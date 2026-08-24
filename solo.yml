@@ -1,0 +1,10 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/ArtMin96/soloist/main/solo.schema.json
+# solo.yml — Soloist's project file.
+#
+# Each entry under `processes:` is a command Soloist runs and watches for you:
+# it starts and stops them, restarts them if they crash, and shows their output.
+# Soloist created this file from what it found in this folder. Edit it freely —
+# add commands, remove the ones you don't want, change a command, or set
+# `auto_start: true` to launch one automatically when you open the project.
+
+processes: {}

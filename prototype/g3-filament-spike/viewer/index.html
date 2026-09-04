@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>G3 Filament spike</title>
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <aside id="panel">
+    <h1>G3 spike</h1>
+    <label>Category
+      <select id="category">
+        <option value="tshirt">tshirt</option>
+        <option value="pants">pants</option>
+      </select>
+    </label>
+    <label>Front (required)
+      <input id="image" type="file" accept="image/*">
+    </label>
+    <label>Back (optional)
+      <input id="image_back" type="file" accept="image/*">
+    </label>
+    <label>Side (optional)
+      <input id="image_side" type="file" accept="image/*">
+    </label>
+    <p class="hint">or upload one sheet with front / side / back side by side as Front</p>
+    <button id="build" type="button">Build garment</button>
+    <ul id="garments"></ul>
+    <button id="back" type="button" hidden>Back to human</button>
+    <div id="status">Starting…</div>
+    <div id="fps">– fps</div>
+  </aside>
+  <main id="stage">
+    <canvas id="canvas"></canvas>
+  </main>
+  <script src="/filament/filament.js"></script>
+  <script type="module" src="/main.js"></script>
+</body>
+</html>

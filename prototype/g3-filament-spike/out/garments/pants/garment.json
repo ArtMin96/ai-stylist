@@ -1,0 +1,30 @@
+{
+  "schema": 1,
+  "id": "pants",
+  "category": "pants",
+  "slot": "bottom",
+  "level": "G3",
+  "label": "Template 3D \u00b7 approximate",
+  "sourceImageSha256": "e07353de886d6dc2f0995249300f8a38274a64f5895179251ae9c37780f80884",
+  "humanSha256": "6ab20deadda2b68caa723d7f250f6fdae69fd01895f2d38ad9bd17967a05afda",
+  "ease_m": 0.02,
+  "views": [
+    "front",
+    "back"
+  ],
+  "stats": {
+    "vertices": 3954,
+    "triangles": 7232,
+    "atlasPx": [
+      659,
+      661
+    ]
+  },
+  "files": {
+    "glb": "garment.glb",
+    "atlas": "atlas.png",
+    "normal": "normal.png",
+    "cutout": "cutout.png"
+  },
+  "createdAt": "2026-09-04T09:41:15Z"
+}

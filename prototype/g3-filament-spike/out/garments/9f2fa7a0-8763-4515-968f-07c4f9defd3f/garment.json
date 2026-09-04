@@ -1,0 +1,25 @@
+{
+  "schema": 1,
+  "id": "9f2fa7a0-8763-4515-968f-07c4f9defd3f",
+  "category": "tshirt",
+  "slot": "top",
+  "level": "G3",
+  "label": "Template 3D \u00b7 approximate",
+  "sourceImageSha256": "89bc5aa5a8be2a7c8e9adda128929155326bb92dc3581e5cda8ad34bd6711184",
+  "humanSha256": "6ab20deadda2b68caa723d7f250f6fdae69fd01895f2d38ad9bd17967a05afda",
+  "ease_m": 0.016,
+  "stats": {
+    "vertices": 7140,
+    "triangles": 14023,
+    "atlasPx": [
+      1024,
+      563
+    ]
+  },
+  "files": {
+    "glb": "garment.glb",
+    "atlas": "atlas.png",
+    "cutout": "cutout.png"
+  },
+  "createdAt": "2026-09-04T09:13:31Z"
+}

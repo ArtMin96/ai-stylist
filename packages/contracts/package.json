@@ -1,0 +1,40 @@
+{
+  "name": "@ai-stylist/contracts",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Canonical API + event contracts: OpenAPI 3.1 per module, JSON Schema 2020-12 events, and the generated TypeScript outputs (planning/06 \u00a71).",
+  "type": "module",
+  "types": "./gen/ts-client/index.ts",
+  "exports": {
+    ".": {
+      "types": "./gen/ts-client/index.ts",
+      "default": "./gen/ts-client/index.ts"
+    },
+    "./events": {
+      "types": "./gen/events-ts/index.ts",
+      "default": "./gen/events-ts/index.ts"
+    },
+    "./openapi.bundle.json": "./gen/openapi.bundle.json"
+  },
+  "scripts": {
+    "bundle": "redocly bundle openapi/openapi.yaml --output gen/openapi.bundle.json",
+    "gen": "../../tools/codegen/gen-ts.sh",
+    "generate": "pnpm run gen",
+    "lint": "eslint . && pnpm run lint:openapi",
+    "lint:openapi": "redocly bundle openapi/openapi.yaml --ext json --output node_modules/.cache/openapi.lint.json >/dev/null && spectral lint --fail-severity=warn --ruleset ../../.spectral.yaml node_modules/.cache/openapi.lint.json && if [ -n \"${OASDIFF_BASE:-}\" ]; then oasdiff breaking --fail-on WARN \"$OASDIFF_BASE\" node_modules/.cache/openapi.lint.json; else echo 'oasdiff: OASDIFF_BASE not set, skipping breaking-change check'; fi",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "devDependencies": {
+    "@ai-stylist/shared-kernel": "workspace:*",
+    "@hey-api/openapi-ts": "0.99.0",
+    "@redocly/cli": "2.51.2",
+    "@stoplight/spectral-cli": "6.16.3",
+    "ajv": "^8.20.0",
+    "ajv-formats": "^3.0.1",
+    "eslint": "^10.10.0",
+    "json-schema-to-typescript": "16.0.0",
+    "typescript": "^6.0.3",
+    "vitest": "^5.0.0"
+  }
+}

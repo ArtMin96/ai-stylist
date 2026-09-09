@@ -1,0 +1,38 @@
+# gitleaks configuration (P02-T12). Used by the pre-commit hook, `just security-scan`,
+# the PR-diff scan in pr-gate.yml, and the full-history scan in nightly.yml.
+#
+# Extends the default ruleset shipped inside the gitleaks binary (v8.x).
+# Syntax reference: gitleaks README "Configuration" (v8.25+ uses [[allowlists]]).
+title = "ai-stylist gitleaks config"
+
+[extend]
+useDefault = true
+
+# Custom rule: age identity secret keys (sops+age is the secrets backend, 15 §6).
+# Format: "AGE-SECRET-KEY-1" + 58 chars of Bech32 upper-case alphabet.
+[[rules]]
+id = "age-secret-key"
+description = "age identity secret key (sops/age private key)"
+regex = '''AGE-SECRET-KEY-1[0-9A-Z]{58}'''
+keywords = ["AGE-SECRET-KEY-1"]
+tags = ["key", "age", "sops"]
+
+# Global allowlist: paths that legitimately contain key-shaped strings.
+[[allowlists]]
+description = "zero-value env template, planning docs, sops-encrypted files, this config"
+paths = [
+  '''(^|/)\.env\.example$''',
+  '''^planning/.*''',
+  '''.*\.enc\.yaml$''',
+  '''(^|/)\.gitleaks\.toml$''',
+  '''(^|/)pnpm-lock\.yaml$''',
+  '''(^|/)uv\.lock$''',
+]
+
+# Public age recipients ("age1...") are not secrets; only the AGE-SECRET-KEY rule matters.
+[[allowlists]]
+description = "age public keys in .sops.yaml are recipients, not secrets"
+paths = ['''(^|/)\.sops\.yaml$''']
+condition = "AND"
+regexTarget = "match"
+regexes = ['''^age1[0-9a-z]{58}$''']

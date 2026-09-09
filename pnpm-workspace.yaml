@@ -1,0 +1,10 @@
+packages:
+  - apps/*
+  - packages/*
+
+# pnpm 10: build scripts run only for packages on this allowlist (15 §9 supply chain).
+# Add an entry only with a justification in the PR.
+onlyBuiltDependencies:
+  - '@swc/core'
+  - esbuild
+  - sharp

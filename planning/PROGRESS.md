@@ -23,7 +23,7 @@ Rules:
 
 | Phase | Name | Status | Notes |
 |---|---|---|---|
-| — | Planning package | `ACCEPTED` | This `planning/` directory; ratified 2026-08-24 |
+| — | Planning package | `ACCEPTED` | This `planning/` directory; ratified 2026-08-24; **prices re-verified and pricing model re-baselined 2026-09-09** (r6, DEC-34/35) |
 | P00 | Product validation and decisions | `NOT_STARTED` | |
 | P01 | 3D and capture prototype gate | `NOT_STARTED` | Go/no-go gate — see RISK-01 |
 | P02 | Repo foundations and CI | `NOT_STARTED` | |
@@ -64,4 +64,12 @@ Log hygiene: when this log exceeds ~30 entries, move the oldest entries to `plan
 
 ## Session handoff log
 
-*(newest first — no entries yet; the first implementation session appends here)*
+*(newest first)*
+
+### 2026-09-09 — Planning amendment: price verification & weighted credits (no code)
+
+- **What:** Four research agents verified live prices for every paid service in the plan (fal.ai model pages, Gemini/Anthropic/OpenAI/Voyage/Cohere, Neon/Trigger.dev/Cloudflare/Railway/PostHog/RevenueCat/Expo/GitHub, Apple/Google fees, competitor App Store listings). Findings in [research/r6-pricing-verification-2026-09-09.md](research/r6-pricing-verification-2026-09-09.md).
+- **Key finding:** purpose-built virtual try-on on fal.ai costs **$0.07–0.075/image** (FASHN, Kling), ~8× the Aug-2026 assumption; under the flat 200-credit Pro grant that was break-even monthly and −$6/mo on annual. Per-item processing (≈ $0.0021) and explanation costs verified as planned. Infra envelope is ≈ 2× r4's estimate ($60–70 launch, $370–450 at 5k MAU). Open-Meteo commercial is $29/mo, not $500.
+- **Decisions logged:** DEC-34 (weighted credits: try-on 3 / missing view 1; grants 0/10/60/150, trial 15; top-up packs 30 for $4.99 and 100 for $12.99 as P13 stretch), DEC-35 (Essentials gains missing views; Voyage embeddings; Gemini 3.5 Flash default; price corrections). New OQ-11 (FLUX 2 try-on LoRA cost arm at P11), OQ-12 (Free cap 40 vs 100, weekly SKU), ASM-08/09, AIC-O5–O7, BIL-O7/O8.
+- **Docs touched:** SPINE §2/§6, 00, 05 (§5–§9), 07 §4, 10 (§2–§3, §5, §6.1, §7), 12 (§1–§7, §8), 16, phases P00/P06/P11/P13, README; correction banners on r3/r4/r5.
+- **Next:** unchanged — start P00. When P11 and P13 kick off, re-verify r6 prices first (AIC-O6).

@@ -1,0 +1,126 @@
+# Affected-module tier (tier 2). Runs only when a PR touches the API, DB, or
+# contracts. Budget: < 25 min. Required when triggered.
+#
+# Required secrets: none (uses a Postgres+pgvector service container).
+# Optional secrets (commented block below, not active until the account exists):
+#   NEON_API_KEY, NEON_PROJECT_ID   migration fwd/rollback on a Neon branch-per-PR
+#   TURBO_TOKEN, TURBO_TEAM         Turborepo remote cache
+name: affected
+
+on:
+  pull_request:
+    paths:
+      - 'apps/api/**'
+      - 'packages/db/**'
+      - 'packages/contracts/**'
+      - 'pnpm-lock.yaml'
+      - '.github/workflows/affected.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: affected-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  CI: 'true'
+  DO_NOT_TRACK: '1'
+  # Matches the service container below; Testcontainers-based suites spin up
+  # their own pgvector and ignore this.
+  DATABASE_URL: postgres://app:app@localhost:5432/app
+  PGHOST: localhost
+  PGPORT: '5432'
+  PGUSER: app
+  PGPASSWORD: app
+  PGDATABASE: app
+
+jobs:
+  integration:
+    name: just test (integration, pgvector)
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    services:
+      postgres:
+        # Local Docker pgvector matching the Neon Postgres major (brief §1).
+        image: pgvector/pgvector:pg17
+        env:
+          POSTGRES_USER: app
+          POSTGRES_PASSWORD: app
+          POSTGRES_DB: app
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U app -d app"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
+      TURBO_TEAM: ${{ secrets.TURBO_TEAM }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: ./.github/actions/setup
+        with:
+          python: 'true'
+      - name: Enable pgvector extension
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -c 'CREATE EXTENSION IF NOT EXISTS vector;'
+      - name: just test
+        run: just test
+
+  migrations:
+    name: just db-migrate && just db-rollback
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    services:
+      postgres:
+        image: pgvector/pgvector:pg17
+        env:
+          POSTGRES_USER: app
+          POSTGRES_PASSWORD: app
+          POSTGRES_DB: app
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U app -d app"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    steps:
+      - uses: actions/checkout@v7
+      - uses: ./.github/actions/setup
+      - name: Enable pgvector extension
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -c 'CREATE EXTENSION IF NOT EXISTS vector;'
+      - name: Forward migration
+        run: just db-migrate
+      - name: Rollback last migration (expand-contract aware)
+        run: just db-rollback
+      - name: Re-apply after rollback (idempotency)
+        run: just db-migrate
+
+      # ---------------------------------------------------------------------
+      # Neon branch-per-PR variant (AC-5: "migrate+rollback on Neon branch").
+      # Not active: no Neon account exists yet (brief §8 #14, OQ-07 regions).
+      # When NEON_API_KEY / NEON_PROJECT_ID are set, replace the service
+      # container with a branch created from the staging parent:
+      #
+      # - name: Create Neon branch for this PR
+      #   if: ${{ secrets.NEON_API_KEY != '' }}
+      #   id: neon
+      #   run: |
+      #     # neonctl is not pinned yet; add to mise.toml when the account exists.
+      #     # neonctl branches create --project-id "$NEON_PROJECT_ID" \
+      #     #   --name "pr-${{ github.event.pull_request.number }}" --parent staging
+      #     # echo "url=<connection string from neonctl output>" >> "$GITHUB_OUTPUT"
+      #   env:
+      #     NEON_API_KEY: ${{ secrets.NEON_API_KEY }}
+      #     NEON_PROJECT_ID: ${{ secrets.NEON_PROJECT_ID }}
+      # - name: Migrate + rollback on the Neon branch
+      #   if: ${{ secrets.NEON_API_KEY != '' }}
+      #   env:
+      #     DATABASE_URL: ${{ steps.neon.outputs.url }}
+      #   run: just db-migrate && just db-rollback
+      # - name: Delete Neon branch
+      #   if: ${{ always() && secrets.NEON_API_KEY != '' }}
+      #   run: echo "neonctl branches delete ..."
+      # ---------------------------------------------------------------------

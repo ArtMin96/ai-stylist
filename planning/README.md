@@ -14,7 +14,7 @@ A premium, personalized AI stylist for iOS + Android: a parametric 3D avatar adj
 5. **[PROGRESS.md](PROGRESS.md)** — status ledger; where the next session starts.
 6. **[phases/](phases/)** — P00–P15, one implementation-ready file each.
 7. **[CLAUDE.md](CLAUDE.md)** + **[.agents/skills/](.agents/skills/)** (13 skills) — move to repo root when implementation starts.
-8. **[research/](research/)** — r1–r5 evidence reports (read-only; all prices/versions as of Aug 2026).
+8. **[research/](research/)** — r1–r5 evidence reports (read-only; versions as of Aug 2026) + **[r6](research/r6-pricing-verification-2026-09-09.md)** (prices verified 2026-09-09 — supersedes r3/r4/r5 price figures; basis for DEC-34/35).
 9. **[templates/](templates/)** — ADR, module contract, phase, issue, PR, session handoff.
 
 ## Phase map

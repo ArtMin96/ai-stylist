@@ -1,0 +1,31 @@
+{
+  "$schema": "https://turbo.build/schema.json",
+  "globalDependencies": ["tsconfig.base.json", "mise.toml", ".env.example"],
+  "tasks": {
+    "generate": {
+      "outputs": ["gen/**"],
+      "cache": true
+    },
+    "build": {
+      "dependsOn": ["^build", "generate"],
+      "outputs": ["dist/**", "build/**"],
+      "cache": true
+    },
+    "typecheck": {
+      "dependsOn": ["^build", "generate"],
+      "outputs": [],
+      "cache": true
+    },
+    "lint": {
+      "dependsOn": ["generate"],
+      "outputs": [],
+      "cache": true
+    },
+    "test": {
+      "dependsOn": ["^build", "generate"],
+      "outputs": ["coverage/**"],
+      "cache": true,
+      "env": ["CI", "DATABASE_URL"]
+    }
+  }
+}

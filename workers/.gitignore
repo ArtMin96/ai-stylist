@@ -1,0 +1,2 @@
+# workspace-local caches (root .gitignore covers .venv, __pycache__, .pytest_cache, .ruff_cache)
+.hypothesis/

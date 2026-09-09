@@ -64,12 +64,12 @@ Full assumptions register with validation plan: [16 §Assumptions](16-risks-open
 **Constraints (fixed):**
 - Team of 2–3 developers on Ubuntu Linux, heavy Claude Code usage; no Mac owned — hosted macOS CI for iOS builds ([SPINE §1](SPINE.md), research/r1).
 - Store compliance: Apple App Store + Google Play billing rules bound the trial/paywall design (P13).
-- Budget reality: infra ≈ $30–35/mo at launch; AI cost anchors per [SPINE §6](SPINE.md); all pricing figures are hypotheses.
+- Budget reality: infra ≈ $60–70/mo at launch, ≈ $370–450/mo at 5k MAU ([r6](research/r6-pricing-verification-2026-09-09.md), verified 2026-09-09); AI cost anchors per [SPINE §6](SPINE.md); all pricing figures are hypotheses.
 
 **Load-bearing assumptions (labeled, tracked as ASM-NN in doc 16):**
 - `react-native-filament` is production-viable for our avatar workload — **validated at the P01 prototype gate**, with a native-Filament JSI fallback (ASM-01).
 - Anny (Apache 2.0) base meshes + morphs are production-quality after our own asset pipeline pass (ASM-02).
-- G2 generative try-on quality at ~$0.003–0.025/image clears user-satisfaction and unit-cost gates (ASM-03, gated P11).
+- G2 generative try-on quality at $0.075/image (FASHN/Kling on fal.ai; $0.021/MP FLUX 2 LoRA if it passes eval) clears user-satisfaction and unit-cost gates under weighted credits (ASM-03, DEC-34, gated P11).
 - Fashion content can be licensed at viable cost (ASM-04, validated by P12 and OQ-05).
 - The 3-day server-granted trial model passes App Store / Play review (ASM-05, validated P13).
 
@@ -211,7 +211,7 @@ Each bet carries the full brief-§11 contract. Costs limits are planning caps, n
 
 #### RB-4 — Single-view missing-side synthesis quality (pre-P11 gate)
 - **User problem:** Users capture only the front of a garment but want complete catalog views.
-- **Hypothesis:** fal.ai-class generation can synthesize back/side views that users find useful when clearly provenance-marked, at ≤ $0.025/image.
+- **Hypothesis:** fal.ai-class generation can synthesize back/side views that users find useful when clearly provenance-marked, at ≤ $0.012/image (FLUX.2 dev; $0.04 Kontext escalation ceiling).
 - **Prototype:** P11 pre-gate eval: 100 items across categories/materials; user-facing usefulness rating + artifact review.
 - **Dataset:** Team + consented beta closet photos; versioned eval set per doc 10.
 - **Target devices:** N/A (server-side generation); display on all tiers.

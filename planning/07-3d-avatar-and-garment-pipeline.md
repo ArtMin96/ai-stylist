@@ -189,13 +189,13 @@ For higher fidelity later: consented upload of 1–3 selfies → server-side rec
 
 ## 6. Garment capability ladder (G0–G4)
 
-Per-level contract. Costs are provider prices as of Aug 2026 from [r3](research/r3-ai-providers-costs.md)/[r5](research/r5-avatar-garment-3d.md); serving costs and credit pricing are owned by [10](10-ai-usage-cost-and-evaluation.md)/[12](12-pricing-entitlements-and-unit-economics.md).
+Per-level contract. Costs are provider prices verified 2026-09-09 in [r6](research/r6-pricing-verification-2026-09-09.md) (superseding r3/r5 figures); serving costs and credit pricing are owned by [10](10-ai-usage-cost-and-evaluation.md)/[12](12-pricing-entitlements-and-unit-economics.md).
 
 | | Input required | Output artifacts | Honest quality expectation | Marginal cost | Phase |
 |---|---|---|---|---|---|
 | **G0 — flat-lay / collage** | 1 front photo (min capture) | segmented 2D cutout + thumbnails | "Your real photos, arranged as an outfit." No body context, no fit info. Always available; the permanent fallback. | ~$0 (on-device segmentation; server fallback ~$0.001/img) | P06/P10 |
 | **G1 — 2.5D overlay** | G0 cutout + avatar | warped cutout anchored to avatar in 1–2 poses | "An approximate preview on your avatar." Works for fitted garments; loose garments and complex poses look wrong — labeled approximate. | ~$0 runtime (deterministic warp) | post-P10, optional; may be skipped if G2 quality makes it redundant |
-| **G2 — generative photo try-on** (MVP premium) | user photo (or avatar render) + garment photo | photorealistic try-on **image(s)**, provenance-marked | "A realistic AI-generated preview — not a physical fit measurement." Small text/logos may distort; fine patterns may blur; multi-angle costs extra images. | $0.003–0.025/image (fal.ai VTON/Flux-class, SPINE §2 range); 1 generative credit | P11 |
+| **G2 — generative photo try-on** (MVP premium) | user photo (or avatar render) + garment photo | photorealistic try-on **image(s)**, provenance-marked | "A realistic AI-generated preview — not a physical fit measurement." Small text/logos may distort; fine patterns may blur; multi-angle costs extra images. | $0.07–0.075/image (fal.ai FASHN/Kling; $0.021/MP FLUX 2 LoRA if it passes eval — SPINE §2); **3 generative credits** (missing view = 1) | P11 |
 | **G3 — template 3D garment** | G0 cutout + category → matched template mesh | template glTF garment + projected user texture, attached to avatar, all poses | "Your garment's colors and pattern on a standard 3D shape of that garment type." Shape is the template's, not the item's exact cut. | authoring: template library (outsourced, ~$50–500/template, one-time); runtime ~$0 + texture-projection job ~$0.001–0.01 | later, gated by SPK-3 |
 | **G4 — reconstructed 3D + cloth sim** | multi-view capture (aspirational: single view) | simulation-ready garment mesh + physics params | Research bet. Not production-ready in 2025–26 (mobile cloth sim ≈ toy resolutions; single-image reconstruction under-constrained — r5 §4). No user-facing promise until SPK-4 passes. | unknown; bounded by spike budget | research only |
 

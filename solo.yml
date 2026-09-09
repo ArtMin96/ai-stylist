@@ -7,4 +7,13 @@
 # add commands, remove the ones you don't want, change a command, or set
 # `auto_start: true` to launch one automatically when you open the project.
 
-processes: {}
+processes:
+  api:
+    command: just dev-api
+    auto_start: false
+  mobile:
+    command: just dev-mobile
+    auto_start: false
+  workers:
+    command: just dev-workers
+    auto_start: false

@@ -1,0 +1,27 @@
+# Local infrastructure for `just dev-api` / `just db-*` (planning/15 §1.4): Postgres 17 with
+# pgvector, matching the Neon major. Data persists in the named volume; `just db-reset --yes`
+# wipes the schema, `docker compose down -v` wipes the volume.
+#
+# Host port defaults to 5432; set POSTGRES_HOST_PORT in .env when another Postgres already
+# listens there (DATABASE_URL must use the same port).
+services:
+  postgres:
+    image: pgvector/pgvector:pg17
+    container_name: ai-stylist-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ai_stylist
+      POSTGRES_PASSWORD: ai_stylist
+      POSTGRES_DB: ai_stylist
+    ports:
+      - '${POSTGRES_HOST_PORT:-5432}:5432'
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U ai_stylist -d ai_stylist']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  postgres-data:

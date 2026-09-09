@@ -154,7 +154,7 @@ P00 *introduces* (labels and ratifies) budgets; it measures nothing (no system e
 | Budget | Target (hypothesis until measured) | How measured |
 |---|---|---|
 | Performance | Full table ratified in [13 §12](../13-testing-quality-and-performance.md) incl. P01 gate thresholds (60 fps iPhone 13-class / 50 fps Galaxy A52-class, <50 ms touch, <100 MB package, <300 MB memory) | P01 gate (3D), P02+ per phase, ratified P14 |
-| Cost | Infra ~$30–35/mo launch; AI $0.02–0.15/user/mo steady, $0.10–0.30 onboarding spike; iOS CI $30–50/mo (as of Aug 2026, r1/r3/r4) | Provider billing + `usage_meters` from P06; checked P13 (RISK-08) |
+| Cost | Infra ~$60–70/mo launch (~$370–450 at 5k MAU); AI $0.01–0.15/user/mo steady excl. credits, $0.10–0.30 onboarding spike; try-on ≈ $0.0825/image = 3 credits; iOS CI $10–30/mo (verified 2026-09-09, [r6](../research/r6-pricing-verification-2026-09-09.md)) | Provider billing + `usage_meters` from P06; checked P13 (RISK-08) |
 | AI quality | Eval-gate structure ratified ([13 §10](../13-testing-quality-and-performance.md), doc 10); numeric thresholds set in owning phases (P06/P09/P11) | `just ml-eval` from P06 |
 | Reliability | API ≥ 99.5% monthly, error budget 3.6 h/mo; crash-free ≥ 99.5% (hypotheses) | Dashboards from P02; ratified P14 |
 

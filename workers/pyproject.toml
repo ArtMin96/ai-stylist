@@ -1,0 +1,76 @@
+# uv workspace root for the Python ML workers (planning/15 §1.2, brief §1 "Python").
+# Not a package itself: it pins the shared dev tooling and hosts the single `uv.lock`.
+# Every service lives in `ml/<service>/` and is a workspace member.
+[project]
+name = "ai-stylist-workers"
+version = "0.0.0"
+description = "Workspace root for the AI Stylist Python ML workers (dev tooling only)"
+requires-python = ">=3.12,<3.13"
+dependencies = [
+  # Workspace members, so a plain `uv sync --frozen` installs every service in editable mode.
+  "ai-stylist-generated",
+  "ai-stylist-segmentation",
+]
+
+[dependency-groups]
+dev = [
+  "basedpyright>=1.29",
+  "datamodel-code-generator>=0.30",
+  "httpx>=0.28",
+  "hypothesis>=6.130",
+  "pytest>=8.3",
+  "pytest-asyncio>=0.26",
+  "ruff>=0.12",
+  "schemathesis>=4.0",
+]
+
+[tool.uv]
+package = false
+
+[tool.uv.workspace]
+members = ["ml/*"]
+
+[tool.uv.sources]
+ai-stylist-generated = { workspace = true }
+ai-stylist-segmentation = { workspace = true }
+
+# --- ruff: lint + format (brief §1 "Lint / format") --------------------------------
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+src = ["ml/*/src", "ml/*/tests"]
+# Generated models are regenerated, never edited or linted by hand (`just generate`).
+extend-exclude = ["ml/generated/ai_stylist_generated/events/"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP", "N", "S", "ASYNC", "RUF"]
+
+[tool.ruff.lint.per-file-ignores]
+"**/tests/**" = ["S101"] # assert is the test idiom
+"conftest.py" = ["S101"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["ai_stylist_segmentation", "ai_stylist_generated"]
+
+# --- pytest (brief §1 "Tests: workers") ----------------------------------------------
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"
+# Test placement rule (brief §5): every service keeps its tests in `ml/<service>/tests/`.
+testpaths = ["ml/*/tests"]
+# importlib mode: sibling services may both own a `tests/test_health.py`.
+addopts = ["--import-mode=importlib", "-p", "no:cacheprovider", "--strict-markers"]
+xfail_strict = true
+filterwarnings = ["error"]
+
+# --- basedpyright (brief §1 "Python": Pyright/BasedPyright) ---------------------------
+[tool.basedpyright]
+typeCheckingMode = "standard"
+pythonVersion = "3.12"
+pythonPlatform = "Linux"
+venvPath = "."
+venv = ".venv"
+include = ["ml", "conftest.py"]
+exclude = ["**/.venv", "**/__pycache__", "**/.ruff_cache", "**/.pytest_cache", "**/.hypothesis"]
+reportMissingImports = "error"
+reportMissingTypeStubs = "none"

@@ -1,9 +1,9 @@
 # SPINE — Canonical Decisions & Conventions
 
-**Status:** Ratified for planning · **Date:** 2026-08-24
+**Status:** Ratified for planning · **Date:** 2026-08-24 · **Amended:** 2026-09-09 (§2 fal.ai prices, §6 weighted credits — [r6](research/r6-pricing-verification-2026-09-09.md), DEC-34/35)
 **Purpose:** Single source of truth for decisions, names, and conventions used across every file in `planning/`. Every planning document MUST conform to this file. If a document conflicts with the SPINE, the document is wrong unless the decision log in `16-risks-open-questions-and-decision-log.md` records a superseding decision.
 
-Research evidence: `research/r1-linux-ios-build.md`, `research/r2-mobile-3d-stack.md`, `research/r3-ai-providers-costs.md`, `research/r4-backend-providers.md`, `research/r5-avatar-garment-3d.md`. All prices/versions cited are **as of Aug 2026** unless noted.
+Research evidence: `research/r6-pricing-verification-2026-09-09.md` (**verified prices, 2026-09-09 — supersedes r3/r4/r5 price figures**), `research/r1-linux-ios-build.md`, `research/r2-mobile-3d-stack.md`, `research/r3-ai-providers-costs.md`, `research/r4-backend-providers.md`, `research/r5-avatar-garment-3d.md`. All prices/versions cited are **as of Aug 2026** unless noted.
 
 ---
 
@@ -27,7 +27,7 @@ Research evidence: `research/r1-linux-ios-build.md`, `research/r2-mobile-3d-stac
 | 3D renderer | **Filament via `react-native-filament` (margelo)**; glTF 2.0, morph targets, skeletal animation, PBR | Fallback: native Filament behind a JSI bridge; rejected: Unity-as-a-Library (size/license), react-three-fiber/expo-gl (dependency instability) | r2 |
 | 3D asset formats | **glTF 2.0** canonical; **KTX2/Basis** textures; **Draco or meshopt** mesh compression; asset manifests versioned | USDZ only as iOS AR export if ever needed | r2, r5 |
 | Parametric body model | **Anny (Naver, Apache 2.0)** — 11 interpretable shape params + local blend shapes; inclusive base set | Rejected: SMPL/SMPL-X (Meshcapade commercial licensing risk/cost); alternative kept warm: MPFB2/MakeHuman (CC0) | r5 |
-| Garment MVP capability | **G0 collage + G2 generative photo try-on (fal.ai VTON-class, ~$0.003–0.01/image)**; A1 parametric avatar for fit context; G3 template 3D garments later, gated | Cloth simulation (G4) = research non-goal for v1; single-image 3D garment reconstruction = research bet | r5 |
+| Garment MVP capability | **G0 collage + G2 generative photo try-on (fal.ai try-on-class, $0.07–0.075/image FASHN/Kling; $0.021/MP FLUX 2 LoRA eval-gated — r6)**; A1 parametric avatar for fit context; G3 template 3D garments later, gated | Cloth simulation (G4) = research non-goal for v1; single-image 3D garment reconstruction = research bet | r5 |
 | Selfie→face | **On-device landmarks (ARKit / MediaPipe) → stylized likeness on avatar head (A2)**; server path documented for heavier reconstruction; generic face default | "Exact digital twin" claims forbidden | r5 |
 | Backend framework | **NestJS on Fastify adapter** — modular monolith + isolated workers, TypeScript | Hono/Fastify-bare (weaker module/DI story), Go/Elixir (no decisive win for this team) | r4 |
 | API contract | **OpenAPI 3.1 as the canonical contract**, generated TS client for mobile (openapi codegen); contract files owned by `packages/contracts` | tRPC rejected: couples mobile to server internals, weaker fit for future chat/admin/3rd-party clients — documented in 05 | r4 + orchestrator reconciliation |
@@ -47,7 +47,7 @@ Research evidence: `research/r1-linux-ios-build.md`, `research/r2-mobile-3d-stac
 | AI: classification & attributes | **Vision-LLM structured extraction (Gemini Flash-class or Claude Haiku) with JSON schema**; Google Cloud Vision for cheap coarse labels; escalate to Ximilar Fashion Tagging only if eval precision insufficient | — | r3 |
 | AI: embeddings | **Multimodal embedding API (Cohere Embed v4-class)** → self-hosted SigLIP only past measured volume threshold | — | r3 |
 | AI: explanations | **Templates from structured reason codes by default**; **Claude Haiku (batch + prompt caching)** for optional natural-language polish | Explanations are produced by the engine's decision trace, never hallucinated after the fact | r3 |
-| AI: generative try-on / missing views | **fal.ai** (Flux/VTON-class, ~100ms-class latency, $0.003–0.025/image) | Replicate rejected for real-time (cold starts); usable for batch | r3, r5 |
+| AI: generative try-on / missing views | **fal.ai** (try-on $0.07–0.075/image FASHN/Kling, $0.021/MP FLUX 2 LoRA eval-gated; missing view $0.012/MP FLUX.2 dev, $0.003 Schnell; ~100ms-class latency — verified 2026-09-09, r6) | Replicate rejected for real-time (cold starts); usable for batch | r3, r5 |
 | AI data policy | Default **no provider training on customer data**; prefer providers with zero/short retention (Anthropic 7-day, no training). Face/body media only to providers passing privacy review | — | r3 |
 | iOS build/delivery | **Develop 100% on Linux. EAS Build (or GitHub Actions macOS M-series ~$0.12/min) for iOS builds + signing; TestFlight upload via App Store Connect API from CI; ~$30–50/mo. No Mac purchase.** xtool: not viable for RN; noted as native-only curiosity | Final EAS-vs-GHA choice = ADR in Phase P02 | r1 |
 | Monorepo & tasks | **pnpm workspaces + Turborepo**; root task runner **`just`**; pinned toolchain via `mise` (or asdf); one-command bootstrap + doctor script | — | r2, r4 |
@@ -112,14 +112,17 @@ Notes: entitlement *seams* (feature flags + entitlement checks) are built into f
 
 **Trial:** 3-day full access at **Pro** level from signup, server-granted, no card required. After expiry → Free tier. Data never deleted on downgrade; export always available.
 
-| Plan | Price (hypothesis) | Closet | Recommendations | Avatar/try-on | Generative credits/mo | Extras |
+| Plan | Price (hypothesis) | Closet | Recommendations | Avatar/try-on | Generative credits/mo (weighted) | Extras |
 |---|---|---|---|---|---|---|
 | **Free** | $0 | up to 40 items | 1/day, basic context | A1 avatar, G0 collage only | 0 | export, ads-free anyway |
-| **Essentials** | $4.99/mo · $39.99/yr | 500 items | unlimited, full context | A1 + poses, G0 | 10 | trends feed (basic) |
-| **Plus** | $9.99/mo · $79.99/yr | unlimited | unlimited + future-day planning | + G2 photo try-on | 50 | missing-view gen, personalized trends, wardrobe analytics |
-| **Pro** | $19.99/mo · $149.99/yr | unlimited | everything | + priority processing, multi-angle exports | 200 | early features, future stylist chat |
+| **Essentials** | $4.99/mo · $39.99/yr | 500 items | unlimited, full context | A1 + poses, G0 | 10 (= 10 missing views; no try-on) | missing-view gen, trends feed (basic) |
+| **Plus** | $9.99/mo · $79.99/yr | unlimited | unlimited + future-day planning | + G2 photo try-on | 60 (= 20 try-ons or 60 missing views) | personalized trends, wardrobe analytics |
+| **Pro** | $19.99/mo · $149.99/yr | unlimited | everything | + priority processing, multi-angle exports | 150 (= 50 try-ons or 150 missing views) | early features, future stylist chat |
+| **Top-up packs** (consumable IAP, any paid tier) | 30 credits $4.99 · 100 credits $12.99 | — | — | — | no expiry (or 90-day — decide at P13) | P13 stretch, otherwise v1.1 |
 
-"Generative credit" = one G2 try-on image or one missing-view synthesis (~$0.003–0.025 provider cost). Unit economics anchors (from r3/r4): AI cost/user/mo steady ≈ $0.02–0.08 (light–medium), heavy ≈ $0.10–0.15 + credits ≈ $0.01/image; onboarding spike $0.10–0.30; infra $30–35/mo launch, $150–180/mo at 5k users. Doc 12 owns the full calculation tables.
+**Weighted credits (re-baselined 2026-09-09, [r6](research/r6-pricing-verification-2026-09-09.md), DEC-34):** a G2 try-on image costs **3 credits**, a missing-view image **1 credit**. Provider cost per try-on ≈ $0.075 (FASHN/Kling on fal.ai, +10% retry allowance ≈ $0.0825); per missing view ≈ $0.012 (FLUX.2 dev), i.e. ≈ $0.0275 per credit either way. The earlier flat 10/50/200 credits at an assumed ~$0.01/image would have left Pro at break-even monthly and **−$6/mo on annual** at real prices; the weighted allotments cap generative exposure at ≈ $0.13 / $1.65 / $4.13 per Essentials / Plus / Pro subscriber-month. If the cheaper FLUX 2 try-on LoRA ($0.021/MP) passes the P11 quality gate, weights may be relaxed (decision logged at P11).
+
+Unit economics anchors (r6, verified 2026-09-09): per closet item processed ≈ $0.002; AI cost/user/mo steady ≈ $0.01–0.06 (light–medium), heavy ≈ $0.10–0.15, **excluding credits**; onboarding spike $0.10–0.30; infra ≈ $60–70/mo at launch, ≈ $370–450/mo at 5k MAU (≈ $0.08 per active user). Store fee base case 15% (Apple SBP; Google Play reportedly 10% since June 2026 — verify at P13). Doc 12 owns the full calculation tables. Experiments queued for P13: Free cap 40 vs 100 items (market clusters at 100), weekly Plus SKU (weekly plans ≈ 55% of category revenue per Adapty 2026), annual discount depth, credit quantities.
 
 ## 7. Requirement ID scheme (owned by `01-requirements-and-traceability.md`)
 
@@ -155,7 +158,7 @@ planning/
   .agents/skills/<skill>/SKILL.md
   templates/{adr,module-contract,phase,issue,pull-request,session-handoff}.md
   phases/P00…P15 (one file each)
-  research/r1…r5 (evidence; read-only)
+  research/r1…r6 (evidence; read-only — r6 holds verified prices)
 ```
 
 ## 10. Writing rules (binding for every author/agent)

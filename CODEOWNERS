@@ -1,0 +1,41 @@
+# CODEOWNERS — AI Stylist
+#
+# Path ownership per planning/15-team-workflow-and-ai-agent-operations.md §7 and the
+# single-writer list in CLAUDE.md ("Parallel sessions"). With a 2–3 person team this
+# routes review; it does not gate.
+#
+# PLACEHOLDER HANDLES: @dev-lead, @3d-owner, @ml-owner, @team are NOT real GitHub
+# handles. Replace every one of them with real user or team handles BEFORE enabling
+# branch protection / "require review from code owners" — GitHub silently ignores
+# unknown owners, which would leave these paths unrouted.
+#
+# Later rules override earlier ones: default first, module ownership next,
+# single-writer paths last so they always win.
+
+*                                        @team
+
+# --- Module ownership (doc 15 §7) ---
+/apps/api/src/modules/recommendation/    @dev-lead
+/apps/api/src/modules/billing/           @dev-lead
+/apps/mobile/src/render/                 @3d-owner
+/assets/3d/                              @3d-owner
+/workers/                                @ml-owner
+
+# --- Decisions and planning (doc 15 §7) ---
+/planning/                               @dev-lead
+/docs/adr/                               @dev-lead
+/.agents/skills/                         @dev-lead
+
+# --- Single-writer paths (CLAUDE.md "Parallel sessions"; P02 §13) -> dev lead ---
+/CLAUDE.md                               @dev-lead
+/CODEOWNERS                              @dev-lead
+/justfile                                @dev-lead
+/mise.toml                               @dev-lead
+/package.json                            @dev-lead
+/pnpm-workspace.yaml                     @dev-lead
+/pnpm-lock.yaml                          @dev-lead
+/workers/**/uv.lock                      @dev-lead
+/turbo.json                              @dev-lead
+/.github/workflows/                      @dev-lead
+/packages/contracts/                     @dev-lead
+/packages/shared-kernel/                 @dev-lead

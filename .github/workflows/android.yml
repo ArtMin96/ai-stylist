@@ -1,0 +1,94 @@
+# Android build lane (P02-T14). Runs on Linux (brief §4: "Linux can: Android build+sign").
+#
+# Trigger: manual dispatch, or tags `v*`.
+# Required secrets: none for an unsigned preview build.
+# Optional secrets (signing is skipped when unset - NO Play account exists yet):
+#   ANDROID_KEYSTORE_BASE64   base64 of the upload keystore (.jks)
+#   ANDROID_KEYSTORE_PASSWORD
+#   ANDROID_KEY_ALIAS
+#   ANDROID_KEY_PASSWORD
+name: android
+
+on:
+  workflow_dispatch:
+    inputs:
+      profile:
+        description: Build profile
+        type: choice
+        options: [dev, preview, prod]
+        default: preview
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: android-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  CI: 'true'
+  DO_NOT_TRACK: '1'
+
+jobs:
+  build:
+    name: just mobile-android-build
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      PROFILE: ${{ inputs.profile || 'preview' }}
+      HAS_KEYSTORE: ${{ secrets.ANDROID_KEYSTORE_BASE64 != '' }}
+    steps:
+      - name: Record start
+        id: start
+        run: echo "ts=$(date +%s)" >> "$GITHUB_OUTPUT"
+      - uses: actions/checkout@v7
+      # Android SDK + platform tools are preinstalled on ubuntu-24.04 images;
+      # Temurin 17 comes from mise.toml via the setup action.
+      - uses: ./.github/actions/setup
+
+      - name: Decode upload keystore
+        id: keystore
+        if: env.HAS_KEYSTORE == 'true'
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+        run: |
+          mkdir -p "$RUNNER_TEMP/android-signing"
+          echo "$ANDROID_KEYSTORE_BASE64" | base64 -d > "$RUNNER_TEMP/android-signing/upload.jks"
+          echo "path=$RUNNER_TEMP/android-signing/upload.jks" >> "$GITHUB_OUTPUT"
+          echo "Signing: enabled"
+
+      - name: Signing status
+        if: env.HAS_KEYSTORE != 'true'
+        run: echo "::notice::ANDROID_KEYSTORE_BASE64 not set - producing an unsigned/debug-signed build"
+
+      - name: just mobile-android-build --profile ${{ env.PROFILE }}
+        env:
+          # Consumed by the Gradle signing config when present (T14 wires it).
+          ANDROID_KEYSTORE_PATH: ${{ steps.keystore.outputs.path }}
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: just mobile-android-build --profile "$PROFILE"
+
+      - name: Upload AAB/APK
+        uses: actions/upload-artifact@v7
+        with:
+          name: android-${{ env.PROFILE }}-${{ github.sha }}
+          path: |
+            apps/mobile/android/app/build/outputs/bundle/**/*.aab
+            apps/mobile/android/app/build/outputs/apk/**/*.apk
+          if-no-files-found: warn
+          retention-days: 30
+
+      - name: Remove keystore
+        if: always()
+        run: rm -rf "$RUNNER_TEMP/android-signing"
+
+      - name: Record ci.android_build_duration_seconds
+        if: always()
+        run: |
+          n=$(( $(date +%s) - ${{ steps.start.outputs.ts }} ))
+          echo "ci.android_build_duration_seconds=${n} profile=${PROFILE}" | tee -a "$GITHUB_STEP_SUMMARY"

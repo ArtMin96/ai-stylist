@@ -1,0 +1,48 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://contracts.ai-stylist.app/events/analytics/events.schema.json",
+  "title": "AnalyticsTaxonomy",
+  "description": "Schema for the product-analytics event taxonomy (events.json). CI rejects any analytics call whose event name is not registered here (brief §6); events marked consentRequired never fire before consent.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["version", "events"],
+  "properties": {
+    "version": { "type": "integer", "minimum": 1 },
+    "events": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/AnalyticsEventDefinition" }
+    }
+  },
+  "$defs": {
+    "AnalyticsEventDefinition": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "owner", "properties", "consentRequired"],
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "snake_case event name, stable once shipped",
+          "pattern": "^[a-z][a-z0-9]*(_[a-z0-9]+)*$"
+        },
+        "owner": {
+          "type": "string",
+          "description": "Owning SPINE module",
+          "pattern": "^[a-z][a-z-]*$"
+        },
+        "description": { "type": "string" },
+        "properties": {
+          "type": "object",
+          "description": "Allowed property names and their scalar types; anything else is dropped",
+          "additionalProperties": {
+            "type": "string",
+            "enum": ["string", "integer", "number", "boolean"]
+          }
+        },
+        "consentRequired": {
+          "type": "boolean",
+          "description": "True when the event may only be sent after analytics consent (doc 11)"
+        }
+      }
+    }
+  }
+}

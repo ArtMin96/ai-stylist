@@ -1,0 +1,14 @@
+* text=auto eol=lf
+
+# Lockfiles: never merge by hand
+pnpm-lock.yaml merge=binary linguist-generated
+uv.lock merge=binary linguist-generated
+
+# Generated contract outputs
+**/gen/** linguist-generated
+
+# 3D assets via Git LFS (planning/07, brief §2 assets/3d)
+assets/3d/**/*.glb filter=lfs diff=lfs merge=lfs -text
+assets/3d/**/*.gltf filter=lfs diff=lfs merge=lfs -text
+assets/3d/**/*.ktx2 filter=lfs diff=lfs merge=lfs -text
+assets/3d/**/*.bin filter=lfs diff=lfs merge=lfs -text

@@ -1,0 +1,147 @@
+# Nightly tier (tier 3). Non-blocking: failures open issues, never block merges.
+# Also exposed via `workflow_call` so pre-release.yml reuses these jobs.
+#
+# Required secrets: none.
+# Optional secrets (steps skipped when unset):
+#   TURBO_TOKEN, TURBO_TEAM   Turborepo remote cache
+#   EXPO_TOKEN                Maestro on a CI-built dev-client (P02-T10/T14)
+name: nightly
+
+on:
+  schedule:
+    - cron: '0 3 * * *' # 03:00 UTC daily
+  workflow_dispatch:
+  workflow_call:
+
+permissions:
+  contents: read
+
+env:
+  CI: 'true'
+  DO_NOT_TRACK: '1'
+  DATABASE_URL: postgres://app:app@localhost:5432/app
+
+jobs:
+  full-test:
+    name: just test (full suite)
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    services:
+      postgres:
+        image: pgvector/pgvector:pg17
+        env:
+          POSTGRES_USER: app
+          POSTGRES_PASSWORD: app
+          POSTGRES_DB: app
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U app -d app"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
+      TURBO_TEAM: ${{ secrets.TURBO_TEAM }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: ./.github/actions/setup
+        with:
+          python: 'true'
+      - name: Enable pgvector extension
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -c 'CREATE EXTENSION IF NOT EXISTS vector;'
+      - name: just test
+        run: just test
+
+  gitleaks-history:
+    name: gitleaks (full history)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - uses: ./.github/actions/setup
+        with:
+          install: 'false'
+      - name: gitleaks over all refs
+        # `gitleaks detect` is a hidden alias in v8.x; `git` is the current subcommand.
+        run: gitleaks git --log-opts=--all --config .gitleaks.toml --redact --verbose .
+
+  osv-scanner:
+    name: osv-scanner (npm + PyPI + Actions)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+      - uses: ./.github/actions/setup
+        with:
+          install: 'false'
+      - name: osv-scanner
+        run: osv-scanner scan source --recursive .
+
+  sbom:
+    name: syft SBOM
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+      - uses: ./.github/actions/setup
+      - name: Generate SBOM (SPDX + CycloneDX)
+        run: |
+          mkdir -p sbom
+          syft scan dir:. -o spdx-json=sbom/sbom.spdx.json -o cyclonedx-json=sbom/sbom.cdx.json
+      - uses: actions/upload-artifact@v7
+        with:
+          name: sbom-${{ github.sha }}
+          path: sbom/
+          retention-days: 90
+
+  ml-eval:
+    name: just ml-eval
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v7
+      - uses: ./.github/actions/setup
+        with:
+          python: 'true'
+      - name: just ml-eval (exit 2 = not implemented -> skipped)
+        run: |
+          set +e
+          just ml-eval
+          rc=$?
+          set -e
+          case "$rc" in
+            0) echo "ml-eval passed" ;;
+            2) echo "::notice::ml-eval reports NOT IMPLEMENTED (exit 2) - skipped (P02-T17 stub)" ;;
+            *) echo "::error::ml-eval failed with exit $rc"; exit "$rc" ;;
+          esac
+
+  expired-flags:
+    name: expired feature-flag report
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v7
+      - name: Report flags past expiry (placeholder)
+        run: |
+          echo "NOT IMPLEMENTED (P02-T09): flag registry with owner/expiry lands with the logging/lint task"
+          echo "::notice::expired-flag report placeholder - registry not present yet"
+          exit 0
+
+  maestro:
+    name: Maestro E2E (emulator)
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v7
+      - name: Maestro flows (placeholder)
+        run: |
+          if [ -d apps/mobile/e2e ]; then
+            echo "::notice::apps/mobile/e2e exists but the emulator lane is not wired yet (P02-T10/T14) - skipped"
+          else
+            echo "::notice::apps/mobile/e2e absent - Maestro skipped"
+          fi
+          echo "NOT IMPLEMENTED (P02-T10): Maestro on Android emulator / device farm"
+          exit 0

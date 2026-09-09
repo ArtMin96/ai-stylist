@@ -1,0 +1,81 @@
+# Pre-release tier (tier 4). Skeleton only in P02 (brief §4).
+# Reuses every nightly job via workflow_call, then adds P14 placeholders.
+#
+# Required secrets: none (P02). P14 adds device-farm, store, and backup creds.
+name: pre-release
+
+on:
+  push:
+    branches:
+      - 'release/**'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pre-release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  nightly:
+    name: nightly suite
+    uses: ./.github/workflows/nightly.yml
+    secrets: inherit
+
+  device-matrix-perf:
+    name: device-matrix perf
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - run: |
+          echo "NOT IMPLEMENTED (P14)"
+          exit 0
+
+  store-size-gate:
+    name: store size gate
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - run: |
+          echo "NOT IMPLEMENTED (P14)"
+          exit 0
+
+  a11y-checklist:
+    name: a11y checklist
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - run: |
+          echo "NOT IMPLEMENTED (P14)"
+          exit 0
+
+  restore-drill:
+    name: restore drill
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - run: |
+          echo "NOT IMPLEMENTED (P14)"
+          exit 0
+
+  release-checklist:
+    name: release checklist
+    needs: [nightly, device-matrix-perf, store-size-gate, a11y-checklist, restore-drill]
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - run: |
+          {
+            echo "## Pre-release checklist (skeleton, P02)"
+            echo "| gate | result |"
+            echo "|---|---|"
+            echo "| nightly suite | ${{ needs.nightly.result }} |"
+            echo "| device-matrix perf | NOT IMPLEMENTED (P14) |"
+            echo "| store size gate | NOT IMPLEMENTED (P14) |"
+            echo "| a11y checklist | NOT IMPLEMENTED (P14) |"
+            echo "| restore drill | NOT IMPLEMENTED (P14) |"
+          } >> "$GITHUB_STEP_SUMMARY"
+          echo "NOT IMPLEMENTED (P14)"
+          exit 0

@@ -1,0 +1,31 @@
+{
+  "name": "@ai-stylist/test-support",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Shared test builders and fakes: Testcontainers Postgres (pgvector), in-memory pino log stream, fake clock. Framework-agnostic (no vitest import).",
+  "type": "module",
+  "types": "./src/index.ts",
+  "exports": {
+    ".": {
+      "types": "./src/index.ts",
+      "default": "./src/index.ts"
+    }
+  },
+  "files": [
+    "src"
+  ],
+  "scripts": {
+    "lint": "eslint .",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@testcontainers/postgresql": "^12.1.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.20.2",
+    "eslint": "^10.10.0",
+    "typescript": "^6.0.3",
+    "vitest": "^5.0.0"
+  }
+}

@@ -1,0 +1,31 @@
+{
+  "name": "@ai-stylist/shared-kernel",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Pure types, constants, and registries shared by every module: ULID prefixes, units, event envelope, error/reason/entitlement registries (docs/modules/shared-kernel.md).",
+  "type": "module",
+  "types": "./src/index.ts",
+  "exports": {
+    ".": {
+      "types": "./src/index.ts",
+      "default": "./src/index.ts"
+    }
+  },
+  "files": [
+    "src"
+  ],
+  "scripts": {
+    "lint": "eslint .",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "ulid": "^3.0.2"
+  },
+  "devDependencies": {
+    "eslint": "^10.10.0",
+    "fast-check": "^4.9.0",
+    "typescript": "^6.0.3",
+    "vitest": "^5.0.0"
+  }
+}

@@ -1,0 +1,14 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "rootDir": ".",
+    "noEmit": true,
+    "types": [],
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    // The bundled @hey-api/openapi-ts fetch client (gen/ts-client/{client,core}) does not compile
+    // under exactOptionalPropertyTypes (upstream generated code; must not be hand-edited). Scoped
+    // to this package only; every other workspace keeps the base setting.
+    "exactOptionalPropertyTypes": false
+  },
+  "include": ["gen/**/*.ts", "tests/**/*.ts", "openapi-ts.config.ts", "vitest.config.ts"]
+}

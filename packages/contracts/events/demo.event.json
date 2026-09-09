@@ -1,0 +1,48 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://contracts.ai-stylist.app/events/demo.outbox-flow.requested.v1.json",
+  "title": "DemoOutboxFlowRequestedV1",
+  "description": "P02 demo event proving the API → outbox → Trigger.dev → worker round-trip (brief §7 T08). The full event is the envelope (envelope.json) narrowed by this schema.",
+  "type": "object",
+  "required": ["type", "payload"],
+  "properties": {
+    "type": { "const": "demo.outbox-flow.requested.v1" },
+    "payload": { "$ref": "#/$defs/DemoOutboxFlowRequestedV1Payload" }
+  },
+  "$defs": {
+    "DemoOutboxFlowRequestedV1Payload": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["demoId", "requestedAt"],
+      "properties": {
+        "demoId": {
+          "type": "string",
+          "description": "Client-chosen id of the demo run; used by the worker to correlate its reply"
+        },
+        "requestedAt": { "type": "string", "format": "date-time" },
+        "note": {
+          "type": "string",
+          "maxLength": 200,
+          "description": "Free text echoed by the worker; never sensitive"
+        }
+      }
+    }
+  },
+  "examples": [
+    {
+      "id": "evt_01J8Z8Q6X3K9V2N4M7P1R5T0AB",
+      "type": "demo.outbox-flow.requested.v1",
+      "occurredAt": "2026-09-10T12:00:00Z",
+      "producer": "platform",
+      "aggregate": { "kind": "demo_run", "id": "demo-run-1" },
+      "sequence": 1,
+      "actor": { "kind": "system" },
+      "correlationId": "4f1c9a2e-7b3d-4e7a-9c1f-2a6b8d0e5f13",
+      "payload": {
+        "demoId": "demo-run-1",
+        "requestedAt": "2026-09-10T12:00:00Z",
+        "note": "hello outbox"
+      }
+    }
+  ]
+}

@@ -1,0 +1,22 @@
+[project]
+name = "ai-stylist-segmentation"
+version = "0.1.0"
+description = "AI Stylist garment segmentation worker (FastAPI). P02: echo stub."
+requires-python = ">=3.12,<3.13"
+dependencies = [
+  "ai-stylist-generated",
+  "fastapi>=0.115",
+  "pydantic>=2.11,<3",
+  "structlog>=25.1",
+  "uvicorn[standard]>=0.34",
+]
+
+[build-system]
+requires = ["hatchling>=1.27"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/ai_stylist_segmentation"]
+
+[tool.uv.sources]
+ai-stylist-generated = { workspace = true }

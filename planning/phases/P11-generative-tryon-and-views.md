@@ -158,7 +158,7 @@ Thresholds are the **enablement gate** (doc 10 §2.4–2.5, doc 16 SPK-2/RISK-02
 |---|---|---|
 | AI quality (missing-view gate) | ≥ 80% of generated views pass auto-checks; attribute consistency ≥ 90% vs real-back ground truth; user keep-rate ≥ 70% (SPK-2 success: ≥ 75% keep-rate aspiration, ≥ 70% doc 10 floor); no slice regressing > threshold even if aggregate passes | `just ml-eval` gate report (T09) + beta keep-rate telemetry |
 | AI quality (G2 gate) | User satisfaction ≥ 80% across diverse body types & garment categories; artifact-report rate < 5%; refusal-to-show < 3%; face region untouched; anatomy unaltered | eval suite + rated beta sample |
-| Cost | Missing-view ≤ **$0.025/image**; G2 ≤ **$0.01/image blended** ($0.003–0.01 provider range); per-plan monthly caps per doc 10 §6.1; global cap $500/mo config; credit economics vs doc 12 §4 (blended ~$0.01/credit) | per-task spend metrics + provider-dashboard weekly reconciliation |
+| Cost | Missing-view ≤ **$0.012/image** (FLUX.2 dev; $0.04 Kontext escalation ceiling) = 1 credit; G2 ≤ **$0.075/image** (FASHN v1.6 / Kling; +10% retry allowance ≈ $0.0825; $0.11 Leffa ceiling) = 3 credits; **cost arm: FLUX 2 try-on LoRA ($0.021/MP) evaluated on the same set (AIC-O5 / OQ-11)**; per-plan monthly caps per doc 10 §6.1; global cap $500/mo config; credit economics vs doc 12 §4 (≈ $0.0275/credit) — prices verified 2026-09-09, [r6](../research/r6-pricing-verification-2026-09-09.md) | per-task spend metrics + provider-dashboard weekly reconciliation |
 | Performance | Missing-view job p95 < 20 s; G2 end-to-end p95 < 15 s; re-view (cache hit) instant | job telemetry, k6 not required (async jobs) |
 | Reliability | Provider outage ⇒ rungs 5–6 flip with credits untouched; 0 double-charges under duplicate delivery; refund on every discarded/failed output | chaos tests (T13) + ledger audit |
 
@@ -172,7 +172,7 @@ Thresholds are the **enablement gate** (doc 10 §2.4–2.5, doc 16 SPK-2/RISK-02
 
 - Risks in play: **RISK-02** (G2 quality/cost — this phase *is* its validation point), **RISK-10** (fal.ai concentration — fallback adapter + port), **RISK-08** (AI cost overrun — caps + shadow metering), **RISK-07**-adjacent (user photos to a provider — AIC-O2 gate), **ASM-03** (G2 clears gates at ~$0.003–0.025/image, as of Aug 2026).
 - **Stop/kill criteria (from doc 16 RISK-02 + SPK-2 — binding):**
-  - G2: user-satisfaction eval **< 80% on diverse-body slices**, or unit cost breaks the doc 12 credit economics → **ship P11 with G2 disabled behind its flag**; MVP remains valid via G0 + avatar (doc 00 §7); log DEC.
+  - G2: user-satisfaction eval **< 80% on diverse-body slices**, or measured unit cost > $0.11/image → **ship P11 with G2 disabled behind its flag**; MVP remains valid via G0 + avatar (doc 00 §7); log DEC.
   - Missing-view: keep-rate **< 50%**, or provider cost/latency breaks credit economics → kill/hold the feature (SPK-2 kill row); closet works on real views only; G2 unaffected; log DEC.
   - AIC-O2 fails or stalls → photo-based try-on stays off indefinitely; avatar-render-based G2 ships alone; log DEC.
   - Any nonzero anatomy-alteration or real-view-replacement finding in eval or beta → immediate flag-off + sev-2, fix before re-gate.
@@ -192,7 +192,7 @@ Staging + real device, entitled test account (shadow credits):
 
 ## 19. Acceptance criteria
 
-- **AC-1 (enablement gate):** the G2 eval suite passes on the versioned consent-safe dataset — satisfaction ≥ 80% including every body-type/skin-tone slice, artifact-report < 5%, refusal < 3%, face-region + anatomy checks 100%, unit cost ≤ $0.01 blended measured — **before** `tryon.g2` serves any non-internal user. Evidence: `just ml-eval` report + DEC entry (NFR-AIC-020/100, REQ-CAP-140, RISK-02).
+- **AC-1 (enablement gate):** the G2 eval suite passes on the versioned consent-safe dataset — satisfaction ≥ 80% including every body-type/skin-tone slice, artifact-report < 5%, refusal < 3%, face-region + anatomy checks 100%, measured unit cost ≤ $0.0825/image incl. retries (report the FLUX 2 LoRA arm's cost + quality alongside) — **before** `tryon.g2` serves any non-internal user. Evidence: `just ml-eval` report + DEC entry (NFR-AIC-020/100, REQ-CAP-140, RISK-02).
 - **AC-2 (enablement gate):** the SPK-2 missing-view eval passes — auto-check pass ≥ 80%, attribute consistency ≥ 90%, keep-rate ≥ 70% on the beta cohort, cost ≤ $0.025/view, p95 ≤ 20 s — before `views.missing-view-gen` serves non-internal users; kill path documented and rehearsed (flag-off leaves closet fully functional).
 - **AC-3:** pipeline test proves a real captured view blocks synthesis of that view, and a `generated` asset can never supersede a `captured` one (property test + REQ-CAP-070); generated views are provably absent from extraction/embedding inputs (guard test).
 - **AC-4:** metadata schema requires `provenance` + `confidence` on every generated asset (contract test rejects absence); UI badge visible and screen-reader-announced on both features (RNTL + Maestro artifacts); every `garment_representations` row carries its G-level with no conflation (schema test) — REQ-CAP-080/100.

@@ -1,0 +1,35 @@
+# Root OpenAPI 3.1 document (planning/06 §1–§2). Each SPINE module owns one file under
+# ./modules/; this root only wires them together. `just generate` bundles everything into
+# gen/openapi.bundle.json — never hand-edit the bundle or gen/**.
+openapi: 3.1.0
+info:
+  title: AI Stylist API
+  version: 1.0.0
+  description: |
+    Public API of the AI Stylist backend. URI-versioned (`/v1`); changes within `v1` are additive.
+    Errors are RFC 9457 `application/problem+json` with a stable machine `code` from
+    `@ai-stylist/shared-kernel`.
+  contact:
+    name: AI Stylist engineering
+  license:
+    name: Proprietary
+servers:
+  - url: https://api.ai-stylist.app/v1
+    description: Production
+  - url: http://localhost:3000/v1
+    description: Local development
+tags:
+  - name: platform
+    description: Health, version and other non-domain endpoints
+paths:
+  /v1/health:
+    $ref: './modules/platform.yaml#/paths/~1v1~1health'
+  /v1/version:
+    $ref: './modules/platform.yaml#/paths/~1v1~1version'
+components:
+  schemas:
+    ProblemDetails:
+      $ref: './modules/platform.yaml#/components/schemas/ProblemDetails'
+  responses:
+    Problem:
+      $ref: './modules/platform.yaml#/components/responses/Problem'

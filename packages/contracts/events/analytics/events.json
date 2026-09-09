@@ -1,0 +1,16 @@
+{
+  "version": 1,
+  "events": [
+    {
+      "name": "app_opened",
+      "owner": "platform",
+      "description": "The mobile app came to the foreground",
+      "properties": {
+        "platform": "string",
+        "appVersion": "string",
+        "coldStart": "boolean"
+      },
+      "consentRequired": true
+    }
+  ]
+}

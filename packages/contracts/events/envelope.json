@@ -1,0 +1,74 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://contracts.ai-stylist.app/events/envelope.json",
+  "title": "EventEnvelope",
+  "description": "Domain event envelope (planning/06 §4). Mirrored by `EventEnvelope` in @ai-stylist/shared-kernel; consumers must tolerate unknown fields.",
+  "type": "object",
+  "required": [
+    "id",
+    "type",
+    "occurredAt",
+    "producer",
+    "aggregate",
+    "sequence",
+    "actor",
+    "correlationId",
+    "payload"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "description": "`evt_` ULID; idempotency key and outbox row id",
+      "pattern": "^evt_[0-7][0-9A-HJKMNP-TV-Z]{25}$"
+    },
+    "type": {
+      "type": "string",
+      "description": "<module>.<entity>.<action>.v<N>",
+      "pattern": "^[a-z][a-z0-9-]*\\.[a-z][a-z0-9_-]*\\.[a-z][a-z0-9_-]*\\.v[1-9][0-9]*$"
+    },
+    "occurredAt": {
+      "type": "string",
+      "format": "date-time",
+      "description": "RFC 3339 UTC timestamp"
+    },
+    "producer": {
+      "type": "string",
+      "description": "Producing module (SPINE §3 canonical name)",
+      "pattern": "^[a-z][a-z-]*$"
+    },
+    "aggregate": {
+      "type": "object",
+      "required": ["kind", "id"],
+      "properties": {
+        "kind": { "type": "string", "pattern": "^[a-z][a-z0-9_]*$" },
+        "id": { "type": "string" }
+      }
+    },
+    "sequence": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Per-aggregate monotonic sequence assigned in the producing transaction"
+    },
+    "actor": {
+      "type": "object",
+      "required": ["kind"],
+      "properties": {
+        "kind": { "type": "string", "enum": ["user", "system", "admin", "job"] },
+        "id": { "type": "string" }
+      }
+    },
+    "correlationId": { "type": "string", "minLength": 1 },
+    "causationId": {
+      "type": "string",
+      "description": "Id of the event or request that caused this one; absent for roots"
+    },
+    "consentScope": {
+      "type": "string",
+      "description": "Consent scope required to process the payload (doc 11); present when it touches sensitive data"
+    },
+    "payload": {
+      "type": "object",
+      "description": "Event-specific payload; the per-event schema (e.g. demo.event.json) narrows it"
+    }
+  }
+}

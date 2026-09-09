@@ -1,5 +1,7 @@
 # Research: 3D Avatar & Virtual Try-On Landscape (2025–2026)
 
+> **⚠️ Price correction (2026-09-09):** the figures below were accurate research as of Aug 24, 2026 but several load-bearing prices were wrong or have since changed. Verified replacements live in [r6-pricing-verification-2026-09-09.md](r6-pricing-verification-2026-09-09.md), which supersedes this file wherever they differ. Known deltas: generative try-on on fal.ai costs **$0.07–0.075/image** (FASHN v1.6, Kling Kolors), not ~$0.003–0.01; only the FLUX 2 try-on LoRA is in the $0.021/MP range and its quality is unproven (P11 eval arm). The credit model was re-baselined accordingly (DEC-34).
+
 **Date:** 2026-08-24  
 **Depth:** Deep · **Sources:** 35+ (15+ primary) · **Files traced:** Benchmark data, API docs, licensing pages
 

@@ -1,0 +1,79 @@
+# Composite action: install the pinned toolchain and workspace dependencies.
+#
+# The caller is responsible for `actions/checkout`. This action:
+#   1. installs every tool pinned in the root `mise.toml` via jdx/mise-action
+#      (node, pnpm, python, java, just, gitleaks, osv-scanner, syft, uv, prek)
+#      and puts them on PATH;
+#   2. restores/saves the pnpm content-addressable store keyed on pnpm-lock.yaml;
+#   3. runs `pnpm install --frozen-lockfile` (fails if the lockfile is stale);
+#   4. optionally runs `uv sync --frozen` in every `workers/**` project that
+#      has a `pyproject.toml` (only when `python: 'true'` and the dir exists).
+#
+# Keep this generic: no repo-specific env, no recipe calls. Workflows call `just`.
+name: Setup toolchain
+description: Install mise-pinned tools, restore pnpm store, install workspace deps
+
+inputs:
+  python:
+    description: Also sync Python workers (`uv sync --frozen` under workers/**)
+    required: false
+    default: 'false'
+  install:
+    description: Run `pnpm install --frozen-lockfile` (set 'false' for tool-only jobs)
+    required: false
+    default: 'true'
+
+runs:
+  using: composite
+  steps:
+    - name: Install mise-pinned toolchain
+      uses: jdx/mise-action@v4
+      with:
+        cache: true
+        install: true
+        experimental: true
+
+    - name: Resolve pnpm store path
+      id: pnpm-store
+      if: inputs.install == 'true'
+      shell: bash
+      run: |
+        if [ ! -f package.json ]; then
+          echo "::notice::no package.json at repo root - skipping pnpm install"
+          echo "skip=true" >> "$GITHUB_OUTPUT"
+          exit 0
+        fi
+        echo "path=$(pnpm store path)" >> "$GITHUB_OUTPUT"
+
+    - name: Restore pnpm store
+      if: inputs.install == 'true' && steps.pnpm-store.outputs.skip != 'true'
+      uses: actions/cache@v6
+      with:
+        path: ${{ steps.pnpm-store.outputs.path }}
+        key: pnpm-store-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('pnpm-lock.yaml') }}
+        restore-keys: |
+          pnpm-store-${{ runner.os }}-${{ runner.arch }}-
+
+    - name: Install workspace dependencies (frozen lockfile)
+      if: inputs.install == 'true' && steps.pnpm-store.outputs.skip != 'true'
+      shell: bash
+      run: pnpm install --frozen-lockfile
+
+    - name: Sync Python workers (uv, frozen)
+      if: inputs.python == 'true'
+      shell: bash
+      run: |
+        if [ ! -d workers ]; then
+          echo "::notice::workers/ not present - skipping uv sync"
+          exit 0
+        fi
+        found=0
+        while IFS= read -r -d '' pyproject; do
+          found=1
+          dir="$(dirname "$pyproject")"
+          echo "uv sync --frozen in $dir"
+          (cd "$dir" && uv sync --frozen)
+        done < <(find workers -name pyproject.toml -not -path '*/.venv/*' -print0)
+        if [ "$found" = 0 ]; then
+          echo "::notice::no pyproject.toml under workers/** - nothing to sync"
+        fi

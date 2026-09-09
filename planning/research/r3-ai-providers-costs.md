@@ -1,5 +1,7 @@
 # AI Stylist Mobile App: Cost Model & Provider Analysis (August 2026)
 
+> **⚠️ Price correction (2026-09-09):** the figures below were accurate research as of Aug 24, 2026 but several load-bearing prices were wrong or have since changed. Verified replacements live in [r6-pricing-verification-2026-09-09.md](r6-pricing-verification-2026-09-09.md), which supersedes this file wherever they differ. Known deltas: fal.ai Flux Schnell is **$0.003/MP**, not $0.025; purpose-built try-on (FASHN/Kling) is **$0.07–0.075/image**, not $0.003–0.01; Gemini Flash is now 3.5 Flash at $0.30/$2.50; Cohere Embed v4's per-image token rule is undocumented (Voyage multimodal-3.5 ≈ $0.0003/image is the verified pick); BiRefNet server fallback is ≈ $0.006/image, not $0.001.
+
 **Date:** August 24, 2026  
 **Scope:** iOS + Android clothing recognition, outfit recommendation, optional generative features  
 **Methodology:** Primary sources (official pricing pages), secondary sources (cost analysis), vendor direct pricing  

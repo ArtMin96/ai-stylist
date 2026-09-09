@@ -1,0 +1,39 @@
+{
+  "name": "@ai-stylist/seed-data",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Deterministic synthetic fixtures/factories for local seeding and tests. Never real user data.",
+  "type": "module",
+  "types": "./src/index.ts",
+  "exports": {
+    ".": {
+      "types": "./src/index.ts",
+      "default": "./src/index.ts"
+    }
+  },
+  "files": [
+    "src"
+  ],
+  "scripts": {
+    "seed": "tsx scripts/seed.ts",
+    "lint": "eslint .",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@ai-stylist/contracts": "workspace:*",
+    "@ai-stylist/db": "workspace:*",
+    "@ai-stylist/shared-kernel": "workspace:*",
+    "@faker-js/faker": "^10.6.0",
+    "ulid": "^3.0.2"
+  },
+  "devDependencies": {
+    "@types/node": "^22.20.2",
+    "ajv": "^8.20.0",
+    "ajv-formats": "^3.0.1",
+    "eslint": "^10.10.0",
+    "tsx": "^4.23.13",
+    "typescript": "^6.0.3",
+    "vitest": "^5.0.0"
+  }
+}

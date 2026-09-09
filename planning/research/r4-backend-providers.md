@@ -1,5 +1,7 @@
 # Backend Stack Research: Current Options & Recommendations (August 2025 – 2026)
 
+> **⚠️ Price correction (2026-09-09):** the figures below were accurate research as of Aug 24, 2026 but several load-bearing prices were wrong or have since changed. Verified replacements live in [r6-pricing-verification-2026-09-09.md](r6-pricing-verification-2026-09-09.md), which supersedes this file wherever they differ. Known deltas: Open-Meteo commercial is **$29/mo (1M calls) / $99/mo (5M)**, not $500/mo; infra totals are ≈ **$60–70/mo at launch and ≈ $370–450/mo at 5k MAU** (paid tiers of PostHog/Sentry/EAS/Trigger.dev), not $30–35 / $150–180; EAS has a $19/mo Starter tier (no $199 cliff); Neon storage is $0.35/GB-mo; Google Play reportedly moved to 10% on subscriptions (June 2026 — verify).
+
 **Compiled:** August 24, 2026 | **Scope:** Modular monolith + isolated workers, PostgreSQL, TypeScript, 2–3 dev team | **Scale:** Launch (1–5k users)
 
 ---

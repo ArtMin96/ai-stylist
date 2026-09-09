@@ -1,6 +1,6 @@
 # 05 — Technology Decisions
 
-**Status:** Ratified (mirrors [SPINE.md §2](SPINE.md)) · **Date:** 2026-08-24 · **All prices/versions as of Aug 2026 unless noted.**
+**Status:** Ratified (mirrors [SPINE.md §2](SPINE.md)) · **Date:** 2026-08-24 · **Amended:** 2026-09-09 — prices re-verified in [r6](research/r6-pricing-verification-2026-09-09.md); §6, §6.2, §8 assumption A10 and §9 pins updated (DEC-34/35). **Versions as of Aug 2026, prices as of 2026-09-09 unless noted.**
 
 This document is the full justification for the decision table ratified in [SPINE.md §2](SPINE.md). It does not change any decision. Evidence base: [r1](research/r1-linux-ios-build.md) (Linux/iOS build), [r2](research/r2-mobile-3d-stack.md) (mobile + 3D stack), [r3](research/r3-ai-providers-costs.md) (AI providers/costs), [r4](research/r4-backend-providers.md) (backend/providers), [r5](research/r5-avatar-garment-3d.md) (avatar/garment 3D). Where this doc and SPINE could ever diverge, SPINE wins; supersessions go through the decision log in [16-risks-open-questions-and-decision-log.md](16-risks-open-questions-and-decision-log.md).
 
@@ -149,7 +149,7 @@ Budget anchors (r2): single Draco+KTX2 avatar asset 0.5–2 MB; Filament native 
 
 ## 5. Backend decisions
 
-All from [r4](research/r4-backend-providers.md) (Aug 24, 2026) unless noted. Launch infra target: **~$30–35/mo**; ~$150–180/mo at 5k users.
+Decisions from [r4](research/r4-backend-providers.md) (Aug 24, 2026); prices re-verified in [r6](research/r6-pricing-verification-2026-09-09.md) (2026-09-09). Launch infra envelope: **~$60–70/mo** (EAS Starter $19, Railway Hobby $5, dev-program fees amortised, rest on free tiers); **~$370–450/mo at 5k MAU** (≈ $0.08 per active user). r4's $30–35 / $150–180 figures understated paid-tier step-ups (PostHog, Sentry, Trigger.dev Pro, EAS).
 
 ### 5.1 Backend framework: NestJS on Fastify
 
@@ -176,13 +176,13 @@ Contract mechanics (versioning, codegen commands, CI staleness checks, event sch
 
 ### 5.3 Database: Neon Postgres + Drizzle + pgvector
 
-- **Neon** (serverless Postgres): scale-to-zero after 5 min idle, 100 CU-hrs + 0.5 GB free, $0.106/CU-hr (Launch tier), branch-per-PR (10 branches) — dev/preview databases without ops. Est. ~$10–15/mo at launch, ~$40/mo at 1k MAU. Rejected: Prisma-style RDS/Supabase floor costs and ops weight at this scale (Supabase $25/mo floor; RDS $30–100+/mo).
+- **Neon** (serverless Postgres): scale-to-zero after 5 min idle, 100 CU-hrs + 0.5 GB free, $0.106/CU-hr (Launch tier), storage $0.35/GB-mo, branch-per-PR (10 branches) — dev/preview databases without ops. Est. ~$10–15/mo at launch, ~$40/mo at 1k MAU. Rejected: Prisma-style RDS/Supabase floor costs and ops weight at this scale (Supabase $25/mo floor; RDS $30–100+/mo).
 - **Drizzle ORM** + drizzle-kit migrations: SQL-shaped, ~5KB, edge-compatible; momentum crossing Prisma in serverless contexts (r4, March 2026 npm data). Prisma remains the named alternative if DX is preferred over footprint.
 - **pgvector in the same Postgres** for garment/style embeddings and near-duplicate detection: ~8ms average latency, no second datastore, no API round-trip for joins; pgvectorscale benchmarks at 471 QPS @ 50M vectors. Dedicated vector DB (Pinecone $0.70/hr/index) rejected **until** >10M vectors or <50ms p99 is a measured need (brief §13 rule 8).
 
 ### 5.4 Jobs/queue: Trigger.dev v4
 
-Durable pipelines for the media/AI state machine (brief §3.5): built-in idempotency, retries, DLQ semantics, warm starts 100–300ms, tasks running minutes-to-hours. Free tier ($5 credit ≈ ~13,774 small runs/mo) covers launch. v4 GA since Aug 2025.
+Durable pipelines for the media/AI state machine (brief §3.5): built-in idempotency, retries, DLQ semantics, warm starts 100–300ms, tasks running minutes-to-hours. Free tier covers launch; Hobby $10/mo (incl. $10 credit, 50 concurrent runs) and Pro $50/mo (incl. $50, 200 concurrent) are the step-ups; Small-2x machine $0.0000675/s + $0.000025 per run (r6). v4 GA since Aug 2025.
 Rejected: Temporal (ops weight indefensible for 2–3 devs), BullMQ (we'd own Redis + workers + monitoring; also violates "Redis only when justified" — brief §4.3). **pg-boss kept as the self-hosted fallback** (SPINE §2) if Trigger.dev pricing or lock-in becomes a problem — jobs land back in the Postgres we already run.
 
 ### 5.5 ML workers: Python FastAPI
@@ -209,14 +209,14 @@ Every provider sits behind an owned port in `platform`/`context` (SPINE §3); **
 
 | Provider (port) | Data rights | Coverage | Pricing driver | Rate limits | Privacy | Reliability | Lock-in | Fallback | Caching | Replacement cost |
 |---|---|---|---|---|---|---|---|---|---|---|
-| **Open-Meteo** (`WeatherProvider`) — **commercial API plan for production** (free tier is non-commercial-only; r4 cites a $500/mo production tier as of Aug 2026 — re-verify current commercial tiers at P08 contract time) | Forecast data, no user data sent beyond coordinates | Global, 30+ models, 15-day hourly | API calls/mo (plan tier) | Plan-based | Coarse coords or manual city only — never precise location without consent (brief §3.6) | High (multi-model) | Low — plain REST | **Tomorrow.io** (premium upgrade path); WeatherKit if user base skews Apple | Cache per (geohash, hour); forecasts stale-marked via context-fact freshness | Low — port + normalized context facts |
+| **Open-Meteo** (`WeatherProvider`) — **commercial API plan for production** (free tier is non-commercial-only; **commercial Standard $29/mo for 1M calls, Professional $99/mo for 5M** — verified 2026-09-09, r6; r4's $500/mo figure was stale. WeatherAPI.com Starter $7/mo (3M calls) and Apple WeatherKit (500k calls included with the developer program) are cheaper alternatives to compare at P08) | Forecast data, no user data sent beyond coordinates | Global, 30+ models, 15-day hourly | API calls/mo (plan tier) | Plan-based | Coarse coords or manual city only — never precise location without consent (brief §3.6) | High (multi-model) | Low — plain REST | **Tomorrow.io** (premium upgrade path); WeatherKit if user base skews Apple | Cache per (geohash, hour); forecasts stale-marked via context-fact freshness | Low — port + normalized context facts |
 | **Nager.Date** (`HolidayProvider`) | Free, open-source, self-hostable | 200+ countries | $0 (fair use) | Fair-use public endpoint | No personal data — locale only | Good; self-host removes dependency | None (can self-host) | **Calendarific** ($100/yr, 500 req/mo free) | Holidays cacheable **per country-year** — near-total cache hit rate | Trivial |
 | **better-auth** (identity adapter) | Self-hosted — all auth data stays in our Postgres | Apple + Google sign-in, passkeys, MFA, orgs | $0 (OSS; our compute) | Ours to set | Best posture: no third-party processor for credentials | Ours to operate; **risk: security patching burden is ours** | Low (own DB schema) | **Clerk** (50k MAU free, then $0.02/MAU) if maintenance burden proves too high | Session caching internal | Medium — auth migrations are always painful; mitigated by owning the user table |
 | **FCM + APNs direct** (`PushProvider`) | Tokens only; no content to 3rd-party beyond Google/Apple (unavoidable) | All Android + iOS | **$0**, unlimited | Practical platform limits | Minimal payloads; no sensitive data in pushes (brief §3.6 logging rules apply) | Platform-grade | Low — both are the base layer every vendor wraps | OneSignal (rejected as unneeded vendor: $9/mo for a wrapper) | Delivery scheduling in `notifications` module | Low |
 | **RevenueCat** (billing adapter) | Purchase metadata; **our entitlements table stays source of truth** (SPINE §2) | App Store + Play, cross-platform entitlements | Free < $2.5k MRR, then **1% of tracked revenue** | Generous | Purchase data only; no PII beyond app user ID | High; plus reconciliation job guards against webhook loss | **Medium** — webhook/SDK shapes proprietary; mitigated by idempotent webhook handling into our own table | Direct StoreKit 2 + Play Billing (revisit > $5k MRR when 1% ≈ an infra bill) | Entitlement state cached server-side, pushed to client | Medium — SDK swap + re-verification path |
 | **Cloudflare R2** (`StorageProvider`) | Our objects; Cloudflare is processor | Global CDN | Storage GB + operations; **egress $0** | High | Signed URLs, short-lived; EXIF stripped before store (brief §3.5) | High | **Low by design — S3-compatible API** | Any S3-compatible store (S3, Bunny); zero-egress makes exit copies cheap | CDN edge caching built-in; safe invalidation rules in doc 14 | Low (S3 API portability) |
 | **PostHog** (analytics/flags/errors) | Event data under our taxonomy; EU/US hosting selectable | Product analytics, session replay, error tracking, feature flags, A/B | Events/mo (1M free), replays (5k free), errors (100k/mo free) | Volume-based | **Consent-gated, no raw sensitive payloads** (brief §7); redaction rules in doc 14 | Good | Medium — event history export possible, flags re-implementable | **Sentry** for mobile crash if PostHog's error tracking proves insufficient; Unleash/Flagsmith for flags | Client-side event batching; flag values cached with TTL | Medium — taxonomy is ours (portable), history is sticky |
-| **fal.ai** (AI/GPU — primary generative; see §6.2) | Per-task; face/body media only after privacy review (SPINE §2 AI data policy) | Flux/VTON-class models, warm-pool serverless | Per image (~$0.003–0.025 by model/res) | Plan-based | Provider retention/training terms reviewed per task; default **no training on customer data** | Warm pools: ~100ms-class cold start, ~0.5s platform overhead | Medium — model APIs proprietary but task contracts are ours | **Replicate** for batch (cheap but 10–120s cold starts — rejected for real-time); RunPod/Modal self-host past ~200–300M tokens/mo or ~2M embeddings/mo break-even | **Content-hash dedup: never regenerate the same input** (brief §3.1); results stored with lineage | Medium — provider abstraction + eval suite makes swaps testable |
+| **fal.ai** (AI/GPU — primary generative; see §6.2) | Per-task; face/body media only after privacy review (SPINE §2 AI data policy) | Try-on (FASHN, Kling Kolors, FLUX 2 LoRA), FLUX.2/Schnell/Kontext image models, BiRefNet/Bria, warm-pool serverless | **Try-on $0.07–0.075/generation** (FLUX 2 LoRA $0.021/MP, eval-gated); missing view $0.012/MP (FLUX.2 dev), $0.003 (Schnell); bg-removal ~$0.006 — verified 2026-09-09, r6 | Pay-as-you-go, no minimum; free credits playground-only | Provider retention/training terms reviewed per task; default **no training on customer data** | Warm pools: ~100ms-class cold start, ~0.5s platform overhead | Medium — model APIs proprietary but task contracts are ours | **Replicate** for batch (cheap but 10–120s cold starts — rejected for real-time); RunPod/Modal self-host past ~200–300M tokens/mo or ~2M embeddings/mo break-even | **Content-hash dedup: never regenerate the same input** (brief §3.1); results stored with lineage | Medium — provider abstraction + eval suite makes swaps testable |
 | **Fashion content sources** (`fashion-intel` ingestion) | **OPEN QUESTION (tracked in doc 16)** — licensed APIs/editorial feeds only; **no scraping as a business foundation** (brief §2.8) | TBD: candidate licensed trend/runway APIs and syndicated editorial feeds to be evaluated in P12 | Licensing fees TBD | TBD | Provenance + attribution mandatory; moderation pipeline required | TBD | TBD — contracts must include source-disappearance terms | Editorial/manual curation at small scale is the honest fallback | Ingested content stored with provenance + freshness | Unknown until sourcing decided — this is a P12 blocking decision, not an implementation detail |
 
 Rejected without ports: OneSignal (above), remove.bg (per-image cost vs $0 on-device — §6.2), Clerk/Firebase auth (cost/lock-in vs better-auth), Expo Push service tier ($99/mo unnecessary given FCM/APNs direct; the Expo notifications *client module* is still used).
@@ -227,14 +227,15 @@ Deterministic-before-AI governs every row (brief §3.1); full AI decision table,
 
 | Task | Primary | Fallback / escalation | Unit cost (Aug 2026) |
 |---|---|---|---|
-| Background removal | **On-device**: Apple Vision subject lift (iOS) / ML Kit Subject Segmentation (Android) | Server: BiRefNet/RMBG-class on fal.ai (~$0.001/img GPU); remove.bg rejected ($0.20–1.00/img) | **$0** on-device |
-| Classification & attributes | Vision-LLM structured extraction with JSON schema (Gemini Flash-class or Claude Haiku); Google Cloud Vision for coarse labels ($1.50/1k img, 1k/mo free) | Ximilar Fashion Tagging (custom quote, est. $0.003–0.01/img) only if eval precision insufficient | ~$0.0015–0.005/img |
-| Embeddings / dedup | Multimodal embedding API (Cohere Embed v4-class, $0.47/1M image tokens ≈ $0.0005/img) | Self-hosted SigLIP/CLIP past ~200–300M tokens/mo (A10G ~$0.75/hr break-even) | ~$0–0.0005/img |
-| Explanations | **Templates from structured reason codes** (deterministic, $0); Claude Haiku batch + prompt caching for optional NL polish (batch 50% + cache 90% stack ≈ 95% off) | GPT-5.4 Nano-class | ~$0.00001–0.0001/explanation |
-| Generative try-on / missing views (G2) | **fal.ai** (Flux/VTON-class; VTON ~$0.003–0.01/img, Flux Schnell $0.025, Flux Pro $0.05) | Replicate or Gemini Batch API for non-realtime batch (50% off) | $0.003–0.025/img (SPINE range) |
+| Background removal | **On-device**: Apple Vision subject lift (iOS) / ML Kit Subject Segmentation (Android) | Server: BiRefNet v2 on fal.ai (~$0.006/img; Bria RMBG 2.0 $0.018 if commercial licence needed); remove.bg rejected ($0.20–1.00/img) | **$0** on-device; ≈ $0.0006/item at 10% fallback |
+| Classification & attributes | Vision-LLM structured extraction with JSON schema (Gemini 3.5 Flash $0.30/$2.50 per M ≈ $0.0012/img; Claude Haiku 4.5 $1/$5 ≈ $0.0037/img); Google Cloud Vision for coarse labels ($1.50/1k img, 1k/mo free) | Ximilar Fashion Tagging (credit-based, quote only) only if eval precision insufficient | ~$0.0012–0.0037/img (batch halves it) |
+| Embeddings / dedup | Multimodal embedding API (Voyage multimodal-3.5 per-pixel ≈ $0.0003/img, 200M free tokens; Cohere Embed v4 $0.47/1M image tokens — tokens/img undocumented) | Self-hosted SigLIP/CLIP/Nomic past measured break-even (H100 $1.89/hr discounted) | ~$0.0003/img |
+| Explanations | **Templates from structured reason codes** (deterministic, $0); Claude Haiku batch + prompt caching for optional NL polish (batch 50% + cache 90% stack ≈ 95% off) | Gemini 3.5 Flash (≈ $0.00033) / OpenAI nano-class | ~$0.0001/explanation batched+cached (≤ $0.0006 standard) |
+| Generative try-on (G2) | **fal.ai FASHN v1.6 $0.075/img or Kling Kolors $0.07** (Leffa $0.10 ceiling); **FLUX 2 try-on LoRA $0.021/MP is the P11 cost-arm candidate** | Replicate try-on for non-realtime batch | **$0.0825/img incl. 10% retry allowance** = 3 credits (SPINE §6) |
+| Missing-view synthesis | **fal.ai FLUX.2 [dev] $0.012/MP** (Schnell $0.003 if quality allows; Kontext pro $0.04 escalation) | Gemini 2.5 Flash Image $0.039 / Replicate batch | **$0.013/img** = 1 credit |
 | Trend summarization | Claude Haiku batch + cache, server-side, cached across users | Gemini Flash-class | ~$0.0001/user/mo |
 
-Cost anchors carried into [12-pricing…](12-pricing-entitlements-and-unit-economics.md): steady-state AI cost/user/mo ≈ $0.02–0.08 light–medium, $0.10–0.15 heavy; onboarding spike $0.10–0.30/user (r3 §6–7). **Data policy:** default no provider training on customer data; prefer zero/short retention (Anthropic 7-day API retention, never trained; OpenAI 30-day; Google contract-dependent — r3 §1.3). Face/body media goes only to providers passing the privacy review in [11-security…](11-security-privacy-and-compliance.md).
+Cost anchors carried into [12-pricing…](12-pricing-entitlements-and-unit-economics.md) (r6, 2026-09-09): per item processed ≈ $0.0021; steady-state AI cost/user/mo ≈ $0.01–0.06 light–medium, $0.10–0.15 heavy, excluding credits; onboarding spike $0.10–0.30/user; **try-on ≈ $0.0825 is the one expensive unit (~35× an item) and drives the weighted-credit model**. **Data policy:** default no provider training on customer data; prefer zero/short retention (Anthropic 7-day API retention, never trained; OpenAI 30-day; Google contract-dependent — r3 §1.3). Face/body media goes only to providers passing the privacy review in [11-security…](11-security-privacy-and-compliance.md).
 
 ---
 
@@ -258,8 +259,8 @@ What **does** work from Linux: all coding, Android builds/testing, backend/worke
 | Dimension | **EAS Build** | **GitHub Actions macOS (M-series)** |
 |---|---|---|
 | Model | Managed RN/Expo build service; signing handled server-side | Raw macOS runners; we own fastlane/signing scripts |
-| Pricing (Aug 2026) | Free tier: **15 iOS + 15 Android builds/mo**; paid from **$199/mo** | **$0.12/min** (M-series large), $0.16/min (XL); free-plan included minutes are Linux-oriented |
-| Cost at our cadence (~20 builds/mo × ~12 min) | $0 while within free tier; a $199 jump if we exceed it | ~240 min ≈ **$29/mo**, linear thereafter |
+| Pricing (verified 2026-09-09, r6) | Free tier: **15 iOS + 15 Android builds/mo**; **Starter $19/mo + $1–4 per-build overage**; Production $199/mo | **$0.062/min** (macOS 3–4 core), $0.12/min (M-series large), $0.16/min (XL); free-plan minutes are Linux-oriented (macOS burns them at 10×) |
+| Cost at our cadence (~20 builds/mo × ~12 min) | $0 while within free tier; **$19/mo Starter** (not a $199 cliff) once exceeded | ~240 min ≈ **$15–29/mo** depending on runner size, linear thereafter |
 | Setup/maintenance | Near-zero; deepest Expo integration (dev-client, EAS Update, EAS Submit) | Days of fastlane/cert setup; ongoing script ownership |
 | Signing/cert management | Managed by EAS | Ours (match-style repo or App Store Connect API keys) |
 | Lock-in | Medium (Expo services) — but config is `eas.json`, exit path is exactly the GHA lane | Low |
@@ -307,7 +308,7 @@ Every material assumption below must be validated by a prototype/eval before the
 | A7 | Measurement→param mapping produces avatars users recognize | P04 calibration testing, diverse body set | **P04** | Users can correct to satisfaction via calibration screen (metric owned by doc 12/00) | More points/regression work; fall back to slider-first calibration |
 | A8 | On-device segmentation (Apple Vision / ML Kit) is good enough for closet cutouts | P06 eval on garment photo set | **P06** | Eval precision threshold set in doc 10; server fallback rate < target | Raise fal.ai BiRefNet fallback share; costs re-checked against r3 model |
 | A9 | Vision-LLM structured extraction hits classification precision targets at ~$0.002/img | P06 eval suite (doc 10 dataset) | **P06** | Precision/recall gates from doc 10 | Escalate to Ximilar; re-price unit economics |
-| A10 | G2 generative try-on quality is acceptable across body types/garments at $0.003–0.025/img | P11 eval + user testing, provenance-marked | **P11** | Eval + satisfaction gate (doc 10); **kill criteria defined before build** | Ship without G2 (G0 collage remains the always-available fallback — MVP stays valuable, brief §11) |
+| A10 | G2 generative try-on quality is acceptable across body types/garments at **$0.075/img (FASHN/Kling) — or $0.021/MP if the FLUX 2 LoRA passes the same eval** | P11 eval + user testing, provenance-marked | **P11** | Eval + satisfaction gate (doc 10); **kill criteria defined before build** | Ship without G2 (G0 collage remains the always-available fallback — MVP stays valuable, brief §11) |
 | A11 | Trigger.dev free tier covers launch job volume; pg-boss migration is a bounded swap | P02 pipeline skeleton + load test in P06 | **P02/P06** | Job cost within infra budget; idempotency/retry/DLQ proven in tests | pg-boss on Neon (self-hosted fallback) |
 | A12 | Neon scale-to-zero cold starts don't harm API latency budgets | P02 observability baseline + P03 walking skeleton | **P03** | API p95 within budget (doc 13) with realistic idle patterns | Keep-warm compute floor or Railway Postgres |
 | A13 | Licensed fashion-content sourcing exists at viable cost (OQ) | Provider outreach + licensing review | **before P12 build** | Signed/signable licensed source(s) with attribution + takedown terms | Editorial/manual curation at small scale; feed scope reduced — never scraping |
@@ -318,9 +319,9 @@ Every material assumption below must be validated by a prototype/eval before the
 
 ## 9. Version & date notes
 
-All decisions ratified **2026-08-24** against these versions/prices. Re-verify anything load-bearing at the phase that consumes it; the r3 review checkpoint is **Oct 1, 2026** (post-Gemini-2.5 sunset Oct 16, 2026).
+All decisions ratified **2026-08-24**; **prices re-verified 2026-09-09** ([r6](research/r6-pricing-verification-2026-09-09.md) — rows marked r6 supersede r1/r3/r4/r5 pins). Re-verify anything load-bearing at the phase that consumes it: next checkpoints **P11 kickoff** (fal.ai model pages) and **P13 kickoff** (store fees, RevenueCat). Gemini 2.5 Flash sunset Oct 16, 2026 is moot — the pick is now Gemini 3.5 Flash.
 
-| Item | Version / price pin (as of Aug 2026) | Source |
+| Item | Version / price pin (versions Aug 2026; prices 2026-09-09 where marked r6) | Source |
 |---|---|---|
 | Expo SDK | 55+ (New Architecture mandatory; default since SDK 52) | r2 |
 | react-native-filament | v1.11.0 (May 27, 2026) | r2 |
@@ -329,20 +330,21 @@ All decisions ratified **2026-08-24** against these versions/prices. Re-verify a
 | Anny | Naver release, Apache 2.0; 11 params + 256 local blend shapes | r5 |
 | SMPL/Meshcapade | Epic Games acquisition announced Feb 2026, closing April 2026; terms unknown — monitor quarterly | r5 |
 | Xcode requirement | Xcode 26+ mandatory for App Store uploads from **2026-04-28** | r1 (Apple Developer News) |
-| GHA macOS M-series | $0.12/min (large), $0.16/min (XL) | r1 |
-| EAS Build | Free: 15 iOS + 15 Android builds/mo; paid $199/mo | r1 |
-| Trigger.dev | v4 (GA Aug 2025); free $5 credit; $0.0000169–0.00068/sec | r4 |
-| Neon | $0.106/CU-hr Launch, $0.222 Scale; free 100 CU-hrs + 0.5 GB | r4 |
-| Cloudflare R2 | $0.015/GB-mo storage; $0 egress; $4.50/M writes, $0.36/M reads | r4 |
-| Railway | Usage-based, ~$15/mo API at launch | r4 |
-| RevenueCat | Free < $2.5k MRR, then 1% | r4 |
-| PostHog | Free: 1M events, 5k replays, 100k errors/mo | r4 |
-| Open-Meteo | Free tier non-commercial; production tier $500/mo per r4 — **re-verify commercial tiers at P08** | r4 |
-| Claude (API) | Opus 5 $5/$25 · Sonnet 5 $2/$10 · Haiku 4.5 $1/$5 per M in/out; batch 50% + cache 90% stack; 7-day retention, never trained | r3 |
-| Gemini | 3.1 Flash $0.50/$3.00; 2.5 Flash sunset Oct 16, 2026 | r3 |
-| fal.ai | VTON-class ~$0.003–0.01/img; Flux Schnell $0.025; Flux Pro $0.05; ~100ms-class warm starts | r3, r5 |
-| Cohere Embed v4 | $0.47/1M image tokens | r3 |
-| Google Cloud Vision | $1.50/1k images; 1k/mo free | r3 |
-| Infra totals | ~$30–35/mo launch; ~$150–180/mo at 5k users; iOS CI ~$30–50/mo | r4, r1 |
+| GHA macOS | $0.062/min (3–4 core), $0.12/min (M-series large), $0.16/min (XL); Linux 2-core $0.006/min; Pro plan 3k free min/mo | r1, r6 |
+| EAS Build / Update | Free: 15 iOS + 15 Android builds/mo; Starter $19/mo + $1–4/build overage; Production $199/mo; EAS Update free < 3k MAU then $0.005/MAU | r6 |
+| Trigger.dev | v4; Hobby $10/mo (incl. $10), Pro $50/mo (incl. $50); Small-2x $0.0000675/s; $0.000025/run | r6 |
+| Neon | $0.106/CU-hr Launch, $0.222 Scale; storage $0.35/GB-mo; free 100 CU-hrs + 0.5 GB | r6 |
+| Cloudflare R2 / Images | $0.015/GB-mo storage; $0 egress; $4.50/M writes, $0.36/M reads; Images 5k transforms free then $0.50/1k, $5/100k stored | r6 |
+| Railway | Hobby $5/mo incl. $5 usage; vCPU ~$0.028/h, RAM ~$0.014/GB-h; egress $0.05/GB; ~$15–30/mo API at 1k MAU | r6 |
+| RevenueCat | Free < $2.5k MTR, then 1% of tracked revenue | r6 |
+| PostHog | Free: 1M events, 5k replays, 100k errors, 1M flag requests/mo; then $0.00005/event stepping down | r6 |
+| Open-Meteo | Free tier non-commercial; **Standard $29/mo (1M calls), Professional $99/mo (5M)** | r6 |
+| Claude (API) | Opus 5 $5/$25 · Sonnet 5 $2/$10 · Haiku 4.5 $1/$5 per M in/out; batch 50% + cache 90% stack; 7-day retention, never trained | r3, r6 |
+| Gemini | 3.5 Flash $0.30/$2.50 (cache read $0.075/M, batch −50%); 3.8 Flash $0.75/$3.75 (promo to 2026-12-31); 2.5 Flash Image $0.039/img | r6 |
+| fal.ai | Try-on: FASHN $0.075, Kling $0.07, Leffa $0.10 per generation; FLUX 2 try-on LoRA $0.021/MP · Images: Schnell $0.003/MP, FLUX.2 dev $0.012/MP, FLUX.1 dev $0.025/MP, Kontext pro $0.04 · BiRefNet v2 ~$0.006, Bria $0.018 · H100 $1.89/h discounted · pay-as-you-go, no minimum | r6 |
+| Embeddings | Voyage multimodal-3.5 per-pixel ≈ $0.0003/img (200M free); Cohere Embed v4 $0.47/1M image tokens (token rule undocumented) | r6 |
+| Google Cloud Vision | $1.50/1k images; 1k/mo free | r3, r6 |
+| Store fees | Apple SBP 15% (< $1M); Apple EU DMA from 2026-10-01: 15–26% by route; Google Play reportedly 10% on subscriptions since June 2026 (**verify at P13**); Apple dev $99/yr, Play $25 once | r6 |
+| Infra totals | ~$60–70/mo launch; ~$160–200 at 1k; ~$370–450/mo at 5k; ~$870–1,100 at 20k MAU; iOS CI ~$10–30/mo | r6 |
 
 **Hypothesis labeling:** all pricing-tier figures feeding [12-pricing…](12-pricing-entitlements-and-unit-economics.md) are hypotheses requiring market testing (SPINE §6). No benchmark number in this document originates from us; every performance figure is a cited third-party claim to be re-measured at its gate (brief §13 rules 2–4).

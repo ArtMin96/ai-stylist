@@ -1,0 +1,45 @@
+{
+  "name": "@ai-stylist/api",
+  "version": "0.1.0",
+  "private": true,
+  "description": "NestJS (Fastify adapter) modular monolith: composition root, platform adapters, one directory per SPINE domain module (planning/04 \u00a74\u2013\u00a75).",
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch --env-file-if-exists=../../.env src/main.ts",
+    "build": "tsc -p tsconfig.build.json",
+    "start": "node --env-file-if-exists=../../.env dist/apps/api/src/main.js",
+    "lint": "eslint .",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@ai-stylist/db": "workspace:*",
+    "@ai-stylist/shared-kernel": "workspace:*",
+    "@fastify/rate-limit": "^11.2.0",
+    "@nestjs/common": "^11.2.3",
+    "@nestjs/core": "^11.2.3",
+    "@nestjs/platform-fastify": "^11.2.3",
+    "fastify": "5.11.3",
+    "nestjs-pino": "^5.1.0",
+    "pino": "^10.3.1",
+    "pino-http": "^11.0.0",
+    "postgres": "^3.4.9",
+    "reflect-metadata": "^0.2.2",
+    "rxjs": "^7.8.2",
+    "zod": "^4.6.0"
+  },
+  "devDependencies": {
+    "@ai-stylist/contracts": "workspace:*",
+    "@ai-stylist/seed-data": "workspace:*",
+    "@ai-stylist/test-support": "workspace:*",
+    "@nestjs/testing": "^11.2.3",
+    "@swc/core": "^1.16.2",
+    "@types/node": "^22.20.2",
+    "drizzle-orm": "^0.45.2",
+    "eslint": "^10.10.0",
+    "tsx": "^4.23.13",
+    "typescript": "^6.0.3",
+    "unplugin-swc": "^1.6.0",
+    "vitest": "^5.0.0"
+  }
+}

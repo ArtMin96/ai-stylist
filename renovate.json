@@ -1,0 +1,39 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": ["config:recommended", ":semanticCommits", ":pinAllExceptPeerDependencies"],
+  "timezone": "Europe/Berlin",
+  "schedule": ["before 6am on monday"],
+  "labels": ["dependencies"],
+  "rangeStrategy": "bump",
+  "lockFileMaintenance": { "enabled": true, "schedule": ["before 6am on monday"] },
+  "mise": { "enabled": true },
+  "packageRules": [
+    {
+      "description": "Toolchain pins in mise.toml bump only via Renovate, one PR each (15 §1.2, §9)",
+      "matchManagers": ["mise"],
+      "groupName": null,
+      "automerge": false
+    },
+    {
+      "description": "Group non-major JS devDependencies",
+      "matchDepTypes": ["devDependencies"],
+      "matchUpdateTypes": ["minor", "patch"],
+      "groupName": "js dev dependencies (non-major)"
+    },
+    {
+      "description": "Security-critical scanners: patch updates auto-merge after CI",
+      "matchPackageNames": ["gitleaks", "osv-scanner", "syft"],
+      "matchUpdateTypes": ["patch"],
+      "automerge": true
+    },
+    {
+      "description": "Major runtime bumps (node/pnpm/python/java/expo) need an ADR — never automerge",
+      "matchPackageNames": ["node", "pnpm", "python", "java", "expo", "react-native"],
+      "matchUpdateTypes": ["major"],
+      "automerge": false,
+      "labels": ["dependencies", "needs-adr"]
+    }
+  ],
+  "vulnerabilityAlerts": { "enabled": true, "labels": ["security"] },
+  "osvVulnerabilityAlerts": true
+}

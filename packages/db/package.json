@@ -1,0 +1,39 @@
+{
+  "name": "@ai-stylist/db",
+  "version": "0.1.0",
+  "private": true,
+  "description": "drizzle-kit config, composed Drizzle schema entry, committed SQL migrations (+ down files) and the db client/migrate helpers (planning/06 \u00a77; brief \u00a78 #2).",
+  "type": "module",
+  "types": "./src/index.ts",
+  "exports": {
+    ".": {
+      "types": "./src/index.ts",
+      "default": "./src/index.ts"
+    }
+  },
+  "files": [
+    "src",
+    "migrations"
+  ],
+  "scripts": {
+    "migration:generate": "drizzle-kit generate",
+    "migrate": "tsx scripts/migrate.ts",
+    "rollback": "tsx scripts/rollback.ts",
+    "reset": "tsx scripts/reset.ts",
+    "lint": "eslint .",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "drizzle-orm": "^0.45.2",
+    "postgres": "^3.4.9"
+  },
+  "devDependencies": {
+    "@types/node": "^22.20.2",
+    "drizzle-kit": "^0.31.10",
+    "eslint": "^10.10.0",
+    "tsx": "^4.23.13",
+    "typescript": "^6.0.3",
+    "vitest": "^5.0.0"
+  }
+}

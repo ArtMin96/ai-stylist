@@ -63,6 +63,10 @@ just doctor
 
 Every line should be a ✔. A ⚠ is informational. An ✘ comes with a hint for the fix. Run this whenever something feels off.
 
+### 5. External accounts (only when a task needs one)
+
+Nothing above needs a vendor account. When a phase does (Neon, Railway, Trigger.dev, Cloudflare, Expo/EAS, Apple, Google Play, PostHog, Grafana, and so on), follow [`docs/SERVICES-SETUP.md`](docs/SERVICES-SETUP.md). It has every account in phase order, every step and field, and where each key goes.
+
 ## Running the app
 
 Open one terminal per process, or use the `solo.yml` process list if you use Soloist.
@@ -135,6 +139,7 @@ If it is green locally, it is green in CI. The CI workflows call the same `just`
 - `planning/SPINE.md` is the product and architecture canon. When a document and the code disagree, the SPINE wins.
 - `planning/PROGRESS.md` is the status ledger. It says which phase is in progress and what the next action is.
 - `docs/adr/` records decisions. `docs/modules/<name>.md` is the contract for each backend module.
+- `docs/SERVICES-SETUP.md` is the checklist for every external account and credential.
 - `.agents/skills/` holds step-by-step procedures for common task types (migrations, contract changes, security review, and so on).
 
 ## When something is red

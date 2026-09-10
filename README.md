@@ -107,20 +107,23 @@ The mobile app cannot be run on iOS from Linux. iOS builds happen in CI on a hos
 
 ## Daily commands
 
-| Command               | What it does                                                                          |
-| --------------------- | ------------------------------------------------------------------------------------- |
-| `just --list`         | Every recipe with a one-line description                                              |
-| `just test`           | Full test suite. `just test closet` runs one module's tests                           |
-| `just lint`           | ESLint (with architecture boundaries) and Ruff                                        |
-| `just typecheck`      | TypeScript and Python type checks                                                     |
-| `just format`         | Prettier and Ruff format. `--check` for CI mode                                       |
-| `just arch-check`     | Module boundary rules. Fails on a forbidden import                                    |
-| `just generate`       | Regenerate clients from the OpenAPI and event schemas. `--check` = staleness gate     |
-| `just db-migrate`     | Apply pending migrations to your local database                                       |
-| `just db-rollback`    | Roll back the last migration                                                          |
-| `just db-reset --yes` | Drop and rebuild the local database with seed data. Local only, refuses anything else |
-| `just security-scan`  | Secret scan, dependency vulnerabilities, license check                                |
-| `just ci-parity`      | Exactly what the pull-request gate runs. Run before opening a PR                      |
+| Command                                               | What it does                                                                                              |
+| ----------------------------------------------------- | --------------------------------------------------------------------------------------------------------- |
+| `just --list`                                         | Every recipe with a one-line description                                                                  |
+| `just test`                                           | Full test suite. `just test closet` runs one module's tests                                               |
+| `just lint`                                           | ESLint (with architecture boundaries) and Ruff                                                            |
+| `just typecheck`                                      | TypeScript and Python type checks                                                                         |
+| `just format`                                         | Prettier and Ruff format. `--check` for CI mode                                                           |
+| `just arch-check`                                     | Module boundary rules. Fails on a forbidden import                                                        |
+| `just arch-check --fixtures`                          | Proves each boundary rule still fires on its fixture. `just lint --fixtures` does the same for lint rules |
+| `just generate`                                       | Regenerate clients from the OpenAPI and event schemas. `--check` = staleness gate                         |
+| `just db-migrate`                                     | Apply pending migrations to your local database                                                           |
+| `just db-rollback`                                    | Roll back the last migration                                                                              |
+| `just db-reset --yes`                                 | Drop and rebuild the local database with seed data. Local only, refuses anything else                     |
+| `just mobile-android-build --profile preview`         | Android APK/AAB. Local Gradle if `ANDROID_HOME` is set, otherwise `--cloud` for EAS                       |
+| `just mobile-ios-build --cloud eas --profile preview` | iOS build on EAS. Needs the accounts in `docs/SERVICES-SETUP.md` section 7 and 8                          |
+| `just security-scan`                                  | Secret scan, dependency vulnerabilities, license check                                                    |
+| `just ci-parity`                                      | Exactly what the pull-request gate runs. Run before opening a PR                                          |
 
 ## Before you commit
 

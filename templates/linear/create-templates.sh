@@ -8,7 +8,8 @@
 # Never put the key in a file inside this repo.
 #
 # Usage:
-#   LINEAR_API_KEY=… templates/linear/create-templates.sh [--team "AI Stylist"] [--update] [--dry-run]
+#   templates/linear/create-templates.sh [--team "AI Stylist"] [--update] [--dry-run] [--only 01]
+#   Key: LINEAR_API_KEY env, else ~/.config/ai-stylist/linear-api-key (0600, outside the repo).
 #
 # Verification status (2026-09-11, against the public schema at
 # https://raw.githubusercontent.com/linear/linear/master/packages/sdk/src/schema.graphql):
@@ -16,10 +17,8 @@
 #              TemplateCreateInput { name: String!, type: String!, templateData: JSON!, teamId, description, sortOrder }
 #   VERIFIED   mutation templateUpdate(id: String!, input: TemplateUpdateInput!)
 #   VERIFIED   queries teams(filter: {name: {eq}}), issueLabels(filter: {name: {eq}}), templates
-#   UNVERIFIED the key names inside templateData. The schema types it as opaque JSON; the keys used
-#              below (description, labelIds, priority) follow the shape Linear's own client stores for
-#              issue templates and what get_template returns, but are not enforced by the schema.
-#              Run with --dry-run first; if a created template shows an empty body, adjust build_template_data().
+#   VERIFIED   templateData keys {description, labelIds, priority}: all 8 templates created 2026-09-11
+#              and read back via the Linear MCP get_template with body, label and priority intact.
 # shellcheck disable=SC2016  # GraphQL variables ($name, $input) are meant to stay literal
 set -euo pipefail
 
@@ -27,6 +26,7 @@ API_URL="https://api.linear.app/graphql"
 TEAM_NAME="AI Stylist"
 UPDATE=0
 DRY_RUN=0
+ONLY=""
 HERE="$(cd "$(dirname "$0")" && pwd)"
 
 while [ $# -gt 0 ]; do
@@ -34,6 +34,7 @@ while [ $# -gt 0 ]; do
     --team) TEAM_NAME="$2"; shift 2 ;;
     --update) UPDATE=1; shift ;;
     --dry-run) DRY_RUN=1; shift ;;
+    --only) ONLY="$2"; shift 2 ;;   # file-name prefix, e.g. --only 01
     -h|--help) sed -n '2,22p' "$0"; exit 0 ;;
     *) echo "unknown argument: $1" >&2; exit 2 ;;
   esac
@@ -99,6 +100,7 @@ build_template_data() { # <markdown-file> <label-id>
 }
 
 printf '%s\n' "$MANIFEST" | sed '/^$/d' | while IFS='|' read -r file name label desc; do
+  if [ -n "${ONLY:-}" ]; then case "$file" in "$ONLY"*) ;; *) continue ;; esac; fi
   path="${HERE}/${file}"
   [ -f "$path" ] || { echo "  ! missing ${path}" >&2; exit 1; }
 

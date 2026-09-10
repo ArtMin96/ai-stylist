@@ -40,7 +40,7 @@ The Linear MCP server exposes `list_templates` / `get_template` but no template-
 ### Option B — GraphQL script
 
 ```sh
-export LINEAR_API_KEY=lin_api_…        # personal API key; never commit it, never put it in a repo file
+# Key: either export LINEAR_API_KEY, or store it once in ~/.config/ai-stylist/linear-api-key (chmod 600). Never in a repo file.
 templates/linear/create-templates.sh --dry-run
 templates/linear/create-templates.sh            # creates missing templates on team "AI Stylist"
 templates/linear/create-templates.sh --update   # re-syncs bodies of templates that already exist
@@ -48,7 +48,7 @@ templates/linear/create-templates.sh --update   # re-syncs bodies of templates t
 
 The script resolves the team by name, resolves each `type:` label by name, and calls `templateCreate` (or `templateUpdate` with `--update`) with `type: "issue"` and `templateData = {description, labelIds, priority: 0}`. Requires `curl` and `jq`.
 
-**Verification status:** `templateCreate`, `templateUpdate`, `TemplateCreateInput` (`name!`, `type!`, `templateData: JSON!`, `teamId`, `description`, `sortOrder`) and the `teams` / `issueLabels` / `templates` queries were checked against Linear's public SDK schema (`packages/sdk/src/schema.graphql` on GitHub) on 2026-09-11. The key names _inside_ `templateData` are opaque JSON in the schema and could not be verified against a published spec; run `--dry-run`, then create one template and open it in Linear before trusting the rest. If the body comes out empty, adjust `build_template_data()` in the script.
+**Verification status:** `templateCreate`, `templateUpdate`, `TemplateCreateInput` (`name!`, `type!`, `templateData: JSON!`, `teamId`, `description`, `sortOrder`) and the `teams` / `issueLabels` / `templates` queries were checked against Linear's public SDK schema (`packages/sdk/src/schema.graphql` on GitHub) on 2026-09-11. The `templateData` keys (`description`, `labelIds`, `priority`) were verified on 2026-09-11: all eight templates were created on the AI Stylist team and read back through the Linear MCP with body, label and priority intact. Re-sync after editing a file with `--update` (or `--update --only 02` for one).
 
 ## Keeping them in sync
 

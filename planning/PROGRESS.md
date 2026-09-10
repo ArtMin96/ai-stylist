@@ -75,6 +75,18 @@ Log hygiene: when this log exceeds ~30 entries, move the oldest entries to `plan
 
 *(newest first)*
 
+### 2026-09-11 — P02 hardening: first CI run, clean-VM proof, security gate, secrets, macOS (PR #1)
+
+- **Phase / tasks worked:** P02 — T02 (close), T11 (first run), T12 (close), plus macOS portability (not a P02 task; DEC pending).
+- **Status changes:** none in the table. Branch `chore/foundation-hardening`, PR #1, commits `795b633`, `b419c54`; pr-gate green 3×, `portability` green on `macos-15` (4 min) and `ubuntu-latest` (3 min).
+- **Done this session:** T02 — `bootstrap.sh`/`doctor.sh` verified on a fresh `ubuntu:24.04` container (11 min to green) and on a real macOS runner; fixes: udev dir absent, `$USER` unset in non-login shells, doctor without system python3, pnpm store landing inside the repo when the checkout is on another filesystem (`.npmrc store-dir`, ignores, doctor check). T12 — `security-scan` now runs the SPDX license gate (`tools/security/license-policy.json`, deny GPL/AGPL/SSPL for prod deps, dev-only = warn, 62-day exceptions; fixture-proven) and writes a syft SBOM to `artifacts/sbom/`. `just secrets-sync` / `secrets-edit` implemented on sops+age (refuse staging/prod outside CI; actionable errors). macOS: scripts bash-3.2 clean, GNU-isms removed, Homebrew path in `--system`, per-runtime Docker hints, `dev-mobile --ios`, local `expo run:ios`, `SKIP_DOCKER_TESTS=1`, shellcheck in `just lint`, `.github/workflows/portability.yml` (weekly + dispatch + tooling-path PRs), `docs/DEVELOPING-ON-MACOS.md`, `docs/SERVICES-SETUP.md` (every vendor account, verified 2026-09-10), `.github/pull_request_template.md`. `CLAUDE.md` layout block no longer names composition-root files (authorised by the product owner).
+- **Not done / in flight:** T07 Neon envs, T08, T09, T13, T14, T15, T17, T18 unchanged. Human-only: merge PR #1, age key (`docs/SERVICES-SETUP.md` §2), branch protection, CODEOWNERS handles, Renovate app, vendor accounts (Neon, Railway, Expo/EAS first).
+- **Repository state:** buildable ✅ — `just ci-parity` green locally and on both runners, 2026-09-11.
+- **New decisions / risks / questions filed:** none filed yet; candidate DEC: "tooling must stay portable to macOS (bash 3.2, no GNU-only flags), proven weekly by `portability.yml`" — add when PR #1 merges.
+- **Surprises / gotchas:** pnpm silently uses `<repo>/.pnpm-store` when `$HOME` is on a different filesystem; `workflow_dispatch` only works once the workflow file exists on the default branch (the PR `paths` trigger covered the first run); macOS runner minutes bill 10× on this private repo, hence weekly + tooling-path triggers only; Expo SDK 57 still needs CocoaPods (doctor warns on macOS).
+- **Files touched (by directory):** `scripts/`, `scripts/security/`, `tools/security/`, `tools/depcruise/*.sh`, `tools/eslint/*.sh`, `justfile`, `mise.toml` (shellcheck), `.npmrc`, `.prettierignore`, `.gitignore`, `.sops.yaml`, `secrets/README.md`, `.github/workflows/portability.yml`, `.github/pull_request_template.md`, `README.md`, `CLAUDE.md`, `docs/{SERVICES-SETUP,DEVELOPING-ON-MACOS}.md`, `docs/security/`, `planning/PROGRESS.md` (this entry).
+- **Next session starts:** merge PR #1, then the human-only list above; then P00 or P02-T08 per "Next session starts here".
+
 ### 2026-09-10 — P02 repo foundations, first implementation session (2026-09-09 → 2026-09-10)
 
 - **Phase / tasks worked:** P02 — P02-T01, T02, T03, T04, T05, T06, T07, T10, T11, T12, T16 (+ workers skeleton)

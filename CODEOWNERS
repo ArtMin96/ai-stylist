@@ -17,6 +17,7 @@
 # --- Module ownership (doc 15 §7) ---
 /apps/api/src/modules/recommendation/    @dev-lead
 /apps/api/src/modules/billing/           @dev-lead
+/apps/mobile/                            @dev-lead
 /apps/mobile/src/render/                 @3d-owner
 /assets/3d/                              @3d-owner
 /workers/                                @ml-owner

@@ -3,7 +3,7 @@
 - **Status:** Accepted
 - **Date:** 2026-09-09
 - **Deciders:** product owner + implementing session (P02-T16)
-- **Decision-log entry:** pending DEC entry in [planning/16](../../planning/16-risks-open-questions-and-decision-log.md) (extends DEC-31 / DEC-32 / DEC-33; the layout tie-breaks below are new)
+- **Decision-log entry:** DEC-37 in [planning/16](../../planning/16-risks-open-questions-and-decision-log.md) (extends DEC-31 / DEC-32 / DEC-33; the layout tie-breaks below are new)
 - **Related:** NFR-TEAM-030, NFR-TEAM-080, NFR-TEAM-090, NFR-TEAM-100 · RISK-12 · OQ-04, OQ-07 · phase P02
 
 ## Context

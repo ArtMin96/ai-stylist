@@ -5,15 +5,7 @@
     "noEmit": true,
     "types": ["node"],
     "experimentalDecorators": true,
-    "emitDecoratorMetadata": true,
-    // TEMPORARY (report to contracts owner): the `.` export of @ai-stylist/contracts resolves to
-    // the bundled hey-api fetch client, which only compiles with exactOptionalPropertyTypes off
-    // and the DOM lib. The API needs the contract *types* only, so typecheck resolves the bare
-    // specifier to the types-only generated file. Value imports from the client are thereby a
-    // type error here, which is intended: the server never uses its own client.
-    "paths": {
-      "@ai-stylist/contracts": ["../../packages/contracts/gen/ts-client/types.gen.ts"]
-    }
+    "emitDecoratorMetadata": true
   },
   "include": ["src/**/*.ts", "tests/**/*.ts", "vitest.config.ts"]
 }

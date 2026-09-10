@@ -5,7 +5,7 @@
 ## 1. Overview
 
 - **Phase:** P02 — Repo Foundations and CI
-- **Status:** `NOT_STARTED` *(mirror of PROGRESS.md; PROGRESS.md wins on conflict)*
+- **Status:** `IN_PROGRESS` *(mirror of PROGRESS.md; PROGRESS.md wins on conflict)* — started 2026-09-09 ahead of P00 for the no-P00-dependency subset (DEC-36); per-task state in §12
 - **Goal (one sentence):** Stand up the production monorepo — module skeletons with enforced boundaries, the contracts pipeline, CI in all four tiers including the iOS lane (ADR-decided), observability and security foundations, and the CLAUDE.md + skills operating contract live at repo root — so that P03's walking skeleton is built inside guardrails, not before them.
 - **User-visible outcome:** None for end users. For the team (the users of this phase): a fresh Ubuntu machine reaches a green `just ci-parity` with one bootstrap command; every later feature lands inside enforced boundaries with generated contracts and a working iOS/Android delivery lane.
 - **Why now:** Every convention deferred past the first feature becomes a migration. Boundaries (NFR-TEAM-030), contract generation (NFR-TEAM-080), CI tiers (NFR-TST-120), redaction lint (NFR-PRV-080), and the agent operating contract (NFR-TEAM-090/100) only work if they exist **before** P03 writes the first domain code. Depends only on P00; runs in parallel with P01.
@@ -164,26 +164,26 @@ For each AI use: classification (per brief §3.1), why deterministic is insuffic
 
 Small enough for one AI-assisted session each (~half-day). Task IDs `P02-T##` are referenced by handoff entries.
 
-| ID | Task | Depends on | Est. sessions |
-|---|---|---|---|
-| P02-T01 | Repo scaffold: pnpm workspaces + Turborepo + `mise.toml` pins + `justfile` skeleton + directory layout per [04 §6](../04-architecture.md); branch protection + Conventional-Commit hooks | — | 1 |
-| P02-T02 | Bootstrap + doctor: `scripts/` per [15 §4](../15-team-workflow-and-ai-agent-operations.md); `.env.example`; direnv; verified on a clean Ubuntu VM | P02-T01 | 2 |
-| P02-T03 | `shared-kernel` package: IDs/ULID prefixes, unit types + converters, event envelope, error-code registry, registry stubs (reason codes, entitlement names) + tests | P02-T01 | 1 |
-| P02-T04 | Contracts pipeline: `packages/contracts` layout, OpenAPI scaffold (health/version, problem+json), envelope + event schemas, all four generators, `just generate --check`, spectral + oasdiff | P02-T03 | 2 |
-| P02-T05 | API skeleton: NestJS/Fastify, 15 module skeletons + composition root, health/version controllers validated against the contract, rate-limit middleware skeleton | P02-T04 | 2 |
-| P02-T06 | Boundary enforcement: eslint-plugin-boundaries + dependency-cruiser rules ([04 §4.2–4.3](../04-architecture.md) incl. `recommendation⊥avatar`, provider-SDK ban, `prototype/` ban, no-`utils` lint) → `just arch-check` + violation tests (each rule proven by a fixture that fails) | P02-T05 | 1 |
-| P02-T07 | Data layer: Drizzle + migrations 0001/0002 (outbox, idempotency), Testcontainers harness, `just db-*` recipes, Neon envs + PR branches, seed-data package | P02-T05 | 2 |
-| P02-T08 | Outbox relay + Trigger.dev + worker stub: relay (SKIP LOCKED poll), demo event → task → FastAPI stub round-trip; idempotency/retry/DLQ/replay test suite (NFR-TST-040, REQ-MED-090/110); resilience utils in `platform` | P02-T07 | 2 |
-| P02-T09 | Observability: pino/structlog + redaction allowlist/denylist + forbidden-field lint + canary test; OTel wiring API/worker/task; Grafana Cloud + dashboard 1 + SEV alerts; ADR-OBS-01 | P02-T08 | 2 |
-| P02-T10 | Mobile skeleton: Expo prebuild app, generated client round-trip to health, PostHog init (consent-stub off) + crash reporting + sourcemap upload, Jest/RNTL + Maestro smoke, renderer-boundary lint | P02-T04 | 2 |
-| P02-T11 | CI tiers: GitHub Actions invoking `just` recipes only; PR fast gate (<10 min budget, measured), affected-module, nightly, pre-release skeleton; Turborepo remote cache; `ci.*` metrics | P02-T05, P02-T06, P02-T07 | 2 |
-| P02-T12 | Security lane: sops+age setup + CI key; gitleaks (pre-commit + CI + nightly history), osv-scanner, pnpm audit, syft SBOM, license gate, Renovate, postinstall allowlist → `just security-scan` | P02-T01 | 1 |
-| P02-T13 | Signed-URL skeleton: `StorageProvider` port + R2 adapter (presigned PUT/GET, TTL, namespace + content-type/size constraints) + `*.sec.test.ts` (expired/foreign-key rejects); R2 buckets per env; Cloudflare WAF in front of API | P02-T05 | 1 |
-| P02-T14 | iOS/Android lanes: EAS free-tier profile **and** GHA macOS lane both building + signing; TestFlight upload from Linux via App Store Connect API; Android debug/release lane; `just mobile-*-build` | P02-T10 | 2 |
-| P02-T15 | ADR-P02 (OQ-04): after ~2 weeks of dual-lane data (cost, flake rate — A5) decide EAS vs GHA; DEC entry; deactivate the losing lane's schedule (config retained as fallback per RISK-12) | P02-T14 | 1 |
-| P02-T16 | Operating contract live: move CLAUDE.md `planning/` → repo root (paths activated, content per NFR-TEAM-090); `.agents/skills/` — 13 SKILL.md files per NFR-TEAM-100 with all six sections + overlap review; templates + CODEOWNERS (real handles) + PROGRESS.md at root | P02-T01 | 2 |
-| P02-T17 | Assets scaffolding: `assets/3d` manifest schema (P01-ratified conventions, [07 §9](../07-3d-avatar-and-garment-pipeline.md)), Git LFS, `just assets-validate` (adopt P01 tooling), `just ml-eval` stub | P02-T04 (+P01 tooling when available) | 1 |
-| P02-T18 | Close-out: `just ci-parity` green on two machines + CI; module-contract files complete; docs/PROGRESS/handoff; A4 (pnpm×EAS) outcome recorded | all | 1 |
+| ID | Task | Depends on | Est. sessions | State (2026-09-10) |
+|---|---|---|---|---|
+| P02-T01 | Repo scaffold: pnpm workspaces + Turborepo + `mise.toml` pins + `justfile` skeleton + directory layout per [04 §6](../04-architecture.md); branch protection + Conventional-Commit hooks | — | 1 | `DONE` |
+| P02-T02 | Bootstrap + doctor: `scripts/` per [15 §4](../15-team-workflow-and-ai-agent-operations.md); `.env.example`; direnv; verified on a clean Ubuntu VM | P02-T01 | 2 | `PARTIAL` — clean-Ubuntu-VM verification outstanding |
+| P02-T03 | `shared-kernel` package: IDs/ULID prefixes, unit types + converters, event envelope, error-code registry, registry stubs (reason codes, entitlement names) + tests | P02-T01 | 1 | `DONE` |
+| P02-T04 | Contracts pipeline: `packages/contracts` layout, OpenAPI scaffold (health/version, problem+json), envelope + event schemas, all four generators, `just generate --check`, spectral + oasdiff | P02-T03 | 2 | `DONE` |
+| P02-T05 | API skeleton: NestJS/Fastify, 15 module skeletons + composition root, health/version controllers validated against the contract, rate-limit middleware skeleton | P02-T04 | 2 | `DONE` |
+| P02-T06 | Boundary enforcement: eslint-plugin-boundaries + dependency-cruiser rules ([04 §4.2–4.3](../04-architecture.md) incl. `recommendation⊥avatar`, provider-SDK ban, `prototype/` ban, no-`utils` lint) → `just arch-check` + violation tests (each rule proven by a fixture that fails) | P02-T05 | 1 | `DONE` |
+| P02-T07 | Data layer: Drizzle + migrations 0001/0002 (outbox, idempotency), Testcontainers harness, `just db-*` recipes, Neon envs + PR branches, seed-data package | P02-T05 | 2 | `PARTIAL` — Neon envs + PR branches not provisioned (P00/OQ-07) |
+| P02-T08 | Outbox relay + Trigger.dev + worker stub: relay (SKIP LOCKED poll), demo event → task → FastAPI stub round-trip; idempotency/retry/DLQ/replay test suite (NFR-TST-040, REQ-MED-090/110); resilience utils in `platform` | P02-T07 | 2 | `NOT_STARTED` |
+| P02-T09 | Observability: pino/structlog + redaction allowlist/denylist + forbidden-field lint + canary test; OTel wiring API/worker/task; Grafana Cloud + dashboard 1 + SEV alerts; ADR-OBS-01 | P02-T08 | 2 | `NOT_STARTED` |
+| P02-T10 | Mobile skeleton: Expo prebuild app, generated client round-trip to health, PostHog init (consent-stub off) + crash reporting + sourcemap upload, Jest/RNTL + Maestro smoke, renderer-boundary lint | P02-T04 | 2 | `DONE` |
+| P02-T11 | CI tiers: GitHub Actions invoking `just` recipes only; PR fast gate (<10 min budget, measured), affected-module, nightly, pre-release skeleton; Turborepo remote cache; `ci.*` metrics | P02-T05, P02-T06, P02-T07 | 2 | `DONE` — workflows actionlint-clean; not yet run on GitHub |
+| P02-T12 | Security lane: sops+age setup + CI key; gitleaks (pre-commit + CI + nightly history), osv-scanner, pnpm audit, syft SBOM, license gate, Renovate, postinstall allowlist → `just security-scan` | P02-T01 | 1 | `PARTIAL` — syft SBOM + license gate outstanding |
+| P02-T13 | Signed-URL skeleton: `StorageProvider` port + R2 adapter (presigned PUT/GET, TTL, namespace + content-type/size constraints) + `*.sec.test.ts` (expired/foreign-key rejects); R2 buckets per env; Cloudflare WAF in front of API | P02-T05 | 1 | `NOT_STARTED` |
+| P02-T14 | iOS/Android lanes: EAS free-tier profile **and** GHA macOS lane both building + signing; TestFlight upload from Linux via App Store Connect API; Android debug/release lane; `just mobile-*-build` | P02-T10 | 2 | `NOT_STARTED` |
+| P02-T15 | ADR-P02 (OQ-04): after ~2 weeks of dual-lane data (cost, flake rate — A5) decide EAS vs GHA; DEC entry; deactivate the losing lane's schedule (config retained as fallback per RISK-12) | P02-T14 | 1 | `NOT_STARTED` |
+| P02-T16 | Operating contract live: move CLAUDE.md `planning/` → repo root (paths activated, content per NFR-TEAM-090); `.agents/skills/` — 13 SKILL.md files per NFR-TEAM-100 with all six sections + overlap review; templates + CODEOWNERS (real handles) + PROGRESS.md at root | P02-T01 | 2 | `DONE` — CODEOWNERS handles are placeholders |
+| P02-T17 | Assets scaffolding: `assets/3d` manifest schema (P01-ratified conventions, [07 §9](../07-3d-avatar-and-garment-pipeline.md)), Git LFS, `just assets-validate` (adopt P01 tooling), `just ml-eval` stub | P02-T04 (+P01 tooling when available) | 1 | `NOT_STARTED` |
+| P02-T18 | Close-out: `just ci-parity` green on two machines + CI; module-contract files complete; docs/PROGRESS/handoff; A4 (pnpm×EAS) outcome recorded | all | 1 | `NOT_STARTED` |
 
 ## 13. Parallelization
 

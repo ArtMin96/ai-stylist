@@ -12,17 +12,17 @@
       "cache": true
     },
     "typecheck": {
-      "dependsOn": ["^build", "generate"],
+      "dependsOn": ["^build", "^generate", "generate"],
       "outputs": [],
       "cache": true
     },
     "lint": {
-      "dependsOn": ["generate"],
+      "dependsOn": ["^generate", "generate"],
       "outputs": [],
       "cache": true
     },
     "test": {
-      "dependsOn": ["^build", "generate"],
+      "dependsOn": ["^build", "^generate", "generate"],
       "outputs": ["coverage/**"],
       "cache": true,
       "env": ["CI", "DATABASE_URL"]

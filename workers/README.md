@@ -27,7 +27,7 @@ workers/
 
 - **`mobile/workers-not-server`:** workers may depend only on `packages/contracts` (through the
   generated models) and `packages/shared-kernel`. Never on `apps/api`. The versioned JSON
-  schemas in `packages/contracts/events/*.json` are the *only* contract shared with the
+  schemas in `packages/contracts/events/*.json` are the _only_ contract shared with the
   TypeScript side; `just generate` turns them into `ml/generated/ai_stylist_generated/events/`.
 - **`composition-root-only`:** `ml/<service>/src/<pkg>/main.py` is the only module that builds
   the app, configures logging, or constructs adapters. Everything else is pure, importable code.
@@ -81,18 +81,17 @@ available; `workers/.dockerignore` keeps tests, caches and venvs out of the cont
 `packages/contracts/events/*.json` into `ml/generated/ai_stylist_generated/events/` (one module
 per schema), formats the result with the workspace ruff config and is idempotent. `--check`
 exits 1 when the committed output is stale. `CONTRACTS_EVENTS_DIR` overrides the input directory.
-Generated files start with a `GENERATED — run \`just generate\`` banner and are excluded from
-`ruff check`; they are still type-checked.
+Generated files start with a `GENERATED — run \`just generate\``banner and are excluded from`ruff check`; they are still type-checked.
 
 ## Rules enforced by tooling
 
-| Rule | Where | Effect |
-|---|---|---|
-| no-skip | `workers/conftest.py` | `@pytest.mark.skip`/`skipif` must carry `reason=` containing `#<n>` or `<PROJECT>-<n>`; otherwise collection fails (exit 4) |
-| test-placement | `testpaths = ["ml/*/tests"]` | tests outside a service's `tests/` are never collected |
-| strict pytest | `--strict-markers`, `xfail_strict`, `filterwarnings = error` | typos and deprecations fail fast |
-| lint | ruff `E,F,I,B,UP,N,S,ASYNC,RUF`, line length 100, py312 | `S101` allowed in tests |
-| types | basedpyright `standard` | 0 errors, 0 warnings required |
+| Rule           | Where                                                        | Effect                                                                                                                      |
+| -------------- | ------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------- |
+| no-skip        | `workers/conftest.py`                                        | `@pytest.mark.skip`/`skipif` must carry `reason=` containing `#<n>` or `<PROJECT>-<n>`; otherwise collection fails (exit 4) |
+| test-placement | `testpaths = ["ml/*/tests"]`                                 | tests outside a service's `tests/` are never collected                                                                      |
+| strict pytest  | `--strict-markers`, `xfail_strict`, `filterwarnings = error` | typos and deprecations fail fast                                                                                            |
+| lint           | ruff `E,F,I,B,UP,N,S,ASYNC,RUF`, line length 100, py312      | `S101` allowed in tests                                                                                                     |
+| types          | basedpyright `standard`                                      | 0 errors, 0 warnings required                                                                                               |
 
 ## Adding a service
 

@@ -1,0 +1,29 @@
+{
+  "cli": {
+    "version": ">= 16.0.0",
+    "appVersionSource": "remote"
+  },
+  "_comment": "No credentials here. The EAS project id is written to app config by `eas init` (human step, P02 §3). Profiles: dev = development client for internal testers, preview = internal release build, prod = store build (T14 wires the CI lanes).",
+  "build": {
+    "dev": {
+      "developmentClient": true,
+      "distribution": "internal",
+      "channel": "dev",
+      "android": { "buildType": "apk" },
+      "ios": { "simulator": false }
+    },
+    "preview": {
+      "distribution": "internal",
+      "channel": "preview",
+      "android": { "buildType": "apk" }
+    },
+    "prod": {
+      "distribution": "store",
+      "channel": "prod",
+      "autoIncrement": true
+    }
+  },
+  "submit": {
+    "prod": {}
+  }
+}

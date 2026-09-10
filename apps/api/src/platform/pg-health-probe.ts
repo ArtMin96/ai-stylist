@@ -1,6 +1,6 @@
 import type { Sql } from 'postgres';
 
-import type { HealthCheckStatus } from '@ai-stylist/contracts';
+import type { HealthCheckStatus } from '@ai-stylist/contracts/types';
 
 import type { HealthProbe } from './ports/health-probe.port.js';
 

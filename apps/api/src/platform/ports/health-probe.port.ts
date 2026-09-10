@@ -1,4 +1,4 @@
-import type { HealthCheckStatus } from '@ai-stylist/contracts';
+import type { HealthCheckStatus } from '@ai-stylist/contracts/types';
 
 /** One dependency check behind GET /v1/health; adapters must never throw, only report. */
 export type HealthProbe = {

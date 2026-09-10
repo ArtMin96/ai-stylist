@@ -15,14 +15,32 @@
     "@commitlint/cli": "^21.2.2",
     "@commitlint/config-conventional": "^21.2.2",
     "@eslint/js": "^10.0.1",
+    "dependency-cruiser": "18.2.0",
     "eslint": "^10.10.0",
     "eslint-config-prettier": "^10.1.8",
+    "eslint-import-resolver-typescript": "^4.4.5",
     "eslint-plugin-boundaries": "^7.2.0",
     "fast-check": "^4.9.0",
+    "globals": "^17.12.0",
     "prettier": "^3.9.6",
     "turbo": "^2.10.12",
     "typescript": "^6.0.3",
     "typescript-eslint": "^8.70.0",
     "vitest": "^5.0.0"
+  },
+  "pnpm": {
+    "overrides": {
+      "@nestjs/platform-fastify>fastify": "5.12.1",
+      "@hey-api/json-schema-ref-parser>js-yaml": "^4.3.2",
+      "@esbuild-kit/core-utils>esbuild": "^0.25.4",
+      "xcode>uuid": "^11.1.1"
+    },
+    "auditConfig": {
+      "ignoreGhsas": [
+        "GHSA-5p2g-fcmc-qvqq",
+        "GHSA-w3rx-r6r6-pgpr",
+        "GHSA-vcc3-ghjq-m6fr"
+      ]
+    }
   }
 }

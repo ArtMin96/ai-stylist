@@ -1,0 +1,10 @@
+{
+  "compilerOptions": {
+    "allowJs": true,
+    "baseUrl": "../..",
+    "paths": {
+      "@/*": ["apps/mobile/src/*"]
+    }
+  },
+  "files": ["rules.cjs"]
+}

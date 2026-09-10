@@ -3,15 +3,20 @@
 > Module names are canonical per [SPINE §3](../../planning/SPINE.md). Path: `packages/shared-kernel`. This contract is the module's source of truth; code that contradicts it is wrong until a DEC entry says otherwise.
 
 - **Responsibility (one sentence):** Pure types, constants, and registries shared by every module: ULID prefixes, units, event envelope type, error/reason/entitlement registries.
-- **Owner:** @team (placeholder — see `CODEOWNERS`) · **Status:** skeleton (P02) · **Last updated:** 2026-09-09
+- **Owner:** @team (placeholder — see `CODEOWNERS`) · **Status:** skeleton (P02) · **Last updated:** 2026-09-10
 
 ## Public interface
 
-Public interface: `index.ts` only; nothing exported yet (P02 skeleton). Everything is importable by every module; nothing here may import anything back (`shared-kernel-pure`).
+Public interface: `index.ts` only, which re-exports every file below in full. Everything is importable by every module; nothing here may import anything back (`shared-kernel-pure`; the only dependency is `ulid`).
 
-| Export | Kind (service/command/query/type/port) | Purpose  |
-| ------ | -------------------------------------- | -------- |
-| —      | —                                      | none yet |
+| Export (by file)                                                                                                                                                                                                      | Kind (service/command/query/type/port) | Purpose                                                                                        |
+| --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------- | ---------------------------------------------------------------------------------------------- |
+| `ids.ts`: `ID_PREFIXES`, `IdKind`, `IdPrefix`, `Id<K>`, `ParsedId`, `IdParseError`, `IdParseResult`, `newId`, `formatId`, `parseId`, `isId`                                                                           | constant / type / pure function        | Prefixed ULID identifiers per aggregate kind: mint, format, parse, and narrow                  |
+| `units.ts`: `LENGTH_UNITS`, `MASS_UNITS`, `TEMPERATURE_UNITS`, `*Unit`, `Unit`, `CANONICAL_UNITS`, `Dimension`, `UNIT_SYSTEMS`, `UnitSystem`, `MEASUREMENT_SOURCES`, `MeasurementSource`, `Measurement<U>`, `convert` | constant / type / pure function        | Canonical metric storage units, unit systems, measurement provenance, and conversions          |
+| `envelope.ts`: `EventType`, `ACTOR_KINDS`, `ActorKind`, `EventAggregate`, `EventActor`, `EventEnvelope<T, P>`                                                                                                         | type / constant                        | The event envelope every outbox event and consumer shares (doc 04 §9)                          |
+| `errors.ts`: `ERROR_CODES`, `ErrorCode`, `PROBLEM_TYPE_BASE`, `ProblemFieldError`, `ProblemDetails`, `ProblemOverrides`, `problem`                                                                                    | constant / type / pure function        | Error-code registry and the RFC 9457 problem-details shape the API returns                     |
+| `reason-codes.ts`: `REASON_CODE_NAMESPACES`, `ReasonCodeNamespace`, `ReasonCodeStage`, `ReasonCodeDefinition`, `REASON_CODES`, `ReasonCode`                                                                           | constant / type                        | Recommendation reason-code registry (explanations come from the decision trace, never prose)   |
+| `entitlements.ts`: `EntitlementValueKind`, `EntitlementDefinition`, `ENTITLEMENTS`, `EntitlementName`, `CREDIT_METERS`, `CreditMeter`                                                                                 | constant / type                        | Entitlement names/kinds and credit meters shared by billing, recommendation, and the mobile UI |
 
 ## Owned data
 

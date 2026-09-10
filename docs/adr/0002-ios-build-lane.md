@@ -32,7 +32,7 @@ For each lane, real numbers from CI logs and vendor dashboards; nothing estimate
 3. **Latency:** queue wait and wall-clock build time, median and p95.
 4. **pnpm × EAS outcome (A4):** whether the pnpm workspace + Expo prebuild builds under EAS without workarounds; if not, what the workaround costs. Record the outcome in T18 close-out regardless of the lane chosen.
 5. **Signing and TestFlight:** that each lane produced a signed build that reached TestFlight via the Linux upload step and installed on a physical iPhone from the same commit as the Android AAB (AC-8).
-6. **Operational fit:** `just mobile-ios-build --profile dev|preview|prod` triggers the lane; secrets stay scoped to the macOS lane (P02 §6); Renovate/pin compatibility with the EAS image vs the GHA runner image.
+6. **Operational fit:** `just mobile-ios-build --cloud eas|gha --profile <p>` triggers the lane; secrets stay scoped to the macOS lane (P02 §6); Renovate/pin compatibility with the EAS image vs the GHA runner image.
 
 ## Rationale
 

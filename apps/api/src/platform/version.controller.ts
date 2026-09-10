@@ -1,6 +1,6 @@
 import { Controller, Get, Inject } from '@nestjs/common';
 
-import type { VersionInfo } from '@ai-stylist/contracts';
+import type { VersionInfo } from '@ai-stylist/contracts/types';
 
 export const VERSION_INFO = Symbol('VersionInfo');
 

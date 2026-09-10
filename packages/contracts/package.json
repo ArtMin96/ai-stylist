@@ -10,10 +10,15 @@
       "types": "./gen/ts-client/index.ts",
       "default": "./gen/ts-client/index.ts"
     },
+    "./types": {
+      "types": "./gen/ts-client/types.gen.ts",
+      "default": "./gen/ts-client/types.gen.ts"
+    },
     "./events": {
       "types": "./gen/events-ts/index.ts",
       "default": "./gen/events-ts/index.ts"
     },
+    "./events/*": "./events/*",
     "./openapi.bundle.json": "./gen/openapi.bundle.json"
   },
   "scripts": {

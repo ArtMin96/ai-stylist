@@ -5,11 +5,16 @@
   "schedule": ["before 6am on monday"],
   "labels": ["dependencies"],
   "rangeStrategy": "bump",
-  "lockFileMaintenance": { "enabled": true, "schedule": ["before 6am on monday"] },
-  "mise": { "enabled": true },
+  "lockFileMaintenance": {
+    "enabled": true,
+    "schedule": ["before 6am on monday"]
+  },
+  "mise": {
+    "enabled": true
+  },
   "packageRules": [
     {
-      "description": "Toolchain pins in mise.toml bump only via Renovate, one PR each (15 §1.2, §9)",
+      "description": "Toolchain pins in mise.toml bump only via Renovate, one PR each (15 \u00a71.2, \u00a79)",
       "matchManagers": ["mise"],
       "groupName": null,
       "automerge": false
@@ -27,13 +32,33 @@
       "automerge": true
     },
     {
-      "description": "Major runtime bumps (node/pnpm/python/java/expo) need an ADR — never automerge",
+      "description": "Expo SDK moves as one unit (expo, react, react-native and every expo-*/@expo/* package; regex entries use Renovate's /pattern/ syntax); never automerge",
+      "groupName": "expo sdk",
+      "matchPackageNames": [
+        "expo",
+        "react",
+        "react-dom",
+        "react-native",
+        "/^expo-/",
+        "/^@expo\\//",
+        "/^jest-expo/",
+        "/^eslint-config-expo/",
+        "/^eslint-plugin-expo/",
+        "/^react-native-/"
+      ],
+      "automerge": false
+    },
+    {
+      "description": "Major runtime bumps (node/pnpm/python/java/expo) need an ADR \u2014 never automerge",
       "matchPackageNames": ["node", "pnpm", "python", "java", "expo", "react-native"],
       "matchUpdateTypes": ["major"],
       "automerge": false,
       "labels": ["dependencies", "needs-adr"]
     }
   ],
-  "vulnerabilityAlerts": { "enabled": true, "labels": ["security"] },
+  "vulnerabilityAlerts": {
+    "enabled": true,
+    "labels": ["security"]
+  },
   "osvVulnerabilityAlerts": true
 }

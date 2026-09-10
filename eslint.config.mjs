@@ -5,12 +5,16 @@
 //   export default [...base, /* workspace overrides */];
 //
 // Rules in the P02 lint bundle land here or in tools/eslint/*.mjs:
-//   boundaries (T06), no-skip (here), forbidden-field (T09), a11y (T10), no-utils (T06),
-//   test-placement (T06), expired-flag (T09), file-size (T06).
+//   boundaries (tools/eslint/boundaries.mjs), no-skip (here), forbidden-field + test-placement +
+//   file-size + no-console (tools/eslint/quality.mjs), a11y (T10), expired-flag (T09).
+//   no-utils-dirs is enforced by `just arch-check` (tools/depcruise).
 
 import js from '@eslint/js';
 import tseslint from 'typescript-eslint';
 import prettier from 'eslint-config-prettier';
+import globals from 'globals';
+
+import quality from './tools/eslint/quality.mjs';
 
 // ---------------------------------------------------------------------------
 // Custom inline rule: no-skip-without-issue
@@ -101,6 +105,9 @@ export const ignores = {
     'planning/**',
     '.claude/**',
     'workers/**',
+    'prototype/**',
+    // Lint fixtures are deliberately broken trees, checked by tools/*/check-fixtures.sh only.
+    'tools/**/fixtures/**',
   ],
 };
 
@@ -126,17 +133,21 @@ export const base = [
     },
   },
   {
-    // No console in server + shared code: use the pino logger with the redaction allowlist (11 §8).
-    files: ['apps/api/src/**/*.{ts,mts,cts}', 'packages/**/*.{ts,mts,cts}'],
-    rules: {
-      'no-console': 'error',
-    },
-  },
-  {
     // Config / script files are plain JS: do not type-check them.
     files: ['**/*.{js,mjs,cjs}'],
     ...tseslint.configs.disableTypeChecked,
+    languageOptions: {
+      ...tseslint.configs.disableTypeChecked.languageOptions,
+      globals: globals.node,
+    },
   },
+  {
+    files: ['**/*.cjs'],
+    languageOptions: { sourceType: 'commonjs' },
+    rules: { '@typescript-eslint/no-require-imports': 'off' },
+  },
+  // test-placement, forbidden-field (no-log-request-body), no-console, file-size (warn).
+  ...quality,
   ...(await loadBoundaries()),
   prettier, // must stay last: turns off formatting rules
 ];

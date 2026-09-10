@@ -21,6 +21,8 @@ export const ERROR_CODES = {
   ACCOUNT_DELETED: { status: 410, title: 'Account deleted' },
   RATE_LIMITED: { status: 429, title: 'Too many requests' },
   INTERNAL: { status: 500, title: 'Internal error' },
+  /** A checked dependency (db, provider) is down; health returns this with `checks` (doc 06 §2). */
+  SERVICE_UNAVAILABLE: { status: 503, title: 'Service unavailable' },
 } as const;
 
 export type ErrorCode = keyof typeof ERROR_CODES;

@@ -4,7 +4,7 @@ import { type DynamicModule, Module } from '@nestjs/common';
 import { APP_FILTER } from '@nestjs/core';
 import { LoggerModule, type Params as LoggerParams } from 'nestjs-pino';
 
-import type { VersionInfo } from '@ai-stylist/contracts';
+import type { VersionInfo } from '@ai-stylist/contracts/types';
 
 import { HealthController } from './health.controller.js';
 import { CLOCK, type Clock } from './ports/clock.port.js';

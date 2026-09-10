@@ -3,7 +3,7 @@
 import type { NestFastifyApplication } from '@nestjs/platform-fastify';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
-import type { HealthReport, ProblemDetails, VersionInfo } from '@ai-stylist/contracts';
+import type { HealthReport, ProblemDetails, VersionInfo } from '@ai-stylist/contracts/types';
 import type { DemoOutboxFlowRequestedV1 } from '@ai-stylist/contracts/events';
 import { ERROR_CODES, PROBLEM_TYPE_BASE } from '@ai-stylist/shared-kernel';
 import { memoryLogStream } from '@ai-stylist/test-support';

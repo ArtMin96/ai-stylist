@@ -1,6 +1,6 @@
 import { Controller, Get, Inject, ServiceUnavailableException } from '@nestjs/common';
 
-import type { HealthReport } from '@ai-stylist/contracts';
+import type { HealthReport } from '@ai-stylist/contracts/types';
 
 import { HEALTH_PROBE, type HealthProbe } from './ports/health-probe.port.js';
 

@@ -1,0 +1,25 @@
+{
+  // Expo's base (jsx react-native, bundler resolution, allowJs) + our strictness; NodeNext from the
+  // repo base is incompatible with Metro's bundler resolution, so this does not extend tsconfig.base.
+  "extends": "expo/tsconfig.base",
+  "compilerOptions": {
+    "strict": true,
+    "noUncheckedIndexedAccess": true,
+    "noImplicitOverride": true,
+    "noFallthroughCasesInSwitch": true,
+    "verbatimModuleSyntax": true,
+    "isolatedModules": true,
+    "forceConsistentCasingInFileNames": true,
+    "skipLibCheck": true,
+    "noEmit": true,
+    // Same scoped exception as packages/contracts/tsconfig.json: the generated hey-api fetch client
+    // (a value import here, unlike the API) does not compile under exactOptionalPropertyTypes.
+    "exactOptionalPropertyTypes": false,
+    "types": ["jest"],
+    "paths": {
+      "@/*": ["./src/*"]
+    }
+  },
+  "include": ["**/*.ts", "**/*.tsx", ".expo/types/**/*.ts", "expo-env.d.ts"],
+  "exclude": ["node_modules", "android", "ios", ".expo/export"]
+}

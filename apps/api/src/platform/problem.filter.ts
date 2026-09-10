@@ -21,6 +21,7 @@ const STATUS_TO_CODE: Readonly<Record<number, ErrorCode>> = {
   409: 'CONFLICT',
   410: 'ACCOUNT_DELETED',
   429: 'RATE_LIMITED',
+  503: 'SERVICE_UNAVAILABLE',
 };
 
 /** Problem details plus RFC 9457 extension members (e.g. health `checks`). */
@@ -63,14 +64,6 @@ export function toProblem(exception: unknown, instance: string): ProblemBody {
     }
   } else if (exception instanceof Error) {
     detail = exception.message;
-  }
-  if (status === 503) {
-    return {
-      ...base,
-      title: 'Service unavailable',
-      ...(detail !== undefined ? { detail } : {}),
-      ...extensions,
-    };
   }
   return { ...base, ...(detail !== undefined ? { detail } : {}), ...extensions };
 }

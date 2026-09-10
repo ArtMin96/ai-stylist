@@ -87,6 +87,13 @@ else
   mise_exec pnpm install
 fi
 
+log "uv sync (Python workers)"
+if [[ -f workers/uv.lock ]]; then
+  mise_exec uv sync --frozen --project workers
+else
+  info "no workers/uv.lock — skipping Python dependency sync"
+fi
+
 # --- 4. git hooks --------------------------------------------------------------------
 log "git hooks (prek: gitleaks + commitlint)"
 mise_exec prek install --hook-type pre-commit --hook-type commit-msg

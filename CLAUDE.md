@@ -18,15 +18,15 @@ Do not reopen decisions recorded in the decision log without new evidence; if yo
 ## Repository layout (orientation)
 
 ```
-apps/mobile/            React Native + Expo (TypeScript, New Architecture); src/app/_root.tsx = composition root
+apps/mobile/            React Native + Expo (TypeScript, New Architecture)
 apps/mobile/src/render/ Filament 3D boundary — nothing outside imports Filament types
 apps/mobile/e2e/        Maestro flows (documented test-placement exception)
-apps/api/               NestJS (Fastify adapter) modular monolith; src/main.ts + app.module.ts = composition root
+apps/api/               NestJS (Fastify adapter) modular monolith
 apps/api/src/modules/<name>/           one directory per SPINE domain module (13): index.ts (public API), internal/, tests/
 apps/api/src/modules/<name>/tests/     that module's tests (always here)
 apps/api/src/platform/  infra adapters implementing ports (storage, outbox relay, logger, OTel, provider SDKs); leaf-only
-apps/api/src/trigger/   Trigger.dev task definitions (composition root for tasks)
-workers/                Python FastAPI ML/media services (Docker); workers/ml/<service>/main.py = composition root
+apps/api/src/trigger/   Trigger.dev task definitions
+workers/                Python FastAPI ML/media services (Docker)
 packages/contracts/     OpenAPI 3.1 + event schemas (canonical) + generated clients
 packages/shared-kernel/ units, IDs, reason codes, entitlement names, event envelope — pure, depends on nothing
 packages/db/            drizzle-kit config, composed schema entry, migrations/ (table definitions live in modules/<name>/internal/schema.ts)

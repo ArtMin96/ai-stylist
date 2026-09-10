@@ -24,16 +24,13 @@ bootstrap *args:
 doctor:
     scripts/doctor.sh
 
-# Decrypt sops dev secrets (secrets/dev.enc.yaml) into the gitignored .env
-secrets-sync:
-    #!/usr/bin/env bash
-    set -euo pipefail
-    if [[ ! -f secrets/dev.enc.yaml ]]; then
-        echo "NOT IMPLEMENTED (P02 T02): decrypt secrets/dev.enc.yaml -> .env (no encrypted file or age keys exist yet)" >&2
-        exit 2
-    fi
-    sops --decrypt --input-type yaml --output-type dotenv secrets/dev.enc.yaml > .env
-    echo "wrote .env from secrets/dev.enc.yaml"
+# Decrypt secrets/<env>.enc.yaml (sops + age) and merge its keys into the gitignored .env; staging/prod need CI=true or --i-know-this-is-not-dev
+secrets-sync env='dev' *args:
+    scripts/security/secrets-sync.sh "$@"
+
+# Edit secrets/<env>.enc.yaml in $EDITOR through sops (creates it from the .env.example key list on first run)
+secrets-edit env='dev':
+    scripts/security/secrets-edit.sh "$@"
 
 # --- dev servers ---------------------------------------------------------------
 
@@ -115,7 +112,7 @@ arch-check *args:
 generate *args:
     tools/codegen/generate.sh "$@"
 
-# * gitleaks + osv-scanner + pnpm audit + license check (+ syft SBOM in T12)
+# * gitleaks + osv-scanner + pnpm audit + license gate (tools/security/license-policy.json) + syft SBOM (artifacts/sbom/, gitignored)
 security-scan:
     #!/usr/bin/env bash
     set -euo pipefail
@@ -127,10 +124,16 @@ security-scan:
     osv-scanner scan --recursive . || { rc=$?; [[ $rc -eq 128 ]] && echo "osv-scanner: no packages found" || exit $rc; }
     echo "==> pnpm audit"
     pnpm audit --audit-level=high
-    echo "==> license check"
-    echo "TODO(P02 T12): license gate (no GPL/AGPL) + syft SBOM"
+    echo "==> license check (npm + pypi; docs/security/licenses.md)"
+    scripts/security/license-check.sh
+    echo "==> sbom (syft)"
+    scripts/security/sbom.sh
 
-# Run the exact PR-gate sequence locally: format --check, lint (+ fixtures), typecheck, arch-check (+ fixtures), generate --check, test, security-scan
+# Generate the SPDX + CycloneDX SBOM into artifacts/sbom/ (same syft invocation as nightly.yml)
+sbom:
+    scripts/security/sbom.sh
+
+# Run the exact PR-gate sequence locally: format --check, lint (+ fixtures), typecheck, arch-check (+ fixtures), generate --check, test, security-scan (+ license fixtures)
 ci-parity:
     just format --check
     just lint
@@ -141,6 +144,7 @@ ci-parity:
     just generate --check
     just test
     just security-scan
+    scripts/security/license-check.sh --fixtures
 
 # --- database (drizzle-kit; expand–contract) ----------------------------------------
 

@@ -30,18 +30,24 @@ if (( SYSTEM )); then
   sudo DEBIAN_FRONTEND=noninteractive apt-get install -y -qq "${APT_PKGS[@]}"
   log "udev rules for Android devices"
   if [[ ! -f /etc/udev/rules.d/51-android.rules ]]; then
+    sudo mkdir -p /etc/udev/rules.d   # absent on minimal/container/WSL images without udev
     printf 'SUBSYSTEM=="usb", ATTR{idVendor}=="18d1", MODE="0666", GROUP="plugdev"\n' \
       | sudo tee /etc/udev/rules.d/51-android.rules >/dev/null
-    sudo udevadm control --reload-rules && sudo udevadm trigger
+    if have udevadm; then
+      sudo udevadm control --reload-rules && sudo udevadm trigger
+    else
+      info "udevadm not present (no udev on this machine) — rules written, will apply once udev runs"
+    fi
   else
     info "udev rules already present"
   fi
   log "docker group membership"
-  if id -nG "$USER" | /usr/bin/grep -qw docker; then
-    info "$USER already in docker group"
+  me="$(id -un)"   # $USER is unset in non-login shells (CI, docker exec, systemd)
+  if id -nG "$me" | /usr/bin/grep -qw docker; then
+    info "$me already in docker group"
   else
-    sudo usermod -aG docker "$USER"
-    warn "added $USER to docker group — log out and back in for it to take effect"
+    sudo usermod -aG docker "$me"
+    warn "added $me to docker group — log out and back in for it to take effect"
   fi
   sudo systemctl enable --now docker >/dev/null 2>&1 || warn "could not enable docker service"
   log "watchman (Metro file watcher; prebuilt binary needs libs in /usr/local/lib)"
@@ -80,11 +86,19 @@ log "mise install (pins from mise.toml)"
 
 # --- 3. workspace dependencies ---------------------------------------------------------
 log "pnpm install"
+# .npmrc pins store-dir under $HOME. A checkout whose node_modules was linked from the old in-repo
+# store (<repo>/.pnpm-store, pnpm's default when the repo sits on another filesystem) must be
+# relinked; pnpm asks for a TTY confirmation before purging node_modules, so answer yes here —
+# node_modules is derived state and this script is the repair path.
+if [[ -d .pnpm-store ]]; then
+  warn "removing stale in-repo pnpm store .pnpm-store/ (store-dir now lives under \$HOME, see .npmrc)"
+  rm -rf .pnpm-store
+fi
 if [[ -f pnpm-lock.yaml ]]; then
-  mise_exec pnpm install --frozen-lockfile
+  mise_exec pnpm install --frozen-lockfile --config.confirm-modules-purge=false
 else
   warn "no pnpm-lock.yaml yet — running a non-frozen install to create it (commit the lockfile)"
-  mise_exec pnpm install
+  mise_exec pnpm install --config.confirm-modules-purge=false
 fi
 
 log "uv sync (Python workers)"

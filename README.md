@@ -58,7 +58,7 @@ Add it to `~/.zshrc` (or `~/.bashrc`), then open a new terminal. You do not stri
 ### 4. Check everything
 
 ```bash
-just doctor
+just doctor                              # or, before mise is activated: ~/.local/bin/mise exec -- just doctor
 ```
 
 Every line should be a ✔. A ⚠ is informational. An ✘ comes with a hint for the fix. Run this whenever something feels off.

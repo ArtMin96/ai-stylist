@@ -8,9 +8,28 @@ cd "$REPO_ROOT"
 heading "AI Stylist doctor"
 
 # --- mise + pinned tools ------------------------------------------------------
+# A clean machine has no system python3; use the mise-pinned one when installed, else the system one.
+doctor_python() {
+  if "$MISE_BIN" which python3 >/dev/null 2>&1; then mise_exec python3 "$@"
+  elif have python3; then python3 "$@"
+  else return 127
+  fi
+}
 if [[ -x "$MISE_BIN" ]]; then
   ok "mise present ($("$MISE_BIN" --version 2>/dev/null | head -1))"
   # Every tool in mise.toml must resolve to exactly its pinned version (mise ls --current --json).
+  pin_rows="$("$MISE_BIN" ls --current --json 2>/dev/null \
+    | doctor_python -c '
+import json,sys
+d=json.load(sys.stdin)
+for tool,entries in d.items():
+    for e in entries:
+        req=e.get("requested_version") or ""
+        inst=e.get("version") if e.get("installed") else "(missing)"
+        print(f"{tool}\t{req}\t{inst}")' 2>/dev/null || true)"
+  if [[ -z "$pin_rows" ]]; then
+    fail "could not read pinned tool versions (mise ls --current --json)" "~/.local/bin/mise install --yes   (or: just bootstrap)"
+  fi
   while IFS=$'\t' read -r tool requested installed; do
     [[ -z "$tool" ]] && continue
     if [[ "$installed" == "$requested" ]]; then
@@ -18,23 +37,19 @@ if [[ -x "$MISE_BIN" ]]; then
     else
       fail "$tool resolves to '$installed', pinned '$requested'" "~/.local/bin/mise install $tool@$requested"
     fi
-  done < <("$MISE_BIN" ls --current --json 2>/dev/null \
-    | python3 -c '
-import json,sys
-d=json.load(sys.stdin)
-for tool,entries in d.items():
-    for e in entries:
-        req=e.get("requested_version") or ""
-        inst=e.get("version") if e.get("installed") else "(missing)"
-        print(f"{tool}\t{req}\t{inst}")' 2>/dev/null || true)
+  done <<< "$pin_rows"
 else
   fail "mise not found at $MISE_BIN" "curl https://mise.run | sh   (or: just bootstrap)"
 fi
 
 # --- pnpm store -----------------------------------------------------------------
 if [[ -x "$MISE_BIN" ]] && mise_exec pnpm --version >/dev/null 2>&1; then
-  if store="$(mise_exec pnpm store path 2>/dev/null)" && [[ -d "$store" || -n "$store" ]]; then
-    ok "pnpm store ok ($store)"
+  if store="$(mise_exec pnpm store path 2>/dev/null)" && [[ -n "$store" ]]; then
+    if [[ "$store" == "$REPO_ROOT"/* ]]; then
+      fail "pnpm store is inside the repo ($store) — prettier/eslint/gitleaks would crawl it" "just bootstrap   (relinks node_modules from the \$HOME store pinned in .npmrc)"
+    else
+      ok "pnpm store ok ($store)"
+    fi
   else
     fail "pnpm store not resolvable" "mise exec -- pnpm store path"
   fi

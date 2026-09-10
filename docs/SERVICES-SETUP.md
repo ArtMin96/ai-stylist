@@ -89,17 +89,17 @@ Shared secrets are committed to the repo encrypted, one file per environment (`s
 
 ### When you need it
 
-Now. Every other service in this document stores its values through this mechanism. Status today: `.sops.yaml` holds placeholder recipients and `secrets/` has no encrypted files. `just secrets-sync` exits 2 with `NOT IMPLEMENTED (P02 T02)` until `secrets/dev.enc.yaml` exists.
+Now. Every other service in this document stores its values through this mechanism. Status today: `.sops.yaml` lists no recipients (each environment has an `# ADD RECIPIENTS` marker) and `secrets/` has no encrypted files. Until step 3 below is done, `just secrets-sync` and `just secrets-edit` exit 1 with `no age recipients in .sops.yaml for secrets/dev.enc.yaml — follow docs/SERVICES-SETUP.md §2`.
 
 ### Cost
 
-Free. No account. `sops` 3.13.3 and `age` 1.3.2 are pinned in `mise.toml` and installed by `./scripts/bootstrap.sh`.
+Free. No account. `sops` 3.13.3 and `age` 1.3.2 are pinned in `mise.toml` and installed by `./scripts/bootstrap.sh`; the two recipes below run them through `scripts/security/secrets-edit.sh` and `scripts/security/secrets-sync.sh`.
 
 ### Steps
 
-Run these in a shell where mise is activated (`eval "$(~/.local/bin/mise activate zsh)"`), or prefix each tool with `~/.local/bin/mise exec --`.
+Run these in a shell where mise is activated (`eval "$(~/.local/bin/mise activate zsh)"`), or prefix each tool with `~/.local/bin/mise exec --`. `just` recipes need no activation.
 
-1. Generate your key. The path is the default sops looks in on Linux (`$XDG_CONFIG_HOME/sops/age/keys.txt`, falling back to `~/.config/sops/age/keys.txt`, Checked 2026-09-10 at <https://getsops.io/docs/usage/identities/age/>):
+1. Generate your key. The path is the default sops looks in on Linux (`$XDG_CONFIG_HOME/sops/age/keys.txt`, falling back to `~/.config/sops/age/keys.txt`, Checked 2026-09-10 at <https://getsops.io/docs/usage/identities/age/>); the scripts also honor `SOPS_AGE_KEY_FILE` and `SOPS_AGE_KEY` (in that order of precedence: `SOPS_AGE_KEY`, `SOPS_AGE_KEY_FILE`, the default file):
 
    ```bash
    mkdir -p ~/.config/sops/age
@@ -111,7 +111,7 @@ Run these in a shell where mise is activated (`eval "$(~/.local/bin/mise activat
 
 2. Back up the private key file somewhere outside the repo (a password manager entry). Losing it means you cannot decrypt anything encrypted for you.
 
-3. Edit `.sops.yaml`. Replace `age1PLACEHOLDER_DEV_LEAD_PUBLIC_KEY` with your public key in all three `creation_rules` entries. Each later developer adds their own public key as a new line under `age:` in every rule.
+3. Edit `.sops.yaml`. Under the `# ADD RECIPIENTS` comment of the `dev` rule add one line `- age1<your public key>` (same indentation as the comment). Deployers add theirs under `staging` and `prod` too. Each later developer adds their own line the same way; the comment stays as the marker. Public keys are not secrets (`.gitleaks.toml` allowlists them in this file).
 
 4. Generate the CI key the same way, into a temporary file, and treat it as a service credential:
 
@@ -119,37 +119,37 @@ Run these in a shell where mise is activated (`eval "$(~/.local/bin/mise activat
    age-keygen -o "$(mktemp -d)/ci.txt"
    ```
 
-   Copy its `Public key:` line into `.sops.yaml` in place of `age1PLACEHOLDER_CI_PUBLIC_KEY` (all three rules). Copy the whole contents of the file into a GitHub repository secret named `SOPS_AGE_KEY` (this name is a proposal; no workflow reads it yet, the deploy jobs added in P03 will export it as the `SOPS_AGE_KEY` environment variable that sops honors). Then delete the temporary file.
+   Add its `Public key:` line under `# ADD RECIPIENTS` in all three rules. Copy the whole contents of the file into a GitHub repository secret named `SOPS_AGE_KEY` (no workflow reads it yet; the deploy jobs added in P03 export it as the `SOPS_AGE_KEY` environment variable that sops and `scripts/security/secrets-sync.sh` honor). Then delete the temporary file.
 
-5. Create the first encrypted file. Write a plaintext YAML file with one `KEY: value` line per `.env.example` key you have a shared dev value for (unknown values stay empty), encrypt it, and delete the plaintext. `secrets/*.dec.*` is gitignored, so the plaintext name below cannot be committed by accident:
-
-   ```bash
-   cp .env.example secrets/dev.dec.yaml     # then edit: change each `KEY=` line to `KEY: value`, drop the comments
-   sops --encrypt --filename-override secrets/dev.enc.yaml secrets/dev.dec.yaml > secrets/dev.enc.yaml
-   rm secrets/dev.dec.yaml
-   ```
-
-   `--filename-override` makes sops pick the `creation_rules` entry for `secrets/dev.enc.yaml` (the recipients) even though the input file has a different name.
-
-6. Repeat step 5 for `staging.enc.yaml` and `prod.enc.yaml` when those environments exist (Neon staging branch, Railway environments). Until then leave them absent.
-
-7. Decrypt into your `.env`:
+5. Create the first encrypted file:
 
    ```bash
-   just secrets-sync
+   just secrets-edit            # same as: just secrets-edit env=dev
    ```
 
-   This runs `sops --decrypt --output-type dotenv secrets/dev.enc.yaml > .env` and prints `wrote .env from secrets/dev.enc.yaml`. Note that it overwrites `.env` completely; personal overrides such as `POSTGRES_HOST_PORT` or `EXPO_PUBLIC_API_BASE_URL` must be re-added after each sync, or kept in the shared file if they are the same for everyone.
+   On the first run for an environment this creates `secrets/dev.enc.yaml` with every key from `.env.example` and an empty value (`KEY: ""`), encrypted for the `dev` recipients, and opens it in `$EDITOR` through `sops`. Fill in the shared dev values (`KEY: value`), leave unknown ones empty, save and quit; sops re-encrypts on save (`File has not changed, exiting.` means you quit without editing, which is fine). No plaintext file ever lands in the repo: the template is built in a private temp dir and encrypted before it is moved into `secrets/`.
 
-8. Edit values later with `sops secrets/dev.enc.yaml` (opens `$EDITOR` on the decrypted content and re-encrypts on save). Commit the encrypted file through a pull request like any other change.
+6. Repeat step 5 with `env=staging` / `env=prod` when those environments exist (Neon staging branch, Railway environments). Until then leave them absent.
 
-9. Onboard another developer: they run step 1, send you the public key, you add it to `.sops.yaml`, then run `for f in secrets/*.enc.yaml; do sops updatekeys "$f"; done` and commit. `updatekeys` re-wraps the data key for the new recipient list without changing the values.
+7. Merge into your `.env`:
+
+   ```bash
+   just secrets-sync            # same as: just secrets-sync dev
+   ```
+
+   This decrypts `secrets/dev.enc.yaml` to a private temp file and merges it into `.env`: every key with a non-empty shared value replaces its `KEY=...` line (or is appended if missing); keys whose shared value is empty are skipped; every other line is kept verbatim, so personal overrides such as `POSTGRES_HOST_PORT` or `EXPO_PUBLIC_API_BASE_URL` survive as long as the shared file leaves them empty. If `.env` does not exist it is created from `.env.example` first. The output lists the key names that were replaced or added and a count; it never prints a value, and `.env` ends up with mode 600. `.envrc` (`dotenv_if_exists .env`) keeps working unchanged.
+
+   `just secrets-sync staging` and `just secrets-sync prod` refuse to run on a workstation; CI sets `CI=true`, and a human who really needs it locally passes `--i-know-this-is-not-dev`.
+
+8. Edit values later with `just secrets-edit` (or `just secrets-edit env=staging`); commit the encrypted file through a pull request like any other change, then everyone runs `just secrets-sync` again.
+
+9. Onboard another developer: they run step 1, send you the public key, you add it to `.sops.yaml` (step 3), then run `for f in secrets/*.enc.yaml; do sops updatekeys "$f"; done` and commit. `updatekeys` re-wraps the data key for the new recipient list without changing the values.
 
 10. `direnv allow` once in the repo root so `.envrc` loads `.env` into every shell (optional; `just` recipes and the db scripts read `.env` themselves).
 
 ### What to record
 
-- `.sops.yaml`: one `age1...` public key per developer plus the CI public key, in every rule.
+- `.sops.yaml`: one `age1...` public key per developer under the `dev` rule, plus deployers and the CI key under `staging` and `prod`.
 - `secrets/dev.enc.yaml` committed; `staging`/`prod` when they exist.
 - GitHub secret: `SOPS_AGE_KEY` (the CI private key file contents).
 - Password manager: your own private key file.
@@ -158,7 +158,7 @@ Run these in a shell where mise is activated (`eval "$(~/.local/bin/mise activat
 
 - Do not paste a private key into a chat, a ticket, or a workflow file.
 - Do not commit `secrets/*.dec.*` or `.env`; both are gitignored, keep it that way.
-- Do not put values into `secrets/*.enc.yaml` that are not keys in `.env.example`; the file must mirror it (`secrets/README.md`).
+- Do not put values into `secrets/*.enc.yaml` that are not keys in `.env.example`; the file must mirror it (`secrets/README.md`). `secrets-edit` seeds exactly that key list.
 - Do not share one age key between two people.
 
 ### Verify
@@ -168,7 +168,7 @@ just secrets-sync
 just doctor
 ```
 
-Expected: `wrote .env from secrets/dev.enc.yaml`, then a `✔ .env has every key from .env.example` line in the doctor output.
+Expected: `secrets-sync: merged secrets/dev.enc.yaml into .env — N replaced, M added, K skipped (empty in the shared file), other lines untouched` (preceded by one `replaced KEY` / `added KEY` line per key), then a `✔ .env has every key from .env.example` line in the doctor output.
 
 ## 3. Neon
 

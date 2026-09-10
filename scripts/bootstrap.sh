@@ -2,9 +2,12 @@
 # just bootstrap — idempotent developer environment setup (planning/15 §1, §4).
 #
 #   scripts/bootstrap.sh            user-level steps only (no sudo): mise, pins, pnpm, hooks, .env
-#   scripts/bootstrap.sh --system   additionally runs the apt / udev / docker-group steps (sudo)
+#   scripts/bootstrap.sh --system   additionally installs system packages:
+#                                     Linux  apt + udev rules + docker group + watchman (sudo)
+#                                     macOS  Homebrew formulae/casks, no sudo (docs/DEVELOPING-ON-MACOS.md)
 #
 # Never edits shell rc files; prints the activation line at the end instead.
+# Runs under macOS /bin/bash 3.2 as well as bash 5: no associative arrays, mapfile, ${var,,} etc.
 set -euo pipefail
 source "$(dirname "${BASH_SOURCE[0]}")/lib.sh"
 cd "$REPO_ROOT"
@@ -14,15 +17,67 @@ WATCHMAN_VERSION="${WATCHMAN_VERSION:-2026.07.27.00}"   # bump with Renovate-sty
 for arg in "$@"; do
   case "$arg" in
     --system) SYSTEM=1 ;;
-    -h|--help) sed -n '2,8p' "$0"; exit 0 ;;
+    -h|--help) sed -n '2,10p' "$0"; exit 0 ;;
     *) die "unknown flag: $arg (accepted: --system)" ;;
   esac
 done
 
 heading "AI Stylist bootstrap"
 
-# --- 0. system packages (opt-in, sudo) -------------------------------------------
-if (( SYSTEM )); then
+# --- 0. system packages (opt-in) -----------------------------------------------------
+if (( SYSTEM )) && os_is_darwin; then
+  log "system packages (Homebrew) — macOS, no sudo"
+  # Xcode Command Line Tools: git, clang, and the SDK headers node-gyp / Metro need. The installer
+  # is an interactive Apple dialog, so it cannot run from here.
+  if xcode-select -p >/dev/null 2>&1; then
+    info "xcode command line tools: $(xcode-select -p)"
+  else
+    error "Xcode Command Line Tools are missing"
+    info "run:  xcode-select --install   (accept the dialog, wait for it to finish), then re-run: just bootstrap --system"
+    exit 1
+  fi
+  # Homebrew: never curl-pipe-installed silently; the official one-liner is printed for you to run.
+  if have brew; then
+    info "homebrew: $(brew --version 2>/dev/null | head -1)"
+  else
+    error "Homebrew is missing"
+    info "install it with the official command from https://brew.sh, then re-run: just bootstrap --system"
+    # shellcheck disable=SC2016  # printed for the human to run, not expanded here
+    info '  /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"'
+    exit 1
+  fi
+  # git-lfs (also mise-pinned; the brew copy keeps `git lfs` working in shells without mise) and
+  # watchman (Metro file watcher; the brew build is the supported macOS binary — no Linux zip here).
+  for formula in git-lfs watchman; do
+    if brew list --formula "$formula" >/dev/null 2>&1; then
+      info "$formula already installed"
+    else
+      brew install "$formula"
+    fi
+  done
+  log "android platform-tools (adb) — Homebrew cask"
+  if brew list --cask android-platform-tools >/dev/null 2>&1 || have adb; then
+    info "adb present: $(command -v adb)"
+  else
+    brew install --cask android-platform-tools
+  fi
+  log "docker runtime"
+  # Not installed by this script: three runtimes exist and the choice is yours
+  # (docs/DEVELOPING-ON-MACOS.md). Detect only.
+  case "$(darwin_docker_runtime)" in
+    desktop) info "Docker Desktop detected (/Applications/Docker.app) — start it from Launchpad if 'docker info' fails" ;;
+    orbstack) info "OrbStack detected — 'orb start' if 'docker info' fails" ;;
+    colima) info "Colima detected — 'colima start'; Testcontainers needs DOCKER_HOST=unix://\$HOME/.colima/default/docker.sock" ;;
+    *)
+      warn "no Docker runtime found. Install one (docs/DEVELOPING-ON-MACOS.md):"
+      info "  Docker Desktop  brew install --cask docker      GUI, zero config for Testcontainers; check Docker's licence terms for your company size"
+      info "  OrbStack        brew install --cask orbstack    fastest/lightest, zero config for Testcontainers; free for personal use, paid seat commercially"
+      info "  Colima          brew install colima docker      CLI only, free; Testcontainers needs DOCKER_HOST (see the doc)"
+      info "  recommendation: Docker Desktop or OrbStack (no env vars); Colima if you want no GUI"
+      ;;
+  esac
+  info "skipping udev rules / docker group / systemctl (Linux only)"
+elif (( SYSTEM )); then
   log "system packages (apt) — requires sudo"
   APT_PKGS=(build-essential git git-lfs curl unzip zip ca-certificates gnupg libssl-dev pkg-config
             docker.io docker-compose-v2 android-sdk-platform-tools-common adb)
@@ -30,18 +85,24 @@ if (( SYSTEM )); then
   sudo DEBIAN_FRONTEND=noninteractive apt-get install -y -qq "${APT_PKGS[@]}"
   log "udev rules for Android devices"
   if [[ ! -f /etc/udev/rules.d/51-android.rules ]]; then
+    sudo mkdir -p /etc/udev/rules.d   # absent on minimal/container/WSL images without udev
     printf 'SUBSYSTEM=="usb", ATTR{idVendor}=="18d1", MODE="0666", GROUP="plugdev"\n' \
       | sudo tee /etc/udev/rules.d/51-android.rules >/dev/null
-    sudo udevadm control --reload-rules && sudo udevadm trigger
+    if have udevadm; then
+      sudo udevadm control --reload-rules && sudo udevadm trigger
+    else
+      info "udevadm not present (no udev on this machine) — rules written, will apply once udev runs"
+    fi
   else
     info "udev rules already present"
   fi
   log "docker group membership"
-  if id -nG "$USER" | /usr/bin/grep -qw docker; then
-    info "$USER already in docker group"
+  me="$(id -un)"   # $USER is unset in non-login shells (CI, docker exec, systemd)
+  if id -nG "$me" | command grep -qw docker; then
+    info "$me already in docker group"
   else
-    sudo usermod -aG docker "$USER"
-    warn "added $USER to docker group — log out and back in for it to take effect"
+    sudo usermod -aG docker "$me"
+    warn "added $me to docker group — log out and back in for it to take effect"
   fi
   sudo systemctl enable --now docker >/dev/null 2>&1 || warn "could not enable docker service"
   log "watchman (Metro file watcher; prebuilt binary needs libs in /usr/local/lib)"
@@ -61,7 +122,11 @@ if (( SYSTEM )); then
     info "installed watchman v${WATCHMAN_VERSION}"
   fi
 else
-  info "skipping apt / udev / docker-group steps (run with --system to include them; they need sudo)"
+  if os_is_darwin; then
+    info "skipping Homebrew steps (run with --system to include them: Xcode CLT check, git-lfs, watchman, adb, Docker runtime detection)"
+  else
+    info "skipping apt / udev / docker-group steps (run with --system to include them; they need sudo)"
+  fi
 fi
 
 # --- 1. mise -----------------------------------------------------------------------
@@ -80,11 +145,19 @@ log "mise install (pins from mise.toml)"
 
 # --- 3. workspace dependencies ---------------------------------------------------------
 log "pnpm install"
+# .npmrc pins store-dir under $HOME. A checkout whose node_modules was linked from the old in-repo
+# store (<repo>/.pnpm-store, pnpm's default when the repo sits on another filesystem) must be
+# relinked; pnpm asks for a TTY confirmation before purging node_modules, so answer yes here —
+# node_modules is derived state and this script is the repair path.
+if [[ -d .pnpm-store ]]; then
+  warn "removing stale in-repo pnpm store .pnpm-store/ (store-dir now lives under \$HOME, see .npmrc)"
+  rm -rf .pnpm-store
+fi
 if [[ -f pnpm-lock.yaml ]]; then
-  mise_exec pnpm install --frozen-lockfile
+  mise_exec pnpm install --frozen-lockfile --config.confirm-modules-purge=false
 else
   warn "no pnpm-lock.yaml yet — running a non-frozen install to create it (commit the lockfile)"
-  mise_exec pnpm install
+  mise_exec pnpm install --config.confirm-modules-purge=false
 fi
 
 log "uv sync (Python workers)"
@@ -100,7 +173,11 @@ mise_exec prek install --hook-type pre-commit --hook-type commit-msg
 if git lfs version >/dev/null 2>&1; then
   git lfs install --local >/dev/null 2>&1 && info "git lfs hooks installed (local)"
 else
-  warn "git-lfs missing — assets/3d/** needs it (run: just bootstrap --system)"
+  if os_is_darwin; then
+    warn "git-lfs missing — assets/3d/** needs it (run: just bootstrap --system, or: brew install git-lfs)"
+  else
+    warn "git-lfs missing — assets/3d/** needs it (run: just bootstrap --system)"
+  fi
 fi
 
 # --- 5. .env scaffold ------------------------------------------------------------------

@@ -13,6 +13,9 @@ order of preference, and the choice is recorded in the table below.
    override is verified with the tool that consumes the overridden package (see table).
 4. **Ignore with expiry**, only when there is no fixed version or every fix path breaks a tool.
 
+The license gate that runs in the same recipe follows the same discipline; see
+[licenses.md](licenses.md) for its policy file and exception format.
+
 ## Ignore policy
 
 - Ignores live in two places that must stay in sync:

@@ -6,7 +6,7 @@ build/
 coverage/
 *.tsbuildinfo
 
-# env & secrets (only *.enc.* under secrets/ is committed)
+# env & secrets (only *.enc.* under secrets/ is committed; `just secrets-sync` merges into .env)
 .env
 .env.*.local
 secrets/*.dec.*
@@ -42,6 +42,11 @@ Thumbs.db
 !.vscode/settings.json
 !.vscode/extensions.json
 
-# security scan artifacts
+# security scan artifacts (`just security-scan` / `just sbom` write artifacts/sbom/, never committed)
+artifacts/
 sbom.*.json
 gitleaks-report.json
+
+# license-gate fixture: a hand-written node_modules tree that must be committed (docs/security/licenses.md)
+!tools/security/fixtures/agpl-tree/node_modules/
+.pnpm-store/

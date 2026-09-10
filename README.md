@@ -22,7 +22,7 @@ The operating rules for anyone (human or AI agent) changing code are in [`CLAUDE
 
 ## First-time setup
 
-You need Ubuntu 22.04 or newer (other Linux distros work with small changes), `git`, `curl`, and `sudo` for the one system step. Everything else is installed into your home directory by the bootstrap script, with exact versions pinned in `mise.toml`, so nothing here conflicts with tools you already have.
+You need Ubuntu 22.04 or newer (other Linux distros work with small changes) or macOS (Apple Silicon or Intel; see [`docs/DEVELOPING-ON-MACOS.md`](docs/DEVELOPING-ON-MACOS.md) for the Mac-specific prerequisites), `git`, `curl`, and, on Linux, `sudo` for the one system step. Everything else is installed into your home directory by the bootstrap script, with exact versions pinned in `mise.toml`, so nothing here conflicts with tools you already have.
 
 ### 1. Clone
 
@@ -31,13 +31,13 @@ git clone https://github.com/ArtMin96/ai-stylist.git
 cd ai-stylist
 ```
 
-### 2. Install system packages (once per machine, needs sudo)
+### 2. Install system packages (once per machine, needs sudo on Linux)
 
 ```bash
 ./scripts/bootstrap.sh --system
 ```
 
-This installs the apt packages, Docker, the Android udev rules, and adds you to the `docker` group. **Log out and back in afterwards** so the group change takes effect. Skip this step if Docker already works for your user and you do not need Android device access.
+On Linux this installs the apt packages, Docker, the Android udev rules, and adds you to the `docker` group. **Log out and back in afterwards** so the group change takes effect. On macOS it uses Homebrew (git-lfs, watchman, adb), checks for the Xcode Command Line Tools, and tells you which Docker runtime it found (Docker Desktop, OrbStack, or Colima; it installs none). Skip this step if Docker already works for your user and you do not need Android device access.
 
 ### 3. Install the toolchain and dependencies
 
@@ -58,7 +58,7 @@ Add it to `~/.zshrc` (or `~/.bashrc`), then open a new terminal. You do not stri
 ### 4. Check everything
 
 ```bash
-just doctor
+just doctor                              # or, before mise is activated: ~/.local/bin/mise exec -- just doctor
 ```
 
 Every line should be a ✔. A ⚠ is informational. An ✘ comes with a hint for the fix. Run this whenever something feels off.
@@ -103,7 +103,7 @@ just dev-mobile --android    # also opens the app on a connected Android device 
 
 Expo Go is enough for the current placeholder app (`pnpm --filter @ai-stylist/mobile exec expo start --go --android` if you prefer it; `just dev-mobile` always starts the dev client, and Expo refuses `--dev-client` together with `--go`); a development build becomes necessary once the first native module lands.
 
-The mobile app cannot be run on iOS from Linux. iOS builds happen in CI on a hosted Mac (see `.github/workflows/README.md`). For Android you need either the Android SDK and an emulator, or a physical phone with USB debugging on. See `apps/mobile/README.md` for the details.
+The mobile app cannot be run on iOS from Linux; on a Mac, `just dev-mobile --ios` opens the simulator and `just mobile-ios-build --profile dev` builds locally. From Linux, iOS builds happen in CI on a hosted Mac (see `.github/workflows/README.md`). For Android you need either the Android SDK and an emulator, or a physical phone with USB debugging on. See `apps/mobile/README.md` for the details.
 
 ## Daily commands
 
@@ -149,7 +149,7 @@ If it is green locally, it is green in CI. The CI workflows call the same `just`
 
 1. `just doctor` first. Most environment problems show up there with a fix hint.
 2. `just bootstrap` again. It is idempotent and repairs missing tools or dependencies.
-3. Docker not reachable: make sure the daemon is running and your user is in the `docker` group (step 2 above, then re-login).
+3. Docker not reachable: on Linux make sure the daemon is running and your user is in the `docker` group (step 2 above, then re-login); on macOS start Docker Desktop / OrbStack / `colima start` (the doctor hint names the one it found; Colima also needs `DOCKER_HOST`, see `docs/DEVELOPING-ON-MACOS.md`).
 4. `git push` complains about `git-lfs`: your shell has not activated `mise`. Add the activation line from step 3 or run the command through `mise exec -- git push`.
 5. `just generate --check` fails: someone edited a contract without regenerating. Run `just generate` and commit the result.
 6. Still stuck: open an issue using `templates/issue.md` and paste the failing command with its full output.

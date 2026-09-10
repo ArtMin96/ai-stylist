@@ -21,6 +21,7 @@ osv-scanner = "2.5.1"     # vulnerability scanning (security-scan)
 syft = "1.51.1"           # SBOM generation (security-scan, T12)
 git-lfs = "3.8.0"         # assets/3d/** (.gitattributes); `git lfs install --local` in bootstrap
 "github:oasdiff/oasdiff" = "1.31.0" # OpenAPI breaking-change detector (contracts lint, T04); not in the core registry
+shellcheck = "0.11.0"     # shell lint for scripts/** and tools/**/*.sh (bash 3.2 portability, macOS /bin/bash)
 # watchman: NOT via mise. Facebook's prebuilt Linux binary hardcodes /usr/local/lib/libglog.so.1
 # etc. (absolute DT_NEEDED), so it only works after `sudo cp lib/* /usr/local/lib` —
 # handled by `just bootstrap --system`. Metro falls back to Node's watcher without it.

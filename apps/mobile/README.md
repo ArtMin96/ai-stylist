@@ -57,9 +57,11 @@ root layout to be `_layout.tsx`, so that file is the composition root.
 ```bash
 just dev-mobile                 # Metro for a development build (expo start --dev-client)
 just dev-mobile --android       # …and open on a connected Android device/emulator (needs adb)
+just dev-mobile --ios           # …and open in the iOS simulator (macOS + Xcode only)
 pnpm --filter @ai-stylist/mobile test | lint | typecheck | doctor | export
 just mobile-android-build --profile dev|preview|prod        # prebuild + Gradle (needs ANDROID_HOME)
 just mobile-android-build --cloud --profile preview         # EAS Build (needs EXPO_TOKEN / eas login)
+just mobile-ios-build --profile dev [--device]                     # macOS only: local `expo run:ios` (simulator, or USB iPhone with --device)
 just mobile-ios-build --cloud eas|gha --profile dev|preview|prod   # never local on Linux
 ```
 
@@ -81,7 +83,9 @@ just mobile-ios-build --cloud eas|gha --profile dev|preview|prod   # never local
    install `android/app/build/outputs/apk/debug/app-debug.apk` with `adb install`, then
    `just dev-mobile --android`. Without a local SDK, use `--cloud` (EAS) once the Expo account exists.
 
-iOS cannot be built or run from Linux; the CI lanes (`.github/workflows/ios-*.yml`, ADR-0002) do it.
+iOS cannot be built or run from Linux; the CI lanes (`.github/workflows/ios-*.yml`, ADR-0002) do it. On a
+Mac, `just mobile-ios-build --profile dev` (Xcode + CocoaPods, see `docs/DEVELOPING-ON-MACOS.md`) builds and
+installs on the simulator; `just dev-mobile --ios` then starts Metro and opens it.
 
 ## Tests
 

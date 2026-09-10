@@ -1,0 +1,12 @@
+{
+  "name": "license-gate-fixture",
+  "private": true,
+  "description": "Hand-written tree for `scripts/security/license-check.sh --fixtures`: one production AGPL dependency (must FAIL), one dev-only GPL tool (must WARN), one MIT dependency (must pass).",
+  "dependencies": {
+    "fake-agpl-lib": "1.0.0",
+    "fake-mit-lib": "1.0.0"
+  },
+  "devDependencies": {
+    "fake-gpl-devtool": "2.0.0"
+  }
+}

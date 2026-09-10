@@ -17,3 +17,4 @@ android/
 *.gltf
 *.ktx2
 prototype/
+.pnpm-store/

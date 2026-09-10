@@ -17,6 +17,7 @@ REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 WORKERS_DIR="$REPO_ROOT/workers"
 INPUT_DIR="${CONTRACTS_EVENTS_DIR:-$REPO_ROOT/packages/contracts/events}"
 OUTPUT_DIR="$WORKERS_DIR/ml/generated/ai_stylist_generated/events"
+# shellcheck disable=SC2016  # literal backticks in the generated-file banner
 HEADER='# GENERATED — run `just generate` (tools/codegen/gen-python.sh). DO NOT EDIT BY HAND.'
 
 check_only=false

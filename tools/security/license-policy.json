@@ -1,0 +1,60 @@
+{
+  "notes": [
+    "Consumed by scripts/security/license-check.sh (planning/15 section 9; docs/security/licenses.md).",
+    "Entries are SPDX ids or trove classifier names as pip-licenses prints them, minus any trailing parenthetical (case-insensitive; '*' is a glob).",
+    "Precedence per license id: deny > warn > allow. An id in no list is 'unclassified'.",
+    "SPDX expressions: OR picks the most permissive alternative, AND the least permissive part, WITH is dropped.",
+    "Production dependency: deny/unclassified = FAIL, warn = WARN. Dev-only dependency: never fails, deny/unclassified/warn = WARN.",
+    "exceptions: package + license + reason + added + expiry (<= 62 days after added). Expired exceptions fail."
+  ],
+  "firstParty": ["@ai-stylist/*", "ai-stylist-*"],
+  "allow": [
+    "MIT",
+    "MIT-0",
+    "MIT License",
+    "ISC",
+    "BSD-2-Clause",
+    "BSD-3-Clause",
+    "0BSD",
+    "BSD License",
+    "Apache-2.0",
+    "Apache Software License",
+    "BlueOak-1.0.0",
+    "CC0-1.0",
+    "CC-BY-4.0",
+    "CC-BY-3.0",
+    "Unlicense",
+    "Zlib",
+    "Python-2.0",
+    "PSF-2.0",
+    "Python Software Foundation License",
+    "MPL-2.0",
+    "WTFPL",
+    "Artistic-2.0",
+    "ISC License",
+    "Mozilla Public License 2.0"
+  ],
+  "warn": [
+    "LGPL-*",
+    "GNU Lesser General Public License*",
+    "EPL-*",
+    "CDDL-*",
+    "OSL-*",
+    "CC-BY-SA-*",
+    "BUSL-*"
+  ],
+  "deny": [
+    "GPL-*",
+    "AGPL-*",
+    "GNU General Public License*",
+    "GNU Affero General Public License*",
+    "SSPL-*",
+    "Server Side Public License*",
+    "CC-BY-NC*",
+    "UNKNOWN",
+    "UNLICENSED",
+    "NONE",
+    ""
+  ],
+  "exceptions": []
+}

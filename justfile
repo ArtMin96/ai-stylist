@@ -2,6 +2,8 @@
 # CI calls these recipes; never re-implement them in YAML. Recipe names use dashes.
 # Recipes marked NOT IMPLEMENTED (P02 Tnn) exit 2 until that task lands.
 
+# `bash` resolves to /bin/bash 3.2 on macOS (Homebrew bash is optional): recipes and scripts/**
+# stay bash 3.2-clean and use only POSIX/BSD-compatible flags (docs/DEVELOPING-ON-MACOS.md).
 set shell := ["bash", "-euo", "pipefail", "-c"]
 set positional-arguments := true
 
@@ -16,7 +18,7 @@ default:
 
 # --- environment ---------------------------------------------------------------
 
-# Full environment setup, idempotent (`--system` adds apt/udev/docker-group steps with sudo)
+# Full environment setup, idempotent (`--system` adds apt/udev/docker-group steps with sudo on Linux, Homebrew packages on macOS)
 bootstrap *args:
     scripts/bootstrap.sh "$@"
 
@@ -24,16 +26,13 @@ bootstrap *args:
 doctor:
     scripts/doctor.sh
 
-# Decrypt sops dev secrets (secrets/dev.enc.yaml) into the gitignored .env
-secrets-sync:
-    #!/usr/bin/env bash
-    set -euo pipefail
-    if [[ ! -f secrets/dev.enc.yaml ]]; then
-        echo "NOT IMPLEMENTED (P02 T02): decrypt secrets/dev.enc.yaml -> .env (no encrypted file or age keys exist yet)" >&2
-        exit 2
-    fi
-    sops --decrypt --input-type yaml --output-type dotenv secrets/dev.enc.yaml > .env
-    echo "wrote .env from secrets/dev.enc.yaml"
+# Decrypt secrets/<env>.enc.yaml (sops + age) and merge its keys into the gitignored .env; staging/prod need CI=true or --i-know-this-is-not-dev
+secrets-sync env='dev' *args:
+    scripts/security/secrets-sync.sh "$@"
+
+# Edit secrets/<env>.enc.yaml in $EDITOR through sops (creates it from the .env.example key list on first run)
+secrets-edit env='dev':
+    scripts/security/secrets-edit.sh "$@"
 
 # --- dev servers ---------------------------------------------------------------
 
@@ -42,8 +41,16 @@ dev-api *args:
     docker compose up -d --wait postgres
     pnpm --filter @ai-stylist/api dev "$@"
 
-# Expo dev client (Metro); `--android` targets a connected device/emulator
+# Expo dev client (Metro); `--android` targets a connected device/emulator, `--ios` the iOS simulator (macOS only)
 dev-mobile *args:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    for a in "$@"; do
+        if [[ "$a" == "--ios" && "$(uname -s)" != "Darwin" ]]; then
+            echo "dev-mobile: --ios needs the iOS simulator (macOS + Xcode); on $(uname -s) use --android or Expo Go" >&2
+            exit 1
+        fi
+    done
     pnpm --filter @ai-stylist/mobile exec expo start --dev-client "$@"
 
 # Segmentation worker (FastAPI, uvicorn --reload on :8001); the Trigger.dev dev server half lands in T08
@@ -53,10 +60,20 @@ dev-workers *args:
 
 # --- quality gates (* = part of ci-parity) -------------------------------------------
 
-# * Run tests: full suite via turbo, or one module's tests/ dir (`just test recommendation`)
+# * Run tests: full suite via turbo, or one module's tests/ dir (`just test recommendation`); SKIP_DOCKER_TESTS=1 leaves out the Testcontainers `migrations` project (runners without Docker only)
 test module='':
     #!/usr/bin/env bash
     set -euo pipefail
+    if [[ "${SKIP_DOCKER_TESTS:-}" == "1" && -z "{{module}}" ]]; then
+        # apps/api/vitest.config.ts has two projects: `api` and `migrations` (Testcontainers; it
+        # FAILS without Docker, never skips). Run every other workspace through turbo, then only
+        # the `api` project. Docker-less hosts only (portability.yml on macos-15): never in pr-gate.
+        echo "SKIP_DOCKER_TESTS=1: skipping apps/api vitest project 'migrations' (Testcontainers needs Docker)" >&2
+        pnpm turbo run test --filter='!@ai-stylist/api'
+        pnpm --filter @ai-stylist/api exec vitest run --project api
+        uv run --project workers pytest workers -q
+        exit 0
+    fi
     if [[ -n "{{module}}" ]]; then
         case "{{module}}" in
             platform) dir="src/platform/tests" ;;
@@ -77,7 +94,7 @@ test module='':
     pnpm turbo run test
     uv run --project workers pytest workers -q
 
-# * ESLint per workspace via turbo (boundaries, test-placement, no-skip, no-console, forbidden-field, file-size) + root tools/ + Ruff for workers; `--fixtures` asserts tools/eslint/fixtures each fail on their rule
+# * ESLint per workspace via turbo (boundaries, test-placement, no-skip, no-console, forbidden-field, file-size) + root tools/ + Ruff for workers + shellcheck for scripts/** and tools/**/*.sh; `--fixtures` asserts tools/eslint/fixtures each fail on their rule
 lint *args:
     #!/usr/bin/env bash
     set -euo pipefail
@@ -89,6 +106,8 @@ lint *args:
     pnpm turbo run lint
     pnpm exec eslint tools eslint.config.mjs
     uv run --project workers ruff check workers
+    # -s bash: every script must run under macOS /bin/bash 3.2 as well (docs/DEVELOPING-ON-MACOS.md)
+    shellcheck -s bash -x -P SCRIPTDIR scripts/*.sh scripts/security/*.sh tools/codegen/*.sh tools/depcruise/*.sh tools/eslint/*.sh
 
 # * `tsc --noEmit` per workspace via turbo + basedpyright for workers
 typecheck:
@@ -115,7 +134,7 @@ arch-check *args:
 generate *args:
     tools/codegen/generate.sh "$@"
 
-# * gitleaks + osv-scanner + pnpm audit + license check (+ syft SBOM in T12)
+# * gitleaks + osv-scanner + pnpm audit + license gate (tools/security/license-policy.json) + syft SBOM (artifacts/sbom/, gitignored)
 security-scan:
     #!/usr/bin/env bash
     set -euo pipefail
@@ -127,10 +146,16 @@ security-scan:
     osv-scanner scan --recursive . || { rc=$?; [[ $rc -eq 128 ]] && echo "osv-scanner: no packages found" || exit $rc; }
     echo "==> pnpm audit"
     pnpm audit --audit-level=high
-    echo "==> license check"
-    echo "TODO(P02 T12): license gate (no GPL/AGPL) + syft SBOM"
+    echo "==> license check (npm + pypi; docs/security/licenses.md)"
+    scripts/security/license-check.sh
+    echo "==> sbom (syft)"
+    scripts/security/sbom.sh
 
-# Run the exact PR-gate sequence locally: format --check, lint (+ fixtures), typecheck, arch-check (+ fixtures), generate --check, test, security-scan
+# Generate the SPDX + CycloneDX SBOM into artifacts/sbom/ (same syft invocation as nightly.yml)
+sbom:
+    scripts/security/sbom.sh
+
+# Run the exact PR-gate sequence locally: format --check, lint (+ fixtures), typecheck, arch-check (+ fixtures), generate --check, test, security-scan (+ license fixtures)
 ci-parity:
     just format --check
     just lint
@@ -141,6 +166,7 @@ ci-parity:
     just generate --check
     just test
     just security-scan
+    scripts/security/license-check.sh --fixtures
 
 # --- database (drizzle-kit; expand–contract) ----------------------------------------
 
@@ -169,21 +195,41 @@ db-seed *args:
 
 # --- mobile builds -------------------------------------------------------------------
 
-# iOS build lane: `--cloud eas` (EAS Build) or `--cloud gha` (runs xcodebuild; macOS only), `--profile dev|preview|prod` (ADR-0002 picks the default in T15)
+# iOS build lane: no `--cloud` on macOS = local `expo run:ios` (simulator; `--device` for a plugged-in iPhone); `--cloud eas` (EAS Build) or `--cloud gha` (xcodebuild archive; macOS only); `--profile dev|preview|prod` (ADR-0002 picks the default in T15)
 mobile-ios-build *args:
     #!/usr/bin/env bash
     set -euo pipefail
-    cloud="" profile="dev"
+    cloud="" profile="dev" device=0
     while [[ $# -gt 0 ]]; do
         case "$1" in
             --cloud) cloud="$2"; shift 2 ;;
             --profile) profile="$2"; shift 2 ;;
-            *) echo "mobile-ios-build: unknown argument '$1' (use --cloud eas|gha --profile dev|preview|prod)" >&2; exit 1 ;;
+            --device) device=1; shift ;;
+            *) echo "mobile-ios-build: unknown argument '$1' (use [--cloud eas|gha] --profile dev|preview|prod [--device])" >&2; exit 1 ;;
         esac
     done
     case "$profile" in dev|preview|prod) ;; *) echo "mobile-ios-build: --profile must be dev|preview|prod" >&2; exit 1 ;; esac
     cd apps/mobile
     case "$cloud" in
+        '')
+            # Local lane (macOS only): `npx expo run:ios` is Expo's documented path for compiling a
+            # development build locally (docs.expo.dev/get-started/set-up-your-environment, local
+            # build env, checked 2026-09-10); `eas build --local` exists only to reproduce cloud
+            # build failures (docs.expo.dev/build-reference/local-builds). run:ios prebuilds ios/
+            # (CNG; CocoaPods still used in SDK 57), compiles with Xcode and installs on the
+            # simulator, or on a USB device with --device (needs a signing team in Xcode).
+            if [[ "$(uname -s)" != "Darwin" ]]; then
+                echo "mobile-ios-build: iOS cannot be built on $(uname -s) (no Xcode). Use --cloud eas, or --cloud gha via the ios-gha-macos workflow." >&2
+                exit 1
+            fi
+            if ! xcode-select -p >/dev/null 2>&1; then
+                echo "mobile-ios-build: Xcode Command Line Tools missing — run: xcode-select --install (and install Xcode from the App Store)" >&2
+                exit 1
+            fi
+            configuration=Release; [[ "$profile" == "dev" ]] && configuration=Debug
+            run_args=(--configuration "$configuration"); [[ $device -eq 1 ]] && run_args+=(--device)
+            pnpm exec expo run:ios "${run_args[@]}"
+            ;;
         eas)
             # eas-cli is not pinned yet (T14 adds it to mise.toml); fall back to a one-off pnpm dlx.
             if command -v eas >/dev/null; then eas build --platform ios --profile "$profile" --non-interactive
@@ -210,12 +256,12 @@ mobile-ios-build *args:
             fi
             ;;
         *)
-            echo "mobile-ios-build: --cloud eas|gha is required (ADR-0002 picks the default in T15)" >&2
+            echo "mobile-ios-build: --cloud must be eas|gha (omit it on macOS for a local expo run:ios build; ADR-0002 picks the default in T15)" >&2
             exit 1
             ;;
     esac
 
-# Android APK/AAB: local CNG prebuild + Gradle when ANDROID_HOME is set, `--cloud` for EAS; `--profile dev|preview|prod`
+# Android APK/AAB: local CNG prebuild + Gradle when the Android SDK is found (ANDROID_HOME, or the default Studio location per OS), `--cloud` for EAS; `--profile dev|preview|prod`
 mobile-android-build *args:
     #!/usr/bin/env bash
     set -euo pipefail
@@ -235,8 +281,14 @@ mobile-android-build *args:
         exit 0
     fi
     if [[ -z "${ANDROID_HOME:-${ANDROID_SDK_ROOT:-}}" ]]; then
-        echo "mobile-android-build: ANDROID_HOME is not set (no Android SDK on this machine)." >&2
-        echo "  install the SDK via \`just bootstrap --system\`, or run \`just mobile-android-build --cloud --profile $profile\` for an EAS build." >&2
+        # Android Studio's default SDK location: ~/Library/Android/sdk (macOS), ~/Android/Sdk (Linux).
+        for candidate in "$HOME/Library/Android/sdk" "$HOME/Android/Sdk"; do
+            if [[ -d "$candidate/platform-tools" ]]; then export ANDROID_HOME="$candidate"; break; fi
+        done
+    fi
+    if [[ -z "${ANDROID_HOME:-${ANDROID_SDK_ROOT:-}}" ]]; then
+        echo "mobile-android-build: ANDROID_HOME is not set and no SDK found in ~/Library/Android/sdk or ~/Android/Sdk." >&2
+        echo "  install Android Studio (or the SDK via \`just bootstrap --system\` on Linux), or run \`just mobile-android-build --cloud --profile $profile\` for an EAS build." >&2
         exit 1
     fi
     pnpm exec expo prebuild --platform android --no-install

@@ -1,0 +1,144 @@
+# Portability proof: the developer tooling (scripts/**, justfile, mise.toml) must work on macOS
+# (Apple Silicon) as well as Linux (docs/DEVELOPING-ON-MACOS.md). The bootstrap script itself is
+# what is under test, so this workflow deliberately does NOT use .github/actions/setup: it runs
+# `./scripts/bootstrap.sh` (user-level, no --system) exactly like a new developer would.
+#
+# macos-15 (arm64) has no Docker (actions/runner-images macos-15-arm64 README, checked
+# 2026-09-10): `just doctor` reports the docker check as failed there (its output goes to the job
+# summary, non-blocking), and `just test` runs with SKIP_DOCKER_TESTS=1, which leaves out the
+# apps/api `migrations` vitest project (Testcontainers). ubuntu-latest has Docker and runs the
+# full suite. macOS minutes bill at 10x on a private repo: pull_request runs only for tooling
+# paths; otherwise weekly + manual.
+name: portability
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '0 4 * * 1' # Monday 04:00 UTC
+  pull_request:
+    paths:
+      - 'scripts/**'
+      - 'justfile'
+      - 'mise.toml'
+      - '.npmrc'
+      - 'tools/**/*.sh'
+      - '.github/workflows/portability.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: portability-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  CI: 'true'
+  DO_NOT_TRACK: '1'
+  MISE_YES: '1'
+
+jobs:
+  bootstrap:
+    name: bootstrap + gates (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-15, ubuntu-latest]
+    steps:
+      - name: Record start
+        id: start
+        run: echo "ts=$(date +%s)" >> "$GITHUB_OUTPUT"
+
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0 # `just security-scan` runs gitleaks over the git history
+
+      # Caches only shorten the run (macOS minutes are expensive); a miss still exercises the
+      # real download path of bootstrap.sh.
+      - name: Cache mise installs
+        uses: actions/cache@v6
+        with:
+          path: ~/.local/share/mise
+          key: mise-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('mise.toml') }}
+      - name: Cache pnpm store
+        uses: actions/cache@v6
+        with:
+          path: ~/.local/share/pnpm/store
+          key: pnpm-store-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('pnpm-lock.yaml') }}
+          restore-keys: |
+            pnpm-store-${{ runner.os }}-${{ runner.arch }}-
+
+      - name: Host facts
+        run: |
+          uname -a
+          echo "bash: $(bash --version | head -1)   /bin/bash: $(/bin/bash --version | head -1)"
+          command -v docker >/dev/null 2>&1 && docker info >/dev/null 2>&1 && echo "docker: reachable" || echo "docker: unavailable"
+
+      - name: ./scripts/bootstrap.sh (user-level, the script under test)
+        run: |
+          # bootstrap ends with doctor and returns its exit code. Docker is absent on macOS runners,
+          # so a doctor failure is expected there; anything that stops bootstrap BEFORE the doctor
+          # stage (mise install, pnpm install, uv sync, hooks) is a real failure.
+          set +e
+          ./scripts/bootstrap.sh 2>&1 | tee bootstrap.log
+          rc=${PIPESTATUS[0]}
+          set -e
+          if [ "$rc" -ne 0 ] && ! grep -q '^==> doctor' bootstrap.log; then
+            echo "::error::bootstrap.sh failed before reaching the doctor stage (exit $rc)"
+            exit "$rc"
+          fi
+          echo "bootstrap reached doctor (exit $rc; doctor is re-run and summarised in the next step)"
+
+      - name: Put mise shims on PATH (same dirs the justfile prepends)
+        run: |
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+          echo "$HOME/.local/share/mise/shims" >> "$GITHUB_PATH"
+
+      - name: just doctor (non-blocking; full output in the job summary)
+        run: |
+          set +e
+          NO_COLOR=1 just doctor 2>&1 | tee doctor.log
+          rc=${PIPESTATUS[0]}
+          set -e
+          {
+            echo "## just doctor on ${{ matrix.os }} (exit $rc)"
+            echo '```'
+            cat doctor.log
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: just format --check
+        run: just format --check
+      - name: just lint
+        run: just lint
+      - name: just lint --fixtures
+        run: just lint --fixtures
+      - name: just typecheck
+        run: just typecheck
+      - name: just arch-check
+        run: just arch-check
+      - name: just arch-check --fixtures
+        run: just arch-check --fixtures
+      - name: just generate --check
+        run: just generate --check
+
+      - name: just test (SKIP_DOCKER_TESTS=1 when no Docker daemon)
+        run: |
+          if docker info >/dev/null 2>&1; then
+            just test
+          else
+            echo "::notice::no Docker daemon on ${{ matrix.os }}: apps/api 'migrations' project (Testcontainers) skipped via SKIP_DOCKER_TESTS=1"
+            SKIP_DOCKER_TESTS=1 just test
+          fi
+
+      - name: just security-scan
+        env:
+          GITLEAKS_LICENSE: ${{ secrets.GITLEAKS_LICENSE }}
+        run: just security-scan
+
+      - name: Record ci.portability_duration_seconds
+        if: always()
+        run: |
+          n=$(( $(date +%s) - ${{ steps.start.outputs.ts }} ))
+          echo "ci.portability_duration_seconds=${n} os=${{ matrix.os }} arch=${{ runner.arch }} result=${{ job.status }}" | tee -a "$GITHUB_STEP_SUMMARY"

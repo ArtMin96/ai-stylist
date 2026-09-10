@@ -31,3 +31,36 @@ have()     { command -v "$1" >/dev/null 2>&1; }
 
 # Run a tool through mise without requiring shell activation.
 mise_exec() { "$MISE_BIN" exec -- "$@"; }
+
+# --- portability (Linux + macOS; scripts stay bash 3.2-clean because macOS /bin/bash is 3.2) ----
+OS_NAME="$(uname -s)"
+os_is_darwin() { [[ "$OS_NAME" == "Darwin" ]]; }
+
+# In-place sed that works with GNU sed (-i takes an optional suffix) and BSD sed (-i needs one).
+#   sed_inplace 's/a/b/' file...
+sed_inplace() {
+  if sed --version >/dev/null 2>&1; then sed -i "$@"; else sed -i '' "$@"; fi
+}
+
+# Free space of the filesystem holding $1 (default: cwd) in whole GiB. POSIX `df -Pk` parses the
+# same on both OSes; GNU-only `df -BG --output=avail` does not exist on macOS.
+disk_free_gb() {
+  df -Pk "${1:-.}" | awk 'NR == 2 { printf "%d\n", $4 / 1048576 }'
+}
+
+# Which Docker runtime provides `docker` on macOS: the active docker context first (a machine can
+# have several installed), then installed apps. Prints desktop | orbstack | colima | none.
+darwin_docker_runtime() {
+  local ctx
+  ctx="$(docker context show 2>/dev/null || true)"
+  case "$ctx" in
+    orbstack) echo orbstack; return ;;
+    colima*) echo colima; return ;;
+    desktop-linux) echo desktop; return ;;
+  esac
+  if [[ -d /Applications/OrbStack.app ]] || have orbctl; then echo orbstack
+  elif [[ -d /Applications/Docker.app ]]; then echo desktop
+  elif have colima; then echo colima
+  else echo none
+  fi
+}

@@ -40,7 +40,12 @@ secrets_recipient_count() {
             in_rule = (file ~ regex)
             next
         }
-        in_rule && /^[[:space:]]*-[[:space:]]*age1[0-9a-z]{58}[[:space:]]*$/ { n++ }
+        # age public keys are exactly 62 chars ("age1" + 58 bech32 chars); a length test instead of
+        # an ERE interval ({58}) because macOS awk (bwk awk) only gained intervals in 2019.
+        in_rule && /^[[:space:]]*-[[:space:]]*age1[0-9a-z]+[[:space:]]*$/ {
+            key = $0; sub(/^[[:space:]]*-[[:space:]]*/, "", key); sub(/[[:space:]]*$/, "", key)
+            if (length(key) == 62) n++
+        }
         END { print n + 0 }
     ' .sops.yaml
 }

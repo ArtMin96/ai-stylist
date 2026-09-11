@@ -118,6 +118,8 @@ Both scripts live in `scripts/` as readable, commented bash (or TS via `zx` if b
 | `just rec-replay <id>` | Re-run a stored recommendation from its snapshots and diff against the stored result (doc 09 §9) |
 | `just rec-golden-update` | Regenerate recommendation golden fixtures for review (doc 09 §13.3) |
 | `just secrets-sync` | Decrypt sops dev secrets into the gitignored `.env` (§6) |
+| `just secrets-edit <env>` | Edit `secrets/<env>.enc.yaml` through sops; first run creates it from the `.env.example` key list (§6) |
+| `just secrets-updatekeys [env ...]` | Re-wrap `secrets/*.enc.yaml` for the recipient list in `.sops.yaml` after adding or removing a key (§6 onboarding/rotation) |
 
 Rules: recipes fail fast; long recipes call `scripts/*.sh`, not inline blobs; every recipe prints what it will do against which environment before touching anything non-local; destructive recipes (`db-reset`, `db-rollback`) require `--yes` or interactive confirm.
 
@@ -130,7 +132,7 @@ GitHub Actions jobs invoke `just` recipes, never re-implement them in YAML. If C
 **Decision: `sops` + `age` (chosen over 1Password CLI).** Rationale: free, offline, no vendor account coupling for a 2–3 person team, diffs are reviewable (encrypted values, plaintext keys), and CI decryption needs only one age key. Revisit via ADR if the team adopts 1Password org-wide.
 
 - `.env.example` — committed, exhaustive, **zero real values**; every key has a comment (what it is, where to get it, which envs need it). CI checks `.env.example` keys ⊇ keys referenced in config schema.
-- `secrets/<env>.enc.yaml` — sops-encrypted per environment (`dev`, `staging`, `prod`), committed. Each developer's age public key + one CI key in `.sops.yaml`. Onboarding = add pubkey, re-encrypt (`just` helper), PR.
+- `secrets/<env>.enc.yaml` — sops-encrypted per environment (`dev`, `staging`, `prod`), committed. Each developer's age public key + one CI key in `.sops.yaml`. Onboarding = add pubkey, `just secrets-updatekeys`, PR.
 - **direnv** — `.envrc` (committed) loads `.env` (gitignored, generated from decrypted dev secrets via `just secrets-sync`) so shells and `just` recipes see config without manual exporting.
 - **CI:** GitHub encrypted secrets hold only: the CI age private key, store signing credentials (§3), and deploy tokens for Railway/Trigger.dev/Neon/R2. Everything else flows from sops files.
 - **Prod values:** live in sops `prod` file + the platform's own secret store (Railway variables) — sops file is the source of truth; a sync script pushes, never hand-edited in dashboards.

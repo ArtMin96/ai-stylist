@@ -88,6 +88,8 @@ mv "$tmp/merged.env" .env
 
 n_replaced=0 n_added=0 n_skipped=0
 if [[ -f "$tmp/report.txt" ]]; then
+    # awk, not `grep -v`: grep exits 1 when it filters every line (a first file whose values are all
+    # empty), and pipefail would turn that into a failure after .env was already written.
     awk '$1 != "skipped"' "$tmp/report.txt" | sort | while read -r action key; do echo "  $action $key"; done
     n_replaced=$(grep -c '^replaced ' "$tmp/report.txt" || true)
     n_added=$(grep -c '^added ' "$tmp/report.txt" || true)

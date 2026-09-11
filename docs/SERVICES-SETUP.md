@@ -116,8 +116,7 @@ Run these in a shell where mise is activated (`eval "$(~/.local/bin/mise activat
 4. Generate the CI key the same way, into a temporary file, and treat it as a service credential:
 
    ```bash
-   ci_age_dir="$(mktemp -d "${TMPDIR:-/tmp}/ai-stylist-ci-age.XXXXXX")"
-   chmod 700 "$ci_age_dir"
+   ci_age_dir="$(mktemp -d "${TMPDIR:-/tmp}/ai-stylist-ci-age.XXXXXX")"   # mktemp -d creates it mode 0700
    age-keygen -o "$ci_age_dir/ci.txt"
    ```
 
@@ -150,7 +149,7 @@ Run these in a shell where mise is activated (`eval "$(~/.local/bin/mise activat
 
 8. Edit values later with `just secrets-edit` (or `just secrets-edit staging`); commit the encrypted file through a pull request like any other change, then everyone runs `just secrets-sync` again.
 
-9. Onboard another developer: they run step 1, send you the public key, you add it to `.sops.yaml` (step 3), then run `for f in secrets/*.enc.yaml; do sops updatekeys "$f"; done` and commit. `updatekeys` re-wraps the data key for the new recipient list without changing the values.
+9. Onboard another developer: they run step 1, send you the public key, you add it to `.sops.yaml` (step 3), then run `just secrets-updatekeys` and commit `.sops.yaml` together with the re-wrapped files. The recipe runs `sops updatekeys`, which re-wraps each file's data key for the new recipient list without changing the values; it needs an identity that can already decrypt (a public recipient alone cannot re-wrap).
 
 10. `direnv allow` once in the repo root so `.envrc` loads `.env` into every shell (optional; `just` recipes and the db scripts read `.env` themselves).
 
@@ -671,7 +670,7 @@ Deferred to P03: `just test identity` runs the better-auth provider fixtures.
 ## When something goes wrong
 
 1. `just secrets-sync` reports `no age recipients in .sops.yaml`. Finish section 2 step 3 for the environment named in the error, then retry. If it reports that `secrets/<env>.enc.yaml` does not exist, create that encrypted file with `just secrets-edit <env>` as described in section 2 step 5.
-2. `sops` says `no key could decrypt the data` or `failed to get the data key`. Your public key is not in the file's recipient list, or your private key is not at `~/.config/sops/age/keys.txt`. Ask a developer who can decrypt to add your key to `.sops.yaml` and run `sops updatekeys` on every file. Check `SOPS_AGE_KEY_FILE` if you keep the key elsewhere.
+2. `sops` says `no key could decrypt the data` or `failed to get the data key`. Your public key is not in the file's recipient list, or your private key is not at `~/.config/sops/age/keys.txt`. Ask a developer who can decrypt to add your key to `.sops.yaml` and run `just secrets-updatekeys`. Check `SOPS_AGE_KEY_FILE` if you keep the key elsewhere.
 3. `just doctor` reports `.env missing N key(s)`. Someone added keys to `.env.example`. Copy the missing lines from `.env.example` into `.env` (values stay empty) or re-run `just secrets-sync` after the shared file is updated.
 4. `just db-migrate` against Neon fails with a `SET` or `prepared statement` error. You used the pooled connection string. Copy the direct string (Connection pooling toggle off) and retry.
 5. The `ios-eas` workflow stops at `Require EXPO_TOKEN` or `Require App Store Connect API key secrets`. The GitHub secret is missing or named differently. The names must match `.github/workflows/README.md` exactly; check for trailing spaces in the secret value when the step passes but `eas` still reports `Not logged in`.

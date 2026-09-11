@@ -1,12 +1,15 @@
 # sops + age (planning/15 §6, docs/SERVICES-SETUP.md §2). One age recipient per developer + one CI key.
-# Onboarding: add your public key under every environment, re-encrypt every secrets/*.enc.yaml
-# (`for f in secrets/*.enc.yaml; do sops updatekeys "$f"; done`), open a PR.
+# Onboarding: add your public key under every environment you need, run `just secrets-updatekeys`
+# (re-wraps every secrets/*.enc.yaml; needs an identity that can already decrypt), open a PR.
+# Label every recipient with a comment line above it (developer name or `ci`): rotation and access
+# removal (secrets/README.md) must know which line to delete. Keep a trailing-comment-free key line,
+# scripts/security/secrets-lib.sh counts `- age1...` lines verbatim.
 #
 # The initial developer and CI recipients were provisioned in P02. Generate additional developer
 # identities with:
 #   age-keygen -o ~/.config/sops/age/keys.txt   # prints "Public key: age1..."
 # and paste that public key as a `- age1...` line under the `# ADD RECIPIENTS` marker of each
-# environment you need, then run `sops updatekeys` for the affected encrypted files.
+# environment you need, then run `just secrets-updatekeys`.
 # Public keys are not secrets (.gitleaks.toml allowlists them here); private keys never enter the repo.
 creation_rules:
   - path_regex: secrets/dev\.enc\.yaml$
@@ -24,6 +27,8 @@ creation_rules:
   - path_regex: secrets/prod\.enc\.yaml$
     key_groups:
       - age:
-          # ADD RECIPIENTS: dev lead + CI key only (planning/15 §6: no prod credentials on workstations)
+          # ADD RECIPIENTS: dev lead + CI key only. planning/15 §6 "no prod credentials on workstations" is
+          # enforced by secrets-sync refusing to write prod into a workstation .env; the dev lead's key is
+          # listed so the file can be edited through `just secrets-edit prod`.
           - age1y89w72fy404qqwcfh52zxw4sj7f78s7kdrq7cpazxm0gq4v8w5nsx53x5n
           - age1teyjfp2p9wu3yahqrvy957r6gatchsvgh65nk9d39c0tk6sdrpqq7knt36

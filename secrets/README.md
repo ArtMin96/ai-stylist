@@ -24,8 +24,8 @@ until those environments exist.
 - An **age recipient** is the matching public `age1...` value. It is safe to commit in `.sops.yaml`.
   Each environment rule lists everyone allowed to decrypt that environment.
 - Each encrypted file has its own data key. sops encrypts the values with that data key, then wraps
-  the data key once for every listed recipient. `sops updatekeys` re-wraps it when access changes;
-  it does not expose or manually re-encrypt the configuration values.
+  the data key once for every listed recipient. `just secrets-updatekeys` (`sops updatekeys`) re-wraps
+  it when access changes; it does not expose or manually re-encrypt the configuration values.
 - CI has a separate identity whose private material is the GitHub repository secret
   `SOPS_AGE_KEY`. No pull-request workflow receives it; deployment workflows will use it when they
   are introduced in P03.
@@ -53,13 +53,14 @@ run `just secrets-sync` after it merges. Do not edit ciphertext directly and do 
 
 ## Commands
 
-| Recipe                               | Script                             | What it does                                                                                                                                                                                                              |
-| ------------------------------------ | ---------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `just secrets-edit dev`              | `scripts/security/secrets-edit.sh` | Opens `secrets/<env>.enc.yaml` in `$EDITOR` through `sops`; on the first run creates it with every `.env.example` key and an empty value, encrypted for the `<env>` recipients in `.sops.yaml`                            |
-| `just secrets-sync` (`env=dev`)      | `scripts/security/secrets-sync.sh` | Decrypts `secrets/<env>.enc.yaml` and **merges** it into `.env`: each key with a non-empty value replaces its `KEY=` line or is appended; empty values and every other line (personal overrides, comments) are left alone |
-| `just secrets-sync staging` / `prod` | same                               | Refuses on a workstation unless `CI=true` or `--i-know-this-is-not-dev` is passed (no prod credentials on workstations, planning/15 §6)                                                                                   |
+| Recipe                               | Script                                   | What it does                                                                                                                                                                                                              |
+| ------------------------------------ | ---------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `just secrets-edit dev`              | `scripts/security/secrets-edit.sh`       | Opens `secrets/<env>.enc.yaml` in `$EDITOR` through `sops`; on the first run creates it with every `.env.example` key and an empty value, encrypted for the `<env>` recipients in `.sops.yaml`                            |
+| `just secrets-sync` (default `dev`)  | `scripts/security/secrets-sync.sh`       | Decrypts `secrets/<env>.enc.yaml` and **merges** it into `.env`: each key with a non-empty value replaces its `KEY=` line or is appended; empty values and every other line (personal overrides, comments) are left alone |
+| `just secrets-sync staging` / `prod` | same                                     | Refuses on a workstation unless `CI=true` or `--i-know-this-is-not-dev` is passed (no prod credentials on workstations, planning/15 §6)                                                                                   |
+| `just secrets-updatekeys [env ...]`  | `scripts/security/secrets-updatekeys.sh` | Re-wraps every (or the named) `secrets/<env>.enc.yaml` for the current recipient list in `.sops.yaml` via `sops updatekeys -y`; needs an identity that can decrypt today; values are never written to disk or printed     |
 
-Both scripts check that `sops` and `age` are on PATH (mise), that `.sops.yaml` lists at least one
+All three scripts check that `sops` and `age` are on PATH (mise), that `.sops.yaml` lists at least one
 `age1...` recipient for the environment, and (for anything that decrypts) that a private key is
 reachable via `SOPS_AGE_KEY`, `SOPS_AGE_KEY_FILE`, or `~/.config/sops/age/keys.txt`. They print key
 names and counts only, never values. `.env` is written with mode 600; if it does not exist it is
@@ -82,33 +83,36 @@ first created from `.env.example`.
 mkdir -p ~/.config/sops/age && age-keygen -o ~/.config/sops/age/keys.txt   # note the printed public key
 # add the public key under `# ADD RECIPIENTS` for dev (and staging/prod if you are a deployer) in .sops.yaml,
 # then someone who already holds a key re-wraps the files for the new recipient list:
-for f in secrets/*.enc.yaml; do sops updatekeys "$f"; done
+just secrets-updatekeys
 just secrets-sync                                                          # merges dev values into .env
 ```
 
 The new developer sends only the printed `age1...` recipient. A teammate who can already decrypt
-the files must add that recipient and run `sops updatekeys`; possession of a public recipient alone
+the files must add that recipient and run `just secrets-updatekeys`; possession of a public recipient alone
 does not grant access to existing ciphertext.
 
 ## Losing or rotating an identity
 
 - **Lost but not exposed:** generate a replacement identity, have an authorized teammate add its
-  recipient and run `sops updatekeys`, then remove the lost recipient. If no authorized identity or
+  recipient and run `just secrets-updatekeys`, then remove the lost recipient. If no authorized identity or
   backup remains, the encrypted values cannot be recovered.
-- **Possibly exposed:** remove the recipient, run `sops updatekeys` on every encrypted file, and
+- **Possibly exposed:** remove the recipient, run `just secrets-updatekeys`, and
   rotate the underlying service credentials immediately. Re-wrapping blocks future files but does
   not revoke ciphertext already copied from Git history.
 - **Routine access removal:** remove the recipient from every environment it can access, run
-  `sops updatekeys` on each existing encrypted file, and commit `.sops.yaml` together with the
-  re-wrapped files.
+  `just secrets-updatekeys`, and commit `.sops.yaml` together with the re-wrapped files.
 
 Every developer must back up their identity outside the repository in the team's approved password
 manager. CI recovery means replacing the `SOPS_AGE_KEY` repository secret with a newly generated CI
 identity and re-wrapping all environment files for its new public recipient.
 
-## Creating the first file (once at least one recipient is listed)
+## Creating the file for a new environment
+
+`dev.enc.yaml` exists. When staging and production arrive (P03), a deployer whose recipient is
+listed under that environment's rule in `.sops.yaml` creates its file the same way `dev` was created:
 
 ```bash
-just secrets-edit            # creates secrets/dev.enc.yaml from .env.example, opens it in $EDITOR
-just secrets-sync            # .env now carries the shared dev values
+just secrets-edit staging    # creates secrets/staging.enc.yaml from .env.example, opens it in $EDITOR
 ```
+
+Only CI syncs it (`CI=true just secrets-sync staging`); workstations refuse.

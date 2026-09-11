@@ -34,6 +34,10 @@ secrets-sync env='dev' *args:
 secrets-edit env='dev':
     scripts/security/secrets-edit.sh "$@"
 
+# Re-wrap secrets/*.enc.yaml for the recipient list in .sops.yaml after adding/removing a key (sops updatekeys; needs an identity that can decrypt today); `just secrets-updatekeys staging` for one env
+secrets-updatekeys *envs:
+    scripts/security/secrets-updatekeys.sh "$@"
+
 # --- dev servers ---------------------------------------------------------------
 
 # Compose stack (Postgres+pgvector) + NestJS API in watch mode (tsx; reads the repo-root .env)
@@ -60,7 +64,7 @@ dev-workers *args:
 
 # --- quality gates (* = part of ci-parity) -------------------------------------------
 
-# * Run tests: full suite via turbo, or one module's tests/ dir (`just test recommendation`); SKIP_DOCKER_TESTS=1 leaves out the Testcontainers `migrations` project (runners without Docker only)
+# * Run tests: full suite via turbo, or one module's tests/ dir (`just test recommendation`; `just test secrets` = the sops+age shell suite); SKIP_DOCKER_TESTS=1 leaves out the Testcontainers `migrations` project (runners without Docker only)
 test module='':
     #!/usr/bin/env bash
     set -euo pipefail
@@ -76,11 +80,8 @@ test module='':
         exit 0
     fi
     if [[ -n "{{module}}" ]]; then
-        if [[ "{{module}}" == "secrets" ]]; then
-            just test-secrets
-            exit 0
-        fi
         case "{{module}}" in
+            secrets) just test-secrets; exit 0 ;;
             platform) dir="src/platform/tests" ;;
             api) dir="." ;;
             *) dir="src/modules/{{module}}/tests" ;;

@@ -25,7 +25,7 @@ Phase numbers refer to `planning/phases/`. "Needed from" is the first task that 
 | #   | Service                                                 | What it is for                                         | Needed from     | Free tier?                                  | Account owner | Done |
 | --- | ------------------------------------------------------- | ------------------------------------------------------ | --------------- | ------------------------------------------- | ------------- | ---- |
 | 1   | GitHub repository                                       | Source, CI (GitHub Actions), branch protection         | P02 now         | Yes (public repo or personal plan)          | `<owner>`     | [ ]  |
-| 2   | sops + age                                              | Encrypted shared secrets in the repo                   | P02 now         | Free, no account                            | `<owner>`     | [ ]  |
+| 2   | sops + age                                              | Encrypted shared secrets in the repo                   | P02 now         | Free, no account                            | `<owner>`     | [x]  |
 | 3   | Neon                                                    | Postgres 17 + pgvector for dev, staging, prod          | P02-T07         | Yes, Checked 2026-09-10                     | `<owner>`     | [ ]  |
 | 4   | Railway                                                 | API + workers hosting                                  | P03 (deploy)    | $1/month credit on Free, Checked 2026-09-10 | `<owner>`     | [ ]  |
 | 5   | Trigger.dev                                             | Durable jobs (outbox relay, media pipeline)            | P02-T08         | Yes, $5/month credit, Checked 2026-09-10    | `<owner>`     | [ ]  |
@@ -89,7 +89,7 @@ Shared secrets are committed to the repo encrypted, one file per environment (`s
 
 ### When you need it
 
-Now. Every other service in this document stores its values through this mechanism. Status today: `.sops.yaml` lists no recipients (each environment has an `# ADD RECIPIENTS` marker) and `secrets/` has no encrypted files. Until step 3 below is done, `just secrets-sync` and `just secrets-edit` exit 1 with `no age recipients in .sops.yaml for secrets/dev.enc.yaml — follow docs/SERVICES-SETUP.md §2`.
+Now. Every other service in this document stores its values through this mechanism. The initial developer and CI public recipients are listed in `.sops.yaml`, `secrets/dev.enc.yaml` contains every `.env.example` key with an empty value ready to be filled as services are provisioned, and the matching CI private identity is stored in the GitHub repository secret `SOPS_AGE_KEY`. Staging and production files stay absent until those environments exist.
 
 ### Cost
 
@@ -131,7 +131,7 @@ Run these in a shell where mise is activated (`eval "$(~/.local/bin/mise activat
 5. Create the first encrypted file:
 
    ```bash
-   just secrets-edit            # same as: just secrets-edit env=dev
+   just secrets-edit            # same as: just secrets-edit dev
    ```
 
    On the first run for an environment this creates `secrets/dev.enc.yaml` with every key from `.env.example` and an empty value (`KEY: ""`), encrypted for the `dev` recipients, and opens it in `$EDITOR` through `sops`. Fill in the shared dev values (`KEY: value`), leave unknown ones empty, save and quit; sops re-encrypts on save (`File has not changed, exiting.` means you quit without editing, which is fine). No plaintext file ever lands in the repo: the template is built in a private temp dir and encrypted before it is moved into `secrets/`.
@@ -148,7 +148,7 @@ Run these in a shell where mise is activated (`eval "$(~/.local/bin/mise activat
 
    `just secrets-sync staging` and `just secrets-sync prod` refuse to run on a workstation; CI sets `CI=true`, and a human who really needs it locally passes `--i-know-this-is-not-dev`.
 
-8. Edit values later with `just secrets-edit` (or `just secrets-edit env=staging`); commit the encrypted file through a pull request like any other change, then everyone runs `just secrets-sync` again.
+8. Edit values later with `just secrets-edit` (or `just secrets-edit staging`); commit the encrypted file through a pull request like any other change, then everyone runs `just secrets-sync` again.
 
 9. Onboard another developer: they run step 1, send you the public key, you add it to `.sops.yaml` (step 3), then run `for f in secrets/*.enc.yaml; do sops updatekeys "$f"; done` and commit. `updatekeys` re-wraps the data key for the new recipient list without changing the values.
 
@@ -670,7 +670,7 @@ Deferred to P03: `just test identity` runs the better-auth provider fixtures.
 
 ## When something goes wrong
 
-1. `just secrets-sync` reports `no age recipients in .sops.yaml`. Finish section 2 step 3 for the environment named in the error, then retry. If it reports that `secrets/<env>.enc.yaml` does not exist, create that encrypted file with `just secrets-edit env=<env>` as described in section 2 step 5.
+1. `just secrets-sync` reports `no age recipients in .sops.yaml`. Finish section 2 step 3 for the environment named in the error, then retry. If it reports that `secrets/<env>.enc.yaml` does not exist, create that encrypted file with `just secrets-edit <env>` as described in section 2 step 5.
 2. `sops` says `no key could decrypt the data` or `failed to get the data key`. Your public key is not in the file's recipient list, or your private key is not at `~/.config/sops/age/keys.txt`. Ask a developer who can decrypt to add your key to `.sops.yaml` and run `sops updatekeys` on every file. Check `SOPS_AGE_KEY_FILE` if you keep the key elsewhere.
 3. `just doctor` reports `.env missing N key(s)`. Someone added keys to `.env.example`. Copy the missing lines from `.env.example` into `.env` (values stay empty) or re-run `just secrets-sync` after the shared file is updated.
 4. `just db-migrate` against Neon fails with a `SET` or `prepared statement` error. You used the pooled connection string. Copy the direct string (Connection pooling toggle off) and retry.

@@ -91,6 +91,23 @@ STUB
     [[ "$output" != *"synthetic-added-value"* ]]
 }
 
+test_sync_all_empty() {
+    local fixture="$TEST_ROOT/sync-all-empty" output
+    fixture_repo "$fixture"
+    cat > "$fixture/bin/sops" <<'STUB'
+#!/usr/bin/env bash
+printf 'BASE=\n'
+STUB
+    chmod +x "$fixture/bin/sops"
+
+    output="$(cd "$fixture" && HOME="$fixture/home" PATH="$fixture/bin:$PATH" \
+        SOPS_AGE_KEY=synthetic-test-identity scripts/security/secrets-sync.sh dev 2>&1)" || return 1
+
+    grep -Fxq 'BASE=' "$fixture/.env" || return 1
+    [[ "$(file_mode "$fixture/.env")" == "600" ]] || return 1
+    [[ "$output" == *"0 replaced, 0 added, 1 skipped"* ]]
+}
+
 test_encrypt_failure_is_atomic() {
     local fixture="$TEST_ROOT/encrypt-failure" output rc script_tmp script_tmp_mode
     fixture_repo "$fixture"
@@ -130,6 +147,7 @@ STUB
 run_test "plaintext secrets ignored; encrypted files and README committable" test_ignore_policy
 run_test "staging secrets refused on a workstation" test_non_dev_refusal
 run_test "sync replaces, adds, skips empty values, preserves local lines, and writes mode 0600" test_sync_merge
+run_test "sync accepts a first encrypted file whose shared values are all empty" test_sync_all_empty
 run_test "failed first encryption leaves no target or temporary plaintext" test_encrypt_failure_is_atomic
 
 if [[ $failures -ne 0 ]]; then

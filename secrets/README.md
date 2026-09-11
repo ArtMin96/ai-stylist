@@ -9,15 +9,17 @@ sops + age encrypted configuration, one file per environment (planning/15 §6; s
 | `staging.enc.yaml` | CI deploy jobs (`CI=true just secrets-sync staging`, decrypted with the `SOPS_AGE_KEY` CI secret) |
 | `prod.enc.yaml`    | CI deploy jobs; source of truth that a sync script pushes to Railway variables (P03)              |
 
-**Status (P02 T02): no encrypted files exist yet.** `.sops.yaml` has no recipients (each
-environment carries an `# ADD RECIPIENTS` marker); `just secrets-sync` and `just secrets-edit` stop
-with `no age recipients in .sops.yaml` until the first public key is added.
+**Status (P02 T02): development is operational.** `.sops.yaml` contains the initial developer and
+CI public recipients for every environment, and `dev.enc.yaml` contains all `.env.example` keys
+with empty values ready to be filled as services are provisioned. The matching CI private identity
+is stored as the GitHub repository secret `SOPS_AGE_KEY`. Staging and production files stay absent
+until those environments exist.
 
 ## Commands
 
 | Recipe                               | Script                             | What it does                                                                                                                                                                                                              |
 | ------------------------------------ | ---------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `just secrets-edit env=dev`          | `scripts/security/secrets-edit.sh` | Opens `secrets/<env>.enc.yaml` in `$EDITOR` through `sops`; on the first run creates it with every `.env.example` key and an empty value, encrypted for the `<env>` recipients in `.sops.yaml`                            |
+| `just secrets-edit dev`              | `scripts/security/secrets-edit.sh` | Opens `secrets/<env>.enc.yaml` in `$EDITOR` through `sops`; on the first run creates it with every `.env.example` key and an empty value, encrypted for the `<env>` recipients in `.sops.yaml`                            |
 | `just secrets-sync` (`env=dev`)      | `scripts/security/secrets-sync.sh` | Decrypts `secrets/<env>.enc.yaml` and **merges** it into `.env`: each key with a non-empty value replaces its `KEY=` line or is appended; empty values and every other line (personal overrides, comments) are left alone |
 | `just secrets-sync staging` / `prod` | same                               | Refuses on a workstation unless `CI=true` or `--i-know-this-is-not-dev` is passed (no prod credentials on workstations, planning/15 §6)                                                                                   |
 

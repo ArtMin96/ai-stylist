@@ -43,7 +43,7 @@ Rules:
 
 ## ➡️ Next session starts here
 
-**First command, always:** `just bootstrap && just doctor && just ci-parity` — must be green before any other work (last green: 2026-09-10 on the implementing machine; CI has not yet run on GitHub).
+**First command, always:** `just bootstrap && just doctor && just ci-parity` — must be green before any other work (last green: 2026-09-11 locally and on GitHub).
 
 Then pick one:
 
@@ -78,10 +78,10 @@ Log hygiene: when this log exceeds ~30 entries, move the oldest entries to `plan
 ### 2026-09-11 — P02 sops + age repository hardening
 
 - **Phase / tasks worked:** P02 — T02/T12 secrets boundary follow-up on `fix/repo-sops-age-hardening`.
-- **Done this session:** plaintext files under `secrets/` are ignored while `README.md` and `*.enc.yaml` remain committable; the existing sync/edit contract has synthetic shell regression coverage; Docker-less test runs retain that coverage; CI age-key cleanup and troubleshooting docs are accurate. No recipients, identities, or encrypted environment files were created. CI follow-up: the portability bootstrap failed before doctor because mise's unauthenticated GitHub release lookup exhausted the shared runner's anonymous quota; that step now receives the ephemeral `${{ github.token }}` as step-scoped `MISE_GITHUB_TOKEN`.
-- **Regression evidence:** before the fixes, the suite reported `FAIL plaintext secrets ignored; encrypted files and README committable`; the review follow-up reported `FAIL SKIP_DOCKER_TESTS=1 just test omitted the secrets suite` after all non-Docker suites passed. For the CI follow-up, a deterministic structural check failed before the workflow edit with `FAIL: bootstrap step does not bind MISE_GITHUB_TOKEN to github.token` and passed afterward.
-- **Repository state:** buildable ✅ — `just test secrets`, `SKIP_DOCKER_TESTS=1 just test`, `just test`, `just lint`, `just arch-check`, `just security-scan`, and `just ci-parity` green locally on 2026-09-11; `just format --check` also passed after the CI fix.
-- **Not done / next action:** commit and push the workflow fix, then confirm both GitHub portability matrix jobs pass; the remote Actions rerun is the behavioral verification because a local run cannot reproduce a shared runner IP quota.
+- **Done this session:** plaintext files under `secrets/` are ignored while `README.md` and `*.enc.yaml` remain committable; the sync/edit contract has synthetic regression coverage, including the all-empty first-file case; Docker-less test runs retain that coverage; CI age-key cleanup and troubleshooting docs are accurate. The initial developer and CI age identities were generated, their public recipients were added to every environment rule, and `secrets/dev.enc.yaml` was created with all 41 `.env.example` keys empty. Real decryption succeeded with both identities, `just secrets-sync dev` produced a mode-600 `.env`, and isolated `sops updatekeys` rotation proved add/decrypt/remove/deny. The matching CI identity was streamed into the GitHub repository secret `SOPS_AGE_KEY`, verified by name/timestamp, and its temporary local file was removed. The portability bootstrap now receives the ephemeral `${{ github.token }}` as step-scoped `MISE_GITHUB_TOKEN`; PR #2's macOS, Ubuntu, and PR gates passed.
+- **Regression evidence:** before the fixes, the suite reported `FAIL plaintext secrets ignored; encrypted files and README committable`; the review follow-up reported `FAIL SKIP_DOCKER_TESTS=1 just test omitted the secrets suite`; the initial all-empty real file then exposed `secrets-sync` exiting before its summary, reproduced by `FAIL sync accepts a first encrypted file whose shared values are all empty`. For the CI follow-up, a deterministic structural check failed before the workflow edit with `FAIL: bootstrap step does not bind MISE_GITHUB_TOKEN to github.token` and passed afterward.
+- **Repository state:** buildable ✅ — real SOPS/age decrypt, sync, and recipient rotation checks pass; `just test secrets`, `SKIP_DOCKER_TESTS=1 just test`, `just test`, `just lint`, `just arch-check`, `just security-scan`, and `just ci-parity` were green locally on 2026-09-11; PR #2 portability and PR-gate runs are green.
+- **Not done / next action:** fill `dev.enc.yaml` values only as the corresponding service accounts are provisioned; create staging/prod files in P03 when those environments exist. Back up the developer identity from `~/.config/sops/age/keys.txt` in the team's approved password manager so loss of this workstation does not remove developer access.
 
 ### 2026-09-11 — P02 hardening: first CI run, clean-VM proof, security gate, secrets, macOS (PR #1)
 

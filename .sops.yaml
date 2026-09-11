@@ -2,22 +2,28 @@
 # Onboarding: add your public key under every environment, re-encrypt every secrets/*.enc.yaml
 # (`for f in secrets/*.enc.yaml; do sops updatekeys "$f"; done`), open a PR.
 #
-# No keys exist yet (P02 T01/T02). Until a real recipient is listed, `just secrets-sync` and
-# `just secrets-edit` stop with "no age recipients in .sops.yaml". Generate yours with:
+# The initial developer and CI recipients were provisioned in P02. Generate additional developer
+# identities with:
 #   age-keygen -o ~/.config/sops/age/keys.txt   # prints "Public key: age1..."
 # and paste that public key as a `- age1...` line under the `# ADD RECIPIENTS` marker of each
-# environment you need (dev for every developer; staging/prod additionally get the CI key).
+# environment you need, then run `sops updatekeys` for the affected encrypted files.
 # Public keys are not secrets (.gitleaks.toml allowlists them here); private keys never enter the repo.
 creation_rules:
   - path_regex: secrets/dev\.enc\.yaml$
     key_groups:
       - age:
           # ADD RECIPIENTS: every developer's age public key + the CI key, one `- age1...` per line
+          - age1y89w72fy404qqwcfh52zxw4sj7f78s7kdrq7cpazxm0gq4v8w5nsx53x5n
+          - age1teyjfp2p9wu3yahqrvy957r6gatchsvgh65nk9d39c0tk6sdrpqq7knt36
   - path_regex: secrets/staging\.enc\.yaml$
     key_groups:
       - age:
           # ADD RECIPIENTS: dev lead + CI key (deploy jobs decrypt with SOPS_AGE_KEY)
+          - age1y89w72fy404qqwcfh52zxw4sj7f78s7kdrq7cpazxm0gq4v8w5nsx53x5n
+          - age1teyjfp2p9wu3yahqrvy957r6gatchsvgh65nk9d39c0tk6sdrpqq7knt36
   - path_regex: secrets/prod\.enc\.yaml$
     key_groups:
       - age:
           # ADD RECIPIENTS: dev lead + CI key only (planning/15 §6: no prod credentials on workstations)
+          - age1y89w72fy404qqwcfh52zxw4sj7f78s7kdrq7cpazxm0gq4v8w5nsx53x5n
+          - age1teyjfp2p9wu3yahqrvy957r6gatchsvgh65nk9d39c0tk6sdrpqq7knt36

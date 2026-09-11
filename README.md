@@ -63,7 +63,14 @@ just doctor                              # or, before mise is activated: ~/.loca
 
 Every line should be a ✔. A ⚠ is informational. An ✘ comes with a hint for the fix. Run this whenever something feels off.
 
-### 5. External accounts (only when a task needs one)
+### 5. Get access to shared development configuration
+
+Bootstrap creates a local `.env`, but shared values are stored in Git as sops-encrypted files. Follow the
+[`secrets/` technical guide](secrets/README.md) to generate your personal age identity, send only its
+public recipient to a teammate who already has access, and merge the shared development values with
+`just secrets-sync`. Never send or commit the private identity.
+
+### 6. External accounts (only when a task needs one)
 
 Nothing above needs a vendor account. When a phase does (Neon, Railway, Trigger.dev, Cloudflare, Expo/EAS, Apple, Google Play, PostHog, Grafana, and so on), follow [`docs/SERVICES-SETUP.md`](docs/SERVICES-SETUP.md). It has every account in phase order, every step and field, and where each key goes.
 
@@ -142,6 +149,7 @@ If it is green locally, it is green in CI. The CI workflows call the same `just`
 - `planning/SPINE.md` is the product and architecture canon. When a document and the code disagree, the SPINE wins.
 - `planning/PROGRESS.md` is the status ledger. It says which phase is in progress and what the next action is.
 - `docs/adr/` records decisions. `docs/modules/<name>.md` is the contract for each backend module.
+- `secrets/README.md` is the technical guide for encrypted configuration, developer access, and key rotation.
 - `docs/SERVICES-SETUP.md` is the checklist for every external account and credential.
 - `.agents/skills/` holds step-by-step procedures for common task types (migrations, contract changes, security review, and so on).
 

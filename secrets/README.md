@@ -15,6 +15,42 @@ with empty values ready to be filled as services are provisioned. The matching C
 is stored as the GitHub repository secret `SOPS_AGE_KEY`. Staging and production files stay absent
 until those environments exist.
 
+## Mental model
+
+- **sops** encrypts each value but leaves the YAML key names readable. A pull request can therefore
+  show which configuration changed without exposing its value.
+- An **age identity** is the private `AGE-SECRET-KEY-1...` material that decrypts files. It belongs to
+  exactly one developer or to CI and must never enter Git, chat, logs, or screenshots.
+- An **age recipient** is the matching public `age1...` value. It is safe to commit in `.sops.yaml`.
+  Each environment rule lists everyone allowed to decrypt that environment.
+- Each encrypted file has its own data key. sops encrypts the values with that data key, then wraps
+  the data key once for every listed recipient. `sops updatekeys` re-wraps it when access changes;
+  it does not expose or manually re-encrypt the configuration values.
+- CI has a separate identity whose private material is the GitHub repository secret
+  `SOPS_AGE_KEY`. No pull-request workflow receives it; deployment workflows will use it when they
+  are introduced in P03.
+
+The encrypted `*.enc.yaml` files are the shared source of truth. `.env` is a developer-local,
+gitignored result that may also contain personal overrides.
+
+## Daily workflow
+
+After pulling changes, merge the latest shared development values into your local `.env`:
+
+```bash
+just secrets-sync
+```
+
+To change a shared value, edit through sops and commit only the encrypted file:
+
+```bash
+just secrets-edit dev
+git add secrets/dev.enc.yaml
+```
+
+Review the diff for changed key names and sops metadata, open a pull request, and tell teammates to
+run `just secrets-sync` after it merges. Do not edit ciphertext directly and do not commit `.env`.
+
 ## Commands
 
 | Recipe                               | Script                             | What it does                                                                                                                                                                                                              |
@@ -49,6 +85,26 @@ mkdir -p ~/.config/sops/age && age-keygen -o ~/.config/sops/age/keys.txt   # not
 for f in secrets/*.enc.yaml; do sops updatekeys "$f"; done
 just secrets-sync                                                          # merges dev values into .env
 ```
+
+The new developer sends only the printed `age1...` recipient. A teammate who can already decrypt
+the files must add that recipient and run `sops updatekeys`; possession of a public recipient alone
+does not grant access to existing ciphertext.
+
+## Losing or rotating an identity
+
+- **Lost but not exposed:** generate a replacement identity, have an authorized teammate add its
+  recipient and run `sops updatekeys`, then remove the lost recipient. If no authorized identity or
+  backup remains, the encrypted values cannot be recovered.
+- **Possibly exposed:** remove the recipient, run `sops updatekeys` on every encrypted file, and
+  rotate the underlying service credentials immediately. Re-wrapping blocks future files but does
+  not revoke ciphertext already copied from Git history.
+- **Routine access removal:** remove the recipient from every environment it can access, run
+  `sops updatekeys` on each existing encrypted file, and commit `.sops.yaml` together with the
+  re-wrapped files.
+
+Every developer must back up their identity outside the repository in the team's approved password
+manager. CI recovery means replacing the `SOPS_AGE_KEY` repository secret with a newly generated CI
+identity and re-wrapping all environment files for its new public recipient.
 
 ## Creating the first file (once at least one recipient is listed)
 

@@ -5,7 +5,7 @@
 # removal (secrets/README.md) must know which line to delete. Keep a trailing-comment-free key line,
 # scripts/security/secrets-lib.sh counts `- age1...` lines verbatim.
 #
-# The initial developer and CI recipients were provisioned in P02. Generate additional developer
+# The developer and CI recipients were (re)provisioned on 2026-09-12 (the P02 originals had no surviving private key). Generate additional developer
 # identities with:
 #   age-keygen -o ~/.config/sops/age/keys.txt   # prints "Public key: age1..."
 # and paste that public key as a `- age1...` line under the `# ADD RECIPIENTS` marker of each
@@ -16,19 +16,25 @@ creation_rules:
     key_groups:
       - age:
           # ADD RECIPIENTS: every developer's age public key + the CI key, one `- age1...` per line
-          - age1y89w72fy404qqwcfh52zxw4sj7f78s7kdrq7cpazxm0gq4v8w5nsx53x5n
-          - age1teyjfp2p9wu3yahqrvy957r6gatchsvgh65nk9d39c0tk6sdrpqq7knt36
+          # developer: arthur (workstation identity, backed up in the password manager)
+          - age1j430he6fuujyre9qj0tm3ddn0mfk73qyvy6e8zw30wkyetspe3hsunlzdg
+          # ci: GitHub repository secret SOPS_AGE_KEY (deploy jobs only)
+          - age1uw54tfgnn9xrm522lnqfd4vsu5ejzjw5h7f9w6pjf92en6044g4s88h29t
   - path_regex: secrets/staging\.enc\.yaml$
     key_groups:
       - age:
           # ADD RECIPIENTS: dev lead + CI key (deploy jobs decrypt with SOPS_AGE_KEY)
-          - age1y89w72fy404qqwcfh52zxw4sj7f78s7kdrq7cpazxm0gq4v8w5nsx53x5n
-          - age1teyjfp2p9wu3yahqrvy957r6gatchsvgh65nk9d39c0tk6sdrpqq7knt36
+          # developer: arthur (workstation identity, backed up in the password manager)
+          - age1j430he6fuujyre9qj0tm3ddn0mfk73qyvy6e8zw30wkyetspe3hsunlzdg
+          # ci: GitHub repository secret SOPS_AGE_KEY (deploy jobs only)
+          - age1uw54tfgnn9xrm522lnqfd4vsu5ejzjw5h7f9w6pjf92en6044g4s88h29t
   - path_regex: secrets/prod\.enc\.yaml$
     key_groups:
       - age:
           # ADD RECIPIENTS: dev lead + CI key only. planning/15 §6 "no prod credentials on workstations" is
           # enforced by secrets-sync refusing to write prod into a workstation .env; the dev lead's key is
           # listed so the file can be edited through `just secrets-edit prod`.
-          - age1y89w72fy404qqwcfh52zxw4sj7f78s7kdrq7cpazxm0gq4v8w5nsx53x5n
-          - age1teyjfp2p9wu3yahqrvy957r6gatchsvgh65nk9d39c0tk6sdrpqq7knt36
+          # developer: arthur (workstation identity, backed up in the password manager)
+          - age1j430he6fuujyre9qj0tm3ddn0mfk73qyvy6e8zw30wkyetspe3hsunlzdg
+          # ci: GitHub repository secret SOPS_AGE_KEY (deploy jobs only)
+          - age1uw54tfgnn9xrm522lnqfd4vsu5ejzjw5h7f9w6pjf92en6044g4s88h29t

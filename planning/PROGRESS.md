@@ -78,10 +78,10 @@ Log hygiene: when this log exceeds ~30 entries, move the oldest entries to `plan
 ### 2026-09-11 — P02 sops + age repository hardening
 
 - **Phase / tasks worked:** P02 — T02/T12 secrets boundary follow-up on `fix/repo-sops-age-hardening`.
-- **Done this session:** plaintext files under `secrets/` are ignored while `README.md` and `*.enc.yaml` remain committable; the existing sync/edit contract has synthetic shell regression coverage; Docker-less test runs retain that coverage; CI age-key cleanup and troubleshooting docs are accurate. No recipients, identities, or encrypted environment files were created.
-- **Regression evidence:** before the fixes, the suite reported `FAIL plaintext secrets ignored; encrypted files and README committable`; the review follow-up reported `FAIL SKIP_DOCKER_TESTS=1 just test omitted the secrets suite` after all non-Docker suites passed.
-- **Repository state:** buildable ✅ — `just test secrets`, `SKIP_DOCKER_TESTS=1 just test`, `just test`, `just lint`, `just arch-check`, `just security-scan`, and `just ci-parity` green locally on 2026-09-11.
-- **Not done / next action:** independent review, then commit/push/open the PR; no git history or remote configuration was changed in this session.
+- **Done this session:** plaintext files under `secrets/` are ignored while `README.md` and `*.enc.yaml` remain committable; the existing sync/edit contract has synthetic shell regression coverage; Docker-less test runs retain that coverage; CI age-key cleanup and troubleshooting docs are accurate. No recipients, identities, or encrypted environment files were created. CI follow-up: the portability bootstrap failed before doctor because mise's unauthenticated GitHub release lookup exhausted the shared runner's anonymous quota; that step now receives the ephemeral `${{ github.token }}` as step-scoped `MISE_GITHUB_TOKEN`.
+- **Regression evidence:** before the fixes, the suite reported `FAIL plaintext secrets ignored; encrypted files and README committable`; the review follow-up reported `FAIL SKIP_DOCKER_TESTS=1 just test omitted the secrets suite` after all non-Docker suites passed. For the CI follow-up, a deterministic structural check failed before the workflow edit with `FAIL: bootstrap step does not bind MISE_GITHUB_TOKEN to github.token` and passed afterward.
+- **Repository state:** buildable ✅ — `just test secrets`, `SKIP_DOCKER_TESTS=1 just test`, `just test`, `just lint`, `just arch-check`, `just security-scan`, and `just ci-parity` green locally on 2026-09-11; `just format --check` also passed after the CI fix.
+- **Not done / next action:** commit and push the workflow fix, then confirm both GitHub portability matrix jobs pass; the remote Actions rerun is the behavioral verification because a local run cannot reproduce a shared runner IP quota.
 
 ### 2026-09-11 — P02 hardening: first CI run, clean-VM proof, security gate, secrets, macOS (PR #1)
 

@@ -72,9 +72,14 @@ test module='':
         pnpm turbo run test --filter='!@ai-stylist/api'
         pnpm --filter @ai-stylist/api exec vitest run --project api
         uv run --project workers pytest workers -q
+        just test-secrets
         exit 0
     fi
     if [[ -n "{{module}}" ]]; then
+        if [[ "{{module}}" == "secrets" ]]; then
+            just test-secrets
+            exit 0
+        fi
         case "{{module}}" in
             platform) dir="src/platform/tests" ;;
             api) dir="." ;;
@@ -93,6 +98,11 @@ test module='':
     fi
     pnpm turbo run test
     uv run --project workers pytest workers -q
+    just test-secrets
+
+[private]
+test-secrets:
+    scripts/security/tests/secrets.test.sh
 
 # * ESLint per workspace via turbo (boundaries, test-placement, no-skip, no-console, forbidden-field, file-size) + root tools/ + Ruff for workers + shellcheck for scripts/** and tools/**/*.sh; `--fixtures` asserts tools/eslint/fixtures each fail on their rule
 lint *args:
@@ -107,7 +117,7 @@ lint *args:
     pnpm exec eslint tools eslint.config.mjs
     uv run --project workers ruff check workers
     # -s bash: every script must run under macOS /bin/bash 3.2 as well (docs/DEVELOPING-ON-MACOS.md)
-    shellcheck -s bash -x -P SCRIPTDIR scripts/*.sh scripts/security/*.sh tools/codegen/*.sh tools/depcruise/*.sh tools/eslint/*.sh
+    shellcheck -s bash -x -P SCRIPTDIR scripts/*.sh scripts/security/*.sh scripts/security/tests/*.sh tools/codegen/*.sh tools/depcruise/*.sh tools/eslint/*.sh
 
 # * `tsc --noEmit` per workspace via turbo + basedpyright for workers
 typecheck:

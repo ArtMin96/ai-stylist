@@ -75,6 +75,14 @@ Log hygiene: when this log exceeds ~30 entries, move the oldest entries to `plan
 
 *(newest first)*
 
+### 2026-09-11 — P02 sops + age repository hardening
+
+- **Phase / tasks worked:** P02 — T02/T12 secrets boundary follow-up on `fix/repo-sops-age-hardening`.
+- **Done this session:** plaintext files under `secrets/` are ignored while `README.md` and `*.enc.yaml` remain committable; the existing sync/edit contract has synthetic shell regression coverage; Docker-less test runs retain that coverage; CI age-key cleanup and troubleshooting docs are accurate. No recipients, identities, or encrypted environment files were created.
+- **Regression evidence:** before the fixes, the suite reported `FAIL plaintext secrets ignored; encrypted files and README committable`; the review follow-up reported `FAIL SKIP_DOCKER_TESTS=1 just test omitted the secrets suite` after all non-Docker suites passed.
+- **Repository state:** buildable ✅ — `just test secrets`, `SKIP_DOCKER_TESTS=1 just test`, `just test`, `just lint`, `just arch-check`, `just security-scan`, and `just ci-parity` green locally on 2026-09-11.
+- **Not done / next action:** independent review, then commit/push/open the PR; no git history or remote configuration was changed in this session.
+
 ### 2026-09-11 — P02 hardening: first CI run, clean-VM proof, security gate, secrets, macOS (PR #1)
 
 - **Phase / tasks worked:** P02 — T02 (close), T11 (first run), T12 (close), plus macOS portability (not a P02 task; DEC pending).

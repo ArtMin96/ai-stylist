@@ -116,10 +116,17 @@ Run these in a shell where mise is activated (`eval "$(~/.local/bin/mise activat
 4. Generate the CI key the same way, into a temporary file, and treat it as a service credential:
 
    ```bash
-   age-keygen -o "$(mktemp -d)/ci.txt"
+   ci_age_dir="$(mktemp -d "${TMPDIR:-/tmp}/ai-stylist-ci-age.XXXXXX")"
+   chmod 700 "$ci_age_dir"
+   age-keygen -o "$ci_age_dir/ci.txt"
    ```
 
-   Add its `Public key:` line under `# ADD RECIPIENTS` in all three rules. Copy the whole contents of the file into a GitHub repository secret named `SOPS_AGE_KEY` (no workflow reads it yet; the deploy jobs added in P03 export it as the `SOPS_AGE_KEY` environment variable that sops and `scripts/security/secrets-sync.sh` honor). Then delete the temporary file.
+   Add its `Public key:` line under `# ADD RECIPIENTS` in all three rules. Copy the whole contents of `$ci_age_dir/ci.txt` into a GitHub repository secret named `SOPS_AGE_KEY` (no workflow reads it yet; the deploy jobs added in P03 export it as the `SOPS_AGE_KEY` environment variable that sops and `scripts/security/secrets-sync.sh` honor). Immediately remove the private key and its temporary directory, then clear the shell variable:
+
+   ```bash
+   rm -rf "$ci_age_dir"
+   unset ci_age_dir
+   ```
 
 5. Create the first encrypted file:
 
@@ -663,7 +670,7 @@ Deferred to P03: `just test identity` runs the better-auth provider fixtures.
 
 ## When something goes wrong
 
-1. `just secrets-sync` prints `NOT IMPLEMENTED (P02 T02)` and exits 2. `secrets/dev.enc.yaml` does not exist yet. Finish section 2 step 5, or copy `.env.example` to `.env` and fill values by hand.
+1. `just secrets-sync` reports `no age recipients in .sops.yaml`. Finish section 2 step 3 for the environment named in the error, then retry. If it reports that `secrets/<env>.enc.yaml` does not exist, create that encrypted file with `just secrets-edit env=<env>` as described in section 2 step 5.
 2. `sops` says `no key could decrypt the data` or `failed to get the data key`. Your public key is not in the file's recipient list, or your private key is not at `~/.config/sops/age/keys.txt`. Ask a developer who can decrypt to add your key to `.sops.yaml` and run `sops updatekeys` on every file. Check `SOPS_AGE_KEY_FILE` if you keep the key elsewhere.
 3. `just doctor` reports `.env missing N key(s)`. Someone added keys to `.env.example`. Copy the missing lines from `.env.example` into `.env` (values stay empty) or re-run `just secrets-sync` after the shared file is updated.
 4. `just db-migrate` against Neon fails with a `SET` or `prepared statement` error. You used the pooled connection string. Copy the direct string (Connection pooling toggle off) and retry.

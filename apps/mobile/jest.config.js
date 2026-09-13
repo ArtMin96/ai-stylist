@@ -7,6 +7,10 @@ const MSW_ESM = 'msw|@mswjs|rettime|until-async|@open-draft|outvariant|strict-ev
 /** @type {import('jest').Config} */
 module.exports = {
   preset: 'jest-expo',
+  // The first render in a suite pays jest-expo's cold-start cost (lazy React Native mocks + msw
+  // interceptors): ~2 s on a warm workstation, 5-6 s on a shared GitHub runner, which tripped
+  // Jest's 5 s default on PR #1's merge and PR #2 (home-screen.test.tsx, first test only).
+  testTimeout: 20_000,
   transformIgnorePatterns: preset.transformIgnorePatterns.map((pattern) =>
     pattern.replace('(?!(.pnpm|', `(?!(.pnpm|${MSW_ESM}|`),
   ),

@@ -120,6 +120,8 @@ Both scripts live in `scripts/` as readable, commented bash (or TS via `zx` if b
 | `just secrets-sync` | Decrypt sops dev secrets into the gitignored `.env` (§6) |
 | `just secrets-edit <env>` | Edit `secrets/<env>.enc.yaml` through sops; first run creates it from the `.env.example` key list (§6) |
 | `just secrets-updatekeys [env ...]` | Re-wrap `secrets/*.enc.yaml` for the recipient list in `.sops.yaml` after adding or removing a key (§6 onboarding/rotation) |
+| `just secrets-approve <branch>` | Approve a developer's onboarding branch: verify it only adds age recipients to .sops.yaml, re-wrap every secrets/*.enc.yaml, push, print the PR URL (§6 onboarding) |
+| `just secrets-backup-done` | Record that your age identity is backed up in the password manager (marker file checked by just doctor) |
 
 Rules: recipes fail fast; long recipes call `scripts/*.sh`, not inline blobs; every recipe prints what it will do against which environment before touching anything non-local; destructive recipes (`db-reset`, `db-rollback`) require `--yes` or interactive confirm.
 

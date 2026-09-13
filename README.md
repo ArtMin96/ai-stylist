@@ -65,10 +65,20 @@ Every line should be a ✔. A ⚠ is informational. An ✘ comes with a hint for
 
 ### 5. Get access to shared development configuration
 
-Bootstrap creates a local `.env`, but shared values are stored in Git as sops-encrypted files. Follow the
-[`secrets/` technical guide](secrets/README.md) to generate your personal age identity, send only its
-public recipient to a teammate who already has access, and merge the shared development values with
-`just secrets-sync`. Never send or commit the private identity.
+Bootstrap creates a local `.env`, but shared values are stored in Git as sops-encrypted files. Step 3
+(`./scripts/bootstrap.sh`) already generated your personal age identity and opened a pull request
+adding you as a `dev` recipient in `.sops.yaml` — it printed a compare URL; open that link. While you
+wait for an approver to run `just secrets-approve <branch>` and merge it, `just doctor` correctly
+reports that your recipient is not yet listed; that is expected. Three commands cover the rest:
+
+```bash
+just secrets-backup-done     # after you back up the identity file in the team password manager
+just secrets-sync            # once the pull request has merged — decrypts the shared dev values into .env
+just doctor                  # confirm every check is ✔
+```
+
+See the [`secrets/` technical guide](secrets/README.md) for the full flow, the offline fallback, and
+how to onboard someone else. Never send or commit the private identity.
 
 ### 6. External accounts (only when a task needs one)
 

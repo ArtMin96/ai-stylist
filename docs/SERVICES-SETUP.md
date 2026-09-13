@@ -99,7 +99,11 @@ Free. No account. `sops` 3.13.3 and `age` 1.3.2 are pinned in `mise.toml` and in
 
 Run these in a shell where mise is activated (`eval "$(~/.local/bin/mise activate zsh)"`), or prefix each tool with `~/.local/bin/mise exec --`. `just` recipes need no activation.
 
-1. Generate your key. The path is the default sops looks in on Linux (`$XDG_CONFIG_HOME/sops/age/keys.txt`, falling back to `~/.config/sops/age/keys.txt`, Checked 2026-09-10 at <https://getsops.io/docs/usage/identities/age/>); the scripts also honor `SOPS_AGE_KEY_FILE` and `SOPS_AGE_KEY` (in that order of precedence: `SOPS_AGE_KEY`, `SOPS_AGE_KEY_FILE`, the default file):
+1. Run `just bootstrap`. Near the end it generates your age identity if none exists yet, at the resolved path (`SOPS_AGE_KEY` when set — key material in the environment, no file — else `SOPS_AGE_KEY_FILE`, else the default sops looks in on Linux: `$XDG_CONFIG_HOME/sops/age/keys.txt`, falling back to `~/.config/sops/age/keys.txt`, Checked 2026-09-10 at <https://getsops.io/docs/usage/identities/age/>; that order — `SOPS_AGE_KEY`, `SOPS_AGE_KEY_FILE`, the default file — is the precedence), mode 600 (directory mode 700); the private key is never printed. It then adds a `# developer: <label>` comment and your `age1...` recipient under the `dev` rule's `# ADD RECIPIENTS` marker in `.sops.yaml`, on a new `onboard/<slug>` branch, pushes it, and prints a compare URL — open that link as your pull request. Running it again once your identity exists and is already listed is a no-op (`age identity present at <path>` then `your age recipient is already listed in .sops.yaml (dev) — nothing to do`). In CI (`CI` set) or when `SOPS_AGE_KEY` is already set, this step is skipped entirely: no key is generated and no branch is created.
+
+   If the push fails (no remote access yet), bootstrap still exits successfully, warns, and prints the exact `git push -u origin onboard/<slug>` command to run later; the branch and commit already exist locally.
+
+   **Manual fallback**, only if `just bootstrap` cannot run at all:
 
    ```bash
    mkdir -p ~/.config/sops/age
@@ -107,11 +111,11 @@ Run these in a shell where mise is activated (`eval "$(~/.local/bin/mise activat
    chmod 600 ~/.config/sops/age/keys.txt
    ```
 
-   The command prints `Public key: age1<...>`. Copy that line. The file itself contains the private key (`AGE-SECRET-KEY-1<...>`); the repo's gitleaks rule blocks that string from ever being committed.
+   The command prints `Public key: age1<...>`. Copy that line, then under the `# ADD RECIPIENTS` comment of the `dev` rule in `.sops.yaml` add `# developer: <your name>` then `- age1<your public key>` (same indentation as the comment), and open a pull request yourself. The file itself contains the private key (`AGE-SECRET-KEY-1<...>`); the repo's gitleaks rule blocks that string from ever being committed.
 
-2. Back up the private key file somewhere outside the repo (a password manager entry). Losing it means you cannot decrypt anything encrypted for you.
+2. Back up the private key file somewhere outside the repo (a password manager entry), then run `just secrets-backup-done` — it records today's date in `<path>.backed-up` (mode 600) so `just doctor` stops warning. Losing the key without a backup means you cannot decrypt anything encrypted for you.
 
-3. Edit `.sops.yaml`. Under the `# ADD RECIPIENTS` comment of the `dev` rule add one line `- age1<your public key>` (same indentation as the comment). Deployers add theirs under `staging` and `prod` too. Each later developer adds their own line the same way; the comment stays as the marker. Public keys are not secrets (`.gitleaks.toml` allowlists them in this file).
+3. Wait for approval. An approver — a teammate whose identity can already decrypt `secrets/dev.enc.yaml` — reviews the pull request (it should touch only `.sops.yaml`, adding your `# developer:` comment and recipient line; public keys are not secrets, `.gitleaks.toml` allowlists them in this file) and runs `just secrets-approve <branch>`, which re-wraps every `secrets/*.enc.yaml` for the new recipient list, commits, and pushes. Merge it, then run `just secrets-sync` (or re-run `just bootstrap`) to decrypt the shared dev values into your `.env`. Until it merges, `just doctor` correctly reports your recipient as not yet listed — that is expected, not a bug.
 
 4. Generate the CI key the same way, into a temporary file, and treat it as a service credential:
 
@@ -149,7 +153,7 @@ Run these in a shell where mise is activated (`eval "$(~/.local/bin/mise activat
 
 8. Edit values later with `just secrets-edit` (or `just secrets-edit staging`); commit the encrypted file through a pull request like any other change, then everyone runs `just secrets-sync` again.
 
-9. Onboard another developer: they run step 1, send you the public key, you add it to `.sops.yaml` (step 3), then run `just secrets-updatekeys` and commit `.sops.yaml` together with the re-wrapped files. The recipe runs `sops updatekeys`, which re-wraps each file's data key for the new recipient list without changing the values; it needs an identity that can already decrypt (a public recipient alone cannot re-wrap).
+9. Onboard another developer: they run `just bootstrap`, which generates their identity, adds their `# developer: <label>` comment and recipient to the `dev` rule of `.sops.yaml` on a new `onboard/<slug>` branch, and prints a compare URL to open a pull request — no manual key exchange needed. Review the diff (it should touch only `.sops.yaml`, adding a label comment and a bare `- age1...` line), then run `just secrets-approve <branch>`: it re-wraps every `secrets/*.enc.yaml` for the new recipient list, commits and pushes onto their branch, and prints the compare URL again. Merge it; the new developer runs `just secrets-sync` (or re-runs `just bootstrap`) to pick up the shared dev values. Only the `dev` rule is automated this way — a deployer who needs `staging` or `prod` access still adds their own recipient under that rule by hand and asks a teammate who can already decrypt to run `just secrets-updatekeys`.
 
 10. `direnv allow` once in the repo root so `.envrc` loads `.env` into every shell (optional; `just` recipes and the db scripts read `.env` themselves).
 
@@ -174,7 +178,7 @@ just secrets-sync
 just doctor
 ```
 
-Expected: `secrets-sync: merged secrets/dev.enc.yaml into .env — N replaced, M added, K skipped (empty in the shared file), other lines untouched` (preceded by one `replaced KEY` / `added KEY` line per key), then a `✔ .env has every key from .env.example` line in the doctor output.
+Expected: `secrets-sync: merged secrets/dev.enc.yaml into .env — N replaced, M added, K skipped (empty in the shared file), other lines untouched` (preceded by one `replaced KEY` / `added KEY` line per key), then a `✔ .env has every key from .env.example` line, followed by four sops + age checks in the doctor output: `✔ age identity present (<path>, mode 600)`, `✔ age recipient listed in .sops.yaml (dev)`, `✔ secrets/dev.enc.yaml decrypts with your identity`, and `✔ age identity backup recorded (<date>)` (this last line is `⚠ age identity not recorded as backed up` — a warning, never a failure — until you run `just secrets-backup-done`).
 
 ## 3. Neon
 

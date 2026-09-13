@@ -6,10 +6,12 @@ build/
 coverage/
 *.tsbuildinfo
 
-# env & secrets (only *.enc.* under secrets/ is committed; `just secrets-sync` merges into .env)
+# env & secrets (only *.enc.yaml under secrets/ is committed; `just secrets-sync` merges into .env)
 .env
 .env.*.local
-secrets/*.dec.*
+secrets/*
+!secrets/README.md
+!secrets/*.enc.yaml
 .direnv/
 .mise.local.toml
 mise.local.toml

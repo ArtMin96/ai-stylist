@@ -25,7 +25,7 @@ Phase numbers refer to `planning/phases/`. "Needed from" is the first task that 
 | #   | Service                                                 | What it is for                                         | Needed from     | Free tier?                                  | Account owner | Done |
 | --- | ------------------------------------------------------- | ------------------------------------------------------ | --------------- | ------------------------------------------- | ------------- | ---- |
 | 1   | GitHub repository                                       | Source, CI (GitHub Actions), branch protection         | P02 now         | Yes (public repo or personal plan)          | `<owner>`     | [ ]  |
-| 2   | sops + age                                              | Encrypted shared secrets in the repo                   | P02 now         | Free, no account                            | `<owner>`     | [ ]  |
+| 2   | sops + age                                              | Encrypted shared secrets in the repo                   | P02 now         | Free, no account                            | `<owner>`     | [x]  |
 | 3   | Neon                                                    | Postgres 17 + pgvector for dev, staging, prod          | P02-T07         | Yes, Checked 2026-09-10                     | `<owner>`     | [ ]  |
 | 4   | Railway                                                 | API + workers hosting                                  | P03 (deploy)    | $1/month credit on Free, Checked 2026-09-10 | `<owner>`     | [ ]  |
 | 5   | Trigger.dev                                             | Durable jobs (outbox relay, media pipeline)            | P02-T08         | Yes, $5/month credit, Checked 2026-09-10    | `<owner>`     | [ ]  |
@@ -89,7 +89,7 @@ Shared secrets are committed to the repo encrypted, one file per environment (`s
 
 ### When you need it
 
-Now. Every other service in this document stores its values through this mechanism. Status today: `.sops.yaml` lists no recipients (each environment has an `# ADD RECIPIENTS` marker) and `secrets/` has no encrypted files. Until step 3 below is done, `just secrets-sync` and `just secrets-edit` exit 1 with `no age recipients in .sops.yaml for secrets/dev.enc.yaml — follow docs/SERVICES-SETUP.md §2`.
+Now. Every other service in this document stores its values through this mechanism. The initial developer and CI public recipients are listed in `.sops.yaml`, `secrets/dev.enc.yaml` contains every `.env.example` key with an empty value ready to be filled as services are provisioned, and the matching CI private identity is stored in the GitHub repository secret `SOPS_AGE_KEY`. Staging and production files stay absent until those environments exist.
 
 ### Cost
 
@@ -99,7 +99,11 @@ Free. No account. `sops` 3.13.3 and `age` 1.3.2 are pinned in `mise.toml` and in
 
 Run these in a shell where mise is activated (`eval "$(~/.local/bin/mise activate zsh)"`), or prefix each tool with `~/.local/bin/mise exec --`. `just` recipes need no activation.
 
-1. Generate your key. The path is the default sops looks in on Linux (`$XDG_CONFIG_HOME/sops/age/keys.txt`, falling back to `~/.config/sops/age/keys.txt`, Checked 2026-09-10 at <https://getsops.io/docs/usage/identities/age/>); the scripts also honor `SOPS_AGE_KEY_FILE` and `SOPS_AGE_KEY` (in that order of precedence: `SOPS_AGE_KEY`, `SOPS_AGE_KEY_FILE`, the default file):
+1. Run `just bootstrap`. Near the end it generates your age identity if none exists yet, at the resolved path (`SOPS_AGE_KEY` when set — key material in the environment, no file — else `SOPS_AGE_KEY_FILE`, else the default sops looks in on Linux: `$XDG_CONFIG_HOME/sops/age/keys.txt`, falling back to `~/.config/sops/age/keys.txt`, Checked 2026-09-10 at <https://getsops.io/docs/usage/identities/age/>; that order — `SOPS_AGE_KEY`, `SOPS_AGE_KEY_FILE`, the default file — is the precedence), mode 600 (directory mode 700); the private key is never printed. It then adds a `# developer: <label>` comment and your `age1...` recipient under the `dev` rule's `# ADD RECIPIENTS` marker in `.sops.yaml`, on a new `onboard/<slug>` branch, pushes it, and prints a compare URL — open that link as your pull request. Running it again once your identity exists and is already listed is a no-op (`age identity present at <path>` then `your age recipient is already listed in .sops.yaml (dev) — nothing to do`). In CI (`CI` set) or when `SOPS_AGE_KEY` is already set, this step is skipped entirely: no key is generated and no branch is created.
+
+   If the push fails (no remote access yet), bootstrap still exits successfully, warns, and prints the exact `git push -u origin onboard/<slug>` command to run later; the branch and commit already exist locally.
+
+   **Manual fallback**, only if `just bootstrap` cannot run at all:
 
    ```bash
    mkdir -p ~/.config/sops/age
@@ -107,24 +111,30 @@ Run these in a shell where mise is activated (`eval "$(~/.local/bin/mise activat
    chmod 600 ~/.config/sops/age/keys.txt
    ```
 
-   The command prints `Public key: age1<...>`. Copy that line. The file itself contains the private key (`AGE-SECRET-KEY-1<...>`); the repo's gitleaks rule blocks that string from ever being committed.
+   The command prints `Public key: age1<...>`. Copy that line, then under the `# ADD RECIPIENTS` comment of the `dev` rule in `.sops.yaml` add `# developer: <your name>` then `- age1<your public key>` (same indentation as the comment), and open a pull request yourself. The file itself contains the private key (`AGE-SECRET-KEY-1<...>`); the repo's gitleaks rule blocks that string from ever being committed.
 
-2. Back up the private key file somewhere outside the repo (a password manager entry). Losing it means you cannot decrypt anything encrypted for you.
+2. Back up the private key file somewhere outside the repo (a password manager entry), then run `just secrets-backup-done` — it records today's date in `<path>.backed-up` (mode 600) so `just doctor` stops warning. Losing the key without a backup means you cannot decrypt anything encrypted for you.
 
-3. Edit `.sops.yaml`. Under the `# ADD RECIPIENTS` comment of the `dev` rule add one line `- age1<your public key>` (same indentation as the comment). Deployers add theirs under `staging` and `prod` too. Each later developer adds their own line the same way; the comment stays as the marker. Public keys are not secrets (`.gitleaks.toml` allowlists them in this file).
+3. Wait for approval. An approver — a teammate whose identity can already decrypt `secrets/dev.enc.yaml` — reviews the pull request (it should touch only `.sops.yaml`, adding your `# developer:` comment and recipient line; public keys are not secrets, `.gitleaks.toml` allowlists them in this file) and runs `just secrets-approve <branch>`, which re-wraps every `secrets/*.enc.yaml` for the new recipient list, commits, and pushes. Merge it, then run `just secrets-sync` (or re-run `just bootstrap`) to decrypt the shared dev values into your `.env`. Until it merges, `just doctor` correctly reports your recipient as not yet listed — that is expected, not a bug.
 
 4. Generate the CI key the same way, into a temporary file, and treat it as a service credential:
 
    ```bash
-   age-keygen -o "$(mktemp -d)/ci.txt"
+   ci_age_dir="$(mktemp -d "${TMPDIR:-/tmp}/ai-stylist-ci-age.XXXXXX")"   # mktemp -d creates it mode 0700
+   age-keygen -o "$ci_age_dir/ci.txt"
    ```
 
-   Add its `Public key:` line under `# ADD RECIPIENTS` in all three rules. Copy the whole contents of the file into a GitHub repository secret named `SOPS_AGE_KEY` (no workflow reads it yet; the deploy jobs added in P03 export it as the `SOPS_AGE_KEY` environment variable that sops and `scripts/security/secrets-sync.sh` honor). Then delete the temporary file.
+   Add its `Public key:` line under `# ADD RECIPIENTS` in all three rules. Copy the whole contents of `$ci_age_dir/ci.txt` into a GitHub repository secret named `SOPS_AGE_KEY` (no workflow reads it yet; the deploy jobs added in P03 export it as the `SOPS_AGE_KEY` environment variable that sops and `scripts/security/secrets-sync.sh` honor). Immediately remove the private key and its temporary directory, then clear the shell variable:
+
+   ```bash
+   rm -rf "$ci_age_dir"
+   unset ci_age_dir
+   ```
 
 5. Create the first encrypted file:
 
    ```bash
-   just secrets-edit            # same as: just secrets-edit env=dev
+   just secrets-edit            # same as: just secrets-edit dev
    ```
 
    On the first run for an environment this creates `secrets/dev.enc.yaml` with every key from `.env.example` and an empty value (`KEY: ""`), encrypted for the `dev` recipients, and opens it in `$EDITOR` through `sops`. Fill in the shared dev values (`KEY: value`), leave unknown ones empty, save and quit; sops re-encrypts on save (`File has not changed, exiting.` means you quit without editing, which is fine). No plaintext file ever lands in the repo: the template is built in a private temp dir and encrypted before it is moved into `secrets/`.
@@ -141,9 +151,9 @@ Run these in a shell where mise is activated (`eval "$(~/.local/bin/mise activat
 
    `just secrets-sync staging` and `just secrets-sync prod` refuse to run on a workstation; CI sets `CI=true`, and a human who really needs it locally passes `--i-know-this-is-not-dev`.
 
-8. Edit values later with `just secrets-edit` (or `just secrets-edit env=staging`); commit the encrypted file through a pull request like any other change, then everyone runs `just secrets-sync` again.
+8. Edit values later with `just secrets-edit` (or `just secrets-edit staging`); commit the encrypted file through a pull request like any other change, then everyone runs `just secrets-sync` again.
 
-9. Onboard another developer: they run step 1, send you the public key, you add it to `.sops.yaml` (step 3), then run `for f in secrets/*.enc.yaml; do sops updatekeys "$f"; done` and commit. `updatekeys` re-wraps the data key for the new recipient list without changing the values.
+9. Onboard another developer: they run `just bootstrap`, which generates their identity, adds their `# developer: <label>` comment and recipient to the `dev` rule of `.sops.yaml` on a new `onboard/<slug>` branch, and prints a compare URL to open a pull request — no manual key exchange needed. Review the diff (it should touch only `.sops.yaml`, adding a label comment and a bare `- age1...` line), then run `just secrets-approve <branch>`: it re-wraps every `secrets/*.enc.yaml` for the new recipient list, commits and pushes onto their branch, and prints the compare URL again. Merge it; the new developer runs `just secrets-sync` (or re-runs `just bootstrap`) to pick up the shared dev values. Only the `dev` rule is automated this way — a deployer who needs `staging` or `prod` access still adds their own recipient under that rule by hand and asks a teammate who can already decrypt to run `just secrets-updatekeys`.
 
 10. `direnv allow` once in the repo root so `.envrc` loads `.env` into every shell (optional; `just` recipes and the db scripts read `.env` themselves).
 
@@ -168,7 +178,7 @@ just secrets-sync
 just doctor
 ```
 
-Expected: `secrets-sync: merged secrets/dev.enc.yaml into .env — N replaced, M added, K skipped (empty in the shared file), other lines untouched` (preceded by one `replaced KEY` / `added KEY` line per key), then a `✔ .env has every key from .env.example` line in the doctor output.
+Expected: `secrets-sync: merged secrets/dev.enc.yaml into .env — N replaced, M added, K skipped (empty in the shared file), other lines untouched` (preceded by one `replaced KEY` / `added KEY` line per key), then a `✔ .env has every key from .env.example` line, followed by four sops + age checks in the doctor output: `✔ age identity present (<path>, mode 600)`, `✔ age recipient listed in .sops.yaml (dev)`, `✔ secrets/dev.enc.yaml decrypts with your identity`, and `✔ age identity backup recorded (<date>)` (this last line is `⚠ age identity not recorded as backed up` — a warning, never a failure — until you run `just secrets-backup-done`).
 
 ## 3. Neon
 
@@ -663,8 +673,8 @@ Deferred to P03: `just test identity` runs the better-auth provider fixtures.
 
 ## When something goes wrong
 
-1. `just secrets-sync` prints `NOT IMPLEMENTED (P02 T02)` and exits 2. `secrets/dev.enc.yaml` does not exist yet. Finish section 2 step 5, or copy `.env.example` to `.env` and fill values by hand.
-2. `sops` says `no key could decrypt the data` or `failed to get the data key`. Your public key is not in the file's recipient list, or your private key is not at `~/.config/sops/age/keys.txt`. Ask a developer who can decrypt to add your key to `.sops.yaml` and run `sops updatekeys` on every file. Check `SOPS_AGE_KEY_FILE` if you keep the key elsewhere.
+1. `just secrets-sync` reports `no age recipients in .sops.yaml`. Finish section 2 step 3 for the environment named in the error, then retry. If it reports that `secrets/<env>.enc.yaml` does not exist, create that encrypted file with `just secrets-edit <env>` as described in section 2 step 5.
+2. `sops` says `no key could decrypt the data` or `failed to get the data key`. Your public key is not in the file's recipient list, or your private key is not at `~/.config/sops/age/keys.txt`. Ask a developer who can decrypt to add your key to `.sops.yaml` and run `just secrets-updatekeys`. Check `SOPS_AGE_KEY_FILE` if you keep the key elsewhere.
 3. `just doctor` reports `.env missing N key(s)`. Someone added keys to `.env.example`. Copy the missing lines from `.env.example` into `.env` (values stay empty) or re-run `just secrets-sync` after the shared file is updated.
 4. `just db-migrate` against Neon fails with a `SET` or `prepared statement` error. You used the pooled connection string. Copy the direct string (Connection pooling toggle off) and retry.
 5. The `ios-eas` workflow stops at `Require EXPO_TOKEN` or `Require App Store Connect API key secrets`. The GitHub secret is missing or named differently. The names must match `.github/workflows/README.md` exactly; check for trailing spaces in the secret value when the step passes but `eas` still reports `Not logged in`.

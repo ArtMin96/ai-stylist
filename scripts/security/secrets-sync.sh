@@ -34,7 +34,7 @@ fi
 secrets_require_tools
 secrets_require_recipients
 if [[ ! -f "$ENC_FILE" ]]; then
-    echo "error: $ENC_FILE does not exist yet — create it with 'just secrets-edit env=$ENV_NAME' (see $SECRETS_DOC)" >&2
+    echo "error: $ENC_FILE does not exist yet — create it with 'just secrets-edit $ENV_NAME' (see $SECRETS_DOC)" >&2
     exit 1
 fi
 secrets_require_identity
@@ -88,7 +88,9 @@ mv "$tmp/merged.env" .env
 
 n_replaced=0 n_added=0 n_skipped=0
 if [[ -f "$tmp/report.txt" ]]; then
-    grep -v '^skipped ' "$tmp/report.txt" | sort | while read -r action key; do echo "  $action $key"; done
+    # awk, not `grep -v`: grep exits 1 when it filters every line (a first file whose values are all
+    # empty), and pipefail would turn that into a failure after .env was already written.
+    awk '$1 != "skipped"' "$tmp/report.txt" | sort | while read -r action key; do echo "  $action $key"; done
     n_replaced=$(grep -c '^replaced ' "$tmp/report.txt" || true)
     n_added=$(grep -c '^added ' "$tmp/report.txt" || true)
     n_skipped=$(grep -c '^skipped ' "$tmp/report.txt" || true)

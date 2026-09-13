@@ -7,8 +7,8 @@ This root file exists so that `PROGRESS.md` resolves at the repository root as t
 ## Current phase
 
 - **P02 — Repo foundations and CI:** `IN_PROGRESS`, started 2026-09-09 (ahead of P00 for the no-dependency subset, DEC-36). Task list, per-task state and acceptance criteria: [`planning/phases/P02-repo-foundations-and-ci.md`](planning/phases/P02-repo-foundations-and-ci.md) §12 and §19.
-- **Last green:** `just ci-parity`, 2026-09-10 (local; CI has not yet run on GitHub).
-- **Latest handoff:** [`planning/PROGRESS.md`](planning/PROGRESS.md) → "Session handoff log" → entry dated 2026-09-10 (P02 session 1); next action in its "Next session starts here" section.
+- **Last green:** `just ci-parity`, 2026-09-13 (locally, branch `fix/repo-sops-age-hardening`; PR #2 CI runs on push).
+- **Latest handoff:** [`planning/PROGRESS.md`](planning/PROGRESS.md) → "Session handoff log" → entry dated 2026-09-13 (automated secrets onboarding); next action in its "Next session starts here" section.
 
 ## How to update status
 

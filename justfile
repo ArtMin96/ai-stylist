@@ -34,6 +34,18 @@ secrets-sync env='dev' *args:
 secrets-edit env='dev':
     scripts/security/secrets-edit.sh "$@"
 
+# Re-wrap secrets/*.enc.yaml for the recipient list in .sops.yaml after adding/removing a key (sops updatekeys; needs an identity that can decrypt today); `just secrets-updatekeys staging` for one env
+secrets-updatekeys *envs:
+    scripts/security/secrets-updatekeys.sh "$@"
+
+# Approve a developer's onboarding branch: verify it only adds age recipients to .sops.yaml, re-wrap every secrets/*.enc.yaml, push, print the PR URL (§6 onboarding)
+secrets-approve branch:
+    scripts/security/secrets-approve.sh "$@"
+
+# Record that your age identity is backed up in the password manager (marker file checked by just doctor)
+secrets-backup-done:
+    scripts/security/secrets-backup-done.sh
+
 # --- dev servers ---------------------------------------------------------------
 
 # Compose stack (Postgres+pgvector) + NestJS API in watch mode (tsx; reads the repo-root .env)
@@ -60,7 +72,7 @@ dev-workers *args:
 
 # --- quality gates (* = part of ci-parity) -------------------------------------------
 
-# * Run tests: full suite via turbo, or one module's tests/ dir (`just test recommendation`); SKIP_DOCKER_TESTS=1 leaves out the Testcontainers `migrations` project (runners without Docker only)
+# * Run tests: full suite via turbo, or one module's tests/ dir (`just test recommendation`; `just test secrets` = the sops+age shell suite); SKIP_DOCKER_TESTS=1 leaves out the Testcontainers `migrations` project (runners without Docker only)
 test module='':
     #!/usr/bin/env bash
     set -euo pipefail
@@ -72,10 +84,12 @@ test module='':
         pnpm turbo run test --filter='!@ai-stylist/api'
         pnpm --filter @ai-stylist/api exec vitest run --project api
         uv run --project workers pytest workers -q
+        just test-secrets
         exit 0
     fi
     if [[ -n "{{module}}" ]]; then
         case "{{module}}" in
+            secrets) just test-secrets; exit 0 ;;
             platform) dir="src/platform/tests" ;;
             api) dir="." ;;
             *) dir="src/modules/{{module}}/tests" ;;
@@ -93,6 +107,11 @@ test module='':
     fi
     pnpm turbo run test
     uv run --project workers pytest workers -q
+    just test-secrets
+
+[private]
+test-secrets:
+    scripts/security/tests/secrets.test.sh
 
 # * ESLint per workspace via turbo (boundaries, test-placement, no-skip, no-console, forbidden-field, file-size) + root tools/ + Ruff for workers + shellcheck for scripts/** and tools/**/*.sh; `--fixtures` asserts tools/eslint/fixtures each fail on their rule
 lint *args:
@@ -107,7 +126,7 @@ lint *args:
     pnpm exec eslint tools eslint.config.mjs
     uv run --project workers ruff check workers
     # -s bash: every script must run under macOS /bin/bash 3.2 as well (docs/DEVELOPING-ON-MACOS.md)
-    shellcheck -s bash -x -P SCRIPTDIR scripts/*.sh scripts/security/*.sh tools/codegen/*.sh tools/depcruise/*.sh tools/eslint/*.sh
+    shellcheck -s bash -x -P SCRIPTDIR scripts/*.sh scripts/security/*.sh scripts/security/tests/*.sh tools/codegen/*.sh tools/depcruise/*.sh tools/eslint/*.sh
 
 # * `tsc --noEmit` per workspace via turbo + basedpyright for workers
 typecheck:

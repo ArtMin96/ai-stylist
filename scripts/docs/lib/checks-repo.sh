@@ -3,7 +3,7 @@
 # PROGRESS.md pointer, banned stale vendor names, the CLAUDE.md layout block, and the doc 15 §5
 # recipe catalog. Source, do not execute; depends on common.sh being sourced first.
 
-DOCS_CHECK_BANNED_VENDORS=("Trigger.dev" "Neon" "Railway")
+DOCS_CHECK_BANNED_VENDORS=("Trigger.dev" "Neon" "Railway" "Cloudflare Images")
 
 # check_dc12 ROOT — root PROGRESS.md "Current phase" id+status == its row in planning/PROGRESS.md.
 check_dc12() {

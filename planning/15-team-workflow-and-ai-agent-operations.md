@@ -1,7 +1,7 @@
 # 15 — Team Workflow and AI-Agent Operations
 
 **Owner of:** developer environment (Ubuntu), command catalog, secrets strategy, branching/review, ADR/DoR/DoD process, supply-chain policy, release channels, environment isolation, and the AI-agent operating procedures.
-**Conforms to:** [SPINE.md](SPINE.md) §2 (stack), §3 (modules), §5 (phases). Evidence: [research/r1-linux-ios-build.md](research/r1-linux-ios-build.md), [research/r2-mobile-3d-stack.md](research/r2-mobile-3d-stack.md), [research/r4-backend-providers.md](research/r4-backend-providers.md).
+**Conforms to:** [SPINE.md](SPINE.md) §2 (stack), §3 (modules), §5 (phases). **Amended:** 2026-09-13 ([r7](research/r7-third-party-services-and-self-hosting-audit-2026-09-13.md), ADR-0003 — Coolify secrets/environments, ephemeral DBs, pg-boss). Evidence: [research/r1-linux-ios-build.md](research/r1-linux-ios-build.md), [research/r2-mobile-3d-stack.md](research/r2-mobile-3d-stack.md), [research/r4-backend-providers.md](research/r4-backend-providers.md).
 **Related:** root operating contract [CLAUDE.md](CLAUDE.md) · skills in `.agents/skills/` · templates in `templates/` · migrations policy in [06-data-api-and-event-contracts.md](06-data-api-and-event-contracts.md) · CI tiers in [13-testing-quality-and-performance.md](13-testing-quality-and-performance.md).
 
 Requirement IDs delivered: `REQ-TEAM-*` / `NFR-TEAM-*` (defined in [01-requirements-and-traceability.md](01-requirements-and-traceability.md)). Set up in phase **P02**; refined in every later phase.
@@ -43,7 +43,7 @@ adb                         # via google-android-platform-tools-installer or SDK
 
 ### 1.4 Containers
 
-- **Docker Engine + Compose plugin** (docker.io or docker-ce). Used for: local Postgres (pgvector image, mirroring Neon's Postgres major version), Python ML workers, and any adapter integration-test dependencies.
+- **Docker Engine + Compose plugin** (docker.io or docker-ce). Used for: local Postgres (`pgvector/pgvector:pg17`, mirroring the production PostgreSQL major), Python ML workers, and any adapter integration-test dependencies.
 - `just dev-api` brings up the compose stack automatically.
 
 ### 1.5 Editor / LSP
@@ -69,7 +69,7 @@ Target: first merged PR within day one; anything blocking that is a bootstrap bu
 
 Per [research/r1](research/r1-linux-ios-build.md) and SPINE §2: **no local Mac, ever, and no pretending otherwise.** iOS simulator, Metal shader compilation, and App Store submission require macOS; we buy that as a service.
 
-- **Builds + signing:** EAS Build **or** GitHub Actions macOS M-series runners (~$0.12/min; ~$30–50/mo at our cadence). The final choice is **ADR-gated in P02** (r1 §6). Until that ADR lands, planning documents must say "EAS-or-GHA-macOS", not assume one.
+- **Builds + signing:** EAS Build (free allowance only, DEC-48) **or** GitHub Actions macOS M-series runners (~$0.12/min; ~$30–50/mo at our cadence). The final choice is **ADR-gated in P02** (r1 §6). Until that ADR lands, planning documents must say "EAS-or-GHA-macOS", not assume one.
 - **TestFlight upload:** App Store Connect API from a **Linux** runner (fastlane `upload_to_testflight` or `Apple-Actions/upload-testflight-build`) — works without macOS (r1 §3).
 - **App Store submission:** macOS CI step (Xcode 26+ mandatory since 2026-04-28, r1 §2). Automated in the release lane, never manual.
 - **Signing assets:** distribution certificate + provisioning profiles live in CI secret storage (§6); managed via EAS credentials service or fastlane match — per the P02 ADR. No developer ever holds signing keys locally.
@@ -96,7 +96,7 @@ Both scripts live in `scripts/` as readable, commented bash (or TS via `zx` if b
 | `just doctor` | Environment + repo health check (§4) |
 | `just dev-api` | Compose stack (Postgres+pgvector) + NestJS API in watch mode |
 | `just dev-mobile` | Expo dev client (Metro); `--android` targets connected device/emulator |
-| `just dev-workers` | Python ML workers + Trigger.dev dev server locally |
+| `just dev-workers` | Python ML workers locally (pg-boss job handlers run inside `just dev-api` or a local `jobs` process — no separate job dev server) |
 | `just test <module>` | Scoped: one module's `tests/` dir (e.g. `just test recommendation`) |
 | `just test` | Full suite (all modules + packages), as CI PR gate runs it |
 | `just lint` | ESLint (incl. boundary rules) + Ruff for workers |
@@ -136,8 +136,8 @@ GitHub Actions jobs invoke `just` recipes, never re-implement them in YAML. If C
 - `.env.example` — committed, exhaustive, **zero real values**; every key has a comment (what it is, where to get it, which envs need it). CI checks `.env.example` keys ⊇ keys referenced in config schema.
 - `secrets/<env>.enc.yaml` — sops-encrypted per environment (`dev`, `staging`, `prod`), committed. Each developer's age public key + one CI key in `.sops.yaml`. Onboarding = add pubkey, `just secrets-updatekeys`, PR.
 - **direnv** — `.envrc` (committed) loads `.env` (gitignored, generated from decrypted dev secrets via `just secrets-sync`) so shells and `just` recipes see config without manual exporting.
-- **CI:** GitHub encrypted secrets hold only: the CI age private key, store signing credentials (§3), and deploy tokens for Railway/Trigger.dev/Neon/R2. Everything else flows from sops files.
-- **Prod values:** live in sops `prod` file + the platform's own secret store (Railway variables) — sops file is the source of truth; a sync script pushes, never hand-edited in dashboards.
+- **CI:** GitHub encrypted secrets hold only: the CI age private key, store signing credentials (§3), and deploy tokens for Coolify, R2 and the server provider (per OQ-07/OQ-14). Everything else flows from sops files.
+- **Prod values:** live in sops `prod` file + the platform's own secret store (Coolify environment variables per environment) — sops file is the source of truth; a sync script pushes, never hand-edited in dashboards.
 - Rotation: any secret that ever appears in plaintext in a terminal shared with an AI agent, a log, or a screenshot is rotated same-day (see [11-security-privacy-and-compliance.md](11-security-privacy-and-compliance.md)).
 - Enforcement: gitleaks pre-commit hook + CI (§9) blocks accidental plaintext secrets.
 
@@ -189,8 +189,8 @@ Sized for 2–3 people shipping tracer bullets, not a 50-person org.
 
 ## 11. Environments, data isolation, and seed data
 
-- **Environments:** `local` (docker Postgres, fake providers by default) → `staging` (Neon branch/project, R2 staging bucket, sandbox RevenueCat, test store products) → `production`. Separate credentials, buckets, API keys per env — no shared resources, no prod credentials on workstations (§6).
-- **Neon branching** gives cheap per-PR/preview databases for migration testing.
+- **Environments:** `local` (docker Postgres, fake providers by default) → `staging` (self-managed staging PostgreSQL in the staging Coolify environment, R2 staging bucket, sandbox RevenueCat, test store products) → `production`. Separate credentials, buckets, API keys per env — no shared resources, no prod credentials on workstations (§6).
+- **Ephemeral databases** (Testcontainers locally and in CI) give per-PR migration testing; staging migrations are proven on a scratch database restored from the latest staging backup (pgBackRest) — this replaces branch-per-PR (DEC-43).
 - **Privacy-safe seed data:** synthetic only. Generated personas (fake measurements within realistic bounds), CC0/owned garment photo fixtures, synthetic weather/holiday fixtures. **Never copy production user data anywhere**, including "anonymized" — body measurements and photos are sensitive (doc 11). Seeds live in `packages/seed-data` with factories reused by module tests (brief §5.4 fixtures rule).
 - **Test accounts:** documented set in sops (`staging` file): one per tier (Free/Essentials/Plus/Pro), one mid-trial, one expired-trial, one deletion-requested; store sandbox tester accounts for IAP flows. Reset script: `just db-seed --accounts` (staging only).
 
@@ -234,7 +234,7 @@ Any session ending with work in flight writes [templates/session-handoff.md](tem
 ### 12.5 Recommended tooling (recommendations, not requirements)
 
 - **Claude Code** with this repo's `CLAUDE.md` + `.agents/skills/` is the reference setup; any agent tooling must obey the same contract.
-- **MCP servers worth adding:** `context7` (current library docs — Expo/Filament/Drizzle/Trigger.dev move fast; CLAUDE.md requires consulting current docs) and a read-only **Postgres MCP** pointed at local/staging for schema inspection during migration work. Evaluate others via ADR; each MCP server is an attack/typo surface, keep the list short.
+- **MCP servers worth adding:** `context7` (current library docs — Expo/Filament/Drizzle/pg-boss move fast; CLAUDE.md requires consulting current docs) and a read-only **Postgres MCP** pointed at local/staging for schema inspection during migration work. Evaluate others via ADR; each MCP server is an attack/typo surface, keep the list short.
 - **Model tiers for cost:** cheap/fast models for mechanical work (renames, fixture generation, applying a settled pattern across files, commit messages); top-tier models for architecture, recommendation-engine rules, security-sensitive code, and anything touching contracts. Batch mechanical tasks per §12.3 fan-out. Track agent spend the same way we track provider AI spend (doc 10): it is a real unit cost.
 
 ### 12.6 Human responsibilities that never delegate to agents

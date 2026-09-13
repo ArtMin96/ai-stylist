@@ -1,6 +1,6 @@
 # 09 — Recommendation Engine
 
-**Status:** Draft for ratification · **Date:** 2026-08-24 · **Owning module:** `recommendation` (with `context`, `closet`, `outfit`, `shared-kernel`)
+**Status:** Draft for ratification · **Date:** 2026-08-24 · **Amended:** 2026-09-13 ([r7](research/r7-third-party-services-and-self-hosting-audit-2026-09-13.md), ADR-0003 — LLM explanation polish removed, `date-holidays` provider) · **Owning module:** `recommendation` (with `context`, `closet`, `outfit`, `shared-kernel`)
 **Delivered in:** P09 (`P09-recommendation-engine-v1`); context providers in P08 (`P08-context-providers`)
 **Requirement areas covered:** REQ-REC-\*, REQ-EXP-\*, REQ-CTX-\* (IDs owned by [01-requirements-and-traceability.md](01-requirements-and-traceability.md))
 **Related docs:** contracts & events → [06-data-api-and-event-contracts.md](06-data-api-and-event-contracts.md) · item attributes & taxonomy → [08-closet-taxonomy-and-organization.md](08-closet-taxonomy-and-organization.md) · AI usage/cost/eval → [10-ai-usage-cost-and-evaluation.md](10-ai-usage-cost-and-evaluation.md) · presentation → [07-3d-avatar-and-garment-pipeline.md](07-3d-avatar-and-garment-pipeline.md)
@@ -24,10 +24,10 @@ The engine is a **versioned, deterministic, explainable pipeline** — a first-c
 | Deterministic scoring (5) | **Pure deterministic code**; color harmony uses precomputed color math, item similarity uses embeddings **precomputed** at capture time by `closet` (embedding/similarity task, see doc 08/10) — the engine only reads stored vectors |
 | Learned preference weights (5) | **Ranking/personalization model** — a bounded per-user linear weight vector updated by explicit feedback rules (§8). No neural ranker in v1. |
 | Trend influence (6) | **Pure deterministic code** reading `fashion-intel` relevance scores (P12; zero before then) |
-| Explanation text (post-8) | **Templates from reason codes** (deterministic). **Optional LLM polish** (Claude Haiku, batch + prompt caching) that may only rephrase template output — budget, eval, and fallback in [10-ai-usage-cost-and-evaluation.md](10-ai-usage-cost-and-evaluation.md) |
+| Explanation text (post-8) | **Templates from reason codes only** (deterministic, $0). LLM wording polish is removed from the product path (DEC-46); any future NL polish needs a new doc-10 entry + eval ([10-ai-usage-cost-and-evaluation.md](10-ai-usage-cost-and-evaluation.md)) |
 | Presentation (9), feedback capture (10) | **Pure deterministic code** |
 
-Net: the engine is ~95% deterministic code. The only paid AI call is optional explanation polish, and the product is fully functional with it disabled.
+Net: the engine is deterministic code end to end; there is no paid AI call in the recommendation or explanation path (DEC-46).
 
 ---
 
@@ -85,7 +85,7 @@ interface ContextFact<K extends ContextFactKind = ContextFactKind> {
   value: ContextValue[K];           // typed payload, schema-validated per kind
   schemaVersion: string;            // e.g. 'weather.current@2'
 
-  provider: ProviderId;             // 'open-meteo' | 'nager-date' | 'user' | ...
+  provider: ProviderId;             // 'open-meteo' | 'date-holidays' | 'user' | ...
   sourceTime: string;               // ISO — when the provider produced the data
   fetchedAt: string;                // ISO — when we retrieved it
   expiresAt: string;                // ISO — hard expiry
@@ -131,7 +131,7 @@ interface ContextQuery {
 }
 ```
 
-v1 registry: `OpenMeteoWeatherProvider` (`weather.current`, `weather.forecast_day`), `NagerDateHolidayProvider` (`holiday`), `UserOccasionProvider` (`occasion` — reads the user's explicit selection; provider = `'user'`, confidence 1.0). Provider ports live in `context`; SDK adapters in `platform` (SPINE §3).
+v1 registry: `OpenMeteoWeatherProvider` (`weather.current`, `weather.forecast_day`), `DateHolidaysHolidayProvider` (`holiday` — embedded `date-holidays` library, no network call; DEC-45), `UserOccasionProvider` (`occasion` — reads the user's explicit selection; provider = `'user'`, confidence 1.0). Provider ports live in `context`; SDK adapters in `platform` (SPINE §3).
 
 ---
 
@@ -257,7 +257,7 @@ Explicit user action; never engine-initiated. Implementation: a per-request `shu
 
 - **Registry:** reason codes are stable identifiers in the `shared-kernel` registry (SPINE §3/§8) — single source of truth shared by engine, API contract, clients, analytics, and doc 10's explanation templates. Namespaces: `RC-EXCL-*` (hard exclusions), `RC-WEATHER-*`, `RC-OCCASION-*`, `RC-COLOR-*`, `RC-FIT-*`, `RC-REPEAT-*`, `RC-RARELY-WORN`, `RC-PREF-*`, `RC-TREND-*`, `RC-GAP-*` (sparse closet), `RC-CTX-MISSING-*`, `RC-STALE-*`. Adding a code = versioned shared-kernel change (doc 06 discipline).
 - **Produced by the decision process:** each rule/scorer emits `ReasonEvent{code, stage, subject (outfit|itemIds), params, contribution}` into the `DecisionTrace` *while executing*. The result's `reasons[]` is a deterministic selection from the trace (top positive contributions + any user-salient exclusions). Nothing downstream may add a reason that has no trace entry — enforced by contract test.
-- **Rendering:** template per code with typed params ("Warm layers for −5 °C with wind", "Your green jacket hasn't been worn in 6 weeks"). Localization-ready. **Optional LLM polish** (Haiku, doc 10) receives *only* the rendered template sentences and may merge/rephrase them; a validation step rejects output introducing facts absent from input (doc 10 owns the eval). Polish off ⇒ templates ship as-is. Sensitive-inference language rules (brief §2.7) are enforced at the template layer: templates never mention body data or private inferences in surprising terms.
+- **Rendering:** template per code with typed params ("Warm layers for −5 °C with wind", "Your green jacket hasn't been worn in 6 weeks"). Localization-ready. Templates ship as-is — there is no LLM polish in the product path (DEC-46); any future NL polish needs a new doc-10 entry + eval and could only rephrase rendered template sentences behind a faithfulness validator. Sensitive-inference language rules (brief §2.7) are enforced at the template layer: templates never mention body data or private inferences in surprising terms.
 
 ---
 
@@ -368,7 +368,7 @@ The engine runs **server-side only** in v1 (no on-device rules fork — one sour
 | Diversity | distinct items across a user's trailing 7 recommendations / total slots | baseline first |
 | Repetition complaints | "repetitive" feedback per 100 recommendations | baseline first, trend down |
 | Latency | engine p95 (§5.2), end-to-end p95 | < 300 ms / < 800 ms |
-| Cost | paid-AI cost per recommendation (explanation polish only) | ≤ $0.001; $0 with polish off (doc 10) |
+| Cost | paid-AI cost per recommendation | $0 — no paid AI call in the recommendation/explanation path (DEC-46, doc 10) |
 | Trust | reason-tap-through rate, "why?"-satisfaction survey, feedback-undo rate (high undo ⇒ overreacting weights) | baseline first |
 | Cold-start / sparse-closet success | acceptance within first 5 recommendations; partial-outfit usefulness rating | baseline first |
 

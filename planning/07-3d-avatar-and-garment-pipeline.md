@@ -2,7 +2,7 @@
 
 **Status:** Planning-ratified · **Date:** 2026-08-24
 **Owns:** parametric avatar system (A0–A2), selfie→face path, poses/camera/lighting, renderer boundary contract, garment capability ladder (G0–G4), missing-view synthesis rules, media/asset pipeline state machine, asset formats/manifests, GPU/memory budgets, 3D R&D spikes.
-**Conforms to:** [SPINE.md](SPINE.md) §2 (Anny, Filament, glTF/KTX2/Draco, fal.ai), §4 (capability codes).
+**Conforms to:** [SPINE.md](SPINE.md) §2 (Anny, Filament, glTF/KTX2/Draco, fal.ai), §4 (capability codes). **Amended:** 2026-09-13 ([r7](research/r7-third-party-services-and-self-hosting-audit-2026-09-13.md), ADR-0003 — pg-boss jobs, R2 delivery model, BiRefNet self-host eval arm).
 **Evidence:** [research/r5-avatar-garment-3d.md](research/r5-avatar-garment-3d.md) (primary), [research/r2-mobile-3d-stack.md](research/r2-mobile-3d-stack.md) (renderer/formats), [research/r3-ai-providers-costs.md](research/r3-ai-providers-costs.md) (per-image costs).
 **Related docs:** schema/event conventions → [06-data-api-and-event-contracts.md](06-data-api-and-event-contracts.md) · how attributes feed the engine → [09-recommendation-engine.md](09-recommendation-engine.md) · AI cost/eval detail → [10-ai-usage-cost-and-evaluation.md](10-ai-usage-cost-and-evaluation.md) · face/body data privacy → [11-security-privacy-and-compliance.md](11-security-privacy-and-compliance.md) · credits/entitlements → [12-pricing-entitlements-and-unit-economics.md](12-pricing-entitlements-and-unit-economics.md).
 
@@ -182,7 +182,7 @@ For higher fidelity later: consented upload of 1–3 selfies → server-side rec
 ### 5.3 Consent, retention, deletion, misuse
 
 - Explicit, revocable consent screen before any face processing; declining leaves a full-featured app with a generic face.
-- Retention: original selfies are discarded after derivation by default (user may opt to keep for re-derivation); derived face assets live until user deletion, face-feature deletion, or account deletion — all three propagate to every derived asset and CDN copy (deletion lineage in §8.4).
+- Retention: original selfies are discarded after derivation by default (user may opt to keep for re-derivation); derived face assets live until user deletion, face-feature deletion, or account deletion — all three propagate to every derived asset and cached copy (deletion lineage in §8.4).
 - **Misuse protections:** capture-first UX (live camera default), liveness-style heuristics on gallery imports (single face, frontal, quality) with an "is this you?" attestation; processing photos of identifiable third parties is prohibited by ToS and enforced by moderation on the server path; no face search, no cross-user face matching, ever. Full abuse-case list in [11](11-security-privacy-and-compliance.md).
 
 ---
@@ -220,7 +220,7 @@ Applies to G2-era synthesis of garment views (back/side) the user did not captur
 
 ## 8. Media & asset pipeline (brief §3.5)
 
-Owned by the `media` module; jobs on Trigger.dev with idempotency keys (idempotency/outbox conventions in [06](06-data-api-and-event-contracts.md)). All stages are idempotent and resumable; the mobile upload queue is offline-tolerant (P06).
+Owned by the `media` module; pg-boss jobs with singleton keys (idempotency/outbox conventions in [06](06-data-api-and-event-contracts.md)). All stages are idempotent and resumable; the mobile upload queue is offline-tolerant (P06).
 
 ### 8.1 Pipeline state machine
 
@@ -242,7 +242,7 @@ stateDiagram-v2
     texturing --> proxying : texture/material assets built
     proxying --> optimizing : garment proxy / 3D rep where level supported (G1/G3)
     texturing --> optimizing : (no 3D level available)
-    optimizing --> published : LODs, Draco/meshopt, KTX2, thumbnails → CDN
+    optimizing --> published : LODs, Draco/meshopt, KTX2, thumbnails → R2 publish
     published --> [*]
     quarantined --> deleted : moderation reject (audited)
     quarantined --> validating : moderation approve
@@ -258,9 +258,9 @@ State names are canonical identifiers (SPINE §8 terminology rule); doc [06](06-
 - **Upload + content hash:** original is immutable; SHA-256 hash is the dedup key at byte level (visual/semantic dedup lives in [08 §11](08-closet-taxonomy-and-organization.md)) and the cache key preventing repeated paid processing of the same image (brief §3.1).
 - **Validation/moderation:** malware scan + content classification; NSFW/disallowed → `quarantined` with moderation queue in `admin`.
 - **EXIF strip:** all metadata including GPS removed before any storage that outlives the job; orientation baked in.
-- **Segmentation + quality score:** on-device first (Apple Vision subject lift / ML Kit) at capture time; server fallback BiRefNet/RMBG-class on fal.ai (SPINE §2). Quality score stored; low score → guided retake or manual crop, not silent bad cutouts.
+- **Segmentation + quality score:** on-device first (Apple Vision subject lift / ML Kit) at capture time; server fallback evaluated in P06 between self-hosted BiRefNet (MIT weights) in the segmentation worker and fal.ai BiRefNet/RMBG endpoints — the existing IoU/latency/cost gate decides (DEC-47). Quality score stored; low score → guided retake or manual crop, not silent bad cutouts.
 - **Attribute extraction + user confirmation:** vision-LLM structured extraction per [10](10-ai-usage-cost-and-evaluation.md); results are *proposals* until the user confirms in the P06 review UI. **User corrections are authoritative** and versioned (details + eval feedback loop in [08 §10](08-closet-taxonomy-and-organization.md)).
-- **CDN publish:** R2 + signed URLs; per-item derivative set: original (private), cutout, thumbnails (2–3 sizes), palette swatch, level-specific assets.
+- **R2 publish:** per-item derivative set produced once by the workers and stored in R2 (no transform service): original (private), cutout, thumbnails (2–3 sizes), palette swatch, level-specific assets. User media is served via presigned URLs (uncached); only public app assets (3D bundles, manifests) use the cached custom domain (DEC-44).
 
 ### 8.3 Reprocessing after model upgrades
 
@@ -268,7 +268,7 @@ New segmentation/extraction model versions trigger selective reprocessing (by mo
 
 ### 8.4 Lineage
 
-Every derived asset row records: parent asset(s), producing stage + model/version/config hash, provenance class (`original_capture | derived_deterministic | ai_generated | user_corrected` — canonical values in [03 §1.5](03-domain-model-and-glossary.md)), and status (`active | superseded | deleted`). Supersession (real photo replacing generated view; corrected crop replacing auto crop) links old→new. Deletion propagates down lineage edges (original deleted ⇒ all descendants deleted, including CDN invalidation) — the mechanism backing the privacy guarantees in [11](11-security-privacy-and-compliance.md).
+Every derived asset row records: parent asset(s), producing stage + model/version/config hash, provenance class (`original_capture | derived_deterministic | ai_generated | user_corrected` — canonical values in [03 §1.5](03-domain-model-and-glossary.md)), and status (`active | superseded | deleted`). Supersession (real photo replacing generated view; corrected crop replacing auto crop) links old→new. Deletion propagates down lineage edges (original deleted ⇒ all descendants deleted, including cache purge of any custom-domain copy) — the mechanism backing the privacy guarantees in [11](11-security-privacy-and-compliance.md).
 
 ---
 
@@ -278,7 +278,7 @@ Per SPINE §2 (evidence r2 §4): **glTF 2.0 (.glb)** canonical scene/mesh format
 
 Conventions (locked so every tool agrees): meters, Y-up, right-handed, glTF PBR metal-rough, sRGB for color textures / linear for data maps, morph-target and joint names from the shared-kernel registry, animation clips named `pose.*`.
 
-**Asset manifest** (JSON, schema owned by `packages/contracts` per [06](06-data-api-and-event-contracts.md)) is the unit of delivery: manifest id + semver, compatibility (`topology`, `rig`, min client version), entries (asset id, type, LOD level, byte size, hash, CDN path), and dependency edges. Clients download by manifest, verify hashes, and cache with LRU eviction (target cache ≤ 300 MB, configurable). Source 3D assets live in the artifact store (Git LFS at current scale, r5 §5), not loose in Git; the authoring pipeline is Blender-headless + gltfpack/glTF-Transform in CI with the topology validations from §3.5.
+**Asset manifest** (JSON, schema owned by `packages/contracts` per [06](06-data-api-and-event-contracts.md)) is the unit of delivery: manifest id + semver, compatibility (`topology`, `rig`, min client version), entries (asset id, type, LOD level, byte size, hash, custom-domain R2 path), and dependency edges. Clients download by manifest, verify hashes, and cache with LRU eviction (target cache ≤ 300 MB, configurable). Source 3D assets live in the artifact store (Git LFS at current scale, r5 §5), not loose in Git; the authoring pipeline is Blender-headless + gltfpack/glTF-Transform in CI with the topology validations from §3.5.
 
 ## 10. Performance budgets, fallbacks, accessibility
 

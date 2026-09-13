@@ -1,5 +1,7 @@
 # P10 — Outfit on Avatar
 
+> Amended 2026-09-13 ([r7](../research/r7-third-party-services-and-self-hosting-audit-2026-09-13.md), ADR-0003 — service consolidation: pg-boss jobs, owned server + Coolify, self-managed PostgreSQL, R2 delivery model).
+
 > File name per [SPINE §5](../SPINE.md). Template: [templates/phase.md](../templates/phase.md). Status values per [PROGRESS.md](../PROGRESS.md). Presentation design owned by [07-3d-avatar-and-garment-pipeline.md](../07-3d-avatar-and-garment-pipeline.md) §4.3, §6, §10; on conflict, doc 07 wins.
 
 ## 1. Overview
@@ -77,7 +79,7 @@ Invariant checked continuously: dependency-cruiser forbids `recommendation` → 
 | Backend | `outfit` presentation assembly, representation resolution, presentation endpoints |
 | Workers (ML/media) | Static posed avatar render job (server-side 2D renders per pose for the non-3D path) — deterministic Filament/headless render, no AI |
 | Data / migrations | `presentation_prefs` column |
-| Infrastructure | CDN manifest wiring for outfit derivative sets; device-farm lane configured for the outfit-view perf runs |
+| Infrastructure | Custom-domain cached manifest wiring for outfit derivative sets (public app assets only; user-specific renders stay presigned per DEC-44); device-farm lane configured for the outfit-view perf runs |
 | 3D / assets | Outfit-view scene tuning (lighting preset reuse from P04, neutral IBL — color-accuracy rule doc 07 §4.2); `just assets-validate` extended to presentation asset manifests |
 | Admin / internal tools | None |
 

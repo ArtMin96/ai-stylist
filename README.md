@@ -82,7 +82,7 @@ how to onboard someone else. Never send or commit the private identity.
 
 ### 6. External accounts (only when a task needs one)
 
-Nothing above needs a vendor account. When a phase does (Neon, Railway, Trigger.dev, Cloudflare, Expo/EAS, Apple, Google Play, PostHog, Grafana, and so on), follow [`docs/SERVICES-SETUP.md`](docs/SERVICES-SETUP.md). It has every account in phase order, every step and field, and where each key goes.
+Nothing above needs a vendor account. When a phase does (a server provider + Coolify, Cloudflare R2, Expo/EAS, Apple, Google Play, PostHog, Grafana, and so on; pg-boss and PostgreSQL need no account), follow [`docs/SERVICES-SETUP.md`](docs/SERVICES-SETUP.md). It has every account in phase order, every step and field, and where each key goes.
 
 ## Running the app
 

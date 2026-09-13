@@ -1,6 +1,6 @@
 import { PostgreSqlContainer, type StartedPostgreSqlContainer } from '@testcontainers/postgresql';
 
-/** Same image as docker-compose.yml and CI (Neon major + pgvector). */
+/** Same image as docker-compose.yml and CI (production PostgreSQL major + pgvector). */
 export const POSTGRES_TEST_IMAGE = 'pgvector/pgvector:pg17';
 
 export type StartedPostgres = {

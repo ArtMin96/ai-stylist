@@ -36,7 +36,7 @@ just test <owning module>
 just typecheck && just lint && just arch-check && just ci-parity
 ```
 
-Staging apply runs on a Neon branch via the affected-module CI lane; cite that run in the PR when a staging environment exists (OPEN until P02 OQ-07 region memo — see planning/16 OQ-07).
+Staging apply is proven first on a scratch database restored from the latest staging backup (pgBackRest / nightly `pg_dump`, `docs/SERVICES-SETUP.md` §3) via the affected-module CI lane; cite that run in the PR when a staging environment exists (OPEN until P02 OQ-07 region memo — see planning/16 OQ-07). Local and CI runs use Testcontainers/ephemeral databases.
 
 ## Output
 

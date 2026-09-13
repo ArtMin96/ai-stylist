@@ -24,7 +24,7 @@ None yet (P02 skeleton). Planned per SPINE §3: none — types and constants onl
 
 ## Invariants
 
-1. No business rule lives in a controller, Drizzle schema file, Trigger.dev task body, provider wrapper, or React component (doc 04 §4.2 rule 9); adapters translate, this module decides.
+1. No business rule lives in a controller, Drizzle schema file, pg-boss job handler, provider wrapper, or React component (doc 04 §4.2 rule 9); adapters translate, this module decides.
 2. No tables, no I/O, no framework imports; every export is a type, constant, registry entry, or pure function with a test.
 3. Further invariants: OPEN until the first domain phase that touches this module fills them in (each needs at least one test).
 
@@ -49,7 +49,7 @@ Derived from P02 brief §5 and doc 04 §4.2; every rule has a failing fixture in
 
 - Any edge that closes a cycle (`no-cycles`); the graph must equal doc 04 §4.1.
 - `apps/api/src/modules/**`, `apps/api/src/platform/**`, `packages/contracts`, and every other workspace package.
-- Provider SDKs — `@trigger.dev/sdk`, aws-sdk/R2, RevenueCat, fal.ai, Open-Meteo, FCM, PostHog SDKs (`domain-no-provider-sdk`); ports only.
+- Provider SDKs — `pg-boss`, aws-sdk/R2, RevenueCat, fal.ai, Open-Meteo, FCM, PostHog SDKs (`domain-no-provider-sdk`); ports only.
 - Creating `utils/`, `helpers/`, or `common/` directories (`no-utils-dirs`); importing `prototype/**` (`prototype-unimportable`).
 - Must not import any workspace package, NestJS, Drizzle, Node I/O, or provider SDK; pure functions only.
 - Single-writer path (CLAUDE.md, Parallel sessions): sequence changes, never parallelize them; owner `@dev-lead` in `CODEOWNERS`.

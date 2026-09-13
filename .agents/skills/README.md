@@ -9,7 +9,7 @@ One `SKILL.md` per task type required by NFR-TEAM-100 (`planning/01-requirements
 | [`backend-module`](backend-module/SKILL.md)                   | Domain work inside `apps/api/src/modules/<name>/` or a `platform` adapter      |
 | [`db-migration`](db-migration/SKILL.md)                       | Drizzle schema, migrations, backfills, rollbacks                               |
 | [`entitlements-billing`](entitlements-billing/SKILL.md)       | Plans, entitlements, credits, RevenueCat webhooks, paywall gating              |
-| [`media-ml-pipeline`](media-ml-pipeline/SKILL.md)             | Trigger.dev tasks, Python workers, AI provider calls, evals                    |
+| [`media-ml-pipeline`](media-ml-pipeline/SKILL.md)             | pg-boss jobs, Python workers, AI provider calls, evals                         |
 | [`mobile-feature`](mobile-feature/SKILL.md)                   | Screens, navigation, offline, native bridges outside the 3D boundary           |
 | [`native-3d-assets`](native-3d-assets/SKILL.md)               | `apps/mobile/src/render/`, avatar/garment 3D, `assets/3d/`, device validation  |
 | [`performance-profiling`](performance-profiling/SKILL.md)     | Budget investigations and verified perf claims                                 |

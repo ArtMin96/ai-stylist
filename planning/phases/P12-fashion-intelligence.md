@@ -1,5 +1,7 @@
 # P12 — Fashion Intelligence
 
+> Amended 2026-09-13 ([r7](../research/r7-third-party-services-and-self-hosting-audit-2026-09-13.md), ADR-0003 — service consolidation: pg-boss jobs, owned server + Coolify, self-managed PostgreSQL, R2 delivery model).
+
 > File name: `phases/P12-fashion-intelligence.md` per [SPINE §5](../SPINE.md). Every section below is REQUIRED (brief §10). Status values per [PROGRESS.md](../PROGRESS.md).
 
 ## 1. Overview
@@ -79,9 +81,9 @@ Arch rules enforced: no `fashion-intel → outfit`/renderer edge; `recommendatio
 |---|---|
 | Mobile | Discover tab: feed list, card detail, why-shown affordance, attribution display, save/follow/hide/report, starter-feed empty state, offline cache + queued signals, upgrade card |
 | Backend | `fashion-intel` module (ingestion orchestration, feed query, personalization matching, trend-relevance port); `recommendation` stage-6 activation; `admin` moderation extension |
-| Workers (ML/media) | None new — summarization + embedding calls go through existing LLM/embedding ports from Trigger.dev tasks |
+| Workers (ML/media) | None new — summarization + embedding calls go through existing LLM/embedding ports from pg-boss jobs |
 | Data / migrations | Tables + indexes per §7; seed: synthetic licensed-sample content fixtures in `packages/seed-data` |
-| Infrastructure | Trigger.dev scheduled ingestion tasks per source (idempotent, per-source `concurrencyKey`); kill-switch flag for trend summarization ([10 §6.3](../10-ai-usage-cost-and-evaluation.md) rung 2) |
+| Infrastructure | pg-boss cron schedules for ingestion per source (idempotent, per-source `singletonKey`); kill-switch flag for trend summarization ([10 §6.3](../10-ai-usage-cost-and-evaluation.md) rung 2) |
 | 3D / assets | None |
 | Admin / internal tools | Moderation queue view for content, source register CRUD (rights basis mandatory field — cannot save a source without one), editor spot-check queue |
 
@@ -179,7 +181,7 @@ Link RISK-NN/ASM-NN in [16](../16-risks-open-questions-and-decision-log.md); add
 
 On a real device against staging, two test users with different profiles/closets (from `packages/seed-data` personas):
 
-1. `just db-seed` staging personas; run one full ingestion cycle for the licensed source (`trigger.dev` task run visible in dashboard).
+1. `just db-seed` staging personas; run one full ingestion cycle for the licensed source (pg-boss job run visible in the jobs dashboard).
 2. As user A (minimal profile): open Discover → starter feed labeled "Getting to know your style"; every card shows source attribution.
 3. As user B (rich profile + 100-item closet): open Discover → visibly different feed; tap "why you're seeing this" on a card → reasons name concrete inputs (e.g. region/season + a followed designer + closet composition).
 4. Hide a designer's card → confirm immediate removal; pull-to-refresh → that designer's content absent.

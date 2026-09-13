@@ -7,7 +7,7 @@ sops + age encrypted configuration, one file per environment (planning/15 §6; s
 | ------------------ | ------------------------------------------------------------------------------------------------- |
 | `dev.enc.yaml`     | `just secrets-sync` → merged into the gitignored `.env` on developer machines                     |
 | `staging.enc.yaml` | CI deploy jobs (`CI=true just secrets-sync staging`, decrypted with the `SOPS_AGE_KEY` CI secret) |
-| `prod.enc.yaml`    | CI deploy jobs; source of truth that a sync script pushes to Railway variables (P03)              |
+| `prod.enc.yaml`    | CI deploy jobs; source of truth that a sync script pushes to Coolify environment variables (P03)  |
 
 **Status (P02 T02): development is operational.** `.sops.yaml` contains the initial developer and
 CI public recipients for every environment, and `dev.enc.yaml` contains all `.env.example` keys

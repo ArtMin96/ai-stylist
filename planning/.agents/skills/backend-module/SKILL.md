@@ -10,7 +10,7 @@ description: Create or change a NestJS domain module in apps/api/src/modules/ โ€
 - Adding/changing behavior inside one of the SPINE ยง3 modules: application services, domain rules, ports, repositories, module events, outbox usage.
 - Wiring a new port implementation in `platform`.
 
-**Not this skill (do those first, then return):** schema/migration changes (`db-migration`), endpoint shape changes (`api-contract-change`), recommendation engine rules (`recommendation-rules`), billing/entitlements (`entitlements-billing`), Trigger.dev/ML pipelines (`media-ml-pipeline`).
+**Not this skill (do those first, then return):** schema/migration changes (`db-migration`), endpoint shape changes (`api-contract-change`), recommendation engine rules (`recommendation-rules`), billing/entitlements (`entitlements-billing`), pg-boss job/ML pipelines (`media-ml-pipeline`).
 
 ## Required reading
 

@@ -26,7 +26,7 @@ Rules:
 | — | Planning package | `ACCEPTED` | This `planning/` directory; ratified 2026-08-24; **prices re-verified and pricing model re-baselined 2026-09-09** (r6, DEC-34/35) |
 | P00 | Product validation and decisions | `NOT_STARTED` | |
 | P01 | 3D and capture prototype gate | `NOT_STARTED` | Go/no-go gate — see RISK-01 |
-| P02 | Repo foundations and CI | `IN_PROGRESS` | Started 2026-09-09 **ahead of P00** for the no-P00-dependency subset (DEC-36). Done: T01, T02, T03, T04, T05, T06, T10, T11, T16; partial: T07 (Neon envs), T12 (Renovate app install, human). Cloud-touching tasks (T07 Neon, T08, T09, T13, T14/T15) wait for P00 / OQ-07 and vendor accounts. `just ci-parity` green 2026-09-11 |
+| P02 | Repo foundations and CI | `IN_PROGRESS` | Started 2026-09-09 **ahead of P00** for the no-P00-dependency subset (DEC-36). Done: T01, T02, T03, T04, T05, T06, T10, T11, T16; partial: T07 (self-managed PostgreSQL envs — Neon dropped 2026-09-13, ADR-0003), T12 (Renovate app install, human). Cloud-touching tasks (T07 staging/prod PostgreSQL hosts, T09, T13, T14/T15) wait for P00 / OQ-07 / OQ-14 and vendor accounts; T08 (pg-boss) needs no vendor account. Vendor set consolidated 2026-09-13 (DEC-41–48). `just ci-parity` green 2026-09-13 |
 | P03 | Identity, consent, onboarding | `NOT_STARTED` | |
 | P04 | Parametric avatar v1 | `NOT_STARTED` | |
 | P05 | Selfie face personalization | `NOT_STARTED` | |
@@ -48,10 +48,12 @@ Rules:
 Then pick one:
 
 1. **Start P00 — Product validation and decisions** (still the formal gate; P02 was started ahead of it under DEC-36). Read [SPINE.md](SPINE.md) → [00-product-vision-and-scope.md](00-product-vision-and-scope.md) → `phases/P00-product-validation-and-decisions.md` → [16](16-risks-open-questions-and-decision-log.md); set P00 `IN_PROGRESS`; P00 has no code deliverables — outputs are ratified ADRs, measurable definitions, legal/privacy discovery notes, and resolution or scheduling of OQ-03 (age policy) and OQ-07 (data residency).
-2. **Continue P02 with P02-T08** (outbox relay + Trigger.dev + worker round-trip; `phases/P02-repo-foundations-and-ci.md` §12). T08, T09 (Grafana Cloud/PostHog) and T13 (R2 buckets) each need a vendor account before they can be finished; the local/offline part of T08 (relay, idempotency/retry/DLQ tests against Testcontainers) can start without one.
+2. **Continue P02 with P02-T08** (outbox relay + pg-boss + worker round-trip; `phases/P02-repo-foundations-and-ci.md` §12). T08 is the pg-boss proof (DEC-41, [ADR-0003](../docs/adr/0003-self-hosted-infrastructure-baseline.md)): the acceptance suite (kill/retry, idempotency, DLQ, replay, per-user cancellation, deletion/export) runs entirely against Testcontainers PostgreSQL, so **no vendor account is needed**; self-hosted Trigger.dev is the fallback only if that suite fails. T09 (Grafana Cloud/PostHog) and T13 (R2 buckets) still need a vendor account before they can be finished; T07's staging/prod PostgreSQL hosts wait for OQ-07/OQ-14.
 
 **Human-only steps outstanding** (agents stop at config + `.env.example` keys):
-- Create vendor accounts and record regions per OQ-07: Neon, Cloudflare R2, Railway, Trigger.dev, Grafana Cloud, PostHog, Expo/EAS, Apple Developer, Google Play.
+- Create vendor accounts and record regions per OQ-07: server provider (per OQ-07/OQ-14 — Hetzner is the working assumption), Cloudflare R2, Grafana Cloud, PostHog, Expo/EAS, Apple Developer, Google Play. (Neon, Railway and Trigger.dev were removed on 2026-09-13 — DEC-41–43.)
+- Decide OQ-14 (server provider + single-host vs DB-separate topology at launch) together with OQ-07 before any cloud provisioning.
+- Remove the four stale empty keys from `secrets/dev.enc.yaml` (`sops unset secrets/dev.enc.yaml '["NEON_API_KEY"]'` etc. for `NEON_PROJECT_ID`, `TRIGGER_PROJECT_REF`, `TRIGGER_SECRET_KEY`) — the agent session was not permitted to write the secret store.
 - Enable GitHub branch protection on `main` (required checks = the `pr-gate` workflow jobs) and confirm the workflows run green on GitHub (none has run remotely yet).
 - Replace the placeholder handles in `CODEOWNERS` with real GitHub handles.
 - Authorise the one-line `CLAUDE.md` fix: the mobile composition root is `apps/mobile/src/app/_layout.tsx` (expo-router mandates the name), not `_root.tsx`.
@@ -74,6 +76,16 @@ Log hygiene: when this log exceeds ~30 entries, move the oldest entries to `plan
 ## Session handoff log
 
 *(newest first)*
+
+### 2026-09-13 — Service consolidation: r7 audit applied (ADR-0003, DEC-41–48)
+
+- **Phase / tasks worked:** P02 — planning/docs consolidation from [research/r7-third-party-services-and-self-hosting-audit-2026-09-13.md](research/r7-third-party-services-and-self-hosting-audit-2026-09-13.md) (verified 2026-09-13); no product code beyond the placeholder rename `apps/api/src/trigger/` → `apps/api/src/jobs/`. Reshapes T07 (self-managed PostgreSQL envs instead of Neon), T08 (pg-boss instead of Trigger.dev), T13 (R2 delivery model, no Cloudflare Images).
+- **Status changes:** none (P02 stays `IN_PROGRESS`; no task moved).
+- **Done this session:** [ADR-0003](../docs/adr/0003-self-hosted-infrastructure-baseline.md) accepted — pg-boss v12 on the app PostgreSQL (`apps/api/src/jobs/`), owned servers + Docker + Coolify, self-managed PostgreSQL 17 + pgvector with pgBackRest PITR/PgBouncer/restore drills, R2 kept with an explicit delivery model (presigned private / custom-domain cached public) and Cloudflare Images removed, embedded `date-holidays` behind `HolidayProvider`, reason-code-only explanations, self-hosted AI eval arms (BiRefNet, Qwen3-VL, SigLIP/SigLIP2 in P06; FASHN VTON v1.5 in P11; FLUX.2 [dev] non-commercial for self-hosting), managed services kept with exit triggers (R2, PostHog/Grafana free tiers, RevenueCat through launch, EAS free allowance, GitHub). Google Play subscription fee verified 15% (ASM-09, BIL-O7 closed). [SPINE §2/§6](SPINE.md), [doc 16](16-risks-open-questions-and-decision-log.md), [README](README.md), phase files, module contracts, skills, agent definitions, templates, tooling rules, `.env.example` and workflows moved to the new vocabulary (per the target-state spec); old DEC rows marked superseded, never deleted. Linear updated the same day: AI-9 (P02-T08) and AI-7 rewritten for pg-boss / self-managed PostgreSQL / Coolify, AI-8 retitled to the pg-boss acceptance gate, Linear templates 1/6/8 re-synced via `templates/linear/create-templates.sh --update`; root `CLAUDE.md` edited with owner authorization.
+- **Regression evidence:** n/a — docs-only plus the placeholder rename; `just ci-parity` green on 2026-09-13 after `just format` (Prettier had re-aligned seven Markdown tables); `just lint`, `just typecheck`, `just arch-check` (+ `--fixtures`), `just generate --check`, `pnpm --filter @ai-stylist/db test` (9 passed), api vitest project (40 passed) all green.
+- **Not done / next action:** P02-T08 = the pg-boss proof (outbox relay + pg-boss + worker round-trip against the acceptance suite: kill/retry, idempotency, DLQ, replay, per-user cancellation, deletion/export) — self-hosted Trigger.dev only if it fails; root `CLAUDE.md` edits applied 2026-09-13 with owner authorization; owner decides OQ-14 (server provider + single-host vs DB-separate topology) together with OQ-07 before any cloud provisioning; T07 recovery acceptance (pgBackRest PITR + restore evidence) is now part of the T07 definition of done.
+- **New decisions filed:** DEC-41–48, RISK-17 (self-managed PostgreSQL recovery/ops burden; RISK-15/16 were already taken), OQ-14; RISK-11, ASM-09, OQ-07, OQ-11 updated.
+- **Files touched:** `planning/` (SPINE, README, docs 05/10/11/12/15/16, PROGRESS), `planning/phases/`, `docs/` (adr/0003 + index, modules/), `.agents/`, `.claude/`, `templates/`, `tools/`, `apps/api/src/jobs/` (renamed placeholder), `.env.example`, `.github/workflows/`, root `PROGRESS.md`.
 
 ### 2026-09-13 — Automated secrets onboarding (P02 T02/T12 follow-up, PR #2)
 

@@ -20,24 +20,24 @@ If a secret ever shows up in a terminal shared with an AI agent, a log, a screen
 
 ## Overview
 
-Phase numbers refer to `planning/phases/`. "Needed from" is the first task that cannot proceed without the account. Regions for Neon, R2, Railway, and PostHog are provisional until the OQ-07 data-residency memo lands in P00 (DEC-36).
+Phase numbers refer to `planning/phases/`. "Needed from" is the first task that cannot proceed without the account. Regions for the server, R2, and PostHog are provisional until the OQ-07 data-residency memo lands in P00 (DEC-36; OQ-14 covers the server provider and topology). The self-hosting baseline (pg-boss, owned server + Coolify, self-managed PostgreSQL, R2 delivery model) is ADR-0003, from [r7](../planning/research/r7-third-party-services-and-self-hosting-audit-2026-09-13.md).
 
-| #   | Service                                                 | What it is for                                         | Needed from     | Free tier?                                  | Account owner | Done |
-| --- | ------------------------------------------------------- | ------------------------------------------------------ | --------------- | ------------------------------------------- | ------------- | ---- |
-| 1   | GitHub repository                                       | Source, CI (GitHub Actions), branch protection         | P02 now         | Yes (public repo or personal plan)          | `<owner>`     | [ ]  |
-| 2   | sops + age                                              | Encrypted shared secrets in the repo                   | P02 now         | Free, no account                            | `<owner>`     | [x]  |
-| 3   | Neon                                                    | Postgres 17 + pgvector for dev, staging, prod          | P02-T07         | Yes, Checked 2026-09-10                     | `<owner>`     | [ ]  |
-| 4   | Railway                                                 | API + workers hosting                                  | P03 (deploy)    | $1/month credit on Free, Checked 2026-09-10 | `<owner>`     | [ ]  |
-| 5   | Trigger.dev                                             | Durable jobs (outbox relay, media pipeline)            | P02-T08         | Yes, $5/month credit, Checked 2026-09-10    | `<owner>`     | [ ]  |
-| 6   | Cloudflare (R2, Images, WAF)                            | Object storage for media, later transforms and WAF     | P02-T13         | Yes, 10 GB-month, Checked 2026-09-10        | `<owner>`     | [ ]  |
-| 7   | Expo / EAS                                              | Cloud builds for iOS and Android                       | P02-T14         | 15 + 15 builds/month, Checked 2026-09-10    | `<owner>`     | [ ]  |
-| 8   | Apple Developer Program                                 | iOS signing, TestFlight, App Store, Sign in with Apple | P02-T14         | No, 99 USD/year, Checked 2026-09-10         | `<owner>`     | [ ]  |
-| 9   | Google Play Console                                     | Android signing and distribution                       | P02-T14         | No, 25 USD once, Checked 2026-09-10         | `<owner>`     | [ ]  |
-| 10  | PostHog                                                 | Product analytics, replay, error tracking, flags       | P02-T09/P03     | Yes, 1M events/month, Checked 2026-09-10    | `<owner>`     | [ ]  |
-| 11  | Grafana Cloud                                           | OTel traces, metrics, logs                             | P02-T09         | Yes, Checked 2026-09-10                     | `<owner>`     | [ ]  |
-| 12  | RevenueCat                                              | Subscriptions and entitlements                         | P13             | Yes, up to $2,500 MTR, Checked 2026-09-10   | `<owner>`     | [ ]  |
-| 13  | fal.ai, Open-Meteo, Nager.Date, LLM/embedding providers | AI generation, weather, holidays, extraction           | P06 / P08 / P11 | Mixed, see section 13                       | `<owner>`     | [ ]  |
-| 14  | Apple and Google sign-in                                | Social login for better-auth                           | P03             | Included in 8 and free Google Cloud project | `<owner>`     | [ ]  |
+| #   | Service                                                                 | What it is for                                            | Needed from                | Free tier?                                   | Account owner | Done |
+| --- | ----------------------------------------------------------------------- | --------------------------------------------------------- | -------------------------- | -------------------------------------------- | ------------- | ---- |
+| 1   | GitHub repository                                                       | Source, CI (GitHub Actions), branch protection            | P02 now                    | Yes (public repo or personal plan)           | `<owner>`     | [ ]  |
+| 2   | sops + age                                                              | Encrypted shared secrets in the repo                      | P02 now                    | Free, no account                             | `<owner>`     | [x]  |
+| 3   | PostgreSQL (self-managed, pgvector)                                     | Postgres 17 + pgvector for staging, prod (docker locally) | P02-T07                    | $0 software; host cost in row 4              | `<owner>`     | [ ]  |
+| 4   | Server + Coolify                                                        | API, jobs, workers, PostgreSQL hosting                    | P02 (server), P03 (deploy) | Server ~€10–25/month; Coolify $0 self-hosted | `<owner>`     | [ ]  |
+| 5   | pg-boss (no account)                                                    | Durable jobs (outbox relay, media pipeline)               | P02-T08                    | $0, MIT, runs on the app database            | n/a           | [ ]  |
+| 6   | Cloudflare (R2 + DNS/WAF)                                               | Object storage for media and public assets, DNS, WAF      | P02-T13                    | Yes, 10 GB-month, Checked 2026-09-10         | `<owner>`     | [ ]  |
+| 7   | Expo / EAS                                                              | Cloud builds for iOS and Android                          | P02-T14                    | 15 + 15 builds/month, Checked 2026-09-10     | `<owner>`     | [ ]  |
+| 8   | Apple Developer Program                                                 | iOS signing, TestFlight, App Store, Sign in with Apple    | P02-T14                    | No, 99 USD/year, Checked 2026-09-10          | `<owner>`     | [ ]  |
+| 9   | Google Play Console                                                     | Android signing and distribution                          | P02-T14                    | No, 25 USD once, Checked 2026-09-10          | `<owner>`     | [ ]  |
+| 10  | PostHog                                                                 | Product analytics, replay, error tracking, flags          | P02-T09/P03                | Yes, 1M events/month, Checked 2026-09-10     | `<owner>`     | [ ]  |
+| 11  | Grafana Cloud                                                           | OTel traces, metrics, logs                                | P02-T09                    | Yes, Checked 2026-09-10                      | `<owner>`     | [ ]  |
+| 12  | RevenueCat                                                              | Subscriptions and entitlements                            | P13                        | Yes, up to $2,500 MTR, Checked 2026-09-10    | `<owner>`     | [ ]  |
+| 13  | fal.ai, Open-Meteo, date-holidays (no account), LLM/embedding providers | AI generation, weather, holidays, extraction              | P06 / P08 / P11            | Mixed, see section 13                        | `<owner>`     | [ ]  |
+| 14  | Apple and Google sign-in                                                | Social login for better-auth                              | P03                        | Included in 8 and free Google Cloud project  | `<owner>`     | [ ]  |
 
 Replace `<owner>` with a real name once an account exists; keep this table current.
 
@@ -139,7 +139,7 @@ Run these in a shell where mise is activated (`eval "$(~/.local/bin/mise activat
 
    On the first run for an environment this creates `secrets/dev.enc.yaml` with every key from `.env.example` and an empty value (`KEY: ""`), encrypted for the `dev` recipients, and opens it in `$EDITOR` through `sops`. Fill in the shared dev values (`KEY: value`), leave unknown ones empty, save and quit; sops re-encrypts on save (`File has not changed, exiting.` means you quit without editing, which is fine). No plaintext file ever lands in the repo: the template is built in a private temp dir and encrypted before it is moved into `secrets/`.
 
-6. Repeat step 5 with `env=staging` / `env=prod` when those environments exist (Neon staging branch, Railway environments). Until then leave them absent.
+6. Repeat step 5 with `env=staging` / `env=prod` when those environments exist (staging PostgreSQL database, Coolify environments). Until then leave them absent.
 
 7. Merge into your `.env`:
 
@@ -180,42 +180,45 @@ just doctor
 
 Expected: `secrets-sync: merged secrets/dev.enc.yaml into .env — N replaced, M added, K skipped (empty in the shared file), other lines untouched` (preceded by one `replaced KEY` / `added KEY` line per key), then a `✔ .env has every key from .env.example` line, followed by four sops + age checks in the doctor output: `✔ age identity present (<path>, mode 600)`, `✔ age recipient listed in .sops.yaml (dev)`, `✔ secrets/dev.enc.yaml decrypts with your identity`, and `✔ age identity backup recorded (<date>)` (this last line is `⚠ age identity not recorded as backed up` — a warning, never a failure — until you run `just secrets-backup-done`).
 
-## 3. Neon
+## 3. PostgreSQL (self-managed)
 
 ### Why we use it
 
-Serverless Postgres with scale-to-zero and branching (`SPINE.md` §2). pgvector is available as an extension on every Neon project; the repo's migrations create it. Locally, `docker-compose.yml` runs `pgvector/pgvector:pg17`, so the Neon project must be Postgres 17 to match.
+Self-managed PostgreSQL 17 with pgvector on an owned host (DEC-43, ADR-0003, [r7](../planning/research/r7-third-party-services-and-self-hosting-audit-2026-09-13.md)). The database runs from the same `pgvector/pgvector:pg17` image that `docker-compose.yml` uses locally, so versions match and the repo's migrations create the extension in both places. Running it ourselves brings obligations that a managed vendor used to carry: WAL archiving and point-in-time recovery through pgBackRest, a nightly logical backup, PgBouncer pooling, disk/backup-age alerts in Grafana, and a quarterly restore drill (RISK-17).
 
 ### When you need it
 
-P02-T07 (Neon envs and PR branches are the `PARTIAL` remainder of that task) and P02-T08 onward. Region choice is provisional until OQ-07 (P00-T06); pick one now and record it, expect to recreate the project if the memo says otherwise.
+P02-T07 (the staging database, its backup pipeline, and the ephemeral test databases are the `PARTIAL` remainder of that task) and P02-T08 onward. The database lives on the server from section 4, so its region follows OQ-07 / OQ-14; expect to rebuild it from a backup if the residency memo says otherwise.
 
 ### Cost
 
-Free plan, Checked 2026-09-10 at <https://neon.com/docs/introduction/plans>: 100 projects, 10 branches per project, 0.5 GB storage per project, 100 compute-unit hours per project per month, autoscaling up to 2 CU. Neon supports Postgres 14 through 18 (Checked 2026-09-10, <https://neon.com/docs/postgresql/postgres-version-policy>). The docs do not state whether a credit card is needed for the free plan; expect none. Paid plans: verify on <https://neon.com/pricing>.
+$0 for software: PostgreSQL, pgvector, pgBackRest, and PgBouncer are all open source (pgBackRest, Checked 2026-09-13 at <https://pgbackrest.org>). The host cost is in section 4. Backup storage is a dedicated R2 bucket (section 6), inside the free tier at launch.
 
 ### Steps
 
-1. Sign up at <https://neon.com> (GitHub login is simplest; the account should belong to the account owner, not a personal email that could leave the project).
-2. Create a project: name `ai-stylist`, Postgres version **17**, region: the one closest to the launch market pending OQ-07 (write the choice into the overview table's notes). Leave the default compute size.
-3. The project comes with a `main` branch and a database named `neondb` by default (label may differ). Until launch, `main` is the **staging** environment. Create a second branch only when P03 deploys production; name it `production` then and never point staging tooling at it.
-4. Get connection strings: project dashboard, **Connect** button. The modal has a **Connection pooling** toggle. Copy two strings:
-   - Toggle off: the **direct** string, host `ep-<...>.<region>.aws.neon.tech`. Use this for migrations; transaction pooling does not support everything migration tools need.
-   - Toggle on: the **pooled** string, host `ep-<...>-pooler.<region>.aws.neon.tech`. Use this for the running API.
-5. Store the direct string as `DATABASE_URL` in `secrets/staging.enc.yaml` (create the file per section 2 step 5). Your local `.env` keeps the docker value from `.env.example`; only put the Neon string in `.env` temporarily when you run the verify step below.
-6. API key for CI branch-per-PR: account menu, **Account settings**, **API keys** (label may differ), **Create new API key**, name `github-actions`. Copy it once. Store it as GitHub secret `NEON_API_KEY`. Copy the project id from **Project settings**, **General** (label may differ) into GitHub secret `NEON_PROJECT_ID`. `affected.yml` has the branch-per-PR steps commented out and will use both when T07 is finished; nothing runs until then.
+1. Provision on the server from section 4, on the private Docker network: either Coolify's built-in PostgreSQL service with the image set to `pgvector/pgvector:pg17`, or a `docker compose` stack that Coolify manages. Put the data directory on the encrypted disk. Publish no port; the API, the jobs process, and the workers reach it over the private network only, with TLS enabled on the server.
+2. Enable pgvector once per database (`CREATE EXTENSION IF NOT EXISTS vector;`); the committed migrations also do this, matching local.
+3. Create the `staging` database and its application role now (least privilege, own password); create the `production` database and role only when P03 deploys production. Keep one superuser for provisioning and backups, never for the API.
+4. PgBouncer (transaction pooling) in front of the database for the running API; `just db-migrate` uses the direct connection, because transaction pooling does not support everything migration tools need.
+5. pgBackRest WAL archiving: create a dedicated R2 bucket `ai-stylist-pg-backups` with its own token scoped to that bucket only (section 6 step 5 pattern, **Object Read & Write**, never the media token). Configure a pgBackRest stanza `ai-stylist` with the S3 repository type pointed at the R2 endpoint, repository encryption on (`repo1-cipher-type`), `archive_mode=on`, and `archive_command` delegated to `pgbackrest archive-push`. Take the first full backup, then schedule a daily differential and a weekly full backup with a retention that keeps at least two full backups.
+6. Nightly `pg_dump` logical backup of each database to the same bucket under a separate prefix, kept for 30 days. It is the fallback when a PITR restore is not possible and the input for the scratch-database migration test.
+7. Grafana alerts (section 11): backup age above 26 hours, WAL archive push failures, disk usage above 80%, and replication lag once a replica exists.
+8. Store the direct connection string (TLS on) as `DATABASE_URL` in `secrets/staging.enc.yaml` (create the file per section 2 step 5) and the pooled string under the key the P02-T07 task adds for the API. Your local `.env` keeps the docker value from `.env.example`; only put the staging string in `.env` temporarily when you run the verify step below. Production strings go into `secrets/prod.enc.yaml` in P03.
+9. Restore drill: restore the latest backup into a scratch database and run the migration suite against it. First run at P02-T07, then quarterly and before every P14 release check. The same restored scratch database is where staging migrations are proven before they run on staging (`.agents/skills/db-migration/SKILL.md`).
 
 ### What to record
 
-- `.env.example` keys: `DATABASE_URL` (staging: `secrets/staging.enc.yaml`; local: docker value), `NEON_API_KEY` and `NEON_PROJECT_ID` (GitHub secrets only, CI).
-- Overview table: region chosen and the date.
+- `.env.example` keys: `DATABASE_URL` (staging: `secrets/staging.enc.yaml`; prod: `secrets/prod.enc.yaml`; local: docker value). No GitHub secrets; CI uses Testcontainers, not a shared database.
+- Overview table: host, region, backup bucket name, and the date of the last restore drill.
 
 ### Do not
 
-- Do not run `just db-reset` against Neon; it refuses non-local hosts by design, do not work around it.
-- Do not use the pooled string for `just db-migrate`.
-- Do not create the `production` branch before P03 needs it.
-- Do not put the Neon string into `.env.example` or into the mobile app (`EXPO_PUBLIC_*`).
+- Do not run `just db-reset` against any non-local host; it refuses by design, do not work around it.
+- Do not use the pooled (PgBouncer) string for `just db-migrate`.
+- Do not put a connection string into `.env.example` or into the mobile app (`EXPO_PUBLIC_*`).
+- Do not expose port 5432 on the host firewall or through Coolify's proxy.
+- Do not skip the restore drill; a backup that has never been restored is not a backup.
+- Do not create the `production` database before P03 needs it.
 
 ### Verify
 
@@ -223,94 +226,94 @@ Free plan, Checked 2026-09-10 at <https://neon.com/docs/introduction/plans>: 100
 DATABASE_URL='<direct connection string>' just db-migrate
 ```
 
-Expected last line: `db-migrate: up to date`. This applies the committed migrations from `packages/db/migrations` to the Neon `main` branch, which is the intended state for staging. A `password authentication failed` or `ENOTFOUND` error means the string was pasted wrong; copy it again from **Connect**.
+Expected last line: `db-migrate: up to date`. This applies the committed migrations from `packages/db/migrations` to the staging database. A `password authentication failed` or `ENOTFOUND` error means the string was pasted wrong or the private network is not reachable from where you ran it. On the host, `pgbackrest --stanza=ai-stylist info` must list a full backup and a WAL archive range; the Grafana backup-age alert must be green.
 
-## 4. Railway
+## 4. Server + Coolify
 
 ### Why we use it
 
-Hosts the NestJS API and the Python workers as containers (`SPINE.md` §2, about $15/month at launch was the planning estimate; not verified against a real bill). Production secrets are pushed from `secrets/prod.enc.yaml` into Railway variables by a sync script (doc 15 §6); the dashboard is never hand-edited.
+Owned servers with Docker and Coolify (Apache-2.0) host the NestJS API, the jobs process, the Python workers, and PostgreSQL (DEC-42, ADR-0003, [r7](../planning/research/r7-third-party-services-and-self-hosting-audit-2026-09-13.md)). Coolify provides deploys, HTTPS, health checks, rollbacks, and per-environment variables. Production secrets are pushed from `secrets/prod.enc.yaml` into Coolify environment variables by a sync script (doc 15 §6); the dashboard is never hand-edited. API, jobs, workers, and PostgreSQL share a private Docker network on the host; the host firewall and TLS to the database close the rest.
 
 ### When you need it
 
-The account and empty project: now, so the region is settled together with Neon and R2. The first deploy: P03 (there is no `apps/api/Dockerfile` yet; it lands with the first deploy task, together with the Railway sync script and the deploy workflow).
+The account and the empty server: now, so the region is settled together with R2 per OQ-07 / OQ-14 and the database in section 3 has somewhere to live. The first deploy: P03 (there is no `apps/api/Dockerfile` yet; it lands with the first deploy task, together with the Coolify sync script and the deploy workflow).
 
 ### Cost
 
-Checked 2026-09-10 at <https://docs.railway.com/reference/pricing/plans>: Free plan $0 with $1 of credit per month (1 replica, 0.5 GB RAM, 1 vCPU per service); Trial gives a one-time $5 grant; Hobby $5/month; Pro $20/month. Railway requires a post-paid card for paid plans. Plan to move to Hobby before the first staging deploy; the Free allowance will not run an API continuously.
+One owned server in the ~€10–25/month class (Hetzner is the working assumption per OQ-14, not a decision; verify current prices on the chosen provider's page before ordering). Coolify is $0 self-hosted (Checked 2026-09-13 at <https://coolify.io/docs/core/what-is-coolify>). Coolify Cloud is an optional paid managed control plane and is not used.
 
 ### Steps
 
-1. Sign up at <https://railway.com> with GitHub.
-2. **New Project**, choose **Empty project**. Do not choose "GitHub repo": there is nothing to build yet, and connecting the repo now would create failing deployments on every push.
-3. Rename the project to `ai-stylist`: **Project Settings** (gear icon), **General**, name field (label may differ).
-4. Environments: **Project Settings**, **Environments**. Rename the default environment to `staging` and add `production`. Each gets its own variables and its own deploy later.
-5. Region: Railway sets the region per service, not per project (**US West Metal**, **US East Metal**, **EU West Metal**, **Southeast Asia Metal**, Checked 2026-09-10 at <https://docs.railway.com/reference/deployment-regions>). There is no service yet, so record the intended region in the overview notes and set it when the first service is created in P03, in the same region family as Neon.
-6. No API token is needed now. When the deploy workflow lands in P03 it will need a Railway project token stored as a GitHub secret; that task adds the key name to `.github/workflows/README.md`.
+1. Choose the provider and region per OQ-07 / OQ-14 and record both in the overview table notes.
+2. Provision an Ubuntu LTS host (4 GB RAM and 80 GB disk are enough for staging plus a first production; a dedicated database host comes later when load justifies it). Enable disk encryption at creation (provider-side or LUKS); it is the at-rest encryption for the database and for uploaded media caches.
+3. Harden before anything else runs: SSH keys only (`PasswordAuthentication no`), a non-root sudo user, `ufw` default deny with 22, 80, and 443 open, unattended upgrades enabled. Record the SSH public key fingerprint in the password manager, not in the repo.
+4. Install Coolify with the official installation script from its docs (read the script first; do not run install scripts from any other source). Open the dashboard, create the admin account, and disable public registration.
+5. Create the project `ai-stylist` with environments `staging` and `production`. Each environment gets its own variables and its own deploy later.
+6. Networking: keep the API, jobs, workers, and PostgreSQL resources on one private Docker network per environment; only the API and, later, the workers' health endpoint are published through Coolify's proxy with HTTPS. PostgreSQL is never published.
+7. API token for CI: Coolify dashboard, **Keys & Tokens**, **API tokens** (label may differ), create one named `github-actions` with the narrowest permission that can trigger a deploy. Copy it once and store it as `COOLIFY_TOKEN` in `secrets/staging.enc.yaml` (and `secrets/prod.enc.yaml` in P03); the deploy jobs decrypt it with `SOPS_AGE_KEY`, so no extra GitHub secret is needed. The P03 deploy task adds the key to `.env.example` with a comment. Nothing reads it until then.
+8. Do not connect the GitHub repository or enable automatic deploys in P02; there is nothing to build yet.
 
 ### What to record
 
-- Nothing in `.env.example` yet. `PORT` is set by Railway at runtime and already listed there.
-- Overview table: project name, environments, intended region.
+- `.env.example` key `COOLIFY_TOKEN` (added in P03; staging/prod only, in the matching `secrets/<env>.enc.yaml`). `PORT` is set per resource in Coolify and already listed there.
+- GitHub secrets: none.
+- Overview table: provider, region, host name, Coolify dashboard URL, environments.
 
 ### Do not
 
-- Do not connect the GitHub repository or enable automatic deploys in P02.
-- Do not type secrets into Railway variables by hand; the sync script is the only writer.
-- Do not add a Railway-managed Postgres; the database is Neon.
+- Do not type secrets into Coolify environment variables by hand; the sync script is the only writer.
+- Do not publish the PostgreSQL port; the database is reachable only on the private network.
+- Do not enable automatic deploys or connect the repository in P02.
+- Do not run the observability stack on this host if it is ever self-hosted; it belongs on a separate failure domain (DEC-48).
 
 ### Verify
 
-No repo command exists yet. Verify in the dashboard: project `ai-stylist` shows environments `staging` and `production` and zero services. After P03 lands `apps/api/Dockerfile`, `curl <railway url>/v1/health` should return `{"status":"ok","checks":{"db":"ok"}}`.
+Over SSH, `docker ps` lists the Coolify containers and nothing else; `ufw status` shows only 22, 80, and 443 open. The dashboard shows project `ai-stylist` with environments `staging` and `production` and zero resources. After P03 lands `apps/api/Dockerfile`, `curl https://<api domain>/v1/health` should return `{"status":"ok","checks":{"db":"ok"}}`.
 
-## 5. Trigger.dev
+## 5. pg-boss (durable jobs)
 
 ### Why we use it
 
-Durable job pipelines with retries, idempotency keys, and dead-letter semantics (`SPINE.md` §2). Task definitions live in `apps/api/src/trigger/`. The API's outbox relay (P02-T08) hands events to Trigger.dev tasks; the worker round-trip test depends on it.
+Durable job pipelines with retries and backoff, dead-letter handling, scheduling, and priorities, on the app's own PostgreSQL instead of a separate queue service (DEC-41, ADR-0003, [r7](../planning/research/r7-third-party-services-and-self-hosting-audit-2026-09-13.md)). pg-boss v12 is MIT (Checked 2026-09-13 at <https://github.com/timgit/pg-boss>). Job definitions live in `apps/api/src/jobs/`; the API's outbox relay (P02-T08) hands events to pg-boss jobs, and the handlers run in the API process or in a dedicated `jobs` process. There is no dev server and no dashboard to sign up for.
 
 ### When you need it
 
-P02-T08. `just dev-workers` currently notes that the Trigger.dev dev-server half lands in T08.
+P02-T08. `just dev-workers` runs the handlers in-process from T08 on.
 
 ### Cost
 
-Trigger.dev Cloud, Checked 2026-09-10 at <https://trigger.dev/pricing>: Free plan $0 with $5/month of credits, 20 concurrent runs, 5 team members, 10 schedules, 1 day log retention; runs in the `dev` environment are not charged. Hobby $10/month, Pro $50/month. Self-hosting exists (a webapp container bundling the dashboard, Postgres and Redis, plus a worker container with the supervisor and runners, and the object storage and registry those need; Checked 2026-09-10 at <https://trigger.dev/docs/self-hosting/overview>). Recommendation: cloud. Self-hosting is several services to operate for a two-person team, and the SPINE names pg-boss as the fallback if the vendor fails, not a self-hosted Trigger.dev.
+$0. No account.
 
 ### Steps
 
-1. Sign up at <https://cloud.trigger.dev> with GitHub.
-2. Create an organization named `ai-stylist` (or accept the default personal org) and a project named `ai-stylist`. Choose v4 if asked; new projects are v4.
-3. Copy the project ref from **Project settings** in the dashboard. It looks like `proj_<...>` and is not a secret. Store it as `TRIGGER_PROJECT_REF` in `.env` and in `secrets/dev.enc.yaml`. T08 will write the same value into `trigger.config.ts` under `apps/api/`.
-4. Open **API keys** (dashboard, project selected, environment selector). Copy the **Development** secret key (`tr_dev_sk_...`) and store it as `TRIGGER_SECRET_KEY` in `.env` and `secrets/dev.enc.yaml`. The **Production** key (`tr_prod_sk_...`) goes into `secrets/prod.enc.yaml` when P03 creates it; a preview key exists as well (`tr_preview_sk_...`) and is not used yet.
-5. The `dev` environment runs tasks on your machine through the CLI dev server; `prod` runs them on Trigger.dev's cloud. Deployment credentials (`TRIGGER_ACCESS_TOKEN`) are needed only by the deploy workflow in P03 and will be added to `.github/workflows/README.md` then.
+None beyond adding the `pg-boss` dependency and letting it create its `pgboss` schema in the app database (`DATABASE_URL`). Locally that is the docker compose Postgres; in staging and production it is the database from section 3, so it is covered by the same backups and alerts.
 
 ### What to record
 
-- `.env.example` keys: `TRIGGER_PROJECT_REF`, `TRIGGER_SECRET_KEY` (per environment: `dev` in `.env` and `secrets/dev.enc.yaml`, `prod` in `secrets/prod.enc.yaml`).
+Nothing. No keys, no dashboard, no GitHub secrets.
 
 ### Do not
 
-- Do not use the production secret key locally.
-- Do not put business logic into task handlers; they are adapters (`CLAUDE.md` invariants).
+- Do not run a second queue service until the P02-T08 acceptance suite (kill/retry, idempotency, DLQ, replay, per-user cancellation, deletion/export scenarios) proves pg-boss insufficient; the fallback is then self-hosted Trigger.dev per DEC-41, decided through an ADR, not a quiet swap.
+- Do not put business logic into job handlers; they are adapters (`CLAUDE.md` invariants).
 
 ### Verify
 
-Until T08 lands: `just doctor` reports `✔ .env has every key from .env.example`. After T08: `just dev-workers` starts the Trigger.dev dev server and the dashboard's `dev` environment shows your machine as connected.
+Until T08 lands: `just doctor` reports `✔ .env has every key from .env.example`. After T08: the T08 acceptance suite is green (`just test platform`) and `just dev-workers` runs the handlers in-process against the local database.
 
-## 6. Cloudflare (R2, Images, WAF)
+## 6. Cloudflare (R2, DNS/WAF)
 
 ### Why we use it
 
-R2 is the object store for user media (zero egress fees, `SPINE.md` §2), behind the `StorageProvider` port in `apps/api/src/platform/`. Cloudflare Images provides transforms later; the WAF sits in front of the API when it has a public hostname.
+R2 is the object store for user media and for public app assets (zero egress fees, `SPINE.md` §2; DEC-44), behind the `StorageProvider` port in `apps/api/src/platform/`. DNS and the WAF sit in front of the API when it has a public hostname. Delivery model (DEC-44): private user media is served by presigned GET on the S3 endpoint, uncached, TTL at most 10 minutes; only public app and content assets (3D bundles, avatar/garment manifests, app content) go through an R2 custom domain with the Cloudflare cache. Fixed derivatives (cutout, two or three thumbnail sizes, palette swatch) are produced once by the media workers and stored in R2; there is no on-the-fly image transform service.
 
 ### When you need it
 
-R2 bucket and token: P02-T13 (signed-URL skeleton). Images: P06 (closet capture, thumbnails). WAF and DNS: when the API gets a domain in P03. Region ("location hint" or jurisdiction) is provisional per OQ-07.
+R2 bucket and token: P02-T13 (signed-URL skeleton). Custom domain for the public assets bucket: P04 (3D bundles) or P06 (closet derivatives), whichever ships first. WAF and DNS: when the API gets a domain in P03. Region ("location hint" or jurisdiction) is provisional per OQ-07.
 
 ### Cost
 
-R2, Checked 2026-09-10 at <https://developers.cloudflare.com/r2/pricing/>: free tier 10 GB-month storage, 1 million Class A operations and 10 million Class B operations per month, egress free. Cloudflare Images, Checked 2026-09-10 at <https://developers.cloudflare.com/images/pricing/>: 5,000 unique transformations per month free, then $0.50 per 1,000; stored images $5 per 100,000 per month. Enabling R2 may ask for a payment method; verify at signup.
+R2, Checked 2026-09-10 at <https://developers.cloudflare.com/r2/pricing/>: free tier 10 GB-month storage, 1 million Class A operations and 10 million Class B operations per month, egress free. DNS and the managed WAF rules used here are on the free plan. Enabling R2 may ask for a payment method; verify at signup.
 
 ### Steps
 
@@ -320,20 +323,20 @@ R2, Checked 2026-09-10 at <https://developers.cloudflare.com/r2/pricing/>: free 
 4. Copy the account id: R2 overview page, **Account details** panel, **Account ID**. Store it as `R2_ACCOUNT_ID`.
 5. Create a token: R2 overview, **Account details**, **Manage** next to **API Tokens**, **Create Account API token** (an account token outlives any one person; do not use "Create User API token"). Name `ai-stylist-dev`. Permissions: **Object Read & Write**. Under "Specify bucket(s)" choose only `ai-stylist-dev`. TTL: leave unlimited or set a rotation date. Create.
 6. The next screen shows **Access Key ID** and **Secret Access Key** once. Copy them into `R2_ACCESS_KEY_ID` and `R2_SECRET_ACCESS_KEY`. The S3 endpoint is `https://<R2_ACCOUNT_ID>.r2.cloudflarestorage.com` (or the jurisdiction variant shown on that screen); the adapter builds it from `R2_ACCOUNT_ID`, so it is not a separate key.
-7. Set `R2_BUCKET=ai-stylist-dev`. Leave `R2_PUBLIC_BASE_URL` empty locally; it is set when a custom domain or `r2.dev` public access is attached to a bucket (bucket, **Settings**, **Public access**), which is not needed before P06.
+7. Set `R2_BUCKET=ai-stylist-dev`. Leave `R2_PUBLIC_BASE_URL` empty locally; it is set when a custom domain is attached to the public assets bucket (step 9), which is not needed before P04/P06.
 8. Repeat steps 5 and 6 with a separate token per environment (`ai-stylist-staging`, `ai-stylist-prod`), each scoped to its own bucket, into the matching `secrets/<env>.enc.yaml`.
-9. Cloudflare Images (P06): left menu **Images**, enable, then follow the P06 task; no key exists in `.env.example` yet and one will be added with that phase.
+9. Custom domain for public assets (P04/P06): create a separate bucket `ai-stylist-assets-<env>` for public app and content assets only, then bucket, **Settings**, **Public access**, **Custom domains**, connect a hostname on the project's Cloudflare zone and set `R2_PUBLIC_BASE_URL` to it in the matching `secrets/<env>.enc.yaml`. The Cloudflare cache in front of that hostname is the only CDN in the design. User media buckets never get a custom domain or `r2.dev` access; they are read through presigned GETs only. A separate backup bucket with its own token is created in section 3 step 5.
 10. WAF (P03 or later): add the API domain to Cloudflare DNS, proxy it (orange cloud), then **Security**, **WAF** managed rules. Rate limits inside the API (`RATE_LIMIT_*`) stay on regardless; never disable one to make the other work.
 
 ### What to record
 
 - `.env.example` keys: `R2_ACCOUNT_ID`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`, `R2_BUCKET`, `R2_PUBLIC_BASE_URL` (one set per environment).
-- Overview table: bucket names, jurisdiction chosen.
+- Overview table: bucket names (media, public assets, backups), jurisdiction chosen.
 
 ### Do not
 
 - Do not create one token with **Admin Read & Write** and reuse it across environments.
-- Do not make the dev or staging bucket public.
+- Do not make a user media bucket public in any environment; only the dedicated public assets bucket gets a custom domain.
 - Do not upload real user photos to any bucket; test data is synthetic.
 
 ### Verify
@@ -545,10 +548,10 @@ Free tier, Checked 2026-09-10 at <https://grafana.com/pricing/>: 10k active metr
 
 ### Steps
 
-1. Sign up at <https://grafana.com/auth/sign-up/create-user>. Create a stack named `ai-stylist`; choose the region closest to Railway's (provisional per OQ-07).
+1. Sign up at <https://grafana.com/auth/sign-up/create-user>. Create a stack named `ai-stylist`; choose the region closest to the server's (section 4; provisional per OQ-07).
 2. Grafana Cloud portal, your organization **Overview**, select the stack, then **Configure** on the **OpenTelemetry** tile (Checked 2026-09-10, <https://grafana.com/docs/grafana-cloud/send-data/otlp/send-data-otlp/>).
 3. Follow that page to generate an API token (name `api-dev`, role write). It shows ready-made environment variables: `OTEL_EXPORTER_OTLP_ENDPOINT` (`https://otlp-gateway-<region>.grafana.net/otlp`) and `OTEL_EXPORTER_OTLP_HEADERS` (`Authorization=Basic <base64 of instanceId:token>`). Copy both exactly as shown.
-4. Store them in `secrets/dev.enc.yaml` and `.env` under the same names. Set `OTEL_SERVICE_NAME=api` for the API and `workers-ml` for the workers (the workers get their own env in their compose/Railway config).
+4. Store them in `secrets/dev.enc.yaml` and `.env` under the same names. Set `OTEL_SERVICE_NAME=api` for the API and `workers-ml` for the workers (the workers get their own env in their compose/Coolify config).
 5. Generate a separate token per environment (`api-staging`, `api-prod`) into the matching `secrets/<env>.enc.yaml` so one can be revoked without touching the others.
 
 ### What to record
@@ -627,15 +630,15 @@ Keep these short; each provider is wrapped by a port in `apps/api/src/platform/`
 - Steps: at P08 start, buy Standard at <https://open-meteo.com/en/pricing> with the owner's card; the customer portal is <https://dashboard.open-meteo.com>. Copy the API key. The adapter reads `OPEN_METEO_BASE_URL` (set to the customer endpoint in staging/prod, empty locally); the API-key variable is added to `.env.example` by the P08 adapter task.
 - Record: `.env.example` key `OPEN_METEO_BASE_URL`; API key name added in P08.
 
-### Nager.Date
+### date-holidays (embedded)
 
-- Why: public holidays behind the `HolidayProvider` port (P08).
-- When: P08. No account, no API key, no rate limit on the hosted API (Checked 2026-09-10, <https://nagerholidays.com/Api>; note that `date.nager.at` now redirects to `nagerholidays.com`, which the P08 adapter base URL must reflect). Self-hosting is the documented fallback (DEC-23).
-- Record: nothing in `.env.example` yet; a base-URL key is added in P08.
+- Why: public holidays behind the `HolidayProvider` port (P08) from the embedded open-source `date-holidays` library (ISC code, CC-BY-3.0 data; DEC-45, adapter `DateHolidaysHolidayProvider`, provider id `date-holidays`). No account, no network call, no key (Checked 2026-09-13 at <https://github.com/commenthol/date-holidays>).
+- When: P08. The hosted Nager.Date API is used only to record cross-check fixtures in the P08 tests, never at runtime. Nager.Date self-hosting needs a licence key for its Docker image and package, so it was not chosen.
+- Record: nothing in `.env.example`.
 
 ### Embeddings and vision LLM
 
-- Why: attribute extraction (Gemini Flash-class or Claude Haiku), embeddings (Voyage multimodal per DEC-35, Cohere as the SPINE-era pick), explanation polish (Claude Haiku).
+- Why: attribute extraction (Gemini Flash-class or Claude Haiku), embeddings (Voyage multimodal per DEC-35, Cohere as the SPINE-era pick). Explanations are templates from reason codes with no LLM polish (DEC-46). The self-hosted eval arms (BiRefNet for segmentation, Qwen3-VL for extraction, SigLIP/SigLIP2 for embeddings in P06; FASHN VTON 1.5 for try-on in P11; DEC-47) need a GPU eval host, not accounts.
 - When: P06 onward. Each provider must pass the doc 11 §7.5 privacy review before receiving garment images.
 - Steps: create the accounts when P06 starts (Google AI Studio or Google Cloud for Gemini; Anthropic Console for Claude; Voyage AI dashboard for embeddings). Keys are not in `.env.example` yet; the P06 tasks that add the adapters add the keys with comments, following the existing pattern. Prefer a project-owned email and a monthly spend cap on each.
 - Do not: put any of these keys in the mobile app; all calls go through the API.
@@ -661,22 +664,22 @@ Deferred to P03: `just test identity` runs the better-auth provider fixtures.
 
 ## Checklist by phase
 
-| Phase     | Do now                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
-| --------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| P02 (now) | 1 GitHub (CODEOWNERS, branch protection, Actions). 2 sops + age (keys, `.sops.yaml`, `secrets/dev.enc.yaml`, `SOPS_AGE_KEY`). 3 Neon project (T07). 4 Railway empty project. 5 Trigger.dev (T08). 6 R2 dev bucket + token (T13). 7 Expo/EAS + `EXPO_TOKEN` (T14). 8 Apple enrollment + ASC API key (T14). 9 Play Console + keystore secrets (T14). 10 PostHog project (T09). 11 Grafana Cloud stack + OTel vars (T09). Request Apple and Google approvals first; they take days. |
-| P03       | Railway first deploy (Dockerfile, project token, sync script), Neon `production` branch, `secrets/staging.enc.yaml` and `secrets/prod.enc.yaml`, Cloudflare DNS + WAF for the API domain, PostHog prod project + personal API key, 14 Apple and Google sign-in credentials.                                                                                                                                                                                                      |
-| P06       | fal.ai key + spend limit, vision-LLM and embedding provider accounts (privacy review first), Cloudflare Images, R2 multipart upload settings.                                                                                                                                                                                                                                                                                                                                    |
-| P08       | Open-Meteo Standard plan + key, Nager.Date base URL decision (hosted vs self-hosted).                                                                                                                                                                                                                                                                                                                                                                                            |
-| P11       | fal.ai production key, AIC-O2 review passed, Replicate fallback account, per-provider spend caps.                                                                                                                                                                                                                                                                                                                                                                                |
-| P13       | 12 RevenueCat project, store connections, webhook secret, `REVENUECAT_*` in `secrets/prod.enc.yaml`.                                                                                                                                                                                                                                                                                                                                                                             |
-| P14       | Rotate every credential created during development that was ever pasted into a shared terminal; confirm each `secrets/prod.enc.yaml` value is production-scoped; Play closed-testing requirement; App Store review assets.                                                                                                                                                                                                                                                       |
+| Phase     | Do now                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
+| --------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| P02 (now) | 1 GitHub (CODEOWNERS, branch protection, Actions). 2 sops + age (keys, `.sops.yaml`, `secrets/dev.enc.yaml`, `SOPS_AGE_KEY`). 3 PostgreSQL on the server: databases, PgBouncer, pgBackRest to the backup bucket (T07). 4 Server + Coolify: host, hardening, project + environments. 5 pg-boss: nothing to provision (T08). 6 R2 dev bucket + token (T13). 7 Expo/EAS + `EXPO_TOKEN` (T14). 8 Apple enrollment + ASC API key (T14). 9 Play Console + keystore secrets (T14). 10 PostHog project (T09). 11 Grafana Cloud stack + OTel vars (T09). Request Apple and Google approvals first; they take days. |
+| P03       | Coolify first deploy (Dockerfile, `COOLIFY_TOKEN`, sync script), production database + role, `secrets/staging.enc.yaml` and `secrets/prod.enc.yaml`, Cloudflare DNS + WAF for the API domain, PostHog prod project + personal API key, 14 Apple and Google sign-in credentials.                                                                                                                                                                                                                                                                                                                           |
+| P06       | fal.ai key + spend limit, vision-LLM and embedding provider accounts (privacy review first), GPU eval host for the self-hosted eval arms, R2 public assets custom domain (if not done in P04), R2 multipart upload settings.                                                                                                                                                                                                                                                                                                                                                                              |
+| P08       | Open-Meteo Standard plan + key; run the weather comparison (Open-Meteo managed vs self-hosted vs WeatherKit); holidays need nothing (embedded `date-holidays`).                                                                                                                                                                                                                                                                                                                                                                                                                                           |
+| P11       | fal.ai production key, AIC-O2 review passed, Replicate fallback account, per-provider spend caps.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
+| P13       | 12 RevenueCat project, store connections, webhook secret, `REVENUECAT_*` in `secrets/prod.enc.yaml`.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
+| P14       | Rotate every credential created during development that was ever pasted into a shared terminal; confirm each `secrets/prod.enc.yaml` value is production-scoped; restore drill via pgBackRest into a scratch database (section 3 step 9); Play closed-testing requirement; App Store review assets.                                                                                                                                                                                                                                                                                                       |
 
 ## When something goes wrong
 
 1. `just secrets-sync` reports `no age recipients in .sops.yaml`. Finish section 2 step 3 for the environment named in the error, then retry. If it reports that `secrets/<env>.enc.yaml` does not exist, create that encrypted file with `just secrets-edit <env>` as described in section 2 step 5.
 2. `sops` says `no key could decrypt the data` or `failed to get the data key`. Your public key is not in the file's recipient list, or your private key is not at `~/.config/sops/age/keys.txt`. Ask a developer who can decrypt to add your key to `.sops.yaml` and run `just secrets-updatekeys`. Check `SOPS_AGE_KEY_FILE` if you keep the key elsewhere.
 3. `just doctor` reports `.env missing N key(s)`. Someone added keys to `.env.example`. Copy the missing lines from `.env.example` into `.env` (values stay empty) or re-run `just secrets-sync` after the shared file is updated.
-4. `just db-migrate` against Neon fails with a `SET` or `prepared statement` error. You used the pooled connection string. Copy the direct string (Connection pooling toggle off) and retry.
+4. `just db-migrate` against the staging PostgreSQL fails with a `SET` or `prepared statement` error. You used the pooled (PgBouncer) connection string. Use the direct string from section 3 step 8 and retry.
 5. The `ios-eas` workflow stops at `Require EXPO_TOKEN` or `Require App Store Connect API key secrets`. The GitHub secret is missing or named differently. The names must match `.github/workflows/README.md` exactly; check for trailing spaces in the secret value when the step passes but `eas` still reports `Not logged in`.
 6. `eas build` reports the free build quota is exhausted. Wait for the monthly reset shown under **Usage**, or build Android locally with `just mobile-android-build --profile preview` (needs `ANDROID_HOME`), or upgrade the plan with the owner's approval.
 7. The `android` workflow prints `ANDROID_KEYSTORE_BASE64 not set`. Expected until section 9 is done; the build is unsigned and cannot be uploaded to Play. After adding the four secrets, re-run the workflow and look for `Signing: enabled`.

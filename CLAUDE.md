@@ -25,7 +25,7 @@ apps/api/               NestJS (Fastify adapter) modular monolith
 apps/api/src/modules/<name>/           one directory per SPINE domain module (13): index.ts (public API), internal/, tests/
 apps/api/src/modules/<name>/tests/     that module's tests (always here)
 apps/api/src/platform/  infra adapters implementing ports (storage, outbox relay, logger, OTel, provider SDKs); leaf-only
-apps/api/src/trigger/   Trigger.dev task definitions
+apps/api/src/jobs/      pg-boss job definitions
 workers/                Python FastAPI ML/media services (Docker)
 packages/contracts/     OpenAPI 3.1 + event schemas (canonical) + generated clients
 packages/shared-kernel/ units, IDs, reason codes, entitlement names, event envelope — pure, depends on nothing
@@ -60,7 +60,7 @@ scripts/  justfile  mise.toml           tooling; `just` is the only entry point
 
 - **Modules** (canonical names in SPINE §3): `identity`, `profile`, `avatar`, `closet`, `media`, `outfit`, `context`, `recommendation`, `fashion-intel`, `billing`, `notifications`, `admin`, `assistant`, `shared-kernel`, `platform`.
 - Import other modules **only via their public API** (`index.ts`). Never import another module's internals. `just arch-check` enforces this; do not weaken its rules.
-- **No domain logic in adapters**: business rules never live in UI components, NestJS controllers, database models, provider SDK wrappers, Trigger.dev job handlers, or React hooks. Adapters translate; modules decide.
+- **No domain logic in adapters**: business rules never live in UI components, NestJS controllers, database models, provider SDK wrappers, pg-boss job handlers, or React hooks. Adapters translate; modules decide.
 - **Domain never imports provider SDKs.** Providers (weather, holidays, fal.ai, RevenueCat, R2, …) sit behind ports; `platform` implements them.
 - **`recommendation` ⊥ renderer:** the recommendation module must not depend on `avatar`, Filament, or any rendering concern. It returns structured results with reason codes; rendering happens elsewhere.
 - **Deterministic before AI:** if rules, geometry, a query, or cached computation can solve it reliably, do not call a model. Any new AI call needs the doc-10 justification (contract, cost, cache, fallback, eval).
@@ -133,7 +133,7 @@ Ask, state exactly what will run, and wait for confirmation.
 
 - Never fabricate or extrapolate test output, benchmark numbers, device results, eval metrics, or "it works" claims. Evidence = the actual command and its actual output.
 - If you did not run it, say so. If it fails, report the precise failure.
-- For fast-moving APIs (Expo/RN, Filament, Drizzle, Trigger.dev, RevenueCat, store policies), consult current official docs (context7 MCP or web) instead of guessing from training data; note the doc version/date in the PR when it matters.
+- For fast-moving APIs (Expo/RN, Filament, Drizzle, pg-boss, Coolify, RevenueCat, store policies), consult current official docs (context7 MCP or web) instead of guessing from training data; note the doc version/date in the PR when it matters.
 
 ## Completion checklist (every task)
 

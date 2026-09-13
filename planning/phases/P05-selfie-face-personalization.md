@@ -1,5 +1,7 @@
 # P05 — Selfie Face Personalization
 
+> Amended 2026-09-13 ([r7](../research/r7-third-party-services-and-self-hosting-audit-2026-09-13.md), ADR-0003 — service consolidation: pg-boss jobs, owned server + Coolify, self-managed PostgreSQL, R2 delivery model).
+
 > File name: `phases/P05-selfie-face-personalization.md` per [SPINE §5](../SPINE.md). Every section below is REQUIRED (brief §10); write "None" explicitly rather than deleting a section. Status values per [PROGRESS.md](../PROGRESS.md).
 
 ## 1. Overview
@@ -39,7 +41,7 @@ IDs from [01-requirements-and-traceability.md](../01-requirements-and-traceabili
 
 ## 4. In scope / out of scope
 
-**In scope:** `face_processing` consent screen + registry integration; guided selfie capture UX (live-camera-first) with on-device quality validation; on-device landmark extraction (ARKit / MediaPipe Face Landmarker); deterministic landmarks→head-morph mapping; stylized-likeness review screen with confidence indicator; multi-angle fallback capture; face-data deletion cascade (consent withdrawal and account deletion paths) incl. derived avatar assets and CDN copies; misuse protections (single-face, capture-first, self-attestation, gallery-import heuristics); regional gating mechanism; UI-copy honesty audit; SPK-1 evaluation.
+**In scope:** `face_processing` consent screen + registry integration; guided selfie capture UX (live-camera-first) with on-device quality validation; on-device landmark extraction (ARKit / MediaPipe Face Landmarker); deterministic landmarks→head-morph mapping; stylized-likeness review screen with confidence indicator; multi-angle fallback capture; face-data deletion cascade (consent withdrawal and account deletion paths) incl. derived avatar assets and any cached copies; misuse protections (single-face, capture-first, self-attestation, gallery-import heuristics); regional gating mechanism; UI-copy honesty audit; SPK-1 evaluation.
 
 **Out of scope / non-goals for this phase:** server-side face reconstruction (doc 07 §5.2 — documented path only, own consent + gate, not built); A3 scan-grade twin (explicit non-goal, SPINE §4); face search or cross-user face matching (never, doc 07 §5.3); emotion/attribute inference from faces (forbidden, [11 §11](../11-security-privacy-and-compliance.md)); apparent-minor selfie hardening beyond the baseline check (deepened in P14 with NFR-SEC-090/REQ-FAC-080).
 
@@ -86,7 +88,7 @@ Architectural invariant reaffirmed: the selfie image never leaves the device in 
 | Surface | Work (or "None") |
 |---|---|
 | Mobile | Consent screen (S1/S2); guided capture with overlay + on-device quality validation; ARKit (iOS) / MediaPipe Face Landmarker (Android) integration behind one native-bridge interface; landmarks→head-morph deterministic mapping; review + confidence UI; multi-angle flow; delete-face-data flow; gallery-import heuristics + attestation |
-| Backend | Face-vector endpoint with consent guard (integration-tested: no processing/storage before consent record exists); face-scoped deletion cascade job (Trigger.dev, idempotent, audited steps); regional gating check |
+| Backend | Face-vector endpoint with consent guard (integration-tested: no processing/storage before consent record exists); face-scoped deletion cascade job (pg-boss, idempotent, audited steps); regional gating check |
 | Workers (ML/media) | None (processing is on-device; no server ML path in v1) |
 | Data / migrations | Face-vector + lineage migrations; synthetic face-vector fixtures (never real biometric data — [13 §2](../13-testing-quality-and-performance.md)) |
 | Infrastructure | Encryption-at-rest verification for the face-vector store; flag + regional gating config; audit-log wiring for every S3 face-data access |
@@ -110,7 +112,7 @@ Owning row: [10 §2.6](../10-ai-usage-cost-and-evaluation.md) (Selfie → styliz
 
 - New sensitive data introduced + classification (per [11 §6](../11-security-privacy-and-compliance.md)): selfies (device-local only), face landmark vectors, face-personalized avatar assets — all **S3** (biometric-adjacent). Encrypted at rest; every access audited; break-glass only.
 - Consent required / consent UI changes: `face_processing` purpose — explicit, separate, revocable, versioned policy doc, dedicated screen (never bundled — [11 §7.2](../11-security-privacy-and-compliance.md)). BIPA-grade handling nationwide per LR-05: retention/destruction schedule shown at consent time (delete on withdrawal, account deletion, or 3 y inactivity — whichever first); no sale/lease/trade; no cross-user comparison, no identification use, ever.
-- Retention, deletion, and export impact: original selfie discarded after derivation by default (opt-in keep for re-derivation, device-local); withdrawal runs doc 11 §13.2 steps 3–5 scoped to face assets (selfies, landmark vectors, A2 avatar assets, CDN copies) and reverts to generic face; account deletion includes the same set; export bundle includes the face-parameter vector + derived assets marked with provenance; hard delete ≤30 d of request.
+- Retention, deletion, and export impact: original selfie discarded after derivation by default (opt-in keep for re-derivation, device-local); withdrawal runs doc 11 §13.2 steps 3–5 scoped to face assets (selfies, landmark vectors, A2 avatar assets, any cached copies — private media is served presigned and uncached per DEC-44, so this step verifies rather than purges a CDN) and reverts to generic face; account deletion includes the same set; export bundle includes the face-parameter vector + derived assets marked with provenance; hard delete ≤30 d of request.
 - Threat/abuse cases added to the threat model: unauthorized face creation / processing another person's image (11 §3.1) — mitigations shipped here: capture-first UX, single-face + frontal heuristics on imports, "is this you?" attestation, different-person-on-recapture confirmation, ToS prohibition; moderation path reserved for the server path. No face search, no cross-user matching (structural mitigation per 11 §11). Apparent-minor selfie rejection per age policy (11 §10).
 
 ## 11. Observability and analytics added in this phase
@@ -130,7 +132,7 @@ Owning row: [10 §2.6](../10-ai-usage-cost-and-evaluation.md) (Selfie → styliz
 | P05-T05 | Review screen: confidence indicator, accept/adjust/reject, apply-to-avatar (`avatar.face.applied.v1`), honest-copy strings | P05-T03, P05-T04 | 1 |
 | P05-T06 | Multi-angle fallback flow (2–3 optional angles, partial-subset handling) | P05-T05 | 1 |
 | P05-T07 | Backend: face-vector endpoint with consent guard + encryption; migrations; rig-version binding + `needs-recapture` on topology bump | P05-T01 | 1 |
-| P05-T08 | Face-scoped deletion cascade: Trigger.dev job (idempotent, audited), consent-withdrawal trigger, account-deletion integration, orphan verification scan; deletion-cascade test | P05-T07 | 2 |
+| P05-T08 | Face-scoped deletion cascade: pg-boss job (idempotent, audited), consent-withdrawal trigger, account-deletion integration, orphan verification scan; deletion-cascade test | P05-T07 | 2 |
 | P05-T09 | Misuse protections: gallery-import heuristics, self-attestation, different-person re-capture confirmation, apparent-minor rejection | P05-T03 | 1 |
 | P05-T10 | Regional gating (OQ-06 list via flag payload) + kill-switch flag; rollout wiring | P05-T07 | 1 |
 | P05-T11 | Observability + analytics; UI-copy honesty audit (no "twin"/"exact" strings — automated lexicon check in CI over copy files) | P05-T05 | 1 |
@@ -147,7 +149,7 @@ Owning row: [10 §2.6](../10-ai-usage-cost-and-evaluation.md) (Selfie → styliz
 |---|---|---|---|---|---|
 | `identity` | Consent purpose gating logic | Consent history append-only invariant | Consent API vs OpenAPI | **Consent-before-processing test: face endpoint 403s and no bytes are processed/stored without an active consent record (REQ-FAC-030)** | Maestro: consent decline path leaves full app value |
 | `avatar` | Landmarks→morph mapping math | Mapping bounded within head blend-shape ranges for arbitrary landmark inputs | Face-vector schema; `avatar.face.applied.v1` pinned | Rig-bump → `needs-recapture` state test | Golden renders: likeness presets across skin tones on avatar head |
-| `media` | Lineage rows for face-derived assets | — | Deletion event schema | **Deletion-cascade test: withdrawal removes selfie refs, vectors, derived assets, CDN copies; orphan scan clean (REQ-FAC-050 / NFR-PRV-040)**; Testcontainers PG + R2-compatible store | — |
+| `media` | Lineage rows for face-derived assets | — | Deletion event schema | **Deletion-cascade test: withdrawal removes selfie refs, vectors, derived assets, any cached copies; orphan scan clean (REQ-FAC-050 / NFR-PRV-040)**; Testcontainers PG + R2-compatible store | — |
 | Mobile | Quality-validation thresholds; misuse heuristics | — | Generated client compile | Capture flow RNTL with mocked bridge | Device tests (real iOS + Android): extraction success/latency on guided captures; low-quality images rejected with specific guidance (REQ-FAC-020); a11y pass on consent + capture + review |
 | Security suite | — | — | — | `*.sec.test.ts`: face fields never in logs/analytics/crash payloads (forbidden-field lint, NFR-PRV-050); S3 access audited | Copy-lexicon check: no "digital twin"/"exact" claims (REQ-FAC-060) |
 
@@ -195,7 +197,7 @@ New bug fixes require a regression test that fails before the fix. Tests live in
 - AC-2: Low-quality test images (blur/dark/multi-face/angle fixtures) are rejected with actionable, specific guidance; retake, crop, and review are demonstrated on device.
 - AC-3: Integration test proves no face bytes are processed and no face data stored before an active `face_processing` consent record exists; consent is per-purpose, versioned, revocable, append-only.
 - AC-4: The default A2 path performs landmark extraction on-device (demonstrated in airplane mode); the server path exists only as documentation (doc 07 §5.2) with its own consent gate described; code search shows no selfie upload path.
-- AC-5: Deleting face data (withdrawal) and account deletion each remove originals, landmark vectors, and all face-derived assets including CDN copies — verified by the deletion-cascade test and the orphan scan; retention/destruction schedule matches the consent-screen copy.
+- AC-5: Deleting face data (withdrawal) and account deletion each remove originals, landmark vectors, and all face-derived assets including any cached copies — verified by the deletion-cascade test and the orphan scan; retention/destruction schedule matches the consent-screen copy.
 - AC-6: Automated copy-lexicon check finds no "digital twin"/"exact likeness" claims; every A2 result shows a confidence/quality indicator; A3 documented as a non-goal.
 - AC-7: Low-confidence results trigger the fallback flow; the user can complete with the generic face or multi-angle capture; partial angle subsets are accepted.
 - AC-8: Misuse safeguards are implemented and threat-model-documented: capture-first default, single-face/frontal import heuristics, self-attestation, different-person confirmation, apparent-minor rejection; each has a test.
@@ -210,7 +212,7 @@ just test avatar && just test media && just test identity   # all pass, no skips
 just lint && just typecheck
 just arch-check
 just generate --check
-just db-migrate && just db-rollback && just db-migrate      # Neon branch, up/down/up
+just db-migrate && just db-rollback && just db-migrate      # a scratch database restored from the staging backup, up/down/up
 just security-scan
 just ci-parity
 # phase-specific: device runs (iOS + Android) for extraction latency/success;

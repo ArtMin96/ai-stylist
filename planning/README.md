@@ -35,10 +35,10 @@ A premium, personalized AI stylist for iOS + Android: a parametric 3D avatar adj
 1. **React Native + Expo (TypeScript) with Filament (`react-native-filament`)** for 3D — single codebase for a small team; validated by the P01 device gate before commitment.
 2. **Anny (Apache 2.0) parametric body model** — avoids the SMPL commercial-licensing trap; zero licensing cost.
 3. **Honest capability ladders (A0–A3, G0–G4)** — MVP ships A1 avatar + G0 collage + G2 generative photo try-on; 3D garment reconstruction and cloth simulation are gated R&D, not promises.
-4. **NestJS modular monolith + Trigger.dev workers + Neon Postgres (pgvector) + Cloudflare R2** — module boundaries enforced in CI; no microservices/Kubernetes until measured need.
+4. **NestJS modular monolith + pg-boss jobs + self-managed PostgreSQL (pgvector) + Cloudflare R2, on owned servers with Coolify** — module boundaries enforced in CI; no microservices/Kubernetes until measured need (self-hosting baseline 2026-09-13: [r7](research/r7-third-party-services-and-self-hosting-audit-2026-09-13.md), [ADR-0003](../docs/adr/0003-self-hosted-infrastructure-baseline.md)).
 5. **OpenAPI 3.1 canonical contracts, generated clients** — one source of truth for schemas, taxonomy, reason codes, entitlements; future chat reuses the same application services.
 6. **Deterministic recommendation engine** — hard constraints before soft preferences, reason codes from the decision trace, zero-hidden-randomness; AI only at bounded edges (~$0.02–0.16/user/mo).
-7. **Linux-first development; hosted macOS CI (EAS/GitHub Actions, ~$30–50/mo) for iOS delivery** — no Mac purchase; xtool assessed and not viable for this stack.
+7. **Linux-first development; hosted macOS CI (EAS free allowance or GitHub Actions macOS, ~$30–50/mo) for iOS delivery** — no Mac purchase; xtool assessed and not viable for this stack; the GHA macOS lane is the exit path if EAS becomes paid (ADR-0002, DEC-48).
 8. **Server-side entitlements + 3-day Pro-level trial → Free tier + 3 paid tiers** (prices are hypotheses; see [doc 12](12-pricing-entitlements-and-unit-economics.md)).
 
 ## Five highest risks (register in [doc 16](16-risks-open-questions-and-decision-log.md))

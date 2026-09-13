@@ -78,7 +78,7 @@ MANIFEST='
 03-improvement.md|3 · Improvement / Tech debt|type:improvement|Refactor, perf, DX; no user-visible behaviour change
 04-spike.md|4 · Spike / Research|type:spike|Time-boxed question; output is a doc/ADR, no production code
 05-contract-change.md|5 · Contract change|type:contract|OpenAPI / event schema / shared-kernel registry; producer before consumer
-06-migration.md|6 · Migration|type:migration|DB schema change: expand–contract, down file, Testcontainers + Neon branch
+06-migration.md|6 · Migration|type:migration|DB schema change: expand–contract, down file, Testcontainers + scratch database
 07-security-review.md|7 · Security / privacy review|type:security|Auth, consent, deletion, webhooks; security-privacy-review skill
 08-chore.md|8 · Chore / Ops|type:chore|Accounts, CI, tooling; human-only steps and secret names
 '

@@ -32,7 +32,7 @@ name, and the compliant alternative. Fixes go back to the owning engineer agent.
 - `recommendation-not-renderer`, `recommendation-outfit-types-only`.
 - `assistant-app-services-only`: `assistant` calls application services only; no tables, no
   `platform`, no `drizzle-orm`, no second engine.
-- `domain-no-provider-sdk`: no `@trigger.dev/*`, `@aws-sdk/*`, `@cloudflare/*`,
+- `domain-no-provider-sdk`: no `pg-boss`, `@aws-sdk/*`, `@cloudflare/*`,
   `react-native-purchases`, `@fal-ai/*`, `posthog-*`, `firebase-admin`, `@sentry/*` in `modules/**`.
 - `platform-leaf`, `modules-not-platform`, `composition-root-only`, `dev-ports-only`.
 - `shared-kernel-pure`, `no-utils-dirs`, `prototype-unimportable`, `not-to-unresolvable`.

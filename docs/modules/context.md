@@ -19,7 +19,7 @@ None yet (P02 skeleton). Planned per SPINE §3: `context_facts` (cached; precise
 
 ## Invariants
 
-1. No business rule lives in a controller, Drizzle schema file, Trigger.dev task body, provider wrapper, or React component (doc 04 §4.2 rule 9); adapters translate, this module decides.
+1. No business rule lives in a controller, Drizzle schema file, pg-boss job handler, provider wrapper, or React component (doc 04 §4.2 rule 9); adapters translate, this module decides.
 2. This module writes only the tables it owns (doc 04 §4.2 rule 8); cross-module behaviour goes through public application services or events.
 3. Further invariants: OPEN until the first domain phase that touches this module fills them in (each needs at least one test).
 
@@ -35,7 +35,7 @@ None yet (P02 skeleton). Planned per SPINE §3: `context_facts` (cached; precise
 
 ## Dependencies (allowed)
 
-- `packages/shared-kernel` only (doc 04 §4.1). Providers (Open-Meteo, holidays) sit behind ports implemented in `platform`. Consumed by `recommendation`, `assistant`.
+- `packages/shared-kernel` only (doc 04 §4.1). Providers (Open-Meteo for weather; the embedded `date-holidays` library for holidays, DEC-45) sit behind ports implemented in `platform`. Consumed by `recommendation`, `assistant`.
 - Ports: none declared yet. New external capability = port interface here (or in `shared-kernel`) + implementation in `apps/api/src/platform/` + fake in tests; bound only at the composition root (`apps/api/src/main.ts` / `app.module.ts`).
 
 ## Forbidden dependencies
@@ -44,7 +44,7 @@ Derived from P02 brief §5 and doc 04 §4.2; every rule has a failing fixture in
 
 - Any module edge absent from the doc 04 §4.1 graph (`allowed-edges-only`), and any edge that closes a cycle (`no-cycles`).
 - `apps/api/src/modules/<other>/internal/**` of any other module (`public-api-only`); another module's tables.
-- Provider SDKs — `@trigger.dev/sdk`, aws-sdk/R2, RevenueCat, fal.ai, Open-Meteo, FCM, PostHog SDKs (`domain-no-provider-sdk`); ports only.
+- Provider SDKs — `pg-boss`, aws-sdk/R2, RevenueCat, fal.ai, Open-Meteo, FCM, PostHog SDKs (`domain-no-provider-sdk`); ports only.
 - `apps/api/src/platform/**` (`modules-not-platform`); ports are bound at composition roots only.
 - Creating `utils/`, `helpers/`, or `common/` directories (`no-utils-dirs`); importing `prototype/**` (`prototype-unimportable`).
 - Never imports Open-Meteo or other provider clients; unknown context is reported explicitly (missing-data note / lowered confidence), never invented (doc 09).

@@ -1,6 +1,6 @@
 # 08 — Closet Taxonomy & Organization
 
-**Status:** Planning-ratified · **Date:** 2026-08-24
+**Status:** Planning-ratified · **Date:** 2026-08-24 · **Amended:** 2026-09-13 ([r7](research/r7-third-party-services-and-self-hosting-audit-2026-09-13.md), ADR-0003 — embedding provider wording)
 **Owns:** category/subcategory taxonomy + extension mechanism, canonical identifiers, attribute schemas (shared, category-specific, practical), lifecycle metadata, availability states, wear history, tags/filters/search/collections, automatic classification + correction flow, duplicate detection, taxonomy-drift prevention, data-quality metrics.
 **Module:** `closet` (SPINE §3) owns items, taxonomy, item states, wear events. Attribute *derivation* runs in the `media` pipeline ([07 §8](07-3d-avatar-and-garment-pipeline.md)); `closet` owns the resulting canonical metadata.
 **Related docs:** schema/versioning/event conventions → [06-data-api-and-event-contracts.md](06-data-api-and-event-contracts.md) · how attributes feed recommendations → [09-recommendation-engine.md](09-recommendation-engine.md) · classification/embedding models and costs → [10-ai-usage-cost-and-evaluation.md](10-ai-usage-cost-and-evaluation.md) · closet-size entitlements → [12-pricing-entitlements-and-unit-economics.md](12-pricing-entitlements-and-unit-economics.md).
@@ -143,7 +143,7 @@ Consented, privacy-reviewed correction pairs (model proposal, user correction, i
 ## 11. Duplicate & near-duplicate detection
 
 - **Exact:** content hash match at upload ([07 §8.2](07-3d-avatar-and-garment-pipeline.md)) → "already in your closet" with the existing item, zero cost.
-- **Near-duplicate:** multimodal embedding per item cutout (Cohere Embed v4-class per SPINE §2), stored in **pgvector** in the same Postgres. At item creation, ANN search over the user's own items; cosine similarity above a tuned threshold + same category ⇒ non-blocking prompt: "Looks similar to [item] — same item, new photo of it, or a different item?" User choice is final: merge (new photo attaches to existing item), keep both, or replace.
+- **Near-duplicate:** multimodal embedding per item cutout (Voyage multimodal-3.5 per DEC-35, or self-hosted SigLIP/SigLIP2 if the P06 eval arm wins — DEC-47), stored in **pgvector** in the same Postgres. At item creation, ANN search over the user's own items; cosine similarity above a tuned threshold + same category ⇒ non-blocking prompt: "Looks similar to [item] — same item, new photo of it, or a different item?" User choice is final: merge (new photo attaches to existing item), keep both, or replace.
 - Embeddings computed once per real capture (never on generated views, [07 §7](07-3d-avatar-and-garment-pipeline.md)), keyed by content hash, reused for style-similarity features in [09](09-recommendation-engine.md)/[12](12-pricing-entitlements-and-unit-economics.md) wardrobe analytics. Scope rule: dedup search runs **within one user's closet only** — no cross-user visual matching.
 - Duplicate rate (accepted-merge / items captured) is a tracked quality metric (§13); thresholds tuned against a labeled eval set, not guessed.
 

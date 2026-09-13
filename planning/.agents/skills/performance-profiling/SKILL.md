@@ -23,7 +23,7 @@ description: Investigate or improve performance against the documented budgets �
 1. Restate: which budget, current target, and the measurement procedure. If no budget exists for the concern, first propose one (as a hypothesis) in doc 13 terms — do not optimize toward an undefined target.
 2. **Measure before touching code.** Reproducible procedure: fixed dataset/seed, named device tier or environment, ≥5 runs, report median + p95 — not a single lucky run. Tools by area:
    - API: traces + `just test`-adjacent load script per doc 13; Postgres `EXPLAIN ANALYZE` for query suspects.
-   - Jobs/pipeline: Trigger.dev run timings, queue age metrics.
+   - Jobs/pipeline: pg-boss job timings (Grafana job metrics), queue age metrics.
    - Mobile JS/UI: React DevTools profiler, Perfetto/systrace on device.
    - 3D: on-device frame-time capture per doc 07/13 procedure, low-tier device mandatory.
    - Size: platform bundle analyzers; app-size budget in doc 13.

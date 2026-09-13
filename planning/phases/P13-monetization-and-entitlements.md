@@ -1,5 +1,7 @@
 # P13 — Monetization and Entitlements
 
+> Amended 2026-09-13 ([r7](../research/r7-third-party-services-and-self-hosting-audit-2026-09-13.md), ADR-0003 — service consolidation: pg-boss jobs, owned server + Coolify, self-managed PostgreSQL, R2 delivery model).
+
 > File name: `phases/P13-monetization-and-entitlements.md` per [SPINE §5](../SPINE.md). Every section below is REQUIRED (brief §10). Status values per [PROGRESS.md](../PROGRESS.md). All prices in this file are **PRICING HYPOTHESES** per [12](../12-pricing-entitlements-and-unit-economics.md); store-compliance statements carry `[VERIFY-P13]` and require qualified review.
 
 ## 1. Overview
@@ -92,7 +94,7 @@ Module names per [SPINE §3](../SPINE.md); update each touched module's contract
 | Backend | `billing` module per §6; enforcement activation at the [12 §3.3](../12-pricing-entitlements-and-unit-economics.md) points; webhook handler; identity signup hook; notifications categories |
 | Workers (ML/media) | Generation jobs: entitlement double-check before spend + ledger consume/refund calls (already seamed in P11 — verify + activate) |
 | Data / migrations | Tables per §7; staging test accounts per tier + mid-trial + expired-trial ([15 §11](../15-team-workflow-and-ai-agent-operations.md)) |
-| Infrastructure | RevenueCat project/products/offerings (6 subscription SKUs + 2 consumable top-up SKUs if the stretch lands, both stores); store sandbox products + testers; webhook endpoint + secret in sops; Trigger.dev: trial-expiry sweep, credit period grant/expire, nightly reconciliation |
+| Infrastructure | RevenueCat project/products/offerings (6 subscription SKUs + 2 consumable top-up SKUs if the stretch lands, both stores); store sandbox products + testers; webhook endpoint + secret in sops; pg-boss cron schedules: trial-expiry sweep, credit period grant/expire, nightly reconciliation |
 | 3D / assets | None |
 | Admin / internal tools | Billing panel + reconcile-now + audited credit adjustment; experiment-assignment lookup for support |
 
@@ -181,7 +183,7 @@ New bug fixes require a regression test that fails before the fix. Tests live in
 
 Link RISK-NN/ASM-NN in [16](../16-risks-open-questions-and-decision-log.md); add phase-local ones there, not here.
 
-- Risks in play: **RISK-04** (store approval of trial/paywall model — primary), RISK-08 (AI cost vs anchors, checked at P13 per register), RISK-11 (RevenueCat vendor risk — entitlement truth is our table), ASM-05, ASM-09; OQ-01, OQ-02, OQ-09; LR-08.
+- Risks in play: **RISK-04** (store approval of trial/paywall model — primary), RISK-08 (AI cost vs anchors, checked at P13 per register), RISK-11 (RevenueCat vendor risk — entitlement truth is our table), ASM-05, ASM-09 (closed 2026-09-13 per DEC-48); OQ-01, OQ-02, OQ-09; LR-08.
 - **Stop/kill criteria for this phase:**
   - T01 compliance review or store rejection finds a written policy conflict with the server-granted trial → **switch to store-managed intro-offer variant** (RevenueCat supports both; fallback per RISK-04), log DEC; pricing copy never promises the non-compliant variant.
   - Reconciliation drift alert fires persistently (> 0.1 % for 3 consecutive days) in beta → halt paid rollout (`entitlement-enforcement` stays limited to internal) until root-caused.
@@ -214,7 +216,7 @@ Objectively verifiable statements — no "works well".
 - AC-7: The compliance checklist covers every `[VERIFY-P13]` item with a verdict and a named qualified-review label; unresolved conflicts have a decided fallback (OQ-02 closed by DEC). Final store sign-off completes in P14 (REQ-BIL-070).
 - AC-8: Replaying any recorded webhook produces zero state change (test); nightly reconciliation repairs injected drift and raises the drift alert (test + staging demo); webhook forgery/tamper tests pass.
 - AC-9: Credit grants match SPINE §6 per tier (0 / 10 / 60 / 150; trial 15); **consume debits the task weight from `credits.weights` (try-on 3, missing view 1) and rejects a job whose weight exceeds the balance** (test); capture/recommendation/browsing consume zero credits (test); consume is atomic with job acceptance and double-delivery cannot double-charge (idempotency test); failed jobs refund the full weight.
-- AC-9b: Store fee assumptions in doc 12 §7 re-verified against live Apple SBP / Google Play policy and recorded (BIL-O7); provider prices re-verified against r6 at phase kickoff (AIC-O6).
+- AC-9b: Store fee assumptions in doc 12 §7 re-verified against live Apple SBP / Google Play policy and recorded — Google Play 15% for auto-renewing subscriptions (10% service + 5% billing fee in the EEA/UK/US program from 2026-06-30; 15% elsewhere), verified 2026-09-13 ([r7](../research/r7-third-party-services-and-self-hosting-audit-2026-09-13.md)); base case 15% unchanged; BIL-O7 resolved 2026-09-13 but re-verified at P13 kickoff; provider prices re-verified against r6 at phase kickoff (AIC-O6).
 - AC-10: Per-capability cost tables exist in doc 12/10 (as-of dated); per-plan soft/hard caps from [10 §6.1](../10-ai-usage-cost-and-evaluation.md) are enforced in staging (breach test triggers alert + degrade).
 - AC-11: Plans carry versions; a simulated repackaging keeps an existing subscriber's payloads via `grandfather_grant` (test); experiment config schema contains no entitlement-enforcement fields (schema test) and hard-constraint stages remain un-experimentable (REQ-REC-170 check re-run).
 - AC-12: Downgrade/expiry deletes nothing (row-count + media assertion), over-cap items are read-only but visible/searchable/exportable, export succeeds on Free and expired accounts, paid-derived assets remain viewable with provenance.

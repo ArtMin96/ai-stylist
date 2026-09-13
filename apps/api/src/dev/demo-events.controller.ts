@@ -1,7 +1,7 @@
 // Dev-only: POST /v1/dev/demo-events returns a fresh `demo.outbox-flow.requested.v1` envelope.
 // Registered by the composition root only when NODE_ENV !== 'production'.
 // TODO(P02 T08): persist the envelope to platform_outbox in a transaction so the relay dispatches
-// it to the demo Trigger.dev task; until then nothing is stored.
+// it to the demo pg-boss job; until then nothing is stored.
 import { Body, Controller, HttpCode, Inject, Post } from '@nestjs/common';
 
 import type { DemoOutboxFlowRequestedV1Payload } from '@ai-stylist/contracts/events';

@@ -4,16 +4,16 @@ Source of truth for the eight issue templates on the Linear team **AI Stylist** 
 
 Every template is a superset of [`templates/issue.md`](../issue.md) (phase/task, requirements, owning modules, scope, non-goals, dependencies, acceptance criteria, test plan, observability, rollout, rollback) plus the CLAUDE.md guardrails, and points to the matching `.agents/skills/<area>/SKILL.md`.
 
-| File                    | Linear name                     | Default label      | Type-specific sections                                                |
-| ----------------------- | ------------------------------- | ------------------ | --------------------------------------------------------------------- |
-| `01-feature.md`         | `1 · Feature`                   | `type:feature`     | — (baseline)                                                          |
-| `02-bug.md`             | `2 · Bug`                       | `type:bug`         | Reproduction · Regression test (paste the failing run)                |
-| `03-improvement.md`     | `3 · Improvement / Tech debt`   | `type:improvement` | Behaviour invariant · before/after perf numbers                       |
-| `04-spike.md`           | `4 · Spike / Research`          | `type:spike`       | Question · Time box · Decision output (ADR path) · Kill criteria      |
-| `05-contract-change.md` | `5 · Contract change`           | `type:contract`    | Breaking? (oasdiff) · Version bump · Consumers to regenerate          |
-| `06-migration.md`       | `6 · Migration`                 | `type:migration`   | Expand / Contract step · Down file · Data backfill · Neon branch test |
-| `07-security-review.md` | `7 · Security / privacy review` | `type:security`    | Threat model (doc 11 §2 STRIDE-lite) · Approved-provider check        |
-| `08-chore.md`           | `8 · Chore / Ops`               | `type:chore`       | Human-only steps · Secrets involved (names only)                      |
+| File                    | Linear name                     | Default label      | Type-specific sections                                                     |
+| ----------------------- | ------------------------------- | ------------------ | -------------------------------------------------------------------------- |
+| `01-feature.md`         | `1 · Feature`                   | `type:feature`     | — (baseline)                                                               |
+| `02-bug.md`             | `2 · Bug`                       | `type:bug`         | Reproduction · Regression test (paste the failing run)                     |
+| `03-improvement.md`     | `3 · Improvement / Tech debt`   | `type:improvement` | Behaviour invariant · before/after perf numbers                            |
+| `04-spike.md`           | `4 · Spike / Research`          | `type:spike`       | Question · Time box · Decision output (ADR path) · Kill criteria           |
+| `05-contract-change.md` | `5 · Contract change`           | `type:contract`    | Breaking? (oasdiff) · Version bump · Consumers to regenerate               |
+| `06-migration.md`       | `6 · Migration`                 | `type:migration`   | Expand / Contract step · Down file · Data backfill · Scratch-database test |
+| `07-security-review.md` | `7 · Security / privacy review` | `type:security`    | Threat model (doc 11 §2 STRIDE-lite) · Approved-provider check             |
+| `08-chore.md`           | `8 · Chore / Ops`               | `type:chore`       | Human-only steps · Secrets involved (names only)                           |
 
 Common sections, in this order, in every template: Context · Scope · Modules touched · Acceptance criteria · Architecture guardrails · Search-before-write · Data, security, privacy · Risks and rollback · Test plan · Dependencies / blocked by · Definition of done. The first line of each body tells an agent to fill every section and write `N/A — <reason>` rather than delete one.
 

@@ -1,5 +1,7 @@
 # P09 — Recommendation Engine v1
 
+> Amended 2026-09-13 ([r7](../research/r7-third-party-services-and-self-hosting-audit-2026-09-13.md), ADR-0003 — service consolidation: pg-boss jobs, owned server + Coolify, self-managed PostgreSQL, R2 delivery model).
+
 > File name per [SPINE §5](../SPINE.md). Template: [templates/phase.md](../templates/phase.md). Status values per [PROGRESS.md](../PROGRESS.md). Engine design is owned by [09-recommendation-engine.md](../09-recommendation-engine.md) — this file sequences its delivery; on conflict, doc 09 wins.
 
 ## 1. Overview
@@ -51,9 +53,9 @@ IDs from [01-requirements-and-traceability.md](../01-requirements-and-traceabili
 | REQ-NOT-030 | Daily outfit notification honoring preferences + context freshness | AC-13 |
 | NFR-TST-100 | Simulation suite proves zero hard-constraint violations (incl. cold-weather-holiday) | AC-2 |
 | NFR-TST-020 | Property-based suites for ranking/constraint invariants *(P09 slice per doc 13 §4; units P03, taxonomy P07)* | AC-3, AC-12 |
-| NFR-TST-090 | AI/ML eval suites *(partial — explanation-polish faithfulness eval, flag-gated)* | AC-14 |
-| NFR-AIC-040 | Templates from reason codes default; LLM polish optional, flag-gated, cost-tracked *(P09 slice)* | AC-14 |
-| NFR-AIC-020 | Per-feature AI spec *(P09 slice: explanation-polish contract, thresholds, eval, latency + cost budget per doc 10 §2.7)* | AC-14 |
+| NFR-TST-090 | AI/ML eval suites *(partial — explanation-template faithfulness eval; LLM polish removed per DEC-46)* | AC-14 |
+| NFR-AIC-040 | Templates from reason codes only; LLM polish removed from the product path (DEC-46) *(P09 slice)* | AC-14 |
+| NFR-AIC-020 | Per-feature AI spec *(P09 slice: none — no AI call remains in P09 after DEC-46; doc 10 §2.7 records the template-only path and its faithfulness eval)* | AC-14 |
 
 Consumed, not delivered: REQ-ONB-070 (climate tolerance, P03), REQ-ORG-090 availability states (P07). REQ-REC-180 is P10.
 
@@ -64,7 +66,7 @@ Consumed, not delivered: REQ-ONB-070 (climate tolerance, P03), REQ-ORG-090 avail
 
 ## 4. In scope / out of scope
 
-**In scope:** doc 09 §§3–11 and §13 in full — hard-constraint rule registry (`H-SAFE/H-EXCL/H-PAIR/H-AVAIL/H-DRESS/H-COMP`) with versioned thresholds; slot-based candidate generation with K/B bounds and precomputed pair scores; fixed-point scoring with the eight scorers (trend scorer wired at weight 0); stage-7 final validation; deterministic ranking + tie-breaks + seeded shuffle; reason-code registry in `shared-kernel` + template rendering; `RecommendationResult` contract; feedback ingestion with the full §8.1 mapping, §8.2 guardrails, undo, reset, transparency screen; versioned replayable `RecommendationRecord` + `just rec-replay`; degraded modes (cold start, sparse closet, missing context, no-valid-outfit); client prefetch/offline cache; simulation suite SIM-01…08 + property tests + goldens in CI; safety-acknowledgment flow (§4.3); daily notification (REQ-NOT-*); optional Haiku explanation polish behind a flag with its faithfulness eval.
+**In scope:** doc 09 §§3–11 and §13 in full — hard-constraint rule registry (`H-SAFE/H-EXCL/H-PAIR/H-AVAIL/H-DRESS/H-COMP`) with versioned thresholds; slot-based candidate generation with K/B bounds and precomputed pair scores; fixed-point scoring with the eight scorers (trend scorer wired at weight 0); stage-7 final validation; deterministic ranking + tie-breaks + seeded shuffle; reason-code registry in `shared-kernel` + template rendering; `RecommendationResult` contract; feedback ingestion with the full §8.1 mapping, §8.2 guardrails, undo, reset, transparency screen; versioned replayable `RecommendationRecord` + `just rec-replay`; degraded modes (cold start, sparse closet, missing context, no-valid-outfit); client prefetch/offline cache; simulation suite SIM-01…08 + property tests + goldens in CI; safety-acknowledgment flow (§4.3); daily notification (REQ-NOT-*); explanation faithfulness eval on template output (reason-code templates only; LLM polish removed per DEC-46).
 
 **Out of scope / non-goals:** rendering on the avatar and `OutfitPresentation` (P10); trend scorer activation with nonzero weight (P12); live A/B experiments and Free-tier daily-limit *enforcement activation* (P13 — but the entitlement seam checks ship now per REQ-BIL-130); calendar/travel providers (P15); any on-device engine fork (doc 09 §11 — server-side only); commerce/shopping links in gap notes (doc 09 §10.2).
 
@@ -92,7 +94,7 @@ Journey detail owned by [02 §8–§9](../02-user-journeys-and-information-archi
 | `closet` | Emits item-changed events already (P07); adds read model for eligible-item snapshot hashing | Minor |
 | `outfit` | Saved outfits, scheduled outfits, mark-worn (writes wear events via closet), `outfits`/`outfit_items` tables | Yes |
 | `notifications` | **New module slice**: scheduling + delivery over the prefs/quiet-hours storage landed in P03; `platform` FCM/APNs port | Yes |
-| `platform` | FCM/APNs adapter; optional `ExplanationPort` (Haiku polish) adapter | Yes |
+| `platform` | FCM/APNs adapter (no `ExplanationPort`: explanations are template-only per DEC-46) | Yes |
 | `profile` | Reset-personalization touchpoint; transparency reads | Minor |
 
 Invariants enforced this phase: `recommendation` ⊥ `avatar`/renderer (dependency-cruiser rule from P02 now has real code to bite on); UI contains zero scoring/constraint logic (arch check + review); no wall-clock reads inside stages 3–8 (lint rule + tests).
@@ -110,34 +112,34 @@ Invariants enforced this phase: `recommendation` ⊥ `avatar`/renderer (dependen
 |---|---|
 | Mobile | Today card, alternatives rail, shuffle control, replace-item picker, feedback surface + undo, transparency screen, offline cache + prefetch, staleness/partial/no-valid-outfit states, notification prefs UI |
 | Backend | Everything in §6: engine, feedback, replay, transparency APIs, notifications scheduling, sim suite |
-| Workers (ML/media) | None (explanation polish is an API-side batch call through `ExplanationPort`, no new worker) |
-| Data / migrations | §7 tables + pair-score incremental maintenance job (Trigger.dev, idempotent) |
+| Workers (ML/media) | None (explanations are rendered from templates in the API; no provider call, DEC-46) |
+| Data / migrations | §7 tables + pair-score incremental maintenance job (pg-boss, idempotent) |
 | Infrastructure | FCM/APNs credentials; k6 load profile "morning spike" (doc 13 §12.3) wired for the P09 gate |
 | 3D / assets | None |
 | Admin / internal tools | Replay entry point for support ("why did it suggest this?") reading `rec-replay` output; violation-auditor job dashboard |
 
 ## 9. AI vs deterministic decisions
 
-Per doc 09 §0 the engine is ~95% deterministic; the only paid AI is optional explanation polish. Owning rows: [10 §1 #7/#8, §2.7](../10-ai-usage-cost-and-evaluation.md).
+Per doc 09 §0 the engine is ~95% deterministic; after DEC-46 there is no paid AI in P09 (explanation polish removed). Owning rows: [10 §1 #7/#8, §2.7](../10-ai-usage-cost-and-evaluation.md).
 
 | Capability | AI or deterministic | Why | Fallback | Budget |
 |---|---|---|---|---|
 | Constraints, candidates, scoring, ranking, validation, tie-breaks | **Deterministic** (rules + data queries + fixed-point math) | Doc 10 #7: never an LLM in the decision path | n/a | ~$0/recommendation |
 | Learned preference weights | **RANK** — bounded per-user linear weights updated by explicit feedback rules | Simple, inspectable, versioned; no neural ranker in v1 | Onboarding baseline weights | $0 (no inference calls) |
 | Color harmony / similarity reads | Deterministic math + **precomputed** embeddings (capture-time, P06) | Engine only reads stored vectors — zero inference at request time | Attribute-only scoring | $0 at request time |
-| Explanations | **Templates from reason codes (default)**; optional **NL** Haiku polish (batch + prompt cache), flag-gated | Doc 10 §2.7; polish may only rephrase template output; faithfulness validator rejects invented facts | Templates (permanent fallback; kill-switch rung 1, doc 10 §6.3) | ≤ $0.0001/explanation; ≤ $0.001/recommendation total; $0 with polish off |
+| Explanations | **Templates from reason codes only** (LLM polish removed per DEC-46; any future NL polish needs a new doc-10 entry + eval) | Doc 10 §2.7; faithfulness validator on template output rejects invented facts | Templates are the product path, not a fallback (kill-switch rung 1 of doc 10 §6.3 is a no-op here) | $0/explanation |
 
 ## 10. Security, privacy, consent, and data lifecycle
 
 - **New sensitive data:** wardrobe-history-derived preference weights and feedback events; decision traces referencing context (location-coarse) facts. Classified per [11](../11-security-privacy-and-compliance.md); traces carry IDs and codes, never free text or media.
-- **Consent:** no new consent scopes; explanation polish sends **only reason codes + template sentences** to Anthropic (approved provider, no-training/7-day retention per DEC-29) — never raw profile/closet data. Analytics on feedback are consent-gated (NFR-PRV-110).
+- **Consent:** no new consent scopes; explanations are rendered from templates on our own API — nothing leaves the system for explanations (DEC-46). Analytics on feedback are consent-gated (NFR-PRV-110).
 - **Retention/deletion/export:** trace retention window per doc 11 (open item doc 09 §14 — resolve to a number in P09-T02 and record in doc 11); recommendations/feedback/outfits/weights included in export and the deletion cascade (coverage test extended).
 - **Threat/abuse cases added:** feedback-poisoning of another user (authz: feedback only on own recs — sec suite matrix); replay endpoint information disclosure (support role + audit log per NFR-OBS-070); notification content leaking wardrobe details (template review — codes only).
-- **Explanation language:** template layer enforces REQ-EXP-020 (no body-data or inferred-trait phrasing); blocklist per 11 §17 wired into the polish validator.
+- **Explanation language:** template layer enforces REQ-EXP-020 (no body-data or inferred-trait phrasing); blocklist per 11 §17 wired into the template validator.
 
 ## 11. Observability and analytics added in this phase
 
-- **Metrics (doc 14 §4 registrations):** hard-constraint violation rate from the **independent post-hoc auditor job** re-running stage-7 rules on served results (target 0 — invariant; any nonzero = sev-2 alert, doc 09 §13.1); practical validity; engine p95 / end-to-end p95; candidate-pool sizes; no-valid-outfit rate; feedback-undo rate; weight-clamp saturation; notification delivery success; explanation-polish spend + template-fallback rate.
+- **Metrics (doc 14 §4 registrations):** hard-constraint violation rate from the **independent post-hoc auditor job** re-running stage-7 rules on served results (target 0 — invariant; any nonzero = sev-2 alert, doc 09 §13.1); practical validity; engine p95 / end-to-end p95; candidate-pool sizes; no-valid-outfit rate; feedback-undo rate; weight-clamp saturation; notification delivery success; explanation template-render failure rate.
 - **Product analytics events:** `rec_requested`, `rec_shown`, `rec_shuffle`, `rec_feedback` (kind enum only), `rec_item_replaced`, `outfit_saved|worn|scheduled`, `prefs_reset`, `transparency_viewed` — schema-validated, no attribute values or item names.
 - **Alerts/dashboards/runbooks:** violation-rate alert (page immediately); rec-validity dashboard; runbooks: "violation alert fired" (freeze ruleset rollout → replay offending rec → fix + regression sim), "engine latency regression", "notification delivery failures". Replay (`just rec-replay <id>`) documented as the support entry point (audit-trailed).
 
@@ -162,7 +164,7 @@ Per doc 09 §0 the engine is ~95% deterministic; the only paid AI is optional ex
 | P09-T15 | Prefetch + offline cache + freshness warnings + offline feedback queue (idempotency keys) | T13 | 1–2 |
 | P09-T16 | Notifications: prefs, quiet hours, timezone scheduling, FCM/APNs port + daily-outfit notification (context-fresh) | T08 | 2 |
 | P09-T17 | Violation-auditor job + observability + analytics + runbooks (§11) | T08, T12 | 1 |
-| P09-T18 | Explanation polish (flag-gated): `ExplanationPort` Haiku batch+cache adapter, faithfulness validator + eval set (doc 10 §2.7), cost tracking | T09 | 1–2 |
+| P09-T18 | Explanation faithfulness: template-output validator + eval set (doc 10 §2.7) — reason-code templates only; LLM polish and `ExplanationPort` removed per DEC-46; explanation cost stays $0 | T09 | 1–2 |
 | P09-T19 | Load test (k6 morning-spike profile), perf-budget measurement, entitlement-seam checks (`recs.daily_limit` advisory, flag-dormant per REQ-BIL-130) | T07–T16 | 1 |
 | P09-T20 | Demo, module contracts, docs, deletion/export coverage, PROGRESS | all | 1 |
 
@@ -182,7 +184,7 @@ Written before implementation per task; suites per [13 §3–§5, §11](../13-te
 | `notifications` | quiet-hours/timezone math | — | port contract (fake FCM/APNs) | scheduling job; opt-out honored | device push smoke (both platforms) |
 | `shared-kernel` | reason-code registry completeness (every emitted code registered; every code has a template) | — | enum sync in contracts | — | — |
 | Mobile | card states, template rendering from codes | — | generated client handshake | RNTL: feedback flows, transparency, offline states (MSW) | Maestro: recommendation → explanation → feedback; degraded-provider flow (doc 13 §7) |
-| `platform` (`ExplanationPort`) | validator rejects unsupported facts | — | recorded Haiku fixtures | flag-off ⇒ zero provider calls | faithfulness eval in nightly ML lane |
+| `recommendation` (explanation templates) | validator rejects unsupported facts | — | — | zero provider calls on the explanation path (test) | faithfulness eval in nightly ML lane |
 
 New bug fixes require a regression test that fails before the fix. Tests live in each module's `tests/`.
 
@@ -191,19 +193,19 @@ New bug fixes require a regression test that fails before the fix. Tests live in
 | Budget | Target (hypothesis until measured) | How measured |
 |---|---|---|
 | Performance | Engine compute p95 < 300 ms (500-item closet); rec endpoint p50/p95 400 ms/1.5 s (200-item, doc 13 §12.2); request→rendered ≤ 2.5 s mid-tier (doc 13 §12.1); 1,000-item closet within bounds (REQ-REC-100) | k6 (morning-spike profile) + device runs; raw traces archived |
-| Cost | ≤ $0.001/recommendation with polish on; **$0 with polish off**; polish monthly spend within doc 10 §6.1 plan caps | per-task spend metric `{task, provider, model_version, plan}` |
-| AI quality | Polish faithfulness ≥ 99.5%, hallucination < 0.5% (doc 10 §2.7 gate); template-fallback rate tracked | nightly eval lane (doc 13 §10) |
+| Cost | **$0/recommendation** (no AI call in P09 after DEC-46) | per-task spend metric `{task, provider, model_version, plan}` |
+| AI quality | Template faithfulness 100% (validator; doc 10 §2.7 gate applied to template output); no LLM output to measure | nightly eval lane (doc 13 §10) |
 | Reliability | Hard-constraint violation rate **0** (invariant); no-valid-outfit responses always structured; graceful behavior with every provider degraded (NFR-PERF-040) | auditor job + sim suite + chaos tests |
 
 ## 16. Rollout, flags, migration, compatibility, rollback
 
-- **Feature flags (owner + expiry):** `rec.engine` master (owner BE; expiry P10 acceptance); `rec.explanation-polish` (owner ML; no expiry — it is the permanent kill-switch rung 1, doc 10 §6.3); `rec.daily-notification` (owner BE; expiry P14); entitlement-seam flags `recs.daily_limit`/`recs.future_planning` **dormant until P13** (owner BE; expiry P13 activation) per REQ-BIL-130.
+- **Feature flags (owner + expiry):** `rec.engine` master (owner BE; expiry P10 acceptance); `rec.daily-notification` (owner BE; expiry P14); entitlement-seam flags `recs.daily_limit`/`recs.future_planning` **dormant until P13** (owner BE; expiry P13 activation) per REQ-BIL-130.
 - **Migration/backward-compat:** all-new tables; ruleset changes always ship as a new `rulesetVersion` with changelog — old versions remain loadable for replay (doc 09 §9). Mobile additive within `/v1`.
 - **Rollback plan:** flip `rec.engine` off → Today reverts to the P08 context strip + capture CTA (no fabricated results); revert deploy; rulesets roll back by re-pointing the active `rulesetVersion` (config, no migration); DB down-migrations documented per table (§7). A ruleset rollback is rehearsed once in this phase (evidence in §20).
 
 ## 17. Risks, mitigations, assumptions, stop/kill criteria
 
-- Risks in play: **RISK-15** (cold-start trust — sparse-closet strategy + `RC-GAP-*` honesty; not killable: if cold-start validity stays low, gate recommendations behind a minimum-closet prompt rather than showing bad results); **RISK-14** (taxonomy/data quality feeding bad constraints — correction-rate metrics watched); **RISK-08** (AI cost — bounded here to polish; kill-switch rung 1).
+- Risks in play: **RISK-15** (cold-start trust — sparse-closet strategy + `RC-GAP-*` honesty; not killable: if cold-start validity stays low, gate recommendations behind a minimum-closet prompt rather than showing bad results); **RISK-14** (taxonomy/data quality feeding bad constraints — correction-rate metrics watched); **RISK-08** (AI cost — none in P09 after DEC-46).
 - **Stop/kill criteria for this phase:** (a) sim suite cannot reach **0 hard-constraint violations** after the defense-in-depth fixes → **release-blocked, period** — the engine does not ship with a nonzero violation rate (NFR-TST-100 is a release gate); (b) engine p95 > 2× budget on the 500-item closet after the doc 09 §5 bounds are tuned → reduce K/B and re-measure before adding any complexity; (c) replay byte-equality unachievable cross-platform → escalate as an architecture defect (fixed-point audit), do not weaken the invariant.
 
 ## 18. Demo script
@@ -236,7 +238,7 @@ Real device + staging backend, fixture closet (~60 items incl. laundry states):
 - **AC-11:** every feedback type in the doc 09 §8.1 table has a test proving its distinct classified effect; single-item replace preserves + revalidates the rest; "unavailable" flips closet state.
 - **AC-12:** property test enforces the bounded-step guardrail (no single event moves any weight > ε); undo reverses the exact delta; reset returns to onboarding baseline keeping hard exclusions.
 - **AC-13:** opted-in device receives the daily notification at local time with a fresh recommendation on both platforms; opted-out receives nothing; quiet hours honored (scheduling tests + device evidence).
-- **AC-14:** with `rec.explanation-polish` off, zero provider calls occur (test); with it on, faithfulness eval ≥ 99.5% and violating outputs are discarded to templates (eval report).
+- **AC-14:** explanations are rendered from reason-code templates only: zero provider calls occur on the explanation path (test); the faithfulness validator rejects any template output with unsupported facts (eval report). LLM polish removed per DEC-46.
 
 ## 20. Definition of done
 
@@ -246,9 +248,9 @@ just test outfit && just test notifications
 just lint && just typecheck
 just arch-check            # recommendation ⊥ avatar/renderer; no logic in UI/controllers
 just generate --check
-just db-migrate && just db-rollback     # exercised on a Neon branch
+just db-migrate && just db-rollback     # exercised on a scratch database restored from the staging backup
 just rec-replay <sample-id>             # byte-equal replay demonstrated
-just ml-eval               # explanation-polish faithfulness gate (flag-on path)
+just ml-eval               # explanation-template faithfulness gate
 just ci-parity
 # k6 morning-spike run against staging; device Maestro flows (both platforms)
 ```

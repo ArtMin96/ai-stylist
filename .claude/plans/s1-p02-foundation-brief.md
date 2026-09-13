@@ -1,5 +1,7 @@
 # P02 Foundation Brief
 
+> Amended 2026-09-13: service consolidation per ADR-0003 ([r7](../../planning/research/r7-third-party-services-and-self-hosting-audit-2026-09-13.md)) — pg-boss replaces Trigger.dev, owned server + Coolify replaces Railway, self-managed PostgreSQL replaces Neon, R2 delivery model fixed.
+
 Sources (`planning/`): P02 phase file, docs 04/05/06/11/13/14/15/16, SPINE, r1, CLAUDE.md. Citations use doc number + §. Repo root today holds only `.claude/`, `planning/`, one prompt file, `solo.yml`.
 
 ## 1. Decided stack
@@ -18,14 +20,15 @@ Sources (`planning/`): P02 phase file, docs 04/05/06/11/13/14/15/16, SPINE, r1, 
 | Mobile | React Native + Expo prebuild/dev-client, New Architecture | Expo SDK 55+ | 05 §2 |
 | 3D | Filament via `react-native-filament`; boundary dir only, empty in P02 | RNF 1.11.0 / Filament 1.76.0 at decision time | 05 §3, §9 |
 | ORM/migrations | Drizzle + drizzle-kit; expand–contract | latest stable | 05 §5.3, 06 §7 |
-| DB | Neon Postgres (dev/staging/prod + branch-per-PR), pgvector; local Docker pgvector matching Neon major | — | 05 §5.3, 15 §1.4 |
-| Queue/jobs | Trigger.dev v4 + Postgres outbox; pg-boss fallback | v4 | 05 §5.4, 04 §9 |
+| DB | Self-managed PostgreSQL 17 + pgvector (Docker `pgvector/pgvector:pg17` on the owned host; staging/prod), pgBackRest PITR to an encrypted R2 bucket, PgBouncer; ephemeral/Testcontainers DBs replace branch-per-PR; local Docker pgvector on the same major | 17 | 05 §5.3, 15 §1.4, ADR-0003 |
+| Hosting | Owned server + Docker + Coolify (staging/prod; API, jobs, workers, PostgreSQL on a private Docker network); provider + topology per OQ-07/OQ-14 | — | ADR-0003 |
+| Queue/jobs | pg-boss v12 on the app PostgreSQL + Postgres outbox; jobs in `apps/api/src/jobs/`; self-hosted Trigger.dev only if the T08 acceptance suite proves pg-boss insufficient | 12 | 05 §5.4, 04 §9, ADR-0003 |
 | Python | 3.12.x via mise; `uv` + committed `uv.lock`; Pyright/BasedPyright | 3.12.x | 15 §1.2, §1.5, §9 |
 | Contracts | OpenAPI 3.1 YAML per module → `openapi.bundle.json`; `@hey-api/openapi-ts`; `datamodel-code-generator`; `json-schema-to-typescript`; spectral; oasdiff | generators pinned via mise | 06 §1, §9 |
 | CI | GitHub Actions calling `just` only; Linux runners except iOS lane | — | DEC-32, 15 §5.1 |
 | iOS lane | EAS free tier AND GHA macOS M-series run ~2 weeks; ADR-P02 decides (OQ-04); TestFlight upload from Linux via App Store Connect API | UNDECIDED until T15 | 05 §7.2, r1 §6 |
 | Secrets/env | sops + age (`secrets/<env>.enc.yaml`, `.sops.yaml`); direnv `.envrc` → gitignored `.env`; `just secrets-sync` | — | 15 §6 |
-| Observability | pino (API), structlog (workers), OTel → Grafana Cloud (ADR-OBS-01); PostHog behind consent stub (off) | latest stable | 14 §1–2, P02 §11 |
+| Observability | pino (API), structlog (workers), OTel → Grafana Cloud free tier or separate-node self-hosted stack (ADR-OBS-01 chooses); PostHog behind consent stub (off) | latest stable | 14 §1–2, P02 §11 |
 | Commits / hooks | Conventional Commits + commit-lint; gitleaks pre-commit; manager `prek`/husky UNDECIDED | — | 15 §4, §7 |
 | Boundary tool | eslint-plugin-boundaries (`just lint`) + dependency-cruiser `tools/depcruise/rules.cjs` (`just arch-check`) | latest stable | 04 §4.3 |
 | Pinning | `mise.toml`: node, pnpm, java Temurin 17, just 1.x, python, watchman; bumps only via Renovate | — | 15 §1.2, §9 |
@@ -45,7 +48,7 @@ apps/api/src/main.ts app.module.ts      Nest/Fastify root; GET /v1/health, /v1/v
 apps/api/src/modules/<name>/{index.ts,internal/,tests/}  13 dirs: identity profile avatar closet media outfit context
                             recommendation fashion-intel billing notifications admin assistant (empty index.ts + smoke test)
 apps/api/src/platform/      StorageProvider(R2), outbox relay, logger, OTel init, PostHog server, resilience utils
-apps/api/src/trigger/index.ts  demo task;  apps/api/tests/migrations/  fwd/rollback tests
+apps/api/src/jobs/index.ts  demo job;  apps/api/tests/migrations/  fwd/rollback tests
 workers/ml/segmentation/    FastAPI echo stub, Dockerfile, main.py, tests/, pyproject+uv.lock;  workers/ml/generated/
 packages/contracts/{openapi,events,gen/ts-client,gen/events-ts}/  health/version, RFC 9457, envelope.json, demo event, analytics schema
 packages/shared-kernel/     ULID prefixes, units, envelope type, error/reason/entitlement registries, tests/
@@ -65,7 +68,7 @@ Dashes only; `*` = in `ci-parity`; long recipes call `scripts/*.sh`; destructive
 |---|---|---|
 | `bootstrap` | `scripts/bootstrap.sh`: apt → mise install → pnpm install (frozen) → Android SDK/udev → Docker/direnv checks → git hooks → `.env` scaffold (15 §4) | idempotent |
 | `doctor` | `scripts/doctor.sh`: pins, adb, Docker, Postgres, direnv, `.env` keys, `generate --check`, hooks, disk; hint per failure | read-only |
-| `dev-api` / `dev-mobile` / `dev-workers` | compose pgvector + Nest watch / Expo dev client / workers + Trigger.dev dev | `--android` |
+| `dev-api` / `dev-mobile` / `dev-workers` | compose pgvector + Nest watch / Expo dev client / workers + pg-boss job process | `--android` |
 | `test [module]` * | one module's `tests/` or full suite via turbo | module |
 | `lint` * | ESLint (boundaries, no-skip, forbidden-field, a11y, no-utils, test-placement, expired-flag, file-size) + Ruff | — |
 | `typecheck` * | `tsc --noEmit` per workspace + Pyright | — |
@@ -85,7 +88,7 @@ Dashes only; `*` = in `ci-parity`; long recipes call `scripts/*.sh`; destructive
 | Tier | Trigger | Runs | Required |
 |---|---|---|---|
 | PR fast gate | every PR | `ci-parity` set + spectral, oasdiff, gitleaks, clone check, `.env.example` key check, analytics-schema check | Required; < 10 min (`ci.pr_gate_duration`) |
-| Affected-module | PR touching matched paths | Testcontainers integration (outbox suite), migration fwd/rollback on Neon branch, golden smoke, simulation subset | Yes when triggered; < 25 min |
+| Affected-module | PR touching matched paths | Testcontainers integration (outbox suite), migration fwd/rollback on a scratch DB restored from the staging backup, golden smoke, simulation subset | Yes when triggered; < 25 min |
 | Nightly | schedule | full integration + sec suite, history gitleaks, osv, Maestro emulator/device farm, ML eval stub, load smoke, quarantine lane, expired-flag report | Non-blocking |
 | Pre-release | release branch | nightly + device-matrix perf, store size gate, a11y checklist, restore-drill, release checklist | Skeleton only in P02 |
 
@@ -102,7 +105,7 @@ From 04 §4.2–4.4, SPINE §3, P02 §4. Each rule has a failing fixture (AC-3);
 | allowed-edges-only | domain modules | any module edge absent from 04 §4.1 |
 | recommendation-not-renderer | `modules/recommendation/**` | `modules/avatar/**`, `apps/mobile/src/render/**`, 3D/asset types; `→ outfit` only for item/composition types |
 | assistant-app-services-only | `modules/assistant/**` | any `internal/**`, Drizzle schema, `platform` |
-| domain-no-provider-sdk | `modules/**` | `@trigger.dev/sdk`, aws-sdk/R2, RevenueCat, fal.ai, Open-Meteo, FCM, PostHog SDKs |
+| domain-no-provider-sdk | `modules/**` | `pg-boss`, aws-sdk/R2, RevenueCat, fal.ai, Open-Meteo, FCM, PostHog SDKs |
 | platform-leaf | `apps/api/src/platform/**` | anything but `packages/shared-kernel` + provider SDKs |
 | modules-not-platform | `modules/**` | `apps/api/src/platform/**` (ports bound at composition roots only) |
 | shared-kernel-pure | `packages/shared-kernel/**` | any workspace pkg, framework, I/O |
@@ -110,11 +113,11 @@ From 04 §4.2–4.4, SPINE §3, P02 §4. Each rule has a failing fixture (AC-3);
 | prototype-unimportable | any | `prototype/**` |
 | render-boundary | `apps/mobile/**` except designated 3D screens | `apps/mobile/src/render/**`, Filament types |
 | mobile/workers-not-server | `apps/mobile/**`, `workers/**` | anything but `packages/contracts`, `packages/shared-kernel` |
-| composition-root-only | all but `main.ts`/`app.module.ts`, `trigger/index.ts`, `_root.tsx`, worker `main.py` | constructing adapters |
+| composition-root-only | all but `main.ts`/`app.module.ts`, `jobs/index.ts`, `_root.tsx`, worker `main.py` | constructing adapters |
 | test-placement (lint) | `*.test.ts` outside `tests/` (exceptions: `apps/mobile/e2e/`, `apps/api/tests/migrations/`) | fails |
 | no-skip (lint) | `it.skip`/`xit`/`pytest.mark.skip` without issue ID | fails |
 
-ESLint element types: `module`, `module-internal`, `shared-kernel`, `platform`, `composition-root`, `trigger-task`, `contracts`.
+ESLint element types: `module`, `module-internal`, `shared-kernel`, `platform`, `composition-root`, `job-handler`, `contracts`.
 
 ## 6. Security/privacy foundations required in P02
 
@@ -136,14 +139,14 @@ ESLint element types: `module`, `module-internal`, `shared-kernel`, `platform`, 
 | T04 | Contracts pipeline: OpenAPI scaffold, envelope/events, 4 generators, `generate --check`, spectral, oasdiff | T03 |
 | T05 | API skeleton: Nest/Fastify, module dirs, composition root, health/version, rate-limit stub | T04 |
 | T06 | Boundary rules → `arch-check` + failing fixtures | T05 |
-| T07 | Drizzle, migrations 0001/0002, Testcontainers, `db-*`, Neon envs, seed-data | T05 |
-| T08 | Outbox relay + Trigger.dev + worker round-trip; idempotency/retry/DLQ suite; resilience utils | T07 |
-| T09 | Logging/redaction/lint/canary; OTel; Grafana dashboard 1 + alerts; ADR-OBS-01 | T08 |
+| T07 | Drizzle, migrations 0001/0002, Testcontainers, `db-*`, self-managed PostgreSQL envs (pgBackRest PITR, PgBouncer, backup-age alert), seed-data | T05 |
+| T08 | Outbox relay + pg-boss + worker round-trip; idempotency/retry/DLQ/replay/cancellation suite (the pg-boss gate; self-hosted Trigger.dev fallback only if it fails); resilience utils | T07 |
+| T09 | Logging/redaction/lint/canary; OTel; Grafana (Cloud free tier or separate-node self-hosted, ADR-OBS-01 chooses) dashboard 1 + alerts; ADR-OBS-01 | T08 |
 | T10 | Expo skeleton, generated client, PostHog + crash, Jest/RNTL + Maestro, render-boundary lint | T04 |
 | T11 | Four GHA tiers calling `just`; remote cache; `ci.*` metrics | T05–T07 |
 | T12 | Security lane → `security-scan` | T01 |
 | T13 | Signed-URL skeleton + sec tests; R2 buckets; WAF | T05 |
-| T14 | EAS + GHA macOS + Android lanes; TestFlight from Linux; `mobile-*-build` | T10 |
+| T14 | EAS (free allowance) + GHA macOS + Android lanes; TestFlight from Linux; `mobile-*-build` | T10 |
 | T15 | ADR-P02 after ~2 weeks dual-lane data; DEC; deactivate loser | T14 |
 | T16 | CLAUDE.md → root; 13 SKILL.md; templates; CODEOWNERS; PROGRESS.md | T01 |
 | T17 | `assets/3d` schema, Git LFS, `assets-validate`, `ml-eval` stub | T04 (+P01) |
@@ -151,13 +154,13 @@ ESLint element types: `module`, `module-internal`, `shared-kernel`, `platform`, 
 
 Waves (P02 §13): W1 {T02,T03,T12,T16}; W2 after T04 {T05→T06,T10,T17}; W3 after T05/T07 {T08,T09,T13}; T14 with W3; T11 after T05/06/07. Single-writer: contracts, shared-kernel, lockfiles, mise.toml, justfile, CI workflows, CLAUDE.md.
 
-Acceptance (P02 §19, condensed): **AC-1** clean-Ubuntu `bootstrap && doctor && ci-parity` exit 0 (transcript); `just --list` shows every 15 §5 recipe; PR gate < 10 min on ≥ 3 PRs. **AC-2** `generate --check` passes clean, fails after unregenerated spec edit; spectral + oasdiff in CI; all generated outputs consumed by compiling code. **AC-3** `arch-check` passes and fails on six fixtures (internal import, recommendation→avatar, provider SDK in domain, assistant→internal, `utils/` dir, `prototype/` import); 15 contract files. **AC-4** lint fails on stray `*.test.ts`, skip without issue ID, file-size fixture. **AC-5** duplicate idempotency key → one effect; failure → retries → DLQ + `queue.job.dlq` + alert; replay no second effect; migrate+rollback on Neon branch. **AC-6** one trace API→outbox→task→worker, one correlation ID; canary green, forbidden-field lint red; dashboard 1; crashes symbolicated iOS+Android; unknown analytics event rejected; `demo-outbox-flow` rollback demoed. **AC-7** `security-scan` green; gitleaks blocks planted synthetic secret; SBOM; `.env.example` ⊇ config keys; repo grep clean; signed-URL sec suite green. **AC-8** ADR-P02 with two weeks of dual-lane data + DEC; TestFlight build from Linux step; signed AAB; both on physical devices from one commit. **AC-9** root CLAUDE.md has every NFR-TEAM-090 rule; ≥ 13 SKILL.md, six sections + overlap note; templates + CODEOWNERS + PROGRESS.md at root; clone check in CI.
+Acceptance (P02 §19, condensed): **AC-1** clean-Ubuntu `bootstrap && doctor && ci-parity` exit 0 (transcript); `just --list` shows every 15 §5 recipe; PR gate < 10 min on ≥ 3 PRs. **AC-2** `generate --check` passes clean, fails after unregenerated spec edit; spectral + oasdiff in CI; all generated outputs consumed by compiling code. **AC-3** `arch-check` passes and fails on six fixtures (internal import, recommendation→avatar, provider SDK in domain, assistant→internal, `utils/` dir, `prototype/` import); 15 contract files. **AC-4** lint fails on stray `*.test.ts`, skip without issue ID, file-size fixture. **AC-5** duplicate idempotency key → one effect; failure → retries → DLQ + `queue.job.dlq` + alert; replay no second effect; migrate+rollback on a scratch DB restored from the staging backup. **AC-6** one trace API→outbox→task→worker, one correlation ID; canary green, forbidden-field lint red; dashboard 1; crashes symbolicated iOS+Android; unknown analytics event rejected; `demo-outbox-flow` rollback demoed. **AC-7** `security-scan` green; gitleaks blocks planted synthetic secret; SBOM; `.env.example` ⊇ config keys; repo grep clean; signed-URL sec suite green. **AC-8** ADR-P02 with two weeks of dual-lane data + DEC; TestFlight build from Linux step; signed AAB; both on physical devices from one commit. **AC-9** root CLAUDE.md has every NFR-TEAM-090 rule; ≥ 13 SKILL.md, six sections + overlap note; templates + CODEOWNERS + PROGRESS.md at root; clone check in CI.
 
 Definition of done (P02 §20):
 ```bash
 just ci-parity; just test; just lint && just typecheck && just arch-check
 just generate --check; just security-scan
-just db-migrate && just db-rollback   # Neon staging branch
+just db-migrate && just db-rollback   # scratch DB restored from the staging backup
 just doctor                           # 2 dev machines + clean VM
 # + TestFlight build id, Android AAB artifact, ADR-P02 merged
 ```
@@ -179,7 +182,7 @@ just doctor                           # 2 dev machines + clean VM
 | 11 | A4 pnpm × EAS | unproven; fallback Yarn workspaces (05 §8) | keep pnpm; test EAS hook first thing in T14; yarn not installed |
 | 12 | ADR naming | templates `ADR-NNN`; 15 §8 `docs/adr/NNNN-slug.md`; P02 `ADR-P02`, `ADR-OBS-01` | `NNNN-slug.md`, label in title |
 | 13 | `assets-validate` | adopts P01 tooling; P01 `NOT_STARTED` | ship manifest-schema + glTF validation; KTX2/budgets TODO with issue |
-| 14 | Vendor accounts | GitHub org, Neon, Railway, Cloudflare, Trigger.dev, PostHog, Grafana, Expo/EAS, Apple, Play (P02 §3) | human-only; agent work stops at config + `.env.example` keys |
+| 14 | Vendor accounts | GitHub org, server provider (OQ-07/OQ-14), Cloudflare (R2 + DNS/WAF only), PostHog, Grafana, Expo/EAS, Apple, Play (P02 §3) | human-only; agent work stops at config + `.env.example` keys |
 
 ## 9. Open questions I could not resolve from the docs
 
@@ -187,5 +190,5 @@ just doctor                           # 2 dev machines + clean VM
 - Hook manager (`prek` vs husky) and the clone-detection tool for NFR-TEAM-040 (none named).
 - Numeric file-size threshold and exception syntax (NFR-TEAM-050).
 - Real CODEOWNERS handles (`@dev-lead`, `@3d-owner`, `@ml-owner`, `@team` are placeholders).
-- Neon/R2/Railway regions pending the P00 OQ-07 memo.
+- Server-provider/R2/PostHog regions pending the P00 OQ-07 memo (server provider + topology: OQ-14).
 - Whether `packages/db` replaces per-module `internal/schema.ts` or only hosts drizzle-kit config (§8 #2).

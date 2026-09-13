@@ -1,6 +1,6 @@
 # 14 — Observability, Operations, and Analytics
 
-**Status:** Draft for ratification · **Date:** 2026-08-24 · **Conforms to:** [SPINE.md](SPINE.md)
+**Status:** Draft for ratification · **Date:** 2026-08-24 · **Conforms to:** [SPINE.md](SPINE.md) · **Amended:** 2026-09-13 ([r7](research/r7-third-party-services-and-self-hosting-audit-2026-09-13.md), ADR-0003 — host/Coolify supplements, pg-boss, pgBackRest backups, exit triggers for Grafana Cloud/PostHog)
 **Owns:** logging architecture (redaction *rules* owned by [11 §8](11-security-privacy-and-compliance.md)), tracing, metrics catalog, crash reporting, dashboards/alerts/on-call, runbooks, incident review process, product analytics event taxonomy, audit trails, feature-flag policy, backup/restore + DR, support/admin tooling minimum, per-phase observability rule.
 **Requirement IDs delivered:** `NFR-OBS-*` (defined in [01-requirements-and-traceability.md](01-requirements-and-traceability.md)).
 **Error budgets / perf thresholds:** numbers live in [13 §12](13-testing-quality-and-performance.md); this doc wires them to dashboards and alerts.
@@ -12,17 +12,17 @@
 Two–three developers operate this system. Observability must be **cheap to run, honest, and quiet**: few tools, aggressive redaction, alerts only for things a human must act on. Every phase ships the observability for what it introduces (§15) — no "instrument it later."
 
 **Tooling (per [r4](research/r4-backend-providers.md) + SPINE):**
-- **PostHog** — product analytics, error tracking, session replay (mobile, off by default and consent-gated), feature flags.
+- **PostHog** — product analytics, error tracking, session replay (mobile, off by default and consent-gated), feature flags. Kept on the Cloud free tier (DEC-48); exit trigger: before any paid usage, or if OQ-07 residency rejects the region → self-host PostHog OSS only if in-house data is itself a requirement.
 - **OpenTelemetry SDK** everywhere for traces/metrics/logs — vendor-neutral instrumentation is the commitment; the export target is swappable.
-- **Pragmatic trace/metric backend at launch:** OTel → **Grafana Cloud free tier** (Tempo traces, Prometheus-style metrics, Loki logs). Chosen over self-hosting (ops burden for 2 devs) and over PostHog-only (PostHog is not a distributed-tracing backend). Confirmed as **ADR-OBS-01 in P02**; fallback if free-tier limits bite: self-hosted Grafana stack on the Hetzner path.
+- **Pragmatic trace/metric backend at launch:** OTel → **Grafana Cloud free tier** (Tempo traces, Prometheus-style metrics, Loki logs). Chosen over self-hosting (ops burden for 2 devs) and over PostHog-only (PostHog is not a distributed-tracing backend). Confirmed as **ADR-OBS-01 in P02**; kept on the free tier (DEC-48). Exit trigger: before any paid usage → self-hosted Grafana + Prometheus + Loki + Tempo (AGPL-3.0) on a **separate failure domain**, never on the app server.
 - **Sentry (optional):** enable for RN crash symbolication only if PostHog error tracking proves insufficient for native crashes (decision point end of P03; keep the seam — crash reporter behind one init module).
-- Railway/Neon/Cloudflare/Trigger.dev built-in dashboards are supplements, not the system of record.
+- Coolify's deploy/container views, host metrics (node exporter), Cloudflare dashboards and pg-boss queue tables are supplements, not the system of record.
 
 ## 2. Structured logging
 
-- JSON logs everywhere (NestJS via pino; Python via structlog; Trigger.dev tasks via its logger + OTel bridge).
+- JSON logs everywhere (NestJS via pino; Python via structlog; pg-boss job handlers via pino in the API/`jobs` process).
 - **Required fields:** `ts`, `level`, `service`, `module`, `correlation_id`, `user_id` (pseudonymous id only), `event` (stable snake_case name), `duration_ms` where applicable, `job_id`/`trace_id` when in a job/request.
-- **Correlation IDs:** minted at the mobile client per logical operation (UUIDv7), sent as `x-correlation-id`, propagated through API → outbox events → Trigger.dev jobs → Python workers → provider calls (as our own metadata, never as user data). One capture-to-catalog flow is traceable end-to-end by one ID.
+- **Correlation IDs:** minted at the mobile client per logical operation (UUIDv7), sent as `x-correlation-id`, propagated through API → outbox events → pg-boss jobs → Python workers → provider calls (as our own metadata, never as user data). One capture-to-catalog flow is traceable end-to-end by one ID.
 - **Redaction enforced by the logger, not by discipline:** serializer allowlist per log schema — only declared fields are emitted; denylist backstop drops keys matching the forbidden list in [11 §8](11-security-privacy-and-compliance.md) (tokens, image data, measurements, coordinates, calendar text, emails, prompt payloads).
 - **Forbidden-field lint (CI):** ESLint/Ruff rules ban `console.*`, logging of `req.body`/`request.json()` wholesale, and any identifier matching the forbidden-field patterns inside logging calls. The runtime canary test lives in [13 §8.1](13-testing-quality-and-performance.md).
 - Retention: 30 d hot, 90 d archived (S1 data per 11 §6). Log access is itself restricted (logs are internal data, but treated as if a leak is possible — hence redaction at source).
@@ -30,7 +30,7 @@ Two–three developers operate this system. Observability must be **cheap to run
 ## 3. Tracing
 
 - OTel auto-instrumentation: NestJS HTTP + Drizzle/pg spans; fetch/undici spans for provider calls (URL path only, no query strings — signed URLs contain credentials); FastAPI + httpx on workers; manual spans around pipeline stages (validate, strip, segment, classify) and recommendation stages (context, candidates, score, validate).
-- **Async continuity:** trace context serialized into outbox event envelopes and Trigger.dev payloads (`traceparent` field in the shared event envelope, `shared-kernel`), so a trace covers API request → enqueue → job → worker → completion webhook. Where a hard boundary breaks the trace, span links + the correlation ID recover the story.
+- **Async continuity:** trace context serialized into outbox event envelopes and pg-boss job payloads (`traceparent` field in the shared event envelope, `shared-kernel`), so a trace covers API request → enqueue → job → worker → completion webhook. Where a hard boundary breaks the trace, span links + the correlation ID recover the story.
 - Span attributes carry ids and enums only — the same redaction rules as logs apply (no payloads).
 - Sampling: 100% at launch volumes; head-sampling down (keep all errors + slow traces) when volume demands — revisit at 5k users.
 
@@ -49,7 +49,7 @@ Namespace `stylist.*`; all metrics tagged `service`, `env`, and where relevant `
 | `pipeline.quarantine.count` (reason) | counter | abuse signal (11 §5.5); spike → A-6 |
 | `provider.call.duration` / `errors` / `timeouts` (provider) | histogram/counter | per-port; failure rate → A-3 |
 | `provider.circuit.state` (provider) | gauge | context providers degrade gracefully (doc 09) |
-| `cache.hit_ratio` (cache: context, signed-url, cdn, prompt-cache) | gauge | 13 §12.2 CDN target |
+| `cache.hit_ratio` (cache: context, signed-url, custom-domain asset cache, prompt-cache) | gauge | 13 §12.2 cache target |
 | `reco.request.duration` / `reco.validity_rate` / `reco.no_valid_outfit.count` | histogram/gauge/counter | validity = share passing final validation; **hard-constraint violation count must be 0 — any >0 is A-1** (engine must fail closed; metric exists to prove it) |
 | `reco.feedback.count` (kind) | counter | feeds doc 09 eval metrics |
 | `asset.3d.load_failures` (asset_type, tier) | counter | 3D asset failure metric; A-5 |
@@ -92,14 +92,14 @@ Grafana (launch set — each phase adds its panel, §15):
 - **Alert budget:** ≤ 2 pages/week rolling average. Exceeding it triggers a mandatory tuning session — noisy alerts get fixed or demoted; an alert nobody acts on is deleted. Every page must map to a runbook (§9); an alert without a runbook cannot ship.
 - **Quiet hours:** 23:00–08:00 local — only SEV1 pages. Store-release weeks may temporarily promote SEV2 to full paging (release-gate checklist, doc 15).
 - Rotation: weekly primary swap between the two devs; vacation = documented degraded mode (SEV1 only, longer ack targets) — pretending otherwise would be fiction.
-- Delivery: Grafana alerting → push/phone escalation app; provider status webhooks ingested (Railway, Neon, Cloudflare, Trigger.dev, fal.ai status pages).
+- Delivery: Grafana alerting → push/phone escalation app; provider status webhooks ingested (Cloudflare, Grafana Cloud, fal.ai, RevenueCat status pages); host alerts (disk, CPU/memory, container health via Coolify) and backup-age / WAL-archive-lag alerts from pgBackRest metrics are first-class (RISK-17).
 
 ## 8. Runbooks and incident reviews
 
 **Runbook list (each ships with the phase that creates the risk; stored in `planning/runbooks/` → repo `docs/runbooks/` at implementation):**
-1. API down / Railway incident (failover options, status comms).
-2. Neon incident + PITR restore (with post-restore re-deletion replay, 11 §13.3).
-3. R2/CDN incident (asset serving degradation, signed-URL fallback).
+1. API down / host or Coolify incident (container restart, rollback, host replacement, status comms).
+2. PostgreSQL incident + pgBackRest PITR restore (with post-restore re-deletion replay, 11 §13.3).
+3. R2 / custom-domain cache incident (asset serving degradation, signed-URL fallback).
 4. Queue stuck / DLQ drain / poison-message isolation.
 5. Provider outage: weather/holiday (serve cached context facts with freshness warning), AI providers (fallback chain per doc 10), RevenueCat (entitlement grace behavior).
 6. Security incident (expands 11 §16: containment commands, secret-rotation order, evidence preservation).
@@ -179,9 +179,9 @@ Availability target 99.5% monthly (hypothesis, 13 §12.2) ⇒ budget 3.6 h/mo. B
 
 ## 13. Backup, restore, disaster recovery
 
-- **Neon:** PITR window per plan (7–30 d) is the primary DB recovery; weekly logical dump (pg_dump) to a separate R2 bucket (different credentials than app storage) for provider-failure independence. RPO: ≤ 24 h (dump) / minutes (PITR); RTO hypothesis: ≤ 4 h — proven, not asserted, via drills.
+- **PostgreSQL (self-managed, DEC-43):** pgBackRest WAL archiving to an encrypted R2 bucket (different credentials than app storage) with a **14-day PITR window** is the primary DB recovery; nightly logical dump (`pg_dump`) to the same bucket for engine-independent restores; backup-age and WAL-archive-lag alerts in Grafana; quarterly restore drill to a scratch database (13 §9). RPO: ≤ 24 h (dump) / minutes (PITR); RTO hypothesis: ≤ 4 h — proven, not asserted, via drills (RISK-17).
 - **R2:** originals bucket with object versioning + 30 d retention on deletes (aligned with the deletion caveat 11 §13.3 — versions of deleted users' objects are purged by the cascade's verification step after the window); derived assets are reproducible from originals (lineage, doc 07) so they are *not* backed up — the reprocessing path is the recovery.
-- **Config/infra:** Terraform state + Railway/Cloudflare config exported; secrets inventory (11 §5.3) means rotation, not recovery, of secrets.
+- **Config/infra:** Coolify configuration export + Cloudflare config exported, host provisioning scripted; secrets inventory (11 §5.3) means rotation, not recovery, of secrets.
 - **Restore drill cadence: quarterly**, verification assertions owned by [13 §9](13-testing-quality-and-performance.md); drill freshness is a pre-release gate item. DR scenario doc (region loss, provider account loss) = runbooks 1–3 (§8).
 
 ## 14. Support and admin tooling (minimum viable, `admin` module)

@@ -1,6 +1,6 @@
 # workers/ — Python ML services
 
-Stateless **FastAPI** services that Trigger.dev tasks call over HTTP for CV/ML steps that need
+Stateless **FastAPI** services that pg-boss job handlers call over HTTP for CV/ML steps that need
 Python or native tooling (planning/04 §2, §6). One service per directory under `ml/`, each
 shipped as its own Docker image. In P02 the only service is `ml/segmentation`, an echo stub.
 

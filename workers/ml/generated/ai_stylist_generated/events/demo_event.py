@@ -32,7 +32,7 @@ class DemoOutboxFlowRequestedV1Payload(BaseModel):
 
 class DemoOutboxFlowRequestedV1(BaseModel):
     """
-    P02 demo event proving the API → outbox → Trigger.dev → worker round-trip (brief §7 T08). The full event is the envelope (envelope.json) narrowed by this schema.
+    P02 demo event proving the API → outbox → pg-boss → worker round-trip (brief §7 T08). The full event is the envelope (envelope.json) narrowed by this schema.
     """
 
     type: Literal["demo.outbox-flow.requested.v1"]

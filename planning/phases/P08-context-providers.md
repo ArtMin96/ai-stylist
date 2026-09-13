@@ -1,12 +1,14 @@
 # P08 — Context Providers
 
+> Amended 2026-09-13 ([r7](../research/r7-third-party-services-and-self-hosting-audit-2026-09-13.md), ADR-0003 — service consolidation: pg-boss jobs, owned server + Coolify, self-managed PostgreSQL, R2 delivery model).
+
 > File name per [SPINE §5](../SPINE.md). Template: [templates/phase.md](../templates/phase.md). Status values per [PROGRESS.md](../PROGRESS.md).
 
 ## 1. Overview
 
 - **Phase:** P08 — Context providers
 - **Status:** `NOT_STARTED` *(mirror of PROGRESS.md; PROGRESS.md wins on conflict)*
-- **Goal (one sentence):** Deliver the `context` module — pluggable `ContextProvider` ports with the four v1 providers (Open-Meteo weather, forecast-day, Nager.Date holidays, explicit user occasion), typed `ContextFact` records with freshness/confidence/consent/override, caching, and graceful provider-failure degradation — so P09 can consume context without ever touching a provider SDK.
+- **Goal (one sentence):** Deliver the `context` module — pluggable `ContextProvider` ports with the four v1 providers (Open-Meteo weather, forecast-day, embedded `date-holidays` holidays, explicit user occasion), typed `ContextFact` records with freshness/confidence/consent/override, caching, and graceful provider-failure degradation — so P09 can consume context without ever touching a provider SDK.
 - **User-visible outcome:** The user can see today's (and a selected future day's) weather and holiday context with source and freshness labels, choose an occasion/dress code/activity explicitly, override any fact ("I'll be indoors all day"), and get weather via coarse location by default or manual city with no location permission at all.
 - **Why now:** P09 (engine) hard-depends on typed context facts; P03 delivered the profile fields (locale, units, timezone, climate tolerance) and the consent machinery this phase builds on. Building context before the engine keeps stage 1–2 of the doc 09 pipeline an independent, separately testable module.
 
@@ -20,7 +22,7 @@ IDs from [01-requirements-and-traceability.md](../01-requirements-and-traceabili
 | REQ-CTX-020 | Weather provider (Open-Meteo behind `WeatherProvider` port), current + hourly | AC-2 |
 | REQ-CTX-030 | Forecast for a user-selected future day; beyond-horizon degrades explicitly | AC-3 |
 | REQ-CTX-040 | Weather facts include temp, feels-like, precip, wind, humidity, UV, indoor/outdoor plan | AC-2 |
-| REQ-CTX-050 | Locale-aware holidays (Nager.Date behind `HolidayProvider` port) + "matters to me" toggle | AC-4 |
+| REQ-CTX-050 | Locale-aware holidays (embedded `date-holidays` library behind `HolidayProvider` port) + "matters to me" toggle | AC-4 |
 | REQ-CTX-060 | Explicit occasion/dress code/activity/location type/time of day/travel/style/comfort inputs | AC-5 |
 | REQ-CTX-070 | Providers pluggable; future calendar provider addable with zero engine changes | AC-6 |
 | REQ-CTX-080 | Cached/offline context usable with staleness warnings *(P08 part: caching + freshness fields; P09 consumes)* | AC-7 |
@@ -31,11 +33,11 @@ Out of this table by design: REQ-CTX-090 (calendar minimization — P15), REQ-ON
 ## 3. Prerequisites and blocking dependencies
 
 - Hard depends on (must be `ACCEPTED`): **P03** (identity/consent records, profile locale/timezone/units) — per SPINE §5. (P02 foundations transitively via P03.)
-- External blockers: Open-Meteo **commercial API plan** account + key provisioned (SPINE §2, DEC-22); decision on Nager.Date hosted vs self-hosted instance (default: hosted, self-host documented as fallback per DEC-23); ASM-08 (coverage adequacy) is validated in this phase.
+- External blockers: Open-Meteo **commercial API plan** account + key provisioned (SPINE §2, DEC-22); holidays need no account, key or network call — embedded `date-holidays` library per DEC-45 (supersedes DEC-23; Nager.Date self-hosting rejected: licence key), with the hosted Nager.Date API used only as a fixture cross-check source in tests; ASM-08 (coverage adequacy) is validated in this phase.
 
 ## 4. In scope / out of scope
 
-**In scope:** `context` module (ports, registry, fact cache, freshness derivation, overrides, MissingFact semantics); `platform` adapters for Open-Meteo and Nager.Date; `ContextFact` schemas in `packages/contracts`; consent-scope wiring for coarse/precise location; location settings UI (coarse default / precise opt-in / manual city); occasion picker and holiday "does this matter" toggle; future-day date picker bounded by forecast horizon; context strip UI showing facts + source + freshness + override affordances (rendered on a placeholder Today surface until P09 fills it); provider-failure degradation and chaos tests; mock calendar provider proving the plugin seam.
+**In scope:** `context` module (ports, registry, fact cache, freshness derivation, overrides, MissingFact semantics); `platform` adapters for Open-Meteo and `date-holidays`; `ContextFact` schemas in `packages/contracts`; consent-scope wiring for coarse/precise location; location settings UI (coarse default / precise opt-in / manual city); occasion picker and holiday "does this matter" toggle; future-day date picker bounded by forecast horizon; context strip UI showing facts + source + freshness + override affordances (rendered on a placeholder Today surface until P09 fills it); provider-failure degradation and chaos tests; mock calendar provider proving the plugin seam.
 
 **Out of scope / non-goals:** engine consumption of facts and recommendation staleness banners on results (P09); calendar/travel providers and calendar data minimization (P15, REQ-CTX-090); notifications tied to context changes (P09); Tomorrow.io upgrade (documented fallback only); any AI use — this phase is 100% deterministic (doc 10 §1 #17).
 
@@ -58,7 +60,7 @@ Module names per [SPINE §3](../SPINE.md); update each touched module's contract
 | Module | Change | Contract update needed? |
 |---|---|---|
 | `context` | **New module**: `ContextProvider` port + registry, `collect()` orchestration, `context_facts` cache, freshness derivation, override handling, `MissingFact` semantics, `ContextSnapshot` assembly (consumed by P09) | Yes — new module contract |
-| `platform` | `OpenMeteoWeatherProvider`, `NagerDateHolidayProvider` adapters (SDK/HTTP code lives here only); geocoding adapter for manual city | Yes |
+| `platform` | `OpenMeteoWeatherProvider`, `DateHolidaysHolidayProvider` (provider id `'date-holidays'`) adapters (SDK/HTTP/library code lives here only); geocoding adapter for manual city | Yes |
 | `shared-kernel` | Context enums (`ContextFactKind`, `ConsentScope` additions `coarse-location`/`precise-location`, occasion/dress-code enums), geohash precision constants | Yes (single-writer, sequence first) |
 | `identity` | Consent scopes for coarse/precise location registered; withdrawal halts collection | Yes |
 | `profile` | Manual-city field + location-mode preference (reads existing locale/timezone) | Yes (minor) |
@@ -81,7 +83,7 @@ Architecture invariants exercised: domain never imports provider SDKs (`just arc
 | Backend | `context` module, provider registry, cache/TTL logic, override endpoints, consent gating, `ContextSnapshot` assembly |
 | Workers (ML/media) | None |
 | Data / migrations | `context_facts`, `context_overrides`, profile location fields |
-| Infrastructure | Open-Meteo commercial key + Nager.Date base URL in env/secrets (doc 15 §6); rate-limit budget config per provider |
+| Infrastructure | Open-Meteo commercial key in env/secrets (doc 15 §6); no holiday key or base URL — `date-holidays` is a package dependency (DEC-45); rate-limit budget config per provider |
 | 3D / assets | None |
 | Admin / internal tools | Provider-health panel entry (last success per provider, error rate) in existing ops dashboard |
 
@@ -115,8 +117,8 @@ Small enough for one AI-assisted session each. Task IDs `P08-T##`.
 | P08-T01 | Contracts: `ContextFact`/`MissingFact`/`ContextSnapshot`/override schemas + OpenAPI paths + `context.fact.overridden.v1`; regenerate clients | — | 1 |
 | P08-T02 | `shared-kernel`: context enums, consent scopes, occasion/dress-code enums, geohash constants (single-writer; lands before consumers) | — | 1 |
 | P08-T03 | `context` module skeleton: `ContextProvider` port, registry, `collect()` orchestration with per-provider isolation (one failing provider never blocks others), MissingFact semantics + unit tests | T01, T02 | 1 |
-| P08-T04 | `platform`: Open-Meteo adapter (current + forecast-day, all REQ-CTX-040 signals) + recorded-fixture contract tests (doc 13 §5) | T03 | 1–2 |
-| P08-T05 | `platform`: Nager.Date adapter + locale mapping + recorded-fixture contract tests | T03 | 1 |
+| P08-T04 | `platform`: Open-Meteo adapter (current + forecast-day, all REQ-CTX-040 signals) + recorded-fixture contract tests (doc 13 §5); measured weather-delivery comparison — Open-Meteo managed vs self-hosted Open-Meteo (AGPL-3.0; ≥ 8 GB RAM / 100 GB disk, continuous ingestion) vs Apple WeatherKit REST — on coverage, freshness, outage behaviour, privacy and total cost, recorded as a DEC (do not self-host solely to avoid $29/mo; [r7](../research/r7-third-party-services-and-self-hosting-audit-2026-09-13.md)) | T03 | 1–2 |
+| P08-T05 | `platform`: `date-holidays` adapter (`DateHolidaysHolidayProvider`) + locale mapping + fixture cross-check of its output against recorded hosted Nager.Date responses (DEC-45) | T03 | 1 |
 | P08-T06 | `UserOccasionProvider` + occasion-defaults endpoints + REQ-CTX-060 input set | T03 | 1 |
 | P08-T07 | `context_facts` cache + TTL/freshness derivation (`fresh|stale|expired` from `staleAfter`/`expiresAt`) + migrations + prune job | T03 | 1 |
 | P08-T08 | Overrides: endpoint, precedence (override wins, provider value retained), event emission, cache invalidation on override | T07 | 1 |
@@ -140,7 +142,7 @@ Per [13](../13-testing-quality-and-performance.md); tests live in each module's 
 | Module | Unit | Property | Contract | Integration | E2E / device / visual |
 |---|---|---|---|---|---|
 | `context` | freshness derivation, override precedence, MissingFact per failure reason, snapshot hashing | fast-check: freshness is a pure monotone function of timestamps; override never mutates provider value; `collect()` results are order-independent | ContextFact schema round-trip per kind; snapshot consumed by a stub engine | Testcontainers: cache write/read/prune, consent-withdrawal purge | — |
-| `platform` (adapters) | payload mapping incl. all REQ-CTX-040 fields | — | recorded Open-Meteo/Nager.Date fixtures; provider format change breaks test, not prod (doc 13 §5) | timeout/retry/circuit behavior against a fake slow server | — |
+| `platform` (adapters) | payload mapping incl. all REQ-CTX-040 fields | — | recorded Open-Meteo fixtures; `date-holidays` output cross-checked against recorded hosted Nager.Date fixtures; provider format change breaks test, not prod (doc 13 §5) | timeout/retry/circuit behavior against a fake slow server | — |
 | `identity`/`profile` | consent-scope checks | — | — | withdrawal halts collection mid-flight (sec suite pattern, doc 13 §8.1 consent gating) | — |
 | Mobile | freshness label rendering from fact fields | — | generated-client handshake | RNTL: strip states (fresh/stale/expired/missing), override sheet | Maestro: manual-city-only weather flow; degraded-provider flow (doc 13 §7 list) |
 
@@ -149,7 +151,7 @@ Per [13](../13-testing-quality-and-performance.md); tests live in each module's 
 | Budget | Target (hypothesis until measured) | How measured |
 |---|---|---|
 | Performance | `GET /context-facts` p95 ≤ 250 ms warm cache; cold provider fetch p95 ≤ 2.5 s; prefetch keeps engine path warm for P09 | API metrics + k6 smoke on the endpoint |
-| Cost | Open-Meteo commercial plan flat fee within infra budget (SPINE §6 anchors); $0 AI spend; provider calls/user/day ≤ 4 via cache TTLs (weather ttl 3 h / stale 1 h per doc 09 §2.2) | provider-call metric vs active users |
+| Cost | Open-Meteo commercial plan flat fee within infra budget (SPINE §6 anchors) — the T04 comparison (managed vs self-hosted Open-Meteo vs WeatherKit) decides total weather cost; holidays $0 (embedded library); $0 AI spend; provider calls/user/day ≤ 4 via cache TTLs (weather ttl 3 h / stale 1 h per doc 09 §2.2) | provider-call metric vs active users |
 | AI quality | n/a (no AI) | — |
 | Reliability | Any single provider down ⇒ 0 request failures on `/context-facts` (facts + MissingFacts returned); cache hit rate ≥ 70% steady state | chaos tests (T12) + dashboard |
 
@@ -163,8 +165,8 @@ Per [13](../13-testing-quality-and-performance.md); tests live in each module's 
 
 Registry in [16](../16-risks-open-questions-and-decision-log.md); add new phase risks there, not here.
 
-- Risks in play: **RISK-11** (small-vendor/provider concentration — mitigated by ports + Tomorrow.io/Calendarific fallbacks per DEC-22/DEC-23); **ASM-08** (Open-Meteo + Nager.Date global coverage adequacy — this phase validates it).
-- **Stop/kill criteria:** coverage spot-check across ≥ 10 launch-relevant countries shows Open-Meteo hourly forecast or Nager.Date holidays materially missing/wrong for > 20% of them → swap the failing provider behind its port (Tomorrow.io / Calendarific), log a DEC entry; the port means this is an adapter task, not a redesign. If the commercial-plan procurement blocks > 1 week → develop against the free tier with a hard pre-launch gate item (never launch on the free tier — DEC-22).
+- Risks in play: **RISK-11** (small-vendor/provider concentration — mitigated by ports + the Tomorrow.io weather fallback per DEC-22; holidays are an embedded library with no vendor, DEC-45); **ASM-08** (Open-Meteo + `date-holidays` global coverage adequacy — this phase validates it).
+- **Stop/kill criteria:** coverage spot-check across ≥ 10 launch-relevant countries shows Open-Meteo hourly forecast or `date-holidays` data materially missing/wrong for > 20% of them → swap the failing provider behind its port (Tomorrow.io for weather; another holiday library or the hosted Nager.Date API for holidays), log a DEC entry; the port means this is an adapter task, not a redesign. If the commercial-plan procurement blocks > 1 week → develop against the free tier with a hard pre-launch gate item (never launch on the free tier — DEC-22).
 
 ## 18. Demo script
 
@@ -186,7 +188,7 @@ Objectively verifiable; evidence = actual command output / screenshots.
 - **AC-1:** `ContextFact` schema in `packages/contracts` contains all six REQ-CTX-010 fields; a contract test rejects a fact missing any of them; the P09-facing `ContextSnapshot` is immutable and content-hashed (test).
 - **AC-2:** `just test context platform` passes adapter suites proving current + hourly + all REQ-CTX-040 signals from recorded Open-Meteo fixtures; swapping the weather provider in a test requires only a new port implementation (compile-time proof: fake provider registered, zero `context`-core diffs).
 - **AC-3:** future-day request within horizon returns forecast facts with lead-decayed confidence; beyond-horizon returns `MissingFact{not_configured}` — both covered by tests and demo step 5.
-- **AC-4:** holiday facts appear for ≥ 3 locales from Nager.Date fixtures; per-recommendation-request "matters" toggle round-trips and is visible in the fact's override field.
+- **AC-4:** holiday facts appear for ≥ 3 locales from the embedded `date-holidays` adapter and match the recorded hosted Nager.Date cross-check fixtures; per-recommendation-request "matters" toggle round-trips and is visible in the fact's override field.
 - **AC-5:** every REQ-CTX-060 input is settable via API + UI and lands in the occasion fact payload (schema test enumerates the full list).
 - **AC-6:** T13 mock calendar provider test passes using only the public `ContextProvider` interface; `git diff` in the test PR shows zero changes under `context/src` core (REQ-CTX-070).
 - **AC-7:** offline device renders cached facts with a staleness warning naming the fact and its age (Maestro flow recording).
@@ -201,7 +203,7 @@ just test platform         # adapter contract tests (recorded fixtures)
 just lint && just typecheck
 just arch-check            # no provider SDK imports outside platform; module boundaries hold
 just generate --check      # contracts/clients not stale
-just db-migrate && just db-rollback   # forward + rollback exercised on a Neon branch
+just db-migrate && just db-rollback   # forward + rollback exercised on a scratch database restored from the staging backup
 just ci-parity             # full PR gate green
 ```
 

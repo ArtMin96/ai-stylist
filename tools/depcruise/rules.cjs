@@ -29,7 +29,7 @@ const UTILS_DIR = '(^|/)(utils|helpers|common)/';
 const COMPOSITION_ROOTS = [
   '^apps/api/src/app\\.module\\.ts$',
   '^apps/api/src/main\\.ts$',
-  '^apps/api/src/trigger/',
+  '^apps/api/src/jobs/',
   '^apps/mobile/src/app/_layout\\.tsx$',
   '^apps/mobile/src/lib/app-services\\.tsx$',
 ];
@@ -38,7 +38,7 @@ const COMPOSITION_ROOTS = [
 // resolved path (pnpm realpath contains `node_modules/<pkg>/`) and the bare specifier when the
 // package is not installed, so an unresolvable import still fails.
 const PROVIDER_SDKS =
-  '(^|/)(@trigger\\.dev|@aws-sdk|@cloudflare|react-native-purchases|@fal-ai|posthog-[^/]*|firebase-admin|@sentry)(/|$)';
+  '(^|/)(pg-boss|@aws-sdk|@cloudflare|react-native-purchases|@fal-ai|posthog-[^/]*|firebase-admin|@sentry)(/|$)';
 
 // --- the allowed module DAG, copied from planning/04 §4.1 ----------------------------------------
 // key → modules it may import (via their index.ts). Every module may also import shared-kernel

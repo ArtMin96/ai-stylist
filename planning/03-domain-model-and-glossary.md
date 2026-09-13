@@ -1,7 +1,7 @@
 # 03 — Domain Model & Glossary
 
 **Status:** Draft for review · **Date:** 2026-08-24
-**Conforms to:** [SPINE.md](SPINE.md) (modules §3, capability codes §4, terminology §8)
+**Conforms to:** [SPINE.md](SPINE.md) (modules §3, capability codes §4, terminology §8) · **Amended:** 2026-09-13 ([r7](research/r7-third-party-services-and-self-hosting-audit-2026-09-13.md), ADR-0003 — cache-purge wording)
 **Owns:** the canonical glossary (full definitions extending SPINE §8), module ownership of every concept, aggregate/entity/value-object sketches, per-aggregate invariants, and the four domain state machines (media processing — domain-level summary; canonical pipeline stage names are owned by [07 §8.1](07-3d-avatar-and-garment-pipeline.md) per SPINE §8 —, closet item availability, subscription/entitlement, recommendation).
 **Does not own:** database schemas and API contracts ([06-data-api-and-event-contracts.md](06-data-api-and-event-contracts.md)), pipeline stage implementations ([07-3d-avatar-and-garment-pipeline.md](07-3d-avatar-and-garment-pipeline.md)), taxonomy contents ([08-closet-taxonomy-and-organization.md](08-closet-taxonomy-and-organization.md)), engine mechanics ([09-recommendation-engine.md](09-recommendation-engine.md)), billing mechanics ([12-pricing-entitlements-and-unit-economics.md](12-pricing-entitlements-and-unit-economics.md)).
 
@@ -172,7 +172,7 @@ Cross-aggregate references are by ID only. No aggregate embeds another's data; e
 - Two uploads with the same content hash by the same user converge to one asset (dedup at the asset level; item-level duplicates are a `closet` concern).
 - A Derivation of class `ai_generated` can never replace or masquerade as an `original_capture`; replacement flows only go the other way (real photo supersedes generated view).
 - Reprocessing after model upgrades creates superseding derivations; superseded ones are retained per retention policy, and user corrections are re-applied, not lost.
-- Deletion of an original cascades to its entire derivation tree, including CDN/cache purge.
+- Deletion of an original cascades to its entire derivation tree, including cache purge (custom-domain assets).
 
 **Outfit**
 - All item refs must belong to the same user.
@@ -237,7 +237,7 @@ stateDiagram-v2
     reprocessing --> published: superseding derivations created
     published --> deleted_pending: user/account deletion
     failed --> deleted_pending: user deletes
-    deleted_pending --> [*]: purge complete (incl. CDN)
+    deleted_pending --> [*]: purge complete (incl. custom-domain cache)
 ```
 
 Notes: `queued_local` is the durable on-device queue (journey doc 02 §6.4); every server-side transition is idempotent per (content hash, step, version); `failed` always retains the original photo. This is the domain-level summary; the canonical fine-grained server pipeline states are owned by [07 §8.1](07-3d-avatar-and-garment-pipeline.md) (per SPINE §8): `preprocessing` here rolls up doc 07's `stripping`, and `processing` rolls up `segmenting → extracting` plus the post-confirmation `synthesizing/texturing/proxying/optimizing` stages before `published`.

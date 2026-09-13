@@ -69,7 +69,7 @@
       "Bash(gh pr merge *)",
       "Bash(git push * --delete*)",
       "Bash(git push --delete*)",
-      "Bash(git push * :* *)",
+      "Bash(git push * :*)",
       "Bash(eas submit*)",
       "Bash(just secrets-sync staging*)",
       "Bash(just secrets-sync prod*)",

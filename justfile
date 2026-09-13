@@ -38,6 +38,14 @@ secrets-edit env='dev':
 secrets-updatekeys *envs:
     scripts/security/secrets-updatekeys.sh "$@"
 
+# Approve a developer's onboarding branch: verify it only adds age recipients to .sops.yaml, re-wrap every secrets/*.enc.yaml, push, print the PR URL (§6 onboarding)
+secrets-approve branch:
+    scripts/security/secrets-approve.sh "$@"
+
+# Record that your age identity is backed up in the password manager (marker file checked by just doctor)
+secrets-backup-done:
+    scripts/security/secrets-backup-done.sh
+
 # --- dev servers ---------------------------------------------------------------
 
 # Compose stack (Postgres+pgvector) + NestJS API in watch mode (tsx; reads the repo-root .env)

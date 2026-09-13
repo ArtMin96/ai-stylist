@@ -4,6 +4,10 @@
 # Linux + macOS (bash 3.2-clean; POSIX df/grep only — see scripts/lib.sh for the helpers).
 set -euo pipefail
 source "$(dirname "${BASH_SOURCE[0]}")/lib.sh"
+# shellcheck source=scripts/security/secrets-lib.sh
+source "$(dirname "${BASH_SOURCE[0]}")/security/secrets-lib.sh"
+# shellcheck source=scripts/security/secrets-doctor.sh
+source "$(dirname "${BASH_SOURCE[0]}")/security/secrets-doctor.sh"
 cd "$REPO_ROOT"
 
 heading "AI Stylist doctor"
@@ -119,6 +123,10 @@ if [[ -f .env ]]; then
 else
   fail ".env not found" "cp .env.example .env   (or: just secrets-sync)"
 fi
+
+# --- sops + age identity ---------------------------------------------------------
+secrets_select_env dev
+secrets_doctor_checks
 
 # --- git hooks (prek) -------------------------------------------------------------
 hooks_dir="$(git rev-parse --git-path hooks 2>/dev/null || echo .git/hooks)"

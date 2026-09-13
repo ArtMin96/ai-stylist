@@ -112,12 +112,21 @@ write_sops_config() {
 # hooks.
 fixture_git_repo() {
     local fixture="$1"
-    printf '/home/\n/bin/\n' > "$fixture/.gitignore"
+    printf '/home/\n/bin/\n/node_modules\n' > "$fixture/.gitignore"
     git -C "$fixture" init -q -b main
     git -C "$fixture" config user.name "Synthetic Developer"
     git -C "$fixture" config user.email "synthetic-dev@example.invalid"
-    mkdir -p "$fixture/no-hooks"
-    git -C "$fixture" config core.hooksPath "$fixture/no-hooks"
+    # The real repo's commit-msg hook runs `pnpm exec commitlint` from the commit's cwd, so it needs
+    # the checkout's node_modules. Model that: every commit must see node_modules/.hook-marker where
+    # it runs, which a throwaway worktree only has if the script links the repo's node_modules in.
+    mkdir -p "$fixture/hooks" "$fixture/node_modules"
+    : > "$fixture/node_modules/.hook-marker"
+    cat > "$fixture/hooks/commit-msg" <<'HOOK'
+#!/usr/bin/env bash
+[[ -e node_modules/.hook-marker ]] || { echo "commit-msg hook: node_modules missing in $PWD" >&2; exit 1; }
+HOOK
+    chmod +x "$fixture/hooks/commit-msg"
+    git -C "$fixture" config core.hooksPath "$fixture/hooks"
     git -C "$fixture" config commit.gpgsign false
     git -C "$fixture" add -A
     git -C "$fixture" commit -q -m "chore: fixture baseline"
@@ -136,6 +145,7 @@ new_synthetic_branch_worktree() {
         command rm -rf "$wt"
         return 1
     fi
+    ln -s "$fixture/node_modules" "$wt/node_modules"
     printf '%s\n' "$wt"
 }
 
@@ -422,12 +432,15 @@ test_onboard_adds_labelled_recipient_under_marker() {
         PATH="$fixture/bin:$PATH" scripts/security/secrets-onboard.sh >/dev/null 2>&1) || return 1
 
     pub="$("$age_keygen" -y "$path" 2>/dev/null)" || return 1
-    marker_line="$(grep -n '# ADD RECIPIENTS' "$fixture/.sops.yaml" | head -1 | cut -d: -f1)"
+    # The developer's own tree stays untouched (see the sibling test); the insertion lands on the
+    # pushed onboarding branch, so read .sops.yaml from the remote.
+    git -C "$fixture.git" show "onboard/synthetic-developer:.sops.yaml" > "$fixture/pushed-sops.yaml" || return 1
+    marker_line="$(grep -n '# ADD RECIPIENTS' "$fixture/pushed-sops.yaml" | head -1 | cut -d: -f1)"
     [[ -n "$marker_line" ]] || return 1
-    [[ "$(sed -n "$((marker_line + 1))p" "$fixture/.sops.yaml")" == "          # developer: Synthetic Developer" ]] || return 1
-    [[ "$(sed -n "$((marker_line + 2))p" "$fixture/.sops.yaml")" == "          - $pub" ]] || return 1
+    [[ "$(sed -n "$((marker_line + 1))p" "$fixture/pushed-sops.yaml")" == "          # developer: Synthetic Developer" ]] || return 1
+    [[ "$(sed -n "$((marker_line + 2))p" "$fixture/pushed-sops.yaml")" == "          - $pub" ]] || return 1
 
-    count_after="$(grep -cE '^[[:space:]]*- age1[0-9a-z]+[[:space:]]*$' "$fixture/.sops.yaml")"
+    count_after="$(grep -cE '^[[:space:]]*- age1[0-9a-z]+[[:space:]]*$' "$fixture/pushed-sops.yaml")"
     [[ $((count_before + 1)) -eq $count_after ]]
 }
 
@@ -455,6 +468,29 @@ test_onboard_pushes_branch_and_leaves_tree_clean() {
     git -C "$fixture.git" rev-parse --verify --quiet "refs/heads/$branch" >/dev/null || return 1
     remote_sops="$(git -C "$fixture.git" show "$branch:.sops.yaml")" || return 1
     [[ "$remote_sops" == *"$pub"* ]]
+}
+
+# A fresh machine often has no git user.name/user.email yet; onboarding must say so and stop
+# before creating a branch, instead of failing inside the worktree commit.
+test_onboard_requires_git_identity() {
+    local fixture="$TEST_ROOT/onboard-no-identity" output age_keygen
+    fixture_repo "$fixture"
+    fixture_git_repo "$fixture"
+    printf '#!/usr/bin/env bash\nexit 1\n' > "$fixture/bin/sops"
+    chmod +x "$fixture/bin/sops"
+    age_keygen="$(resolve_tool age-keygen)" || return 1
+    ln -s "$age_keygen" "$fixture/bin/age-keygen" || return 1
+    git -C "$fixture" config --unset user.name
+    git -C "$fixture" config --unset user.email
+
+    output="$(cd "$fixture" && CI="" SOPS_AGE_KEY="" HOME="$fixture/home" XDG_CONFIG_HOME="$fixture/home/.config" \
+        GIT_CONFIG_GLOBAL=/dev/null GIT_CONFIG_SYSTEM=/dev/null PATH="$fixture/bin:$PATH" \
+        scripts/security/secrets-onboard.sh 2>&1)" || return 1
+
+    [[ "$output" == *"git identity is not configured"* ]] || return 1
+    [[ "$output" == *"git config --global user.name"* ]] || return 1
+    ! git -C "$fixture.git" rev-parse --verify --quiet "refs/heads/onboard/synthetic-developer" >/dev/null || return 1
+    [[ "$output" != *"AGE-SECRET-KEY-1"* ]]
 }
 
 # Already green after T1: pins the URL format secrets-onboard.sh (T3) will print.
@@ -782,6 +818,7 @@ run_test "real sops+age: create, set, sync, add recipient, remove recipient, den
 run_test "onboard generates a mode-600 identity in a mode-700 dir and never prints the key" test_onboard_generates_identity_mode_600
 run_test "onboard never overwrites an existing identity" test_onboard_never_overwrites_existing_key
 run_test "onboard inserts the labelled recipient directly under the ADD RECIPIENTS marker" test_onboard_adds_labelled_recipient_under_marker
+run_test "onboard stops with a hint when git has no user.name/user.email" test_onboard_requires_git_identity
 run_test "onboard pushes the onboarding branch and leaves the developer's tree/branch untouched" test_onboard_pushes_branch_and_leaves_tree_clean
 run_test "secrets_github_compare_url prints the compare URL for a github.com remote" test_onboard_prints_compare_url_for_github_remote
 run_test "onboard prints the manual push command and keeps the local branch when push fails" test_onboard_push_failure_prints_manual_commands

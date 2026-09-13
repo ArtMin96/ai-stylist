@@ -175,6 +175,19 @@ secrets_add_recipient() {
     command rm -rf "$tmp_dir"
 }
 
+# Make the repo's node_modules visible inside a throwaway worktree. The commit-msg hook runs
+# `pnpm exec commitlint` from the commit's cwd (.pre-commit-config.yaml), so a worktree without
+# node_modules fails every commit; a symlink keeps the hooks running for real instead of being
+# bypassed. node_modules is gitignored, so nothing can be staged through it. No-op when the repo has
+# no node_modules (hooks not installed yet) or the worktree already has one.
+secrets_link_node_modules() {
+    local worktree="$1" root
+    root="$(secrets_root)"
+    if [[ -d "$root/node_modules" && ! -e "$worktree/node_modules" ]]; then
+        ln -s "$root/node_modules" "$worktree/node_modules"
+    fi
+}
+
 # The identity file sops would use: $SOPS_AGE_KEY_FILE when set, else the default keys file
 # (https://getsops.io/docs/usage/identities/age/). Never checks whether the file exists.
 secrets_identity_file() {

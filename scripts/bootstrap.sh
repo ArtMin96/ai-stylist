@@ -192,7 +192,15 @@ if have direnv || mise_exec direnv --version >/dev/null 2>&1; then
   mise_exec direnv allow . 2>/dev/null || true
 fi
 
-# --- 6. doctor -------------------------------------------------------------------------
+# --- 6. age identity + secrets onboarding -----------------------------------------------
+log "age identity + secrets onboarding"
+set +e
+mise_exec scripts/security/secrets-onboard.sh
+onboard_rc=$?
+set -e
+(( onboard_rc == 0 )) || warn "secrets onboarding step reported a problem — see above; bootstrap continues"
+
+# --- 7. doctor -------------------------------------------------------------------------
 log "doctor"
 set +e
 "$REPO_ROOT/scripts/doctor.sh"
@@ -205,6 +213,9 @@ cat <<MSG
   Activate mise in your shell (not written to rc files by this script):
       eval "\$(~/.local/bin/mise activate zsh)"
       eval "\$(direnv hook zsh)"
-  Then:  direnv allow   ·   just secrets-sync   ·   just doctor   ·   just dev-api
+  Then:  direnv allow
+  Secrets: open the onboarding pull request printed above, then ask an approver to run
+           'just secrets-approve <branch>'. Once it merges:  just secrets-sync  ·  just doctor  ·  just dev-api
+  Back up your age identity in the team password manager, then:  just secrets-backup-done
 MSG
 exit "$doctor_rc"

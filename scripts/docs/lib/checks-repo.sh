@@ -76,7 +76,10 @@ check_dc14() {
     [[ -z "${line// /}" ]] && continue
     token="$(awk '{print $1}' <<<"$line")"
     dir_token="${token%%<*}"
-    if [[ -n "$dir_token" && ! -e "$root/$dir_token" ]]; then
+    # Gitignored paths (artifacts/, node_modules/) are absent on a fresh CI checkout but must still be
+    # documented when present, so they are exempt from the existence requirement only.
+    if [[ -n "$dir_token" && ! -e "$root/$dir_token" ]] \
+      && ! (cd "$root" && git check-ignore -q "$dir_token" 2>/dev/null); then
       finding "$level" DC-14 "CLAUDE.md" 1 "layout block path '$token' does not exist"
     fi
     block_top+=("${token%%/*}")

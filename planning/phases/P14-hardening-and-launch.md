@@ -1,5 +1,7 @@
 # P14 — Hardening and Launch
 
+> Amended 2026-09-13 ([r7](../research/r7-third-party-services-and-self-hosting-audit-2026-09-13.md), ADR-0003 — service consolidation: pg-boss jobs, owned server + Coolify, self-managed PostgreSQL, R2 delivery model).
+
 > File name: `phases/P14-hardening-and-launch.md` per [SPINE §5](../SPINE.md). Every section below is REQUIRED (brief §10). Status values per [PROGRESS.md](../PROGRESS.md).
 
 ## 1. Overview
@@ -97,7 +99,7 @@ Module names per [SPINE §3](../SPINE.md); update each touched module's contract
 | Mobile | A11y fixes from audit; perf fixes from device runs; store build config (icons, name per OQ-01, permission strings); reduced-motion/non-3D verification; release-channel wiring |
 | Backend | Security-review fixes; rate-limit tuning; SLO/error-budget ratification; retention jobs verification |
 | Workers (ML/media) | Eval-suite freshness check; kill-switch ladder verification; no new capability work |
-| Data / migrations | Restore-drill execution against Neon PITR + R2 sample; retention bookkeeping if needed |
+| Data / migrations | Restore-drill execution: pgBackRest PITR restore to a scratch host + R2 sample restore (RISK-17); retention bookkeeping if needed |
 | Infrastructure | Production environment finalization (separate credentials per [15 §11](../15-team-workflow-and-ai-agent-operations.md)); WAF/bot rules; alert delivery + escalation app; store CI/CD lanes exercised end-to-end incl. rollback rehearsal |
 | 3D / assets | Device-floor fallback defaults; asset-budget verification (`just assets-validate` across the full manifest) |
 | Admin / internal tools | Support/admin minimum set complete and role-tested |
@@ -142,7 +144,7 @@ Small enough for one AI-assisted session each. Task IDs `P14-T##`. (Qualificatio
 | P14-T08 | Performance: device-matrix runs (low/mid/high, iOS+Android) against every [13 §12.1](../13-testing-quality-and-performance.md) budget; fix or invoke documented fallbacks; ratify budgets + device floor (OQ-08) as DEC entries | T01 | 3 |
 | P14-T09 | Load tests (k6 profiles per [13 §12.3](../13-testing-quality-and-performance.md)) + backend SLO/error-budget ratification + rate-limit tuning | T01 | 2 |
 | P14-T10 | Reliability drills: provider chaos (weather, AI, RevenueCat), kill-switch ladder live verification, offline journeys on device | T01 | 2 |
-| P14-T11 | Backup/restore + DR drill: Neon PITR restore to scratch + verification suite, R2 sample restore, post-restore re-deletion replay; document RTO/RPO measured | T01 | 1 |
+| P14-T11 | Backup/restore + DR drill: pgBackRest PITR restore to a scratch host + verification suite, R2 sample restore, post-restore re-deletion replay; document RTO/RPO measured | T01 | 1 |
 | P14-T12 | Support/admin minimum complete ([14 §14](../14-observability-operations-and-analytics.md)) + support email templates + audit-log viewer demo | T01 | 2 |
 | P14-T13 | Observability closure: metric-gap sweep, alert-budget tuning, on-call rota + paging test, all runbooks written | T09, T10 | 2 |
 | P14-T14 | Store readiness: name (OQ-01) final, listings, privacy nutrition labels / Data safety (LR-01), permission strings, review-guideline self-check, billing compliance final sign-off (REQ-BIL-070), size gate | T02, T07 | 2 |
@@ -178,7 +180,7 @@ This phase converts hypotheses to measured, ratified gates (DEC entries for each
 | Budget | Target (hypothesis until measured) | How measured |
 |---|---|---|
 | Performance | Every row of [13 §12.1–12.2](../13-testing-quality-and-performance.md): cold start ≤ 4.0/2.5/1.8 s by tier, rec-request→render ≤ 3.5/2.5/2.0 s, 3D ≥ 30/60/60 fps, memory ≤ 700 MB low-tier 3D, app ≤ 150 MB target/200 MB cap, API p95 250 ms, availability ≥ 99.5 %, etc. | Device-matrix runs + k6 load tests, raw traces archived; dashboards |
-| Cost | AI cost/user/mo within SPINE §6 anchors at beta traffic; per-plan guardrails quiet; infra within $60–85/mo launch fixed ([12 §7.4](../12-pricing-entitlements-and-unit-economics.md)) | Provider bills + `ai.cost_per_active_user`; Railway/Neon invoices |
+| Cost | AI cost/user/mo within SPINE §6 anchors at beta traffic; per-plan guardrails quiet; infra within $60–85/mo launch fixed ([12 §7.4](../12-pricing-entitlements-and-unit-economics.md)) | Provider bills + `ai.cost_per_active_user`; server-provider invoice + R2/PostHog/Grafana usage pages |
 | AI quality | All doc 10 eval thresholds green at RC versions; no slice regression ([13 §10](../13-testing-quality-and-performance.md)) | `just ml-eval` reports |
 | Reliability | Crash-free sessions ≥ 99.5 % (gate); error budget 3.6 h/mo armed; RTO ≤ 4 h / RPO ≤ 24 h proven by drill; zero hard-constraint violations; deletion SLA 100 % | PostHog/Grafana; drill reports; simulation + auditor job |
 
@@ -186,7 +188,7 @@ This phase converts hypotheses to measured, ratified gates (DEC entries for each
 
 - Feature flags (owner + expiry date): no new feature flags; expired-flag sweep executed (CI report clean — [14 §11](../14-observability-operations-and-analytics.md)); permanent kill-switch flags verified live; `staged-rollout` configuration is store-native, not a PostHog flag.
 - Migration/backward-compatibility plan: release candidate carries no pending destructive migrations; store builds pinned to contract version; OTA policy honored (JS/assets only; native changes require full build — [15 §10](../15-team-workflow-and-ai-agent-operations.md)).
-- Rollback plan (rehearsed in T15, executed if crash gate trips): halt staged rollout (Play console / iOS phased-release pause) → triage with runbook 9 → fix-forward via expedited build or OTA (JS-only fixes) → if server-side cause, revert deploy on Railway (previous image) + `just db-rollback` only for contract-phase-safe migrations → post-incident review. Store rollback limitations documented honestly (Play allows halting, not un-shipping; iOS requires new build).
+- Rollback plan (rehearsed in T15, executed if crash gate trips): halt staged rollout (Play console / iOS phased-release pause) → triage with runbook 9 → fix-forward via expedited build or OTA (JS-only fixes) → if server-side cause, revert deploy in Coolify (previous image) + `just db-rollback` only for contract-phase-safe migrations → post-incident review. Store rollback limitations documented honestly (Play allows halting, not un-shipping; iOS requires new build).
 
 ## 17. Risks, mitigations, assumptions, stop/kill criteria
 
@@ -222,7 +224,7 @@ Objectively verifiable statements — no "works well".
 - AC-2: Device-matrix performance runs on low/mid/high iOS + Android record every [13 §12.1](../13-testing-quality-and-performance.md) metric with archived raw traces; every budget is met or its documented fallback is active and demonstrated; budgets + device floor (OQ-08) ratified via DEC entries. No fabricated numbers — evidence is the trace archive.
 - AC-3: k6 load profiles pass with [13 §12.2](../13-testing-quality-and-performance.md) budgets held and bounded queues; SLO dashboards + error-budget burn alerts live; metric tree (NFR-OBS-100) complete with owner/source/privacy/target/decision per metric and guardrail alerts armed.
 - AC-4: The six E2E journeys (onboarding, capture, recommendation, purchase/restore, deletion, degraded providers) pass in the pre-release tier on both platforms; state-coverage spot-audit (empty/loading/partial/failure/retry/recovery) finds no missing state in the core journeys.
-- AC-5: The backup/restore drill is executed: Neon PITR restore verified by the migration/invariant suite, R2 sample restore resolves manifests, post-restore re-deletion replay passes; measured RTO/RPO documented.
+- AC-5: The backup/restore drill is executed: pgBackRest PITR restore to a scratch host verified by the migration/invariant suite, R2 sample restore resolves manifests, post-restore re-deletion replay passes; measured RTO/RPO documented.
 - AC-6: Full security suite green (authZ matrix, isolation, signed URLs, webhook replay, rate limits, deletion, redaction canary, hostile uploads, consent gating); pen-test complete with all high findings fixed (regression tests attached) and mediums owned with deadlines; threat-model re-review recorded; audit-trail query demo executed; moderation verified across upload + content pipelines.
 - AC-7: All ten runbooks exist and are linked from their alerts; on-call rota live; a real test page was delivered and acknowledged; one incident drill completed with a blameless review artifact; secret-rotation drill completed.
 - AC-8: Deletion of a fully-populated account leaves zero user-linked queryable artifacts outside the documented retained set (automated verification job output); retention jobs live with face data on the strictest schedule; export completes within the documented SLA on Free tier.

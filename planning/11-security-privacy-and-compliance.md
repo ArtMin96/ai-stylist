@@ -1,6 +1,6 @@
 # 11 — Security, Privacy, and Compliance
 
-**Status:** Draft for ratification · **Date:** 2026-08-24 · **Conforms to:** [SPINE.md](SPINE.md)
+**Status:** Draft for ratification · **Date:** 2026-08-24 · **Conforms to:** [SPINE.md](SPINE.md) · **Amended:** 2026-09-13 ([r7](research/r7-third-party-services-and-self-hosting-audit-2026-09-13.md), ADR-0003 — self-managed PostgreSQL/pgBackRest, Coolify secrets, pg-boss deletion chain, processor list)
 **Owns:** threat model, abuse cases, authN/authZ design, encryption & key management, data classification, consent registry, logging redaction rules, privacy/regulatory mapping, legal-review register, age policy, export/deletion flows, incident response, abuse prevention, product-ethics rules.
 **Requirement IDs delivered:** `REQ-SEC-*`, `REQ-PRV-*` (defined in [01-requirements-and-traceability.md](01-requirements-and-traceability.md)).
 **Security tests that verify this design:** [13-testing-quality-and-performance.md](13-testing-quality-and-performance.md) §8. **Audit trails, alerting, and monitoring:** [14-observability-operations-and-analytics.md](14-observability-operations-and-analytics.md).
@@ -22,7 +22,7 @@ The app handles data most products never touch: body measurements, selfies and f
 
 ## 2. Threat model (STRIDE-lite, by asset)
 
-Scope: mobile apps (iOS/Android), NestJS API on Railway, Python ML workers, Trigger.dev jobs, Neon Postgres, Cloudflare R2/CDN, third-party providers (fal.ai, LLM APIs, RevenueCat, PostHog, Open-Meteo, Nager.Date).
+Scope: mobile apps (iOS/Android), NestJS API, pg-boss jobs, Python ML workers and self-managed PostgreSQL on owned servers (Docker + Coolify), Cloudflare R2, third-party providers (fal.ai, LLM APIs, RevenueCat, PostHog, Open-Meteo; holidays come from the embedded `date-holidays` library — no provider).
 
 Threat classes per asset (S=Spoofing, T=Tampering, R=Repudiation, I=Information disclosure, D=Denial of service, E=Elevation of privilege). Sensitivity classes are defined in §6.
 
@@ -37,9 +37,9 @@ Threat classes per asset (S=Spoofing, T=Tampering, R=Repudiation, I=Information 
 | **Media pipeline (uploads, derived assets)** | S2–S3 | T: malicious file upload (polyglot, decompression bomb); I: EXIF GPS leakage; D: pipeline flooding. | Upload restrictions + scanning (§5.5); EXIF stripping before storage of derivatives (SPINE §3.5 pipeline); quarantine state in the media state machine (owned by [07-3d-avatar-and-garment-pipeline.md](07-3d-avatar-and-garment-pipeline.md)); per-user upload quotas (§14). |
 | **Admin surface & audit data** | S3 | E: support tooling used to browse user media; R: untraceable admin actions. | Admin RBAC + step-up auth (§4.4); admin access to user media is break-glass, logged, and alerting (14 §10); audit log append-only. |
 | **Secrets & provider keys** | S3 | I: key leakage via repo, logs, mobile bundle; E: pivot to providers. | No secrets in the mobile bundle (all provider calls server-side except on-device ML); platform secret manager + rotation (§5.3); secret scanning in CI ([15-team-workflow-and-ai-agent-operations.md](15-team-workflow-and-ai-agent-operations.md)). |
-| **Backups & database** | S3 | I: backup exfiltration; T: restore of tampered snapshot. | Neon-managed encrypted storage + PITR (14 §13); access to production DB restricted to named accounts with MFA; restore drills verify integrity (13 §9). |
+| **Backups & database** | S3 | I: backup exfiltration; T: restore of tampered snapshot. | pgBackRest WAL archiving + PITR to an encrypted off-host R2 bucket, host disk encryption (14 §13); access to production DB restricted to named accounts with MFA; restore drills verify integrity (13 §9). |
 
-**Trust boundaries:** device ↔ API (TLS, authenticated); API ↔ Postgres/R2 (private networking / scoped credentials); API/worker ↔ AI providers (data leaves our control — governed by §7.5 and the SPINE AI data policy); API ↔ RevenueCat/PostHog (webhooks in, minimal data out). A Mermaid trust-boundary diagram belongs in [04-architecture.md](04-architecture.md); this doc owns the threat table only.
+**Trust boundaries:** device ↔ API (TLS, authenticated); API/jobs ↔ Postgres (host-private Docker network or private network between hosts, TLS, scoped per-service credentials, host firewall — nothing on the public interface) · API ↔ R2 (TLS, scoped credentials); API/worker ↔ AI providers (data leaves our control — governed by §7.5 and the SPINE AI data policy); API ↔ RevenueCat/PostHog (webhooks in, minimal data out). A Mermaid trust-boundary diagram belongs in [04-architecture.md](04-architecture.md); this doc owns the threat table only.
 
 ## 3. Abuse cases
 
@@ -97,15 +97,15 @@ Each abuse case gets an automated security test in 13 §8 where testable.
 ## 5. Encryption, keys, secrets, media protection
 
 ### 5.1 In transit
-- TLS 1.2+ (1.3 preferred) for all client↔API, API↔provider, API↔DB (Neon requires TLS) traffic. HSTS on API domains. Mobile: certificate transparency respected; full cert pinning is a P14 decision (pinning vs. update-agility trade-off — decision DO-SEC-02).
+- TLS 1.2+ (1.3 preferred) for all client↔API, API↔provider, API↔DB (TLS enforced on the self-managed PostgreSQL even on the private network) traffic. HSTS on API domains. Mobile: certificate transparency respected; full cert pinning is a P14 decision (pinning vs. update-agility trade-off — decision DO-SEC-02).
 
 ### 5.2 At rest
-- Neon: encrypted at rest (managed). R2: encrypted at rest (managed). Device: sensitive local caches (avatar params, measurements cached offline) stored via encrypted storage (SecureStore for small secrets; SQLCipher/encrypted MMKV for structured offline data — implementation choice in P03).
+- PostgreSQL: encrypted at rest via host disk encryption (LUKS or provider-managed volume encryption); backups encrypted by pgBackRest before leaving the host. R2: encrypted at rest (managed). Device: sensitive local caches (avatar params, measurements cached offline) stored via encrypted storage (SecureStore for small secrets; SQLCipher/encrypted MMKV for structured offline data — implementation choice in P03).
 - Application-layer encryption of face-geometry blobs (envelope encryption, key in the platform KMS/secret manager) is a P05 decision (DO-SEC-03): default **yes** for face landmark/geometry data, because it is the highest-sensitivity derived asset.
 
 ### 5.3 Key management & secret rotation
-- Secrets live in the platform secret manager (Railway environment secrets + Cloudflare API tokens), never in Git; `.env.example` only (doc 15).
-- Inventory of secrets with owner + rotation period maintained in the ops runbook (14 §8): provider API keys (90 d), R2 signing credentials (90 d), better-auth signing secret (180 d, with dual-secret rollover), webhook signing secrets (on provider rotation), DB credentials (Neon role rotation, 180 d).
+- Secrets live in sops-encrypted files (source of truth) synced to Coolify environment variables per environment, plus Cloudflare API tokens, never in Git; `.env.example` only (doc 15).
+- Inventory of secrets with owner + rotation period maintained in the ops runbook (14 §8): provider API keys (90 d), R2 signing credentials (90 d), better-auth signing secret (180 d, with dual-secret rollover), webhook signing secrets (on provider rotation), DB credentials (PostgreSQL role rotation, 180 d).
 - Rotation must be exercised, not just documented: one rotation drill in P14 hardening (13 §8.2).
 - CI secrets scoped per-lane (iOS signing certs only in the macOS lane — doc 15).
 
@@ -188,7 +188,7 @@ When calendar context ships: process only start/end time, coarse event type, and
 | Restriction / objection (Art. 18/21) | Per-purpose consent withdrawal halts processing (§7.1); personalization reset (doc 09) |
 | Records of processing (Art. 30) | Processing-activity register maintained alongside this doc (P00 deliverable) |
 | DPIA (Art. 35) | Face processing + measurements likely trigger a DPIA → LR-06, due before P05 ships |
-| Processors & transfers (Art. 28, Ch. V) | DPAs with Neon, Cloudflare, Railway, PostHog, RevenueCat, AI providers; transfer mechanism review = LR-03 |
+| Processors & transfers (Art. 28, Ch. V) | DPAs with the server provider (per OQ-07/OQ-14), Cloudflare, PostHog, RevenueCat, AI providers; transfer mechanism review = LR-03 |
 | Breach notification (Art. 33/34; state laws) | Incident response §16 includes the 72-hour assessment step |
 | CCPA/CPRA "sale/share" | We do not sell/share personal data for cross-context advertising; verify PostHog config keeps it that way → LR-08 |
 | UK GDPR divergences | Tracked under LR-02 |
@@ -229,7 +229,7 @@ When calendar context ships: process only start/end time, coarse event type, and
 Self-serve, async job: ZIP with machine-readable JSON (profile, measurements, preferences, closet items + attributes, outfits, wear history, consent history, recommendation history with reason codes) + original media files the user uploaded + generated assets marked with provenance. Delivered via signed URL (24 h TTL), notification on completion. Rate-limited (1 concurrent export). Export contains **only the requesting user's data**; tested in 13 §8.1.
 
 ### 13.2 Account deletion cascade
-Ordered, resumable job (Trigger.dev, idempotent steps, each step audited):
+Ordered, resumable pg-boss job chain (idempotent steps, each step audited):
 1. Immediate: sessions revoked; account flagged `deleting` (login blocked); 7-day grace window with cancel option (guards against takeover-driven deletion; user informed).
 2. Cancel store subscription linkage (RevenueCat subscriber deletion API); entitlements tombstoned.
 3. Provider-side deletion: PostHog person deletion API; any AI-provider stored artifacts (design goal: **zero** — providers are chosen for zero/short retention, so this step is verification, not cleanup); push tokens removed.
@@ -241,7 +241,7 @@ Ordered, resumable job (Trigger.dev, idempotent steps, each step audited):
 Face-consent withdrawal without account deletion runs steps 3–5 scoped to face assets only (selfies, landmarks, A2 avatar assets; avatar reverts to generic face).
 
 ### 13.3 Backup caveat (disclosed in the privacy notice)
-Deleted data may persist in point-in-time-recovery windows and backups until they age out: Neon PITR window (7–30 d depending on plan) and any R2 versioning/backup copies (14 §13). We do not restore deleted users from backups; the restore runbook (14 §8) includes a re-deletion step replaying deletion requests after any restore. Disclosure wording → included in LR-02.
+Deleted data may persist in point-in-time-recovery windows and backups until they age out: our pgBackRest PITR retention (14 days) plus nightly logical dumps on the same retention, and any R2 versioning/backup copies (14 §13). We do not restore deleted users from backups; the restore runbook (14 §8) includes a re-deletion step replaying deletion requests after any restore. Disclosure wording → included in LR-02.
 
 ## 14. Rate limits and abuse prevention
 

@@ -2,7 +2,7 @@
 
 > Module names are canonical per [SPINE §3](../../planning/SPINE.md). Path: `apps/api/src/platform`. This contract is the module's source of truth; code that contradicts it is wrong until a DEC entry says otherwise.
 
-- **Responsibility (one sentence):** Infrastructure adapters that implement the ports declared by domain modules: storage (R2), outbox relay, logger, OTel init, PostHog server, resilience utilities, provider SDK wrappers.
+- **Responsibility (one sentence):** Infrastructure adapters that implement the ports declared by domain modules: storage (R2), durable jobs (pg-boss), outbox relay, logger, OTel init, PostHog server, resilience utilities, provider SDK wrappers; deployment target is owned servers + Coolify (DEC-42).
 - **Owner:** @team (placeholder — see `CODEOWNERS`) · **Status:** skeleton (P02) · **Last updated:** 2026-09-09
 
 ## Public interface
@@ -35,7 +35,7 @@ None yet (P02 skeleton). Planned per SPINE §3: no domain data (SPINE §3); P02 
 
 ## Dependencies (allowed)
 
-- `packages/shared-kernel` and provider SDKs only (`platform-leaf`, doc 04 §4.2 rule 5). Adapters are bound to ports at `apps/api/src/main.ts` / `app.module.ts` and `apps/api/src/trigger/index.ts`.
+- `packages/shared-kernel` and provider SDKs only (`platform-leaf`, doc 04 §4.2 rule 5). Adapters are bound to ports at `apps/api/src/main.ts` / `app.module.ts` and `apps/api/src/jobs/index.ts`.
 - Ports: implements ports declared by modules; declares none of its own. Fakes for tests live in `packages/test-support/`.
 
 ## Forbidden dependencies

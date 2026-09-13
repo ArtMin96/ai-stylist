@@ -1,5 +1,7 @@
 # P03 — Identity, Consent, Onboarding
 
+> Amended 2026-09-13 ([r7](../research/r7-third-party-services-and-self-hosting-audit-2026-09-13.md), ADR-0003 — service consolidation: pg-boss jobs, owned server + Coolify, self-managed PostgreSQL, R2 delivery model).
+
 > File name: `phases/P03-identity-consent-onboarding.md` per [SPINE §5](../SPINE.md). Every section below is REQUIRED (brief §10); "None" is written explicitly rather than deleting a section. Status values per [PROGRESS.md](../PROGRESS.md).
 
 ## 1. Overview
@@ -56,10 +58,10 @@ Contributing (primary delivery elsewhere): NFR-PRV-010 (classification enforced 
 - `profile`: measurements (SI-canonical values with unit/provenance/confidence per [06 §3.1](../06-data-api-and-event-contracts.md); plausibility bounds from [07 §3.3](../07-3d-avatar-and-garment-pipeline.md), validation symmetric, never silent clamping — conflicts surfaced), presentation + base-model selection (decoupled fields), fit preferences, style preferences incl. hard exclusions vs soft dislikes, climate tolerance, occasion presets, locale/units/timezone/region/accessibility settings, `profile.measurements.updated.v1`.
 - `shared-kernel`: unit converters finalized + property-tested; measurement definitions + bounds registry; preference/climate enums; error codes for this surface.
 - `billing` (seam only): `entitlements` table + resolver ([12 §3](../12-pricing-entitlements-and-unit-economics.md)); consumer of `identity.account.created.v1` writes the **trial grant** (Pro-level payloads, `expires_at = signup + 72h`, `source = trial_grant` per [12 §2](../12-pricing-entitlements-and-unit-economics.md)); expiry resolver behavior implemented; `GET /v1/me/entitlements`. **Dormant:** flag `entitlement-enforcement` (owner BE, expiry P13) stays **off** — nothing is gated yet, no paywall, no trial UI beyond a settings line; RevenueCat not integrated (P13).
-- Deletion cascade v1 (Trigger.dev chain per [06 §8](../06-data-api-and-event-contracts.md) / [11 §13.2](../11-security-privacy-and-compliance.md)): sessions revoked → grace window → provider steps (PostHog deletion, push-token no-op), R2 prefix delete (empty now, mechanism verified), Postgres cascade from the FK map + coverage test, retained-records set, audit per step, completion verification. Export job v1: async ZIP (profile, measurements, preferences, consent history) via signed URL 24 h TTL, 1-concurrent limit.
+- Deletion cascade v1 (pg-boss job chain per [06 §8](../06-data-api-and-event-contracts.md) / [11 §13.2](../11-security-privacy-and-compliance.md)): sessions revoked → grace window → provider steps (PostHog deletion, push-token no-op), R2 prefix delete (empty now, mechanism verified), Postgres cascade from the FK map + coverage test, retained-records set, audit per step, completion verification. Export job v1: async ZIP (profile, measurements, preferences, consent history) via signed URL 24 h TTL, 1-concurrent limit.
 - Mobile onboarding flow ([02 §3.2](../02-user-journeys-and-information-architecture.md) steps 1–9 + 11): welcome, sign-in + age gate, core consents (granular ones deferred to point of use), units/locale, presentation + base model, height/weight, additional measurements, fit/style preferences, lifestyle/occasions, first-capture nudge → lands on a stub Today tab (honest empty state; capture arrives P06). Step 10 (selfie offer) renders as a "coming soon"-free skip — the step simply doesn't exist until P05. Server-side per-step progress persistence + resume; idempotent writes (client `Idempotency-Key`).
 - Settings baseline ([02 §11](../02-user-journeys-and-information-architecture.md)): privacy & consent toggles (analytics + notifications purposes now; face/location arrive with their features), profile view/edit/clear-field for every collected field, units/locale, accessibility (reduced motion, non-3D preference stored), data export, delete account (re-auth + grace + store-subscription caveat text), subscription section showing trial status line (read-only).
-- Analytics consent gate ON + P03 event set (`onboarding_*`, `consent_updated`, `profile_measurements_saved`, `data_export_requested`, `account_deletion_requested` per [14 §9](../14-observability-operations-and-analytics.md)); audit trail for consent + deletion (NFR-OBS-070); observability additions (§11); A12 measurement (Neon cold starts vs API p95).
+- Analytics consent gate ON + P03 event set (`onboarding_*`, `consent_updated`, `profile_measurements_saved`, `data_export_requested`, `account_deletion_requested` per [14 §9](../14-observability-operations-and-analytics.md)); audit trail for consent + deletion (NFR-OBS-070); observability additions (§11); A12 measurement (self-managed PostgreSQL on one host vs API p95).
 
 **Out of scope / non-goals for this phase:**
 - Avatar rendering/derivation (P04) — base-model selection stores an ID only; selfie/face + `face_processing` consent surface (P05); capture/closet/media pipeline (P06); location consent + weather (P08 — manual-city groundwork only as a settings stub); notifications sending (P09; the consent purpose + preference storage exist now).
@@ -99,7 +101,7 @@ Module names per [SPINE §3](../SPINE.md); each touched module's contract file i
 
 - API endpoints added/changed (OpenAPI in `packages/contracts`, per [06 §2](../06-data-api-and-event-contracts.md) conventions): better-auth surface under `/v1/auth/*`; `GET|PATCH /v1/me/profile`; `GET|PUT /v1/me/measurements`; `GET|PATCH /v1/me/preferences`; `GET|POST /v1/me/consents`; `GET /v1/me/entitlements`; `POST /v1/me/exports` + `GET /v1/me/exports/{id}`; `POST /v1/me/deletion` + `DELETE /v1/me/deletion` (grace-window cancel); `GET|PATCH /v1/me/onboarding-progress`. All mutating routes take `Idempotency-Key`; profile carries `version` + `If-Match`.
 - Event schemas added/changed: `identity.account.created.v1`, `identity.consent.changed.v1`, `identity.account.deletion_requested.v1`, `profile.measurements.updated.v1` (payloads per [06 §4](../06-data-api-and-event-contracts.md) catalog); P02's `platform.demo.requested.v1` retired.
-- DB migrations (Drizzle, one module per file per [06 §7](../06-data-api-and-event-contracts.md)): `00xx_identity_users_sessions_consents`, `00xx_profile_profiles_measurements_preferences`, `00xx_billing_entitlements`, `00xx_admin_audit_log`, `00xx_notifications_prefs` — all expand-phase additive, each with down path, tested forward+rollback on a Neon branch; deletion-cascade coverage test extended to every new user-FK table.
+- DB migrations (Drizzle, one module per file per [06 §7](../06-data-api-and-event-contracts.md)): `00xx_identity_users_sessions_consents`, `00xx_profile_profiles_measurements_preferences`, `00xx_billing_entitlements`, `00xx_admin_audit_log`, `00xx_notifications_prefs` — all expand-phase additive, each with down path, tested forward+rollback on a scratch database restored from the staging backup; deletion-cascade coverage test extended to every new user-FK table.
 - Generated clients to regenerate: TS client + TanStack hooks (mobile), event TS types, Python models — `just generate` in the same PR as each spec change (staleness gate enforces).
 
 ## 8. Work breakdown by surface
@@ -107,7 +109,7 @@ Module names per [SPINE §3](../SPINE.md); each touched module's contract file i
 | Surface | Work (or "None") |
 |---|---|
 | Mobile | Onboarding flow (11 steps minus selfie), resume logic, settings baseline (consent/profile-edit/units/accessibility/export/delete/subscription-line), SecureStore session handling, consent-gated PostHog wiring, stub Today tab, error/empty/offline states per §5 |
-| Backend | `identity`/`profile`/`billing`-seam/`admin`-audit services + controllers; rate limits; deletion + export Trigger.dev chains; authz matrix middleware conventions |
+| Backend | `identity`/`profile`/`billing`-seam/`admin`-audit services + controllers; rate limits; deletion + export pg-boss job chains; authz matrix middleware conventions |
 | Workers (ML/media) | None (no ML in P03) |
 | Data / migrations | Five module migrations above; FK cascade map regeneration; seed personas (synthetic) for staging |
 | Infrastructure | Apple/Google OAuth credentials into sops; email provider account (transactional) behind `platform` port; staging test accounts per [15 §11](../15-team-workflow-and-ai-agent-operations.md) |
@@ -131,7 +133,7 @@ Module names per [SPINE §3](../SPINE.md); each touched module's contract file i
 
 Per the [14 §15](../14-observability-operations-and-analytics.md) P03 row:
 
-- Logs/metrics/traces: `auth.signin.failures`, `auth.ratelimit.hits`, `deletion.cascade.duration` / `deletion.cascade.incomplete` (alert: incomplete > 0 for > 24 h = SEV2), export SLA metric, `consent.changes` counter, entitlement-grant counter; traces across signup → outbox → trial-grant consumer and deletion chain; **A12 measurement:** API p50/p95 on profile CRUD under realistic idle patterns (Neon cold starts) vs the [13 §12.2](../13-testing-quality-and-performance.md) budget — outcome recorded (keep-warm decision if breached).
+- Logs/metrics/traces: `auth.signin.failures`, `auth.ratelimit.hits`, `deletion.cascade.duration` / `deletion.cascade.incomplete` (alert: incomplete > 0 for > 24 h = SEV2), export SLA metric, `consent.changes` counter, entitlement-grant counter; traces across signup → outbox → trial-grant consumer and deletion chain; **A12 measurement:** API p50/p95 on profile CRUD under realistic idle patterns (self-managed PostgreSQL + PgBouncer on one host) vs the [13 §12.2](../13-testing-quality-and-performance.md) budget — outcome recorded (PostgreSQL/PgBouncer tuning decision if breached).
 - Product analytics events (taxonomy per [14 §9](../14-observability-operations-and-analytics.md)): `onboarding_started/completed/step_skipped`, `consent_updated`, `profile_measurements_saved`, `data_export_requested`, `account_deletion_requested` — all consent-gated, enum/bool/bucket properties only (no measurement values).
 - Alerts/dashboards/runbook entries: privacy-ops dashboard panels (deletion/export SLA, consent changes) started (dashboard 7 seed); auth-failure anomaly alert (SEV3); runbook #7 (deletion/export job failure) written; audit-log query demoed. Crash-reporting adequacy reviewed → **Sentry decision logged (DEC) at phase end** ([14 §1](../14-observability-operations-and-analytics.md)).
 
@@ -149,7 +151,7 @@ Small enough for one AI-assisted session each (~half-day). Task IDs `P03-T##` ar
 | P03-T06 | `profile`: schema + services (measurements w/ SI canonical + provenance + bounds validation, presentation/base-model, preferences incl. hard exclusions, settings values) + migration + unit/property tests | P03-T02 | 2 |
 | P03-T07 | `billing` seam: entitlements table + resolver, trial-grant consumer of `account.created` (72 h Pro grant, `source=trial_grant`), `GET /v1/me/entitlements`, flag `entitlement-enforcement` off; idempotent grant (replay-safe) | P03-T02, P03-T03 | 1 |
 | P03-T08 | AuthZ matrix harness: generated endpoint × principal (anon/userA/userB/support) suite over all §7 routes (NFR-SEC-030; the harness every later phase extends) | P03-T03…T07 | 1 |
-| P03-T09 | Export job: Trigger.dev chain → ZIP (profile/measurements/preferences/consent history) → R2 signed link 24 h, 1-concurrent, notification stub | P03-T06, P03-T05 | 1 |
+| P03-T09 | Export job: pg-boss job chain → ZIP (profile/measurements/preferences/consent history) → R2 signed link 24 h, 1-concurrent, notification stub | P03-T06, P03-T05 | 1 |
 | P03-T10 | Deletion cascade v1: grace window + cancel, ordered chain per [06 §8](../06-data-api-and-event-contracts.md) (sessions → providers → R2 prefix → Postgres cascade → retained set → verification), per-step audit + idempotency, FK coverage test | P03-T09 | 2 |
 | P03-T11 | Mobile: onboarding steps 1–5 (welcome, sign-in + age gate, core consents, units/locale, presentation + base model) with per-step server persistence + resume | P03-T02 (client), P03-T03, P03-T05 | 2 |
 | P03-T12 | Mobile: onboarding steps 6–9 + 11 (height/weight, measurements, preferences, occasions, capture nudge) + stub Today tab; unit-aware inline validation UX | P03-T06, P03-T11 | 2 |
@@ -186,7 +188,7 @@ New bug fixes require a regression test that fails before the fix (failing run p
 
 | Budget | Target (hypothesis until measured) | How measured |
 |---|---|---|
-| Performance | API CRUD p50/p95/p99 ≤ 80/250/600 ms ([13 §12.2](../13-testing-quality-and-performance.md), first real measurement — **A12** incl. Neon cold-start idle patterns); onboarding blocking calls < 2 s each ([02 §3.3](../02-user-journeys-and-information-architecture.md)); 5xx ≤ 0.5% | `api.request.duration` panels over the E2E + k6 smoke; results recorded in doc 13 with hypothesis labels flipped |
+| Performance | API CRUD p50/p95/p99 ≤ 80/250/600 ms ([13 §12.2](../13-testing-quality-and-performance.md), first real measurement — **A12** incl. realistic idle patterns against self-managed PostgreSQL); onboarding blocking calls < 2 s each ([02 §3.3](../02-user-journeys-and-information-architecture.md)); 5xx ≤ 0.5% | `api.request.duration` panels over the E2E + k6 smoke; results recorded in doc 13 with hypothesis labels flipped |
 | Cost | Infra stays within the ~$35/mo envelope with real (team+beta) signups; transactional email in free tier | Provider billing screenshots at phase end |
 | AI quality | n/a — no AI in P03 | n/a |
 | Reliability | Deletion cascade completion 100% within SLA in tests (prod SLA ≤ 30 d, typical ≤ 8 d); export job success ≥ 99% in staging soak; signup→trial-grant loss rate 0 across outbox chaos tests | deletion/export SLA metrics + outbox suite runs |
@@ -201,9 +203,9 @@ New bug fixes require a regression test that fails before the fix (failing run p
 
 Link RISK-NN/ASM-NN in [16](../16-risks-open-questions-and-decision-log.md); phase-local ones are added there, not here.
 
-- Risks in play: **RISK-07** (compliance groundwork — consent registry correctness), **RISK-11** (better-auth self-hosting patch burden — Clerk fallback documented), **RISK-16** (capacity). Assumptions under test: **A12** (Neon cold starts within API budget), **ASM-10** (users grant data given honest consent UX — first funnel data from beta signups), **ASM-06** (cadence).
+- Risks in play: **RISK-07** (compliance groundwork — consent registry correctness), **RISK-11** (better-auth self-hosting patch burden — Clerk fallback documented), **RISK-16** (capacity). Assumptions under test: **A12** (self-managed PostgreSQL on one host meets API p95 budgets at launch), **ASM-10** (users grant data given honest consent UX — first funnel data from beta signups), **ASM-06** (cadence).
 - **Stop/kill criteria for this phase:**
-  - A12 fails (API p95 over budget from cold starts after tuning) → execute the recorded fallback: Neon keep-warm compute floor or Railway Postgres ([05 §8](../05-technology-decisions.md)); log DEC. Do not silently raise the latency budget.
+  - A12 fails (API p95 over budget after tuning) → tune PostgreSQL/PgBouncer on the host (pool sizing, memory settings, indexes); if still breached, move the database to a dedicated host per DEC-43 ([05 §8](../05-technology-decisions.md)); log DEC. Do not silently raise the latency budget.
   - LR-02/07/09 unresolved at exit → phase goes `BLOCKED` (not `DONE`) naming the items; no sensitive-data phase (P05/P06) may start meanwhile.
   - better-auth reveals a security defect without timely upstream fix → stop, assess Clerk fallback per RISK-11, ADR before proceeding.
   - Onboarding-completion beta funnel signals are collected but **not** a kill gate here (baseline-first per [00 §8.1](../00-product-vision-and-scope.md)).
@@ -234,7 +236,7 @@ Objectively verifiable statements — no "works well".
 - AC-5: deletion-cascade test: account seeded with data in every P03 module + an R2 object + PostHog stub → cascade → zero remaining user-linked artifacts outside the documented retained set; idempotent + resumable mid-cascade; grace-window cancel works; export produces a machine-readable archive containing all P03 data classes, on a signed 24 h URL, works for any account state (NFR-PRV-030/040). SLA metrics + alert live (screenshot).
 - AC-6: the six P03 journey surfaces each demonstrate empty/loading/partial/failure/retry/recovery/offline per §5 (Maestro + RNTL coverage map linked; failure+retry covered in E2E per REQ-ONB-130); onboarding E2E runs in the nightly tier on both platforms (CI links).
 - AC-7: trial seam: replaying `identity.account.created.v1` produces exactly one grant (idempotency test); `GET /v1/me/entitlements` returns the Pro trial payload pre-expiry and Free resolution post-expiry (clock-advanced test); with `entitlement-enforcement` off, no P03 surface denies anything (sweep test) — REQ-BIL-010's P13 delivery finds the grant machinery already proven.
-- AC-8: A12 recorded: API p50/p95 on profile CRUD with realistic idle gaps measured and pasted into [doc 13 §12.2](../13-testing-quality-and-performance.md) (pass, or the keep-warm DEC logged); `just ci-parity` green on the final commit.
+- AC-8: A12 recorded: API p50/p95 on profile CRUD with realistic idle gaps measured and pasted into [doc 13 §12.2](../13-testing-quality-and-performance.md) (pass, or the PostgreSQL/PgBouncer tuning DEC logged); `just ci-parity` green on the final commit.
 
 ## 20. Definition of done
 
@@ -246,7 +248,7 @@ just test                                           # full suite green
 just lint && just typecheck && just arch-check      # clean (boundaries hold)
 just generate --check                               # contracts fresh
 just security-scan                                  # green
-just db-migrate && just db-rollback                 # each P03 migration proven on Neon branch
+just db-migrate && just db-rollback                 # each P03 migration proven on a scratch database restored from the staging backup
 just ci-parity                                      # exact PR gate, locally green
 # nightly tier run link with the onboarding E2E green on iOS + Android
 ```

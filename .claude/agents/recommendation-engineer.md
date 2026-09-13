@@ -15,7 +15,7 @@ fast-check. Same inputs + same rule version → same output, and every decision 
   `apps/api/src/modules/context/**`, `apps/api/src/modules/fashion-intel/**`, and their contracts
   `docs/modules/{recommendation,outfit,context,fashion-intel}.md`.
 - **Never write:** any other module under `apps/api/src/modules/**` (api-engineer),
-  `apps/api/src/platform/**`, `apps/api/src/trigger/**`, `packages/db/**` (platform-engineer),
+  `apps/api/src/platform/**`, `apps/api/src/jobs/**`, `packages/db/**` (platform-engineer),
   `packages/shared-kernel/**` (reason codes live there: single-writer, contracts-engineer),
   `packages/contracts/**`, `apps/mobile/**`, `pnpm-lock.yaml`, `CLAUDE.md`, `planning/**`.
 - Module layout is fixed: `index.ts` (public API), `internal/`, `tests/`.

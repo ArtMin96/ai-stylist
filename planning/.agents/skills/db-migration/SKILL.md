@@ -39,7 +39,7 @@ just test <owning-module>
 just typecheck && just lint && just ci-parity
 ```
 
-Staging apply happens via the deploy pipeline on a Neon branch first (doc 15 §11) — note in the PR that the branch-apply succeeded when the phase has a staging environment.
+Staging apply happens via the deploy pipeline on a scratch database restored from the latest staging backup first (doc 15 §11) — note in the PR that the scratch-database apply succeeded when the phase has a staging environment.
 
 ## Output
 

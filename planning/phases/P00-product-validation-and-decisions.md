@@ -1,5 +1,7 @@
 # P00 — Product Validation and Decisions
 
+> Amended 2026-09-13 ([r7](../research/r7-third-party-services-and-self-hosting-audit-2026-09-13.md), ADR-0003 — service consolidation: pg-boss jobs, owned server + Coolify, self-managed PostgreSQL, R2 delivery model).
+
 > File name: `phases/P00-product-validation-and-decisions.md` per [SPINE §5](../SPINE.md). Every section below is REQUIRED (brief §10); "None" is written explicitly rather than deleting a section. Status values per [PROGRESS.md](../PROGRESS.md).
 
 ## 1. Overview
@@ -87,7 +89,7 @@ No module code exists yet. P00 ratifies the module map itself and the documents 
 | Backend | None |
 | Workers (ML/media) | None |
 | Data / migrations | None |
-| Infrastructure | None (OQ-07 residency discovery memo feeds P02 region choices for Neon/R2/Railway) |
+| Infrastructure | None (OQ-07 residency discovery memo feeds P02 region choices for the server provider, R2 and PostHog; ties to OQ-14 server provider + topology) |
 | 3D / assets | None (Anny license attribution requirement noted for P01/P04 asset work, per [15 §9](../15-team-workflow-and-ai-agent-operations.md) SBOM/license rules) |
 | Admin / internal tools | None |
 | **Documents (the actual surface of P00)** | ADR set in `planning/adr/` (moves to `docs/adr/` in P02); legal-review register updates in doc 11 §12; processing-activity register skeleton; metric/budget label audit edits in docs 00/13/14; decision-log updates in doc 16 |
@@ -126,7 +128,7 @@ Small enough for one AI-assisted session each (~half-day). Task IDs `P00-T##` ar
 | P00-T03 | Budget-label audit: walk [13 §12](../13-testing-quality-and-performance.md) and [07 §10.1](../07-3d-avatar-and-garment-pipeline.md); verify every number is labeled hypothesis with its measuring phase; verify the P01 gate table ([05 §2.3](../05-technology-decisions.md)) is internally consistent with 13 §12.1 and [doc 00 §9.1 RB-5](../00-product-vision-and-scope.md). | — | 1 |
 | P00-T04 | Legal/privacy discovery kickoff: engage counsel; for LR-01…LR-12 record owner, due phase, and briefing note per item; start the Art. 30 processing-activity register ([11 §9](../11-security-privacy-and-compliance.md)); write the DPIA scoping note (LR-06 pre-work). **[PO]** engages counsel. | — | 2 |
 | P00-T05 | Age-policy decision (OQ-03): ratify the 16+ launch proposal ([11 §10](../11-security-privacy-and-compliance.md)) as a DEC entry marked "pending LR-09 counsel confirmation"; record signup-enforcement + store-rating implications for P03/P14. **[PO]** decides. | P00-T04 | 1 |
-| P00-T06 | Data-residency discovery (OQ-07): memo on EU-hosting requirements vs Neon/R2/Railway/PostHog region options (as-of dated); hand recommendation to P02 as an input to infra setup; log DEC or keep OQ-07 open with a P02 due date. | P00-T04 | 1 |
+| P00-T06 | Data-residency discovery (OQ-07): memo on EU-hosting requirements vs server-provider (OQ-14: Hetzner vs alternative, single-host vs DB-separate topology), R2 and PostHog region options (as-of dated); hand recommendation to P02 as an input to infra setup; log DEC or keep OQ-07 open with a P02 due date. | P00-T04 | 1 |
 | P00-T07 | Ratify security/privacy/ethics baselines: threat model + abuse cases (11 §2–§3), data classification (11 §6), product-ethics rules (11 §17), logging redaction rules (11 §8) — each gets a ratification line (date + **[PO]**) in its doc header. | — | 1 |
 | P00-T08 | Ratify AI governance: decision table (10 §1), per-feature specs' deterministic-first justifications (10 §2), provider data policy + provider register (10 §3), research-bet register RB-1…RB-5 with all ten fields (00 §9.1 / 16 prototype needs). | — | 1 |
 | P00-T09 | Re-run the brief-coverage audit: verify [01 §4](../01-requirements-and-traceability.md) maps every brief section and [01 §5](../01-requirements-and-traceability.md) every named specific; fix any gap by adding requirement IDs in doc 01 (steps-of-10 insertion rule), never by hand-waving. | — | 1 |

@@ -22,9 +22,9 @@ description: Create or change a NestJS domain module under apps/api/src/modules/
 
 1. Restate scope, non-goals, acceptance criteria; name the single owning module. Behaviour that seems to belong to two modules is a contract question — stop.
 2. Search before write (CLAUDE.md): this module's internals, neighbours' public APIs, `packages/shared-kernel/`, `packages/test-support/`.
-3. Implement in `internal/`; export through `index.ts` only what `docs/modules/<name>.md` declares public. Controllers and Trigger.dev task bodies stay thin: parse via contract types → call application service → map result. No business rules in controllers, schema files, task bodies, or provider wrappers.
+3. Implement in `internal/`; export through `index.ts` only what `docs/modules/<name>.md` declares public. Controllers and pg-boss job handlers stay thin: parse via contract types → call application service → map result. No business rules in controllers, schema files, job handlers, or provider wrappers.
 4. Cross-module needs go through the other module's `index.ts` or an event, never its tables or `internal/**`. A new edge must exist in doc 04 §4.1; update both contract docs in the same PR.
-5. External capability = port interface in the module (or `shared-kernel` if shared) + adapter in `apps/api/src/platform/` + fake in `packages/test-support/`; bind in `apps/api/src/main.ts` / `app.module.ts` (or `apps/api/src/trigger/index.ts`). Never import a provider SDK in `modules/**`.
+5. External capability = port interface in the module (or `shared-kernel` if shared) + adapter in `apps/api/src/platform/` + fake in `packages/test-support/`; bind in `apps/api/src/main.ts` / `app.module.ts` (or `apps/api/src/jobs/index.ts`). Never import a provider SDK in `modules/**`.
 6. Async side effects go through the Postgres outbox with an idempotency key, retry policy, and DLQ path — no fire-and-forget.
 7. Logging via the `platform` logger only; no `console.*`, no raw `req.body`, no sensitive fields (measurements, photos, location, tokens).
 8. Tests in `apps/api/src/modules/<name>/tests/`: unit for rules (no framework), Testcontainers Postgres for repositories, fakes for ports. Bug fix = regression test that fails first, with output pasted.

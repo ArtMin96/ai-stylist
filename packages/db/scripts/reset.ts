@@ -16,7 +16,7 @@ const url = requireDatabaseUrl();
 if (!isLocalDatabaseUrl(url)) {
   process.stderr.write(
     `db-reset refused: DATABASE_URL host is not localhost/127.0.0.1 (${new URL(url).hostname}). ` +
-      'Resetting a shared database is prohibited; use a Neon branch instead.\n',
+      'Resetting a shared database is prohibited; use a scratch database instead.\n',
   );
   process.exit(1);
 }

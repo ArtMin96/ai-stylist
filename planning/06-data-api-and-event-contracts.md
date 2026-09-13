@@ -1,6 +1,6 @@
 # 06 — Data, API, and Event Contracts
 
-**Status:** Draft for ratification · **Date:** 2026-08-24 · **Conforms to:** [SPINE.md](SPINE.md) §2–§3, §8
+**Status:** Draft for ratification · **Date:** 2026-08-24 · **Conforms to:** [SPINE.md](SPINE.md) §2–§3, §8 · **Amended:** 2026-09-13 ([r7](research/r7-third-party-services-and-self-hosting-audit-2026-09-13.md), ADR-0003 — pg-boss jobs, ephemeral migration DBs, PITR caveat)
 **Owns:** source-of-truth strategy, API style conventions, representative schema sketches, domain event catalog + envelope + versioning, outbox table design, migration policy, consistency model, deletion propagation.
 **Does not own:** engine internals and reason-code semantics → [09-recommendation-engine.md](09-recommendation-engine.md) · pipeline stage/state semantics → [07-3d-avatar-and-garment-pipeline.md](07-3d-avatar-and-garment-pipeline.md) · entitlement/plan semantics → [12-pricing-entitlements-and-unit-economics.md](12-pricing-entitlements-and-unit-economics.md) · container/module topology → [04-architecture.md](04-architecture.md).
 
@@ -289,10 +289,10 @@ Retention: `dispatched` rows pruned after **90 days** (replay window, §9.2 of d
 
 ## 7. Migration policy (Drizzle)
 
-- **Tooling:** drizzle-kit generated SQL migrations, committed under `apps/api/drizzle/`; applied via `just db-migrate` locally and by a release step in CI (never on app boot). Neon branch databases give every PR an isolated migrated copy; migration + rollback tested there before merge.
+- **Tooling:** drizzle-kit generated SQL migrations, committed under `apps/api/drizzle/`; applied via `just db-migrate` locally and by a release step in CI (never on app boot). Ephemeral databases (Testcontainers) give every PR an isolated migrated copy in CI; migration + rollback are tested there before merge and then proven on a staging scratch database restored from the latest backup (DEC-43).
 - **Expand–contract, always:**
   1. *Expand:* additive migration (new nullable column/table/index `CONCURRENTLY`), deploy code that writes both/reads old.
-  2. *Migrate:* backfill via idempotent batched job (Trigger.dev task, ≤ 5k rows/batch), verify counts.
+  2. *Migrate:* backfill via idempotent batched job (pg-boss job, ≤ 5k rows/batch), verify counts.
   3. *Contract:* only after all code paths read the new shape **and** one release cycle has passed, drop the old column in a separate migration.
 - **Rollback rules:** every migration ships with a down path or an explicit `-- IRREVERSIBLE:` header + ADR link; deploys roll back **code first** (safe because expand-phase schema supports N and N−1 code); destructive migrations (drops, type narrowing) require a fresh backup verification and cannot ship in the same release as the code that stops using the data.
 - **Forbidden:** renaming columns in place (add-copy-drop instead), long-lock operations without `CONCURRENTLY`/batching, editing an applied migration file.
@@ -300,18 +300,18 @@ Retention: `dispatched` rows pruned after **90 days** (replay window, §9.2 of d
 
 ## 8. Deletion propagation (account deletion)
 
-Trigger: `identity.account.deletion_requested.v1` (user action or admin). Orchestrated as a durable Trigger.dev task chain with per-step idempotency and a completion audit record. Consent-scope deletions (e.g. revoking face processing) run the same machinery scoped to the affected data class (doc 11 owns policy; this doc owns mechanics).
+Trigger: `identity.account.deletion_requested.v1` (user action or admin). Orchestrated as a durable pg-boss job chain with per-step idempotency and a completion audit record. Consent-scope deletions (e.g. revoking face processing) run the same machinery scoped to the affected data class (doc 11 owns policy; this doc owns mechanics).
 
 | Step | Target | Action | Notes |
 |---|---|---|---|
 | 1 | Postgres (all modules) | Hard-delete user-owned rows in dependency order (closet → media metadata → profile → …), keep an anonymized `deleted_accounts` stub (userId hash, deletedAt) for audit/idempotency | Cascade map generated from Drizzle FK graph; contract test asserts every user-FK table is covered |
 | 2 | R2 | Delete all objects under the user prefix (originals + derived + avatar + generated views) | Prefix-scoped; verified by a follow-up list call returning empty |
 | 3 | Provider data | fal.ai / LLM providers: zero-or-short retention by policy (SPINE §2, r3) — nothing to delete; RevenueCat: delete subscriber via API; PostHog: deletion request API; push tokens revoked | Each provider step recorded with response evidence |
-| 4 | Trigger.dev | Cancel pending runs keyed to the user; run payloads carry IDs only, and expire with platform retention | |
+| 4 | pg-boss | Cancel pending jobs keyed to the user (queue/singleton keys carry the user id); job payloads carry IDs only and are purged by pg-boss's completed-job retention | |
 | 5 | Caches/local | Session revocation (all devices); next mobile launch wipes local store on 401 + `ACCOUNT_DELETED` code | |
 | 6 | Outbox/events | Historical envelopes carry IDs only; rows age out at 90 days — documented as residual until pruning completes | |
 
-**Backups caveat (stated honestly, also in user-facing policy):** Neon point-in-time-recovery history and any R2 backup copies retain deleted data until their retention windows lapse (Neon PITR: per plan config, target ≤ 30 days; doc 11). We do not rewrite backups; we guarantee deletion from live systems immediately and from backups by expiry, and we never restore deleted user data except during disaster recovery, in which case deletions are re-applied from the `deleted_accounts` ledger before serving traffic. Legal review required (doc 11 register).
+**Backups caveat (stated honestly, also in user-facing policy):** our pgBackRest point-in-time-recovery archive, nightly logical dumps and any R2 backup copies retain deleted data until their retention windows lapse (PITR retention: 14 days; doc 11). We do not rewrite backups; we guarantee deletion from live systems immediately and from backups by expiry, and we never restore deleted user data except during disaster recovery, in which case deletions are re-applied from the `deleted_accounts` ledger before serving traffic. Legal review required (doc 11 register).
 
 SLA: user-visible completion target ≤ 30 days (GDPR-aligned; typically minutes for live systems); progress auditable in `admin`.
 

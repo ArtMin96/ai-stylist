@@ -2,8 +2,7 @@
 # contracts. Budget: < 25 min. Required when triggered.
 #
 # Required secrets: none (uses a Postgres+pgvector service container).
-# Optional secrets (commented block below, not active until the account exists):
-#   NEON_API_KEY, NEON_PROJECT_ID   migration fwd/rollback on a Neon branch-per-PR
+# Optional secrets:
 #   TURBO_TOKEN, TURBO_TEAM         Turborepo remote cache
 name: affected
 
@@ -42,7 +41,7 @@ jobs:
     timeout-minutes: 25
     services:
       postgres:
-        # Local Docker pgvector matching the Neon Postgres major (brief §1).
+        # Local Docker pgvector matching the production PostgreSQL major (brief §1).
         image: pgvector/pgvector:pg17
         env:
           POSTGRES_USER: app
@@ -98,29 +97,6 @@ jobs:
       - name: Re-apply after rollback (idempotency)
         run: just db-migrate
 
-      # ---------------------------------------------------------------------
-      # Neon branch-per-PR variant (AC-5: "migrate+rollback on Neon branch").
-      # Not active: no Neon account exists yet (brief §8 #14, OQ-07 regions).
-      # When NEON_API_KEY / NEON_PROJECT_ID are set, replace the service
-      # container with a branch created from the staging parent:
-      #
-      # - name: Create Neon branch for this PR
-      #   if: ${{ secrets.NEON_API_KEY != '' }}
-      #   id: neon
-      #   run: |
-      #     # neonctl is not pinned yet; add to mise.toml when the account exists.
-      #     # neonctl branches create --project-id "$NEON_PROJECT_ID" \
-      #     #   --name "pr-${{ github.event.pull_request.number }}" --parent staging
-      #     # echo "url=<connection string from neonctl output>" >> "$GITHUB_OUTPUT"
-      #   env:
-      #     NEON_API_KEY: ${{ secrets.NEON_API_KEY }}
-      #     NEON_PROJECT_ID: ${{ secrets.NEON_PROJECT_ID }}
-      # - name: Migrate + rollback on the Neon branch
-      #   if: ${{ secrets.NEON_API_KEY != '' }}
-      #   env:
-      #     DATABASE_URL: ${{ steps.neon.outputs.url }}
-      #   run: just db-migrate && just db-rollback
-      # - name: Delete Neon branch
-      #   if: ${{ always() && secrets.NEON_API_KEY != '' }}
-      #   run: echo "neonctl branches delete ..."
-      # ---------------------------------------------------------------------
+      # Migration forward/rollback runs against a Testcontainers/ephemeral Postgres here;
+      # staging proof runs on a scratch database restored from the staging backup
+      # (DEC-43, docs/SERVICES-SETUP.md §3).

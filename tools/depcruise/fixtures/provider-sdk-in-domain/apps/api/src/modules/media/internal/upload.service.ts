@@ -1,4 +1,4 @@
 // FIXTURE: violates domain-no-provider-sdk (a domain module importing a provider SDK).
-import { task } from '@trigger.dev/sdk';
+import PgBoss from 'pg-boss';
 
-export const uploadTask = task;
+export const uploadQueue = PgBoss;

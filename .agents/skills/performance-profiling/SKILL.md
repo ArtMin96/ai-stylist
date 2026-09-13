@@ -21,7 +21,7 @@ description: Investigate or improve performance against documented budgets — A
 ## Workflow
 
 1. Restate the budget, its target, and the measurement procedure. No budget? Propose one as a hypothesis in doc 13 terms first; do not optimise toward an undefined target.
-2. Measure before touching code: fixed seed data (`packages/seed-data/`), named device tier or environment, ≥ 5 runs, median + p95. Tools by area: API — OTel traces + Postgres `EXPLAIN ANALYZE`; jobs — Trigger.dev run timings, outbox queue age; mobile — React DevTools profiler, Perfetto on device; 3D — on-device frame-time capture on a low-tier device; size — bundle analyzers; CI — GHA job timings.
+2. Measure before touching code: fixed seed data (`packages/seed-data/`), named device tier or environment, ≥ 5 runs, median + p95. Tools by area: API — OTel traces + Postgres `EXPLAIN ANALYZE`; jobs — pg-boss job timings (Grafana job metrics), outbox queue age; mobile — React DevTools profiler, Perfetto on device; 3D — on-device frame-time capture on a low-tier device; size — bundle analyzers; CI — GHA job timings.
 3. Profile to the actual hotspot; write the hypothesis down before changing code.
 4. Optimise the smallest thing that moves the metric. Behaviour preserved; tests stay green; no correctness traded for speed without a human decision.
 5. Measure after with the same procedure and environment. The improvement is the delta between two recorded runs — never estimated, never from a different machine.

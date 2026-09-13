@@ -65,9 +65,9 @@ dev-mobile *args:
     done
     pnpm --filter @ai-stylist/mobile exec expo start --dev-client "$@"
 
-# Segmentation worker (FastAPI, uvicorn --reload on :8001); the Trigger.dev dev server half lands in T08
+# Segmentation worker (FastAPI, uvicorn --reload on :8001); TODO(T08): pg-boss handlers run in the API process; starting the segmentation worker only
 dev-workers *args:
-    @echo "TODO(T08): trigger.dev dev server is not wired yet; starting the segmentation worker only"
+    @echo "TODO(T08): pg-boss handlers run in the API process; starting the segmentation worker only"
     uv run --project workers/ml/segmentation uvicorn ai_stylist_segmentation.main:app --reload --port 8001 "$@"
 
 # --- quality gates (* = part of ci-parity) -------------------------------------------

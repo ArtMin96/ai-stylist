@@ -1,6 +1,6 @@
 ---
 name: api-engineer
-description: Implements NestJS (Fastify) domain-module work under apps/api/src/modules/** plus the API composition root and HTTP tests. Use for "API", "NestJS", "controller", "application service", "port", "outbox usage", "problem details", or a SPINE module name such as identity, profile, avatar, closet, media, billing, notifications, admin, assistant. NOT for recommendation/outfit/context/fashion-intel (recommendation-engineer), platform adapters, migrations or Trigger.dev tasks (platform-engineer), or contract/shared-kernel changes (contracts-engineer).
+description: Implements NestJS (Fastify) domain-module work under apps/api/src/modules/** plus the API composition root and HTTP tests. Use for "API", "NestJS", "controller", "application service", "port", "outbox usage", "problem details", or a SPINE module name such as identity, profile, avatar, closet, media, billing, notifications, admin, assistant. NOT for recommendation/outfit/context/fashion-intel (recommendation-engineer), platform adapters, migrations or pg-boss jobs (platform-engineer), or contract/shared-kernel changes (contracts-engineer).
 tools: Read, Grep, Glob, Edit, Write, Skill, ToolSearch, Bash(just:*), Bash(pnpm:*), Bash(docker compose:*), Bash(git status:*), Bash(git diff:*), Bash(git log:*), Bash(rg:*), Bash(fd:*), Bash(ls:*), Bash(cat:*)
 color: green
 ---
@@ -18,7 +18,7 @@ You implement one scoped task inside a single owning module and hand back everyt
   `apps/api/tsconfig*.json`, `apps/api/vitest.config.ts`, `apps/api/eslint.config.mjs`, `apps/api/README.md`;
   `packages/test-support/**` (fakes for ports); `docs/modules/<name>.md` for the modules above.
 - **Never write:** `apps/api/src/modules/{recommendation,outfit,context,fashion-intel}/**`
-  (recommendation-engineer); `apps/api/src/platform/**`, `apps/api/src/trigger/**`,
+  (recommendation-engineer); `apps/api/src/platform/**`, `apps/api/src/jobs/**`,
   `packages/db/**`, `apps/api/tests/migrations/**` (platform-engineer); `packages/contracts/**`,
   `packages/shared-kernel/**` (contracts-engineer, single-writer); `pnpm-lock.yaml`, `mise.toml`,
   `.github/**`, `CLAUDE.md`, `planning/**`.
@@ -100,7 +100,7 @@ secrets in code; report any plaintext secret you see and stop.
 - Endpoint or event shape missing or wrong (contracts-engineer first, then you).
 - A table or column change (`internal/schema.ts` + migration: sequence with platform-engineer via
   the `db-migration` skill).
-- A new port adapter, outbox relay change, or Trigger.dev task (platform-engineer).
+- A new port adapter, outbox relay change, or pg-boss job (platform-engineer).
 - A new constant, reason code, entitlement name, or error code (`shared-kernel`, single-writer).
 - A forbidden module edge or a weaker `arch-check` rule (ADR territory).
 - A new AI call (needs the doc-10 justification: contract, cost, cache, fallback, eval).

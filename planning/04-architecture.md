@@ -1,6 +1,6 @@
 # 04 — Architecture
 
-**Status:** Draft for ratification · **Date:** 2026-08-24 · **Conforms to:** [SPINE.md](SPINE.md) §2–§3
+**Status:** Draft for ratification · **Date:** 2026-08-24 · **Conforms to:** [SPINE.md](SPINE.md) §2–§3 · **Amended:** 2026-09-13 ([r7](research/r7-third-party-services-and-self-hosting-audit-2026-09-13.md), ADR-0003 — pg-boss jobs, owned servers + Coolify, self-managed PostgreSQL, R2 delivery model)
 **Owns:** system context, containers, module boundaries and dependency rules, composition roots, repo layout, key data flows, sync/offline design, job/event flow (outbox), future chat seam, dependency-enforcement tooling.
 **Does not own:** engine internals → [09-recommendation-engine.md](09-recommendation-engine.md) · asset pipeline stages → [07-3d-avatar-and-garment-pipeline.md](07-3d-avatar-and-garment-pipeline.md) · entitlement semantics → [12-pricing-entitlements-and-unit-economics.md](12-pricing-entitlements-and-unit-economics.md) · contract/schema details → [06-data-api-and-event-contracts.md](06-data-api-and-event-contracts.md).
 
@@ -8,7 +8,7 @@
 
 ## 1. Architecture in one paragraph
 
-A **modular monolith** (NestJS on the Fastify adapter, TypeScript) serves all clients over an OpenAPI-3.1 contract. Durable asynchronous work (media pipeline, AI calls, notifications, billing reconciliation, trend ingestion) runs as **Trigger.dev v4 tasks**, fed reliably through a **Postgres outbox**. GPU/CV-heavy steps are delegated by those tasks to separately deployable **Python FastAPI ML workers** over versioned JSON schemas. **Neon Postgres** (+ pgvector) is the single transactional source of truth; **Cloudflare R2** (+ CDN) holds all original and derived media/3D assets. The **React Native + Expo** mobile app renders 3D through **Filament** (`react-native-filament`) behind a renderer boundary, keeps an offline local store, and talks only to the generated API client. All external providers sit behind ports implemented in the `platform` module. No microservices until measured need (SPINE §2).
+A **modular monolith** (NestJS on the Fastify adapter, TypeScript) serves all clients over an OpenAPI-3.1 contract. Durable asynchronous work (media pipeline, AI calls, notifications, billing reconciliation, trend ingestion) runs as **pg-boss v12 jobs** on the application database, fed reliably through a **Postgres outbox**. GPU/CV-heavy steps are delegated by those job handlers to separately deployable **Python FastAPI ML workers** over versioned JSON schemas. **Self-managed PostgreSQL 17** (+ pgvector) is the single transactional source of truth; **Cloudflare R2** holds all original and derived media/3D assets (private user media via presigned URLs; public app assets via a cached custom domain). API, jobs, workers and PostgreSQL run as Docker containers on owned servers deployed with Coolify (ADR-0003). The **React Native + Expo** mobile app renders 3D through **Filament** (`react-native-filament`) behind a renderer boundary, keeps an offline local store, and talks only to the generated API client. All external providers sit behind ports implemented in the `platform` module. No microservices until measured need (SPINE §2).
 
 ## 2. System context
 
@@ -19,17 +19,17 @@ flowchart LR
     subgraph system["AI Stylist system"]
         mobile["Mobile app<br/>React Native + Expo"]
         api["API monolith<br/>NestJS"]
-        jobs["Trigger.dev jobs"]
+        jobs["pg-boss jobs"]
         ml["Python ML workers"]
-        pg[("Neon Postgres<br/>+ pgvector")]
-        r2[("Cloudflare R2 + CDN")]
+        pg[("PostgreSQL 17<br/>+ pgvector, self-managed")]
+        r2[("Cloudflare R2")]
+        holidays["date-holidays<br/>embedded library"]
     end
 
     weather["Open-Meteo<br/>weather"]
-    holidays["Nager.Date<br/>holidays"]
     rc["RevenueCat +<br/>App Store / Play"]
     fal["fal.ai<br/>gen. inference"]
-    llm["Vision-LLM APIs<br/>classification / polish"]
+    llm["Vision-LLM APIs<br/>classification / trend summaries"]
     push["FCM / APNs"]
     ph["PostHog<br/>analytics / flags / errors"]
     content["Licensed fashion<br/>content sources"]
@@ -55,7 +55,8 @@ flowchart LR
 
 Notes:
 
-- The mobile app reads media **directly from R2/CDN** via signed URLs; it never proxies binaries through the API.
+- The mobile app reads user media **directly from R2** via presigned GET URLs (uncached, TTL ≤ 10 min); public app/content assets (3D bundles, avatar/garment manifests) are served from the R2 custom domain with Cloudflare cache. It never proxies binaries through the API.
+- Holidays come from the embedded `date-holidays` library behind `HolidayProvider` — no network call, no account (DEC-45).
 - RevenueCat calls **into** the API (webhooks); the entitlement source of truth is our `billing.entitlements` table (doc 12).
 - better-auth runs **inside** the API monolith (`identity` module) — auth is not an external container.
 - PostHog receives consented analytics events and errors from both mobile and backend; no raw sensitive payloads (doc 14).
@@ -74,24 +75,23 @@ flowchart TB
         end
     end
 
-    subgraph railway["Railway"]
+    subgraph host["Owned server(s) — Docker + Coolify, private Docker network"]
         subgraph api["apps/api — NestJS modular monolith"]
             modules["Domain modules<br/>identity · profile · avatar · closet · media · outfit<br/>context · recommendation · fashion-intel · billing<br/>notifications · admin"]
             platform["platform<br/>infra adapters, provider SDK wrappers"]
             outbox["Outbox relay"]
         end
+        subgraph jobsproc["jobs process — pg-boss v12"]
+            tasks["Durable job handlers<br/>media pipeline · AI calls · notifications<br/>billing reconciliation · trend ingestion · feedback aggregation"]
+        end
+        pg[("PostgreSQL 17 + pgvector<br/>source of truth, outbox + pg-boss tables<br/>(same host at launch; dedicated host once load justifies)")]
     end
 
-    subgraph triggerdev["Trigger.dev v4 cloud"]
-        tasks["Durable tasks<br/>media pipeline · AI calls · notifications<br/>billing reconciliation · trend ingestion · feedback aggregation"]
-    end
-
-    subgraph mlhost["Railway / Hetzner — Docker"]
+    subgraph mlhost["Owned server(s) — Docker (GPU host only when a self-hosted model passes its eval)"]
         mlw["workers/ml — Python FastAPI services<br/>segmentation fallback · embeddings glue<br/>attribute extraction glue · 3D asset processing"]
     end
 
-    neon[("Neon Postgres + pgvector<br/>source of truth, outbox table")]
-    r2[("Cloudflare R2 + CDN<br/>originals, derived assets, 3D bundles")]
+    r2[("Cloudflare R2<br/>originals, derived assets, 3D bundles<br/>presigned private · cached custom domain for public assets")]
 
     ui --> client
     ui --> renderer
@@ -99,12 +99,12 @@ flowchart TB
     localdb --> upq
     upq --> client
     client -- "HTTPS / OpenAPI 3.1" --> api
-    renderer -- "signed URLs" --> r2
+    renderer -- "presigned / custom-domain URLs" --> r2
     modules --> platform
-    modules --> neon
-    outbox -- "poll + dispatch" --> tasks
+    modules --> pg
+    outbox -- "poll + enqueue" --> tasks
     tasks -- "HTTPS, versioned JSON" --> mlw
-    tasks --> neon
+    tasks --> pg
     tasks --> r2
     mlw --> r2
 ```
@@ -114,11 +114,11 @@ Container responsibilities:
 | Container | Runtime | Deploy | Responsibility |
 |---|---|---|---|
 | `apps/mobile` | React Native + Expo SDK 55+, TS | EAS / stores | All UX; 3D rendering behind renderer boundary; offline store; capture + upload queue |
-| `apps/api` | NestJS (Fastify), Node, TS | Railway | All synchronous business logic; auth; OpenAPI surface; outbox writes + relay; provider ports |
-| Trigger.dev tasks | Trigger.dev v4 (code lives in `apps/api/src/trigger` — see §6) | Trigger.dev cloud | Durable async pipelines; retries/DLQ; orchestrate ML workers |
-| `workers/ml` | Python 3.12, FastAPI, Docker | Railway/Hetzner | CV/ML steps needing Python/native tooling; stateless; versioned JSON contracts |
-| Neon Postgres | Postgres 16 + pgvector | Neon | Transactional source of truth; embeddings; outbox table |
-| R2 + CDN | Cloudflare | Cloudflare | All binaries: originals, derivations, 3D delivery assets; signed URLs |
+| `apps/api` | NestJS (Fastify), Node, TS | Owned server, Docker + Coolify | All synchronous business logic; auth; OpenAPI surface; outbox writes + relay; provider ports |
+| pg-boss jobs | pg-boss v12 (job definitions in `apps/api/src/jobs` — see §6); run in the API process or a dedicated `jobs` process | Owned server, Docker + Coolify | Durable async pipelines; retries/DLQ; orchestrate ML workers |
+| `workers/ml` | Python 3.12, FastAPI, Docker | Owned server, Docker + Coolify (GPU host only if a self-hosted model passes its eval) | CV/ML steps needing Python/native tooling; stateless; versioned JSON contracts |
+| PostgreSQL | PostgreSQL 17 + pgvector (`pgvector/pgvector:pg17`), PgBouncer, pgBackRest | Owned server, Docker (same host at launch; dedicated host once load justifies) | Transactional source of truth; embeddings; outbox + pg-boss tables; PITR to encrypted off-host R2 bucket |
+| R2 | Cloudflare | Cloudflare | All binaries: originals, derivations, 3D delivery assets; presigned URLs for private media, cached custom domain for public app assets |
 
 ## 4. Module boundary map
 
@@ -197,16 +197,16 @@ flowchart TB
 1. **Public API only.** Every module exposes a single entry point (`apps/api/src/modules/<name>/index.ts`). Importing `modules/<name>/internal/**` from another module is a build failure.
 2. **`recommendation` ⊥ renderer.** `recommendation` never imports `avatar`, any 3D/asset type, or anything from the mobile renderer. It emits structured results (doc 06 §3.5); `outfit` + the mobile renderer consume them. `recommendation → outfit` is allowed only for the item/composition **types** needed for candidates — never for presentation.
 3. **`assistant` → application services only.** The future chat adapter may call the same public application services every client uses (§10). It owns no business logic, no direct table access, no second engine.
-4. **Domain ⊥ provider SDKs.** No domain module imports a provider SDK (`@trigger.dev/sdk`, R2/aws-sdk, RevenueCat, fal.ai, Open-Meteo clients, FCM, PostHog). Domains declare **ports** (interfaces in the module's public API or `shared-kernel`); `platform` implements them; the composition root binds them.
+4. **Domain ⊥ provider SDKs.** No domain module imports a provider SDK (`pg-boss`, R2/aws-sdk, RevenueCat, fal.ai, Open-Meteo clients, FCM, PostHog). Domains declare **ports** (interfaces in the module's public API or `shared-kernel`); `platform` implements them; the composition root binds them.
 5. **`platform` is leaf-only.** `platform` depends only on `shared-kernel` and provider SDKs. No domain module depends on `platform` directly — only on ports, wired at the composition root.
 6. **`shared-kernel` depends on nothing** and contains no I/O, no tables, no framework imports. Types, constants, registries, pure functions only.
 7. **No cycles.** The graph above is a DAG; dependency-cruiser fails CI on any cycle.
 8. **Cross-module writes are forbidden.** A module writes only tables it owns (SPINE §3). Cross-module behavior goes through public application services, commands/queries, or events (§9).
-9. **Business logic location.** No business rules in controllers, Drizzle schema files, Trigger.dev task bodies, provider wrappers, or React components. Controllers/tasks are thin: parse → call application service → map result.
+9. **Business logic location.** No business rules in controllers, Drizzle schema files, pg-boss job handlers, provider wrappers, or React components. Controllers/handlers are thin: parse → call application service → map result.
 
 ### 4.3 Enforcement tooling
 
-- **ESLint boundaries** (`eslint-plugin-boundaries`): element types `module`, `module-internal`, `shared-kernel`, `platform`, `composition-root`, `trigger-task`, `contracts`; rules encode §4.2. Runs in `just lint` and PR CI.
+- **ESLint boundaries** (`eslint-plugin-boundaries`): element types `module`, `module-internal`, `shared-kernel`, `platform`, `composition-root`, `job-handler`, `contracts`; rules encode §4.2. Runs in `just lint` and PR CI.
 - **dependency-cruiser**: whole-graph validation (`tools/depcruise/rules.cjs`) — cycle detection, forbidden-edge checks (e.g. `recommendation → avatar`, `modules → platform`, `* → **/internal/**`), orphan detection. Runs as `just arch-check` in PR CI; the same config renders the dependency graph SVG for docs.
 - Mobile side: the same ESLint boundary config keeps `apps/mobile/src/renderer/**` (Filament code) importable only from designated 3D screens, so normal screens never touch engine internals.
 - CI fails on violation; there is no warning tier. Exceptions require an ADR.
@@ -222,7 +222,7 @@ The only places where concrete adapters meet ports:
 | Root | Path | Wires |
 |---|---|---|
 | API | `apps/api/src/main.ts` + `app.module.ts` | NestJS DI: binds every port token to its `platform` adapter; registers module public providers; config/env validation; OpenAPI doc emission |
-| Trigger tasks | `apps/api/src/trigger/index.ts` | Task definitions importing **public** application services only; binds ports for the task runtime (R2 client, ML-worker HTTP client) |
+| Job handlers | `apps/api/src/jobs/index.ts` | pg-boss job definitions importing **public** application services only; binds ports for the job runtime (R2 client, ML-worker HTTP client) |
 | Mobile | `apps/mobile/src/app/_root.tsx` | Generated API client instance, local DB, upload queue, renderer provider, feature-flag/consent context |
 | ML workers | `workers/ml/<service>/main.py` | FastAPI app factory; model versions pinned; settings from env |
 | Tests | each module's `tests/` support | In-memory/fake port implementations from module-owned test support packages |
@@ -249,7 +249,7 @@ Everything else receives dependencies; nothing else constructs adapters.
 │           │   ├── internal/                 # implementation, not importable
 │           │   └── tests/                    # module-owned tests + test support
 │           ├── platform/                     # port implementations, provider wrappers
-│           └── trigger/                      # Trigger.dev task definitions (thin)
+│           └── jobs/                         # pg-boss job definitions (thin)
 ├── workers/
 │   └── ml/
 │       ├── segmentation/        # each: FastAPI service, Dockerfile, tests/
@@ -285,9 +285,9 @@ sequenceDiagram
     participant M as Mobile app
     participant A as API (media / closet)
     participant PG as Postgres (+outbox)
-    participant T as Trigger.dev task
+    participant T as pg-boss job
     participant W as ML worker
-    participant R2 as R2/CDN
+    participant R2 as R2
 
     M->>M: capture photo, on-device background lift, enqueue upload (offline-safe)
     M->>A: POST /media-uploads (content hash, kind)
@@ -296,7 +296,7 @@ sequenceDiagram
     M->>R2: PUT original (resumable)
     M->>A: POST /media-uploads/:id/complete
     A->>PG: state=uploaded, outbox: media.asset.ready_for_processing
-    PG-->>T: outbox relay dispatches processing task (idempotency key = asset id + pipeline version)
+    PG-->>T: outbox relay enqueues processing job (singleton key = asset id + pipeline version)
     T->>R2: fetch original
     T->>W: segment / quality-score / attributes (versioned JSON)
     W-->>T: results + confidence
@@ -320,7 +320,7 @@ sequenceDiagram
     participant CTX as context module
     participant REC as recommendation module
     participant PG as Postgres
-    participant R2 as R2/CDN
+    participant R2 as R2
 
     M->>A: GET /recommendations?date=…&occasion=…
     A->>CTX: resolve context facts (user, date, location)
@@ -348,7 +348,7 @@ sequenceDiagram
     participant RC as RevenueCat
     participant A as API (billing)
     participant PG as Postgres (+outbox)
-    participant T as Trigger.dev
+    participant T as pg-boss job
     participant M as Mobile app
 
     RC->>A: POST /webhooks/revenuecat (signed)
@@ -359,7 +359,7 @@ sequenceDiagram
     PG-->>T: outbox relay
     T->>PG: adjust generative-credit meters, effective-at timestamps
     T->>M: push "plan updated" (via notifications module)
-    Note over A,T: nightly reconciliation task diffs RevenueCat state vs entitlements table and repairs + alerts
+    Note over A,T: nightly reconciliation job diffs RevenueCat state vs entitlements table and repairs + alerts
     M->>A: GET /me/entitlements (on app focus + after purchase)
 ```
 
@@ -377,27 +377,27 @@ sequenceDiagram
   4. Deletes win over concurrent edits; tombstones retained for sync convergence, purged after 30 days.
 - **Offline capture:** full capture loop works offline (photo, on-device background lift, local draft item). Processing states show honest "queued — waiting for connection" status. Recommendations offline = cached results + staleness banner (doc 09).
 
-## 9. Job/event flow: outbox on Postgres + Trigger.dev
+## 9. Job/event flow: outbox on Postgres + pg-boss
 
 Brief §3.4 compliance: events and an outbox, no distributed event platform.
 
 ### 9.1 Shape
 
 1. Every state change that must trigger async work writes a row to the **`outbox` table in the same Postgres transaction** as the domain write (table design: [06-data-api-and-event-contracts.md](06-data-api-and-event-contracts.md) §6).
-2. A small **relay** in the API process polls `outbox` (`FOR UPDATE SKIP LOCKED`, batch ≤100, ~250 ms interval) and dispatches each event to the mapped Trigger.dev task via `tasks.trigger()`, passing the event envelope; on ack it marks the row dispatched. At-least-once by construction.
-3. Consumers are **Trigger.dev tasks** (or in-process handlers for cheap same-service reactions). Every consumer is idempotent.
+2. A small **relay** in the API process polls `outbox` (`FOR UPDATE SKIP LOCKED`, batch ≤100, ~250 ms interval) and enqueues each event on the mapped pg-boss queue via `boss.send()`, passing the event envelope; on ack it marks the row dispatched. Outbox and pg-boss tables live in the same PostgreSQL, so the relay is a local write, not a network hop. At-least-once by construction.
+3. Consumers are **pg-boss job handlers** (`apps/api/src/jobs/`, run in the API process or a dedicated `jobs` process; or in-process handlers for cheap same-service reactions). Every consumer is idempotent. Self-hosted Trigger.dev is the fallback only if the P02-T08 acceptance suite (kill/retry, idempotency, DLQ, replay, per-user cancellation, deletion/export scenarios) proves pg-boss insufficient (DEC-41).
 
 ### 9.2 Semantics (binding defaults)
 
 | Concern | Policy |
 |---|---|
-| Idempotency keys | Trigger.dev `idempotencyKey` = event `id` (ULID) for event-driven tasks; = `entityId + pipelineVersion` for reprocessing tasks. Consumers also guard with a processed-events check where side effects are non-transactional (provider calls). |
-| Retries | Trigger.dev retry with exponential backoff + jitter; default max 5 attempts; media/AI pipeline tasks max 3 (expensive), notification sends max 5, billing reconciliation max 8. |
-| DLQ | Exhausted tasks land in Trigger.dev's failed-run state **and** the outbox row is marked `failed`; a nightly task sweeps failed rows into an `admin` moderation/ops queue with alerting (doc 14). Nothing is silently dropped. |
-| Ordering | **No global ordering guaranteed.** Per-aggregate ordering is achieved by consumers using the envelope `sequence` (per-aggregate monotonic) and ignoring stale events (compare against stored version). Tasks needing strict serial execution per entity use Trigger.dev queues keyed by entity id (`concurrencyKey`). |
+| Idempotency keys | pg-boss `singletonKey` = event `id` (ULID) for event-driven jobs; = `entityId + pipelineVersion` for reprocessing jobs. Consumers also guard with a processed-events check where side effects are non-transactional (provider calls). |
+| Retries | pg-boss `retryLimit` + `retryBackoff` (exponential, jittered); default max 5 attempts; media/AI pipeline jobs max 3 (expensive), notification sends max 5, billing reconciliation max 8. |
+| DLQ | Exhausted jobs land in the queue's pg-boss dead-letter queue **and** the outbox row is marked `failed`; a nightly job sweeps failed rows into an `admin` moderation/ops queue with alerting (doc 14). Nothing is silently dropped. |
+| Ordering | **No global ordering guaranteed.** Per-aggregate ordering is achieved by consumers using the envelope `sequence` (per-aggregate monotonic) and ignoring stale events (compare against stored version). Jobs needing strict serial execution per entity use a per-entity pg-boss queue (or `singletonKey` = entity id with a short throttle window) so one handler runs per entity at a time. |
 | Replay | Events are facts; replay = re-dispatch from `outbox` (retained 90 days) or re-emit a synthetic `*.reprocess_requested` event. Replays carry the original event id so idempotency holds. Pipeline-version bumps (doc 07) drive bulk reprocessing via explicit reprocess events, never by mutating history. |
 | Versioning | Envelope `type` carries a version suffix (`closet.item.created.v1`). Additive changes only within a version; breaking change = new version, consumers support N and N+1 during migration (rules: doc 06 §5). |
-| Observability | Relay lag, outbox depth, oldest-unprocessed age, task failure rate are first-class metrics with alerts (doc 14). Every envelope carries `correlationId` for cross-container tracing. |
+| Observability | Relay lag, outbox depth, oldest-unprocessed age, pg-boss queue depth and job failure rate are first-class metrics with alerts (doc 14). Every envelope carries `correlationId` for cross-container tracing. |
 
 ### 9.3 What is event-driven (and what is not)
 

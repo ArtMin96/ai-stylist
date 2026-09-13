@@ -1,5 +1,7 @@
 # P07 — Closet Organization and Sync
 
+> Amended 2026-09-13 ([r7](../research/r7-third-party-services-and-self-hosting-audit-2026-09-13.md), ADR-0003 — service consolidation: pg-boss jobs, owned server + Coolify, self-managed PostgreSQL, R2 delivery model).
+
 > File name: `phases/P07-closet-organization-and-sync.md` per [SPINE §5](../SPINE.md). Every section below is REQUIRED (brief §10); write "None" explicitly rather than deleting a section. Status values per [PROGRESS.md](../PROGRESS.md).
 
 ## 1. Overview
@@ -219,7 +221,7 @@ just test closet && just test profile && just test platform   # all pass, no ski
 just lint && just typecheck
 just arch-check              # closet/avatar isolation intact; no renderer deps
 just generate --check
-just db-migrate && just db-rollback && just db-migrate        # Neon branch, up/down/up (incl. CONCURRENTLY index)
+just db-migrate && just db-rollback && just db-migrate        # a scratch database restored from the staging backup, up/down/up (incl. CONCURRENTLY index)
 just ci-parity
 # phase-specific: Maestro offline suite + two-device convergence run green on both platforms;
 # 500-item low-tier perf run within §15 budgets; registry-bump drill output; k6 sync profile

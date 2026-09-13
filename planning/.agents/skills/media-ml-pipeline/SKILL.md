@@ -1,13 +1,13 @@
 ---
 name: media-ml-pipeline
-description: Build or change asset-processing and AI pipelines — Trigger.dev jobs, Python FastAPI ML workers, segmentation/classification/embedding/try-on steps, provider integrations (fal.ai etc.), caching and lineage — and run model evaluations. Use for anything in the media module's pipeline, workers/, or AI provider calls.
+description: Build or change asset-processing and AI pipelines — pg-boss jobs in apps/api/src/jobs/, Python FastAPI ML workers, segmentation/classification/embedding/try-on steps, provider integrations (fal.ai etc.), caching and lineage — and run model evaluations. Use for anything in the media module's pipeline, workers/, or AI provider calls.
 ---
 
 # Media / ML Pipeline Development
 
 ## Trigger
 
-- Changes to the media processing state machine, Trigger.dev tasks, Python worker endpoints, model/provider calls (background removal, classification, embeddings, G2 try-on, missing-view synthesis), derived-asset generation, or their caching/lineage.
+- Changes to the media processing state machine, pg-boss jobs, Python worker endpoints, model/provider calls (background removal, classification, embeddings, G2 try-on, missing-view synthesis), derived-asset generation, or their caching/lineage.
 
 **Not this skill:** which model/provider to adopt (ADR + `planning/10` decision first); on-device ML in the app (`mobile-feature`); 3D asset formats (`native-3d-assets`).
 
@@ -27,7 +27,7 @@ description: Build or change asset-processing and AI pipelines — Trigger.dev j
    - **Provenance:** every generated view/asset is marked generated, with confidence; a user's real photo is never overwritten (SPINE §4).
    - **Failure paths:** retries with backoff/jitter, bounded attempts, dead-letter state, and a user-visible failed/retry state — no silently stuck items. Quarantine path for moderation/malware flags.
    - **Privacy:** EXIF stripped at ingest; face/body media only to providers on the doc-10/11 approved list; nothing sensitive in logs or job payload dumps.
-4. Trigger.dev ↔ Python boundary: versioned JSON schemas both sides (Pydantic mirror of the contract); bump schema version on shape change, keep the previous version accepted during rollout.
+4. Job ↔ Python boundary: versioned JSON schemas both sides (Pydantic mirror of the contract); bump schema version on shape change, keep the previous version accepted during rollout.
 5. Model/prompt changes are versioned; record model id + version + params in lineage so outputs are reproducible and eval deltas attributable.
 6. Tests: state-machine transition tests + idempotency/retry/cancellation tests in `media/tests/`; worker unit tests in `workers/<service>/tests/`; contract tests against schema fixtures. Eval before merge for quality-affecting changes.
 

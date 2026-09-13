@@ -1,6 +1,6 @@
 # 12 — Pricing, Entitlements & Unit Economics
 
-**Status:** Draft for ratification · **Date:** 2026-08-24 · **Amended:** 2026-09-09 (weighted credits, top-up packs, §7 recomputed on verified prices — [r6](research/r6-pricing-verification-2026-09-09.md), DEC-34/35) · **Owner:** Billing/monetization (`billing` module)
+**Status:** Draft for ratification · **Date:** 2026-08-24 · **Amended:** 2026-09-09 (weighted credits, top-up packs, §7 recomputed on verified prices — [r6](research/r6-pricing-verification-2026-09-09.md), DEC-34/35) · **Amended:** 2026-09-13 ([r7](research/r7-third-party-services-and-self-hosting-audit-2026-09-13.md), ADR-0003 — infra envelope, pg-boss priority, BIL-O3/BIL-O7) · **Owner:** Billing/monetization (`billing` module)
 **Conforms to:** [SPINE.md](SPINE.md) §6 (tiers/prices/credits are fixed there — this doc elaborates, never changes them), §3 (modules), §5 (P13 delivers billing)
 **Evidence:** [research/r6-pricing-verification-2026-09-09.md](research/r6-pricing-verification-2026-09-09.md) (all prices, store fees, infra envelope, market benchmarks — verified 2026-09-09), [research/r4-backend-providers.md](research/r4-backend-providers.md) (provider landscape), [research/r3-ai-providers-costs.md](research/r3-ai-providers-costs.md) via [10-ai-usage-cost-and-evaluation.md](10-ai-usage-cost-and-evaluation.md) §5 — **all AI cost numbers in this doc are imported from doc 10 §5 and are not restated as new facts.**
 
@@ -87,7 +87,7 @@ The strings in §1.2 (`closet.max_items`, `recs.daily_limit`, `recs.context.full
 | `recs.daily_limit` | `recommendation` service per request (server counts, per user per local day) |
 | `tryon.generative`, `views.missing_view` | job enqueue in `media`/`outfit` services — worker double-checks before spending money |
 | `credits.monthly`, `credits.topup` | credit ledger consume (§4) of the task weight (`credits.weights`) inside the same transaction as job acceptance |
-| `processing.priority` | queue priority assignment in Trigger.dev job submit |
+| `processing.priority` | pg-boss job priority set on enqueue |
 | `recs.*`, `trends.level`, `analytics.wardrobe`, `export.*`, `chat.stylist` | owning application service per call |
 
 Mobile caches the resolved entitlement set (with `etag`/short TTL) for **rendering** paywalls and hiding buttons; every mutating or costly request is re-checked server-side. A UI that fails to hide a button must still be safe: the server returns a typed `ENTITLEMENT_REQUIRED` error the client renders as a contextual paywall.
@@ -177,7 +177,7 @@ Published in-app verbatim (plain-language version):
 
 ## 7. Unit economics
 
-Inputs (all verified 2026-09-09, [r6](research/r6-pricing-verification-2026-09-09.md)): AI cost/user/mo from **doc 10 §5** (light ≈ $0.02, medium ≈ $0.06, heavy ≈ $0.12–0.17 annualized, excl. credits; try-on ≈ $0.0825 and missing view ≈ $0.013 incl. retry allowance; onboarding $0.10–0.30 once). Infra: **≈ $60–70/mo at launch, ≈ $370–450/mo at 5k MAU → ≈ $0.08 per active user** (r4's $30–35 / $150–180 was ~2× too low). Store commission: **15% base case** (Apple Small Business Program; Google Play reportedly 10% on subscriptions since June 2026 — modeled at 15% until verified `[VERIFY-P13]`; 30% shown as sensitivity; Apple EU DMA structure from 2026-10-01 is 15–26% by payment route). RevenueCat: $0 under $2.5k MTR, then 1% (modeled as 1% throughout).
+Inputs (all verified 2026-09-09, [r6](research/r6-pricing-verification-2026-09-09.md)): AI cost/user/mo from **doc 10 §5** (light ≈ $0.02, medium ≈ $0.06, heavy ≈ $0.12–0.17 annualized, excl. credits; try-on ≈ $0.0825 and missing view ≈ $0.013 incl. retry allowance; onboarding $0.10–0.30 once). Infra: **≈ $25–45/mo at launch** (owned server ~$10–25/mo per OQ-14, R2/PostHog/Grafana free tiers, EAS free allowance — [r7](research/r7-third-party-services-and-self-hosting-audit-2026-09-13.md), ADR-0003); **≈ $370–450/mo at 5k MAU → ≈ $0.08 per active user** kept as the upper-bound hypothesis until re-baselined at P02 (r4's $30–35 / $150–180 was ~2× too low). Store commission: **15% base case** (Apple Small Business Program; Google Play 15% for auto-renewing subscriptions (10% service + 5% billing fee in the EEA/UK/US program from 2026-06-30; 15% elsewhere) — verified 2026-09-13 ([r7](research/r7-third-party-services-and-self-hosting-audit-2026-09-13.md)); base case 15% unchanged; 30% shown as sensitivity; Apple EU DMA structure from 2026-10-01 is 15–26% by payment route). RevenueCat: $0 under $2.5k MTR, then 1% (modeled as 1% throughout).
 
 ### 7.1 Net revenue per subscriber per month (unchanged prices)
 
@@ -225,7 +225,7 @@ Onboarding adds a one-time $0.10–0.30 in month 1 plus ≈ $0.41 of trial try-o
 
 ### 7.4 Break-even
 
-Fixed monthly at launch: infra ≈ $60–70 (r6: EAS Starter, Railway Hobby, dev-program fees amortised, everything else on free tiers) + hosted iOS CI $10–30 ≈ **$70–100/mo** (Open-Meteo Standard $29/mo is added when the weather feature goes live — not $500/mo as r4 stated). Assumed subscriber mix hypothesis 60% Essentials / 30% Plus / 10% Pro at cap costs, excluding the infra share (counted in the fixed pool): margins $4.00 / $6.66 / $12.51 → **blended ≈ $5.65/mo per paid subscriber** (monthly prices). At expected 40% utilisation the blend is ≈ $6.30.
+Fixed monthly at launch: infra ≈ $25–45 (owned server ~$10–25/mo per OQ-14, dev-program fees amortised, EAS free allowance, R2/PostHog/Grafana free tiers — r7) + hosted iOS CI $10–30 ≈ **$35–75/mo** (Open-Meteo Standard $29/mo is added when the weather feature goes live — not $500/mo as r4 stated). Assumed subscriber mix hypothesis 60% Essentials / 30% Plus / 10% Pro at cap costs, excluding the infra share (counted in the fixed pool): margins $4.00 / $6.66 / $12.51 → **blended ≈ $5.65/mo per paid subscriber** (monthly prices). At expected 40% utilisation the blend is ≈ $6.30.
 
 - **Launch break-even: ≈ 13–18 paying subscribers** cover $70–100 fixed.
 - **At 5k MAU** (infra ≈ $400 + free-user AI ≈ 4,850 × $0.02 ≈ $100 → ≈ $500/mo pool): break-even ≈ **89 paying subscribers ≈ 1.8% paid conversion**. At a 3% conversion hypothesis (150 paid), monthly contribution ≈ 150 × $5.65 − $500 ≈ **+$350/mo** (≈ +$445 at expected utilisation).
@@ -262,9 +262,9 @@ Plan-level cost caps, alerting, and the degradation ladder that keep §7.2 true 
 |---|---|---|
 | BIL-O1 | Store compliance verification checklist (§2, §5 `[VERIFY-P13]` items) with qualified review | P13 |
 | BIL-O2 | Regional price-tier sheet + store-suggested local prices | P13 |
-| BIL-O3 | Open-Meteo Standard ($29/mo, 1M calls) vs WeatherAPI Starter ($7/mo) vs Apple WeatherKit (500k free) — pick at P08 (r6 §3) | P08 |
+| BIL-O3 | Open-Meteo Standard ($29/mo, 1M calls) vs WeatherAPI Starter ($7/mo) vs Apple WeatherKit (500k free) — pick at P08 (r6 §3). P08 runs the measured comparison Open-Meteo managed vs self-hosted Open-Meteo (AGPL-3.0; ≥ 8 GB RAM/100 GB disk, continuous ingestion) vs Apple WeatherKit REST on coverage, freshness, outage behaviour, privacy, total cost; do not self-host solely to avoid $29/mo ([r7](research/r7-third-party-services-and-self-hosting-audit-2026-09-13.md), DEC-48) | P08 |
 | BIL-O4 | Credit top-up packs (P13 stretch → v1.1) & rollover experiments | P13 / post-launch |
-| BIL-O7 | Verify Google Play 10% subscription fee (June 2026 change reported by secondary sources) and Apple EU DMA route before finalising §7 commission base | P13 |
+| BIL-O7 | **Resolved 2026-09-13** ([r7](research/r7-third-party-services-and-self-hosting-audit-2026-09-13.md), DEC-48): Google Play is 15% for auto-renewing subscriptions (10% service + 5% billing fee in the EEA/UK/US program from 2026-06-30; 15% elsewhere) — §7 base case 15% unchanged. Apple EU DMA route check remains part of the P13 price re-verification (AIC-O6) | Resolved |
 | BIL-O8 | Re-run §7 with P11 shadow-credit utilisation data and the FLUX 2 LoRA gate outcome (AIC-O5); relax `credits.weights` if warranted | P11 → P13 |
 | BIL-O5 | Family sharing product decision | post-launch |
 | BIL-O6 | Small Business Program enrollment (Apple) / Play reduced-rate confirmation | P13 |

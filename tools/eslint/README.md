@@ -17,7 +17,7 @@ minus the ignore that hides fixtures from workspace runs). Both run in `just ci-
 ## Boundaries element types
 
 `module` (`apps/api/src/modules/<name>`), `module-internal` (`.../<name>/internal`), `platform`,
-`trigger-task` (`apps/api/src/trigger`), `dev` (`apps/api/src/dev`), `shared-kernel`, `contracts`;
+`job-handler` (`apps/api/src/jobs`), `dev` (`apps/api/src/dev`), `shared-kernel`, `contracts`;
 `composition-root` is a file category (`app.module.ts`, `main.ts`, `_layout.tsx`, `app-services.tsx`)
 because eslint-plugin-boundaries v7 classifies single files through `boundaries/files`. ESLint gives
 inline feedback; `tools/depcruise` is the whole-graph gate and carries the full rule set.

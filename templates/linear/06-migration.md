@@ -32,20 +32,20 @@ Every migration ships its rollback; classify it honestly.
 
 - Down file path: `packages/db/migrations/<…>.down.sql` (or drizzle equivalent)
 - Rollback class: <safe (no data loss) | lossy — detail: <what is lost>>
-- Proven with `just db-rollback` on: <local | Neon branch — run link>
+- Proven with `just db-rollback` on: <local | scratch database restored from the staging backup — run link>
 
 ## Data backfill
 
 Idempotent, batched, resumable; never a single UPDATE on a live table.
 
 - Backfill needed: <no | yes — script `<path>`, batch size <n>, resume key <…>, idempotency note <…>>
-- Volume estimate + runtime: <rows, minutes> · Runs as: <Trigger.dev task | one-off script with human trigger>
+- Volume estimate + runtime: <rows, minutes> · Runs as: <pg-boss job | one-off script with human trigger>
 
-## Neon branch test
+## Scratch-database test
 
-Staging apply runs on a Neon branch via the affected-module CI lane. Region choice is gated by P00 / OQ-07 — do not pick one here.
+Staging apply runs first on a scratch database restored from the latest staging backup (`docs/SERVICES-SETUP.md` §3) via the affected-module CI lane. Region choice is gated by P00 / OQ-07 — do not pick one here.
 
-- Neon branch run: <link | `OPEN — waiting on OQ-07 region memo`> · Local Testcontainers run: `just test <module>` → `<…>`
+- Scratch-database run: <link | `OPEN — waiting on OQ-07 region memo`> · Local Testcontainers run: `just test <module>` → `<…>`
 
 ## Modules touched
 
@@ -97,11 +97,11 @@ Existing table/column that already stores this? Existing fixture/factory to exte
 ## Dependencies / blocked by
 
 - Contract change issue (wire shape): <ID | N/A> · Module code issue (consumer): <ID>
-- Neon / staging (`docs/SERVICES-SETUP.md` §3): <ready | blocked by P00 / OQ-07>
+- Staging PostgreSQL (`docs/SERVICES-SETUP.md` §3): <ready | blocked by P00 / OQ-07>
 
 ## Definition of done
 
-- [ ] Up + down applied and rolled back with pasted output (local; Neon branch when available)
+- [ ] Up + down applied and rolled back with pasted output (local; scratch database when available)
 - [ ] Backfill script idempotent and reviewed, or `N/A`; sensitivity note in PR
 - [ ] `just test <module>` · `just lint` · `just typecheck` · `just arch-check` green; `just ci-parity` green before PR
 - [ ] Contract step tracked as a separate issue with human authorization noted

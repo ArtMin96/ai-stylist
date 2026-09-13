@@ -1,6 +1,7 @@
 # 00 — Product Vision and Scope
 
 **Status:** Ratified for planning · **Date:** 2026-08-24
+**Amended:** 2026-09-13 ([r7](research/r7-third-party-services-and-self-hosting-audit-2026-09-13.md), ADR-0003 — pg-boss metrics, try-on eval arm).
 **Conforms to:** [SPINE.md](SPINE.md) (canonical decisions). Requirement IDs live in [01-requirements-and-traceability.md](01-requirements-and-traceability.md). Risks, assumptions, and open questions referenced here are tracked in [16-risks-open-questions-and-decision-log.md](16-risks-open-questions-and-decision-log.md).
 
 ---
@@ -64,12 +65,12 @@ Full assumptions register with validation plan: [16 §Assumptions](16-risks-open
 **Constraints (fixed):**
 - Team of 2–3 developers on Ubuntu Linux, heavy Claude Code usage; no Mac owned — hosted macOS CI for iOS builds ([SPINE §1](SPINE.md), research/r1).
 - Store compliance: Apple App Store + Google Play billing rules bound the trial/paywall design (P13).
-- Budget reality: infra ≈ $60–70/mo at launch, ≈ $370–450/mo at 5k MAU ([r6](research/r6-pricing-verification-2026-09-09.md), verified 2026-09-09); AI cost anchors per [SPINE §6](SPINE.md); all pricing figures are hypotheses.
+- Budget reality: infra ≈ $25–45/mo at launch (owned server ~$10–25/mo per OQ-14, R2/PostHog/Grafana free tiers — [r7](research/r7-third-party-services-and-self-hosting-audit-2026-09-13.md), ADR-0003), ≈ $370–450/mo at 5k MAU as the upper-bound hypothesis until re-baselined at P02 ([r6](research/r6-pricing-verification-2026-09-09.md), verified 2026-09-09); AI cost anchors per [SPINE §6](SPINE.md); all pricing figures are hypotheses.
 
 **Load-bearing assumptions (labeled, tracked as ASM-NN in doc 16):**
 - `react-native-filament` is production-viable for our avatar workload — **validated at the P01 prototype gate**, with a native-Filament JSI fallback (ASM-01).
 - Anny (Apache 2.0) base meshes + morphs are production-quality after our own asset pipeline pass (ASM-02).
-- G2 generative try-on quality at $0.075/image (FASHN/Kling on fal.ai; $0.021/MP FLUX 2 LoRA if it passes eval) clears user-satisfaction and unit-cost gates under weighted credits (ASM-03, DEC-34, gated P11).
+- G2 generative try-on quality at $0.075/image (FASHN/Kling on fal.ai; $0.021/MP FLUX 2 LoRA if it passes eval; self-hosted FASHN VTON v1.5 is a further P11 gate arm — DEC-47) clears user-satisfaction and unit-cost gates under weighted credits (ASM-03, DEC-34, gated P11).
 - Fashion content can be licensed at viable cost (ASM-04, validated by P12 and OQ-05).
 - The 3-day server-granted trial model passes App Store / Play review (ASM-05, validated P13).
 
@@ -145,7 +146,7 @@ graph TD
 |---|---|---|---|---|---|
 | Crash-free sessions | MOB | PostHog/Sentry | C1 | Hypothesis ≥ 99.5% | Release gate (P14) |
 | Recommendation latency; 3D first-render; frame rate on device tiers | MOB | perf monitoring + device lab | C0 | Budgets set in [13](13-testing-quality-and-performance.md); P01 gate: 60 fps iPhone 13-class / 50 fps Galaxy A52-class (r2) | P01 go/no-go; perf work priority |
-| Asset/job pipeline reliability (job age, DLQ depth) | BE | Trigger.dev + metrics | C0 | Budgets in [14](14-observability-operations-and-analytics.md) | Ops/alerting investment |
+| Asset/job pipeline reliability (job age, DLQ depth) | BE | pg-boss queue metrics | C0 | Budgets in [14](14-observability-operations-and-analytics.md) | Ops/alerting investment |
 | Consent coverage (sensitive processing without valid consent) | BE | audit trail | C3 | **0 — hard target** | Immediate incident (11) |
 | Deletion completion within SLA (incl. derived assets) | BE | audit trail | C3 | **100% within stated SLA** | Compliance gate (P14) |
 | Sensitive-data logging incidents; unauthorized access events | BE | log audits + security tests | C3 | **0 — hard target** | Incident response ([11](11-security-privacy-and-compliance.md)) |

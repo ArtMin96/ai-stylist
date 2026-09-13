@@ -2,7 +2,7 @@
 // `just lint`. dependency-cruiser (tools/depcruise/rules.cjs) is the whole-graph gate; the two
 // overlap on purpose. Loaded by the root eslint.config.mjs (`BOUNDARIES` extension point).
 //
-// Element types: module, module-internal, shared-kernel, platform, trigger-task, contracts, dev;
+// Element types: module, module-internal, shared-kernel, platform, job-handler, contracts, dev;
 // composition-root is a file category (v7 dropped file-mode elements). Patterns are repo-root
 // relative (boundaries/root-path), so the same config works from every workspace's `eslint .`.
 import path from 'node:path';
@@ -13,7 +13,7 @@ const REPO_ROOT = path.resolve(import.meta.dirname, '..', '..');
 
 // Provider SDKs that never appear in a domain module (04 §4.2 rule 4; mirrors depcruise).
 export const PROVIDER_SDKS = [
-  '@trigger.dev/*',
+  'pg-boss',
   '@aws-sdk/*',
   '@cloudflare/*',
   'react-native-purchases',
@@ -45,7 +45,7 @@ const ELEMENTS = [
   },
   { type: 'module', pattern: 'apps/api/src/modules/*', capture: ['module'] },
   { type: 'platform', pattern: 'apps/api/src/platform' },
-  { type: 'trigger-task', pattern: 'apps/api/src/trigger' },
+  { type: 'job-handler', pattern: 'apps/api/src/jobs' },
   { type: 'dev', pattern: 'apps/api/src/dev' },
   { type: 'shared-kernel', pattern: 'packages/shared-kernel' },
   { type: 'contracts', pattern: 'packages/contracts' },
@@ -128,7 +128,7 @@ export default [
               // Nothing outside modules/ reaches an internal/** either.
               from: {
                 element: {
-                  type: ['platform', 'trigger-task', 'dev', 'shared-kernel', 'contracts'],
+                  type: ['platform', 'job-handler', 'dev', 'shared-kernel', 'contracts'],
                 },
               },
               disallow: { to: { element: { type: 'module-internal' } } },
@@ -153,7 +153,7 @@ export default [
               from: { element: { type: 'platform' } },
               disallow: {
                 to: {
-                  element: { type: ['module', 'module-internal', 'trigger-task', 'dev'] },
+                  element: { type: ['module', 'module-internal', 'job-handler', 'dev'] },
                 },
               },
               message:

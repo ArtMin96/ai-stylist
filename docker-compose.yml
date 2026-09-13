@@ -1,5 +1,5 @@
 # Local infrastructure for `just dev-api` / `just db-*` (planning/15 §1.4): Postgres 17 with
-# pgvector, matching the Neon major. Data persists in the named volume; `just db-reset --yes`
+# pgvector, matching the production PostgreSQL major. Data persists in the named volume; `just db-reset --yes`
 # wipes the schema, `docker compose down -v` wipes the volume.
 #
 # Host port defaults to 5432; set POSTGRES_HOST_PORT in .env when another Postgres already

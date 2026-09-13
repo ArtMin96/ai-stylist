@@ -78,7 +78,7 @@ export const localPlugin = {
 // BOUNDARIES: extended in tools/eslint/boundaries.mjs (added by arch agent, T06).
 // That file must `export default` an array of flat-config entries using
 // eslint-plugin-boundaries (element types: module, module-internal, shared-kernel,
-// platform, composition-root, trigger-task, contracts). Loaded only if present.
+// platform, composition-root, job-handler, contracts). Loaded only if present.
 // ---------------------------------------------------------------------------
 async function loadBoundaries() {
   try {

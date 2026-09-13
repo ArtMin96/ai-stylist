@@ -1,5 +1,7 @@
 # P04 — Parametric Avatar v1
 
+> Amended 2026-09-13 ([r7](../research/r7-third-party-services-and-self-hosting-audit-2026-09-13.md), ADR-0003 — service consolidation: pg-boss jobs, owned server + Coolify, self-managed PostgreSQL, R2 delivery model).
+
 > File name: `phases/P04-parametric-avatar-v1.md` per [SPINE §5](../SPINE.md). Every section below is REQUIRED (brief §10); write "None" explicitly rather than deleting a section. Status values per [PROGRESS.md](../PROGRESS.md).
 
 ## 1. Overview
@@ -40,7 +42,7 @@ IDs from [01-requirements-and-traceability.md](../01-requirements-and-traceabili
 
 ## 4. In scope / out of scope
 
-**In scope:** Anny base asset pipeline (Blender-headless → glTF/KTX2/Draco via CI); `avatar` module (configs, mapping, versioning); calibration screen with sliders, confidence display, conflict prompts; 4 poses + camera/rotation/zoom + neutral IBL lighting; skin tone/hair/appearance; avatar asset manifests + CDN delivery + client caching; low-end rendering-tier fallback incl. static renders; non-3D calibration path; golden/visual regression harness; avatar analytics events.
+**In scope:** Anny base asset pipeline (Blender-headless → glTF/KTX2/Draco via CI); `avatar` module (configs, mapping, versioning); calibration screen with sliders, confidence display, conflict prompts; 4 poses + camera/rotation/zoom + neutral IBL lighting; skin tone/hair/appearance; avatar asset manifests + custom-domain cached delivery (public app assets, DEC-44) + client caching; low-end rendering-tier fallback incl. static renders; non-3D calibration path; golden/visual regression harness; avatar analytics events.
 
 **Out of scope / non-goals for this phase:** face personalization (A2 → [P05](P05-selfie-face-personalization.md)); any garment on the avatar (→ [P10](P10-outfit-on-avatar.md)); G2 try-on (→ P11); A3 scan-grade twin (explicit non-goal, SPINE §4); server-side face reconstruction (doc 07 §5.2); minor/child base meshes (doc 07 §3.1); mood lighting presets beyond the neutral default (later).
 
@@ -68,7 +70,7 @@ Module names per [SPINE §3](../SPINE.md); update each touched module's contract
 | `media` | Avatar asset kind (`avatar_asset`) in the asset store; CDN manifests for avatar bundles | Yes — asset-kind addition |
 | `outfit` | `OutfitPresentation` contract stub ratified (schema only, no behavior) so P10/P09 consumers have a stable seam (REQ-AVA-120) | Yes — contract file created with schema-only status |
 | `shared-kernel` | Morph-target/joint/pose name registry; skin-tone palette ids | Yes |
-| `platform` | R2/CDN delivery of versioned avatar manifests; client LRU asset cache policy | Yes |
+| `platform` | R2 custom-domain (Cloudflare-cached) delivery of versioned avatar manifests — public app assets only, per DEC-44; client LRU asset cache policy | Yes |
 | `recommendation` | **No change** — dependency-cruiser rule (from P02) verified to forbid `recommendation` → `avatar`/renderer | No |
 
 ## 7. Public interfaces, contracts, schemas, migrations, events
@@ -171,7 +173,7 @@ All values are hypotheses from [13 §12](../13-testing-quality-and-performance.m
 
 - Feature flags (owner + expiry date): `avatar-3d-enabled` (kill switch to static-render/2D ladder; owner MOB, expiry P14 ratification), `avatar-calibration-v1` (owner MOB, expiry end of P05). Registered per [14 §11](../14-observability-operations-and-analytics.md) flag policy.
 - Migration/backward-compatibility plan: first release of avatar tables — additive migration only. Asset compatibility via manifest `(topology, rig, minClientVersion)`; older clients resolve older manifests (doc 07 §3.7/§9). AvatarConfig `schema: 1` is the baseline; migration functions required from the first bump onward (tested in P04-T12).
-- Rollback plan: (1) flip `avatar-3d-enabled` off → non-3D ladder serves everything (no data loss); (2) manifest rollback = re-point manifest alias to previous semver (assets are immutable, hash-addressed); (3) DB rollback via `just db-rollback` (tables additive, down path tested on Neon branch); (4) mobile release rollback per store staged-rollout policy (doc 15).
+- Rollback plan: (1) flip `avatar-3d-enabled` off → non-3D ladder serves everything (no data loss); (2) manifest rollback = re-point manifest alias to previous semver (assets are immutable, hash-addressed); (3) DB rollback via `just db-rollback` (tables additive, down path tested on a scratch database restored from the staging backup); (4) mobile release rollback per store staged-rollout policy (doc 15).
 
 ## 17. Risks, mitigations, assumptions, stop/kill criteria
 
@@ -227,7 +229,7 @@ just lint && just typecheck
 just arch-check           # module boundaries incl. recommendation ⊥ avatar rule
 just generate --check     # contracts/clients not stale
 just assets-validate      # 3D asset gate green
-just db-migrate && just db-rollback && just db-migrate   # on Neon branch: up/down/up proven
+just db-migrate && just db-rollback && just db-migrate   # on a scratch database restored from the staging backup: up/down/up proven
 just ci-parity            # full PR gate locally
 # phase-specific: nightly golden lane green; device-lane run on low/mid/high per doc 13 §7
 ```

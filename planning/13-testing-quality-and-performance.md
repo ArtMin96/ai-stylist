@@ -1,6 +1,6 @@
 # 13 — Testing, Quality, and Performance
 
-**Status:** Draft for ratification · **Date:** 2026-08-24 · **Conforms to:** [SPINE.md](SPINE.md)
+**Status:** Draft for ratification · **Date:** 2026-08-24 · **Conforms to:** [SPINE.md](SPINE.md) · **Amended:** 2026-09-13 ([r7](research/r7-third-party-services-and-self-hosting-audit-2026-09-13.md), ADR-0003 — pg-boss job tests, pgBackRest restore drills, Coolify staging load tests, `date-holidays`)
 **Owns:** test organization rules, per-subsystem test pyramid + tooling, quality rules (regression-first, no-skip, flaky policy), CI tiers, security test suite, AI/ML evaluation strategy, recommendation simulations, performance budget table, load testing, device matrix.
 **Requirement IDs delivered:** `NFR-TST-*`, `NFR-PERF-*` (defined in [01-requirements-and-traceability.md](01-requirements-and-traceability.md)).
 **Referenced by:** every phase file (each phase's "test-first plan" and "budgets" sections cite this doc); [11-security-privacy-and-compliance.md](11-security-privacy-and-compliance.md) (security tests §8); [14-observability-operations-and-analytics.md](14-observability-operations-and-analytics.md) (error budgets §12); [10-ai-usage-cost-and-evaluation.md](10-ai-usage-cost-and-evaluation.md) (eval datasets, cost gates).
@@ -35,7 +35,7 @@
 | **Backend domain modules** (NestJS) | **Vitest** — pure domain rules, state machines, scoring, normalization; no DI container needed for pure logic | **fast-check** — see §4 | OpenAPI-generated contract tests — see §5 | **Testcontainers** (Postgres w/ pgvector) for repositories/adapters; outbox + event tests | via API-level E2E in nightly (Testcontainers + real HTTP) |
 | **Mobile app** (RN/Expo) | **Jest + React Native Testing Library** — components, hooks, view-models | fast-check for shared logic packages | consumes generated client; contract drift caught in §5 | RNTL integration (navigation flows w/ mocked network via MSW) | **Maestro** flows on device/emulator (§7); golden renders (§6) |
 | **ML/media workers** (Python FastAPI) | **pytest** — pure functions, schema validation (Pydantic) | **hypothesis** — parsing/geometry invariants | Schemathesis against worker OpenAPI; versioned JSON schema round-trip tests vs `packages/contracts` | pytest + Testcontainers (Postgres) where workers touch state; golden-file pipeline tests on fixture images | eval suites (§10) on nightly GPU lane |
-| **Jobs/pipelines** (Trigger.dev) | task logic extracted to pure functions → Vitest | — | payload schemas from `packages/contracts` | **Idempotency/retry/DLQ suite**: run task twice with same idempotency key → one effect; inject failure at each step → retry then DLQ; resume-after-crash replays safely; cancellation mid-pipeline leaves no orphan asset (media state machine, doc 07) | pipeline E2E on staging nightly |
+| **Jobs/pipelines** (pg-boss) | handler logic extracted to pure functions → Vitest | — | payload schemas from `packages/contracts` | **Idempotency/retry/DLQ suite** (the P02-T08 acceptance suite that gates pg-boss vs the self-hosted Trigger.dev fallback, DEC-41): run job twice with same singleton key → one effect; inject failure at each step → retry then DLQ; resume-after-crash replays safely; cancellation mid-pipeline leaves no orphan asset (media state machine, doc 07) | pipeline E2E on staging nightly |
 | **Recommendation engine** | Vitest on rules/scoring/tie-breaks | ranking + constraint invariants (§4) | recommendation result schema contract | simulations (§11) with seeded closets | latency measured in §12 budgets |
 | **3D/avatar/garments** | param-mapping math (Vitest) | morph-bound invariants (§4) | asset-manifest schema tests | asset validation CLI on every committed asset (formats per SPINE) | **golden/visual regression** (§6) + device perf (§7) |
 | **Billing/entitlements** | Vitest on entitlement logic | metering arithmetic invariants | RevenueCat webhook payload contracts (recorded fixtures) | webhook idempotency/replay (also in security suite §8); reconciliation-drift tests | purchase/restore E2E on store sandbox (P13) |
@@ -54,7 +54,7 @@
 - Backend: schema-conformance tests generated from the spec (Schemathesis or Vitest harness) run against the app booted in-process — every documented endpoint, auth required where declared, error envelope shape verified.
 - Mobile: builds only against the generated client; a spec-version handshake test verifies additive-only changes within a major version (versioning policy owned by [06-data-api-and-event-contracts.md](06-data-api-and-event-contracts.md)).
 - Events: outbox event payloads validate against versioned event schemas in `packages/contracts`; a replay test feeds each recorded historical version to current consumers (doc 06 replay/versioning policy).
-- Provider ports: recorded-fixture contract tests per provider (Open-Meteo, Nager.Date, RevenueCat webhooks, fal.ai job callbacks) so a provider format change breaks a test, not production.
+- Provider ports: recorded-fixture contract tests per provider (Open-Meteo, RevenueCat webhooks, fal.ai job callbacks) so a provider format change breaks a test, not production. `date-holidays` is an embedded library with no network call: its tests are per-country-year fixture cross-checks against the hosted Nager.Date API (P08), not contract tests.
 
 ## 6. Golden / visual regression (avatar poses + garment rendering)
 
@@ -96,7 +96,7 @@ P14: external penetration test (or structured internal one if budget-blocked, re
 ## 9. Migration, backup, and restore tests
 
 - Every Drizzle migration: forward-apply on a Testcontainers snapshot of the previous schema seeded with representative data; rollback (or documented irreversibility + expand/contract plan per doc 06 policy); data-preservation assertions for destructive changes.
-- **Restore drills** (cadence + runbook owned by 14 §13, verification owned here): quarterly — restore Neon PITR to a scratch branch, run the full migration test suite + row-count/invariant checks against it; restore R2 sample set and verify asset manifests resolve. A drill that has not run in > 1 quarter is a red release-gate item.
+- **Restore drills** (cadence + runbook owned by 14 §13, verification owned here): quarterly — restore a pgBackRest PITR point to a scratch database (14 §13), run the full migration test suite + row-count/invariant checks against it; restore R2 sample set and verify asset manifests resolve. A drill that has not run in > 1 quarter is a red release-gate item.
 - Backup of the deletion guarantee: post-restore re-deletion replay test (11 §13.3).
 
 ## 10. AI/ML evaluation suites (gates defined here; datasets & metrics detail in [doc 10](10-ai-usage-cost-and-evaluation.md))
@@ -108,7 +108,7 @@ P14: external penetration test (or structured internal one if budget-blocked, re
   - Classification/attributes: precision/recall per category vs labeled set; **user-correction rate in production is the online metric** (14 §4).
   - Dedup/embeddings: precision@k on known duplicate pairs.
   - Missing-view synthesis & G2 try-on: human-rated rubric sample + automated checks — provenance marker present, garment color/pattern fidelity (ΔE bound), no anatomy alterations (body shape must match avatar params), **hallucination/invalid-output checks** (output must contain exactly the input garment; reject-and-fallback on failure).
-  - Explanation text (Haiku polish path): faithfulness — every sentence maps to an engine reason code (no invented reasons — SPINE honesty rules); ethics blocklist from 11 §17 (no body commentary); template-fallback rate tracked.
+  - Explanation text (templates from reason codes, DEC-46 — no LLM polish): faithfulness — every sentence maps to an engine reason code (no invented reasons — SPINE honesty rules); ethics blocklist from 11 §17 (no body commentary).
   - **Cost/latency regression gates:** each AI call type has a per-call cost + p95 latency budget (anchors from [r3](research/r3-ai-providers-costs.md), owned by doc 10); nightly eval runs fail if a model/prompt change exceeds budget.
 - Every eval run records model id, prompt/template version, dataset version, and git SHA — reproducible per SPINE §3.1 (brief) requirements.
 
@@ -161,12 +161,12 @@ Measurement rules: real devices per §7 matrix, cold vs warm distinguished, raw 
 | Webhook processing p95 | ≤ 5 s | hypothesis → P13 |
 | Signed URL mint p95 | ≤ 100 ms | hypothesis → P02 |
 | 5xx error rate | ≤ 0.5% of requests (part of error budget, 14 §12) | hypothesis → P03 |
-| CDN/asset cache hit rate (delivery assets) | ≥ 90% | hypothesis → P04 |
+| Custom-domain asset cache hit rate (public delivery assets) | ≥ 90% | hypothesis → P04 |
 
 AI per-call cost/latency budgets live in doc 10 (owned there; gated here via §10). Cost-per-active-user guardrails live in doc 12; the alert lives in 14 §7.
 
 ### 12.3 Load testing
-- Tooling: k6 against staging (Railway preview env + Neon branch, doc 15). Profiles: steady (5k-user launch model from [r4](research/r4-backend-providers.md)), morning spike (recommendation burst 8–9 am local), onboarding burst (new-user batch capture: 50 uploads/user), webhook storm (RevenueCat replay).
+- Tooling: k6 against the staging environment on Coolify with a scratch database restored from the latest staging backup (doc 15). Profiles: steady (5k-user launch model from [r4](research/r4-backend-providers.md)), morning spike (recommendation burst 8–9 am local), onboarding burst (new-user batch capture: 50 uploads/user), webhook storm (RevenueCat replay).
 - Run: before P09, P13, and P14 gates; then before any launch-scale change. Pass = budgets in §12.2 hold at target load with bounded queues (no unbounded growth) and graceful backpressure (429s, not timeouts).
 
 ## 13. CI tiers

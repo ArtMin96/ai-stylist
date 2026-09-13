@@ -12,7 +12,7 @@ describe('isLocalDatabaseUrl (db-reset guard)', () => {
   });
 
   it.each([
-    'postgres://u:p@ep-cool-name-123456.eu-central-1.aws.neon.tech/neondb?sslmode=require',
+    'postgres://u:p@db.staging.internal/ai_stylist?sslmode=require',
     'postgres://u:p@localhost.evil.example/db',
     'postgres://u:p@10.0.0.5/db',
     'mysql://u:p@localhost/db',

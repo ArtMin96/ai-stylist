@@ -43,6 +43,8 @@ Rules:
 
 ## ➡️ Next session starts here
 
+**Tracking:** every P02 task has a Linear issue in the project [P02 — Repo foundations and CI](https://linear.app/ai-stylist-app/project/p02-repo-foundations-and-ci-f1943b23882e) (AI-9 = T08, AI-16 = T07, AI-17 = T09, AI-21 = T13, AI-22/23 = T14/T15, AI-26 = T18 close-out, AI-27 = human-only steps).
+
 **First command, always:** `just bootstrap && just doctor && just ci-parity` — must be green before any other work (last green: 2026-09-13 locally; PR #2 CI on push).
 
 Then pick one:

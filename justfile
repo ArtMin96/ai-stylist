@@ -90,6 +90,8 @@ test module='':
     if [[ -n "{{module}}" ]]; then
         case "{{module}}" in
             secrets) just test-secrets; exit 0 ;;
+            mobile) pnpm --filter @ai-stylist/mobile test; exit 0 ;;
+            workers) uv run --project workers pytest workers -q; exit 0 ;;
             platform) dir="src/platform/tests" ;;
             api) dir="." ;;
             *) dir="src/modules/{{module}}/tests" ;;
@@ -113,6 +115,10 @@ test module='':
 test-secrets:
     scripts/security/tests/secrets.test.sh
 
+# Prove a regression test fails at the merge-base and passes at HEAD (scripts/test/regression.sh <test-file>); structural version of CLAUDE.md's "regression test fails before the fix"
+test-regression file:
+    scripts/test/regression.sh "$@"
+
 # * ESLint per workspace via turbo (boundaries, test-placement, no-skip, no-console, forbidden-field, file-size) + root tools/ + Ruff for workers + shellcheck for scripts/** and tools/**/*.sh; `--fixtures` asserts tools/eslint/fixtures each fail on their rule
 lint *args:
     #!/usr/bin/env bash
@@ -126,7 +132,11 @@ lint *args:
     pnpm exec eslint tools eslint.config.mjs
     uv run --project workers ruff check workers
     # -s bash: every script must run under macOS /bin/bash 3.2 as well (docs/DEVELOPING-ON-MACOS.md)
-    shellcheck -s bash -x -P SCRIPTDIR scripts/*.sh scripts/security/*.sh scripts/security/tests/*.sh tools/codegen/*.sh tools/depcruise/*.sh tools/eslint/*.sh
+    shellcheck -s bash -x -P SCRIPTDIR scripts/*.sh scripts/security/*.sh scripts/security/tests/*.sh scripts/docs/*.sh scripts/docs/lib/*.sh scripts/hooks/*.sh scripts/test/*.sh scripts/db/*.sh scripts/lint-file.sh tools/codegen/*.sh tools/depcruise/*.sh tools/eslint/*.sh
+
+# Single-file lint dispatch by extension (.ts/.tsx/.mjs/.cjs -> eslint, .py -> ruff, .sh -> shellcheck, else no-op); used by the PostToolUse hook so one edit doesn't pay for a whole-repo lint
+lint-file path:
+    scripts/lint-file.sh "$@"
 
 # * `tsc --noEmit` per workspace via turbo + basedpyright for workers
 typecheck:
@@ -148,6 +158,10 @@ format *args:
 # * dependency-cruiser boundary rules (tools/depcruise/rules.cjs) + banned utils/ dirs; `--fixtures` asserts tools/depcruise/fixtures each fail on their rule
 arch-check *args:
     tools/depcruise/arch-check.sh "$@"
+
+# * Docs enforcement gate (scripts/docs/docs-check.sh): module<->contract bijection, ADR/skill/agent README sync, PROGRESS.md sync, stale last-reviewed dates, dead repo paths, undocumented just recipes, raw pnpm/uv/npx/drizzle-kit/eas invocations in .agents|.claude|.claude/rules; `--strict` errors on the two human-approval-pending checks, `--fixtures` proves every check fails on its own fixture
+docs-check *args:
+    scripts/docs/docs-check.sh "$@"
 
 # * Contract codegen: OpenAPI bundle -> hey-api, json-schema-to-typescript, datamodel-code-generator; `--check` diffs committed output
 generate *args:
@@ -182,12 +196,17 @@ ci-parity:
     just typecheck
     just arch-check
     just arch-check --fixtures
+    just docs-check
     just generate --check
     just test
     just security-scan
     scripts/security/license-check.sh --fixtures
 
 # --- database (drizzle-kit; expand–contract) ----------------------------------------
+
+# Generate a Drizzle migration from packages/db schema changes, named <name> (drizzle-kit generate --name); prints a reminder that packages/db/migrations/down/<idx>.sql is required by db-rollback
+db-generate name:
+    scripts/db/generate.sh "$@"
 
 # Apply pending migrations (packages/db/migrations) to DATABASE_URL (env or repo-root .env)
 db-migrate env='local':

@@ -1,0 +1,92 @@
+[
+  {
+    "query": "a user emailed support asking us to delete their account, need to make sure closet items and media derivations get cleaned up too, not just the identity row",
+    "should_trigger": true
+  },
+  {
+    "query": "implementing the GDPR export endpoint and the zip file needs to include consent history now, not just profile fields",
+    "should_trigger": true
+  },
+  {
+    "query": "user withdrew consent for face processing on the selfie personalization feature, need to wire that into the deletion flow like P05-T08 describes",
+    "should_trigger": true
+  },
+  {
+    "query": "our purge job isn't actually verifying the R2 objects got deleted after an account deletion, might be a compliance gap",
+    "should_trigger": true
+  },
+  {
+    "query": "need to add a new consent purpose called marketing_emails to the consents table and hook up the withdrawal path",
+    "should_trigger": true
+  },
+  {
+    "query": "where does the 90 day retention window on outbox events come from, and do we need a cleanup job for it",
+    "should_trigger": true
+  },
+  {
+    "query": "a customer asked why their data export took 3 days to show up, checking the pg-boss job chain for the export flow",
+    "should_trigger": true
+  },
+  {
+    "query": "got a right-to-be-forgotten request from a CCPA state user, need to check our deletion cascade actually covers everything",
+    "should_trigger": true
+  },
+  {
+    "query": "the segmentation worker seems to still reference a user's photos after they deleted their account, looks like a purge gap somewhere",
+    "should_trigger": true
+  },
+  {
+    "query": "extending the account deletion cascade so it also cancels pending try-on jobs and revokes RevenueCat subscriber data",
+    "should_trigger": true
+  },
+  {
+    "query": "add a `deleted_at` column to the closet items table and write the drizzle migration for it",
+    "should_trigger": false,
+    "_near_miss_reason": "mentions deletion vocabulary but the actual work is a schema + migration — db-migration's job, not the cascade mechanics."
+  },
+  {
+    "query": "need to expose a new GET /users/me/consents endpoint with a different response shape than what's in the openapi spec today",
+    "should_trigger": false,
+    "_near_miss_reason": "touches consents but the change is the wire contract shape — api-contract-change goes first."
+  },
+  {
+    "query": "reviewing the diff for a new webhook handler that processes RevenueCat subscription cancellation events, want a security pass before merge",
+    "should_trigger": false,
+    "_near_miss_reason": "billing/cancellation vocabulary is adjacent, but this is explicitly a review task on a webhook handler — security-privacy-review, not implementing lifecycle mechanics."
+  },
+  {
+    "query": "trial users aren't losing access to closet uploads when their RevenueCat entitlement expires, seems like a gating bug",
+    "should_trigger": false,
+    "_near_miss_reason": "entitlement expiry sounds adjacent to retention, but the defect is in gating logic — entitlements-billing owns it."
+  },
+  {
+    "query": "the closet screen in the app crashes when you swipe past the last item in the wardrobe grid",
+    "should_trigger": false,
+    "_near_miss_reason": "no data-lifecycle content at all despite mentioning closet — a mobile UI bug, mobile-feature's territory."
+  },
+  {
+    "query": "support wants a way to suspend a user's account for a policy violation without fully deleting it",
+    "should_trigger": false,
+    "_near_miss_reason": "suspend-vs-delete sounds adjacent to account deletion, but this is an admin moderation action, not the deletion cascade — admin-moderation's job."
+  },
+  {
+    "query": "closet's internal/schema.ts has drifted from what's actually applied in postgres after the last migration, can you reconcile it",
+    "should_trigger": false,
+    "_near_miss_reason": "schema drift is a migration-state problem — db-migration, not a data-lifecycle retention or cascade question."
+  },
+  {
+    "query": "docs-check keeps failing because our ADR index is out of sync with docs/adr, not sure which recipe fixes that",
+    "should_trigger": false,
+    "_near_miss_reason": "same task's sibling skill boundary: docs/ADR sync is docs-maintenance, and a broken docs-check recipe itself would be tooling-ci — neither is data-lifecycle."
+  },
+  {
+    "query": "want to run the identity module's test suite after a refactor just to make sure nothing regressed",
+    "should_trigger": false,
+    "_near_miss_reason": "identity is where consent lives, but a generic post-refactor test run with no consent/deletion/export content is backend-module's territory."
+  },
+  {
+    "query": "the fal.ai try-on job for a closet item has been stuck in pending in pg-boss for an hour and never completes",
+    "should_trigger": false,
+    "_near_miss_reason": "pg-boss + fal.ai vocabulary overlaps with the deletion-cascade job cancellation content, but a stuck job with no consent/deletion/export angle is media-ml-pipeline's job."
+  }
+]

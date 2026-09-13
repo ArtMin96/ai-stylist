@@ -1,0 +1,92 @@
+[
+  {
+    "query": "got a RevenueCat webhook for a renewal that's arriving out of order after the cancellation event, entitlements ended up in the wrong state",
+    "should_trigger": true
+  },
+  {
+    "query": "need to add a new weighted-credit meter for the 'style consult' feature per DEC-34, on top of the existing try-on credits",
+    "should_trigger": true
+  },
+  {
+    "query": "trial users aren't getting downgraded to Free when the trial expiry sweep job runs, they still have Plus access",
+    "should_trigger": true
+  },
+  {
+    "query": "want to gate the closet upload feature behind a paywall check so free-tier users over the item cap get a read-only view",
+    "should_trigger": true
+  },
+  {
+    "query": "a user upgraded from Plus to Pro mid-cycle and the credit re-grant didn't happen, they're stuck with the old balance",
+    "should_trigger": true
+  },
+  {
+    "query": "need to run the nightly reconciliation job manually because we suspect entitlement drift after yesterday's RevenueCat outage",
+    "should_trigger": true
+  },
+  {
+    "query": "the restore-purchase flow on a new device isn't picking up the user's existing subscription, entitlements stay at Free",
+    "should_trigger": true
+  },
+  {
+    "query": "credit ledger consume isn't atomic with job acceptance, seeing double-spend under concurrent try-on requests",
+    "should_trigger": true
+  },
+  {
+    "query": "webhook signature verification is missing on our RevenueCat endpoint, anyone could POST a fake cancellation",
+    "should_trigger": true
+  },
+  {
+    "query": "need to build the GET /me/entitlements resolver endpoint that returns etag-cached entitlement state for a signed-in user",
+    "should_trigger": true
+  },
+  {
+    "query": "the paywall screen's buttons are misaligned on smaller iPhone screens and the trial pill overlaps the price text",
+    "should_trigger": false,
+    "_near_miss_reason": "mentions the paywall but the issue is purely visual/layout — mobile-feature owns the UI once the entitlement contract already exists."
+  },
+  {
+    "query": "product wants to test a $2 lower price point for the Plus monthly tier to see if conversion improves",
+    "should_trigger": false,
+    "_near_miss_reason": "a price/tier experiment is a product/pricing decision (doc 12 hypothesis), explicitly out of scope for this skill even though it's billing-adjacent."
+  },
+  {
+    "query": "need to add a PostHog feature flag to roll out the new onboarding flow to 10% of users",
+    "should_trigger": false,
+    "_near_miss_reason": "PostHog rollout flags are explicitly not entitlements per doc 15 §10, even though both gate feature access."
+  },
+  {
+    "query": "the try-on job is stuck in pending in pg-boss and never completes, seems unrelated to credits",
+    "should_trigger": false,
+    "_near_miss_reason": "try-on jobs touch the credit-consuming operation, but a stuck pg-boss job is media-ml-pipeline's territory unless the credit ledger itself is the defect."
+  },
+  {
+    "query": "reviewing the diff for the new billing webhook handler before it merges, want a second pair of eyes on module boundaries",
+    "should_trigger": false,
+    "_near_miss_reason": "the diff is billing work, but reviewing it for boundary violations is architecture-review's task, not an implementation task."
+  },
+  {
+    "query": "the admin panel doesn't have a button yet to manually trigger a reconcile-now for a specific user account",
+    "should_trigger": false,
+    "_near_miss_reason": "reconciliation itself is entitlements-billing's invariant, but building the admin UI/button that calls the existing service is admin-moderation's or the admin panel's territory, not the billing logic."
+  },
+  {
+    "query": "need to expose a new GET /billing/plans endpoint with a different response shape than what's in the OpenAPI spec today",
+    "should_trigger": false,
+    "_near_miss_reason": "phrased as billing work, but the actual change is the wire contract shape — api-contract-change goes first, then this skill implements behind it."
+  },
+  {
+    "query": "want to add a `family_sharing` column to the plans table so we can store that flag for later",
+    "should_trigger": false,
+    "_near_miss_reason": "shares billing vocabulary and even a real out-of-scope feature name, but the concrete ask is a schema + migration — db-migration's job even though the table lives in billing."
+  },
+  {
+    "query": "need to update the App Store screenshots and metadata for the new subscription tiers before we submit",
+    "should_trigger": false,
+    "_near_miss_reason": "shares 'subscription tiers'/store vocabulary, but store listing metadata and screenshots are release-readiness's IAP product config check, not the entitlement/webhook logic this skill implements."
+  },
+  {
+    "query": "write a haiku about a shopping cart for the app's checkout confirmation email",
+    "should_trigger": false,
+    "_teaches": "no real overlap with entitlements-billing despite mentioning checkout — included only as a sanity negative, not a load-bearing near-miss."
+  }
+]

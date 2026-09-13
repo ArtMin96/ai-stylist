@@ -1,0 +1,92 @@
+[
+  {
+    "query": "need to design the tool-contract schema for `check_entitlement` so the chat assistant can tell whether a user has the chat.stylist entitlement before answering, per P15 tool contracts",
+    "should_trigger": true
+  },
+  {
+    "query": "the assistant module's index.ts is still just an empty @Module({}) skeleton, want to know what's actually allowed to go in there once P15 build starts",
+    "should_trigger": true
+  },
+  {
+    "query": "someone added an import of apps/api/src/modules/closet/internal/repository.ts inside apps/api/src/modules/assistant, is that even allowed",
+    "should_trigger": true
+  },
+  {
+    "query": "reviewing a PR that adds a `resolve_context` tool to the chat assistant, want to check it's calling context's public API and not touching a table directly",
+    "should_trigger": true
+  },
+  {
+    "query": "want to sketch out the conversations and messages table shape for the future assistant chat feature per P15 section 7",
+    "should_trigger": true
+  },
+  {
+    "query": "is the chat assistant going to have its own copy of the outfit scoring logic or does it reuse the recommendation engine",
+    "should_trigger": true
+  },
+  {
+    "query": "P15-T08 asks for a prompt/version registry design for the assistant module, where should that live and what does it need to cover",
+    "should_trigger": true
+  },
+  {
+    "query": "assistant-app-services-only keeps failing arch-check on my branch, apps/api/src/modules/assistant seems to be importing something it shouldn't",
+    "should_trigger": true
+  },
+  {
+    "query": "drafting the compose_outfit tool contract for chat — should it call the outfit module's public service or does it need its own logic",
+    "should_trigger": true
+  },
+  {
+    "query": "the outfit recommendation keeps suggesting linen shirts on cold days, need to tighten the hard constraint in the engine",
+    "should_trigger": false,
+    "_near_miss_reason": "the recommendation engine is exactly what assistant is forbidden from re-implementing, but tightening a constraint is recommendation-rules' job, not an assistant-chat task."
+  },
+  {
+    "query": "need to add a markWorn application service to the closet module so chat can eventually call it",
+    "should_trigger": false,
+    "_near_miss_reason": "mentions chat as the eventual consumer, but the actual work — adding a service to closet — is backend-module's job; assistant-chat only covers the assistant side of the call."
+  },
+  {
+    "query": "add a new GET /assistant/conversations endpoint shape to the OpenAPI spec with pagination params",
+    "should_trigger": false,
+    "_near_miss_reason": "names the assistant module directly, but the primary change is the wire contract in packages/contracts — api-contract-change goes first, even though assistant-chat would consume the result."
+  },
+  {
+    "query": "the fal.ai try-on job that assistant's compose_outfit tool would eventually trigger is stuck pending in pg-boss",
+    "should_trigger": false,
+    "_near_miss_reason": "assistant is mentioned as the eventual caller, but the actual defect is in the pg-boss job/provider pipeline — media-ml-pipeline's territory."
+  },
+  {
+    "query": "want to build a chat-style prompt experiment for fashion-intel's trend summarization, not the user-facing assistant module",
+    "should_trigger": false,
+    "_near_miss_reason": "shares 'chat'/'prompt' vocabulary but is fashion-intel's per-item summarization LLM call, not the assistant module — fashion-intel-ingestion owns that."
+  },
+  {
+    "query": "reviewing the assistant module's conversation storage design for consent and deletion-cascade compliance before it ships",
+    "should_trigger": false,
+    "_near_miss_reason": "touches assistant directly, but the ask is specifically a privacy/consent review — security-privacy-review is the primary skill for that pass, even though assistant-chat's Stop section routes there too."
+  },
+  {
+    "query": "billing module's chat.stylist entitlement check keeps throwing a raw 500 instead of a typed ENTITLEMENT_REQUIRED error",
+    "should_trigger": false,
+    "_near_miss_reason": "the entitlement name references chat, but the bug is inside billing's application service — backend-module (billing) owns fixing that, not assistant-chat."
+  },
+  {
+    "query": "want to run assistant's smoke test after touching apps/api/src/main.ts composition root wiring",
+    "should_trigger": false,
+    "_near_miss_reason": "names assistant's test, but the actual change is composition-root wiring shared across all modules — a generic backend-module concern, not assistant-specific tool/service behaviour."
+  },
+  {
+    "query": "add a haiku-writing easter egg command to the marketing site's chatbot widget",
+    "should_trigger": false,
+    "_near_miss_reason": "mentions a chatbot but is unrelated to the apps/api assistant module, its tool contracts, or the app-services-only invariant — no real overlap."
+  },
+  {
+    "query": "chat assistant needs to submit user feedback on a recommendation via a submit_feedback tool call, what's the right way to wire that without duplicating the recommendation module's feedback logic",
+    "should_trigger": true
+  },
+  {
+    "query": "the mobile app's chat screen UI is misaligned on smaller iPhones, the message bubbles overflow the container",
+    "should_trigger": false,
+    "_near_miss_reason": "shares 'chat' vocabulary and even the same feature, but this is a React Native layout bug — mobile-feature owns UI rendering, not the backend assistant module's service-boundary rules."
+  }
+]

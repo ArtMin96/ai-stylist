@@ -1,0 +1,42 @@
+{
+  "skill_name": "recommendation-rules",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Users on cold mornings (below 5°C) keep getting linen shirts suggested in their top outfit. This should be a hard exclusion, not just a scoring penalty — add an H-EXCL rule for it per P09's hard-rule registry.",
+      "expected_output": "The agent adds a new hard-constraint rule in apps/api/src/modules/recommendation/internal/ (stage 3, per planning/09-recommendation-engine.md), assigns it a reason code from the shared-kernel registry (or stops to request one), writes unit + fast-check property tests in apps/api/src/modules/recommendation/tests/ proving the rule excludes the candidate before ranking and that no soft signal can resurrect it, and bumps the rule version + changelog.",
+      "files": [],
+      "assertions": [
+        "The new rule lives under apps/api/src/modules/recommendation/internal/, not in a controller or job handler",
+        "The agent either uses an already-registered reason code or explicitly stops and reports that a new shared-kernel reason code is needed before proceeding",
+        "A fast-check property test asserts the hard-excluded candidate is never resurrected by a soft score, and the agent's report names `just test recommendation` as the command it ran",
+        "The rule-version registry and changelog are updated, and the agent states whether `just rec-replay <id>` was run or is a stub in the current phase",
+        "No import of apps/api/src/modules/avatar/**, apps/mobile/src/render/**, or a 3D/asset type appears in the diff"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "Product wants to weight a new 'recently worn' penalty into the scoring formula so the engine stops repeating the same outfit two days in a row.",
+      "expected_output": "The agent treats this as a soft-signal scoring change: it restates which scoring stage it touches, confirms the change cannot override a hard exclusion, adds/updates a scorer with a documented weight and tie-break behavior, adds property/simulation tests, bumps the rule version, and reports an eval metric delta (or explicitly says the eval suite is a P02 stub and names the stub).",
+      "files": [],
+      "assertions": [
+        "The agent explicitly states the change is a soft signal and cannot resurrect a hard-excluded candidate",
+        "The scoring change is deterministic — no wall-clock or random input introduced — and the agent's report says so",
+        "The agent reports an eval metric delta from `just ml-eval` with real output, or states plainly that the offline eval is a stub in the current phase and names it as such rather than fabricating a number",
+        "The rule-version registry and changelog are updated to reflect the scoring change"
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "A user reported that yesterday's recommendation showed a reason code that didn't match any of the items actually in the outfit — the explanation text looks unrelated to the picks. Fix it.",
+      "expected_output": "The agent treats this as a regression: it reproduces the mismatch by replaying the stored recommendation via `just rec-replay <id>` (or explains why that's unavailable), writes a failing test that captures the trace/reason-code mismatch, fixes only the reason-code selection or trace logic in apps/api/src/modules/recommendation/**, and reruns the tests to show green — it never invents a new explanation-generation path outside the decision trace.",
+      "files": [],
+      "assertions": [
+        "The agent's report includes the actual failing test output captured before the fix, not a paraphrase",
+        "The fix stays inside apps/api/src/modules/recommendation/** (plus docs/modules/recommendation.md if invariants changed) — no edit to packages/shared-kernel/** reason-code registry unless the agent explicitly stops to request a registry change first",
+        "The agent confirms the fixed explanation still derives from the decision trace rather than being generated after the fact",
+        "The agent reruns `just test recommendation` after the fix and pastes the passing output"
+      ]
+    }
+  ]
+}

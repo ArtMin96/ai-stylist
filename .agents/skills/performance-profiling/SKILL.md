@@ -1,6 +1,10 @@
 ---
 name: performance-profiling
-description: Investigate or improve performance against documented budgets — API latency, job throughput, mobile startup/interaction, 3D frame time, memory, app size, AI cost/latency, CI gate duration. Use when something is slow, a budget is exceeded, or a perf claim must be verified. Measurement first, always.
+description: Investigate or improve performance against documented budgets — API latency, job throughput, mobile startup/interaction, 3D frame time, memory, app size, AI cost/latency, CI gate duration. Use when something is slow, a budget from `planning/13-testing-quality-and-performance.md` is exceeded or suspected, or a PR's performance claim needs verified before/after numbers. Not for AI provider spend policy — use `media-ml-pipeline` (doc 10 owns cost budgets); not for 3D render-quality trade-offs on their own — use `native-3d-assets`, which calls this skill's measurement procedure. Measurement first, always: no before/after numbers from the same procedure, no perf claim.
+metadata:
+  modules:
+  last-reviewed: 2026-09-13
+  owner-agent: platform-engineer
 ---
 
 # Performance Profiling
@@ -21,7 +25,14 @@ description: Investigate or improve performance against documented budgets — A
 ## Workflow
 
 1. Restate the budget, its target, and the measurement procedure. No budget? Propose one as a hypothesis in doc 13 terms first; do not optimise toward an undefined target.
-2. Measure before touching code: fixed seed data (`packages/seed-data/`), named device tier or environment, ≥ 5 runs, median + p95. Tools by area: API — OTel traces + Postgres `EXPLAIN ANALYZE`; jobs — pg-boss job timings (Grafana job metrics), outbox queue age; mobile — React DevTools profiler, Perfetto on device; 3D — on-device frame-time capture on a low-tier device; size — bundle analyzers; CI — GHA job timings.
+2. Measure before touching code: fixed seed data (`packages/seed-data/`), named device tier or environment, ≥ 5 runs, median + p95. Exact capture procedure per surface:
+   - **API** — the OTel trace span for the exact route + params under test, read from the Grafana Cloud trace view (doc 14 §2); for a suspected query hotspot, `EXPLAIN (ANALYZE, BUFFERS)` the query against the same Postgres instance the trace ran against.
+   - **Jobs** — pg-boss job duration and outbox queue age for the same job type and payload shape, read from the Grafana job-metrics dashboard (doc 14 §4); exclude idempotent-retry runs from the timing set, they are not comparable.
+   - **Mobile startup/interaction** — Android: an on-device `perfetto` system trace (`adb shell perfetto`) around the traced interaction on the doc 13 §7 low/mid-tier device, inspected in the Perfetto UI; iOS: since the team has no local Mac (doc 15 §3), capture via an Xcode Instruments run against a TestFlight/EAS dev-profile build on the cloud macOS lane (ADR-0002) — state in the report which lane produced the trace, and if neither is available that session, say so rather than substituting an estimate.
+   - **3D frame time / memory** — on-device capture on a real low-tier Android device (doc 13 §7); `native-3d-assets` owns the exact avatar/garment scenario, this skill owns the before/after discipline.
+   - **App / bundle size** — the artifact size reported by `just mobile-android-build` / `just mobile-ios-build`'s build output, compared against the doc 13 §12 size budget.
+   - **CI gate duration** — the GitHub Actions job wall-clock time from the run (`gh run view`), compared against the `ci.pr_gate_duration` budget.
+   - **AI cost/latency** — the doc 10 cost dashboard plus the OTel span around the provider call; never re-run a paid call just to re-measure it — use recorded spans from real traffic or an already-budgeted eval run.
 3. Profile to the actual hotspot; write the hypothesis down before changing code.
 4. Optimise the smallest thing that moves the metric. Behaviour preserved; tests stay green; no correctness traded for speed without a human decision.
 5. Measure after with the same procedure and environment. The improvement is the delta between two recorded runs — never estimated, never from a different machine.
@@ -43,6 +54,7 @@ Done checklist: before/after from the same procedure · ≥ 5 runs, median + p95
 
 ## Stop / escalation
 
+- **No measurement, no claim (the stop condition, not a suggestion):** if the before/after numbers cannot be captured with the same procedure on the same environment — device unavailable, provider call too costly to repeat, macOS lane unreachable for an iOS trace — stop and report the gap instead of estimating, extrapolating, or "roughly remembering" a number (CLAUDE.md "Testing rules" and "Honesty about results").
 - Meeting the budget needs an architectural change (cache layer, LOD system, schema change, provider swap) → findings + options to a human/ADR.
 - Budget looks wrong (unachievable on the low-tier device, or trivially loose) → propose a revision in doc 13; do not ignore it.
 - Optimisation would degrade output quality → explicit human trade-off.

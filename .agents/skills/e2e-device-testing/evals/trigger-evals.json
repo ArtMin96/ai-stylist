@@ -1,0 +1,82 @@
+[
+  {
+    "query": "need to add a maestro flow for the closet single-item capture screen in apps/mobile/e2e, camera should be mocked since we're on the emulator",
+    "should_trigger": true
+  },
+  {
+    "query": "the avatar golden render diff is flagging changes after I tweaked the pose camera angles in P04's harness, do I just run golden-accept or what",
+    "should_trigger": true
+  },
+  {
+    "query": "we need to run the onboarding-burst k6 profile from doc 13 before the P09 launch gate, how do we kick that off",
+    "should_trigger": true
+  },
+  {
+    "query": "which device tier (low/mid/high) do we actually run the onboarding maestro journey on for the nightly device farm",
+    "should_trigger": true
+  },
+  {
+    "query": "the two-device convergence closet sync test needs a new maestro scenario: airplane mode, edit stuff, reconnect, check both devices converge",
+    "should_trigger": true
+  },
+  {
+    "query": "screenshot diff baseline for the outfit-on-avatar collage looks different after the P10 morph preset changes, want to review before accepting anything",
+    "should_trigger": true
+  },
+  {
+    "query": "set up the account export + deletion maestro flows on ios and android per P03-T15, wire it into the nightly tier",
+    "should_trigger": true
+  },
+  {
+    "query": "need the webhook-storm k6 load profile ready for revenuecat replay testing before beta",
+    "should_trigger": true
+  },
+  {
+    "query": "smoke.yaml only checks the header text, can you extend it so it also asserts the updated consent toggle copy",
+    "should_trigger": true
+  },
+  {
+    "query": "our pre-release qualification device-farm run is missing the low-tier android device (galaxy a16 class), need to add that lane",
+    "should_trigger": true
+  },
+  {
+    "query": "the closet batch-capture RNTL test keeps flaking in CI, can you fix it so it stops failing intermittently",
+    "should_trigger": false
+  },
+  {
+    "query": "3D avatar frame time on the low-tier device dropped below the budget after the last morph change, need to profile where the time is going",
+    "should_trigger": false
+  },
+  {
+    "query": "want to add a new pose + camera preset to the avatar rendering pipeline under apps/mobile/src/render",
+    "should_trigger": false
+  },
+  {
+    "query": "a stored recommendation replay doesn't match after we changed the scoring weights, can you check what's wrong",
+    "should_trigger": false
+  },
+  {
+    "query": "want to bump the beta build number and run through the testflight submission checklist before the pre-release review",
+    "should_trigger": false
+  },
+  {
+    "query": "closet search endpoint p95 latency blew past budget after the new sync index landed, need to dig into why",
+    "should_trigger": false
+  },
+  {
+    "query": "need unit tests added for the quiet-hours check in the notifications module, coverage is thin there",
+    "should_trigger": false
+  },
+  {
+    "query": "need to wire up assets-validate checks for the new garment mesh so glTF/KTX2 budgets are enforced",
+    "should_trigger": false
+  },
+  {
+    "query": "the e2e README says maestro can't run locally on this linux box, can you just fix the github actions workflow yaml instead so ci covers it",
+    "should_trigger": false
+  },
+  {
+    "query": "want to add a shared retry-with-backoff utility script under scripts/ that a few different load-test profiles could reuse",
+    "should_trigger": false
+  }
+]

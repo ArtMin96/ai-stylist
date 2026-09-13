@@ -1,0 +1,82 @@
+[
+  {
+    "query": "before I add a new formatPrice helper to apps/api/src/modules/closet/internal, can you check if something like it already exists in shared-kernel",
+    "should_trigger": true
+  },
+  {
+    "query": "just arch-check failed on my branch with an allowed-edges-only violation, apps/api/src/modules/recommendation is importing something from apps/mobile/src/render, can you look into it",
+    "should_trigger": true
+  },
+  {
+    "query": "review this diff before I open the PR — added a new mapper in apps/api/src/modules/media/internal, want to make sure I'm not duplicating anything",
+    "should_trigger": true
+  },
+  {
+    "query": "did I break a module boundary by importing apps/api/src/modules/billing/internal/ledger.ts directly from the closet service instead of going through billing's index.ts",
+    "should_trigger": true
+  },
+  {
+    "query": "is this duplicated? I added a slugify function to apps/mobile/src/lib and I have a feeling there's already one in packages/shared-kernel",
+    "should_trigger": true
+  },
+  {
+    "query": "someone on the team hand-edited packages/contracts/gen/openapi.d.ts directly instead of regenerating it after the schema change, is that going to cause problems",
+    "should_trigger": true
+  },
+  {
+    "query": "can you give this PR an architecture review before I merge it into main, it touches three modules",
+    "should_trigger": true
+  },
+  {
+    "query": "the recommendation module in this branch now imports a type from apps/mobile/src/render, is that actually allowed by our rules",
+    "should_trigger": true
+  },
+  {
+    "query": "want a second pair of eyes on the module boundaries for the new billing webhook handler before it merges",
+    "should_trigger": true
+  },
+  {
+    "query": "does this new closet pricing helper already exist somewhere else in the repo before I write it from scratch",
+    "should_trigger": true
+  },
+  {
+    "query": "can you review this new RevenueCat webhook handler to make sure the signature check can't be bypassed",
+    "should_trigger": false
+  },
+  {
+    "query": "does this new error response leak the user's selfie url or face-derived data anywhere",
+    "should_trigger": false
+  },
+  {
+    "query": "the identity module needs a new application service for resetting a forgotten password, where do i start",
+    "should_trigger": false
+  },
+  {
+    "query": "the outfit recommendation keeps suggesting linen shirts on days below 10°C, need to tighten the hard constraint",
+    "should_trigger": false
+  },
+  {
+    "query": "add a season column to the items table in closet and backfill existing rows to 'all-season'",
+    "should_trigger": false
+  },
+  {
+    "query": "trial users aren't losing access to the closet upload feature when their RevenueCat entitlement expires",
+    "should_trigger": false
+  },
+  {
+    "query": "want to run the closet module's tests after a 3D avatar render change, to make sure garment fit didn't regress",
+    "should_trigger": false
+  },
+  {
+    "query": "double check docs/modules/closet.md still matches the code after this PR merges",
+    "should_trigger": false
+  },
+  {
+    "query": "the eslint max-lines rule keeps warning on a logger.ts file that hasn't changed in months, can we bump the threshold",
+    "should_trigger": false
+  },
+  {
+    "query": "the closet screen in the app crashes when you swipe past the last item in the wardrobe grid",
+    "should_trigger": false
+  }
+]

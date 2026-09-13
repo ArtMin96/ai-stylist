@@ -1,0 +1,92 @@
+[
+  {
+    "query": "need to add a quiet-hours check to the notifications module so users in apps/api/src/modules/notifications don't get pushed between 10pm and 7am their local time",
+    "should_trigger": true
+  },
+  {
+    "query": "we're finally building the FCM/APNs port for push, per P09-T16 — where does the adapter live and how do i bind it without importing the SDK into the domain",
+    "should_trigger": true
+  },
+  {
+    "query": "the daily-outfit push notification keeps sending twice when the outbox relay redelivers the event, need to fix the dedup",
+    "should_trigger": true
+  },
+  {
+    "query": "user opted out of marketing pushes in settings but is still getting notified, bug is somewhere in apps/api/src/modules/notifications",
+    "should_trigger": true
+  },
+  {
+    "query": "add timezone-aware scheduling so the morning outfit push actually fires at 7am local time instead of 7am UTC for every user",
+    "should_trigger": true
+  },
+  {
+    "query": "want to record delivery receipts (sent/delivered/failed) for pushes in a `deliveries` table, what's the right shape for that in the notifications module",
+    "should_trigger": true
+  },
+  {
+    "query": "notification_prefs table needs an opt-out flag per notification kind, and the send path needs to check it before calling FCM",
+    "should_trigger": true
+  },
+  {
+    "query": "APNs is rejecting our push payload in staging, need to debug the adapter in apps/api/src/platform without touching the domain module",
+    "should_trigger": true
+  },
+  {
+    "query": "how do we make sure a redelivered outbox event for a push doesn't create a second row in deliveries",
+    "should_trigger": true
+  },
+  {
+    "query": "the notifications module's index.ts is empty (P02 skeleton) and now we need to actually export a service for scheduling the daily push",
+    "should_trigger": true
+  },
+  {
+    "query": "add a new POST /notifications/test-send endpoint with a different request body shape than what's in the OpenAPI spec right now",
+    "should_trigger": false,
+    "_near_miss_reason": "mentions notifications but the primary change is the wire contract shape — api-contract-change goes first, then this skill wires the delivery."
+  },
+  {
+    "query": "users on the free tier shouldn't get more than one daily-outfit push per day even if they re-trigger recommendations, need to gate that on their entitlement",
+    "should_trigger": false,
+    "_near_miss_reason": "touches the daily-outfit push but the actual decision is an entitlement/tier gate — entitlements-billing owns who is allowed to use a capability, not delivery mechanics."
+  },
+  {
+    "query": "reviewing the diff for the new push-delivery port before it merges, want a second pair of eyes on whether it leaks the FCM SDK into the domain",
+    "should_trigger": false,
+    "_near_miss_reason": "about notifications' port, but the task is reviewing a diff for boundary violations — architecture-review, not implementation."
+  },
+  {
+    "query": "does sending a push notification with the user's precise location in the payload need a privacy sign-off before we ship it",
+    "should_trigger": false,
+    "_near_miss_reason": "shares the word 'push notification' but the actual question is a sensitive-data/consent decision — security-privacy-review first, this skill only handles delivery mechanics."
+  },
+  {
+    "query": "add a notification_prefs column for quiet-hours start/end and write the Drizzle migration for it",
+    "should_trigger": false,
+    "_near_miss_reason": "shares 'notification_prefs' and 'quiet-hours' vocabulary, but the ask is explicitly a schema + migration — db-migration's job, even though notifications-delivery consumes that column afterward."
+  },
+  {
+    "query": "the push notification banner on the lock screen looks wrong on iOx — the text is truncated and the icon is missing",
+    "should_trigger": false,
+    "_near_miss_reason": "about 'push notification' but it's a mobile UI/rendering bug in how the OS displays it, not backend delivery logic — mobile-feature owns the client side."
+  },
+  {
+    "query": "generic module work in apps/api/src/modules/notifications: need a plain CRUD service for reading a user's own notification_prefs row, nothing about sending",
+    "should_trigger": false,
+    "_near_miss_reason": "shares the module name and even the table name, but is asking for generic module scaffolding with no scheduling/quiet-hours/port/dedup content — backend-module handles the generic case; this skill is for the delivery-specific rules."
+  },
+  {
+    "query": "admin needs a queue to review flagged notification content before it goes out to users, similar to the moderation queue",
+    "should_trigger": false,
+    "_near_miss_reason": "mentions notification content, but the moderation queue itself is admin's invariant (admin-moderation), not a delivery-mechanics change in the notifications module."
+  },
+  {
+    "query": "assistant chat wants to send the user a message when the daily outfit is ready, should it call the notifications module directly or go through the same application service everyone else uses",
+    "should_trigger": false,
+    "_near_miss_reason": "adjacent to notifications delivery, but the actual question is about assistant's own architectural rule (only call the same application services as any other client) — assistant-chat is where that gets resolved, not a change inside notifications itself."
+  },
+  {
+    "query": "write a short blurb for the App Store listing about how the app sends helpful daily reminders",
+    "should_trigger": false,
+    "_teaches": "BAD near-miss negative — no real overlap with delivery mechanics at all, mentioning 'reminders' loosely; useful as a sanity check that a description doesn't over-trigger on unrelated marketing copy."
+  }
+]

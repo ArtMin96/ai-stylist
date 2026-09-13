@@ -3,11 +3,11 @@
 > Module names are canonical per [SPINE §3](../../planning/SPINE.md). Path: `apps/api/src/modules/profile`. This contract is the module's source of truth; code that contradicts it is wrong until a DEC entry says otherwise.
 
 - **Responsibility (one sentence):** Measurements, body data, preferences, style identity, and units/locale for a user.
-- **Owner:** @team (placeholder — see `CODEOWNERS`) · **Status:** skeleton (P02) · **Last updated:** 2026-09-09
+- **Owner:** @team (placeholder — see `CODEOWNERS`) · **Status:** skeleton (P02) · **Last updated:** 2026-09-13
 
 ## Public interface
 
-Public interface: `index.ts` only; nothing exported yet (P02 skeleton). Everything under `internal/` is blocked by the `public-api-only` boundary rule (`just arch-check`, `just lint`).
+Public interface: `index.ts` only. P02 skeleton: the sole export is the empty NestJS `ProfileModule` class (composition-root wiring, imported by `tests/profile.smoke.test.ts`); no domain service, command, query, type, or port is exported yet. Everything under `internal/` is blocked by the `public-api-only` boundary rule (`just arch-check`, `just lint`).
 
 | Export | Kind (service/command/query/type/port) | Purpose  |
 | ------ | -------------------------------------- | -------- |

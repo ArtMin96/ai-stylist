@@ -1,0 +1,82 @@
+[
+  {
+    "query": "closet keeps double-logging a wear event when you mark an item worn twice in one day, can you fix that",
+    "should_trigger": true
+  },
+  {
+    "query": "billing's trial-expiry tests only cover the happy path, need to beef up coverage before the grace-period change ships",
+    "should_trigger": true
+  },
+  {
+    "query": "the sync-drain test for 50 queued mutations has failed three times this week in CI with no related code changes, seems flaky",
+    "should_trigger": true
+  },
+  {
+    "query": "identity's rotation-reuse revocation test is broken after someone touched the auth service, need a regression test proving it before fixing",
+    "should_trigger": true
+  },
+  {
+    "query": "a user reported that changing units from metric to imperial and back corrupts their stored measurement value, need to investigate and fix",
+    "should_trigger": true
+  },
+  {
+    "query": "notifications module quiet-hours check isn't covered by any test and we're about to change its logic, add tests first",
+    "should_trigger": true
+  },
+  {
+    "query": "the outfit fallback-chain test intermittently times out in the nightly run, want to quarantine it properly with an issue instead of just skipping it",
+    "should_trigger": true
+  },
+  {
+    "query": "media module's dedup logic double-processes the same upload sometimes, need a fix with a proper regression test",
+    "should_trigger": true
+  },
+  {
+    "query": "before touching the recommendation candidate-generation code for this bugfix, I want to prove the bug with a failing test first",
+    "should_trigger": true
+  },
+  {
+    "query": "context module's weather-cache invariant test is passing locally but red in CI every third run, investigate the flake",
+    "should_trigger": true
+  },
+  {
+    "query": "need to add a maestro flow for the closet capture screen with the camera mocked in the emulator",
+    "should_trigger": false
+  },
+  {
+    "query": "the avatar golden render diff shows changes after a morph-mapping tweak, should I run golden-accept",
+    "should_trigger": false
+  },
+  {
+    "query": "want to run the onboarding-burst k6 profile before the P09 launch gate",
+    "should_trigger": false
+  },
+  {
+    "query": "3D avatar frame time on the low-tier device dropped below budget after the last render change, need to profile it",
+    "should_trigger": false
+  },
+  {
+    "query": "closet search endpoint p95 latency budget is blown after the new sync index, need to find the hotspot",
+    "should_trigger": false
+  },
+  {
+    "query": "adding a new markWorn application service to the closet module per the wear_events table design",
+    "should_trigger": false
+  },
+  {
+    "query": "need to add a new endpoint for exporting closet items as CSV, what's the request/response shape look like",
+    "should_trigger": false
+  },
+  {
+    "query": "want to review this PR's diff for module boundary violations before it merges",
+    "should_trigger": false
+  },
+  {
+    "query": "checking whether the new webhook handler in billing is safe from a privacy and consent standpoint before we ship it",
+    "should_trigger": false
+  },
+  {
+    "query": "device-farm run for the pre-release qualification tier is missing the low-tier android device, need to add that lane",
+    "should_trigger": false
+  }
+]

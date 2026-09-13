@@ -294,7 +294,7 @@ Nothing. No keys, no dashboard, no GitHub secrets.
 
 ### Do not
 
-- Do not run a second queue service until the P02-T08 acceptance suite (kill/retry, idempotency, DLQ, replay, per-user cancellation, deletion/export scenarios) proves pg-boss insufficient; the fallback is then self-hosted Trigger.dev per DEC-41, decided through an ADR, not a quiet swap.
+- Do not run a second queue service until the P02-T08 acceptance suite (kill/retry, idempotency, DLQ, replay, per-user cancellation, deletion/export scenarios) proves pg-boss insufficient; the fallback is then the self-hosted queue service recorded in DEC-41, adopted only through an ADR, not a quiet swap.
 - Do not put business logic into job handlers; they are adapters (`CLAUDE.md` invariants).
 
 ### Verify

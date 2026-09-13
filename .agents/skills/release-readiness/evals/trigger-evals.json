@@ -1,0 +1,92 @@
+[
+  {
+    "query": "cutting a beta for TestFlight and Play internal this week, commit is on main, can you run through what needs to be true before we push it",
+    "should_trigger": true
+  },
+  {
+    "query": "we're at 25% staged rollout on Play for build 44 and crash-free sessions just dipped, should we keep going or pull back",
+    "should_trigger": true
+  },
+  {
+    "query": "is build 42 ready for store submission? need the full checklist with evidence before I hand it to the founder to actually submit",
+    "should_trigger": true
+  },
+  {
+    "query": "how long do we usually soak in beta before going to production rollout, need a number for the release plan doc",
+    "should_trigger": true
+  },
+  {
+    "query": "checking whether there's any expired feature flag riding along in this release candidate before we promote it",
+    "should_trigger": true
+  },
+  {
+    "query": "want to verify the android AAB and ios build from the same commit SHA both made it to their respective internal channels before I schedule the beta",
+    "should_trigger": true
+  },
+  {
+    "query": "store review keeps flagging our subscription screen, need to know what our fallback plan is if this submission gets rejected again",
+    "should_trigger": true
+  },
+  {
+    "query": "need to write the rollback plan for this release before we start the staged rollout, per the pre-release checklist",
+    "should_trigger": true
+  },
+  {
+    "query": "the crash-free session gate tripped overnight during the ios phased rollout, what's the standard response here",
+    "should_trigger": true
+  },
+  {
+    "query": "want to know if it's safe to promote the current internal build straight to the beta channel given what changed since the last beta",
+    "should_trigger": true
+  },
+  {
+    "query": "the migration for the new wear_events table needs to run against staging before we can even think about a release candidate this week",
+    "should_trigger": false,
+    "_near_miss_reason": "release-readiness's gate checklist references 'pending migrations applied to staging' as evidence to collect, but actually running/writing the migration is db-migration's job, not this skill's."
+  },
+  {
+    "query": "need to add a signature check on the RevenueCat webhook handler before this ships, noticed it's currently unauthenticated",
+    "should_trigger": false,
+    "_near_miss_reason": "shows up in a pre-ship context ('before this ships') but the actual work is a security fix on a webhook handler — security-privacy-review plus the owning engineer, not release readiness."
+  },
+  {
+    "query": "want to measure whether the app's cold-start time is actually within budget on a low-tier device before we lock this release",
+    "should_trigger": false,
+    "_near_miss_reason": "device-matrix perf is one of release-readiness's gate items, but actually capturing the measurement is performance-profiling's procedure; release-readiness only cites the resulting evidence."
+  },
+  {
+    "query": "our EAS vs GitHub Actions macOS iOS build lane comparison has been running for two weeks now, time to write up which one wins and update the ADR",
+    "should_trigger": false,
+    "_near_miss_reason": "release-readiness reads ADR-0002 to know which lane is live, but writing the ADR decision itself is a P02-T15 infra/tooling task, not a release-promotion task."
+  },
+  {
+    "query": "add a new PostHog feature flag for the redesigned paywall with a 90-day expiry and an owner, want to gate the rollout behind it",
+    "should_trigger": false,
+    "_near_miss_reason": "creating a new flag is implementation work for the owning engineer following the feature-flags-rollout reference; release-readiness only checks flag hygiene as a release gate, it doesn't create flags."
+  },
+  {
+    "query": "want to add a Grafana panel so we can see crash-free sessions trending over time instead of checking manually every release",
+    "should_trigger": false,
+    "_near_miss_reason": "crash-free sessions are exactly what the release crash gate monitors, but building the dashboard panel is observability-analytics' job, not a release-promotion task."
+  },
+  {
+    "query": "need to fix the actual bug causing the crash spike that halted last week's rollout",
+    "should_trigger": false,
+    "_near_miss_reason": "release-readiness recommends the halt and hands the fix off; writing the fix itself is testing-regression or the owning engineer's job."
+  },
+  {
+    "query": "reviewing this diff to see if the new caching layer duplicates something that already exists in shared-kernel before it merges",
+    "should_trigger": false,
+    "_near_miss_reason": "a pre-merge review task, but it's a duplication/boundary check — architecture-review's lens, unrelated to release-channel promotion."
+  },
+  {
+    "query": "want to check whether our privacy nutrition label / Data safety form values still match what the app actually collects, ahead of next quarter's audit",
+    "should_trigger": false,
+    "_near_miss_reason": "store privacy declarations show up as a release-readiness gate item, but a standalone compliance audit outside the context of an actual release candidate is security-privacy-review's territory."
+  },
+  {
+    "query": "onboarding is dropping too many users at the paywall step, want to run an experiment on the copy",
+    "should_trigger": false,
+    "_near_miss_reason": "mentions an experiment (flag-adjacent vocabulary) but this is a product/growth change to paywall copy, not a release-channel gate or rollout decision."
+  }
+]

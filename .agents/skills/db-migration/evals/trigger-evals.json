@@ -1,0 +1,92 @@
+[
+  {
+    "query": "need to add a season enum column to closet's items table and write the migration for it",
+    "should_trigger": true
+  },
+  {
+    "query": "the outfit module needs a new table to store computed outfit scores with a pgvector embedding column for similarity search",
+    "should_trigger": true
+  },
+  {
+    "query": "billing's entitlements table is missing an index on (user_id, status) and queries are doing full table scans, need to add it",
+    "should_trigger": true
+  },
+  {
+    "query": "identity module needs a deleted_at column on the users table for soft delete, plus the backfill and a rollback file",
+    "should_trigger": true
+  },
+  {
+    "query": "media's asset_derivatives table needs a new jsonb column for provenance metadata, and I need to write the down migration too",
+    "should_trigger": true
+  },
+  {
+    "query": "just db-migrate is failing locally after I edited profile's internal/schema.ts, drizzle says there's a pending migration mismatch",
+    "should_trigger": true
+  },
+  {
+    "query": "notifications needs a new deliveries table with an FK to notification_prefs, want to make sure I do expand-contract right and don't lock anything",
+    "should_trigger": true
+  },
+  {
+    "query": "want to backfill the new nullable column on closet's item_states with a batched idempotent script before making it NOT NULL next release",
+    "should_trigger": true
+  },
+  {
+    "query": "context module's weather cache table needs a unique index on (location_id, date), how do I generate that migration safely",
+    "should_trigger": true
+  },
+  {
+    "query": "avatar's measurements table schema needs a rollback file, I generated the migration but forgot the down.sql",
+    "should_trigger": true
+  },
+  {
+    "query": "want to add a markWorn application service to closet that records a wear event using the existing wear_events table and updates the item's last-worn date",
+    "should_trigger": false,
+    "_near_miss_reason": "mentions a closet table but there is no schema change — the table already exists, so this is application-service work for backend-module."
+  },
+  {
+    "query": "closet's items already have a season column but the upload screen never sends the right value, values are always landing as null",
+    "should_trigger": false,
+    "_near_miss_reason": "names a real closet column but the defect is in the client/wire path, not the schema — api-contract-change or mobile-feature, not a migration."
+  },
+  {
+    "query": "need a new GET /closet/items filter parameter for season, should be part of the OpenAPI spec before anyone builds against it",
+    "should_trigger": false,
+    "_near_miss_reason": "closet/items vocabulary overlaps db-migration, but the actual change is the wire contract shape — api-contract-change owns that."
+  },
+  {
+    "query": "the recommendation engine keeps preferring heavy layered items on days above 25°C, need to tighten the hard constraint",
+    "should_trigger": false,
+    "_near_miss_reason": "no schema or table involved at all — this is a scoring/constraint change, recommendation-rules' territory."
+  },
+  {
+    "query": "closet's tests started failing after someone renamed a field in packages/shared-kernel, need to fix the closet module so tests pass again",
+    "should_trigger": false,
+    "_near_miss_reason": "a regression in module code from a shared-kernel rename, not a schema change — testing-regression / backend-module."
+  },
+  {
+    "query": "reviewing the migration diff for the new billing credits table before it merges, want a second pair of eyes on backwards compatibility and locking",
+    "should_trigger": false,
+    "_near_miss_reason": "the diff was produced by db-migration work, but reviewing someone else's migration for boundary/safety issues is architecture-review's task, not authoring a new one."
+  },
+  {
+    "query": "the platform outbox relay is dropping events under load, might need to tune the polling batch size or the FOR UPDATE SKIP LOCKED query",
+    "should_trigger": false,
+    "_near_miss_reason": "touches platform_outbox by name, but the fix is relay/polling behaviour in the adapter, not a schema or migration change — backend-module's port-adapter work."
+  },
+  {
+    "query": "want to add a clearer validation error message when low_stock_threshold is left blank on the closet upload screen",
+    "should_trigger": false,
+    "_near_miss_reason": "shares the column name with a real migration task, but this is client-side form validation copy — mobile-feature."
+  },
+  {
+    "query": "just db-seed isn't giving me enough synthetic wardrobe rows to test the closet grid pagination locally",
+    "should_trigger": false,
+    "_near_miss_reason": "GOOD near-miss: real db-related `just` recipe and packages/db-adjacent vocabulary, but seeding synthetic rows is not a schema or migration change — no schema.ts edit, no migration file."
+  },
+  {
+    "query": "write a short changelog entry for this week's release notes",
+    "should_trigger": false,
+    "_near_miss_reason": "BAD near-miss — no shared vocabulary or plausible overlap with db-migration at all; kept only as a sanity check that the description doesn't over-trigger on unrelated writing tasks."
+  }
+]

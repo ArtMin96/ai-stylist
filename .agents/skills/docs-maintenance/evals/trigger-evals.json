@@ -1,0 +1,82 @@
+[
+  {
+    "query": "just docs-check is failing with DC-01 saying docs/modules/context.md doesn't exist even though apps/api/src/modules/context is right there, can you fix that",
+    "should_trigger": true
+  },
+  {
+    "query": "we just added a wear_events table to closet's internal/schema.ts, need to update the closet module contract's Owned data table before the PR merges",
+    "should_trigger": true
+  },
+  {
+    "query": "i created docs/adr/0004-otel-backend-choice.md yesterday but forgot to add the row to the adr index, can you sync that up",
+    "should_trigger": true
+  },
+  {
+    "query": "wrapping up for the day, need a handoff entry in planning/PROGRESS.md and the root PROGRESS.md pointer synced before i close this terminal",
+    "should_trigger": true
+  },
+  {
+    "query": "the assistant module's index.ts now exports a startConversation command but docs/modules/assistant.md still says 'none yet', that drift needs fixing",
+    "should_trigger": true
+  },
+  {
+    "query": "just docs-check keeps complaining about a stale last-reviewed date on the media module contract, can you refresh it since nothing else actually changed",
+    "should_trigger": true
+  },
+  {
+    "query": "root PROGRESS.md says P02 is IN_PROGRESS but planning/PROGRESS.md's notes column got updated last week and they don't match anymore, sync them",
+    "should_trigger": true
+  },
+  {
+    "query": "someone renamed apps/api/src/jobs/index.ts wrong in a skill file a while back and docs-check is flagging a dead path reference, go find and fix the broken references",
+    "should_trigger": true
+  },
+  {
+    "query": "is the billing module contract stale after last week's entitlement changes landed, can you check docs-check and update it if so",
+    "should_trigger": true
+  },
+  {
+    "query": "just docs-check --fixtures is red on DC-04, the adr folder and the readme index list are out of sync, please reconcile them",
+    "should_trigger": true
+  },
+  {
+    "query": "add a markWorn command to the closet module in apps/api/src/modules/closet and export it from index.ts",
+    "should_trigger": false
+  },
+  {
+    "query": "review this diff for module-boundary violations before it merges, want a second pair of eyes",
+    "should_trigger": false
+  },
+  {
+    "query": "the shellcheck lint on scripts/docs/docs-check.sh itself is failing after someone edited it, can you fix the script",
+    "should_trigger": false
+  },
+  {
+    "query": "add a new just recipe for regenerating the contracts client from packages/contracts",
+    "should_trigger": false
+  },
+  {
+    "query": "closet's tests are failing after someone renamed a field in packages/shared-kernel, fix the module so tests pass again",
+    "should_trigger": false
+  },
+  {
+    "query": "need to expose a new GET /closet/items/{id} endpoint with a different response shape and regenerate the client",
+    "should_trigger": false
+  },
+  {
+    "query": "run the release readiness check and give me a go/no-go before we submit to TestFlight",
+    "should_trigger": false
+  },
+  {
+    "query": "write a migration adding a season column to items and backfill existing rows to 'all-season'",
+    "should_trigger": false
+  },
+  {
+    "query": "add a synthetic fixture for a closet item to packages/seed-data for the new wear_events table",
+    "should_trigger": false
+  },
+  {
+    "query": "the fal.ai try-on job for a closet item is stuck pending in pg-boss and never completes, can you look at the worker",
+    "should_trigger": false
+  }
+]

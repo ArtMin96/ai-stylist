@@ -1,0 +1,82 @@
+[
+  {
+    "query": "need to add a `markWorn` method to the closet module in apps/api/src/modules/closet, should update the item's last worn date and log a wear event",
+    "should_trigger": true
+  },
+  {
+    "query": "the identity module needs a new application service for resetting a forgotten password, where do i even start",
+    "should_trigger": true
+  },
+  {
+    "query": "can someone add an outbox-based email trigger for when a user finishes onboarding? goes in the profile module i think",
+    "should_trigger": true
+  },
+  {
+    "query": "adding a port adapter for the storage provider under apps/api/src/platform, need to bind it in app.module.ts",
+    "should_trigger": true
+  },
+  {
+    "query": "billing module keeps throwing a raw error instead of problem+json, need to fix the application service in apps/api/src/modules/billing",
+    "should_trigger": true
+  },
+  {
+    "query": "want to add an archiveItem command to closet that soft-deletes an item and its wear history",
+    "should_trigger": true
+  },
+  {
+    "query": "notifications module — add an internal service that decides whether a push is allowed based on the user's quiet hours setting",
+    "should_trigger": true
+  },
+  {
+    "query": "just found out the admin module doesn't have an application service for suspending a user account yet, need to build that",
+    "should_trigger": true
+  },
+  {
+    "query": "assistant module calls the closet http endpoint directly instead of going through the shared application service, need to fix that so it goes through the same path as every other client",
+    "should_trigger": true
+  },
+  {
+    "query": "the context module's ContextProvider registry needs a new occasion provider that reads holiday data — does the adapter binding go in the module itself or over in platform",
+    "should_trigger": true
+  },
+  {
+    "query": "add a `season` column to the items table in closet and backfill existing rows to 'all-season'",
+    "should_trigger": false
+  },
+  {
+    "query": "need to expose a new GET /closet/items/{id} endpoint with a different response shape than what's currently in the OpenAPI spec",
+    "should_trigger": false
+  },
+  {
+    "query": "the outfit recommendation keeps suggesting linen shirts on days below 10°C, need to tighten the hard constraint",
+    "should_trigger": false
+  },
+  {
+    "query": "trial users aren't losing access to the closet upload feature when their RevenueCat entitlement expires",
+    "should_trigger": false
+  },
+  {
+    "query": "the closet screen in the app crashes when you swipe past the last item in the wardrobe grid",
+    "should_trigger": false
+  },
+  {
+    "query": "fal.ai try-on job for a closet item is stuck in pending in pg-boss and never completes",
+    "should_trigger": false
+  },
+  {
+    "query": "closet's internal/schema.ts diverges from what's actually in postgres after the last migration, can you reconcile it",
+    "should_trigger": false
+  },
+  {
+    "query": "reviewing the diff for the new billing webhook handler before it merges, want a second pair of eyes on the module boundaries",
+    "should_trigger": false
+  },
+  {
+    "query": "add a `low_stock_threshold` column to closet's item_states table and write the migration for it",
+    "should_trigger": false
+  },
+  {
+    "query": "want to add a new licensed content source to the fashion-intel ingestion pipeline, needs rights-basis metadata recorded before it can publish anything",
+    "should_trigger": false
+  }
+]

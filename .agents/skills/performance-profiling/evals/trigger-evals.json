@@ -1,0 +1,92 @@
+[
+  {
+    "query": "the /recommendation/generate endpoint is taking almost 4 seconds on staging for a closet with 150 items, need to figure out if that's actually over budget and where the time is going",
+    "should_trigger": true
+  },
+  {
+    "query": "someone on the team claims their PR made avatar pose switching '2x faster' but there's no before/after numbers attached, can you check if that claim holds up before we merge",
+    "should_trigger": true
+  },
+  {
+    "query": "need to capture a frame-time trace on a low-tier Android device for the try-on screen, not sure what tool to actually use since nobody here has a Mac for the iOS side",
+    "should_trigger": true
+  },
+  {
+    "query": "the CI pipeline went from 7 minutes to 14 minutes over the last two weeks and I think we're about to blow past the pr_gate_duration budget, how do I even measure which job got slower",
+    "should_trigger": true
+  },
+  {
+    "query": "pg-boss jobs for the try-on pipeline seem to be queueing up longer than usual, want to measure the actual job duration and outbox age before assuming it's a fal.ai slowdown",
+    "should_trigger": true
+  },
+  {
+    "query": "want to double check whether our AI cost per active user is still within the SPINE budget anchors before we ship the new onboarding flow",
+    "should_trigger": true
+  },
+  {
+    "query": "the android AAB build size crept up after the last release, need a real before/after size number instead of just eyeballing the file",
+    "should_trigger": true
+  },
+  {
+    "query": "app feels janky when rotating the avatar on my test device, want to know the right way to measure this instead of just guessing it's slow",
+    "should_trigger": true
+  },
+  {
+    "query": "we ratified a budget in doc 13 for query latency last quarter but nobody's checked it since, is it still being met on the current schema",
+    "should_trigger": true
+  },
+  {
+    "query": "startup time on the app feels noticeably worse since we added the new onboarding screens, want a real measurement of cold-start time on a mid-tier device before deciding whether to optimize",
+    "should_trigger": true
+  },
+  {
+    "query": "the fal.ai try-on job for a closet item is stuck in pending in pg-boss and never completes, seems like it's just hanging forever",
+    "should_trigger": false,
+    "_near_miss_reason": "sounds performance-adjacent ('stuck', 'never completes') but this is a stuck/failed job needing pipeline debugging (media-ml-pipeline), not a measured-but-slow budget investigation."
+  },
+  {
+    "query": "want to add a Grafana alert for when the outbox relay queue depth crosses a threshold so we get paged before it backs up",
+    "should_trigger": false,
+    "_near_miss_reason": "touches the same dashboards performance-profiling reads from, but adding new alerting/instrumentation is observability-analytics' job, not a performance investigation."
+  },
+  {
+    "query": "need to write the recommendation-engine ranking replay suite so we can catch scoring regressions before they ship",
+    "should_trigger": false,
+    "_near_miss_reason": "recommendation-rules' replay/simulation tooling, not a latency or throughput measurement task even though 'regression' sounds adjacent."
+  },
+  {
+    "query": "our low-tier Android device floor decision (OQ-08) needs to be ratified for P14, can you help draft the criteria",
+    "should_trigger": false,
+    "_near_miss_reason": "device-tier language overlaps with the device matrix this skill measures against, but deciding the floor policy is a product/phase decision, not a measurement task."
+  },
+  {
+    "query": "the closet screen crashes when swiping past the last item in the wardrobe grid on some devices",
+    "should_trigger": false,
+    "_near_miss_reason": "a crash bug on a mobile screen — mobile-feature/testing-regression territory, not a performance budget question even though it happens on-device."
+  },
+  {
+    "query": "want to add a k6 load profile for the morning-spike traffic pattern against the recommendation endpoint",
+    "should_trigger": false,
+    "_near_miss_reason": "load-test profile authoring is e2e-device-testing's job (doc 13 §12.3 load budgets); this skill investigates an existing suspected slowdown, it doesn't build the load-test harness."
+  },
+  {
+    "query": "need to reduce our per-user AI spend because we're over the SPINE cost anchor two months running, what's the cost-reduction playbook",
+    "should_trigger": false,
+    "_near_miss_reason": "cost-reduction strategy (smaller models, batching, on-device per doc 10) is media-ml-pipeline/AI-policy territory; this skill only measures and reports the number, not the mitigation playbook for AI spend specifically."
+  },
+  {
+    "query": "reviewing this PR's diff to check whether the new caching layer it adds duplicates something that already exists in packages/shared-kernel",
+    "should_trigger": false,
+    "_near_miss_reason": "a caching PR sounds performance-related, but the ask here is a duplication/boundary review — architecture-review's job, not a measurement task."
+  },
+  {
+    "query": "want to run the pre-release checklist for next week's build, checking crash-free sessions and store metadata before we promote to beta",
+    "should_trigger": false,
+    "_near_miss_reason": "release-gate checklist work belongs to release-readiness even though it includes a device-matrix perf gate line item; that gate calls this skill's procedure, but the overall task here is release preparation."
+  },
+  {
+    "query": "the onboarding flow's measurement-to-morph mapping calibration test needs a bigger internal/beta panel to hit the 90% 'recognize my shape' target",
+    "should_trigger": false,
+    "_near_miss_reason": "this is a model-quality/eval calibration question (doc 07 rig accuracy), not a latency/throughput/frame-time budget — no just-recipe measurement procedure from doc 13 applies here."
+  }
+]

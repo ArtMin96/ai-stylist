@@ -1,0 +1,42 @@
+{
+  "skill_name": "db-migration",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Add a low_stock_threshold integer column (nullable, no default) to closet's item_states table, and note that a later migration will backfill it to 0 and add NOT NULL once the reading code ships.",
+      "expected_output": "The agent edits apps/api/src/modules/closet/internal/schema.ts, generates the migration with `just db-generate <name>` (never drizzle-kit directly), reviews the generated SQL, writes the paired packages/db/migrations/down/<idx>.sql, states whether the rollback is lossy, adds a forward+rollback test in apps/api/tests/migrations/, and reports that docs/modules/closet.md \"Owned data\" needs updating.",
+      "files": [],
+      "assertions": [
+        "The new column is defined in apps/api/src/modules/closet/internal/schema.ts, matching the rule that the module owner edits internal/schema.ts and platform-engineer generates the migration",
+        "The agent's report names `just db-generate <name>` as the command used to generate the migration, never a raw drizzle-kit invocation",
+        "A packages/db/migrations/down/<idx>.sql file is created pairing the new forward migration, and the report states explicitly whether the rollback is lossy or safe",
+        "The migration is additive only (nullable column, no NOT NULL, no rewrite-triggering default) — the backfill and NOT NULL step is explicitly deferred to a later migration, per expand-migrate-contract",
+        "The report states that docs/modules/closet.md \"Owned data\" needs to be updated for the new column"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "avatar needs a waist_circumference_cm column on its measurements table so the parametric mesh generator can read it directly instead of recomputing it on every render.",
+      "expected_output": "The agent recognizes waist_circumference_cm as sensitive body-measurement data, states its classification, retention, and deletion-propagation in the PR per planning/11-security-privacy-and-compliance.md, ships the column as an additive migration with a paired rollback file, and never invokes drizzle-kit directly — only `just db-generate <name>`.",
+      "files": [],
+      "assertions": [
+        "The report explicitly classifies waist_circumference_cm as sensitive body-measurement data and states its retention and deletion-propagation handling",
+        "The migration is additive (new nullable column) with a paired packages/db/migrations/down/<idx>.sql file, and no DROP/TRUNCATE/NOT NULL step is taken without explicit human authorization",
+        "The agent's report names `just db-generate <name>` as the generator, never a raw drizzle-kit invocation",
+        "The diff touches only the schema/migration for avatar, not apps/api/src/modules/avatar/internal/ rendering or business logic, and the agent does not silently expand scope into the render layer"
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "just db-rollback --yes && just db-migrate fails after rolling back 0002_platform_idempotency_keys — the round trip doesn't come back cleanly. Investigate and fix the rollback file.",
+      "expected_output": "The agent treats this as a regression: it reruns the round trip, pastes the actual failing output, fixes only packages/db/migrations/down/0002.sql to exactly undo the additive step in packages/db/migrations/0002_platform_idempotency_keys.sql (never editing the already-applied forward migration), reruns the round trip, and pastes the passing output.",
+      "files": [],
+      "assertions": [
+        "The agent's report includes the actual failing round-trip output captured before the fix, not a paraphrase",
+        "The fix is confined to packages/db/migrations/down/0002.sql; packages/db/migrations/0002_platform_idempotency_keys.sql (already applied) is never edited",
+        "The agent reruns `just db-rollback --yes && just db-migrate` after the fix and pastes the passing output",
+        "The report states explicitly whether the corrected rollback is lossy or safe"
+      ]
+    }
+  ]
+}

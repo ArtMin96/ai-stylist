@@ -1,0 +1,4 @@
+# minimal justfile for the _clean fixture
+
+hello:
+    echo hi

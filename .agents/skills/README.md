@@ -1,21 +1,52 @@
 # Skills index
 
-One `SKILL.md` per task type required by NFR-TEAM-100 (`planning/01-requirements-and-traceability.md`; doc 15 §12 points here). Each file has the six required sections — Trigger, Required reading, Workflow, Validation commands, Output, Stop / escalation — plus an Overlap note naming adjacent skills. Skills compose: run the producer skill first (contract, migration), then the consumer. `CLAUDE.md` rules always apply on top.
+One `SKILL.md` per task type required by NFR-TEAM-100 (`planning/01-requirements-and-traceability.md`; doc 15 §12 points here). Each file has the six required sections — Trigger, Required reading, Workflow, Validation commands, Output, Stop / escalation — plus an Overlap note naming adjacent skills, `metadata.last-reviewed`, and a description with a negative trigger ("Not for … — use `<other>` instead"). Skills compose: run the producer skill first (contract, migration), then the consumer. Each skill is symlinked from `.claude/skills/<name>` so it is discoverable/preloadable; `CLAUDE.md` rules always apply on top.
 
-| Skill                                                         | Use when                                                                       |
-| ------------------------------------------------------------- | ------------------------------------------------------------------------------ |
-| [`api-contract-change`](api-contract-change/SKILL.md)         | Any OpenAPI/event schema change in `packages/contracts` + regeneration         |
-| [`architecture-review`](architecture-review/SKILL.md)         | Reviewing a diff for boundary violations, duplication, source-of-truth drift   |
-| [`backend-module`](backend-module/SKILL.md)                   | Domain work inside `apps/api/src/modules/<name>/` or a `platform` adapter      |
-| [`db-migration`](db-migration/SKILL.md)                       | Drizzle schema, migrations, backfills, rollbacks                               |
-| [`entitlements-billing`](entitlements-billing/SKILL.md)       | Plans, entitlements, credits, RevenueCat webhooks, paywall gating              |
-| [`media-ml-pipeline`](media-ml-pipeline/SKILL.md)             | pg-boss jobs, Python workers, AI provider calls, evals                         |
-| [`mobile-feature`](mobile-feature/SKILL.md)                   | Screens, navigation, offline, native bridges outside the 3D boundary           |
-| [`native-3d-assets`](native-3d-assets/SKILL.md)               | `apps/mobile/src/render/`, avatar/garment 3D, `assets/3d/`, device validation  |
-| [`performance-profiling`](performance-profiling/SKILL.md)     | Budget investigations and verified perf claims                                 |
-| [`recommendation-rules`](recommendation-rules/SKILL.md)       | Engine constraints, scoring, reason codes, evals, replay                       |
-| [`release-readiness`](release-readiness/SKILL.md)             | Channel promotion evidence and GO/NO-GO                                        |
-| [`security-privacy-review`](security-privacy-review/SKILL.md) | Review of auth, consent, sensitive data, webhooks, uploads, logging, AI egress |
-| [`testing-regression`](testing-regression/SKILL.md)           | Bug fixes regression-first, coverage work, flaky tests                         |
+| Skill                                                         | Use when                                                                                                                                       |
+| ------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
+| [`admin-moderation`](admin-moderation/SKILL.md)               | Admin CRUD, RBAC on admin actions, append-only audit log, moderation/quarantine queues                                                         |
+| [`api-contract-change`](api-contract-change/SKILL.md)         | Any OpenAPI/event schema change in `packages/contracts` + regeneration                                                                         |
+| [`architecture-review`](architecture-review/SKILL.md)         | Reviewing a diff for boundary violations, duplication, source-of-truth drift                                                                   |
+| [`assistant-chat`](assistant-chat/SKILL.md)                   | `assistant` module's chat adapter — conversation storage, tool-call orchestration, entitlement enforcement, calling only existing app services |
+| [`backend-module`](backend-module/SKILL.md)                   | Domain work inside `apps/api/src/modules/<name>/` (identity, profile, avatar, closet, media, outfit, context) or a `platform` adapter          |
+| [`data-lifecycle`](data-lifecycle/SKILL.md)                   | Consent registry, cross-module account-deletion cascade, data export, retention windows, purge verification                                    |
+| [`db-migration`](db-migration/SKILL.md)                       | Drizzle schema, migrations, backfills, rollbacks                                                                                               |
+| [`docs-maintenance`](docs-maintenance/SKILL.md)               | Sync `PROGRESS.md`, module contracts, and the ADR index with landed code; resolve `docs-check` findings                                        |
+| [`e2e-device-testing`](e2e-device-testing/SKILL.md)           | Maestro E2E flows, device-lane/device-farm runs, golden/visual-regression baselines, k6 load profiles                                          |
+| [`entitlements-billing`](entitlements-billing/SKILL.md)       | Plans, entitlements, credits, RevenueCat webhooks, paywall gating                                                                              |
+| [`fashion-intel-ingestion`](fashion-intel-ingestion/SKILL.md) | Source register, ingestion pipeline, freshness/retirement, moderation wiring, feed personalization in `fashion-intel`                          |
+| [`media-ml-pipeline`](media-ml-pipeline/SKILL.md)             | pg-boss jobs, Python workers, AI provider calls, evals                                                                                         |
+| [`mobile-feature`](mobile-feature/SKILL.md)                   | Screens, navigation, offline, camera/push/analytics outside the 3D boundary                                                                    |
+| [`native-3d-assets`](native-3d-assets/SKILL.md)               | `apps/mobile/src/render/`, avatar/garment 3D, `assets/3d/`, device validation                                                                  |
+| [`notifications-delivery`](notifications-delivery/SKILL.md)   | FCM/APNs push delivery, quiet hours, opt-out, delivery receipts in the `notifications` module                                                  |
+| [`observability-analytics`](observability-analytics/SKILL.md) | OTel metrics/traces, Grafana dashboards/alerts, PostHog events, runbooks, spend alerts                                                         |
+| [`performance-profiling`](performance-profiling/SKILL.md)     | Budget investigations and verified perf claims                                                                                                 |
+| [`recommendation-rules`](recommendation-rules/SKILL.md)       | Engine constraints, scoring, reason codes, evals, replay                                                                                       |
+| [`release-readiness`](release-readiness/SKILL.md)             | Channel promotion evidence and GO/NO-GO                                                                                                        |
+| [`security-privacy-review`](security-privacy-review/SKILL.md) | Review of auth, consent, sensitive data, webhooks, uploads, logging, AI egress                                                                 |
+| [`testing-regression`](testing-regression/SKILL.md)           | Bug fixes regression-first, coverage work, flaky tests                                                                                         |
+| [`tooling-ci`](tooling-ci/SKILL.md)                           | `just` recipes, CI workflows, `tools/**` gates and fixtures, bootstrap/doctor, machine portability                                             |
 
 Overlap review (AC-9): each skill's Overlap section names its neighbours and the seam; no two skills own the same file set. Where a task crosses seams, the order is contract → migration → module → UI → review → release.
+
+## Module coverage (SPINE §3, 15 modules)
+
+Every SPINE module resolves to skill detail (a `references/<module>.md` file, or a skill whose `metadata.modules` names it) and appears in exactly one row below naming an existing skill and an existing agent (`docs-check` DC-08).
+
+| Module         | Skill                                              | Where the module detail lives                                      | Agent                                                |
+| -------------- | -------------------------------------------------- | ------------------------------------------------------------------ | ---------------------------------------------------- |
+| identity       | `backend-module`                                   | `.agents/skills/backend-module/references/identity.md`             | `api-engineer`                                       |
+| profile        | `backend-module`                                   | `.agents/skills/backend-module/references/profile.md`              | `api-engineer`                                       |
+| avatar         | `backend-module` (+ `native-3d-assets` for render) | `.agents/skills/backend-module/references/avatar.md`               | `api-engineer` / `render-3d-engineer`                |
+| closet         | `backend-module`                                   | `.agents/skills/backend-module/references/closet.md`               | `api-engineer`                                       |
+| media          | `backend-module` (+ `media-ml-pipeline` for jobs)  | `.agents/skills/backend-module/references/media.md`                | `api-engineer` / `platform-engineer` / `ml-engineer` |
+| outfit         | `backend-module`                                   | `.agents/skills/backend-module/references/outfit.md`               | `recommendation-engineer`                            |
+| context        | `backend-module`                                   | `.agents/skills/backend-module/references/context.md`              | `recommendation-engineer`                            |
+| platform       | `backend-module`                                   | `.agents/skills/backend-module/references/platform.md`             | `platform-engineer`                                  |
+| shared-kernel  | `api-contract-change`                              | `.agents/skills/api-contract-change/references/shared-kernel.md`   | `contracts-engineer`                                 |
+| recommendation | `recommendation-rules`                             | `.agents/skills/recommendation-rules/references/recommendation.md` | `recommendation-engineer`                            |
+| billing        | `entitlements-billing`                             | `.agents/skills/entitlements-billing/references/billing.md`        | `api-engineer`                                       |
+| notifications  | `notifications-delivery`                           | SKILL.md + `metadata.modules: "notifications"`                     | `api-engineer`                                       |
+| admin          | `admin-moderation`                                 | SKILL.md + `metadata.modules: "admin"`                             | `api-engineer`                                       |
+| fashion-intel  | `fashion-intel-ingestion`                          | SKILL.md + `metadata.modules: "fashion-intel"`                     | `recommendation-engineer`                            |
+| assistant      | `assistant-chat`                                   | SKILL.md + `metadata.modules: "assistant"`                         | `api-engineer`                                       |

@@ -1,0 +1,92 @@
+[
+  {
+    "query": "need to add a Grafana panel showing p95 API latency by route so we can see if we're breaching the 13 §12 budget",
+    "should_trigger": true
+  },
+  {
+    "query": "want to wire up a new PostHog event `avatar_calibration_adjusted` when the user tweaks their avatar's body params",
+    "should_trigger": true
+  },
+  {
+    "query": "the billing.webhook.lag metric doesn't exist yet, need to add it and an alert if it goes above a few minutes",
+    "should_trigger": true
+  },
+  {
+    "query": "we don't have a runbook for what to do when the queue gets stuck and DLQ starts filling up, need to write one",
+    "should_trigger": true
+  },
+  {
+    "query": "getting paged every night for something that isn't actually urgent, need to fix the alert severity/quiet-hours config",
+    "should_trigger": true
+  },
+  {
+    "query": "want an OTel trace span around the recommendation engine's context/candidates/score/validate stages so we can see where time goes",
+    "should_trigger": true
+  },
+  {
+    "query": "ai.cost_per_active_user metric is missing from the dashboard, need to add it so we notice if we blow the cost guardrail",
+    "should_trigger": true
+  },
+  {
+    "query": "need to set an expiry date and owner on this feature flag before it can ship, per the flag policy",
+    "should_trigger": true
+  },
+  {
+    "query": "SLO for availability is 99.5% monthly, want to set up the burn-rate alerts (fast burn vs slow burn) in Grafana",
+    "should_trigger": true
+  },
+  {
+    "query": "want to add an audit log entry every time an admin does a break-glass read of a user's data",
+    "should_trigger": true
+  },
+  {
+    "query": "the p95 latency on POST /closet/items jumped from 200ms to 900ms yesterday, need to figure out what's causing it",
+    "should_trigger": false,
+    "_near_miss_reason": "mentions p95 latency (a metric this skill's catalog defines) but the ask is root-causing an already-observed regression, not building the dashboard — performance-profiling."
+  },
+  {
+    "query": "double check this new webhook handler doesn't log the RevenueCat signature or the raw request body anywhere",
+    "should_trigger": false,
+    "_near_miss_reason": "logging is this skill's territory in the abstract, but reviewing a diff for a redaction leak before it ships is security-privacy-review's job."
+  },
+  {
+    "query": "add a `markWorn` method to the closet module that records when an item was worn",
+    "should_trigger": false,
+    "_near_miss_reason": "no observability vocabulary at all — generic module application-service work, backend-module."
+  },
+  {
+    "query": "the segmentation worker's classification confidence score isn't being stored in the lineage record, need to fix that",
+    "should_trigger": false,
+    "_near_miss_reason": "confidence/lineage sounds metric-adjacent, but this is the pipeline's own data model, not a catalog metric/dashboard/alert — media-ml-pipeline."
+  },
+  {
+    "query": "crash-free-sessions dropped below 99.5% on the last TestFlight build, is it safe to keep the staged rollout going",
+    "should_trigger": false,
+    "_near_miss_reason": "crash-free-sessions is a metric this skill's catalog defines, but deciding whether to halt a staged rollout based on it is release-readiness's GO/NO-GO call."
+  },
+  {
+    "query": "onboarding_started event exists but the field names don't match what's actually in packages/contracts anymore, need to reconcile the OpenAPI spec",
+    "should_trigger": false,
+    "_near_miss_reason": "onboarding_started is a catalog analytics event, but reconciling the schema drift in packages/contracts is api-contract-change's job, not the taxonomy/dashboard side."
+  },
+  {
+    "query": "add a low_stock_threshold column to the item_states table and write the migration",
+    "should_trigger": false,
+    "_near_miss_reason": "no shared vocabulary with metrics/dashboards/alerts — a schema/migration task, db-migration."
+  },
+  {
+    "query": "the mobile app's cold start time seems slower since the last TestFlight build, need to check it against the p50/p95 budget and figure out what actually regressed",
+    "should_trigger": false,
+    "_near_miss_reason": "mobile.cold_start_ms is a catalog metric this skill defines, but investigating a suspected regression against the budget is performance-profiling's job, not the catalog/dashboard side."
+  },
+  {
+    "query": "what's a good way to structure a debounce hook for a search input in react native",
+    "should_trigger": false,
+    "_teaches": "unambiguous negative with zero shared vocabulary, included to balance the should_trigger:false set."
+  },
+  {
+    "query": "want to turn off session replay by default and rewrite the onboarding consent screen copy so it's clear to users what recording means",
+    "should_trigger": false,
+    "_near_miss_reason": "session replay and consent are both in the catalog's analytics section (§9), but the actual task is UI consent copy on an onboarding screen — mobile-feature."
+  }
+]

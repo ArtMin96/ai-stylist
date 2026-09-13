@@ -1,0 +1,39 @@
+{
+  "skill_name": "fashion-intel-ingestion",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Add ingestion support for a new licensed runway-photo source per P12-T05: fetch -> validate -> hash dedup -> publish draft, idempotent and retryable.",
+      "expected_output": "The agent checks that a rights-basis record exists for the source (or stops if it does not), implements the fetch as a ContentSourcePort adapter bound in apps/api/src/platform/ rather than a direct HTTP call inside fashion-intel's domain code, writes content_items through the draft state, and makes the job idempotent (per-source singletonKey / dedup hash) so re-runs do not duplicate items. It reports which validation commands it ran.",
+      "files": [],
+      "assertions": [
+        "The agent either confirms a rights-basis record for the source or explicitly stops and reports the missing rights basis instead of building the adapter anyway",
+        "The fetch logic lives behind a ContentSourcePort adapter in apps/api/src/platform/, not as a direct external call inside apps/api/src/modules/fashion-intel/internal/",
+        "The ingestion path is idempotent (dedup hash or singletonKey) so a re-run does not create duplicate content_items rows",
+        "The agent's report names `just test fashion-intel` and `just arch-check` as commands it ran"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "Product wants the daily outfit recommendation to be influenced by what's trending on Discover right now, more strongly than the current cap allows — bump the trend weight up in the recommendation scoring so it matters more.",
+      "expected_output": "The agent recognizes this is a recommendation-engine scoring change (the 0.03 weight cap on RC-TREND-* lives in the recommendation module's stage-6 scorer per planning/09-recommendation-engine.md), not a fashion-intel change, and either routes the weight change to recommendation-rules or explains that fashion-intel-ingestion only produces the relevance scores the port exposes and cannot itself change how heavily the engine weights them.",
+      "files": [],
+      "assertions": [
+        "The agent does not modify scoring/weighting logic inside apps/api/src/modules/recommendation/ under this skill's authority",
+        "The agent explicitly names recommendation-rules (or the recommendation module's stage-6 scorer) as the owner of the weight cap change",
+        "The agent's response does not invent a fashion-intel -> outfit or fashion-intel -> recommendation-internals shortcut to achieve the same effect"
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "The trend-summarization job seems to be calling the LLM summarization port once per user viewing a Discover card instead of once per content item — costs are way higher than expected. Fix it.",
+      "expected_output": "The agent treats this as a violation of the per-item, cache-once summarization invariant (P12 non-goals: 'no per-user LLM summarization'; doc 10 §2.8 cost model), traces the call site, and fixes it to summarize once per content item on ingestion (cached by content hash) rather than at feed-read time, then reruns tests to confirm the fix.",
+      "files": [],
+      "assertions": [
+        "The agent's report identifies the per-user call as violating the per-content-item summarization invariant from planning/phases/P12-fashion-intelligence.md and planning/10-ai-usage-cost-and-evaluation.md §2.8",
+        "The fix moves the LLM summarization call to the ingestion pipeline (once per content item, cached), not the feed-read/request path",
+        "The agent reruns `just test fashion-intel` after the fix and reports the result"
+      ]
+    }
+  ]
+}

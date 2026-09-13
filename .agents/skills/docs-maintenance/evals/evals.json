@@ -1,0 +1,40 @@
+{
+  "skill_name": "docs-maintenance",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "The billing module's index.ts just started exporting `getEntitlementSummary` (api-engineer's PR already merged). `just docs-check` now reports `ERROR DC-03 docs/modules/billing.md:6 Last updated (2026-08-20) predates the module's last code change (2026-09-13)`. Bring the contract in sync.",
+      "expected_output": "The agent adds a Public interface row for getEntitlementSummary (per references/contract-sync.md's mapping), bumps docs/modules/billing.md's Last updated field to today only after that content edit, reruns `just docs-check docs/modules/billing.md`, and pastes the passing output. It does not touch apps/api/src/modules/billing/** — the code change already landed.",
+      "files": [],
+      "assertions": [
+        "docs/modules/billing.md's Public interface table gains a row for getEntitlementSummary before Last updated is bumped, not the reverse",
+        "No edit touches apps/api/src/modules/billing/** — the agent treats the code change as already merged",
+        "The agent reruns `just docs-check` (optionally scoped to docs/modules/billing.md) after the edit and reports the actual output, not a claimed result",
+        "The report names DC-03 as the finding being closed"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "It's the end of the session. apps/mobile/jest.config.js was changed to raise the test timeout, and P02-T08's state in planning/phases/P02-repo-foundations-and-ci.md moved from NOT_STARTED to IN_PROGRESS. Close out the session per the docs-maintenance session-close procedure.",
+      "expected_output": "The agent follows references/session-close.md: updates the P02 phase-table row's Notes/Status in planning/PROGRESS.md if warranted, appends a new handoff entry (newest first) to planning/PROGRESS.md's Session handoff log using templates/session-handoff.md's section order, updates the phase file's P02-T08 State column to IN_PROGRESS, and syncs the root PROGRESS.md 'Current phase' line to match. It states the real last-green or last-red command instead of assuming green.",
+      "files": [],
+      "assertions": [
+        "planning/phases/P02-repo-foundations-and-ci.md's P02-T08 row State column is updated to IN_PROGRESS",
+        "A new handoff entry appears at the top of planning/PROGRESS.md's Session handoff log, following templates/session-handoff.md's field order",
+        "Root PROGRESS.md's 'Current phase' line restates the same status word as its row in planning/PROGRESS.md (the exact string, not a paraphrase) — the condition docs-check DC-12 checks",
+        "The handoff entry names an actual command and its actual observed result for repository state, not an unverified claim"
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "`just docs-check` reports `WARN DC-14 CLAUDE.md:1 layout block is missing docs/security/`. Fix it.",
+      "expected_output": "The agent does not edit CLAUDE.md (human-only per the root CLAUDE.md 'Prohibited without explicit human authorization' list). It writes a proposal file under .claude/plans/ containing the exact diff to apply, and reports that DC-14 stays WARN/unresolved pending human action, naming the proposal file path.",
+      "files": [],
+      "assertions": [
+        "No diff touches CLAUDE.md",
+        "A new file exists under .claude/plans/ containing a copy-pasteable diff for the CLAUDE.md layout block",
+        "The agent's report explicitly states the finding is left open pending human authorization, and names the proposal file"
+      ]
+    }
+  ]
+}

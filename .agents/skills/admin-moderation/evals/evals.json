@@ -1,0 +1,42 @@
+{
+  "skill_name": "admin-moderation",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Wire the P06-T13 content-scan result into the admin queue: when media's malware/content scan flags an item, it should land in a quarantine state visible to an admin, who can approve (unquarantine) or reject (remove) it, and both outcomes must be audited.",
+      "expected_output": "An admin-owned moderation_queue entry is created from a scan result read via media's public index.ts (never media's table directly); approve/reject actions write an audit_log row recording who acted, what changed, and the prior state; a Vitest test in apps/api/src/modules/admin/tests/ covers both outcomes plus a non-admin caller being denied.",
+      "files": [],
+      "assertions": [
+        "The scan result is consumed through media's public index.ts, not by reading a media-owned table directly from admin",
+        "Both approve and reject write an audit_log row including the prior state or an explicit inverse action",
+        "A test in apps/api/src/modules/admin/tests/ covers a non-admin caller being denied the approve/reject action, and the agent names `just test admin` as the command it ran",
+        "The agent runs and reports `just arch-check` to confirm no forbidden module edge was introduced",
+        "The agent's report states whether docs/modules/admin.md needed updating and why"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "Build the P12-T04 source-register admin CRUD: admins can register a new fashion-intel content source, and every source must record a rights basis (license, public-domain, licensed-partner, etc.) before it can be used for ingestion.",
+      "expected_output": "An admin CRUD service enforces rights-basis as a mandatory field at creation (reject the write if absent), records every create/update/takedown in audit_log, and never writes to a fashion-intel-owned table directly — it calls fashion-intel's public API or the two modules agree on which owns the source-register table per docs/modules/admin.md and docs/modules/fashion-intel.md.",
+      "files": [],
+      "assertions": [
+        "A source cannot be created or approved for ingestion without a non-empty rights-basis value",
+        "Every create/update/takedown action on a source produces an audit_log row",
+        "The diff does not read or write a fashion-intel-owned table directly from apps/api/src/modules/admin/internal/ without going through fashion-intel's public index.ts, or the agent explicitly reports which module owns the table per the two module contracts",
+        "The agent reports `just test admin` output showing the rights-basis rejection case passes"
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "An admin rejected a flagged closet item last week but there's no record of who did it or why — the audit trail is missing for that action. Find and fix the gap in the admin module.",
+      "expected_output": "The agent treats this as a regression: reproduces that the reject path currently skips the audit_log write (or writes an incomplete row), shows the actual test output before and after, and fixes the reject handler to always write a complete audit_log row (actor, action, target, timestamp, prior state) atomically with the rejection, without changing the closet module.",
+      "files": [],
+      "assertions": [
+        "The agent's report includes actual test output demonstrating the missing/incomplete audit_log write before the fix, not a paraphrase",
+        "The fix is inside apps/api/src/modules/admin/** and does not modify apps/api/src/modules/closet/**",
+        "The audit_log row written after the fix includes actor, action, target, and enough prior-state information to reverse the action",
+        "The agent reruns `just test admin` after the fix and pastes the passing output"
+      ]
+    }
+  ]
+}

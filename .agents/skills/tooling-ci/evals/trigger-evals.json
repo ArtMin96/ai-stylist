@@ -1,0 +1,92 @@
+[
+  {
+    "query": "need to add a `just` recipe that runs the k6 load test profile against staging, not sure where to put it in the justfile",
+    "should_trigger": true
+  },
+  {
+    "query": "pr-gate.yml is calling pnpm directly in one of the steps instead of going through a just recipe, want to fix that",
+    "should_trigger": true
+  },
+  {
+    "query": "just arch-check --fixtures is only reporting 5 of the 6 depcruise rules failing, one fixture seems to have stopped tripping its rule",
+    "should_trigger": true
+  },
+  {
+    "query": "trying to run bootstrap.sh on my m2 macbook and it's using a bash 4 associative array, breaks on the system bash 3.2",
+    "should_trigger": true
+  },
+  {
+    "query": "docs-check keeps printing a DC-11 finding about a raw npx invocation somewhere in .claude/agents, need to track it down",
+    "should_trigger": true
+  },
+  {
+    "query": "want to add shellcheck to the pre-commit hook so it catches scripts/ issues before CI does",
+    "should_trigger": true
+  },
+  {
+    "query": "portability.yml hasn't run in 3 weeks even though we changed scripts/lib.sh twice, is the trigger path wrong",
+    "should_trigger": true
+  },
+  {
+    "query": "just doctor isn't catching that mise isn't installed, want to add a check for that with a fix hint",
+    "should_trigger": true
+  },
+  {
+    "query": "need a new just recipe for running the eslint max-lines fixture in isolation while I'm iterating on the rule",
+    "should_trigger": true
+  },
+  {
+    "query": "the eslint config in tools/eslint/quality.mjs needs a new rule and I want to make sure there's a fixture proving it fails",
+    "should_trigger": true
+  },
+  {
+    "query": "the closet module's application service is missing a markWorn method, want to add it",
+    "should_trigger": false,
+    "_near_miss_reason": "no CI/tooling machinery involved at all — a plain module change, backend-module's job."
+  },
+  {
+    "query": "add a column to the items table for tracking low stock and write the migration",
+    "should_trigger": false,
+    "_near_miss_reason": "schema + migration work — db-migration, not the CI/tooling gate that runs migrations."
+  },
+  {
+    "query": "docs-check is complaining that docs/modules/closet.md is missing the Extension points heading, need to fix the doc",
+    "should_trigger": false,
+    "_near_miss_reason": "a docs-check finding, but the fix is the module contract's content — docs-maintenance owns DC-01..DC-04 content fixes, not the docs-check machinery itself."
+  },
+  {
+    "query": "need to add the RC-TREND-01 reason code wiring for the fashion-intel feed personalization",
+    "should_trigger": false,
+    "_near_miss_reason": "shares no tooling vocabulary despite sounding like registry/config work — fashion-intel-ingestion's domain."
+  },
+  {
+    "query": "the account deletion cascade doesn't cover closet media yet, need to extend the ordered steps in doc 06 section 8",
+    "should_trigger": false,
+    "_near_miss_reason": "sounds like it could touch scripts/tests but the actual work is cascade/retention mechanics — data-lifecycle, this task's own sibling skill."
+  },
+  {
+    "query": "want to review this PR for module boundary violations before it merges, does it break any allowed-edges rules",
+    "should_trigger": false,
+    "_near_miss_reason": "mentions arch-check rules by name, but reviewing a diff for boundary violations is architecture-review's task, not changing the tooling that runs the rule."
+  },
+  {
+    "query": "the RevenueCat webhook handler logs the full request body on signature failure, is that a problem",
+    "should_trigger": false,
+    "_near_miss_reason": "sounds like it could be a CI/lint finding (no-log-request-body rule) but this is asking for a security review of actual behavior, not a tooling/gate change — security-privacy-review."
+  },
+  {
+    "query": "onboarding flow for a new engineer needs an updated readme section explaining how to get their sops age key set up",
+    "should_trigger": false,
+    "_near_miss_reason": "onboarding/tooling-adjacent wording, but editing README content is out of this skill's write set and not a just/CI/gate change."
+  },
+  {
+    "query": "want to add a maestro flow for the two-device wardrobe sync convergence scenario",
+    "should_trigger": false,
+    "_near_miss_reason": "e2e/device-farm test authoring — e2e-device-testing, not CI machinery."
+  },
+  {
+    "query": "need to bump the entitlement check so free-tier users can't upload more than 50 closet items",
+    "should_trigger": false,
+    "_near_miss_reason": "no tooling/CI content whatsoever despite being a limit/threshold change — entitlements-billing's domain."
+  }
+]

@@ -1,6 +1,10 @@
 # CLAUDE.md — AI Stylist Operating Contract
 
-> **Status: PROPOSED.** Lives in `planning/` during planning; move to the repository root when implementation starts (P02). Paths below assume the implementation-repo layout.
+> **Status: HISTORICAL.** The binding operating contract moved to the repository root (`CLAUDE.md`) at
+> P02-T16 (2026-09-09); root `CLAUDE.md` is now LIVE and wins any conflict with this copy (root
+> `CLAUDE.md` § Source-of-truth priority). This file is kept for planning-phase context only. It still
+> names vendors superseded by [ADR-0003](../docs/adr/0003-self-hosted-infrastructure-baseline.md)
+> (e.g. Trigger.dev, Neon, Railway) — treat every tooling name below as historical, not current.
 
 This file is the permanent operating contract for every AI agent session in this repository. Phase-specific detail lives in `planning/phases/`; module detail lives in module contracts. Rules here are permanent and binding.
 

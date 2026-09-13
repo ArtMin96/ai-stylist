@@ -97,13 +97,17 @@ Both scripts live in `scripts/` as readable, commented bash (or TS via `zx` if b
 | `just dev-api` | Compose stack (Postgres+pgvector) + NestJS API in watch mode |
 | `just dev-mobile` | Expo dev client (Metro); `--android` targets connected device/emulator |
 | `just dev-workers` | Python ML workers locally (pg-boss job handlers run inside `just dev-api` or a local `jobs` process — no separate job dev server) |
-| `just test <module>` | Scoped: one module's `tests/` dir (e.g. `just test recommendation`) |
+| `just test <module>` | Scoped: one module's `tests/` dir (e.g. `just test recommendation`); `mobile`, `workers`, `secrets`, `platform`, `api` route to their own suites instead of a `modules/<name>/tests` dir |
 | `just test` | Full suite (all modules + packages), as CI PR gate runs it |
+| `just test-regression <file>` | Prove a regression test fails at the merge-base and passes at HEAD — the structural form of CLAUDE.md's "regression test fails before the fix" |
 | `just lint` | ESLint (incl. boundary rules) + Ruff for workers |
+| `just lint-file <path>` | Single-file lint dispatch by extension (eslint/ruff/shellcheck, else no-op); used by the PostToolUse hook so one edit doesn't pay for a whole-repo lint |
 | `just typecheck` | `tsc --noEmit` across workspace + Pyright for workers |
 | `just format` | Prettier + Ruff format, write mode; `--check` in CI |
 | `just arch-check` | dependency-cruiser: module dependency rules, public-API-only imports (SPINE §3) |
+| `just docs-check [--strict]` | Repo self-consistency gate: module↔contract bijection, ADR/skill/agent README sync, PROGRESS.md sync, stale review dates, dead repo paths, undocumented recipes, raw package-manager invocations in `.agents`/`.claude`; `--strict` turns the two human-approval-pending checks (this table, the CLAUDE.md layout block) into errors |
 | `just generate` | OpenAPI contract → TS client + types; event schema types; `--check` fails on stale output |
+| `just db-generate <name>` | Generate a Drizzle migration from `packages/db` schema changes (`drizzle-kit generate --name`); reminds you `packages/db/migrations/down/<idx>.sql` is required by `db-rollback` |
 | `just db-migrate` | Apply pending drizzle-kit migrations to the target env (default: local) |
 | `just db-rollback` | Roll back last migration per doc 06 policy (expand/contract aware) |
 | `just db-reset` | Drop + recreate + migrate + seed **local** DB only (refuses non-local `DATABASE_URL`) |
@@ -113,7 +117,8 @@ Both scripts live in `scripts/` as readable, commented bash (or TS via `zx` if b
 | `just assets-validate` | 3D asset gate: glTF 2.0 validity, KTX2 encoding, poly/texture budgets, manifest schema, morph-target names (doc 07) |
 | `just ml-eval` | Run versioned eval suites for classification/segmentation/try-on against golden datasets (doc 10) |
 | `just security-scan` | gitleaks + osv-scanner + npm/pnpm audit + license check (§9) |
-| `just ci-parity` | Run the exact PR-gate sequence locally: format-check, lint, typecheck, arch-check, generate --check, test, security-scan |
+| `just sbom` | Generate the SPDX + CycloneDX SBOM into `artifacts/sbom/` (same syft invocation `security-scan` runs) |
+| `just ci-parity` | Run the exact PR-gate sequence locally: format-check, lint, typecheck, arch-check, docs-check, generate --check, test, security-scan |
 | `just golden-accept` | Accept updated golden/visual-regression baselines as a reviewed commit (doc 13 §6) |
 | `just rec-replay <id>` | Re-run a stored recommendation from its snapshots and diff against the stored result (doc 09 §9) |
 | `just rec-golden-update` | Regenerate recommendation golden fixtures for review (doc 09 §13.3) |
@@ -233,7 +238,7 @@ Any session ending with work in flight writes [templates/session-handoff.md](tem
 
 ### 12.5 Recommended tooling (recommendations, not requirements)
 
-- **Claude Code** with this repo's `CLAUDE.md` + `.agents/skills/` is the reference setup; any agent tooling must obey the same contract.
+- **Claude Code** with this repo's `CLAUDE.md` + `.agents/skills/` (symlinked at `.claude/skills/`) + `.claude/agents/` (agent personas) + `.claude/rules/` (path-scoped rules) + the `.claude/settings.json` hook layer (`scripts/hooks/`) is the reference setup; any agent tooling must obey the same contract.
 - **MCP servers worth adding:** `context7` (current library docs — Expo/Filament/Drizzle/pg-boss move fast; CLAUDE.md requires consulting current docs) and a read-only **Postgres MCP** pointed at local/staging for schema inspection during migration work. Evaluate others via ADR; each MCP server is an attack/typo surface, keep the list short.
 - **Model tiers for cost:** cheap/fast models for mechanical work (renames, fixture generation, applying a settled pattern across files, commit messages); top-tier models for architecture, recommendation-engine rules, security-sensitive code, and anything touching contracts. Batch mechanical tasks per §12.3 fan-out. Track agent spend the same way we track provider AI spend (doc 10): it is a real unit cost.
 

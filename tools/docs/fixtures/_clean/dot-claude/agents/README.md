@@ -1,5 +1,5 @@
 # Agents
 
-| Agent | Owns |
-| --- | --- |
-| `a` | everything in this fixture |
+| Agent | Owns                       |
+| ----- | -------------------------- |
+| `a`   | everything in this fixture |

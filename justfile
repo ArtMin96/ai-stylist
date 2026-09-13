@@ -196,7 +196,7 @@ ci-parity:
     just typecheck
     just arch-check
     just arch-check --fixtures
-    just docs-check
+    just docs-check --strict
     just generate --check
     just test
     just security-scan

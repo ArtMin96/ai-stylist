@@ -33,22 +33,41 @@ packages/db/            drizzle-kit config, composed schema entry, migrations/ (
 packages/seed-data/     synthetic fixtures/factories (never real user data)
 packages/test-support/  shared test builders/fakes
 tools/                  depcruise/rules.cjs (arch-check), codegen/ (contract generators)
+tools/docs/             docs-check fixtures (tools/docs/fixtures/DC-*) + planned-paths.txt
 planning/               SPINE, docs 00–16, phases/, templates/  (read-only context)
 docs/adr/  docs/modules/                decisions and module contracts
+docs/security/          dependency-ignore and license-policy notes (`just security-scan`)
 templates/              issue, PR, ADR, session-handoff, module-contract, phase templates
+templates/linear/       Linear issue-type templates (feature, bug, spike, contract-change, migration, security-review, chore)
 .agents/skills/         one SKILL.md per task type (see "Match a skill" below)
+.claude/skills/         symlinks into `.agents/skills/` so Claude Code's skill loader finds them
+.claude/agents/         one agent persona per task type, invoked via the Agent tool
+.claude/rules/          path-scoped rules, auto-loaded when an agent touches matching files
+.claude/settings.json   hooks + permission policy (see the hook-layer note below)
 .github/workflows/      CI tiers; every job calls `just`, never raw tools
 scripts/  justfile  mise.toml           tooling; `just` is the only entry point
+scripts/hooks/          `.claude/settings.json` hook scripts (path guard, Bash guard, scoped lint, PROGRESS gate, orientation)
+scripts/docs/           docs-check.sh + lib/ (`just docs-check`)
+artifacts/              generated build output (e.g. sbom/); gitignored, not read for orientation
+node_modules/           package-manager output; gitignored, never read or edited directly
+prototype/              throwaway spikes (e.g. g3-filament-spike); not shipped
+secrets/                sops+age encrypted per-environment config (planning/15 §6); never plaintext
 ```
 
 ## Session workflow
 
 1. **Orient:** read `planning/SPINE.md` (product + architecture canon; skim if already loaded this session), `PROGRESS.md`, the current phase file, and the contract of every module in scope. Check the decision log for anything touching the task.
 2. **Restate** the task's scope, non-goals, and acceptance criteria in your own words. If they are unclear, or conflict with what you read, **stop and ask** — do not guess.
-3. **Match a skill:** if a skill in `.agents/skills/` covers the task type, follow its workflow; skills compose (e.g., contract change first, then module work).
+3. **Match a skill:** if a skill in `.agents/skills/` covers the task type, follow its workflow; skills compose (e.g., contract change first, then module work). Path-scoped rules in `.claude/rules/` load automatically when you touch matching files — treat them as binding, not optional reading.
 4. **Search before write** (below), then implement the smallest coherent change.
 5. **Verify** with the scoped checks for what you touched; paste real output.
-6. **Close out:** update `PROGRESS.md` and affected docs; leave the repo buildable or report the precise failure; write a handoff note if work remains.
+6. **Close out:** update `PROGRESS.md` and affected docs (the `docs-maintenance` skill and `just docs-check` cover this); leave the repo buildable or report the precise failure; write a handoff note if work remains.
+
+Five deterministic hooks in `.claude/settings.json` (scripts in `scripts/hooks/`) back parts of this
+workflow: a path guard on protected files, a Bash-command guard, scoped post-edit lint, a PROGRESS-ledger
+gate on session stop, and an orientation print on session start. Two escape hatches exist for
+human-authorized exceptions: `AGENT_MAY_EDIT_POLICY=1` bypasses the path guard for a sanctioned policy
+edit; `AGENT_SKIP_PROGRESS_GATE=1` bypasses the stop gate for a session intentionally left mid-work.
 
 ## Parallel sessions
 
@@ -88,7 +107,7 @@ Use `just` recipes only — never raw tool invocations that CI does not run. Ful
 - `just doctor` — environment check (run when anything is weird)
 - `just dev-api` / `just dev-mobile` / `just dev-workers`
 - `just test <module>` (scoped) · `just test` (full)
-- `just lint` · `just typecheck` · `just format` · `just arch-check`
+- `just lint` · `just typecheck` · `just format` · `just arch-check` · `just docs-check`
 - `just generate` — contracts → clients (`--check` = staleness gate)
 - `just db-migrate` / `just db-rollback` / `just db-reset` (local only)
 - `just assets-validate` · `just ml-eval` · `just security-scan`
@@ -139,7 +158,7 @@ Ask, state exactly what will run, and wait for confirmation.
 
 - [ ] Acceptance criteria restated at start; all met, with evidence pasted (real command output).
 - [ ] Semantic reuse check done; new code justified against candidates.
-- [ ] Scoped checks green: `just test <module>` + `lint` + `typecheck` + `arch-check` (+ `generate --check` / `assets-validate` where relevant).
+- [ ] Scoped checks green: `just test <module>` + `lint` + `typecheck` + `arch-check` + `docs-check` (+ `generate --check` / `assets-validate` where relevant).
 - [ ] Regression test failed-then-passed for any bug fix.
 - [ ] No new duplication of schemas/constants/validators/mappings; generated files regenerated, not edited.
 - [ ] No sensitive data introduced into logs/fixtures/prompts/output.

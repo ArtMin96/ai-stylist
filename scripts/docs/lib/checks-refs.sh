@@ -52,14 +52,15 @@ check_dc09() {
   local root="$1" f rel lineno content tok
   for f in $(docs_check_ref_scan_files "$root"); do
     rel="${f#"$root"/}"
-    while IFS=: read -r lineno content; do
-      while IFS= read -r tok; do
-        looks_like_repo_path "$tok" || continue
-        [[ -e "$root/$tok" ]] && continue
-        is_planned_path "$tok" && continue
-        finding ERROR DC-09 "$rel" "$lineno" "backticked path '$tok' does not exist"
-      done < <(backticked_spans <<<"$content")
-    done < <(grep -n '' "$f")
+    # One grep per file (lineno:`span`), not one per line: this check scans thousands of lines.
+    # shellcheck disable=SC2016
+    while IFS=: read -r lineno tok; do
+      tok="${tok#\`}"; tok="${tok%\`}"
+      looks_like_repo_path "$tok" || continue
+      [[ -e "$root/$tok" ]] && continue
+      is_planned_path "$tok" && continue
+      finding ERROR DC-09 "$rel" "$lineno" "backticked path '$tok' does not exist"
+    done < <(grep -noE '`[^`]+`' "$f" 2>/dev/null || true)
   done
   return 0
 }
@@ -76,6 +77,7 @@ check_dc10() {
   for f in $(docs_check_ref_scan_files "$root"); do
     rel="${f#"$root"/}"
     while IFS=: read -r lineno content; do
+      [[ "$content" != *'`'* || "$content" != *'just '* ]] && continue
       is_comment_line "$content" && continue
       while IFS= read -r span; do
         while IFS= read -r recipe; do

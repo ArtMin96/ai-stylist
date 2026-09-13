@@ -76,6 +76,8 @@ jobs:
           command -v docker >/dev/null 2>&1 && docker info >/dev/null 2>&1 && echo "docker: reachable" || echo "docker: unavailable"
 
       - name: ./scripts/bootstrap.sh (user-level, the script under test)
+        env:
+          MISE_GITHUB_TOKEN: ${{ github.token }}
         run: |
           # bootstrap ends with doctor and returns its exit code. Docker is absent on macOS runners,
           # so a doctor failure is expected there; anything that stops bootstrap BEFORE the doctor

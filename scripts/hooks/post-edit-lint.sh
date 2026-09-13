@@ -11,6 +11,8 @@ set -uo pipefail
 input="$(cat)"
 path="$(printf '%s' "$input" | jq -r '.tool_input.file_path // empty')"
 [[ -z "$path" ]] && exit 0
+# Only lint files inside the project: scratchpad/temp files written during a session are not ours.
+case "$path" in "${CLAUDE_PROJECT_DIR:-$PWD}"/*) ;; *) exit 0 ;; esac
 
 # Non-blocking reminder that a module contract likely needs a matching update (CLAUDE.md
 # "Single source of truth"). Emitted via hookSpecificOutput.additionalContext regardless of the

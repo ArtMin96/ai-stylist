@@ -66,7 +66,7 @@ The `just` recipes are wired in the root justfile. The recipe bodies are `apps/i
 | `just ios-project`                             |  yes  |  no   | Runs XcodeGen: `project.yml` to `AIStylist.xcodeproj`                                                               |
 | `just ios-build [--config dev\|preview\|prod]` |  yes  |  no   | Builds the app unsigned for the simulator                                                                           |
 | `just ios-test`                                |  yes  |  no   | Runs the package unit tests through the `AIStylist-Dev` scheme on an iOS 26+ iPhone simulator                       |
-| `just ios-e2e`                                 |  yes  |  no   | Builds Prod for the simulator and runs the shared Maestro flow `e2e/smoke.yaml`                                     |
+| `just ios-e2e`                                 |  yes  |  no   | Builds Dev for the simulator and runs the shared Maestro flow `e2e/smoke.yaml` (`APP_ID=app.aistylist.mobile.dev`) |
 | `just ios-test-packages [core\|features]`      |  yes  |  yes  | Runs `swift test` for Core and the Features view models                                                             |
 | `just ios-lint`                                |  yes  |  yes  | Runs the SwiftLint safety rules (on Linux: `swiftlint-static`)                                                      |
 | `just ios-format [--check]`                    |  yes  |  yes  | Runs swift-format, in place or as a check                                                                           |

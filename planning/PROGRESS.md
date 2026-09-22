@@ -26,7 +26,7 @@ Rules:
 | — | Planning package | `ACCEPTED` | This `planning/` directory; ratified 2026-08-24; **prices re-verified and pricing model re-baselined 2026-09-09** (r6, DEC-34/35) |
 | P00 | Product validation and decisions | `NOT_STARTED` | |
 | P01 | 3D and capture prototype gate | `NOT_STARTED` | Re-scoped 2026-09-22 (DEC-50): the RN + Filament gate is moot (RISK-01 retired). The Anny asset pipeline + measurement harness can run now; the native Filament spike runs when 3D resumes |
-| P02 | Repo foundations and CI | `IN_PROGRESS` | Started 2026-09-09 **ahead of P00** for the no-P00-dependency subset (DEC-36). Done: T01, T02, T03, T04, T05, T06, T10, T11, T16; partial: T07 (self-managed PostgreSQL envs — Neon dropped 2026-09-13, ADR-0003), T12 (Renovate app install, human). Cloud-touching tasks (T07 staging/prod PostgreSQL hosts, T09, T13, T14/T15) wait for P00 / OQ-07 / OQ-14 and vendor accounts; T08 (pg-boss) needs no vendor account. Vendor set consolidated 2026-09-13 (DEC-41–48). **2026-09-22: React Native + Expo replaced by native `apps/ios` (SwiftUI) + `apps/android` (Compose)** (ADR-0004, DEC-49–54): T10 done by replacement, T14 re-scoped to native signing lanes (`PARTIAL`: unsigned lanes committed), T15 re-scoped (lane decided, DEC-51). iOS app target not yet built on a Mac. Branch `chore/native-foundations`, not merged. `just ci-parity` last green 2026-09-13 (pre-migration); post-migration verification pending |
+| P02 | Repo foundations and CI | `IN_PROGRESS` | Started 2026-09-09 **ahead of P00** for the no-P00-dependency subset (DEC-36). Done: T01, T02, T03, T04, T05, T06, T10, T11, T16; partial: T07 (self-managed PostgreSQL envs — Neon dropped 2026-09-13, ADR-0003), T12 (Renovate app install, human). Cloud-touching tasks (T07 staging/prod PostgreSQL hosts, T09, T13, T14/T15) wait for P00 / OQ-07 / OQ-14 and vendor accounts; T08 (pg-boss) needs no vendor account. Vendor set consolidated 2026-09-13 (DEC-41–48). **2026-09-22: React Native + Expo replaced by native `apps/ios` (SwiftUI) + `apps/android` (Compose)** (ADR-0004, DEC-49–54): T10 done by replacement, T14 re-scoped to native signing lanes (`PARTIAL`: unsigned lanes committed), T15 re-scoped (lane decided, DEC-51). iOS app target not yet built on a Mac. Branch `chore/native-foundations`, not merged. `just ci-parity` last green 2026-09-23 on the branch (Linux; iOS simulator steps not yet run on a Mac) |
 | P03 | Identity, consent, onboarding | `NOT_STARTED` | |
 | P04 | Parametric avatar v1 | `NOT_STARTED` | |
 | P05 | Selfie face personalization | `NOT_STARTED` | |
@@ -45,7 +45,7 @@ Rules:
 
 **Tracking:** every P02 task has a Linear issue in the project [P02 — Repo foundations and CI](https://linear.app/ai-stylist-app/project/p02-repo-foundations-and-ci-f1943b23882e) (AI-9 = T08, AI-16 = T07, AI-17 = T09, AI-21 = T13, AI-22/23 = T14/T15, AI-26 = T18 close-out, AI-27 = human-only steps).
 
-**First command, always:** `just bootstrap && just doctor && just ci-parity` — must be green before any other work (last green: 2026-09-13 locally, before the native migration; the `chore/native-foundations` branch's final verification is pending, see the 2026-09-22 handoff).
+**First command, always:** `just bootstrap && just doctor && just ci-parity` — must be green before any other work (last green: 2026-09-23 locally on `chore/native-foundations`, Linux; the iOS simulator build/test still needs a Mac, see the 2026-09-22 handoff).
 
 **Native migration (2026-09-22) — do first if `chore/native-foundations` is not merged yet:** on the team's Mac run `just ios-doctor && just ios-check` (the iOS app target and SwiftUI views have never been compiled; checklist in the 2026-09-22 handoff entry), then `just ci-parity`, then open the PR.
 
@@ -98,7 +98,7 @@ Log hygiene: when this log exceeds ~30 entries, move the oldest entries to `plan
   - No Android device/emulator or Maestro run yet.
   - The integration branch (justfile recipes, `mise.toml` JDK 21, CLAUDE.md layout, agents/skills/rules for native) must merge before `just docs-check --strict` is clean: DC-15 on the docs branch alone flags the new doc-15 §5 rows until the native recipes exist.
   - The signing lanes (TestFlight, Play upload) are not built (OQ-18).
-- **Repository state:** last green `just ci-parity` = 2026-09-13 (pre-migration). Post-migration verification is **pending final verification** by the integration session on the merged branch.
+- **Repository state:** last green `just ci-parity` = 2026-09-23 on the merged branch (Linux, exit 0). Not run: `just ios-project` / `ios-build` / `ios-test` / `ios-e2e` (Mac only) and `just android-e2e` (needs a device).
 - **New decisions / risks / questions filed:**
   - Added: DEC-49–54, RISK-18 (native review capacity), RISK-19 (parity drift), ASM-11, OQ-15 (shared-kernel emission for Swift/Kotlin), OQ-16 (contract double `/v1`), OQ-17 (staging host), OQ-18 (native signing/store lanes, permanent bundle id).
   - Superseded: DEC-03/04/30/38; the DEC-05 wrapper half, the DEC-20 client half and the DEC-48 EAS row. Amended: DEC-11/37.

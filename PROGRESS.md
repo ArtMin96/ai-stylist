@@ -7,7 +7,7 @@ This root file exists so that `PROGRESS.md` resolves at the repository root as t
 ## Current phase
 
 - **P02 — Repo foundations and CI:** `IN_PROGRESS`, started 2026-09-09 (ahead of P00 for the no-dependency subset, DEC-36). Task list, per-task state and acceptance criteria: [`planning/phases/P02-repo-foundations-and-ci.md`](planning/phases/P02-repo-foundations-and-ci.md) §12 and §19.
-- **Last green:** `just ci-parity`, 2026-09-13 (locally, branch `chore/agent-setup`), before the native migration. Verification of the 2026-09-22 native migration (`chore/native-foundations`) is pending final verification.
+- **Last green:** `just ci-parity`, 2026-09-23 (locally on Linux, branch `chore/native-foundations`, after the native migration): all gates pass, incl. Android build/test/lint, iOS packages via Docker Swift, gitleaks + osv fixtures. iOS simulator build/test skipped on Linux (needs a Mac or the `ios` workflow) and not yet run.
 - **Latest handoff:** [`planning/PROGRESS.md`](planning/PROGRESS.md) → "Session handoff log" → entry dated 2026-09-22 ("Native migration: React Native + Expo replaced by SwiftUI + Compose", [ADR-0004](docs/adr/0004-native-ios-and-android-clients.md)). Next action: on the team's Mac, `just ios-doctor && just ios-check`; then `just ci-parity` on the merged branch and open the PR.
 
 ## How to update status

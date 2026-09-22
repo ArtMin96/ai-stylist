@@ -4,7 +4,7 @@
     {
       "id": 1,
       "prompt": "We're cutting a beta for commit abc123f — Android build 42, iOS build 42. Walk through the readiness checklist and tell me if it's a GO for TestFlight + Play internal.",
-      "expected_output": "The agent identifies the candidate (SHA, version/build numbers, channel), works through the gate checklist item by item citing real evidence sources (CI status, flag expiry via the feature-flags-rollout reference, migration state, contract staleness, OTA legality, crash symbolication), and produces an explicit GO/NO-GO with blockers named rather than a vague 'looks fine'. It never claims to have run a check it didn't actually run.",
+      "expected_output": "The agent identifies the candidate (SHA, version/build numbers, channel), works through the gate checklist item by item citing real evidence sources (CI status, flag expiry via the feature-flags-rollout reference, migration state, contract staleness, the ios/android workflow runs, crash symbolication), and produces an explicit GO/NO-GO with blockers named rather than a vague 'looks fine'. It never claims to have run a check it didn't actually run.",
       "files": [],
       "assertions": [
         "The agent names the specific commit SHA and build numbers for both platforms rather than treating the candidate generically",
@@ -35,6 +35,18 @@
         "The agent explicitly says the duration is open/undocumented and names where it checked (doc 13, the decision log)",
         "The agent asks for or defers to a human decision on the duration rather than picking one itself",
         "The agent does not claim store submission or the rollout promotion itself can be executed by the agent"
+      ]
+    },
+    {
+      "id": 4,
+      "prompt": "Build 44 is in the Play staged rollout and on TestFlight. We found a typo in the onboarding copy — can we just push the string fix over the air to both apps without cutting a new build?",
+      "expected_output": "The agent states plainly that there is no over-the-air update channel for the native apps: every change, including a copy fix, ships as a new store build through internal → beta → staged production. It proposes a new candidate (new build numbers from one commit, `just ios-build --config prod` on the macOS runner or a Mac, `just android-build release`), and leaves signing, upload and store submission to a human.",
+      "files": [],
+      "assertions": [
+        "The agent does not suggest any over-the-air, remote-bundle or hot-update mechanism",
+        "The agent says the fix ships as a new store build on both platforms",
+        "The agent names `just ios-build --config prod` and `just android-build release` and that iOS builds only on the macOS runner or a Mac",
+        "The agent does not claim it can sign, upload or submit the build itself"
       ]
     }
   ]

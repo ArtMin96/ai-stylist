@@ -3,27 +3,27 @@
   "evals": [
     {
       "id": 1,
-      "prompt": "Add a Maestro flow for the closet single-item capture journey (camera mocked in the emulator) to apps/mobile/e2e/, matching smoke.yaml's style, and note where it plugs into P06's nightly Maestro suite.",
-      "expected_output": "A new .yaml flow lives directly under apps/mobile/e2e/ (not a tests/ directory), reuses smoke.yaml's appId/launchApp/assertVisible vocabulary instead of inventing a new style, its header comment states which steps are camera-mocked-in-emulator vs real-device-only, it cites planning/phases/P06-closet-capture-pipeline.md's Maestro row, and the agent states plainly that it cannot run the flow on the Linux dev box (no Android SDK/emulator).",
+      "prompt": "Add a Maestro flow for the closet single-item capture journey to e2e/, matching smoke.yaml's style, runnable on both native apps, and note where it plugs into P06's nightly Maestro suite.",
+      "expected_output": "A new .yaml flow lives directly under e2e/ (not a tests/ directory), keeps `appId: ${APP_ID}` and smoke.yaml's launchApp/assertVisible vocabulary, asserts only strings or ids that both apps expose identically, its header comment states which steps are simulator/emulator-safe vs real-device-only, it cites planning/phases/P06-closet-capture-pipeline.md, and the agent states which of `just ios-e2e` (macOS) / `just android-e2e` (emulator) it actually ran — or that it could run neither here.",
       "files": [],
       "assertions": [
-        "The new flow file is created under apps/mobile/e2e/, never under a tests/ directory",
-        "The flow's appId and step style match apps/mobile/e2e/smoke.yaml rather than introducing a new format",
+        "The new flow file is created under e2e/, never under a tests/ directory",
+        "The flow keeps `appId: ${APP_ID}` and smoke.yaml's step style rather than a per-platform fork",
         "The agent's report names planning/phases/P06-closet-capture-pipeline.md (or its Maestro row) as the phase context",
-        "The agent explicitly states it could not execute the flow locally and either hands off to CI or names what it verified statically",
-        "No claim of a device or emulator transcript that was not actually produced"
+        "The agent states exactly which of just ios-e2e / just android-e2e it ran, or that it could run neither, and what it verified statically",
+        "No claim of a simulator, emulator or device transcript that was not actually produced"
       ]
     },
     {
       "id": 2,
-      "prompt": "The avatar golden/visual-regression suite is showing diffs after a morph-mapping change landed in P04-T13's harness. Before I run `just golden-accept`, what should I check?",
-      "expected_output": "The agent explains that the diff must be inspected first, the visual change confirmed as intentional and traced to the morph-mapping change, and only then accepted via `just golden-accept` naming the change in the PR — it does not tell the user to blindly accept or to hand-edit a baseline image or threshold.",
+      "prompt": "The closet-grid screenshot golden is showing diffs on both the iOS and Android lanes after the card-spacing change landed. Before I run `just golden-accept`, what should I check?",
+      "expected_output": "The agent explains that the diff must be inspected first on each platform, the visual change confirmed as intentional and traced to the card-spacing change, and only then accepted via `just golden-accept` naming the change in the PR — it does not tell the user to blindly accept or to hand-edit a baseline image or threshold, and it notes that `just golden-accept` is still a stub.",
       "files": [],
       "assertions": [
         "The agent never recommends silently overwriting or hand-editing a baseline image or diff threshold",
         "The agent states that `just golden-accept` must name the specific visual change in the PR before/when accepting",
         "The agent cites planning/13-testing-quality-and-performance.md §6 (or an equivalent description of the golden-regression rule) as the source of this requirement",
-        "The agent flags that if the diff looks unintended, it is native-3d-assets' (render pipeline) territory rather than something to accept away"
+        "The agent flags that if the diff looks unintended (on either platform), it is the owning feature skill's territory (ios-feature / android-feature) rather than something to accept away"
       ]
     },
     {
@@ -36,6 +36,18 @@
         "The agent explicitly states that no just recipe currently wraps k6 execution",
         "The agent names the onboarding-burst profile and references the §12.2 budget / bounded-queue pass criteria from doc 13",
         "The agent does not fabricate a load-test result or number"
+      ]
+    },
+    {
+      "id": 4,
+      "prompt": "The new sign-in Maestro flow passes with `just android-e2e` but fails on iOS because the button isn't found by id. Can I add an iOS-only branch to the flow so it goes green?",
+      "expected_output": "The agent refuses to fork the flow per platform: it explains that flows match on user-visible text or ids both apps expose identically (iOS accessibility identifier, Android testTag exported as a resource id), treats the mismatch as a parity defect for ios-feature / cross-platform-feature to fix by adding the missing accessibility identifier, and says the flow is not done until it passes on both `just ios-e2e` and `just android-e2e`.",
+      "files": [],
+      "assertions": [
+        "The agent does not add a platform-specific branch or a second per-platform flow file",
+        "The agent names the iOS accessibility identifier / Android testTag-as-resource-id mechanism",
+        "The agent hands the missing identifier to the owning feature skill (ios-feature or cross-platform-feature) rather than weakening the assertion",
+        "The agent states the flow must pass on both platforms before it counts as done"
       ]
     }
   ]

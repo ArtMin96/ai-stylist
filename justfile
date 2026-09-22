@@ -191,7 +191,7 @@ security-scan:
     echo "==> gitleaks (working tree)"
     gitleaks dir . --no-banner --redact
     echo "==> osv-scanner"
-    osv-scanner scan --recursive . || { rc=$?; [[ $rc -eq 128 ]] && echo "osv-scanner: no packages found" || exit $rc; }
+    scripts/ci/osv-scan.sh
     echo "==> pnpm audit"
     pnpm audit --audit-level=high
     echo "==> license check (npm + pypi; docs/security/licenses.md)"
@@ -230,12 +230,12 @@ ci-env-example-check:
 ci-gitleaks-history:
     gitleaks git --log-opts=--all --config .gitleaks.toml --redact --verbose .
 
-# osv-scanner over every lockfile and manifest in the tree (npm + PyPI + Actions; nightly)
+# osv-scanner over every lockfile and manifest in the tree (scripts/ci/osv-scan.sh: an empty scan or an unscanned tracked lockfile fails; nightly)
 [private]
 ci-osv-source:
-    osv-scanner scan source --recursive .
+    scripts/ci/osv-scan.sh
 
-# Run the PR gates locally: format --check, lint (+ fixtures), typecheck, arch-check (+ fixtures), docs-check --strict, generate --check, test, native builds, security-scan (+ license and gitleaks fixtures); native toolchains are required (Xcode-only steps skip on Linux with a notice); `--core` = pr-gate's parity job (native lanes run in ios.yml / android.yml)
+# Run the PR gates locally: format --check, lint (+ fixtures), typecheck, arch-check (+ fixtures), docs-check --strict, generate --check, test, native builds, security-scan (+ license, gitleaks and osv-scanner fixtures); native toolchains are required (Xcode-only steps skip on Linux with a notice); `--core` = pr-gate's parity job (native lanes run in ios.yml / android.yml)
 ci-parity *args:
     #!/usr/bin/env bash
     set -euo pipefail
@@ -261,6 +261,7 @@ ci-parity *args:
     just security-scan
     scripts/security/license-check.sh --fixtures
     scripts/security/gitleaks-fixtures.sh
+    scripts/ci/osv-scan.sh --fixtures
 
 # --- ios (apps/ios: Swift 6 + SwiftUI; recipe bodies in apps/ios/scripts/*.sh) ------------------
 # Linux-capable: ios-test-packages, ios-lint, ios-format, ios-check-banned, ios-check (Swift runs in

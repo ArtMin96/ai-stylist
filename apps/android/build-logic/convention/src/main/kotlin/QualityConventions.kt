@@ -36,6 +36,7 @@ internal fun Project.configureCommonQuality() {
         lockAllConfigurations()
         lockMode.set(org.gradle.api.artifacts.dsl.LockMode.STRICT)
     }
+    configureBuildToolSecurityFloors()
     tasks.withType<KotlinCompilationTask<*>>().configureEach {
         compilerOptions {
             allWarningsAsErrors.set(true)

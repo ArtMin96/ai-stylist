@@ -29,6 +29,7 @@ internal val ALLOWED_MODULE_EDGES: Map<String, Set<String>> =
 /** `aistylist.root` — applied once, to the root project. */
 class RootConventionPlugin : Plugin<Project> {
     override fun apply(target: Project) {
+        target.configureKtlintLogbackFloor()
         target.tasks.register<CheckModuleGraphTask>("checkModuleGraph") {
             group = "verification"
             description = "Fails when a module depends on a module outside ALLOWED_MODULE_EDGES."

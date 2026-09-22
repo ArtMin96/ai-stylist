@@ -23,6 +23,20 @@ ktlint = "1.8.0"
 detekt = "2.0.0-alpha.6"
 compose-lint-checks = "1.6.0"
 
+# Security floors for BUILD-TOOL configurations only (never the app's runtime classpath): the
+# patched versions of transitive dependencies that AGP's plugin classpath, Android Lint
+# (`androidLintTool`), the Unified Test Platform (`unified-test-platform-*`) and Spotless's ktlint
+# resolve at vulnerable versions. Applied as upgrade-only constraints by the root build script and
+# build-logic (BuildToolSecurityFloors.kt). Drop an entry once its owning tool ships the fix.
+# See docs/security/dependency-ignores.md (2026-09-23).
+floor-bouncycastle = "1.85"
+floor-commons-lang3 = "3.18.0"
+floor-httpclient = "4.5.14"
+floor-jose4j = "0.9.6"
+floor-jdom2 = "2.0.6.1"
+floor-netty = "4.1.137.Final"
+floor-logback = "1.5.34"
+
 # SDK levels (read by build-logic; see apps/android/README.md for why these values).
 sdk-compile = "37"
 sdk-target = "36"
@@ -59,6 +73,16 @@ robolectric-android-all = { module = "org.robolectric:android-all-instrumented",
 turbine = { module = "app.cash.turbine:turbine", version.ref = "turbine" }
 
 compose-lint-checks = { module = "com.slack.lint.compose:compose-lint-checks", version.ref = "compose-lint-checks" }
+
+# Security floors (see the floor-* versions above). Constraints only: none is ever a direct dependency.
+floor-bcprov = { module = "org.bouncycastle:bcprov-jdk18on", version.ref = "floor-bouncycastle" }
+floor-bcpkix = { module = "org.bouncycastle:bcpkix-jdk18on", version.ref = "floor-bouncycastle" }
+floor-bcutil = { module = "org.bouncycastle:bcutil-jdk18on", version.ref = "floor-bouncycastle" }
+floor-commons-lang3 = { module = "org.apache.commons:commons-lang3", version.ref = "floor-commons-lang3" }
+floor-httpclient = { module = "org.apache.httpcomponents:httpclient", version.ref = "floor-httpclient" }
+floor-jose4j = { module = "org.bitbucket.b_c:jose4j", version.ref = "floor-jose4j" }
+floor-jdom2 = { module = "org.jdom:jdom2", version.ref = "floor-jdom2" }
+floor-netty-bom = { module = "io.netty:netty-bom", version.ref = "floor-netty" }
 
 # Build-logic (convention plugins) compile against these; not used by app modules directly.
 android-gradle-plugin = { module = "com.android.tools.build:gradle", version.ref = "agp" }

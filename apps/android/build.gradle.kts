@@ -6,6 +6,23 @@ buildscript {
     configurations.classpath {
         resolutionStrategy.activateDependencyLocking()
     }
+    // Security floors (gradle/libs.versions.toml `floor-*`): upgrade-only constraints for
+    // vulnerable transitives of AGP on the plugin classpath. Build tooling only, never the APK.
+    dependencies {
+        constraints {
+            listOf(
+                libs.floor.bcprov,
+                libs.floor.bcpkix,
+                libs.floor.bcutil,
+                libs.floor.commons.lang3,
+                libs.floor.httpclient,
+                libs.floor.jose4j,
+                libs.floor.jdom2,
+            ).forEach { floor ->
+                classpath(floor) { because("security floor; see docs/security/dependency-ignores.md") }
+            }
+        }
+    }
 }
 
 plugins {

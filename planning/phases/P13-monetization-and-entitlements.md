@@ -160,7 +160,7 @@ Small enough for one AI-assisted session each. Task IDs `P13-T##`.
 | `closet`/`media`/`outfit`/`recommendation`/`fashion-intel` | Seam checks respond to resolved entitlements (409/403 + upsell code) | — | `ENTITLEMENT_REQUIRED` error envelope | Direct API call without entitlement → 403 regardless of client state; over-cap read-only rule | Free-tier journey: browse closet, 1 rec/day, export |
 | `identity` | Signup+grant transactionality | — | — | Signup rollback if grant fails | — |
 | Security (`*.sec.test.ts`) | — | — | — | Webhook forgery rejected; replay exactly-once; entitlement tamper; credit double-spend; deletion incl. RevenueCat step | — |
-| Mobile `features/billing` | Paywall/pill/recap components; pending-purchase state machine | — | Generated client only | MSW flows for grace/expiry/restore errors | Maestro purchase+restore (sandbox); golden snapshots of paywall/recap states |
+| Mobile `features/billing` | Paywall/pill/recap components; pending-purchase state machine | — | Generated client only | Fake-API UI tests for grace/expiry/restore errors | Maestro purchase+restore (sandbox); golden snapshots of paywall/recap states |
 
 New bug fixes require a regression test that fails before the fix. Tests live in each module's `tests/` directory.
 

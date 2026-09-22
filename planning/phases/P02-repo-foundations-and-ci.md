@@ -4,6 +4,14 @@
 
 > File name: `phases/P02-repo-foundations-and-ci.md` per [SPINE §5](../SPINE.md). Every section below is REQUIRED (brief §10); "None" is written explicitly rather than deleting a section. Status values per [PROGRESS.md](../PROGRESS.md).
 
+> **Amended 2026-09-22 ([ADR-0004](../../docs/adr/0004-native-ios-and-android-clients.md), DEC-49–54).** React Native + Expo were replaced by native apps: `apps/ios` (Swift 6 + SwiftUI) and `apps/android` (Kotlin + Compose), with generated Swift/Kotlin clients and `.github/workflows/ios.yml` / `android.yml`.
+> - **T10:** done by replacement. The Expo skeleton was deleted and the native foundations cover its scope.
+> - **T14:** re-scoped to native signing and store-upload lanes.
+> - **T15:** the EAS-vs-GHA ADR is moot (DEC-51 resolves OQ-04). T15 becomes a lane-reliability review.
+> - **A4** (pnpm × EAS) is moot.
+>
+> Wording below that still names Expo/EAS/RNTL is marked *historical* or restated.
+
 ## 1. Overview
 
 - **Phase:** P02 — Repo Foundations and CI
@@ -43,7 +51,7 @@ IDs from [01-requirements-and-traceability.md](../01-requirements-and-traceabili
 | NFR-TST-110 | Regression-first, no-skip, flaky-quarantine rules enforced by lint + PR template | AC-4 |
 | NFR-TST-120 | Four CI tiers live (PR fast gate <10 min, affected, nightly, pre-release skeleton) | AC-1 |
 | NFR-TST-130 | Behavior-first testing rules in review checklist; ports faked at boundary | AC-4 |
-| NFR-TEAM-010 | Linux-first dev proven: Ubuntu-only dev ships Android build + TestFlight build via CI; **EAS-vs-GHA ADR decided** | AC-8 |
+| NFR-TEAM-010 | Linux-first dev proven: a Linux dev ships an Android build, and a TestFlight build comes from CI (the GHA macOS lane; the lane decision is DEC-51, which replaced the EAS-vs-GHA ADR) | AC-8 |
 | NFR-TEAM-020 | Monorepo layout per [04 §6](../04-architecture.md); no `utils` dumps; no large binaries in Git | AC-1 |
 | NFR-TEAM-030 | ESLint boundaries + dependency-cruiser enforce module rules; module-contract files exist | AC-3 |
 | NFR-TEAM-040 | Search-before-write workflow mandatory in CLAUDE.md; clone-detection in CI | AC-9 |
@@ -64,31 +72,31 @@ Contributing (primary delivery elsewhere): NFR-TEAM-110 (templates/ADR log — r
 
 ## 3. Prerequisites and blocking dependencies
 
-- Hard depends on (must be `ACCEPTED`): **P00** ([SPINE §5](../SPINE.md)). **P01 parallel OK** — P02 must not block on the gate; the only coupling is A4/A5 (EAS × pnpm, lane cost) evidence exchange.
+- Hard depends on (must be `ACCEPTED`): **P00** ([SPINE §5](../SPINE.md)). **P01 parallel OK** — P02 must not block on the gate; the only coupling is A5 (lane cost) evidence exchange (A4, EAS × pnpm, is moot since 2026-09-22).
 - External blockers:
-  - Vendor accounts: GitHub org, server provider (per OQ-07/OQ-14), Cloudflare (R2 + DNS/WAF only), PostHog, Grafana Cloud, Expo/EAS (free allowance only), Apple Developer Program, Play Console. Regions per the **OQ-07 memo from P00** (ADR-0003, [r7](../research/r7-third-party-services-and-self-hosting-audit-2026-09-13.md)).
+  - Vendor accounts: GitHub org, server provider (per OQ-07/OQ-14), Cloudflare (R2 + DNS/WAF only), PostHog, Grafana Cloud, Apple Developer Program, Play Console. *(Expo/EAS removed 2026-09-22, DEC-51.)* Regions per the **OQ-07 memo from P00** (ADR-0003, [r7](../research/r7-third-party-services-and-self-hosting-audit-2026-09-13.md)).
   - Apple/Google developer-program approvals can take days — request at phase start (blocks P02-T14 only).
   - ADR-P02 (OQ-04, iOS lane) needs ~2 weeks of dual-lane data (A5) — start both lanes early.
 
 ## 4. In scope / out of scope
 
 **In scope:**
-- Monorepo scaffold exactly per [04 §6](../04-architecture.md): `apps/mobile`, `apps/api`, `workers/ml`, `packages/contracts`, `packages/shared-kernel`, `packages/seed-data`, `packages/test-support`, `assets/3d`, `tools/`, `justfile`, `mise.toml`, `turbo.json`; pnpm workspaces + Turborepo.
+- Monorepo scaffold exactly per [04 §6](../04-architecture.md): `apps/ios` + `apps/android` (*were `apps/mobile` until 2026-09-22*), `apps/api`, `workers/ml`, `packages/contracts`, `packages/shared-kernel`, `packages/seed-data`, `packages/test-support`, `assets/3d`, `tools/`, `justfile`, `mise.toml`, `turbo.json`; pnpm workspaces + Turborepo.
 - All 15 module skeletons (`apps/api/src/modules/<name>/{index.ts,internal/,tests/}` for every SPINE §3 name incl. `assistant` stub) + `platform` + composition roots; module-contract files in `docs/modules/` from [templates/module-contract.md](../templates/module-contract.md).
 - Boundary enforcement: eslint-plugin-boundaries + dependency-cruiser rules encoding [04 §4.2](../04-architecture.md) (public-API-only, no cycles, `recommendation ⊥ avatar/renderer`, domain ⊥ provider SDKs, `platform` leaf-only, no `utils/` dirs, `prototype/` unimportable) → `just arch-check`.
 - Contracts pipeline ([06 §1](../06-data-api-and-event-contracts.md)): OpenAPI 3.1 authoring layout, `@hey-api/openapi-ts` TS client, `datamodel-code-generator` Python models, event JSON Schemas + envelope, `just generate --check` staleness gate, spectral lint, oasdiff breaking-change detector. Seed content: health/version endpoint, error envelope (RFC 9457), event envelope, analytics-event schema.
 - Data layer: Drizzle + drizzle-kit stream, Testcontainers Postgres+pgvector harness, **outbox table ([06 §6](../06-data-api-and-event-contracts.md)) + relay + pg-boss v12 job runtime (`apps/api/src/jobs/`, DEC-41) + one demo event round-trip** with idempotency/retry/DLQ tests; migration policy (expand–contract, `just db-migrate/rollback/reset/seed`); self-managed PostgreSQL 17 + pgvector per environment (staging/prod on the owned server, Docker `pgvector/pgvector:pg17`) with pgBackRest WAL archiving + PITR to an encrypted R2 bucket, nightly `pg_dump`, PgBouncer pooling and a backup-age alert (DEC-43); ephemeral/Testcontainers databases replace branch-per-PR.
 - CI: GitHub Actions running `just` recipes only; four tiers per [13 §13](../13-testing-quality-and-performance.md); Linux runners everywhere except the iOS lane; Turborepo remote cache; `ci.pr_gate_duration` metric.
-- **iOS lane + ADR-P02:** EAS (free allowance only) *and* GHA macOS lane both exercised (~2 weeks, A5); TestFlight upload via App Store Connect API from Linux; Android build/sign lane; ADR records the chosen lane (OQ-04 → DEC entry).
+- **iOS + Android lanes:** GHA macOS lane (`ios.yml`) and Linux Android lane (`android.yml`). Unsigned build + test is **done**. Still to do: signed archive → TestFlight upload via the App Store Connect API, and Play upload signing (OQ-18). Lane cost/flake measured (A5). *(Historical: EAS and GHA macOS were to run side by side for an ADR, which DEC-51 made moot.)*
 - Observability baseline ([14 §15 P02 row](../14-observability-operations-and-analytics.md)): pino/structlog JSON logging with schema-allowlist redaction, correlation IDs client→API→outbox→job→worker, OTel traces/metrics → Grafana Cloud free tier or a separate-node self-hosted Grafana stack (**ADR-OBS-01** chooses), PostHog project (events/errors/flags; consent-gated client wiring lands P03), crash reporting with sourcemap/dSYM upload, dashboard 1 (service health), severity ladder + first runbooks (API down, PostgreSQL incident, queue stuck), flag registry + expiry lint.
 - Security foundations: sops+age secrets ([15 §6](../15-team-workflow-and-ai-agent-operations.md)), `.env.example`, gitleaks pre-commit + CI, osv-scanner, license/SBOM (syft), Renovate, frozen lockfiles + postinstall allowlist, per-env credential isolation, Cloudflare WAF in front of the API, rate-limit middleware skeleton, **signed-URL skeleton**: `StorageProvider` port + R2 adapter minting presigned PUT/GET with TTL + namespace constraints ([11 §5.4](../11-security-privacy-and-compliance.md)) + its security tests (full media enforcement is P06/NFR-SEC-050).
 - **CLAUDE.md moved from `planning/` to repo root** (verbatim policy content, paths activated) + `.agents/skills/` with one SKILL.md per NFR-TEAM-100 area (13 skills), each with trigger/required-reading/workflow/validation/output/stop-conditions; templates (issue/PR/ADR/session-handoff/module-contract) under `templates/`→repo; CODEOWNERS with real handles; PROGRESS.md operational at root.
-- Mobile + workers skeletons: Expo app boots to a placeholder screen with generated client + PostHog init + crash reporting; one FastAPI worker (`workers/ml/segmentation` stub) consuming generated Pydantic models behind a versioned endpoint, containerized, hit by the demo outbox flow.
+- Mobile + workers skeletons: native iOS and Android apps boot to a home screen with the generated client, a version round-trip, and a consent-gated analytics port (no PostHog/crash SDK yet; *historical: Expo app with PostHog init + crash reporting*); one FastAPI worker (`workers/ml/segmentation` stub) consuming generated Pydantic models behind a versioned endpoint, containerized, hit by the demo outbox flow.
 - `just` catalog complete per [15 §5](../15-team-workflow-and-ai-agent-operations.md) including `assets-validate` (adopting P01 tooling when available) and `ml-eval` stub.
 
 **Out of scope / non-goals for this phase:**
 - Any real domain behavior: auth, consent, profile → P03; media pipeline stages → P06; engine → P09. Skeleton endpoints stay at health/version + demo flow.
-- 3D rendering in the product app (renderer boundary directory exists, empty) → P04; P01 owns prototype rendering.
+- 3D rendering in the product apps → P04 (no renderer boundary exists in the native apps yet; it is created when 3D resumes, DEC-50); P01 owns prototype rendering.
 - Store-facing releases, staged rollout execution, crash-gate rehearsal → P14 (config documented now per NFR-TEAM-140).
 - RevenueCat, fal.ai, Open-Meteo accounts/adapters and the embedded `date-holidays` adapter → their owning phases (ports pattern only is established here).
 - Sentry decision → end of P03 per [14 §1](../14-observability-operations-and-analytics.md).
@@ -118,7 +126,7 @@ Module names per [SPINE §3](../SPINE.md); every touched module gets its contrac
 | `platform` | Port pattern established; first adapters: `StorageProvider` (R2 signed URLs), outbox relay, logger, OTel init, PostHog server client, resilience utilities (timeout/retry+jitter/circuit-breaker) | Yes |
 | `admin` | Skeleton only + DLQ-sweep ops-queue placeholder (consumer of failed outbox rows per [04 §9.2](../04-architecture.md)) | Yes |
 | `assistant` | Skeleton + boundary rule (may import only public application services) — REQ-CHT-010 | Yes |
-| Composition roots | `apps/api/src/main.ts`/`app.module.ts`, `apps/api/src/jobs/index.ts`, `apps/mobile/src/app/_root.tsx`, worker `main.py` — only places adapters meet ports ([04 §5](../04-architecture.md)) | n/a |
+| Composition roots | `apps/api/src/main.ts`/`app.module.ts`, `apps/api/src/jobs/index.ts`, `apps/ios/App/CompositionRoot.swift`, `apps/android/app` `AppContainer` (*was `apps/mobile/src/app/_layout.tsx`*), worker `main.py` — only places adapters meet ports ([04 §5](../04-architecture.md)) | n/a |
 
 ## 7. Public interfaces, contracts, schemas, migrations, events
 
@@ -131,7 +139,7 @@ Module names per [SPINE §3](../SPINE.md); every touched module gets its contrac
 
 | Surface | Work (or "None") |
 |---|---|
-| Mobile | Expo SDK 55+ prebuild skeleton; generated client wired; PostHog + crash reporting init; ESLint boundary config for `src/renderer/**`; Jest/RNTL harness; Maestro smoke flow (app boots) |
+| Mobile | Native skeletons (SwiftUI app + local SwiftPM packages; Compose app + Gradle modules); generated Swift/Kotlin clients wired; consent-gated analytics port; safety settings (Swift 6 strict concurrency, warnings as errors; Kotlin/Lint warnings as errors, detekt, module-graph allow-list); Swift Testing / JUnit + Robolectric harnesses; shared Maestro smoke flow `e2e/smoke.yaml`. PostHog + crash reporting SDKs still to wire (NFR-OBS-040). *(Historical: Expo SDK 55+ skeleton with Jest/RNTL.)* |
 | Backend | NestJS/Fastify app; 15 module skeletons; DI composition root; health/version; outbox relay; rate-limit middleware skeleton; pino + OTel; contract-conformance test harness |
 | Workers (ML/media) | `segmentation` FastAPI stub (versioned echo endpoint), Dockerfile, pytest + Schemathesis harness, generated Pydantic models |
 | Data / migrations | Drizzle setup; outbox + idempotency migrations; Testcontainers harness; `just db-*` recipes; self-managed PostgreSQL 17 + pgvector per env (staging/prod) with pgBackRest PITR + PgBouncer; ephemeral databases per PR (no branch-per-PR); `packages/seed-data` factories (synthetic only) |
@@ -177,15 +185,15 @@ Small enough for one AI-assisted session each (~half-day). Task IDs `P02-T##` ar
 | P02-T07 | Data layer: Drizzle + migrations 0001/0002 (outbox, idempotency), Testcontainers harness, `just db-*` recipes, self-managed PostgreSQL environments (staging/prod DB provisioning on the owned server, pgBackRest WAL archiving + PITR to an encrypted R2 bucket, nightly `pg_dump`, PgBouncer, backup-age alert — DEC-43), seed-data package | P02-T05 | 2 | `PARTIAL` — self-managed PostgreSQL environments not provisioned (staging/prod provisioning, pgBackRest archiving, PgBouncer, backup-age alert remain; P00/OQ-07, OQ-14) |
 | P02-T08 | Outbox relay + **pg-boss** + worker stub: relay (SKIP LOCKED poll), demo event → pg-boss job → FastAPI stub round-trip; acceptance suite covering idempotency/retry/DLQ/replay, kill/retry, per-user cancellation and the deletion/export scenarios (NFR-TST-040, REQ-MED-090/110) — the acceptance suite is the pg-boss gate; if the suite proves pg-boss insufficient, record a DEC and fall back to self-hosted Trigger.dev (DEC-41); resilience utils in `platform` | P02-T07 | 2 | `NOT_STARTED` |
 | P02-T09 | Observability: pino/structlog + redaction allowlist/denylist + forbidden-field lint + canary test; OTel wiring API/worker/job; Grafana Cloud free tier or a separate-node self-hosted Grafana stack (ADR-OBS-01 chooses; never on the app server) + dashboard 1 + SEV alerts; ADR-OBS-01 | P02-T08 | 2 | `NOT_STARTED` |
-| P02-T10 | Mobile skeleton: Expo prebuild app, generated client round-trip to health, PostHog init (consent-stub off) + crash reporting + sourcemap upload, Jest/RNTL + Maestro smoke, renderer-boundary lint | P02-T04 | 2 | `DONE` |
+| P02-T10 | Mobile skeleton: Expo prebuild app, generated client round-trip to health, PostHog init (consent-stub off) + crash reporting + sourcemap upload, Jest/RNTL + Maestro smoke, renderer-boundary lint | P02-T04 | 2 | `DONE` — **done by replacement 2026-09-22 (DEC-49):** the Expo app was deleted, and native foundations `apps/ios` + `apps/android` landed on `chore/native-foundations`. They cover the home screen, generated-client version round-trip, consent-gated analytics port, unit tests and the shared Maestro flow. Crash reporting + PostHog init were not carried over (NFR-OBS-040 still open); the iOS app target has not been built on a Mac yet |
 | P02-T11 | CI tiers: GitHub Actions invoking `just` recipes only; PR fast gate (<10 min budget, measured), affected-module, nightly, pre-release skeleton; Turborepo remote cache; `ci.*` metrics | P02-T05, P02-T06, P02-T07 | 2 | `DONE` — workflows actionlint-clean; not yet run on GitHub |
 | P02-T12 | Security lane: sops+age setup + CI key; gitleaks (pre-commit + CI + nightly history), osv-scanner, pnpm audit, syft SBOM, license gate, Renovate, postinstall allowlist → `just security-scan` | P02-T01 | 1 | `PARTIAL` — sops+age (recipients, `dev.enc.yaml`, CI `SOPS_AGE_KEY`, `just secrets-updatekeys`), gitleaks, osv-scanner, pnpm audit, syft SBOM, license gate, postinstall allowlist done (PR #1, PR #2); Renovate GitHub app install (human) outstanding |
 | P02-T13 | Signed-URL skeleton: `StorageProvider` port + R2 adapter (presigned PUT/GET, TTL, namespace + content-type/size constraints) + `*.sec.test.ts` (expired/foreign-key rejects); R2 buckets per env; Cloudflare WAF in front of API; no Cloudflare Images — delivery model documented: private user media = presigned GET on the S3 endpoint (uncached, TTL ≤ 10 min), public app assets only = R2 custom domain with Cloudflare cache (DEC-44) | P02-T05 | 1 | `NOT_STARTED` |
-| P02-T14 | iOS/Android lanes: EAS profile (free allowance only) **and** GHA macOS lane both building + signing; TestFlight upload from Linux via App Store Connect API; Android debug/release lane; `just mobile-*-build` | P02-T10 | 2 | `NOT_STARTED` |
-| P02-T15 | ADR-P02 (OQ-04): after ~2 weeks of dual-lane data (cost, flake rate — A5) decide EAS vs GHA; DEC entry; deactivate the losing lane's schedule (config retained as fallback per RISK-12) | P02-T14 | 1 | `NOT_STARTED` |
+| P02-T14 | **Re-scoped 2026-09-22:** native iOS/Android lanes. Unsigned build/lint/test lanes exist (`ios.yml`, `android.yml`, `just ios-*` / `just android-*`). Remaining: signed iOS archive + TestFlight upload via App Store Connect API key, and a Play upload-keystore job (tag/dispatch only), per OQ-18. *(Was: EAS profile and GHA macOS lane both signing; `just mobile-*-build`.)* | P02-T10 | 2 | `PARTIAL` — unsigned lanes committed, not yet run on GitHub; signing lanes not started |
+| P02-T15 | **Re-scoped 2026-09-22:** the lane decision is made (DEC-51, OQ-04 resolved; ADR-0002 superseded by ADR-0004). What remains: after ~2 weeks of `ios.yml` runs, record cost and flake rate (A5), and move the runner off the preview `xcode-27` image once a GA image carries Xcode 27 (RISK-12). *(Was: decide EAS vs GHA from dual-lane data.)* | P02-T14 | 1 | `NOT_STARTED` |
 | P02-T16 | Operating contract live: move CLAUDE.md `planning/` → repo root (paths activated, content per NFR-TEAM-090); `.agents/skills/` — 13 SKILL.md files per NFR-TEAM-100 with all six sections + overlap review; templates + CODEOWNERS (real handles) + PROGRESS.md at root | P02-T01 | 2 | `DONE` — CODEOWNERS handles are placeholders |
 | P02-T17 | Assets scaffolding: `assets/3d` manifest schema (P01-ratified conventions, [07 §9](../07-3d-avatar-and-garment-pipeline.md)), Git LFS, `just assets-validate` (adopt P01 tooling), `just ml-eval` stub | P02-T04 (+P01 tooling when available) | 1 | `NOT_STARTED` |
-| P02-T18 | Close-out: `just ci-parity` green on two machines + CI; module-contract files complete; docs/PROGRESS/handoff; A4 (pnpm×EAS) outcome recorded | all | 1 | `NOT_STARTED` |
+| P02-T18 | Close-out: `just ci-parity` green on two machines + CI; module-contract files complete; docs/PROGRESS/handoff; iOS app target verified on the team's Mac (`just ios-check`) *(A4, pnpm × EAS, is moot)* | all | 1 | `NOT_STARTED` |
 
 ## 13. Parallelization
 
@@ -206,7 +214,7 @@ Tooling per [13 §3](../13-testing-quality-and-performance.md); tests live in ea
 | `platform` | Relay batching/backoff logic; resilience utils | Retry-jitter bounds | `StorageProvider` port contract test (fake + R2 recorded fixtures) | **Outbox suite**: same idempotency key twice → one effect; injected failure → retry → DLQ; replay preserves idempotency (Testcontainers) | — |
 | API (cross-module) | Controller mapping | — | Schema-conformance harness: every documented endpoint, auth flags, problem+json shape; `just generate --check` | Boot-in-process + Testcontainers; demo-flow trace assertion (correlation ID end-to-end) | — |
 | Security suite | — | — | — | `*.sec.test.ts`: signed-URL constraints (expired, foreign namespace, wrong content-type), redaction canary (planted markers never reach sink) | — |
-| Mobile | Jest/RNTL placeholder-screen + client-wiring tests | — | Generated-client round-trip vs contract | MSW-mocked health flow | Maestro smoke: app boots on emulator (CI) + one real device |
+| Mobile (iOS / Android) | Swift Testing (config, analytics consent, version service, home model) / JUnit + Robolectric (config, repository, ViewModel, consent, home screen) | — | Generated-client round-trip vs contract (in-memory transport / MockWebServer) | App scheme tests on the iOS simulator / Robolectric Compose tests | Maestro smoke `e2e/smoke.yaml`: app boots on simulator/emulator + one real device *(historical: Jest/RNTL + MSW)* |
 | Worker | pytest: schema validation | hypothesis: payload parsing invariants | Schemathesis vs worker OpenAPI; Pydantic ↔ contracts fixtures | Docker-composed round-trip from T08 | — |
 | Migrations | — | — | Drizzle schema ↔ migration drift check | Forward + rollback on an ephemeral database (CI) and on a scratch database restored from the staging backup with seeded data ([13 §9](../13-testing-quality-and-performance.md)) | — |
 
@@ -217,7 +225,7 @@ New bug fixes require a regression test that fails before the fix; the no-skip l
 | Budget | Target (hypothesis until measured) | How measured |
 |---|---|---|
 | Performance | PR fast gate **< 10 min** wall clock (measured from day one); signed-URL mint p95 ≤ 100 ms; API health p95 ≤ 250 ms; mobile cold start ≤ 2.5 s mid-tier (first skeleton measurement per [13 §12](../13-testing-quality-and-performance.md)) | `ci.pr_gate_duration` metric; k6 smoke on staging; cold-start timer on one mid-tier device (archived trace) |
-| Cost | Infra ≤ ~$35/mo launch envelope (owned server ~$10–25/mo per OQ-14, R2/PostHog/Grafana free tiers); iOS lane ≤ $50/mo (A5 measurement decides ADR-P02) | Provider billing dashboards, screenshots archived monthly; lane cost sheet in ADR-P02 |
+| Cost | Infra ≤ ~$35/mo launch envelope (owned server ~$10–25/mo per OQ-14, R2/PostHog/Grafana free tiers); iOS lane ≤ $50/mo (A5 measurement; *the ADR-P02 lane choice is moot, DEC-51*) | Provider billing dashboards, screenshots archived monthly; lane cost sheet in ADR-P02 |
 | AI quality | n/a this phase (eval harness stub `just ml-eval` exists, empty) | n/a |
 | Reliability | Outbox: zero lost events across kill/retry tests; relay oldest-unprocessed age < 60 s in demo load; CI flake rate baseline recorded | Outbox test suite; `queue.job.age_oldest` panel; `ci.flake_rate` |
 
@@ -225,16 +233,16 @@ New bug fixes require a regression test that fails before the fix; the no-skip l
 
 - Feature flags (owner + expiry date): flag *infrastructure* ships (PostHog, registry, expiry lint). One flag created: `demo-outbox-flow` (owner: BE lead, expiry: P03 start) used to demo flag rollback (NFR-OBS-080). No product flags yet.
 - Migration/backward-compatibility plan: migrations 0001/0002 are greenfield; expand–contract policy ([06 §7](../06-data-api-and-event-contracts.md)) is enforced from the first migration (review checklist + ephemeral-database test in CI; staging proof on a scratch database restored from the staging backup). Contract versioning starts at `/v1` additive-only.
-- Rollback plan: infra is declarative/config-controlled — revert = git revert + redeploy via CI; `just db-rollback` proven against staging for both migrations; iOS lane rollback = the ADR-P02 losing lane retained as documented fallback (RISK-12); dashboard/alert config exported and version-controlled.
+- Rollback plan: infra is declarative/config-controlled — revert = git revert + redeploy via CI; `just db-rollback` proven against staging for both migrations; iOS lane fallback = build and upload from the team's Mac (RISK-12, DEC-51); dashboard/alert config exported and version-controlled.
 
 ## 17. Risks, mitigations, assumptions, stop/kill criteria
 
 Link RISK-NN/ASM-NN in [16](../16-risks-open-questions-and-decision-log.md); phase-local ones are added there, not here.
 
-- Risks in play: **RISK-11** (managed-service lock-in — vendor concentration reduced by ADR-0003; fallbacks documented per remaining vendor as accounts are created), **RISK-17** (self-managed PostgreSQL recovery/ops burden — pgBackRest + backup-age alerts stood up in T07, quarterly restore drill from P14), **RISK-12** (iOS-without-Mac — both lanes stood up, ADR-P02), **RISK-16** (capacity — P02 is the discipline machine itself). Assumptions under test: **A4** (pnpm × EAS build hooks), **A5** (lane cost/flake), **A11** partially (pg-boss on the app database sustains skeleton job volume; launch target ≤ ~10 jobs/s), **A12** setup (self-managed PostgreSQL latency measurement harness ready for P03).
+- Risks in play: **RISK-11** (managed-service lock-in — vendor concentration reduced by ADR-0003; fallbacks documented per remaining vendor as accounts are created), **RISK-17** (self-managed PostgreSQL recovery/ops burden — pgBackRest + backup-age alerts stood up in T07, quarterly restore drill from P14), **RISK-12** (single iOS CI lane; Mac fallback, DEC-51), **RISK-18/19** (native review capacity, parity drift — the safety settings land here), **RISK-16** (capacity — P02 is the discipline machine itself). Assumptions under test: ~~A4 (pnpm × EAS build hooks)~~ moot, **A5** (lane cost/flake), **A11** partially (pg-boss on the app database sustains skeleton job volume; launch target ≤ ~10 jobs/s), **A12** setup (self-managed PostgreSQL latency measurement harness ready for P03).
 - **Stop/kill criteria for this phase:**
-  - A4 fails (pnpm monorepo cannot build via EAS after the documented build-hook workaround) → execute the recorded fallback: Yarn workspaces (tooling-local change, [05 §8](../05-technology-decisions.md)); log DEC. Do not fork the repo layout.
-  - Both iOS lanes flake > 10% or exceed $50/mo at our cadence for 2 consecutive weeks → escalate per RISK-12 (second-provider activation; Mac rental is last resort, purchase stays vetoed by DEC-03).
+  - ~~A4 fails (pnpm monorepo cannot build via EAS…)~~ moot since 2026-09-22 (no EAS).
+  - The iOS lane flakes > 10% or exceeds $50/mo at our cadence for 2 consecutive weeks → escalate per RISK-12: build from the team's Mac meanwhile and evaluate Xcode Cloud as a second lane (new DEC). *(DEC-03's Mac veto is superseded by DEC-51.)*
   - PR fast gate cannot reach < 10 min after cache tuning → split tiers further (move suites to affected-tier) rather than weakening gates; a gate-weakening change requires an ADR.
   - P02 has no product kill switch — it can only complete, or block with named blockers in PROGRESS.md.
 
@@ -248,9 +256,9 @@ Exact steps proving the vertical slice end-to-end on a real environment:
 4. Edit the OpenAPI spec without regenerating → `just generate --check` fails; run `just generate`, diff shows only generated files; commit passes.
 5. `just dev-api` + `curl /v1/health` → 200 with problem+json verified on a bad route; trigger the demo event → show one trace in Grafana spanning API → outbox → pg-boss job → Python worker, single correlation ID.
 6. Kill the worker mid-task → retries visible → DLQ row + alert fires → runbook #4 linked from the alert.
-7. Launch the mobile skeleton on a real device via dev-client: health round-trip on screen; force the test crash → symbolicated in PostHog.
+7. Launch the native skeletons on real devices (iOS from Xcode on the team's Mac, Android via `adb install`): version round-trip on screen; force the test crash → symbolicated in PostHog (once crash reporting is wired; see T10 note).
 8. Open a PR: fast gate completes < 10 min; merge; show `main` green.
-9. Show the same commit built by the chosen iOS lane → TestFlight build appears; Android AAB from CI installs on device (an Ubuntu-only dev shipped both — NFR-TEAM-010).
+9. Show the same commit built by the GHA macOS lane → TestFlight build appears; Android AAB from CI installs on device (an Ubuntu-only dev shipped both — NFR-TEAM-010).
 10. Open root `CLAUDE.md`, `.agents/skills/` (13 skills), `docs/modules/` (15 contracts), PROGRESS.md at root.
 
 ## 19. Acceptance criteria
@@ -264,7 +272,7 @@ Objectively verifiable statements — no "works well".
 - AC-5: outbox suite green: duplicate idempotency key → exactly one effect; injected failure → ≤ configured retries → DLQ row + `queue.job.dlq` metric + alert; replay of a dispatched event produces no second effect; `just db-migrate` + `just db-rollback` proven on a scratch database restored from the staging backup (output pasted). REQ-MED-090/110 mechanism delivered.
 - AC-6: one demo-flow trace shows API → outbox → task → worker under a single correlation ID (Grafana link); redaction canary test green and the forbidden-field lint fails a fixture that logs a marker token; dashboard 1 live with owners; forced crashes on iOS + Android symbolicated in PostHog; analytics CI check rejects an unknown event fixture; flag `demo-outbox-flow` rollback demoed (before/after behavior shown).
 - AC-7: `just security-scan` green; gitleaks blocks a planted fake secret in pre-commit and CI (red run pasted, secret synthetic); SBOM artifact produced; `.env.example` keys ⊇ config-schema keys (CI check); secrets exist only in sops files + platform stores (repo grep for known key patterns clean); signed-URL `*.sec.test.ts` suite green including expired-URL and foreign-namespace rejections.
-- AC-8: **ADR-P02 exists** with two weeks of dual-lane data (builds, cost, flake rate) and a decision (OQ-04 → DEC entry); TestFlight build uploaded from a Linux-runner step; Android AAB built + signed in CI; both installed on physical devices from CI artifacts of the same commit.
+- AC-8: *(re-scoped 2026-09-22)* the iOS lane decision is recorded (DEC-51, ADR-0004; OQ-04 resolved) with two weeks of `ios.yml` data (builds, cost, flake rate); TestFlight build uploaded via the App Store Connect API; Android AAB built + signed in CI; both installed on physical devices from CI artifacts of the same commit.
 - AC-9: root `CLAUDE.md` contains every NFR-TEAM-090 rule (checklist cross-walk in PR); `.agents/skills/` has ≥ 13 SKILL.md files covering every NFR-TEAM-100 area, each with all six sections (scripted section check) + overlap-review note; templates + CODEOWNERS (real handles) + PROGRESS.md live at root; duplication/clone check runs in CI (NFR-TEAM-040).
 
 ## 20. Definition of done
@@ -279,14 +287,16 @@ just generate --check   # contracts fresh
 just security-scan      # gitleaks + osv + audit + license green
 just db-migrate && just db-rollback   # proven on a scratch database restored from the staging backup
 just doctor             # green on 2 developer machines + the clean VM
-# + iOS lane: TestFlight build id, Android AAB artifact, ADR-P02 merged
+just ios-check          # on the team's Mac: lint, format, bans, package tests, simulator build + tests
+just android-check      # Android local gate
+# + iOS lane: TestFlight build id, Android AAB artifact (ADR-P02 superseded by ADR-0004)
 ```
 
 Evidence to attach/link: clean-VM transcript, CI run links (all four tiers having executed at least once), Grafana dashboard + trace links, PostHog crash screenshots, lane cost sheet, red-run pastes for every negative test in §19 — never fabricated.
 
 ## 21. Documentation and PROGRESS.md updates
 
-- Docs to update: `docs/modules/*` (15 new contracts), `docs/adr/` (ADR-P02, ADR-OBS-01, ADR-0003 — done 2026-09-13, migrated P00 ADR set), root CLAUDE.md + skills (new), [doc 16](../16-risks-open-questions-and-decision-log.md) (OQ-04 → DEC, A4/A5 outcomes, vendor-fallback notes), [doc 15](../15-team-workflow-and-ai-agent-operations.md) (any command-catalog deltas discovered), [doc 14](../14-observability-operations-and-analytics.md) (dashboard/runbook links), [doc 13](../13-testing-quality-and-performance.md) (measured PR-gate + cold-start baselines).
+- Docs to update: `docs/modules/*` (15 new contracts), `docs/adr/` (ADR-OBS-01, ADR-0003 — done 2026-09-13, ADR-0004 — done 2026-09-22 and superseding ADR-P02, migrated P00 ADR set), root CLAUDE.md + skills (new), [doc 16](../16-risks-open-questions-and-decision-log.md) (OQ-04 resolved by DEC-51; A5 outcome, vendor-fallback notes), [doc 15](../15-team-workflow-and-ai-agent-operations.md) (any command-catalog deltas discovered), [doc 14](../14-observability-operations-and-analytics.md) (dashboard/runbook links), [doc 13](../13-testing-quality-and-performance.md) (measured PR-gate + cold-start baselines).
 - [PROGRESS.md](../PROGRESS.md): moves to repo root as the live ledger; set status per its rules; `DONE` only with §20 evidence.
 
 ## 22. Handoff note

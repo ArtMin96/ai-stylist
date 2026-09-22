@@ -25,8 +25,8 @@ Rules:
 |---|---|---|---|
 | — | Planning package | `ACCEPTED` | This `planning/` directory; ratified 2026-08-24; **prices re-verified and pricing model re-baselined 2026-09-09** (r6, DEC-34/35) |
 | P00 | Product validation and decisions | `NOT_STARTED` | |
-| P01 | 3D and capture prototype gate | `NOT_STARTED` | Go/no-go gate — see RISK-01 |
-| P02 | Repo foundations and CI | `IN_PROGRESS` | Started 2026-09-09 **ahead of P00** for the no-P00-dependency subset (DEC-36). Done: T01, T02, T03, T04, T05, T06, T10, T11, T16; partial: T07 (self-managed PostgreSQL envs — Neon dropped 2026-09-13, ADR-0003), T12 (Renovate app install, human). Cloud-touching tasks (T07 staging/prod PostgreSQL hosts, T09, T13, T14/T15) wait for P00 / OQ-07 / OQ-14 and vendor accounts; T08 (pg-boss) needs no vendor account. Vendor set consolidated 2026-09-13 (DEC-41–48). `just ci-parity` green 2026-09-13 |
+| P01 | 3D and capture prototype gate | `NOT_STARTED` | Re-scoped 2026-09-22 (DEC-50): the RN + Filament gate is moot (RISK-01 retired). The Anny asset pipeline + measurement harness can run now; the native Filament spike runs when 3D resumes |
+| P02 | Repo foundations and CI | `IN_PROGRESS` | Started 2026-09-09 **ahead of P00** for the no-P00-dependency subset (DEC-36). Done: T01, T02, T03, T04, T05, T06, T10, T11, T16; partial: T07 (self-managed PostgreSQL envs — Neon dropped 2026-09-13, ADR-0003), T12 (Renovate app install, human). Cloud-touching tasks (T07 staging/prod PostgreSQL hosts, T09, T13, T14/T15) wait for P00 / OQ-07 / OQ-14 and vendor accounts; T08 (pg-boss) needs no vendor account. Vendor set consolidated 2026-09-13 (DEC-41–48). **2026-09-22: React Native + Expo replaced by native `apps/ios` (SwiftUI) + `apps/android` (Compose)** (ADR-0004, DEC-49–54): T10 done by replacement, T14 re-scoped to native signing lanes (`PARTIAL`: unsigned lanes committed), T15 re-scoped (lane decided, DEC-51). iOS app target not yet built on a Mac. Branch `chore/native-foundations`, not merged. `just ci-parity` last green 2026-09-13 (pre-migration); post-migration verification pending |
 | P03 | Identity, consent, onboarding | `NOT_STARTED` | |
 | P04 | Parametric avatar v1 | `NOT_STARTED` | |
 | P05 | Selfie face personalization | `NOT_STARTED` | |
@@ -45,7 +45,9 @@ Rules:
 
 **Tracking:** every P02 task has a Linear issue in the project [P02 — Repo foundations and CI](https://linear.app/ai-stylist-app/project/p02-repo-foundations-and-ci-f1943b23882e) (AI-9 = T08, AI-16 = T07, AI-17 = T09, AI-21 = T13, AI-22/23 = T14/T15, AI-26 = T18 close-out, AI-27 = human-only steps).
 
-**First command, always:** `just bootstrap && just doctor && just ci-parity` — must be green before any other work (last green: 2026-09-13 locally; PR #2 CI on push).
+**First command, always:** `just bootstrap && just doctor && just ci-parity` — must be green before any other work (last green: 2026-09-13 locally, before the native migration; the `chore/native-foundations` branch's final verification is pending, see the 2026-09-22 handoff).
+
+**Native migration (2026-09-22) — do first if `chore/native-foundations` is not merged yet:** on the team's Mac run `just ios-doctor && just ios-check` (the iOS app target and SwiftUI views have never been compiled; checklist in the 2026-09-22 handoff entry), then `just ci-parity`, then open the PR.
 
 Then pick one:
 
@@ -53,12 +55,13 @@ Then pick one:
 2. **Continue P02 with P02-T08** (outbox relay + pg-boss + worker round-trip; `phases/P02-repo-foundations-and-ci.md` §12). T08 is the pg-boss proof (DEC-41, [ADR-0003](../docs/adr/0003-self-hosted-infrastructure-baseline.md)): the acceptance suite (kill/retry, idempotency, DLQ, replay, per-user cancellation, deletion/export) runs entirely against Testcontainers PostgreSQL, so **no vendor account is needed**; self-hosted Trigger.dev is the fallback only if that suite fails. T09 (Grafana Cloud/PostHog) and T13 (R2 buckets) still need a vendor account before they can be finished; T07's staging/prod PostgreSQL hosts wait for OQ-07/OQ-14.
 
 **Human-only steps outstanding** (agents stop at config + `.env.example` keys):
-- Create vendor accounts and record regions per OQ-07: server provider (per OQ-07/OQ-14 — Hetzner is the working assumption), Cloudflare R2, Grafana Cloud, PostHog, Expo/EAS, Apple Developer, Google Play. (Neon, Railway and Trigger.dev were removed on 2026-09-13 — DEC-41–43.)
+- Create vendor accounts and record regions per OQ-07: server provider (per OQ-07/OQ-14 — Hetzner is the working assumption), Cloudflare R2, Grafana Cloud, PostHog, Apple Developer, Google Play. (Neon, Railway and Trigger.dev were removed on 2026-09-13 — DEC-41–43; Expo/EAS on 2026-09-22 — DEC-51.)
+- Native-migration cleanup (2026-09-22): delete the GitHub secret `EXPO_TOKEN`; remove `EXPO_PUBLIC_EAS_PROJECT_ID` and `EXPO_PUBLIC_API_BASE_URL` from `secrets/dev.enc.yaml` (`just secrets-edit dev`); decide whether to keep or delete the Expo account/project; decide a staging API host (OQ-17); confirm iOS 26.0 / Android minSdk 29 device floors and `app.aistylist.mobile` as the permanent id (OQ-08, OQ-18).
 - Decide OQ-14 (server provider + single-host vs DB-separate topology at launch) together with OQ-07 before any cloud provisioning.
 - Remove the four stale empty keys from `secrets/dev.enc.yaml` (`sops unset secrets/dev.enc.yaml '["NEON_API_KEY"]'` etc. for `NEON_PROJECT_ID`, `TRIGGER_PROJECT_REF`, `TRIGGER_SECRET_KEY`) — the agent session was not permitted to write the secret store.
 - Enable GitHub branch protection on `main` (required checks = the `pr-gate` workflow jobs) and confirm the workflows run green on GitHub (none has run remotely yet).
 - Replace the placeholder handles in `CODEOWNERS` with real GitHub handles.
-- Authorise the one-line `CLAUDE.md` fix: the mobile composition root is `apps/mobile/src/app/_layout.tsx` (expo-router mandates the name), not `_root.tsx`.
+- ~~Authorise the one-line `CLAUDE.md` fix for the RN composition root~~ — moot since 2026-09-22 (`apps/mobile` deleted).
 - Doc-15 file-size threshold (NFR-TEAM-050): already recorded in [15 §7](15-team-workflow-and-ai-agent-operations.md) and DEC-40 — nothing to do.
 
 Before ending the session, follow the session-handoff rules below.
@@ -78,6 +81,40 @@ Log hygiene: when this log exceeds ~30 entries, move the oldest entries to `plan
 ## Session handoff log
 
 *(newest first)*
+
+### 2026-09-22 — Native migration: React Native + Expo replaced by SwiftUI + Compose (ADR-0004, DEC-49–54)
+
+- **Phase / tasks worked:** P02: T10 (done by replacement), T14 (re-scoped, `PARTIAL`), T15 (re-scoped). Branch `chore/native-foundations` @ `eb62dfc` (removal + iOS + Android merged); docs on `docs/native-decision`; tooling wiring on `integration/native-wiring` (parallel).
+- **Status changes:** none in the phase table (P02 stays `IN_PROGRESS`; P01 re-scoped, still `NOT_STARTED`).
+- **Done this session:**
+  - Removed `apps/mobile` and the Expo/EAS config, recipes, workflows and RN-only agent/skill/rules.
+  - Added `apps/ios`: Swift 6 + SwiftUI, XcodeGen + SwiftPM `Core`/`Features`, strict concurrency, warnings as errors, a ban script, and `.github/workflows/ios.yml`.
+  - Added `apps/android`: Kotlin + Compose, AGP 9.3.3, 5 modules, Lint/detekt/Spotless, a module-graph allow-list, lockfiles + verification metadata, and `.github/workflows/android.yml`.
+  - Added generated Swift/Kotlin clients (`packages/contracts/gen/{swift,kotlin}-client`) and moved the shared Maestro flow to `e2e/smoke.yaml`.
+  - Recorded ADR-0004; ADR-0002 is superseded.
+  - Planning package made truthful: SPINE §1/§2/§5, docs 00/01/04/05/07/11/12/13/14/15/16, README, phases P01–P14, module contracts `avatar`/`recommendation`, and a banner on `planning/CLAUDE.md`.
+- **Not done / in flight:**
+  - **The iOS app target has never been built:** the SwiftUI views and XcodeGen project have not been compiled on a Mac. Only the Core/Features packages have been tested on Linux (Docker `swift:6.4`).
+  - No Android device/emulator or Maestro run yet.
+  - The integration branch (justfile recipes, `mise.toml` JDK 21, CLAUDE.md layout, agents/skills/rules for native) must merge before `just docs-check --strict` is clean: DC-15 on the docs branch alone flags the new doc-15 §5 rows until the native recipes exist.
+  - The signing lanes (TestFlight, Play upload) are not built (OQ-18).
+- **Repository state:** last green `just ci-parity` = 2026-09-13 (pre-migration). Post-migration verification is **pending final verification** by the integration session on the merged branch.
+- **New decisions / risks / questions filed:**
+  - Added: DEC-49–54, RISK-18 (native review capacity), RISK-19 (parity drift), ASM-11, OQ-15 (shared-kernel emission for Swift/Kotlin), OQ-16 (contract double `/v1`), OQ-17 (staging host), OQ-18 (native signing/store lanes, permanent bundle id).
+  - Superseded: DEC-03/04/30/38; the DEC-05 wrapper half, the DEC-20 client half and the DEC-48 EAS row. Amended: DEC-11/37.
+  - Retired: RISK-01, ASM-01. Resolved: OQ-04. Updated: RISK-11/12/13, OQ-08.
+- **Surprises / gotchas:**
+  - The contract's `servers[]` already end in `/v1`, so clients must use a host-only `API_BASE_URL`.
+  - mise's `swift@6.4.0` cannot run on Arch (missing libncurses/libxml2), so Linux uses Docker `swift:6.4`.
+  - Android cmdline-tools 23.0's new `android` CLI shim hung on first run, so `sdk.sh` pins 19.0.
+  - The `xcode-27` runner image is still marked preview.
+- **Next session starts:**
+  1. On the team's Mac: `just ios-doctor && just ios-check`, then `open apps/ios/AIStylist.xcodeproj` and run AIStylist-Dev against `just dev-api`.
+  2. `just android-check`.
+  3. `just ci-parity`, then `just docs-check --strict` on the merged branch.
+  4. Open the PR from `chore/native-foundations`.
+  5. Human cleanup: see "Human-only steps outstanding".
+  6. Then OQ-16 (a contracts change), and OQ-15 before the first native feature that needs reason codes or entitlements.
 
 ### 2026-09-13 — Agent operating foundation: skills/agents/hooks/docs-check landed (s3 plan, T22 verification)
 

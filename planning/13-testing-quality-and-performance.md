@@ -1,6 +1,6 @@
 # 13 — Testing, Quality, and Performance
 
-**Status:** Draft for ratification · **Date:** 2026-08-24 · **Conforms to:** [SPINE.md](SPINE.md) · **Amended:** 2026-09-13 ([r7](research/r7-third-party-services-and-self-hosting-audit-2026-09-13.md), ADR-0003 — pg-boss job tests, pgBackRest restore drills, Coolify staging load tests, `date-holidays`)
+**Status:** Draft for ratification · **Date:** 2026-08-24 · **Conforms to:** [SPINE.md](SPINE.md) · **Amended:** 2026-09-13 ([r7](research/r7-third-party-services-and-self-hosting-audit-2026-09-13.md), ADR-0003 — pg-boss job tests, pgBackRest restore drills, Coolify staging load tests, `date-holidays`) · **Amended:** 2026-09-22 ([ADR-0004](../docs/adr/0004-native-ios-and-android-clients.md), DEC-49: native iOS/Android replace React Native + Expo; §2, §3, §5, §6, §7 updated)
 **Owns:** test organization rules, per-subsystem test pyramid + tooling, quality rules (regression-first, no-skip, flaky policy), CI tiers, security test suite, AI/ML evaluation strategy, recommendation simulations, performance budget table, load testing, device matrix.
 **Requirement IDs delivered:** `NFR-TST-*`, `NFR-PERF-*` (defined in [01-requirements-and-traceability.md](01-requirements-and-traceability.md)).
 **Referenced by:** every phase file (each phase's "test-first plan" and "budgets" sections cite this doc); [11-security-privacy-and-compliance.md](11-security-privacy-and-compliance.md) (security tests §8); [14-observability-operations-and-analytics.md](14-observability-operations-and-analytics.md) (error budgets §12); [10-ai-usage-cost-and-evaluation.md](10-ai-usage-cost-and-evaluation.md) (eval datasets, cost gates).
@@ -19,21 +19,23 @@
 
 ## 2. Test organization
 
-- **Every module owns a `tests/` directory** next to its source: `apps/api/src/modules/<name>/tests/`, `apps/mobile/src/features/<name>/tests/`, `workers/<name>/tests/`, `packages/<name>/tests/`. **No test files scattered in production directories** — no `*.test.ts` beside source files.
+- **Every module owns a `tests/` directory** next to its source: `apps/api/src/modules/<name>/tests/`, `apps/ios/Packages/<Package>/tests/<Target>Tests/`, `workers/<name>/tests/`, `packages/<name>/tests/`. **No test files scattered in production directories** — no `*.test.ts` beside source files.
 - **Test-support packages, not copy-paste fixtures.** Each module exposes `tests/support/` (builders, factories, fakes) importable by its own tests and — via the module's public test-support export — by other modules' integration tests. Shared cross-cutting builders (users, consents, entitlements) live in `packages/test-support`. Duplicating a builder instead of importing it fails review (semantic-reuse rule, [15-team-workflow-and-ai-agent-operations.md](15-team-workflow-and-ai-agent-operations.md)).
 - **Documented framework exceptions:**
-  - *React Native / Jest*: Jest discovers via config, not location, so the `tests/` rule holds. Maestro E2E flows live in `apps/mobile/e2e/` (device-level, not module-owned) — documented exception #1.
-  - *Detox/native build test harness files* if ever needed: same `e2e/` home — covered by exception #1.
+  - *Maestro E2E flows* live in the repo-root `e2e/`. They are device-level, not module-owned, and one flow serves both native apps. This is documented exception #1. *(Historical: until 2026-09-22 they lived in `apps/mobile/e2e/`, and RN/Jest found tests by config.)*
+  - *iOS (Swift Testing):* tests live in `apps/ios/Packages/<Package>/tests/<Target>Tests/`, wired through an explicit `path:` in `Package.swift`, so the `tests/` rule holds. Logic goes in `*Model` targets so it can be unit-tested on Linux. SwiftUI views are covered by the simulator build and Maestro. No exception is needed.
+  - *Android (Gradle source sets):* JVM and Robolectric tests live in each Gradle module's `src/test/kotlin`, which is the layout Gradle requires. This is documented exception #3 (DEC-49).
   - *Drizzle migration tests* run against the composed schema and live in `apps/api/tests/migrations/` (app-level, since migrations cross modules) — documented exception #2.
   - No other exceptions. Adding one requires a decision-log entry.
-- **Naming:** `*.test.ts` (unit/integration), `*.contract.test.ts`, `*.pbt.test.ts` (property-based), `*.sec.test.ts` (security suite), `*_test.py` (workers). CI lanes select by suffix + path.
+- **Naming:** `*.test.ts` (unit/integration), `*.contract.test.ts`, `*.pbt.test.ts` (property-based), `*.sec.test.ts` (security suite), `*_test.py` (workers), `*Tests.swift` (iOS), `*Test.kt` (Android). CI lanes select by suffix + path.
 
 ## 3. Test pyramid per subsystem (tooling is binding)
 
 | Subsystem | Unit | Property-based | Contract | Integration | E2E / device |
 |---|---|---|---|---|---|
 | **Backend domain modules** (NestJS) | **Vitest** — pure domain rules, state machines, scoring, normalization; no DI container needed for pure logic | **fast-check** — see §4 | OpenAPI-generated contract tests — see §5 | **Testcontainers** (Postgres w/ pgvector) for repositories/adapters; outbox + event tests | via API-level E2E in nightly (Testcontainers + real HTTP) |
-| **Mobile app** (RN/Expo) | **Jest + React Native Testing Library** — components, hooks, view-models | fast-check for shared logic packages | consumes generated client; contract drift caught in §5 | RNTL integration (navigation flows w/ mocked network via MSW) | **Maestro** flows on device/emulator (§7); golden renders (§6) |
+| **iOS app** (Swift/SwiftUI) | **Swift Testing**: config, services and `*Model` view models (`just ios-test-packages` runs on Linux and macOS) | property tests where logic warrants (library choice deferred to the first need) | builds only against the generated Swift client; contract drift caught in §5 | package tests through the app scheme on the iOS simulator (`just ios-test`); an in-memory `ClientTransport` fake under the real generated client | **Maestro** flows on simulator/device (§7); golden renders (§6) once 3D resumes |
+| **Android app** (Kotlin/Compose) | **JUnit 4 + kotlinx-coroutines-test + Turbine**: config, repositories, ViewModels | as iOS | builds only against the generated Kotlin client; contract drift caught in §5 | **Robolectric + Compose UI test** on the JVM (no emulator); OkHttp MockWebServer for the API | **Maestro** flows on emulator/device (§7); golden renders (§6) once 3D resumes |
 | **ML/media workers** (Python FastAPI) | **pytest** — pure functions, schema validation (Pydantic) | **hypothesis** — parsing/geometry invariants | Schemathesis against worker OpenAPI; versioned JSON schema round-trip tests vs `packages/contracts` | pytest + Testcontainers (Postgres) where workers touch state; golden-file pipeline tests on fixture images | eval suites (§10) on nightly GPU lane |
 | **Jobs/pipelines** (pg-boss) | handler logic extracted to pure functions → Vitest | — | payload schemas from `packages/contracts` | **Idempotency/retry/DLQ suite** (the P02-T08 acceptance suite that gates pg-boss vs the self-hosted Trigger.dev fallback, DEC-41): run job twice with same singleton key → one effect; inject failure at each step → retry then DLQ; resume-after-crash replays safely; cancellation mid-pipeline leaves no orphan asset (media state machine, doc 07) | pipeline E2E on staging nightly |
 | **Recommendation engine** | Vitest on rules/scoring/tie-breaks | ranking + constraint invariants (§4) | recommendation result schema contract | simulations (§11) with seeded closets | latency measured in §12 budgets |
@@ -50,22 +52,22 @@
 
 ## 5. Contract tests (generated from OpenAPI)
 
-- `packages/contracts` owns OpenAPI 3.1 (SPINE). CI regenerates the TS client + types and **fails on diff** (stale-generation gate, brief §5.5).
+- `packages/contracts` owns OpenAPI 3.1 (SPINE). CI regenerates the TS, Swift and Kotlin clients (and the Python models) and **fails on diff** (`just generate --check`, stale-generation gate, brief §5.5; DEC-53).
 - Backend: schema-conformance tests generated from the spec (Schemathesis or Vitest harness) run against the app booted in-process — every documented endpoint, auth required where declared, error envelope shape verified.
-- Mobile: builds only against the generated client; a spec-version handshake test verifies additive-only changes within a major version (versioning policy owned by [06-data-api-and-event-contracts.md](06-data-api-and-event-contracts.md)).
+- Mobile (iOS and Android): each app builds only against its generated client, and only one module per app may import it (`APIData` / `:core:data`). A spec-version handshake test verifies additive-only changes within a major version (versioning policy owned by [06-data-api-and-event-contracts.md](06-data-api-and-event-contracts.md)).
 - Events: outbox event payloads validate against versioned event schemas in `packages/contracts`; a replay test feeds each recorded historical version to current consumers (doc 06 replay/versioning policy).
 - Provider ports: recorded-fixture contract tests per provider (Open-Meteo, RevenueCat webhooks, fal.ai job callbacks) so a provider format change breaks a test, not production. `date-holidays` is an embedded library with no network call: its tests are per-country-year fixture cross-checks against the hosted Nager.Date API (P08), not contract tests.
 
 ## 6. Golden / visual regression (avatar poses + garment rendering)
 
 - **What:** screenshot-diff suite rendering a fixed matrix — base meshes × representative morph presets (min/mid/max + 6 diverse body presets) × 4 poses × 2 camera angles; garment overlays (G0 collage compositions; G2 sample outputs are eval-gated in §10 instead, since generative output isn't pixel-stable).
-- **How:** deterministic render harness (fixed seed, fixed lighting, fixed viewport) on the Filament pipeline; screenshots diffed with a perceptual metric (SSIM/pixelmatch with anti-aliasing tolerance); baselines stored in LFS/artifact store, updated only via an explicit `just golden-accept` commit that names the visual change in the PR.
+- **How:** deterministic render harness (fixed seed, fixed lighting, fixed viewport) on the Filament pipeline (native Filament C++ once 3D resumes, DEC-50; nothing to golden-test until then); screenshots diffed with a perceptual metric (SSIM/pixelmatch with anti-aliasing tolerance); baselines stored in LFS/artifact store, updated only via an explicit `just golden-accept` commit that names the visual change in the PR.
 - **Where:** emulator-based render lane nightly; a 3-config smoke subset on PR when `avatar`/`outfit`/asset files change (affected-module rule §13). Real-device render spot-checks in the pre-release tier.
-- Also golden-tested: color-calibration output (known color-card fixture images → expected palette extraction, doc 08) and key UI states (empty/error/loading screens via RNTL snapshot images — kept small and intentional).
+- Also golden-tested: color-calibration output (known color-card fixture images → expected palette extraction, doc 08) and key UI states (empty/error/loading screens as snapshot images: Roborazzi-class on Android, a snapshot library on iOS, both chosen when the first screens need them — kept small and intentional; *historical: RNTL snapshots in the RN plan*).
 
 ## 7. Mobile E2E and real-device performance
 
-- **Maestro** flows (CI on emulators/simulators; nightly on a device farm) covering: onboarding incl. consent choices; profile/measurement entry with unit switching; closet single + batch capture (camera mocked in emulator, real on device); recommendation request → explanation → feedback; purchase/restore (store sandbox, P13); account export + deletion; degraded-provider behavior (weather down → cached context warning, doc 09).
+- **Maestro** flows in `e2e/`, one flow per journey shared by both apps (`appId: ${APP_ID}`; user-facing strings and accessibility ids must match across platforms, RISK-19), run in CI on emulators/simulators and nightly on a device farm, covering: onboarding incl. consent choices; profile/measurement entry with unit switching; closet single + batch capture (camera mocked in emulator, real on device); recommendation request → explanation → feedback; purchase/restore (store sandbox, P13); account export + deletion; degraded-provider behavior (weather down → cached context warning, doc 09).
 - **Device tiers** (representative matrix — hypothesis, revisit yearly; final selection is a P01 output):
 
 | Tier | Android | iOS | Rationale |
@@ -74,8 +76,8 @@
 | Mid | Pixel 8a / Galaxy A56 | iPhone 14 / 15 | volume segment |
 | High | Pixel 10 Pro / Galaxy S25 | iPhone 16/17 Pro | headroom + thermal ceiling |
 
-- **Runner:** EAS Build artifacts driven on a device farm for the nightly perf lane; local devices for P01 prototype measurements. Performance runs collect the §12 metrics with stored raw traces (no summarizing by hand — rule 5 in §1).
-- **Accessibility:** automated — RNTL a11y queries (labels/roles on every interactive element), contrast lint on the design tokens, touch-target size lint; **manual checklist per release** (owned here, executed in P14 and every release after): VoiceOver + TalkBack full pass of the five core journeys, dynamic type at max, reduced motion honored (esp. 3D viewer), color-blind review of color-coded closet views, keyboard/switch-access smoke. The 3D avatar screen must have a non-3D accessible alternative (brief §2.3) — its presence is an automated check.
+- **Runner:** builds from the `ios` (GitHub Actions macOS) and `android` workflows driven on a device farm for the nightly perf lane (*historical: EAS Build artifacts*); local devices for P01 prototype measurements. Performance runs collect the §12 metrics with stored raw traces (no summarizing by hand — rule 5 in §1).
+- **Accessibility:** automated — accessibility assertions in the UI tests (Compose semantics in Robolectric tests; accessibility identifiers/labels on iOS; labels/roles on every interactive element; *historical: RNTL a11y queries*), contrast lint on the design tokens, touch-target size lint; **manual checklist per release** (owned here, executed in P14 and every release after): VoiceOver + TalkBack full pass of the five core journeys, dynamic type at max, reduced motion honored (esp. 3D viewer), color-blind review of color-coded closet views, keyboard/switch-access smoke. The 3D avatar screen must have a non-3D accessible alternative (brief §2.3) — its presence is an automated check.
 
 ## 8. Security test suite (`*.sec.test.ts`, verifies [doc 11](11-security-privacy-and-compliance.md))
 

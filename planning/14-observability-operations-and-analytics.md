@@ -15,7 +15,7 @@ Two–three developers operate this system. Observability must be **cheap to run
 - **PostHog** — product analytics, error tracking, session replay (mobile, off by default and consent-gated), feature flags. Kept on the Cloud free tier (DEC-48); exit trigger: before any paid usage, or if OQ-07 residency rejects the region → self-host PostHog OSS only if in-house data is itself a requirement.
 - **OpenTelemetry SDK** everywhere for traces/metrics/logs — vendor-neutral instrumentation is the commitment; the export target is swappable.
 - **Pragmatic trace/metric backend at launch:** OTel → **Grafana Cloud free tier** (Tempo traces, Prometheus-style metrics, Loki logs). Chosen over self-hosting (ops burden for 2 devs) and over PostHog-only (PostHog is not a distributed-tracing backend). Confirmed as **ADR-OBS-01 in P02**; kept on the free tier (DEC-48). Exit trigger: before any paid usage → self-hosted Grafana + Prometheus + Loki + Tempo (AGPL-3.0) on a **separate failure domain**, never on the app server.
-- **Sentry (optional):** enable for RN crash symbolication only if PostHog error tracking proves insufficient for native crashes (decision point end of P03; keep the seam — crash reporter behind one init module).
+- **Sentry (optional):** enable for native iOS/Android crash symbolication only if PostHog error tracking proves insufficient (decision point end of P03; keep the seam — crash reporter behind one init module).
 - Coolify's deploy/container views, host metrics (node exporter), Cloudflare dashboards and pg-boss queue tables are supplements, not the system of record.
 
 ## 2. Structured logging
@@ -66,7 +66,7 @@ Namespace `stylist.*`; all metrics tagged `service`, `env`, and where relevant `
 
 ## 5. Crash reporting
 
-- **Mobile:** PostHog error tracking (JS) + native crash capture; source maps/dSYMs uploaded from EAS/CI per release. If native symbolication is inadequate → Sentry per §1 decision. Crash reports scrubbed: no screenshots, no view hierarchies containing user content, breadcrumbs limited to event names.
+- **Mobile:** PostHog error tracking + native crash capture on iOS and Android; dSYMs (iOS) and R8 mapping files (Android) uploaded from CI per release. *(Updated 2026-09-22: no JS source maps, no EAS.)* If native symbolication is inadequate → Sentry per §1 decision. Crash reports scrubbed: no screenshots, no view hierarchies containing user content, breadcrumbs limited to event names.
 - **Backend/workers:** unhandled exceptions → PostHog error tracking with trace_id link; panics in jobs also surface as DLQ entries (§4).
 - **Crash-free-sessions** is a release-gate metric (staged rollout halts below threshold — rollout policy in doc 15 §10; hypothesis ≥ 99.5%, ratified in P14).
 

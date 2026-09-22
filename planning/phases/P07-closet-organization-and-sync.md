@@ -40,7 +40,7 @@ IDs from [01-requirements-and-traceability.md](../01-requirements-and-traceabili
 
 ## 4. In scope / out of scope
 
-**In scope:** closet browse views (grid/list; grouping by category, season, color, formality, recency, wear); search (tsvector free text + structured attribute filters) and sort; saved filters (structured query objects); custom tags with dedupe suggestions + merge tool; collections/capsules; season and color views (canned saved filters); availability-state machine + bulk changes + wear-count laundry assists; lifecycle metadata CRUD (brand/size/purchase/condition/care/favorite/archive); wear events + derived wear stats + cost-per-wear; deterministic practical-attribute derivation rules (doc 08 §4.3) + user overrides; offline read-model store (expo-sqlite + Drizzle), mutation-log sync, delta pull (`/sync/changes`), conflict policy per [04 §8](../04-architecture.md); closet-item count seam remains dormant (P06 flag); taxonomy property tests + tag-hygiene metrics.
+**In scope:** closet browse views (grid/list; grouping by category, season, color, formality, recency, wear); search (tsvector free text + structured attribute filters) and sort; saved filters (structured query objects); custom tags with dedupe suggestions + merge tool; collections/capsules; season and color views (canned saved filters); availability-state machine + bulk changes + wear-count laundry assists; lifecycle metadata CRUD (brand/size/purchase/condition/care/favorite/archive); wear events + derived wear stats + cost-per-wear; deterministic practical-attribute derivation rules (doc 08 §4.3) + user overrides; offline read-model store (native per platform, chosen in P07-T07; *was expo-sqlite + Drizzle in the RN plan*), mutation-log sync, delta pull (`/sync/changes`), conflict policy per [04 §8](../04-architecture.md); closet-item count seam remains dormant (P06 flag); taxonomy property tests + tag-hygiene metrics.
 
 **Out of scope / non-goals for this phase:** recommendation candidacy logic and repeat-avoidance scoring (→ [P09](P09-recommendation-engine-v1.md)); outfit composition/saved outfits UI (`outfit` module → P09/P10); "did you wear this?" inference prompts beyond the opt-in setting stub (P09 feedback loop); wardrobe analytics dashboards (Plus-tier, → P13 gating; only cost-per-wear on the item ships here); multi-user closet sharing (not in v1); full offline recommendations (cached-only per doc 09; owned there).
 
@@ -70,7 +70,7 @@ Journey detail owned by [02-user-journeys §7](../02-user-journeys-and-informati
 | `media` | None beyond serving thumbnails to the offline index (existing) | No |
 | `recommendation` | **No change** — but `closet` public API now exposes everything doc 09 will consume (availability, practical attributes, wear stats); reviewed against doc 09 §inputs | No (consumer note only) |
 
-Mobile: local store (expo-sqlite + Drizzle) mirroring read-model subsets of `closet`/`outfit`/`profile` + mutation log; image cache LRU disk budget default 512 MB (doc 04 §8).
+Mobile: local store (native per platform, chosen in P07-T07) mirroring read-model subsets of `closet`/`outfit`/`profile` + mutation log; image cache LRU disk budget default 512 MB (doc 04 §8).
 
 ## 7. Public interfaces, contracts, schemas, migrations, events
 
@@ -132,7 +132,7 @@ Mobile: local store (expo-sqlite + Drizzle) mirroring read-model subsets of `clo
 | P07-T04 | Wear events + materialized stats + cost-per-wear; `wear_event.recorded` + `outfit.worn` stub schemas | P07-T01 | 1 |
 | P07-T05 | Tags (dedupe suggestions, merge tool), saved filters (structured query objects), collections/capsules — backend + contracts | — | 2 |
 | P07-T06 | Server search: tsvector + attribute indexes (`CONCURRENTLY`), filter grammar, sort options | P07-T03 | 1–2 |
-| P07-T07 | Mobile local store: expo-sqlite schema, read-model mirror, image cache LRU (512 MB), hydration from server | — | 2 |
+| P07-T07 | Mobile local store: choose and record (ADR) the native store per platform, then schema, read-model mirror, image cache LRU (512 MB), hydration from server | — | 2 |
 | P07-T08 | Mutation-log sync: ordered durable log, background drain, `GET /sync/changes` delta pull with cursors, tombstones | P07-T07 | 2 |
 | P07-T09 | Conflict policy implementation per doc 04 §8 classes 1–4 + conflicted-copy UX; two-device convergence test harness | P07-T08 | 2 |
 | P07-T10 | Browse UI: grid/list, grouping (category/season/color/formality/recency/wear), season + color views | P07-T07 | 2 |
@@ -155,7 +155,7 @@ Mobile: local store (expo-sqlite + Drizzle) mirroring read-model subsets of `clo
 | `closet` | State-machine transitions, cost-per-wear arithmetic, tag merge, derivation rules on fixtures | fast-check (NFR-TST-020): only registry ids persist; attribute applicability map never violated (shoe never gets neckline); availability transitions closed over the six states; derivation rules deterministic for same inputs + version | Filter grammar, saved-filter schema, all §7 endpoints vs OpenAPI; event schemas pinned | Testcontainers PG: search correctness incl. tsvector, registry-bump backfill (T14) preserves `source: user` and rewrites saved filters | — |
 | `platform` (sync) | Cursor logic, tombstone purge | **Conflict resolution: deterministic, commutative-per-policy, idempotent — two-device operation sequences converge to identical state (REQ-ORG-120)**; losing user edits always surface as conflicted copies, never dropped | `/sync/changes` schema | Delta-feed under concurrent writers; user-isolation on sync rows (sec test) | — |
 | `profile` | Wear-count-per-wash prefs | — | Prefs schema | — | — |
-| Mobile | Local query parity (same filter → same results online/offline), LRU eviction | Mutation-log replay after crash yields identical state | Generated client compile | RNTL: browse/filter/detail/conflict-card flows | Maestro: full offline session (airplane mode: browse, search, edit attributes, change availability, favorite, add to collection → reconnect → converged server state); two-device convergence demo; a11y pass incl. color-blind check of color views; perf: 500-item closet scroll/search on low-tier device |
+| Mobile | Local query parity (same filter → same results online/offline), LRU eviction | Mutation-log replay after crash yields identical state | Generated client compile | native UI tests (Compose/Robolectric; iOS models + simulator): browse/filter/detail/conflict-card flows | Maestro: full offline session (airplane mode: browse, search, edit attributes, change availability, favorite, add to collection → reconnect → converged server state); two-device convergence demo; a11y pass incl. color-blind check of color views; perf: 500-item closet scroll/search on low-tier device |
 
 New bug fixes require a regression test that fails before the fix. Tests live in each module's `tests/` directory.
 

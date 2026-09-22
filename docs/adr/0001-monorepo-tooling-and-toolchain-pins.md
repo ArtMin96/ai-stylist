@@ -1,6 +1,6 @@
 # ADR-0001 — Monorepo layout, tooling, and toolchain pins
 
-- **Status:** Accepted
+- **Status:** Accepted. Partly superseded by [ADR-0004](0004-native-ios-and-android-clients.md) (2026-09-22): item 1 (`apps/mobile/src/render/`) and the Java Temurin 17 / watchman pins in item 8. The body below is unchanged.
 - **Date:** 2026-09-09
 - **Deciders:** product owner + implementing session (P02-T16)
 - **Decision-log entry:** DEC-37 in [planning/16](../../planning/16-risks-open-questions-and-decision-log.md) (extends DEC-31 / DEC-32 / DEC-33; the layout tie-breaks below are new)

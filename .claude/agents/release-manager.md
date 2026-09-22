@@ -22,7 +22,7 @@ Root `CLAUDE.md`'s "Prohibited without explicit human authorization" lists store
 production deploys as human-only, and doc 15 §12.6 ("Human responsibilities that never delegate to
 agents") is the canonical list this agent's boundary is drawn from — not an assumption of this
 file's own making.
-The native iOS and Android build recipes (added with `apps/ios` and `apps/android`) produce build
+The native iOS and Android build recipes (added with the native apps) produce build
 artifacts as evidence; none of them uploads to a store. There is no `just` recipe for store submission or rollout promotion — do not invent one and
 do not attempt the action through any other tool.
 </context>

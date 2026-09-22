@@ -16,3 +16,10 @@ Each staged case is `git init`ed, so a fixture's own `.gitignore` applies exactl
 repo's does: the recursive content scans skip gitignored files. `_clean/` carries a gitignored
 agent worktree (`dot-claude/worktrees/probe/`) holding the same banned-vendor note that makes
 `DC-13/` fail; `_clean/` must report nothing for it.
+
+A case named `DC-NN-<variant>/` (e.g. `DC-03-shallow/`) is a second case for `DC-NN`. Two optional
+marker files at a case root are read by the runner and removed from the staged copy:
+`.shallow-clone` stages the case as a depth-1 clone of a two-commit repo (what
+`actions/checkout` does without `fetch-depth: 0`), and `.expect-only` holds the exact `DC-NN`
+finding lines the case must produce, nothing more. `DC-03-shallow/` uses both to prove DC-03
+refuses a shallow clone with one clear error instead of a wrong per-module date finding.

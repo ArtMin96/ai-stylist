@@ -1,0 +1,1 @@
+ERROR DC-03 docs/modules:1 shallow git clone: DC-03 needs full git history to date module code; run `git fetch --unshallow` or check out with fetch-depth: 0

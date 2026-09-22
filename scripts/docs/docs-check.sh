@@ -87,37 +87,58 @@ stage_fixture() {
     [[ -n "$dir" ]] || continue
     mv "$dir" "$(dirname "$dir")/.${dir##*/dot-}"
   done < <(find "$dest" -depth \( -name dot-claude -o -name dot-agents \) -type d)
+  rm -f "$dest/.expect-only" "$dest/.shallow-clone"
   # Each case is its own git work tree so list_repo_files honours the fixture's .gitignore exactly
   # as it does the real repo's (a staged copy under TMPDIR is otherwise outside any repo).
   git -C "$dest" init -q
+  if [[ -f "$src/.shallow-clone" ]]; then
+    # Reproduce actions/checkout's default fetch-depth: 1 — two commits, cloned at depth 1.
+    local -a gitc
+    gitc=(-c user.name=docs-check -c user.email=docs-check@invalid -c commit.gpgsign=false -c core.hooksPath=/dev/null)
+    git -C "$dest" add -A
+    git -C "$dest" "${gitc[@]}" commit -q -m fixture
+    git -C "$dest" "${gitc[@]}" commit -q --allow-empty -m head
+    mv "$dest" "$dest.full"
+    git clone -q --depth 1 "file://$dest.full" "$dest"
+  fi
 }
 
-# run_fixtures — every tools/docs/fixtures/DC-NN/ must fail with finding id DC-NN; the shared
+# run_fixtures — every tools/docs/fixtures/DC-NN/ (or DC-NN-<variant>/) must fail with finding id
+# DC-NN, and exactly as its optional .expect-only file says (tools/docs/fixtures/README.md); the shared
 # tools/docs/fixtures/_clean/ tree must pass every check (including DC-14/DC-15 under --strict).
 # Each fixture is staged into a temp dir via stage_fixture before its checks run.
 run_fixtures() {
   local fixtures_dir="$DOCS_CHECK_REPO_ROOT/tools/docs/fixtures"
-  local failures=0 case_dir check_id output rc stage_root
+  local failures=0 case_dir case_name check_id output rc stage_root
   stage_root="$(mktemp -d "${TMPDIR:-/tmp}/docs-check-fixtures.XXXXXX")"
   # shellcheck disable=SC2064  # expand now: stage_root is local to this function
   trap "rm -rf '$stage_root'" EXIT
 
   for case_dir in "$fixtures_dir"/DC-*/; do
     [[ -d "$case_dir" ]] || continue
-    check_id="$(basename "$case_dir")"
+    case_name="$(basename "$case_dir")"
+    check_id="${case_name%%-[a-z]*}" # DC-03-shallow -> DC-03
     DOCS_CHECK_STRICT=0
     case "$check_id" in DC-14|DC-15) DOCS_CHECK_STRICT=1 ;; esac
-    stage_fixture "${case_dir%/}" "$stage_root/$check_id"
+    stage_fixture "${case_dir%/}" "$stage_root/$case_name"
     set +e
-    output="$(run_all_checks "$stage_root/$check_id" 0 2>&1)"
+    output="$(run_all_checks "$stage_root/$case_name" 0 2>&1)"
     rc=$?
     set -e
     if [[ $rc -ne 1 ]] || ! grep -q " $check_id " <<<"$output"; then
-      echo "FAIL  $check_id: expected exit 1 with a '$check_id' finding, got exit $rc:" >&2
+      echo "FAIL  $case_name: expected exit 1 with a '$check_id' finding, got exit $rc:" >&2
+      echo "$output" >&2
+      failures=$((failures + 1))
+    elif [[ -f "$case_dir/.expect-only" ]] \
+      && [[ "$(grep " $check_id " <<<"$output")" != "$(cat "$case_dir/.expect-only")" ]]; then
+      # .expect-only: the case's $check_id findings must be exactly this text, nothing more.
+      echo "FAIL  $case_name: expected exactly these '$check_id' findings:" >&2
+      cat "$case_dir/.expect-only" >&2
+      echo "got:" >&2
       echo "$output" >&2
       failures=$((failures + 1))
     else
-      echo "ok    $check_id -> reported (exit $rc)"
+      echo "ok    $case_name -> reported (exit $rc)"
     fi
   done
 

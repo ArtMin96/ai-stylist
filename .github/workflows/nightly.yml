@@ -31,6 +31,8 @@ permissions:
 env:
   CI: 'true'
   DO_NOT_TRACK: '1'
+  # Native lanes (apps/ios, apps/android) run in ios.yml and android.yml, not in this tier.
+  NATIVE_LANES: none
   DATABASE_URL: postgres://app:app@localhost:5432/app
 
 jobs:
@@ -200,11 +202,7 @@ jobs:
         uses: actions/checkout@v7
       - name: Test · Maestro flows in e2e/ (NOT IMPLEMENTED)
         run: |
-          if [ -d e2e ]; then
-            echo "::notice::e2e/ exists but no native app build is wired into this lane yet - skipped"
-          else
-            echo "::notice::e2e/ absent - Maestro skipped"
-          fi
+          echo "::notice::Maestro skipped: no emulator/simulator lane yet (locally: just ios-e2e on a Mac, just android-e2e with an emulator)"
           echo "NOT IMPLEMENTED: Maestro on an Android emulator / iOS simulator / device farm"
 
   summary:

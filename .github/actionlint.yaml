@@ -1,0 +1,7 @@
+# actionlint configuration (`just lint` runs actionlint over .github/workflows/**).
+self-hosted-runner:
+  # GitHub-hosted labels newer than actionlint's built-in list. `xcode-27` is the
+  # actions/runner-images xcode-27-arm64 image (preview; Xcode 27.0 27A266a), used by ios.yml.
+  # Drop an entry once actionlint knows the label.
+  labels:
+    - xcode-27

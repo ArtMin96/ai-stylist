@@ -45,6 +45,9 @@ env:
   CI: 'true'
   DO_NOT_TRACK: '1'
   MISE_YES: '1'
+  # The native lanes need Xcode 27 / Docker swift / the Android SDK, none of which a user-level
+  # bootstrap installs; ios.yml (incl. macOS) and android.yml cover them.
+  NATIVE_LANES: none
 
 jobs:
   bootstrap:

@@ -34,6 +34,8 @@ concurrency:
 env:
   CI: 'true'
   DO_NOT_TRACK: '1'
+  # Native lanes (apps/ios, apps/android) run in ios.yml and android.yml, not in this tier.
+  NATIVE_LANES: none
   # Matches the service container below; Testcontainers-based suites spin up
   # their own pgvector and ignore this.
   DATABASE_URL: postgres://app:app@localhost:5432/app

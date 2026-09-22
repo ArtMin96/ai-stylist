@@ -1,0 +1,65 @@
+[
+  {
+    "query": "add a settings screen to the android app with the analytics consent toggle, compose + viewmodel + robolectric test",
+    "should_trigger": true
+  },
+  {
+    "query": "HomeViewModel should retry the version call on failure, the retry button does nothing",
+    "should_trigger": true
+  },
+  {
+    "query": "wire the closet list endpoint into apps/android through the generated kotlin client",
+    "should_trigger": true
+  },
+  {
+    "query": "detekt flags a swallowed CancellationException in VersionRepository, fix it",
+    "should_trigger": true
+  },
+  {
+    "query": "add a preview build type config key for the image CDN host in apps/android",
+    "should_trigger": true
+  },
+  {
+    "query": "the consent toggle resets after rotation on android",
+    "should_trigger": true
+  },
+  {
+    "query": "new :feature:closet gradle module for the closet grid screen",
+    "should_trigger": true
+  },
+  {
+    "query": "SwiftUI home screen loses the toggle state in apps/ios",
+    "should_trigger": false,
+    "_near_miss_reason": "iOS side — ios-feature."
+  },
+  {
+    "query": "ship the outfit detail screen on iOS and Android with identical copy and states",
+    "should_trigger": false,
+    "_near_miss_reason": "both platforms — cross-platform-feature."
+  },
+  {
+    "query": "add an analytics event closet_item_viewed to the taxonomy so both apps can send it",
+    "should_trigger": false,
+    "_near_miss_reason": "taxonomy lives in packages/contracts — api-contract-change."
+  },
+  {
+    "query": "android.yml CI job times out on the gradle cache step",
+    "should_trigger": false,
+    "_near_miss_reason": "workflow change — tooling-ci."
+  },
+  {
+    "query": "implement GET /v1/closet/items/count in the closet module so the android home card has data",
+    "should_trigger": false,
+    "_near_miss_reason": "server-side endpoint implementation — backend-module (api-engineer)."
+  },
+  {
+    "query": "add a nullable `brand` field to the ClosetItem response schema and regenerate the Kotlin and Swift clients",
+    "should_trigger": false,
+    "_near_miss_reason": "contract shape change — api-contract-change."
+  },
+  {
+    "query": "promote the Play internal build to closed testing",
+    "should_trigger": false,
+    "_near_miss_reason": "release promotion evidence (human-only action) — release-readiness."
+  }
+]

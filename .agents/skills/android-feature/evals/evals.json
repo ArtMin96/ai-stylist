@@ -1,0 +1,54 @@
+{
+  "skill_name": "android-feature",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Add a closet item count card to the Android home screen; GET /v1/closet/items already exists in the contract. Show loading, failure with retry, and the count.",
+      "expected_output": "The agent adds a repository in :core:data over the generated Kotlin client returning domain types, exposes it through DataServices, wires it in AppContainer, extends HomeUiState/HomeViewModel with loading/failure/retry/count, puts strings in strings.xml, adds ViewModel and Robolectric tests under feature/home/src/test/kotlin, and verifies with just android-check.",
+      "files": [],
+      "assertions": [
+        "Only :core:data code depends on the generated client; the feature module sees domain types only",
+        "No new module-graph edge is added without being called out as a separate reviewed change",
+        "User-visible strings are added to res/values/strings.xml, not hard-coded in the composable",
+        "Tests are added under the module's src/test/kotlin and the agent pastes real `just android-check` (or `just test android`) output",
+        "Every catch around suspend code rethrows CancellationException"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "Android Lint fails with a new warning in HomeScreen.kt. Add a lint baseline so CI goes green and we'll fix it later.",
+      "expected_output": "The agent refuses to add a baseline or lower warningsAsErrors, fixes the warning in code (or, if the check is a genuine false positive, proposes a reasoned entry in config/lint.xml for human review), and re-runs just android-lint.",
+      "files": [],
+      "assertions": [
+        "The agent does not create a lint baseline file or lower warningsAsErrors/abortOnError",
+        "The agent does not add a blanket @Suppress to silence the warning",
+        "The agent re-runs `just android-lint` or `just android-check` and pastes the real result"
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "Bump the Compose BOM to the latest version in the Android app.",
+      "expected_output": "The agent changes the version only in gradle/libs.versions.toml, runs just android-deps-lock, reviews and commits the lockfiles together with verification-metadata.xml, runs just android-check, and flags that a macOS teammate may need to add macOS-only checksums — or stops if the task did not grant a dependency change.",
+      "files": [],
+      "assertions": [
+        "The version change is made only in apps/android/gradle/libs.versions.toml",
+        "The agent runs `just android-deps-lock` rather than hand-editing gradle.lockfile or verification-metadata.xml",
+        "Lockfiles and verification-metadata.xml are committed together with the catalog change",
+        "The agent verifies with `just android-check` and reports the real outcome"
+      ]
+    },
+    {
+      "id": 4,
+      "prompt": "On Android the analytics consent toggle flips back to off after rotating the phone, and sometimes a cancelled version request still shows 'Could not reach the API'. Fix both.",
+      "expected_output": "The agent writes failing tests first (a Robolectric/state-restoration test for the toggle and a ViewModel test that cancels the request), shows them failing, then keeps consent state in the ViewModel/SavedStateHandle or rememberSaveable and rethrows CancellationException from the catch around the suspend call, re-runs just test android / just android-check, and reports the self-review list.",
+      "files": [],
+      "assertions": [
+        "A regression test is written and shown failing before the fix, and passing after",
+        "Toggle state survives configuration change via rememberSaveable, SavedStateHandle or ViewModel state, not plain remember",
+        "The catch/runCatching around the suspend call rethrows CancellationException instead of mapping it to a failure state",
+        "Tests live under the module's src/test/kotlin and real `just test android` or `just android-check` output is pasted",
+        "The agent does not claim an emulator or Maestro result it did not run"
+      ]
+    }
+  ]
+}

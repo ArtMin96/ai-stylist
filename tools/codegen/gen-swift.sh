@@ -46,8 +46,9 @@ TOOL_DIR="$(cd "$TOOL_DIR" && pwd)"
 
 # Run a `swift` subcommand with the native toolchain, or inside Docker with the repo and the
 # cache mounted at their host paths (so every path argument means the same thing inside).
+# A `swift` on PATH that cannot run (e.g. a broken mise install on Arch) counts as absent.
 swift_cmd() {
-  if command -v swift >/dev/null 2>&1; then
+  if command -v swift >/dev/null 2>&1 && swift --version >/dev/null 2>&1; then
     swift "$@"
   elif command -v docker >/dev/null 2>&1; then
     docker run --rm \

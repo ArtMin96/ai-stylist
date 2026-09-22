@@ -80,10 +80,10 @@ pick_simulator() {
 cmd_doctor() {
   if ! ios_is_macos; then
     echo "ios-doctor: $(uname -s): Xcode steps (ios-project, ios-build, ios-test, ios-e2e) are N/A here."
-    if command -v swift >/dev/null 2>&1; then
+    if ios_has_swift; then
       echo "  swift: $(swift --version 2>&1 | head -n 1)"
     elif command -v docker >/dev/null 2>&1; then
-      echo "  swift: not on PATH; Docker fallback image $SWIFT_DOCKER_IMAGE will be used"
+      echo "  swift: none working on PATH; Docker fallback image $SWIFT_DOCKER_IMAGE will be used"
     else
       echo "  swift: MISSING (mise install swift, or install Docker)"
     fi

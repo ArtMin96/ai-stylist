@@ -44,4 +44,4 @@ Status: skeleton (P02), no domain-phase task has touched it yet. `planning/phase
 ## Escalate when
 
 - Anything would create an import edge between `avatar` and `recommendation` in either direction — stop immediately, this is the `recommendation-not-renderer` rule and it is architecture-review/ADR territory, not a workaround.
-- The actual 3D rendering/asset work starts (scenes, morph targets, glTF/KTX2 assets) — no skill owns client-side 3D today (3D is deferred), so stop and escalate; this skill only owns the domain-module side (config, calibration, versioning).
+- The actual 3D rendering/asset work starts (scenes, morph targets, glTF/KTX2 assets) — client-side 3D is deferred (no owner until it resumes), so stop and escalate; this skill only owns the domain-module side (config, calibration, versioning).

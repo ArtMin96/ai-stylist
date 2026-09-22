@@ -119,7 +119,7 @@ APIs, `packages/shared-kernel/`, `packages/test-support/`.">
 
 Only real `just` recipes that appear in `just --summary` (`docs-check` DC-10
 checks every `just <recipe>` token) — never a raw `pnpm --filter`, `uv run`,
-`npx`, `drizzle-kit`, or `eas ` invocation (`docs-check` DC-11 bans exactly
+`npx`, `drizzle-kit`, `eas `, `gradlew `, or `xcodebuild ` invocation (`docs-check` DC-11 bans exactly
 these in `.agents/skills/**`). One fenced
 `bash` block, one command per concern, commented where a command is conditional.
 Real example (`backend-module`):

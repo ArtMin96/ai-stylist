@@ -1,7 +1,7 @@
 Fill every section; delete nothing; if a section truly does not apply write `N/A — <reason>`.
 
 - **Phase / task:** P##-T## · **Requirements:** NFR IDs (perf budget, DX, file-size NFR-TEAM-050, …)
-- **Type:** improvement · **Skill:** `.agents/skills/<backend-module | mobile-feature | performance-profiling | architecture-review>/SKILL.md`
+- **Type:** improvement · **Skill:** `.agents/skills/<backend-module | ios-feature | android-feature | performance-profiling | architecture-review>/SKILL.md`
 - **Labels:** `type:improvement`, `mod:<owner>`, `phase:P##` · **Kind:** <refactor | perf | DX | dependency>
 
 ## Context

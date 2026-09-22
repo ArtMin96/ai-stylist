@@ -62,7 +62,7 @@
   {
     "query": "the closet screen in the app crashes when you swipe past the last item in the wardrobe grid",
     "should_trigger": false,
-    "_near_miss_reason": "no data-lifecycle content at all despite mentioning closet — a mobile UI bug, mobile-feature's territory."
+    "_near_miss_reason": "no data-lifecycle content at all despite mentioning closet — a mobile UI bug, ios-feature / android-feature's territory."
   },
   {
     "query": "support wants a way to suspend a user's account for a policy violation without fully deleting it",

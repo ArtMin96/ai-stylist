@@ -22,8 +22,9 @@ PASS), in a throwaway `git worktree`, and exits 1 if either expectation breaks. 
 output; a manually narrated before/after does not satisfy this rule.
 Test placement is enforced, not a style preference: a `*.test.*`/`*.spec.*` file outside a tests/
 directory fails eslint's quality/test-placement rule (`e2e/**` and `apps/api/tests/**`
-are the only documented exceptions, per `e2e/README.md` and root `CLAUDE.md`'s
-repository layout). `it.skip`/`test.skip`/`describe.skip`/`xit`/`xtest`/`xdescribe` without an issue
+are the only documented TypeScript exceptions, per `e2e/README.md` and root `CLAUDE.md`'s
+repository layout; native tests live in `apps/ios/Packages/<Pkg>/tests/` and each Gradle module's
+src/test/kotlin (instrumented: src/androidTest/kotlin), owned by `ios-engineer` / `android-engineer`). `it.skip`/`test.skip`/`describe.skip`/`xit`/`xtest`/`xdescribe` without an issue
 id in the title fails eslint's local/no-skip-without-issue rule — a flaky test you cannot fix now is
 quarantined with a linked issue, named owner, and deadline, never silently skipped.
 </context>

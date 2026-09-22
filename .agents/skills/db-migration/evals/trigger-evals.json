@@ -47,7 +47,7 @@
   {
     "query": "closet's items already have a season column but the upload screen never sends the right value, values are always landing as null",
     "should_trigger": false,
-    "_near_miss_reason": "names a real closet column but the defect is in the client/wire path, not the schema — api-contract-change or mobile-feature, not a migration."
+    "_near_miss_reason": "names a real closet column but the defect is in the client/wire path, not the schema — api-contract-change or ios-feature / android-feature, not a migration."
   },
   {
     "query": "need a new GET /closet/items filter parameter for season, should be part of the OpenAPI spec before anyone builds against it",
@@ -77,7 +77,7 @@
   {
     "query": "want to add a clearer validation error message when low_stock_threshold is left blank on the closet upload screen",
     "should_trigger": false,
-    "_near_miss_reason": "shares the column name with a real migration task, but this is client-side form validation copy — mobile-feature."
+    "_near_miss_reason": "shares the column name with a real migration task, but this is client-side form validation copy — ios-feature / android-feature."
   },
   {
     "query": "just db-seed isn't giving me enough synthetic wardrobe rows to test the closet grid pagination locally",

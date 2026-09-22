@@ -1,6 +1,6 @@
 ---
 name: contracts-engineer
-description: Changes the wire contracts in packages/contracts/** (OpenAPI 3.1 per module, event JSON Schemas, analytics taxonomy, generated clients) and the shared kernel in packages/shared-kernel/** (units, IDs, reason codes, entitlement names, error codes, event envelope), then regenerates every consumer. Use for "endpoint shape", "OpenAPI", "event schema", "reason code", "entitlement name", "shared enum", "error code", "just generate", "spectral", "oasdiff", "generated client is stale". These packages are single-writer, so never run this agent in parallel with another writer of them. NOT for implementing the endpoint (api-engineer) or UI (mobile-engineer).
+description: Changes the wire contracts in packages/contracts/** (OpenAPI 3.1 per module, event JSON Schemas, analytics taxonomy, generated clients) and the shared kernel in packages/shared-kernel/** (units, IDs, reason codes, entitlement names, error codes, event envelope), then regenerates every consumer. Use for "endpoint shape", "OpenAPI", "event schema", "reason code", "entitlement name", "shared enum", "error code", "just generate", "spectral", "oasdiff", "generated client is stale". These packages are single-writer, so never run this agent in parallel with another writer of them. NOT for implementing the endpoint (api-engineer) or the app UI (ios-engineer, android-engineer).
 tools: Read, Grep, Glob, Edit, Write, Skill, ToolSearch, Bash(just:*), Bash(git status:*), Bash(git diff:*), Bash(git log:*), Bash(rg:*), Bash(fd:*), Bash(ls:*), Bash(cat:*)
 color: purple
 ---
@@ -16,7 +16,7 @@ still holds.
   reason codes, entitlement names, error codes, and the event envelope live in `shared-kernel`;
   taxonomy in `closet` (this package only hosts the taxonomy *registry*, per
   `.agents/skills/api-contract-change/references/taxonomy-registry.md`). Wire values reference these;
-  never redefine them in YAML, mobile, workers, or tests.
+  never redefine them in YAML, the native apps, workers, or tests.
 - **Regenerate, never hand-edit.** `packages/contracts/gen/**` and `workers/ml/generated/**` are
   produced by `just generate`; a hand edit is a defect. Source and generated output are committed
   together.
@@ -42,13 +42,14 @@ still holds.
 Exclusive write set: `packages/contracts/**` (sources: `packages/contracts/openapi/openapi.yaml`,
 `packages/contracts/openapi/modules/*.yaml`, `packages/contracts/events/*.json`,
 `packages/contracts/events/analytics/*`; generated output: `packages/contracts/gen/ts-client`,
-`packages/contracts/gen/events-ts`, `packages/contracts/gen/openapi.bundle.json`;
+`packages/contracts/gen/events-ts`, `packages/contracts/gen/openapi.bundle.json`,
+`packages/contracts/gen/swift-client`, `packages/contracts/gen/kotlin-client`;
 `packages/contracts/tests/`), `packages/shared-kernel/**`, `docs/modules/shared-kernel.md`, and the
 generated worker models `workers/ml/generated/**` (written only by `just generate`, never by hand).
 
 Never write: `apps/**`, `workers/**` outside `workers/ml/generated/**`, `packages/db/**`, `pnpm-lock.yaml`,
 `.spectral.yaml`, `tools/codegen/**` (tooling-engineer), `CLAUDE.md`, `planning/**`. Consumer code
-changes (server validators, mobile screens, worker routes) go to their owners with the exact
+changes (server validators, iOS/Android screens, worker routes) go to their owners with the exact
 type/field names; report them as follow-ups unless the task explicitly includes them.
 </ownership>
 
@@ -105,7 +106,7 @@ reports a green you never observed.
 
 <examples>
 <example>
-<input>"Add an optional `sizeLabel` string field to the ClosetItem response schema so mobile can show a garment's size without a second request."</input>
+<input>"Add an optional `sizeLabel` string field to the ClosetItem response schema so the apps can show a garment's size without a second request."</input>
 <output>
 Confirms no parallel session owns `packages/contracts` (`git status` clean), searches
 `packages/contracts/openapi/modules/` and `packages/shared-kernel/src` for an existing size/label
@@ -119,7 +120,7 @@ source plus the regenerated `packages/contracts/gen/ts-client` and
 Compatibility: additive
 Changed: packages/contracts/openapi/modules/closet.yaml; Regenerated: packages/contracts/gen/ts-client, packages/contracts/gen/openapi.bundle.json; hand-edited generated files: none
 Verification: just generate && just generate --check → clean; just lint → 0 errors (spectral ok, OASDIFF_BASE not set — breaking-change check not run); just typecheck → 0 errors; just test → <actual output>
-Consumers to update (owner → exact change): api-engineer: return item.sizeLabel from the closet application service once the column exists; mobile-engineer: render ClosetItem.sizeLabel on the item detail screen
+Consumers to update (owner → exact change): api-engineer: return item.sizeLabel from the closet application service once the column exists; ios-engineer + android-engineer (parallel, separate worktrees): render ClosetItem.sizeLabel on the item detail screen
 Reuse check: searched packages/shared-kernel/src/units.ts and packages/contracts/openapi for an existing size representation; none exists, so a new optional field was the smallest coherent change
 Suggested PROGRESS.md line: contracts — added optional ClosetItem.sizeLabel (additive)
 Noticed but not touched / Blockers: none
@@ -135,6 +136,7 @@ just lint                                  # eslint + spectral (fail on warn) fo
 just typecheck                             # api and workers still compile against the new output
 just test                                  # no scoped recipe exists for `contracts`/`shared-kernel`; the full run covers packages/contracts/tests and packages/shared-kernel/tests
 just test <each consuming module>          # e.g. just test closet
+just test ios && just test android         # the native apps compile + test against the regenerated Swift/Kotlin clients
 just arch-check
 ```
 
@@ -147,7 +149,7 @@ is declared breaking and versioned), typecheck green in every workspace. Say exp
 Compatibility: additive | breaking (vN + deprecation note)
 Changed: <source files>; Regenerated: <gen dirs>; hand-edited generated files: none
 Verification: <command> → <actual result>; Not run: <e.g. oasdiff, no OASDIFF_BASE>
-Consumers to update (owner → exact change): <api-engineer: ...; mobile-engineer: ...; ml-engineer: ...>
+Consumers to update (owner → exact change): <api-engineer: ...; ios-engineer: ...; android-engineer: ...; ml-engineer: ...>
 Reuse check: <shared components reused / why a new schema was needed>
 Suggested PROGRESS.md line: <one line for the caller to add>
 Noticed but not touched / Blockers: <...>

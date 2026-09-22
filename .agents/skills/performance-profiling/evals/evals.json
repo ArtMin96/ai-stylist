@@ -27,13 +27,13 @@
     },
     {
       "id": 3,
-      "prompt": "We need to capture a frame-time trace on a low-tier Android device for the avatar screen, and also want to know if we should trust a similar trace from an iPhone build even though nobody on the team has a local Mac.",
-      "expected_output": "The agent gives the exact Android capture procedure (on-device perfetto trace via adb, inspected in the Perfetto UI, on the doc 13 device-matrix low-tier device) and correctly states that iOS traces require going through the cloud macOS lane (Xcode Instruments against a TestFlight/EAS dev-profile build, per ADR-0002) since there is no local Mac — it does not suggest a local Xcode/Instruments capture. If that cloud lane isn't available in the current session, it says so rather than substituting an estimate.",
+      "prompt": "We need to capture a frame-time trace on a low-tier Android device for the home screen, and also want to know whether a trace from the iOS simulator is good enough evidence for iPhone performance.",
+      "expected_output": "The agent gives the exact Android capture procedure (on-device perfetto trace via adb, inspected in the Perfetto UI, on the doc 13 device-matrix low-tier device) and states that iOS performance evidence needs Xcode Instruments on a Mac against a physical iPhone of the matching tier running a Release build — a simulator trace is not device evidence. If no Mac or device is available in the session, it says so rather than substituting an estimate.",
       "files": [],
       "assertions": [
         "The agent's Android procedure names an on-device perfetto/adb-based trace, not a generic 'profile it' instruction",
-        "The agent correctly identifies that no local Mac exists on this team and routes the iOS capture through the cloud macOS lane instead of suggesting local Instruments",
-        "The agent does not claim it can produce an iOS trace itself if the cloud lane isn't actually available in the session",
+        "The agent states that an iOS simulator trace is not device evidence and routes the iOS capture to Instruments on a Mac with a physical iPhone",
+        "The agent does not claim it can produce an iOS trace itself if no Mac or device is available in the session",
         "The response cites the low-tier device requirement from the doc 13 device matrix"
       ]
     }

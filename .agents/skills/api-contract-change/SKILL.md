@@ -66,4 +66,4 @@ Done checklist: `generate --check` clean · contract tests green · typecheck gr
 
 ## Overlap
 
-Adjacent: `backend-module` (implements the endpoint after the contract lands), `db-migration` (storage shape, separate PR), `mobile-feature` and `media-ml-pipeline` (consumers of generated clients), `architecture-review` (reviews the resulting diff). This skill alone owns edits under `packages/contracts/` and `packages/shared-kernel/`.
+Adjacent: `backend-module` (implements the endpoint after the contract lands), `db-migration` (storage shape, separate PR), `ios-feature` / `android-feature` and `media-ml-pipeline` (consumers of generated clients), `architecture-review` (reviews the resulting diff). This skill alone owns edits under `packages/contracts/` and `packages/shared-kernel/`.

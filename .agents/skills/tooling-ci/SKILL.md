@@ -4,7 +4,7 @@ description: Add or change a `just` recipe, a workflow under `.github/workflows/
 
 metadata:
   modules:
-  last-reviewed: 2026-09-13
+  last-reviewed: 2026-09-23
   owner-agent: tooling-engineer
 ---
 
@@ -36,14 +36,15 @@ metadata:
 4. Never weaken a gate to make something pass: `tools/depcruise/rules.cjs` and `tools/eslint/**` rules stay `severity: 'error'`; an exception is an ADR-backed `pathNot` narrowing, never a deleted rule or a new warn tier. The same applies to `docs-check`'s two `--strict` checks: flip strict mode only after the human applies the pending `CLAUDE.md` / doc 15 proposals it depends on, never by loosening the check itself.
 5. A gate change ships with a fixture: a tree under `tools/<gate>/fixtures/<case>/` (or `tools/docs/fixtures/<DC-NN>/` for `docs-check`) that still fails on the named rule, proven by `just <gate> --fixtures` (or `just docs-check --fixtures`). A gate without a fixture that demonstrably fails is unproven, the same way an unfixed test is unproven.
 6. Adding a recipe means its `justfile` doc comment is accurate — it is exactly what `just --summary`/`just --list` shows — and, separately, that the doc 15 §5 recipe catalog needs the same addition; propose that as a diff under `.claude/plans/`, never hand-edit `planning/15-*.md` (root `CLAUDE.md`: editing this file is human-authorized only).
-7. Changing which checks are required to merge a PR, adding a secret, or touching a store-submission/deploy step is human-only; stop and report instead of guessing at the right value.
+7. Native lanes: the aggregate recipes (`lint`, `format`, `arch-check`, `test`, `generate`, `ci-parity`) call the iOS/Android recipes through `scripts/native-lane.sh`. Keep that policy intact: `NATIVE_LANES` selects lanes, a missing toolchain is a loud SKIPPED notice locally and a failure with `CI=true` or `NATIVE_STRICT=1`, and Xcode-only steps skip on Linux with a notice — never a silent pass. The `ios` and `android` workflows run the native lanes; other workflows set `NATIVE_LANES: none`, except pr-gate's contracts job, which runs the full `just generate --check`. Recipe bodies for the apps live in `apps/ios/scripts/` and `apps/android/tools/` (their engineers' write sets); the justfile only wires them.
+8. Changing which checks are required to merge a PR, adding a secret, or touching a store-submission/deploy step is human-only; stop and report instead of guessing at the right value.
 
 ## Validation commands
 
 ```bash
 just --list                                   # recipe registered with a doc comment
-just lint && just lint --fixtures             # eslint + ruff + shellcheck; every eslint fixture still fails
-just arch-check && just arch-check --fixtures # depcruise rules + every fixture still fails
+just lint && just lint --fixtures             # eslint + ruff + shellcheck + actionlint + native lint lanes; every eslint fixture still fails
+just arch-check && just arch-check --fixtures # depcruise rules + iOS bans + Android module graph; every fixture still fails
 just docs-check && just docs-check --fixtures # DC-01..DC-15 + every tools/docs/fixtures/DC-NN case still fails
 just doctor                                   # environment check still passes
 just ci-parity                                # the exact PR gate, before handing back a CI/justfile change

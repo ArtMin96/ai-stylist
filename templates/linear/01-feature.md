@@ -1,7 +1,7 @@
 Fill every section; delete nothing; if a section truly does not apply write `N/A — <reason>`.
 
 - **Phase / task:** P##-T## (`planning/phases/P##-*.md`) · **Requirements:** REQ/NFR IDs (`planning/01-requirements-and-traceability.md`)
-- **Type:** feature · **Skill:** `.agents/skills/<mobile-feature | backend-module | media-ml-pipeline | recommendation-rules | entitlements-billing>/SKILL.md`
+- **Type:** feature · **Skill:** `.agents/skills/<ios-feature | android-feature | backend-module | media-ml-pipeline | recommendation-rules | entitlements-billing>/SKILL.md`
 - **Labels:** `type:feature`, `mod:<owner>`, `phase:P##`
 
 ## Context

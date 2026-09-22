@@ -1,6 +1,6 @@
 ---
 name: entitlements-billing
-description: Change subscription plans, entitlements, trials, weighted-credit metering, RevenueCat webhook handling, restore/reconciliation, or paywall gating in the billing module — anything that decides who may use which capability or moves money through store billing. Use for a new entitlement or credit meter, a RevenueCat webhook, a trial/grace/expiry lifecycle edge case, or paywall gating logic. Not for the paywall's visual UI (`mobile-feature`, once the entitlement contract exists) or a price/tier experiment — pricing is a product decision recorded as a doc 12 hypothesis, out of scope for this skill.
+description: Change subscription plans, entitlements, trials, weighted-credit metering, RevenueCat webhook handling, restore/reconciliation, or paywall gating in the billing module — anything that decides who may use which capability or moves money through store billing. Use for a new entitlement or credit meter, a RevenueCat webhook, a trial/grace/expiry lifecycle edge case, or paywall gating logic. Not for the paywall's visual UI (`ios-feature` / `android-feature`, once the entitlement contract exists) or a price/tier experiment — pricing is a product decision recorded as a doc 12 hypothesis, out of scope for this skill.
 
 metadata:
   modules: billing
@@ -13,7 +13,7 @@ metadata:
 ## Trigger
 
 - Changes to plans/tiers, the entitlements table or checks, trial logic, generative-credit metering (weighted credits per DEC-34), RevenueCat webhook handling, restore/reconciliation, grace/expiry, or paywall gating on server or client.
-- Not this skill: PostHog rollout flags (doc 15 §10 — flags are not entitlements); paywall visuals (`mobile-feature`, after the entitlement contract exists); a price/tier change itself (doc 12 hypothesis, product decision — this skill implements the resulting entitlement, it does not set the price).
+- Not this skill: PostHog rollout flags (doc 15 §10 — flags are not entitlements); paywall visuals (`ios-feature` / `android-feature`, after the entitlement contract exists); a price/tier change itself (doc 12 hypothesis, product decision — this skill implements the resulting entitlement, it does not set the price).
 
 ## Required reading
 
@@ -57,4 +57,4 @@ Done checklist: lifecycle matrix green · webhook idempotency tests green · nam
 
 ## Overlap
 
-Adjacent: `backend-module` (general module mechanics), `api-contract-change` (new entitlement names on the wire), `security-privacy-review` (mandatory for webhook handlers), `mobile-feature` (paywall UI reads entitlements, never decides them), `release-readiness` (IAP product config check, and the P13-T17 store-sandbox pass). This skill owns `billing`'s entitlement/metering/webhook/reconciliation invariants; it never sets a price, only the entitlement that a price maps to.
+Adjacent: `backend-module` (general module mechanics), `api-contract-change` (new entitlement names on the wire), `security-privacy-review` (mandatory for webhook handlers), `ios-feature` / `android-feature` (paywall UI reads entitlements, never decides them), `release-readiness` (IAP product config check, and the P13-T17 store-sandbox pass). This skill owns `billing`'s entitlement/metering/webhook/reconciliation invariants; it never sets a price, only the entitlement that a price maps to.

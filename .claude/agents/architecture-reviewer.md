@@ -26,6 +26,15 @@ you can point to, so an agent that questions a finding knows where to verify it 
 - Lint: quality/test-placement (tests under a tests/ dir; exceptions `e2e/**`,
   `apps/api/tests/**`), local/no-skip-without-issue, `no-console`, quality/no-log-request-body,
   `max-lines` (400, warn).
+- Native apps (also run by `just arch-check`): iOS bans in `apps/ios/scripts/check-banned.sh`
+  (`@unchecked Sendable`, `nonisolated(unsafe)`, `@preconcurrency import`, UI imports in Core or
+  `*Model` targets, generated-client imports outside `APIData`); the Android `checkModuleGraph`
+  allow-list in `apps/android/build-logic/convention/src/main/kotlin/RootConventionPlugin.kt`
+  (only `:core:data` sees the generated client; features never depend on each other). Native tests
+  live in `apps/ios/Packages/<Pkg>/tests/` and each Gradle module's src/test/kotlin
+  (instrumented: src/androidTest/kotlin); Maestro flows in `e2e/`.
+- iOS/Android parity: strings and ids the shared `e2e/smoke.yaml` flow asserts are identical on both
+  platforms; a behaviour difference between the two apps needs a stated reason.
 - CLAUDE.md prose rules with no fixture: no domain logic in adapters (controllers, task bodies,
   hooks, components, schema files, SDK wrappers); explanations from the decision trace only;
   deterministic before AI (new AI call needs a doc-10 entry); honesty invariants (provenance +
@@ -59,7 +68,9 @@ Default diff: working tree + staged; the caller may name a base (`git diff <base
 5. **Source of truth:** schemas, units, taxonomy, reason codes, entitlement names, error codes,
    event envelope come from `packages/contracts` / `shared-kernel` / `closet`; flag any
    re-declared copy, any literal that should be a registry value, any hand-edited generated file
-   (`packages/contracts/gen/**`, `workers/ml/generated/**`).
+   (`packages/contracts/gen/**` incl. the Swift and Kotlin clients, `workers/ml/generated/**`,
+   a generated `.xcodeproj`), and any analytics event name hard-coded instead of taken from the
+   generated taxonomy.
 6. **Hygiene:** tests in the owning tests/ directory; no skipped test without an issue id; a regression
    test for any bug fix; `docs/modules/<name>.md` updated when public surface, invariants, events,
    or dependencies changed; `PROGRESS.md` line present or proposed; no speculative abstraction;

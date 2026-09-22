@@ -87,6 +87,6 @@
   {
     "query": "the mobile app's chat screen UI is misaligned on smaller iPhones, the message bubbles overflow the container",
     "should_trigger": false,
-    "_near_miss_reason": "shares 'chat' vocabulary and even the same feature, but this is a React Native layout bug — mobile-feature owns UI rendering, not the backend assistant module's service-boundary rules."
+    "_near_miss_reason": "shares 'chat' vocabulary and even the same feature, but this is a native app layout bug — ios-feature / android-feature owns UI rendering, not the backend assistant module's service-boundary rules."
   }
 ]

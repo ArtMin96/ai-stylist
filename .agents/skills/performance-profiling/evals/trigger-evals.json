@@ -62,7 +62,7 @@
   {
     "query": "the closet screen crashes when swiping past the last item in the wardrobe grid on some devices",
     "should_trigger": false,
-    "_near_miss_reason": "a crash bug on a mobile screen — mobile-feature/testing-regression territory, not a performance budget question even though it happens on-device."
+    "_near_miss_reason": "a crash bug on a mobile screen — ios-feature/android-feature/testing-regression territory, not a performance budget question even though it happens on-device."
   },
   {
     "query": "want to add a k6 load profile for the morning-spike traffic pattern against the recommendation endpoint",

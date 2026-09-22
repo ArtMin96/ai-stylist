@@ -159,7 +159,7 @@ OutfitPresentation v1 {
 }
 ```
 
-The mobile renderer module consumes `OutfitPresentation` and resolves the best renderable representation per slot from the asset manifest. Replacing Filament (or adding a web renderer, or the future assistant rendering a collage) touches only consumers of this contract. Contract schema and versioning per [06](06-data-api-and-event-contracts.md).
+The client renderer module (per platform, Filament C++ once 3D resumes — DEC-50) consumes `OutfitPresentation` and resolves the best renderable representation per slot from the asset manifest. Replacing Filament (or adding a web renderer, or the future assistant rendering a collage) touches only consumers of this contract. Contract schema and versioning per [06](06-data-api-and-event-contracts.md).
 
 ---
 

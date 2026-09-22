@@ -1,6 +1,6 @@
 # 05 — Technology Decisions
 
-**Status:** Ratified (mirrors [SPINE.md §2](SPINE.md)) · **Date:** 2026-08-24 · **Amended:** 2026-09-09 — prices re-verified in [r6](research/r6-pricing-verification-2026-09-09.md); §6, §6.2, §8 assumption A10 and §9 pins updated (DEC-34/35) · **Amended:** 2026-09-13 ([r7](research/r7-third-party-services-and-self-hosting-audit-2026-09-13.md), ADR-0003 — services re-audited: §5.3–5.7, §6, §6.2, §8 A11/A12, §9 updated; DEC-41..48). **Versions as of Aug 2026, prices as of 2026-09-09 unless noted; services re-audited 2026-09-13.**
+**Status:** Ratified (mirrors [SPINE.md §2](SPINE.md)) · **Date:** 2026-08-24 · **Amended:** 2026-09-09 — prices re-verified in [r6](research/r6-pricing-verification-2026-09-09.md); §6, §6.2, §8 assumption A10 and §9 pins updated (DEC-34/35) · **Amended:** 2026-09-13 ([r7](research/r7-third-party-services-and-self-hosting-audit-2026-09-13.md), ADR-0003 — services re-audited: §5.3–5.7, §6, §6.2, §8 A11/A12, §9 updated; DEC-41..48) · **Amended:** 2026-09-22 ([ADR-0004](../docs/adr/0004-native-ios-and-android-clients.md), DEC-49–54: native iOS/Android replace React Native + Expo. Updated §1, §2 (new §2.0; §2.1–2.3 kept as history), §3, §5.2, §5.8, §6, §7, §8 A1–A5, §9). **Versions as of Aug 2026, prices as of 2026-09-09 unless noted; services re-audited 2026-09-13.**
 
 This document is the full justification for the decision table ratified in [SPINE.md §2](SPINE.md). It does not change any decision. Evidence base: [r1](research/r1-linux-ios-build.md) (Linux/iOS build), [r2](research/r2-mobile-3d-stack.md) (mobile + 3D stack), [r3](research/r3-ai-providers-costs.md) (AI providers/costs), [r4](research/r4-backend-providers.md) (backend/providers), [r5](research/r5-avatar-garment-3d.md) (avatar/garment 3D). Where this doc and SPINE could ever diverge, SPINE wins; supersessions go through the decision log in [16-risks-open-questions-and-decision-log.md](16-risks-open-questions-and-decision-log.md).
 
@@ -10,12 +10,12 @@ This document is the full justification for the decision table ratified in [SPIN
 
 | Area | Decision | Justified in | Prototype gate |
 |---|---|---|---|
-| Mobile framework | React Native + Expo (SDK 55+, prebuild/dev-client), TypeScript, New Architecture | [§2](#2-mobile-framework-decision) | P01 |
-| 3D renderer | Filament via `react-native-filament` (margelo) | [§3](#3-3d-renderer-decision) | P01 |
+| Mobile framework | Native: Swift 6 + SwiftUI (`apps/ios/`) and Kotlin + Jetpack Compose (`apps/android/`); React Native + Expo superseded (DEC-49) | [§2](#2-mobile-framework-decision) | — |
+| 3D renderer | Deferred; when 3D resumes, Google Filament's C++ engine used directly on both platforms (DEC-50) | [§3](#3-3d-renderer-decision) | P01 (native Filament spike) |
 | 3D asset formats | glTF 2.0 (.glb) canonical · KTX2/Basis textures · Draco or meshopt compression | [§3.4](#34-asset-format-decisions) | P01 |
 | Parametric body model | Anny (Naver, Apache 2.0) | [§4](#4-parametric-body-model) | P01/P04 |
 | Backend framework | NestJS on Fastify adapter (modular monolith + workers) | [§5.1](#51-backend-framework-nestjs-on-fastify) | — |
-| API contract | OpenAPI 3.1 canonical, generated TS client (overrides r4's tRPC lean) | [§5.2](#52-api-contract-adr-openapi-31-over-trpc) | — |
+| API contract | OpenAPI 3.1 canonical; generated TS, Swift and Kotlin clients (overrides r4's tRPC lean; DEC-53) | [§5.2](#52-api-contract-adr-openapi-31-over-trpc) | — |
 | Database / vectors | Self-managed PostgreSQL 17 + pgvector (Docker, owned host), Drizzle ORM | [§5.3](#53-database-self-managed-postgresql-17--pgvector--drizzle) | P02-T07 / P14 drill |
 | Jobs/queue | pg-boss v12 on the app PostgreSQL (self-hosted Trigger.dev = gated fallback) | [§5.4](#54-jobsqueue-pg-boss-v12) | P02-T08 |
 | ML workers | Python FastAPI in Docker, versioned JSON schemas | [§5.5](#55-ml-workers-python-fastapi) | — |
@@ -29,14 +29,28 @@ This document is the full justification for the decision table ratified in [SPIN
 | Holidays | Embedded `date-holidays` library (no network) | [§6](#6-external-provider-evaluation) | — |
 | AI/GPU (generative) | fal.ai primary; per-task provider table incl. self-hosted eval arms (BiRefNet, Qwen3-VL, SigLIP, FASHN VTON 1.5) | [§6.2](#62-aigpu-provider-selection-per-task) | P06 / P11 eval gates |
 | Fashion content | Licensed APIs/feeds — **open question OQ**, no scraping | [§6](#6-external-provider-evaluation) | P12 |
-| iOS build/delivery | 100% Linux dev; EAS Build or GHA macOS lane; TestFlight via App Store Connect API; no Mac purchase | [§7](#7-linux-first-development--the-ios-reality) | ADR-P02 |
-| Monorepo/CI | pnpm + Turborepo, `just`, `mise`; GitHub Actions | [§5.8](#58-monorepo-and-ci-tooling) · [§7](#7-linux-first-development--the-ios-reality) | — |
+| iOS build/delivery | GitHub Actions macOS runner is the only iOS CI lane; iOS development on the team's Mac; TestFlight via App Store Connect API (DEC-51; EAS removed) | [§7](#7-linux-first-development--the-ios-reality) | P02-T14 (re-scoped) |
+| Monorepo/CI | pnpm + Turborepo (TS), own Gradle root (`apps/android`), XcodeGen + SwiftPM (`apps/ios`), all behind `just`; `mise`; GitHub Actions | [§5.8](#58-monorepo-and-ci-tooling) · [§7](#7-linux-first-development--the-ios-reality) | — |
 
 ---
 
 ## 2. Mobile framework decision
 
-**Decision: React Native + Expo (SDK 55+, prebuild/dev-client), TypeScript, New Architecture.** Rejected: Flutter (3D immaturity), fully native Swift/Kotlin (two codebases ≈ 2× cost for a 2–3 dev team).
+### 2.0 Current decision (2026-09-22, DEC-49, [ADR-0004](../docs/adr/0004-native-ios-and-android-clients.md))
+
+**Decision: fully native clients.** Swift 6 + SwiftUI in `apps/ios/` (XcodeGen `project.yml`, local SwiftPM packages `Core` and `Features`) and Kotlin + Jetpack Compose in `apps/android/` (own Gradle root, `build-logic/` convention plugins, 5 modules). Both share the backend through the OpenAPI 3.1 contract and generated clients (§5.2). React Native + Expo is superseded (DEC-04, DEC-38 → DEC-49). Kotlin Multiplatform is rejected for now (Swift Export is Alpha in Kotlin 2.4.20). Flutter is still rejected, for the reasons in §2.2.
+
+Why the Aug-2026 matrix below no longer decides:
+
+- Its RN column depended on `react-native-filament`, which went dormant. That was RISK-01, now retired.
+- On 2026-09-22 EAS could not build against the iOS 27.1 SDK.
+- The product owner prefers native toolkits and first-party tooling.
+
+The matrix's main case against native, 2× cost and weaker agent codegen, is accepted as a cost rather than disproved. It is mitigated by strict compiler/lint settings, generated clients, tests and a parity review, and tracked as RISK-18/19.
+
+*Historical (kept for evidence):* §2.1–§2.3 record the Aug-2026 RN analysis and the RN-era P01 gate. Their gate thresholds (fps, latency, size, memory) still inform the native Filament spike in P01.
+
+*Original decision (2026-08-24, superseded):* **React Native + Expo (SDK 55+, prebuild/dev-client), TypeScript, New Architecture.** Rejected: Flutter (3D immaturity), fully native Swift/Kotlin (two codebases ≈ 2× cost for a 2–3 dev team).
 
 ### 2.1 Weighted decision matrix (from r2, Aug 2026)
 
@@ -90,14 +104,16 @@ The renderer-boundary rule (recommendation engine and domain modules never depen
 
 ## 3. 3D renderer decision
 
-**Decision: Google Filament via `react-native-filament` (margelo).** Version at decision time: react-native-filament **v1.11.0 (May 27, 2026)**, Filament core **v1.76.0** (r2, primary sources).
+**Decision (2026-09-22, DEC-50): no 3D in the native foundation. When 3D resumes, use Google Filament's C++ engine directly on both platforms**: the Metal backend on iOS and the official Android AARs, with the same glTF + KTX2 + Draco assets (§3.4) and up to 256 morph targets. RealityKit is rejected for the avatar path: it is USDZ-only, and the converters decode Draco and flatten KTX2. SceneKit is dead. The engine reasons in §3.1 still hold; only the RN wrapper is gone.
+
+*Original decision (2026-08-24, wrapper half superseded):* **Google Filament via `react-native-filament` (margelo).** Version at decision time: react-native-filament **v1.11.0 (May 27, 2026)**, Filament core **v1.76.0** (r2, primary sources). *As of 2026-09-22 the wrapper had no release after 1.11.0, 16 weeks without commits, and CI pinned to RN 0.83.1 (ADR-0004).*
 
 ### 3.1 Why Filament
 
 - **Feature-complete for our avatar needs:** full glTF 2.0 load path including **morph targets** (MorphHelper in gltfio), **skeletal animation** (`updateBoneMatrices()`), and PBR materials with image-based lighting — exactly the A1 parametric-avatar requirements (SPINE §4).
 - **Native GPU backends:** Metal on iOS, Vulkan/OpenGL on Android — no WebGL translation layer.
 - **Compression support in-engine:** Draco geometry and KTX2/Basis textures, which the asset budget depends on (§3.4).
-- **Maintenance signal:** margelo's wrapper is actively released (v1.11.0 in May 2026); mitigation for wrapper risk includes maintainer relationship/sponsorship and the JSI-bridge fallback (r2, Risk 1).
+- **Maintenance signal:** margelo's wrapper is actively released (v1.11.0 in May 2026); mitigation for wrapper risk includes maintainer relationship/sponsorship and the JSI-bridge fallback (r2, Risk 1). *Historical: this signal failed. The wrapper went dormant, so RISK-01 is retired by using Filament directly (DEC-50).*
 - Known honest caveat (r2): no major consumer app is publicly proven on `react-native-filament` at scale — this is precisely why P01 is a mandatory gate rather than a formality.
 
 ### 3.2 Rejected alternatives
@@ -107,7 +123,7 @@ The renderer-boundary rule (recommendation engine and domain modules never depen
 | **Unity as a Library** | Rejected | (a) **Size:** empty project with Unity Library AAR (17 MB) produces a ~60 MB APK — ~3.5× overhead before any product code; blows the <100 MB gate. (b) **Rendering constraint:** full-screen only — "Rendering on a part of the screen isn't supported" (Unity discussions, confirmed 2026), which breaks the embedded-avatar-in-native-UI pattern the product requires. (c) **License/ops:** an entire game-engine toolchain, editor licensing tiers, and a second build system for a 2–3 dev team (brief §4.1 explicitly flags game-engine embedding cost). |
 | **react-three-fiber + expo-gl** | Rejected | Broken in practice on mobile as of 2025–2026: Expo SDK 53 ships `expo-gl@15` while R3F v8+ depends on `expo-gl@11`; the mismatch breaks real-device builds ("building and testing code on real devices is not possible at the moment" — r2 source). Works on web only. |
 | **Flutter GPU / flutter_filament** | Rejected (for now) | Preview-only, main-channel, breaking changes expected (Flutter blog). Toyota's Fluorite engine signals future promise, not present stability. |
-| **RealityKit (iOS) + Filament (Android), native** | Held as pivot #2, not primary | Best per-platform quality (SceneKit is soft-deprecated; RealityKit is the iOS future) but forces the two-codebase problem. Only reachable via the P01 pivot path. |
+| **RealityKit (iOS) + Filament (Android), native** | Rejected for the avatar path (2026-09-22, DEC-50) | *Aug 2026:* best per-platform quality, but it forced the two-codebase problem. *2026-09-22:* the apps are native anyway, but RealityKit is USDZ-only, and the USDZ converters decode Draco and flatten KTX2, which breaks our canonical asset format (§3.4). Filament C++ on both platforms keeps one engine and one asset path. SceneKit is dead. |
 
 ### 3.3 Renderer isolation contract
 
@@ -124,7 +140,7 @@ The renderer is a leaf. Avatar params, garment representations, outfit compositi
 | Large binaries | Git LFS in P01–P05, migrate to DVC when asset experiments scale | r5 §5; keeps repo clean per brief §5.1 |
 | USDZ | **Not** canonical; only as a future iOS AR export if ever needed | SPINE §2 |
 
-Budget anchors (r2): single Draco+KTX2 avatar asset 0.5–2 MB; Filament native module ~5–8 MB per architecture; realistic 3D-heavy app 80–120 MB — hence the 100 MB P01 gate with headroom work planned (Expo Atlas, tree-shaking: 30–70% reductions claimed by Expo docs, to be verified in P01, not assumed).
+Budget anchors (r2): single Draco+KTX2 avatar asset 0.5–2 MB; Filament native module ~5–8 MB per architecture; realistic 3D-heavy app 80–120 MB — hence the 100 MB P01 gate with headroom work planned (*historical, RN-era:* Expo Atlas and tree-shaking, with 30–70% reductions claimed by Expo docs; the native equivalents are app thinning / App Store size reports and R8 / Play size reports, still to be measured, not assumed).
 
 ---
 
@@ -162,14 +178,14 @@ Decisions from [r4](research/r4-backend-providers.md) (Aug 24, 2026); prices re-
 
 ### 5.2 API contract ADR: OpenAPI 3.1 over tRPC
 
-> **ADR (ratified 2026-08-24, orchestrator reconciliation).** The r4 report recommended tRPC (+OpenAPI bridge) for its no-schema-duplication DX. **The orchestrator overrode this: OpenAPI 3.1 is the canonical contract**, with generated TypeScript clients for mobile (openapi codegen, e.g. `@hey-api/openapi-ts`), contract files owned by `packages/contracts`.
+> **ADR (ratified 2026-08-24, orchestrator reconciliation).** The r4 report recommended tRPC (+OpenAPI bridge) for its no-schema-duplication DX. **The orchestrator overrode this: OpenAPI 3.1 is the canonical contract**, with generated TypeScript clients for mobile (openapi codegen, e.g. `@hey-api/openapi-ts`), contract files owned by `packages/contracts`. *Amended 2026-09-22 (DEC-53):* the native apps use generated **Swift** (swift-openapi-generator) and **Kotlin** (openapi-generator) clients from the same bundle; the TS client stays for `apps/api` and tests.
 
 **Why the override — recorded so later agents do not reopen it without new evidence:**
 
 1. **Multi-client future is a stated requirement, not a maybe.** The brief plans a future AI-stylist chat client that "must call the same profile, closet, context, recommendation, trend, and entitlement services as every other client" (brief §2.9), plus admin/support tooling (brief §3.2's admin module) and potential third-party surfaces. r4 itself concedes GraphQL/schema-first approaches win "for multi-client scenarios"; tRPC's advantage assumes a TypeScript-monoculture client set forever.
 2. **Contract-first is mandated by the brief.** §5.5 requires canonical schema owners with generated clients and CI failing on stale generation; §6 requires contract tests for mobile/backend APIs and version compatibility. An explicit, versioned, language-neutral OpenAPI 3.1 document is that artifact. A tRPC router is an implementation, not a contract — its "schema" is the server's TypeScript, which is exactly the coupling brief §5.2 forbids ("how the mobile application shares contracts without sharing server internals").
 3. **Decoupling mobile from server internals.** With tRPC, mobile type-imports the server's router types; server refactors leak into the app. With OpenAPI, mobile consumes a generated client from a versioned contract file that reviews as a diff.
-4. **The cost of the override is small.** NestJS generates OpenAPI from the same decorators/DTOs we write anyway; `@hey-api/openapi-ts` gives typed RN clients. We lose tRPC's zero-ceremony DX, and accept that as the price of an explicit contract.
+4. **The cost of the override is small.** NestJS generates OpenAPI from the same decorators/DTOs we write anyway; `@hey-api/openapi-ts` gives typed RN clients (*2026-09-22:* Swift and Kotlin generators do the same for the native apps, and the language-neutral contract is what made the switch to native cheap on the wire side). We lose tRPC's zero-ceremony DX, and accept that as the price of an explicit contract.
 5. **Python workers already forced a schema boundary.** ML workers speak versioned JSON schemas (§5.5); one contract discipline (OpenAPI/JSON Schema) covers both seams instead of two mechanisms.
 
 Contract mechanics (versioning, codegen commands, CI staleness checks, event schemas/outbox) are owned by [06-data-api-and-event-contracts.md](06-data-api-and-event-contracts.md).
@@ -199,7 +215,7 @@ Separately deployable Docker services on owned servers deployed with Coolify (§
 
 ### 5.8 Monorepo and CI tooling
 
-pnpm workspaces + Turborepo (the default 2026 stack for this team size per r2; Expo SDK 55 has native monorepo support — note r2's caveat that EAS historically assumed Yarn; the pnpm build-hook workaround is validated in P02). Root task runner **`just`**; toolchain pinned via **`mise`**; one-command bootstrap + doctor script (brief §5.4). CI on GitHub Actions: Linux runners for everything except the iOS build lane (§7).
+pnpm workspaces + Turborepo for the TypeScript packages (the default 2026 stack for this team size per r2). The native apps keep their own build systems inside the monorepo: `apps/android/` is its own Gradle root (wrapper, version catalog, lockfiles + verification metadata), and `apps/ios/` is an XcodeGen spec plus local SwiftPM packages. Both are driven only through `just` recipes (DEC-49; *historical:* the Expo/EAS pnpm caveat is moot). Root task runner **`just`**; toolchain pinned via **`mise`**; one-command bootstrap + doctor script (brief §5.4). CI on GitHub Actions: Linux runners for everything except the iOS build lane (§7).
 
 ---
 
@@ -219,7 +235,7 @@ Every provider sits behind an owned port in `platform`/`context` (SPINE §3); **
 | **fal.ai** (AI/GPU — primary generative; see §6.2) | Per-task; face/body media only after privacy review (SPINE §2 AI data policy) | Try-on (FASHN, Kling Kolors, FLUX 2 LoRA), FLUX.2/Schnell/Kontext image models, BiRefNet/Bria, warm-pool serverless | **Try-on $0.07–0.075/generation** (FLUX 2 LoRA $0.021/MP, eval-gated); missing view $0.012/MP (FLUX.2 dev), $0.003 (Schnell); bg-removal ~$0.006 — verified 2026-09-09, r6 | Pay-as-you-go, no minimum; free credits playground-only | Provider retention/training terms reviewed per task; default **no training on customer data** | Warm pools: ~100ms-class cold start, ~0.5s platform overhead | Medium — model APIs proprietary but task contracts are ours | **Replicate** for batch (cheap but 10–120s cold starts — rejected for real-time); RunPod/Modal self-host past ~200–300M tokens/mo or ~2M embeddings/mo break-even | **Content-hash dedup: never regenerate the same input** (brief §3.1); results stored with lineage | Medium — provider abstraction + eval suite makes swaps testable |
 | **Fashion content sources** (`fashion-intel` ingestion) | **OPEN QUESTION (tracked in doc 16)** — licensed APIs/editorial feeds only; **no scraping as a business foundation** (brief §2.8) | TBD: candidate licensed trend/runway APIs and syndicated editorial feeds to be evaluated in P12 | Licensing fees TBD | TBD | Provenance + attribution mandatory; moderation pipeline required | TBD | TBD — contracts must include source-disappearance terms | Editorial/manual curation at small scale is the honest fallback | Ingested content stored with provenance + freshness | Unknown until sourcing decided — this is a P12 blocking decision, not an implementation detail |
 
-Rejected without ports: OneSignal (above), remove.bg (per-image cost vs $0 on-device — §6.2), Clerk/Firebase auth (cost/lock-in vs better-auth), Expo Push service tier ($99/mo unnecessary given FCM/APNs direct; the Expo notifications *client module* is still used).
+Rejected without ports: OneSignal (above), remove.bg (per-image cost vs $0 on-device — §6.2), Clerk/Firebase auth (cost/lock-in vs better-auth), Expo Push service tier ($99/mo unnecessary given FCM/APNs direct). *2026-09-22:* the Expo notifications client module went away with Expo; clients register natively (UserNotifications / FCM SDK, DEC-52).
 
 ### 6.2 AI/GPU provider selection per task (from r3, Aug 2026)
 
@@ -241,20 +257,24 @@ Cost anchors carried into [12-pricing…](12-pricing-entitlements-and-unit-econo
 
 ## 7. Linux-first development & the iOS reality
 
-**Decision (SPINE §2): develop 100% on Ubuntu; hosted macOS CI for iOS builds/signing; TestFlight upload via App Store Connect API from CI; no Mac purchase. Final EAS-vs-GHA choice = ADR-P02.** Evidence: [r1](research/r1-linux-ios-build.md), Aug 24, 2026.
+**Decision (2026-09-22, DEC-51): Linux stays the primary workstation OS. iOS development uses the team's Mac, and the GitHub Actions macOS runner is the only iOS CI lane** (`.github/workflows/ios.yml`: a Linux job runs lint, format, bans and the Core/Features package tests; then a macOS job does the unsigned simulator build and tests). TestFlight upload via the App Store Connect API is still to be built (OQ-18). EAS is removed. Supersedes DEC-03/DEC-30; OQ-04 resolved.
+
+*Original decision (2026-08-24, superseded):* develop 100% on Ubuntu; hosted macOS CI for iOS builds/signing; TestFlight upload via App Store Connect API from CI; no Mac purchase. Final EAS-vs-GHA choice = ADR-P02. Evidence: [r1](research/r1-linux-ios-build.md), Aug 24, 2026. §7.1 still holds. §7.2–§7.4 are kept as the RN-era analysis, with notes.
 
 ### 7.1 The explicit, non-negotiable statement
 
 Everything about Android and backend development is excellent on Ubuntu. **The complete iOS release lifecycle cannot be done locally on Ubuntu, and this plan never implies otherwise:**
 
 - **iOS Simulator** — macOS-exclusive; no Linux equivalent exists, and the Simulator doesn't support Metal anyway, so real-device testing is mandatory for our camera + 3D app regardless.
-- **Metal shader toolchain** — Metal shader compilation requires Xcode's `metal` toolchain on macOS; no cross-compiler or open-source replacement exists. (For us this is absorbed inside the RN/Expo iOS build on macOS CI runners.)
-- **App Store submission** — as of **April 28, 2026, Xcode 26+ is mandatory for App Store uploads** (Apple Developer News). Submission runs on macOS infra (EAS Submit, Xcode Cloud, or a macOS CI step); there is no Linux bypass.
-- **Signing/provisioning** — Apple's proprietary chain; managed for us server-side by EAS or by CI-held certificates (fastlane match-style) on macOS runners.
+- **Metal shader toolchain** — Metal shader compilation requires Xcode's `metal` toolchain on macOS; no cross-compiler or open-source replacement exists. (For us this is absorbed inside the Xcode build on the Mac or the macOS CI runner.)
+- **App Store submission** — as of **April 28, 2026, Xcode 26+ is mandatory for App Store uploads** (Apple Developer News). Submission runs on macOS infra (the team's Mac, Xcode Cloud, or a macOS CI step); there is no Linux bypass. *(2026-09-22: EAS Submit no longer applies.)*
+- **Signing/provisioning** — Apple's proprietary chain; handled by Xcode-managed signing with an App Store Connect API key on the macOS runner, or by the team's Mac (OQ-18).
 
-What **does** work from Linux: all coding, Android builds/testing, backend/workers, **TestFlight IPA upload via the App Store Connect API** (fastlane `upload_to_testflight` and GitHub Actions on Linux runners both work — the IPA must already be signed on macOS), and physical-device installs of dev builds.
+What **does** work from Linux: all coding, Android builds/testing (Gradle, Robolectric; no Android Studio needed), iOS `Core`/`Features` package builds and tests (`swift test`, mise or Docker `swift:6.4`), swift-format/SwiftLint, Swift/Kotlin client generation, backend/workers, **TestFlight IPA upload via the App Store Connect API** (fastlane `upload_to_testflight` and GitHub Actions on Linux runners both work — the IPA must already be signed on macOS), and physical-device installs of dev builds.
 
 ### 7.2 EAS Build vs GitHub Actions macOS lane (ADR-P02 decides)
+
+> **Historical (resolved 2026-09-22 by DEC-51):** EAS existed to build the RN/Expo app. With React Native removed, the GitHub Actions macOS lane is the only lane, ADR-0002 is superseded, and the comparison below is kept as evidence only. Xcode Cloud remains the candidate second lane (RISK-12).
 
 | Dimension | **EAS Build** | **GitHub Actions macOS (M-series)** |
 |---|---|---|
@@ -282,14 +302,14 @@ flowchart LR
 
 **xtool** (xtool-org/xtool; requires Swift 6.1+, releases built with Swift 6.2, actively maintained through 2026) cross-compiles **SwiftPM packages** into iOS apps from Linux, signs with ad-hoc/dev profiles, and sideloads to devices.
 
-- **Why not viable for us:** xtool is **Swift-only and SwiftPM-based — it cannot build React Native (or Flutter) projects at all** (r1 §1). Our app is RN; xtool is categorically irrelevant to our build pipeline.
+- **Why not viable for us:** xtool is **Swift-only and SwiftPM-based — it cannot build React Native (or Flutter) projects at all** (r1 §1). Our app is RN; xtool is categorically irrelevant to our build pipeline. *2026-09-22: the app is now native Swift, but xtool is still not used. The team has a Mac, the app needs asset catalogs, Metal and App Store submission, and our Linux path already covers the SwiftPM packages through `swift test`.*
 - **What it can do** (for the record): build/sign/install SwiftUI apps to physical devices from Linux; programmatic Apple Developer Services access.
 - **What it can't do even for native Swift apps:** no Metal shader compilation, no iOS extensions (widgets/clips), no asset catalogs, no Interface Builder, no LLDB, and **no App Store submission**.
 - **Residual value for us:** none in the critical path. At most a curiosity if we ever ship a tiny native Swift companion utility.
 
 ### 7.4 Ubuntu day-to-day
 
-Android SDK/emulator, Expo dev-client, Metro, backend, workers, Postgres, and all CI-parity checks run natively on Ubuntu (setup owned by [15-team-workflow-and-ai-agent-operations.md](15-team-workflow-and-ai-agent-operations.md)). iOS day-to-day iteration uses the Expo dev-client installed on physical iPhones (built by the macOS lane infrequently), with JS-level changes delivered over the wire — so the macOS lane is exercised on native-dependency changes and releases, not every code edit. Real-device iOS testing uses team-owned test iPhones; cloud device farms (AWS Device Farm-class) are the documented backstop for device-matrix coverage (doc 13).
+*Updated 2026-09-22 (DEC-49/51).* The Android SDK (user-level, no Android Studio), Gradle builds, Robolectric tests, the backend, workers, Postgres and all CI-parity checks run natively on Linux. The iOS `Core` and `Features` packages build and test on Linux as well. Setup is owned by [15-team-workflow-and-ai-agent-operations.md](15-team-workflow-and-ai-agent-operations.md). The app target, SwiftUI views, the Simulator and device installs need the team's Mac or the macOS CI job. There is no over-the-wire JS reload anymore; every iOS UI change is a native build. *(Historical: the RN plan used the Expo dev-client and Metro for iOS iteration.)* Real-device iOS testing uses team-owned test iPhones; cloud device farms (AWS Device Farm-class) are the documented backstop for device-matrix coverage (doc 13).
 
 ---
 
@@ -299,11 +319,11 @@ Every material assumption below must be validated by a prototype/eval before the
 
 | # | Assumption (currently unproven) | Validation | Phase | Pass criteria | On failure |
 |---|---|---|---|---|---|
-| A1 | `react-native-filament` renders a morphing avatar at target fps on mid-tier real devices | P01 vertical prototype, §2.3 gates G1–G3 | **P01** | 60 fps iPhone 13-class / 50 fps Galaxy A52-class, <50 ms touch | Pivot ladder §2.3 (JSI-native Filament → native 3D views → full native) |
+| A1 | ~~`react-native-filament` renders a morphing avatar at target fps on mid-tier real devices~~ **Retired 2026-09-22 (DEC-50).** Replaced by: *Filament's C++ engine, used directly (Metal on iOS, AARs on Android), renders a morphing avatar at target fps on mid-tier real devices* | P01 native Filament spike when 3D resumes, gates G1–G3 of §2.3 | **P01** (when 3D resumes) | 60 fps iPhone 13-class / 50 fps Galaxy A52-class, <50 ms touch | Asset diet / LOD; if structural, A0/G0 non-3D experience (RISK-09) and a new DEC |
 | A2 | App size and memory stay in budget with Filament + assets | §2.3 G5–G6 | **P01** | <100 MB package, <300 MB memory | Asset diet (LOD/KTX2/Draco tuning); if structural, revisit renderer embedding |
-| A3 | EAS delivers the same codebase to TestFlight + Play internal without platform forks | §2.3 G7 | **P01** | Both stores receive builds; zero platform-specific 3D workarounds | Switch lane per §7.2 comparison; escalate to ADR-P02 early |
-| A4 | pnpm monorepo + EAS build hooks coexist (r2's Yarn-assumption caveat) | P02 CI bring-up | **P02** | Green iOS+Android builds from pnpm workspace | Yarn workspaces fallback (tooling-local change) |
-| A5 | EAS vs GHA macOS lane: cost + reliability at our cadence | Run both lanes 2 weeks | **P02 (ADR-P02)** | Chosen lane ≤ $50/mo, <10% build flake | Adopt the other lane; Mac rental as last resort |
+| A3 | ~~EAS delivers the same codebase to TestFlight + Play internal without platform forks~~ **Moot 2026-09-22 (DEC-49/51):** two native codebases by design; delivery = GHA macOS → TestFlight and Gradle → Play internal (OQ-18) | §2.3 G7 | — | — | — |
+| A4 | ~~pnpm monorepo + EAS build hooks coexist (r2's Yarn-assumption caveat)~~ **Moot 2026-09-22:** EAS removed; the native apps build outside the pnpm workspace | — | — | — | — |
+| A5 | GHA macOS lane: cost + reliability at our cadence (*was: EAS vs GHA; lane choice resolved by DEC-51*) | Measure the `ios` workflow over P02–P03 | **P02–P03** | ≤ $50/mo, <10% build flake | Build from the team's Mac; evaluate Xcode Cloud as a second lane (new DEC) |
 | A6 | Anny topology/rig survives our morph ranges and export path (Anny → glTF → Filament) with stable topology | Measurement→morph spike on Anny GLB in the P01 harness | **P01/P04** | Morphs within realistic bounds, no mesh artifacts across param extremes | MPFB2 (CC0) swap — same glTF contract |
 | A7 | Measurement→param mapping produces avatars users recognize | P04 calibration testing, diverse body set | **P04** | Users can correct to satisfaction via calibration screen (metric owned by doc 12/00) | More points/regression work; fall back to slider-first calibration |
 | A8 | On-device segmentation (Apple Vision / ML Kit) is good enough for closet cutouts | P06 eval on garment photo set | **P06** | Eval precision threshold set in doc 10; server fallback rate < target | Raise server fallback share (self-hosted BiRefNet or fal.ai per the P06 gate); costs re-checked against r3 model |
@@ -323,15 +343,18 @@ All decisions ratified **2026-08-24**; **prices re-verified 2026-09-09** ([r6](r
 
 | Item | Version / price pin (versions Aug 2026; prices 2026-09-09 where marked r6) | Source |
 |---|---|---|
-| Expo SDK | 55+ (New Architecture mandatory; default since SDK 52) | r2 |
-| react-native-filament | v1.11.0 (May 27, 2026) | r2 |
+| Expo SDK | 55+ (New Architecture mandatory; default since SDK 52). *Superseded 2026-09-22 (DEC-49): no Expo in the repo* | r2 |
+| react-native-filament | v1.11.0 (May 27, 2026). *Superseded 2026-09-22 (DEC-50): dormant, not used* | r2 |
+| Xcode / Swift (iOS) | Xcode 27.0 (27A266a) / Swift 6.4; iOS deployment target 26.0; iOS 27 SDK required for App Store uploads from April 2027 | 2026-09-22, Apple release notes (ADR-0004, DEC-54) |
+| Android toolchain | AGP 9.3.3 · Gradle 9.7.1 · Kotlin 2.4.20 · Compose BOM 2026.09.00 · compileSdk 37 / targetSdk 36 (Play floor since 2026-08-31) / minSdk 29 · JDK Temurin 21 | 2026-09-22, official release notes (ADR-0004, DEC-54) |
+| API client generators | swift-openapi-generator 1.13.1 (runtime 1.12.1, urlsession 1.3.1) · openapi-generator 7.25.0 | 2026-09-22 (DEC-53) |
 | Filament (core) | v1.76.0 | r2 |
 | Flutter | Impeller default since 3.27; Flutter GPU/flutter_filament in preview | r2 |
 | Anny | Naver release, Apache 2.0; 11 params + 256 local blend shapes | r5 |
 | SMPL/Meshcapade | Epic Games acquisition announced Feb 2026, closing April 2026; terms unknown — monitor quarterly | r5 |
 | Xcode requirement | Xcode 26+ mandatory for App Store uploads from **2026-04-28** | r1 (Apple Developer News) |
 | GHA macOS | $0.062/min (3–4 core), $0.12/min (M-series large), $0.16/min (XL); Linux 2-core $0.006/min; Pro plan 3k free min/mo | r1, r6 |
-| EAS Build / Update | Free: 15 iOS + 15 Android builds/mo; Starter $19/mo + $1–4/build overage; Production $199/mo; EAS Update free < 3k MAU then $0.005/MAU | r6 |
+| EAS Build / Update | Free: 15 iOS + 15 Android builds/mo; Starter $19/mo + $1–4/build overage; Production $199/mo; EAS Update free < 3k MAU then $0.005/MAU. *Not used since 2026-09-22 (DEC-51)* | r6 |
 | pg-boss | v12 (12.31.0, MIT); runs on the app PostgreSQL; $0 | r7 |
 | Owned server (Hetzner-class VPS/dedicated) | ~€10–25/mo at launch; provider/region per OQ-07/OQ-14 | r7 |
 | Coolify | $0 self-hosted (Apache-2.0); deploys, HTTPS, health checks, rollbacks | r7 |
@@ -345,6 +368,6 @@ All decisions ratified **2026-08-24**; **prices re-verified 2026-09-09** ([r6](r
 | Embeddings | Voyage multimodal-3.5 per-pixel ≈ $0.0003/img (200M free); Cohere Embed v4 $0.47/1M image tokens (token rule undocumented) | r6 |
 | Google Cloud Vision | $1.50/1k images; 1k/mo free | r3, r6 |
 | Store fees | Apple SBP 15% (< $1M); Apple EU DMA from 2026-10-01: 15–26% by route; Google Play 15% for auto-renewing subscriptions (10% service + 5% billing fee in the EEA/UK/US program from 2026-06-30; 15% elsewhere) — verified 2026-09-13, base case 15% unchanged; Apple dev $99/yr, Play $25 once | r6, r7 |
-| Infra totals | ~$25–45/mo launch (owned server ~$10–25, dev fees amortised, EAS free allowance, R2/PostHog/Grafana free tiers); r6's ~$160–200 at 1k / ~$370–450 at 5k / ~$870–1,100 at 20k MAU are upper bounds to re-baseline at P02 (OQ-14); iOS CI ~$10–30/mo | r6, r7 |
+| Infra totals | ~$25–45/mo launch (owned server ~$10–25, dev fees amortised, R2/PostHog/Grafana free tiers; the EAS free allowance is gone since 2026-09-22); r6's ~$160–200 at 1k / ~$370–450 at 5k / ~$870–1,100 at 20k MAU are upper bounds to re-baseline at P02 (OQ-14); iOS CI ~$10–30/mo | r6, r7 |
 
 **Hypothesis labeling:** all pricing-tier figures feeding [12-pricing…](12-pricing-entitlements-and-unit-economics.md) are hypotheses requiring market testing (SPINE §6). No benchmark number in this document originates from us; every performance figure is a cited third-party claim to be re-measured at its gate (brief §13 rules 2–4).

@@ -1,0 +1,176 @@
+# iOS lane for the native Swift/SwiftUI app in apps/ios (XcodeGen project + local SwiftPM packages).
+#
+# What it does (a two-job tree):
+#   1. Lint & format (Linux)          SwiftLint safety rules, swift-format check, banned patterns
+#                                     (+ their fixtures), and the Core/Features package unit tests on
+#                                     the Linux Swift toolchain (cheap; proves Core stays UI-free).
+#   2. Build & test (macOS simulator) needs 1. Generates the Xcode project, builds the app unsigned
+#                                     for the simulator (Dev), runs the package test targets through
+#                                     the AIStylist-Dev scheme on an iOS simulator.
+#
+# Triggers: pull_request and push to main touching apps/ios/**, packages/contracts/**,
+#           tools/codegen/gen-swift.sh or this file; manual workflow_dispatch.
+# Secrets:  none (unsigned simulator builds only). The TestFlight lane (later) will add
+#           APP_STORE_CONNECT_API_KEY_ID, APP_STORE_CONNECT_API_ISSUER_ID, APP_STORE_CONNECT_API_KEY_P8
+#           and DEVELOPMENT_TEAM.
+# Recipes:  just ios-lint, just ios-format --check, just ios-check-banned [--fixtures],
+#           just ios-test-packages, just ios-doctor, just ios-project, just ios-build --config dev,
+#           just ios-test.
+# Runner:   `xcode-27` (actions/runner-images xcode-27-arm64 image, marked preview: Xcode 27.0
+#           27A266a at /Applications/Xcode_27.0.app, iOS 27.0 simulators), checked 2026-09-22.
+#           Override with the repository variable IOS_MACOS_RUNNER (actionlint's built-in label list
+#           predates `xcode-27`, hence the expression). Move to macos-26 / macos-27 once they ship
+#           Xcode 27 as GA. macOS minutes bill at 10x,
+#           so the macOS job only starts after the Linux job is green.
+name: ios
+
+on:
+  pull_request:
+    paths:
+      - 'apps/ios/**'
+      - 'packages/contracts/**'
+      - 'tools/codegen/gen-swift.sh'
+      - '.github/workflows/ios.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'apps/ios/**'
+      - 'packages/contracts/**'
+      - 'tools/codegen/gen-swift.sh'
+      - '.github/workflows/ios.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  CI: 'true'
+  DO_NOT_TRACK: '1'
+
+jobs:
+  lint:
+    name: Lint & format (Linux)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+    concurrency:
+      group: ios-lint-${{ github.ref }}
+      cancel-in-progress: true
+    steps:
+      - name: Setup · Check out
+        uses: actions/checkout@v7
+
+      - name: Setup · Install mise tools
+        uses: jdx/mise-action@v4
+        with:
+          install_args: just swift swiftlint
+          cache: true
+
+      - name: Verify · Lint
+        id: lint
+        run: just ios-lint
+
+      - name: Verify · Format check
+        id: format
+        run: just ios-format --check
+
+      - name: Verify · Banned patterns
+        id: banned
+        run: |
+          just ios-check-banned
+          just ios-check-banned --fixtures
+
+      - name: Test · Core package
+        id: packages
+        run: just ios-test-packages
+
+      - name: Report · Job summary
+        if: always()
+        env:
+          LINT: ${{ steps.lint.outcome }}
+          FORMAT: ${{ steps.format.outcome }}
+          BANNED: ${{ steps.banned.outcome }}
+          PACKAGES: ${{ steps.packages.outcome }}
+        run: |
+          {
+            echo "### iOS · Lint & format (Linux)"
+            echo ""
+            echo "| Check | Result |"
+            echo "|---|---|"
+            echo "| SwiftLint safety rules (\`just ios-lint\`) | ${LINT} |"
+            echo "| swift-format (\`just ios-format --check\`) | ${FORMAT} |"
+            echo "| Banned patterns + fixtures (\`just ios-check-banned\`) | ${BANNED} |"
+            echo "| Core + Features package tests (\`just ios-test-packages\`) | ${PACKAGES} |"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  build-test:
+    name: Build & test (macOS simulator)
+    needs: lint
+    # Repository variable IOS_MACOS_RUNNER switches the runner without editing this file
+    # (e.g. to macos-26 once it carries Xcode 27 GA); DEVELOPER_DIR below must match it.
+    runs-on: ${{ vars.IOS_MACOS_RUNNER || 'xcode-27' }}
+    timeout-minutes: 45
+    permissions:
+      contents: read
+    concurrency:
+      group: ios-macos-${{ github.ref }}
+      cancel-in-progress: true
+    env:
+      # Pin the Xcode the runner image ships (apps/ios/.xcode-version); `just ios-doctor` checks it.
+      DEVELOPER_DIR: /Applications/Xcode_27.0.app/Contents/Developer
+    steps:
+      - name: Setup · Check out
+        uses: actions/checkout@v7
+
+      - name: Setup · Install mise tools
+        uses: jdx/mise-action@v4
+        with:
+          install_args: just xcodegen xcbeautify
+          cache: true
+
+      - name: Setup · Select Xcode
+        run: just ios-doctor
+
+      - name: Setup · Restore package cache
+        uses: actions/cache@v6
+        with:
+          path: apps/ios/.build/SourcePackages
+          key: ios-spm-${{ runner.os }}-xcode27-${{ hashFiles('apps/ios/Packages/*/Package.swift', 'apps/ios/Packages/*/Package.resolved', 'packages/contracts/gen/swift-client/Package.swift') }}
+          restore-keys: |
+            ios-spm-${{ runner.os }}-xcode27-
+
+      - name: Setup · Generate Xcode project
+        run: just ios-project
+
+      - name: Build · Simulator app (dev)
+        id: build
+        run: just ios-build --config dev
+
+      - name: Test · App on simulator
+        id: test
+        run: just ios-test
+
+      - name: Report · Upload xcresult
+        if: failure() && steps.test.outcome == 'failure'
+        uses: actions/upload-artifact@v7
+        with:
+          name: ios-test-xcresult
+          path: apps/ios/.build/test.xcresult
+          retention-days: 7
+
+      - name: Report · Job summary
+        if: always()
+        env:
+          BUILD: ${{ steps.build.outcome }}
+          TEST: ${{ steps.test.outcome }}
+        run: |
+          {
+            echo "### iOS · Build & test (macOS simulator)"
+            echo ""
+            echo "| Step | Result |"
+            echo "|---|---|"
+            echo "| Xcode | $(xcodebuild -version | head -n 1) |"
+            echo "| Unsigned simulator build, Dev (\`just ios-build --config dev\`) | ${BUILD} |"
+            echo "| Package tests on simulator (\`just ios-test\`) | ${TEST} |"
+          } >> "$GITHUB_STEP_SUMMARY"

@@ -29,15 +29,15 @@ included:
   - App
   - Packages
 excluded:
-  - "**/.build"
+  - '**/.build'
   - scripts/fixtures
 
 custom_rules:
   no_unchecked_sendable:
     regex: '@unchecked\s+Sendable'
-    message: "Use an actor, Mutex, or a value type instead of @unchecked Sendable."
+    message: 'Use an actor, Mutex, or a value type instead of @unchecked Sendable.'
     severity: error
   no_nonisolated_unsafe:
     regex: 'nonisolated\s*\(\s*unsafe\s*\)'
-    message: "nonisolated(unsafe) opts out of data-race safety; restructure the code instead."
+    message: 'nonisolated(unsafe) opts out of data-race safety; restructure the code instead.'
     severity: error

@@ -30,11 +30,11 @@ The generated client lives in `packages/contracts/gen/swift-client/`. `tools/cod
 
 ## Environments
 
-| Config (scheme)                  | Display name       | Bundle id                      | API_BASE_URL (host-only)      |
-|----------------------------------|--------------------|--------------------------------|-------------------------------|
-| Dev (`AIStylist-Dev`)            | AI Stylist Dev     | `app.aistylist.mobile.dev`     | `http://localhost:3000`       |
-| Preview (`AIStylist-Preview`)    | AI Stylist Preview | `app.aistylist.mobile.preview` | `https://api.ai-stylist.app`* |
-| Prod (`AIStylist-Prod`)          | AI Stylist         | `app.aistylist.mobile`         | `https://api.ai-stylist.app`  |
+| Config (scheme)               | Display name       | Bundle id                      | API_BASE_URL (host-only)      |
+| ----------------------------- | ------------------ | ------------------------------ | ----------------------------- |
+| Dev (`AIStylist-Dev`)         | AI Stylist Dev     | `app.aistylist.mobile.dev`     | `http://localhost:3000`       |
+| Preview (`AIStylist-Preview`) | AI Stylist Preview | `app.aistylist.mobile.preview` | `https://api.ai-stylist.app`* |
+| Prod (`AIStylist-Prod`)       | AI Stylist         | `app.aistylist.mobile`         | `https://api.ai-stylist.app`  |
 
 \* There is no staging API yet, so Preview points at production for now.
 
@@ -60,17 +60,17 @@ a secret in an xcconfig.
 
 The `just` recipes are wired in the root justfile. The recipe bodies are `apps/ios/scripts/*.sh`.
 
-| Recipe                                     | macOS | Linux | What it does |
-|--------------------------------------------|:-----:|:-----:|--------------|
-| `just ios-doctor`                          | yes   | yes   | Checks that Xcode matches `.xcode-version` and that the tools are installed. On Linux it reports what can run there |
-| `just ios-project`                         | yes   | no    | Runs XcodeGen: `project.yml` to `AIStylist.xcodeproj` |
-| `just ios-build [--config dev\|preview\|prod]` | yes | no  | Builds the app unsigned for the simulator |
-| `just ios-test`                            | yes   | no    | Runs the package unit tests through the `AIStylist-Dev` scheme on an iOS 26+ iPhone simulator |
-| `just ios-e2e`                             | yes   | no    | Builds Prod for the simulator and runs the shared Maestro flow `e2e/smoke.yaml` |
-| `just ios-test-packages [core\|features]`  | yes   | yes   | Runs `swift test` for Core and the Features view models |
-| `just ios-lint`                            | yes   | yes   | Runs the SwiftLint safety rules (on Linux: `swiftlint-static`) |
-| `just ios-format [--check]`                | yes   | yes   | Runs swift-format, in place or as a check |
-| `just ios-check-banned [--fixtures]`       | yes   | yes   | Runs the grep bans, or proves every ban still fires |
+| Recipe                                         | macOS | Linux | What it does                                                                                                        |
+| ---------------------------------------------- | :---: | :---: | ------------------------------------------------------------------------------------------------------------------- |
+| `just ios-doctor`                              |  yes  |  yes  | Checks that Xcode matches `.xcode-version` and that the tools are installed. On Linux it reports what can run there |
+| `just ios-project`                             |  yes  |  no   | Runs XcodeGen: `project.yml` to `AIStylist.xcodeproj`                                                               |
+| `just ios-build [--config dev\|preview\|prod]` |  yes  |  no   | Builds the app unsigned for the simulator                                                                           |
+| `just ios-test`                                |  yes  |  no   | Runs the package unit tests through the `AIStylist-Dev` scheme on an iOS 26+ iPhone simulator                       |
+| `just ios-e2e`                                 |  yes  |  no   | Builds Prod for the simulator and runs the shared Maestro flow `e2e/smoke.yaml`                                     |
+| `just ios-test-packages [core\|features]`      |  yes  |  yes  | Runs `swift test` for Core and the Features view models                                                             |
+| `just ios-lint`                                |  yes  |  yes  | Runs the SwiftLint safety rules (on Linux: `swiftlint-static`)                                                      |
+| `just ios-format [--check]`                    |  yes  |  yes  | Runs swift-format, in place or as a check                                                                           |
+| `just ios-check-banned [--fixtures]`           |  yes  |  yes  | Runs the grep bans, or proves every ban still fires                                                                 |
 
 Where Swift comes from on Linux: `mise` swift, or Docker `swift:6.4` when `swift` is not on PATH.
 

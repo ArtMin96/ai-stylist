@@ -26,6 +26,6 @@ Every workflow follows the same layout so the Actions UI reads as a tree:
 
 - `.github/actions/setup/action.yml` - composite: `jdx/mise-action` (cache on), pnpm store cache keyed on `pnpm-lock.yaml`, `pnpm install --frozen-lockfile`, optional `uv sync --frozen` under `workers/**`.
 - `.github/actionlint.yaml` - declares runner labels newer than actionlint's built-in list (`xcode-27`); `just lint` runs actionlint over every workflow.
-- `.gitleaks.toml` (repo root) - extends the default ruleset, adds an `age` secret-key rule, allowlists `.env.example`, `planning/**`, `**/*.enc.yaml`.
+- `.gitleaks.toml` (repo root) - extends the default ruleset, adds an `age` secret-key rule, allowlists `.env.example`, `planning/**`, `**/*.enc.yaml`, and the gitignored native build caches (`apps/ios/**/.build/`, `apps/ios/**/DerivedData/`, `apps/android/**/build/`, `apps/android/**/.gradle/`, `apps/android/**/.kotlin/`; path-only, no rule allowlisted), proven by `scripts/security/gitleaks-fixtures.sh` in `just ci-parity`.
 
 Action pins (major tags, verified against each repo's latest release on 2026-09-09): `actions/checkout@v7`, `actions/cache@v6`, `actions/upload-artifact@v7`, `jdx/mise-action@v4`, `gitleaks/gitleaks-action@v3`, `gradle/actions/setup-gradle@v6`. Renovate keeps them current (15 §9).

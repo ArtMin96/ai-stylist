@@ -7,18 +7,3 @@
 #
 # Only findings with no fixed version, or where every fix path breaks a tool, belong here.
 # Anything with a working fix is bumped or handled via `pnpm.overrides` in package.json.
-
-[[IgnoredVulns]]
-id = "GHSA-5p2g-fcmc-qvqq"
-ignoreUntil = 2026-11-10
-reason = "image-size@1.2.1 (pnpm-lock.yaml: expo -> @expo/cli -> metro -> image-size). JXL/HEIF parser DoS. No fixed release: advisory marks every version through 2.0.2 (the latest) as affected. Build-time only (Metro asset resolver on the developer/CI machine); never runs in the app or API. Revisit when image-size publishes a fixed release."
-
-[[IgnoredVulns]]
-id = "GHSA-w3rx-r6r6-pgpr"
-ignoreUntil = 2026-11-10
-reason = "image-size@1.2.1 (pnpm-lock.yaml: expo -> @expo/cli -> metro -> image-size). ICNS parser DoS. No fixed release: advisory marks every version through 2.0.2 (the latest) as affected. Build-time only (Metro asset resolver); never runs in the app or API. Revisit when image-size publishes a fixed release."
-
-[[IgnoredVulns]]
-id = "GHSA-vcc3-ghjq-m6fr"
-ignoreUntil = 2026-11-10
-reason = "decode-uri-component@0.2.2 (pnpm-lock.yaml: expo-router@57.0.20 -> query-string@7.1.3 -> decode-uri-component). The only fixed line (>=0.5.0) is ESM-only (`export default`), while query-string@7 is CommonJS and calls `require('decode-uri-component')(value)`; under Metro/Node CJS interop the require returns a namespace object, so route-path parsing would throw at app runtime. expo-router@57 (latest) still pins query-string ^7. Revisit when expo-router moves off query-string@7 or a CJS-compatible fix is published."

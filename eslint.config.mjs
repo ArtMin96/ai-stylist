@@ -99,9 +99,9 @@ export const ignores = {
     '**/.turbo/**',
     '**/gen/**',
     '**/generated/**',
-    '**/.expo/**',
-    '**/ios/**',
-    '**/android/**',
+    // Native apps are linted by their own toolchains (Swift / Kotlin), not ESLint.
+    'apps/ios/**',
+    'apps/android/**',
     'planning/**',
     '.claude/**',
     'workers/**',

@@ -32,15 +32,7 @@
     "overrides": {
       "@nestjs/platform-fastify>fastify": "5.12.1",
       "@hey-api/json-schema-ref-parser>js-yaml": "^4.3.2",
-      "@esbuild-kit/core-utils>esbuild": "^0.25.4",
-      "xcode>uuid": "^11.1.1"
-    },
-    "auditConfig": {
-      "ignoreGhsas": [
-        "GHSA-5p2g-fcmc-qvqq",
-        "GHSA-w3rx-r6r6-pgpr",
-        "GHSA-vcc3-ghjq-m6fr"
-      ]
+      "@esbuild-kit/core-utils>esbuild": "^0.25.4"
     }
   }
 }

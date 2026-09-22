@@ -10,9 +10,8 @@ uv.lock
 planning/
 .claude/
 secrets/*.enc.*
-ios/
-android/
-.expo/
+apps/ios/
+apps/android/
 *.glb
 *.gltf
 *.ktx2

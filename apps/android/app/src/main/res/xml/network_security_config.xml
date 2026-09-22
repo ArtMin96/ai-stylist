@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Release/preview: HTTPS only. The debug source set overrides this file to allow cleartext to
+     the local dev API (10.0.2.2 = emulator host, localhost = `adb reverse`). -->
+<network-security-config>
+    <base-config cleartextTrafficPermitted="false" />
+</network-security-config>

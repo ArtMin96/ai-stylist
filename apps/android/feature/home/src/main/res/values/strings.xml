@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Home screen copy. "AI Stylist" and "Share anonymous usage data" are asserted by the shared
+     Maestro smoke flow (e2e/smoke.yaml) and must stay identical on iOS and Android. -->
+<resources>
+    <string name="home_title">AI Stylist</string>
+    <string name="home_api_caption">API: %1$s</string>
+    <string name="home_version_loading">Checking API version…</string>
+    <string name="home_version_loaded">API %1$s (%2$s)</string>
+    <string name="home_version_error">The API is not reachable right now: %1$s</string>
+    <string name="home_error_unreachable">Could not reach the API</string>
+    <string name="home_error_status">API responded with %1$d</string>
+    <string name="home_error_invalid_response">The API sent an unexpected response</string>
+    <string name="home_retry">Retry</string>
+    <string name="home_consent_label">Share anonymous usage data</string>
+    <string name="home_consent_caption">Off by default. Nothing is sent until you opt in.</string>
+</resources>

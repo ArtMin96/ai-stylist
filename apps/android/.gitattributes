@@ -1,0 +1,7 @@
+# Windows wrapper script needs CRLF; the wrapper jar is binary.
+gradlew.bat text eol=crlf
+*.jar binary
+# Machine-maintained: regenerate, never merge by hand.
+gradle.lockfile merge=binary linguist-generated
+*-gradle.lockfile merge=binary linguist-generated
+gradle/verification-metadata.xml merge=binary linguist-generated

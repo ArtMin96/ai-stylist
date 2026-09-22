@@ -11,7 +11,8 @@ so the two never drift apart (copy-and-diverge is forbidden repo-wide).
 
 | Agent | Owns | Scope | Verify with |
 | --- | --- | --- | --- |
-| [`mobile-engineer`](mobile-engineer.md) | `apps/mobile/**` except `src/render/**` and `e2e/**` | React Native / Expo screens, navigation, offline sync, data layer | `just test mobile`, `just lint`, `just typecheck`, `just arch-check`, `just generate --check` (if contracts touched) |
+| [`ios-engineer`](ios-engineer.md) | `apps/ios/**` | Native iOS: Swift 6 + SwiftUI screens, view models, Core services, xcconfigs, `project.yml` | `just ios-check`, `just test ios`, `just generate --check` (if contracts touched); macOS: `just ios-build`, `just ios-test`, `just ios-e2e` |
+| [`android-engineer`](android-engineer.md) | `apps/android/**` | Native Android: Kotlin + Compose screens, ViewModels, core modules, Gradle build logic | `just android-check`, `just test android`, `just generate --check` (if contracts touched); emulator: `just android-e2e` |
 | [`api-engineer`](api-engineer.md) | `apps/api/src/modules/{identity,profile,avatar,closet,media,billing,notifications,admin,assistant}/**` + the API composition root | NestJS domain-module work and HTTP tests for those modules | `just test <module>`, `just test api`, `just lint`, `just typecheck`, `just arch-check` |
 | [`platform-engineer`](platform-engineer.md) | `apps/api/src/platform/**`, `apps/api/src/jobs/**`, `packages/db/**`, `apps/api/tests/migrations/**`, `packages/seed-data/**`, `docker-compose.yml` | Port adapters, pg-boss jobs, Drizzle migrations + rollbacks, seed data | `just test platform`, `just test api`, `just db-reset --yes && just db-migrate && just db-seed`, `just db-rollback --yes && just db-migrate`, `just lint`, `just typecheck`, `just arch-check` |
 | [`contracts-engineer`](contracts-engineer.md) | `packages/contracts/**`, `packages/shared-kernel/**`, `workers/ml/generated/**` (via `just generate` only) | OpenAPI 3.1 + event schemas, shared kernel, regenerating every consumer — single-writer | `just generate && just generate --check`, `just lint`, `just typecheck`, `just test`, `just test <each consuming module>`, `just arch-check` |
@@ -37,7 +38,11 @@ those lines.
 
 Cross-seam sequences (producer before consumer):
 
-- Endpoint or event: `contracts-engineer` → `api-engineer` / `mobile-engineer` / `ml-engineer`.
+- Endpoint or event: `contracts-engineer` → `api-engineer` / `ios-engineer` / `android-engineer` / `ml-engineer`.
+- Client feature on both platforms (skill `cross-platform-feature`): contract first (`contracts-engineer`,
+  merged) → `ios-engineer` and `android-engineer` in parallel, one worktree each (their write sets
+  `apps/ios/**` and `apps/android/**` are disjoint) → a parity review of both diffs (strings, ids,
+  states, analytics events) plus `architecture-reviewer`.
 - Table change: module owner edits `modules/<name>/internal/schema.ts` → `platform-engineer` generates the
   migration + down file + migration test → module owner writes the repository code.
 - New port: module owner declares the port and asks `api-engineer` for the fake in

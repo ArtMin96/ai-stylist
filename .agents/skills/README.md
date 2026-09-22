@@ -5,18 +5,20 @@ One `SKILL.md` per task type required by NFR-TEAM-100 (`planning/01-requirements
 | Skill                                                         | Use when                                                                                                                                       |
 | ------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
 | [`admin-moderation`](admin-moderation/SKILL.md)               | Admin CRUD, RBAC on admin actions, append-only audit log, moderation/quarantine queues                                                         |
+| [`android-feature`](android-feature/SKILL.md)                 | Native Android (Kotlin + Compose) screens, ViewModels, `:core` repositories, Gradle modules in `apps/android/`                                 |
 | [`api-contract-change`](api-contract-change/SKILL.md)         | Any OpenAPI/event schema change in `packages/contracts` + regeneration                                                                         |
 | [`architecture-review`](architecture-review/SKILL.md)         | Reviewing a diff for boundary violations, duplication, source-of-truth drift                                                                   |
 | [`assistant-chat`](assistant-chat/SKILL.md)                   | `assistant` module's chat adapter — conversation storage, tool-call orchestration, entitlement enforcement, calling only existing app services |
 | [`backend-module`](backend-module/SKILL.md)                   | Domain work inside `apps/api/src/modules/<name>/` (identity, profile, avatar, closet, media, outfit, context) or a `platform` adapter          |
+| [`cross-platform-feature`](cross-platform-feature/SKILL.md)   | Lead-session orchestration of one feature on both apps: contract first, iOS and Android agents in parallel worktrees, parity review            |
 | [`data-lifecycle`](data-lifecycle/SKILL.md)                   | Consent registry, cross-module account-deletion cascade, data export, retention windows, purge verification                                    |
 | [`db-migration`](db-migration/SKILL.md)                       | Drizzle schema, migrations, backfills, rollbacks                                                                                               |
 | [`docs-maintenance`](docs-maintenance/SKILL.md)               | Sync `PROGRESS.md`, module contracts, and the ADR index with landed code; resolve `docs-check` findings                                        |
-| [`e2e-device-testing`](e2e-device-testing/SKILL.md)           | Maestro E2E flows, device-lane/device-farm runs, golden/visual-regression baselines, k6 load profiles                                          |
+| [`e2e-device-testing`](e2e-device-testing/SKILL.md)           | Shared Maestro E2E flows in `e2e/` for both apps, device-lane/device-farm runs, golden/visual-regression baselines, k6 load profiles           |
 | [`entitlements-billing`](entitlements-billing/SKILL.md)       | Plans, entitlements, credits, RevenueCat webhooks, paywall gating                                                                              |
 | [`fashion-intel-ingestion`](fashion-intel-ingestion/SKILL.md) | Source register, ingestion pipeline, freshness/retirement, moderation wiring, feed personalization in `fashion-intel`                          |
+| [`ios-feature`](ios-feature/SKILL.md)                         | Native iOS (Swift 6 + SwiftUI) screens, view models, Core services, xcconfig/project.yml in `apps/ios/`                                        |
 | [`media-ml-pipeline`](media-ml-pipeline/SKILL.md)             | pg-boss jobs, Python workers, AI provider calls, evals                                                                                         |
-| [`mobile-feature`](mobile-feature/SKILL.md)                   | Screens, navigation, offline, camera/push/analytics outside the 3D boundary                                                                    |
 | [`notifications-delivery`](notifications-delivery/SKILL.md)   | FCM/APNs push delivery, quiet hours, opt-out, delivery receipts in the `notifications` module                                                  |
 | [`observability-analytics`](observability-analytics/SKILL.md) | OTel metrics/traces, Grafana dashboards/alerts, PostHog events, runbooks, spend alerts                                                         |
 | [`performance-profiling`](performance-profiling/SKILL.md)     | Budget investigations and verified perf claims                                                                                                 |
@@ -26,7 +28,7 @@ One `SKILL.md` per task type required by NFR-TEAM-100 (`planning/01-requirements
 | [`testing-regression`](testing-regression/SKILL.md)           | Bug fixes regression-first, coverage work, flaky tests                                                                                         |
 | [`tooling-ci`](tooling-ci/SKILL.md)                           | `just` recipes, CI workflows, `tools/**` gates and fixtures, bootstrap/doctor, machine portability                                             |
 
-Overlap review (AC-9): each skill's Overlap section names its neighbours and the seam; no two skills own the same file set. Where a task crosses seams, the order is contract → migration → module → UI → review → release.
+Overlap review (AC-9): each skill's Overlap section names its neighbours and the seam; no two skills own the same file set. Where a task crosses seams, the order is contract → migration → module → UI (iOS and Android in parallel, `cross-platform-feature`) → review → release.
 
 ## Module coverage (SPINE §3, 15 modules)
 

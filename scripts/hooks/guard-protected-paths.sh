@@ -29,6 +29,10 @@ deny() {
 case "$path" in
   */packages/contracts/gen/*|*/workers/ml/generated/*|*/packages/db/migrations/meta/*)
     deny "Generated output — run \`just generate\`, never hand-edit." ;;
+  */apps/ios/*.xcodeproj/*|*/apps/ios/*.xcodeproj)
+    deny "Generated Xcode project (gitignored) — edit apps/ios/project.yml or Config/*.xcconfig, then run \`just ios-project\`." ;;
+  */apps/android/*gradle.lockfile|*/apps/android/gradle/verification-metadata.xml)
+    deny "Dependency lock/verification state — change gradle/libs.versions.toml, then run \`just android-deps-lock\` and commit the lockfiles + verification-metadata.xml together." ;;
   */CLAUDE.md|*/planning/SPINE.md|*/planning/15-*.md)
     deny "Human-authorized only (CLAUDE.md source-of-truth priority) — write a proposal under .claude/plans/ instead." ;;
   */pnpm-lock.yaml|*/workers/uv.lock|*/secrets/*|*/.sops.yaml|*/.github/workflows/*)
@@ -40,6 +44,18 @@ case "$(basename "$path")" in
     case "$path" in
       */tests/*|*/e2e/*) ;;
       *) deny "Tests live in the owning module's tests/ (CLAUDE.md Testing rules)." ;;
+    esac
+    ;;
+  *Tests.swift)
+    case "$path" in
+      */apps/ios/Packages/*/tests/*) ;;
+      */apps/ios/*) deny "Swift tests live in apps/ios/Packages/<Pkg>/tests/<Target>Tests/ (CLAUDE.md Testing rules)." ;;
+    esac
+    ;;
+  *Test.kt)
+    case "$path" in
+      */src/test/*|*/src/androidTest/*) ;;
+      */apps/android/*) deny "Android tests live in the Gradle module's src/test/kotlin (or src/androidTest) (CLAUDE.md Testing rules)." ;;
     esac
     ;;
 esac

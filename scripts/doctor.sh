@@ -160,21 +160,66 @@ else
   fail "free disk ${free_gb}G < 10G" "free space for pnpm store / asset caches / Docker images"
 fi
 
-# --- adb (warn only) --------------------------------------------------------------
-if have adb; then
-  ok "adb present ($(adb devices 2>/dev/null | command grep -c $'\tdevice$' || true) device(s) attached)"
-elif os_is_darwin; then
-  warnc "adb not found (needed for Android device work)" "just bootstrap --system  (brew install --cask android-platform-tools)"
+# --- Android (apps/android; warn only: backend-only machines need none of it) ------------------
+java_major=""
+if have java; then
+  java_major="$(java -XshowSettings:properties -version 2>&1 | sed -n 's/^ *java\.specification\.version = //p')"
+fi
+if [[ "$java_major" == "21" ]]; then
+  ok "JDK 21 on PATH (apps/android, gen-kotlin.sh)"
 else
-  warnc "adb not found (needed for Android device work)" "just bootstrap --system  (installs platform-tools + udev rules)"
+  warnc "java is '${java_major:-missing}'; apps/android and just generate need JDK 21" "mise install   (mise.toml pins Temurin 21)"
+fi
+# apps/android/tools/gradle.sh prefers JAVA_HOME over PATH: a stale one (e.g. an old global mise JDK) breaks Gradle.
+if [[ -n "${JAVA_HOME:-}" ]]; then
+  java_home_major="$("$JAVA_HOME/bin/java" -XshowSettings:properties -version 2>&1 | sed -n 's/^ *java\.specification\.version = //p' || true)"
+  if [[ "$java_home_major" != "21" ]]; then
+    warnc "JAVA_HOME=$JAVA_HOME is JDK '${java_home_major:-unknown}', and Gradle (apps/android) uses it over PATH" "unset JAVA_HOME, or point it at the mise JDK 21 (mise where java)"
+  fi
+fi
+if sdk_report="$(apps/android/tools/sdk.sh check 2>&1)"; then
+  sdk_line="$(printf '%s\n' "$sdk_report" | tail -n 1)"
+  ok "$sdk_line"
+  sdk_root="${sdk_line#android sdk: complete at }"
+  if [[ -z "${ANDROID_HOME:-}" ]]; then
+    # shellcheck disable=SC2016  # hint text for the reader's rc file
+    warnc "ANDROID_HOME is unset (apps/android/tools/gradle.sh still finds $sdk_root; IDEs and adb want it)" 'just bootstrap --system writes it to ~/.config/ai-stylist/env.sh; or export ANDROID_HOME and put $ANDROID_HOME/platform-tools on PATH'
+  fi
+  if have adb && [[ "$(command -v adb)" != "$sdk_root/platform-tools/adb" ]]; then
+    # shellcheck disable=SC2016
+    warnc "adb on PATH is $(command -v adb), not the SDK's $sdk_root/platform-tools/adb (two adb servers fight over devices)" 'put $ANDROID_HOME/platform-tools first on PATH'
+  fi
+else
+  warnc "Android SDK incomplete (only needed for apps/android work)" "just android-sdk install   (user-level, no sudo; apps/android/README.md)"
 fi
 
-# --- macOS: iOS native toolchain (warn only) ----------------------------------------------
+# --- iOS (apps/ios; warn only) --------------------------------------------------------------
 if os_is_darwin; then
-  if xcode-select -p >/dev/null 2>&1; then
-    ok "xcode command line tools ($(xcode-select -p))"
+  pinned_xcode="$(tr -d '[:space:]' < apps/ios/.xcode-version 2>/dev/null || true)"
+  xcode_version=""
+  if have xcodebuild; then
+    xcode_version="$(xcodebuild -version 2>/dev/null | awk 'NR == 1 { print $2 }' || true)"
+  fi
+  if [[ -z "$xcode_version" ]]; then
+    warnc "Xcode not found (iOS builds need Xcode $pinned_xcode, not only the command line tools)" "install Xcode $pinned_xcode, then: just ios-doctor"
+  elif [[ "$xcode_version" == "$pinned_xcode" ]]; then
+    ok "Xcode $xcode_version (pinned in apps/ios/.xcode-version)"
   else
-    warnc "xcode command line tools missing (iOS builds need Xcode)" "xcode-select --install"
+    warnc "Xcode $xcode_version, but apps/ios/.xcode-version pins $pinned_xcode" "xcodes install $pinned_xcode, then select it (just ios-doctor explains)"
+  fi
+else
+  # Linux: the Linux-capable iOS recipes and gen-swift.sh run Docker swift:6.4 unless a working
+  # swift is on PATH (mise's swift cannot run on Arch).
+  if have swift && swift --version >/dev/null 2>&1; then
+    ok "swift on PATH ($(swift --version 2>&1 | head -n 1))"
+  elif have docker && docker info >/dev/null 2>&1; then
+    if docker image inspect swift:6.4 >/dev/null 2>&1; then
+      ok "Swift via Docker image swift:6.4 (ios-test-packages, ios-format, just generate)"
+    else
+      warnc "Docker image swift:6.4 not pulled yet: the first ios-* recipe or just generate pulls about 1.3 GB" "docker pull swift:6.4"
+    fi
+  else
+    warnc "no Swift toolchain: the Linux iOS recipes and the Swift half of just generate need swift or Docker" "fix Docker above (image swift:6.4 is pulled on first use)"
   fi
 fi
 

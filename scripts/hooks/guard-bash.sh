@@ -33,6 +33,10 @@ elif [[ "$command" =~ git[[:space:]]+push[^\&\|\;]*[[:space:]]:[^[:space:]\&\|\;
   deny "Deleting a remote ref via the ':<branch>' refspec is a destructive git operation prohibited without explicit human authorization (CLAUDE.md)."
 elif [[ "$command" =~ eas[[:space:]]+submit([[:space:]]|$) ]]; then
   deny "Store submission is a human-only release action (CLAUDE.md 'Prohibited without explicit human authorization')."
+elif [[ "$command" =~ fastlane[[:space:]]+(deliver|pilot|supply|upload_to_testflight|upload_to_app_store|upload_to_play_store)([[:space:]]|$) ]] \
+  || [[ "$command" =~ xcrun[[:space:]]+altool[^\&\|\;]*--upload ]] \
+  || [[ "$command" =~ gradle[^\&\|\;]*[[:space:]]:?([a-z-]+:)*publish[A-Za-z]*(Bundle|Apk|Listing|Products) ]]; then
+  deny "Uploading a build to TestFlight/App Store Connect or Google Play is a human-only release action (CLAUDE.md 'Prohibited without explicit human authorization')."
 elif [[ "$command" =~ just[[:space:]]+secrets-sync[[:space:]]+(staging|prod)([[:space:]]|$) ]]; then
   deny "Syncing secrets to staging/prod is a cloud/infra mutation prohibited without explicit human authorization (CLAUDE.md)."
 elif [[ "$command" =~ gh[[:space:]]+api[[:space:]] ]] && [[ "$command" =~ (-X|--method)[[:space:]]+DELETE ]]; then

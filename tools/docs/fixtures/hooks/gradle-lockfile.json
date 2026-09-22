@@ -1,0 +1,12 @@
+{
+  "session_id": "fixture-session",
+  "transcript_path": "/tmp/fixture-transcript.jsonl",
+  "cwd": "/home/arthur/Projects/app",
+  "hook_event_name": "PreToolUse",
+  "tool_name": "Edit",
+  "tool_input": {
+    "file_path": "/home/arthur/Projects/app/apps/android/app/gradle.lockfile",
+    "old_string": "a",
+    "new_string": "b"
+  }
+}

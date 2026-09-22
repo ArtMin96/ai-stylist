@@ -9,7 +9,7 @@
 node = "22.23.2"          # active LTS; must match CI
 pnpm = "10.34.5"          # also pinned in package.json#packageManager
 python = "3.12.14"        # ML workers (workers/), deps via uv
-java = "temurin-17.0.20+8" # JDK for the Android Gradle build (apps/android)
+java = "temurin-21.0.12+8.0.LTS" # Android: AGP 9.3 / Gradle 9.7 / Robolectric (apps/android); also gen-kotlin.sh
 just = "1.58.0"           # task runner (root justfile)
 uv = "0.12.10"            # Python package manager / lockfile
 direnv = "2.37.1"         # .envrc -> .env loading
@@ -22,6 +22,15 @@ syft = "1.51.1"           # SBOM generation (security-scan, T12)
 git-lfs = "3.8.0"         # assets/3d/** (.gitattributes); `git lfs install --local` in bootstrap
 "github:oasdiff/oasdiff" = "1.31.0" # OpenAPI breaking-change detector (contracts lint, T04); not in the core registry
 shellcheck = "0.11.0"     # shell lint for scripts/** and tools/**/*.sh (bash 3.2 portability, macOS /bin/bash)
+actionlint = "1.7.12"     # .github/workflows/** lint (just lint); runner label list in .github/actionlint.yaml
+
+# Native apps (apps/ios, apps/android). Swift itself is NOT pinned here: Xcode provides it on macOS,
+# and on Linux the iOS scripts and gen-swift.sh run Docker swift:6.4 (mise's swift build cannot run
+# on Arch: missing libncurses.so.6/libxml2.so.2). JDK: the java pin above. Android SDK: just android-sdk.
+"aqua:realm/SwiftLint" = "0.65.1"                  # just ios-lint (swiftlint on macOS, swiftlint-static on Linux)
+maestro = "cli-2.10.0"                              # e2e/*.yaml flows (just ios-e2e, just android-e2e); runs on the JDK above
+xcodegen = { version = "2.46.0", os = ["macos"] }   # apps/ios/project.yml -> AIStylist.xcodeproj (just ios-project)
+xcbeautify = { version = "3.2.1", os = ["macos"] }  # readable xcodebuild output (just ios-build / ios-test)
 
 [settings]
 # Tools listed here use the mise-idiomatic version files only; no .nvmrc / .python-version drift.

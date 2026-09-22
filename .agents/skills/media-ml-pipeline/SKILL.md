@@ -1,6 +1,6 @@
 ---
 name: media-ml-pipeline
-description: Build or change the asset-processing and AI pipeline — pg-boss job handlers under `apps/api/src/jobs/`, Python FastAPI workers under `workers/ml/<service>/`, segmentation/classification/embedding/try-on steps, provider calls (fal.ai etc.), derived-asset caching and lineage, idempotency/retry/DLQ behaviour, and running model evals with `just ml-eval`. Use for "pg-boss job", "workers/ml", "segmentation", "classification", "embedding", "try-on", "fal.ai", "lineage", "provenance", "DLQ", or a pipeline eval. Not for choosing a model/provider in the first place (ADR + `planning/10-ai-usage-cost-and-evaluation.md`), on-device ML — use `mobile-feature` instead, or client-side 3D asset formats (no owner while 3D is deferred).
+description: Build or change the asset-processing and AI pipeline — pg-boss job handlers under `apps/api/src/jobs/`, Python FastAPI workers under `workers/ml/<service>/`, segmentation/classification/embedding/try-on steps, provider calls (fal.ai etc.), derived-asset caching and lineage, idempotency/retry/DLQ behaviour, and running model evals with `just ml-eval`. Use for "pg-boss job", "workers/ml", "segmentation", "classification", "embedding", "try-on", "fal.ai", "lineage", "provenance", "DLQ", or a pipeline eval. Not for choosing a model/provider in the first place (ADR + `planning/10-ai-usage-cost-and-evaluation.md`), on-device ML — use `ios-feature` / `android-feature` instead, or 3D asset formats (client-side 3D is deferred (no owner until it resumes)).
 metadata:
   modules:
   last-reviewed: 2026-09-13
@@ -12,7 +12,7 @@ metadata:
 ## Trigger
 
 - Changes to the `media` state machine's pipeline steps, a pg-boss job handler, a `workers/ml/<service>/` endpoint, a provider call (fal.ai, etc.), derived-asset generation, caching/lineage, or an eval suite.
-- Not this skill: choosing a model/provider in the first place (ADR + `planning/10-ai-usage-cost-and-evaluation.md` first); on-device ML (`mobile-feature`); 3D asset formats and render output (client-side, deferred); dashboards/alerts on pipeline metrics once they are emitted (`observability-analytics`).
+- Not this skill: choosing a model/provider in the first place (ADR + `planning/10-ai-usage-cost-and-evaluation.md` first); on-device ML (`ios-feature` / `android-feature`); 3D asset formats and render output (client-side 3D is deferred (no owner until it resumes)); dashboards/alerts on pipeline metrics once they are emitted (`observability-analytics`).
 
 ## Required reading
 

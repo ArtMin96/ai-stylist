@@ -14,7 +14,7 @@ metadata:
 - A budget from `planning/13-testing-quality-and-performance.md` (or the P02 `ci.pr_gate_duration` < 10 min budget) is exceeded or suspected.
 - A PR claims a performance improvement — this skill verifies it.
 - Phase work that measures budgets (P01 prototype gate, P14 hardening).
-- Not this skill: AI spend policy (doc 10; `media-ml-pipeline` implements); render-quality trade-offs (client rendering; 3D is deferred).
+- Not this skill: AI spend policy (doc 10; `media-ml-pipeline` implements); render-quality trade-offs (client-side 3D is deferred (no owner until it resumes)).
 
 ## Required reading
 
@@ -28,7 +28,7 @@ metadata:
 2. Measure before touching code: fixed seed data (`packages/seed-data/`), named device tier or environment, ≥ 5 runs, median + p95. Exact capture procedure per surface:
    - **API** — the OTel trace span for the exact route + params under test, read from the Grafana Cloud trace view (doc 14 §2); for a suspected query hotspot, `EXPLAIN (ANALYZE, BUFFERS)` the query against the same Postgres instance the trace ran against.
    - **Jobs** — pg-boss job duration and outbox queue age for the same job type and payload shape, read from the Grafana job-metrics dashboard (doc 14 §4); exclude idempotent-retry runs from the timing set, they are not comparable.
-   - **Mobile startup/interaction** — Android: an on-device `perfetto` system trace (`adb shell perfetto`) around the traced interaction on the doc 13 §7 low/mid-tier device, inspected in the Perfetto UI; iOS: since the team has no local Mac (doc 15 §3), capture via an Xcode Instruments run against a TestFlight/EAS dev-profile build on the cloud macOS lane (ADR-0002) — state in the report which lane produced the trace, and if neither is available that session, say so rather than substituting an estimate.
+   - **Mobile startup/interaction** — Android: an on-device `perfetto` system trace (`adb shell perfetto`) around the traced interaction on the doc 13 §7 low/mid-tier device, inspected in the Perfetto UI; iOS: an Xcode Instruments trace on a Mac against a physical iPhone of the matching tier, running a Release-configuration build (`just ios-build --config prod` builds for the simulator only; simulator traces are not device evidence) — state in the report which Mac and device produced the trace, and if no Mac or device is available that session, say so rather than substituting an estimate.
    - **3D frame time / memory** — on-device capture on a real low-tier Android device (doc 13 §7); the scenario comes from the feature under test, this skill owns the before/after discipline.
    - **App / bundle size** — the artifact size reported by the native iOS / Android release build output, compared against the doc 13 §12 size budget.
    - **CI gate duration** — the GitHub Actions job wall-clock time from the run (`gh run view`), compared against the `ci.pr_gate_duration` budget.
@@ -61,4 +61,4 @@ Done checklist: before/after from the same procedure · ≥ 5 runs, median + p95
 
 ## Overlap
 
-Adjacent: `media-ml-pipeline` (job throughput and AI latency), `mobile-feature` (startup/interaction), `backend-module` (query hotspots), `release-readiness` (device-matrix perf in the pre-release tier).
+Adjacent: `media-ml-pipeline` (job throughput and AI latency), `ios-feature` / `android-feature` (startup/interaction), `backend-module` (query hotspots), `release-readiness` (device-matrix perf in the pre-release tier).

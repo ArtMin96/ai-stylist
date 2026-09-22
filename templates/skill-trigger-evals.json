@@ -59,7 +59,7 @@
   {
     "query": "the closet screen in the app crashes when you swipe past the last item in the wardrobe grid",
     "should_trigger": false,
-    "_near_miss_reason": "shares the module name 'closet' but is a mobile UI/render bug, not an API application-service change — mobile-feature owns it."
+    "_near_miss_reason": "shares the module name 'closet' but is a mobile UI/render bug, not an API application-service change — ios-feature / android-feature owns it."
   },
   {
     "query": "fal.ai try-on job for a closet item is stuck in pending in pg-boss and never completes",
@@ -79,7 +79,7 @@
   {
     "query": "want to run the closet module's tests after a 3D avatar render change, to make sure garment fit didn't regress",
     "should_trigger": false,
-    "_near_miss_reason": "names the closet module and its tests, but the actual work is a rendering/asset regression check in the client app (3D is deferred), not a module code change."
+    "_near_miss_reason": "names the closet module and its tests, but the actual work is a rendering/asset regression check in the client app (client-side 3D is deferred (no owner until it resumes)), not a module code change."
   },
   {
     "query": "add a `low_stock_threshold` column to closet's item_states table and write the migration for it",

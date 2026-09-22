@@ -23,7 +23,7 @@
         "The agent explicitly labels the change 'breaking', not additive",
         "The agent's plan follows planning/06-data-api-and-event-contracts.md's versioning/deprecation path rather than an in-place rename with no migration story",
         "The agent's stated commit/PR framing uses `feat(contracts)!:` with a `BREAKING CHANGE:` footer",
-        "The agent does not silently ship the rename without flagging it as breaking to consumers (api-engineer, mobile-engineer)"
+        "The agent does not silently ship the rename without flagging it as breaking to consumers (api-engineer, ios-engineer, android-engineer)"
       ]
     },
     {

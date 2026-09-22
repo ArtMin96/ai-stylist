@@ -1,6 +1,6 @@
 ---
 name: recommendation-rules
-description: Change the recommendation engine's hard constraints, soft constraints, candidate generation, scoring, tie-break rules, validation, or reason-code emission, or run its replay/simulation/eval suites after a rule or feedback change. Use for any change inside apps/api/src/modules/recommendation/, a rule/model version bump, `just rec-replay`, `just rec-golden-update`, or a reported bad recommendation. Not for rendering the recommended outfit (the client apps), context-provider mechanics unrelated to scoring (`backend-module`), or displaying the reason code in the app (`mobile-feature`).
+description: Change the recommendation engine's hard constraints, soft constraints, candidate generation, scoring, tie-break rules, validation, or reason-code emission, or run its replay/simulation/eval suites after a rule or feedback change. Use for any change inside apps/api/src/modules/recommendation/, a rule/model version bump, `just rec-replay`, `just rec-golden-update`, or a reported bad recommendation. Not for rendering the recommended outfit (the client apps), context-provider mechanics unrelated to scoring (`backend-module`), or displaying the reason code in the app (`ios-feature` / `android-feature`).
 
 metadata:
   modules: recommendation
@@ -14,7 +14,7 @@ metadata:
 
 - Adding or modifying a constraint, compatibility rule, scoring weight, tie-break, context-fact consumer, reason-code emission, feedback mapping, or rule/model version in `recommendation`.
 - A reported bad recommendation, an eval/replay metric regression, or a golden-fixture update request.
-- Not this skill: context providers themselves (`backend-module` on `context`); rendering the result (the client apps); explanation display (`mobile-feature`); adding a reason code to the `shared-kernel` registry (`api-contract-change`, single-writer).
+- Not this skill: context providers themselves (`backend-module` on `context`); rendering the result (the client apps); explanation display (`ios-feature` / `android-feature`); adding a reason code to the `shared-kernel` registry (`api-contract-change`, single-writer).
 
 ## Required reading
 
@@ -60,4 +60,4 @@ Done checklist: property + simulation suites green · replay reproducible · no 
 
 ## Overlap
 
-Adjacent: `backend-module` (module mechanics, `context` providers), `mobile-feature` (displays reason codes), `testing-regression` (bad-recommendation bug reports start there, then land here), `architecture-review` (renderer-independence check). This skill owns `recommendation`'s scoring/constraint/reason-code invariants; `backend-module` owns `outfit`, `context`, and `fashion-intel` mechanics that are not scoring-specific.
+Adjacent: `backend-module` (module mechanics, `context` providers), `ios-feature` / `android-feature` (displays reason codes), `testing-regression` (bad-recommendation bug reports start there, then land here), `architecture-review` (renderer-independence check). This skill owns `recommendation`'s scoring/constraint/reason-code invariants; `backend-module` owns `outfit`, `context`, and `fashion-intel` mechanics that are not scoring-specific.

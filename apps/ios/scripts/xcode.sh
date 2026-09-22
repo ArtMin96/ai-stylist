@@ -6,7 +6,7 @@
 #   xcode.sh project                      apps/ios/project.yml -> apps/ios/AIStylist.xcodeproj (XcodeGen)
 #   xcode.sh build [--config dev|preview|prod]   unsigned simulator build (default dev)
 #   xcode.sh test                         package unit tests through the AIStylist-Dev scheme on a simulator
-#   xcode.sh e2e                          Prod simulator build + Maestro e2e/smoke.yaml (appId app.aistylist.mobile)
+#   xcode.sh e2e                          Dev simulator build + Maestro e2e/smoke.yaml (APP_ID=app.aistylist.mobile.dev)
 #
 # Env: IOS_SIMULATOR_ID  simulator UDID to use (default: first available iPhone on the newest iOS runtime)
 # Build state goes to apps/ios/.build/ (gitignored): DerivedData, SourcePackages, test.xcresult.
@@ -178,16 +178,17 @@ cmd_e2e() {
   command -v maestro >/dev/null 2>&1 || ios_die "ios-e2e: maestro not found (mise install maestro; needs Java)"
   local flow="$REPO_ROOT/e2e/smoke.yaml"
   [[ -f "$flow" ]] || ios_die "ios-e2e: shared Maestro flow ${flow#"$REPO_ROOT"/} not found"
-  # The shared flow targets appId app.aistylist.mobile, which is the Prod bundle id.
-  cmd_build --config prod
-  local app="$DERIVED_DATA/Build/Products/Prod-iphonesimulator/AIStylist.app"
+  # The shared flow takes its appId from APP_ID; the Dev build (bundle id app.aistylist.mobile.dev)
+  # is the installable one on both platforms.
+  cmd_build --config dev
+  local app="$DERIVED_DATA/Build/Products/Dev-iphonesimulator/AIStylist.app"
   [[ -d "$app" ]] || ios_die "ios-e2e: built app not found at $app"
   local udid
   udid="$(pick_simulator)"
   xcrun simctl boot "$udid" 2>/dev/null || true
   xcrun simctl bootstatus "$udid" -b
   xcrun simctl install "$udid" "$app"
-  maestro --device "$udid" test "$flow"
+  maestro --device "$udid" test -e APP_ID=app.aistylist.mobile.dev "$flow"
 }
 
 cmd="${1:-}"

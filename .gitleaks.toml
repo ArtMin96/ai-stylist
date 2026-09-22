@@ -29,6 +29,26 @@ paths = [
   '''(^|/)uv\.lock$''',
 ]
 
+# Native build caches. `gitleaks dir .` (just security-scan) walks the working tree and does not
+# honour .gitignore, so after a local iOS/Android build it scans binary compiler output (e.g.
+# SwiftPM *.swiftmodule records under apps/ios/.build/) where a hash can match generic-api-key.
+# These directories are machine-generated and gitignored by apps/ios/.gitignore and
+# apps/android/.gitignore, so nothing in them can be committed; the git-history scan
+# (gitleaks detect / ci-gitleaks-history) still covers everything that is. Scope is path-only (no
+# rule is allowlisted) and limited to the build-output directory names under apps/ios/ and
+# apps/android/ — source trees, build scripts (build.gradle.kts), build-logic/ and every other
+# path stay fully scanned. `(^|/)` keeps it valid for both `gitleaks dir .` and an absolute scan
+# root. Proven by scripts/security/gitleaks-fixtures.sh (run by `just ci-parity`).
+[[allowlists]]
+description = "gitignored native build caches (apps/ios .build/DerivedData, apps/android build/.gradle/.kotlin)"
+paths = [
+  '''(^|/)apps/ios/([^/]+/)*\.build/''',
+  '''(^|/)apps/ios/([^/]+/)*DerivedData/''',
+  '''(^|/)apps/android/([^/]+/)*build/''',
+  '''(^|/)apps/android/([^/]+/)*\.gradle/''',
+  '''(^|/)apps/android/([^/]+/)*\.kotlin/''',
+]
+
 # Public age recipients ("age1...") are not secrets; only the AGE-SECRET-KEY rule matters.
 [[allowlists]]
 description = "age public keys in .sops.yaml are recipients, not secrets"

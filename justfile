@@ -235,7 +235,7 @@ ci-gitleaks-history:
 ci-osv-source:
     osv-scanner scan source --recursive .
 
-# Run the PR gates locally: format --check, lint (+ fixtures), typecheck, arch-check (+ fixtures), docs-check --strict, generate --check, test, native builds, security-scan (+ license fixtures); native toolchains are required (Xcode-only steps skip on Linux with a notice); `--core` = pr-gate's parity job (native lanes run in ios.yml / android.yml)
+# Run the PR gates locally: format --check, lint (+ fixtures), typecheck, arch-check (+ fixtures), docs-check --strict, generate --check, test, native builds, security-scan (+ license and gitleaks fixtures); native toolchains are required (Xcode-only steps skip on Linux with a notice); `--core` = pr-gate's parity job (native lanes run in ios.yml / android.yml)
 ci-parity *args:
     #!/usr/bin/env bash
     set -euo pipefail
@@ -260,6 +260,7 @@ ci-parity *args:
     scripts/native-lane.sh ios xcode just ios-test
     just security-scan
     scripts/security/license-check.sh --fixtures
+    scripts/security/gitleaks-fixtures.sh
 
 # --- ios (apps/ios: Swift 6 + SwiftUI; recipe bodies in apps/ios/scripts/*.sh) ------------------
 # Linux-capable: ios-test-packages, ios-lint, ios-format, ios-check-banned, ios-check (Swift runs in

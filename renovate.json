@@ -32,25 +32,8 @@
       "automerge": true
     },
     {
-      "description": "Expo SDK moves as one unit (expo, react, react-native and every expo-*/@expo/* package; regex entries use Renovate's /pattern/ syntax); never automerge",
-      "groupName": "expo sdk",
-      "matchPackageNames": [
-        "expo",
-        "react",
-        "react-dom",
-        "react-native",
-        "/^expo-/",
-        "/^@expo\\//",
-        "/^jest-expo/",
-        "/^eslint-config-expo/",
-        "/^eslint-plugin-expo/",
-        "/^react-native-/"
-      ],
-      "automerge": false
-    },
-    {
-      "description": "Major runtime bumps (node/pnpm/python/java/expo) need an ADR \u2014 never automerge",
-      "matchPackageNames": ["node", "pnpm", "python", "java", "expo", "react-native"],
+      "description": "Major runtime bumps (node/pnpm/python/java) need an ADR \u2014 never automerge",
+      "matchPackageNames": ["node", "pnpm", "python", "java"],
       "matchUpdateTypes": ["major"],
       "automerge": false,
       "labels": ["dependencies", "needs-adr"]

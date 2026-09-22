@@ -53,18 +53,6 @@ dev-api *args:
     docker compose up -d --wait postgres
     pnpm --filter @ai-stylist/api dev "$@"
 
-# Expo dev client (Metro); `--android` targets a connected device/emulator, `--ios` the iOS simulator (macOS only)
-dev-mobile *args:
-    #!/usr/bin/env bash
-    set -euo pipefail
-    for a in "$@"; do
-        if [[ "$a" == "--ios" && "$(uname -s)" != "Darwin" ]]; then
-            echo "dev-mobile: --ios needs the iOS simulator (macOS + Xcode); on $(uname -s) use --android or Expo Go" >&2
-            exit 1
-        fi
-    done
-    pnpm --filter @ai-stylist/mobile exec expo start --dev-client "$@"
-
 # Segmentation worker (FastAPI, uvicorn --reload on :8001); TODO(T08): pg-boss handlers run in the API process; starting the segmentation worker only
 dev-workers *args:
     @echo "TODO(T08): pg-boss handlers run in the API process; starting the segmentation worker only"
@@ -90,7 +78,6 @@ test module='':
     if [[ -n "{{module}}" ]]; then
         case "{{module}}" in
             secrets) just test-secrets; exit 0 ;;
-            mobile) pnpm --filter @ai-stylist/mobile test; exit 0 ;;
             workers) uv run --project workers pytest workers -q; exit 0 ;;
             platform) dir="src/platform/tests" ;;
             api) dir="." ;;
@@ -230,114 +217,6 @@ db-reset *args:
 # Load privacy-safe synthetic seed data into DATABASE_URL (`--accounts N` reserved for identity factories)
 db-seed *args:
     pnpm --filter @ai-stylist/seed-data --silent seed "$@"
-
-# --- mobile builds -------------------------------------------------------------------
-
-# iOS build lane: no `--cloud` on macOS = local `expo run:ios` (simulator; `--device` for a plugged-in iPhone); `--cloud eas` (EAS Build) or `--cloud gha` (xcodebuild archive; macOS only); `--profile dev|preview|prod` (ADR-0002 picks the default in T15)
-mobile-ios-build *args:
-    #!/usr/bin/env bash
-    set -euo pipefail
-    cloud="" profile="dev" device=0
-    while [[ $# -gt 0 ]]; do
-        case "$1" in
-            --cloud) cloud="$2"; shift 2 ;;
-            --profile) profile="$2"; shift 2 ;;
-            --device) device=1; shift ;;
-            *) echo "mobile-ios-build: unknown argument '$1' (use [--cloud eas|gha] --profile dev|preview|prod [--device])" >&2; exit 1 ;;
-        esac
-    done
-    case "$profile" in dev|preview|prod) ;; *) echo "mobile-ios-build: --profile must be dev|preview|prod" >&2; exit 1 ;; esac
-    cd apps/mobile
-    case "$cloud" in
-        '')
-            # Local lane (macOS only): `npx expo run:ios` is Expo's documented path for compiling a
-            # development build locally (docs.expo.dev/get-started/set-up-your-environment, local
-            # build env, checked 2026-09-10); `eas build --local` exists only to reproduce cloud
-            # build failures (docs.expo.dev/build-reference/local-builds). run:ios prebuilds ios/
-            # (CNG; CocoaPods still used in SDK 57), compiles with Xcode and installs on the
-            # simulator, or on a USB device with --device (needs a signing team in Xcode).
-            if [[ "$(uname -s)" != "Darwin" ]]; then
-                echo "mobile-ios-build: iOS cannot be built on $(uname -s) (no Xcode). Use --cloud eas, or --cloud gha via the ios-gha-macos workflow." >&2
-                exit 1
-            fi
-            if ! xcode-select -p >/dev/null 2>&1; then
-                echo "mobile-ios-build: Xcode Command Line Tools missing — run: xcode-select --install (and install Xcode from the App Store)" >&2
-                exit 1
-            fi
-            configuration=Release; [[ "$profile" == "dev" ]] && configuration=Debug
-            run_args=(--configuration "$configuration"); [[ $device -eq 1 ]] && run_args+=(--device)
-            pnpm exec expo run:ios "${run_args[@]}"
-            ;;
-        eas)
-            # eas-cli is not pinned yet (T14 adds it to mise.toml); fall back to a one-off pnpm dlx.
-            if command -v eas >/dev/null; then eas build --platform ios --profile "$profile" --non-interactive
-            else pnpm dlx eas-cli@latest build --platform ios --profile "$profile" --non-interactive; fi
-            ;;
-        gha)
-            if [[ "$(uname -s)" != "Darwin" ]]; then
-                echo "mobile-ios-build: iOS cannot be built on $(uname -s) (no Xcode/Metal/signing). Run the ios-gha-macos workflow, or use --cloud eas." >&2
-                exit 1
-            fi
-            # macOS lane: CNG prebuild (+ pod install), then an Xcode archive under ios/build/.
-            # Unsigned unless APPLE_TEAM_ID is set; IPA export needs ios/ExportOptions.plist (T14).
-            pnpm exec expo prebuild --platform ios
-            workspace=$(ls -d ios/*.xcworkspace | head -n1)
-            scheme=$(basename "$workspace" .xcworkspace)
-            configuration=Release; [[ "$profile" == "dev" ]] && configuration=Debug
-            signing=(CODE_SIGNING_ALLOWED=NO); [[ -n "${APPLE_TEAM_ID:-}" ]] && signing=(DEVELOPMENT_TEAM="$APPLE_TEAM_ID")
-            xcodebuild -workspace "$workspace" -scheme "$scheme" -configuration "$configuration" \
-                -destination 'generic/platform=iOS' -archivePath "ios/build/$scheme.xcarchive" archive "${signing[@]}"
-            if [[ -n "${APPLE_TEAM_ID:-}" && -f ios/ExportOptions.plist ]]; then
-                xcodebuild -exportArchive -archivePath "ios/build/$scheme.xcarchive" -exportOptionsPlist ios/ExportOptions.plist -exportPath ios/build
-            else
-                echo "archive at apps/mobile/ios/build/$scheme.xcarchive; IPA export skipped (needs APPLE_TEAM_ID + ios/ExportOptions.plist, T14)"
-            fi
-            ;;
-        *)
-            echo "mobile-ios-build: --cloud must be eas|gha (omit it on macOS for a local expo run:ios build; ADR-0002 picks the default in T15)" >&2
-            exit 1
-            ;;
-    esac
-
-# Android APK/AAB: local CNG prebuild + Gradle when the Android SDK is found (ANDROID_HOME, or the default Studio location per OS), `--cloud` for EAS; `--profile dev|preview|prod`
-mobile-android-build *args:
-    #!/usr/bin/env bash
-    set -euo pipefail
-    cloud=0 profile="dev"
-    while [[ $# -gt 0 ]]; do
-        case "$1" in
-            --cloud) cloud=1; shift ;;
-            --profile) profile="$2"; shift 2 ;;
-            *) echo "mobile-android-build: unknown argument '$1' (use [--cloud] --profile dev|preview|prod)" >&2; exit 1 ;;
-        esac
-    done
-    case "$profile" in dev|preview|prod) ;; *) echo "mobile-android-build: --profile must be dev|preview|prod" >&2; exit 1 ;; esac
-    cd apps/mobile
-    if [[ $cloud -eq 1 ]]; then
-        if command -v eas >/dev/null; then eas build --platform android --profile "$profile" --non-interactive
-        else pnpm dlx eas-cli@latest build --platform android --profile "$profile" --non-interactive; fi
-        exit 0
-    fi
-    if [[ -z "${ANDROID_HOME:-${ANDROID_SDK_ROOT:-}}" ]]; then
-        # Android Studio's default SDK location: ~/Library/Android/sdk (macOS), ~/Android/Sdk (Linux).
-        for candidate in "$HOME/Library/Android/sdk" "$HOME/Android/Sdk"; do
-            if [[ -d "$candidate/platform-tools" ]]; then export ANDROID_HOME="$candidate"; break; fi
-        done
-    fi
-    if [[ -z "${ANDROID_HOME:-${ANDROID_SDK_ROOT:-}}" ]]; then
-        echo "mobile-android-build: ANDROID_HOME is not set and no SDK found in ~/Library/Android/sdk or ~/Android/Sdk." >&2
-        echo "  install Android Studio (or the SDK via \`just bootstrap --system\` on Linux), or run \`just mobile-android-build --cloud --profile $profile\` for an EAS build." >&2
-        exit 1
-    fi
-    pnpm exec expo prebuild --platform android --no-install
-    # Outputs land in android/app/build/outputs/{apk,bundle}/** (the android.yml artifact globs).
-    # Signing config for ANDROID_KEYSTORE_* is wired by T14; until then release builds are debug-signed.
-    case "$profile" in
-        prod) (cd android && ./gradlew --quiet bundleRelease assembleRelease) ;;
-        preview) (cd android && ./gradlew --quiet assembleRelease) ;;
-        *) (cd android && ./gradlew --quiet assembleDebug) ;;
-    esac
-    echo "artifacts under apps/mobile/android/app/build/outputs/"
 
 # --- assets / ML / recommendation ---------------------------------------------------
 

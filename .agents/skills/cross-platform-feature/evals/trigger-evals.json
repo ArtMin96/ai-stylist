@@ -1,0 +1,47 @@
+[
+  {
+    "query": "build the outfit detail screen on both iOS and Android, split the work between two agents",
+    "should_trigger": true
+  },
+  {
+    "query": "we need the same consent settings page in both native apps, plan the parallel work",
+    "should_trigger": true
+  },
+  {
+    "query": "merge the ios and android branches for the closet feature, check they match first",
+    "should_trigger": true
+  },
+  {
+    "query": "launch ios-engineer and android-engineer in parallel for the daily outfit card",
+    "should_trigger": true
+  },
+  {
+    "query": "the iOS and Android home screens show different error copy, reconcile them",
+    "should_trigger": true
+  },
+  {
+    "query": "fix the SwiftUI layout bug on the iOS home card",
+    "should_trigger": false,
+    "_near_miss_reason": "one platform only — ios-feature."
+  },
+  {
+    "query": "Compose preview crashes in feature/home",
+    "should_trigger": false,
+    "_near_miss_reason": "one platform only — android-feature."
+  },
+  {
+    "query": "add the thumbnailUrl field to the ClosetItem schema",
+    "should_trigger": false,
+    "_near_miss_reason": "the producer step alone — api-contract-change."
+  },
+  {
+    "query": "implement the closet list endpoint in the API",
+    "should_trigger": false,
+    "_near_miss_reason": "backend — backend-module."
+  },
+  {
+    "query": "add a Maestro flow that checks the closet grid on both apps",
+    "should_trigger": false,
+    "_near_miss_reason": "shared e2e flow — e2e-device-testing."
+  }
+]

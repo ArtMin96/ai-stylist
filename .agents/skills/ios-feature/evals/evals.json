@@ -1,0 +1,54 @@
+{
+  "skill_name": "ios-feature",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Add a closet item count card to the iOS home screen; GET /v1/closet/items already exists in the contract. Show loading, failure with retry, and the count.",
+      "expected_output": "The agent adds a protocol in AppServices and an implementation in Packages/Core/Sources/APIData over the generated Swift client, extends HomeModel (no SwiftUI import) with loading/failure/retry/count states, keeps HomeScreen rendering model state only, adds Swift Testing tests under apps/ios/Packages/Features/tests/HomeModelTests/ with a fake service, and verifies with just ios-check, stating that the SwiftUI view and app target were not compiled on Linux.",
+      "files": [],
+      "assertions": [
+        "Only code under apps/ios/Packages/Core/Sources/APIData imports the generated client (AIStylistAPI / OpenAPI runtime)",
+        "The new state logic lives in the HomeModel target, which imports no SwiftUI or UIKit",
+        "Tests are added under apps/ios/Packages/Features/tests/ and use a fake of the AppServices protocol, not a live network call",
+        "The agent runs `just ios-check` (or `just test ios`) and pastes real output",
+        "The report says which Xcode-only steps (ios-build, ios-test, ios-e2e) were not run on Linux instead of claiming them"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "The iOS build fails with a Sendable warning-as-error in the new ClosetService. Just mark the class @unchecked Sendable so we can move on.",
+      "expected_output": "The agent refuses the ban-listed escape hatch, explains that @unchecked Sendable is banned (just ios-check-banned) and why, and fixes the data race properly: an actor, immutable value types, MainActor isolation, or a Mutex, then re-runs the checks.",
+      "files": [],
+      "assertions": [
+        "The agent does not add @unchecked Sendable, nonisolated(unsafe) or @preconcurrency import",
+        "The agent names the ban (just ios-check-banned / apps/ios/scripts/check-banned.sh) as the rule being protected",
+        "The fix uses an actor, value types, main-actor isolation or a Mutex and is explained in one or two sentences",
+        "The agent does not relax Swift 6 mode, strict concurrency or warnings-as-errors in Config/Base.xcconfig or Package.swift"
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "Add a 'rotate the avatar in 3D' view to the iOS outfit screen using RealityKit.",
+      "expected_output": "The agent stops: the native apps carry no 3D yet (no RealityKit, SceneKit or Metal renderers), so this is a product/ADR decision, not an implementation task; it offers only non-3D UI work if the task can be reduced to that.",
+      "files": [],
+      "assertions": [
+        "The agent does not add a RealityKit, SceneKit or Metal import or any 3D package",
+        "The agent states that 3D is deferred for the native apps and names this as a stop condition",
+        "The agent hands the decision back to a human instead of choosing a renderer"
+      ]
+    },
+    {
+      "id": 4,
+      "prompt": "Add a 'Retry' button to the iOS home screen's API error state so users can re-fetch the version. Android is adding the same button in parallel.",
+      "expected_output": "The agent adds the retry action to HomeModel (tested on Linux with a fake VersionFetching service that fails then succeeds), renders the button in HomeScreen with an accessibility label and an accessibility identifier, and reports that identifier and the button copy as parity items Android's Compose testTag and text must match byte for byte, so the shared e2e/smoke.yaml can drive both apps. It does not edit apps/android or e2e/smoke.yaml.",
+      "files": [],
+      "assertions": [
+        "The retry logic lives in the HomeModel target and a Swift Testing test under apps/ios/Packages/Features/tests/HomeModelTests/ covers failure-then-success",
+        "The button has an accessibility label and an .accessibilityIdentifier, and the report lists the identifier and visible string for android-engineer to match exactly",
+        "No file under apps/android/** or e2e/** is changed",
+        "A stored retry Task is cancelled with its owner (or the view uses .task {}), and CancellationError is not surfaced as an error state",
+        "The report lists ios-build, ios-test and ios-e2e as Not run if the session ran on Linux"
+      ]
+    }
+  ]
+}

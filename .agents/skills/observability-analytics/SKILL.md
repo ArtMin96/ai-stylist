@@ -23,7 +23,7 @@ metadata:
 2. `planning/11-security-privacy-and-compliance.md` §8 — the redaction rules this skill's logs/metrics/events must never violate (forbidden-field denylist, allowlist serialization).
 3. `planning/13-testing-quality-and-performance.md` §12 — the latency/error-budget thresholds a dashboard or alert wires to.
 4. `docs/modules/platform.md` — `platform` owns the logger, OTel init, and PostHog server wiring; nothing outside `platform` constructs these adapters directly.
-5. `apps/api/src/platform/logger.ts` and `apps/api/src/platform/tests/logger.redaction.test.ts` — the current redaction canary; `apps/mobile/src/lib/analytics/` (`port.ts`, `index.ts`, `consent-stub.ts`) — the mobile analytics port and its consent gate.
+5. `apps/api/src/platform/logger.ts` and `apps/api/src/platform/tests/logger.redaction.test.ts` — the current redaction canary; the native apps' analytics port and its consent gate (consent off by default, nothing recorded until opt-in) live in the iOS and Android app sources.
 
 ## Workflow
 

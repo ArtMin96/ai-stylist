@@ -8,7 +8,7 @@ The engine pipeline: hard/soft constraints, candidate generation, scoring, valid
 
 ## Invariants that bite
 
-- `recommendation-not-renderer`: must not import `apps/api/src/modules/avatar/**`, `apps/mobile/src/render/**`, Filament, or any 3D/asset type; `→ outfit` is `import type` only, never presentation.
+- `recommendation-not-renderer`: must not import `apps/api/src/modules/avatar/**`, any renderer, or any 3D/asset type; `→ outfit` is `import type` only, never presentation.
 - Deterministic: same inputs + same rule version → same output, documented tie-breaks, no randomness; explanations come from the decision trace (reason codes), never generated after the fact (root `CLAUDE.md`).
 - This module writes only the tables it owns (doc 04 §4.2 rule 8); a rule/model version bump updates the version registry + changelog so a stored recommendation replays via `just rec-replay <id>`.
 

@@ -41,7 +41,7 @@ metadata:
 ```bash
 just generate && just generate --check
 just lint                             # eslint + spectral (fail on warn) for every workspace, incl. packages/contracts
-just typecheck                        # api, mobile, and workers still compile against the new client
+just typecheck                        # api and workers still compile against the new client
 just test <each consuming module>     # e.g. just test closet; no scoped recipe exists for contracts/shared-kernel — `just test` (full) covers packages/contracts/tests and packages/shared-kernel/tests
 just arch-check
 just ci-parity                        # before opening the PR

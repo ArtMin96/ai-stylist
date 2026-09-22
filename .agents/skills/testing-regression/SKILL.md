@@ -22,7 +22,7 @@ metadata:
 1. `CLAUDE.md` "Testing rules" — tests belong in the module's own tests/ directory, a regression must fail first, behaviour over implementation, never skip/weaken, flaky = defect.
 2. `planning/13-testing-quality-and-performance.md` — pyramid per subsystem, CI tiers, flaky-test policy, fixture rules.
 3. `docs/modules/<name>.md` invariants and the module's existing tests/ directory; `packages/test-support/` and `packages/seed-data/` factories (reuse, never duplicate).
-4. Tooling: Vitest + fast-check + Testcontainers (API/packages), Jest + RNTL + MSW (mobile), pytest + hypothesis + Schemathesis (workers). Maestro E2E flows in `apps/mobile/e2e/`, golden/visual regression, and k6 load profiles are `e2e-device-testing`'s territory, not this skill's.
+4. Tooling: Vitest + fast-check + Testcontainers (API/packages), XCTest (iOS) and JUnit (Android) in the native apps, pytest + hypothesis + Schemathesis (workers). Maestro E2E flows in `e2e/`, golden/visual regression, and k6 load profiles are `e2e-device-testing`'s territory, not this skill's.
 
 ## Workflow
 

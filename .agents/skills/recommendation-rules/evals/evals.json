@@ -11,7 +11,7 @@
         "The agent either uses an already-registered reason code or explicitly stops and reports that a new shared-kernel reason code is needed before proceeding",
         "A fast-check property test asserts the hard-excluded candidate is never resurrected by a soft score, and the agent's report names `just test recommendation` as the command it ran",
         "The rule-version registry and changelog are updated, and the agent states whether `just rec-replay <id>` was run or is a stub in the current phase",
-        "No import of apps/api/src/modules/avatar/**, apps/mobile/src/render/**, or a 3D/asset type appears in the diff"
+        "No import of apps/api/src/modules/avatar/**, a renderer, or a 3D/asset type appears in the diff"
       ]
     },
     {

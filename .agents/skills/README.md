@@ -17,7 +17,6 @@ One `SKILL.md` per task type required by NFR-TEAM-100 (`planning/01-requirements
 | [`fashion-intel-ingestion`](fashion-intel-ingestion/SKILL.md) | Source register, ingestion pipeline, freshness/retirement, moderation wiring, feed personalization in `fashion-intel`                          |
 | [`media-ml-pipeline`](media-ml-pipeline/SKILL.md)             | pg-boss jobs, Python workers, AI provider calls, evals                                                                                         |
 | [`mobile-feature`](mobile-feature/SKILL.md)                   | Screens, navigation, offline, camera/push/analytics outside the 3D boundary                                                                    |
-| [`native-3d-assets`](native-3d-assets/SKILL.md)               | `apps/mobile/src/render/`, avatar/garment 3D, `assets/3d/`, device validation                                                                  |
 | [`notifications-delivery`](notifications-delivery/SKILL.md)   | FCM/APNs push delivery, quiet hours, opt-out, delivery receipts in the `notifications` module                                                  |
 | [`observability-analytics`](observability-analytics/SKILL.md) | OTel metrics/traces, Grafana dashboards/alerts, PostHog events, runbooks, spend alerts                                                         |
 | [`performance-profiling`](performance-profiling/SKILL.md)     | Budget investigations and verified perf claims                                                                                                 |
@@ -33,20 +32,20 @@ Overlap review (AC-9): each skill's Overlap section names its neighbours and the
 
 Every SPINE module resolves to skill detail (a `references/<module>.md` file, or a skill whose `metadata.modules` names it) and appears in exactly one row below naming an existing skill and an existing agent (`docs-check` DC-08).
 
-| Module         | Skill                                              | Where the module detail lives                                      | Agent                                                |
-| -------------- | -------------------------------------------------- | ------------------------------------------------------------------ | ---------------------------------------------------- |
-| identity       | `backend-module`                                   | `.agents/skills/backend-module/references/identity.md`             | `api-engineer`                                       |
-| profile        | `backend-module`                                   | `.agents/skills/backend-module/references/profile.md`              | `api-engineer`                                       |
-| avatar         | `backend-module` (+ `native-3d-assets` for render) | `.agents/skills/backend-module/references/avatar.md`               | `api-engineer` / `render-3d-engineer`                |
-| closet         | `backend-module`                                   | `.agents/skills/backend-module/references/closet.md`               | `api-engineer`                                       |
-| media          | `backend-module` (+ `media-ml-pipeline` for jobs)  | `.agents/skills/backend-module/references/media.md`                | `api-engineer` / `platform-engineer` / `ml-engineer` |
-| outfit         | `backend-module`                                   | `.agents/skills/backend-module/references/outfit.md`               | `recommendation-engineer`                            |
-| context        | `backend-module`                                   | `.agents/skills/backend-module/references/context.md`              | `recommendation-engineer`                            |
-| platform       | `backend-module`                                   | `.agents/skills/backend-module/references/platform.md`             | `platform-engineer`                                  |
-| shared-kernel  | `api-contract-change`                              | `.agents/skills/api-contract-change/references/shared-kernel.md`   | `contracts-engineer`                                 |
-| recommendation | `recommendation-rules`                             | `.agents/skills/recommendation-rules/references/recommendation.md` | `recommendation-engineer`                            |
-| billing        | `entitlements-billing`                             | `.agents/skills/entitlements-billing/references/billing.md`        | `api-engineer`                                       |
-| notifications  | `notifications-delivery`                           | SKILL.md + `metadata.modules: "notifications"`                     | `api-engineer`                                       |
-| admin          | `admin-moderation`                                 | SKILL.md + `metadata.modules: "admin"`                             | `api-engineer`                                       |
-| fashion-intel  | `fashion-intel-ingestion`                          | SKILL.md + `metadata.modules: "fashion-intel"`                     | `recommendation-engineer`                            |
-| assistant      | `assistant-chat`                                   | SKILL.md + `metadata.modules: "assistant"`                         | `api-engineer`                                       |
+| Module         | Skill                                             | Where the module detail lives                                      | Agent                                                |
+| -------------- | ------------------------------------------------- | ------------------------------------------------------------------ | ---------------------------------------------------- |
+| identity       | `backend-module`                                  | `.agents/skills/backend-module/references/identity.md`             | `api-engineer`                                       |
+| profile        | `backend-module`                                  | `.agents/skills/backend-module/references/profile.md`              | `api-engineer`                                       |
+| avatar         | `backend-module`                                  | `.agents/skills/backend-module/references/avatar.md`               | `api-engineer`                                       |
+| closet         | `backend-module`                                  | `.agents/skills/backend-module/references/closet.md`               | `api-engineer`                                       |
+| media          | `backend-module` (+ `media-ml-pipeline` for jobs) | `.agents/skills/backend-module/references/media.md`                | `api-engineer` / `platform-engineer` / `ml-engineer` |
+| outfit         | `backend-module`                                  | `.agents/skills/backend-module/references/outfit.md`               | `recommendation-engineer`                            |
+| context        | `backend-module`                                  | `.agents/skills/backend-module/references/context.md`              | `recommendation-engineer`                            |
+| platform       | `backend-module`                                  | `.agents/skills/backend-module/references/platform.md`             | `platform-engineer`                                  |
+| shared-kernel  | `api-contract-change`                             | `.agents/skills/api-contract-change/references/shared-kernel.md`   | `contracts-engineer`                                 |
+| recommendation | `recommendation-rules`                            | `.agents/skills/recommendation-rules/references/recommendation.md` | `recommendation-engineer`                            |
+| billing        | `entitlements-billing`                            | `.agents/skills/entitlements-billing/references/billing.md`        | `api-engineer`                                       |
+| notifications  | `notifications-delivery`                          | SKILL.md + `metadata.modules: "notifications"`                     | `api-engineer`                                       |
+| admin          | `admin-moderation`                                | SKILL.md + `metadata.modules: "admin"`                             | `api-engineer`                                       |
+| fashion-intel  | `fashion-intel-ingestion`                         | SKILL.md + `metadata.modules: "fashion-intel"`                     | `recommendation-engineer`                            |
+| assistant      | `assistant-chat`                                  | SKILL.md + `metadata.modules: "assistant"`                         | `api-engineer`                                       |

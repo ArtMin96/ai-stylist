@@ -1,6 +1,6 @@
 ---
 name: recommendation-rules
-description: Change the recommendation engine's hard constraints, soft constraints, candidate generation, scoring, tie-break rules, validation, or reason-code emission, or run its replay/simulation/eval suites after a rule or feedback change. Use for any change inside apps/api/src/modules/recommendation/, a rule/model version bump, `just rec-replay`, `just rec-golden-update`, or a reported bad recommendation. Not for rendering the recommended outfit or 3D avatar (`native-3d-assets`), context-provider mechanics unrelated to scoring (`backend-module`), or displaying the reason code in the app (`mobile-feature`).
+description: Change the recommendation engine's hard constraints, soft constraints, candidate generation, scoring, tie-break rules, validation, or reason-code emission, or run its replay/simulation/eval suites after a rule or feedback change. Use for any change inside apps/api/src/modules/recommendation/, a rule/model version bump, `just rec-replay`, `just rec-golden-update`, or a reported bad recommendation. Not for rendering the recommended outfit (the client apps), context-provider mechanics unrelated to scoring (`backend-module`), or displaying the reason code in the app (`mobile-feature`).
 
 metadata:
   modules: recommendation
@@ -14,7 +14,7 @@ metadata:
 
 - Adding or modifying a constraint, compatibility rule, scoring weight, tie-break, context-fact consumer, reason-code emission, feedback mapping, or rule/model version in `recommendation`.
 - A reported bad recommendation, an eval/replay metric regression, or a golden-fixture update request.
-- Not this skill: context providers themselves (`backend-module` on `context`); rendering the result (`native-3d-assets`); explanation display (`mobile-feature`); adding a reason code to the `shared-kernel` registry (`api-contract-change`, single-writer).
+- Not this skill: context providers themselves (`backend-module` on `context`); rendering the result (the client apps); explanation display (`mobile-feature`); adding a reason code to the `shared-kernel` registry (`api-contract-change`, single-writer).
 
 ## Required reading
 
@@ -28,7 +28,7 @@ metadata:
 ## Workflow
 
 1. Restate the rule change: stage (exclusion / candidate gen / scoring / validation), hard or soft, precedence relative to neighbours, reason codes emitted or affected. A change that seems to need two owners (e.g. a new context fact) is a contract question — stop and say so.
-2. Invariants (SPINE + doc 09 + root `CLAUDE.md`): hard constraints evaluated before and re-validated after ranking — no soft signal overrides safety/practicality; deterministic (same inputs + rule version → same output, documented tie-breaks, no randomness); renderer-independent (no `avatar`, `apps/mobile/src/render/**`, Filament, or 3D types; `→ outfit` for item/composition types only); every decision leaves a trace entry and every user-visible reason maps to a reason code; unknown context handled explicitly, never invented; deterministic before AI.
+2. Invariants (SPINE + doc 09 + root `CLAUDE.md`): hard constraints evaluated before and re-validated after ranking — no soft signal overrides safety/practicality; deterministic (same inputs + rule version → same output, documented tie-breaks, no randomness); renderer-independent (no `avatar`, renderer, or 3D types; `→ outfit` for item/composition types only); every decision leaves a trace entry and every user-visible reason maps to a reason code; unknown context handled explicitly, never invented; deterministic before AI.
 3. Rule changes bump the rule version and update the version registry + changelog; a stored recommendation must replay from (inputs, rule version) via `just rec-replay <id>`.
 4. Feedback changes: classify each signal per doc 09 and respect the overfitting guardrails — a scoring change tuned to look good on one feedback batch is the failure mode this guards against.
 5. Tests first in `apps/api/src/modules/recommendation/tests/`: unit per rule, fast-check property tests for ranking invariants (a soft signal never resurrects a hard-excluded candidate), simulation cases for the doc 09 scenario set. Regression-fails-first for any reported bad recommendation. Golden fixture changes go through `just rec-golden-update` and a reviewed commit, never a manual fixture edit.
@@ -60,4 +60,4 @@ Done checklist: property + simulation suites green · replay reproducible · no 
 
 ## Overlap
 
-Adjacent: `backend-module` (module mechanics, `context` providers), `native-3d-assets` (renders the structured result), `mobile-feature` (displays reason codes), `testing-regression` (bad-recommendation bug reports start there, then land here), `architecture-review` (renderer-independence check). This skill owns `recommendation`'s scoring/constraint/reason-code invariants; `backend-module` owns `outfit`, `context`, and `fashion-intel` mechanics that are not scoring-specific.
+Adjacent: `backend-module` (module mechanics, `context` providers), `mobile-feature` (displays reason codes), `testing-regression` (bad-recommendation bug reports start there, then land here), `architecture-review` (renderer-independence check). This skill owns `recommendation`'s scoring/constraint/reason-code invariants; `backend-module` owns `outfit`, `context`, and `fashion-intel` mechanics that are not scoring-specific.

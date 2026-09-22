@@ -34,7 +34,7 @@ Decide additive vs breaking with `oasdiff` (runs in the PR gate). Breaking = rem
 
 Every consumer of the generated output must be listed; producers land before consumers rebase.
 
-- `gen/ts-client` (mobile): <yes/no — follow-up issue ID> · `gen/events-ts` (api): <…> · worker Pydantic models: <…>
+- `gen/ts-client` (api types, TS SDK): <yes/no — follow-up issue ID> · `gen/events-ts` (api): <…> · worker Pydantic models: <…>
 - Server conformance in module: <name> — follow-up issue ID <…>
 
 ## Modules touched

@@ -79,7 +79,7 @@
   {
     "query": "want to run the closet module's tests after a 3D avatar render change, to make sure garment fit didn't regress",
     "should_trigger": false,
-    "_near_miss_reason": "names the closet module and its tests, but the actual work is a rendering/asset regression check — native-3d-assets, not a module code change."
+    "_near_miss_reason": "names the closet module and its tests, but the actual work is a rendering/asset regression check in the client app (3D is deferred), not a module code change."
   },
   {
     "query": "add a `low_stock_threshold` column to closet's item_states table and write the migration for it",

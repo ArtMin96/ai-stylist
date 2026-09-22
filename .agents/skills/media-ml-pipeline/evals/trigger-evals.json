@@ -49,7 +49,7 @@
   {
     "query": "avatar garment fitting looks off after the last render update, the sleeve clips through the arm mesh on pose 3",
     "should_trigger": false,
-    "_near_miss_reason": "garments and avatars sound pipeline-adjacent but this is a 3D geometry/render bug — native-3d-assets."
+    "_near_miss_reason": "garments and avatars sound pipeline-adjacent but this is a 3D geometry/render bug in the client app's UI (no 3D renderer exists today), not a pipeline step."
   },
   {
     "query": "reviewing this PR that adds a new pg-boss job handler, want a second pair of eyes on whether it's importing module internals it shouldn't",

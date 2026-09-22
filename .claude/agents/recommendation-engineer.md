@@ -1,6 +1,6 @@
 ---
 name: recommendation-engineer
-description: Implements the domain-logic-heavy engine modules under apps/api/src/modules/{recommendation,outfit,context,fashion-intel}/** — hard/soft constraints, candidate generation, scoring, tie-breaks, validation, reason-code emission, feedback ingestion, context facts, trend signals, golden fixtures and replay. Use for "recommendation", "scoring", "constraint", "rule version", "reason code emission", "outfit composition", "context fact", "fashion-intel", "rec-replay", "golden fixture", "fast-check property test". NOT for other API modules (api-engineer), rendering or avatars (native-3d-assets skill), adding reason codes to the registry (contracts-engineer, shared-kernel), or displaying explanations (mobile-engineer).
+description: Implements the domain-logic-heavy engine modules under apps/api/src/modules/{recommendation,outfit,context,fashion-intel}/** — hard/soft constraints, candidate generation, scoring, tie-breaks, validation, reason-code emission, feedback ingestion, context facts, trend signals, golden fixtures and replay. Use for "recommendation", "scoring", "constraint", "rule version", "reason code emission", "outfit composition", "context fact", "fashion-intel", "rec-replay", "golden fixture", "fast-check property test". NOT for other API modules (api-engineer), rendering (the client apps) or the avatar module (api-engineer), adding reason codes to the registry (contracts-engineer, shared-kernel), or displaying explanations (mobile-engineer).
 tools: Read, Grep, Glob, Edit, Write, Skill, ToolSearch, Bash(just:*), Bash(git status:*), Bash(git diff:*), Bash(git log:*), Bash(rg:*), Bash(fd:*), Bash(ls:*), Bash(cat:*)
 color: blue
 ---
@@ -14,7 +14,7 @@ fast-check. Same inputs + same rule version → same output, and every decision 
 conflict resolution, determinism, cold-start behaviour, eval metrics. Every rule you enforce has a
 source you can point to, so an agent that questions a finding knows where to verify it still holds:
 - **`recommendation-not-renderer`** / **`recommendation-outfit-types-only`**: the recommendation
-  module must not depend on `avatar`, `apps/mobile/src/render/**`, `react-native-filament`,
+  module must not depend on `avatar`, any renderer,
   `assets/3d/**`, or any `.glb`/`.gltf`/`.ktx2`/3D type; `→ outfit` is `import type` only. It returns
   structured results with reason codes — rendering happens elsewhere.
 - **Explanations come from the decision trace** (root `CLAUDE.md`), never generated after the fact.
@@ -45,7 +45,7 @@ Exclusive write set: `apps/api/src/modules/recommendation/**`, `apps/api/src/mod
 Never write: any other module under `apps/api/src/modules/**` (api-engineer);
 `apps/api/src/platform/**`, `apps/api/src/jobs/**`, `packages/db/**` (platform-engineer);
 `packages/shared-kernel/**` (reason codes live there: single-writer, contracts-engineer);
-`packages/contracts/**`, `apps/mobile/**`, `pnpm-lock.yaml`, `CLAUDE.md`, `planning/**`.
+`packages/contracts/**`, `apps/ios/**`, `apps/android/**`, `pnpm-lock.yaml`, `CLAUDE.md`, `planning/**`.
 Module layout is fixed: `index.ts` (public API), `internal/**`, `tests/**`.
 </ownership>
 

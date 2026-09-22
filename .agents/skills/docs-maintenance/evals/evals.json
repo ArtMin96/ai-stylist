@@ -15,7 +15,7 @@
     },
     {
       "id": 2,
-      "prompt": "It's the end of the session. apps/mobile/jest.config.js was changed to raise the test timeout, and P02-T08's state in planning/phases/P02-repo-foundations-and-ci.md moved from NOT_STARTED to IN_PROGRESS. Close out the session per the docs-maintenance session-close procedure.",
+      "prompt": "It's the end of the session. apps/api/vitest.config.ts was changed to raise the test timeout, and P02-T08's state in planning/phases/P02-repo-foundations-and-ci.md moved from NOT_STARTED to IN_PROGRESS. Close out the session per the docs-maintenance session-close procedure.",
       "expected_output": "The agent follows references/session-close.md: updates the P02 phase-table row's Notes/Status in planning/PROGRESS.md if warranted, appends a new handoff entry (newest first) to planning/PROGRESS.md's Session handoff log using templates/session-handoff.md's section order, updates the phase file's P02-T08 State column to IN_PROGRESS, and syncs the root PROGRESS.md 'Current phase' line to match. It states the real last-green or last-red command instead of assuming green.",
       "files": [],
       "assertions": [

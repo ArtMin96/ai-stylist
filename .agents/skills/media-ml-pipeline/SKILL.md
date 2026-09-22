@@ -1,6 +1,6 @@
 ---
 name: media-ml-pipeline
-description: Build or change the asset-processing and AI pipeline — pg-boss job handlers under `apps/api/src/jobs/`, Python FastAPI workers under `workers/ml/<service>/`, segmentation/classification/embedding/try-on steps, provider calls (fal.ai etc.), derived-asset caching and lineage, idempotency/retry/DLQ behaviour, and running model evals with `just ml-eval`. Use for "pg-boss job", "workers/ml", "segmentation", "classification", "embedding", "try-on", "fal.ai", "lineage", "provenance", "DLQ", or a pipeline eval. Not for choosing a model/provider in the first place (ADR + `planning/10-ai-usage-cost-and-evaluation.md`), on-device ML — use `mobile-feature` instead, or 3D asset formats — use `native-3d-assets` instead.
+description: Build or change the asset-processing and AI pipeline — pg-boss job handlers under `apps/api/src/jobs/`, Python FastAPI workers under `workers/ml/<service>/`, segmentation/classification/embedding/try-on steps, provider calls (fal.ai etc.), derived-asset caching and lineage, idempotency/retry/DLQ behaviour, and running model evals with `just ml-eval`. Use for "pg-boss job", "workers/ml", "segmentation", "classification", "embedding", "try-on", "fal.ai", "lineage", "provenance", "DLQ", or a pipeline eval. Not for choosing a model/provider in the first place (ADR + `planning/10-ai-usage-cost-and-evaluation.md`), on-device ML — use `mobile-feature` instead, or client-side 3D asset formats (no owner while 3D is deferred).
 metadata:
   modules:
   last-reviewed: 2026-09-13
@@ -12,7 +12,7 @@ metadata:
 ## Trigger
 
 - Changes to the `media` state machine's pipeline steps, a pg-boss job handler, a `workers/ml/<service>/` endpoint, a provider call (fal.ai, etc.), derived-asset generation, caching/lineage, or an eval suite.
-- Not this skill: choosing a model/provider in the first place (ADR + `planning/10-ai-usage-cost-and-evaluation.md` first); on-device ML (`mobile-feature`); 3D asset formats and render output (`native-3d-assets`); dashboards/alerts on pipeline metrics once they are emitted (`observability-analytics`).
+- Not this skill: choosing a model/provider in the first place (ADR + `planning/10-ai-usage-cost-and-evaluation.md` first); on-device ML (`mobile-feature`); 3D asset formats and render output (client-side, deferred); dashboards/alerts on pipeline metrics once they are emitted (`observability-analytics`).
 
 ## Required reading
 
@@ -60,4 +60,4 @@ Done checklist: idempotency + retry tests green · provenance fields set · prov
 
 ## Overlap
 
-Adjacent: `backend-module` (the `media` module's non-pipeline code), `api-contract-change` (worker request/response schemas), `native-3d-assets` (3D outputs of the pipeline), `performance-profiling` (job throughput budgets once instrumented), `observability-analytics` (the dashboards/alerts that watch `queue.depth`, `pipeline.stage.duration`, and DLQ counts once this pipeline emits them), `security-privacy-review` (provider egress, uploads).
+Adjacent: `backend-module` (the `media` module's non-pipeline code), `api-contract-change` (worker request/response schemas), `performance-profiling` (job throughput budgets once instrumented), `observability-analytics` (the dashboards/alerts that watch `queue.depth`, `pipeline.stage.duration`, and DLQ counts once this pipeline emits them), `security-privacy-review` (provider egress, uploads).

@@ -17,10 +17,9 @@ so the two never drift apart (copy-and-diverge is forbidden repo-wide).
 | [`contracts-engineer`](contracts-engineer.md) | `packages/contracts/**`, `packages/shared-kernel/**`, `workers/ml/generated/**` (via `just generate` only) | OpenAPI 3.1 + event schemas, shared kernel, regenerating every consumer — single-writer | `just generate && just generate --check`, `just lint`, `just typecheck`, `just test`, `just test <each consuming module>`, `just arch-check` |
 | [`ml-engineer`](ml-engineer.md) | `workers/**` except `ml/generated/**`, `tools/codegen/gen-python.sh` | Python FastAPI ML/media workers | `just test workers`, `just lint`, `just typecheck`, `just generate --check`, `just ml-eval` |
 | [`recommendation-engineer`](recommendation-engineer.md) | `apps/api/src/modules/{recommendation,outfit,context,fashion-intel}/**` | Constraints, scoring, tie-breaks, reason-code emission, trend signals | `just test recommendation` (+ `outfit`/`context`/`fashion-intel` as touched), `just rec-replay <id>`, `just rec-golden-update`, `just lint`, `just typecheck`, `just arch-check` |
-| [`render-3d-engineer`](render-3d-engineer.md) | `apps/mobile/src/render/**`, designated 3D screens under `apps/mobile/src/features/avatar/**`, `assets/3d/**` | Filament rendering boundary, avatar meshes/morphs/poses, glTF/KTX2 asset pipeline | `just assets-validate`, `just test mobile`, `just lint`, `just typecheck`, `just arch-check` |
 | [`tooling-engineer`](tooling-engineer.md) | `scripts/**`, `tools/**` except `tools/codegen/gen-python.sh`, `justfile`, `mise.toml`, `.github/**` | `just` recipes, CI workflows, depcruise/eslint/docs-check gates and fixtures | `just lint --fixtures`, `just arch-check --fixtures`, `just docs-check --fixtures`, `shellcheck`, `actionlint`, `just doctor`, `just ci-parity` |
 | [`docs-maintainer`](docs-maintainer.md) | `docs/modules/**`, `docs/adr/README.md` (index rows only), root `PROGRESS.md`, `planning/PROGRESS.md`, phase-file task-state columns | Syncs docs with landed code; runs only after the change that made a doc stale has merged | `just docs-check` |
-| [`test-engineer`](test-engineer.md) | `apps/api/tests/**` except `http.test.ts` and `migrations/**`; `apps/mobile/e2e/**` (maintenance only); conditionally a module's own `tests/**` | Regression-first bug proof, flaky-test triage, cross-cutting suites — never a new Maestro flow | `just test-regression <file>`, `just test`, `just lint`, `just typecheck`, `just arch-check` |
+| [`test-engineer`](test-engineer.md) | `apps/api/tests/**` except `http.test.ts` and `migrations/**`; `e2e/**` (maintenance only); conditionally a module's own `tests/**` | Regression-first bug proof, flaky-test triage, cross-cutting suites — never a new Maestro flow | `just test-regression <file>`, `just test`, `just lint`, `just typecheck`, `just arch-check` |
 | [`release-manager`](release-manager.md) | nothing (read-only) | Gathers release-channel promotion evidence, returns GO/NO-GO — never ships | `just ci-parity`, `just security-scan`, `just generate --check`, `gh run list`, `gh run view` |
 | [`security-privacy-reviewer`](security-privacy-reviewer.md) | nothing (read-only) | Security/privacy review of a diff — findings only, never a fix | `just security-scan`, `just lint`, `just docs-check` |
 | [`architecture-reviewer`](architecture-reviewer.md) | nothing (read-only) | Module-boundary, duplication, and source-of-truth review of a diff | `just arch-check`, `just lint`, `just typecheck`, `just generate --check`, `just docs-check` |
@@ -72,8 +71,8 @@ duplicate them.
 - **`planner`**: before any non-trivial change (3+ steps, several files, shared structure). It
   produces the contract and the wave-sequenced task list with exclusive file ownership; the project
   agents then execute the tasks whose files fall in their write set.
-- **`researcher`**: open questions, library/API facts (Expo, Filament, Drizzle, pg-boss, Coolify,
-  RevenueCat, store policy), "how is X wired". Read-and-report only.
+- **`researcher`**: open questions, library/API facts (Drizzle, pg-boss, Coolify, RevenueCat,
+  store policy), "how is X wired". Read-and-report only.
 - **`implementer`**: a self-contained, already-understood change that does not fit one area
   cleanly, or a plan task whose write set spans areas (still disjoint from any running project
   agent). Prefer the area agent when the files fall in one area: it carries the area's invariants,

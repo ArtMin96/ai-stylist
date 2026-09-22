@@ -11,7 +11,7 @@ paths:
 **Agent:** `contracts-engineer`.
 
 **Proof:** `just generate && just generate --check`, then `just test <each consuming module>` and
-`just typecheck` (mobile + workers must still compile against the regenerated client).
+`just typecheck` (the API and workers must still compile against the regenerated clients).
 
 **Invariants that bite here:**
 1. Single-writer path (root `CLAUDE.md` "Parallel sessions") — confirm no other session owns

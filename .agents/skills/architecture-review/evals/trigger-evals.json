@@ -4,7 +4,7 @@
     "should_trigger": true
   },
   {
-    "query": "just arch-check failed on my branch with an allowed-edges-only violation, apps/api/src/modules/recommendation is importing something from apps/mobile/src/render, can you look into it",
+    "query": "just arch-check failed on my branch with an allowed-edges-only violation, apps/api/src/modules/recommendation is importing something from apps/api/src/modules/avatar/internal, can you look into it",
     "should_trigger": true
   },
   {
@@ -16,7 +16,7 @@
     "should_trigger": true
   },
   {
-    "query": "is this duplicated? I added a slugify function to apps/mobile/src/lib and I have a feeling there's already one in packages/shared-kernel",
+    "query": "is this duplicated? I added a slugify function to apps/api/src/modules/closet/internal and I have a feeling there's already one in packages/shared-kernel",
     "should_trigger": true
   },
   {
@@ -28,7 +28,7 @@
     "should_trigger": true
   },
   {
-    "query": "the recommendation module in this branch now imports a type from apps/mobile/src/render, is that actually allowed by our rules",
+    "query": "the recommendation module in this branch now imports a type from the avatar module, is that actually allowed by our rules",
     "should_trigger": true
   },
   {

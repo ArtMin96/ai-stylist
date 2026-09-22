@@ -20,7 +20,7 @@
       "files": [],
       "assertions": [
         "The agent explicitly rejects or reworks the care-label free-text property and the raw city-name property, citing the no-free-text / region-bucket-only rule",
-        "The agent proposes the event schema live in packages/contracts, not duplicated by hand in apps/mobile and apps/api",
+        "The agent proposes the event schema live in packages/contracts, not duplicated by hand in the native apps and apps/api",
         "The agent notes the event must be consent-gated behind the `analytics` purpose before it fires",
         "The agent does not silently ship the event with the disallowed properties intact"
       ]

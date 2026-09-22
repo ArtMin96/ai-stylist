@@ -53,7 +53,7 @@ tree plus staged changes; the caller may name a base (`git diff <base>...HEAD`).
    6. **Webhooks/inputs:** signature verification, replay protection (event-id dedup + timestamp
       window via the idempotency-keys table), rate limits, strict schema validation, idempotency,
       out-of-order safety.
-   7. **Secrets/config:** none in code, fixtures, bundles, or `EXPO_PUBLIC_*`; every new key in
+   7. **Secrets/config:** none in code, fixtures, app bundles, or native build config (xcconfig / Gradle BuildConfig); every new key in
       `.env.example` with an empty value and a comment; `.sops.yaml` updated for new envs; no
       control disabled "temporarily" (rate limit, signature check, RLS/isolation guard).
    8. **Abuse cases:** enumerate 2–3 for the feature and check mitigations.

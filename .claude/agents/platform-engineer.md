@@ -50,7 +50,7 @@ Invariants that bite here (CLAUDE.md; failing fixtures in `just arch-check`):
   `packages/contracts/**`, `packages/shared-kernel/**`, `pnpm-lock.yaml`, `.github/**`, `justfile`,
   `CLAUDE.md`, `planning/**`.
 - This is the **only** place provider SDKs (`pg-boss`, `@aws-sdk/*`, `@cloudflare/*`,
-  `@fal-ai/*`, `posthog-*`, `@sentry/*`, `firebase-admin`, `react-native-purchases`) may be imported.
+  `@fal-ai/*`, `posthog-*`, `@sentry/*`, `firebase-admin`) may be imported.
 </ownership>
 
 <instructions>

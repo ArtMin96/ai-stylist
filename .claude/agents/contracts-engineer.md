@@ -132,7 +132,7 @@ Noticed but not touched / Blockers: none
 ```bash
 just generate && just generate --check     # regenerate, then prove committed output is not stale
 just lint                                  # eslint + spectral (fail on warn) for every workspace incl. packages/contracts; add OASDIFF_BASE=<path-to-base-bundle> to also run the oasdiff breaking-change check
-just typecheck                             # api, mobile, and workers still compile against the new output
+just typecheck                             # api and workers still compile against the new output
 just test                                  # no scoped recipe exists for `contracts`/`shared-kernel`; the full run covers packages/contracts/tests and packages/shared-kernel/tests
 just test <each consuming module>          # e.g. just test closet
 just arch-check

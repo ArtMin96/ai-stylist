@@ -28,7 +28,7 @@ Invariants that bite here (root `CLAUDE.md` + `workers/README.md`):
   model + version, params, cost, confidence). Model and prompt changes are versioned.
 - **Honesty invariants:** every generated result carries `provenance {generated, model, confidence}`;
   a real user photo is never replaced by a generated one; no "exact digital twin" claims.
-- **`mobile-workers-not-server`:** workers depend only on `packages/contracts` (via the generated
+- **Workers are not the server** (brief §5; Python, so no depcruise rule covers it): workers depend only on `packages/contracts` (via the generated
   models) and `packages/shared-kernel`; never on `apps/api`. The event JSON Schemas are the only
   shared contract; bump the version on shape change and accept the previous version during rollout.
 - **`composition-root-only`:** `ml/<service>/src/<pkg>/main.py` is the only module that builds the

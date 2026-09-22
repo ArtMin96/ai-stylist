@@ -51,7 +51,7 @@ Any provider receiving S2/S3 data must pass doc 11 §7.5; face/body media only t
 
 - [ ] Auth, isolation and consent checks live in the owning module, not only in an adapter (controller/hook)
 - [ ] No security control disabled or weakened (rate limit, signature check, RLS/isolation guard), even temporarily
-- [ ] Domain never imports provider SDKs; secrets only via environment; nothing in the mobile bundle
+- [ ] Domain never imports provider SDKs; secrets only via environment; nothing in the app bundles
 - [ ] Entitlements enforced server-side; webhooks verify signature + idempotency key
 - [ ] Explanations from reason codes only; honesty invariants (provenance + confidence; real photo never replaced)
 - [ ] Single source of truth for consent purposes / entitlement names (`shared-kernel`, `identity` consents)
@@ -78,7 +78,7 @@ Existing guard, middleware, redaction schema, or consent check that already cove
 
 ## Test plan
 
-- Security tests location: `apps/api/src/modules/<name>/tests/` (isolation, signature, rate limit, redaction canary) · Maestro flow for consent UI: `apps/mobile/e2e/<…>`
+- Security tests location: `apps/api/src/modules/<name>/tests/` (isolation, signature, rate limit, redaction canary) · Maestro flow for consent UI: `e2e/<…>`
 - Fixtures: synthetic only, from `packages/test-support` / `packages/seed-data` · Skips: none, or `<test> — issue <ID>`
 
 ## Dependencies / blocked by

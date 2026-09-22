@@ -19,12 +19,11 @@ you can point to, so an agent that questions a finding knows where to verify it 
 - `recommendation-not-renderer`, `recommendation-outfit-types-only`.
 - `assistant-app-services-only`: `assistant` calls application services only; no tables, no
   `platform`, no `drizzle-orm`, no second engine.
-- `domain-no-provider-sdk`: no `pg-boss`, `@aws-sdk/*`, `@cloudflare/*`, `react-native-purchases`,
+- `domain-no-provider-sdk`: no `pg-boss`, `@aws-sdk/*`, `@cloudflare/*`,
   `@fal-ai/*`, `posthog-*`, `firebase-admin`, `@sentry/*` in `modules/**`.
 - `platform-leaf`, `modules-not-platform`, `composition-root-only`, `dev-ports-only`.
 - `shared-kernel-pure`, `no-utils-dirs`, `prototype-unimportable`, `not-to-unresolvable`.
-- `render-boundary`, `mobile-workers-not-server`.
-- Lint: quality/test-placement (tests under a tests/ dir; exceptions `apps/mobile/e2e/**`,
+- Lint: quality/test-placement (tests under a tests/ dir; exceptions `e2e/**`,
   `apps/api/tests/**`), local/no-skip-without-issue, `no-console`, quality/no-log-request-body,
   `max-lines` (400, warn).
 - CLAUDE.md prose rules with no fixture: no domain logic in adapters (controllers, task bodies,

@@ -1,0 +1,18 @@
+// Dev: debug build for local development and the simulator (scheme AIStylist-Dev).
+#include "Base.xcconfig"
+
+APP_DISPLAY_NAME = AI Stylist Dev
+PRODUCT_BUNDLE_IDENTIFIER = app.aistylist.mobile.dev
+// HOST-ONLY (no path, no trailing slash): API paths already start with /v1.
+// The simulator shares the Mac's network, so localhost reaches `just dev-api` on port 3000.
+API_BASE_URL = http:/$()/localhost:3000
+
+// MARK: Debug build
+SWIFT_OPTIMIZATION_LEVEL = -Onone
+SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG $(inherited)
+GCC_OPTIMIZATION_LEVEL = 0
+GCC_PREPROCESSOR_DEFINITIONS = DEBUG=1 $(inherited)
+DEBUG_INFORMATION_FORMAT = dwarf
+ONLY_ACTIVE_ARCH = YES
+ENABLE_TESTABILITY = YES
+COPY_PHASE_STRIP = NO

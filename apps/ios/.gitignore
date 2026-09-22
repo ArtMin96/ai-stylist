@@ -1,0 +1,17 @@
+# apps/ios: generated and local build state. The Xcode project is GENERATED from project.yml
+# by `just ios-project` (XcodeGen) and is never committed.
+*.xcodeproj/
+*.xcworkspace/
+xcuserdata/
+DerivedData/
+.build/
+.swiftpm/
+build/
+*.xcresult
+*.ipa
+*.dSYM.zip
+*.dSYM/
+# Signing material never lives in the repo.
+*.p12
+*.mobileprovision
+*.cer

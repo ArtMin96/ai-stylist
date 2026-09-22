@@ -1,0 +1,58 @@
+// Base build settings shared by every configuration (Dev, Preview, Prod).
+//
+// ALL build settings live in Config/*.xcconfig. project.yml sets `settingPresets: none`, so XcodeGen
+// writes no hidden defaults into the (generated, gitignored) .xcodeproj. Change settings here.
+// Local Swift packages do NOT read these files: keep Packages/*/Package.swift `strictSettings` in sync.
+//
+// Gotcha: `//` starts a comment in xcconfig. Write URLs as  http:/$()/host  (see Dev.xcconfig).
+// Everything that reaches Info.plist ships in the app bundle and is public: never put a secret here.
+
+// MARK: Product
+PRODUCT_NAME = AIStylist
+MARKETING_VERSION = 0.1.0
+// CI overrides with the run number when it archives (TestFlight lane, later).
+CURRENT_PROJECT_VERSION = 1
+SDKROOT = iphoneos
+SUPPORTED_PLATFORMS = iphoneos iphonesimulator
+SUPPORTS_MACCATALYST = NO
+SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO
+SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = NO
+// iPhone only, portrait (parity with the retired RN app: supportsTablet false, portrait).
+TARGETED_DEVICE_FAMILY = 1
+IPHONEOS_DEPLOYMENT_TARGET = 26.0
+LD_RUNPATH_SEARCH_PATHS = $(inherited) @executable_path/Frameworks
+ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon
+ENABLE_PREVIEWS = YES
+CODE_SIGN_STYLE = Automatic
+// Set once the Apple developer account exists (never commit certificates or profiles).
+DEVELOPMENT_TEAM =
+
+// MARK: Info.plist (generated + App/Info.plist for the custom keys)
+GENERATE_INFOPLIST_FILE = YES
+INFOPLIST_FILE = App/Info.plist
+INFOPLIST_KEY_CFBundleDisplayName = $(APP_DISPLAY_NAME)
+INFOPLIST_KEY_LSApplicationCategoryType = public.app-category.lifestyle
+INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES
+INFOPLIST_KEY_UILaunchScreen_Generation = YES
+INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = UIInterfaceOrientationPortrait
+
+// MARK: Swift safety (non-negotiable; see apps/ios/README.md)
+// Swift 6 language mode: complete strict concurrency, data-race findings are errors.
+SWIFT_VERSION = 6.0
+// Redundant in Swift 6 mode; explicit for readers.
+SWIFT_STRICT_CONCURRENCY = complete
+// Code is main-actor unless it opts out (`nonisolated`, `@concurrent`).
+SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor
+SWIFT_APPROACHABLE_CONCURRENCY = YES
+SWIFT_UPCOMING_FEATURE_EXISTENTIAL_ANY = YES
+SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES
+SWIFT_UPCOMING_FEATURE_INTERNAL_IMPORTS_BY_DEFAULT = YES
+SWIFT_TREAT_WARNINGS_AS_ERRORS = YES
+GCC_TREAT_WARNINGS_AS_ERRORS = YES
+SWIFT_EMIT_LOC_STRINGS = YES
+
+// MARK: Build hygiene
+ENABLE_USER_SCRIPT_SANDBOXING = YES
+ALWAYS_SEARCH_USER_PATHS = NO
+CLANG_ENABLE_MODULES = YES
+ENABLE_STRICT_OBJC_MSGSEND = YES

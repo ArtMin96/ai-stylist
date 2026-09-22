@@ -4,7 +4,7 @@ The tooling (`scripts/**`, `justfile`, `mise.toml`) runs on macOS (Apple Silicon
 
 ## Prerequisites (once per Mac)
 
-1. **Xcode Command Line Tools**: `xcode-select --install` (interactive Apple dialog). For iOS builds also install Xcode from the App Store and open it once to accept the licence.
+1. **Xcode Command Line Tools**: `xcode-select --install` (interactive Apple dialog). For iOS work also install the exact Xcode pinned in `apps/ios/.xcode-version` (Xcode 27 today; for example with `xcodes install <version>`, or the Apple developer downloads page), select it (`sudo xcode-select -s /Applications/Xcode-<version>.app`), and open it once to accept the licence and install the iOS simulator runtime. `just ios-doctor` checks all of it.
 2. **Homebrew**: the official one-liner from <https://brew.sh>. The bootstrap script never installs it for you.
 3. **A Docker runtime** (`docker compose` for Postgres, Testcontainers for the migration tests). macOS has no native daemon; pick one:
 
@@ -22,23 +22,24 @@ The tooling (`scripts/**`, `justfile`, `mise.toml`) runs on macOS (Apple Silicon
 
 ```bash
 git clone https://github.com/ArtMin96/ai-stylist.git && cd ai-stylist
-./scripts/bootstrap.sh --system   # Homebrew: git-lfs, android-platform-tools (adb); detects your Docker runtime. No sudo.
-./scripts/bootstrap.sh            # mise -> pinned toolchain -> pnpm install -> uv sync -> git hooks -> .env -> doctor
+./scripts/bootstrap.sh --system   # Homebrew: git-lfs; Android SDK packages (~/Library/Android/sdk); Xcode check; detects your Docker runtime. No sudo.
+./scripts/bootstrap.sh            # mise -> pinned toolchain (incl. xcodegen, xcbeautify, SwiftLint, maestro) -> pnpm install -> uv sync -> git hooks -> .env -> doctor
 eval "$(~/.local/bin/mise activate zsh)"   # add to ~/.zshrc
 just doctor
 ```
 
-`mise` installs to `~/.local/bin/mise` with shims in `~/.local/share/mise/shims` on macOS too (mise "Directories": data dir is `${XDG_DATA_HOME:-$HOME/.local/share}/mise`; only the cache moves to `~/Library/Caches/mise`). Every pin in `mise.toml` has a darwin-arm64 build (Temurin 17 is arm64-native; oasdiff ships a universal binary); verified 2026-09-10.
+`mise` installs to `~/.local/bin/mise` with shims in `~/.local/share/mise/shims` on macOS too (mise "Directories": data dir is `${XDG_DATA_HOME:-$HOME/.local/share}/mise`; only the cache moves to `~/Library/Caches/mise`). Every pin in `mise.toml` has a darwin-arm64 build (Temurin is arm64-native; oasdiff ships a universal binary); verified 2026-09-10 for the pre-native pins. The native-app pins added on 2026-09-22 (Temurin 21, xcodegen, xcbeautify, SwiftLint, maestro) were resolved on Linux only; `mise install` on the first Mac run confirms them. `xcodegen` and `xcbeautify` are macOS-only pins.
 
 ## What differs from Linux
 
 - `bootstrap.sh --system` uses Homebrew instead of apt and skips udev rules, the docker group and systemd. It stops with instructions if Xcode CLT or Homebrew are missing (both installers are interactive) and only detects the Docker runtime, never installs one.
-- `just doctor` adds a warn-only Xcode Command Line Tools check.
-- The native iOS app (`apps/ios`) builds and runs only on macOS with Xcode; its README covers the simulator and device workflow. The native Android app (`apps/android`) builds on macOS and Linux alike.
+- `just doctor` adds a warn-only Xcode check (installed version vs `apps/ios/.xcode-version`).
+- The native iOS app (`apps/ios`) builds and runs only on macOS with Xcode: `just ios-project` (XcodeGen), `just ios-build`, `just ios-test`, `just ios-e2e`, or all Linux-capable checks plus the simulator build and tests with `just ios-check`. Swift comes from Xcode here (Linux uses Docker `swift:6.4`). Its README covers the simulator and device workflow.
+- The native Android app (`apps/android`) builds on macOS and Linux alike (`just android-check`). After a dependency bump, run `just android-deps-lock` once on a Mac too and commit any macOS-only checksums it adds to `apps/android/gradle/verification-metadata.xml`.
 - The pgvector Postgres image is multi-arch (`pgvector/pgvector:pg17` publishes amd64 and arm64), so `just dev-api` needs no emulation.
 
 ## Known gaps
 
 - `SKIP_DOCKER_TESTS=1 just test` leaves out the Testcontainers `migrations` project; it exists for the macOS CI runner (no Docker) and is not for local use. The project itself still fails, never skips, when Docker is missing.
-- The `--system` step installs no Android SDK or emulator; install Android Studio for that.
+- The `--system` step installs the Android SDK packages but no emulator image; create an emulator with Android Studio (or `sdkmanager` + `avdmanager`) to run `just android-e2e`.
 - Intel Macs are supported by every pin but are not exercised by CI (`macos-15` is arm64).

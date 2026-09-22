@@ -10,6 +10,7 @@ This repository is a monorepo: the native iOS and Android apps, the API, the ML 
 | ---------------------- | ----------------------------------------------- | ------------------------------------------------------- |
 | iOS app                | `apps/ios/`                                     | Swift + SwiftUI (native)                                |
 | Android app            | `apps/android/`                                 | Kotlin + Jetpack Compose (native)                       |
+| Shared E2E flows       | `e2e/`                                          | Maestro, one smoke flow for both apps                   |
 | API                    | `apps/api/`                                     | NestJS on Fastify, modular monolith, one dir per module |
 | ML / media workers     | `workers/`                                      | Python 3.12, FastAPI, uv, Docker                        |
 | API + event contracts  | `packages/contracts/`                           | OpenAPI 3.1 + JSON Schema, generated clients            |
@@ -38,7 +39,7 @@ cd ai-stylist
 ./scripts/bootstrap.sh --system
 ```
 
-On Linux this installs the apt packages, Docker, the Android udev rules, and adds you to the `docker` group. **Log out and back in afterwards** so the group change takes effect. On macOS it uses Homebrew (git-lfs, adb), checks for the Xcode Command Line Tools, and tells you which Docker runtime it found (Docker Desktop, OrbStack, or Colima; it installs none). Skip this step if Docker already works for your user and you do not need Android device access.
+On Linux this installs the apt packages, Docker, the Android udev rules, and adds you to the `docker` group. **Log out and back in afterwards** so the group change takes effect. On macOS it uses Homebrew (git-lfs), checks for the Xcode Command Line Tools and Xcode, and tells you which Docker runtime it found (Docker Desktop, OrbStack, or Colima; it installs none). On both it installs the Android SDK packages into your home directory (no emulator) and writes `ANDROID_HOME` to `~/.config/ai-stylist/env.sh`, which `.envrc` loads; on Linux it also pulls the `swift:6.4` Docker image the Linux iOS checks use. Skip this step if Docker already works for your user and you do not work on the apps.
 
 ### 3. Install the toolchain and dependencies
 
@@ -114,7 +115,22 @@ Starts the Python segmentation service on port 8001. `curl localhost:8001/health
 
 ### Mobile apps
 
-The apps are native: Swift + SwiftUI in `apps/ios/` and Kotlin + Jetpack Compose in `apps/android/`. The iOS app needs macOS with Xcode; the Android app needs the Android SDK and an emulator, or a physical phone with USB debugging on. Each app's own README explains how to build and run it. Both apps share one Maestro smoke flow in `e2e/`.
+The apps are native: Swift + SwiftUI in `apps/ios/` and Kotlin + Jetpack Compose in `apps/android/`. Each app's own README explains how to build and run it; both talk to the API through clients generated from `packages/contracts` and share one Maestro smoke flow in `e2e/`.
+
+```bash
+# Android (Linux or macOS)
+just android-sdk install      # SDK packages into your home directory (bootstrap --system already ran this)
+just android-check            # format, lint, detekt, unit + Robolectric tests, all APKs
+just android-build            # debug APK (app.aistylist.mobile.dev); `just android-e2e` runs the smoke flow on an emulator
+
+# iOS (a Mac with the pinned Xcode is required to build and run)
+just ios-project              # generate apps/ios/AIStylist.xcodeproj from project.yml (XcodeGen; never edit the project)
+just ios-build                # unsigned Dev simulator build; `just ios-e2e` runs the smoke flow
+just ios-test                 # package unit tests on an iPhone simulator
+just ios-check                # lint, format, bans, package tests (Linux via Docker swift:6.4); on a Mac also build + test
+```
+
+The Android app needs the Android SDK (`just android-sdk install`) and, to run it, an emulator or a phone with USB debugging on. The iOS app builds and runs only on macOS with the Xcode version pinned in `apps/ios/.xcode-version`.
 
 ## Daily commands
 
@@ -122,9 +138,9 @@ The apps are native: Swift + SwiftUI in `apps/ios/` and Kotlin + Jetpack Compose
 | ---------------------------- | --------------------------------------------------------------------------------------------------------- |
 | `just --list`                | Every recipe with a one-line description                                                                  |
 | `just test`                  | Full test suite. `just test closet` runs one module's tests                                               |
-| `just lint`                  | ESLint (with architecture boundaries) and Ruff                                                            |
+| `just lint`                  | ESLint (with architecture boundaries), Ruff, shellcheck, actionlint, SwiftLint, Android Lint + detekt     |
 | `just typecheck`             | TypeScript and Python type checks                                                                         |
-| `just format`                | Prettier and Ruff format. `--check` for CI mode                                                           |
+| `just format`                | Prettier, Ruff, swift-format and Spotless (ktlint). `--check` for CI mode                                 |
 | `just arch-check`            | Module boundary rules. Fails on a forbidden import                                                        |
 | `just arch-check --fixtures` | Proves each boundary rule still fires on its fixture. `just lint --fixtures` does the same for lint rules |
 | `just generate`              | Regenerate clients from the OpenAPI and event schemas. `--check` = staleness gate                         |
@@ -132,7 +148,9 @@ The apps are native: Swift + SwiftUI in `apps/ios/` and Kotlin + Jetpack Compose
 | `just db-rollback`           | Roll back the last migration                                                                              |
 | `just db-reset --yes`        | Drop and rebuild the local database with seed data. Local only, refuses anything else                     |
 | `just security-scan`         | Secret scan, dependency vulnerabilities, license check                                                    |
-| `just ci-parity`             | Exactly what the pull-request gate runs. Run before opening a PR                                          |
+| `just ci-parity`             | Every pull-request gate, including the iOS and Android lanes. Run before opening a PR                     |
+| `just ios-check`             | The iOS gate (Linux-capable parts everywhere; simulator build + tests on macOS)                           |
+| `just android-check`         | The Android gate: format, lint, detekt, tests, all three APKs                                             |
 
 ## Before you commit
 
@@ -144,7 +162,7 @@ Before opening a pull request:
 just ci-parity
 ```
 
-If it is green locally, it is green in CI. The CI workflows call the same `just` recipes and nothing else.
+If it is green locally, it is green in CI. The CI workflows call the same `just` recipes and nothing else. Two caveats: on Linux the Xcode steps print a skip (the `ios` workflow runs them on macOS), and a native lane whose toolchain is missing fails `ci-parity` with an install hint instead of passing.
 
 ## Where things are decided
 

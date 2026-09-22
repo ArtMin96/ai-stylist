@@ -147,7 +147,7 @@ Run these in a shell where mise is activated (`eval "$(~/.local/bin/mise activat
    just secrets-sync            # same as: just secrets-sync dev
    ```
 
-   This decrypts `secrets/dev.enc.yaml` to a private temp file and merges it into `.env`: every key with a non-empty shared value replaces its `KEY=...` line (or is appended if missing); keys whose shared value is empty are skipped; every other line is kept verbatim, so personal overrides such as `POSTGRES_HOST_PORT` or `EXPO_PUBLIC_API_BASE_URL` survive as long as the shared file leaves them empty. If `.env` does not exist it is created from `.env.example` first. The output lists the key names that were replaced or added and a count; it never prints a value, and `.env` ends up with mode 600. `.envrc` (`dotenv_if_exists .env`) keeps working unchanged.
+   This decrypts `secrets/dev.enc.yaml` to a private temp file and merges it into `.env`: every key with a non-empty shared value replaces its `KEY=...` line (or is appended if missing); keys whose shared value is empty are skipped; every other line is kept verbatim, so personal overrides such as `POSTGRES_HOST_PORT` survive as long as the shared file leaves them empty. If `.env` does not exist it is created from `.env.example` first. The output lists the key names that were replaced or added and a count; it never prints a value, and `.env` ends up with mode 600. `.envrc` (`dotenv_if_exists .env`) keeps working unchanged.
 
    `just secrets-sync staging` and `just secrets-sync prod` refuse to run on a workstation; CI sets `CI=true`, and a human who really needs it locally passes `--i-know-this-is-not-dev`.
 
@@ -360,7 +360,7 @@ If an Expo account or project was already created, a human cleans up:
 
 ### Why we use it
 
-iOS code signing, TestFlight, App Store distribution, and Sign in with Apple. The native iOS CI lane reads the App Store Connect API key and signing material from GitHub secrets.
+iOS code signing, TestFlight, App Store distribution, and Sign in with Apple. Today `.github/workflows/ios.yml` builds unsigned simulator builds only and needs no secret; the signing + TestFlight upload lane is future work a human approves and runs, and it will read the App Store Connect API key and signing material from the GitHub secrets below.
 
 ### When you need it
 
@@ -370,14 +370,14 @@ P02-T14. Apple's approval can take days, so enroll at phase start (`P02` §3).
 
 99 USD per membership year (Checked 2026-09-10, <https://developer.apple.com/programs/whats-included/>). Enrollment needs an Apple Account with two-factor authentication. Individuals enroll with their legal name; organizations need a legal entity, a D-U-N-S Number, a domain-matching work email and a public website (Checked 2026-09-10, <https://developer.apple.com/programs/enroll/>). Decide individual vs organization before enrolling; the seller name shown on the App Store follows from it.
 
-Since 2026-04-28 Apple requires uploads to be built with Xcode 26 or later using the iOS 26 SDK (Checked 2026-09-10, <https://developer.apple.com/news/upcoming-requirements/>). The macOS GitHub runner image used by the iOS lane must therefore provide Xcode 26; check the image notes when the lane pins it.
+Since 2026-04-28 Apple requires uploads to be built with Xcode 26 or later using the iOS 26 SDK (Checked 2026-09-10, <https://developer.apple.com/news/upcoming-requirements/>). The iOS lane pins Xcode 27 (`apps/ios/.xcode-version`, the `xcode-27` runner image in `ios.yml`), which satisfies this.
 
 ### Steps
 
 1. Enroll at <https://developer.apple.com/programs/enroll/>. Wait for the confirmation email before continuing; App Store Connect stays empty until then.
-2. Decide the bundle identifier. The native apps use the placeholder `app.aistylist.mobile` as both the iOS bundle identifier and the Android `applicationId` (set in each app's build configuration); it must be replaced by a final reverse-domain id that you own before the first signed build, because Apple ties it to the App ID and it cannot change later. Change it through a pull request.
+2. Decide the bundle identifier. The native apps use the placeholder `app.aistylist.mobile` as both the iOS bundle identifier and the Android `applicationId` for prod, with `.dev` and `.preview` suffixes for the other environments (set in `apps/ios/Config/*.xcconfig` and `apps/android/app/build.gradle.kts`); it must be replaced by a final reverse-domain id that you own before the first signed build, because Apple ties it to the App ID and it cannot change later. Change it through a pull request (both apps and the Maestro `APP_ID` values in the `just` e2e recipes).
 3. Register the App ID: <https://developer.apple.com/account>, **Certificates, Identifiers & Profiles**, **Identifiers**, **+**, **App IDs**, type **App**, description `AI Stylist`, Bundle ID **Explicit** with the id from step 2. Enable the **Sign in with Apple** and **Push Notifications** capabilities now; they are free to enable and needed in P03 and P09. Register.
-4. Copy the **Team ID** from the account **Membership details** page (10 characters). Store it as GitHub secret `APPLE_TEAM_ID`; the native iOS CI lane reads it to sign.
+4. Copy the **Team ID** from the account **Membership details** page (10 characters). Store it as GitHub secret `APPLE_TEAM_ID`; the future signing lane reads it.
 5. Create the app record: <https://appstoreconnect.apple.com>, **Apps**, **+**, **New App**, platform iOS, name `AI Stylist`, primary language, the bundle id from step 3, SKU `ai-stylist`. This makes TestFlight uploads possible.
 6. Create the App Store Connect API key: **Users and Access**, **Integrations** (opens with App Store Connect API selected), **Team Keys**, **Generate API Key** (or **+**). Name `github-actions`. Access: **App Manager** (enough for TestFlight uploads). **Generate**.
 7. The key row now shows **Key ID**; the page header shows **Issuer ID**. Download the `AuthKey_<KEYID>.p8` file; it can be downloaded once only. Store:
@@ -385,7 +385,7 @@ Since 2026-04-28 Apple requires uploads to be built with Xcode 26 or later using
    - **Issuer ID** as GitHub secret `APP_STORE_CONNECT_API_ISSUER_ID`
    - the full text of the `.p8` file (including the `-----BEGIN PRIVATE KEY-----` lines) as GitHub secret `APP_STORE_CONNECT_API_KEY_P8`
 8. Move the `.p8` file into the password manager and delete it from disk.
-9. Distribution certificate and provisioning profile: the native iOS CI lane needs them exported as `IOS_DIST_CERT_P12_BASE64`, `IOS_DIST_CERT_PASSWORD`, and `IOS_PROVISIONING_PROFILE_BASE64`. Skip until that lane asks for them.
+9. Distribution certificate and provisioning profile: the future signing lane needs them exported as `IOS_DIST_CERT_P12_BASE64`, `IOS_DIST_CERT_PASSWORD`, and `IOS_PROVISIONING_PROFILE_BASE64`. Skip until that lane asks for them.
 
 ### What to record
 
@@ -401,17 +401,17 @@ Since 2026-04-28 Apple requires uploads to be built with Xcode 26 or later using
 
 ### Verify
 
-Run the native iOS workflow with upload enabled (see `.github/workflows/README.md` for its name and inputs once the lane exists). A new build appears under **TestFlight** in App Store Connect within about 30 minutes. If the build step fails on signing, step 9 has not been completed.
+Once the signing + upload lane exists (it will be listed in `.github/workflows/README.md`), a human runs it; a new build appears under **TestFlight** in App Store Connect within about 30 minutes. Until then, confirm the App ID and app record exist in the portal; nothing in the repo reads these secrets yet.
 
 ## 9. Google Play Console
 
 ### Why we use it
 
-Android distribution. `android.yml` signs release builds when the upload keystore secrets exist, and the native Android release build produces the AAB that Play accepts.
+Android distribution. Today `.github/workflows/android.yml` builds debug, preview and an **unsigned** release APK and needs no secret; a signed release bundle (AAB) and the Play internal-track upload are a future, tag- or dispatch-only lane a human approves and runs.
 
 ### When you need it
 
-P02-T14 (`android.yml` is dispatch-only and unsigned until then).
+P02-T14 (the release build stays unsigned until the signing lane exists).
 
 ### Cost
 
@@ -423,29 +423,30 @@ P02-T14 (`android.yml` is dispatch-only and unsigned until then).
 2. **Create app**: name `AI Stylist`, default language, **App** (not game), **Free**. Accept the declarations. The package name is fixed by the first uploaded bundle; it must equal the Android app's `applicationId`, so finish section 8 step 2 first.
 3. Signing. Two keys exist: the **upload key** (yours; signs the AAB you upload) and the **app signing key** (Google's; signs what users install). Use **Play App Signing** (default on new apps) so Google holds the app signing key.
 4. Upload keystore. Generate one locally with `keytool` from the mise-pinned JDK (`keytool -genkeypair -v -keystore upload.jks -alias upload -keyalg RSA -keysize 2048 -validity 10000`).
-5. Store, as GitHub secrets, exactly as `android.yml` expects:
+5. Store, as GitHub secrets, under the names the future signing lane will read:
    - `ANDROID_KEYSTORE_BASE64`: `base64 -w0 upload.jks`
    - `ANDROID_KEYSTORE_PASSWORD`
    - `ANDROID_KEY_ALIAS`
    - `ANDROID_KEY_PASSWORD`
 6. Move the keystore and its passwords into the password manager and delete the keystore from the repo checkout.
-7. First upload: Play Console, **Testing**, **Internal testing**, **Create new release**, upload the signed AAB from the `android` workflow artifact. Play records the upload certificate from this first bundle; every later upload must be signed with the same key.
+7. First upload (human, once the signing lane produces a signed AAB): Play Console, **Testing**, **Internal testing**, **Create new release**, upload that AAB. Play records the upload certificate from this first bundle; every later upload must be signed with the same key. Google requires the first bundle to be uploaded by hand; the API cannot create the first release.
+8. Play upload service account (for the future upload lane; skip until it exists). In Google Cloud (the project from section 14 is fine), **IAM & Admin**, **Service Accounts**, create `play-upload`, then **Keys**, **Add key**, **JSON**. In Play Console, **Users and permissions**, **Invite new users**, the service account's email, app access `AI Stylist` only, permissions **Release apps to testing tracks** (add production release rights only when a staged-rollout lane is approved). Store the JSON file's full text as GitHub secret `PLAY_SERVICE_ACCOUNT_JSON`, then move the file into the password manager and delete it from disk.
 
 ### What to record
 
-- GitHub secrets: `ANDROID_KEYSTORE_BASE64`, `ANDROID_KEYSTORE_PASSWORD`, `ANDROID_KEY_ALIAS`, `ANDROID_KEY_PASSWORD`.
+- GitHub secrets: `ANDROID_KEYSTORE_BASE64`, `ANDROID_KEYSTORE_PASSWORD`, `ANDROID_KEY_ALIAS`, `ANDROID_KEY_PASSWORD`, and (step 8) `PLAY_SERVICE_ACCOUNT_JSON`.
 - `.env.example`: nothing; `GOOGLE_SIGNIN_CLIENT_ID` comes from section 14.
 - Repo: final `applicationId` in the Android app's build configuration.
 
 ### Do not
 
 - Do not lose the upload keystore; recovering requires a support request to Google and a key reset.
-- Do not commit `*.jks` or `*.keystore`.
+- Do not commit `*.jks`, `*.keystore`, or the service-account JSON key.
 - Do not opt out of Play App Signing.
 
 ### Verify
 
-GitHub, **Actions**, **android**, **Run workflow**, profile `prod`. The log prints `Signing: enabled` (instead of the `ANDROID_KEYSTORE_BASE64 not set` notice) and the artifact contains an `.aab`. Uploading it to Internal testing succeeds without a signature error.
+Until the signing lane exists, confirm the app record exists in Play Console and the four keystore secrets are set; nothing in the repo reads them yet. Once the lane exists (it will be listed in `.github/workflows/README.md`), a human runs it: the artifact contains a signed `.aab`, and uploading it to Internal testing succeeds without a signature error.
 
 ## 10. PostHog
 
@@ -629,5 +630,5 @@ Deferred to P03: `just test identity` runs the better-auth provider fixtures.
 2. `sops` says `no key could decrypt the data` or `failed to get the data key`. Your public key is not in the file's recipient list, or your private key is not at `~/.config/sops/age/keys.txt`. Ask a developer who can decrypt to add your key to `.sops.yaml` and run `just secrets-updatekeys`. Check `SOPS_AGE_KEY_FILE` if you keep the key elsewhere.
 3. `just doctor` reports `.env missing N key(s)`. Someone added keys to `.env.example`. Copy the missing lines from `.env.example` into `.env` (values stay empty) or re-run `just secrets-sync` after the shared file is updated.
 4. `just db-migrate` against the staging PostgreSQL fails with a `SET` or `prepared statement` error. You used the pooled (PgBouncer) connection string. Use the direct string from section 3 step 8 and retry.
-5. A native build workflow stops at a missing-secret step (App Store Connect API key or signing material). The GitHub secret is missing or named differently. The names must match `.github/workflows/README.md` exactly; check for trailing spaces in the secret value when the step passes but `eas` still reports `Not logged in`.
-6. The `android` workflow prints `ANDROID_KEYSTORE_BASE64 not set`. Expected until section 9 is done; the build is unsigned and cannot be uploaded to Play. After adding the four secrets, re-run the workflow and look for `Signing: enabled`.
+5. A native build workflow stops at a missing-secret step (App Store Connect API key or signing material). The GitHub secret is missing or named differently. The names must match `.github/workflows/README.md` exactly; check for trailing spaces in the secret value when the secret step passes but the upload is still rejected as unauthenticated.
+6. The `android` workflow's release APK is unsigned and cannot be uploaded to Play. That is expected: the signing lane is future work (section 9); the job summary lists the signing state per variant.

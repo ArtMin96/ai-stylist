@@ -5,6 +5,17 @@
   "schedule": ["before 6am on monday"],
   "labels": ["dependencies"],
   "rangeStrategy": "bump",
+  "ignorePaths": [
+    "**/node_modules/**",
+    "**/bower_components/**",
+    "**/vendor/**",
+    "**/examples/**",
+    "**/__tests__/**",
+    "**/test/**",
+    "**/tests/**",
+    "**/__fixtures__/**",
+    "packages/contracts/gen/**"
+  ],
   "lockFileMaintenance": {
     "enabled": true,
     "schedule": ["before 6am on monday"]
@@ -12,9 +23,36 @@
   "mise": {
     "enabled": true
   },
+  "gradle": {
+    "enabled": true
+  },
+  "gradle-wrapper": {
+    "enabled": true
+  },
+  "swift": {
+    "enabled": true
+  },
+  "customManagers": [
+    {
+      "customType": "regex",
+      "description": "swift-openapi-generator pin in the Swift codegen script; the generated client follows via `just generate`, never by hand",
+      "managerFilePatterns": ["/^tools/codegen/gen-swift\\.sh$/"],
+      "matchStrings": ["GENERATOR_VERSION=\"(?<currentValue>[^\"]+)\""],
+      "depNameTemplate": "apple/swift-openapi-generator",
+      "datasourceTemplate": "github-tags"
+    },
+    {
+      "customType": "regex",
+      "description": "swift-openapi-runtime pin in the Swift codegen script (copied into the generated packages/contracts/gen/swift-client/Package.swift, which Renovate ignores)",
+      "managerFilePatterns": ["/^tools/codegen/gen-swift\\.sh$/"],
+      "matchStrings": ["RUNTIME_VERSION=\"(?<currentValue>[^\"]+)\""],
+      "depNameTemplate": "apple/swift-openapi-runtime",
+      "datasourceTemplate": "github-tags"
+    }
+  ],
   "packageRules": [
     {
-      "description": "Toolchain pins in mise.toml bump only via Renovate, one PR each (15 \u00a71.2, \u00a79)",
+      "description": "Toolchain pins in mise.toml bump only via Renovate, one PR each (15 §1.2, §9)",
       "matchManagers": ["mise"],
       "groupName": null,
       "automerge": false
@@ -32,11 +70,69 @@
       "automerge": true
     },
     {
-      "description": "Major runtime bumps (node/pnpm/python/java) need an ADR \u2014 never automerge",
+      "description": "Major runtime bumps (node/pnpm/python/java) need an ADR — never automerge",
       "matchPackageNames": ["node", "pnpm", "python", "java"],
       "matchUpdateTypes": ["major"],
       "automerge": false,
       "labels": ["dependencies", "needs-adr"]
+    },
+    {
+      "description": "Android (apps/android: version catalog gradle/libs.versions.toml + Gradle wrapper). Every bump needs `just android-deps-lock` on the branch (gradle.lockfiles + verification-metadata.xml; needs the Android SDK), so never automerge",
+      "matchManagers": ["gradle", "gradle-wrapper"],
+      "automerge": false,
+      "labels": ["dependencies", "android", "needs-deps-lock"],
+      "prBodyNotes": [
+        "**Android:** before merging, check out this branch and run `just android-deps-lock` (refreshes every `gradle.lockfile` and `apps/android/gradle/verification-metadata.xml`), review the diff, commit it, then `just android-check`. CI fails with dependency-verification errors until the locks are refreshed."
+      ]
+    },
+    {
+      "description": "Android toolchain: AGP, Kotlin (incl. the Compose compiler plugin), KSP, detekt and the Gradle wrapper move together (KGP/AGP compatibility table); never automerge",
+      "matchManagers": ["gradle", "gradle-wrapper"],
+      "matchPackageNames": [
+        "com.android.**",
+        "org.jetbrains.kotlin**",
+        "com.google.devtools.ksp**",
+        "io.gitlab.arturbosch.detekt**",
+        "dev.detekt**",
+        "gradle"
+      ],
+      "groupName": "android toolchain",
+      "automerge": false
+    },
+    {
+      "description": "Compose BOM and the Compose artifacts in one PR",
+      "matchManagers": ["gradle"],
+      "matchPackageNames": ["androidx.compose**"],
+      "groupName": "compose bom"
+    },
+    {
+      "description": "robolectric and its android-all(-instrumented) jar must move together (offline mode fails loudly on a mismatch)",
+      "matchManagers": ["gradle"],
+      "matchPackageNames": ["org.robolectric**"],
+      "groupName": "robolectric"
+    },
+    {
+      "description": "iOS SwiftPM (apps/ios/Packages/*/Package.swift, exact pins): Renovate does not rewrite Package.resolved, so a human resolves it on the branch; never automerge",
+      "matchManagers": ["swift"],
+      "automerge": false,
+      "labels": ["dependencies", "ios"],
+      "prBodyNotes": [
+        "**iOS:** Renovate edits `Package.swift` only. Refresh the committed `Package.resolved` files on this branch (`just ios-test-packages` resolves them), review the resolved diff, then `just ios-check`."
+      ]
+    },
+    {
+      "description": "swift-openapi-runtime is pinned in apps/ios/Packages/Core/Package.swift and in tools/codegen/gen-swift.sh (the generated client): bump both in one PR and run `just generate`",
+      "matchPackageNames": [
+        "https://github.com/apple/swift-openapi-runtime",
+        "apple/swift-openapi-runtime",
+        "apple/swift-openapi-generator"
+      ],
+      "groupName": "swift-openapi",
+      "automerge": false,
+      "labels": ["dependencies", "ios"],
+      "prBodyNotes": [
+        "**Contracts:** run `just generate` and commit the regenerated `packages/contracts/gen/swift-client/`, then `just generate --check`."
+      ]
     }
   ],
   "vulnerabilityAlerts": {

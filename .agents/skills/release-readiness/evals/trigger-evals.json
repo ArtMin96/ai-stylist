@@ -20,7 +20,7 @@
     "should_trigger": true
   },
   {
-    "query": "want to verify the android AAB and ios build from the same commit SHA both made it to their respective internal channels before I schedule the beta",
+    "query": "want to verify the android release build and the ios Prod build come from the same commit SHA with matching versionCode / CFBundleVersion before I schedule the beta",
     "should_trigger": true
   },
   {
@@ -40,6 +40,10 @@
     "should_trigger": true
   },
   {
+    "query": "typo in the onboarding copy on the production build, can we hot-fix it without going through the stores again",
+    "should_trigger": true
+  },
+  {
     "query": "the migration for the new wear_events table needs to run against staging before we can even think about a release candidate this week",
     "should_trigger": false,
     "_near_miss_reason": "release-readiness's gate checklist references 'pending migrations applied to staging' as evidence to collect, but actually running/writing the migration is db-migration's job, not this skill's."
@@ -55,9 +59,9 @@
     "_near_miss_reason": "device-matrix perf is one of release-readiness's gate items, but actually capturing the measurement is performance-profiling's procedure; release-readiness only cites the resulting evidence."
   },
   {
-    "query": "our EAS vs GitHub Actions macOS iOS build lane comparison has been running for two weeks now, time to write up which one wins and update the ADR",
+    "query": "we should decide whether iOS release builds get signed on the xcode-27 GitHub runner or on a Mac mini, write up the ADR",
     "should_trigger": false,
-    "_near_miss_reason": "release-readiness reads ADR-0002 to know which lane is live, but writing the ADR decision itself is a P02-T15 infra/tooling task, not a release-promotion task."
+    "_near_miss_reason": "release-readiness reads the native-apps ADRs to know which lane is live, but writing the build-lane ADR itself is an infra/tooling decision, not a release-promotion task."
   },
   {
     "query": "add a new PostHog feature flag for the redesigned paywall with a 90-day expiry and an owner, want to gate the rollout behind it",
@@ -88,5 +92,10 @@
     "query": "onboarding is dropping too many users at the paywall step, want to run an experiment on the copy",
     "should_trigger": false,
     "_near_miss_reason": "mentions an experiment (flag-adjacent vocabulary) but this is a product/growth change to paywall copy, not a release-channel gate or rollout decision."
+  },
+  {
+    "query": "set up fastlane and the App Store Connect API key secret in CI so TestFlight uploads happen automatically on merge",
+    "should_trigger": false,
+    "_near_miss_reason": "TestFlight vocabulary, but building a signing/upload lane is future tooling-ci work with human-owned secrets, not evaluating a release candidate."
   }
 ]

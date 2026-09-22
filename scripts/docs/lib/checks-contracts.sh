@@ -72,8 +72,15 @@ check_dc02() {
 }
 
 # check_dc03 ROOT — Status enum + Last-updated date not older than the module's code.
+# The code date comes from git history; on a shallow clone that history is truncated, so the date
+# comparison is refused with ONE loud ERROR (never skipped silently, never a wrong per-module
+# finding). The Status / Last-updated field checks still run.
 check_dc03() {
-  local root="$1" f rel name status_line status_word last_line last_date code_date line
+  local root="$1" f rel name status_line status_word last_line last_date code_date line shallow=0
+  if git_is_shallow "$root"; then
+    shallow=1
+    finding ERROR DC-03 "docs/modules" 1 "shallow git clone: DC-03 needs full git history to date module code; run \`git fetch --unshallow\` or check out with fetch-depth: 0"
+  fi
   for f in $(list_md_files "$root/docs/modules"); do
     name="$(basename "$f" .md)"
     rel="docs/modules/$(basename "$f")"
@@ -101,6 +108,7 @@ check_dc03() {
       continue
     fi
 
+    [[ $shallow -eq 1 ]] && continue
     code_date="$(git_or_mtime_date "$root" "apps/api/src/modules/$name/index.ts" "apps/api/src/modules/$name/internal/schema.ts")"
     if [[ -n "$code_date" && "$last_date" < "$code_date" ]]; then
       finding ERROR DC-03 "$rel" "$line" "Last updated ($last_date) predates the module's last code change ($code_date)"

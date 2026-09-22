@@ -97,6 +97,13 @@ git_or_mtime_date() {
   echo "$newest"
 }
 
+# git_is_shallow REPO_ROOT -> exit 0 when REPO_ROOT is a shallow clone (e.g. actions/checkout's
+# default fetch-depth: 1). There, `git log -1 -- PATH` returns the one grafted commit for every
+# tracked PATH, so any history-derived date (DC-03) would be silently wrong. Not a git repo -> 1.
+git_is_shallow() {
+  [[ "$(git -C "$1" rev-parse --is-shallow-repository 2>/dev/null || true)" == "true" ]]
+}
+
 # --- markdown/frontmatter helpers ------------------------------------------------------
 # frontmatter_field FILE KEY -> the scalar value of a top-level "key: value" line inside the
 # leading "---" ... "---" YAML frontmatter block. Empty if absent. Values are not YAML-parsed

@@ -20,8 +20,6 @@ const DEV = '^apps/api/src/dev/';
 const SHARED_KERNEL = '^packages/shared-kernel/';
 const CONTRACTS = '^packages/contracts/';
 const DB = '^packages/db/';
-const MOBILE_RENDER = '^apps/mobile/src/render/';
-const FILAMENT = '(^|/)react-native-filament(/|$)';
 const PROTOTYPE = '^prototype/';
 const UTILS_DIR = '(^|/)(utils|helpers|common)/';
 
@@ -30,15 +28,13 @@ const COMPOSITION_ROOTS = [
   '^apps/api/src/app\\.module\\.ts$',
   '^apps/api/src/main\\.ts$',
   '^apps/api/src/jobs/',
-  '^apps/mobile/src/app/_layout\\.tsx$',
-  '^apps/mobile/src/lib/app-services\\.tsx$',
 ];
 
 // Provider SDKs that never appear in a domain module (04 §4.2 rule 4). Matched against the
 // resolved path (pnpm realpath contains `node_modules/<pkg>/`) and the bare specifier when the
 // package is not installed, so an unresolvable import still fails.
 const PROVIDER_SDKS =
-  '(^|/)(pg-boss|@aws-sdk|@cloudflare|react-native-purchases|@fal-ai|posthog-[^/]*|firebase-admin|@sentry)(/|$)';
+  '(^|/)(pg-boss|@aws-sdk|@cloudflare|@fal-ai|posthog-[^/]*|firebase-admin|@sentry)(/|$)';
 
 // --- the allowed module DAG, copied from planning/04 §4.1 ----------------------------------------
 // key → modules it may import (via their index.ts). Every module may also import shared-kernel
@@ -113,7 +109,7 @@ module.exports = {
       comment: '04 §4.2 rule 2: recommendation never touches avatar, the renderer, or 3D assets',
       from: { path: `${MODULES}recommendation/` },
       to: {
-        path: [`${MODULES}avatar/`, MOBILE_RENDER, FILAMENT, '^assets/', '\\.(glb|gltf|ktx2)$'],
+        path: [`${MODULES}avatar/`, '^assets/', '\\.(glb|gltf|ktx2)$'],
       },
     },
     {
@@ -186,23 +182,6 @@ module.exports = {
       to: { path: PROTOTYPE },
     },
     {
-      name: 'render-boundary',
-      severity: 'error',
-      comment: '04 §4.3: only src/render/** and src/features/avatar/** touch Filament',
-      from: {
-        path: '^apps/mobile/',
-        pathNot: [MOBILE_RENDER, '^apps/mobile/src/features/avatar/'],
-      },
-      to: { path: [MOBILE_RENDER, FILAMENT] },
-    },
-    {
-      name: 'mobile-workers-not-server',
-      severity: 'error',
-      comment: 'brief §5: mobile imports only contracts and shared-kernel from the workspace',
-      from: { path: '^apps/mobile/' },
-      to: { path: '^(apps|packages)/', pathNot: ['^apps/mobile/', CONTRACTS, SHARED_KERNEL] },
-    },
-    {
       name: 'composition-root-only',
       severity: 'error',
       comment:
@@ -243,14 +222,14 @@ module.exports = {
         '/build/',
         '/coverage/',
         '\\.turbo/',
-        '\\.expo/',
         '(^|/)fixtures/',
-        '^apps/mobile/(android|ios)/',
+        // Native apps (Swift / Kotlin) hold no JS/TS; keep their build trees out of the cruise.
+        '^apps/(ios|android)/',
       ],
     },
     tsPreCompilationDeps: true,
-    // One tsconfig for the whole tree: only the mobile `@/*` alias needs `paths`; NodeNext `.js`
-    // → `.ts` and workspace `exports` resolve through enhanced-resolve below.
+    // One tsconfig for the whole tree (no `paths` aliases); NodeNext `.js` → `.ts` and workspace
+    // `exports` resolve through enhanced-resolve below.
     tsConfig: { fileName: path.join(__dirname, 'tsconfig.json') },
     enhancedResolveOptions: {
       exportsFields: ['exports'],

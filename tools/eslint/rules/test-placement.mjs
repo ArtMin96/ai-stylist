@@ -2,13 +2,13 @@
 // the module under test. A file-name check on `Program`; the file body is irrelevant.
 //
 // Exceptions (documented framework placements):
-//   apps/mobile/e2e/**          Maestro flows (YAML + helpers)
+//   e2e/**                      Maestro flows shared by the native apps (YAML + helpers)
 //   apps/api/tests/**           API-level HTTP tests and the Testcontainers migration suite
 //                               (apps/api/tests/migrations/**) — the "module" is the whole app
 import path from 'node:path';
 
 const TEST_FILE = /\.(test|spec)\.(ts|tsx|mts|cts|js|jsx|mjs|cjs)$/;
-const EXCEPTIONS = [/^apps\/mobile\/e2e\//, /^apps\/api\/tests\//];
+const EXCEPTIONS = [/^e2e\//, /^apps\/api\/tests\//];
 
 export function isMisplacedTest(relativePath) {
   const posix = relativePath.split(path.sep).join('/');
@@ -26,7 +26,7 @@ export default {
     ],
     messages: {
       misplaced:
-        'test-placement: "{{file}}" must live in a tests/ directory (exceptions: apps/mobile/e2e/**, apps/api/tests/**)',
+        'test-placement: "{{file}}" must live in a tests/ directory (exceptions: e2e/**, apps/api/tests/**)',
     },
   },
   create(context) {

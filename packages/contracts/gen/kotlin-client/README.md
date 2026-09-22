@@ -1,0 +1,14 @@
+# kotlin-client (GENERATED — DO NOT EDIT BY HAND)
+
+Kotlin API client for the AI Stylist API, generated from `packages/contracts/gen/openapi.bundle.json`
+by `tools/codegen/gen-kotlin.sh` (openapi-generator 7.25.0, `kotlin` generator,
+`jvm-retrofit2` + `kotlinx_serialization` + coroutines). Regenerate with `just generate`;
+`just generate --check` fails when this directory is stale.
+
+- Package: `app.aistylist.contracts.client` (`apis/`, `models/`, `infrastructure/`).
+- Consumers: `apps/android` module `:core:api-client` compiles `src/main/kotlin` directly;
+  `:core:analytics` compiles `analytics/src/main/kotlin` (`AnalyticsTaxonomy`: event and property
+  names from `packages/contracts/events/analytics/events.json`).
+- Base URL: always construct `ApiClient(baseUrl = <host-only API_BASE_URL>)`. The generated paths
+  already start with `v1/`, and the default base path (from the spec's `servers`) also ends in
+  `/v1`, so relying on the default would request `/v1/v1/...`.

@@ -1,6 +1,6 @@
 # ADR-0002 (ADR-P02) — iOS build lane: EAS Build vs GitHub Actions macOS
 
-- **Status:** Proposed — no decision yet; this file frames the question and the evidence T15 must collect
+- **Status:** Superseded by ADR-0004 (2026-09-22). React Native, Expo and EAS were removed, so the EAS option no longer exists and the GitHub Actions macOS runner is the only iOS lane (DEC-51; OQ-04 resolved). This record was never accepted; the body below is kept unchanged as history.
 - **Date:** 2026-09-09
 - **Deciders:** product owner + implementing session (P02-T15), after ~2 weeks of dual-lane data from P02-T14
 - **Decision-log entry:** none yet; resolves OQ-04 in [planning/16](../../planning/16-risks-open-questions-and-decision-log.md) and will extend DEC-30 when accepted

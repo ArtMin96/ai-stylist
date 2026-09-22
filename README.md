@@ -2,13 +2,14 @@
 
 Personal AI stylist for iOS and Android: a parametric 3D avatar built from your measurements, a digitized closet, and explainable outfit recommendations grounded in the clothes you actually own, the weather, and the occasion.
 
-This repository is a monorepo: the mobile app, the API, the ML workers, and the shared contracts all live here. `just` is the only command entry point. If you are new, follow **First-time setup** top to bottom; it takes about 15 minutes on a fresh Ubuntu machine, most of it downloads.
+This repository is a monorepo: the native iOS and Android apps, the API, the ML workers, and the shared contracts all live here. `just` is the only command entry point. If you are new, follow **First-time setup** top to bottom; it takes about 15 minutes on a fresh Ubuntu machine, most of it downloads.
 
 ## What is inside
 
 | Part                   | Path                                            | Stack                                                   |
 | ---------------------- | ----------------------------------------------- | ------------------------------------------------------- |
-| Mobile app             | `apps/mobile/`                                  | React Native + Expo (TypeScript, New Architecture)      |
+| iOS app                | `apps/ios/`                                     | Swift + SwiftUI (native)                                |
+| Android app            | `apps/android/`                                 | Kotlin + Jetpack Compose (native)                       |
 | API                    | `apps/api/`                                     | NestJS on Fastify, modular monolith, one dir per module |
 | ML / media workers     | `workers/`                                      | Python 3.12, FastAPI, uv, Docker                        |
 | API + event contracts  | `packages/contracts/`                           | OpenAPI 3.1 + JSON Schema, generated clients            |
@@ -37,7 +38,7 @@ cd ai-stylist
 ./scripts/bootstrap.sh --system
 ```
 
-On Linux this installs the apt packages, Docker, the Android udev rules, and adds you to the `docker` group. **Log out and back in afterwards** so the group change takes effect. On macOS it uses Homebrew (git-lfs, watchman, adb), checks for the Xcode Command Line Tools, and tells you which Docker runtime it found (Docker Desktop, OrbStack, or Colima; it installs none). Skip this step if Docker already works for your user and you do not need Android device access.
+On Linux this installs the apt packages, Docker, the Android udev rules, and adds you to the `docker` group. **Log out and back in afterwards** so the group change takes effect. On macOS it uses Homebrew (git-lfs, adb), checks for the Xcode Command Line Tools, and tells you which Docker runtime it found (Docker Desktop, OrbStack, or Colima; it installs none). Skip this step if Docker already works for your user and you do not need Android device access.
 
 ### 3. Install the toolchain and dependencies
 
@@ -82,7 +83,7 @@ how to onboard someone else. Never send or commit the private identity.
 
 ### 6. External accounts (only when a task needs one)
 
-Nothing above needs a vendor account. When a phase does (a server provider + Coolify, Cloudflare R2, Expo/EAS, Apple, Google Play, PostHog, Grafana, and so on; pg-boss and PostgreSQL need no account), follow [`docs/SERVICES-SETUP.md`](docs/SERVICES-SETUP.md). It has every account in phase order, every step and field, and where each key goes.
+Nothing above needs a vendor account. When a phase does (a server provider + Coolify, Cloudflare R2, Apple, Google Play, PostHog, Grafana, and so on; pg-boss and PostgreSQL need no account), follow [`docs/SERVICES-SETUP.md`](docs/SERVICES-SETUP.md). It has every account in phase order, every step and field, and where each key goes.
 
 ## Running the app
 
@@ -111,36 +112,27 @@ just dev-workers
 
 Starts the Python segmentation service on port 8001. `curl localhost:8001/health` should answer.
 
-### Mobile
+### Mobile apps
 
-```bash
-just dev-mobile              # starts Metro (the JS bundler)
-just dev-mobile --android    # also opens the app on a connected Android device or emulator
-```
-
-Expo Go is enough for the current placeholder app (`pnpm --filter @ai-stylist/mobile exec expo start --go --android` if you prefer it; `just dev-mobile` always starts the dev client, and Expo refuses `--dev-client` together with `--go`); a development build becomes necessary once the first native module lands.
-
-The mobile app cannot be run on iOS from Linux; on a Mac, `just dev-mobile --ios` opens the simulator and `just mobile-ios-build --profile dev` builds locally. From Linux, iOS builds happen in CI on a hosted Mac (see `.github/workflows/README.md`). For Android you need either the Android SDK and an emulator, or a physical phone with USB debugging on. See `apps/mobile/README.md` for the details.
+The apps are native: Swift + SwiftUI in `apps/ios/` and Kotlin + Jetpack Compose in `apps/android/`. The iOS app needs macOS with Xcode; the Android app needs the Android SDK and an emulator, or a physical phone with USB debugging on. Each app's own README explains how to build and run it. Both apps share one Maestro smoke flow in `e2e/`.
 
 ## Daily commands
 
-| Command                                               | What it does                                                                                              |
-| ----------------------------------------------------- | --------------------------------------------------------------------------------------------------------- |
-| `just --list`                                         | Every recipe with a one-line description                                                                  |
-| `just test`                                           | Full test suite. `just test closet` runs one module's tests                                               |
-| `just lint`                                           | ESLint (with architecture boundaries) and Ruff                                                            |
-| `just typecheck`                                      | TypeScript and Python type checks                                                                         |
-| `just format`                                         | Prettier and Ruff format. `--check` for CI mode                                                           |
-| `just arch-check`                                     | Module boundary rules. Fails on a forbidden import                                                        |
-| `just arch-check --fixtures`                          | Proves each boundary rule still fires on its fixture. `just lint --fixtures` does the same for lint rules |
-| `just generate`                                       | Regenerate clients from the OpenAPI and event schemas. `--check` = staleness gate                         |
-| `just db-migrate`                                     | Apply pending migrations to your local database                                                           |
-| `just db-rollback`                                    | Roll back the last migration                                                                              |
-| `just db-reset --yes`                                 | Drop and rebuild the local database with seed data. Local only, refuses anything else                     |
-| `just mobile-android-build --profile preview`         | Android APK/AAB. Local Gradle if `ANDROID_HOME` is set, otherwise `--cloud` for EAS                       |
-| `just mobile-ios-build --cloud eas --profile preview` | iOS build on EAS. Needs the accounts in `docs/SERVICES-SETUP.md` section 7 and 8                          |
-| `just security-scan`                                  | Secret scan, dependency vulnerabilities, license check                                                    |
-| `just ci-parity`                                      | Exactly what the pull-request gate runs. Run before opening a PR                                          |
+| Command                      | What it does                                                                                              |
+| ---------------------------- | --------------------------------------------------------------------------------------------------------- |
+| `just --list`                | Every recipe with a one-line description                                                                  |
+| `just test`                  | Full test suite. `just test closet` runs one module's tests                                               |
+| `just lint`                  | ESLint (with architecture boundaries) and Ruff                                                            |
+| `just typecheck`             | TypeScript and Python type checks                                                                         |
+| `just format`                | Prettier and Ruff format. `--check` for CI mode                                                           |
+| `just arch-check`            | Module boundary rules. Fails on a forbidden import                                                        |
+| `just arch-check --fixtures` | Proves each boundary rule still fires on its fixture. `just lint --fixtures` does the same for lint rules |
+| `just generate`              | Regenerate clients from the OpenAPI and event schemas. `--check` = staleness gate                         |
+| `just db-migrate`            | Apply pending migrations to your local database                                                           |
+| `just db-rollback`           | Roll back the last migration                                                                              |
+| `just db-reset --yes`        | Drop and rebuild the local database with seed data. Local only, refuses anything else                     |
+| `just security-scan`         | Secret scan, dependency vulnerabilities, license check                                                    |
+| `just ci-parity`             | Exactly what the pull-request gate runs. Run before opening a PR                                          |
 
 ## Before you commit
 

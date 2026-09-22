@@ -30,7 +30,7 @@ Phase numbers refer to `planning/phases/`. "Needed from" is the first task that 
 | 4   | Server + Coolify                                                        | API, jobs, workers, PostgreSQL hosting                    | P02 (server), P03 (deploy) | Server ~€10–25/month; Coolify $0 self-hosted | `<owner>`     | [ ]  |
 | 5   | pg-boss (no account)                                                    | Durable jobs (outbox relay, media pipeline)               | P02-T08                    | $0, MIT, runs on the app database            | n/a           | [ ]  |
 | 6   | Cloudflare (R2 + DNS/WAF)                                               | Object storage for media and public assets, DNS, WAF      | P02-T13                    | Yes, 10 GB-month, Checked 2026-09-10         | `<owner>`     | [ ]  |
-| 7   | Expo / EAS                                                              | Cloud builds for iOS and Android                          | P02-T14                    | 15 + 15 builds/month, Checked 2026-09-10     | `<owner>`     | [ ]  |
+| 7   | Expo / EAS (removed 2026-09-22)                                         | Nothing: the React Native app and EAS builds are gone     | n/a                        | n/a                                          | n/a           | n/a  |
 | 8   | Apple Developer Program                                                 | iOS signing, TestFlight, App Store, Sign in with Apple    | P02-T14                    | No, 99 USD/year, Checked 2026-09-10          | `<owner>`     | [ ]  |
 | 9   | Google Play Console                                                     | Android signing and distribution                          | P02-T14                    | No, 25 USD once, Checked 2026-09-10          | `<owner>`     | [ ]  |
 | 10  | PostHog                                                                 | Product analytics, replay, error tracking, flags          | P02-T09/P03                | Yes, 1M events/month, Checked 2026-09-10     | `<owner>`     | [ ]  |
@@ -74,7 +74,7 @@ Free. GitHub Actions minutes on Linux runners are free for public repositories; 
 ### Do not
 
 - Do not add secrets to workflow YAML or to `.env.example`.
-- Do not require `ios-eas`, `ios-gha-macos`, `android`, or `nightly` checks on `main`; they are dispatch-only or scheduled.
+- Do not require the native `android` / iOS build lanes or `nightly` checks on `main`; they are dispatch-only or scheduled.
 - Do not change required checks, force-push, or rewrite history without explicit human authorization (`CLAUDE.md` "Prohibited").
 
 ### Verify
@@ -215,7 +215,7 @@ $0 for software: PostgreSQL, pgvector, pgBackRest, and PgBouncer are all open so
 
 - Do not run `just db-reset` against any non-local host; it refuses by design, do not work around it.
 - Do not use the pooled (PgBouncer) string for `just db-migrate`.
-- Do not put a connection string into `.env.example` or into the mobile app (`EXPO_PUBLIC_*`).
+- Do not put a connection string into `.env.example` or into the native apps' build configuration.
 - Do not expose port 5432 on the host firewall or through Coolify's proxy.
 - Do not skip the restore drill; a backup that has never been restored is not a backup.
 - Do not create the `production` database before P03 needs it.
@@ -343,75 +343,24 @@ R2, Checked 2026-09-10 at <https://developers.cloudflare.com/r2/pricing/>: free 
 
 No repo command exists until P02-T13 lands the adapter and its `*.sec.test.ts` suite; then `just test platform` exercises presigned PUT/GET against the configured bucket. Until then, `just doctor` confirms the keys are present in `.env`, and the bucket page in the dashboard lists `ai-stylist-dev` with zero objects.
 
-## 7. Expo / EAS
+## 7. Expo / EAS (removed)
 
-### Why we use it
+The React Native / Expo app and its EAS build and submit lanes were removed on 2026-09-22; the native
+iOS app builds with Xcode and the native Android app with Gradle, so no Expo account is needed. The
+section number is kept so references to sections 8 and 9 stay valid.
 
-The team develops on Linux with no Mac (ADR-0002). EAS Build produces iOS and Android binaries in the cloud; `eas submit` uploads to TestFlight from a Linux runner. The `ios-eas.yml` and `android.yml` workflows, and `just mobile-ios-build --cloud eas` / `just mobile-android-build --cloud`, all depend on this account. Profiles are in `apps/mobile/eas.json` (`dev`, `preview`, `prod`).
+If an Expo account or project was already created, a human cleans up:
 
-### When you need it
-
-P02-T14 (both iOS lanes running for about two weeks so P02-T15 can write ADR-0002).
-
-### Cost
-
-Checked 2026-09-10 at <https://expo.dev/pricing>: Free plan 15 Android and 15 iOS builds per month, 45 minute build timeout, low queue priority. Starter $19/month plus usage. The two-week dual-lane experiment in T14 will consume a large part of one month's free quota; watch **Usage** in the dashboard.
-
-### Steps
-
-1. Create an Expo account at <https://expo.dev/signup>. Use the project owner's email; an Expo organization can be added later and the project transferred.
-2. Log in from the repo (eas-cli is not pinned in `mise.toml` yet; the justfile falls back to `pnpm dlx`):
-
-   ```bash
-   cd apps/mobile
-   pnpm dlx eas-cli@latest login
-   ```
-
-3. Create the EAS project and get its id:
-
-   ```bash
-   pnpm dlx eas-cli@latest init
-   ```
-
-   `eas init` creates the project on EAS under your account with the slug `ai-stylist` from `app.config.ts` and prints the project id (a UUID). Because `app.config.ts` is TypeScript, `eas init` cannot write `extra.eas.projectId` for you; the config reads it from `EXPO_PUBLIC_EAS_PROJECT_ID` instead. If the command offers to modify a config file, decline.
-
-4. Put the id into `.env` as `EXPO_PUBLIC_EAS_PROJECT_ID=<uuid>` and into `secrets/dev.enc.yaml`. It is not a secret (it ships in the bundle) but everyone needs the same value.
-5. First build, Android, preview profile, from the repo root:
-
-   ```bash
-   just mobile-android-build --cloud --profile preview
-   ```
-
-   On the first run EAS asks to generate an Android keystore; answer yes and let EAS manage it (see section 9 for how that keystore relates to Play Console). The build page URL is printed; the APK is downloadable there when it finishes.
-
-6. Access token for CI: <https://expo.dev>, account menu, **Access tokens** (under the account settings), **Create token**. Prefer creating a **Robot** user first (same page) and generating the token for it, so the token does not act as you. Name `github-actions`. Copy the token once and store it as GitHub secret `EXPO_TOKEN`. eas-cli honors it as the `EXPO_TOKEN` environment variable without `eas login` (Checked 2026-09-10, <https://docs.expo.dev/accounts/programmatic-access/>).
-7. iOS builds additionally need section 8 done; the first `eas build --platform ios` run asks for the Apple account to create the distribution certificate and provisioning profile, and stores them on EAS.
-
-### What to record
-
-- `.env.example` key: `EXPO_PUBLIC_EAS_PROJECT_ID` (`.env`, `secrets/dev.enc.yaml`).
-- GitHub secret: `EXPO_TOKEN`.
-- `apps/mobile/README.md` "Configuration" already documents the key.
-
-### Do not
-
-- Do not commit `credentials.json` or a downloaded keystore under `apps/mobile/`.
-- Do not hand-edit `app.config.ts` to hardcode the project id; the env var is the mechanism.
-- Do not run `prod` profile builds before the store accounts exist; they consume quota and cannot be submitted.
-
-### Verify
-
-```bash
-cd apps/mobile && pnpm dlx eas-cli@latest whoami
-```
-
-Expected: your Expo username. Then in GitHub, **Actions**, **ios-eas**, **Run workflow** with profile `preview` and submit unchecked; the `Require EXPO_TOKEN` step passes and `just mobile-ios-build --cloud eas` starts (it fails later at signing until section 8 is done, which is expected).
+- delete the GitHub secret `EXPO_TOKEN`;
+- remove `EXPO_PUBLIC_EAS_PROJECT_ID` and `EXPO_PUBLIC_API_BASE_URL` from `secrets/dev.enc.yaml` with
+  `just secrets-edit dev` (they are no longer in `.env.example`);
+- optionally delete the Expo project and any robot-user access token on <https://expo.dev>.
 
 ## 8. Apple Developer Program and App Store Connect
 
 ### Why we use it
 
-iOS code signing, TestFlight, App Store distribution, and Sign in with Apple. The `ios-eas.yml` upload job and the `ios-gha-macos.yml` lane read App Store Connect API keys from GitHub secrets.
+iOS code signing, TestFlight, App Store distribution, and Sign in with Apple. The native iOS CI lane reads the App Store Connect API key and signing material from GitHub secrets.
 
 ### When you need it
 
@@ -421,14 +370,14 @@ P02-T14. Apple's approval can take days, so enroll at phase start (`P02` §3).
 
 99 USD per membership year (Checked 2026-09-10, <https://developer.apple.com/programs/whats-included/>). Enrollment needs an Apple Account with two-factor authentication. Individuals enroll with their legal name; organizations need a legal entity, a D-U-N-S Number, a domain-matching work email and a public website (Checked 2026-09-10, <https://developer.apple.com/programs/enroll/>). Decide individual vs organization before enrolling; the seller name shown on the App Store follows from it.
 
-Since 2026-04-28 Apple requires uploads to be built with Xcode 26 or later using the iOS 26 SDK (Checked 2026-09-10, <https://developer.apple.com/news/upcoming-requirements/>). EAS build images and the `macos-15` GitHub runner image must therefore provide Xcode 26; check the image notes when T14 pins them.
+Since 2026-04-28 Apple requires uploads to be built with Xcode 26 or later using the iOS 26 SDK (Checked 2026-09-10, <https://developer.apple.com/news/upcoming-requirements/>). The macOS GitHub runner image used by the iOS lane must therefore provide Xcode 26; check the image notes when the lane pins it.
 
 ### Steps
 
 1. Enroll at <https://developer.apple.com/programs/enroll/>. Wait for the confirmation email before continuing; App Store Connect stays empty until then.
-2. Decide the bundle identifier. `apps/mobile/app.config.ts` uses the placeholder `app.aistylist.mobile` for both `ios.bundleIdentifier` and `android.package`; it must be replaced by a final reverse-domain id that you own before the first signed build, because Apple ties it to the App ID and it cannot change later. Change it through a pull request.
+2. Decide the bundle identifier. The native apps use the placeholder `app.aistylist.mobile` as both the iOS bundle identifier and the Android `applicationId` (set in each app's build configuration); it must be replaced by a final reverse-domain id that you own before the first signed build, because Apple ties it to the App ID and it cannot change later. Change it through a pull request.
 3. Register the App ID: <https://developer.apple.com/account>, **Certificates, Identifiers & Profiles**, **Identifiers**, **+**, **App IDs**, type **App**, description `AI Stylist`, Bundle ID **Explicit** with the id from step 2. Enable the **Sign in with Apple** and **Push Notifications** capabilities now; they are free to enable and needed in P03 and P09. Register.
-4. Copy the **Team ID** from the account **Membership details** page (10 characters). Store it as GitHub secret `APPLE_TEAM_ID`; the `ios-gha-macos.yml` lane and `just mobile-ios-build --cloud gha` read it to sign.
+4. Copy the **Team ID** from the account **Membership details** page (10 characters). Store it as GitHub secret `APPLE_TEAM_ID`; the native iOS CI lane reads it to sign.
 5. Create the app record: <https://appstoreconnect.apple.com>, **Apps**, **+**, **New App**, platform iOS, name `AI Stylist`, primary language, the bundle id from step 3, SKU `ai-stylist`. This makes TestFlight uploads possible.
 6. Create the App Store Connect API key: **Users and Access**, **Integrations** (opens with App Store Connect API selected), **Team Keys**, **Generate API Key** (or **+**). Name `github-actions`. Access: **App Manager** (enough for TestFlight uploads). **Generate**.
 7. The key row now shows **Key ID**; the page header shows **Issuer ID**. Download the `AuthKey_<KEYID>.p8` file; it can be downloaded once only. Store:
@@ -436,13 +385,13 @@ Since 2026-04-28 Apple requires uploads to be built with Xcode 26 or later using
    - **Issuer ID** as GitHub secret `APP_STORE_CONNECT_API_ISSUER_ID`
    - the full text of the `.p8` file (including the `-----BEGIN PRIVATE KEY-----` lines) as GitHub secret `APP_STORE_CONNECT_API_KEY_P8`
 8. Move the `.p8` file into the password manager and delete it from disk.
-9. Distribution certificate and provisioning profile: let EAS create and store them on the first `eas build --platform ios` (section 7 step 7). The `ios-gha-macos.yml` lane instead needs them exported as `IOS_DIST_CERT_P12_BASE64`, `IOS_DIST_CERT_PASSWORD`, and `IOS_PROVISIONING_PROFILE_BASE64`; T14 documents that export (`pnpm dlx eas-cli@latest credentials` can download what EAS holds). Skip until T14 asks for it.
+9. Distribution certificate and provisioning profile: the native iOS CI lane needs them exported as `IOS_DIST_CERT_P12_BASE64`, `IOS_DIST_CERT_PASSWORD`, and `IOS_PROVISIONING_PROFILE_BASE64`. Skip until that lane asks for them.
 
 ### What to record
 
 - GitHub secrets: `APP_STORE_CONNECT_API_KEY_ID`, `APP_STORE_CONNECT_API_ISSUER_ID`, `APP_STORE_CONNECT_API_KEY_P8`, `APPLE_TEAM_ID`; later `IOS_DIST_CERT_P12_BASE64`, `IOS_DIST_CERT_PASSWORD`, `IOS_PROVISIONING_PROFILE_BASE64`.
 - `.env.example` keys `APPLE_SIGNIN_TEAM_ID`, `APPLE_SIGNIN_KEY_ID`, `APPLE_SIGNIN_CLIENT_ID` come from section 14, not from this section.
-- Repo: final bundle id in `apps/mobile/app.config.ts`.
+- Repo: final bundle id in the iOS app's build configuration.
 
 ### Do not
 
@@ -452,13 +401,13 @@ Since 2026-04-28 Apple requires uploads to be built with Xcode 26 or later using
 
 ### Verify
 
-GitHub, **Actions**, **ios-eas**, **Run workflow**, profile `preview`, submit **checked**. The `Require App Store Connect API key secrets` step passes and `eas submit --platform ios --latest` runs; a new build appears under **TestFlight** in App Store Connect within about 30 minutes. If the build step fails on signing, section 7 step 7 has not been completed.
+Run the native iOS workflow with upload enabled (see `.github/workflows/README.md` for its name and inputs once the lane exists). A new build appears under **TestFlight** in App Store Connect within about 30 minutes. If the build step fails on signing, step 9 has not been completed.
 
 ## 9. Google Play Console
 
 ### Why we use it
 
-Android distribution. `android.yml` signs release builds when the upload keystore secrets exist, and `just mobile-android-build --profile prod` produces the AAB that Play accepts.
+Android distribution. `android.yml` signs release builds when the upload keystore secrets exist, and the native Android release build produces the AAB that Play accepts.
 
 ### When you need it
 
@@ -471,27 +420,27 @@ P02-T14 (`android.yml` is dispatch-only and unsigned until then).
 ### Steps
 
 1. Register at <https://play.google.com/console/signup> with the owner's Google account. Choose organization if a legal entity exists (matches the Apple decision in section 8). Pay the fee and complete verification.
-2. **Create app**: name `AI Stylist`, default language, **App** (not game), **Free**. Accept the declarations. The package name is fixed by the first uploaded bundle; it must equal `android.package` in `apps/mobile/app.config.ts`, so finish section 8 step 2 first.
+2. **Create app**: name `AI Stylist`, default language, **App** (not game), **Free**. Accept the declarations. The package name is fixed by the first uploaded bundle; it must equal the Android app's `applicationId`, so finish section 8 step 2 first.
 3. Signing. Two keys exist: the **upload key** (yours; signs the AAB you upload) and the **app signing key** (Google's; signs what users install). Use **Play App Signing** (default on new apps) so Google holds the app signing key.
-4. Upload keystore. If section 7 step 5 let EAS generate the keystore, download it: `cd apps/mobile && pnpm dlx eas-cli@latest credentials`, platform **Android**, profile `prod`, **credentials.json: Upload/Download credentials between EAS servers and your local json**, **Download credentials from EAS to credentials.json** (Checked 2026-09-10, <https://docs.expo.dev/app-signing/app-credentials/>). The keystore path, its password, the key alias and the key password are in the downloaded `credentials.json`. Otherwise generate one locally with `keytool` from the mise-pinned JDK (`keytool -genkeypair -v -keystore upload.jks -alias upload -keyalg RSA -keysize 2048 -validity 10000`).
+4. Upload keystore. Generate one locally with `keytool` from the mise-pinned JDK (`keytool -genkeypair -v -keystore upload.jks -alias upload -keyalg RSA -keysize 2048 -validity 10000`).
 5. Store, as GitHub secrets, exactly as `android.yml` expects:
    - `ANDROID_KEYSTORE_BASE64`: `base64 -w0 upload.jks`
    - `ANDROID_KEYSTORE_PASSWORD`
    - `ANDROID_KEY_ALIAS`
    - `ANDROID_KEY_PASSWORD`
-6. Move the keystore and `credentials.json` into the password manager and delete both from the repo checkout (`credentials.json` must never be committed).
-7. First upload: Play Console, **Testing**, **Internal testing**, **Create new release**, upload the signed AAB from the `android` workflow artifact (or from EAS). Play records the upload certificate from this first bundle; every later upload must be signed with the same key.
+6. Move the keystore and its passwords into the password manager and delete the keystore from the repo checkout.
+7. First upload: Play Console, **Testing**, **Internal testing**, **Create new release**, upload the signed AAB from the `android` workflow artifact. Play records the upload certificate from this first bundle; every later upload must be signed with the same key.
 
 ### What to record
 
 - GitHub secrets: `ANDROID_KEYSTORE_BASE64`, `ANDROID_KEYSTORE_PASSWORD`, `ANDROID_KEY_ALIAS`, `ANDROID_KEY_PASSWORD`.
 - `.env.example`: nothing; `GOOGLE_SIGNIN_CLIENT_ID` comes from section 14.
-- Repo: final package name in `apps/mobile/app.config.ts`.
+- Repo: final `applicationId` in the Android app's build configuration.
 
 ### Do not
 
 - Do not lose the upload keystore; recovering requires a support request to Google and a key reset.
-- Do not commit `credentials.json`, `*.jks`, or `*.keystore`.
+- Do not commit `*.jks` or `*.keystore`.
 - Do not opt out of Play App Signing.
 
 ### Verify
@@ -502,7 +451,7 @@ GitHub, **Actions**, **android**, **Run workflow**, profile `prod`. The log prin
 
 ### Why we use it
 
-Product analytics, session replay, error tracking, and feature flags (`SPINE.md` §2). The mobile app has an analytics port with a consent stub whose sink is a no-op (`apps/mobile/src/lib/analytics`); the consent default is OFF, so nothing is sent until P03 wires the consent-gated SDK.
+Product analytics, session replay, error tracking, and feature flags (`SPINE.md` §2). The native apps have an analytics port with a consent stub whose sink is a no-op; the consent default is OFF, so nothing is sent until P03 wires the consent-gated SDK.
 
 ### When you need it
 
@@ -664,15 +613,15 @@ Deferred to P03: `just test identity` runs the better-auth provider fixtures.
 
 ## Checklist by phase
 
-| Phase     | Do now                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
-| --------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| P02 (now) | 1 GitHub (CODEOWNERS, branch protection, Actions). 2 sops + age (keys, `.sops.yaml`, `secrets/dev.enc.yaml`, `SOPS_AGE_KEY`). 3 PostgreSQL on the server: databases, PgBouncer, pgBackRest to the backup bucket (T07). 4 Server + Coolify: host, hardening, project + environments. 5 pg-boss: nothing to provision (T08). 6 R2 dev bucket + token (T13). 7 Expo/EAS + `EXPO_TOKEN` (T14). 8 Apple enrollment + ASC API key (T14). 9 Play Console + keystore secrets (T14). 10 PostHog project (T09). 11 Grafana Cloud stack + OTel vars (T09). Request Apple and Google approvals first; they take days. |
-| P03       | Coolify first deploy (Dockerfile, `COOLIFY_TOKEN`, sync script), production database + role, `secrets/staging.enc.yaml` and `secrets/prod.enc.yaml`, Cloudflare DNS + WAF for the API domain, PostHog prod project + personal API key, 14 Apple and Google sign-in credentials.                                                                                                                                                                                                                                                                                                                           |
-| P06       | fal.ai key + spend limit, vision-LLM and embedding provider accounts (privacy review first), GPU eval host for the self-hosted eval arms, R2 public assets custom domain (if not done in P04), R2 multipart upload settings.                                                                                                                                                                                                                                                                                                                                                                              |
-| P08       | Open-Meteo Standard plan + key; run the weather comparison (Open-Meteo managed vs self-hosted vs WeatherKit); holidays need nothing (embedded `date-holidays`).                                                                                                                                                                                                                                                                                                                                                                                                                                           |
-| P11       | fal.ai production key, AIC-O2 review passed, Replicate fallback account, per-provider spend caps.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
-| P13       | 12 RevenueCat project, store connections, webhook secret, `REVENUECAT_*` in `secrets/prod.enc.yaml`.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
-| P14       | Rotate every credential created during development that was ever pasted into a shared terminal; confirm each `secrets/prod.enc.yaml` value is production-scoped; restore drill via pgBackRest into a scratch database (section 3 step 9); Play closed-testing requirement; App Store review assets.                                                                                                                                                                                                                                                                                                       |
+| Phase     | Do now                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
+| --------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| P02 (now) | 1 GitHub (CODEOWNERS, branch protection, Actions). 2 sops + age (keys, `.sops.yaml`, `secrets/dev.enc.yaml`, `SOPS_AGE_KEY`). 3 PostgreSQL on the server: databases, PgBouncer, pgBackRest to the backup bucket (T07). 4 Server + Coolify: host, hardening, project + environments. 5 pg-boss: nothing to provision (T08). 6 R2 dev bucket + token (T13). 8 Apple enrollment + ASC API key (T14). 9 Play Console + keystore secrets (T14). 10 PostHog project (T09). 11 Grafana Cloud stack + OTel vars (T09). Request Apple and Google approvals first; they take days. |
+| P03       | Coolify first deploy (Dockerfile, `COOLIFY_TOKEN`, sync script), production database + role, `secrets/staging.enc.yaml` and `secrets/prod.enc.yaml`, Cloudflare DNS + WAF for the API domain, PostHog prod project + personal API key, 14 Apple and Google sign-in credentials.                                                                                                                                                                                                                                                                                          |
+| P06       | fal.ai key + spend limit, vision-LLM and embedding provider accounts (privacy review first), GPU eval host for the self-hosted eval arms, R2 public assets custom domain (if not done in P04), R2 multipart upload settings.                                                                                                                                                                                                                                                                                                                                             |
+| P08       | Open-Meteo Standard plan + key; run the weather comparison (Open-Meteo managed vs self-hosted vs WeatherKit); holidays need nothing (embedded `date-holidays`).                                                                                                                                                                                                                                                                                                                                                                                                          |
+| P11       | fal.ai production key, AIC-O2 review passed, Replicate fallback account, per-provider spend caps.                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
+| P13       | 12 RevenueCat project, store connections, webhook secret, `REVENUECAT_*` in `secrets/prod.enc.yaml`.                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
+| P14       | Rotate every credential created during development that was ever pasted into a shared terminal; confirm each `secrets/prod.enc.yaml` value is production-scoped; restore drill via pgBackRest into a scratch database (section 3 step 9); Play closed-testing requirement; App Store review assets.                                                                                                                                                                                                                                                                      |
 
 ## When something goes wrong
 
@@ -680,6 +629,5 @@ Deferred to P03: `just test identity` runs the better-auth provider fixtures.
 2. `sops` says `no key could decrypt the data` or `failed to get the data key`. Your public key is not in the file's recipient list, or your private key is not at `~/.config/sops/age/keys.txt`. Ask a developer who can decrypt to add your key to `.sops.yaml` and run `just secrets-updatekeys`. Check `SOPS_AGE_KEY_FILE` if you keep the key elsewhere.
 3. `just doctor` reports `.env missing N key(s)`. Someone added keys to `.env.example`. Copy the missing lines from `.env.example` into `.env` (values stay empty) or re-run `just secrets-sync` after the shared file is updated.
 4. `just db-migrate` against the staging PostgreSQL fails with a `SET` or `prepared statement` error. You used the pooled (PgBouncer) connection string. Use the direct string from section 3 step 8 and retry.
-5. The `ios-eas` workflow stops at `Require EXPO_TOKEN` or `Require App Store Connect API key secrets`. The GitHub secret is missing or named differently. The names must match `.github/workflows/README.md` exactly; check for trailing spaces in the secret value when the step passes but `eas` still reports `Not logged in`.
-6. `eas build` reports the free build quota is exhausted. Wait for the monthly reset shown under **Usage**, or build Android locally with `just mobile-android-build --profile preview` (needs `ANDROID_HOME`), or upgrade the plan with the owner's approval.
-7. The `android` workflow prints `ANDROID_KEYSTORE_BASE64 not set`. Expected until section 9 is done; the build is unsigned and cannot be uploaded to Play. After adding the four secrets, re-run the workflow and look for `Signing: enabled`.
+5. A native build workflow stops at a missing-secret step (App Store Connect API key or signing material). The GitHub secret is missing or named differently. The names must match `.github/workflows/README.md` exactly; check for trailing spaces in the secret value when the step passes but `eas` still reports `Not logged in`.
+6. The `android` workflow prints `ANDROID_KEYSTORE_BASE64 not set`. Expected until section 9 is done; the build is unsigned and cannot be uploaded to Play. After adding the four secrets, re-run the workflow and look for `Signing: enabled`.

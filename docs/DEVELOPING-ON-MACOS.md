@@ -22,7 +22,7 @@ The tooling (`scripts/**`, `justfile`, `mise.toml`) runs on macOS (Apple Silicon
 
 ```bash
 git clone https://github.com/ArtMin96/ai-stylist.git && cd ai-stylist
-./scripts/bootstrap.sh --system   # Homebrew: git-lfs, watchman, android-platform-tools (adb); detects your Docker runtime. No sudo.
+./scripts/bootstrap.sh --system   # Homebrew: git-lfs, android-platform-tools (adb); detects your Docker runtime. No sudo.
 ./scripts/bootstrap.sh            # mise -> pinned toolchain -> pnpm install -> uv sync -> git hooks -> .env -> doctor
 eval "$(~/.local/bin/mise activate zsh)"   # add to ~/.zshrc
 just doctor
@@ -33,10 +33,8 @@ just doctor
 ## What differs from Linux
 
 - `bootstrap.sh --system` uses Homebrew instead of apt and skips udev rules, the docker group and systemd. It stops with instructions if Xcode CLT or Homebrew are missing (both installers are interactive) and only detects the Docker runtime, never installs one.
-- `just doctor` adds two warn-only checks: Xcode Command Line Tools and CocoaPods (`brew install cocoapods`). Expo SDK 57 still runs `pod install` during `expo prebuild` / `expo run:ios` (the SDK 57 upgrade notes say `npx pod-install`; checked 2026-09-10). Watchman is optional: Expo needs it only for SDK 55 and earlier, Metro uses Node's watcher otherwise.
-- The iOS simulator is available: `just dev-mobile --ios` opens the dev client in it.
-- Local iOS build: `just mobile-ios-build --profile dev` (no `--cloud`) runs `expo run:ios` (Expo's documented local path for a development build; `eas build --local` exists only to reproduce cloud build failures). `--profile preview|prod` builds `--configuration Release`; `--device` targets a USB-connected iPhone (needs a signing team selected in Xcode). `--cloud eas|gha` behave exactly as on Linux.
-- `just mobile-android-build` finds the SDK at `~/Library/Android/sdk` (Android Studio default) when `ANDROID_HOME` is unset.
+- `just doctor` adds a warn-only Xcode Command Line Tools check.
+- The native iOS app (`apps/ios`) builds and runs only on macOS with Xcode; its README covers the simulator and device workflow. The native Android app (`apps/android`) builds on macOS and Linux alike.
 - The pgvector Postgres image is multi-arch (`pgvector/pgvector:pg17` publishes amd64 and arm64), so `just dev-api` needs no emulation.
 
 ## Known gaps

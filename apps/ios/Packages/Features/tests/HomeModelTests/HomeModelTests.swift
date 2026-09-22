@@ -1,4 +1,4 @@
-// Port of apps/mobile/src/features/home/tests/home-screen.test.tsx at the view-model level:
+// Ported from the retired React Native home-screen tests (ADR-0004), at the view-model level:
 // version success/error states, retry, and zero analytics while consent is off.
 import Analytics
 import AppConfig

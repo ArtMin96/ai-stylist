@@ -1,4 +1,4 @@
-// Port of apps/mobile/src/lib/analytics/tests/consent-stub.test.ts.
+// Ported from the retired React Native consent-stub tests (ADR-0004).
 import Analytics
 import Testing
 

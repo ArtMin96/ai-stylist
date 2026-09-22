@@ -1,5 +1,5 @@
 // View model of the placeholder home screen: proves the generated client reaches the API and that
-// analytics stays off until consent. Parity with apps/mobile/src/features/home/home-screen.tsx.
+// analytics stays off until consent. Parity with the retired React Native home screen (ADR-0004) and with apps/android.
 import Analytics
 import AppConfig
 public import AppServices

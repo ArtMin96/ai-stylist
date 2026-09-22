@@ -1,6 +1,6 @@
 // GET /v1/version through the real generated client with an in-memory transport: success, date
 // formats, problem+json, non-problem errors, network failure, and the exactly-one-/v1 URL rule.
-// Port of the version cases in apps/mobile/src/features/home/tests/home-screen.test.tsx.
+// Ported from the version cases of the retired React Native home-screen tests (ADR-0004).
 import APIData
 import AppConfig
 import AppServices

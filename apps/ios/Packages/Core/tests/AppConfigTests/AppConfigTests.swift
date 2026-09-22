@@ -1,4 +1,4 @@
-// Port of apps/mobile/src/lib/tests/config.test.ts, plus the host-only rule for API_BASE_URL.
+// Ported from the retired React Native config tests (ADR-0004), plus the host-only rule for API_BASE_URL.
 import AppConfig
 import Foundation
 import Testing

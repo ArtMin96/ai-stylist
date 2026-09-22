@@ -1,6 +1,6 @@
 // Composition root: the ONLY place that reads bundle configuration and constructs concrete
 // adapters (API client, analytics sink). Features receive them through `AppServices`.
-// Mirrors composeServices() in the retired apps/mobile/src/app/_layout.tsx.
+// Mirrors composeServices() in the retired React Native app (ADR-0004); same shape as apps/android's AppContainer.
 import APIData
 import Analytics
 import AppConfig

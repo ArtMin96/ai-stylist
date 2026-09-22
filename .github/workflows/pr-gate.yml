@@ -2,8 +2,12 @@
 # Budget: < 10 min wall clock (AC-1; ci.pr_gate_duration_seconds lands in the job summary).
 #
 # Triggers:  pull_request (any path), push to main.
-# Recipes:   just ci-parity, just generate --check, and the [private] CI helpers
+# Recipes:   just ci-parity --core, just generate --check, and the [private] CI helpers
 #            ci-env-example-check, ci-contracts-spectral, ci-contracts-breaking (justfile).
+# Native apps: the parity job runs `just ci-parity --core` (NATIVE_LANES=none: the iOS and Android
+#            lanes print "not selected"), because ios.yml and android.yml run those lanes on their own
+#            paths. The contracts job runs the FULL `just generate --check`, so every contract change
+#            proves the TS, Python, Swift (Docker swift:6.4) and Kotlin (JDK 21) clients are current.
 #            The PR-diff secret scan uses gitleaks/gitleaks-action directly (no recipe needed).
 # Required secrets: none.
 # Optional secrets (steps degrade gracefully when unset):
@@ -68,7 +72,7 @@ jobs:
       - name: Verify · .env.example covers every API env key
         run: just ci-env-example-check
       - name: Verify · Run the PR gate sequence (format, lint, typecheck, arch, docs, generate, test, security)
-        run: just ci-parity
+        run: just ci-parity --core
       - name: Report · Job duration
         if: always()
         run: |
@@ -79,7 +83,8 @@ jobs:
     name: Gate · Contracts (generate --check, spectral, oasdiff)
     # needs: none (root of the job tree)
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    # A cold codegen cache builds swift-openapi-generator in Docker (about 6 min); warm runs take seconds.
+    timeout-minutes: 20
     permissions:
       contents: read
     concurrency:
@@ -93,7 +98,14 @@ jobs:
           fetch-depth: 0
       - name: Setup · Install toolchain and dependencies
         uses: ./.github/actions/setup
-      - name: Verify · Generated clients are up to date
+      # gen-swift.sh builds its pinned generator into ~/.cache/ai-stylist/swift-codegen and
+      # gen-kotlin.sh downloads its sha256-checked generator jar into ~/.cache/ai-stylist.
+      - name: Setup · Restore codegen cache
+        uses: actions/cache@v6
+        with:
+          path: ~/.cache/ai-stylist
+          key: codegen-${{ runner.os }}-${{ hashFiles('tools/codegen/gen-swift.sh', 'tools/codegen/gen-kotlin.sh') }}
+      - name: Verify · Generated clients are up to date (TS, Python, Swift, Kotlin)
         run: just generate --check
       - name: Verify · Spectral lint of the OpenAPI sources
         run: just ci-contracts-spectral

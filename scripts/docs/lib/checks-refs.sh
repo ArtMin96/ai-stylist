@@ -3,7 +3,7 @@
 # three "no raw tool invocation, no dead path" directories (doc 15 §5: `just` is the only
 # sanctioned entry point). Source, do not execute; depends on common.sh being sourced first.
 
-DOCS_CHECK_BANNED_INVOCATIONS=("pnpm --filter" "uv run" "npx " "drizzle-kit " "eas ")
+DOCS_CHECK_BANNED_INVOCATIONS=("pnpm --filter" "uv run" "npx " "drizzle-kit " "eas " "gradlew " "xcodebuild ")
 
 # docs_check_ref_scan_files ROOT -> every *.md under the three DC-09/10/11 directories, filtered
 # by file_in_scope (PATH... args) when set.
@@ -95,7 +95,7 @@ check_dc10() {
   return 0
 }
 
-# check_dc11 ROOT — no raw pnpm/uv/npx/drizzle-kit/eas invocation; `just` is the only sanctioned
+# check_dc11 ROOT — no raw pnpm/uv/npx/drizzle-kit/eas/gradlew/xcodebuild invocation; `just` is the only sanctioned
 # entry point (doc 15 §5). Matched on a left word boundary so a banned token embedded inside a
 # longer word (e.g. "eas " inside "areas ") is not a false positive.
 check_dc11() {

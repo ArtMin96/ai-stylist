@@ -11,7 +11,7 @@
 #   DC-08  every SPINE module has skill detail + exactly one README coverage row
 #   DC-09  every backticked repo-relative path in the three dirs below exists
 #   DC-10  every `just <recipe>` token in the three dirs below is a real recipe
-#   DC-11  no raw pnpm/uv/npx/drizzle-kit/eas invocation in the three dirs below
+#   DC-11  no raw pnpm/uv/npx/drizzle-kit/eas/gradlew/xcodebuild invocation in the three dirs below
 #   DC-12  root PROGRESS.md current-phase line == its row in planning/PROGRESS.md
 #   DC-13  banned stale vendor names absent from .agents/**, .claude/**, docs/**, justfile
 #   DC-14  (WARN unless --strict) CLAUDE.md layout block vs the real top-level tree

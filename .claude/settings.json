@@ -71,6 +71,10 @@
       "Bash(git push --delete*)",
       "Bash(git push * :*)",
       "Bash(eas submit*)",
+      "Bash(fastlane deliver*)",
+      "Bash(fastlane pilot*)",
+      "Bash(fastlane supply*)",
+      "Bash(xcrun altool*)",
       "Bash(just secrets-sync staging*)",
       "Bash(just secrets-sync prod*)",
       "Bash(gh api -X DELETE*)"

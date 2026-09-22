@@ -2,9 +2,11 @@
 # just bootstrap — idempotent developer environment setup (planning/15 §1, §4).
 #
 #   scripts/bootstrap.sh            user-level steps only (no sudo): mise, pins, pnpm, hooks, .env
-#   scripts/bootstrap.sh --system   additionally installs system packages:
-#                                     Linux  apt + udev rules + docker group (sudo)
-#                                     macOS  Homebrew formulae/casks, no sudo (docs/DEVELOPING-ON-MACOS.md)
+#   scripts/bootstrap.sh --system   additionally installs system packages and the native-app SDKs:
+#                                     Linux  apt + udev rules + docker group (sudo); Docker image swift:6.4
+#                                     macOS  Homebrew formulae/casks, no sudo (docs/DEVELOPING-ON-MACOS.md); Xcode check
+#                                     both   Android SDK packages (apps/android/tools/sdk.sh install, user-level)
+#                                            and ANDROID_HOME in ~/.config/ai-stylist/env.sh (.envrc sources it)
 #
 # Never edits shell rc files; prints the activation line at the end instead.
 # Runs under macOS /bin/bash 3.2 as well as bash 5: no associative arrays, mapfile, ${var,,} etc.
@@ -51,12 +53,6 @@ if (( SYSTEM )) && os_is_darwin; then
   else
     brew install git-lfs
   fi
-  log "android platform-tools (adb) — Homebrew cask"
-  if brew list --cask android-platform-tools >/dev/null 2>&1 || have adb; then
-    info "adb present: $(command -v adb)"
-  else
-    brew install --cask android-platform-tools
-  fi
   log "docker runtime"
   # Not installed by this script: three runtimes exist and the choice is yours
   # (docs/DEVELOPING-ON-MACOS.md). Detect only.
@@ -76,7 +72,9 @@ if (( SYSTEM )) && os_is_darwin; then
 elif (( SYSTEM )); then
   log "system packages (apt) — requires sudo"
   APT_PKGS=(build-essential git git-lfs curl unzip zip ca-certificates gnupg libssl-dev pkg-config
-            docker.io docker-compose-v2 android-sdk-platform-tools-common adb)
+            docker.io docker-compose-v2 android-sdk-platform-tools-common)
+  # adb itself comes from the Android SDK's platform-tools (step 3), not apt: two adb binaries of
+  # different versions kill each other's server. android-sdk-platform-tools-common = udev rules only.
   sudo apt-get update -qq
   sudo DEBIAN_FRONTEND=noninteractive apt-get install -y -qq "${APT_PKGS[@]}"
   log "udev rules for Android devices"
@@ -103,7 +101,7 @@ elif (( SYSTEM )); then
   sudo systemctl enable --now docker >/dev/null 2>&1 || warn "could not enable docker service"
 else
   if os_is_darwin; then
-    info "skipping Homebrew steps (run with --system to include them: Xcode CLT check, git-lfs, adb, Docker runtime detection)"
+    info "skipping Homebrew steps (run with --system to include them: Xcode CLT check, git-lfs, Docker runtime detection)"
   else
     info "skipping apt / udev / docker-group steps (run with --system to include them; they need sudo)"
   fi
@@ -145,6 +143,40 @@ if [[ -f workers/uv.lock ]]; then
   mise_exec uv sync --frozen --project workers
 else
   info "no workers/uv.lock — skipping Python dependency sync"
+fi
+
+# --- 3. native app toolchains (opt-in with --system) ------------------------------------
+if (( SYSTEM )); then
+  log "Android SDK (apps/android) — user-level, no sudo, no emulator"
+  mise_exec apps/android/tools/sdk.sh install
+  if os_is_darwin; then sdk_dir="$HOME/Library/Android/sdk"; else sdk_dir="$HOME/Android/Sdk"; fi
+  sdk_dir="${ANDROID_HOME:-$sdk_dir}"
+  env_file="$HOME/.config/ai-stylist/env.sh"
+  mkdir -p "$(dirname "$env_file")"
+  if [[ -f "$env_file" ]] && command grep -q '^export ANDROID_HOME=' "$env_file"; then
+    info "ANDROID_HOME already set in $env_file"
+  else
+    {
+      echo "# Written by scripts/bootstrap.sh --system; sourced by the repo .envrc (planning/15 §1)."
+      echo "export ANDROID_HOME=\"$sdk_dir\""
+      # shellcheck disable=SC2016  # expanded when env.sh is sourced, not here
+      echo 'export PATH="$ANDROID_HOME/platform-tools:$PATH"'
+    } >>"$env_file"
+    info "wrote ANDROID_HOME=$sdk_dir to $env_file (direnv loads it through .envrc)"
+  fi
+  if os_is_darwin; then
+    log "Xcode (apps/ios)"
+    apps/ios/scripts/xcode.sh doctor || warn "Xcode is not ready for apps/ios; follow the hints above (Xcode $(cat apps/ios/.xcode-version))"
+  else
+    log "Swift for the Linux iOS recipes and gen-swift.sh (Docker image swift:6.4)"
+    if docker info >/dev/null 2>&1; then
+      docker pull -q swift:6.4 || warn "docker pull swift:6.4 failed; the first ios-* recipe or just generate retries it"
+    else
+      warn "docker not reachable yet (log out and back in after the docker group change); the first ios-* recipe pulls swift:6.4"
+    fi
+  fi
+else
+  info "skipping native-app SDK steps (run with --system: Android SDK, ANDROID_HOME env file, Xcode check or Docker swift:6.4)"
 fi
 
 # --- 4. git hooks --------------------------------------------------------------------

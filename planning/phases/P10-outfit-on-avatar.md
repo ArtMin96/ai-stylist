@@ -57,7 +57,7 @@ Journey detail: [02 §8](../02-user-journeys-and-information-architecture.md) (T
 | `outfit` | `OutfitPresentation` assembly service: slot mapping, representation resolution per item from `garment_representations` + asset manifests, `fallbackChain` policy; compare-view composition | Yes |
 | `shared-kernel` | Slot IDs, representation-level enum (G0–G3), camera/pose preset identifiers (pose IDs exist from P04 — referenced, not redefined) | Yes (single-writer, first) |
 | `media` | Outfit-presentation derivative set: collage-ready cutout sizes + static posed avatar renders for the non-3D path (server-rendered per doc 02 §13.3), published via versioned manifests | Yes (minor) |
-| Mobile `render` boundary (`apps/mobile/src/render/`) | Outfit scene composition on Filament: avatar + pose + presentation panel; render-tier ladder; nothing outside `render/` imports Filament types (CLAUDE.md layout rule) | No (internal, behind the boundary) |
+| Mobile render boundary (a dedicated renderer package/module in `apps/ios` and `apps/android`, created when 3D resumes — DEC-50; *was `apps/mobile/src/render/`*) | Outfit scene composition on Filament (C++ engine, per platform): avatar + pose + presentation panel; render-tier ladder; nothing outside the renderer module imports Filament types | No (internal, behind the boundary) |
 | `recommendation` | **No change.** The engine emits `RecommendationResult` only; if this phase needs anything new from it, that is a P09 contract change, sequenced separately | No |
 | `avatar` | Read-only consumption of avatar config/assets; no changes | No |
 
@@ -105,7 +105,7 @@ P10 introduces **zero AI calls**. Every generated pixel that will arrive in P11 
 
 - **Logs/metrics/traces:** render-tier distribution (how many users land on each fallback rung), 3D init failure rate by device model, outfit first-render time, pose-switch latency, presentation-asset cache hit rate, manifest-version mismatch count (must be 0 after invalidation — NFR-PERF-050).
 - **Product analytics (consent-gated):** `outfit_presentation_viewed` (mode: avatar|collage|static|2d), `outfit_pose_switched`, `outfit_view_toggled`, `outfit_compare_opened`, `render_fallback_triggered` (tier + reason enum, no device fingerprinting beyond model class).
-- **Alerts/dashboards/runbooks:** alert on 3D-init failure rate > 10% on mid-tier devices (regression signal for RISK-01/RISK-09); dashboard: render-tier mix + first-render p95 per tier; runbook: "3D failure spike after release" (check Filament/asset manifest versions → roll back manifest → escalate to renderer fallback ladder). Per-phase observability rule 14 §15 satisfied.
+- **Alerts/dashboards/runbooks:** alert on 3D-init failure rate > 10% on mid-tier devices (regression signal for the renderer integration and RISK-09); dashboard: render-tier mix + first-render p95 per tier; runbook: "3D failure spike after release" (check Filament/asset manifest versions → roll back manifest → escalate to renderer fallback ladder). Per-phase observability rule 14 §15 satisfied.
 
 ## 12. Ordered tasks
 
@@ -138,7 +138,7 @@ Per [13](../13-testing-quality-and-performance.md); tests in each module's `test
 |---|---|---|---|---|---|
 | `outfit` | slot mapping, representation resolution, fallback-chain policy per mix | fast-check: resolution always yields a renderable level (G0 exists for every item — doc 07 §6 invariant); resolution is deterministic in manifest order | `OutfitPresentation` schema round-trip; renders unchanged from the same `RecommendationResult` in avatar and 2D clients (REQ-REC-110 tie-in) | Testcontainers: presentation endpoints over fixture data | — |
 | `media` | derivative-set completeness | — | manifest schema (`just assets-validate`) | posed-render job idempotency; manifest version bump invalidates safely | — |
-| Mobile `render` | scene-graph assembly units (pure parts) | — | consumes generated client | RNTL: view toggle, compare, fallback states, offline | **Golden matrix (§12 T09)**; Maestro: rec → avatar view → pose switch → collage toggle; forced-3D-failure fallback flow |
+| Mobile `render` | scene-graph assembly units (pure parts) | — | consumes generated client | native UI tests (Compose/Robolectric; iOS models + simulator): view toggle, compare, fallback states, offline | **Golden matrix (§12 T09)**; Maestro: rec → avatar view → pose switch → collage toggle; forced-3D-failure fallback flow |
 | Cross-cutting | — | — | dependency-cruiser: `recommendation` ⊥ renderer both directions (CI) | — | device perf lane (T11) |
 
 ## 15. Budgets introduced or measured
@@ -160,7 +160,7 @@ All values hypotheses until the T11 device runs (doc 13 §12.1 anchors); measure
 
 ## 17. Risks, mitigations, assumptions, stop/kill criteria
 
-- Risks in play: **RISK-01** (`react-native-filament` maturity — outfit scene is heavier than P04's avatar-only scene; mitigation: measured early in T05/T11, fallback ladder is product-grade); **RISK-09** (low-end performance — non-3D path is a feature, not a crutch); **ASM-01** revalidated under outfit load.
+- Risks in play: ~~RISK-01~~ (retired 2026-09-22) — the residual renderer risk is Filament C++ under outfit load (heavier than P04's avatar-only scene; measured early in T05/T11, non-3D fallback is product-grade); **RISK-09** (low-end performance — non-3D path is a feature, not a crutch).
 - **Stop/kill criteria for this phase:** mid-tier devices cannot hold ≥ 30 fps / memory budget on the outfit scene after one optimization pass (LOD, texture budget, panel simplification) → ship the phase with **static posed renders as the default avatar mode** on affected tiers (fallback rung 3), log a DEC entry, and file the renderer escalation per RISK-01's ladder — do not slip the phase chasing frames. Accessibility parity failure (any information available only in 3D) → release-blocked until fixed (REQ-AVA-110 is not negotiable).
 
 ## 18. Demo script

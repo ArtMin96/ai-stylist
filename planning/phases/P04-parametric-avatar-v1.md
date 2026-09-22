@@ -10,7 +10,7 @@
 - **Status:** `NOT_STARTED` *(mirror of PROGRESS.md; PROGRESS.md wins on conflict)*
 - **Goal (one sentence):** Ship the A1 capability: Anny base-mesh set, deterministic measurement→morph mapping with bounds and conflict handling, a calibration/review screen, 4 standard poses with rotation/zoom, appearance customization, versioned avatar assets, and the non-3D accessibility alternative.
 - **User-visible outcome:** After entering (or skipping) measurements in onboarding, the user sees a 3D avatar shaped from their data, can correct it with sliders on a calibration screen, switch among 4 poses, rotate/zoom, pick skin tone and hair — or use an equivalent non-3D path.
-- **Why now:** P01 proved the RN+Filament render path on real devices and P03 delivers validated measurements from `profile`; the avatar is the foundation P05 (face), P10 (outfit-on-avatar) build on, and it is the product's first "wow" moment after onboarding.
+- **Why now:** P01 proves the native Filament render path on real devices (*re-scoped 2026-09-22, DEC-50: originally the RN+Filament path*) and P03 delivers validated measurements from `profile`; the avatar is the foundation P05 (face), P10 (outfit-on-avatar) build on, and it is the product's first "wow" moment after onboarding.
 
 ## 2. Requirements delivered
 
@@ -154,7 +154,7 @@ Small enough for one AI-assisted session each. Task IDs `P04-T##` are referenced
 | `avatar` (mapping pkg) | Mapping table per doc 07 (each measurement→param), clamping notices, imputation flags | fast-check: monotonic mesh response per measurement (REQ-AVA-030); bounds never exceeded; imputed values always flagged; conflict severities injected (REQ-AVA-070) | AvatarConfig v1 schema round-trip vs OpenAPI | derive endpoint persists + emits events (Testcontainers PG) | — |
 | `avatar` (backend) | Config CRUD, version triplet rules | Migration fn idempotence | `just generate --check` clean; event schema pinned | v1→v2 migration preserves refinements (REQ-AVA-080) | — |
 | 3D / assets | — | — | Manifest schema validation | `just assets-validate`: topology stability, morph names, joint weights (REQ-AVA-040) | Golden matrix: presets × 4 poses × 2 cameras incl. parameter extremes (NFR-TST-060); skinning at extremes |
-| Mobile | Slider state, tier-detection logic | — | Generated client compile + mock-server contract test | Calibration flow with RNTL incl. non-3D variant | Maestro: measurements→avatar→calibrate→pose-switch on emulator; device lane measures §15 budgets; a11y checks (labels, non-3D alternative presence is an automated check per doc 13 §7) |
+| Mobile | Slider state, tier-detection logic | — | Generated client compile + mock-server contract test | Calibration flow with native UI tests (Compose/Robolectric; iOS models + simulator) incl. non-3D variant | Maestro: measurements→avatar→calibrate→pose-switch on emulator; device lane measures §15 budgets; a11y checks (labels, non-3D alternative presence is an automated check per doc 13 §7) |
 
 New bug fixes require a regression test that fails before the fix. Tests live in each module's `tests/` directory.
 
@@ -164,7 +164,7 @@ All values are hypotheses from [13 §12](../13-testing-quality-and-performance.m
 
 | Budget | Target (hypothesis until measured) | How measured |
 |---|---|---|
-| Performance | 3D first render ≤5/3/2 s (low/mid/high); viewer ≥30/60/60 fps; app memory (3D screen) ≤700/900/1200 MB; GPU memory ≤250/400/600 MB; base avatar bundle ≤2 MB; battery ≤4/3/3% per 10-min 3D session; no sustained thermal throttle in 10 min | Device-lane runs (EAS artifacts on device farm + local P01 devices), raw traces archived; `just assets-validate` for bundle size |
+| Performance | 3D first render ≤5/3/2 s (low/mid/high); viewer ≥30/60/60 fps; app memory (3D screen) ≤700/900/1200 MB; GPU memory ≤250/400/600 MB; base avatar bundle ≤2 MB; battery ≤4/3/3% per 10-min 3D session; no sustained thermal throttle in 10 min | Device-lane runs (builds from the `ios`/`android` workflows on a device farm + local P01 devices), raw traces archived; `just assets-validate` for bundle size |
 | Cost | $0 marginal AI; CDN egress $0 (R2); asset storage delta <$1/mo at launch scale | R2 dashboard; cost panel per doc 14 |
 | AI quality | n/a this phase (no AI calls). Mapping quality proxy: calibration correction magnitude baseline established; RISK-05 gate ≥90% "recognize my shape" in calibration testing | Pilot-user calibration test protocol + `avatar_calibration_adjusted` analytics |
 | Reliability | 3D-init failure ≤5% of sessions mid/high tier (fallback covers the rest); asset cache hit ≥90%; manifest fetch p95 ≤300 ms | Client metrics + CDN dashboards |
@@ -179,7 +179,7 @@ All values are hypotheses from [13 §12](../13-testing-quality-and-performance.m
 
 Link RISK-NN/ASM-NN in [16](../16-risks-open-questions-and-decision-log.md); add phase-local ones there, not here.
 
-- Risks in play: **RISK-05** (measurement→morph accuracy/trust), **RISK-06** (Anny production-asset readiness; ASM-02), **RISK-01** residual (`react-native-filament` maturity; ASM-01 — P01 accepted, but P04 is the first heavy production use), **RISK-09** (low-end performance), **RISK-16** (capacity).
+- Risks in play: **RISK-05** (measurement→morph accuracy/trust), **RISK-06** (Anny production-asset readiness; ASM-02), ~~RISK-01~~ (retired 2026-09-22; the residual renderer risk is Filament C++ integration on both platforms, the first heavy production use), **RISK-09** (low-end performance), **RISK-16** (capacity).
 - **Stop/kill criteria for this phase:**
   - RISK-06: asset pipeline cannot produce stable morphing glTF (topology validation keeps failing) by end of P04-T02's second session → switch base meshes to MPFB2, log DEC, re-run T01–T02.
   - RISK-05: <90% "recognize my shape" in calibration testing after one mapping-tuning iteration → make manual sliders the primary path with auto-mapping assistive-only; log DEC.

@@ -31,7 +31,7 @@ IDs from [01-requirements-and-traceability.md](../01-requirements-and-traceabili
 | REQ-ONB-110 | Required vs optional separation; inline "why we ask"; skip never blocks | AC-1 |
 | REQ-ONB-120 | Consent, correction, export, deletion reachable from settings | AC-4, AC-5 |
 | REQ-ONB-130 | Every journey defines empty/loading/partial/failure/retry/recovery states (P03 journeys) | AC-6 |
-| NFR-SEC-020 | better-auth: Apple + Google + passkeys, SecureStore-only tokens, revocation | AC-3 |
+| NFR-SEC-020 | better-auth: Apple + Google + passkeys, Keychain/Keystore-only tokens (was SecureStore, RN), revocation | AC-3 |
 | NFR-SEC-030 | AuthZ + strict user isolation on every endpoint (matrix suite starts here) | AC-3 |
 | NFR-SEC-070 | Rate limits on auth/signup/recovery; account recovery without support intervention | AC-3 |
 | NFR-PRV-020 | Granular, auditable, per-purpose consent registry; withdrawal halts processing | AC-4 |
@@ -108,7 +108,7 @@ Module names per [SPINE §3](../SPINE.md); each touched module's contract file i
 
 | Surface | Work (or "None") |
 |---|---|
-| Mobile | Onboarding flow (11 steps minus selfie), resume logic, settings baseline (consent/profile-edit/units/accessibility/export/delete/subscription-line), SecureStore session handling, consent-gated PostHog wiring, stub Today tab, error/empty/offline states per §5 |
+| Mobile | Onboarding flow (11 steps minus selfie), resume logic, settings baseline (consent/profile-edit/units/accessibility/export/delete/subscription-line), Keychain (iOS) / Keystore-backed (Android) session handling, consent-gated PostHog wiring, stub Today tab, error/empty/offline states per §5 |
 | Backend | `identity`/`profile`/`billing`-seam/`admin`-audit services + controllers; rate limits; deletion + export pg-boss job chains; authz matrix middleware conventions |
 | Workers (ML/media) | None (no ML in P03) |
 | Data / migrations | Five module migrations above; FK cascade map regeneration; seed personas (synthetic) for staging |
@@ -180,7 +180,7 @@ Tooling per [13 §3](../13-testing-quality-and-performance.md); every feature la
 | `billing` | resolver most-generous-wins; expiry resolution | grant resolution deterministic for any grant set | entitlements endpoint vs OpenAPI | replayed `account.created` → exactly one grant (idempotency) | settings trial line visible |
 | `platform`/jobs | archive builder | — | export archive JSON schema | export job idempotency; **deletion cascade:** seeded account across all modules → zero non-retained rows/objects remain, idempotent + resumable mid-cascade ([13 §8.1](../13-testing-quality-and-performance.md)) | export + delete Maestro flows |
 | `admin` | — | — | audit-row shape | append-only audit assertions; support-role metadata-only access in authz matrix | — |
-| Mobile | step view-models, validation UX | — | generated-client handshake | RNTL flows w/ MSW: resume, offline buffering, consent toggles | **Maestro on both platforms, nightly tier**: full onboarding incl. kill-resume; redaction canary on mobile logs |
+| Mobile | step view-models, validation UX | — | generated-client handshake | native UI tests (Compose/Robolectric; iOS models + simulator) with a fake API: resume, offline buffering, consent toggles | **Maestro on both platforms, nightly tier**: full onboarding incl. kill-resume; redaction canary on mobile logs |
 
 New bug fixes require a regression test that fails before the fix (failing run pasted in PR).
 
@@ -231,10 +231,10 @@ Objectively verifiable statements — no "works well".
 
 - AC-1: Maestro run (both platforms, archived) completes onboarding twice: (a) skipping every optional step — reaching the Today tab having entered only the required set {sign-in, age, core consents, units, presentation/base-model}; (b) filling everything. Zero calendar/budget/shopping fields exist anywhere (`grep` over contracts + mobile source clean); every optional field edited later from settings in the same run; each sensitive field shows its inline "why we ask" (screenshot set).
 - AC-2: `just test shared-kernel profile` green including property suites; entering 5′10″ then switching units shows 177.8 cm with the stored canonical value unchanged (assertion in test + demo step 5); every measurement field in the contract maps to a named consumer in [doc 03](../03-domain-model-and-glossary.md)/[07 §3.3](../07-3d-avatar-and-garment-pipeline.md) (review-checklist cross-walk in the PR); hard exclusions stored distinctly from soft dislikes (schema assertion); all six locale/settings values persist and are respected by formatting (tests).
-- AC-3: security suite green: authz matrix covers 100% of P03 endpoints (a new uncovered endpoint fails CI); user B cannot read/write any user A row (isolation tests); tokens present only in SecureStore (repo lint + device check — no AsyncStorage/API persistence of tokens); rotated-refresh reuse revokes the session family (test); rate limits return structured 429s on auth/signup/recovery drives; recovery flow completes without support intervention on a real device; age gate blocks signup below the OQ-03 floor storing nothing (test asserts empty tables).
+- AC-3: security suite green: authz matrix covers 100% of P03 endpoints (a new uncovered endpoint fails CI); user B cannot read/write any user A row (isolation tests); tokens present only in the iOS Keychain / Android Keystore-backed storage (repo lint + device check — no UserDefaults/SharedPreferences/plain-file persistence of tokens; *was SecureStore/AsyncStorage in the RN plan*); rotated-refresh reuse revokes the session family (test); rate limits return structured 429s on auth/signup/recovery drives; recovery flow completes without support intervention on a real device; age gate blocks signup below the OQ-03 floor storing nothing (test asserts empty tables).
 - AC-4: consent registry: append-only proven (withdrawal creates a record, history retained); declining analytics results in zero PostHog events during a full instrumented session (captured network log); granting emits taxonomy-valid events only; every consent change writes an audit row (query pasted); withdrawal halts dependent processing in the integration test (NFR-PRV-020 fail-closed check).
 - AC-5: deletion-cascade test: account seeded with data in every P03 module + an R2 object + PostHog stub → cascade → zero remaining user-linked artifacts outside the documented retained set; idempotent + resumable mid-cascade; grace-window cancel works; export produces a machine-readable archive containing all P03 data classes, on a signed 24 h URL, works for any account state (NFR-PRV-030/040). SLA metrics + alert live (screenshot).
-- AC-6: the six P03 journey surfaces each demonstrate empty/loading/partial/failure/retry/recovery/offline per §5 (Maestro + RNTL coverage map linked; failure+retry covered in E2E per REQ-ONB-130); onboarding E2E runs in the nightly tier on both platforms (CI links).
+- AC-6: the six P03 journey surfaces each demonstrate empty/loading/partial/failure/retry/recovery/offline per §5 (Maestro + UI-test coverage map linked; failure+retry covered in E2E per REQ-ONB-130); onboarding E2E runs in the nightly tier on both platforms (CI links).
 - AC-7: trial seam: replaying `identity.account.created.v1` produces exactly one grant (idempotency test); `GET /v1/me/entitlements` returns the Pro trial payload pre-expiry and Free resolution post-expiry (clock-advanced test); with `entitlement-enforcement` off, no P03 surface denies anything (sweep test) — REQ-BIL-010's P13 delivery finds the grant machinery already proven.
 - AC-8: A12 recorded: API p50/p95 on profile CRUD with realistic idle gaps measured and pasted into [doc 13 §12.2](../13-testing-quality-and-performance.md) (pass, or the PostgreSQL/PgBouncer tuning DEC logged); `just ci-parity` green on the final commit.
 

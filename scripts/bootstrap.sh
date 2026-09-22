@@ -3,7 +3,7 @@
 #
 #   scripts/bootstrap.sh            user-level steps only (no sudo): mise, pins, pnpm, hooks, .env
 #   scripts/bootstrap.sh --system   additionally installs system packages:
-#                                     Linux  apt + udev rules + docker group + watchman (sudo)
+#                                     Linux  apt + udev rules + docker group (sudo)
 #                                     macOS  Homebrew formulae/casks, no sudo (docs/DEVELOPING-ON-MACOS.md)
 #
 # Never edits shell rc files; prints the activation line at the end instead.
@@ -13,7 +13,6 @@ source "$(dirname "${BASH_SOURCE[0]}")/lib.sh"
 cd "$REPO_ROOT"
 
 SYSTEM=0
-WATCHMAN_VERSION="${WATCHMAN_VERSION:-2026.07.27.00}"   # bump with Renovate-style PRs; not mise-managed (see mise.toml)
 for arg in "$@"; do
   case "$arg" in
     --system) SYSTEM=1 ;;
@@ -27,7 +26,7 @@ heading "AI Stylist bootstrap"
 # --- 0. system packages (opt-in) -----------------------------------------------------
 if (( SYSTEM )) && os_is_darwin; then
   log "system packages (Homebrew) — macOS, no sudo"
-  # Xcode Command Line Tools: git, clang, and the SDK headers node-gyp / Metro need. The installer
+  # Xcode Command Line Tools: git, clang, and the SDK headers node-gyp needs. The installer
   # is an interactive Apple dialog, so it cannot run from here.
   if xcode-select -p >/dev/null 2>&1; then
     info "xcode command line tools: $(xcode-select -p)"
@@ -46,15 +45,12 @@ if (( SYSTEM )) && os_is_darwin; then
     info '  /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"'
     exit 1
   fi
-  # git-lfs (also mise-pinned; the brew copy keeps `git lfs` working in shells without mise) and
-  # watchman (Metro file watcher; the brew build is the supported macOS binary — no Linux zip here).
-  for formula in git-lfs watchman; do
-    if brew list --formula "$formula" >/dev/null 2>&1; then
-      info "$formula already installed"
-    else
-      brew install "$formula"
-    fi
-  done
+  # git-lfs (also mise-pinned; the brew copy keeps `git lfs` working in shells without mise).
+  if brew list --formula git-lfs >/dev/null 2>&1; then
+    info "git-lfs already installed"
+  else
+    brew install git-lfs
+  fi
   log "android platform-tools (adb) — Homebrew cask"
   if brew list --cask android-platform-tools >/dev/null 2>&1 || have adb; then
     info "adb present: $(command -v adb)"
@@ -105,25 +101,9 @@ elif (( SYSTEM )); then
     warn "added $me to docker group — log out and back in for it to take effect"
   fi
   sudo systemctl enable --now docker >/dev/null 2>&1 || warn "could not enable docker service"
-  log "watchman (Metro file watcher; prebuilt binary needs libs in /usr/local/lib)"
-  if have watchman; then
-    info "present: $(watchman --version 2>/dev/null || true)"
-  else
-    tmp="$(mktemp -d)"
-    curl -fsSL -o "$tmp/watchman.zip" \
-      "https://github.com/facebook/watchman/releases/download/v${WATCHMAN_VERSION}/watchman-v${WATCHMAN_VERSION}-linux.zip"
-    unzip -q "$tmp/watchman.zip" -d "$tmp"
-    sudo mkdir -p /usr/local/{bin,lib} /usr/local/var/run/watchman
-    sudo cp "$tmp"/watchman-v*/bin/* /usr/local/bin/
-    sudo cp "$tmp"/watchman-v*/lib/* /usr/local/lib/
-    sudo chmod 755 /usr/local/bin/watchman
-    sudo chmod 2777 /usr/local/var/run/watchman
-    rm -rf "$tmp"
-    info "installed watchman v${WATCHMAN_VERSION}"
-  fi
 else
   if os_is_darwin; then
-    info "skipping Homebrew steps (run with --system to include them: Xcode CLT check, git-lfs, watchman, adb, Docker runtime detection)"
+    info "skipping Homebrew steps (run with --system to include them: Xcode CLT check, git-lfs, adb, Docker runtime detection)"
   else
     info "skipping apt / udev / docker-group steps (run with --system to include them; they need sudo)"
   fi

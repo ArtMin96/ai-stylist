@@ -169,17 +169,12 @@ else
   warnc "adb not found (needed for Android device work)" "just bootstrap --system  (installs platform-tools + udev rules)"
 fi
 
-# --- macOS: iOS native toolchain (warn only; Expo prebuild/run:ios need them) -------------
+# --- macOS: iOS native toolchain (warn only) ----------------------------------------------
 if os_is_darwin; then
   if xcode-select -p >/dev/null 2>&1; then
     ok "xcode command line tools ($(xcode-select -p))"
   else
-    warnc "xcode command line tools missing (expo prebuild / run:ios need them)" "xcode-select --install"
-  fi
-  if have pod; then
-    ok "CocoaPods present ($(pod --version 2>/dev/null || echo '?'))"
-  else
-    warnc "CocoaPods not found (expo prebuild --platform ios runs pod install; SDK 57 still uses CocoaPods)" "brew install cocoapods"
+    warnc "xcode command line tools missing (iOS builds need Xcode)" "xcode-select --install"
   fi
 fi
 

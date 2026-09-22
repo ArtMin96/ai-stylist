@@ -56,10 +56,6 @@ runner_for() {  # $1 = repo-root-relative test file, must exist under $PWD
       printf 'uv run --project workers pytest %q -q\n' "$path"
       return 0
       ;;
-    apps/mobile/*)
-      printf 'pnpm --filter @ai-stylist/mobile exec jest --ci %q\n' "${path#apps/mobile/}"
-      return 0
-      ;;
   esac
   dir="$(dirname "$path")"
   while [[ "$dir" != "." && "$dir" != "/" ]]; do

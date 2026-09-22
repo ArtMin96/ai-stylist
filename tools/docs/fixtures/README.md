@@ -11,3 +11,8 @@ fixture skills as real project skills. The `--fixtures` runner copies each fixtu
 and renames the `dot-` prefix back before running the checks, so the check functions themselves
 never see the convention. Symlink targets inside a fixture still use the real `.agents`/`.claude`
 names, because they are resolved only inside the staged copy.
+
+Each staged case is `git init`ed, so a fixture's own `.gitignore` applies exactly as the real
+repo's does: the recursive content scans skip gitignored files. `_clean/` carries a gitignored
+agent worktree (`dot-claude/worktrees/probe/`) holding the same banned-vendor note that makes
+`DC-13/` fail; `_clean/` must report nothing for it.

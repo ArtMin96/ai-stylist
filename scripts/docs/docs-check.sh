@@ -87,6 +87,9 @@ stage_fixture() {
     [[ -n "$dir" ]] || continue
     mv "$dir" "$(dirname "$dir")/.${dir##*/dot-}"
   done < <(find "$dest" -depth \( -name dot-claude -o -name dot-agents \) -type d)
+  # Each case is its own git work tree so list_repo_files honours the fixture's .gitignore exactly
+  # as it does the real repo's (a staged copy under TMPDIR is otherwise outside any repo).
+  git -C "$dest" init -q
 }
 
 # run_fixtures — every tools/docs/fixtures/DC-NN/ must fail with finding id DC-NN; the shared

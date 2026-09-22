@@ -6,14 +6,14 @@
 DOCS_CHECK_BANNED_INVOCATIONS=("pnpm --filter" "uv run" "npx " "drizzle-kit " "eas " "gradlew " "xcodebuild ")
 
 # docs_check_ref_scan_files ROOT -> every *.md under the three DC-09/10/11 directories, filtered
-# by file_in_scope (PATH... args) when set.
+# by file_in_scope (PATH... args) when set; gitignored files are skipped (list_repo_files).
 docs_check_ref_scan_files() {
   local root="$1" dir f
   for dir in .agents/skills .claude/agents .claude/rules; do
     [[ -d "$root/$dir" ]] || continue
     while IFS= read -r f; do
       file_in_scope "$f" && echo "$f"
-    done < <(find "$root/$dir" -type f -name '*.md' | sort)
+    done < <(list_repo_files "$root" "$dir" '*.md')
   done
 }
 

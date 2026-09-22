@@ -1,5 +1,9 @@
 # osv-scanner ignore list for `just security-scan`.
 #
+# Coverage: `osv-scanner scan --recursive .` finds every lockfile on its own, including the Android
+# gradle.lockfiles + gradle/verification-metadata.xml and the iOS Package.resolved files. Nothing
+# here narrows that; add no path excludes.
+#
 # Policy: docs/security/dependency-ignores.md. Every entry must name the OSV/GHSA id, the
 # affected package + dependency path, why it cannot be fixed today, and an `ignoreUntil`
 # no later than two months out. osv-scanner re-reports the finding automatically once the

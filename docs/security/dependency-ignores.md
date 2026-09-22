@@ -1,7 +1,10 @@
 # Dependency vulnerability ignores
 
-`just security-scan` runs `osv-scanner` and `pnpm audit --audit-level=high` against
-`pnpm-lock.yaml`. Neither tool is ever weakened to get a green run: no `--allow-*` flags, no
+`just security-scan` runs `osv-scanner scan --recursive .` and `pnpm audit --audit-level=high`.
+osv-scanner reads every lockfile in the tree: `pnpm-lock.yaml`, `workers/uv.lock`, the Android
+`gradle.lockfile`s (`apps/android/**/gradle.lockfile`, `apps/android/*-gradle.lockfile`) plus
+`apps/android/gradle/verification-metadata.xml`, and the iOS `apps/ios/Packages/*/Package.resolved`.
+`pnpm audit` covers npm only. Neither tool is ever weakened to get a green run: no `--allow-*` flags, no
 lowered severity threshold, no lockfile exclusion. A reported vulnerability is handled in this
 order of preference, and the choice is recorded in the table below.
 
@@ -24,6 +27,8 @@ The license gate that runs in the same recipe follows the same discipline; see
     `ignoreUntil`.
   - `pnpm.auditConfig.ignoreGhsas` in the root `package.json`, the same id list, because
     `pnpm audit` reads only this setting and cannot express an expiry.
+    Maven (Gradle) and SwiftPM ignores live only in `osv-scanner.toml`; `pnpm audit` never sees
+    them.
 - `ignoreUntil` is at most **two months** from the date the entry is added. When it passes,
   osv-scanner re-reports the finding and `just security-scan` goes red until someone either fixes
   it or renews the entry with a fresh reason and a new date. Renewing also means re-checking
@@ -45,3 +50,15 @@ the three ignored entries (`image-size` GHSA-5p2g-fcmc-qvqq and GHSA-w3rx-r6r6-p
 `decode-uri-component` GHSA-vcc3-ghjq-m6fr), whose only dependency paths ran through Expo. No
 ignored entries remain; `osv-scanner.toml` has no
 `[[IgnoredVulns]]` and `package.json` has no `pnpm.auditConfig`.
+
+2026-09-23: the native apps' lockfiles are in the scan (osv-scanner 2.5.1 reads Gradle lockfiles,
+`verification-metadata.xml` and SwiftPM `Package.resolved` natively; no configuration needed). The
+first run reported **Maven findings: 65 packages, 286 advisories**, all Android. The packages are
+`io.netty:*`, `org.bouncycastle:*`, `org.bitbucket.b_c:jose4j`, `ch.qos.logback:logback-core`,
+`org.apache.commons:commons-lang3`, `org.apache.httpcomponents:httpclient`, `org.jdom:jdom2` and
+`org.jetbrains.kotlin:kotlin-gradle-plugin`. The samples checked come from build-tool Gradle
+configurations (`classpath`, `androidLintTool`, `unified-test-platform-*`), not from the app's
+runtime classpath. **Open, owner: Android.** Bump AGP, Kotlin or the lint and test-platform
+versions where a fixed release exists. Otherwise add expiring `osv-scanner.toml` entries per the
+policy above, each with the Gradle configuration that pulls it in. Until then `just security-scan` is red.
+The SwiftPM `Package.resolved` files had no findings.

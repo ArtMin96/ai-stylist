@@ -13,6 +13,9 @@ vulnerability scan, the gate is never weakened to get a green run: no threshold 
 | npm  | `pnpm licenses list --json` (reads `pnpm-lock.yaml` + the installed store; every workspace package, every version)              | `pnpm licenses list --json --prod` (drops `devDependencies` of every workspace package)        |
 | PyPI | `pip-licenses==5.5.5 --from=mixed`, run as an ephemeral overlay on the `workers/` venv (`uv run --with`), filtered to `uv.lock` | `uv export --project workers --no-dev` (packages reachable without the `dev` dependency group) |
 
+Not scanned: Maven (Gradle, `apps/android`) and SwiftPM (`apps/ios`, the generated Swift
+client). See "Open item" below.
+
 First-party packages (`@ai-stylist/*`, `ai-stylist-*`) are skipped. Runtime on a warm checkout is
 about 7 s.
 
@@ -82,6 +85,20 @@ An exception is one entry in the `exceptions` array of `tools/security/license-p
   longer one (exit 2). When it passes, the finding is a FAIL again until someone fixes it or
   renews the entry with a fresh reason and date.
 - An active exception downgrades the finding to a WARN that names the expiry, so it stays visible.
+
+## Open item: native dependencies are not license-checked
+
+Recorded 2026-09-23. The gate covers npm and PyPI only. The Android app's Maven dependencies
+(`apps/android/gradle/libs.versions.toml`, locked in the `gradle.lockfile`s) and the iOS SwiftPM
+packages (`apps/ios/Packages/*/Package.resolved`) are not checked against
+`tools/security/license-policy.json`. Their vulnerabilities are scanned by osv-scanner, but their
+licenses are not. Until this closes, a reviewer checks the license of every new Maven or SwiftPM
+dependency by hand. Candidate fixes:
+
+- A Gradle license-report plugin feeding `license-check.sh`. A new Gradle plugin needs an ADR-lite.
+- Reading the licenses from the SBOM, since syft already lists the Gradle and SwiftPM packages.
+
+Owner: Android and iOS leads. Not built yet.
 
 ## Proving the gate works
 

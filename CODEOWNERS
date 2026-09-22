@@ -19,6 +19,7 @@
 /apps/api/src/modules/billing/           @dev-lead
 /apps/ios/                               @dev-lead
 /apps/android/                           @dev-lead
+/e2e/                                    @dev-lead
 /assets/3d/                              @3d-owner
 /workers/                                @ml-owner
 
@@ -40,3 +41,8 @@
 /.github/workflows/                      @dev-lead
 /packages/contracts/                     @dev-lead
 /packages/shared-kernel/                 @dev-lead
+
+# --- Generated native clients (never hand-edited; `just generate`). Listed after
+# /packages/contracts/ so they stay explicit if contract ownership changes. ---
+/packages/contracts/gen/swift-client/    @dev-lead
+/packages/contracts/gen/kotlin-client/   @dev-lead

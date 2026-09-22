@@ -119,7 +119,7 @@ lint *args:
     pnpm exec eslint tools eslint.config.mjs
     uv run --project workers ruff check workers
     # -s bash: every script must run under macOS /bin/bash 3.2 as well (docs/DEVELOPING-ON-MACOS.md)
-    shellcheck -s bash -x -P SCRIPTDIR scripts/*.sh scripts/security/*.sh scripts/security/tests/*.sh scripts/docs/*.sh scripts/docs/lib/*.sh scripts/hooks/*.sh scripts/test/*.sh scripts/db/*.sh scripts/lint-file.sh tools/codegen/*.sh tools/depcruise/*.sh tools/eslint/*.sh
+    shellcheck -s bash -x -P SCRIPTDIR scripts/*.sh scripts/security/*.sh scripts/security/tests/*.sh scripts/docs/*.sh scripts/docs/lib/*.sh scripts/hooks/*.sh scripts/test/*.sh scripts/db/*.sh scripts/ci/*.sh scripts/lint-file.sh tools/codegen/*.sh tools/depcruise/*.sh tools/eslint/*.sh
 
 # Single-file lint dispatch by extension (.ts/.tsx/.mjs/.cjs -> eslint, .py -> ruff, .sh -> shellcheck, else no-op); used by the PostToolUse hook so one edit doesn't pay for a whole-repo lint
 lint-file path:
@@ -174,6 +174,38 @@ security-scan:
 # Generate the SPDX + CycloneDX SBOM into artifacts/sbom/ (same syft invocation as nightly.yml)
 sbom:
     scripts/security/sbom.sh
+
+# --- CI-only helpers ([private]: hidden from `just --list`; called by .github/workflows/**) --
+
+# Enable pgvector on the CI service-container database at DATABASE_URL
+[private]
+ci-pgvector:
+    psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -c 'CREATE EXTENSION IF NOT EXISTS vector;'
+
+# Spectral lint of packages/contracts/openapi (skips until the sources and spectral exist)
+[private]
+ci-contracts-spectral:
+    scripts/ci/contracts-spectral.sh
+
+# oasdiff breaking-change check of the OpenAPI bundle against a base commit
+[private]
+ci-contracts-breaking base:
+    scripts/ci/contracts-breaking.sh "$1"
+
+# Every env key read under apps/api/src is declared in .env.example
+[private]
+ci-env-example-check:
+    scripts/ci/env-example-check.sh
+
+# gitleaks over every ref of the full history (nightly; needs a fetch-depth: 0 checkout)
+[private]
+ci-gitleaks-history:
+    gitleaks git --log-opts=--all --config .gitleaks.toml --redact --verbose .
+
+# osv-scanner over every lockfile and manifest in the tree (npm + PyPI + Actions; nightly)
+[private]
+ci-osv-source:
+    osv-scanner scan source --recursive .
 
 # Run the exact PR-gate sequence locally: format --check, lint (+ fixtures), typecheck, arch-check (+ fixtures), generate --check, test, security-scan (+ license fixtures)
 ci-parity:

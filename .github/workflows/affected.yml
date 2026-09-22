@@ -1,9 +1,18 @@
-# Affected-module tier (tier 2). Runs only when a PR touches the API, DB, or
-# contracts. Budget: < 25 min. Required when triggered.
+# Affected-module tier (tier 2): integration tests and migration round-trips against a real
+# Postgres+pgvector, run only when a PR touches the API, the database, or the contracts.
+# Budget: < 25 min. Required when triggered.
 #
+# Triggers:  pull_request touching apps/api/**, packages/db/**, packages/contracts/**,
+#            pnpm-lock.yaml or this file.
+# Recipes:   just test, just db-migrate, just db-rollback, and the [private] CI helper
+#            ci-pgvector (justfile).
 # Required secrets: none (uses a Postgres+pgvector service container).
 # Optional secrets:
-#   TURBO_TOKEN, TURBO_TEAM         Turborepo remote cache
+#   TURBO_TOKEN, TURBO_TEAM   Turborepo remote cache
+#
+# Job tree (roots run in parallel):
+#   integration ─┐
+#   migrations ──┴──> summary
 name: affected
 
 on:
@@ -36,9 +45,15 @@ env:
 
 jobs:
   integration:
-    name: just test (integration, pgvector)
+    name: Test · Integration suite (pgvector)
+    # needs: none (root of the job tree)
     runs-on: ubuntu-latest
     timeout-minutes: 25
+    permissions:
+      contents: read
+    concurrency:
+      group: ${{ github.workflow }}-integration-${{ github.ref }}
+      cancel-in-progress: true
     services:
       postgres:
         # Local Docker pgvector matching the production PostgreSQL major (brief §1).
@@ -58,19 +73,27 @@ jobs:
       TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
       TURBO_TEAM: ${{ secrets.TURBO_TEAM }}
     steps:
-      - uses: actions/checkout@v7
-      - uses: ./.github/actions/setup
+      - name: Setup · Check out
+        uses: actions/checkout@v7
+      - name: Setup · Install toolchain and dependencies
+        uses: ./.github/actions/setup
         with:
           python: 'true'
-      - name: Enable pgvector extension
-        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -c 'CREATE EXTENSION IF NOT EXISTS vector;'
-      - name: just test
+      - name: Setup · Enable pgvector on the service database
+        run: just ci-pgvector
+      - name: Test · Full test suite
         run: just test
 
   migrations:
-    name: just db-migrate && just db-rollback
+    name: Test · Migration forward, rollback, re-apply
+    # needs: none (root of the job tree)
     runs-on: ubuntu-latest
     timeout-minutes: 25
+    permissions:
+      contents: read
+    concurrency:
+      group: ${{ github.workflow }}-migrations-${{ github.ref }}
+      cancel-in-progress: true
     services:
       postgres:
         image: pgvector/pgvector:pg17
@@ -85,18 +108,47 @@ jobs:
           --health-interval 5s
           --health-timeout 5s
           --health-retries 10
+    # Migration forward/rollback runs against the ephemeral service Postgres here; the staging
+    # proof runs on a scratch database restored from the staging backup (DEC-43,
+    # docs/SERVICES-SETUP.md §3).
     steps:
-      - uses: actions/checkout@v7
-      - uses: ./.github/actions/setup
-      - name: Enable pgvector extension
-        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -c 'CREATE EXTENSION IF NOT EXISTS vector;'
-      - name: Forward migration
+      - name: Setup · Check out
+        uses: actions/checkout@v7
+      - name: Setup · Install toolchain and dependencies
+        uses: ./.github/actions/setup
+      - name: Setup · Enable pgvector on the service database
+        run: just ci-pgvector
+      - name: Test · Apply migrations forward
         run: just db-migrate
-      - name: Rollback last migration (expand-contract aware)
+      - name: Test · Roll back the last migration (expand-contract aware)
         run: just db-rollback
-      - name: Re-apply after rollback (idempotency)
+      - name: Test · Re-apply after rollback (idempotency)
         run: just db-migrate
 
-      # Migration forward/rollback runs against a Testcontainers/ephemeral Postgres here;
-      # staging proof runs on a scratch database restored from the staging backup
-      # (DEC-43, docs/SERVICES-SETUP.md §3).
+  summary:
+    name: Report · Affected-module summary
+    needs: [integration, migrations]
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    permissions:
+      contents: read
+    concurrency:
+      group: ${{ github.workflow }}-summary-${{ github.ref }}
+      cancel-in-progress: true
+    steps:
+      - name: Report · Job results
+        run: |
+          {
+            echo "## Affected-module tier"
+            echo ""
+            echo "| job | result |"
+            echo "|---|---|"
+            echo "| integration | ${{ needs.integration.result }} |"
+            echo "| migrations | ${{ needs.migrations.result }} |"
+          } >> "$GITHUB_STEP_SUMMARY"
+      - name: Report · Fail when any job failed
+        if: contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled')
+        run: |
+          echo "::error::one or more affected-module jobs failed"
+          exit 1

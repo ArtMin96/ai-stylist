@@ -1,10 +1,22 @@
-# Nightly tier (tier 3). Non-blocking: failures open issues, never block merges.
-# Also exposed via `workflow_call` so pre-release.yml reuses these jobs.
+# Nightly tier (tier 3): the slow, thorough checks that do not fit the PR gate. Non-blocking:
+# failures are investigated, never block merges.
 #
+# Triggers:  schedule 03:00 UTC daily, workflow_dispatch, and workflow_call (pre-release.yml
+#            reuses every job below).
+# Recipes:   just test, just sbom, just ml-eval, and the [private] CI helpers ci-pgvector,
+#            ci-gitleaks-history, ci-osv-source (justfile).
 # Required secrets: none.
-# Optional secrets (steps skipped when unset):
+# Optional secrets (steps degrade gracefully when unset):
 #   TURBO_TOKEN, TURBO_TEAM   Turborepo remote cache
-#   EXPO_TOKEN                Maestro on a CI-built dev-client (P02-T10/T14)
+#
+# Job tree (roots run in parallel; summary only reports, the failed job itself shows red):
+#   full-test ────────┐
+#   gitleaks-history ─┤
+#   osv-scanner ──────┤
+#   sbom ─────────────┼──> summary
+#   ml-eval ──────────┤
+#   expired-flags ────┤
+#   maestro ──────────┘
 name: nightly
 
 on:
@@ -23,9 +35,16 @@ env:
 
 jobs:
   full-test:
-    name: just test (full suite)
+    name: Test · Full test suite (pgvector)
+    # needs: none (root of the job tree)
     runs-on: ubuntu-latest
     timeout-minutes: 60
+    permissions:
+      contents: read
+    # github.workflow is the caller's name under workflow_call, so pre-release runs get their own group.
+    concurrency:
+      group: ${{ github.workflow }}-full-test-${{ github.ref }}
+      cancel-in-progress: false
     services:
       postgres:
         image: pgvector/pgvector:pg17
@@ -44,69 +63,101 @@ jobs:
       TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
       TURBO_TEAM: ${{ secrets.TURBO_TEAM }}
     steps:
-      - uses: actions/checkout@v7
-      - uses: ./.github/actions/setup
+      - name: Setup · Check out
+        uses: actions/checkout@v7
+      - name: Setup · Install toolchain and dependencies
+        uses: ./.github/actions/setup
         with:
           python: 'true'
-      - name: Enable pgvector extension
-        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -c 'CREATE EXTENSION IF NOT EXISTS vector;'
-      - name: just test
+      - name: Setup · Enable pgvector on the service database
+        run: just ci-pgvector
+      - name: Test · Full test suite
         run: just test
 
   gitleaks-history:
-    name: gitleaks (full history)
+    name: Verify · Secret scan (full history)
+    # needs: none (root of the job tree)
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    permissions:
+      contents: read
+    concurrency:
+      group: ${{ github.workflow }}-gitleaks-history-${{ github.ref }}
+      cancel-in-progress: false
     steps:
-      - uses: actions/checkout@v7
+      - name: Setup · Check out (full history)
+        uses: actions/checkout@v7
         with:
           fetch-depth: 0
-      - uses: ./.github/actions/setup
+      - name: Setup · Install toolchain
+        uses: ./.github/actions/setup
         with:
           install: 'false'
-      - name: gitleaks over all refs
-        # `gitleaks detect` is a hidden alias in v8.x; `git` is the current subcommand.
-        run: gitleaks git --log-opts=--all --config .gitleaks.toml --redact --verbose .
+      - name: Verify · gitleaks over all refs
+        run: just ci-gitleaks-history
 
   osv-scanner:
-    name: osv-scanner (npm + PyPI + Actions)
+    name: Verify · Vulnerability scan (npm, PyPI, Actions)
+    # needs: none (root of the job tree)
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    permissions:
+      contents: read
+    concurrency:
+      group: ${{ github.workflow }}-osv-scanner-${{ github.ref }}
+      cancel-in-progress: false
     steps:
-      - uses: actions/checkout@v7
-      - uses: ./.github/actions/setup
+      - name: Setup · Check out
+        uses: actions/checkout@v7
+      - name: Setup · Install toolchain
+        uses: ./.github/actions/setup
         with:
           install: 'false'
-      - name: osv-scanner
-        run: osv-scanner scan source --recursive .
+      - name: Verify · osv-scanner over every manifest and lockfile
+        run: just ci-osv-source
 
   sbom:
-    name: syft SBOM
+    name: Build · SBOM (SPDX + CycloneDX)
+    # needs: none (root of the job tree)
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    permissions:
+      contents: read
+    concurrency:
+      group: ${{ github.workflow }}-sbom-${{ github.ref }}
+      cancel-in-progress: false
     steps:
-      - uses: actions/checkout@v7
-      - uses: ./.github/actions/setup
-      - name: Generate SBOM (SPDX + CycloneDX)
-        run: |
-          mkdir -p sbom
-          syft scan dir:. -o spdx-json=sbom/sbom.spdx.json -o cyclonedx-json=sbom/sbom.cdx.json
-      - uses: actions/upload-artifact@v7
+      - name: Setup · Check out
+        uses: actions/checkout@v7
+      - name: Setup · Install toolchain and dependencies
+        uses: ./.github/actions/setup
+      - name: Build · Generate the SBOM into artifacts/sbom/
+        run: just sbom
+      - name: Report · Upload the SBOM artifact
+        uses: actions/upload-artifact@v7
         with:
           name: sbom-${{ github.sha }}
-          path: sbom/
+          path: artifacts/sbom/
           retention-days: 90
 
   ml-eval:
-    name: just ml-eval
+    name: Test · ML eval suites
+    # needs: none (root of the job tree)
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    permissions:
+      contents: read
+    concurrency:
+      group: ${{ github.workflow }}-ml-eval-${{ github.ref }}
+      cancel-in-progress: false
     steps:
-      - uses: actions/checkout@v7
-      - uses: ./.github/actions/setup
+      - name: Setup · Check out
+        uses: actions/checkout@v7
+      - name: Setup · Install toolchain and dependencies
+        uses: ./.github/actions/setup
         with:
           python: 'true'
-      - name: just ml-eval (exit 2 = not implemented -> skipped)
+      - name: Test · Run the eval suites (exit 2 = not implemented, skipped)
         run: |
           set +e
           just ml-eval
@@ -119,29 +170,67 @@ jobs:
           esac
 
   expired-flags:
-    name: expired feature-flag report
+    name: Verify · Expired feature flags (placeholder)
+    # needs: none (root of the job tree)
     runs-on: ubuntu-latest
     timeout-minutes: 5
+    permissions:
+      contents: read
+    concurrency:
+      group: ${{ github.workflow }}-expired-flags-${{ github.ref }}
+      cancel-in-progress: false
     steps:
-      - uses: actions/checkout@v7
-      - name: Report flags past expiry (placeholder)
+      - name: Verify · Report flags past expiry (NOT IMPLEMENTED, P02-T09)
         run: |
           echo "NOT IMPLEMENTED (P02-T09): flag registry with owner/expiry lands with the logging/lint task"
           echo "::notice::expired-flag report placeholder - registry not present yet"
-          exit 0
 
   maestro:
-    name: Maestro E2E (emulator)
+    name: Test · Maestro E2E (placeholder)
+    # needs: none (root of the job tree)
     runs-on: ubuntu-latest
     timeout-minutes: 5
+    permissions:
+      contents: read
+    concurrency:
+      group: ${{ github.workflow }}-maestro-${{ github.ref }}
+      cancel-in-progress: false
     steps:
-      - uses: actions/checkout@v7
-      - name: Maestro flows (placeholder)
+      - name: Setup · Check out
+        uses: actions/checkout@v7
+      - name: Test · Maestro flows in e2e/ (NOT IMPLEMENTED)
         run: |
-          if [ -d apps/mobile/e2e ]; then
-            echo "::notice::apps/mobile/e2e exists but the emulator lane is not wired yet (P02-T10/T14) - skipped"
+          if [ -d e2e ]; then
+            echo "::notice::e2e/ exists but no native app build is wired into this lane yet - skipped"
           else
-            echo "::notice::apps/mobile/e2e absent - Maestro skipped"
+            echo "::notice::e2e/ absent - Maestro skipped"
           fi
-          echo "NOT IMPLEMENTED (P02-T10): Maestro on Android emulator / device farm"
-          exit 0
+          echo "NOT IMPLEMENTED: Maestro on an Android emulator / iOS simulator / device farm"
+
+  summary:
+    name: Report · Nightly summary
+    needs: [full-test, gitleaks-history, osv-scanner, sbom, ml-eval, expired-flags, maestro]
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    permissions:
+      contents: read
+    concurrency:
+      group: ${{ github.workflow }}-summary-${{ github.ref }}
+      cancel-in-progress: false
+    steps:
+      - name: Report · Job results
+        run: |
+          {
+            echo "## Nightly tier"
+            echo ""
+            echo "| job | result |"
+            echo "|---|---|"
+            echo "| full-test | ${{ needs.full-test.result }} |"
+            echo "| gitleaks-history | ${{ needs.gitleaks-history.result }} |"
+            echo "| osv-scanner | ${{ needs.osv-scanner.result }} |"
+            echo "| sbom | ${{ needs.sbom.result }} |"
+            echo "| ml-eval | ${{ needs.ml-eval.result }} |"
+            echo "| expired-flags | ${{ needs.expired-flags.result }} (placeholder) |"
+            echo "| maestro | ${{ needs.maestro.result }} (placeholder) |"
+          } >> "$GITHUB_STEP_SUMMARY"

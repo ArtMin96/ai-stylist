@@ -1,12 +1,20 @@
-# PR fast gate (tier 1). Budget: < 10 min wall clock (AC-1, ci.pr_gate_duration).
+# PR gate (tier 1): the fast, blocking check on every pull request and every push to main.
+# Budget: < 10 min wall clock (AC-1; ci.pr_gate_duration_seconds lands in the job summary).
 #
-# Every job here calls `just` recipes (15 §5.1) except the tiny checks that have
-# no recipe yet (gitleaks-on-diff, .env.example key check, clone check).
-#
+# Triggers:  pull_request (any path), push to main.
+# Recipes:   just ci-parity, just generate --check, and the [private] CI helpers
+#            ci-env-example-check, ci-contracts-spectral, ci-contracts-breaking (justfile).
+#            The PR-diff secret scan uses gitleaks/gitleaks-action directly (no recipe needed).
 # Required secrets: none.
-# Optional secrets (steps are skipped when unset):
+# Optional secrets (steps degrade gracefully when unset):
 #   TURBO_TOKEN, TURBO_TEAM   Turborepo remote cache (no Vercel account yet)
 #   GITLEAKS_LICENSE          only needed if the repo lives under a GitHub org
+#
+# Job tree (roots run in parallel; summary fails when any gate job failed or was cancelled):
+#   parity ──────┐
+#   contracts ───┤
+#   secrets ─────┼──> summary
+#   clone-check ─┘
 name: pr-gate
 
 on:
@@ -27,188 +35,153 @@ env:
 
 jobs:
   parity:
-    name: just ci-parity
+    name: Gate · just ci-parity
+    # needs: none (root of the job tree)
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    permissions:
+      contents: read
+    concurrency:
+      group: ${{ github.workflow }}-parity-${{ github.ref }}
+      cancel-in-progress: true
     env:
       # Turborepo remote cache: only active once the account exists.
       TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
       TURBO_TEAM: ${{ secrets.TURBO_TEAM }}
     steps:
-      - name: Record start
+      - name: Setup · Record start time
         id: start
         run: echo "ts=$(date +%s)" >> "$GITHUB_OUTPUT"
-      - uses: actions/checkout@v7
-      - uses: ./.github/actions/setup
+      - name: Setup · Check out
+        uses: actions/checkout@v7
+      - name: Setup · Install toolchain and dependencies
+        uses: ./.github/actions/setup
         with:
           python: 'true'
-      - name: Remote cache status
+      - name: Setup · Report remote cache status
         run: |
           if [ -n "$TURBO_TOKEN" ] && [ -n "$TURBO_TEAM" ]; then
             echo "Turborepo remote cache: enabled"
           else
             echo "::notice::Turborepo remote cache disabled (TURBO_TOKEN/TURBO_TEAM not set)"
           fi
-      - name: just ci-parity
+      - name: Verify · .env.example covers every API env key
+        run: just ci-env-example-check
+      - name: Verify · Run the PR gate sequence (format, lint, typecheck, arch, docs, generate, test, security)
         run: just ci-parity
-      - name: Record ci.pr_gate_duration_seconds
+      - name: Report · Job duration
         if: always()
         run: |
           n=$(( $(date +%s) - ${{ steps.start.outputs.ts }} ))
           echo "ci.pr_gate_duration_seconds=${n}" | tee -a "$GITHUB_STEP_SUMMARY"
 
-  contracts-lint:
-    name: contracts (generate --check, spectral, oasdiff)
+  contracts:
+    name: Gate · Contracts (generate --check, spectral, oasdiff)
+    # needs: none (root of the job tree)
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    permissions:
+      contents: read
+    concurrency:
+      group: ${{ github.workflow }}-contracts-${{ github.ref }}
+      cancel-in-progress: true
     steps:
-      - uses: actions/checkout@v7
+      - name: Setup · Check out
+        uses: actions/checkout@v7
         with:
           # oasdiff needs the base ref to diff against.
           fetch-depth: 0
-      - uses: ./.github/actions/setup
-      - name: just generate --check
+      - name: Setup · Install toolchain and dependencies
+        uses: ./.github/actions/setup
+      - name: Verify · Generated clients are up to date
         run: just generate --check
-      - name: spectral lint
-        run: |
-          if [ ! -d packages/contracts/openapi ]; then
-            echo "::notice::packages/contracts/openapi absent - spectral skipped (T04 not landed)"
-            exit 0
-          fi
-          if ! command -v spectral >/dev/null 2>&1 && ! pnpm exec spectral --version >/dev/null 2>&1; then
-            echo "::warning::spectral not installed - add it to the contracts toolchain (T04)"
-            exit 0
-          fi
-          ruleset=packages/contracts/.spectral.yaml
-          [ -f "$ruleset" ] || ruleset=.spectral.yaml
-          if [ -f "$ruleset" ]; then
-            pnpm exec spectral lint --ruleset "$ruleset" "packages/contracts/openapi/**/*.yaml"
-          else
-            pnpm exec spectral lint "packages/contracts/openapi/**/*.yaml"
-          fi
-      - name: oasdiff breaking (base vs head bundle)
+      - name: Verify · Spectral lint of the OpenAPI sources
+        run: just ci-contracts-spectral
+      - name: Verify · No breaking changes against the base branch (oasdiff)
         if: github.event_name == 'pull_request'
-        run: |
-          bundle=packages/contracts/openapi.bundle.json
-          if [ ! -f "$bundle" ]; then
-            echo "::notice::$bundle absent - oasdiff skipped (T04 not landed)"
-            exit 0
-          fi
-          if ! command -v oasdiff >/dev/null 2>&1; then
-            echo "::warning::oasdiff not on PATH - pin it in mise.toml (T04)"
-            exit 0
-          fi
-          base="${{ github.event.pull_request.base.sha }}"
-          if ! git show "$base:$bundle" > /tmp/base.bundle.json 2>/dev/null; then
-            echo "::notice::no bundle on base ref - nothing to diff"
-            exit 0
-          fi
-          # Verified: `oasdiff breaking <base> <revision> --fail-on ERR` (docs/BREAKING-CHANGES.md)
-          oasdiff breaking /tmp/base.bundle.json "$bundle" --fail-on ERR
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: just ci-contracts-breaking "$BASE_SHA"
 
   secrets:
-    name: gitleaks (PR diff)
+    name: Gate · Secret scan (PR diff)
+    # needs: none (root of the job tree)
     runs-on: ubuntu-latest
     timeout-minutes: 5
     permissions:
       contents: read
       pull-requests: write # gitleaks-action comments on the PR
+    concurrency:
+      group: ${{ github.workflow }}-secrets-${{ github.ref }}
+      cancel-in-progress: true
     steps:
-      - uses: actions/checkout@v7
+      - name: Setup · Check out
+        uses: actions/checkout@v7
         with:
           fetch-depth: 0
-      # Full-tree scan already runs in `just security-scan` (parity job); this
-      # scans only the commits in the PR range and annotates the diff.
-      - uses: gitleaks/gitleaks-action@v3
-        continue-on-error: false
+      # The full-tree scan already runs in `just security-scan` (parity job); this one scans only
+      # the commits in the PR range and annotates the diff.
+      - name: Verify · gitleaks over the PR commits
+        uses: gitleaks/gitleaks-action@v3
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GITLEAKS_LICENSE: ${{ secrets.GITLEAKS_LICENSE }}
           GITLEAKS_CONFIG: .gitleaks.toml
           GITLEAKS_ENABLE_UPLOAD_ARTIFACT: 'false'
 
-  env-example-check:
-    name: .env.example covers apps/api env keys
-    runs-on: ubuntu-latest
-    timeout-minutes: 3
-    steps:
-      - uses: actions/checkout@v7
-      - name: Compare referenced env keys with .env.example
-        shell: bash
-        run: |
-          set -euo pipefail
-          src=apps/api/src
-          if [ ! -d "$src" ]; then
-            echo "::notice::$src does not exist yet - nothing to check"
-            exit 0
-          fi
-          # Keys referenced as process.env.FOO, process.env['FOO'], env.FOO (upper-case only).
-          referenced=$(grep -rhoE "(process\.env|\benv)(\.[A-Z][A-Z0-9_]*|\[['\"][A-Z][A-Z0-9_]*['\"]\])" \
-              --include='*.ts' --include='*.tsx' --include='*.js' --include='*.mjs' "$src" \
-            | sed -E "s/^(process\.env|env)//; s/^\.//; s/^\[['\"]//; s/['\"]\]$//" \
-            | sort -u || true)
-          if [ -z "$referenced" ]; then
-            echo "No env keys referenced under $src."
-            exit 0
-          fi
-          if [ ! -f .env.example ]; then
-            echo "::error::.env.example is missing but $src references env keys:"
-            echo "$referenced"
-            exit 1
-          fi
-          declared=$(grep -oE '^[A-Z][A-Z0-9_]*=' .env.example | sed 's/=$//' | sort -u)
-          missing=$(comm -23 <(echo "$referenced") <(echo "$declared") || true)
-          if [ -n "$missing" ]; then
-            echo "::error::.env.example is missing keys referenced under $src (NFR: .env.example must be exhaustive, zero values):"
-            echo "$missing" | sed 's/^/  - /'
-            echo "Add each key as 'KEY=' (no value) to .env.example."
-            exit 1
-          fi
-          echo "All $(echo "$referenced" | wc -l) referenced keys are declared in .env.example."
-
   clone-check:
-    name: clone detection (NFR-TEAM-040)
+    name: Gate · Clone detection (placeholder)
+    # needs: none (root of the job tree)
     runs-on: ubuntu-latest
     timeout-minutes: 2
+    permissions:
+      contents: read
+    concurrency:
+      group: ${{ github.workflow }}-clone-check-${{ github.ref }}
+      cancel-in-progress: true
     steps:
-      - run: |
+      - name: Verify · Clone detection (NOT IMPLEMENTED, NFR-TEAM-040)
+        run: |
           echo "NOT IMPLEMENTED (NFR-TEAM-040): clone detection tool undecided"
           echo "::notice::clone-check placeholder - tool undecided (brief §9)"
-          exit 0
 
-  gate-duration:
-    # Whole-run wall clock (all jobs above), the number AC-1 is measured on.
-    name: ci.pr_gate_duration
+  summary:
+    # Whole-run wall clock (all jobs above), the number AC-1 is measured on. Also the single job a
+    # branch-protection rule can require once protection is available on this repository.
+    name: Report · PR gate summary
+    needs: [parity, contracts, secrets, clone-check]
     if: always()
-    needs: [parity, contracts-lint, secrets, env-example-check, clone-check]
     runs-on: ubuntu-latest
     timeout-minutes: 2
     permissions:
       contents: read
       actions: read
+    concurrency:
+      group: ${{ github.workflow }}-summary-${{ github.ref }}
+      cancel-in-progress: true
     env:
       GH_TOKEN: ${{ github.token }}
     steps:
-      - name: Write ci.pr_gate_duration_seconds to job summary
+      - name: Report · Run duration and job results
         run: |
           started=$(gh api "repos/${{ github.repository }}/actions/runs/${{ github.run_id }}" --jq .run_started_at)
           n=$(( $(date +%s) - $(date -d "$started" +%s) ))
           {
+            echo "## PR gate"
+            echo ""
             echo "ci.pr_gate_duration_seconds=${n}"
             echo ""
             echo "| job | result |"
             echo "|---|---|"
             echo "| parity | ${{ needs.parity.result }} |"
-            echo "| contracts-lint | ${{ needs.contracts-lint.result }} |"
+            echo "| contracts | ${{ needs.contracts.result }} |"
             echo "| secrets | ${{ needs.secrets.result }} |"
-            echo "| env-example-check | ${{ needs.env-example-check.result }} |"
             echo "| clone-check | ${{ needs.clone-check.result }} |"
           } | tee -a "$GITHUB_STEP_SUMMARY"
           if [ "$n" -gt 600 ]; then
             echo "::warning::PR gate took ${n}s (> 600s budget, AC-1)"
           fi
-      - name: Fail if any gate job failed
-        # Lets branch protection require this single job.
+      - name: Report · Fail when any gate job failed
         if: contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled')
         run: |
           echo "::error::one or more PR gate jobs failed"

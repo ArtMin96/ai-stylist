@@ -11,3 +11,8 @@
 #
 # Only findings with no fixed version, or where every fix path breaks a tool, belong here.
 # Anything with a working fix is bumped or handled via `pnpm.overrides` in package.json.
+#
+# Scope of THIS file: osv-scanner applies only the osv-scanner.toml in the same directory as each
+# scanned lockfile, so entries here cover the root lockfiles (pnpm-lock.yaml). Findings from a
+# lockfile elsewhere need a file beside it, e.g. apps/android/gradle/osv-scanner.toml for
+# verification-metadata.xml. Every such file follows the same policy and ledger.

@@ -1,7 +1,0 @@
-# Maestro smoke flow (planning/13 §2): launch the dev client and see the home screen.
-# Run: maestro test apps/mobile/e2e/smoke.yaml  (needs an emulator/device with the app installed)
-appId: app.aistylist.mobile
----
-- launchApp
-- assertVisible: 'AI Stylist'
-- assertVisible: 'Share anonymous usage data'

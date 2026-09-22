@@ -1,0 +1,8 @@
+# Maestro smoke flow (planning/13 §2): launch the app and see the home screen.
+# Shared by the native iOS (apps/ios) and Android (apps/android) apps; both must render these strings.
+# Run: maestro test e2e/smoke.yaml  (needs a simulator/emulator/device with the app installed)
+appId: app.aistylist.mobile
+---
+- launchApp
+- assertVisible: 'AI Stylist'
+- assertVisible: 'Share anonymous usage data'

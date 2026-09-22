@@ -36,6 +36,7 @@ check_dc12() {
 }
 
 # check_dc13 ROOT — banned stale vendor names absent from .agents/**, .claude/**, docs/**, justfile.
+# Gitignored files (e.g. `.claude/worktrees/` agent checkouts) are out of scope via list_repo_files.
 # `.claude/plans/` is exempt: proposals under review legitimately discuss vendors under
 # consideration. `docs/adr/` is exempt for the same reason in the other direction: ADRs are
 # historical decision records that must keep naming the vendors they rejected or superseded.
@@ -45,10 +46,11 @@ check_dc13() {
     for dir in .agents .claude docs; do
       [[ -d "$root/$dir" ]] || continue
       while IFS= read -r f; do
+        case "$f" in */.claude/plans/*|*/docs/adr/*) continue ;; esac
         while IFS=: read -r lineno content; do
           finding ERROR DC-13 "${f#"$root"/}" "$lineno" "banned stale vendor name '$vendor': $content"
         done < <(grep -nF "$vendor" "$f")
-      done < <(find "$root/$dir" -type f -name '*.md' -not -path '*/.claude/plans/*' -not -path '*/docs/adr/*' | sort)
+      done < <(list_repo_files "$root" "$dir" '*.md')
     done
     if [[ -f "$root/justfile" ]]; then
       while IFS=: read -r lineno content; do

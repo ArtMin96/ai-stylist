@@ -186,7 +186,30 @@ list_md_files() {
   find "$1" -maxdepth 1 -type f -name '*.md' | sort
 }
 
-# module_names_from_docs ROOT -> the SPINE module names, one per line, derived from
+# list_repo_files ROOT DIR NAME-GLOB -> every regular (non-symlink) file under ROOT/DIR, recursive,
+# whose basename matches NAME-GLOB, as sorted absolute paths — excluding anything git ignores.
+# This is the single enumeration every recursive content scan (DC-09/10/11, DC-13) goes through,
+# so gitignored copies of the repo (`.claude/worktrees/<agent>/`, one per parallel agent session)
+# and build output are never scanned. When ROOT is not a git work tree (no worktrees can exist
+# there) it falls back to plain find; --fixtures `git init`s each staged case so fixtures take the
+# same git path the real repo does.
+list_repo_files() {
+  local root="$1" dir="$2" glob="$3" rel
+  [[ -d "$root/$dir" ]] || return 0
+  if (cd "$root" && git rev-parse --is-inside-work-tree >/dev/null 2>&1); then
+    (cd "$root" && git -c core.quotePath=false ls-files --cached --others --exclude-standard -- "$dir") \
+      | sort -u \
+      | while IFS= read -r rel; do
+          # shellcheck disable=SC2254  # NAME-GLOB is a pattern on purpose
+          case "${rel##*/}" in $glob) ;; *) continue ;; esac
+          if [[ -f "$root/$rel" && ! -L "$root/$rel" ]]; then echo "$root/$rel"; fi
+        done
+  else
+    find "$root/$dir" -type f -name "$glob" | sort
+  fi
+}
+
+# module_names_from_docs ROOT ->the SPINE module names, one per line, derived from
 # docs/modules/*.md (DC-01 keeps this bijective with apps/api/src/modules + platform +
 # shared-kernel, so this listing is the single source of truth DC-08 also reuses).
 module_names_from_docs() {

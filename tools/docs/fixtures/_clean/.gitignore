@@ -1,0 +1,2 @@
+# Mirrors the real repo: local agent worktrees are gitignored, so docs-check never scans them.
+.claude/worktrees/

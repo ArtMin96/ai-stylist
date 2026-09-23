@@ -24,7 +24,7 @@ The operating rules for anyone (human or AI agent) changing code are in [`CLAUDE
 
 ## First-time setup
 
-You need Ubuntu 22.04 or newer (other Linux distros work with small changes) or macOS (Apple Silicon or Intel; see [`docs/DEVELOPING-ON-MACOS.md`](docs/DEVELOPING-ON-MACOS.md) for the Mac-specific prerequisites), `git`, `curl`, and, on Linux, `sudo` for the one system step. Everything else is installed into your home directory by the bootstrap script, with exact versions pinned in `mise.toml`, so nothing here conflicts with tools you already have.
+You need Ubuntu 22.04 or newer (other Linux distros work with small changes) or macOS (Apple Silicon or Intel; see [`docs/DEVELOPING-ON-MACOS.md`](docs/DEVELOPING-ON-MACOS.md) for the Mac-specific prerequisites), `git`, `curl`, at least 10 GB of free disk (`just doctor` fails below that; the pnpm store, Gradle caches and Docker images need it), and, on Linux, `sudo` for the one system step. Everything else is installed into your home directory by the bootstrap script, with exact versions pinned in `mise.toml`, so nothing here conflicts with tools you already have.
 
 ### 1. Clone
 

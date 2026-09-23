@@ -17,6 +17,11 @@ React Native, no Kotlin Multiplatform and no 3D code.
 | `config/` | `detekt.yml`, `lint.xml`, `compose-stability.conf` |
 | `gradle/libs.versions.toml` | The version catalog. Every dependency and plugin version is set here |
 | `gradle/verification-metadata.xml`, `**/gradle.lockfile`, `*-gradle.lockfile` | Supply chain: checksums and the locked dependency graph |
+| `tools/` | `gradle.sh` (runs the wrapper with JDK 21 + the SDK) and `sdk.sh` (SDK check/install), behind the `just android-*` recipes |
+
+The generated client also has `app.aistylist.contracts.kernel` (reason codes, entitlement names and units, from
+`packages/shared-kernel/registry/*.json`; [ADR-0005](../../docs/adr/0005-shared-kernel-registries-for-native-clients.md))
+in `packages/contracts/gen/kotlin-client/kernel`. No module compiles it yet.
 
 ### Module graph
 
@@ -70,27 +75,30 @@ in `build-logic/convention/src/main/kotlin/RootConventionPlugin.kt`.
 
 1. JDK 21: `mise` provides it. `java -version` must print 21.
 2. Android SDK, installed per user (no sudo) into `~/Android/Sdk` (macOS: `~/Library/Android/sdk`):
-   `apps/android/tools/sdk.sh install` (and `sdk.sh check` to verify). It pins cmdline-tools 19.0
-   (sha1-verified) and installs `platform-tools`, `platforms;android-37.0` and `build-tools;36.0.0`.
+   `just android-sdk install` (and `just android-sdk` to check; both run `apps/android/tools/sdk.sh`).
+   It pins cmdline-tools 19.0 (sha1-verified) and installs `platform-tools`, `platforms;android-37.0` and `build-tools;36.0.0`.
    On a host with a broken IPv6 route, set `SDKMANAGER_OPTS=-Djava.net.preferIPv4Stack=true`.
    You don't need an emulator: the screen tests run on the JVM with Robolectric.
-3. AGP reads `ANDROID_HOME`. Don't commit `local.properties`.
+3. AGP reads `ANDROID_HOME` (`tools/gradle.sh` falls back to `ANDROID_SDK_ROOT`, then the default path above).
+   Don't commit `local.properties`.
 
 ## Commands
 
 Use the `just android-*` recipes from the repo root. They call `apps/android/tools/gradle.sh`, which
-checks for JDK 21, finds the SDK and runs the wrapper. The Gradle equivalents are:
+checks for JDK 21, finds the SDK and runs the wrapper. CI runs the same recipes in
+`.github/workflows/android.yml`. The Gradle equivalents are:
 
-| Purpose | `tools/gradle.sh` arguments |
-|---|---|
-| Debug APK | `:app:assembleDebug` |
-| Preview / release APK | `:app:assemblePreview` / `:app:assembleRelease` (unsigned) |
-| Unit + Robolectric tests | `testDebugUnitTest :core:data:test :core:analytics:test` |
-| Android Lint (all modules, via `checkDependencies`) | `:app:lintDebug` |
-| Format check / fix | `spotlessCheck` / `spotlessApply` |
-| detekt (type-resolved) | `detektMain detektTest` |
-| Module graph | `checkModuleGraph` |
-| Refresh locks + checksums after a version bump | `<all tasks above> --write-locks --write-verification-metadata sha256`, then review the diff |
+| Purpose | Recipe | `tools/gradle.sh` arguments |
+|---|---|---|
+| Debug APK | `just android-build` | `:app:assembleDebug` |
+| Preview / release APK | `just android-build preview` / `release` (`all` = all three) | `:app:assemblePreview` / `:app:assembleRelease` (unsigned) |
+| Unit + Robolectric tests | `just android-test` | `testDebugUnitTest :core:data:test :core:analytics:test` |
+| Android Lint (all modules, via `checkDependencies`) + module graph | `just android-lint` | `:app:lintDebug checkModuleGraph` |
+| Format check / fix | `just android-format --check` / `just android-format` | `spotlessCheck` / `spotlessApply` |
+| detekt (type-resolved) | `just android-detekt` | `detektMain detektTest` |
+| The whole local gate in one invocation | `just android-check` | all of the above except `spotlessApply` |
+| Install the debug build + run the Maestro smoke flow | `just android-e2e` | `:app:installDebug`, then `maestro test` ([e2e/README.md](../../e2e/README.md)) |
+| Refresh locks + checksums after a version bump | `just android-deps-lock` | the `android-check` tasks `--write-locks --write-verification-metadata sha256`, then review the diff |
 
 ## Strictness (don't relax these to get green)
 

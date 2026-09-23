@@ -3,11 +3,11 @@
 > Module names are canonical per [SPINE §3](../../planning/SPINE.md). Path: `packages/shared-kernel`. This contract is the module's source of truth; code that contradicts it is wrong until a DEC entry says otherwise.
 
 - **Responsibility (one sentence):** Pure types, constants, and registries shared by every module: ULID prefixes, units, event envelope type, error/reason/entitlement registries.
-- **Owner:** @team (placeholder — see `CODEOWNERS`) · **Status:** skeleton (P02) · **Last updated:** 2026-09-10
+- **Owner:** @team (placeholder — see `CODEOWNERS`) · **Status:** skeleton (P02) · **Last updated:** 2026-09-23
 
 ## Public interface
 
-Public interface: `index.ts` only, which re-exports every file below in full. Everything is importable by every module; nothing here may import anything back (`shared-kernel-pure`; the only dependency is `ulid`).
+Public interface: `index.ts` only, which re-exports every file below in full. The data behind `reason-codes.ts`, `entitlements.ts` and `units.ts` comes from `registry/*.json` (JSON Schema-validated) through the generated `src/gen/*.ts`; the same registries generate the Swift `AIStylistKernel` target and the Kotlin `app.aistylist.contracts.kernel` package (`just generate`, [ADR-0005](../adr/0005-shared-kernel-registries-for-native-clients.md)). Edit the JSON, never `src/gen`. Everything is importable by every module; nothing here may import anything back (`shared-kernel-pure`; the only dependency is `ulid`).
 
 | Export (by file)                                                                                                                                                                                                      | Kind (service/command/query/type/port) | Purpose                                                                                        |
 | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------- | ---------------------------------------------------------------------------------------------- |
@@ -26,7 +26,8 @@ None yet (P02 skeleton). Planned per SPINE §3: none — types and constants onl
 
 1. No business rule lives in a controller, Drizzle schema file, pg-boss job handler, provider wrapper, or React component (doc 04 §4.2 rule 9); adapters translate, this module decides.
 2. No tables, no I/O, no framework imports; every export is a type, constant, registry entry, or pure function with a test.
-3. Further invariants: OPEN until the first domain phase that touches this module fills them in (each needs at least one test).
+3. Registry data has one source, `registry/*.json`: TS, Swift and Kotlin are generated from it, and `just generate --check` fails when any output is stale.
+4. Further invariants: OPEN until the first domain phase that touches this module fills them in (each needs at least one test).
 
 ## Events
 

@@ -1,6 +1,6 @@
 # `shared-kernel` — module reference
 
-Last reviewed: 2026-09-13
+Last reviewed: 2026-09-23
 
 ## Contract summary
 
@@ -12,6 +12,7 @@ envelope type, and the error/reason-code/entitlement registries. Full contract:
 
 - `shared-kernel-pure`: the only dependency is `ulid`; no workspace package, no framework, no I/O.
   Every module and `platform` may import it, and it may import nothing back.
+- To add a reason code, entitlement or unit: edit `registry/*.json`, run `just generate`, commit every output.
 - Registries are append-only: add a reason code, entitlement name, unit, or ID prefix — never
   rename or reuse one (explanations come from the decision trace; a renamed code breaks history).
 - Every export is a type, constant, registry entry, or pure function with a test; there is no
@@ -24,7 +25,8 @@ envelope type, and the error/reason-code/entitlement registries. Full contract:
 - `packages/shared-kernel/src/units.ts` — canonical metric units, unit systems, measurement provenance, `convert`.
 - `packages/shared-kernel/src/envelope.ts` — `EventEnvelope<T, P>`, the shape every outbox event and consumer shares.
 - `packages/shared-kernel/src/errors.ts` — `ERROR_CODES`, `ProblemDetails`, `problem()`: the RFC 9457 shape the API returns.
-- `packages/shared-kernel/src/reason-codes.ts` — the recommendation reason-code registry.
+- `packages/shared-kernel/registry/*.json` (+ `*.schema.json`) — the data source for reason codes, entitlements and units. `just generate` writes `src/gen/*.ts`, the Swift `AIStylistKernel` target and the Kotlin `app.aistylist.contracts.kernel` package from it (ADR-0005); never edit those outputs.
+- `packages/shared-kernel/src/reason-codes.ts` — the recommendation reason-code registry types (data from `packages/shared-kernel/src/gen`).
 - `packages/shared-kernel/src/entitlements.ts` — `ENTITLEMENTS`, `CREDIT_METERS`: names shared by billing, recommendation, and mobile.
 - `packages/shared-kernel/tests/` — this package's test suite (single-writer, per `CLAUDE.md` "Parallel sessions").
 

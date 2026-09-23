@@ -4,7 +4,17 @@
 
 # shellcheck disable=SC2034
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-MISE_BIN="${MISE_BIN:-$HOME/.local/bin/mise}"
+# mise: an explicit MISE_BIN wins; else the mise.run install location; else a mise already on PATH
+# (an OS package such as /usr/bin/mise). With none of them present, MISE_BIN stays at the mise.run
+# location, which is where bootstrap installs it.
+if [[ -z "${MISE_BIN:-}" ]]; then
+  MISE_BIN="$HOME/.local/bin/mise"
+  if [[ ! -x "$MISE_BIN" ]]; then
+    _lib_mise_on_path="$(command -v mise 2>/dev/null || true)"
+    [[ "$_lib_mise_on_path" == /* && -x "$_lib_mise_on_path" ]] && MISE_BIN="$_lib_mise_on_path"
+    unset _lib_mise_on_path
+  fi
+fi
 
 if [[ -t 1 && -z "${NO_COLOR:-}" ]]; then
   C_RESET=$'\033[0m'; C_BOLD=$'\033[1m'; C_DIM=$'\033[2m'

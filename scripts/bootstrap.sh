@@ -194,11 +194,43 @@ fi
 
 # --- 5. .env scaffold ------------------------------------------------------------------
 log ".env"
+# The value of KEY in .env (last assignment wins, as in dotenv), unquoted; empty when absent.
+env_file_value() {
+  awk -v key="$1" -v q="'" '
+    { line = $0; sub(/\r$/, "", line); sub(/^export[[:space:]]+/, "", line) }
+    index(line, key "=") == 1 { val = substr(line, length(key) + 2) }
+    END {
+      sub(/[[:space:]]+$/, "", val)
+      first = substr(val, 1, 1)
+      if (length(val) >= 2 && (first == "\"" || first == q) && substr(val, length(val), 1) == first)
+        val = substr(val, 2, length(val) - 2)
+      print val
+    }' .env
+}
+
 if [[ -f .env ]]; then
-  info ".env exists — leaving it untouched"
+  info ".env exists — only an empty DATABASE_URL is filled in (below)"
 else
   cp .env.example .env
-  info "created .env from .env.example (empty values) — fill via: just secrets-sync"
+  info "created .env from .env.example (empty values) — shared values come from: just secrets-sync"
+fi
+# .env.example keeps every value empty (scripts/ci/env-example-check.sh), but the API cannot reach a
+# database without one. Point an empty DATABASE_URL at the docker-compose Postgres documented in
+# .env.example, resolving the host port the way compose does: POSTGRES_HOST_PORT from the
+# environment, else from .env, else 5432. A non-empty value (hand-set or synced) is never touched;
+# secrets-sync skips keys whose shared value is empty, so it does not blank this one either.
+if [[ -z "$(env_file_value DATABASE_URL)" ]]; then
+  if [[ -n "${POSTGRES_HOST_PORT+set}" ]]; then pg_port="$POSTGRES_HOST_PORT"; else pg_port="$(env_file_value POSTGRES_HOST_PORT)"; fi
+  pg_port="${pg_port:-5432}"
+  local_db_url="postgres://ai_stylist:ai_stylist@localhost:${pg_port}/ai_stylist"
+  env_tmp="$(mktemp)"
+  awk -v url="$local_db_url" '
+    /^(export[[:space:]]+)?DATABASE_URL=/ { if (!done) print "DATABASE_URL=" url; done = 1; next }
+    { print }
+    END { if (!done) print "DATABASE_URL=" url }' .env > "$env_tmp"
+  cat "$env_tmp" > .env   # rewrite in place: keeps .env's existing mode (secrets-sync makes it 0600)
+  rm -f "$env_tmp"
+  info "DATABASE_URL was empty — set it to the local docker-compose Postgres (localhost:$pg_port)"
 fi
 if have direnv || mise_exec direnv --version >/dev/null 2>&1; then
   mise_exec direnv allow . 2>/dev/null || true
@@ -206,8 +238,10 @@ fi
 
 # --- 6. age identity + secrets onboarding -----------------------------------------------
 log "age identity + secrets onboarding"
+onboard_status_file="$(mktemp)"
+trap 'rm -f "$onboard_status_file"' EXIT
 set +e
-mise_exec scripts/security/secrets-onboard.sh
+SECRETS_ONBOARD_STATUS_FILE="$onboard_status_file" mise_exec scripts/security/secrets-onboard.sh
 onboard_rc=$?
 set -e
 (( onboard_rc == 0 )) || warn "secrets onboarding step reported a problem — see above; bootstrap continues"
@@ -221,13 +255,24 @@ set -e
 
 # --- next steps ------------------------------------------------------------------------
 heading "Next steps"
+# The Secrets line follows what onboarding actually did (status words: secrets-onboard.sh header).
+if command grep -qx pushed "$onboard_status_file"; then
+  secrets_hint="Secrets: open the onboarding pull request printed above, then ask an approver to run
+           'just secrets-approve <branch>'. Once it merges:  just secrets-sync  ·  just doctor  ·  just dev-api"
+elif command grep -qx synced "$onboard_status_file"; then
+  secrets_hint="Secrets: your age recipient is already approved; the shared dev values were synced into .env
+           (refresh any time with: just secrets-sync). Then:  just doctor  ·  just dev-api"
+elif command grep -qx skipped "$onboard_status_file"; then
+  secrets_hint="Secrets: onboarding skipped (CI or SOPS_AGE_KEY is set); fill .env with:  just secrets-sync"
+else
+  secrets_hint="Secrets: onboarding did not finish — follow its output above, then:  just secrets-sync  ·  just doctor"
+fi
 cat <<MSG
   Activate mise in your shell (not written to rc files by this script):
-      eval "\$(~/.local/bin/mise activate zsh)"
+      eval "\$($MISE_BIN activate zsh)"
       eval "\$(direnv hook zsh)"
   Then:  direnv allow
-  Secrets: open the onboarding pull request printed above, then ask an approver to run
-           'just secrets-approve <branch>'. Once it merges:  just secrets-sync  ·  just doctor  ·  just dev-api
+  $secrets_hint
   Back up your age identity in the team password manager, then:  just secrets-backup-done
 MSG
 exit "$doctor_rc"

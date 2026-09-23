@@ -21,32 +21,39 @@ doctor_python() {
   fi
 }
 if [[ -x "$MISE_BIN" ]]; then
-  ok "mise present ($("$MISE_BIN" --version 2>/dev/null | head -1))"
-  # Every tool in mise.toml must resolve to exactly its pinned version (mise ls --current --json).
+  ok "mise present at $MISE_BIN ($("$MISE_BIN" --version 2>/dev/null | head -1))"
+  # Every tool pinned in this repo's mise config must resolve to exactly its pinned version
+  # (mise ls --current --json). `--current` also merges the user's global/system configs
+  # (~/.config/mise/config.toml, a parent directory's mise.toml); those tools are not this repo's
+  # pins, so entries sourced from a config file outside $REPO_ROOT are skipped. Everything else —
+  # mise.toml, a repo-local mise.local.toml, a MISE_<TOOL>_VERSION env override — is still checked.
   pin_rows="$("$MISE_BIN" ls --current --json 2>/dev/null \
     | doctor_python -c '
-import json,sys
+import json,os,sys
+root=os.path.realpath(sys.argv[1])
 d=json.load(sys.stdin)
 for tool,entries in d.items():
     for e in entries:
+        src=(e.get("source") or {}).get("path") or ""
+        if src and not os.path.realpath(src).startswith(root + os.sep):
+            continue
         req=e.get("requested_version") or ""
         inst=e.get("version") if e.get("installed") else "(missing)"
-        print(f"{tool}\t{req}\t{inst}")' 2>/dev/null || true)"
+        print(f"{tool}\t{req}\t{inst}")' "$REPO_ROOT" 2>/dev/null || true)"
   if [[ -z "$pin_rows" ]]; then
-    # shellcheck disable=SC2088  # the ~ is in a hint string typed by a human, not expanded here
-    fail "could not read pinned tool versions (mise ls --current --json)" "~/.local/bin/mise install --yes   (or: just bootstrap)"
+    fail "could not read this repo's pinned tool versions (mise ls --current --json)" "$MISE_BIN trust && $MISE_BIN install --yes   (or: just bootstrap)"
   fi
   while IFS=$'\t' read -r tool requested installed; do
     [[ -z "$tool" ]] && continue
     if [[ "$installed" == "$requested" ]]; then
       ok "$tool $installed"
     else
-      # shellcheck disable=SC2088
-      fail "$tool resolves to '$installed', pinned '$requested'" "~/.local/bin/mise install $tool@$requested"
+      fail "$tool resolves to '$installed', pinned '$requested'" "$MISE_BIN install $tool@$requested"
     fi
   done <<< "$pin_rows"
 else
-  fail "mise not found at $MISE_BIN" "curl https://mise.run | sh   (or: just bootstrap)"
+  # shellcheck disable=SC2088  # the ~ is in a message for a human, not expanded here
+  fail "mise not found at $MISE_BIN (unless MISE_BIN is set, ~/.local/bin/mise then PATH are tried)" "curl https://mise.run | sh   (or: just bootstrap)"
 fi
 
 # --- pnpm store -----------------------------------------------------------------
@@ -104,8 +111,7 @@ if have direnv || { [[ -x "$MISE_BIN" ]] && mise_exec direnv --version >/dev/nul
     warnc "direnv not active in this shell" 'add: eval "$(direnv hook zsh)" to ~/.zshrc, then: direnv allow'
   fi
 else
-  # shellcheck disable=SC2088
-  fail "direnv missing" "~/.local/bin/mise install direnv"
+  fail "direnv missing" "$MISE_BIN install direnv"
 fi
 
 # --- .env keys ------------------------------------------------------------------

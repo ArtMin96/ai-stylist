@@ -3,6 +3,5 @@
 
 APP_DISPLAY_NAME = AI Stylist Preview
 PRODUCT_BUNDLE_IDENTIFIER = app.aistylist.mobile.preview
-// HOST-ONLY. No staging API exists yet, so Preview talks to production; switch this to the
-// staging host once one is provisioned (keep Android's preview build type in sync).
-API_BASE_URL = https:/$()/api.ai-stylist.app
+// HOST-ONLY (no path): the staging API (keep Android's preview build type in sync).
+API_BASE_URL = https:/$()/staging-api.ai-stylist.app

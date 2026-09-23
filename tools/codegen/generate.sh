@@ -1,10 +1,15 @@
 #!/usr/bin/env bash
 # `just generate [--check]` — runs every contract generator (planning/06 §1, brief §3).
+#   gen-kernel.mjs ts  shared-kernel registries (packages/shared-kernel/registry/*.json, OQ-15)
+#                      -> packages/shared-kernel/src/gen (TS data behind the hand-written registries)
 #   gen-ts.sh      OpenAPI bundle, hey-api TS client, event TS types  -> packages/contracts/gen
-#   gen-swift.sh   swift-openapi-generator Swift client (SwiftPM pkg)  -> packages/contracts/gen/swift-client
-#   gen-kotlin.sh  openapi-generator Kotlin client + analytics taxonomy -> packages/contracts/gen/kotlin-client
+#   gen-swift.sh   swift-openapi-generator Swift client + AIStylistKernel registry target
+#                                                                     -> packages/contracts/gen/swift-client
+#   gen-kotlin.sh  openapi-generator Kotlin client + analytics taxonomy + kernel registries
+#                                                                     -> packages/contracts/gen/kotlin-client
 #   gen-python.sh  datamodel-code-generator Pydantic models           -> workers/ml/generated (if present)
-# gen-ts.sh runs first: it writes gen/openapi.bundle.json, which the Swift and Kotlin generators read.
+# The registry emitter runs first (it validates the registries against their JSON Schemas and fails
+# loudly); gen-ts.sh then writes gen/openapi.bundle.json, which the Swift and Kotlin generators read.
 # Toolchains: node (all), java (gen-kotlin.sh; mise pin), swift on PATH or Docker swift:6.4 (gen-swift.sh).
 # The two native generators run through scripts/native-lane.sh (lanes ios / android): NATIVE_LANES=none
 # skips them with a notice (pr-gate's `just ci-parity --core`; the contracts job runs them); with no
@@ -18,13 +23,13 @@ CHECK=0
 for arg in "$@"; do
   case "$arg" in
     --check) CHECK=1 ;;
-    -h|--help) sed -n '2,12p' "$0"; exit 0 ;;
+    -h|--help) sed -n '2,17p' "$0"; exit 0 ;;
     *) echo "generate.sh: unknown argument '$arg'" >&2; exit 2 ;;
   esac
 done
 
 # Generated output roots (relative to repo root). Missing ones are skipped.
-OUTPUT_DIRS=(packages/contracts/gen)
+OUTPUT_DIRS=(packages/shared-kernel/src/gen packages/contracts/gen)
 # Tool caches that may appear inside output dirs and are never generated or committed.
 # (.build, .swiftpm, Package.resolved: a local `swift build` inside gen/swift-client leaves them.)
 DIFF_EXCLUDES=(-x __pycache__ -x '*.pyc' -x .pytest_cache -x .ruff_cache -x .mypy_cache -x .build -x .swiftpm -x Package.resolved)
@@ -33,6 +38,7 @@ if [[ -x "$HERE/gen-python.sh" ]]; then
 fi
 
 run_generators() {
+  node "$HERE/gen-kernel.mjs" ts "$ROOT/packages/shared-kernel/src/gen"
   "$HERE/gen-ts.sh"            # writes gen/openapi.bundle.json, which the two below read
   "$ROOT/scripts/native-lane.sh" ios swift "$HERE/gen-swift.sh"
   "$ROOT/scripts/native-lane.sh" android none "$HERE/gen-kotlin.sh"

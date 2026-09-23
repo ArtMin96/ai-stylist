@@ -6,7 +6,8 @@ let package = Package(
   name: "AIStylistAPI",
   platforms: [.iOS(.v26), .macOS(.v26)],
   products: [
-    .library(name: "AIStylistAPI", targets: ["AIStylistAPI"])
+    .library(name: "AIStylistAPI", targets: ["AIStylistAPI"]),
+    .library(name: "AIStylistKernel", targets: ["AIStylistKernel"]),
   ],
   dependencies: [
     .package(url: "https://github.com/apple/swift-openapi-runtime", exact: "1.12.1")
@@ -16,6 +17,10 @@ let package = Package(
       name: "AIStylistAPI",
       dependencies: [.product(name: "OpenAPIRuntime", package: "swift-openapi-runtime")],
       swiftSettings: [.swiftLanguageMode(.v6)]
-    )
+    ),
+    .target(
+      name: "AIStylistKernel",
+      swiftSettings: [.swiftLanguageMode(.v6)]
+    ),
   ]
 )

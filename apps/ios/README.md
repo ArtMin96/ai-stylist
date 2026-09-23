@@ -30,13 +30,11 @@ The generated client lives in `packages/contracts/gen/swift-client/`. `tools/cod
 
 ## Environments
 
-| Config (scheme)               | Display name       | Bundle id                      | API_BASE_URL (host-only)      |
-| ----------------------------- | ------------------ | ------------------------------ | ----------------------------- |
-| Dev (`AIStylist-Dev`)         | AI Stylist Dev     | `app.aistylist.mobile.dev`     | `http://localhost:3000`       |
-| Preview (`AIStylist-Preview`) | AI Stylist Preview | `app.aistylist.mobile.preview` | `https://api.ai-stylist.app`* |
-| Prod (`AIStylist-Prod`)       | AI Stylist         | `app.aistylist.mobile`         | `https://api.ai-stylist.app`  |
-
-\* There is no staging API yet, so Preview points at production for now.
+| Config (scheme)               | Display name       | Bundle id                      | API_BASE_URL (host-only)             |
+| ----------------------------- | ------------------ | ------------------------------ | ------------------------------------ |
+| Dev (`AIStylist-Dev`)         | AI Stylist Dev     | `app.aistylist.mobile.dev`     | `http://localhost:3000`              |
+| Preview (`AIStylist-Preview`) | AI Stylist Preview | `app.aistylist.mobile.preview` | `https://staging-api.ai-stylist.app` |
+| Prod (`AIStylist-Prod`)       | AI Stylist         | `app.aistylist.mobile`         | `https://api.ai-stylist.app`         |
 
 `API_BASE_URL` is **host-only**: scheme, host and optional port, with no path. The operation paths already start with
 `/v1`. `AppConfig.parse` rejects a base URL that has a path, so a request can never go to `/v1/v1/...`. In an

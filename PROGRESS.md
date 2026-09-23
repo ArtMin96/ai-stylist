@@ -8,7 +8,7 @@ This root file exists so that `PROGRESS.md` resolves at the repository root as t
 
 - **P02 — Repo foundations and CI:** `IN_PROGRESS`, started 2026-09-09 (ahead of P00 for the no-dependency subset, DEC-36). Task list, per-task state and acceptance criteria: [`planning/phases/P02-repo-foundations-and-ci.md`](planning/phases/P02-repo-foundations-and-ci.md) §12 and §19.
 - **Last green:** `just ci-parity`, 2026-09-23 (locally on Linux, branch `chore/native-foundations`, after the native migration): all gates pass, incl. Android build/test/lint, iOS packages via Docker Swift, gitleaks + osv fixtures. iOS simulator build/test skipped on Linux; they passed on the GitHub macOS runner in PR #6 (https://github.com/ArtMin96/ai-stylist/actions/runs/35790550229/job/106958271073). All 18 PR #6 checks green.
-- **Latest handoff:** [`planning/PROGRESS.md`](planning/PROGRESS.md) → "Session handoff log" → entry dated 2026-09-22 ("Native migration: React Native + Expo replaced by SwiftUI + Compose", [ADR-0004](docs/adr/0004-native-ios-and-android-clients.md)). Next action: on the team's Mac, `just ios-doctor && just ios-check`; then `just ci-parity` on the merged branch and open the PR.
+- **Latest handoff:** [`planning/PROGRESS.md`](planning/PROGRESS.md) → "Session handoff log" → entry dated 2026-09-23 ("Native-migration follow-ups: OQ-15/16/17 resolved", [ADR-0005](docs/adr/0005-shared-kernel-registries-for-native-clients.md)). Next action: merge PR #5 → #6 → `chore/native-followups`.
 
 ## How to update status
 

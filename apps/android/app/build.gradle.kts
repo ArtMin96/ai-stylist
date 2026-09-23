@@ -46,9 +46,8 @@ android {
             initWith(getByName("release"))
             applicationIdSuffix = ".preview"
             manifestPlaceholders["appName"] = "AI Stylist Preview"
-            // TODO(human): no staging/preview API host exists yet, so preview points at the
-            // production host (same as the iOS Preview configuration). Replace when one is chosen.
-            buildConfigField("String", "API_BASE_URL", apiBaseUrl("https://api.ai-stylist.app"))
+            // preview talks to the staging API (OQ-17); keep the iOS Preview configuration in sync.
+            buildConfigField("String", "API_BASE_URL", apiBaseUrl("https://staging-api.ai-stylist.app"))
             // Installable for internal testing without a release key.
             signingConfig = signingConfigs.getByName("debug")
             matchingFallbacks += listOf("release")

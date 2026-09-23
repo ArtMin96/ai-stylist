@@ -14,9 +14,9 @@ public struct VersionService: VersionFetching {
   private let client: Client
 
   /// - Parameters:
-  ///   - baseURL: the HOST-ONLY base URL from `AppConfig.apiBaseURL`. Deliberately NOT the
-  ///     generated `Servers` URLs: those end in `/v1` while the operation paths also start with
-  ///     `/v1`, which would request `/v1/v1/version`.
+  ///   - baseURL: the HOST-ONLY base URL from `AppConfig.apiBaseURL` (the operation paths already
+  ///     start with `/v1`). Deliberately NOT the generated `Servers` URLs: the per-environment
+  ///     host comes from the build configuration, not the contract.
   ///   - transport: the HTTP transport (tests pass an in-memory fake).
   public init(baseURL: URL, transport: any ClientTransport) {
     client = Client(

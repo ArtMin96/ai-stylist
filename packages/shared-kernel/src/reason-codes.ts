@@ -3,26 +3,22 @@
 //
 // Namespaces are fixed by doc 09 §7. Concrete codes land per rule/scorer in P09 (recommendation
 // engine); adding a code is a versioned shared-kernel change with a test and a template.
+//
+// Data lives in packages/shared-kernel/registry/reason-codes.json (the single source for TS, Swift
+// and Kotlin, OQ-15); `just generate` writes ./gen/reason-codes.ts. This file owns the types and
+// the `satisfies` check.
+import {
+  REASON_CODES as REGISTERED_REASON_CODES,
+  REASON_CODE_NAMESPACES,
+  type REASON_CODE_STAGES,
+} from './gen/reason-codes.js';
 
-export const REASON_CODE_NAMESPACES = [
-  'RC-EXCL', // hard exclusions (stage 3)
-  'RC-WEATHER',
-  'RC-OCCASION',
-  'RC-COLOR',
-  'RC-FIT',
-  'RC-REPEAT',
-  'RC-RARELY-WORN',
-  'RC-PREF',
-  'RC-TREND',
-  'RC-GAP', // sparse closet
-  'RC-CTX-MISSING',
-  'RC-STALE',
-] as const;
+export { REASON_CODE_NAMESPACES };
 
 export type ReasonCodeNamespace = (typeof REASON_CODE_NAMESPACES)[number];
 
 /** Stage of the pipeline (doc 09 §2) that may emit the code. */
-export type ReasonCodeStage = 'exclusion' | 'scoring' | 'diagnostic';
+export type ReasonCodeStage = (typeof REASON_CODE_STAGES)[number];
 
 export type ReasonCodeDefinition = {
   readonly namespace: ReasonCodeNamespace;
@@ -36,13 +32,9 @@ export type ReasonCodeDefinition = {
  * Registry shape: `{ 'RC-EXCL-COLD-SAFETY': { namespace: 'RC-EXCL', stage: 'exclusion', … } }`.
  * Only the doc-09 worked example is registered in P02; the full set arrives with P09.
  */
-export const REASON_CODES = {
-  'RC-EXCL-COLD-SAFETY': {
-    namespace: 'RC-EXCL',
-    stage: 'exclusion',
-    params: ['threshold', 'feelsLike'],
-    description: 'Excluded: feels-like temperature is below the safety threshold for this coverage',
-  },
-} as const satisfies Record<`${ReasonCodeNamespace}${string}`, ReasonCodeDefinition>;
+export const REASON_CODES = REGISTERED_REASON_CODES satisfies Record<
+  `${ReasonCodeNamespace}${string}`,
+  ReasonCodeDefinition
+>;
 
 export type ReasonCode = keyof typeof REASON_CODES;

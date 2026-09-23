@@ -56,7 +56,7 @@ Then pick one:
 
 **Human-only steps outstanding** (agents stop at config + `.env.example` keys):
 - Create vendor accounts and record regions per OQ-07: server provider (per OQ-07/OQ-14 — Hetzner is the working assumption), Cloudflare R2, Grafana Cloud, PostHog, Apple Developer, Google Play. (Neon, Railway and Trigger.dev were removed on 2026-09-13 — DEC-41–43; Expo/EAS on 2026-09-22 — DEC-51.)
-- Native-migration cleanup (2026-09-22): delete the GitHub secret `EXPO_TOKEN`; remove `EXPO_PUBLIC_EAS_PROJECT_ID` and `EXPO_PUBLIC_API_BASE_URL` from `secrets/dev.enc.yaml` (`just secrets-edit dev`); decide whether to keep or delete the Expo account/project; decide a staging API host (OQ-17); confirm iOS 26.0 / Android minSdk 29 device floors and `app.aistylist.mobile` as the permanent id (OQ-08, OQ-18).
+- Native-migration cleanup (2026-09-22; updated 2026-09-24): decide whether to keep or delete the Expo account/project; provision `https://staging-api.ai-stylist.app` (OQ-17 decided, host not yet live; ties to OQ-14); confirm iOS 26.0 / Android minSdk 29 device floors and `app.aistylist.mobile` as the permanent id (OQ-08, OQ-18).
 - Decide OQ-14 (server provider + single-host vs DB-separate topology at launch) together with OQ-07 before any cloud provisioning.
 - Remove the four stale empty keys from `secrets/dev.enc.yaml` (`sops unset secrets/dev.enc.yaml '["NEON_API_KEY"]'` etc. for `NEON_PROJECT_ID`, `TRIGGER_PROJECT_REF`, `TRIGGER_SECRET_KEY`) — the agent session was not permitted to write the secret store.
 - Enable GitHub branch protection on `main` (required checks = the `pr-gate` workflow jobs) and confirm the workflows run green on GitHub (none has run remotely yet).
@@ -81,6 +81,27 @@ Log hygiene: when this log exceeds ~30 entries, move the oldest entries to `plan
 ## Session handoff log
 
 *(newest first)*
+
+### 2026-09-23 — Native-migration follow-ups: OQ-15/16/17 resolved (ADR-0005, DEC-55)
+
+- **Phase / tasks worked:** P02 follow-ups to ADR-0004 (PR #6). Branch `chore/native-followups`, cut from `chore/native-foundations` because PRs #5 and #6 were not merged yet. One small agent per concern, each in its own worktree, then merged.
+- **Status changes:** none (P02 stays `IN_PROGRESS`).
+- **Done this session:**
+  - **OQ-16:** `servers[].url` no longer ends in `/v1`; paths unchanged; all clients regenerated. oasdiff reports "No breaking changes to report". The iOS/Android tests that assert exactly one `/v1` pass (`44d69cb`).
+  - **OQ-17:** iOS `Preview.xcconfig` and the Android `preview` build type point at `https://staging-api.ai-stylist.app`; the TODOs and stale double-`/v1` comments are gone (`9cc65f4`, `55bc642`).
+  - **OQ-15:** `packages/shared-kernel/registry/*.json` generates TS (`src/gen`), Swift (`AIStylistKernel`) and Kotlin (`app.aistylist.contracts.kernel`) through `just generate`, and `--check` covers all three (`80be181`, [ADR-0005](../docs/adr/0005-shared-kernel-registries-for-native-clients.md), DEC-55).
+  - **`EXPO_PUBLIC_*`:** both keys removed from `secrets/dev.enc.yaml` with `sops unset` on 2026-09-24 (41 → 39 keys; the file still decrypts). The developer identity was restored from a backup file.
+  - **`EXPO_TOKEN`:** nothing to delete. `gh secret list` shows only `SOPS_AGE_KEY`; the Dependabot and Codespaces scopes are empty, and there are no environments. `rg EXPO_TOKEN` finds no code references.
+- **Not done / in flight:**
+  - No app target consumes `AIStylistKernel` or the Kotlin `kernel` sources yet; that wiring is deferred to the first feature that needs it.
+  - Python kernel emission and `errors.ts` are out of scope.
+- **Repository state:** buildable ✅. See the PR for `just ci-parity` output. iOS Xcode steps are not run on Linux; the macOS CI job covers them.
+- **New decisions / risks / questions filed:** DEC-55; OQ-15, OQ-16 and OQ-17 resolved.
+- **Surprises / gotchas:**
+  - `isolation: worktree` agents branch from `main`, not the current branch, so each agent had to `git switch -c <branch> chore/native-followups` first.
+  - `just test shared-kernel` does not exist; use `pnpm --filter @ai-stylist/shared-kernel test` or `just test`.
+  - The `tools/codegen/**` edits (gen-kernel.mjs, kernel/*.mjs, gen-swift.sh, gen-kotlin.sh, generate.sh) were made by contracts-engineer. A tooling-engineer review is worthwhile.
+- **Next session starts:** merge PR #5 → #6 → this PR. Then wire `AIStylistKernel` / the Kotlin `kernel` sources into the first feature module that shows a reason code or checks an entitlement.
 
 ### 2026-09-22 — Native migration: React Native + Expo replaced by SwiftUI + Compose (ADR-0004, DEC-49–54)
 

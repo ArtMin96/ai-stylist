@@ -82,6 +82,23 @@ Log hygiene: when this log exceeds ~30 entries, move the oldest entries to `plan
 
 *(newest first)*
 
+### 2026-09-24 — Docs and install-steps refresh; fresh-clone bootstrap fixes
+
+- **Phase / tasks worked:** P02 hygiene (no task ID). Branch `docs/refresh`, stacked on `chore/native-followups` (PR #7). One agent per disjoint doc set, plus a read-only fresh-clone run of the README install steps.
+- **Status changes:** none.
+- **Done this session:**
+  - **Doc refresh:** every developer-facing README and setup doc was checked against the code and fixed: root README, macOS guide, iOS/Android/e2e, API/jobs/outbox/db/seed-data, workers, secrets, SERVICES-SETUP (new §15 push), security docs, workflow/tooling/index READMEs, and the platform module contract. `solo.yml` no longer starts the removed `just dev-mobile`.
+  - **Fresh-clone fixes:** `just doctor` ignores global mise tools, bootstrap fills the local `DATABASE_URL`, the onboarding next-step line follows the actual outcome, and a system `mise` on PATH is used. The onboarding tests failed before the fix and pass after (`just test secrets`).
+  - **Human-only drift:** `CLAUDE.md` and `planning/15` changes are written up as a proposal in [`.claude/plans/s4-doc-refresh-human-proposals.md`](../.claude/plans/s4-doc-refresh-human-proposals.md).
+- **Not done / in flight:**
+  - The pr-gate oasdiff step always skips: `scripts/ci/contracts-breaking.sh` looks for `packages/contracts/openapi.bundle.json`, but the bundle is generated at `packages/contracts/gen/openapi.bundle.json`. This needs a tooling fix.
+  - `secrets/dev.enc.yaml` still holds the empty `NEON_*`/`TRIGGER_*` keys.
+  - The push section's Firebase pricing line is not verified against the vendor page.
+- **Repository state:** buildable ✅ (see the PR for `just ci-parity`).
+- **New decisions / risks / questions filed:** none.
+- **Surprises / gotchas:** doctor used to fail for anyone whose global mise config pins `latest` tools. The README's first-run `curl …/v1/health` returned 503 on a fresh clone until bootstrap filled `DATABASE_URL`.
+- **Next session starts:** fix the oasdiff bundle path (tooling-engineer), then merge #5 → #6 → #7 → this PR.
+
 ### 2026-09-23 — Native-migration follow-ups: OQ-15/16/17 resolved (ADR-0005, DEC-55)
 
 - **Phase / tasks worked:** P02 follow-ups to ADR-0004 (PR #6). Branch `chore/native-followups`, cut from `chore/native-foundations` because PRs #5 and #6 were not merged yet. One small agent per concern, each in its own worktree, then merged.

@@ -13,11 +13,11 @@
   },
   "servers": [
     {
-      "url": "https://api.ai-stylist.app/v1",
+      "url": "https://api.ai-stylist.app",
       "description": "Production"
     },
     {
-      "url": "http://localhost:3000/v1",
+      "url": "http://localhost:3000",
       "description": "Local development"
     }
   ],

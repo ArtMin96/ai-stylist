@@ -110,7 +110,7 @@ class ApiClient(
 
         @JvmStatic
         val defaultBasePath: String by lazy {
-            System.getProperties().getProperty(BASE_URL_KEY, "https://api.ai-stylist.app/v1")
+            System.getProperties().getProperty(BASE_URL_KEY, "https://api.ai-stylist.app")
         }
     }
 }

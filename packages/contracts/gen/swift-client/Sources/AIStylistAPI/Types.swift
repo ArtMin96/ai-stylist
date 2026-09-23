@@ -57,7 +57,7 @@ public enum Servers {
         /// Production
         public static func url() throws -> Foundation.URL {
             try Foundation.URL(
-                validatingOpenAPIServerURL: "https://api.ai-stylist.app/v1",
+                validatingOpenAPIServerURL: "https://api.ai-stylist.app",
                 variables: []
             )
         }
@@ -66,7 +66,7 @@ public enum Servers {
     @available(*, deprecated, renamed: "Servers.Server1.url")
     public static func server1() throws -> Foundation.URL {
         try Foundation.URL(
-            validatingOpenAPIServerURL: "https://api.ai-stylist.app/v1",
+            validatingOpenAPIServerURL: "https://api.ai-stylist.app",
             variables: []
         )
     }
@@ -75,7 +75,7 @@ public enum Servers {
         /// Local development
         public static func url() throws -> Foundation.URL {
             try Foundation.URL(
-                validatingOpenAPIServerURL: "http://localhost:3000/v1",
+                validatingOpenAPIServerURL: "http://localhost:3000",
                 variables: []
             )
         }
@@ -84,7 +84,7 @@ public enum Servers {
     @available(*, deprecated, renamed: "Servers.Server2.url")
     public static func server2() throws -> Foundation.URL {
         try Foundation.URL(
-            validatingOpenAPIServerURL: "http://localhost:3000/v1",
+            validatingOpenAPIServerURL: "http://localhost:3000",
             variables: []
         )
     }

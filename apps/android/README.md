@@ -38,7 +38,7 @@ in `build-logic/convention/src/main/kotlin/RootConventionPlugin.kt`.
 | Build type | Env | applicationId | App name | Default `API_BASE_URL` |
 |---|---|---|---|---|
 | `debug` | dev | `app.aistylist.mobile.dev` | AI Stylist Dev | `http://10.0.2.2:3000` (the emulator's alias for the host running `just dev-api`) |
-| `preview` | preview | `app.aistylist.mobile.preview` | AI Stylist Preview | `https://api.ai-stylist.app`. **TODO:** no staging host exists yet, the same as iOS Preview |
+| `preview` | preview | `app.aistylist.mobile.preview` | AI Stylist Preview | `https://staging-api.ai-stylist.app` (staging) |
 | `release` | prod | `app.aistylist.mobile` | AI Stylist | `https://api.ai-stylist.app` |
 
 - **`API_BASE_URL` is host-only**: `scheme://host[:port]`, with no path. The generated operations

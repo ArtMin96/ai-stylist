@@ -1,0 +1,26 @@
+{
+  "$schema": "./reason-codes.schema.json",
+  "namespaces": [
+    { "name": "RC-EXCL", "note": "hard exclusions (stage 3)" },
+    { "name": "RC-WEATHER" },
+    { "name": "RC-OCCASION" },
+    { "name": "RC-COLOR" },
+    { "name": "RC-FIT" },
+    { "name": "RC-REPEAT" },
+    { "name": "RC-RARELY-WORN" },
+    { "name": "RC-PREF" },
+    { "name": "RC-TREND" },
+    { "name": "RC-GAP", "note": "sparse closet" },
+    { "name": "RC-CTX-MISSING" },
+    { "name": "RC-STALE" }
+  ],
+  "stages": ["exclusion", "scoring", "diagnostic"],
+  "codes": {
+    "RC-EXCL-COLD-SAFETY": {
+      "namespace": "RC-EXCL",
+      "stage": "exclusion",
+      "params": ["threshold", "feelsLike"],
+      "description": "Excluded: feels-like temperature is below the safety threshold for this coverage"
+    }
+  }
+}

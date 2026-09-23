@@ -24,8 +24,8 @@ inline feedback; `tools/depcruise` is the whole-graph gate and carries the full 
 ## File-size threshold
 
 The threshold is **400 lines** (`FILE_SIZE_MAX_LINES` in `quality.mjs`), warn-only per brief §8 row 8.
-NFR-TEAM-050 says the number lives in planning doc 15 — doc 15 does not record it yet; a human must add
-"400 lines (warn)" to doc 15 (`planning/` is not edited by agents).
+NFR-TEAM-050 says the number lives in planning doc 15, which records it (§7, "File-size review threshold",
+DEC-40): 400 lines, warning only, tests and generated files exempt, reviewers enforce it.
 
 ## Fixtures
 

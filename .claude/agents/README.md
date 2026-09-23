@@ -11,7 +11,7 @@ so the two never drift apart (copy-and-diverge is forbidden repo-wide).
 
 | Agent | Owns | Scope | Verify with |
 | --- | --- | --- | --- |
-| [`ios-engineer`](ios-engineer.md) | `apps/ios/**` | Native iOS: Swift 6 + SwiftUI screens, view models, Core services, xcconfigs, `project.yml` | `just ios-check`, `just test ios`, `just generate --check` (if contracts touched); macOS: `just ios-build`, `just ios-test`, `just ios-e2e` |
+| [`ios-engineer`](ios-engineer.md) | `apps/ios/**`, `tools/codegen/gen-swift.sh` | Native iOS: Swift 6 + SwiftUI screens, view models, Core services, xcconfigs, `project.yml` | `just ios-check`, `just test ios`, `just generate --check` (if contracts touched); macOS: `just ios-build`, `just ios-test`, `just ios-e2e` |
 | [`android-engineer`](android-engineer.md) | `apps/android/**` | Native Android: Kotlin + Compose screens, ViewModels, core modules, Gradle build logic | `just android-check`, `just test android`, `just generate --check` (if contracts touched); emulator: `just android-e2e` |
 | [`api-engineer`](api-engineer.md) | `apps/api/src/modules/{identity,profile,avatar,closet,media,billing,notifications,admin,assistant}/**` + the API composition root | NestJS domain-module work and HTTP tests for those modules | `just test <module>`, `just test api`, `just lint`, `just typecheck`, `just arch-check` |
 | [`platform-engineer`](platform-engineer.md) | `apps/api/src/platform/**`, `apps/api/src/jobs/**`, `packages/db/**`, `apps/api/tests/migrations/**`, `packages/seed-data/**`, `docker-compose.yml` | Port adapters, pg-boss jobs, Drizzle migrations + rollbacks, seed data | `just test platform`, `just test api`, `just db-reset --yes && just db-migrate && just db-seed`, `just db-rollback --yes && just db-migrate`, `just lint`, `just typecheck`, `just arch-check` |
@@ -65,7 +65,8 @@ This roster and the invariants above are backed by two mechanical layers, not ag
 alone: path-scoped rules under `.claude/rules/*.md` (loaded automatically when an agent touches a
 matching path — the binding rules that would otherwise need a `CLAUDE.md` edit) and the hooks
 declared in `.claude/settings.json` (a `PreToolUse` path guard and Bash guard, a scoped
-`PostToolUse` lint, and a `Stop` `PROGRESS.md` gate). An agent description or this README stating a
+`PostToolUse` lint, a `Stop` `PROGRESS.md` gate, and a `SessionStart` orientation print; scripts in
+`scripts/hooks/`). An agent description or this README stating a
 rule is a convenience for the model; the rule file and the hook are what actually stop a violation.
 
 ## When to use the global agents instead
@@ -141,9 +142,9 @@ https://github.com/anthropics/claude-code/blob/main/CHANGELOG.md.
   files to read first and require the task restatement; CLAUDE.md rules arrive automatically, so
   the bodies restate only the rules that bite in the area.
 - **Length and structure:** the docs suggest 1–5 concise paragraphs (role, scope, success
-  criteria/output format, constraints). These files run 110–140 lines because each carries the
-  area's commands, invariants, and stop conditions; keep them under ~140 lines and move anything
-  larger into the skill files.
+  criteria/output format, constraints). These files run 113–162 lines because each carries the
+  area's commands, invariants, and stop conditions; keep them short and move anything larger into
+  the skill files.
 - **Model:** resolution order is per-invocation `model` → agent `model` field →
   `CLAUDE_CODE_SUBAGENT_MODEL` → the main conversation's model. `inherit` pins to the parent
   explicitly; omitting falls through. Pin `haiku` for cheap read-only work, `opus` for hard

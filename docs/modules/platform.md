@@ -3,19 +3,24 @@
 > Module names are canonical per [SPINE §3](../../planning/SPINE.md). Path: `apps/api/src/platform`. This contract is the module's source of truth; code that contradicts it is wrong until a DEC entry says otherwise.
 
 - **Responsibility (one sentence):** Infrastructure adapters that implement the ports declared by domain modules: storage (R2), durable jobs (pg-boss), outbox relay, logger, OTel init, PostHog server, resilience utilities, provider SDK wrappers; deployment target is owned servers + Coolify (DEC-42).
-- **Owner:** @team (placeholder — see `CODEOWNERS`) · **Status:** skeleton (P02) · **Last updated:** 2026-09-09
+- **Owner:** @team (placeholder — see `CODEOWNERS`) · **Status:** skeleton (P02) · **Last updated:** 2026-09-24
 
 ## Public interface
 
-Public interface: `index.ts` only; nothing exported yet (P02 skeleton). Domain modules never import from here; only composition roots do (`modules-not-platform`).
+Public interface: `index.ts` only. Domain modules never import from here; only composition roots do (`modules-not-platform`).
 
-| Export | Kind (service/command/query/type/port) | Purpose  |
-| ------ | -------------------------------------- | -------- |
-| —      | —                                      | none yet |
+| Export                                                                                                                                                        | Kind (service/command/query/type/port) | Purpose                                                                                                                                                               |
+| ------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `PlatformModule.forRoot(bindings)`, `PlatformBindings`                                                                                                        | service / type                         | Global Nest module: binds the ports to adapters the composition root built, serves `GET /v1/health` and `GET /v1/version`, installs the logger and the problem filter |
+| `CLOCK`, `Clock`, `SystemClock`                                                                                                                               | port / adapter                         | Injectable time source                                                                                                                                                |
+| `HEALTH_PROBE`, `HealthProbe`, `PgHealthProbe`, `UnconfiguredHealthProbe`                                                                                     | port / adapter                         | Readiness probe behind `/v1/health` (Postgres, or `down` when `DATABASE_URL` is unset)                                                                                |
+| `STORAGE_PROVIDER`, `StorageProvider`, `InMemoryStorageProvider`, `StorageError`, `Presign*` types, `StorageNamespace`, `MAX_PRESIGN_TTL_SECONDS`, `clampTtl` | port / adapter                         | Object storage with presigned URLs; R2 adapter pending (P02-T13)                                                                                                      |
+| `ProblemFilter`, `PROBLEM_CONTENT_TYPE`, `ProblemBody`, `toProblem`                                                                                           | adapter                                | RFC 9457 problem+json responses for every error                                                                                                                       |
+| `loggerOptions`, `httpLoggerOptions`, `FORBIDDEN_LOG_KEYS`, `REDACTED`, `isForbiddenLogKey`, `redactForbidden`                                                | adapter                                | pino logger configuration with sensitive-key redaction                                                                                                                |
 
 ## Owned data
 
-None yet (P02 skeleton). Planned per SPINE §3: no domain data (SPINE §3); P02 owns the `platform_outbox` and `platform_idempotency_keys` migrations (0001/0002) as infrastructure tables. Infrastructure tables are defined in `packages/db/migrations/` (0001, 0002) and owned by `platform`; no domain module reads them directly.
+No domain data (SPINE §3). Infrastructure tables only: `platform_outbox` and `platform_idempotency_keys`, defined in `packages/db/src/schema/platform.ts` and created by migrations 0001/0002 in `packages/db/migrations/`. They are owned by `platform`; no domain module reads them directly.
 
 ## Invariants
 

@@ -11,6 +11,10 @@
 # commands instead of `--no-verify`/`--force`. No-op under CI or when SOPS_AGE_KEY is already set —
 # there is nothing to onboard on a machine that only ever gets a key from the environment.
 # Usage: scripts/security/secrets-onboard.sh   (no args; exits 0 except when sops/age are missing)
+# When SECRETS_ONBOARD_STATUS_FILE is set, the outcome is also appended there one word per line —
+# `pushed` (an onboarding branch was pushed: a PR to open), `synced` (secrets-sync filled .env),
+# `skipped` (CI / SOPS_AGE_KEY) — so `just bootstrap` prints a closing hint that matches what
+# actually happened. No word at all means onboarding stopped early and printed what to do by hand.
 set -euo pipefail
 
 # shellcheck source=scripts/security/secrets-lib.sh
@@ -24,6 +28,13 @@ onboard_file_mode() {
         stat -c '%a' "$1"
     else
         stat -f '%Lp' "$1"
+    fi
+}
+
+# Appends outcome word <status> to $SECRETS_ONBOARD_STATUS_FILE when the caller set one (see header).
+onboard_status() {
+    if [[ -n "${SECRETS_ONBOARD_STATUS_FILE:-}" ]]; then
+        printf '%s\n' "$1" >> "$SECRETS_ONBOARD_STATUS_FILE"
     fi
 }
 
@@ -45,6 +56,7 @@ secrets_require_tools
 
 if [[ -n "${CI:-}" ]] || secrets_identity_from_env; then
     echo "skipping onboarding (CI or SOPS_AGE_KEY is set)"
+    onboard_status skipped
     exit 0
 fi
 
@@ -127,6 +139,7 @@ else
 
     if git -C "$wt" push --quiet --set-upstream origin "$branch"; then
         echo "pushed $branch — open the pull request:"
+        onboard_status pushed
         if url="$(secrets_github_compare_url "$default_branch" "$branch")"; then
             echo "$url"
         else
@@ -141,6 +154,7 @@ fi
 
 if secrets_can_decrypt "$ENV_NAME"; then
     "$ROOT/scripts/security/secrets-sync.sh" "$ENV_NAME"
+    onboard_status synced
 else
     echo "waiting for approval: an approver must run  just secrets-approve $branch"
 fi

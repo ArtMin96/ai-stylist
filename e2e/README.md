@@ -11,7 +11,9 @@ flavour has its own id: `app.aistylist.mobile.dev` (dev), `app.aistylist.mobile.
 Run:
 
 - iOS (macOS): `just ios-e2e` builds the Dev configuration for the simulator, installs it and runs the flow.
-- Android: start an emulator (or connect a device), then `just android-e2e` installs the debug build and runs the flow.
+- Android: start an emulator (or connect a device; needs `adb` from the SDK, see [apps/android/README.md](../apps/android/README.md)), then `just android-e2e` installs the debug build and runs the flow.
 - By hand: `maestro test -e APP_ID=app.aistylist.mobile.dev e2e/smoke.yaml`.
 
-Both need the Maestro CLI (`mise install maestro`). Do not claim a flow passed without that transcript.
+Both need the Maestro CLI (`mise install maestro`, pinned in `mise.toml`; it runs on the mise JDK 21). CI does not run
+these flows yet: the `maestro` job in `.github/workflows/nightly.yml` is a placeholder until an emulator/simulator lane
+exists. Do not claim a flow passed without that transcript.

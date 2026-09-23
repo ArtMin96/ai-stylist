@@ -33,8 +33,8 @@ _unclassified_.
 | `deny`         | **FAIL**              | WARN                | GPL-\*, AGPL-\*, SSPL-\*, CC-BY-NC\*, UNKNOWN / UNLICENSED / NONE / no license field                                               |
 | _unclassified_ | **FAIL**              | WARN                | anything not listed: add it to the right list in a reviewed PR                                                                     |
 
-Dev-only copyleft warns instead of failing because it never ships in the mobile or backend
-bundle; the warning keeps it visible so it is not promoted to a production dependency by accident.
+Dev-only copyleft warns instead of failing because it never ships in the API bundle or a
+worker image; the warning keeps it visible so it is not promoted to a production dependency by accident.
 MPL-2.0 is file-level copyleft and allowed as long as we do not modify the dependency's own
 source (lightningcss, certifi).
 
@@ -115,4 +115,5 @@ dependency fails, the GPL dev-only tool warns, and the MIT dependency is silent.
 `.github/workflows/nightly.yml`, so a local file and the CI artifact can be diffed. The directory
 is gitignored; the SBOM is never committed, only uploaded per release (planning/15 §9).
 Excluded from the scan: `node_modules/.cache`, `prototype/`, `.git`, `artifacts/`, and the license
-fixture tree. About 1,900 packages, 30 to 50 s on a warm checkout.
+fixture tree. About 2,400 packages (npm, Maven, PyPI, GitHub Actions, SwiftPM), 15 to 25 s on a warm
+checkout (measured 2026-09-24).

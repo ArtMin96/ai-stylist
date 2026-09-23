@@ -1,6 +1,6 @@
 # Developing on macOS
 
-The tooling (`scripts/**`, `justfile`, `mise.toml`) runs on macOS (Apple Silicon and Intel) and Linux. Every script is written for the macOS default `/bin/bash` 3.2 (no `brew install bash` needed) and uses only flags shared by GNU and BSD tools; `just lint` runs shellcheck with `-s bash` to keep it that way. The `.github/workflows/portability.yml` workflow runs `scripts/bootstrap.sh` and every quality gate on a `macos-15` (arm64) runner and on Ubuntu.
+The tooling (`scripts/**`, `justfile`, `mise.toml`) runs on macOS (Apple Silicon and Intel) and Linux. Every script is written for the macOS default `/bin/bash` 3.2 (no `brew install bash` needed) and uses only flags shared by GNU and BSD tools; `just lint` runs shellcheck with `-s bash` to keep it that way. The `.github/workflows/portability.yml` workflow runs `scripts/bootstrap.sh` and every non-native quality gate on a `macos-15` (arm64) runner and on Ubuntu; the native lanes run in `ios.yml` (simulator build and tests on the `xcode-27` arm64 image) and `android.yml`.
 
 ## Prerequisites (once per Mac)
 
@@ -25,10 +25,11 @@ git clone https://github.com/ArtMin96/ai-stylist.git && cd ai-stylist
 ./scripts/bootstrap.sh --system   # Homebrew: git-lfs; Android SDK packages (~/Library/Android/sdk); Xcode check; detects your Docker runtime. No sudo.
 ./scripts/bootstrap.sh            # mise -> pinned toolchain (incl. xcodegen, xcbeautify, SwiftLint, maestro) -> pnpm install -> uv sync -> git hooks -> .env -> doctor
 eval "$(~/.local/bin/mise activate zsh)"   # add to ~/.zshrc
+eval "$(direnv hook zsh)"                  # add to ~/.zshrc; then `direnv allow` once (loads .env and ANDROID_HOME)
 just doctor
 ```
 
-`mise` installs to `~/.local/bin/mise` with shims in `~/.local/share/mise/shims` on macOS too (mise "Directories": data dir is `${XDG_DATA_HOME:-$HOME/.local/share}/mise`; only the cache moves to `~/Library/Caches/mise`). Every pin in `mise.toml` has a darwin-arm64 build (Temurin is arm64-native; oasdiff ships a universal binary); verified 2026-09-10 for the pre-native pins. The native-app pins added on 2026-09-22 (Temurin 21, xcodegen, xcbeautify, SwiftLint, maestro) were resolved on Linux only; `mise install` on the first Mac run confirms them. `xcodegen` and `xcbeautify` are macOS-only pins.
+`mise` installs to `~/.local/bin/mise` with shims in `~/.local/share/mise/shims` on macOS too (mise "Directories": data dir is `${XDG_DATA_HOME:-$HOME/.local/share}/mise`; only the cache moves to `~/Library/Caches/mise`). Every pin in `mise.toml` has a darwin-arm64 build (Temurin is arm64-native; oasdiff ships a universal binary); verified 2026-09-10 for the pre-native pins; the native-app pins added on 2026-09-22 (Temurin 21, xcodegen, xcbeautify, SwiftLint, maestro) installed on the `macos-15` portability runner on 2026-09-23. `xcodegen` and `xcbeautify` are macOS-only pins.
 
 ## What differs from Linux
 
@@ -42,4 +43,4 @@ just doctor
 
 - `SKIP_DOCKER_TESTS=1 just test` leaves out the Testcontainers `migrations` project; it exists for the macOS CI runner (no Docker) and is not for local use. The project itself still fails, never skips, when Docker is missing.
 - The `--system` step installs the Android SDK packages but no emulator image; create an emulator with Android Studio (or `sdkmanager` + `avdmanager`) to run `just android-e2e`.
-- Intel Macs are supported by every pin but are not exercised by CI (`macos-15` is arm64).
+- Intel Macs are supported by every pin but are not exercised by CI (`macos-15` and `xcode-27` are arm64).

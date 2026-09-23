@@ -98,7 +98,8 @@ If you have no age identity yet, this generates one at the resolved path (mode 6
 700; the private key is never printed), adds a `# developer: <label>` comment and your recipient
 under `# ADD RECIPIENTS` for `dev` in `.sops.yaml` on a new `onboard/<slug>` branch, pushes it, and
 prints a compare URL — open that as your pull request. Running it again once your identity exists
-and is already listed is a no-op. If the push fails (no remote access yet), bootstrap still exits 0
+and is already listed (for example, restored from the password manager) creates no branch; it runs
+`just secrets-sync` for you, and bootstrap's closing summary says the shared values were synced. If the push fails (no remote access yet), bootstrap still exits 0
 and prints the exact `git push -u origin onboard/<slug>` command to run later; the branch and commit
 already exist locally. In CI, or with `SOPS_AGE_KEY` already set, this step is skipped entirely.
 

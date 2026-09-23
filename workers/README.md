@@ -10,6 +10,7 @@ workers/
 ├── uv.lock                 single lockfile for every member (committed; `uv sync --frozen`)
 ├── conftest.py             pytest plugin: the no-skip rule (see below)
 ├── .dockerignore           build context for every image is this directory
+├── .gitignore              workspace-local caches (.hypothesis/); the root .gitignore covers the rest
 └── ml/
     ├── generated/          `ai-stylist-generated`: Pydantic models from packages/contracts/events (never hand-edited)
     └── segmentation/       `ai-stylist-segmentation`: FastAPI service
@@ -25,8 +26,9 @@ workers/
 
 ## Boundaries (brief §5, root CLAUDE.md)
 
-- **`mobile/workers-not-server`:** workers may depend only on `packages/contracts` (through the
-  generated models) and `packages/shared-kernel`. Never on `apps/api`. The versioned JSON
+- **`workers-not-server`** (brief §5; dependency-cruiser covers TypeScript only, so review
+  enforces it here): workers may depend only on `packages/contracts` (through the generated
+  models) and `packages/shared-kernel`. Never on `apps/api`. The versioned JSON
   schemas in `packages/contracts/events/*.json` are the _only_ contract shared with the
   TypeScript side; `just generate` turns them into `ml/generated/ai_stylist_generated/events/`.
 - **`composition-root-only`:** `ml/<service>/src/<pkg>/main.py` is the only module that builds
@@ -52,7 +54,9 @@ uv run basedpyright                    # config in workers/pyproject.toml (typeC
 ```
 
 From the repository root the same commands are `uv run --project workers <cmd> workers`
-(basedpyright additionally needs `--project workers` to find its config).
+(basedpyright additionally needs `--project workers` to find its config). The `just` recipes run
+exactly these: `just test workers`, and the workers leg of `just lint`, `just typecheck` and
+`just format [--check]`.
 
 ### Run a service locally (`just dev-workers`)
 
@@ -81,7 +85,8 @@ available; `workers/.dockerignore` keeps tests, caches and venvs out of the cont
 `packages/contracts/events/*.json` into `ml/generated/ai_stylist_generated/events/` (one module
 per schema), formats the result with the workspace ruff config and is idempotent. `--check`
 exits 1 when the committed output is stale. `CONTRACTS_EVENTS_DIR` overrides the input directory.
-Generated files start with a `GENERATED — run \`just generate\``banner and are excluded from`ruff check`; they are still type-checked.
+Generated files start with a `` # GENERATED — run `just generate` `` banner and are excluded from
+`ruff check`; they are still type-checked.
 
 ## Rules enforced by tooling
 
@@ -97,5 +102,9 @@ Generated files start with a `GENERATED — run \`just generate\``banner and are
 
 1. `mkdir ml/<name>` with a `pyproject.toml` (copy segmentation's; package `ai_stylist_<name>`).
 2. `main.py` composition root, `app.py` factory, `routes.py`, `schemas.py`, `tests/`, `Dockerfile`.
-3. `uv lock` (lockfiles are single-writer — sequence with other lockfile changes), commit `uv.lock`.
-4. The workspace glob `ml/*` picks it up; `pytest`, `ruff` and `basedpyright` need no changes.
+3. In the root `workers/pyproject.toml`, add `ai-stylist-<name>` to `dependencies` and to
+   `[tool.uv.sources]` (`{ workspace = true }`) so `uv sync --frozen` installs it, and add
+   `ai_stylist_<name>` to ruff's `known-first-party`.
+4. `uv lock` (lockfiles are single-writer — sequence with other lockfile changes), commit `uv.lock`.
+5. The workspace glob `ml/*` makes it a member; `pytest` (`ml/*/tests`) and `basedpyright`
+   (`include = ["ml", …]`) need no changes.

@@ -1,10 +1,13 @@
 # Dependency vulnerability ignores
 
-`just security-scan` runs `osv-scanner scan --recursive .` and `pnpm audit --audit-level=high`.
-osv-scanner reads every lockfile in the tree: `pnpm-lock.yaml`, `workers/uv.lock`, the Android
-`gradle.lockfile`s (`apps/android/**/gradle.lockfile`, `apps/android/*-gradle.lockfile`) plus
+`just security-scan` runs `scripts/ci/osv-scan.sh` (`osv-scanner scan --recursive` over the
+checkout) and `pnpm audit --audit-level=high`. osv-scanner reads every lockfile in the tree:
+`pnpm-lock.yaml`, `workers/uv.lock`, the Android `gradle.lockfile`s
+(`apps/android/**/gradle.lockfile`, `apps/android/buildscript-gradle.lockfile`) plus
 `apps/android/gradle/verification-metadata.xml`, and the iOS `apps/ios/Packages/*/Package.resolved`.
-`pnpm audit` covers npm only. Neither tool is ever weakened to get a green run: no `--allow-*` flags, no
+The wrapper fails an empty scan and any tracked lockfile the scan did not report, and scans a git
+worktree through a symlink so an enclosing repository's `.gitignore` cannot hide it;
+`scripts/ci/osv-scan.sh --fixtures` (in `just ci-parity`) proves both. `pnpm audit` covers npm only. Neither tool is ever weakened to get a green run: no `--allow-*` flags, no
 lowered severity threshold, no lockfile exclusion. A reported vulnerability is handled in this
 order of preference, and the choice is recorded in the table below.
 

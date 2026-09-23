@@ -8,11 +8,11 @@ It complements the root [`README.md`](../README.md) (local machine setup) and th
 
 No secret ever goes into a committed file. Every value you copy from a vendor dashboard goes to exactly one of three places:
 
-| Where                                                           | What goes there                                                                                                                                                      | Who reads it                                           |
-| --------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------ |
-| `.env` (repo root, gitignored)                                  | Your personal local values. Keys mirror `.env.example`.                                                                                                              | `just` recipes, direnv, the API, the mobile app        |
-| `secrets/<env>.enc.yaml` (committed, encrypted with sops + age) | Shared values for `dev`, `staging`, `prod`. `just secrets-sync` decrypts `dev` into your `.env`. `staging`/`prod` are decrypted only by CI.                          | Developers (`dev`), CI deploy jobs (`staging`, `prod`) |
-| GitHub repository secrets                                       | Only: the CI age private key, store signing credentials, deploy and build tokens. The exact names are listed per service below and in `.github/workflows/README.md`. | GitHub Actions                                         |
+| Where                                                           | What goes there                                                                                                                                                      | Who reads it                                                                 |
+| --------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------- |
+| `.env` (repo root, gitignored)                                  | Your personal local values. Keys mirror `.env.example`.                                                                                                              | `just` recipes, direnv, the API, the workers (the native apps never read it) |
+| `secrets/<env>.enc.yaml` (committed, encrypted with sops + age) | Shared values for `dev`, `staging`, `prod`. `just secrets-sync` decrypts `dev` into your `.env`. `staging`/`prod` are decrypted only by CI.                          | Developers (`dev`), CI deploy jobs (`staging`, `prod`)                       |
+| GitHub repository secrets                                       | Only: the CI age private key, store signing credentials, deploy and build tokens. The exact names are listed per service below and in `.github/workflows/README.md`. | GitHub Actions                                                               |
 
 `.env.example` is the exhaustive, zero-value catalogue of keys. `just doctor` fails when your `.env` lacks any key listed there (empty values are fine). If a service produces a key that is not in `.env.example`, the key is added to `.env.example` with the phase that needs it, never invented ad hoc.
 
@@ -38,6 +38,7 @@ Phase numbers refer to `planning/phases/`. "Needed from" is the first task that 
 | 12  | RevenueCat                                                              | Subscriptions and entitlements                            | P13                        | Yes, up to $2,500 MTR, Checked 2026-09-10    | `<owner>`     | [ ]  |
 | 13  | fal.ai, Open-Meteo, date-holidays (no account), LLM/embedding providers | AI generation, weather, holidays, extraction              | P06 / P08 / P11            | Mixed, see section 13                        | `<owner>`     | [ ]  |
 | 14  | Apple and Google sign-in                                                | Social login for better-auth                              | P03                        | Included in 8 and free Google Cloud project  | `<owner>`     | [ ]  |
+| 15  | Firebase Cloud Messaging + APNs                                         | Push notifications (FCM + APNs direct, server-side)       | P09-T16                    | FCM free; APNs included in 8                 | `<owner>`     | [ ]  |
 
 Replace `<owner>` with a real name once an account exists; keep this table current.
 
@@ -53,7 +54,7 @@ Now (P02). The repository is `https://github.com/ArtMin96/ai-stylist` under a pe
 
 ### Cost
 
-Free. GitHub Actions minutes on Linux runners are free for public repositories; private repositories get a monthly included quota that depends on the plan. Verify on <https://docs.github.com/en/billing/managing-billing-for-your-products/about-billing-for-github-actions>. The `ios-gha-macos.yml` lane uses macOS runners, which are billed per minute even on paid plans; that lane is dispatch-only until ADR-0002 is decided.
+Free. GitHub Actions minutes on Linux runners are free for public repositories; private repositories get a monthly included quota that depends on the plan. Verify on <https://docs.github.com/en/billing/managing-billing-for-your-products/about-billing-for-github-actions>. The `macos` job of `ios.yml` runs on the `xcode-27` macOS runner for every pull request or push to `main` that touches the iOS paths (DEC-51; ADR-0002 was superseded by ADR-0004); on a private repository macOS minutes use up the quota much faster than Linux minutes.
 
 ### Steps
 
@@ -61,7 +62,7 @@ Free. GitHub Actions minutes on Linux runners are free for public repositories; 
 2. Replace the placeholder handles in `CODEOWNERS` (`@team`, `@dev-lead`, `@3d-owner`, `@ml-owner`) with real GitHub usernames. GitHub silently ignores unknown owners, so do this before step 3. With a one-person team every handle can be the same username. Commit the change through a normal pull request.
 3. Protect `main`: **Settings**, **Branches**, **Add classic branch protection rule** (GitHub also offers **Rulesets** under **Settings**, **Rules**; either works, use one, not both). Branch name pattern: `main`.
 4. Tick **Require a pull request before merging**. Tick **Require review from Code Owners** only after step 2 is merged.
-5. Tick **Require status checks to pass before merging** and **Require branches to be up to date before merging**. In the search box add these check names exactly as the jobs in `pr-gate.yml` report them: `just ci-parity`, `contracts (generate --check, spectral, oasdiff)`, `gitleaks (PR diff)`, `.env.example covers apps/api env keys`, `clone detection (NFR-TEAM-040)`. The names only appear in the search box after the workflow has run at least once on a pull request, so open a trivial PR first if the list is empty. `ci.pr_gate_duration` is informational; do not require it.
+5. Tick **Require status checks to pass before merging** and **Require branches to be up to date before merging**. In the search box add these check names exactly as the jobs in `pr-gate.yml` report them: `Gate · just ci-parity` (it also runs the `.env.example` key check), `Gate · Contracts (generate --check, spectral, oasdiff)`, `Gate · Secret scan (PR diff)`, `Gate · Clone detection (placeholder)`, and `Report · PR gate summary`, which fails when any gate job failed or was cancelled and carries `ci.pr_gate_duration_seconds`. The names only appear in the search box after the workflow has run at least once on a pull request, so open a trivial PR first if the list is empty.
 6. Save the rule.
 7. Repository secrets live at **Settings**, **Secrets and variables**, **Actions**, **New repository secret**. Create them as each later section tells you to. Nothing is needed for `pr-gate.yml`, `affected.yml`, or `nightly.yml` today. `GITLEAKS_LICENSE` is only needed when the repository moves under a GitHub organization; skip it.
 8. Turborepo remote cache (optional). `pr-gate.yml` prints "Turborepo remote cache disabled" until `TURBO_TOKEN` and `TURBO_TEAM` exist. Two options: Vercel Remote Cache (free on all Vercel plans, Checked 2026-09-10, <https://turborepo.dev/docs/core-concepts/remote-caching>; create a Vercel account, run `pnpm exec turbo login` then `pnpm exec turbo link` in the repo root, then create a token under the Vercel account settings, **Tokens** (label may differ), and store it as `TURBO_TOKEN` with the Vercel team slug as `TURBO_TEAM`), or a self-hosted cache server (an open-source `turborepo-remote-cache` deployment you run yourself). Recommendation: skip this until `ci.pr_gate_duration_seconds` in the job summary is consistently above the 10 minute budget. Cold CI runs are within budget today.
@@ -74,12 +75,12 @@ Free. GitHub Actions minutes on Linux runners are free for public repositories; 
 ### Do not
 
 - Do not add secrets to workflow YAML or to `.env.example`.
-- Do not require the native `android` / iOS build lanes or `nightly` checks on `main`; they are dispatch-only or scheduled.
+- Do not require the native `ios` / `android` lanes or `nightly` checks on `main`; the native lanes run only when their paths change (a required check that never runs blocks every other pull request) and `nightly` is scheduled.
 - Do not change required checks, force-push, or rewrite history without explicit human authorization (`CLAUDE.md` "Prohibited").
 
 ### Verify
 
-Open a pull request with any small change. The checks list shows the five `pr-gate` jobs plus `ci.pr_gate_duration`, and the "Merge" button stays disabled until they pass. Locally, `just ci-parity` must be green before you open it.
+Open a pull request with any small change. The checks list shows the four `Gate · …` jobs plus `Report · PR gate summary`, and the "Merge" button stays disabled until they pass. Locally, `just ci-parity` must be green before you open it.
 
 ## 2. sops + age
 
@@ -249,7 +250,7 @@ One owned server in the ~€10–25/month class (Hetzner is the working assumpti
 3. Harden before anything else runs: SSH keys only (`PasswordAuthentication no`), a non-root sudo user, `ufw` default deny with 22, 80, and 443 open, unattended upgrades enabled. Record the SSH public key fingerprint in the password manager, not in the repo.
 4. Install Coolify with the official installation script from its docs (read the script first; do not run install scripts from any other source). Open the dashboard, create the admin account, and disable public registration.
 5. Create the project `ai-stylist` with environments `staging` and `production`. Each environment gets its own variables and its own deploy later.
-6. Networking: keep the API, jobs, workers, and PostgreSQL resources on one private Docker network per environment; only the API and, later, the workers' health endpoint are published through Coolify's proxy with HTTPS. PostgreSQL is never published.
+6. Networking: keep the API, jobs, workers, and PostgreSQL resources on one private Docker network per environment; only the API and, later, the workers' health endpoint are published through Coolify's proxy with HTTPS. PostgreSQL is never published. The API hostnames are fixed in the native apps' build configuration: `staging-api.ai-stylist.app` for staging (OQ-17; the iOS Preview and Android `preview` builds call it) and `api.ai-stylist.app` for production. Neither is provisioned yet; point each at the server in Cloudflare DNS (section 6 step 10) and attach it to that environment's API resource when P03 first deploys it.
 7. API token for CI: Coolify dashboard, **Keys & Tokens**, **API tokens** (label may differ), create one named `github-actions` with the narrowest permission that can trigger a deploy. Copy it once and store it as `COOLIFY_TOKEN` in `secrets/staging.enc.yaml` (and `secrets/prod.enc.yaml` in P03); the deploy jobs decrypt it with `SOPS_AGE_KEY`, so no extra GitHub secret is needed. The P03 deploy task adds the key to `.env.example` with a comment. Nothing reads it until then.
 8. Do not connect the GitHub repository or enable automatic deploys in P02; there is nothing to build yet.
 
@@ -268,7 +269,7 @@ One owned server in the ~€10–25/month class (Hetzner is the working assumpti
 
 ### Verify
 
-Over SSH, `docker ps` lists the Coolify containers and nothing else; `ufw status` shows only 22, 80, and 443 open. The dashboard shows project `ai-stylist` with environments `staging` and `production` and zero resources. After P03 lands `apps/api/Dockerfile`, `curl https://<api domain>/v1/health` should return `{"status":"ok","checks":{"db":"ok"}}`.
+Over SSH, `docker ps` lists the Coolify containers and nothing else; `ufw status` shows only 22, 80, and 443 open. The dashboard shows project `ai-stylist` with environments `staging` and `production` and zero resources. After P03 lands `apps/api/Dockerfile`, `curl https://staging-api.ai-stylist.app/v1/health` should return `{"status":"ok","checks":{"db":"ok"}}`.
 
 ## 5. pg-boss (durable jobs)
 
@@ -326,7 +327,7 @@ R2, Checked 2026-09-10 at <https://developers.cloudflare.com/r2/pricing/>: free 
 7. Set `R2_BUCKET=ai-stylist-dev`. Leave `R2_PUBLIC_BASE_URL` empty locally; it is set when a custom domain is attached to the public assets bucket (step 9), which is not needed before P04/P06.
 8. Repeat steps 5 and 6 with a separate token per environment (`ai-stylist-staging`, `ai-stylist-prod`), each scoped to its own bucket, into the matching `secrets/<env>.enc.yaml`.
 9. Custom domain for public assets (P04/P06): create a separate bucket `ai-stylist-assets-<env>` for public app and content assets only, then bucket, **Settings**, **Public access**, **Custom domains**, connect a hostname on the project's Cloudflare zone and set `R2_PUBLIC_BASE_URL` to it in the matching `secrets/<env>.enc.yaml`. The Cloudflare cache in front of that hostname is the only CDN in the design. User media buckets never get a custom domain or `r2.dev` access; they are read through presigned GETs only. A separate backup bucket with its own token is created in section 3 step 5.
-10. WAF (P03 or later): add the API domain to Cloudflare DNS, proxy it (orange cloud), then **Security**, **WAF** managed rules. Rate limits inside the API (`RATE_LIMIT_*`) stay on regardless; never disable one to make the other work.
+10. WAF (P03 or later): add the `ai-stylist.app` zone to Cloudflare DNS with the API hostnames from section 4 step 6 (`staging-api`, `api`), proxy them (orange cloud), then **Security**, **WAF** managed rules. Rate limits inside the API (`RATE_LIMIT_*`) stay on regardless; never disable one to make the other work.
 
 ### What to record
 
@@ -604,13 +605,25 @@ better-auth (self-hosted, P03) needs Apple and Google as identity providers. Ove
 
 ### Google Sign-In
 
-- Where it comes from: Google Cloud Console (<https://console.cloud.google.com>), create project `ai-stylist`, **APIs & Services**, **OAuth consent screen** (fill app name, support email, privacy policy URL; label may differ), then **Credentials**, **Create credentials**, **OAuth client ID**. Create three clients: **Android** (package name from `app.config.ts` plus the SHA-1 of the upload certificate from section 9 and of the Play app-signing certificate), **iOS** (bundle id), and **Web application** (used by the API for token verification).
+- Where it comes from: Google Cloud Console (<https://console.cloud.google.com>), create project `ai-stylist`, **APIs & Services**, **OAuth consent screen** (fill app name, support email, privacy policy URL; label may differ), then **Credentials**, **Create credentials**, **OAuth client ID**. Create three clients: **Android** (package name = the `applicationId` in `apps/android/app/build.gradle.kts`, see section 8 step 2, plus the SHA-1 of the upload certificate from section 9 and of the Play app-signing certificate), **iOS** (bundle id), and **Web application** (used by the API for token verification).
 - Record: `GOOGLE_SIGNIN_CLIENT_ID` = the Web client id (server verifies ID tokens against it). The mobile clients are configured in the app in P03.
 - Do not: put the client secret of the web client anywhere client-side; the mobile flow does not use it.
 
 ### Verify
 
 Deferred to P03: `just test identity` runs the better-auth provider fixtures.
+
+## 15. Push notifications (FCM + APNs)
+
+Server-side FCM + APNs direct, behind a `platform` port (`SPINE.md` §2); clients register natively: UserNotifications on iOS, the Firebase Cloud Messaging SDK on Android (DEC-52). Overview only; P09-T16 holds the precise configuration. Nothing is built yet.
+
+- When: P09-T16 (daily-outfit notification).
+- Cost: FCM has no per-message charge; APNs is included in the Apple membership (section 8). Verify on <https://firebase.google.com/pricing> before relying on it.
+- Firebase: in the Firebase console, add Firebase to the Google Cloud project from section 14, register the Android app with the `applicationId` (section 8 step 2), then **Project settings**, **Service accounts**, **Generate new private key** (label may differ). Store the JSON base64-encoded as `FCM_SERVICE_ACCOUNT_B64` in the matching `secrets/<env>.enc.yaml`, one service account per environment, and delete the file from disk.
+- APNs: the App ID already has **Push Notifications** enabled (section 8 step 3). In **Certificates, Identifiers & Profiles**, **Keys**, **+**, enable **Apple Push Notifications service (APNs)**, register, download the `.p8` once, and move it into the password manager. Its key names are not in `.env.example` yet; the P09-T16 adapter task adds them.
+- Record: `.env.example` key `FCM_SERVICE_ACCOUNT_B64`; the APNs key names once P09-T16 adds them.
+- Do not: put a service-account JSON or the `.p8` in the native apps, and do not send sensitive data classes in a push payload (`docs/modules/notifications.md`).
+- Verify: deferred to P09: `just test notifications` covers the port with a fake transport; the device push smoke runs on both platforms.
 
 ## Checklist by phase
 
@@ -620,6 +633,7 @@ Deferred to P03: `just test identity` runs the better-auth provider fixtures.
 | P03       | Coolify first deploy (Dockerfile, `COOLIFY_TOKEN`, sync script), production database + role, `secrets/staging.enc.yaml` and `secrets/prod.enc.yaml`, Cloudflare DNS + WAF for the API domain, PostHog prod project + personal API key, 14 Apple and Google sign-in credentials.                                                                                                                                                                                                                                                                                          |
 | P06       | fal.ai key + spend limit, vision-LLM and embedding provider accounts (privacy review first), GPU eval host for the self-hosted eval arms, R2 public assets custom domain (if not done in P04), R2 multipart upload settings.                                                                                                                                                                                                                                                                                                                                             |
 | P08       | Open-Meteo Standard plan + key; run the weather comparison (Open-Meteo managed vs self-hosted vs WeatherKit); holidays need nothing (embedded `date-holidays`).                                                                                                                                                                                                                                                                                                                                                                                                          |
+| P09       | 15 Firebase project + FCM service account per environment, APNs key (T16).                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
 | P11       | fal.ai production key, AIC-O2 review passed, Replicate fallback account, per-provider spend caps.                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
 | P13       | 12 RevenueCat project, store connections, webhook secret, `REVENUECAT_*` in `secrets/prod.enc.yaml`.                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
 | P14       | Rotate every credential created during development that was ever pasted into a shared terminal; confirm each `secrets/prod.enc.yaml` value is production-scoped; restore drill via pgBackRest into a scratch database (section 3 step 9); Play closed-testing requirement; App Store review assets.                                                                                                                                                                                                                                                                      |

@@ -26,7 +26,10 @@ scripts/                 recipe bodies (bash 3.2-portable); fixtures/ prove each
 ```
 
 The generated client lives in `packages/contracts/gen/swift-client/`. `tools/codegen/gen-swift.sh`
-(`just generate`) writes it. Never edit it.
+(`just generate`) writes it. Never edit it. Its package has two products: `AIStylistAPI` (the OpenAPI client) and
+`AIStylistKernel` (reason codes, entitlement names and units generated from `packages/shared-kernel/registry/*.json`,
+[ADR-0005](../../docs/adr/0005-shared-kernel-registries-for-native-clients.md)). No app target consumes
+`AIStylistKernel` yet.
 
 ## Environments
 
@@ -69,8 +72,10 @@ The `just` recipes are wired in the root justfile. The recipe bodies are `apps/i
 | `just ios-lint`                                |  yes  |  yes  | Runs the SwiftLint safety rules (on Linux: `swiftlint-static`)                                                      |
 | `just ios-format [--check]`                    |  yes  |  yes  | Runs swift-format, in place or as a check                                                                           |
 | `just ios-check-banned [--fixtures]`           |  yes  |  yes  | Runs the grep bans, or proves every ban still fires                                                                 |
+| `just ios-check`                               |  yes  |  yes  | The local gate: lint, format check, bans (+ fixtures), package tests; on macOS also `ios-build` + `ios-test`        |
 
-Where Swift comes from on Linux: `mise` swift, or Docker `swift:6.4` when `swift` is not on PATH.
+Where Swift comes from on Linux: a working `swift` on PATH, else Docker `swift:6.4`. `mise.toml` does not pin Swift
+(Xcode provides it on macOS).
 
 ### First run on the Mac
 

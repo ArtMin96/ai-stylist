@@ -89,7 +89,7 @@ Nothing above needs a vendor account. When a phase does (a server provider + Coo
 
 ## Running the app
 
-Open one terminal per process, or use the `api` and `workers` entries of the `solo.yml` process list if you use Soloist.
+Open one terminal per process, or use the `solo.yml` process list if you use Soloist.
 
 ### API
 

@@ -47,9 +47,9 @@ On Linux this installs the apt packages, Docker, the Android udev rules, and add
 ./scripts/bootstrap.sh
 ```
 
-This is safe to re-run at any time. It installs `mise` (the version manager), then every pinned tool (Node, pnpm, Python, Java, `just`, security scanners, and so on), then the JavaScript and Python dependencies, sets up git hooks, and creates your local `.env` from `.env.example`.
+This is safe to re-run at any time. It installs `mise` (the version manager) into `~/.local/bin` unless one is already on your PATH (a system package works; `MISE_BIN=/path/to/mise` forces a specific one), then every pinned tool (Node, pnpm, Python, Java, `just`, security scanners, and so on), then the JavaScript and Python dependencies, sets up git hooks, and creates your local `.env` from `.env.example`, with `DATABASE_URL` pointing at the local Docker Postgres.
 
-At the end it prints two lines to add to your shell config: `mise` puts the pinned tools on your PATH, and `direnv` loads `.env` and `~/.config/ai-stylist/env.sh` (`ANDROID_HOME`, the SDK's `platform-tools` on PATH) when you enter the repo:
+At the end it prints two lines to add to your shell config (the `mise` line uses whichever `mise` it found): `mise` puts the pinned tools on your PATH, and `direnv` loads `.env` and `~/.config/ai-stylist/env.sh` (`ANDROID_HOME`, the SDK's `platform-tools` on PATH) when you enter the repo:
 
 ```bash
 eval "$(~/.local/bin/mise activate zsh)"   # or bash
@@ -69,8 +69,11 @@ Every line should be a ✔. A ⚠ is informational. An ✘ comes with a hint for
 ### 5. Get access to shared development configuration
 
 Bootstrap creates a local `.env`, but shared values are stored in Git as sops-encrypted files. Step 3
-(`./scripts/bootstrap.sh`) already generated your personal age identity and opened a pull request
-adding you as a `dev` recipient in `.sops.yaml` — it printed a compare URL; open that link. While you
+(`./scripts/bootstrap.sh`) already generated your personal age identity. If you are new, it opened a
+pull request adding you as a `dev` recipient in `.sops.yaml` — it printed a compare URL; open that
+link. If your recipient is already listed (for example, you restored your identity from the password
+manager into `~/.config/sops/age/keys.txt`), it synced the shared values into `.env` instead, and its
+closing summary says so; skip to `just doctor`. While you
 wait for an approver to run `just secrets-approve <branch>` and merge it, `just doctor` correctly
 reports that your recipient is not yet listed; that is expected. Three commands cover the rest:
 
@@ -104,7 +107,7 @@ curl localhost:3000/v1/health     # {"status":"ok","checks":{"db":"ok"}}
 curl localhost:3000/v1/version
 ```
 
-If port 5432 is already taken on your machine, set `POSTGRES_HOST_PORT=5433` in `.env` and update `DATABASE_URL` to match.
+`DATABASE_URL` in `.env` already points at this container (bootstrap filled it in). If port 5432 is already taken on your machine, set `POSTGRES_HOST_PORT=5433` in `.env` and change the port in `DATABASE_URL` to match. On the first run, apply the migrations once from a second terminal while `just dev-api` is up (it starts the database; `just db-migrate` does not): `just db-migrate`.
 
 ### Workers
 

@@ -14,7 +14,7 @@ import java.util.concurrent.TimeUnit
  *
  * The generated [ApiClient] is always given the host-only base URL: its operations use
  * relative paths that already start with `v1/`, so the request path is `/v1/...` exactly once.
- * (Its built-in default comes from the spec's `servers[]`, which already ends in `/v1`.)
+ * (Its built-in default comes from the spec's `servers[]`, which is host-only too; it is unused.)
  * No logging interceptor is installed: request/response bodies are never logged.
  */
 class DataServices(

@@ -3,7 +3,7 @@
 Output directory of `tools/codegen/gen-python.sh` (invoked by `just generate`).
 
 - Input: every `packages/contracts/events/*.json` JSON Schema (the only contract shared
-  between the TypeScript side and the workers — doc 06 §1, brief §5 `mobile/workers-not-server`).
+  between the TypeScript side and the workers — doc 06 §1, brief §5 `workers-not-server`).
 - Output: `ai_stylist_generated/events.py`, Pydantic v2 models via `datamodel-code-generator`
   (`--output-model-type pydantic_v2.BaseModel --use-schema-description --target-python-version 3.12`),
   then formatted with the workspace `ruff` config so the result is byte-stable.

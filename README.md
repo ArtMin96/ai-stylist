@@ -6,19 +6,19 @@ This repository is a monorepo: the native iOS and Android apps, the API, the ML 
 
 ## What is inside
 
-| Part                   | Path                                            | Stack                                                   |
-| ---------------------- | ----------------------------------------------- | ------------------------------------------------------- |
-| iOS app                | `apps/ios/`                                     | Swift + SwiftUI (native)                                |
-| Android app            | `apps/android/`                                 | Kotlin + Jetpack Compose (native)                       |
-| Shared E2E flows       | `e2e/`                                          | Maestro, one smoke flow for both apps                   |
-| API                    | `apps/api/`                                     | NestJS on Fastify, modular monolith, one dir per module |
-| ML / media workers     | `workers/`                                      | Python 3.12, FastAPI, uv, Docker                        |
-| API + event contracts  | `packages/contracts/`                           | OpenAPI 3.1 + JSON Schema, generated clients            |
-| Shared constants       | `packages/shared-kernel/`                       | IDs, units, error codes, reason codes, event envelope   |
-| Database               | `packages/db/`                                  | PostgreSQL + pgvector, Drizzle ORM, migrations          |
-| Synthetic data + fakes | `packages/seed-data/`, `packages/test-support/` | never real user data                                    |
-| Tooling                | `justfile`, `mise.toml`, `scripts/`, `tools/`   | pinned toolchain, codegen, arch rules                   |
-| Planning and decisions | `planning/`, `docs/adr/`, `docs/modules/`       | product canon, ADRs, module contracts                   |
+| Part                   | Path                                            | Stack                                                                                       |
+| ---------------------- | ----------------------------------------------- | ------------------------------------------------------------------------------------------- |
+| iOS app                | `apps/ios/`                                     | Swift + SwiftUI (native)                                                                    |
+| Android app            | `apps/android/`                                 | Kotlin + Jetpack Compose (native)                                                           |
+| Shared E2E flows       | `e2e/`                                          | Maestro, one smoke flow for both apps                                                       |
+| API                    | `apps/api/`                                     | NestJS on Fastify, modular monolith, one dir per module                                     |
+| ML / media workers     | `workers/`                                      | Python 3.12, FastAPI, uv, Docker                                                            |
+| API + event contracts  | `packages/contracts/`                           | OpenAPI 3.1 + JSON Schema, generated clients                                                |
+| Shared constants       | `packages/shared-kernel/`                       | IDs, units, error/reason codes, entitlements, event envelope; registries -> TS/Swift/Kotlin |
+| Database               | `packages/db/`                                  | PostgreSQL + pgvector, Drizzle ORM, migrations                                              |
+| Synthetic data + fakes | `packages/seed-data/`, `packages/test-support/` | never real user data                                                                        |
+| Tooling                | `justfile`, `mise.toml`, `scripts/`, `tools/`   | pinned toolchain, codegen, arch rules                                                       |
+| Planning and decisions | `planning/`, `docs/adr/`, `docs/modules/`       | product canon, ADRs, module contracts                                                       |
 
 The operating rules for anyone (human or AI agent) changing code are in [`CLAUDE.md`](CLAUDE.md). Read it once before your first change.
 
@@ -49,13 +49,14 @@ On Linux this installs the apt packages, Docker, the Android udev rules, and add
 
 This is safe to re-run at any time. It installs `mise` (the version manager), then every pinned tool (Node, pnpm, Python, Java, `just`, security scanners, and so on), then the JavaScript and Python dependencies, sets up git hooks, and creates your local `.env` from `.env.example`.
 
-At the end it prints one line to add to your shell config so the pinned tools are on your PATH in every terminal:
+At the end it prints two lines to add to your shell config: `mise` puts the pinned tools on your PATH, and `direnv` loads `.env` and `~/.config/ai-stylist/env.sh` (`ANDROID_HOME`, the SDK's `platform-tools` on PATH) when you enter the repo:
 
 ```bash
 eval "$(~/.local/bin/mise activate zsh)"   # or bash
+eval "$(direnv hook zsh)"                  # or bash
 ```
 
-Add it to `~/.zshrc` (or `~/.bashrc`), then open a new terminal. You do not strictly need this for `just` recipes, which find the tools on their own, but you need it to run `pnpm`, `node`, or `uv` by hand.
+Add them to `~/.zshrc` (or `~/.bashrc`), open a new terminal, and run `direnv allow` once in the repo. `just` recipes find the pinned tools without activation, but you need them to run `pnpm`, `node`, `uv`, or the SDK's `adb` by hand.
 
 ### 4. Check everything
 
@@ -88,7 +89,7 @@ Nothing above needs a vendor account. When a phase does (a server provider + Coo
 
 ## Running the app
 
-Open one terminal per process, or use the `solo.yml` process list if you use Soloist.
+Open one terminal per process, or use the `api` and `workers` entries of the `solo.yml` process list if you use Soloist.
 
 ### API
 
@@ -115,7 +116,7 @@ Starts the Python segmentation service on port 8001. `curl localhost:8001/health
 
 ### Mobile apps
 
-The apps are native: Swift + SwiftUI in `apps/ios/` and Kotlin + Jetpack Compose in `apps/android/`. Each app's own README explains how to build and run it; both talk to the API through clients generated from `packages/contracts` and share one Maestro smoke flow in `e2e/`.
+The apps are native: Swift + SwiftUI in `apps/ios/` and Kotlin + Jetpack Compose in `apps/android/`. Each app's own README ([`apps/ios/README.md`](apps/ios/README.md), [`apps/android/README.md`](apps/android/README.md)) explains how to build and run it; both talk to the API through clients generated from `packages/contracts` and share one Maestro smoke flow in `e2e/`. Dev builds call your local `just dev-api`; preview builds point at `https://staging-api.ai-stylist.app`, which is not live yet.
 
 ```bash
 # Android (Linux or macOS)
@@ -143,7 +144,7 @@ The Android app needs the Android SDK (`just android-sdk install`) and, to run i
 | `just format`                | Prettier, Ruff, swift-format and Spotless (ktlint). `--check` for CI mode                                 |
 | `just arch-check`            | Module boundary rules. Fails on a forbidden import                                                        |
 | `just arch-check --fixtures` | Proves each boundary rule still fires on its fixture. `just lint --fixtures` does the same for lint rules |
-| `just generate`              | Regenerate clients from the OpenAPI and event schemas. `--check` = staleness gate                         |
+| `just generate`              | Regenerate clients (OpenAPI, event schemas) and shared-kernel constants. `--check` = staleness gate       |
 | `just db-migrate`            | Apply pending migrations to your local database                                                           |
 | `just db-rollback`           | Roll back the last migration                                                                              |
 | `just db-reset --yes`        | Drop and rebuild the local database with seed data. Local only, refuses anything else                     |

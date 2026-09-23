@@ -4,3 +4,4 @@ Implementation of the `fashion-intel` module: application services, domain rules
 `schema.ts` (re-exported from `packages/db/src/schema/index.ts`), repositories, mappers.
 Nothing here may be imported from outside `modules/fashion-intel/`; expose behaviour through
 `../index.ts` only. Contract: `docs/modules/fashion-intel.md`.
+P02 skeleton: only this README so far (`../index.ts` exports an empty Nest module).

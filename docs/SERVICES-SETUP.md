@@ -352,8 +352,8 @@ section number is kept so references to sections 8 and 9 stay valid.
 If an Expo account or project was already created, a human cleans up:
 
 - ~~delete the GitHub secret `EXPO_TOKEN`~~ — checked 2026-09-23: it was never created (not in the repository's Actions, Dependabot or Codespaces secrets, and no environments exist);
-- remove `EXPO_PUBLIC_EAS_PROJECT_ID` and `EXPO_PUBLIC_API_BASE_URL` from `secrets/dev.enc.yaml` with
-  `just secrets-edit dev` (they are no longer in `.env.example`);
+- ~~remove `EXPO_PUBLIC_EAS_PROJECT_ID` and `EXPO_PUBLIC_API_BASE_URL` from `secrets/dev.enc.yaml`~~ — done
+  2026-09-24 (`sops unset`);
 - optionally delete the Expo project and any robot-user access token on <https://expo.dev>.
 
 ## 8. Apple Developer Program and App Store Connect

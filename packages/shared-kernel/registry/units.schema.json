@@ -1,0 +1,54 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://contracts.ai-stylist.app/shared-kernel/registry/units.schema.json",
+  "title": "UnitRegistry",
+  "description": "Canonical measurement units (planning/06 §2, §3.1): SI on the wire and in storage; unitSystem only controls display. tools/codegen/gen-kernel.mjs validates this file and also checks that each dimension's canonical unit is one of its units.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["dimensions", "unitSystems", "measurementSources", "conversionFactors"],
+  "properties": {
+    "$schema": { "type": "string" },
+    "dimensions": {
+      "type": "object",
+      "propertyNames": { "pattern": "^[a-z]+$" },
+      "minProperties": 1,
+      "additionalProperties": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["units", "canonical"],
+        "properties": {
+          "units": {
+            "type": "array",
+            "minItems": 1,
+            "uniqueItems": true,
+            "items": { "type": "string", "pattern": "^[a-z]+$" }
+          },
+          "canonical": { "type": "string" }
+        }
+      }
+    },
+    "unitSystems": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": { "type": "string", "pattern": "^[a-z]+$" }
+    },
+    "measurementSources": {
+      "type": "array",
+      "description": "Who produced a measurement value (doc 06 §3.1); estimated/derived values must carry confidence",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": { "type": "string", "pattern": "^[a-z]+$" }
+    },
+    "conversionFactors": {
+      "type": "object",
+      "description": "Exact display-conversion factors (doc 06 §3.1); storage stays SI",
+      "additionalProperties": false,
+      "required": ["cmPerInch", "kgPerPound"],
+      "properties": {
+        "cmPerInch": { "type": "number", "exclusiveMinimum": 0 },
+        "kgPerPound": { "type": "number", "exclusiveMinimum": 0 }
+      }
+    }
+  }
+}

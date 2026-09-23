@@ -1,0 +1,36 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://contracts.ai-stylist.app/shared-kernel/registry/entitlements.schema.json",
+  "title": "EntitlementRegistry",
+  "description": "Entitlement name registry (planning/12 §3.1) and the weighted generative tasks metered against credits.monthly (doc 12 §3.3). tools/codegen/gen-kernel.mjs validates this file and also checks that every entitlement's kind is declared in `kinds`.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["kinds", "entitlements", "creditMeters"],
+  "properties": {
+    "$schema": { "type": "string" },
+    "kinds": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": { "type": "string", "pattern": "^[a-z]+$" }
+    },
+    "entitlements": {
+      "type": "object",
+      "propertyNames": { "pattern": "^[a-z]+(\\.[a-z_]+)+$" },
+      "additionalProperties": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["kind", "description"],
+        "properties": {
+          "kind": { "type": "string" },
+          "description": { "type": "string", "minLength": 1 }
+        }
+      }
+    },
+    "creditMeters": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": { "type": "string", "pattern": "^[a-z]+(_[a-z]+)*$" }
+    }
+  }
+}

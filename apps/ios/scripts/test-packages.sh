@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # `just ios-test-packages [core|features]...`: `swift test` for the local Swift packages.
-# Runs on macOS (Xcode's swift) AND Linux (mise swift, or Docker swift:6.4 when swift is not on
+# Runs on macOS (Xcode's swift) AND Linux (a working swift on PATH, or Docker swift:6.4 when it is not on
 # PATH). No simulator: this is the fast unit-test lane for everything that is not a SwiftUI view.
 #   core      apps/ios/Packages/Core      (config, analytics, services, API data via the generated client)
 #   features  apps/ios/Packages/Features  (view models; SwiftUI views are compiled on Apple platforms only)

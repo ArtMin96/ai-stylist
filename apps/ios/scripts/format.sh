@@ -4,7 +4,7 @@
 #   (no flag)  rewrite files in place
 #   --check    lint only (`swift format lint --strict`): formatting AND the swift-format safety rules
 #              (NeverForceUnwrap, NeverUseForceTry, NeverUseImplicitlyUnwrappedOptionals, OrderedImports).
-# Uses the toolchain's swift-format: Xcode on macOS, mise swift or Docker swift:6.4 on Linux.
+# Uses the toolchain's swift-format: Xcode on macOS, a working swift on PATH or Docker swift:6.4 on Linux.
 set -euo pipefail
 # shellcheck source=lib.sh
 . "$(dirname "${BASH_SOURCE[0]}")/lib.sh"

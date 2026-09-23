@@ -35,7 +35,7 @@ ios_require_macos() {
 }
 
 # Run a `swift` subcommand: the native toolchain when `swift` is on PATH (Xcode on macOS,
-# mise swift on Linux), else the Docker image with the repo mounted at its host path so every
+# a working swift on Linux), else the Docker image with the repo mounted at its host path so every
 # path argument means the same thing inside the container.
 # A `swift` that is on PATH but cannot run (e.g. a mise shim for a toolchain that failed to install
 # on Arch: missing libncurses.so.6/libxml2.so.2) counts as absent, so Docker takes over.
@@ -56,6 +56,6 @@ ios_swift() {
       -w "$PWD" \
       "$SWIFT_DOCKER_IMAGE" swift "$@"
   else
-    ios_die "no Swift toolchain: install Xcode (macOS), or mise swift / Docker (Linux)"
+    ios_die "no Swift toolchain: install Xcode (macOS), or Docker / a working swift on PATH (Linux)"
   fi
 }

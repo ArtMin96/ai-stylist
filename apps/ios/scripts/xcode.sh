@@ -85,7 +85,7 @@ cmd_doctor() {
     elif command -v docker >/dev/null 2>&1; then
       echo "  swift: none working on PATH; Docker fallback image $SWIFT_DOCKER_IMAGE will be used"
     else
-      echo "  swift: MISSING (mise install swift, or install Docker)"
+      echo "  swift: MISSING (install Docker for the swift:6.4 image, or a working swift on PATH)"
     fi
     if command -v swiftlint-static >/dev/null 2>&1 || command -v swiftlint >/dev/null 2>&1; then
       echo "  swiftlint: ok"

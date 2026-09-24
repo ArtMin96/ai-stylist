@@ -16,6 +16,8 @@ creation_rules:
     key_groups:
       - age:
           # ADD RECIPIENTS: every developer's age public key + the CI key, one `- age1...` per line
+          # developer: Arthur Minasyan
+          - age1m9jvz3ngpssssdluajp8nepvxjdgndytlkdzljatsu6n4varq92qx3r2d9
           # developer: arthur (workstation identity, backed up in the password manager)
           - age1j430he6fuujyre9qj0tm3ddn0mfk73qyvy6e8zw30wkyetspe3hsunlzdg
           # ci: GitHub repository secret SOPS_AGE_KEY (deploy jobs only)

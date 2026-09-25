@@ -1,0 +1,40 @@
+{
+  "skill_name": "security-privacy-review",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Review this new RevenueCat webhook handler in `apps/api/src/modules/billing/internal/webhooks/revenuecat.ts` before it merges — I want to make sure the signature check can't be bypassed and the same event can't be replayed.",
+      "expected_output": "A written review with a Blocking or Checked-and-clear verdict for signature verification and replay protection specifically, citing the actual code (file:line), not the PR description. If either check is missing or weak, it is a Blocking finding with the precise fix (verify against the RevenueCat signing secret, dedup on event id + timestamp window).",
+      "files": [],
+      "assertions": [
+        "The report has a checklist row for item 6 (Webhooks/inputs) with an explicit verdict, citing file:line in the reviewed handler",
+        "If signature verification or replay protection is missing, it is listed under Blocking, not Non-blocking",
+        "The agent does not approve the diff without checking `just security-scan` output or explaining why it could not run",
+        "The agent never pastes webhook payload contents (which could carry customer data) into the report — it cites file:line instead"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "Does this new error handler leak anything sensitive? It's in `apps/api/src/modules/media/internal/upload.ts` and logs `logger.error({ err, req: req.body })` when a selfie upload fails.",
+      "expected_output": "A Blocking finding: raw `req.body` in a log call can carry the uploaded selfie/photo payload or other sensitive fields, which is a logging/analytics violation (checklist item 3) regardless of whether this specific request body happens to be safe today. The fix is to log a correlation id, not the request body.",
+      "files": [],
+      "assertions": [
+        "The finding is Blocking, not Non-blocking or Note",
+        "The finding cites the exact file:line of the `logger.error` call",
+        "The suggested fix replaces the raw req.body with a correlation id or an explicitly allow-listed field, per the checklist's logging/analytics item",
+        "No selfie or photo data itself is quoted or described in the review output"
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "We're about to ship a presigned upload URL for wardrobe photos in `apps/api/src/modules/media/internal/uploads.ts`. Can you check it's locked down correctly before this goes out?",
+      "expected_output": "A checklist walk of item 5 (Uploads/media): content-type + size + namespace constraints, TTL <= 15 minutes, EXIF stripped at ingest, no public bucket. Any missing constraint is a Blocking finding with the specific limit to add; if `*.sec.test.ts` coverage for expired/foreign-namespace/wrong-content-type cases is missing, that absence is itself reported as a finding.",
+      "files": [],
+      "assertions": [
+        "The report explicitly checks TTL, content-type/size/namespace constraints, EXIF stripping, and bucket visibility as separate items, not a single bundled verdict",
+        "Missing *.sec.test.ts coverage is reported as a finding (per the skill's 'missing security tests for a reviewed behaviour is itself a finding' rule), not silently skipped",
+        "Any missing constraint is Blocking, not Non-blocking"
+      ]
+    }
+  ]
+}

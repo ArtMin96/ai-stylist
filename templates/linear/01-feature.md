@@ -1,7 +1,7 @@
 Fill every section; delete nothing; if a section truly does not apply write `N/A — <reason>`.
 
 - **Phase / task:** P##-T## (`planning/phases/P##-*.md`) · **Requirements:** REQ/NFR IDs (`planning/01-requirements-and-traceability.md`)
-- **Type:** feature · **Skill:** `.agents/skills/<mobile-feature | backend-module | media-ml-pipeline | native-3d-assets | recommendation-rules | entitlements-billing>/SKILL.md`
+- **Type:** feature · **Skill:** `.agents/skills/<ios-feature | android-feature | backend-module | media-ml-pipeline | recommendation-rules | entitlements-billing>/SKILL.md`
 - **Labels:** `type:feature`, `mod:<owner>`, `phase:P##`
 
 ## Context
@@ -30,7 +30,7 @@ Only SPINE §3 names: identity, profile, avatar, closet, media, outfit, context,
 Numbered; each objectively testable; each names the command that proves it and the expected output line. "Works on my phone" is not a criterion.
 
 1. AC-1: <behaviour> — proof: `just test <module>` → `<expected line>`
-2. AC-2: <behaviour> — proof: `<curl … | Maestro flow apps/mobile/e2e/<flow>.yaml | just ml-eval → metric ≥ X>` → `<expected line>`
+2. AC-2: <behaviour> — proof: `<curl … | Maestro flow e2e/<flow>.yaml | just ml-eval → metric ≥ X>` → `<expected line>`
 
 ## Architecture guardrails
 
@@ -39,7 +39,7 @@ Tick what applies; every unticked box needs a reason. Reviewer re-checks these o
 - [ ] Other modules used only via their public API (`index.ts`); no `internal/` imports
 - [ ] No domain logic in adapters (UI components, controllers, DB models, SDK wrappers, pg-boss handlers, React hooks) — adapters translate, modules decide
 - [ ] Domain never imports provider SDKs; providers sit behind ports implemented in `platform`
-- [ ] `recommendation ⊥ renderer`: no dependency on `avatar`, Filament, or rendering; results carry reason codes
+- [ ] `recommendation ⊥ renderer`: no dependency on `avatar` or rendering; results carry reason codes
 - [ ] Deterministic before AI. New AI call? Fill the doc-10 entry: input/output schema · why deterministic is insufficient · cost + latency budget · cache key (input hash) · fallback on slow/unavailable/low-confidence · eval — or `N/A — no new AI call`
 - [ ] Single source of truth: schemas from `packages/contracts`, constants/units/reason codes/entitlement names from `shared-kernel`, taxonomy from `closet`; nothing copied into mobile/workers/tests; generated files regenerated (`just generate`), never hand-edited
 - [ ] Explanations come from the decision trace (reason codes), never generated after the fact
@@ -75,7 +75,7 @@ What breaks if this is wrong, who is affected, and the exact way back.
 
 ## Test plan
 
-Levels, locations, fixtures. Tests live in the owning module's `tests/` dir (Maestro flows in `apps/mobile/e2e/`). No skipped test without a linked issue ID.
+Levels, locations, fixtures. Tests live in the owning module's `tests/` dir (Maestro flows in `e2e/`). No skipped test without a linked issue ID.
 
 - Unit: <…> · Contract: <…> · Integration (Testcontainers): <…> · E2E (Maestro): <…>
 - Test locations: `apps/api/src/modules/<name>/tests/` · `<other>`

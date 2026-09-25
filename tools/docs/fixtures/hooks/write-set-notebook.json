@@ -1,0 +1,17 @@
+{
+  "session_id": "fixture-session",
+  "transcript_path": "/tmp/fixture-transcript.jsonl",
+  "cwd": "/home/arthur/Projects/app",
+  "hook_event_name": "PreToolUse",
+  "tool_name": "NotebookEdit",
+  "tool_input": {
+    "notebook_path": "/home/arthur/Projects/app/apps/android/app/explore.ipynb",
+    "new_source": "x"
+  },
+  "agent_id": "fixture-agent",
+  "agent_type": "ios-engineer",
+  "scratchpad_dir": "/home/arthur/scratchpad",
+  "_harness": {
+    "args": ["apps/ios/**", "tools/codegen/gen-swift.sh", "!apps/ios/*.xcodeproj/**"]
+  }
+}

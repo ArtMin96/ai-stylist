@@ -36,7 +36,7 @@ export default [
   },
   {
     // no-console everywhere (11 §8): server + shared code log through pino with the redaction
-    // allowlist; mobile goes through the analytics/crash ports; tooling uses process.stdout.
+    // allowlist; tooling uses process.stdout.
     files: SOURCE,
     ignores: [...CLIS, ...GENERATED],
     rules: { 'no-console': 'error' },

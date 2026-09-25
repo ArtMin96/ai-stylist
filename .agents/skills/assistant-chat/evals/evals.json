@@ -1,0 +1,41 @@
+{
+  "skill_name": "assistant-chat",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Design the tool-contract schema for `query_closet` so the future chat assistant can answer 'what jackets do I own' — per P15 §7, one schema per tool with typed input/output and a declared authorization scope.",
+      "expected_output": "The agent adds the schema under packages/contracts (not apps/api/src/modules/assistant/), gives it a typed input/output and an explicit authorization scope, and states that the tool handler in assistant will call closet's existing public index.ts export (or flags that closet does not expose one yet, in which case that is a backend-module gap, not something to build around). It does not invent a direct read of a closet table from assistant.",
+      "files": [],
+      "assertions": [
+        "The new/changed schema lives in packages/contracts, not inside apps/api/src/modules/assistant/",
+        "The schema declares both input/output types and an authorization scope, per P15 §7's tool-contract requirement",
+        "The agent's report identifies which closet public export (or missing export) the tool handler would call, and never proposes reading a closet table, apps/api/src/modules/closet/internal/**, or packages/db directly from assistant",
+        "The agent names `just generate --check` as a command it would run after the contract change"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "We want the chat assistant to be able to re-score a user's saved outfit slightly differently than the normal recommendation engine when they ask 'make this warmer', so add a small scoring tweak inside the assistant module for that case.",
+      "expected_output": "The agent refuses to add scoring/ranking logic inside apps/api/src/modules/assistant/, names this as a second-recommendation-engine violation of the assistant-app-services-only rule and the root CLAUDE.md invariant, and redirects: either the existing recommendation module's public service already supports a 'warmer' request-shaped call and assistant should invoke that, or the capability is missing and belongs in the recommendation module (recommendation-rules skill) before assistant can call it.",
+      "files": [],
+      "assertions": [
+        "The agent does not add any scoring, weighting, or ranking code inside apps/api/src/modules/assistant/",
+        "The agent explicitly names the assistant-app-services-only rule or the CLAUDE.md 'no second recommendation engine' invariant as the reason for refusing",
+        "The agent's proposed resolution routes the capability gap to the recommendation module (recommendation-rules skill), not to a workaround in assistant",
+        "The agent stops and reports rather than silently implementing the tweak",
+        "The agent does not propose calling outfit's index.ts from assistant (no assistant → outfit edge in tools/depcruise/rules.cjs ALLOWED_EDGES or doc 04 §4.1)"
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "Is it safe to start building the real assistant chat module now — conversations table, message endpoints, streaming — or is there something blocking that?",
+      "expected_output": "The agent checks planning/phases/P15-post-launch-learning.md §12 and reports that P15-T10 (chat build) is gated behind P15-T09's build/defer decision, which itself depends on T02 and T08 and has not been confirmed passed in this repo; it recommends starting with the design-always work (tool-contract schemas, T08) rather than building conversations/messages tables ahead of the gate, and cites docs/modules/assistant.md's current 'skeleton' status.",
+      "files": [],
+      "assertions": [
+        "The agent's report names the P15-T09 build/defer gate and its dependency on T02 + T08 from planning/phases/P15-post-launch-learning.md",
+        "The agent does not proceed to scaffold conversations/messages tables or streaming endpoints without first surfacing the gate status",
+        "The agent cites docs/modules/assistant.md's current status (skeleton) as corroborating evidence"
+      ]
+    }
+  ]
+}

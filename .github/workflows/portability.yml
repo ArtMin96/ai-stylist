@@ -1,7 +1,8 @@
 # Portability proof: the developer tooling (scripts/**, justfile, mise.toml) must work on macOS
 # (Apple Silicon) as well as Linux (docs/DEVELOPING-ON-MACOS.md). The bootstrap script itself is
 # what is under test, so this workflow deliberately does NOT use .github/actions/setup: it runs
-# `./scripts/bootstrap.sh` (user-level, no --system) exactly like a new developer would.
+# `./scripts/bootstrap.sh` (user-level, no --system) exactly like a new developer would. That
+# step is the one place a workflow runs a script directly: `just` does not exist until it ran.
 #
 # macos-15 (arm64) has no Docker (actions/runner-images macos-15-arm64 README, checked
 # 2026-09-10): `just doctor` reports the docker check as failed there (its output goes to the job
@@ -9,6 +10,15 @@
 # apps/api `migrations` vitest project (Testcontainers). ubuntu-latest has Docker and runs the
 # full suite. macOS minutes bill at 10x on a private repo: pull_request runs only for tooling
 # paths; otherwise weekly + manual.
+#
+# Triggers:  workflow_dispatch, schedule Monday 04:00 UTC, pull_request touching scripts/**,
+#            justfile, mise.toml, .npmrc, tools/**/*.sh or this file.
+# Recipes:   just doctor, format --check, lint (+ --fixtures), typecheck, arch-check
+#            (+ --fixtures), generate --check, security-scan, test.
+# Required secrets: none (GITLEAKS_LICENSE only under an org).
+#
+# Job tree:
+#   bootstrap (macos-15, ubuntu-latest) ──> summary
 name: portability
 
 on:
@@ -35,47 +45,53 @@ env:
   CI: 'true'
   DO_NOT_TRACK: '1'
   MISE_YES: '1'
+  # The native lanes need Xcode 27 / Docker swift / the Android SDK, none of which a user-level
+  # bootstrap installs; ios.yml (incl. macOS) and android.yml cover them.
+  NATIVE_LANES: none
 
 jobs:
   bootstrap:
-    name: bootstrap + gates (${{ matrix.os }})
+    name: Verify · Bootstrap and gates (${{ matrix.os }})
+    # needs: none (root of the job tree)
     runs-on: ${{ matrix.os }}
     timeout-minutes: 30
+    permissions:
+      contents: read
+    concurrency:
+      group: ${{ github.workflow }}-bootstrap-${{ matrix.os }}-${{ github.ref }}
+      cancel-in-progress: true
     strategy:
       fail-fast: false
       matrix:
         os: [macos-15, ubuntu-latest]
     steps:
-      - name: Record start
+      - name: Setup · Record start time
         id: start
         run: echo "ts=$(date +%s)" >> "$GITHUB_OUTPUT"
-
-      - uses: actions/checkout@v7
+      - name: Setup · Check out
+        uses: actions/checkout@v7
         with:
           fetch-depth: 0 # `just security-scan` runs gitleaks over the git history
-
       # Caches only shorten the run (macOS minutes are expensive); a miss still exercises the
       # real download path of bootstrap.sh.
-      - name: Cache mise installs
+      - name: Setup · Restore mise installs
         uses: actions/cache@v6
         with:
           path: ~/.local/share/mise
           key: mise-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('mise.toml') }}
-      - name: Cache pnpm store
+      - name: Setup · Restore pnpm store
         uses: actions/cache@v6
         with:
           path: ~/.local/share/pnpm/store
           key: pnpm-store-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('pnpm-lock.yaml') }}
           restore-keys: |
             pnpm-store-${{ runner.os }}-${{ runner.arch }}-
-
-      - name: Host facts
+      - name: Setup · Print host facts
         run: |
           uname -a
           echo "bash: $(bash --version | head -1)   /bin/bash: $(/bin/bash --version | head -1)"
           command -v docker >/dev/null 2>&1 && docker info >/dev/null 2>&1 && echo "docker: reachable" || echo "docker: unavailable"
-
-      - name: ./scripts/bootstrap.sh (user-level, the script under test)
+      - name: Setup · Run scripts/bootstrap.sh (user-level; the script under test)
         env:
           MISE_GITHUB_TOKEN: ${{ github.token }}
         run: |
@@ -91,13 +107,11 @@ jobs:
             exit "$rc"
           fi
           echo "bootstrap reached doctor (exit $rc; doctor is re-run and summarised in the next step)"
-
-      - name: Put mise shims on PATH (same dirs the justfile prepends)
+      - name: Setup · Put mise shims on PATH (same dirs the justfile prepends)
         run: |
           echo "$HOME/.local/bin" >> "$GITHUB_PATH"
           echo "$HOME/.local/share/mise/shims" >> "$GITHUB_PATH"
-
-      - name: just doctor (non-blocking; full output in the job summary)
+      - name: Verify · Environment doctor (non-blocking; output in the job summary)
         run: |
           set +e
           NO_COLOR=1 just doctor 2>&1 | tee doctor.log
@@ -109,23 +123,25 @@ jobs:
             cat doctor.log
             echo '```'
           } >> "$GITHUB_STEP_SUMMARY"
-
-      - name: just format --check
+      - name: Verify · Format
         run: just format --check
-      - name: just lint
+      - name: Verify · Lint
         run: just lint
-      - name: just lint --fixtures
+      - name: Verify · Lint fixtures
         run: just lint --fixtures
-      - name: just typecheck
+      - name: Verify · Typecheck
         run: just typecheck
-      - name: just arch-check
+      - name: Verify · Architecture boundaries
         run: just arch-check
-      - name: just arch-check --fixtures
+      - name: Verify · Architecture fixtures
         run: just arch-check --fixtures
-      - name: just generate --check
+      - name: Verify · Generated clients are up to date
         run: just generate --check
-
-      - name: just test (SKIP_DOCKER_TESTS=1 when no Docker daemon)
+      - name: Verify · Security scan
+        env:
+          GITLEAKS_LICENSE: ${{ secrets.GITLEAKS_LICENSE }}
+        run: just security-scan
+      - name: Test · Test suite (SKIP_DOCKER_TESTS=1 when no Docker daemon)
         run: |
           if docker info >/dev/null 2>&1; then
             just test
@@ -133,14 +149,33 @@ jobs:
             echo "::notice::no Docker daemon on ${{ matrix.os }}: apps/api 'migrations' project (Testcontainers) skipped via SKIP_DOCKER_TESTS=1"
             SKIP_DOCKER_TESTS=1 just test
           fi
-
-      - name: just security-scan
-        env:
-          GITLEAKS_LICENSE: ${{ secrets.GITLEAKS_LICENSE }}
-        run: just security-scan
-
-      - name: Record ci.portability_duration_seconds
+      - name: Report · Job duration
         if: always()
         run: |
           n=$(( $(date +%s) - ${{ steps.start.outputs.ts }} ))
           echo "ci.portability_duration_seconds=${n} os=${{ matrix.os }} arch=${{ runner.arch }} result=${{ job.status }}" | tee -a "$GITHUB_STEP_SUMMARY"
+
+  summary:
+    name: Report · Portability summary
+    needs: [bootstrap]
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    permissions:
+      contents: read
+    concurrency:
+      group: ${{ github.workflow }}-summary-${{ github.ref }}
+      cancel-in-progress: true
+    steps:
+      - name: Report · Matrix result
+        run: |
+          {
+            echo "## Portability"
+            echo ""
+            echo "bootstrap matrix (macos-15, ubuntu-latest): ${{ needs.bootstrap.result }}"
+          } >> "$GITHUB_STEP_SUMMARY"
+      - name: Report · Fail when a matrix leg failed
+        if: contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled')
+        run: |
+          echo "::error::a portability matrix leg failed"
+          exit 1

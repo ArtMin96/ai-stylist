@@ -1,0 +1,92 @@
+[
+  {
+    "query": "need to add a new licensed source to the fashion-intel source register, has a rights basis contract with the runway photo agency, want the CRUD form to enforce that field",
+    "should_trigger": true
+  },
+  {
+    "query": "the trend ingestion job in fashion-intel keeps double-publishing the same runway photo from two different sources, need better dedup",
+    "should_trigger": true
+  },
+  {
+    "query": "want to wire the fashion-intel quarantine flow so flagged content shows up in the admin moderation queue instead of just silently disappearing",
+    "should_trigger": true
+  },
+  {
+    "query": "P12-T09 feed personalization — need to build the deterministic why-shown reason assembly for the Discover feed based on closet composition and region/season",
+    "should_trigger": true
+  },
+  {
+    "query": "a content source we're ingesting from went offline 3 days ago, need to handle the graceful retirement per P12 section 7 so stale items don't keep showing",
+    "should_trigger": true
+  },
+  {
+    "query": "trend-relevance port for the recommendation engine's stage 6 scorer — need to implement the per-user item relevance score fashion-intel exposes",
+    "should_trigger": true
+  },
+  {
+    "query": "someone reported a runway photo card in Discover as inappropriate, need to route that report into the moderation queue",
+    "should_trigger": true
+  },
+  {
+    "query": "the taxonomy-mapping step in the fashion-intel ingestion pipeline is rejecting valid category IDs, need to debug the reject-unknown-IDs logic",
+    "should_trigger": true
+  },
+  {
+    "query": "want to add the `trends.level` tier seam so Essentials users get basic trends and Plus+ gets the personalized feed",
+    "should_trigger": true
+  },
+  {
+    "query": "the outfit recommendation keeps ranking trendy items above practical ones even on cold days, need to fix the hard constraint",
+    "should_trigger": false,
+    "_near_miss_reason": "mentions trends and the recommendation engine, but the fix is a hard-constraint/scoring change inside the recommendation module itself — recommendation-rules owns that, not the fashion-intel trend port producer."
+  },
+  {
+    "query": "add a `sources` and `content_items` table with pgvector HNSW index for fashion-intel per the P12 migration plan",
+    "should_trigger": false,
+    "_near_miss_reason": "directly about fashion-intel's data, but the actual work is the Drizzle schema + migration itself — db-migration goes first; fashion-intel-ingestion continues once the tables exist."
+  },
+  {
+    "query": "need to add a POST /feed/items/:id/signal endpoint to the OpenAPI spec for save/hide/follow/report actions",
+    "should_trigger": false,
+    "_near_miss_reason": "the feed is fashion-intel's, but this is a wire-contract change in packages/contracts — api-contract-change comes first, even though fashion-intel-ingestion implements the handler after."
+  },
+  {
+    "query": "the pg-boss job runner keeps retrying a stuck job forever instead of moving it to the DLQ after the max attempts, and it happens to be a trend_ingestion job",
+    "should_trigger": false,
+    "_near_miss_reason": "the job happens to be a fashion-intel ingestion job, but the bug is in generic pg-boss retry/DLQ plumbing shared across all jobs — media-ml-pipeline owns that mechanism."
+  },
+  {
+    "query": "reviewing the diff for the new source-adapter PR to check it doesn't import apps/api/src/platform directly from fashion-intel's internal folder",
+    "should_trigger": false,
+    "_near_miss_reason": "about fashion-intel's boundaries, but the ask is specifically an architecture/boundary review of an existing diff — architecture-review is the primary skill for that pass."
+  },
+  {
+    "query": "the assistant chat module wants to answer 'what's trending in denim right now' by calling fashion-intel's feed query, need to add that tool call",
+    "should_trigger": false,
+    "_near_miss_reason": "fashion-intel is the data source, but the actual work — adding a tool call inside the assistant module — is assistant-chat's territory; fashion-intel-ingestion only needs to expose the already-existing public query."
+  },
+  {
+    "query": "want to run a security review on the new content-source adapter before it goes live, since it fetches from an external partner API",
+    "should_trigger": false,
+    "_near_miss_reason": "touches a fashion-intel adapter, but the ask is a dedicated security/privacy review — security-privacy-review is the primary skill, even though this skill's Stop section also routes there."
+  },
+  {
+    "query": "closet's item taxonomy mapping is out of sync with what the admin panel shows, need to reconcile the categories closet exposes",
+    "should_trigger": false,
+    "_near_miss_reason": "shares 'taxonomy' vocabulary, but this is closet's own taxonomy ownership (per CLAUDE.md, taxonomy lives in closet) — backend-module owns closet, not fashion-intel's content taxonomy-mapping stage."
+  },
+  {
+    "query": "write a fun 'style horoscope' generator for the app's onboarding flow, purely for entertainment, no licensed content involved",
+    "should_trigger": false,
+    "_near_miss_reason": "sounds trend-adjacent but has no source register, ingestion, moderation, or feed-personalization component at all — no real overlap with this skill."
+  },
+  {
+    "query": "hide/unfollow on a Discover card isn't being honored on the next feed refresh, the item keeps reappearing even after the user hid it",
+    "should_trigger": true
+  },
+  {
+    "query": "want to run `just ml-eval` on the segmentation model workers use for garment cutouts, unrelated to Discover or trend content",
+    "should_trigger": false,
+    "_near_miss_reason": "shares the `just ml-eval` command with this skill's validation block, but the model being evaluated (garment segmentation) is media-ml-pipeline's territory, not fashion-intel's taxonomy-mapping/summarization eval."
+  }
+]

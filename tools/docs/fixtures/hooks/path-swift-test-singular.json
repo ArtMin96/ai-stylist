@@ -1,0 +1,11 @@
+{
+  "session_id": "fixture-session",
+  "transcript_path": "/tmp/fixture-transcript.jsonl",
+  "cwd": "/home/arthur/Projects/app",
+  "hook_event_name": "PreToolUse",
+  "tool_name": "Write",
+  "tool_input": {
+    "file_path": "/home/arthur/Projects/app/apps/ios/App/HomeTest.swift",
+    "content": "// fixture"
+  }
+}

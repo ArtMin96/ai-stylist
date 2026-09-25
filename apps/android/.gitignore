@@ -1,0 +1,14 @@
+# apps/android: Gradle / Android Studio output. The wrapper jar (gradle/wrapper/gradle-wrapper.jar),
+# the lockfiles and gradle/verification-metadata.xml ARE committed.
+.gradle/
+.kotlin/
+build/
+local.properties
+captures/
+.cxx/
+.externalNativeBuild/
+*.iml
+.idea/
+*.apk
+*.aab
+*.hprof

@@ -1,0 +1,42 @@
+{
+  "skill_name": "db-migration",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Add a nullable `dead_lettered_at` timestamptz column to the platform_outbox table so the future DLQ sweep can record when a row gave up; a later migration may backfill it.",
+      "expected_output": "The agent edits packages/db/src/schema/platform.ts in the existing style, runs `just db-generate platform_outbox_dead_lettered_at` (never drizzle-kit directly), reviews the generated SQL, writes packages/db/migrations/down/<idx>.sql copying down/0002.sql, states whether the rollback is lossy, extends apps/api/tests/migrations/migrate.test.ts, and shows the `just db-rollback --yes && just db-migrate` round-trip and `just test api` output (or lists them as Not run with the reason, e.g. no Docker).",
+      "files": [],
+      "assertions": [
+        "The column is added in packages/db/src/schema/platform.ts, matching its existing column style (timestamp with timezone, snake_case name)",
+        "The report names `just db-generate <migration_name>` with a migration name (not a module name) as the generator, never a raw drizzle-kit invocation",
+        "A packages/db/migrations/down/<idx>.sql file pairs the new migration, and the report states whether the rollback is lossy or safe",
+        "The migration is additive only (nullable column, no NOT NULL, no rewrite-triggering default)",
+        "apps/api/tests/migrations/migrate.test.ts is extended, and the report shows the round-trip / `just test api` output or an explicit Not run reason"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "avatar needs a waist_circumference_cm column on its measurements table so the parametric mesh generator can read it directly instead of recomputing it on every render.",
+      "expected_output": "The agent notes that body measurements are owned by `profile` (docs/modules/profile.md, SPINE §3), not `avatar`, so the column cannot land in an avatar table; it raises that ownership question instead of adding it. It classifies waist_circumference_cm as S3 sensitive body-measurement data (doc 11 §6) with retention and deletion propagation, and reports that no module has an internal/schema.ts yet, so the first domain table hits the public-api-only-external collision and needs the lead's decision before any schema file is written.",
+      "files": [],
+      "assertions": [
+        "The agent identifies `profile` as the owner of measurements and does not add the column to an avatar table",
+        "The report classifies waist_circumference_cm as sensitive (S3) body-measurement data and states retention and deletion-propagation handling",
+        "The agent reports that no domain internal/schema.ts exists yet and stops on the public-api-only-external collision instead of re-exporting a module internal from packages/db",
+        "No DROP/TRUNCATE/NOT NULL step is proposed without explicit human authorization, and no raw drizzle-kit invocation appears"
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "just db-rollback --yes && just db-migrate fails after rolling back 0002_platform_idempotency_keys — the round trip doesn't come back cleanly. Investigate and fix the rollback file.",
+      "expected_output": "The agent treats this as a regression: it reruns the round trip, pastes the actual failing output, fixes only packages/db/migrations/down/0002.sql (reading packages/db/src/schema/platform.ts for the expected objects) to exactly undo the additive step in packages/db/migrations/0002_platform_idempotency_keys.sql (never editing the already-applied forward migration), reruns the round trip, and pastes the passing output.",
+      "files": [],
+      "assertions": [
+        "The agent's report includes the actual failing round-trip output captured before the fix, not a paraphrase",
+        "The fix is confined to packages/db/migrations/down/0002.sql; packages/db/migrations/0002_platform_idempotency_keys.sql (already applied) is never edited",
+        "The agent reruns `just db-rollback --yes && just db-migrate` after the fix and pastes the passing output",
+        "The report states explicitly whether the corrected rollback is lossy or safe"
+      ]
+    }
+  ]
+}

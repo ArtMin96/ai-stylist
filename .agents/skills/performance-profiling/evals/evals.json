@@ -1,0 +1,41 @@
+{
+  "skill_name": "performance-profiling",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "The GET /closet/items list endpoint feels slow on staging with 200 items in a wardrobe. Before I touch anything, tell me how to measure it properly and confirm whether it's actually over budget.",
+      "expected_output": "The agent looks up the actual latency budget for this endpoint in planning/13-testing-quality-and-performance.md rather than guessing a number, then captures the OTel trace span for the exact route+params from the Grafana Cloud trace view with fixed seed data, runs it ≥5 times, and reports median + p95 before concluding whether the budget is exceeded. It does not propose an optimization before this measurement exists.",
+      "files": [],
+      "assertions": [
+        "The agent names or looks up a specific budget from planning/13-testing-quality-and-performance.md rather than inventing a threshold",
+        "The agent's measurement plan captures the OTel trace span for the specific route under fixed seed data, not a generic 'run it and see' description",
+        "The agent states the ≥5 runs / median + p95 rule explicitly before drawing any conclusion",
+        "The agent does not recommend a code change until the before-measurement is reported"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "A teammate opened a PR claiming their change to the recommendation scoring loop made it '3x faster'. Review whether that claim is solid enough to merge on.",
+      "expected_output": "The agent applies the no-measurement-no-claim rule: it checks whether the PR includes before/after numbers captured with the same procedure on the same environment, ≥5 runs with median+p95, and a pasted (not paraphrased) result. If the PR only has a claim with no attached numbers, or numbers from different machines/procedures, the agent flags this as failing CLAUDE.md's Honesty about results and Testing rules, and does not accept the claim.",
+      "files": [],
+      "assertions": [
+        "The agent explicitly invokes the 'no measurement, no claim' rule as the standard the PR is judged against",
+        "The agent checks for same-procedure, same-environment before/after numbers rather than accepting a bare percentage claim",
+        "If the evidence is missing or mismatched, the agent's verdict is that the claim cannot be accepted yet, not a provisional approval",
+        "The agent does not fabricate or assume what the missing numbers might have been"
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "We need to capture a frame-time trace on a low-tier Android device for the home screen, and also want to know whether a trace from the iOS simulator is good enough evidence for iPhone performance.",
+      "expected_output": "The agent gives the exact Android capture procedure (on-device perfetto trace via adb, inspected in the Perfetto UI, on the doc 13 device-matrix low-tier device) and states that iOS performance evidence needs Xcode Instruments on a Mac against a physical iPhone of the matching tier running a Release build — a simulator trace is not device evidence. If no Mac or device is available in the session, it says so rather than substituting an estimate.",
+      "files": [],
+      "assertions": [
+        "The agent's Android procedure names an on-device perfetto/adb-based trace, not a generic 'profile it' instruction",
+        "The agent states that an iOS simulator trace is not device evidence and routes the iOS capture to Instruments on a Mac with a physical iPhone",
+        "The agent does not claim it can produce an iOS trace itself if no Mac or device is available in the session",
+        "The response cites the low-tier device requirement from the doc 13 device matrix"
+      ]
+    }
+  ]
+}

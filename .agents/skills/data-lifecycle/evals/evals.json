@@ -1,0 +1,47 @@
+{
+  "skill_name": "data-lifecycle",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "A user withdrew their `ai_generative` consent scope while a fal.ai try-on job for that same request was still running in pg-boss. Wire the withdrawal to cancel the in-flight job and block any new try-on requests for that user, per P03-T05's withdrawal-halts-processing rule.",
+      "expected_output": "The agent extends the existing consent-withdrawal handling to cancel the specific pending pg-boss job tagged with the ai_generative purpose before it blocks new requests, records the withdrawal as a new append-only consents row (never mutating history), and does not invent a second consent table or a parallel withdrawal path. It ends by requesting or running security-privacy-review before PR.",
+      "files": [],
+      "assertions": [
+        "The withdrawal is recorded as a new row in the existing consents table, not a mutation of a prior row",
+        "The in-flight pg-boss job for that purpose is cancelled before new requests are blocked, matching the withdrawal-halts-processing ordering in P03-T05",
+        "No second consent table, event, or withdrawal mechanism is introduced alongside the existing consent.changed event",
+        "The agent's report names security-privacy-review as run or as the required next step before PR",
+        "The diff stays inside the module(s) that own the touched tables — no direct write to another module's internal/** or tables",
+        "If the consents table, the consent.changed event, or pg-boss do not exist yet (P03-T05, P02-T08 NOT_STARTED), the agent says so and stops instead of building an ad hoc withdrawal path"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "closet's item photos and derived media aren't covered by the account-deletion cascade yet — doc 06 §8 step 1 only lists profile and identity tables today. Add closet's items and media derivations to the cascade.",
+      "expected_output": "The agent extends the existing FK-ordered Postgres cascade step (doc 06 §8) to include closet's tables in dependency order, adds an R2 prefix-delete step for closet's media objects, and adds or extends a purge-verification check (FK coverage test and/or R2 list-empty) rather than introducing a second deletion mechanism specific to closet.",
+      "files": [],
+      "assertions": [
+        "closet's tables are added to the same ordered Postgres cascade step described in doc 06 §8, in FK dependency order, not a separate cascade",
+        "An R2 prefix-delete step for closet's media objects is added or confirmed already covered",
+        "A verification step (FK-coverage test, R2 list-empty check, or both) is exercised for the new coverage, with output pasted",
+        "The change is per-step idempotent: the agent states what happens if the job is retried after a partial failure",
+        "The agent's report requests or completes security-privacy-review before PR",
+        "If the deletion cascade job or closet's tables do not exist yet (P03-T10, P06, P02-T08 NOT_STARTED), the agent says so and delivers the step design only instead of inventing a second mechanism"
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "A user complained their GDPR data export was incomplete — it's missing their billing/credit-ledger history. Fix the export job so it includes it.",
+      "expected_output": "The agent extends the single existing export job's ZIP contents to include billing/credit-ledger history read through billing's public API (never a direct table query from the export job into billing's internal/**), preserves the one-job/one-signed-link/one-concurrency-slot design from P03-T09, and does not create a second export endpoint or job.",
+      "files": [],
+      "assertions": [
+        "Billing/credit-ledger data is added to the existing export ZIP, not delivered via a new export endpoint or a second job",
+        "The export code reads billing data through billing's index.ts public API, never apps/api/src/modules/billing/internal/** or a billing table directly",
+        "The 1-concurrent, 24-hour signed-link behavior from P03-T09 is preserved and the agent states that it checked this",
+        "The agent names the test command it ran (e.g. just test <module>) and pastes real output",
+        "The agent's report requests or completes security-privacy-review before PR",
+        "If the export job or billing's ledger do not exist yet (P03-T09, P13-T07 NOT_STARTED), the agent says so and stops instead of creating a new export path"
+      ]
+    }
+  ]
+}

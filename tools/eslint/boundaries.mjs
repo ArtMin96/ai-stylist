@@ -16,7 +16,6 @@ export const PROVIDER_SDKS = [
   'pg-boss',
   '@aws-sdk/*',
   '@cloudflare/*',
-  'react-native-purchases',
   '@fal-ai/*',
   'posthog-*',
   'firebase-admin',
@@ -27,12 +26,7 @@ export const PROVIDER_SDKS = [
 const FILES = [
   {
     category: 'composition-root',
-    pattern: [
-      'apps/api/src/app.module.ts',
-      'apps/api/src/main.ts',
-      'apps/mobile/src/app/_layout.tsx',
-      'apps/mobile/src/lib/app-services.tsx',
-    ],
+    pattern: ['apps/api/src/app.module.ts', 'apps/api/src/main.ts'],
   },
 ];
 
@@ -65,13 +59,12 @@ export default [
       'boundaries/files': FILES,
       'boundaries/ignore': ['**/node_modules/**', '**/gen/**', '**/fixtures/**'],
       'boundaries/dependency-nodes': ['import', 'export', 'dynamic-import'],
-      // NodeNext `.js` → `.ts`, workspace `exports`, and the mobile `@/*` alias all need the TS
-      // resolver; the node resolver bundled with the plugin sees none of them.
+      // NodeNext `.js` → `.ts` and workspace `exports` need the TS resolver; the node resolver
+      // bundled with the plugin sees neither.
       'import/resolver': {
         typescript: {
           project: [
             path.join(REPO_ROOT, 'apps/api/tsconfig.json'),
-            path.join(REPO_ROOT, 'apps/mobile/tsconfig.json'),
             path.join(REPO_ROOT, 'packages/*/tsconfig.json'),
           ],
           noWarnOnMultipleProjects: true,

@@ -1,0 +1,95 @@
+# XcodeGen spec: the ONLY definition of the Xcode project. `just ios-project` generates
+# apps/ios/AIStylist.xcodeproj from it (gitignored; never edit or commit the .xcodeproj).
+# XcodeGen 2.46.0 (pinned in mise.toml, macOS only).
+#
+# - Build settings live in Config/*.xcconfig (settingPresets: none, so nothing hidden lands here).
+# - The app target is thin: App/ only (entry point, composition root, Info.plist, assets).
+#   Code goes in the local packages: Packages/Core (no UI) and Packages/Features (screens).
+# - Adding a file under App/ or a package needs no change here; re-run `just ios-project`.
+name: AIStylist
+
+options:
+  settingPresets: none
+  deploymentTarget:
+    iOS: '26.0'
+  xcodeVersion: '27.0'
+  createIntermediateGroups: true
+  groupSortPosition: top
+
+configs:
+  Dev: debug
+  Preview: release
+  Prod: release
+
+configFiles:
+  Dev: Config/Dev.xcconfig
+  Preview: Config/Preview.xcconfig
+  Prod: Config/Prod.xcconfig
+
+packages:
+  Core:
+    path: Packages/Core
+  Features:
+    path: Packages/Features
+
+targets:
+  AIStylist:
+    type: application
+    platform: iOS
+    sources:
+      - path: App
+    dependencies:
+      - package: Core
+        products: [AppConfig, Analytics, AppServices, APIData]
+      - package: Features
+        products: [HomeFeature]
+
+schemes:
+  AIStylist-Dev:
+    build:
+      targets:
+        AIStylist: all
+    run:
+      config: Dev
+    test:
+      config: Dev
+      gatherCoverageData: true
+      targets:
+        - package: Core/AppConfigTests
+        - package: Core/AnalyticsTests
+        - package: Core/APIDataTests
+        - package: Features/HomeModelTests
+    profile:
+      config: Preview
+    analyze:
+      config: Dev
+    archive:
+      config: Dev
+  AIStylist-Preview:
+    build:
+      targets:
+        AIStylist: all
+    run:
+      config: Preview
+    test:
+      config: Preview
+    profile:
+      config: Preview
+    analyze:
+      config: Preview
+    archive:
+      config: Preview
+  AIStylist-Prod:
+    build:
+      targets:
+        AIStylist: all
+    run:
+      config: Prod
+    test:
+      config: Prod
+    profile:
+      config: Prod
+    analyze:
+      config: Prod
+    archive:
+      config: Prod

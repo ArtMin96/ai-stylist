@@ -1,0 +1,82 @@
+[
+  {
+    "query": "can you review this new RevenueCat webhook handler to make sure the signature check can't be bypassed",
+    "should_trigger": true
+  },
+  {
+    "query": "does this new error response leak the user's selfie url or face-derived data anywhere",
+    "should_trigger": true
+  },
+  {
+    "query": "is this presigned upload URL for wardrobe photos scoped correctly, i want to make sure the TTL and content-type are locked down",
+    "should_trigger": true
+  },
+  {
+    "query": "need a consent flow review before we start processing face data for the avatar generator",
+    "should_trigger": true
+  },
+  {
+    "query": "is it safe to log this event payload to PostHog, it might contain someone's precise location",
+    "should_trigger": true
+  },
+  {
+    "query": "can someone check whether this new admin endpoint that suspends an account actually enforces authorization or if there's an IDOR",
+    "should_trigger": true
+  },
+  {
+    "query": "reviewing the deletion flow for closet items, want to make sure the R2 assets actually get removed and not just the postgres row",
+    "should_trigger": true
+  },
+  {
+    "query": "is this fal.ai prompt sending more personal data than it needs to for the try-on job",
+    "should_trigger": true
+  },
+  {
+    "query": "double check this diff doesn't put a token or api key into a fixture or test file by accident",
+    "should_trigger": true
+  },
+  {
+    "query": "want a privacy pass on the new export-my-data endpoint before we ship it",
+    "should_trigger": true
+  },
+  {
+    "query": "review this diff for module boundary violations, it adds a new mapper to the closet module",
+    "should_trigger": false
+  },
+  {
+    "query": "can you check if this markWorn function already exists somewhere in the codebase before I add it to closet",
+    "should_trigger": false
+  },
+  {
+    "query": "the RevenueCat webhook is failing tests, need to debug why the retry logic isn't working",
+    "should_trigger": false
+  },
+  {
+    "query": "trial users aren't losing access to the closet upload feature when their RevenueCat entitlement expires",
+    "should_trigger": false
+  },
+  {
+    "query": "just security-scan is failing in CI because osv-scanner flagged a transitive dependency, can we bump it",
+    "should_trigger": false
+  },
+  {
+    "query": "add a quietHoursActive check to the notifications module so pushes respect the user's configured quiet hours",
+    "should_trigger": false
+  },
+  {
+    "query": "the closet screen in the app crashes when you swipe past the last item in the wardrobe grid",
+    "should_trigger": false
+  },
+  {
+    "query": "is the fal.ai try-on job for a closet item stuck in pending in pg-boss again",
+    "should_trigger": false
+  },
+  {
+    "query": "does docs/modules/identity.md still list the session cookie as httpOnly, or does it need updating",
+    "should_trigger": false
+  },
+  {
+    "query": "want to bump the max-lines eslint threshold because logger.ts keeps warning",
+    "should_trigger": false
+  }
+]

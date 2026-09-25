@@ -13,6 +13,9 @@ vulnerability scan, the gate is never weakened to get a green run: no threshold 
 | npm  | `pnpm licenses list --json` (reads `pnpm-lock.yaml` + the installed store; every workspace package, every version)              | `pnpm licenses list --json --prod` (drops `devDependencies` of every workspace package)        |
 | PyPI | `pip-licenses==5.5.5 --from=mixed`, run as an ephemeral overlay on the `workers/` venv (`uv run --with`), filtered to `uv.lock` | `uv export --project workers --no-dev` (packages reachable without the `dev` dependency group) |
 
+Not scanned: Maven (Gradle, `apps/android`) and SwiftPM (`apps/ios`, the generated Swift
+client). See "Open item" below.
+
 First-party packages (`@ai-stylist/*`, `ai-stylist-*`) are skipped. Runtime on a warm checkout is
 about 7 s.
 
@@ -30,8 +33,8 @@ _unclassified_.
 | `deny`         | **FAIL**              | WARN                | GPL-\*, AGPL-\*, SSPL-\*, CC-BY-NC\*, UNKNOWN / UNLICENSED / NONE / no license field                                               |
 | _unclassified_ | **FAIL**              | WARN                | anything not listed: add it to the right list in a reviewed PR                                                                     |
 
-Dev-only copyleft warns instead of failing because it never ships in the mobile or backend
-bundle; the warning keeps it visible so it is not promoted to a production dependency by accident.
+Dev-only copyleft warns instead of failing because it never ships in the API bundle or a
+worker image; the warning keeps it visible so it is not promoted to a production dependency by accident.
 MPL-2.0 is file-level copyleft and allowed as long as we do not modify the dependency's own
 source (lightningcss, certifi).
 
@@ -83,6 +86,20 @@ An exception is one entry in the `exceptions` array of `tools/security/license-p
   renews the entry with a fresh reason and date.
 - An active exception downgrades the finding to a WARN that names the expiry, so it stays visible.
 
+## Open item: native dependencies are not license-checked
+
+Recorded 2026-09-23. The gate covers npm and PyPI only. The Android app's Maven dependencies
+(`apps/android/gradle/libs.versions.toml`, locked in the `gradle.lockfile`s) and the iOS SwiftPM
+packages (`apps/ios/Packages/*/Package.resolved`) are not checked against
+`tools/security/license-policy.json`. Their vulnerabilities are scanned by osv-scanner, but their
+licenses are not. Until this closes, a reviewer checks the license of every new Maven or SwiftPM
+dependency by hand. Candidate fixes:
+
+- A Gradle license-report plugin feeding `license-check.sh`. A new Gradle plugin needs an ADR-lite.
+- Reading the licenses from the SBOM, since syft already lists the Gradle and SwiftPM packages.
+
+Owner: Android and iOS leads. Not built yet.
+
 ## Proving the gate works
 
 `scripts/security/license-check.sh --fixtures` (run by `just ci-parity`, < 1 s) evaluates the
@@ -98,4 +115,5 @@ dependency fails, the GPL dev-only tool warns, and the MIT dependency is silent.
 `.github/workflows/nightly.yml`, so a local file and the CI artifact can be diffed. The directory
 is gitignored; the SBOM is never committed, only uploaded per release (planning/15 §9).
 Excluded from the scan: `node_modules/.cache`, `prototype/`, `.git`, `artifacts/`, and the license
-fixture tree. About 1,900 packages, 30 to 50 s on a warm checkout.
+fixture tree. About 2,400 packages (npm, Maven, PyPI, GitHub Actions, SwiftPM), 15 to 25 s on a warm
+checkout (measured 2026-09-24).

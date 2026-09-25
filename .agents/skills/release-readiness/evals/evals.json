@@ -1,0 +1,41 @@
+{
+  "skill_name": "release-readiness",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "We're cutting a beta for commit abc123f — Android build 42, iOS build 42. Walk through the readiness checklist and tell me if it's a GO for TestFlight + Play internal.",
+      "expected_output": "The agent identifies the candidate (SHA, version/build numbers, channel), works through the gate checklist item by item citing real evidence sources (CI status, flag expiry via the feature-flags-rollout reference — recorded as unverified pending a human PostHog check because no automated expired-flag report exists, migration state, contract staleness, the ios/android workflow runs, crash symbolication), and produces an explicit GO/NO-GO with blockers named rather than a vague 'looks fine'. It never claims to have run a check it didn't actually run.",
+      "files": [],
+      "assertions": [
+        "The agent names the specific commit SHA and build numbers for both platforms rather than treating the candidate generically",
+        "The agent checks flag owner/expiry/removal-issue status against the feature-flags-rollout reference and records expiry as unverified (a NO-GO until a human confirms) because no automated expired-flag report exists",
+        "The final verdict is an explicit GO or NO-GO with each unmet item named as a blocker, not a hedge",
+        "The agent does not claim a gate passed without citing the command or evidence that proved it"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "Crash-free sessions just dropped below the gate threshold during the 25% staged rollout of build 44. What do we do, and how long do we then soak before going to 100%?",
+      "expected_output": "The agent recommends an immediate halt of the staged rollout, states that fix-forward vs rollback is a human decision, and hands the fix to testing-regression. It cites the crash-free gate from planning/phases/P14-hardening-and-launch.md (≥ 99.5 % hypothesis; doc 13 has no crash-free number) and reports the beta-soak length as OPEN (not in doc 13 or the decision log), asking a human to set it instead of inventing a number.",
+      "files": [],
+      "assertions": [
+        "The agent's first recommendation is to halt the staged rollout, not to wait and monitor",
+        "The agent states that fix-forward vs rollback is a human decision and hands the fix to testing-regression",
+        "The agent cites the P14 phase file (not doc 13) as the source of the crash-free gate",
+        "The agent does not state a beta-soak duration as documented policy; it says the length is open and defers to a human"
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "Build 44 is in the Play staged rollout and on TestFlight. We found a typo in the onboarding copy — can we just push the string fix over the air to both apps without cutting a new build?",
+      "expected_output": "The agent states plainly that there is no over-the-air update channel for the native apps: every change, including a copy fix, ships as a new store build through internal → beta → staged production. It proposes a new candidate (new build numbers from one commit, `just ios-build --config prod` on the macOS runner or a Mac, `just android-build release`), and leaves signing, upload and store submission to a human.",
+      "files": [],
+      "assertions": [
+        "The agent does not suggest any over-the-air, remote-bundle or hot-update mechanism",
+        "The agent says the fix ships as a new store build on both platforms",
+        "The agent names `just ios-build --config prod` and `just android-build release` and that iOS builds only on the macOS runner or a Mac",
+        "The agent does not claim it can sign, upload or submit the build itself"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,40 @@
+{
+  "skill_name": "observability-analytics",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "The recommendation engine just shipped stage-6 scoring. Add the `reco.request.duration` and `reco.validity_rate` metrics from the observability catalog, and wire the hard-constraint-violation alert so it pages before launch, per the catalog's requirement that the violation alert is on before the engine ships.",
+      "expected_output": "The agent cites planning/14-observability-operations-and-analytics.md §4's existing catalog rows for these exact metric names rather than inventing new ones, adds the emission call site inside the recommendation module (or hands off to recommendation-rules for that part), and treats the hard-constraint-violation alert as SEV1 per §7 with a linked runbook before calling it done.",
+      "files": [],
+      "assertions": [
+        "The agent uses the existing metric names `reco.request.duration` / `reco.validity_rate` / `reco.no_valid_outfit.count` from the catalog rather than inventing new ones",
+        "The agent states that a hard-constraint-violation count > 0 is SEV1 (page, any hour) per the alert severity ladder, not a lower severity",
+        "The agent either links the alert to an existing or newly-written runbook, or explicitly stops because no runbook exists yet — it never ships an alert with no runbook",
+        "If the metric emission call site is inside apps/api/src/modules/recommendation/, the agent either hands that part to recommendation-rules or clearly scopes its own change to the dashboard/alert side only"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "Add a new PostHog event `closet_item_favorited` that fires when a user favorites an item, including the item's care-label text and city name for local context, so we can build a heatmap later.",
+      "expected_output": "The agent flags that care-label free text and a city name both violate the consent-gated, no-free-text, region-bucket-only rules for analytics events (doc 14 §9) and either drops those properties or substitutes an allowed alternative (e.g. a region bucket instead of a city name), and puts the event schema in packages/contracts (packages/contracts/events/analytics/events.json) rather than hand-writing it separately in the native apps and the API.",
+      "files": [],
+      "assertions": [
+        "The agent explicitly rejects or reworks the care-label free-text property and the raw city-name property, citing the no-free-text / region-bucket-only rule",
+        "The agent proposes the event schema live in packages/contracts, not duplicated by hand in the native apps and apps/api",
+        "The agent notes the event must be consent-gated behind the `analytics` purpose before it fires",
+        "The agent does not silently ship the event with the disallowed properties intact"
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "We're getting paged 5 times a week for the fal.ai provider degrading, way more than we can handle with two people. Fix the alerting.",
+      "expected_output": "The agent recognizes 5 pages/week exceeds the documented alert budget (<= 2 pages/week rolling average) and treats this as the mandatory tuning session the catalog requires — either demoting the alert to a lower severity with a working fallback, fixing the underlying noisy condition, or explicitly stopping to say a human tuning decision is needed — rather than just silencing the alert.",
+      "files": [],
+      "assertions": [
+        "The agent names the specific alert-budget threshold (<= 2 pages/week rolling average) from the catalog and states it is being exceeded",
+        "The agent does not simply delete or mute the alert without either fixing the noisy condition or explicitly demoting/re-scoping it with a stated reason",
+        "The agent's proposed fix keeps a working fallback path visible (per the provider-outage alert's intent) rather than removing observability of the actual outage"
+      ]
+    }
+  ]
+}

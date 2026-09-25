@@ -1,0 +1,3 @@
+ERROR DC-06 .agents/skills/README.md:1 no index row for skill directory 'orphan'
+ERROR DC-06 .claude/skills/orphan:1 missing or not a symlink
+ERROR DC-06 .agents/skills/README.md:1 index row 'ghost' has no matching skill directory

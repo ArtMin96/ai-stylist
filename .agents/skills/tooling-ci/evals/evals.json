@@ -1,0 +1,42 @@
+{
+  "skill_name": "tooling-ci",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "We keep forgetting to run the migration rollback check locally before pushing. Add a `just db-rollback-check` recipe that runs a migrate-up, migrate-down, migrate-up cycle against the Testcontainers database and wire it into `just ci-parity`.",
+      "expected_output": "The agent searches the justfile and scripts/db/ first for an existing rollback-cycle script before adding one, adds a documented recipe (doc comment matching `just --list` output) that follows the `set shell := [\"bash\", \"-euo\", \"pipefail\", \"-c\"]` convention and stays bash 3.2-portable, wires it into the `ci-parity` sequence, and either adds a fixture proving a broken down-migration fails the check or explains why one isn't feasible for this recipe. It flags that the doc 15 §5 catalog needs the same addition as a proposal, not a direct edit.",
+      "files": [],
+      "assertions": [
+        "The agent searches justfile and scripts/db/** for an existing rollback-cycle mechanism before writing a new one",
+        "The new recipe's doc comment matches what `just --list`/`just --summary` would show",
+        "The recipe is added to the just ci-parity sequence, not left as a standalone command nobody calls in CI",
+        "Any shell script added is stated to be bash 3.2 / BSD-flag portable, or the agent explains why portability.yml already covers it",
+        "The agent does not hand-edit planning/15-*.md — it proposes the doc 15 catalog addition as a diff instead"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "`just docs-check` is failing on the branch with a DC-10 finding: some skill file references `just db-generate` but the recipe is actually called something else now. Find out what happened and fix it.",
+      "expected_output": "The agent reads scripts/docs/docs-check.sh's header comment to understand what DC-10 checks (every `just <recipe>` token must be a real recipe per `just --summary`), locates the actual current recipe name in the justfile, and fixes the stale reference in the skill file rather than adding a fake recipe just to make the check pass. It reruns `just docs-check` and pastes the passing output.",
+      "files": [],
+      "assertions": [
+        "The agent's report shows it read the DC-10 definition (from docs-check.sh's header or equivalent) before acting, not a guess at what DC-10 means",
+        "The fix corrects the stale `just <recipe>` reference to the real recipe name — it does not add a no-op recipe purely to satisfy the check",
+        "The agent reruns `just docs-check` afterward and pastes real passing output, not a claimed result",
+        "No other skill or agent file the agent doesn't own was edited to fix this"
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "`just ci-parity` on the PR gate has crept up to 14 minutes and the team wants to know which step is slow before deciding what to cut or parallelize.",
+      "expected_output": "The agent investigates using existing timing signals (`.github/workflows/README.md`'s stated budgets, `ci.pr_gate_duration_seconds` in the job summary, or timing each just recipe in the ci-parity sequence locally) rather than guessing, reports the actual measured breakdown, and if a fix is proposed it goes through a `just` recipe change with real before/after numbers — never a claim of a speedup that wasn't measured.",
+      "files": [],
+      "assertions": [
+        "The agent's report includes an actual measured timing breakdown, not an assumption about which step is slow",
+        "Any proposed change is expressed as a justfile/workflow change, not a raw CI YAML step that bypasses `just`",
+        "If the agent claims an improvement, it includes a before/after measurement from the same procedure (root CLAUDE.md 'Performance work requires before/after measurements')",
+        "The agent does not touch .github/workflows required-checks configuration without flagging it as human-only"
+      ]
+    }
+  ]
+}

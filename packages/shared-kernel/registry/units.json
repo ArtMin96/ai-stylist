@@ -1,0 +1,14 @@
+{
+  "$schema": "./units.schema.json",
+  "dimensions": {
+    "length": { "units": ["cm"], "canonical": "cm" },
+    "mass": { "units": ["kg"], "canonical": "kg" },
+    "temperature": { "units": ["celsius"], "canonical": "celsius" }
+  },
+  "unitSystems": ["metric", "imperial"],
+  "measurementSources": ["user", "estimated", "derived"],
+  "conversionFactors": {
+    "cmPerInch": 2.54,
+    "kgPerPound": 0.45359237
+  }
+}

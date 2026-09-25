@@ -1,0 +1,92 @@
+[
+  {
+    "query": "add a settings screen to the iOS app with the analytics consent toggle, SwiftUI, needs a view model we can test on linux",
+    "should_trigger": true
+  },
+  {
+    "query": "HomeModel in apps/ios should retry the version call with a backoff when it fails, add tests",
+    "should_trigger": true
+  },
+  {
+    "query": "wire the closet list endpoint into the ios app through the generated swift client",
+    "should_trigger": true
+  },
+  {
+    "query": "swiftlint force_unwrapping error in apps/ios/Packages/Core, fix it properly",
+    "should_trigger": true
+  },
+  {
+    "query": "add a new xcconfig key for the image CDN host to the iOS Dev/Preview/Prod configs",
+    "should_trigger": true
+  },
+  {
+    "query": "the SwiftUI home screen recreates its model on every redraw, the toggle state resets",
+    "should_trigger": true
+  },
+  {
+    "query": "add VoiceOver labels and dynamic type support to the iOS consent row",
+    "should_trigger": true
+  },
+  {
+    "query": "you're the iOS lane for the closet count card, here's the brief and Base sha, build it in apps/ios",
+    "should_trigger": true
+  },
+  {
+    "query": "tools/codegen/gen-swift.sh drops the doc comments from the generated client, fix the script",
+    "should_trigger": true
+  },
+  {
+    "query": "add a new AppServices protocol and an APIData service for the outfit list endpoint, copy the version service pattern",
+    "should_trigger": true
+  },
+  {
+    "query": "Compose home screen loses the toggle state on rotation in apps/android",
+    "should_trigger": false,
+    "_near_miss_reason": "same feature, Android side — android-feature."
+  },
+  {
+    "query": "build the outfit detail screen on both iOS and Android with identical states and copy",
+    "should_trigger": false,
+    "_near_miss_reason": "both platforms — cross-platform-feature orchestrates, then runs ios-feature for the iOS half."
+  },
+  {
+    "query": "add a sizeLabel field to the ClosetItem response schema so the iOS app can show it",
+    "should_trigger": false,
+    "_near_miss_reason": "the wire shape changes first — api-contract-change."
+  },
+  {
+    "query": "extend e2e/smoke.yaml to assert the new consent copy on both apps",
+    "should_trigger": false,
+    "_near_miss_reason": "Maestro flow — e2e-device-testing."
+  },
+  {
+    "query": "implement GET /v1/closet/items/count in the closet module so the iOS home card has something to call",
+    "should_trigger": false,
+    "_near_miss_reason": "API endpoint implementation — backend-module (api-engineer)."
+  },
+  {
+    "query": "the Android release build fails R8 on the generated kotlin client, fix the proguard rules",
+    "should_trigger": false,
+    "_near_miss_reason": "Android build — android-feature."
+  },
+  {
+    "query": "is build 12 ready for TestFlight, give me a go/no-go",
+    "should_trigger": false,
+    "_near_miss_reason": "release evidence — release-readiness."
+  },
+  {
+    "query": "implement the settings screen on iOS and Android with identical strings and ids",
+    "should_trigger": false,
+    "_near_miss_reason": "both platforms from the start — cross-platform-feature."
+  },
+  {
+    "query": "review the iOS lane's diff for boundary violations before we merge it",
+    "should_trigger": false,
+    "_near_miss_reason": "review lens — architecture-review."
+  },
+  {
+    "query": "the iOS keychain token storage needs a privacy review before release",
+    "should_trigger": false,
+    "_near_miss_reason": "security lens — security-privacy-review."
+  }
+]

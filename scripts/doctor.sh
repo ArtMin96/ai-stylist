@@ -21,32 +21,39 @@ doctor_python() {
   fi
 }
 if [[ -x "$MISE_BIN" ]]; then
-  ok "mise present ($("$MISE_BIN" --version 2>/dev/null | head -1))"
-  # Every tool in mise.toml must resolve to exactly its pinned version (mise ls --current --json).
+  ok "mise present at $MISE_BIN ($("$MISE_BIN" --version 2>/dev/null | head -1))"
+  # Every tool pinned in this repo's mise config must resolve to exactly its pinned version
+  # (mise ls --current --json). `--current` also merges the user's global/system configs
+  # (~/.config/mise/config.toml, a parent directory's mise.toml); those tools are not this repo's
+  # pins, so entries sourced from a config file outside $REPO_ROOT are skipped. Everything else —
+  # mise.toml, a repo-local mise.local.toml, a MISE_<TOOL>_VERSION env override — is still checked.
   pin_rows="$("$MISE_BIN" ls --current --json 2>/dev/null \
     | doctor_python -c '
-import json,sys
+import json,os,sys
+root=os.path.realpath(sys.argv[1])
 d=json.load(sys.stdin)
 for tool,entries in d.items():
     for e in entries:
+        src=(e.get("source") or {}).get("path") or ""
+        if src and not os.path.realpath(src).startswith(root + os.sep):
+            continue
         req=e.get("requested_version") or ""
         inst=e.get("version") if e.get("installed") else "(missing)"
-        print(f"{tool}\t{req}\t{inst}")' 2>/dev/null || true)"
+        print(f"{tool}\t{req}\t{inst}")' "$REPO_ROOT" 2>/dev/null || true)"
   if [[ -z "$pin_rows" ]]; then
-    # shellcheck disable=SC2088  # the ~ is in a hint string typed by a human, not expanded here
-    fail "could not read pinned tool versions (mise ls --current --json)" "~/.local/bin/mise install --yes   (or: just bootstrap)"
+    fail "could not read this repo's pinned tool versions (mise ls --current --json)" "$MISE_BIN trust && $MISE_BIN install --yes   (or: just bootstrap)"
   fi
   while IFS=$'\t' read -r tool requested installed; do
     [[ -z "$tool" ]] && continue
     if [[ "$installed" == "$requested" ]]; then
       ok "$tool $installed"
     else
-      # shellcheck disable=SC2088
-      fail "$tool resolves to '$installed', pinned '$requested'" "~/.local/bin/mise install $tool@$requested"
+      fail "$tool resolves to '$installed', pinned '$requested'" "$MISE_BIN install $tool@$requested"
     fi
   done <<< "$pin_rows"
 else
-  fail "mise not found at $MISE_BIN" "curl https://mise.run | sh   (or: just bootstrap)"
+  # shellcheck disable=SC2088  # the ~ is in a message for a human, not expanded here
+  fail "mise not found at $MISE_BIN (unless MISE_BIN is set, ~/.local/bin/mise then PATH are tried)" "curl https://mise.run | sh   (or: just bootstrap)"
 fi
 
 # --- pnpm store -----------------------------------------------------------------
@@ -70,42 +77,42 @@ else
 fi
 
 # --- docker ---------------------------------------------------------------------
-# macOS has no native daemon: Docker Desktop, OrbStack or Colima provide one (docs/DEVELOPING-ON-MACOS.md).
-# Testcontainers (apps/api migrations tests) talks to the socket directly, which Colima only
-# exposes through DOCKER_HOST.
+# macOS has no native daemon: this repo uses OrbStack, which bootstrap.sh --system installs and starts
+# (docs/DEVELOPING-ON-MACOS.md). A machine that already runs Colima still works, but Testcontainers
+# (apps/api migrations tests) talks to the socket directly, which Colima only exposes through DOCKER_HOST.
 colima_sock="unix://$HOME/.colima/default/docker.sock"
 if have docker; then
   if docker info >/dev/null 2>&1; then
     ok "docker daemon reachable"
     if os_is_darwin && [[ "$(darwin_docker_runtime)" == "colima" && -z "${DOCKER_HOST:-}" ]]; then
-      warnc "Colima is the docker runtime but DOCKER_HOST is unset (Testcontainers cannot find the socket)" "export DOCKER_HOST=$colima_sock   (docs/DEVELOPING-ON-MACOS.md)"
+      warnc "Colima is the docker runtime but DOCKER_HOST is unset (Testcontainers cannot find the socket)" "export DOCKER_HOST=$colima_sock   (or switch to OrbStack: ./scripts/bootstrap.sh --system)"
     fi
   elif os_is_darwin; then
     case "$(darwin_docker_runtime)" in
-      desktop) fail "docker daemon not reachable (Docker Desktop installed but not running)" "open -a Docker   then wait for the whale icon to settle" ;;
       orbstack) fail "docker daemon not reachable (OrbStack installed but not running)" "orb start" ;;
-      colima) fail "docker daemon not reachable (Colima installed but not running)" "colima start   then: export DOCKER_HOST=$colima_sock" ;;
-      *) fail "docker daemon not reachable and no Docker runtime found" "install Docker Desktop, OrbStack or Colima: docs/DEVELOPING-ON-MACOS.md" ;;
+      *) fail "docker daemon not reachable (this repo uses OrbStack on macOS)" "./scripts/bootstrap.sh --system   (installs and starts OrbStack)" ;;
     esac
   else
-    fail "docker daemon not reachable" "start Docker and add yourself to the docker group: just bootstrap --system"
+    fail "docker daemon not reachable" "./scripts/bootstrap.sh --system   (enables the docker service, adds you to the docker group; then log out and back in)"
   fi
 elif os_is_darwin; then
-  fail "docker not installed" "install Docker Desktop, OrbStack or Colima (docs/DEVELOPING-ON-MACOS.md); just bootstrap --system lists the commands"
+  fail "docker not installed (this repo uses OrbStack on macOS)" "./scripts/bootstrap.sh --system   (installs and starts OrbStack)"
 else
-  fail "docker not installed" "just bootstrap --system  (installs docker.io + compose plugin)"
+  fail "docker not installed" "./scripts/bootstrap.sh --system   (installs Docker Engine + compose with pacman or apt)"
 fi
 
 # --- direnv ---------------------------------------------------------------------
 if have direnv || { [[ -x "$MISE_BIN" ]] && mise_exec direnv --version >/dev/null 2>&1; }; then
   ok "direnv present"
   if [[ -z "${DIRENV_DIR:-}" ]]; then
-    # shellcheck disable=SC2016  # hint text, the $(...) is for the reader's rc file
-    warnc "direnv not active in this shell" 'add: eval "$(direnv hook zsh)" to ~/.zshrc, then: direnv allow'
+    if rc_file="$(shell_rc_file)" && command grep -qxF "$SHELL_RC_BEGIN" "$rc_file" 2>/dev/null; then
+      warnc "direnv not active in this shell" "open a new terminal (the mise + direnv lines are in $rc_file), then cd into the repo"
+    else
+      warnc "direnv not active in this shell" "./scripts/bootstrap.sh   (adds the mise + direnv lines to your shell rc file), then open a new terminal"
+    fi
   fi
 else
-  # shellcheck disable=SC2088
-  fail "direnv missing" "~/.local/bin/mise install direnv"
+  fail "direnv missing" "$MISE_BIN install direnv"
 fi
 
 # --- .env keys ------------------------------------------------------------------
@@ -141,6 +148,17 @@ else
   fail "prek commit-msg hook missing" "mise exec -- prek install --hook-type commit-msg"
 fi
 
+# --- jq (Claude Code hooks) -------------------------------------------------------
+# Every PreToolUse guard in scripts/hooks/ parses its payload with jq and denies the tool call
+# without it (fail closed), so an agent session here cannot edit files or run commands.
+if have jq; then
+  ok "jq present ($(jq --version 2>/dev/null))"
+elif os_is_darwin; then
+  fail "jq not installed (the Claude Code guards in scripts/hooks/ deny every edit and command without it)" "brew install jq   (macOS 15+ ships /usr/bin/jq)"
+else
+  fail "jq not installed (the Claude Code guards in scripts/hooks/ deny every edit and command without it)" "sudo pacman -S jq   (or: sudo apt-get install jq)"
+fi
+
 # --- git lfs --------------------------------------------------------------------
 if git lfs version >/dev/null 2>&1; then
   ok "git LFS installed ($(git lfs version | head -1))"
@@ -148,7 +166,7 @@ else
   if os_is_darwin; then
     fail "git LFS not installed (assets/3d/** needs it)" "just bootstrap --system  (brew install git-lfs) then: git lfs install"
   else
-    fail "git LFS not installed (assets/3d/** needs it)" "just bootstrap --system  (apt install git-lfs) then: git lfs install"
+    fail "git LFS not installed (assets/3d/** needs it)" "just bootstrap --system  (pacman or apt install git-lfs) then: git lfs install"
   fi
 fi
 
@@ -160,26 +178,68 @@ else
   fail "free disk ${free_gb}G < 10G" "free space for pnpm store / asset caches / Docker images"
 fi
 
-# --- adb (warn only) --------------------------------------------------------------
-if have adb; then
-  ok "adb present ($(adb devices 2>/dev/null | command grep -c $'\tdevice$' || true) device(s) attached)"
-elif os_is_darwin; then
-  warnc "adb not found (needed for Android device work)" "just bootstrap --system  (brew install --cask android-platform-tools)"
+# --- Android (apps/android; warn only: backend-only machines need none of it) ------------------
+java_major=""
+if have java; then
+  java_major="$(java -XshowSettings:properties -version 2>&1 | sed -n 's/^ *java\.specification\.version = //p')"
+fi
+if [[ "$java_major" == "21" ]]; then
+  ok "JDK 21 on PATH (apps/android, gen-kotlin.sh)"
 else
-  warnc "adb not found (needed for Android device work)" "just bootstrap --system  (installs platform-tools + udev rules)"
+  warnc "java is '${java_major:-missing}'; apps/android and just generate need JDK 21" "mise install   (mise.toml pins Temurin 21)"
+fi
+# apps/android/tools/gradle.sh prefers JAVA_HOME over PATH: a stale one (e.g. an old global mise JDK) breaks Gradle.
+if [[ -n "${JAVA_HOME:-}" ]]; then
+  java_home_major="$("$JAVA_HOME/bin/java" -XshowSettings:properties -version 2>&1 | sed -n 's/^ *java\.specification\.version = //p' || true)"
+  if [[ "$java_home_major" != "21" ]]; then
+    warnc "JAVA_HOME=$JAVA_HOME is JDK '${java_home_major:-unknown}', and Gradle (apps/android) uses it over PATH" "unset JAVA_HOME, or point it at the mise JDK 21 (mise where java)"
+  fi
+fi
+if sdk_report="$(apps/android/tools/sdk.sh check 2>&1)"; then
+  sdk_line="$(printf '%s\n' "$sdk_report" | tail -n 1)"
+  ok "$sdk_line"
+  sdk_root="${sdk_line#android sdk: complete at }"
+  if [[ -z "${ANDROID_HOME:-}" ]]; then
+    # shellcheck disable=SC2016  # hint text for the reader's rc file
+    warnc "ANDROID_HOME is unset (apps/android/tools/gradle.sh still finds $sdk_root; IDEs and adb want it)" 'just bootstrap --system writes it to ~/.config/ai-stylist/env.sh; or export ANDROID_HOME and put $ANDROID_HOME/platform-tools on PATH'
+  fi
+  if have adb && [[ "$(command -v adb)" != "$sdk_root/platform-tools/adb" ]]; then
+    # shellcheck disable=SC2016
+    warnc "adb on PATH is $(command -v adb), not the SDK's $sdk_root/platform-tools/adb (two adb servers fight over devices)" 'put $ANDROID_HOME/platform-tools first on PATH'
+  fi
+else
+  warnc "Android SDK incomplete (only needed for apps/android work)" "just android-sdk install   (user-level, no sudo; apps/android/README.md)"
 fi
 
-# --- macOS: iOS native toolchain (warn only; Expo prebuild/run:ios need them) -------------
+# --- iOS (apps/ios; warn only) --------------------------------------------------------------
 if os_is_darwin; then
-  if xcode-select -p >/dev/null 2>&1; then
-    ok "xcode command line tools ($(xcode-select -p))"
+  pinned_xcode="$(tr -d '[:space:]' < apps/ios/.xcode-version 2>/dev/null || true)"
+  xcode_state="$(darwin_xcode_state "$pinned_xcode")"
+  case "$xcode_state" in
+    ok) ok "Xcode $pinned_xcode (pinned in apps/ios/.xcode-version)" ;;
+    unselected\ *)
+      warnc "Xcode $pinned_xcode is installed at ${xcode_state#unselected } but xcodebuild cannot use it (active developer directory: $(xcode-select -p 2>/dev/null || echo none))" \
+        "./scripts/bootstrap.sh --system   (selects it, accepts its licence, runs its first-launch setup)" ;;
+    other\ *)
+      warnc "Xcode ${xcode_state#other }, but apps/ios/.xcode-version pins $pinned_xcode" \
+        "./scripts/bootstrap.sh --system   (installs Xcode $pinned_xcode with xcodes and selects it)" ;;
+    *)
+      warnc "Xcode $pinned_xcode not installed (iOS builds need it, not only the command line tools)" \
+        "./scripts/bootstrap.sh --system   (installs it with xcodes: asks for your Apple ID)" ;;
+  esac
+else
+  # Linux: the Linux-capable iOS recipes and gen-swift.sh run Docker swift:6.4 unless a working
+  # swift is on PATH (mise's swift cannot run on Arch).
+  if have swift && swift --version >/dev/null 2>&1; then
+    ok "swift on PATH ($(swift --version 2>&1 | head -n 1))"
+  elif have docker && docker info >/dev/null 2>&1; then
+    if docker image inspect swift:6.4 >/dev/null 2>&1; then
+      ok "Swift via Docker image swift:6.4 (ios-test-packages, ios-format, just generate)"
+    else
+      warnc "Docker image swift:6.4 not pulled yet: the first ios-* recipe or just generate pulls about 1.3 GB" "docker pull swift:6.4"
+    fi
   else
-    warnc "xcode command line tools missing (expo prebuild / run:ios need them)" "xcode-select --install"
-  fi
-  if have pod; then
-    ok "CocoaPods present ($(pod --version 2>/dev/null || echo '?'))"
-  else
-    warnc "CocoaPods not found (expo prebuild --platform ios runs pod install; SDK 57 still uses CocoaPods)" "brew install cocoapods"
+    warnc "no Swift toolchain: the Linux iOS recipes and the Swift half of just generate need swift or Docker" "fix Docker above (image swift:6.4 is pulled on first use)"
   fi
 fi
 

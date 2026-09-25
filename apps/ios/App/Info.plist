@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  Partial Info.plist: Xcode merges it with the generated one (GENERATE_INFOPLIST_FILE = YES);
+  standard keys come from INFOPLIST_KEY_* settings in Config/*.xcconfig. Only custom keys live here.
+  Everything in the bundle is public: never put a secret here or in an xcconfig.
+-->
+<plist version="1.0">
+<dict>
+	<key>AIStylistAPIBaseURL</key>
+	<string>$(API_BASE_URL)</string>
+	<key>NSAppTransportSecurity</key>
+	<dict>
+		<!-- Dev talks to http://localhost:3000; local networking only, never arbitrary loads. -->
+		<key>NSAllowsLocalNetworking</key>
+		<true/>
+	</dict>
+</dict>
+</plist>

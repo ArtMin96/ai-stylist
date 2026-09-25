@@ -1,0 +1,42 @@
+{
+  "skill_name": "testing-regression",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Users report that marking a closet item as worn twice on the same day sometimes creates two wear_events instead of updating the one from earlier today. Fix it.",
+      "expected_output": "The agent reproduces the double-write, adds a regression test in apps/api/src/modules/closet/tests/, runs `just test-regression <that file>` and pastes its output (fail at the merge-base, pass at HEAD after the fix), states the root cause in one sentence, fixes the smallest coherent thing, then sweeps for the same defect class with `rg` for every caller of the fixed function and for re-exports or aliases of it, and lists the callers it checked.",
+      "files": [],
+      "assertions": [
+        "The agent runs `just test-regression <file>` and pastes its raw output rather than narrating a manual before/after",
+        "The regression test lives under apps/api/src/modules/closet/tests/, not scattered elsewhere",
+        "The agent states a one-sentence root cause distinct from the symptom",
+        "The sibling-sweep step names an `rg` search for the same call shape (callers plus re-exports/aliases) and lists the callers found",
+        "No test is skipped, deleted, or weakened to make this pass"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "The billing module's trial-expiry test suite only covers the happy path. Strengthen coverage before we ship the grace-period change.",
+      "expected_output": "The agent maps existing tests against docs/modules/billing.md's invariants, lists untested behaviours (not line counts), adds behaviour-level tests reusing packages/test-support and packages/seed-data fixtures rather than duplicating them, and does not fabricate a bug report or treat this as a bug-fix flow.",
+      "files": [],
+      "assertions": [
+        "The agent explicitly maps tests against docs/modules/billing.md invariants before writing anything new",
+        "New tests reuse packages/test-support / packages/seed-data factories instead of duplicating fixture logic",
+        "The agent does not invoke `just test-regression` for this task, since there is no bug being proven — it correctly treats this as coverage strengthening, not a bug fix",
+        "The agent's report names `just test billing` as the scoped verification command"
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "The `sync drain of 50 queued mutations` test in apps/api/src/modules/closet/tests/ has failed intermittently in CI three times this week with no code changes nearby. What's the process?",
+      "expected_output": "The agent treats this as a flaky-test case: reproduces under repetition, looks for time/ordering/shared-state/network/unseeded-randomness causes, refuses to delete, skip, retry-blindly, or widen a timeout as a fix, and if unfixable now, quarantines it per doc 13 with a linked issue, named owner, and deadline, noting it in PROGRESS.md.",
+      "files": [],
+      "assertions": [
+        "The agent does not propose `it.skip`/`test.skip` without a linked issue id, blind retries, or a widened timeout as the fix",
+        "The agent investigates a concrete flaky-test cause category (timing, ordering, shared state, network, unseeded randomness) rather than guessing generically",
+        "If quarantining, the agent's report includes a linked issue, a named owner, and a deadline, and states a PROGRESS.md update is needed",
+        "The agent does not claim the flake is fixed without having reproduced it under repetition first"
+      ]
+    }
+  ]
+}

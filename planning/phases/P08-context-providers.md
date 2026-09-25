@@ -144,7 +144,7 @@ Per [13](../13-testing-quality-and-performance.md); tests live in each module's 
 | `context` | freshness derivation, override precedence, MissingFact per failure reason, snapshot hashing | fast-check: freshness is a pure monotone function of timestamps; override never mutates provider value; `collect()` results are order-independent | ContextFact schema round-trip per kind; snapshot consumed by a stub engine | Testcontainers: cache write/read/prune, consent-withdrawal purge | — |
 | `platform` (adapters) | payload mapping incl. all REQ-CTX-040 fields | — | recorded Open-Meteo fixtures; `date-holidays` output cross-checked against recorded hosted Nager.Date fixtures; provider format change breaks test, not prod (doc 13 §5) | timeout/retry/circuit behavior against a fake slow server | — |
 | `identity`/`profile` | consent-scope checks | — | — | withdrawal halts collection mid-flight (sec suite pattern, doc 13 §8.1 consent gating) | — |
-| Mobile | freshness label rendering from fact fields | — | generated-client handshake | RNTL: strip states (fresh/stale/expired/missing), override sheet | Maestro: manual-city-only weather flow; degraded-provider flow (doc 13 §7 list) |
+| Mobile | freshness label rendering from fact fields | — | generated-client handshake | native UI tests (Compose/Robolectric; iOS models + simulator): strip states (fresh/stale/expired/missing), override sheet | Maestro: manual-city-only weather flow; degraded-provider flow (doc 13 §7 list) |
 
 ## 15. Budgets introduced or measured
 

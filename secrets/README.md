@@ -15,6 +15,12 @@ with empty values ready to be filled as services are provisioned. The matching C
 is stored as the GitHub repository secret `SOPS_AGE_KEY`. Staging and production files stay absent
 until those environments exist.
 
+**Pending cleanup (checked 2026-09-24):** `dev.enc.yaml` still carries four empty keys that left
+`.env.example` when Neon and Trigger.dev were removed (ADR-0003): `NEON_API_KEY`, `NEON_PROJECT_ID`,
+`TRIGGER_PROJECT_REF`, `TRIGGER_SECRET_KEY`. `secrets-sync` skips them (empty), but they break the
+"mirror `.env.example` exactly" rule below. Someone who can decrypt removes each with
+`sops unset secrets/dev.enc.yaml '["<KEY>"]'`, as was done for the `EXPO_PUBLIC_*` keys.
+
 ## Mental model
 
 - **sops** encrypts each value but leaves the YAML key names readable. A pull request can therefore
@@ -77,7 +83,8 @@ with mode 600; if it does not exist it is first created from `.env.example`.
 - Never paste a decrypted value into a terminal shared with an AI agent, a log, or a screenshot; if
   it happens, rotate same-day (planning/11).
 - GitHub Actions secrets hold only: the CI age private key (`SOPS_AGE_KEY`), store signing
-  credentials, deploy tokens.
+  credentials, deploy and build tokens (e.g. the optional `TURBO_TOKEN`/`TURBO_TEAM`); the names
+  are listed in `.github/workflows/README.md`.
 
 ## Onboarding a developer
 
@@ -91,7 +98,8 @@ If you have no age identity yet, this generates one at the resolved path (mode 6
 700; the private key is never printed), adds a `# developer: <label>` comment and your recipient
 under `# ADD RECIPIENTS` for `dev` in `.sops.yaml` on a new `onboard/<slug>` branch, pushes it, and
 prints a compare URL — open that as your pull request. Running it again once your identity exists
-and is already listed is a no-op. If the push fails (no remote access yet), bootstrap still exits 0
+and is already listed (for example, restored from the password manager) creates no branch; it runs
+`just secrets-sync` for you, and bootstrap's closing summary says the shared values were synced. If the push fails (no remote access yet), bootstrap still exits 0
 and prints the exact `git push -u origin onboard/<slug>` command to run later; the branch and commit
 already exist locally. In CI, or with `SOPS_AGE_KEY` already set, this step is skipped entirely.
 

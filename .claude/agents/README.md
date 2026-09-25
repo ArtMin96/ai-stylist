@@ -1,125 +1,197 @@
 # Project subagents (`.claude/agents/`)
 
-Project-level Claude Code subagents for the AI Stylist monorepo, one per area of the codebase.
-Each runs in an isolated context with a restricted tool set, owns a disjoint write set, and hands
-back anything outside it. `CLAUDE.md` always applies on top; the agent files only restate the rules
-that bite in their area.
+One Claude Code subagent per area of the AI Stylist monorepo. Each runs in its own context with a
+plain tool list, preloads the `agent-operating-contract` skill plus the skills it owns, and carries
+two per-agent hooks: a write-set guard and a Bash allowlist. `CLAUDE.md` always applies on top.
+
+The authoritative write set of each agent is its own `<ownership>` section, mirrored in its
+`guard-agent-write-set.sh` args. The table below is a summary and never overrides either. The
+workflow, search-before-write procedure, base check, stop rules and the report format live once, in
+`.agents/skills/agent-operating-contract/SKILL.md`.
 
 ## Agents
 
-| Agent | Owns (exclusive write set) | Must not touch | Verify with |
-| --- | --- | --- | --- |
-| `mobile-engineer` | `apps/mobile/**` except `src/render/**` | `src/render/**`, contracts, shared-kernel, `apps/api`, `workers`, lockfiles | `pnpm --filter @ai-stylist/mobile test`, `just lint`, `just typecheck`, `just arch-check`, `npx expo-doctor` |
-| `api-engineer` | `apps/api/src/modules/{identity,profile,avatar,closet,media,billing,notifications,admin,assistant}/**`, `apps/api/src/{app.module,main,config}.ts`, `apps/api/src/dev/**`, `apps/api/tests/http.test.ts`, `apps/api/{package.json,tsconfig*.json,vitest.config.ts,eslint.config.mjs,README.md}`, `packages/test-support/**`, `docs/modules/<those>.md` | engine modules, `platform/**`, `jobs/**`, `packages/db`, contracts, shared-kernel | `just test <module>`, `just test api`, `just lint`, `just typecheck`, `just arch-check` |
-| `platform-engineer` | `apps/api/src/platform/**`, `apps/api/src/jobs/**`, `packages/db/**`, `apps/api/tests/migrations/**`, `packages/seed-data/**`, `docker-compose.yml`, `docs/modules/platform.md` | `modules/**` (incl. `internal/schema.ts`), `app.module.ts`/`main.ts`, `packages/test-support`, contracts, shared-kernel | `just test platform`, `just test api`, `just db-reset --yes && just db-migrate && just db-seed`, `just db-rollback --yes && just db-migrate`, `just lint`, `just typecheck`, `just arch-check` |
-| `contracts-engineer` | `packages/contracts/**`, `packages/shared-kernel/**`, `workers/ml/generated/**` (via `just generate` only), `docs/modules/shared-kernel.md` | everything else; **single-writer: never in parallel** | `just generate && just generate --check`, `pnpm --filter @ai-stylist/contracts lint` (spectral + oasdiff), `just typecheck`, `just test <consumers>`, `just lint`, `just arch-check` |
-| `ml-engineer` | `workers/**` except `ml/generated/**`, `tools/codegen/gen-python.sh` | `workers/ml/generated`, `uv.lock` (unless granted), contracts, `apps/**`, other `tools/**` | `uv run --project workers pytest workers -q`, ruff, basedpyright, `just lint`, `just typecheck`, `just generate --check`, `just ml-eval` (stub) |
-| `recommendation-engineer` | `apps/api/src/modules/{recommendation,outfit,context,fashion-intel}/**`, `docs/modules/<those>.md` | other modules, `platform/**`, `packages/db`, shared-kernel (reason-code registry), contracts | `just test recommendation` (+ `outfit`/`context`/`fashion-intel`), `just rec-replay <id>` (stub), `just lint`, `just typecheck`, `just arch-check` |
-| `tooling-engineer` | `scripts/**`, `tools/**` except `tools/codegen/gen-python.sh`, `justfile`, `mise.toml`, `.github/**`, `.npmrc`, `.prettierignore`, `.prettierrc`, `.editorconfig`, `.pre-commit-config.yaml`, `.gitleaks.toml`, `.env.example` (keys only), root `eslint.config.mjs`, `turbo.json`, `pnpm-workspace.yaml`, `tsconfig.base.json`, `renovate.json`, `osv-scanner.toml`, `commitlint.config.mjs`, `docs/security/**` | product code, `CLAUDE.md`, `planning/**`; never weaken a gate | `just lint --fixtures`, `just arch-check --fixtures`, `shellcheck`, `actionlint`, `just doctor`, `just ci-parity` |
-| `security-privacy-reviewer` | nothing (read-only) | edits of any kind | `just security-scan`, `just lint`, `git diff` |
-| `architecture-reviewer` | nothing (read-only) | edits of any kind | `just arch-check`, `just lint`, `just typecheck`, `just generate --check`, `git diff` |
+| Agent | Primary area (summary; `<ownership>` is authoritative) | Preloaded skills (besides the contract) | Color | Verify with |
+| --- | --- | --- | --- | --- |
+| [`ios-engineer`](ios-engineer.md) | `apps/ios/**`, `tools/codegen/gen-swift.sh` | `ios-feature` | blue | `just ios-check`, `just test ios`; macOS: `just ios-build`, `just ios-test`, `just ios-e2e` |
+| [`android-engineer`](android-engineer.md) | `apps/android/**`, `tools/codegen/gen-kotlin.sh` | `android-feature` | green | `just android-check`, `just test android`; emulator: `just android-e2e` |
+| [`api-engineer`](api-engineer.md) | nine API modules (identity, profile, avatar, closet, media, billing, notifications, admin, assistant), the composition root, `apps/api/tests/http.test.ts`, `packages/test-support/**` | `backend-module`, `entitlements-billing`, `notifications-delivery`, `admin-moderation`, `assistant-chat`, `data-lifecycle` | cyan | `just test <module>`, `just test api`, `just test-regression`, `just lint`, `just typecheck`, `just arch-check` |
+| [`platform-engineer`](platform-engineer.md) | `apps/api/src/platform/**`, `apps/api/src/jobs/**`, `packages/db/**`, `apps/api/tests/migrations/**`, `packages/seed-data/**`, `docker-compose.yml`; OTel and performance work | `backend-module`, `db-migration`, `data-lifecycle`, `media-ml-pipeline`, `observability-analytics`, `performance-profiling` | orange | `just test platform`, `just test api`, `just db-reset --yes`, `just db-rollback && just db-migrate`, `just arch-check` |
+| [`contracts-engineer`](contracts-engineer.md) | `packages/contracts/**`, `packages/shared-kernel/**` (sources); every generated tree via `just generate` — single-writer | `api-contract-change` | purple | `just generate && just generate --check`, `just lint`, `just typecheck`, `just test`, `just arch-check` |
+| [`ml-engineer`](ml-engineer.md) | `workers/**` except `workers/ml/generated/**`; `tools/codegen/gen-python.sh` | `media-ml-pipeline` | pink | `just test workers`, `just lint`, `just typecheck`, `just generate --check`, `just ml-eval` |
+| [`recommendation-engineer`](recommendation-engineer.md) | `apps/api/src/modules/{recommendation,outfit,context,fashion-intel}/**` | `backend-module`, `recommendation-rules`, `fashion-intel-ingestion` | yellow | `just test recommendation`, `just rec-replay`, `just rec-golden-update`, `just arch-check` |
+| [`tooling-engineer`](tooling-engineer.md) | `scripts/**` except `scripts/hooks/**`; `tools/**` except the three per-platform gen scripts; `justfile`, `mise.toml`, root configs, `.env.example`, `docs/security/**`; proposes `.github/workflows/**` diffs | `tooling-ci` | red | `just lint --fixtures`, `just arch-check --fixtures`, `just docs-check --fixtures`, `just ci-parity --core` |
+| [`test-engineer`](test-engineer.md) | `e2e/**`; `apps/api/tests/**` except `http.test.ts` and `migrations/**`; conditionally a module's `tests/**` | `testing-regression`, `e2e-device-testing` | yellow | `just test-regression`, `just test`, `just ios-e2e`, `just android-e2e` |
+| [`docs-maintainer`](docs-maintainer.md) | `docs/modules/**`, `docs/adr/README.md` (index), root `PROGRESS.md`, the `planning/PROGRESS.md` table + handoff log, phase-file task-state columns | `docs-maintenance` | cyan | `just docs-check` |
+| [`architecture-reviewer`](architecture-reviewer.md) | nothing (read-only) — boundaries, duplication, source of truth, parity | `architecture-review` | purple | `just arch-check`, `just lint`, `just typecheck`, `just generate --check`, `just docs-check` |
+| [`security-privacy-reviewer`](security-privacy-reviewer.md) | nothing (read-only) — security and privacy findings | `security-privacy-review` | red | `just security-scan`, `just lint`, `just docs-check` |
+| [`release-manager`](release-manager.md) | nothing (read-only) — GO/NO-GO evidence, never ships | `release-readiness` | orange | `just ci-parity`, `just security-scan`, `just generate --check`, `gh run list` |
 
-Unowned by any agent (human or orchestrating session only): `CLAUDE.md`, `planning/**`
-(including `planning/PROGRESS.md`), `README.md`, `PROGRESS.md`, `CODEOWNERS`, `docs/adr/**`,
-`docs/SERVICES-SETUP.md`, `docs/DEVELOPING-ON-MACOS.md`, `templates/**`, `prototype/**` (unimportable spike),
-`.agents/skills/**` (skills are edited by humans; agents read them), `pnpm-lock.yaml` / `workers/uv.lock` (single-writer;
-an agent changes one only when its task explicitly grants it), `secrets/**`, `.sops.yaml`,
-`.spectral.yaml`. Every write-agent reports a **suggested `PROGRESS.md` line** instead of editing the
-ledger, so parallel agents never collide on it; the orchestrating session applies those lines.
+Colors repeat only between agents that never run in the same wave: the parallel lane (ios, android,
+api) is blue / green / cyan; reviewers, docs-maintainer and test-engineer run after or between
+engineer waves.
 
-Cross-seam sequences (producer before consumer):
+The `cross-platform-feature` skill has no agent: the main (lead) session runs it, because only the
+main session has the Agent tool.
 
-- Endpoint or event: `contracts-engineer` → `api-engineer` / `mobile-engineer` / `ml-engineer`.
-- Table change: module owner edits `internal/schema.ts` → `platform-engineer` generates the
-  migration + down file + migration test → module owner writes the repository code.
-- New port: module owner declares the port and asks `api-engineer` for the fake in
-  `packages/test-support` → `platform-engineer` implements the adapter → `api-engineer` binds it in
-  `app.module.ts`.
-- Any diff: `architecture-reviewer`, plus `security-privacy-reviewer` for auth/consent/deletion/
-  webhooks/uploads/logging/AI egress.
+### Owned by no agent (human or the main session only)
 
-## When to use the global agents instead
+`CLAUDE.md`, `README.md`, `CODEOWNERS`, `.envrc`, `solo.yml`, `AI-STYLIST-FABLE-PROMPT.md`;
+`planning/**` except docs-maintainer's carve-outs above; ADR bodies `docs/adr/NNNN-*.md`,
+`docs/SERVICES-SETUP.md`, `docs/DEVELOPING-ON-MACOS.md`; `templates/**`; `prototype/**`;
+`secrets/**`, `.sops.yaml`, `.spectral.yaml`; the enforcement layer — `.claude/**` (agents, rules,
+skill symlinks, `.claude/settings.json`, the untracked settings.local.json, plans), `.agents/**`,
+`scripts/hooks/**` — except NEW `.claude/plans/<yyyy-mm-dd>-<slug>-proposal.md` files, which
+tooling-engineer and docs-maintainer may create; `.github/workflows/**` and `.github/actions/**`
+(tooling-engineer proposes the diff, a human applies it); `pnpm-lock.yaml` and `workers/uv.lock`
+(single-writer, changed only by the owning command when the task grants a dependency change).
 
-`~/.claude/agents/` provides `planner`, `implementer`, and `researcher`; the project agents do not
-duplicate them.
+### Documented overlaps
 
-- **`planner`**: before any non-trivial change (3+ steps, several files, shared structure). It
-  produces the contract and the wave-sequenced task list with exclusive file ownership; the project
-  agents then execute the tasks whose files fall in their write set.
-- **`researcher`**: open questions, library/API facts (Expo, Filament, Drizzle, pg-boss, Coolify,
-  RevenueCat, store policy), "how is X wired". Read-and-report only.
-- **`implementer`**: a self-contained, already-understood change that does not fit one area
-  cleanly, or a plan task whose write set spans areas (still disjoint from any running project
-  agent). Prefer the area agent when the files fall in one area: it carries the area's invariants,
-  commands, and stop conditions.
+1. `docs/modules/**`: docs-maintainer and each module's engineer (api, platform, recommendation,
+   contracts) — shared, wave-serialized, never in the same wave.
+2. `apps/api/src/modules/<name>/tests/**`: test-engineer and that module's engineer — test-engineer
+   writes only when the dispatch prompt says the engineer is not running this wave.
+3. Generated trees (`packages/contracts/gen/**`, `packages/shared-kernel/src/gen/**`,
+   `workers/ml/generated/**`): written only by `just generate`, which contracts-engineer (or the
+   lead) runs. The ios, android and ml engineers own their gen scripts but never run `just generate`
+   without `--check`, so their write sets stay disjoint in a parallel wave.
+4. New `.claude/plans/` proposal files: tooling-engineer and docs-maintainer, distinct slugs.
+
+## Cross-seam sequences (producer before consumer)
+
+- Endpoint or event: `contracts-engineer` → `api-engineer` / `ios-engineer` / `android-engineer` / `ml-engineer`.
+- Client feature on both platforms: the main session runs `cross-platform-feature` (parallel model below).
+- Table change: the module's engineer edits `apps/api/src/modules/<name>/internal/schema.ts` →
+  `platform-engineer` generates the migration, down file and migration test → the module's engineer
+  writes the repository code. Today the first domain table and the first module repository are
+  stops for the lead: re-exporting a module's internal/schema.ts from
+  `packages/db/src/schema/index.ts` breaks `public-api-only-external`, and modules may not import
+  `packages/db` (`composition-root-only`).
+- New port: the module's engineer declares it in the module `index.ts` (or `contracts-engineer` in
+  `packages/shared-kernel` when two modules share it) → `api-engineer` adds the fake in
+  `packages/test-support/src/`, copying `packages/test-support/src/clock.ts` → `platform-engineer`
+  implements the adapter → `api-engineer` binds it in `apps/api/src/app.module.ts`. The existing
+  `apps/api/src/platform/ports/*.port.ts` layout is P02-interim; do not copy its placement. Modules
+  cannot import the platform `Clock`: a module that needs one asks contracts-engineer for a
+  shared-kernel `Clock`, never a local copy.
+- Modules without a depcruise edge (for example `admin` and `fashion-intel`) talk through events only.
+- Any diff: `architecture-reviewer`, plus `security-privacy-reviewer` for auth, consent, deletion,
+  webhooks, uploads, logging or AI egress; then `docs-maintainer` once the change has landed.
+- Release candidate: every owning engineer's change lands and is reviewed → `release-manager`
+  returns GO/NO-GO; a human ships.
+
+Every write agent reports a `Suggested PROGRESS.md line` instead of editing the ledger; the main
+session or docs-maintainer applies it.
+
+## Parallel work (two or more write agents in one wave)
+
+1. `.claude/settings.json` sets `"worktree": {"baseRef": "head"}`, so worktrees branch from the
+   lead's HEAD, not from `main`.
+2. Write sets in one wave must be disjoint. Each native lane (ios-engineer, android-engineer) runs
+   with the Agent parameter `isolation: "worktree"`. No agent file sets `isolation`.
+3. The lead records `BASE=$(git rev-parse HEAD)` and puts `Base: <sha>` in every prompt. Worktrees
+   hold only committed state (no uncommitted edits, no `node_modules`, no `.env`), so anything the
+   lanes need (contract, generated clients) is committed first; the lead asks the human once for
+   permission to commit on a local `feat/<slug>` branch.
+4. The API lane (api-engineer) needs `node_modules`, so it runs in the lead's checkout while the
+   native lanes run in worktrees; the lead edits nothing while lanes run.
+5. Each agent's first command is `git log -1 --format='%H %s'`; a SHA other than the brief's Base
+   is BLOCKED. Agents never read the other platform's sources for parity: the brief is the only
+   parity source.
+6. Worktree agents run only native recipes (`just ios-check`, `just test ios`,
+   `just android-check`, `just test android`). After integration the lead runs
+   `just generate --check`, `just lint`, `just arch-check`, `just docs-check` and `just ci-parity`
+   in its own checkout.
+7. Integration (lead): `git -C <wt> status --porcelain`; with commit permission, commit in the
+   worktree branch and `git merge --no-ff` into `feat/<slug>`; without it,
+   `git -C <wt> add -A && git -C <wt> diff --cached --binary <BASE> > <scratchpad>/<lane>.patch`
+   then `git apply --3way <patch>`; then `git worktree remove <wt>`.
+8. test-engineer extends the shared e2e flow once, after both apps render the brief's strings and ids.
+
+## Enforcement layer
+
+Agent text is guidance; these mechanisms stop a violation. None of them may be edited by a project
+agent (see "Owned by no agent").
+
+- Per-agent hooks (each agent's frontmatter, active only while that agent runs):
+  - `scripts/hooks/guard-agent-write-set.sh GLOB...` on `Edit|Write|NotebookEdit`: the repo-relative
+    path must match an include glob and no `!` exclude glob; outside any checkout only the session
+    scratchpad is writable. Denies with the allowed globs and "report it for its owner".
+  - `scripts/hooks/guard-agent-bash.sh PATTERN...` on `Bash`: splits the command on unquoted
+    `&&`, `||`, `;`, `|`, `&` and newlines; denies command substitution, process substitution,
+    output redirection (except to /dev/null and fd dups) and `find -exec`/`-delete`; every simple
+    command must match a built-in read-only baseline (`ls`, `cat`, `rg`, `git status`, `git diff`,
+    `git log`, `just --summary`, …) or one of the agent's patterns. No agent may run a git write
+    command.
+  - Both fail closed without `jq`.
+- Project hooks in `.claude/settings.json`, which also fire for every subagent tool call:
+  `scripts/hooks/guard-protected-paths.sh` (generated output, policy docs, single-writer files,
+  `.github/workflows/**`, `.github/actions/**`), `scripts/hooks/guard-bash.sh` (lockfile commands,
+  destructive git/gh, store uploads, secret sync to staging/prod), `scripts/hooks/post-edit-lint.sh`
+  (`just lint-file` on the edited file), `scripts/hooks/session-close-check.sh` (PROGRESS gate) and
+  `scripts/hooks/session-start.sh` (orientation).
+- Permissions in `.claude/settings.json`: `deny` for PR merges, remote branch and repo deletion,
+  store uploads, schema pushes that bypass migrations, lockfile-changing package commands and
+  reading `.env`; `ask` (a human confirms, even in auto mode) for force-push, `reset --hard`, `branch -D`, `clean -f`,
+  rebase, `commit --amend`, history rewrites, stash drops, and edits to `CLAUDE.md`,
+  `planning/SPINE.md`, doc 15, `.claude/settings.json`, `scripts/hooks/**`, `.github/workflows/**`
+  and `.github/actions/**`.
+- Path-scoped rules in `.claude/rules/*.md` load when a matching file is read and name the owning
+  skill, agent and proof for that path.
+- `just docs-check` (DC-07) validates every agent file: description length, a valid `color`, a
+  `tools` list without `(`, a write-set hook when `tools` has Edit or Write, a Bash hook when it has
+  Bash, every `skills:` entry exists and includes `agent-operating-contract`, and a README row.
+
+## When to use a built-in agent instead
+
+- `Plan`: before a change that touches more than three files or two areas; it produces the wave
+  plan with exclusive write sets, and the project agents execute tasks inside their write sets.
+- `Explore`: read-only fan-out search ("how is X wired").
+- `general-purpose`: a self-contained change whose write set spans areas; it must stay disjoint from
+  every running project agent and has no per-agent guard.
+- `claude-code-guide`: questions about Claude Code itself (hooks, settings, subagents).
+- The user-level pr-review agents (pr-correctness-reviewer and siblings under
+  ~/.claude/agents/pr-review/) belong to the global `github-pr-review` skill. For this repo prefer
+  `architecture-reviewer` and `security-privacy-reviewer`, which carry the repo invariants.
 
 ## How to invoke
 
-- Explicitly: start the prompt with the agent name or `@agent-name`, e.g.
-  `@api-engineer add the closet item list endpoint per contract X`, or via the Agent tool with
-  `subagent_type: "api-engineer"`.
-- Automatically: Claude delegates based on each agent's `description` (trigger phrases and owned
-  paths are listed there). Read-only reviewers say "use proactively" so they are picked before PRs.
-- Project agents take precedence over `~/.claude/agents/` on a name collision; there is no
-  collision today.
+- Explicitly: `@agent-name` at the start of the prompt, or the Agent tool with
+  `subagent_type: "<name>"`; add `isolation: "worktree"` for a parallel native lane.
+- Automatically: the main session delegates on each agent's `description` (trigger phrases, owned
+  paths, NOT-for clause). Reviewers say "use proactively" so they are picked before PRs.
+- Every prompt to a write agent names the task, the acceptance criteria, `Base: <sha>`, and for a
+  shared path the sentence "<owning engineer> is not running this wave".
 
-## Parallel sessions (from `CLAUDE.md`)
+## Conventions (verified 2026-09-25)
 
-Parallel agent sessions must own **disjoint file sets**, agreed before launch; use one git worktree
-per session, never two agents in one working tree. `packages/contracts`, `shared-kernel`, lockfiles,
-`mise.toml`, CI config, and `CLAUDE.md` are **single-writer**: sequence those changes, never
-parallelize them. Producers land before consumers: contract/schema work merges first; dependent
-sessions rebase on it. The ownership table above is the disjoint-set agreement; the sequences above
-are the producer order.
+Sources: https://code.claude.com/docs/en/sub-agents.md, https://code.claude.com/docs/en/hooks.md,
+https://code.claude.com/docs/en/skills.md, https://code.claude.com/docs/en/permissions.md,
+https://code.claude.com/docs/en/worktrees.md, https://code.claude.com/docs/en/memory.md, and a
+probe run in this repo on 2026-09-25.
 
-## Conventions
-
-Answers from the `claude-code-guide` agent (2026-09-11), citing
-https://code.claude.com/docs/en/sub-agents.md, https://code.claude.com/docs/en/permissions.md,
-https://code.claude.com/docs/en/skills.md, https://code.claude.com/docs/en/agent-view.md, and
-https://github.com/anthropics/claude-code/blob/main/CHANGELOG.md.
-
-- **Frontmatter fields:** `name` (required; lowercase, hyphens, no colons), `description`
-  (required; delegation trigger text, kept short: all non-built-in descriptions share a 15k-token
-  budget), `tools` (allowlist; comma-separated string or YAML list), `disallowedTools` (denylist,
-  applied first), `model` (`sonnet` | `opus` | `haiku` | `fable` | full id | `inherit`; omit to fall
-  through), `permissionMode` (`default` | `acceptEdits` | `auto` | `dontAsk` | `bypassPermissions` |
-  `plan` | `manual`), `maxTurns`, `skills` (preloaded skill content), `mcpServers`, `hooks`
-  (per-agent lifecycle hooks), `memory` (`user` | `project` | `local`), `background`, `effort`,
-  `isolation: worktree`, `color`, `initialPrompt`, `experimental`.
-- **Restricting Bash:** the sub-agents page documents only exact tool names, `mcp__<server>`
-  patterns, and `Agent(type)`; the permission-rule syntax `Bash(just:*)` (permissions page, "Bash"
-  section) works in a subagent `tools` field and is what `~/.claude/agents/implementer.md` uses, but
-  it is not spelled out on the sub-agents page. These files use it (matching the existing global
-  agents); the officially documented per-agent alternative is a `PreToolUse` hook with
-  `matcher: "Bash"` that exits 2 on disallowed commands, and the project-wide alternative is a
-  `permissions.allow` list in `.claude/settings.json`. If a future Claude Code version stops
-  honouring patterns in `tools`, switch to the hook form.
-- **`description` and automatic delegation:** the description is what the main conversation reads
-  to decide whether to spawn the agent. Good ones state purpose and scope, name trigger phrases
-  and owned paths, include "use proactively" for reviewers, and say when NOT to use the agent.
-  The delegation message plus the agent body is all the agent sees.
-- **Skills:** the `skills` field preloads skills discoverable from `~/.claude/skills/`,
-  `.claude/skills/`, or plugins. This repo keeps skills in `.agents/skills/<area>/SKILL.md`, which
-  is not a discoverable location, so `skills:` cannot preload them; each agent body instead says
-  "Read `.agents/skills/<area>/SKILL.md` before starting". (Suggested change, outside this
-  directory: symlink `.claude/skills/<name>` → `../../.agents/skills/<name>` to make them
-  discoverable and preloadable.)
-- **Context isolation:** a non-fork subagent starts with a fresh context: the agent body, the
-  delegation prompt, every level of the CLAUDE.md hierarchy (built-in `Explore`/`Plan` skip it), a
-  git status snapshot, preloaded skills, and the sibling roster. It does not see the parent
-  conversation, files already read, or skills already invoked. The body must therefore name the
-  files to read first and require the task restatement; CLAUDE.md rules arrive automatically, so
-  the bodies restate only the rules that bite in the area.
-- **Length and structure:** the docs suggest 1–5 concise paragraphs (role, scope, success
-  criteria/output format, constraints). These files run 110–125 lines because each carries the
-  area's commands, invariants, and stop conditions; keep them under ~140 lines and move anything
-  larger into the skill files.
-- **Model:** resolution order is per-invocation `model` → agent `model` field →
-  `CLAUDE_CODE_SUBAGENT_MODEL` → the main conversation's model. `inherit` pins to the parent
-  explicitly; omitting falls through. Pin `haiku` for cheap read-only work, `opus` for hard
-  reasoning. These agents omit `model` so the session's choice applies; the reviewers are
-  candidates for a cheaper pin once their output quality is known.
-- **Invocation and precedence:** first-word match or `@agent-name` in the prompt,
-  `claude --agent <name>` on the CLI, or the Agent tool. Project `.claude/agents/` beats
-  `~/.claude/agents/` on a name collision.
+- Frontmatter fields: `name`, `description`, `tools`, `disallowedTools`, `model`, `permissionMode`,
+  `maxTurns`, `skills`, `mcpServers`, `hooks`, `memory`, `background`, `omitClaudeMd`, `effort`,
+  `isolation`, `color`, `initialPrompt`, `experimental`. `color` is one of red, blue, green, yellow,
+  purple, orange, pink, cyan. These agents set only `name`, `description`, `tools`, `skills`,
+  `color` and `hooks` (the house standard in `templates/agent.md`).
+- `tools` takes plain tool names. A specifier such as `Bash(just:*)` in `tools` does not restrict
+  Bash (probe: an agent limited that way ran `date` and `whoami`), so per-agent command limits live
+  in the `guard-agent-bash.sh` hook. No agent has the `Agent` tool, so no subagent spawns another;
+  only the main session orchestrates.
+- `skills` is a YAML list; the full SKILL.md of each listed skill is injected at startup. The
+  `.claude/skills/<name>` symlinks into `.agents/skills/` resolve for preloading. A skill with
+  `disable-model-invocation: true` cannot be preloaded.
+- Frontmatter `hooks` use the settings.json schema, apply only while the agent runs (`Stop` becomes
+  `SubagentStop`), and run alongside the project hooks, whose input carries `agent_type` and
+  `agent_id`. Command hooks use the exec form (`command` + `args`, no shell).
+  `${CLAUDE_PROJECT_DIR}` is the main checkout even inside a worktree; the input `cwd` follows the
+  agent, so the guards resolve paths from it.
+- `isolation: "worktree"` creates `.claude/worktrees/<name>/` from `worktree.baseRef` (`head` here);
+  the worktree holds only committed files, and its changes stay on disk until the lead integrates them.
+- A subagent loads the `CLAUDE.md` hierarchy and `.claude/rules/` (path-scoped rules when it reads a
+  matching file), its body, the delegation prompt and its preloaded skills. It does not see the
+  parent conversation, so the prompt must carry the task, Base and wave facts.
+- Permissions: deny beats ask beats allow; lists merge across user, project and local scopes; `ask`
+  prompts even in auto mode; Bash rules match each subcommand of a compound command.

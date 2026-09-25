@@ -1,0 +1,92 @@
+[
+  {
+    "query": "the fal.ai try-on call in workers/ml/tryon keeps timing out after 30s and the job just sits there, need retry with backoff",
+    "should_trigger": true
+  },
+  {
+    "query": "adding a new embedding step to the segmentation worker so items get a CLIP-style vector we can use for similarity search later",
+    "should_trigger": true
+  },
+  {
+    "query": "workers/ml/classification is returning a confidence score but we never store it anywhere, need to record it in the lineage table",
+    "should_trigger": true
+  },
+  {
+    "query": "pg-boss job for item processing isn't idempotent, running it twice on the same upload creates two derived assets",
+    "should_trigger": true
+  },
+  {
+    "query": "need to add a new FastAPI endpoint to workers/ml/segmentation for batch background removal instead of one image at a time",
+    "should_trigger": true
+  },
+  {
+    "query": "just ml-eval keeps exiting with code 2, is that expected right now or is something actually broken",
+    "should_trigger": true
+  },
+  {
+    "query": "the DLQ for the media processing queue has 40 stuck messages from yesterday's fal.ai outage, need to figure out how to drain it safely",
+    "should_trigger": true
+  },
+  {
+    "query": "want to bump the classification model to v3 but need to make sure the old prompt version stays queryable in the lineage records",
+    "should_trigger": true
+  },
+  {
+    "query": "provider call to fal.ai for try-on is sending the full request body into the structlog logger, need someone to check whether this is a redaction/privacy problem before it ships",
+    "should_trigger": false,
+    "_near_miss_reason": "the call site lives in a worker this skill owns, but the ask is specifically a privacy/redaction review of a diff before shipping — security-privacy-review's lens, not pipeline implementation work."
+  },
+  {
+    "query": "should we use fal.ai or Replicate for the virtual try-on feature, need a cost comparison before we commit",
+    "should_trigger": false,
+    "_near_miss_reason": "shares fal.ai/try-on vocabulary but the ask is picking a provider in the first place — that's an ADR + planning/10 decision, not pipeline implementation work."
+  },
+  {
+    "query": "the closet screen shows a blurry thumbnail for items still mid-processing, want to swap in a nicer loading skeleton in the app",
+    "should_trigger": false,
+    "_near_miss_reason": "the item is 'mid-processing' (pipeline vocabulary) but the actual change is a mobile UI loading state — ios-feature / android-feature owns that."
+  },
+  {
+    "query": "avatar garment fitting looks off after the last render update, the sleeve clips through the arm mesh on pose 3",
+    "should_trigger": false,
+    "_near_miss_reason": "garments and avatars sound pipeline-adjacent but this is a 3D geometry/render bug in the client app's UI (no 3D renderer exists today), not a pipeline step."
+  },
+  {
+    "query": "reviewing this PR that adds a new pg-boss job handler, want a second pair of eyes on whether it's importing module internals it shouldn't",
+    "should_trigger": false,
+    "_near_miss_reason": "touches a pg-boss job but the task is boundary review of someone else's diff, not implementing the pipeline — architecture-review."
+  },
+  {
+    "query": "trial users can still trigger unlimited try-on generations even after their monthly credit cap should have kicked in",
+    "should_trigger": false,
+    "_near_miss_reason": "try-on is pipeline vocabulary, but the defect is in credit/entitlement enforcement — entitlements-billing owns the gating, even though the gated action is a pipeline job."
+  },
+  {
+    "query": "want a Grafana panel that shows queue.depth and DLQ counts for the media processing queue so we can see it trending over time",
+    "should_trigger": false,
+    "_near_miss_reason": "queue depth and DLQ are metrics this pipeline emits, but building the dashboard/alert is observability-analytics, not the pipeline code itself."
+  },
+  {
+    "query": "add a wear_events table so closet can track when an item was last worn, migration needed",
+    "should_trigger": false,
+    "_near_miss_reason": "no pipeline vocabulary at all beyond 'closet' — this is a schema/migration change, db-migration's job."
+  },
+  {
+    "query": "the media module's public application service doesn't expose a way to list an item's derived assets yet, need to add that method",
+    "should_trigger": false,
+    "_teaches": "GOOD near-miss negative: 'media' and 'derived assets' overlap this skill's vocabulary, but adding a public application service method inside the module is backend-module's job — media-ml-pipeline picks up once the job/worker side is the actual change."
+  },
+  {
+    "query": "what's a good approach for writing unit tests for a debounce hook in react",
+    "should_trigger": false,
+    "_teaches": "BAD-pattern-avoided negative kept intentionally easy: no shared vocabulary with pg-boss/workers/lineage at all, included only to balance the should_trigger:false set with one unambiguous case."
+  },
+  {
+    "query": "the segmentation Dockerfile build is failing on the uv --frozen step, something about the lockfile being out of sync with pyproject.toml",
+    "should_trigger": true
+  },
+  {
+    "query": "need to add Schemathesis contract tests against the workers/ml/classification OpenAPI spec so the API side can trust the response shape",
+    "should_trigger": true
+  }
+]

@@ -1,0 +1,7 @@
+// Prod: the App Store build (scheme AIStylist-Prod).
+#include "Release.xcconfig"
+
+APP_DISPLAY_NAME = AI Stylist
+PRODUCT_BUNDLE_IDENTIFIER = app.aistylist.mobile
+// HOST-ONLY (no path): the contract's production servers[] URL; API paths already start with /v1.
+API_BASE_URL = https:/$()/api.ai-stylist.app

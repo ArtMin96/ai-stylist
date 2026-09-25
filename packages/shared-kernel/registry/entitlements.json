@@ -1,0 +1,36 @@
+{
+  "$schema": "./entitlements.schema.json",
+  "kinds": ["boolean", "limit", "level", "map"],
+  "entitlements": {
+    "closet.max_items": {
+      "kind": "limit",
+      "description": "Maximum closet items (null = unlimited)"
+    },
+    "recs.daily_limit": { "kind": "limit", "description": "Recommendations per local day" },
+    "recs.context.full": {
+      "kind": "boolean",
+      "description": "Full context richness (hourly weather, holidays, all occasions)"
+    },
+    "recs.future_planning": { "kind": "boolean", "description": "Future-day outfit planning" },
+    "avatar.level": { "kind": "level", "description": "Avatar ladder level (A1, A1 + all poses)" },
+    "tryon.generative": {
+      "kind": "level",
+      "description": "Outfit view generation ladder level (G0, G2)"
+    },
+    "views.missing_view": { "kind": "boolean", "description": "Missing-view synthesis" },
+    "credits.monthly": { "kind": "limit", "description": "Generative credits granted per month" },
+    "credits.topup": { "kind": "boolean", "description": "Credit top-up packs purchasable" },
+    "credits.weights": {
+      "kind": "map",
+      "description": "Versioned credit weights per generative task, carried on the plan"
+    },
+    "trends.level": { "kind": "level", "description": "Trends feed level (basic, personalized)" },
+    "analytics.wardrobe": { "kind": "boolean", "description": "Wardrobe analytics" },
+    "processing.priority": { "kind": "boolean", "description": "Priority queue processing" },
+    "export.multi_angle": { "kind": "boolean", "description": "Multi-angle exports" },
+    "features.early_access": { "kind": "boolean", "description": "Early-access features" },
+    "chat.stylist": { "kind": "boolean", "description": "Assistant chat (future)" },
+    "data.export": { "kind": "boolean", "description": "Personal data export" }
+  },
+  "creditMeters": ["tryon", "missing_view"]
+}

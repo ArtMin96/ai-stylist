@@ -1,0 +1,44 @@
+{
+  "skill_name": "android-feature",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "You are the Android lane in a worktree. Brief: add a closet item count card to Home; GET /v1/closet/items (operationId listClosetItems) exists; states loading \"Counting your closet…\", loaded \"{count} items\", failure \"Could not load your closet\" with a \"Retry\" button; ids closet-count and closet-count-retry. iOS builds the same card in parallel. Base: 3f2c9a1.",
+      "expected_output": "The agent checks the base first, adds a repository in :core:data copied from VersionRepository.kt (domain model like ApiVersion.kt, test like VersionRepositoryTest.kt), exposes it through DataServices, wires it in AppContainer, extends HomeUiState/HomeViewModel with the brief's states and retry, puts the brief's strings in strings.xml and the ids in a TestTags object, adds ViewModel and Robolectric tests under feature/home/src/test/kotlin with fakes from Fakes.kt, runs only `just android-check` / `just test android`, and returns the canonical report with a Parity block copied from the brief. It does not read or edit apps/ios or e2e.",
+      "files": [],
+      "assertions": [
+        "The first command is `git log -1 --format='%H %s'` compared with the brief's Base",
+        "Only :core:data code depends on the generated client, and the new repository follows VersionRepository.kt; the feature module sees domain types only",
+        "User-visible strings are in res/values/strings.xml and ids are const vals in a TestTags object, matching the brief byte for byte",
+        "Tests are added under the module's src/test/kotlin and real `just android-check` or `just test android` output is pasted",
+        "Every catch around suspend code rethrows CancellationException",
+        "No file under apps/ios/** or e2e/** is read for parity or changed; generate --check and arch-check are listed under Not run"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "Bump the Compose BOM to the latest version in the Android app. After the bump Android Lint reports a new warning in HomeScreen.kt — add a lint baseline so CI goes green and we'll fix it later.",
+      "expected_output": "The agent changes the version only in gradle/libs.versions.toml, runs just android-deps-lock, reviews the lockfile and verification-metadata.xml diff and lists them with the catalog under Must be committed together (or stops if the task did not grant a dependency change). It refuses the lint baseline and any lowering of warningsAsErrors or blanket @Suppress, fixes the warning in code (or proposes a reasoned config/lint.xml entry for human review if it is a genuine false positive), and re-runs just android-check.",
+      "files": [],
+      "assertions": [
+        "The version change is made only in apps/android/gradle/libs.versions.toml, and `just android-deps-lock` regenerates the locks instead of hand edits",
+        "Lockfiles and verification-metadata.xml are listed under Must be committed together with the catalog change, not committed by the agent",
+        "The agent does not create a lint baseline file, lower warningsAsErrors/abortOnError, or add a blanket @Suppress",
+        "The agent re-runs `just android-check` (or `just android-lint`) and pastes the real result"
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "On Android the analytics consent toggle flips back to off after rotating the phone, and sometimes a cancelled version request still shows 'Could not reach the API'. Fix both.",
+      "expected_output": "The agent writes the tests first, runs `just test android` and keeps the failing lines (just test-regression cannot run Kotlin), (a Robolectric/state-restoration test for the toggle and a ViewModel test that cancels the request), shows them failing, then keeps consent state in the ViewModel/SavedStateHandle or rememberSaveable and rethrows CancellationException from the catch around the suspend call, re-runs just test android / just android-check, and reports the self-review list.",
+      "files": [],
+      "assertions": [
+        "A regression test is written and shown failing before the fix, and passing after",
+        "Toggle state survives configuration change via rememberSaveable, SavedStateHandle or ViewModel state, not plain remember",
+        "The catch/runCatching around the suspend call rethrows CancellationException instead of mapping it to a failure state",
+        "Tests live under the module's src/test/kotlin and real `just test android` or `just android-check` output is pasted",
+        "The agent does not claim an emulator or Maestro result it did not run"
+      ]
+    }
+  ]
+}

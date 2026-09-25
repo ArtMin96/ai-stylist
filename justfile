@@ -18,7 +18,7 @@ default:
 
 # --- environment ---------------------------------------------------------------
 
-# Full environment setup, idempotent (`--system` adds apt/udev/docker-group steps with sudo on Linux, Homebrew packages on macOS)
+# Full environment setup, idempotent, incl. the mise + direnv block in your shell rc file (`--system` adds, with sudo: pacman or apt packages, udev rules and the docker group on Linux; Homebrew, OrbStack and the pinned Xcode on macOS)
 bootstrap *args:
     scripts/bootstrap.sh "$@"
 
@@ -53,18 +53,6 @@ dev-api *args:
     docker compose up -d --wait postgres
     pnpm --filter @ai-stylist/api dev "$@"
 
-# Expo dev client (Metro); `--android` targets a connected device/emulator, `--ios` the iOS simulator (macOS only)
-dev-mobile *args:
-    #!/usr/bin/env bash
-    set -euo pipefail
-    for a in "$@"; do
-        if [[ "$a" == "--ios" && "$(uname -s)" != "Darwin" ]]; then
-            echo "dev-mobile: --ios needs the iOS simulator (macOS + Xcode); on $(uname -s) use --android or Expo Go" >&2
-            exit 1
-        fi
-    done
-    pnpm --filter @ai-stylist/mobile exec expo start --dev-client "$@"
-
 # Segmentation worker (FastAPI, uvicorn --reload on :8001); TODO(T08): pg-boss handlers run in the API process; starting the segmentation worker only
 dev-workers *args:
     @echo "TODO(T08): pg-boss handlers run in the API process; starting the segmentation worker only"
@@ -72,7 +60,7 @@ dev-workers *args:
 
 # --- quality gates (* = part of ci-parity) -------------------------------------------
 
-# * Run tests: full suite via turbo, or one module's tests/ dir (`just test recommendation`; `just test secrets` = the sops+age shell suite); SKIP_DOCKER_TESTS=1 leaves out the Testcontainers `migrations` project (runners without Docker only)
+# * Run tests: full suite via turbo + the native lanes, or one module's tests/ dir (`just test recommendation`; `just test ios` / `just test android` = that app's unit tests; `just test secrets` = the sops+age shell suite; `just test tooling` = the scripts/test shell suites: bootstrap/doctor, contracts-breaking); SKIP_DOCKER_TESTS=1 leaves out the Testcontainers `migrations` project (runners without Docker only)
 test module='':
     #!/usr/bin/env bash
     set -euo pipefail
@@ -85,11 +73,17 @@ test module='':
         pnpm --filter @ai-stylist/api exec vitest run --project api
         uv run --project workers pytest workers -q
         just test-secrets
+        just test-tooling
+        just test-native
         exit 0
     fi
     if [[ -n "{{module}}" ]]; then
         case "{{module}}" in
             secrets) just test-secrets; exit 0 ;;
+            tooling) just test-tooling; exit 0 ;;
+            ios) just ios-test-packages; exit 0 ;;
+            android) just android-test; exit 0 ;;
+            workers) uv run --project workers pytest workers -q; exit 0 ;;
             platform) dir="src/platform/tests" ;;
             api) dir="." ;;
             *) dir="src/modules/{{module}}/tests" ;;
@@ -108,12 +102,29 @@ test module='':
     pnpm turbo run test
     uv run --project workers pytest workers -q
     just test-secrets
+    just test-tooling
+    just test-native
 
 [private]
 test-secrets:
     scripts/security/tests/secrets.test.sh
 
-# * ESLint per workspace via turbo (boundaries, test-placement, no-skip, no-console, forbidden-field, file-size) + root tools/ + Ruff for workers + shellcheck for scripts/** and tools/**/*.sh; `--fixtures` asserts tools/eslint/fixtures each fail on their rule
+[private]
+test-tooling:
+    scripts/test/bootstrap-doctor.test.sh
+    scripts/test/contracts-breaking.test.sh
+
+# Native unit tests for the full `just test` (lane/toolchain policy: scripts/native-lane.sh)
+[private]
+test-native:
+    scripts/native-lane.sh ios swift just ios-test-packages
+    scripts/native-lane.sh android android just android-test
+
+# Prove a regression test fails at the merge-base and passes at HEAD (scripts/test/regression.sh <test-file>); structural version of CLAUDE.md's "regression test fails before the fix"
+test-regression file:
+    scripts/test/regression.sh "$@"
+
+# * ESLint per workspace via turbo (boundaries, test-placement, no-skip, no-console, forbidden-field, file-size) + root tools/ + Ruff for workers + shellcheck for scripts/**, tools/**/*.sh and the native apps' scripts + actionlint + the native lanes (SwiftLint; Android Lint + detekt); `--fixtures` asserts tools/eslint/fixtures each fail on their rule
 lint *args:
     #!/usr/bin/env bash
     set -euo pipefail
@@ -126,30 +137,56 @@ lint *args:
     pnpm exec eslint tools eslint.config.mjs
     uv run --project workers ruff check workers
     # -s bash: every script must run under macOS /bin/bash 3.2 as well (docs/DEVELOPING-ON-MACOS.md)
-    shellcheck -s bash -x -P SCRIPTDIR scripts/*.sh scripts/security/*.sh scripts/security/tests/*.sh tools/codegen/*.sh tools/depcruise/*.sh tools/eslint/*.sh
+    shellcheck -s bash -x -P SCRIPTDIR scripts/*.sh scripts/security/*.sh scripts/security/tests/*.sh scripts/docs/*.sh scripts/docs/lib/*.sh scripts/hooks/*.sh scripts/test/*.sh scripts/db/*.sh scripts/ci/*.sh scripts/lint-file.sh scripts/native-lane.sh tools/codegen/*.sh tools/depcruise/*.sh tools/eslint/*.sh apps/ios/scripts/*.sh apps/android/tools/*.sh
+    actionlint
+    scripts/native-lane.sh ios none just ios-lint
+    scripts/native-lane.sh android android just android-lint
+    scripts/native-lane.sh android android just android-detekt
 
-# * `tsc --noEmit` per workspace via turbo + basedpyright for workers
+# Single-file lint dispatch by extension (.ts/.tsx/.mjs/.cjs -> eslint, .py -> ruff, .sh -> shellcheck, .swift -> swift-format + SwiftLint, .kt/.kts -> Spotless check; else no-op); used by the PostToolUse hook so one edit doesn't pay for a whole-repo lint
+lint-file path:
+    scripts/lint-file.sh "$@"
+
+# * `tsc --noEmit` per workspace via turbo + basedpyright for workers (Swift and Kotlin are type-checked by their compilers in `just test` / `just android-build`)
 typecheck:
     pnpm turbo run typecheck
     uv run --project workers basedpyright --project workers
 
-# * Prettier + Ruff format (workers); `just format --check` for CI
+# * Prettier + Ruff format (workers) + swift-format (apps/ios) + Spotless/ktlint (apps/android); `just format --check` for CI
 format *args:
     #!/usr/bin/env bash
     set -euo pipefail
     if [[ "${1:-}" == "--check" ]]; then
         pnpm exec prettier --check .
         uv run --project workers ruff format --check workers
+        scripts/native-lane.sh ios swift just ios-format --check
+        scripts/native-lane.sh android android just android-format --check
+    elif [[ -n "${1:-}" ]]; then
+        echo "just format: unknown argument '$1' (use --check)" >&2; exit 2
     else
         pnpm exec prettier --write .
         uv run --project workers ruff format workers
+        scripts/native-lane.sh ios swift just ios-format
+        scripts/native-lane.sh android android just android-format
     fi
 
-# * dependency-cruiser boundary rules (tools/depcruise/rules.cjs) + banned utils/ dirs; `--fixtures` asserts tools/depcruise/fixtures each fail on their rule
+# * dependency-cruiser boundary rules (tools/depcruise/rules.cjs) + banned utils/ dirs + iOS bans (`just ios-check-banned`) + the Android module-graph allow-list; `--fixtures` asserts every fixture fails on its rule
 arch-check *args:
+    #!/usr/bin/env bash
+    set -euo pipefail
     tools/depcruise/arch-check.sh "$@"
+    if [[ "${1:-}" == "--fixtures" ]]; then
+        scripts/native-lane.sh ios none just ios-check-banned --fixtures
+    else
+        scripts/native-lane.sh ios none just ios-check-banned
+        scripts/native-lane.sh android android apps/android/tools/gradle.sh -q checkModuleGraph
+    fi
 
-# * Contract codegen: OpenAPI bundle -> hey-api, json-schema-to-typescript, datamodel-code-generator; `--check` diffs committed output
+# * Docs enforcement gate (scripts/docs/docs-check.sh): module<->contract bijection, ADR/skill/agent README sync, PROGRESS.md sync, stale last-reviewed dates, dead repo paths, undocumented just recipes, raw pnpm/uv/npx/drizzle-kit/eas/gradlew/xcodebuild invocations in .agents|.claude|.claude/rules; `--strict` errors on the two human-approval-pending checks, `--fixtures` proves every check fails on its own fixture
+docs-check *args:
+    scripts/docs/docs-check.sh "$@"
+
+# * Contract codegen: OpenAPI bundle -> hey-api, json-schema-to-typescript, datamodel-code-generator, swift-openapi-generator (Swift client), openapi-generator (Kotlin client); `--check` diffs committed output
 generate *args:
     tools/codegen/generate.sh "$@"
 
@@ -162,7 +199,7 @@ security-scan:
     echo "==> gitleaks (working tree)"
     gitleaks dir . --no-banner --redact
     echo "==> osv-scanner"
-    osv-scanner scan --recursive . || { rc=$?; [[ $rc -eq 128 ]] && echo "osv-scanner: no packages found" || exit $rc; }
+    scripts/ci/osv-scan.sh
     echo "==> pnpm audit"
     pnpm audit --audit-level=high
     echo "==> license check (npm + pypi; docs/security/licenses.md)"
@@ -174,20 +211,184 @@ security-scan:
 sbom:
     scripts/security/sbom.sh
 
-# Run the exact PR-gate sequence locally: format --check, lint (+ fixtures), typecheck, arch-check (+ fixtures), generate --check, test, security-scan (+ license fixtures)
-ci-parity:
+# --- CI-only helpers ([private]: hidden from `just --list`; called by .github/workflows/**) --
+
+# Enable pgvector on the CI service-container database at DATABASE_URL
+[private]
+ci-pgvector:
+    psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -c 'CREATE EXTENSION IF NOT EXISTS vector;'
+
+# Spectral lint of packages/contracts/openapi (skips until the sources and spectral exist)
+[private]
+ci-contracts-spectral:
+    scripts/ci/contracts-spectral.sh
+
+# oasdiff breaking-change check of the OpenAPI bundle against a base commit
+[private]
+ci-contracts-breaking base:
+    scripts/ci/contracts-breaking.sh "$1"
+
+# Every env key read under apps/api/src is declared in .env.example
+[private]
+ci-env-example-check:
+    scripts/ci/env-example-check.sh
+
+# gitleaks over every ref of the full history (nightly; needs a fetch-depth: 0 checkout)
+[private]
+ci-gitleaks-history:
+    gitleaks git --log-opts=--all --config .gitleaks.toml --redact --verbose .
+
+# osv-scanner over every lockfile and manifest in the tree (scripts/ci/osv-scan.sh: an empty scan or an unscanned tracked lockfile fails; nightly)
+[private]
+ci-osv-source:
+    scripts/ci/osv-scan.sh
+
+# Run the PR gates locally: format --check, lint (+ fixtures), typecheck, arch-check (+ fixtures), docs-check --strict (+ fixtures, incl. the hook replay), generate --check, test, native builds, security-scan (+ license, gitleaks and osv-scanner fixtures); native toolchains are required (Xcode-only steps skip on Linux with a notice); `--core` = pr-gate's parity job (native lanes run in ios.yml / android.yml)
+ci-parity *args:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    case "${1:-}" in
+        --core) export NATIVE_LANES=none ;;
+        "") export NATIVE_LANES="${NATIVE_LANES-ios android}" ;;
+        *) echo "just ci-parity: unknown argument '$1' (use --core)" >&2; exit 2 ;;
+    esac
+    export NATIVE_STRICT=1
+    echo "ci-parity: native lanes: ${NATIVE_LANES:-none}"
     just format --check
     just lint
     just lint --fixtures
     just typecheck
     just arch-check
     just arch-check --fixtures
+    just docs-check --strict
+    just docs-check --fixtures
     just generate --check
     just test
+    scripts/native-lane.sh android android just android-build all
+    scripts/native-lane.sh ios xcode just ios-build --config dev
+    scripts/native-lane.sh ios xcode just ios-test
     just security-scan
     scripts/security/license-check.sh --fixtures
+    scripts/security/gitleaks-fixtures.sh
+    scripts/ci/osv-scan.sh --fixtures
+
+# --- ios (apps/ios: Swift 6 + SwiftUI; recipe bodies in apps/ios/scripts/*.sh) ------------------
+# Linux-capable: ios-test-packages, ios-lint, ios-format, ios-check-banned, ios-check (Swift runs in
+# Docker swift:6.4 when no working swift is on PATH). Xcode-only (macOS): ios-project, ios-build,
+# ios-test, ios-e2e; on Linux they exit 1 and name the Linux-capable recipes instead.
+
+# iOS toolchain check: Xcode vs apps/ios/.xcode-version, xcodegen/swiftlint/xcbeautify/maestro; on Linux reports what can run there (exit 0)
+ios-doctor:
+    apps/ios/scripts/xcode.sh doctor
+
+# Generate apps/ios/AIStylist.xcodeproj from apps/ios/project.yml with XcodeGen (macOS only; the project is gitignored, never edit it)
+ios-project:
+    apps/ios/scripts/xcode.sh project
+
+# Unsigned iOS simulator build: `just ios-build [--config dev|preview|prod]` (default dev; macOS only)
+ios-build *args:
+    apps/ios/scripts/xcode.sh build "$@"
+
+# iOS package unit tests through the AIStylist-Dev scheme on an iOS 26+ iPhone simulator; result bundle apps/ios/.build/test.xcresult (macOS only)
+ios-test:
+    apps/ios/scripts/xcode.sh test
+
+# Dev simulator build + one shared Maestro flow (default e2e/smoke.yaml) with APP_ID=app.aistylist.mobile.dev: `just ios-e2e [flow]` (macOS only; needs maestro)
+ios-e2e flow='e2e/smoke.yaml':
+    apps/ios/scripts/xcode.sh e2e "$1"
+
+# * `swift test` for apps/ios/Packages (Core + Features view models): `just ios-test-packages [core|features]`; macOS and Linux (swift on PATH, else Docker swift:6.4)
+ios-test-packages *args:
+    apps/ios/scripts/test-packages.sh "$@"
+
+# * SwiftLint safety rules (apps/ios/.swiftlint.yml; swiftlint-static on Linux; missing SwiftLint fails only in CI)
+ios-lint:
+    apps/ios/scripts/lint.sh
+
+# * swift-format over apps/ios App + Packages; `--check` = `swift format lint --strict`
+ios-format *args:
+    apps/ios/scripts/format.sh "$@"
+
+# * iOS bans: @unchecked Sendable, nonisolated(unsafe), @preconcurrency import, UI imports in Core/*Model, generated-client imports outside APIData; `--fixtures` proves each still fires
+ios-check-banned *args:
+    apps/ios/scripts/check-banned.sh "$@"
+
+# The iOS local gate: lint, format --check, bans (+ fixtures), package tests; on macOS also the Dev simulator build + simulator tests (Linux prints a skip for those two)
+ios-check:
+    just ios-lint
+    just ios-format --check
+    just ios-check-banned
+    just ios-check-banned --fixtures
+    just ios-test-packages
+    scripts/native-lane.sh ios xcode just ios-build --config dev
+    scripts/native-lane.sh ios xcode just ios-test
+
+# --- android (apps/android: Kotlin + Jetpack Compose; Gradle via apps/android/tools/gradle.sh) ----
+# Every recipe needs JDK 21 (mise) + the SDK packages `just android-sdk` checks. Only android-e2e
+# needs a running emulator or device.
+
+# Build APKs: debug (= dev, app.aistylist.mobile.dev) | preview | release (= prod, unsigned until Play signing) | all
+android-build variant='debug':
+    #!/usr/bin/env bash
+    set -euo pipefail
+    case "{{variant}}" in
+        debug) tasks=(:app:assembleDebug) ;;
+        preview) tasks=(:app:assemblePreview) ;;
+        release) tasks=(:app:assembleRelease) ;;
+        all) tasks=(:app:assembleDebug :app:assemblePreview :app:assembleRelease) ;;
+        *) echo "android-build: variant must be debug|preview|release|all (got '{{variant}}')" >&2; exit 2 ;;
+    esac
+    apps/android/tools/gradle.sh "${tasks[@]}"
+    echo "APKs: apps/android/app/build/outputs/apk/"
+
+# * Android JVM unit tests + Robolectric Compose tests (no emulator needed)
+android-test:
+    apps/android/tools/gradle.sh testDebugUnitTest :core:data:test :core:analytics:test
+
+# * Android Lint over every module (warnings are errors, compose-lint-checks) + the module-graph allow-list
+android-lint:
+    apps/android/tools/gradle.sh :app:lintDebug checkModuleGraph
+
+# * detekt (coroutines / exceptions / potential-bugs / complexity only), type-resolved
+android-detekt:
+    apps/android/tools/gradle.sh detektMain detektTest
+
+# * Format Kotlin/KTS/misc with Spotless + ktlint (`--check` = verify only)
+android-format *args:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    case "${1:-}" in
+        --check) apps/android/tools/gradle.sh spotlessCheck ;;
+        "") apps/android/tools/gradle.sh spotlessApply ;;
+        *) echo "android-format: unknown argument '$1' (use --check)" >&2; exit 2 ;;
+    esac
+
+# The Android local gate in one Gradle invocation: Spotless, module graph, detekt, Android Lint, unit + Robolectric tests, all three APKs
+android-check:
+    apps/android/tools/gradle.sh spotlessCheck checkModuleGraph detektMain detektTest :app:lintDebug testDebugUnitTest :core:data:test :core:analytics:test :app:assembleDebug :app:assemblePreview :app:assembleRelease
+
+# Check (default) or install the Android SDK packages apps/android needs: `just android-sdk [check|install]` (user-level, no emulator, no sudo)
+android-sdk mode='check':
+    apps/android/tools/sdk.sh "$@"
+
+# Refresh the Gradle lockfiles + gradle/verification-metadata.xml after a version bump (review the diff; run once on macOS too)
+android-deps-lock:
+    apps/android/tools/gradle.sh spotlessCheck checkModuleGraph detektMain detektTest :app:lintDebug testDebugUnitTest :core:data:test :core:analytics:test :app:assembleDebug :app:assemblePreview :app:assembleRelease --write-locks --write-verification-metadata sha256
+
+# Install the debug (dev) build on the running emulator/device + run one shared Maestro flow (default e2e/smoke.yaml) with APP_ID=app.aistylist.mobile.dev: `just android-e2e [flow]` (needs adb + maestro)
+android-e2e flow='e2e/smoke.yaml':
+    #!/usr/bin/env bash
+    set -euo pipefail
+    command -v maestro >/dev/null 2>&1 || { echo "android-e2e: maestro not found (mise install maestro; needs a running emulator or device)" >&2; exit 1; }
+    [[ -f "$1" ]] || { echo "android-e2e: Maestro flow '$1' not found" >&2; exit 1; }
+    apps/android/tools/gradle.sh :app:installDebug
+    maestro test -e APP_ID=app.aistylist.mobile.dev "$1"
 
 # --- database (drizzle-kit; expand–contract) ----------------------------------------
+
+# Generate a Drizzle migration from packages/db schema changes, named <name> (drizzle-kit generate --name); prints a reminder that packages/db/migrations/down/<idx>.sql is required by db-rollback
+db-generate name:
+    scripts/db/generate.sh "$@"
 
 # Apply pending migrations (packages/db/migrations) to DATABASE_URL (env or repo-root .env)
 db-migrate env='local':
@@ -211,114 +412,6 @@ db-reset *args:
 # Load privacy-safe synthetic seed data into DATABASE_URL (`--accounts N` reserved for identity factories)
 db-seed *args:
     pnpm --filter @ai-stylist/seed-data --silent seed "$@"
-
-# --- mobile builds -------------------------------------------------------------------
-
-# iOS build lane: no `--cloud` on macOS = local `expo run:ios` (simulator; `--device` for a plugged-in iPhone); `--cloud eas` (EAS Build) or `--cloud gha` (xcodebuild archive; macOS only); `--profile dev|preview|prod` (ADR-0002 picks the default in T15)
-mobile-ios-build *args:
-    #!/usr/bin/env bash
-    set -euo pipefail
-    cloud="" profile="dev" device=0
-    while [[ $# -gt 0 ]]; do
-        case "$1" in
-            --cloud) cloud="$2"; shift 2 ;;
-            --profile) profile="$2"; shift 2 ;;
-            --device) device=1; shift ;;
-            *) echo "mobile-ios-build: unknown argument '$1' (use [--cloud eas|gha] --profile dev|preview|prod [--device])" >&2; exit 1 ;;
-        esac
-    done
-    case "$profile" in dev|preview|prod) ;; *) echo "mobile-ios-build: --profile must be dev|preview|prod" >&2; exit 1 ;; esac
-    cd apps/mobile
-    case "$cloud" in
-        '')
-            # Local lane (macOS only): `npx expo run:ios` is Expo's documented path for compiling a
-            # development build locally (docs.expo.dev/get-started/set-up-your-environment, local
-            # build env, checked 2026-09-10); `eas build --local` exists only to reproduce cloud
-            # build failures (docs.expo.dev/build-reference/local-builds). run:ios prebuilds ios/
-            # (CNG; CocoaPods still used in SDK 57), compiles with Xcode and installs on the
-            # simulator, or on a USB device with --device (needs a signing team in Xcode).
-            if [[ "$(uname -s)" != "Darwin" ]]; then
-                echo "mobile-ios-build: iOS cannot be built on $(uname -s) (no Xcode). Use --cloud eas, or --cloud gha via the ios-gha-macos workflow." >&2
-                exit 1
-            fi
-            if ! xcode-select -p >/dev/null 2>&1; then
-                echo "mobile-ios-build: Xcode Command Line Tools missing — run: xcode-select --install (and install Xcode from the App Store)" >&2
-                exit 1
-            fi
-            configuration=Release; [[ "$profile" == "dev" ]] && configuration=Debug
-            run_args=(--configuration "$configuration"); [[ $device -eq 1 ]] && run_args+=(--device)
-            pnpm exec expo run:ios "${run_args[@]}"
-            ;;
-        eas)
-            # eas-cli is not pinned yet (T14 adds it to mise.toml); fall back to a one-off pnpm dlx.
-            if command -v eas >/dev/null; then eas build --platform ios --profile "$profile" --non-interactive
-            else pnpm dlx eas-cli@latest build --platform ios --profile "$profile" --non-interactive; fi
-            ;;
-        gha)
-            if [[ "$(uname -s)" != "Darwin" ]]; then
-                echo "mobile-ios-build: iOS cannot be built on $(uname -s) (no Xcode/Metal/signing). Run the ios-gha-macos workflow, or use --cloud eas." >&2
-                exit 1
-            fi
-            # macOS lane: CNG prebuild (+ pod install), then an Xcode archive under ios/build/.
-            # Unsigned unless APPLE_TEAM_ID is set; IPA export needs ios/ExportOptions.plist (T14).
-            pnpm exec expo prebuild --platform ios
-            workspace=$(ls -d ios/*.xcworkspace | head -n1)
-            scheme=$(basename "$workspace" .xcworkspace)
-            configuration=Release; [[ "$profile" == "dev" ]] && configuration=Debug
-            signing=(CODE_SIGNING_ALLOWED=NO); [[ -n "${APPLE_TEAM_ID:-}" ]] && signing=(DEVELOPMENT_TEAM="$APPLE_TEAM_ID")
-            xcodebuild -workspace "$workspace" -scheme "$scheme" -configuration "$configuration" \
-                -destination 'generic/platform=iOS' -archivePath "ios/build/$scheme.xcarchive" archive "${signing[@]}"
-            if [[ -n "${APPLE_TEAM_ID:-}" && -f ios/ExportOptions.plist ]]; then
-                xcodebuild -exportArchive -archivePath "ios/build/$scheme.xcarchive" -exportOptionsPlist ios/ExportOptions.plist -exportPath ios/build
-            else
-                echo "archive at apps/mobile/ios/build/$scheme.xcarchive; IPA export skipped (needs APPLE_TEAM_ID + ios/ExportOptions.plist, T14)"
-            fi
-            ;;
-        *)
-            echo "mobile-ios-build: --cloud must be eas|gha (omit it on macOS for a local expo run:ios build; ADR-0002 picks the default in T15)" >&2
-            exit 1
-            ;;
-    esac
-
-# Android APK/AAB: local CNG prebuild + Gradle when the Android SDK is found (ANDROID_HOME, or the default Studio location per OS), `--cloud` for EAS; `--profile dev|preview|prod`
-mobile-android-build *args:
-    #!/usr/bin/env bash
-    set -euo pipefail
-    cloud=0 profile="dev"
-    while [[ $# -gt 0 ]]; do
-        case "$1" in
-            --cloud) cloud=1; shift ;;
-            --profile) profile="$2"; shift 2 ;;
-            *) echo "mobile-android-build: unknown argument '$1' (use [--cloud] --profile dev|preview|prod)" >&2; exit 1 ;;
-        esac
-    done
-    case "$profile" in dev|preview|prod) ;; *) echo "mobile-android-build: --profile must be dev|preview|prod" >&2; exit 1 ;; esac
-    cd apps/mobile
-    if [[ $cloud -eq 1 ]]; then
-        if command -v eas >/dev/null; then eas build --platform android --profile "$profile" --non-interactive
-        else pnpm dlx eas-cli@latest build --platform android --profile "$profile" --non-interactive; fi
-        exit 0
-    fi
-    if [[ -z "${ANDROID_HOME:-${ANDROID_SDK_ROOT:-}}" ]]; then
-        # Android Studio's default SDK location: ~/Library/Android/sdk (macOS), ~/Android/Sdk (Linux).
-        for candidate in "$HOME/Library/Android/sdk" "$HOME/Android/Sdk"; do
-            if [[ -d "$candidate/platform-tools" ]]; then export ANDROID_HOME="$candidate"; break; fi
-        done
-    fi
-    if [[ -z "${ANDROID_HOME:-${ANDROID_SDK_ROOT:-}}" ]]; then
-        echo "mobile-android-build: ANDROID_HOME is not set and no SDK found in ~/Library/Android/sdk or ~/Android/Sdk." >&2
-        echo "  install Android Studio (or the SDK via \`just bootstrap --system\` on Linux), or run \`just mobile-android-build --cloud --profile $profile\` for an EAS build." >&2
-        exit 1
-    fi
-    pnpm exec expo prebuild --platform android --no-install
-    # Outputs land in android/app/build/outputs/{apk,bundle}/** (the android.yml artifact globs).
-    # Signing config for ANDROID_KEYSTORE_* is wired by T14; until then release builds are debug-signed.
-    case "$profile" in
-        prod) (cd android && ./gradlew --quiet bundleRelease assembleRelease) ;;
-        preview) (cd android && ./gradlew --quiet assembleRelease) ;;
-        *) (cd android && ./gradlew --quiet assembleDebug) ;;
-    esac
-    echo "artifacts under apps/mobile/android/app/build/outputs/"
 
 # --- assets / ML / recommendation ---------------------------------------------------
 

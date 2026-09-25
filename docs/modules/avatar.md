@@ -3,11 +3,11 @@
 > Module names are canonical per [SPINE §3](../../planning/SPINE.md). Path: `apps/api/src/modules/avatar`. This contract is the module's source of truth; code that contradicts it is wrong until a DEC entry says otherwise.
 
 - **Responsibility (one sentence):** Parametric avatar parameters, calibration, poses, and avatar asset versions.
-- **Owner:** @team (placeholder — see `CODEOWNERS`) · **Status:** skeleton (P02) · **Last updated:** 2026-09-09
+- **Owner:** @team (placeholder — see `CODEOWNERS`) · **Status:** skeleton (P02) · **Last updated:** 2026-09-22
 
 ## Public interface
 
-Public interface: `index.ts` only; nothing exported yet (P02 skeleton). Everything under `internal/` is blocked by the `public-api-only` boundary rule (`just arch-check`, `just lint`).
+Public interface: `index.ts` only. P02 skeleton: the sole export is the empty NestJS `AvatarModule` class (composition-root wiring, imported by `tests/avatar.smoke.test.ts`); no domain service, command, query, type, or port is exported yet. Everything under `internal/` is blocked by the `public-api-only` boundary rule (`just arch-check`, `just lint`).
 
 | Export | Kind (service/command/query/type/port) | Purpose  |
 | ------ | -------------------------------------- | -------- |
@@ -35,7 +35,7 @@ None yet (P02 skeleton). Planned per SPINE §3: `avatar_configs`, `avatar_assets
 
 ## Dependencies (allowed)
 
-- Public API of `profile`; `packages/shared-kernel`. Rendering output reaches the mobile render boundary (`apps/mobile/src/render/`) through `packages/contracts`, not through other domain modules.
+- Public API of `profile`; `packages/shared-kernel`. Rendering output reaches the client apps (`apps/ios`, `apps/android`; their renderer module is created when 3D resumes, DEC-50) through `packages/contracts` and the generated clients, not through other domain modules.
 - Ports: none declared yet. New external capability = port interface here (or in `shared-kernel`) + implementation in `apps/api/src/platform/` + fake in tests; bound only at the composition root (`apps/api/src/main.ts` / `app.module.ts`).
 
 ## Forbidden dependencies

@@ -1,7 +1,7 @@
 # 15 — Team Workflow and AI-Agent Operations
 
 **Owner of:** developer environment (Ubuntu), command catalog, secrets strategy, branching/review, ADR/DoR/DoD process, supply-chain policy, release channels, environment isolation, and the AI-agent operating procedures.
-**Conforms to:** [SPINE.md](SPINE.md) §2 (stack), §3 (modules), §5 (phases). **Amended:** 2026-09-13 ([r7](research/r7-third-party-services-and-self-hosting-audit-2026-09-13.md), ADR-0003 — Coolify secrets/environments, ephemeral DBs, pg-boss). Evidence: [research/r1-linux-ios-build.md](research/r1-linux-ios-build.md), [research/r2-mobile-3d-stack.md](research/r2-mobile-3d-stack.md), [research/r4-backend-providers.md](research/r4-backend-providers.md).
+**Conforms to:** [SPINE.md](SPINE.md) §2 (stack), §3 (modules), §5 (phases). **Amended:** 2026-09-13 ([r7](research/r7-third-party-services-and-self-hosting-audit-2026-09-13.md), ADR-0003 — Coolify secrets/environments, ephemeral DBs, pg-boss) · 2026-09-22 ([ADR-0004](../docs/adr/0004-native-ios-and-android-clients.md), DEC-49–54 — native iOS/Android replace React Native + Expo: §1, §3, §4, §5, §7, §10, §12.5 updated). Evidence: [research/r1-linux-ios-build.md](research/r1-linux-ios-build.md), [research/r2-mobile-3d-stack.md](research/r2-mobile-3d-stack.md), [research/r4-backend-providers.md](research/r4-backend-providers.md).
 **Related:** root operating contract [CLAUDE.md](CLAUDE.md) · skills in `.agents/skills/` · templates in `templates/` · migrations policy in [06-data-api-and-event-contracts.md](06-data-api-and-event-contracts.md) · CI tiers in [13-testing-quality-and-performance.md](13-testing-quality-and-performance.md).
 
 Requirement IDs delivered: `REQ-TEAM-*` / `NFR-TEAM-*` (defined in [01-requirements-and-traceability.md](01-requirements-and-traceability.md)). Set up in phase **P02**; refined in every later phase.
@@ -10,7 +10,7 @@ Requirement IDs delivered: `REQ-TEAM-*` / `NFR-TEAM-*` (defined in [01-requireme
 
 ## 1. Developer environment (Ubuntu Linux)
 
-The team is 2–3 developers on Ubuntu workstations. Android + backend development is fully local; iOS builds are cloud-only (§3). Everything below is automated by `just bootstrap` (§4) — this section documents what the script does so it stays reviewable.
+The team is 2–3 developers on Linux workstations plus one Mac for iOS (§3, DEC-51). Android and backend development is fully local on Linux. The iOS `Core`/`Features` packages, lint, format and codegen also run on Linux; the iOS app target needs the Mac or the macOS CI job (§3). Everything below is automated by `just bootstrap` (§4) — this section documents what the script does so it stays reviewable.
 
 ### 1.1 System packages (apt)
 
@@ -27,17 +27,21 @@ adb                         # via google-android-platform-tools-installer or SDK
 
 | Tool | Pin | Notes |
 |---|---|---|
-| Node.js | 22.x (active LTS) | Exact patch pinned in `mise.toml`; matches CI and EAS image |
+| Node.js | 22.x (active LTS) | Exact patch pinned in `mise.toml`; matches CI |
 | pnpm | 10.x | Workspace manager (SPINE §2); exact version also in `packageManager` field of root `package.json` |
-| Java | Temurin 17 | Required by Android Gradle Plugin for RN/Expo SDK 55 |
+| Java | Temurin 21 | Android Gradle Plugin 9 + Robolectric (`apps/android`), `gen-kotlin.sh`, Maestro (DEC-54; was Temurin 17 for RN/Expo) |
 | just | 1.x | Task runner |
 | Python | 3.12.x | ML workers (`workers/`), uv for deps |
-| watchman | latest stable | Metro file watching; installed via prebuilt binary (apt version is stale) |
+| SwiftLint | 0.65.1 | `just ios-lint` (`swiftlint` on macOS, `swiftlint-static` on Linux) |
+| Maestro | 2.10.0 | Shared flows in `e2e/` (`just ios-e2e`, `just android-e2e`) |
+| XcodeGen, xcbeautify | 2.46.0, 3.2.1 (macOS only) | `apps/ios/project.yml` → `.xcodeproj`; readable `xcodebuild` output |
+
+Not in mise: **Xcode 27.0** (pinned by `apps/ios/.xcode-version`, checked by `just ios-doctor`; it provides Swift 6.4 on macOS); **Swift on Linux** (the iOS scripts and `gen-swift.sh` use Docker `swift:6.4`, because mise's Swift build cannot run on Arch); the **Android SDK** (`just android-sdk install`); Gradle (committed wrapper). Watchman was dropped with Metro (DEC-54).
 
 ### 1.3 Android tooling
 
-- **Android Studio** (current stable) for SDK manager, emulator, and profiler — not required for day-to-day builds (Gradle CLI suffices).
-- **SDK components** (installed by bootstrap via `sdkmanager`): platform-tools, latest stable platform (API level per Expo SDK 55 requirement), build-tools, NDK version pinned to the one `react-native-filament` requires, emulator + one x86_64 system image (mid-tier profile, e.g. Pixel 6a class).
+- **Android Studio** (current stable) is optional, for the emulator and profiler. It is not needed for builds or tests: the Gradle wrapper and Robolectric run everything on the JVM.
+- **SDK components** (installed user-level by `just android-sdk install`, no sudo): cmdline-tools 19.0 (sha1-verified; 23.0's new `android` CLI shim hung on first run), `platform-tools`, `platforms;android-37.0`, `build-tools;36.0.0`. **No NDK** (there is no native 3D code; *historical: the RN plan pinned the NDK `react-native-filament` needed*). An emulator + one x86_64 system image (mid-tier profile, e.g. Pixel 6a class) is optional, for Maestro runs.
 - **Physical devices**: udev rules installed by bootstrap; verify with `adb devices`. Real-device testing is mandatory for camera + 3D work (r2) — the emulator is for UI iteration only.
 - `ANDROID_HOME` and PATH entries are written to `~/.config/ai-stylist/env.sh` and sourced by direnv, not scattered in dotfiles.
 
@@ -65,23 +69,25 @@ Claude Code (§12) uses the same LSP servers for symbol navigation — keeping t
 
 Target: first merged PR within day one; anything blocking that is a bootstrap bug — file it.
 
-## 3. iOS on a Linux-only team (the macOS reality)
+## 3. iOS: one Mac plus a macOS CI lane
 
-Per [research/r1](research/r1-linux-ios-build.md) and SPINE §2: **no local Mac, ever, and no pretending otherwise.** iOS simulator, Metal shader compilation, and App Store submission require macOS; we buy that as a service.
+**Updated 2026-09-22 (DEC-51, [ADR-0004](../docs/adr/0004-native-ios-and-android-clients.md)).** The iOS app is native Swift/SwiftUI, so iOS development needs a Mac, and the team has one. The GitHub Actions macOS runner (`.github/workflows/ios.yml`) is the only CI lane. EAS is removed. *Historical: the original rule was "no local Mac, ever" (DEC-03, research r1). This section's bullets are updated where they named EAS.*
 
-- **Builds + signing:** EAS Build (free allowance only, DEC-48) **or** GitHub Actions macOS M-series runners (~$0.12/min; ~$30–50/mo at our cadence). The final choice is **ADR-gated in P02** (r1 §6). Until that ADR lands, planning documents must say "EAS-or-GHA-macOS", not assume one.
+- **What runs where.** Linux (any workstation, and the `ios` workflow's Linux job): `just ios-test-packages`, `just ios-lint`, `just ios-format --check`, `just ios-check-banned`, and `just generate`. Mac (the team's Mac, and the `ios` workflow's macOS job): `just ios-project`, `just ios-build`, `just ios-test`, `just ios-e2e`, Instruments, and device installs.
+
+- **Builds + signing:** GitHub Actions macOS runner (`xcode-27` image, `DEVELOPER_DIR` pinned; ~$0.062–0.12/min). Today it only does unsigned simulator builds. The signed archive + TestFlight lane is still to be built (OQ-18). The team's Mac is the fallback when the lane is down (RISK-12).
 - **TestFlight upload:** App Store Connect API from a **Linux** runner (fastlane `upload_to_testflight` or `Apple-Actions/upload-testflight-build`) — works without macOS (r1 §3).
 - **App Store submission:** macOS CI step (Xcode 26+ mandatory since 2026-04-28, r1 §2). Automated in the release lane, never manual.
-- **Signing assets:** distribution certificate + provisioning profiles live in CI secret storage (§6); managed via EAS credentials service or fastlane match — per the P02 ADR. No developer ever holds signing keys locally.
-- **Device testing:** the team owns 2–3 physical iPhones (low/mid/high tier per doc 13's device matrix). Install TestFlight builds; no local iOS simulator exists on Linux. For debugging native iOS issues beyond what logs provide: reproduce via CI build with verbose logging, or a rented remote Mac session (r1 Option B) as the escape hatch — do not buy hardware for a one-off.
+- **Signing assets:** an App Store Connect API key (cloud-managed signing via `xcodebuild -allowProvisioningUpdates`) lives in CI secret storage (§6); the exact mechanism is decided with OQ-18. Distribution signing happens in CI, not on developer machines.
+- **Device testing:** the team owns 2–3 physical iPhones (low/mid/high tier per doc 13's device matrix). Install from the Mac (Xcode) or TestFlight. The iOS Simulator runs on the Mac and in the macOS CI job. Debug native iOS issues on the Mac.
 
-Android has no such constraint: full build/sign/test cycle runs locally on Ubuntu and on Linux CI runners.
+Android has no such constraint: the full build/test cycle (`just android-check`) runs locally on Linux and on Linux CI runners (`.github/workflows/android.yml`). Play upload signing is still to be built (OQ-18).
 
 ## 4. Bootstrap and doctor
 
 Two commands stand between a fresh Ubuntu install and a working environment:
 
-- **`just bootstrap`** — idempotent, re-runnable, fails fast with actionable errors (brief §5.4). Steps: check Ubuntu version → apt packages → install mise + `mise install` (all pins) → corepack/pnpm → `pnpm install` → Android cmdline-tools + `sdkmanager` components + udev rules → Docker group membership check → direnv hook check → git hooks (`prek`/husky: gitleaks, commit-lint) → `.env` scaffold from `.env.example` → prints next steps (secrets bootstrap §6, `just doctor`).
+- **`just bootstrap`** — idempotent, re-runnable, fails fast with actionable errors (brief §5.4). Steps: check Ubuntu version → apt packages → install mise + `mise install` (all pins) → corepack/pnpm → `pnpm install` → adb + udev rules (the Android SDK itself is a separate `just android-sdk install`, only needed for Android work) → Docker group membership check → direnv hook check → git hooks (`prek`/husky: gitleaks, commit-lint) → `.env` scaffold from `.env.example` → prints next steps (secrets bootstrap §6, `just doctor`).
 - **`just doctor`** — read-only environment verifier, also the first thing to run when anything is weird. Checks: tool versions vs `mise.toml` pins, `adb devices`, Docker daemon reachable, Postgres container healthy, direnv active, `.env` has all keys from `.env.example`, contracts generation up to date (`just generate --check`), git hooks installed, disk space for asset caches. Exit non-zero with a fix hint per failing check.
 
 Both scripts live in `scripts/` as readable, commented bash (or TS via `zx` if branching grows) — no thousand-character one-liners (brief §5.4).
@@ -95,25 +101,46 @@ Both scripts live in `scripts/` as readable, commented bash (or TS via `zx` if b
 | `just bootstrap` | Full environment setup (§4), idempotent |
 | `just doctor` | Environment + repo health check (§4) |
 | `just dev-api` | Compose stack (Postgres+pgvector) + NestJS API in watch mode |
-| `just dev-mobile` | Expo dev client (Metro); `--android` targets connected device/emulator |
 | `just dev-workers` | Python ML workers locally (pg-boss job handlers run inside `just dev-api` or a local `jobs` process — no separate job dev server) |
-| `just test <module>` | Scoped: one module's `tests/` dir (e.g. `just test recommendation`) |
+| `just test <module>` | Scoped: one module's `tests/` dir (e.g. `just test recommendation`); `ios`, `android`, `workers`, `secrets`, `platform`, `api` route to their own suites instead of a `modules/<name>/tests` dir (`ios` = `ios-test-packages`, `android` = `android-test`); the full run includes the native unit tests |
 | `just test` | Full suite (all modules + packages), as CI PR gate runs it |
-| `just lint` | ESLint (incl. boundary rules) + Ruff for workers |
+| `just test-regression <file>` | Prove a regression test fails at the merge-base and passes at HEAD — the structural form of CLAUDE.md's "regression test fails before the fix" |
+| `just lint` | ESLint (incl. boundary rules) + Ruff for workers + shellcheck + actionlint + the native linters (`ios-lint`, `android-lint`, `android-detekt`) |
+| `just lint-file <path>` | Single-file lint dispatch by extension (eslint/ruff/shellcheck, else no-op); used by the PostToolUse hook so one edit doesn't pay for a whole-repo lint |
 | `just typecheck` | `tsc --noEmit` across workspace + Pyright for workers |
-| `just format` | Prettier + Ruff format, write mode; `--check` in CI |
-| `just arch-check` | dependency-cruiser: module dependency rules, public-API-only imports (SPINE §3) |
-| `just generate` | OpenAPI contract → TS client + types; event schema types; `--check` fails on stale output |
+| `just format` | Prettier + Ruff format + `ios-format` + `android-format`, write mode; `--check` in CI |
+| `just arch-check` | dependency-cruiser: module dependency rules, public-API-only imports (SPINE §3); plus `ios-check-banned` and the Android `checkModuleGraph` allow-list; `--fixtures` proves each rule still fires |
+| `just docs-check [--strict]` | Repo self-consistency gate: module↔contract bijection, ADR/skill/agent README sync, PROGRESS.md sync, stale review dates, dead repo paths, undocumented recipes, raw package-manager invocations in `.agents`/`.claude`; `--strict` turns the two human-approval-pending checks (this table, the CLAUDE.md layout block) into errors |
+| `just generate` | OpenAPI contract → TS client + types, Swift client (swift-openapi-generator), Kotlin client (openapi-generator), Python models; event schema types; `--check` fails on stale output |
+| `just db-generate <name>` | Generate a Drizzle migration from `packages/db` schema changes (`drizzle-kit generate --name`); reminds you `packages/db/migrations/down/<idx>.sql` is required by `db-rollback` |
 | `just db-migrate` | Apply pending drizzle-kit migrations to the target env (default: local) |
 | `just db-rollback` | Roll back last migration per doc 06 policy (expand/contract aware) |
 | `just db-reset` | Drop + recreate + migrate + seed **local** DB only (refuses non-local `DATABASE_URL`) |
 | `just db-seed` | Load privacy-safe seed data (§11) into local/staging |
-| `just mobile-ios-build` | Trigger cloud iOS build (EAS or GHA lane per P02 ADR); `--profile dev\|preview\|prod` |
-| `just mobile-android-build` | Local release/debug APK+AAB via Gradle; `--cloud` for CI parity build |
+| `just ios-doctor` | iOS toolchain check: Xcode vs `apps/ios/.xcode-version`, xcodegen, swiftlint, xcbeautify, maestro; on Linux, reports what can run there |
+| `just ios-project` | Generate `apps/ios/AIStylist.xcodeproj` from `project.yml` with XcodeGen (macOS only; the project is gitignored, never edited) |
+| `just ios-build` | Unsigned iOS simulator build, `--config dev\|preview\|prod` (default dev; macOS only) |
+| `just ios-test` | iOS package unit tests through the `AIStylist-Dev` scheme on an iOS 26+ simulator (macOS only) |
+| `just ios-e2e` | Dev simulator build + the shared Maestro flow `e2e/smoke.yaml` with `APP_ID=app.aistylist.mobile.dev` (macOS only) |
+| `just ios-test-packages` | `swift test` for `apps/ios/Packages` (Core + Features view models), `[core\|features]`; macOS and Linux (Docker `swift:6.4` fallback) |
+| `just ios-lint` | SwiftLint safety rules (`apps/ios/.swiftlint.yml`) |
+| `just ios-format` | swift-format over `apps/ios`; `--check` = lint `--strict` |
+| `just ios-check-banned` | iOS bans (`@unchecked Sendable`, `nonisolated(unsafe)`, `@preconcurrency import`, UI imports in Core/`*Model`, generated-client imports outside `APIData`); `--fixtures` proves each fires |
+| `just ios-check` | iOS local gate: lint, format `--check`, bans (+ fixtures), package tests; on macOS also the dev simulator build + simulator tests (Linux prints a skip) |
+| `just android-build` | Build APKs: `debug` (= dev) \| `preview` \| `release` (= prod, unsigned) \| `all` |
+| `just android-test` | Android JVM unit tests + Robolectric Compose tests (no emulator) |
+| `just android-lint` | Android Lint (warnings are errors, compose-lint-checks) + the module-graph allow-list |
+| `just android-detekt` | detekt (coroutines / exceptions / potential-bugs / complexity), type-resolved |
+| `just android-format` | Spotless + ktlint; `--check` = verify only |
+| `just android-check` | Android local gate in one Gradle invocation: Spotless, module graph, detekt, Lint, tests, all three APKs |
+| `just android-sdk` | `check` (default) or `install` the Android SDK packages `apps/android` needs (user-level, no emulator) |
+| `just android-deps-lock` | Refresh Gradle lockfiles + `verification-metadata.xml` after a version bump (review the diff) |
+| `just android-e2e` | Install the debug build on a running emulator/device + the Maestro flow `e2e/smoke.yaml` with `APP_ID=app.aistylist.mobile.dev` |
 | `just assets-validate` | 3D asset gate: glTF 2.0 validity, KTX2 encoding, poly/texture budgets, manifest schema, morph-target names (doc 07) |
 | `just ml-eval` | Run versioned eval suites for classification/segmentation/try-on against golden datasets (doc 10) |
 | `just security-scan` | gitleaks + osv-scanner + npm/pnpm audit + license check (§9) |
-| `just ci-parity` | Run the exact PR-gate sequence locally: format-check, lint, typecheck, arch-check, generate --check, test, security-scan |
+| `just sbom` | Generate the SPDX + CycloneDX SBOM into `artifacts/sbom/` (same syft invocation `security-scan` runs) |
+| `just ci-parity` | Run the exact PR-gate sequence locally: format-check, lint, typecheck, arch-check, docs-check, generate --check, test, security-scan, including the native lanes (`NATIVE_LANES`, default `ios android`; a missing native toolchain is a loud SKIP locally and a failure in CI; Xcode-only steps skip on Linux); `--core` = what the pr-gate parity job runs (the native lanes run in `ios.yml` / `android.yml`) |
 | `just golden-accept` | Accept updated golden/visual-regression baselines as a reviewed commit (doc 13 §6) |
 | `just rec-replay <id>` | Re-run a stored recommendation from its snapshots and diff against the stored result (doc 09 §9) |
 | `just rec-golden-update` | Regenerate recommendation golden fixtures for review (doc 09 §13.3) |
@@ -148,7 +175,7 @@ Sized for 2–3 people shipping tracer bullets, not a 50-person org.
 - **Trunk-based.** `main` is always releasable (or explicitly red with a pinned issue). Short-lived branches: `feat/<module>-<slug>`, `fix/…`, `chore/…`, `spike/…`; target lifetime < 2 days, hard ceiling 5.
 - **Small tracer-bullet PRs.** Prefer a thin end-to-end slice (contract → module → UI stub → test) over a wide horizontal layer. Guideline: < ~400 changed lines excluding generated files and lockfiles; larger PRs need a stated reason in the description.
 - **File-size review threshold (NFR-TEAM-050, DEC-40):** production source files stay under **400 lines**; ESLint `max-lines` reports it as a **warning only** (tests and generated files exempt) and reviewers enforce it. An exception needs a one-line justification in the file or PR, or an ADR for a standing one; never split coherent code merely to satisfy the count.
-- **Conventional Commits**, enforced by commit-lint hook: `feat(closet): …`, `fix(recommendation): …`, `chore(ci): …`. Scope = SPINE module name or `repo|ci|mobile|contracts|workers`. Breaking contract changes: `!` + `BREAKING CHANGE:` footer.
+- **Conventional Commits**, enforced by commit-lint hook: `feat(closet): …`, `fix(recommendation): …`, `chore(ci): …`. Scope = SPINE module name or `repo|ci|ios|android|contracts|workers` (`mobile` for changes that touch both apps). Breaking contract changes: `!` + `BREAKING CHANGE:` footer.
 - **PR template:** [templates/pull-request.md](templates/pull-request.md) — summary, linked issue, scope/non-goals, evidence (test output, screenshots/recordings for UI, perf numbers for perf PRs), checklist (scoped checks run, contracts regenerated, PROGRESS.md updated if session-ending).
 - **Review model:** every PR gets one human review; author merges after green CI + approval. Exceptions (docs-only, dependency bumps with green CI) may self-merge with post-hoc review noted in the PR. AI-authored PRs are **never** self-merged — a human reviews every agent PR.
 - **Review SLA:** first response < 4 working hours; unblocking a red `main` preempts feature work. With 2–3 people, unreviewed-PR pileup is the top workflow risk — WIP limit of 2 open PRs per person.
@@ -158,7 +185,8 @@ Sized for 2–3 people shipping tracer bullets, not a 50-person org.
 /apps/api/src/modules/recommendation/  @dev-lead
 /apps/api/src/modules/billing/         @dev-lead
 /packages/contracts/                   @dev-lead        # any contract change gets the most senior eyes
-/apps/mobile/src/render/               @3d-owner        # Filament boundary
+/apps/ios/                             @dev-lead
+/apps/android/                         @dev-lead
 /workers/                              @ml-owner
 /planning/ /docs/adr/                  @dev-lead
 *                                      @team            # default: anyone reviews
@@ -177,15 +205,15 @@ Sized for 2–3 people shipping tracer bullets, not a 50-person org.
 - **Renovate** (app, not cron scripts): weekly batched minor/patch PRs, immediate PRs for security advisories, majors one-per-PR with changelog link. `mise.toml` pins and GitHub Actions versions included. Automerge only for dev-dependency patches with green full CI.
 - **Vulnerability scanning:** `osv-scanner` (covers npm + PyPI + GitHub Actions) in CI on every PR + nightly; `pnpm audit` as secondary. Failing severity threshold: high+ blocks merge; mediums get an issue with owner + deadline.
 - **Secret scanning:** `gitleaks` in pre-commit **and** CI (history-aware on nightly). A leaked secret = rotate same day (§6) + incident note.
-- **License / SBOM:** `syft` generates SBOM per release artifact (kept with release); license-checker gate denies GPL/AGPL in shipped mobile/backend bundles (Apache-2.0 Anny model is fine — attribution tracked in doc 07). Legal-flagged licenses go to the doc 16 legal-review register.
-- **Supply chain:** committed lockfiles required (`pnpm-lock.yaml`, `uv.lock`); frozen-lockfile installs in CI; no `postinstall` scripts from new deps without review (`pnpm` config restricts build scripts to an allowlist); provenance/signature verification enabled where the registry provides it; new runtime dependency = ADR-lite justification in the PR description (what it replaces, why not stdlib/existing dep — the semantic-reuse rule applies to dependencies too).
+- **License / SBOM:** `syft` generates SBOM per release artifact (kept with release); license-checker gate denies GPL/AGPL in shipped mobile/backend bundles (it covers npm and PyPI today; Gradle/Maven and SwiftPM licenses are not checked yet, a known gap after DEC-49) (Apache-2.0 Anny model is fine — attribution tracked in doc 07). Legal-flagged licenses go to the doc 16 legal-review register.
+- **Supply chain:** committed lockfiles required (`pnpm-lock.yaml`, `uv.lock`, Gradle `gradle.lockfile`s + `apps/android/gradle/verification-metadata.xml`, `Package.resolved` for the iOS packages); frozen-lockfile installs in CI; no `postinstall` scripts from new deps without review (`pnpm` config restricts build scripts to an allowlist); provenance/signature verification enabled where the registry provides it; new runtime dependency = ADR-lite justification in the PR description (what it replaces, why not stdlib/existing dep — the semantic-reuse rule applies to dependencies too).
 
 ## 10. Migrations, flags, and release channels
 
 - **DB migrations:** policy owned by [06-data-api-and-event-contracts.md](06-data-api-and-event-contracts.md). Operationally here: drizzle-kit migrations are committed files, reviewed like code; expand→migrate→contract for anything touching live data; `just db-rollback` must be proven against staging before the corresponding deploy; destructive migrations need explicit human authorization (never agent-initiated — see CLAUDE.md).
 - **Feature flags:** PostHog flags (SPINE §2). Every flag has: owner, creation date, expiry date, removal issue. Flags are for **rollout control**; paid capability gating uses **entitlements** (server-side, doc 12) — never a UI-only flag. Flag review monthly; expired flags fail a lint check.
 - **Release channels:** `internal` (team devices; every merged `main`, auto) → `beta` (TestFlight + Play internal/closed testing; weekly-ish) → `production` **staged rollout** (Play staged %; iOS phased release) → full. **Crash gate:** promotion halts automatically if crash-free sessions drop below the doc 13 threshold (PostHog/Sentry signal); rollback = halt rollout + fix-forward or store rollback.
-- **OTA limits (store policy, r2):** EAS Update may ship JS + assets only — no native module, permission, or native-config changes OTA. Any native change ⇒ full store build through channels. Release-readiness skill enforces the check.
+- **No OTA channel.** Native apps ship every change as a store build through the channels above. *(Historical: the RN plan allowed EAS Update for JS + assets only; removed with EAS on 2026-09-22, DEC-51.)*
 
 ## 11. Environments, data isolation, and seed data
 
@@ -233,8 +261,8 @@ Any session ending with work in flight writes [templates/session-handoff.md](tem
 
 ### 12.5 Recommended tooling (recommendations, not requirements)
 
-- **Claude Code** with this repo's `CLAUDE.md` + `.agents/skills/` is the reference setup; any agent tooling must obey the same contract.
-- **MCP servers worth adding:** `context7` (current library docs — Expo/Filament/Drizzle/pg-boss move fast; CLAUDE.md requires consulting current docs) and a read-only **Postgres MCP** pointed at local/staging for schema inspection during migration work. Evaluate others via ADR; each MCP server is an attack/typo surface, keep the list short.
+- **Claude Code** with this repo's `CLAUDE.md` + `.agents/skills/` (symlinked at `.claude/skills/`) + `.claude/agents/` (agent personas) + `.claude/rules/` (path-scoped rules) + the `.claude/settings.json` hook layer (`scripts/hooks/`) is the reference setup; any agent tooling must obey the same contract.
+- **MCP servers worth adding:** `context7` (current library docs — SwiftUI/Compose, Xcode/AGP, Filament, Drizzle and pg-boss move fast; CLAUDE.md requires consulting current docs) and a read-only **Postgres MCP** pointed at local/staging for schema inspection during migration work. Evaluate others via ADR; each MCP server is an attack/typo surface, keep the list short.
 - **Model tiers for cost:** cheap/fast models for mechanical work (renames, fixture generation, applying a settled pattern across files, commit messages); top-tier models for architecture, recommendation-engine rules, security-sensitive code, and anything touching contracts. Batch mechanical tasks per §12.3 fan-out. Track agent spend the same way we track provider AI spend (doc 10): it is a real unit cost.
 
 ### 12.6 Human responsibilities that never delegate to agents

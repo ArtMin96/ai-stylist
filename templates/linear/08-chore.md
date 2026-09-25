@@ -27,7 +27,7 @@ Agents never do these (doc 15 §12.6, CLAUDE.md "Prohibited without explicit hum
 
 Names only. Values never appear in issues, PRs, logs or commits; they live in sops (`secrets/<env>.enc.yaml`) or GitHub encrypted secrets per doc 15 §6.
 
-- Key names: <e.g. `COOLIFY_TOKEN`, `EAS_TOKEN`> · Added to `.env.example` with a comment: <yes/no> · Envs: <local | dev | staging | prod | CI>
+- Key names: <e.g. `COOLIFY_TOKEN`, `TURBO_TOKEN`> · Added to `.env.example` with a comment: <yes/no> · Envs: <local | dev | staging | prod | CI>
 - Rotation owner + trigger: <…> · Or `N/A — no secrets`
 
 ## Modules touched

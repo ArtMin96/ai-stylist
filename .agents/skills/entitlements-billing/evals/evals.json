@@ -1,0 +1,40 @@
+{
+  "skill_name": "entitlements-billing",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "We need to grant a small one-time credit top-up when a user completes onboarding, on top of their normal tier credit grant. Add the entitlement/meter for it.",
+      "expected_output": "The agent recognizes a new meter needs a shared-kernel + packages/contracts entry first (api-contract-change), then implements the grant transactionally in apps/api/src/modules/billing/internal/, ensures the credit ledger invariant (balance = sum of entries, never negative, oldest-expiring consumed first) holds, and adds a lifecycle-matrix test in apps/api/src/modules/billing/tests/.",
+      "files": [],
+      "assertions": [
+        "The agent checks packages/shared-kernel/registry/entitlements.json (credits.topup, credits.monthly) and either reuses a registered name or explicitly stops to request the registry + contract addition via api-contract-change before writing billing code",
+        "The credit grant is applied transactionally and the agent's report states which invariant (balance = sum of entries, never negative) the new test proves",
+        "A test exists in apps/api/src/modules/billing/tests/ and the agent's report names `just test billing` as the command run",
+        "No RevenueCat SDK import appears in apps/api/src/modules/billing/** — only a port implemented in apps/api/src/platform/"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "RevenueCat just sent us a duplicate CANCELLATION webhook for the same subscription (looks like a retry) and it downgraded the user's entitlement twice, double-logging a billing event. Fix the webhook handler.",
+      "expected_output": "The agent treats this as a regression: reproduces the double-processing with a webhook-replay test, confirms the fix upserts billing_events keyed by the RevenueCat event id (doc 12 §5.2) so a duplicate event is a no-op, reruns the webhook idempotency test suite to show green, and flags that this touches a webhook handler so `security-privacy-review` is needed before PR.",
+      "files": [],
+      "assertions": [
+        "The agent's report includes the actual failing test output captured before the fix (duplicate event caused a double downgrade / double log), not a paraphrase",
+        "The fix makes the billing_events upsert keyed by the RevenueCat event id the dedup mechanism (doc 12 §5.2), rather than an ad hoc duplicate check elsewhere or the platform Idempotency-Key table",
+        "The agent explicitly states that `security-privacy-review` is required before this webhook-handler PR merges",
+        "The agent reruns the billing webhook tests after the fix and pastes the passing output"
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "Product wants to A/B test a $2 lower price point for the Plus monthly tier to see if it improves conversion.",
+      "expected_output": "The agent recognizes this is a price/tier experiment, not an entitlement change, and either declines to implement it under this skill (stating it is a product/pricing decision recorded as a doc 12 hypothesis, and that server-driven offering experiments are P13-T14's PostHog flag-assignment work with the explicit guardrail that experiment schema cannot touch entitlement enforcement) or scopes the task narrowly to the entitlement-safe seam only.",
+      "files": [],
+      "assertions": [
+        "The agent's response states that price/tier experiments are out of scope for this skill and points to the doc 12 hypothesis framing",
+        "If any code is touched, it does not modify entitlement-enforcement logic — only offering/experiment configuration, consistent with P13-T14's guardrail",
+        "The agent never presents the new price as validated or claims a conversion result it did not measure"
+      ]
+    }
+  ]
+}

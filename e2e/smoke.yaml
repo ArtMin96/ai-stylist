@@ -1,0 +1,12 @@
+# Maestro smoke flow (planning/13 §2): launch the app and see the home screen.
+# Shared by the native iOS (apps/ios) and Android (apps/android) apps; both must render these strings.
+# The app id comes from APP_ID so one flow serves every build: the recipes run the installable dev
+# build (app.aistylist.mobile.dev) on both platforms:
+#   just ios-e2e        (macOS: Dev simulator build + this flow)
+#   just android-e2e    (running emulator/device: installDebug + this flow)
+# By hand: maestro test -e APP_ID=app.aistylist.mobile.dev e2e/smoke.yaml
+appId: ${APP_ID}
+---
+- launchApp
+- assertVisible: 'AI Stylist'
+- assertVisible: 'Share anonymous usage data'

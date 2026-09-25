@@ -1,0 +1,92 @@
+[
+  {
+    "query": "need to add a hard exclusion so the engine never suggests wool sweaters when the forecast is above 25C, right now it's only a soft penalty",
+    "should_trigger": true
+  },
+  {
+    "query": "the tie-break logic in the recommendation ranking isn't deterministic — reran the same inputs twice and got a different top pick",
+    "should_trigger": true
+  },
+  {
+    "query": "want to bump the rule version after changing the scoring weight for 'recently worn' items, and need the changelog updated too",
+    "should_trigger": true
+  },
+  {
+    "query": "a user says the reason code shown for yesterday's outfit doesn't match what was actually recommended, feels like a stale explanation",
+    "should_trigger": true
+  },
+  {
+    "query": "running `just rec-replay` on recommendation id abc123 gives a different result than what's stored, reproducibility seems broken",
+    "should_trigger": true
+  },
+  {
+    "query": "need to add candidate-generation support for a new 'formal' occasion slot in the beam search stage",
+    "should_trigger": true
+  },
+  {
+    "query": "the feedback ingestion guardrails aren't clamping deltas correctly, a single thumbs-down is swinging the score way too much",
+    "should_trigger": true
+  },
+  {
+    "query": "want to run `just rec-golden-update` after intentionally changing a simulation scenario's expected outfit",
+    "should_trigger": true
+  },
+  {
+    "query": "closet items with a 'never pair' feedback signal are still showing up together in outfit suggestions, the exclusion isn't sticking",
+    "should_trigger": true
+  },
+  {
+    "query": "eval metrics from `just ml-eval` regressed after last week's scoring change, need to figure out which scorer caused it",
+    "should_trigger": true
+  },
+  {
+    "query": "the weather context provider is returning stale temperature data, need to fix the Open-Meteo adapter",
+    "should_trigger": false,
+    "_near_miss_reason": "context feeds the recommendation engine, but the provider adapter itself is backend-module's territory, not a scoring/constraint change."
+  },
+  {
+    "query": "the Today card on the home screen isn't showing the shuffle button for alternative outfits",
+    "should_trigger": false,
+    "_near_miss_reason": "mentions recommendation UI (Today card, shuffle) but it's a mobile screen/component bug — ios-feature / android-feature owns the display, not the scoring logic."
+  },
+  {
+    "query": "the 3D avatar isn't rendering the recommended jacket correctly, looks clipped through the torso",
+    "should_trigger": false,
+    "_near_miss_reason": "the garment came from a recommendation, but the defect is in rendering/fit — the client app's UI (no 3D renderer exists today), and recommendation must stay renderer-independent anyway."
+  },
+  {
+    "query": "need to add a brand-new reason code to the registry for a scenario we haven't covered yet",
+    "should_trigger": false,
+    "_near_miss_reason": "reason codes are consumed by recommendation-rules but the registry itself lives in shared-kernel/packages/contracts — api-contract-change owns adding a new one, single-writer."
+  },
+  {
+    "query": "trial users are still seeing the full recommendation history even after their entitlement expired, seems like a gating bug",
+    "should_trigger": false,
+    "_near_miss_reason": "touches recommendation output but the actual defect is entitlement gating — entitlements-billing owns that invariant."
+  },
+  {
+    "query": "the outfit composition endpoint is returning a slightly different JSON shape than the OpenAPI spec says",
+    "should_trigger": false,
+    "_near_miss_reason": "'outfit composition' sounds like recommendation-rules territory, but a wire-shape mismatch against the spec is api-contract-change's job."
+  },
+  {
+    "query": "reviewing a PR that touches apps/api/src/modules/recommendation/internal/ for module boundary violations before it merges",
+    "should_trigger": false,
+    "_near_miss_reason": "the PR is recommendation code, but reviewing it for boundary violations is architecture-review's task, not an implementation task."
+  },
+  {
+    "query": "want to add a new closet taxonomy attribute (e.g. 'sheerness') so items can be tagged with it going forward",
+    "should_trigger": false,
+    "_near_miss_reason": "a new taxonomy field could feed future scoring, but adding the attribute itself is closet's job — backend-module — not a recommendation rule change."
+  },
+  {
+    "query": "the pg-boss job that precomputes item_pair_scores keeps timing out on large wardrobes, need to fix the job handler",
+    "should_trigger": false,
+    "_near_miss_reason": "item_pair_scores feeds recommendation scoring, but a pg-boss job/handler performance issue is media-ml-pipeline's job-plumbing territory, not a rule/scoring change."
+  },
+  {
+    "query": "write a quick script to seed 50 synthetic closets for load testing",
+    "should_trigger": false,
+    "_near_miss_reason": "load testing touches the recommendation module (P09-T19) but generic seed-data scripting is not a constraint/scoring/reason-code change this skill owns."
+  }
+]

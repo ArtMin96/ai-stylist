@@ -1,0 +1,40 @@
+{
+  "skill_name": "architecture-review",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Review this diff before I open the PR: it adds `apps/api/src/modules/closet/internal/pricing-helpers.ts` exporting a `roundToCents(amount)` function. `packages/shared-kernel/src/money.ts` already exports a `roundToCents` helper used by `billing`.",
+      "expected_output": "CHANGES REQUESTED with a duplication finding: `apps/api/src/modules/closet/internal/pricing-helpers.ts` duplicates `packages/shared-kernel/src/money.ts`'s `roundToCents`; the fix is to import the shared-kernel export instead of re-implementing it, not to keep both.",
+      "files": [],
+      "assertions": [
+        "The verdict is CHANGES REQUESTED, not APPROVE",
+        "A duplication finding names both file:line locations (the new closet helper and the existing packages/shared-kernel/src/money.ts export)",
+        "The finding's remedy is reuse/extend the shared-kernel export, not 'keep both with a written reason' (no reason was given in the prompt)",
+        "The report follows the block shape from the skill's Output section (verdict word in the header line, Duplication findings section)"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "Did I break a module boundary? My diff has `apps/api/src/modules/closet/internal/checkout.ts` importing `apps/api/src/modules/billing/internal/creditLedger.ts` directly to read the user's credit balance, instead of going through billing's public API.",
+      "expected_output": "CHANGES REQUESTED with a boundary finding citing the `public-api-only` rule: closet must import billing only via `apps/api/src/modules/billing/index.ts`, and the fix is either to use an existing public export or to name the missing one billing needs to add.",
+      "files": [],
+      "assertions": [
+        "The finding cites the `public-api-only` rule by name (as `just arch-check` reports it), not a generic 'don't do this'",
+        "The finding identifies the exact violating file:line (apps/api/src/modules/closet/internal/checkout.ts importing billing's internal/**)",
+        "The compliant alternative names apps/api/src/modules/billing/index.ts as the only allowed import path",
+        "The agent does not approve the diff as-is"
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "The recommendation module in this branch now imports a type from `apps/api/src/modules/avatar/index.ts` to decide which outfit slots have a rendered preview available. Is that allowed by our architecture rules?",
+      "expected_output": "CHANGES REQUESTED: this violates `recommendation-not-renderer` (recommendation must not depend on avatar or any rendering concern) and likely `allowed-edges-only`. The fix is to return a structured result with reason codes from recommendation and let a different layer decide rendering, not to import render types into the module.",
+      "files": [],
+      "assertions": [
+        "The finding names the `recommendation-not-renderer` rule specifically, not just 'boundary violation'",
+        "The agent explains the compliant alternative: recommendation returns structured data (reason codes), rendering concerns stay out of the module",
+        "The agent does not suggest weakening tools/depcruise/rules.cjs as the fix"
+      ]
+    }
+  ]
+}

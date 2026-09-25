@@ -1,0 +1,43 @@
+{
+  "skill_name": "notifications-delivery",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Implement the quiet-hours check for the daily-outfit push from P09-T16: a user with quiet hours 22:00-07:00 in their local timezone should never receive a push during that window, and a push that would have fired during quiet hours should be deferred to the end of the window, not dropped.",
+      "expected_output": "A quiet-hours function lives under apps/api/src/modules/notifications/internal/, takes the user's prefs and a timezone-aware current time (injected, not Date.now() inline), and returns either 'send now' or a deferred send time at the window's end; a Vitest test in apps/api/src/modules/notifications/tests/ covers just-before, at, and just-after both window boundaries plus a DST-transition case; no FCM/APNs SDK import appears anywhere in the diff.",
+      "files": [],
+      "assertions": [
+        "The quiet-hours logic lives under apps/api/src/modules/notifications/internal/ and takes time as an injected parameter rather than calling Date.now() or new Date() directly inside the rule",
+        "A test in apps/api/src/modules/notifications/tests/ exercises the window boundaries (just before, at, just after start and end) and the agent names `just test notifications` as the command it ran",
+        "A push inside the quiet-hours window is deferred to the window's end, not silently dropped",
+        "No import of an FCM or APNs SDK appears anywhere in apps/api/src/modules/notifications/**",
+        "The agent's report states whether docs/modules/notifications.md needed updating and why"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "We need to actually send the push once quiet hours clear. Add the FCM/APNs port and wire the daily-outfit notification to send through it, with delivery receipts recorded and no duplicate sends if the outbox relay redelivers the event.",
+      "expected_output": "The agent declares the push port in the notifications module's index.ts, describes the platform adapter (platform-engineer), the test-support fake and the app.module.ts binding (api-engineer), and the dedup rule keyed on the outbox event id. It reports that the outbox relay and pg-boss are P02-T08 (NOT_STARTED), so it stops before wiring the send path or claiming redelivery is safe, and names T08 as the blocker.",
+      "files": [],
+      "assertions": [
+        "The FCM/APNs SDK (firebase-admin or similar) is never imported inside apps/api/src/modules/notifications/**; the adapter is placed in apps/api/src/platform/ for platform-engineer",
+        "The port is declared in the notifications module's index.ts and bound only at the composition root (apps/api/src/app.module.ts)",
+        "Dedup is keyed off the outbox event id per planning/04-architecture.md §9, not a new ad hoc dedup table",
+        "The agent reports that the outbox relay / pg-boss do not exist yet (P02-T08 NOT_STARTED) and stops before wiring the send path or claiming a redelivery test passes",
+        "The agent runs and reports `just arch-check` (or lists it as Not run with a reason) to show domain-no-provider-sdk holds"
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "A user reports they're still getting push notifications after opting out of marketing pushes in their settings. Find and fix the bug in the notifications module.",
+      "expected_output": "The agent treats this as a regression: reproduces the failure by tracing the opt-out preference through to the send path, shows the actual failing/passing test output before and after, and fixes only the notifications module's opt-out check (a short-circuit before any port call) rather than adding a workaround at the call site.",
+      "files": [],
+      "assertions": [
+        "The agent's report includes the actual test output demonstrating the bug before the fix, not a paraphrase",
+        "The fix is an opt-out check inside apps/api/src/modules/notifications/** that short-circuits before the FCM/APNs port is called, not a filter added at the caller",
+        "The diff does not touch apps/api/src/platform/** unless the port itself needed a signature change, and the agent explains why if it did",
+        "The agent reruns `just test notifications` after the fix and pastes the passing output"
+      ]
+    }
+  ]
+}

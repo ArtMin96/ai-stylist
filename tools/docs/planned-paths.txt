@@ -1,0 +1,5 @@
+# DC-09 exemption list: a backticked repo-relative path that does not exist yet, but is planned
+# by a named phase task. Format: "<path>[/]" then whitespace then a phase id. A trailing "/"
+# exempts every path under that prefix. "#" starts a comment; blank lines are ignored.
+assets/3d/	P04-T01
+apps/api/src/jobs/index.ts	P02-T08

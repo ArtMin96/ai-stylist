@@ -1,0 +1,92 @@
+[
+  {
+    "query": "need to build the admin queue for P06-T13 — when the malware scan flags a closet photo it should sit in quarantine until an admin approves or rejects it",
+    "should_trigger": true
+  },
+  {
+    "query": "add RBAC so only users with the admin role can hit the moderation endpoints in apps/api/src/modules/admin",
+    "should_trigger": true
+  },
+  {
+    "query": "the audit_log table needs an entry every time an admin approves or rejects something in the moderation_queue, who/what/when plus enough to undo it",
+    "should_trigger": true
+  },
+  {
+    "query": "building P12-T04's source-register admin CRUD, every new fashion-intel source needs a mandatory rights-basis field before it can be used",
+    "should_trigger": true
+  },
+  {
+    "query": "wire the fashion-intel quarantine result into the admin queue per P12-T08, plus a user-report endpoint so shoppers can flag a bad recommendation source",
+    "should_trigger": true
+  },
+  {
+    "query": "P14-T12 wants an audit-log viewer demo for support/admin — need the minimal admin surface to show recent moderation actions",
+    "should_trigger": true
+  },
+  {
+    "query": "an admin rejected an item last week and there's no audit trail of who did it, need to fix the gap in apps/api/src/modules/admin",
+    "should_trigger": true
+  },
+  {
+    "query": "editor spot-check queue for fashion-intel ingestion drafts needs to live somewhere in admin per P12-T08",
+    "should_trigger": true
+  },
+  {
+    "query": "the 30-day purge job for quarantined content needs to run, but it should still leave an audit trail even though the underlying item is gone",
+    "should_trigger": true
+  },
+  {
+    "query": "admin's index.ts is still empty from the P02 skeleton, need to export the moderation-queue application service now that P06-T13 is starting",
+    "should_trigger": true
+  },
+  {
+    "query": "media's malware scan is throwing a false positive on a valid jpeg, need to fix the detection logic in the scan stage itself",
+    "should_trigger": false,
+    "_near_miss_reason": "shares the malware-scan/quarantine vocabulary from P06-T13, but the fix is inside the scanning logic (media/media-ml-pipeline), not the admin queue that consumes its result."
+  },
+  {
+    "query": "who should be allowed to hold the admin role in the first place, and does granting it need a security sign-off",
+    "should_trigger": false,
+    "_near_miss_reason": "mentions 'admin role' but the question is authorization policy/who-may-hold-it, which is security-privacy-review's territory, not building the queue/CRUD itself."
+  },
+  {
+    "query": "reviewing the diff for the new moderation-queue endpoint before merge, want a second pair of eyes on whether it checks the caller's role before writing",
+    "should_trigger": false,
+    "_near_miss_reason": "about the moderation queue's RBAC, but reviewing a diff for authorization correctness is security-privacy-review's job, not implementation."
+  },
+  {
+    "query": "add an audit_log column for the correlation id and write the Drizzle migration for it",
+    "should_trigger": false,
+    "_near_miss_reason": "names the audit_log table directly, but the ask is a schema + migration change — db-migration's job, even though admin-moderation consumes that column afterward."
+  },
+  {
+    "query": "closet needs its own service so a user can archive one of their items and restore it later — no admin involved, just the owner's action",
+    "should_trigger": false,
+    "_near_miss_reason": "shares the archive/restore (reversible action) theme with admin's invariant, but it is the owning user's action inside closet — backend-module owns closet; admin-moderation owns only admin actions."
+  },
+  {
+    "query": "the admin dashboard's moderation queue screen in the app looks broken on tablet, the approve/reject buttons overlap",
+    "should_trigger": false,
+    "_near_miss_reason": "mentions the moderation queue but it's a mobile/web UI layout bug, not the backend admin module's logic — ios-feature / android-feature (the relevant client skill) owns rendering."
+  },
+  {
+    "query": "billing needs an admin override to manually grant a refund credit when RevenueCat webhooks miss an edge case",
+    "should_trigger": false,
+    "_near_miss_reason": "mentions 'admin override' but the actual entitlement/credit decision is entitlements-billing's invariant; admin-moderation would only own the audit trail if the override surface itself lived in admin, which this task doesn't establish."
+  },
+  {
+    "query": "fashion-intel's ingestion job is stuck retrying the same source and never completing, pipeline seems to be looping",
+    "should_trigger": false,
+    "_near_miss_reason": "adjacent to the source register from P12-T04 but the defect is in the ingestion job/pipeline itself — fashion-intel-ingestion's territory, not the admin CRUD around it."
+  },
+  {
+    "query": "closet needs a soft-delete flag added to the items table and a migration to backfill existing rows",
+    "should_trigger": false,
+    "_near_miss_reason": "shares the delete/reversal theme with admin's audited-and-reversible invariant, but this is a plain schema + migration inside closet — db-migration's job, with no admin queue, RBAC, or audit_log involvement at all."
+  },
+  {
+    "query": "write the release notes summarizing this sprint's admin panel improvements for the internal wiki",
+    "should_trigger": false,
+    "_teaches": "BAD near-miss negative — no real overlap with building moderation/audit/RBAC behaviour, just documentation copy; useful as a sanity check the description doesn't over-trigger on the word 'admin' alone."
+  }
+]

@@ -1,0 +1,42 @@
+{
+  "skill_name": "ios-feature",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "You are the iOS lane in a worktree. Brief: add a closet item count card to Home; GET /v1/closet/items (operationId listClosetItems) exists; states loading \"Counting your closet…\", loaded \"{count} items\", failure \"Could not load your closet\" with a \"Retry\" button; ids closet-count and closet-count-retry. Android builds the same card in parallel. Base: 3f2c9a1.",
+      "expected_output": "The agent checks the base first, adds a protocol in AppServices and an implementation in Packages/Core/Sources/APIData copied from VersionService.swift (with a test copied from VersionServiceTests.swift), extends HomeModel (no SwiftUI import) with the brief's states and a retry action, renders them in HomeScreen with the brief's exact strings and accessibility identifiers, adds Swift Testing tests under apps/ios/Packages/Features/tests/HomeModelTests/ with a fake service that fails then succeeds, runs only `just ios-check` / `just test ios`, and returns the canonical report with a Parity block copied from the brief and the Xcode-only and node-based checks under Not run. It does not read or edit apps/android or e2e.",
+      "files": [],
+      "assertions": [
+        "The first command is `git log -1 --format='%H %s'` compared with the brief's Base",
+        "Only code under apps/ios/Packages/Core/Sources/APIData imports the generated client, and the new service follows VersionService.swift",
+        "The state and retry logic live in the HomeModel target, covered by a Swift Testing test with a fake AppServices service (failure then success)",
+        "Strings and accessibility identifiers match the brief byte for byte and are listed in the report's Parity block; no file under apps/android/** or e2e/** is read for parity or changed",
+        "A stored retry Task is cancelled with its owner (or the view uses .task {}), and CancellationError is not surfaced as a failure state",
+        "Real `just ios-check` or `just test ios` output is pasted; ios-build, ios-test, generate --check and arch-check are listed under Not run with reasons"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "The iOS build fails with a Sendable warning-as-error in the new ClosetService. Just mark the class @unchecked Sendable so we can move on.",
+      "expected_output": "The agent refuses the ban-listed escape hatch, explains that @unchecked Sendable is banned (just ios-check-banned) and why, and fixes the data race properly: an actor, immutable value types, MainActor isolation, or a Mutex, then re-runs the checks.",
+      "files": [],
+      "assertions": [
+        "The agent does not add @unchecked Sendable, nonisolated(unsafe) or @preconcurrency import",
+        "The agent names the ban (just ios-check-banned / apps/ios/scripts/check-banned.sh) as the rule being protected",
+        "The fix uses an actor, value types, main-actor isolation or a Mutex and is explained in one or two sentences",
+        "The agent does not relax Swift 6 mode, strict concurrency or warnings-as-errors in Config/Base.xcconfig or Package.swift"
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "Add a 'rotate the avatar in 3D' view to the iOS outfit screen using RealityKit.",
+      "expected_output": "The agent stops: the native apps carry no 3D yet (no RealityKit, SceneKit or Metal renderers), so this is a product/ADR decision, not an implementation task; it offers only non-3D UI work if the task can be reduced to that.",
+      "files": [],
+      "assertions": [
+        "The agent does not add a RealityKit, SceneKit or Metal import or any 3D package",
+        "The agent states that 3D is deferred for the native apps and names this as a stop condition",
+        "The agent hands the decision back to a human instead of choosing a renderer"
+      ]
+    }
+  ]
+}

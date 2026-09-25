@@ -1,0 +1,121 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-settings.json",
+  "worktree": {
+    "baseRef": "head"
+  },
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Edit|Write|NotebookEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "${CLAUDE_PROJECT_DIR}/scripts/hooks/guard-protected-paths.sh",
+            "args": []
+          }
+        ]
+      },
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "${CLAUDE_PROJECT_DIR}/scripts/hooks/guard-bash.sh",
+            "args": []
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write|NotebookEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "${CLAUDE_PROJECT_DIR}/scripts/hooks/post-edit-lint.sh",
+            "args": [],
+            "timeout": 30
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "${CLAUDE_PROJECT_DIR}/scripts/hooks/session-close-check.sh",
+            "args": []
+          }
+        ]
+      }
+    ],
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "${CLAUDE_PROJECT_DIR}/scripts/hooks/session-start.sh",
+            "args": []
+          }
+        ]
+      }
+    ]
+  },
+  "permissions": {
+    "deny": [
+      "Bash(pnpm add *)",
+      "Bash(pnpm remove *)",
+      "Bash(pnpm update *)",
+      "Bash(uv add *)",
+      "Bash(uv remove *)",
+      "Bash(drizzle-kit push *)",
+      "Bash(gh pr merge *)",
+      "Bash(git gh pr merge*)",
+      "Bash(git push * --delete*)",
+      "Bash(git push --delete*)",
+      "Bash(fastlane deliver*)",
+      "Bash(fastlane pilot*)",
+      "Bash(fastlane supply*)",
+      "Bash(xcrun altool*)",
+      "Bash(xcrun iTMSTransporter*)",
+      "Bash(just secrets-sync staging*)",
+      "Bash(just secrets-sync prod*)",
+      "Bash(gh api -X DELETE*)",
+      "Bash(git gh api -X DELETE*)",
+      "Bash(git gh api --method DELETE*)",
+      "Bash(gh repo delete*)",
+      "Bash(git gh repo delete*)",
+      "Read(.env)",
+      "Read(.env.local)",
+      "Edit(.env)"
+    ],
+    "ask": [
+      "Bash(git push --force*)",
+      "Bash(git push -f*)",
+      "Bash(git push * --force*)",
+      "Bash(git push * -f*)",
+      "Bash(git push * +*)",
+      "Bash(git push --mirror*)",
+      "Bash(git push * --mirror*)",
+      "Bash(git reset --hard*)",
+      "Bash(git branch -D *)",
+      "Bash(git clean -f*)",
+      "Bash(git filter-branch*)",
+      "Bash(git filter-repo*)",
+      "Bash(git rebase *)",
+      "Bash(git commit --amend*)",
+      "Bash(git checkout -- *)",
+      "Bash(git stash drop*)",
+      "Bash(git stash clear*)",
+      "Bash(git worktree remove --force*)",
+      "Edit(/CLAUDE.md)",
+      "Edit(/planning/SPINE.md)",
+      "Edit(/planning/15-*.md)",
+      "Edit(/.claude/settings.json)",
+      "Edit(/scripts/hooks/**)",
+      "Edit(/.github/workflows/**)",
+      "Edit(/.github/actions/**)"
+    ]
+  }
+}

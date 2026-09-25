@@ -1,0 +1,7 @@
+// Preview: optimized internal build for testers (scheme AIStylist-Preview).
+#include "Release.xcconfig"
+
+APP_DISPLAY_NAME = AI Stylist Preview
+PRODUCT_BUNDLE_IDENTIFIER = app.aistylist.mobile.preview
+// HOST-ONLY (no path): the staging API (keep Android's preview build type in sync).
+API_BASE_URL = https:/$()/staging-api.ai-stylist.app

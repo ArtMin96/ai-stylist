@@ -1,0 +1,92 @@
+[
+  {
+    "query": "need to add an optional `notes` field to the CreateOutfitRequest schema in packages/contracts, should be additive so old mobile builds don't break",
+    "should_trigger": true
+  },
+  {
+    "query": "just generate --check is failing on main, looks like someone edited openapi/openapi.yaml without regenerating the client",
+    "should_trigger": true
+  },
+  {
+    "query": "spectral is throwing an error on the new /v1/closet/items endpoint, says operationId is missing",
+    "should_trigger": true
+  },
+  {
+    "query": "want to add a new event schema for `closet.item.wear_logged` so mobile and the wear-history backfill worker can both consume it off the outbox",
+    "should_trigger": true
+  },
+  {
+    "query": "billing needs a new entitlement name for the pro-tier try-on credit meter, where does that actually get defined",
+    "should_trigger": true
+  },
+  {
+    "query": "oasdiff flagged a breaking change on the outfit endpoint after my last PR and I don't remember renaming anything, can you check",
+    "should_trigger": true
+  },
+  {
+    "query": "recommendation team wants a brand new reason code for a 'weather-mismatch' constraint, which registry does that go in and how do i add it without breaking old ones",
+    "should_trigger": true
+  },
+  {
+    "query": "the generated Swift and Kotlin clients are out of date after the last contract PR merged, packages/contracts/gen/swift-client doesn't match openapi/modules anymore",
+    "should_trigger": true
+  },
+  {
+    "query": "need to bump the closet taxonomy registry to add cat.shoes.sandal as a brand new subcategory, doc 08 style",
+    "should_trigger": true
+  },
+  {
+    "query": "adding a `provenance` and `confidence` field to every generated-image response shape so we're honest about what's AI-generated per the honesty invariants",
+    "should_trigger": true
+  },
+  {
+    "query": "add a markGeneratedTryOn application service to the media module that actually calls the new try-on endpoint once it exists and stores the result",
+    "should_trigger": false,
+    "_near_miss_reason": "mentions an endpoint but the work is implementing the behavior behind it inside a module — backend-module's job once the contract already exists."
+  },
+  {
+    "query": "add a `laundry_state` column to closet's item_states table and write the drizzle migration for it",
+    "should_trigger": false,
+    "_near_miss_reason": "a storage-shape change, not a wire-shape change — db-migration."
+  },
+  {
+    "query": "the paywall screen shows the wrong entitlement name string in the copy, it says 'pro_tier' instead of the friendly label, just a text fix in the mobile app",
+    "should_trigger": false,
+    "_near_miss_reason": "shares 'entitlement name' vocabulary but the fix is display copy in the mobile UI, not the registry — ios-feature / android-feature."
+  },
+  {
+    "query": "closet's classifier keeps mislabeling shoes as tops way too often, need to retrain or swap the extraction model",
+    "should_trigger": false,
+    "_near_miss_reason": "touches the taxonomy's classifier but the actual work is model/extraction quality — media-ml-pipeline, not a registry or schema edit."
+  },
+  {
+    "query": "the reason code text shown to the user on the outfit screen reads really awkwardly, can you rewrite the sentence",
+    "should_trigger": false,
+    "_near_miss_reason": "reason codes live in shared-kernel, but rewording the displayed explanation is a template/UI concern for ios-feature / android-feature, not a registry change."
+  },
+  {
+    "query": "can you review this PR that adds a new closet endpoint, want a second pair of eyes on whether it crosses any module boundaries before merge",
+    "should_trigger": false,
+    "_near_miss_reason": "the PR touched a contract, but the requested task is a boundary/duplication review — architecture-review, not authoring the contract."
+  },
+  {
+    "query": "the /v1/health endpoint is returning 500 in staging, need to figure out why the platform module thinks a dependency is down",
+    "should_trigger": false,
+    "_near_miss_reason": "names an existing endpoint but the task is debugging a runtime failure behind it, not changing its shape — platform-engineer/backend-module."
+  },
+  {
+    "query": "want to add a drizzle enum in packages/db mirroring shared-kernel's CREDIT_METERS so the billing schema.ts has its own typed column",
+    "should_trigger": false,
+    "_near_miss_reason": "references shared-kernel but the requested change is a new Drizzle schema construct — db-migration's territory, and the mirroring itself is the kind of duplication that should be flagged, not built."
+  },
+  {
+    "query": "the assistant module is calling closet's http endpoint directly with fetch instead of going through the shared application service like every other client does, need to fix that",
+    "should_trigger": false,
+    "_near_miss_reason": "mentions an endpoint but the defect is assistant bypassing the module's public API — an architecture/assistant-chat boundary fix, not a contract shape change."
+  },
+  {
+    "query": "the new GET /v1/closet/items/{id}/wear-history endpoint just shipped, need to wire up the screen in the mobile app to call it and render the list",
+    "should_trigger": false,
+    "_near_miss_reason": "the endpoint already exists in the contract; the task is consuming the generated client from a mobile screen — ios-feature / android-feature."
+  }
+]

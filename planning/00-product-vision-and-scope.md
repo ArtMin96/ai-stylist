@@ -63,12 +63,12 @@ Global, English-first at launch; USD pricing modeled with store regional tiers (
 Full assumptions register with validation plan: [16 §Assumptions](16-risks-open-questions-and-decision-log.md#assumptions-register). Key ones:
 
 **Constraints (fixed):**
-- Team of 2–3 developers on Ubuntu Linux, heavy Claude Code usage; no Mac owned — hosted macOS CI for iOS builds ([SPINE §1](SPINE.md), research/r1).
+- Team of 2–3 developers on Linux plus one Mac for iOS (since 2026-09-22, DEC-51), heavy Claude Code usage; native Swift/SwiftUI and Kotlin/Compose clients (DEC-49); GitHub Actions macOS for iOS CI ([SPINE §1](SPINE.md)). *(Originally: no Mac owned, hosted macOS CI only — research/r1.)*
 - Store compliance: Apple App Store + Google Play billing rules bound the trial/paywall design (P13).
 - Budget reality: infra ≈ $25–45/mo at launch (owned server ~$10–25/mo per OQ-14, R2/PostHog/Grafana free tiers — [r7](research/r7-third-party-services-and-self-hosting-audit-2026-09-13.md), ADR-0003), ≈ $370–450/mo at 5k MAU as the upper-bound hypothesis until re-baselined at P02 ([r6](research/r6-pricing-verification-2026-09-09.md), verified 2026-09-09); AI cost anchors per [SPINE §6](SPINE.md); all pricing figures are hypotheses.
 
 **Load-bearing assumptions (labeled, tracked as ASM-NN in doc 16):**
-- `react-native-filament` is production-viable for our avatar workload — **validated at the P01 prototype gate**, with a native-Filament JSI fallback (ASM-01).
+- ~~`react-native-filament` is production-viable for our avatar workload (ASM-01)~~ — **retired 2026-09-22** (DEC-50). The 3D path is Filament's C++ engine used directly on both platforms, validated by the re-scoped P01 native spike when 3D resumes.
 - Anny (Apache 2.0) base meshes + morphs are production-quality after our own asset pipeline pass (ASM-02).
 - G2 generative try-on quality at $0.075/image (FASHN/Kling on fal.ai; $0.021/MP FLUX 2 LoRA if it passes eval; self-hosted FASHN VTON v1.5 is a further P11 gate arm — DEC-47) clears user-satisfaction and unit-cost gates under weighted credits (ASM-03, DEC-34, gated P11).
 - Fashion content can be licensed at viable cost (ASM-04, validated by P12 and OQ-05).
@@ -224,15 +224,15 @@ Each bet carries the full brief-§11 contract. Costs limits are planning caps, n
 
 #### RB-5 — Embedded shared 3D engine within size/battery budgets
 - **User problem:** The whole avatar experience depends on a 3D engine that must not bloat the app or drain batteries.
-- **Hypothesis:** RN + `react-native-filament` stays within ≤ 100 MB install size and acceptable battery/thermal load (r2 prototype-gate numbers).
+- **Hypothesis:** Filament (C++ engine, used natively on iOS and Android) stays within ≤ 100 MB install size and acceptable battery/thermal load (r2 prototype-gate numbers). *(Restated 2026-09-22, DEC-50; originally RN + `react-native-filament`.)*
 - **Prototype:** This *is* the P01 gate — morphing avatar, 3–4 poses, rotate/zoom, camera→upload on real devices; it is scheduled work, listed here because it is also a falsifiable bet.
 - **Dataset:** Draco/KTX2-compressed Anny-derived avatar assets.
 - **Target devices:** iPhone 13-class, Galaxy A52-class (mid-tier baseline), plus one low-tier Android.
 - **Success metric:** P01 gate criteria — 60/50 fps, < 300 MB memory, < 100 MB app size, touch response < 50 ms (r2).
 - **Cost limit:** P01 phase budget; no extra spend.
 - **Privacy review:** None (no user data in prototype).
-- **Fallback:** Native Filament via JSI bridge; then native per-platform renderers ([SPINE §2](SPINE.md) fallback column).
-- **Kill decision:** P01 is a formal go/no-go gate; failure triggers the fallback ladder and a DEC entry — it does not kill the product (RISK-01 in [doc 16](16-risks-open-questions-and-decision-log.md)).
+- **Fallback:** Asset diet / LOD per device tier, then a non-3D (A0/G0) experience below a documented device floor (RISK-09). *(The RN-era JSI-bridge rung is moot since 2026-09-22.)*
+- **Kill decision:** P01 is a formal go/no-go gate; failure triggers the fallback and a DEC entry — it does not kill the product (RISK-06/RISK-09 in [doc 16](16-risks-open-questions-and-decision-log.md); RISK-01 retired 2026-09-22).
 
 ## 10. Related documents
 

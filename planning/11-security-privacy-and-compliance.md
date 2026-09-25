@@ -78,10 +78,10 @@ Each abuse case gets an automated security test in 13 §8 where testable.
 - better-auth runs inside the NestJS `identity` module; session store in Postgres. Anonymous/pre-account browsing is out of scope: account creation is required before any sensitive data is collected (trial starts at account creation, per SPINE §5).
 
 ### 4.2 Sessions on device
-- Tokens stored **only** in `expo-secure-store` (iOS Keychain / Android Keystore-backed EncryptedSharedPreferences). Never in AsyncStorage, Redux persistence, or files.
+- Tokens stored **only** in the iOS Keychain and in Android Keystore-backed storage (exact Android API chosen in P03). Never in UserDefaults, SharedPreferences, or plain files. *(Updated 2026-09-22, DEC-49; the RN plan used `expo-secure-store`.)*
 - Keychain items marked non-synchronizable and `WhenUnlockedThisDeviceOnly`-class accessibility; Android keys hardware-backed where available.
 - Short-lived access token (~15 min) + rotating refresh token; reuse of a rotated refresh token revokes the whole session family.
-- Session lifetime cap (e.g., 90 days sliding) — hypothesis, tune in P03. Sign-out clears SecureStore and revokes server-side. "Sign out all devices" in settings.
+- Session lifetime cap (e.g., 90 days sliding) — hypothesis, tune in P03. Sign-out clears the Keychain/Keystore entries and revokes server-side. "Sign out all devices" in settings.
 
 ### 4.3 Authorization and user isolation
 - Single-tenant-per-user model: **every table owning user data carries `user_id`; every repository method takes the authenticated principal and filters by it.** No repository API accepts "fetch by id" without a user scope, enforced by convention + the authz matrix test suite (13 §8.1).

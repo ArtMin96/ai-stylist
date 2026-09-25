@@ -3,11 +3,11 @@
 > Module names are canonical per [SPINE §3](../../planning/SPINE.md). Path: `apps/api/src/modules/recommendation`. This contract is the module's source of truth; code that contradicts it is wrong until a DEC entry says otherwise.
 
 - **Responsibility (one sentence):** The engine pipeline: hard/soft constraints, candidate generation, scoring, validation, reason codes, and feedback ingestion.
-- **Owner:** @team (placeholder — see `CODEOWNERS`) · **Status:** skeleton (P02) · **Last updated:** 2026-09-09
+- **Owner:** @team (placeholder — see `CODEOWNERS`) · **Status:** skeleton (P02) · **Last updated:** 2026-09-22
 
 ## Public interface
 
-Public interface: `index.ts` only; nothing exported yet (P02 skeleton). Everything under `internal/` is blocked by the `public-api-only` boundary rule (`just arch-check`, `just lint`).
+Public interface: `index.ts` only. P02 skeleton: the sole export is the empty NestJS `RecommendationModule` class (composition-root wiring, imported by `tests/recommendation.smoke.test.ts`); no domain service, command, query, type, or port is exported yet. Everything under `internal/` is blocked by the `public-api-only` boundary rule (`just arch-check`, `just lint`).
 
 | Export | Kind (service/command/query/type/port) | Purpose  |
 | ------ | -------------------------------------- | -------- |
@@ -47,7 +47,7 @@ Derived from P02 brief §5 and doc 04 §4.2; every rule has a failing fixture in
 - Provider SDKs — `pg-boss`, aws-sdk/R2, RevenueCat, fal.ai, Open-Meteo, FCM, PostHog SDKs (`domain-no-provider-sdk`); ports only.
 - `apps/api/src/platform/**` (`modules-not-platform`); ports are bound at composition roots only.
 - Creating `utils/`, `helpers/`, or `common/` directories (`no-utils-dirs`); importing `prototype/**` (`prototype-unimportable`).
-- `recommendation-not-renderer`: must not import `apps/api/src/modules/avatar/**`, `apps/mobile/src/render/**`, Filament, or any 3D/asset type; `→ outfit` is allowed only for item/composition types, never presentation.
+- `recommendation-not-renderer`: must not import `apps/api/src/modules/avatar/**`, `assets/**`, or any 3D/asset type (`.glb`/`.gltf`/`.ktx2`); client renderers live in the native apps and are never reachable from the API (DEC-49/50); `→ outfit` is allowed only for item/composition types, never presentation.
 - Deterministic: same inputs + same rule version → same output; explanations come from the decision trace (reason codes), never generated after the fact (CLAUDE.md).
 
 ## Tests

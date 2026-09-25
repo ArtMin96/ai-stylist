@@ -18,37 +18,58 @@ Do not reopen decisions recorded in the decision log without new evidence; if yo
 ## Repository layout (orientation)
 
 ```
-apps/mobile/            React Native + Expo (TypeScript, New Architecture)
-apps/mobile/src/render/ Filament 3D boundary — nothing outside imports Filament types
-apps/mobile/e2e/        Maestro flows (documented test-placement exception)
+apps/ios/               native iOS app: Swift 6 + SwiftUI; XcodeGen project.yml (generated .xcodeproj gitignored)
+apps/ios/Packages/Core/ no-UI Swift package (config, analytics port, services, APIData = the only generated-client user)
+apps/ios/Packages/Features/ screens: <Name>Model (view model, Linux-testable) + <Name>Feature (SwiftUI) targets
+apps/android/           native Android: Kotlin + Jetpack Compose; own Gradle root (:app, :feature:*, :core:*, build-logic/)
+e2e/                    shared Maestro flows for both native apps (documented test-placement exception)
 apps/api/               NestJS (Fastify adapter) modular monolith
 apps/api/src/modules/<name>/           one directory per SPINE domain module (13): index.ts (public API), internal/, tests/
 apps/api/src/modules/<name>/tests/     that module's tests (always here)
 apps/api/src/platform/  infra adapters implementing ports (storage, outbox relay, logger, OTel, provider SDKs); leaf-only
 apps/api/src/jobs/      pg-boss job definitions
 workers/                Python FastAPI ML/media services (Docker)
-packages/contracts/     OpenAPI 3.1 + event schemas (canonical) + generated clients
+packages/contracts/     OpenAPI 3.1 + event schemas (canonical) + generated TS/Python/Swift/Kotlin clients (gen/; never hand-edit)
 packages/shared-kernel/ units, IDs, reason codes, entitlement names, event envelope — pure, depends on nothing
 packages/db/            drizzle-kit config, composed schema entry, migrations/ (table definitions live in modules/<name>/internal/schema.ts)
 packages/seed-data/     synthetic fixtures/factories (never real user data)
 packages/test-support/  shared test builders/fakes
 tools/                  depcruise/rules.cjs (arch-check), codegen/ (contract generators)
+tools/docs/             docs-check fixtures (tools/docs/fixtures/DC-*) + planned-paths.txt
 planning/               SPINE, docs 00–16, phases/, templates/  (read-only context)
 docs/adr/  docs/modules/                decisions and module contracts
+docs/security/          dependency-ignore and license-policy notes (`just security-scan`)
 templates/              issue, PR, ADR, session-handoff, module-contract, phase templates
+templates/linear/       Linear issue-type templates (feature, bug, spike, contract-change, migration, security-review, chore)
 .agents/skills/         one SKILL.md per task type (see "Match a skill" below)
+.claude/skills/         symlinks into `.agents/skills/` so Claude Code's skill loader finds them
+.claude/agents/         one agent persona per task type, invoked via the Agent tool
+.claude/rules/          path-scoped rules, auto-loaded when an agent touches matching files
+.claude/settings.json   hooks + permission policy (see the hook-layer note below)
 .github/workflows/      CI tiers; every job calls `just`, never raw tools
 scripts/  justfile  mise.toml           tooling; `just` is the only entry point
+scripts/hooks/          `.claude/settings.json` hook scripts (path guard, Bash guard, scoped lint, PROGRESS gate, orientation)
+scripts/docs/           docs-check.sh + lib/ (`just docs-check`)
+artifacts/              generated build output (e.g. sbom/); gitignored, not read for orientation
+node_modules/           package-manager output; gitignored, never read or edited directly
+prototype/              throwaway spikes (e.g. g3-filament-spike); not shipped
+secrets/                sops+age encrypted per-environment config (planning/15 §6); never plaintext
 ```
 
 ## Session workflow
 
 1. **Orient:** read `planning/SPINE.md` (product + architecture canon; skim if already loaded this session), `PROGRESS.md`, the current phase file, and the contract of every module in scope. Check the decision log for anything touching the task.
 2. **Restate** the task's scope, non-goals, and acceptance criteria in your own words. If they are unclear, or conflict with what you read, **stop and ask** — do not guess.
-3. **Match a skill:** if a skill in `.agents/skills/` covers the task type, follow its workflow; skills compose (e.g., contract change first, then module work).
+3. **Match a skill:** if a skill in `.agents/skills/` covers the task type, follow its workflow; skills compose (e.g., contract change first, then module work). Path-scoped rules in `.claude/rules/` load automatically when you touch matching files — treat them as binding, not optional reading.
 4. **Search before write** (below), then implement the smallest coherent change.
 5. **Verify** with the scoped checks for what you touched; paste real output.
-6. **Close out:** update `PROGRESS.md` and affected docs; leave the repo buildable or report the precise failure; write a handoff note if work remains.
+6. **Close out:** update `PROGRESS.md` and affected docs (the `docs-maintenance` skill and `just docs-check` cover this); leave the repo buildable or report the precise failure; write a handoff note if work remains.
+
+Five deterministic hooks in `.claude/settings.json` (scripts in `scripts/hooks/`) back parts of this
+workflow: a path guard on protected files, a Bash-command guard, scoped post-edit lint, a PROGRESS-ledger
+gate on session stop, and an orientation print on session start. Two escape hatches exist for
+human-authorized exceptions: `AGENT_MAY_EDIT_POLICY=1` bypasses the path guard for a sanctioned policy
+edit; `AGENT_SKIP_PROGRESS_GATE=1` bypasses the stop gate for a session intentionally left mid-work.
 
 ## Parallel sessions
 
@@ -60,11 +81,11 @@ scripts/  justfile  mise.toml           tooling; `just` is the only entry point
 
 - **Modules** (canonical names in SPINE §3): `identity`, `profile`, `avatar`, `closet`, `media`, `outfit`, `context`, `recommendation`, `fashion-intel`, `billing`, `notifications`, `admin`, `assistant`, `shared-kernel`, `platform`.
 - Import other modules **only via their public API** (`index.ts`). Never import another module's internals. `just arch-check` enforces this; do not weaken its rules.
-- **No domain logic in adapters**: business rules never live in UI components, NestJS controllers, database models, provider SDK wrappers, pg-boss job handlers, or React hooks. Adapters translate; modules decide.
+- **No domain logic in adapters**: business rules never live in UI components, NestJS controllers, database models, provider SDK wrappers, pg-boss job handlers, SwiftUI views, Compose composables, or ViewModels. Adapters translate; modules decide.
 - **Domain never imports provider SDKs.** Providers (weather, holidays, fal.ai, RevenueCat, R2, …) sit behind ports; `platform` implements them.
-- **`recommendation` ⊥ renderer:** the recommendation module must not depend on `avatar`, Filament, or any rendering concern. It returns structured results with reason codes; rendering happens elsewhere.
+- **`recommendation` ⊥ renderer:** the recommendation module must not depend on `avatar`, a 3D engine, or any rendering concern. It returns structured results with reason codes; rendering happens elsewhere.
 - **Deterministic before AI:** if rules, geometry, a query, or cached computation can solve it reliably, do not call a model. Any new AI call needs the doc-10 justification (contract, cost, cache, fallback, eval).
-- **Single source of truth:** schemas in `packages/contracts` (OpenAPI 3.1), constants/units/reason codes/entitlement names in `shared-kernel`, taxonomy in `closet`. Never copy them into mobile, workers, or tests — import or regenerate (`just generate`). Never hand-edit generated files.
+- **Single source of truth:** schemas in `packages/contracts` (OpenAPI 3.1), constants/units/reason codes/entitlement names in `shared-kernel`, taxonomy in `closet`. Never copy them into the iOS/Android apps, workers, or tests — import or regenerate (`just generate`). Never hand-edit generated files.
 - **Explanations come from the decision trace** (reason codes), never generated after the fact.
 - **`assistant` (future chat) only calls the same application services as every other client** — no second recommendation engine, no direct table access, no forked business logic.
 - **Honesty invariants:** no "exact digital twin" claims; provenance marker + confidence on every generated view; a real user photo is never replaced by a generated one.
@@ -86,15 +107,17 @@ Copy-and-diverge is forbidden. So are speculative abstractions: build for the cu
 Use `just` recipes only — never raw tool invocations that CI does not run. Full catalog: `planning/15-team-workflow-and-ai-agent-operations.md` §5.
 
 - `just doctor` — environment check (run when anything is weird)
-- `just dev-api` / `just dev-mobile` / `just dev-workers`
+- `just dev-api` / `just dev-workers`
+- `just ios-check` (lint, format, bans, package tests; on macOS also the simulator build + tests) · Mac-only: `just ios-project` / `just ios-build` / `just ios-test`
+- `just android-check` (Spotless, module graph, detekt, Android Lint, unit + Robolectric tests, APKs)
 - `just test <module>` (scoped) · `just test` (full)
-- `just lint` · `just typecheck` · `just format` · `just arch-check`
+- `just lint` · `just typecheck` · `just format` · `just arch-check` · `just docs-check`
 - `just generate` — contracts → clients (`--check` = staleness gate)
 - `just db-migrate` / `just db-rollback` / `just db-reset` (local only)
 - `just assets-validate` · `just ml-eval` · `just security-scan`
 - `just ci-parity` — the exact PR gate, locally
 
-Minimum before claiming done: scoped tests for every touched module + `just lint` + `just typecheck` + `just arch-check`; add `just generate --check` if contracts touched, `just assets-validate` if 3D assets touched, `just ci-parity` before opening a PR.
+Minimum before claiming done: scoped tests for every touched module + `just lint` + `just typecheck` + `just arch-check`; add `just generate --check` if contracts touched, `just assets-validate` if 3D assets touched, `just ios-check` if `apps/ios` touched (on Linux it skips the simulator steps: for app-target, SwiftUI or `project.yml` changes also run `just ios-build` + `just ios-test` on a Mac or the `ios` workflow — or say they were not run), `just android-check` if `apps/android` touched, `just ci-parity` before opening a PR.
 
 ## AI usage in product code
 
@@ -105,7 +128,7 @@ Minimum before claiming done: scoped tests for every touched module + `just lint
 
 ## Testing rules
 
-- Tests live in the owning module's `tests/` directory. Do not scatter test files through production source (documented framework exceptions only).
+- Tests live in the owning module's `tests/` directory. Do not scatter test files through production source (documented framework exceptions only: Android tests in each Gradle module's `src/test/kotlin` (JVM + Robolectric) and `src/androidTest` (instrumented); iOS Swift Testing tests in `apps/ios/Packages/<Pkg>/tests/<Target>Tests/`, wired via the `Package.swift` `path:`; Maestro flows in `e2e/`). Keep iOS logic in `*Model` targets so it is unit-testable on Linux; SwiftUI views are covered by the simulator build and Maestro.
 - Bug fixes require a regression test that **demonstrably fails before the fix** — run it, show the failure, then fix.
 - Test observable behavior, not implementation call shapes; minimize mocking.
 - Never skip, delete, or weaken a test to make CI green. A flaky test is a defect: fix it or quarantine it with an owner + linked issue.
@@ -133,13 +156,13 @@ Ask, state exactly what will run, and wait for confirmation.
 
 - Never fabricate or extrapolate test output, benchmark numbers, device results, eval metrics, or "it works" claims. Evidence = the actual command and its actual output.
 - If you did not run it, say so. If it fails, report the precise failure.
-- For fast-moving APIs (Expo/RN, Filament, Drizzle, pg-boss, Coolify, RevenueCat, store policies), consult current official docs (context7 MCP or web) instead of guessing from training data; note the doc version/date in the PR when it matters.
+- For fast-moving APIs (Xcode/Swift/SwiftUI, AGP/Kotlin/Compose, Filament (when 3D resumes), Drizzle, pg-boss, Coolify, RevenueCat, store policies), consult current official docs (context7 MCP or web) instead of guessing from training data; note the doc version/date in the PR when it matters.
 
 ## Completion checklist (every task)
 
 - [ ] Acceptance criteria restated at start; all met, with evidence pasted (real command output).
 - [ ] Semantic reuse check done; new code justified against candidates.
-- [ ] Scoped checks green: `just test <module>` + `lint` + `typecheck` + `arch-check` (+ `generate --check` / `assets-validate` where relevant).
+- [ ] Scoped checks green: `just test <module>` + `lint` + `typecheck` + `arch-check` + `docs-check` (+ `generate --check` / `assets-validate` where relevant).
 - [ ] Regression test failed-then-passed for any bug fix.
 - [ ] No new duplication of schemas/constants/validators/mappings; generated files regenerated, not edited.
 - [ ] No sensitive data introduced into logs/fixtures/prompts/output.

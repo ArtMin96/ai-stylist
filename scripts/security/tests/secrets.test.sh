@@ -563,10 +563,60 @@ test_onboard_skips_in_ci() {
     path="$fixture/home/.config/sops/age/keys.txt"
 
     output="$(cd "$fixture" && CI=true SOPS_AGE_KEY="" HOME="$fixture/home" XDG_CONFIG_HOME="$fixture/home/.config" \
-        PATH="$fixture/bin:$PATH" scripts/security/secrets-onboard.sh 2>&1)" || return 1
+        SECRETS_ONBOARD_STATUS_FILE="$fixture/onboard.status" PATH="$fixture/bin:$PATH" \
+        scripts/security/secrets-onboard.sh 2>&1)" || return 1
 
+    [[ "$(cat "$fixture/onboard.status")" == "skipped" ]] || return 1
     [[ ! -e "$path" ]] || return 1
     [[ "$output" == *"skipping onboarding (CI or SOPS_AGE_KEY is set)"* ]] || return 1
+    branches="$(git -C "$fixture.git" for-each-ref --format='%(refname)' refs/heads/onboard/)"
+    [[ -z "$branches" ]]
+}
+
+# bootstrap.sh picks its closing "Secrets:" hint from SECRETS_ONBOARD_STATUS_FILE: "pushed" only when
+# an onboarding branch was actually pushed (a PR to open), "synced" only when secrets-sync ran.
+test_onboard_status_file_reports_pushed() {
+    local fixture="$TEST_ROOT/onboard-status-pushed" status age_keygen
+    fixture_repo "$fixture"
+    fixture_git_repo "$fixture"
+    printf '#!/usr/bin/env bash\nexit 1\n' > "$fixture/bin/sops"
+    chmod +x "$fixture/bin/sops"
+    age_keygen="$(resolve_tool age-keygen)" || return 1
+    ln -s "$age_keygen" "$fixture/bin/age-keygen" || return 1
+    status="$TEST_ROOT/onboard-status-pushed.status"
+
+    (cd "$fixture" && CI="" SOPS_AGE_KEY="" HOME="$fixture/home" XDG_CONFIG_HOME="$fixture/home/.config" \
+        SECRETS_ONBOARD_STATUS_FILE="$status" PATH="$fixture/bin:$PATH" \
+        scripts/security/secrets-onboard.sh >/dev/null 2>&1) || return 1
+
+    grep -Fxq pushed "$status" || return 1
+    ! grep -Fxq synced "$status"
+}
+
+test_onboard_status_file_reports_synced_without_push() {
+    local fixture="$TEST_ROOT/onboard-status-synced" status path age_keygen pub branches
+    fixture_repo "$fixture"
+    fixture_git_repo "$fixture"
+    # A decrypt that succeeds: the recipient is already approved, so onboarding syncs .env directly.
+    printf '#!/usr/bin/env bash\nprintf "BASE=\\n"\n' > "$fixture/bin/sops"
+    chmod +x "$fixture/bin/sops"
+    age_keygen="$(resolve_tool age-keygen)" || return 1
+    ln -s "$age_keygen" "$fixture/bin/age-keygen" || return 1
+    mkdir -p "$fixture/home/.config/sops/age"
+    path="$fixture/home/.config/sops/age/keys.txt"
+    "$age_keygen" -o "$path" >/dev/null 2>&1 || return 1
+    pub="$("$age_keygen" -y "$path" 2>/dev/null)" || return 1
+    write_sops_config "$fixture" "$pub"
+    git -C "$fixture" add .sops.yaml
+    git -C "$fixture" commit -q -m "chore: pre-list synthetic recipient" || return 1
+    status="$TEST_ROOT/onboard-status-synced.status"
+
+    (cd "$fixture" && CI="" SOPS_AGE_KEY="" HOME="$fixture/home" XDG_CONFIG_HOME="$fixture/home/.config" \
+        SECRETS_ONBOARD_STATUS_FILE="$status" PATH="$fixture/bin:$PATH" \
+        scripts/security/secrets-onboard.sh >/dev/null 2>&1) || return 1
+
+    grep -Fxq synced "$status" || return 1
+    ! grep -Fxq pushed "$status" || return 1
     branches="$(git -C "$fixture.git" for-each-ref --format='%(refname)' refs/heads/onboard/)"
     [[ -z "$branches" ]]
 }
@@ -824,6 +874,8 @@ run_test "secrets_github_compare_url prints the compare URL for a github.com rem
 run_test "onboard prints the manual push command and keeps the local branch when push fails" test_onboard_push_failure_prints_manual_commands
 run_test "onboard is a no-op once the recipient is already listed" test_onboard_noop_when_recipient_already_listed
 run_test "onboard skips entirely under CI" test_onboard_skips_in_ci
+run_test "onboard records 'pushed' (and not 'synced') in SECRETS_ONBOARD_STATUS_FILE after pushing a branch" test_onboard_status_file_reports_pushed
+run_test "onboard records 'synced' (and not 'pushed') when the recipient is already approved" test_onboard_status_file_reports_synced_without_push
 
 run_test "secrets-backup-done writes a dated, mode-600 marker with no key material" test_backup_done_writes_dated_marker
 

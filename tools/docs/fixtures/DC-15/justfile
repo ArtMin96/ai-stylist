@@ -1,0 +1,4 @@
+# minimal justfile for the DC-15 fixture
+
+real-recipe:
+    echo hi

@@ -1,0 +1,94 @@
+[
+  {
+    "query": "need to add a `markWorn` method to the closet module in apps/api/src/modules/closet, should update the item's last worn date and log a wear event",
+    "should_trigger": true,
+    "_template_note": "Copy this file to <skill-dir>/evals/trigger-evals.json and replace with your own skill's 20 queries. Shape per skill-creator's description-optimization step: a bare array of {query, should_trigger}, split into a should-trigger set (8-10) and a should-not-trigger set (8-10) where the negatives are genuine near-misses, not obviously irrelevant queries. This example is filled for the existing `backend-module` skill. Delete this note and every `_near_miss_reason` / `_teaches` key below when you copy the file — run_loop.py only reads `query` and `should_trigger`, so extra keys are harmless in this template but should not ship in a real skill's file."
+  },
+  {
+    "query": "the identity module needs a new application service for resetting a forgotten password, where do i even start",
+    "should_trigger": true
+  },
+  {
+    "query": "can someone add an outbox-based email trigger for when a user finishes onboarding? goes in the profile module i think",
+    "should_trigger": true
+  },
+  {
+    "query": "adding a port adapter for the storage provider under apps/api/src/platform, need to bind it in app.module.ts",
+    "should_trigger": true
+  },
+  {
+    "query": "billing module keeps throwing a raw error instead of problem+json, need to fix the application service in apps/api/src/modules/billing",
+    "should_trigger": true
+  },
+  {
+    "query": "want to add an archiveItem command to closet that soft-deletes an item and its wear history",
+    "should_trigger": true
+  },
+  {
+    "query": "notifications module — add an internal service that decides whether a push is allowed based on the user's quiet hours setting",
+    "should_trigger": true
+  },
+  {
+    "query": "just found out the admin module doesn't have an application service for suspending a user account yet, need to build that",
+    "should_trigger": true
+  },
+  {
+    "query": "assistant module calls the closet http endpoint directly instead of going through the shared application service, need to fix that so it goes through the same path as every other client",
+    "should_trigger": true
+  },
+  {
+    "query": "add a `season` column to the items table in closet and backfill existing rows to 'all-season'",
+    "should_trigger": false,
+    "_near_miss_reason": "shares 'closet'/'table' vocabulary with backend-module, but the primary change is a Drizzle schema + migration — db-migration's job. backend-module continues only after the column exists."
+  },
+  {
+    "query": "need to expose a new GET /closet/items/{id} endpoint with a different response shape than what's currently in the OpenAPI spec",
+    "should_trigger": false,
+    "_near_miss_reason": "the request is phrased as module work ('closet endpoint') but the actual change is the wire contract — api-contract-change goes first."
+  },
+  {
+    "query": "the outfit recommendation keeps suggesting linen shirts on days below 10°C, need to tighten the hard constraint",
+    "should_trigger": false,
+    "_near_miss_reason": "outfit is technically one of the 13 domain modules backend-module could touch, but constraint/scoring logic is recommendation-rules' invariant, not a generic application-service change."
+  },
+  {
+    "query": "trial users aren't losing access to the closet upload feature when their RevenueCat entitlement expires",
+    "should_trigger": false,
+    "_near_miss_reason": "mentions closet, but the actual defect is in entitlement gating — entitlements-billing owns that invariant even though the gated feature lives in another module."
+  },
+  {
+    "query": "the closet screen in the app crashes when you swipe past the last item in the wardrobe grid",
+    "should_trigger": false,
+    "_near_miss_reason": "shares the module name 'closet' but is a mobile UI/render bug, not an API application-service change — ios-feature / android-feature owns it."
+  },
+  {
+    "query": "fal.ai try-on job for a closet item is stuck in pending in pg-boss and never completes",
+    "should_trigger": false,
+    "_near_miss_reason": "touches closet's media, but the failure is in the pg-boss job/provider pipeline — media-ml-pipeline's territory, not a module application service."
+  },
+  {
+    "query": "closet's internal/schema.ts diverges from what's actually in postgres after the last migration, can you reconcile it",
+    "should_trigger": false,
+    "_near_miss_reason": "reconciling schema.ts against the live database is a migration-state problem — db-migration, even though schema.ts physically lives inside the module directory backend-module owns."
+  },
+  {
+    "query": "reviewing the diff for the new billing webhook handler before it merges, want a second pair of eyes on the module boundaries",
+    "should_trigger": false,
+    "_near_miss_reason": "the diff was produced by backend-module work, but reviewing it for boundary violations is architecture-review's task, not an implementation task."
+  },
+  {
+    "query": "want to run the closet module's tests after a 3D avatar render change, to make sure garment fit didn't regress",
+    "should_trigger": false,
+    "_near_miss_reason": "names the closet module and its tests, but the actual work is a rendering/asset regression check in the client app (client-side 3D is deferred (no owner until it resumes)), not a module code change."
+  },
+  {
+    "query": "add a `low_stock_threshold` column to closet's item_states table and write the migration for it",
+    "should_trigger": false,
+    "_teaches": "GOOD near-miss negative: shares real vocabulary with backend-module ('closet', 'module', a table name) and could plausibly be miscategorized, but the ask is explicitly a schema + migration — db-migration's job. A description-optimization pass that fails on queries like this is missing its 'Not for … — use db-migration instead' clause."
+  },
+  {
+    "query": "write a haiku about autumn leaves for the app's seasonal marketing email",
+    "should_trigger": false,
+    "_teaches": "BAD near-miss negative — do not copy this pattern into a real trigger-evals.json. There is no shared vocabulary or plausible overlap with backend-module at all, so a description that correctly rejects this proves nothing about where the skill's actual boundary sits; skill-creator calls this kind of negative useless."
+  }
+]

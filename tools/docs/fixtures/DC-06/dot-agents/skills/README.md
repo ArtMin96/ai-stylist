@@ -1,4 +1,5 @@
 # Skills index
 
-| Skill | Use when |
-| ----- | -------- |
+| Skill   | Use when                      |
+| ------- | ----------------------------- |
+| `ghost` | a row with no skill directory |

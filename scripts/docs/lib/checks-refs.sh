@@ -12,8 +12,8 @@ docs_check_ref_scan_files() {
   for dir in .agents/skills .claude/agents .claude/rules; do
     [[ -d "$root/$dir" ]] || continue
     while IFS= read -r f; do
-      file_in_scope "$f" && echo "$f"
-    done < <(list_repo_files "$root" "$dir" '*.md')
+      [[ -n "$f" ]] && file_in_scope "$f" && echo "$f"
+    done <<<"$(list_repo_files "$root" "$dir" '*.md')"
   done
 }
 
@@ -60,7 +60,7 @@ check_dc09() {
       [[ -e "$root/$tok" ]] && continue
       is_planned_path "$tok" && continue
       finding ERROR DC-09 "$rel" "$lineno" "backticked path '$tok' does not exist"
-    done < <(grep -noE '`[^`]+`' "$f" 2>/dev/null || true)
+    done <<<"$(grep -noE '`[^`]+`' "$f" 2>/dev/null || true)"
   done
   return 0
 }
@@ -73,7 +73,7 @@ check_dc10() {
   real_recipes=()
   while IFS= read -r known; do
     [[ -n "$known" ]] && real_recipes+=("$known")
-  done < <(cd "$root" && just --summary 2>/dev/null | tr ' ' '\n')
+  done <<<"$(cd "$root" && just --summary 2>/dev/null | tr ' ' '\n')"
   for f in $(docs_check_ref_scan_files "$root"); do
     rel="${f#"$root"/}"
     while IFS=: read -r lineno content; do
@@ -88,9 +88,9 @@ check_dc10() {
           if [[ $ok -eq 0 ]]; then
             finding ERROR DC-10 "$rel" "$lineno" "'just $recipe' is not in 'just --summary'"
           fi
-        done < <(grep -oE 'just [a-z][a-z0-9*-]*' <<<"$span" | sed -E 's/^just //')
-      done < <(backticked_spans <<<"$content")
-    done < <(grep -n '' "$f")
+        done <<<"$(grep -oE 'just [a-z][a-z0-9*-]*' <<<"$span" | sed -E 's/^just //')"
+      done <<<"$(backticked_spans <<<"$content")"
+    done <<<"$(grep -n '' "$f")"
   done
   return 0
 }
@@ -109,7 +109,7 @@ check_dc11() {
           finding ERROR DC-11 "$rel" "$lineno" "raw invocation '$pattern' — use a just recipe"
         fi
       done
-    done < <(grep -n '' "$f")
+    done <<<"$(grep -n '' "$f")"
   done
   return 0
 }

@@ -23,7 +23,7 @@ check_dc01() {
   code_names+=("platform" "shared-kernel")
 
   doc_names=()
-  while IFS= read -r name; do doc_names+=("$name"); done < <(module_names_from_docs "$root")
+  while IFS= read -r name; do [[ -n "$name" ]] && doc_names+=("$name"); done <<<"$(module_names_from_docs "$root")"
 
   for name in "${code_names[@]}"; do
     found=0
@@ -124,18 +124,19 @@ check_dc04() {
   adr_nums=()
   if [[ -d "$adr_dir" ]]; then
     while IFS= read -r f; do
+      [[ -n "$f" ]] || continue
       base="$(basename "$f")"
       [[ "$base" == "README.md" ]] && continue
       num="${base%%-*}"
       adr_nums+=("$num")
-    done < <(list_md_files "$adr_dir")
+    done <<<"$(list_md_files "$adr_dir")"
   fi
 
   readme_nums=()
   if [[ -f "$readme" ]]; then
-    while IFS= read -r num; do readme_nums+=("$num"); done < <(
+    while IFS= read -r num; do [[ -n "$num" ]] && readme_nums+=("$num"); done <<<"$(
       grep -oE '\[[0-9]{4}\]\([0-9]{4}-[a-z0-9-]+\.md\)' "$readme" | grep -oE '^\[[0-9]{4}' | tr -d '['
-    )
+    )"
   else
     finding ERROR DC-04 "docs/adr/README.md" 1 "index file missing"
     return

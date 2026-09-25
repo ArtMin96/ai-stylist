@@ -48,5 +48,6 @@ gitleaks-report.json
 !tools/security/fixtures/agpl-tree/node_modules/
 .pnpm-store/
 
-# Claude Code agent worktrees (local only)
+# Claude Code agent worktrees and personal settings (local only)
 .claude/worktrees/
+.claude/settings.local.json

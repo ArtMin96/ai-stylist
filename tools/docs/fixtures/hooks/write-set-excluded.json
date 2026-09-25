@@ -1,0 +1,18 @@
+{
+  "session_id": "fixture-session",
+  "transcript_path": "/tmp/fixture-transcript.jsonl",
+  "cwd": "/home/arthur/Projects/app",
+  "hook_event_name": "PreToolUse",
+  "tool_name": "Edit",
+  "tool_input": {
+    "file_path": "/home/arthur/Projects/app/apps/ios/AIStylist.xcodeproj/project.pbxproj",
+    "old_string": "old",
+    "new_string": "new"
+  },
+  "agent_id": "fixture-agent",
+  "agent_type": "ios-engineer",
+  "scratchpad_dir": "/home/arthur/scratchpad",
+  "_harness": {
+    "args": ["apps/ios/**", "tools/codegen/gen-swift.sh", "!apps/ios/*.xcodeproj/**"]
+  }
+}

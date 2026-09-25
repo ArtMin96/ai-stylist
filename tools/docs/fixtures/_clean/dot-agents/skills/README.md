@@ -1,8 +1,9 @@
 # Skills index
 
-| Skill             | Use when          |
-| ----------------- | ----------------- |
-| [`s`](s/SKILL.md) | The clean fixture |
+| Skill                                                           | Use when                 |
+| --------------------------------------------------------------- | ------------------------ |
+| [`agent-operating-contract`](agent-operating-contract/SKILL.md) | Preloaded by every agent |
+| [`s`](s/SKILL.md)                                               | The clean fixture        |
 
 ## Coverage
 

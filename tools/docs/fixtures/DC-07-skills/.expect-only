@@ -1,0 +1,2 @@
+ERROR DC-07 .claude/agents/unskilled.md:6 skills entry 'ghost-skill' has no .agents/skills/ghost-skill/SKILL.md
+ERROR DC-07 .claude/agents/unskilled.md:6 skills: must preload 'agent-operating-contract'

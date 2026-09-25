@@ -3,7 +3,10 @@
 # (scripts/hooks/*.sh) so one edit pays for one file's lint, not a whole-repo `just lint` turbo
 # run. Prints nothing when clean. Dispatch mirrors `just lint`'s tool choice per file type:
 #   .ts/.tsx/.mjs/.cjs eslint · .py ruff · .sh shellcheck · apps/ios .swift swift-format lint + SwiftLint ·
-#   apps/android .kt/.kts Spotless check (never rewrites the file). Native toolchain absent: a notice, exit 0.
+#   apps/android .kt/.kts Spotless check (never rewrites the file) · .json jq (tsconfig/.vscode JSONC
+#   skipped) · skill/agent/rule .md scoped docs-check · .github/workflows actionlint.
+# Toolchain absent (native toolchain, or node_modules in a fresh worktree): a notice, exit 0.
+# Gate fixture trees (tools/*/fixtures/**) are deliberately rule-breaking: never linted here.
 # Usage: scripts/lint-file.sh <path>
 # Exit: whatever the underlying linter returns; 0 (silently) for extensions with no linter here.
 set -euo pipefail
@@ -20,7 +23,8 @@ path="$1"
 case "$path" in
   # Generated clients are never linted by hand-edit hooks (regenerate with `just generate`), and the
   # iOS ban fixtures are deliberately bad Swift (`just ios-check-banned --fixtures` owns them).
-  */packages/contracts/gen/* | packages/contracts/gen/* | */apps/ios/scripts/fixtures/* | apps/ios/scripts/fixtures/*)
+  */packages/contracts/gen/* | packages/contracts/gen/* | */apps/ios/scripts/fixtures/* | apps/ios/scripts/fixtures/* | \
+    */tools/*/fixtures/* | tools/*/fixtures/*)
     exit 0
     ;;
   *.swift)
@@ -68,13 +72,34 @@ case "$path" in
     fi
     ;;
   *.ts | *.tsx | *.mjs | *.cjs)
-    pnpm exec eslint --max-warnings=0 "$path"
+    if [[ ! -x node_modules/.bin/eslint ]]; then
+      echo "lint-file: notice: node_modules is not installed in this checkout (pnpm install); skipped eslint for $path" >&2
+      exit 0
+    fi
+    # --no-warn-ignored: a file eslint.config.mjs ignores is not a warning that trips --max-warnings.
+    pnpm exec eslint --max-warnings=0 --no-warn-ignored "$path"
     ;;
   *.py)
     uv run --project workers ruff check "$path"
     ;;
   *.sh)
     shellcheck -s bash -x -P SCRIPTDIR "$path"
+    ;;
+  */tsconfig*.json | tsconfig*.json | */.vscode/*.json | .vscode/*.json)
+    exit 0 # JSONC (comments allowed): tsc and the editor validate these
+    ;;
+  *.json)
+    # A malformed .claude/settings.json silently drops every hook, so JSON is at least parsed.
+    jq empty "$path"
+    ;;
+  */.agents/skills/*.md | .agents/skills/*.md | */.claude/skills/*.md | .claude/skills/*.md | \
+    */.claude/agents/*.md | .claude/agents/*.md | */.claude/rules/*.md | .claude/rules/*.md)
+    # The file-scoped docs-check rules (DC-05/07/09/10/11), on the real path behind a .claude/skills symlink.
+    real="$(cd -P "$(dirname "$path")" && pwd)/$(basename "$path")"
+    out="$(scripts/docs/docs-check.sh "$real" 2>&1)" || { printf '%s\n' "$out" >&2; exit 1; }
+    ;;
+  */.github/workflows/*.yml | .github/workflows/*.yml | */.github/workflows/*.yaml | .github/workflows/*.yaml)
+    actionlint "$path"
     ;;
   *)
     exit 0

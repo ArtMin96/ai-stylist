@@ -46,16 +46,18 @@ check_dc13() {
     for dir in .agents .claude docs; do
       [[ -d "$root/$dir" ]] || continue
       while IFS= read -r f; do
-        case "$f" in */.claude/plans/*|*/docs/adr/*) continue ;; esac
+        case "$f" in ''|*/.claude/plans/*|*/docs/adr/*) continue ;; esac
         while IFS=: read -r lineno content; do
+          [[ -n "$lineno" ]] || continue
           finding ERROR DC-13 "${f#"$root"/}" "$lineno" "banned stale vendor name '$vendor': $content"
-        done < <(grep -nF "$vendor" "$f")
-      done < <(list_repo_files "$root" "$dir" '*.md')
+        done <<<"$(grep -nF "$vendor" "$f")"
+      done <<<"$(list_repo_files "$root" "$dir" '*.md')"
     done
     if [[ -f "$root/justfile" ]]; then
       while IFS=: read -r lineno content; do
+        [[ -n "$lineno" ]] || continue
         finding ERROR DC-13 "justfile" "$lineno" "banned stale vendor name '$vendor': $content"
-      done < <(grep -nF "$vendor" "$root/justfile")
+      done <<<"$(grep -nF "$vendor" "$root/justfile")"
     fi
   done
   return 0
@@ -69,9 +71,9 @@ check_dc14() {
 
   local -a block_lines block_top
   block_lines=()
-  while IFS= read -r line; do block_lines+=("$line"); done < <(
+  while IFS= read -r line; do block_lines+=("$line"); done <<<"$(
     awk '/^## Repository layout/{f=1;next} f && /^```/{c++; if(c==2) exit; next} f && c==1' "$claude_md"
-  )
+  )"
 
   block_top=()
   for line in ${block_lines[@]+"${block_lines[@]}"}; do
@@ -119,13 +121,13 @@ check_dc15() {
     name="${name#just }"
     name="$(awk '{print $1}' <<<"$name")"
     doc_recipes+=("$name")
-  done < <(md_table_data_rows "$doc" 'Recipe')
+  done <<<"$(md_table_data_rows "$doc" 'Recipe')"
 
   real_recipes=()
   local r
   while IFS= read -r r; do
     [[ -n "$r" ]] && real_recipes+=("$r")
-  done < <(cd "$root" && just --summary 2>/dev/null | tr ' ' '\n')
+  done <<<"$(cd "$root" && just --summary 2>/dev/null | tr ' ' '\n')"
 
   local found n
   for n in ${real_recipes[@]+"${real_recipes[@]}"}; do

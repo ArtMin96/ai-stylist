@@ -1,0 +1,4 @@
+ERROR DC-07 .claude/agents/narrow.md:4 tools has Edit Write but no PreToolUse hook runs scripts/hooks/guard-agent-write-set.sh with a matcher covering them
+ERROR DC-07 .claude/agents/posthook.md:4 tools has Bash but no PreToolUse hook runs scripts/hooks/guard-agent-bash.sh with a matcher covering Bash
+ERROR DC-07 .claude/agents/runner.md:4 tools has Bash but no PreToolUse hook runs scripts/hooks/guard-agent-bash.sh with a matcher covering Bash
+ERROR DC-07 .claude/agents/writer.md:4 tools has Edit Write but no PreToolUse hook runs scripts/hooks/guard-agent-write-set.sh with a matcher covering them

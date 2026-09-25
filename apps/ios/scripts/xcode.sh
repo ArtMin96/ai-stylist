@@ -6,7 +6,7 @@
 #   xcode.sh project                      apps/ios/project.yml -> apps/ios/AIStylist.xcodeproj (XcodeGen)
 #   xcode.sh build [--config dev|preview|prod]   unsigned simulator build (default dev)
 #   xcode.sh test                         package unit tests through the AIStylist-Dev scheme on a simulator
-#   xcode.sh e2e                          Dev simulator build + Maestro e2e/smoke.yaml (APP_ID=app.aistylist.mobile.dev)
+#   xcode.sh e2e [flow]                   Dev simulator build + one Maestro flow, default e2e/smoke.yaml (APP_ID=app.aistylist.mobile.dev)
 #
 # Env: IOS_SIMULATOR_ID  simulator UDID to use (default: first available iPhone on the newest iOS runtime)
 # Build state goes to apps/ios/.build/ (gitignored): DerivedData, SourcePackages, test.xcresult.
@@ -173,11 +173,12 @@ cmd_test() {
 }
 
 cmd_e2e() {
-  [[ $# -eq 0 ]] || ios_die "ios-e2e: takes no arguments"
+  [[ $# -le 1 ]] || ios_die "ios-e2e: takes at most one argument, a Maestro flow path (default e2e/smoke.yaml)"
   ios_require_macos ios-e2e
   command -v maestro >/dev/null 2>&1 || ios_die "ios-e2e: maestro not found (mise install maestro; needs Java)"
-  local flow="$REPO_ROOT/e2e/smoke.yaml"
-  [[ -f "$flow" ]] || ios_die "ios-e2e: shared Maestro flow ${flow#"$REPO_ROOT"/} not found"
+  local flow="${1:-e2e/smoke.yaml}"
+  [[ "$flow" == /* ]] || flow="$REPO_ROOT/$flow"
+  [[ -f "$flow" ]] || ios_die "ios-e2e: Maestro flow ${flow#"$REPO_ROOT"/} not found"
   # The shared flow takes its appId from APP_ID; the Dev build (bundle id app.aistylist.mobile.dev)
   # is the installable one on both platforms.
   cmd_build --config dev

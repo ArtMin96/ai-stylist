@@ -40,7 +40,7 @@ coverage_row_count() {
   while IFS= read -r row; do
     cell="$(md_table_cells "$row" | head -n1)"
     if [[ "$cell" == "$module" ]]; then count=$((count + 1)); fi
-  done < <(md_table_data_rows "$readme" 'Module')
+  done <<<"$(md_table_data_rows "$readme" 'Module')"
   echo "$count"
 }
 
@@ -55,12 +55,12 @@ coverage_row_names_are_real() {
   while IFS= read -r name; do
     [[ -z "$name" ]] && continue
     if [[ -d "$root/.agents/skills/$name" ]]; then ok_skill=0; fi
-  done < <(grep -oE '`[a-z0-9-]+`' <<<"$skill_cell" | tr -d '`')
+  done <<<"$(grep -oE '`[a-z0-9-]+`' <<<"$skill_cell" | tr -d '`')"
 
   while IFS= read -r name; do
     [[ -z "$name" ]] && continue
     if [[ -f "$root/.claude/agents/$name.md" ]]; then ok_agent=0; fi
-  done < <(grep -oE '`[a-z0-9-]+`' <<<"$agent_cell" | tr -d '`')
+  done <<<"$(grep -oE '`[a-z0-9-]+`' <<<"$agent_cell" | tr -d '`')"
 
   [[ $ok_skill -eq 0 && $ok_agent -eq 0 ]]
 }
@@ -86,7 +86,7 @@ check_dc08() {
         cell="$(md_table_cells "$row" | head -n1)"
         [[ "$cell" != "$module" ]] && continue
         if coverage_row_names_are_real "$root" "$row"; then found_valid_row=1; fi
-      done < <(md_table_data_rows "$root/.agents/skills/README.md" 'Module')
+      done <<<"$(md_table_data_rows "$root/.agents/skills/README.md" 'Module')"
       if [[ $found_valid_row -eq 0 ]]; then
         finding ERROR DC-08 "$readme_rel" 1 "module '$module' coverage row names a skill or agent that does not exist"
       fi

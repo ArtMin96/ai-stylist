@@ -106,15 +106,18 @@ git_is_shallow() {
 
 # --- markdown/frontmatter helpers ------------------------------------------------------
 # frontmatter_field FILE KEY -> the scalar value of a top-level "key: value" line inside the
-# leading "---" ... "---" YAML frontmatter block. Empty if absent. Values are not YAML-parsed
-# (no nested structures in this repo's frontmatter besides `metadata:`, handled separately).
+# leading "---" ... "---" YAML frontmatter block, without one pair of surrounding single or double
+# quotes (prettier's singleQuote rewrites "2026-09-25" to '2026-09-25'). Empty if absent. Values
+# are not otherwise YAML-parsed (no nested structures besides `metadata:`, handled separately).
 frontmatter_field() {
   local file="$1" key="$2"
-  awk -v key="$key" '
+  awk -v key="$key" -v sq="'" '
     NR == 1 && $0 == "---" { infm = 1; next }
     infm && $0 == "---" { exit }
     infm && $0 ~ "^" key ":" {
       sub("^" key ":[ ]*", "")
+      if (length($0) >= 2 && (($0 ~ /^".*"$/) || (substr($0, 1, 1) == sq && substr($0, length($0), 1) == sq)))
+        $0 = substr($0, 2, length($0) - 2)
       print
       exit
     }
@@ -122,21 +125,82 @@ frontmatter_field() {
 }
 
 # frontmatter_subfield FILE PARENT-KEY CHILD-KEY -> value of an indented "child: value" line
-# nested under a top-level "parent:" mapping (e.g. metadata.last-reviewed, metadata.modules).
+# nested under a top-level "parent:" mapping (e.g. metadata.last-reviewed, metadata.modules),
+# without one pair of surrounding single or double quotes.
 frontmatter_subfield() {
   local file="$1" parent="$2" key="$3"
-  awk -v parent="$parent" -v key="$key" '
+  awk -v parent="$parent" -v key="$key" -v sq="'" '
     NR == 1 && $0 == "---" { infm = 1; next }
     infm && $0 == "---" { exit }
     infm && $0 ~ "^" parent ":" { inparent = 1; next }
     infm && inparent && $0 ~ "^[^ ]" { inparent = 0 }
     infm && inparent && $0 ~ "^[ ]+" key ":" {
       sub("^[ ]+" key ":[ ]*", "")
-      gsub(/^"|"$/, "")
+      if (length($0) >= 2 && (($0 ~ /^".*"$/) || (substr($0, 1, 1) == sq && substr($0, length($0), 1) == sq)))
+        $0 = substr($0, 2, length($0) - 2)
       print
       exit
     }
   ' "$file"
+}
+
+# frontmatter_list FILE KEY -> the items of a top-level list field, one per line, from any of the
+# three YAML spellings used here: "key: a, b", "key: [a, b]", or a block of "  - a" lines under
+# "key:". Surrounding quotes and trailing " # comments" are stripped.
+frontmatter_list() {
+  local file="$1" key="$2"
+  awk -v key="$key" -v sq="'" '
+    function emit(v) {
+      sub(/[ \t]+#.*$/, "", v)
+      gsub(/^[ \t]+|[ \t]+$/, "", v)
+      gsub("^[\"" sq "]|[\"" sq "]$", "", v)
+      if (v != "") print v
+    }
+    NR == 1 && $0 == "---" { infm = 1; next }
+    infm && $0 == "---" { exit }
+    infm && inlist {
+      if ($0 ~ /^[ \t]*-[ \t]/) { v = $0; sub(/^[ \t]*-[ \t]+/, "", v); emit(v); next }
+      if ($0 ~ /^[ \t]*(#.*)?$/) next
+      exit
+    }
+    infm && $0 ~ "^" key ":" {
+      v = $0
+      sub("^" key ":[ \t]*", "", v)
+      sub(/[ \t]+#.*$/, "", v)
+      if (v == "") { inlist = 1; next }
+      gsub(/^\[|\][ \t]*$/, "", v)
+      n = split(v, parts, ",")
+      for (i = 1; i <= n; i++) emit(parts[i])
+      exit
+    }
+  ' "$file"
+}
+
+# frontmatter_hook_commands FILE -> "<event>\t<matcher>\t<command>" for every hook command in the
+# frontmatter `hooks:` block (agent-scoped hooks; same schema as .claude/settings.json). An event
+# is a capitalised key (PreToolUse, Stop, ...); the matcher is the nearest preceding `matcher:`
+# under that event.
+frontmatter_hook_commands() {
+  awk -v sq="'" '
+    function unq(v) {
+      sub(/[ \t]+#.*$/, "", v)
+      gsub(/^[ \t]+|[ \t]+$/, "", v)
+      gsub("^[\"" sq "]|[\"" sq "]$", "", v)
+      return v
+    }
+    NR == 1 && $0 == "---" { infm = 1; next }
+    infm && $0 == "---" { exit }
+    infm && /^hooks:[ \t]*$/ { inh = 1; next }
+    infm && inh && /^[^ \t#]/ { inh = 0 }
+    infm && inh && /^[ \t]+[A-Z][A-Za-z]*:[ \t]*$/ { ev = $0; gsub(/[ \t:]/, "", ev); matcher = ""; next }
+    infm && inh && /matcher:/ { m = $0; sub(/.*matcher:/, "", m); matcher = unq(m); next }
+    # Empty fields become "?" / "*" (an empty matcher matches every tool): `read` collapses tabs.
+    infm && inh && /[ \t-]command:/ {
+      c = $0
+      sub(/.*command:/, "", c)
+      print (ev == "" ? "?" : ev) "\t" (matcher == "" ? "*" : matcher) "\t" unq(c)
+    }
+  ' "$1"
 }
 
 # --- PATH-arg scoping (docs-check.sh PATH... narrows the five file-scoped checks) -----------

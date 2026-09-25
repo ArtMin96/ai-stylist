@@ -1,0 +1,2 @@
+ERROR DC-05 .agents/skills/noevals/SKILL.md:1 missing evals/evals.json next to SKILL.md
+ERROR DC-05 .agents/skills/noevals/SKILL.md:1 missing evals/trigger-evals.json next to SKILL.md

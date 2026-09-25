@@ -148,6 +148,17 @@ else
   fail "prek commit-msg hook missing" "mise exec -- prek install --hook-type commit-msg"
 fi
 
+# --- jq (Claude Code hooks) -------------------------------------------------------
+# Every PreToolUse guard in scripts/hooks/ parses its payload with jq and denies the tool call
+# without it (fail closed), so an agent session here cannot edit files or run commands.
+if have jq; then
+  ok "jq present ($(jq --version 2>/dev/null))"
+elif os_is_darwin; then
+  fail "jq not installed (the Claude Code guards in scripts/hooks/ deny every edit and command without it)" "brew install jq   (macOS 15+ ships /usr/bin/jq)"
+else
+  fail "jq not installed (the Claude Code guards in scripts/hooks/ deny every edit and command without it)" "sudo pacman -S jq   (or: sudo apt-get install jq)"
+fi
+
 # --- git lfs --------------------------------------------------------------------
 if git lfs version >/dev/null 2>&1; then
   ok "git LFS installed ($(git lfs version | head -1))"

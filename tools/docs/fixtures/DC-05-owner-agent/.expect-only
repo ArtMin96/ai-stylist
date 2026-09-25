@@ -1,0 +1,2 @@
+ERROR DC-05 .agents/skills/ghost/SKILL.md:6 metadata.owner-agent 'ghost-agent' has no .claude/agents/ghost-agent.md (use an agent name or main-session)
+ERROR DC-05 .agents/skills/nobody/SKILL.md:1 metadata.owner-agent missing (an agent in .claude/agents/, a comma list of them, or main-session)

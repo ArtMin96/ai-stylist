@@ -77,38 +77,39 @@ else
 fi
 
 # --- docker ---------------------------------------------------------------------
-# macOS has no native daemon: Docker Desktop, OrbStack or Colima provide one (docs/DEVELOPING-ON-MACOS.md).
-# Testcontainers (apps/api migrations tests) talks to the socket directly, which Colima only
-# exposes through DOCKER_HOST.
+# macOS has no native daemon: this repo uses OrbStack, which bootstrap.sh --system installs and starts
+# (docs/DEVELOPING-ON-MACOS.md). A machine that already runs Colima still works, but Testcontainers
+# (apps/api migrations tests) talks to the socket directly, which Colima only exposes through DOCKER_HOST.
 colima_sock="unix://$HOME/.colima/default/docker.sock"
 if have docker; then
   if docker info >/dev/null 2>&1; then
     ok "docker daemon reachable"
     if os_is_darwin && [[ "$(darwin_docker_runtime)" == "colima" && -z "${DOCKER_HOST:-}" ]]; then
-      warnc "Colima is the docker runtime but DOCKER_HOST is unset (Testcontainers cannot find the socket)" "export DOCKER_HOST=$colima_sock   (docs/DEVELOPING-ON-MACOS.md)"
+      warnc "Colima is the docker runtime but DOCKER_HOST is unset (Testcontainers cannot find the socket)" "export DOCKER_HOST=$colima_sock   (or switch to OrbStack: ./scripts/bootstrap.sh --system)"
     fi
   elif os_is_darwin; then
     case "$(darwin_docker_runtime)" in
-      desktop) fail "docker daemon not reachable (Docker Desktop installed but not running)" "open -a Docker   then wait for the whale icon to settle" ;;
       orbstack) fail "docker daemon not reachable (OrbStack installed but not running)" "orb start" ;;
-      colima) fail "docker daemon not reachable (Colima installed but not running)" "colima start   then: export DOCKER_HOST=$colima_sock" ;;
-      *) fail "docker daemon not reachable and no Docker runtime found" "install Docker Desktop, OrbStack or Colima: docs/DEVELOPING-ON-MACOS.md" ;;
+      *) fail "docker daemon not reachable (this repo uses OrbStack on macOS)" "./scripts/bootstrap.sh --system   (installs and starts OrbStack)" ;;
     esac
   else
-    fail "docker daemon not reachable" "start Docker and add yourself to the docker group: just bootstrap --system"
+    fail "docker daemon not reachable" "./scripts/bootstrap.sh --system   (enables the docker service, adds you to the docker group; then log out and back in)"
   fi
 elif os_is_darwin; then
-  fail "docker not installed" "install Docker Desktop, OrbStack or Colima (docs/DEVELOPING-ON-MACOS.md); just bootstrap --system lists the commands"
+  fail "docker not installed (this repo uses OrbStack on macOS)" "./scripts/bootstrap.sh --system   (installs and starts OrbStack)"
 else
-  fail "docker not installed" "just bootstrap --system  (installs docker.io + compose plugin)"
+  fail "docker not installed" "./scripts/bootstrap.sh --system   (installs Docker Engine + compose with pacman or apt)"
 fi
 
 # --- direnv ---------------------------------------------------------------------
 if have direnv || { [[ -x "$MISE_BIN" ]] && mise_exec direnv --version >/dev/null 2>&1; }; then
   ok "direnv present"
   if [[ -z "${DIRENV_DIR:-}" ]]; then
-    # shellcheck disable=SC2016  # hint text, the $(...) is for the reader's rc file
-    warnc "direnv not active in this shell" 'add: eval "$(direnv hook zsh)" to ~/.zshrc, then: direnv allow'
+    if rc_file="$(shell_rc_file)" && command grep -qxF "$SHELL_RC_BEGIN" "$rc_file" 2>/dev/null; then
+      warnc "direnv not active in this shell" "open a new terminal (the mise + direnv lines are in $rc_file), then cd into the repo"
+    else
+      warnc "direnv not active in this shell" "./scripts/bootstrap.sh   (adds the mise + direnv lines to your shell rc file), then open a new terminal"
+    fi
   fi
 else
   fail "direnv missing" "$MISE_BIN install direnv"
@@ -154,7 +155,7 @@ else
   if os_is_darwin; then
     fail "git LFS not installed (assets/3d/** needs it)" "just bootstrap --system  (brew install git-lfs) then: git lfs install"
   else
-    fail "git LFS not installed (assets/3d/** needs it)" "just bootstrap --system  (apt install git-lfs) then: git lfs install"
+    fail "git LFS not installed (assets/3d/** needs it)" "just bootstrap --system  (pacman or apt install git-lfs) then: git lfs install"
   fi
 fi
 
@@ -202,17 +203,19 @@ fi
 # --- iOS (apps/ios; warn only) --------------------------------------------------------------
 if os_is_darwin; then
   pinned_xcode="$(tr -d '[:space:]' < apps/ios/.xcode-version 2>/dev/null || true)"
-  xcode_version=""
-  if have xcodebuild; then
-    xcode_version="$(xcodebuild -version 2>/dev/null | awk 'NR == 1 { print $2 }' || true)"
-  fi
-  if [[ -z "$xcode_version" ]]; then
-    warnc "Xcode not found (iOS builds need Xcode $pinned_xcode, not only the command line tools)" "install Xcode $pinned_xcode, then: just ios-doctor"
-  elif [[ "$xcode_version" == "$pinned_xcode" ]]; then
-    ok "Xcode $xcode_version (pinned in apps/ios/.xcode-version)"
-  else
-    warnc "Xcode $xcode_version, but apps/ios/.xcode-version pins $pinned_xcode" "xcodes install $pinned_xcode, then select it (just ios-doctor explains)"
-  fi
+  xcode_state="$(darwin_xcode_state "$pinned_xcode")"
+  case "$xcode_state" in
+    ok) ok "Xcode $pinned_xcode (pinned in apps/ios/.xcode-version)" ;;
+    unselected\ *)
+      warnc "Xcode $pinned_xcode is installed at ${xcode_state#unselected } but xcodebuild cannot use it (active developer directory: $(xcode-select -p 2>/dev/null || echo none))" \
+        "./scripts/bootstrap.sh --system   (selects it, accepts its licence, runs its first-launch setup)" ;;
+    other\ *)
+      warnc "Xcode ${xcode_state#other }, but apps/ios/.xcode-version pins $pinned_xcode" \
+        "./scripts/bootstrap.sh --system   (installs Xcode $pinned_xcode with xcodes and selects it)" ;;
+    *)
+      warnc "Xcode $pinned_xcode not installed (iOS builds need it, not only the command line tools)" \
+        "./scripts/bootstrap.sh --system   (installs it with xcodes: asks for your Apple ID)" ;;
+  esac
 else
   # Linux: the Linux-capable iOS recipes and gen-swift.sh run Docker swift:6.4 unless a working
   # swift is on PATH (mise's swift cannot run on Arch).

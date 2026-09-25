@@ -18,7 +18,7 @@ default:
 
 # --- environment ---------------------------------------------------------------
 
-# Full environment setup, idempotent (`--system` adds apt/udev/docker-group steps with sudo on Linux, Homebrew packages on macOS)
+# Full environment setup, idempotent, incl. the mise + direnv block in your shell rc file (`--system` adds, with sudo: pacman or apt packages, udev rules and the docker group on Linux; Homebrew, OrbStack and the pinned Xcode on macOS)
 bootstrap *args:
     scripts/bootstrap.sh "$@"
 
@@ -60,7 +60,7 @@ dev-workers *args:
 
 # --- quality gates (* = part of ci-parity) -------------------------------------------
 
-# * Run tests: full suite via turbo + the native lanes, or one module's tests/ dir (`just test recommendation`; `just test ios` / `just test android` = that app's unit tests; `just test secrets` = the sops+age shell suite); SKIP_DOCKER_TESTS=1 leaves out the Testcontainers `migrations` project (runners without Docker only)
+# * Run tests: full suite via turbo + the native lanes, or one module's tests/ dir (`just test recommendation`; `just test ios` / `just test android` = that app's unit tests; `just test secrets` = the sops+age shell suite; `just test tooling` = the scripts/test shell suites: bootstrap/doctor, contracts-breaking); SKIP_DOCKER_TESTS=1 leaves out the Testcontainers `migrations` project (runners without Docker only)
 test module='':
     #!/usr/bin/env bash
     set -euo pipefail
@@ -73,12 +73,14 @@ test module='':
         pnpm --filter @ai-stylist/api exec vitest run --project api
         uv run --project workers pytest workers -q
         just test-secrets
+        just test-tooling
         just test-native
         exit 0
     fi
     if [[ -n "{{module}}" ]]; then
         case "{{module}}" in
             secrets) just test-secrets; exit 0 ;;
+            tooling) just test-tooling; exit 0 ;;
             ios) just ios-test-packages; exit 0 ;;
             android) just android-test; exit 0 ;;
             workers) uv run --project workers pytest workers -q; exit 0 ;;
@@ -100,11 +102,17 @@ test module='':
     pnpm turbo run test
     uv run --project workers pytest workers -q
     just test-secrets
+    just test-tooling
     just test-native
 
 [private]
 test-secrets:
     scripts/security/tests/secrets.test.sh
+
+[private]
+test-tooling:
+    scripts/test/bootstrap-doctor.test.sh
+    scripts/test/contracts-breaking.test.sh
 
 # Native unit tests for the full `just test` (lane/toolchain policy: scripts/native-lane.sh)
 [private]

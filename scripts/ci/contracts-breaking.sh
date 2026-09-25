@@ -12,7 +12,8 @@ cd "$REPO_ROOT"
 base="${1:-}"
 [[ -n "$base" ]] || die "usage: scripts/ci/contracts-breaking.sh <base-sha>"
 
-bundle=packages/contracts/openapi.bundle.json
+# Written by tools/codegen/gen-ts.sh (just generate) and committed.
+bundle=packages/contracts/gen/openapi.bundle.json
 if [[ ! -f "$bundle" ]]; then
   echo "::notice::$bundle absent - oasdiff skipped (T04 not landed)"
   exit 0

@@ -188,7 +188,8 @@ main() {
     if run_fixtures; then exit 0; else exit 1; fi
   fi
 
-  DOCS_CHECK_PATH_FILTERS=("${paths[@]}")
+  # ${a[@]+"${a[@]}"}: bash 3.2 (macOS /bin/bash) treats an empty array as unbound under set -u.
+  DOCS_CHECK_PATH_FILTERS=(${paths[@]+"${paths[@]}"})
   local scoped=0
   [[ "${#paths[@]}" -gt 0 ]] && scoped=1
 

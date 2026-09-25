@@ -84,7 +84,7 @@ check_dc10() {
           [[ -z "$recipe" ]] && continue
           [[ "$recipe" == *-'*' ]] && continue
           ok=0
-          for known in "${real_recipes[@]}"; do [[ "$known" == "$recipe" ]] && ok=1 && break; done
+          for known in ${real_recipes[@]+"${real_recipes[@]}"}; do [[ "$known" == "$recipe" ]] && ok=1 && break; done
           if [[ $ok -eq 0 ]]; then
             finding ERROR DC-10 "$rel" "$lineno" "'just $recipe' is not in 'just --summary'"
           fi

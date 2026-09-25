@@ -80,7 +80,8 @@ Where Swift comes from on Linux: a working `swift` on PATH, else Docker `swift:6
 ### First run on the Mac
 
 ```sh
-mise install                 # xcodegen, swiftlint, xcbeautify, maestro (+ just)
+./scripts/bootstrap.sh --system   # once: Xcode 27.0 (xcodes installs it if missing), selected, licence, first launch,
+                                  # iOS simulator (sudo); also mise install: xcodegen, swiftlint, xcbeautify, maestro, just
 just ios-doctor              # Xcode 27.0 selected?
 just ios-project             # generate AIStylist.xcodeproj
 open apps/ios/AIStylist.xcodeproj   # scheme AIStylist-Dev, any iPhone simulator

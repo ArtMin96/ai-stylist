@@ -100,7 +100,7 @@ cmd_doctor() {
   if [[ "$actual" == "$PINNED_XCODE" ]]; then
     echo "  Xcode: $actual (pinned $PINNED_XCODE) ok"
   else
-    echo "  Xcode: $actual, but apps/ios/.xcode-version pins $PINNED_XCODE. Install it (xcodes install $PINNED_XCODE) and select it (sudo xcode-select -s /Applications/Xcode-$PINNED_XCODE.app, or set DEVELOPER_DIR)." >&2
+    echo "  Xcode: $actual, but apps/ios/.xcode-version pins $PINNED_XCODE. Fix: ./scripts/bootstrap.sh --system (installs it with xcodes if missing and selects it), or set DEVELOPER_DIR." >&2
     status=1
   fi
   if command -v xcodegen >/dev/null 2>&1; then

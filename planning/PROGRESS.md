@@ -82,6 +82,23 @@ Log hygiene: when this log exceeds ~30 entries, move the oldest entries to `plan
 
 *(newest first)*
 
+### 2026-09-25 — Bootstrap automation: OrbStack, Xcode, pacman, shell rc block
+
+- **Phase / tasks worked:** P02 hygiene (P02-T02 bootstrap + doctor follow-up). Branch `fix/bootstrap-automation` off `8bc50ba` (the PR #8 merge), **uncommitted**.
+- **Status changes:** none.
+- **Done this session:**
+  - `scripts/bootstrap.sh --system`: on macOS it installs and starts OrbStack, installs the pinned Xcode with `xcodes` when missing, then selects it and runs licence/first-launch setup (sudo) and the iOS simulator download. On Linux it uses pacman (Arch, Omarchy) or apt (Ubuntu), and stops with a manual package list on any other distro.
+  - Bootstrap writes an idempotent mise + direnv block into the shell rc file (zsh `~/.zshrc`; bash `~/.bashrc` on Linux, `~/.bash_profile` on macOS); it skips the block when `CI=true`.
+  - `just doctor` / `just ios-doctor` now tell "Xcode not installed" apart from "installed but the Command Line Tools are selected", and every hint names `./scripts/bootstrap.sh --system`.
+  - New `scripts/test/bootstrap-doctor.test.sh` (13 tests; `just test tooling`, also part of `just test`). Docs: README setup, macOS guide, iOS README, SERVICES-SETUP direnv step.
+  - `just docs-check` now runs on macOS `/bin/bash` 3.2: every array in `scripts/docs/**` that can be empty expands as `${a[@]+"${a[@]}"}`, because bash 3.2 treats an empty array as unbound under `set -u`. `just docs-check`, `just docs-check --strict`, `just docs-check README.md` and `just docs-check .agents/skills/tooling-ci/SKILL.md` exit 0. `just docs-check --fixtures` now prints the same result as Linux bash 5: 2 failures that HEAD already has on both platforms. The DC-06 fixture lost its empty skill directory, since git does not track empty directories. `_clean` reports DC-03 because the staged `index.ts` mtime is today, newer than its fixed `Last updated` of 2026-09-13.
+  - pr-gate's oasdiff step no longer skips: `scripts/ci/contracts-breaking.sh` reads `packages/contracts/gen/openapi.bundle.json`, the path `tools/codegen/gen-ts.sh` writes (it looked for `packages/contracts/openapi.bundle.json` and always printed "bundle absent"). Regression test `scripts/test/contracts-breaking.test.sh` (part of `just test tooling`) failed before the fix. `just ci-contracts-breaking $(git merge-base HEAD main)` → "No breaking changes to report", exit 0.
+- **Not done / in flight:** nothing committed. `./scripts/bootstrap.sh --system` has not run on the real Mac yet (it edits `~/.zshrc` and uses sudo). Bug A (sops on macOS reads `~/Library/Application Support/sops/age/keys.txt`) is skipped by the user's decision. The secrets onboarding PR for `onboard/arthur-minasyan` still needs an approver (`just secrets-approve onboard/arthur-minasyan`). The human-only `planning/15` and doc 16 edits are in [`.claude/plans/s5-bootstrap-automation-human-proposals.md`](../.claude/plans/s5-bootstrap-automation-human-proposals.md).
+- **Repository state:** buildable ✅ for the touched scope: `just test tooling` 13/13, `just typecheck` and `just arch-check` exit 0, and `just lint` is green except the iOS lane. On this Mac `ios-lint` aborts because swiftlint cannot load sourcekitd while the Command Line Tools are selected (bootstrap `--system` fixes that). `just ci-parity` not run.
+- **New decisions / risks / questions filed:** none in doc 16 yet; the user decided: OrbStack is the only macOS Docker runtime; Linux uses Docker Engine with pacman (Omarchy, primary) or apt; a missing pinned Xcode is installed with `xcodes`; bootstrap writes the rc block (this reverses the old "never edits rc files" rule). Proposed DEC text is in the s5 proposal.
+- **Surprises / gotchas:** direnv is pinned only in this repo, so a plain `direnv hook` line fails in a new shell outside the repo; the block runs it through `mise exec direnv@<pin>`. `/usr/bin/xcodebuild` exists with only the CLT selected. On macOS `/bin/bash` 3.2, `just docs-check` with no arguments failed at `scripts/docs/docs-check.sh:191` (empty `paths[@]` under `set -u`; pre-existing, fixed this session).
+- **Next session starts:** the user runs `./scripts/bootstrap.sh --system` on the Mac in a real terminal (sudo prompts; Xcode 27.0 is already in `/Applications`, so no Apple ID prompt), opens a new terminal, and runs `just doctor`. Commit and open the PR only when the user asks.
+
 ### 2026-09-24 — Docs and install-steps refresh; fresh-clone bootstrap fixes
 
 - **Phase / tasks worked:** P02 hygiene (no task ID). Branch `docs/refresh`, stacked on `chore/native-followups` (PR #7). One agent per disjoint doc set, plus a read-only fresh-clone run of the README install steps.

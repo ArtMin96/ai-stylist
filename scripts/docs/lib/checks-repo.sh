@@ -74,7 +74,7 @@ check_dc14() {
   )
 
   block_top=()
-  for line in "${block_lines[@]}"; do
+  for line in ${block_lines[@]+"${block_lines[@]}"}; do
     [[ -z "${line// /}" ]] && continue
     token="$(awk '{print $1}' <<<"$line")"
     dir_token="${token%%<*}"
@@ -93,7 +93,7 @@ check_dc14() {
     name="$(basename "$entry")"
     [[ "$name" == .* ]] && continue
     found=0
-    for t in "${block_top[@]}"; do [[ "$t" == "$name" ]] && found=1 && break; done
+    for t in ${block_top[@]+"${block_top[@]}"}; do [[ "$t" == "$name" ]] && found=1 && break; done
     if [[ $found -eq 0 ]]; then
       finding "$level" DC-14 "CLAUDE.md" 1 "top-level directory '$name/' is not mentioned in the layout block"
     fi
@@ -128,16 +128,16 @@ check_dc15() {
   done < <(cd "$root" && just --summary 2>/dev/null | tr ' ' '\n')
 
   local found n
-  for n in "${real_recipes[@]}"; do
+  for n in ${real_recipes[@]+"${real_recipes[@]}"}; do
     found=0
-    for r in "${doc_recipes[@]}"; do [[ "$r" == "$n" ]] && found=1 && break; done
+    for r in ${doc_recipes[@]+"${doc_recipes[@]}"}; do [[ "$r" == "$n" ]] && found=1 && break; done
     if [[ $found -eq 0 ]]; then
       finding "$level" DC-15 "planning/15-team-workflow-and-ai-agent-operations.md" 1 "recipe '$n' (just --summary) missing from the §5 catalog"
     fi
   done
-  for n in "${doc_recipes[@]}"; do
+  for n in ${doc_recipes[@]+"${doc_recipes[@]}"}; do
     found=0
-    for r in "${real_recipes[@]}"; do [[ "$r" == "$n" ]] && found=1 && break; done
+    for r in ${real_recipes[@]+"${real_recipes[@]}"}; do [[ "$r" == "$n" ]] && found=1 && break; done
     if [[ $found -eq 0 ]]; then
       finding "$level" DC-15 "planning/15-team-workflow-and-ai-agent-operations.md" 1 "§5 catalog documents 'just $n', not a real recipe"
     fi

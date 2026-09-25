@@ -27,12 +27,12 @@ check_dc01() {
 
   for name in "${code_names[@]}"; do
     found=0
-    for d in "${doc_names[@]}"; do [[ "$d" == "$name" ]] && found=1 && break; done
+    for d in ${doc_names[@]+"${doc_names[@]}"}; do [[ "$d" == "$name" ]] && found=1 && break; done
     if [[ $found -eq 0 ]]; then
       finding ERROR DC-01 "docs/modules/$name.md" 1 "no module contract for '$name' (apps/api/src/modules or platform/shared-kernel)"
     fi
   done
-  for name in "${doc_names[@]}"; do
+  for name in ${doc_names[@]+"${doc_names[@]}"}; do
     found=0
     for c in "${code_names[@]}"; do [[ "$c" == "$name" ]] && found=1 && break; done
     if [[ $found -eq 0 ]]; then
@@ -141,16 +141,16 @@ check_dc04() {
     return
   fi
 
-  for num in "${adr_nums[@]}"; do
+  for num in ${adr_nums[@]+"${adr_nums[@]}"}; do
     found=0
-    for r in "${readme_nums[@]}"; do [[ "$r" == "$num" ]] && found=1 && break; done
+    for r in ${readme_nums[@]+"${readme_nums[@]}"}; do [[ "$r" == "$num" ]] && found=1 && break; done
     if [[ $found -eq 0 ]]; then
       finding ERROR DC-04 "docs/adr/README.md" 1 "ADR $num has no index row in docs/adr/README.md"
     fi
   done
-  for num in "${readme_nums[@]}"; do
+  for num in ${readme_nums[@]+"${readme_nums[@]}"}; do
     found=0
-    for a in "${adr_nums[@]}"; do [[ "$a" == "$num" ]] && found=1 && break; done
+    for a in ${adr_nums[@]+"${adr_nums[@]}"}; do [[ "$a" == "$num" ]] && found=1 && break; done
     if [[ $found -eq 0 ]]; then
       finding ERROR DC-04 "docs/adr/README.md" 1 "index row references ADR $num, no such docs/adr/$num-*.md file"
     fi

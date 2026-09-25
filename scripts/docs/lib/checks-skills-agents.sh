@@ -26,7 +26,7 @@ check_dc05() {
     skill_files+=("$f")
   done
 
-  for f in "${skill_files[@]}"; do
+  for f in ${skill_files[@]+"${skill_files[@]}"}; do   # empty when no skill is in scope (bash 3.2 + set -u)
     rel="${f#"$root"/}"
     dir_name="$(basename "$(dirname "$f")")"
 
@@ -101,9 +101,9 @@ check_dc06() {
   fi
 
   local found name
-  for name in "${dir_names[@]}"; do
+  for name in ${dir_names[@]+"${dir_names[@]}"}; do
     found=0
-    for r in "${readme_names[@]}"; do [[ "$r" == "$name" ]] && found=1 && break; done
+    for r in ${readme_names[@]+"${readme_names[@]}"}; do [[ "$r" == "$name" ]] && found=1 && break; done
     if [[ $found -eq 0 ]]; then
       finding ERROR DC-06 ".agents/skills/README.md" 1 "no index row for skill directory '$name'"
     fi
@@ -114,9 +114,9 @@ check_dc06() {
       finding ERROR DC-06 ".claude/skills/$name" 1 "symlink does not resolve"
     fi
   done
-  for name in "${readme_names[@]}"; do
+  for name in ${readme_names[@]+"${readme_names[@]}"}; do
     found=0
-    for d in "${dir_names[@]}"; do [[ "$d" == "$name" ]] && found=1 && break; done
+    for d in ${dir_names[@]+"${dir_names[@]}"}; do [[ "$d" == "$name" ]] && found=1 && break; done
     if [[ $found -eq 0 ]]; then
       finding ERROR DC-06 ".agents/skills/README.md" 1 "index row '$name' has no matching skill directory"
     fi
@@ -142,7 +142,7 @@ check_dc07() {
   local rel name description tools reviewed_line reviewed today banned
   today="$(today_date)"
   agent_names=()
-  for f in "${agent_files[@]}"; do
+  for f in ${agent_files[@]+"${agent_files[@]}"}; do   # empty when no agent is in scope (bash 3.2 + set -u)
     rel="${f#"$root"/}"
     name="$(frontmatter_field "$f" name)"
     [[ -n "$name" ]] && agent_names+=("$name")
@@ -193,9 +193,9 @@ check_dc07() {
   fi
 
   local found n
-  for n in "${agent_names[@]}"; do
+  for n in ${agent_names[@]+"${agent_names[@]}"}; do
     found=0
-    for r in "${readme_names[@]}"; do [[ "$r" == "$n" ]] && found=1 && break; done
+    for r in ${readme_names[@]+"${readme_names[@]}"}; do [[ "$r" == "$n" ]] && found=1 && break; done
     if [[ $found -eq 0 ]]; then
       finding ERROR DC-07 ".claude/agents/README.md" 1 "no index row for agent '$n'"
     fi
@@ -203,9 +203,9 @@ check_dc07() {
   # The reverse direction (README row with no matching file) only makes sense against the full
   # roster: a PATH-scoped run loaded a subset of agent_files on purpose (file_in_scope above).
   if [[ "${#DOCS_CHECK_PATH_FILTERS[@]}" -eq 0 ]]; then
-    for n in "${readme_names[@]}"; do
+    for n in ${readme_names[@]+"${readme_names[@]}"}; do
       found=0
-      for a in "${agent_names[@]}"; do [[ "$a" == "$n" ]] && found=1 && break; done
+      for a in ${agent_names[@]+"${agent_names[@]}"}; do [[ "$a" == "$n" ]] && found=1 && break; done
       if [[ $found -eq 0 ]]; then
         finding ERROR DC-07 ".claude/agents/README.md" 1 "index row '$n' has no matching .claude/agents/$n.md"
       fi

@@ -24,7 +24,7 @@ The operating rules for anyone (human or AI agent) changing code are in [`CLAUDE
 
 ## First-time setup
 
-You need Ubuntu 22.04 or newer (other Linux distros work with small changes) or macOS (Apple Silicon or Intel; see [`docs/DEVELOPING-ON-MACOS.md`](docs/DEVELOPING-ON-MACOS.md) for the Mac-specific prerequisites), `git`, `curl`, at least 10 GB of free disk (`just doctor` fails below that; the pnpm store, Gradle caches and Docker images need it), and, on Linux, `sudo` for the one system step. Everything else is installed into your home directory by the bootstrap script, with exact versions pinned in `mise.toml`, so nothing here conflicts with tools you already have.
+You need Arch Linux (including Omarchy) or Ubuntu 22.04 or newer, or macOS (Apple Silicon or Intel; see [`docs/DEVELOPING-ON-MACOS.md`](docs/DEVELOPING-ON-MACOS.md) for the two Mac prerequisites), `git`, `curl`, at least 10 GB of free disk (`just doctor` fails below that; the pnpm store, Gradle caches and Docker images need it), and `sudo` for the one system step. Everything else is installed into your home directory by the bootstrap script, with exact versions pinned in `mise.toml`, so nothing here conflicts with tools you already have.
 
 ### 1. Clone
 
@@ -33,13 +33,17 @@ git clone https://github.com/ArtMin96/ai-stylist.git
 cd ai-stylist
 ```
 
-### 2. Install system packages (once per machine, needs sudo on Linux)
+### 2. Install system packages (once per machine, needs sudo)
 
 ```bash
 ./scripts/bootstrap.sh --system
 ```
 
-On Linux this installs the apt packages, Docker, the Android udev rules, and adds you to the `docker` group. **Log out and back in afterwards** so the group change takes effect. On macOS it uses Homebrew (git-lfs), checks for the Xcode Command Line Tools and Xcode, and tells you which Docker runtime it found (Docker Desktop, OrbStack, or Colima; it installs none). On both it installs the Android SDK packages into your home directory (no emulator) and writes `ANDROID_HOME` to `~/.config/ai-stylist/env.sh`, which `.envrc` loads; on Linux it also pulls the `swift:6.4` Docker image the Linux iOS checks use. Skip this step if Docker already works for your user and you do not work on the apps.
+On Linux this installs the system packages with pacman (Arch, Omarchy) or apt (Ubuntu): Docker Engine with Compose, git-lfs, a C toolchain, and the Android udev rules. It starts the Docker service and adds you to the `docker` group. **Log out and back in afterwards** so the group change takes effect. If pacman refuses, update the system first (`sudo pacman -Syu`, or `omarchy-update`) and re-run. On other distros it stops and lists what to install by hand.
+
+On macOS it first checks for the Xcode Command Line Tools and Homebrew, whose installers you run yourself (see the macOS guide). Then it installs git-lfs and OrbStack (the Docker runtime) with Homebrew and starts OrbStack. It also sets up the Xcode version pinned in `apps/ios/.xcode-version`. If that version is missing, it installs it with `xcodes`, which asks for your Apple ID and downloads about 10 GB. It selects that Xcode, accepts its licence, runs its first-launch setup, and downloads an iOS simulator runtime if none is installed. Selecting Xcode and the first-launch setup ask for your password (sudo).
+
+On both it installs the Android SDK packages into your home directory (no emulator) and writes `ANDROID_HOME` to `~/.config/ai-stylist/env.sh`, which `.envrc` loads; on Linux it also pulls the `swift:6.4` Docker image the Linux iOS checks use. Skip this step if Docker already works for your user and you do not work on the apps.
 
 ### 3. Install the toolchain and dependencies
 
@@ -49,14 +53,7 @@ On Linux this installs the apt packages, Docker, the Android udev rules, and add
 
 This is safe to re-run at any time. It installs `mise` (the version manager) into `~/.local/bin` unless one is already on your PATH (a system package works; `MISE_BIN=/path/to/mise` forces a specific one), then every pinned tool (Node, pnpm, Python, Java, `just`, security scanners, and so on), then the JavaScript and Python dependencies, sets up git hooks, and creates your local `.env` from `.env.example`, with `DATABASE_URL` pointing at the local Docker Postgres.
 
-At the end it prints two lines to add to your shell config (the `mise` line uses whichever `mise` it found): `mise` puts the pinned tools on your PATH, and `direnv` loads `.env` and `~/.config/ai-stylist/env.sh` (`ANDROID_HOME`, the SDK's `platform-tools` on PATH) when you enter the repo:
-
-```bash
-eval "$(~/.local/bin/mise activate zsh)"   # or bash
-eval "$(direnv hook zsh)"                  # or bash
-```
-
-Add them to `~/.zshrc` (or `~/.bashrc`), open a new terminal, and run `direnv allow` once in the repo. `just` recipes find the pinned tools without activation, but you need them to run `pnpm`, `node`, `uv`, or the SDK's `adb` by hand.
+It also writes a short block into your shell's rc file: `~/.zshrc` for zsh, `~/.bashrc` for bash on Linux, `~/.bash_profile` for bash on macOS. The block activates `mise`, which puts the pinned tools on your PATH. It also hooks `direnv`, which loads `.env` and `~/.config/ai-stylist/env.sh` (`ANDROID_HOME`, the SDK's `platform-tools` on PATH) when you enter the repo. The block sits between marker lines, and a re-run replaces it in place without touching your other lines. When bootstrap finishes, open a new terminal; the repo's `.envrc` is already allowed. With a shell other than zsh or bash, bootstrap warns and you add the activation by hand. `just` recipes find the pinned tools without activation, but you need it to run `pnpm`, `node`, `uv`, or the SDK's `adb` by hand.
 
 ### 4. Check everything
 
@@ -181,7 +178,7 @@ If it is green locally, it is green in CI. The CI workflows call the same `just`
 
 1. `just doctor` first. Most environment problems show up there with a fix hint.
 2. `just bootstrap` again. It is idempotent and repairs missing tools or dependencies.
-3. Docker not reachable: on Linux make sure the daemon is running and your user is in the `docker` group (step 2 above, then re-login); on macOS start Docker Desktop / OrbStack / `colima start` (the doctor hint names the one it found; Colima also needs `DOCKER_HOST`, see `docs/DEVELOPING-ON-MACOS.md`).
-4. `git push` complains about `git-lfs`: your shell has not activated `mise`. Add the activation line from step 3 or run the command through `mise exec -- git push`.
+3. Docker not reachable: on Linux make sure the daemon is running and your user is in the `docker` group (step 2 above, then re-login); on macOS run `orb start`, or `./scripts/bootstrap.sh --system` if OrbStack is not installed.
+4. `git push` complains about `git-lfs`: your shell has not activated `mise`. Open a new terminal (re-run `./scripts/bootstrap.sh` first if the rc block from step 3 is missing), or run the command through `mise exec -- git push`.
 5. `just generate --check` fails: someone edited a contract without regenerating. Run `just generate` and commit the result.
 6. Still stuck: open an issue using `templates/issue.md` and paste the failing command with its full output.

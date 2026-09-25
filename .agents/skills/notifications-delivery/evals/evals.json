@@ -17,14 +17,14 @@
     {
       "id": 2,
       "prompt": "We need to actually send the push once quiet hours clear. Add the FCM/APNs port and wire the daily-outfit notification to send through it, with delivery receipts recorded and no duplicate sends if the outbox relay redelivers the event.",
-      "expected_output": "A push-delivery port is declared in the notifications module (or shared-kernel if justified) and implemented in apps/api/src/platform/, bound only at the composition root; the send path dedups on the outbox event id rather than a new bespoke table; a deliveries record is written per attempt with its outcome; tests cover a redelivered event not double-sending.",
+      "expected_output": "The agent declares the push port in the notifications module's index.ts, describes the platform adapter (platform-engineer), the test-support fake and the app.module.ts binding (api-engineer), and the dedup rule keyed on the outbox event id. It reports that the outbox relay and pg-boss are P02-T08 (NOT_STARTED), so it stops before wiring the send path or claiming redelivery is safe, and names T08 as the blocker.",
       "files": [],
       "assertions": [
-        "The FCM/APNs SDK is imported only inside apps/api/src/platform/**, never inside apps/api/src/modules/notifications/**",
-        "The port is bound at the composition root (main.ts or app.module.ts), not constructed inside the module",
-        "Dedup/idempotency keys off the outbox event id per planning/04-architecture.md §9, not a new ad hoc dedup table",
-        "A test demonstrates that redelivering the same outbox event does not produce a second send or a second deliveries row",
-        "The agent runs and reports `just arch-check` to show the module-boundary rule (domain-no-provider-sdk) holds"
+        "The FCM/APNs SDK (firebase-admin or similar) is never imported inside apps/api/src/modules/notifications/**; the adapter is placed in apps/api/src/platform/ for platform-engineer",
+        "The port is declared in the notifications module's index.ts and bound only at the composition root (apps/api/src/app.module.ts)",
+        "Dedup is keyed off the outbox event id per planning/04-architecture.md §9, not a new ad hoc dedup table",
+        "The agent reports that the outbox relay / pg-boss do not exist yet (P02-T08 NOT_STARTED) and stops before wiring the send path or claiming a redelivery test passes",
+        "The agent runs and reports `just arch-check` (or lists it as Not run with a reason) to show domain-no-provider-sdk holds"
       ]
     },
     {

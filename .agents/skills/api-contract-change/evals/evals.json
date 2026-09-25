@@ -4,38 +4,39 @@
     {
       "id": 1,
       "prompt": "closet needs a new `GET /v1/closet/items/{id}/wear-history` endpoint that returns a paginated list of wear events with provenance/confidence on each derived field. Add it to the contract.",
-      "expected_output": "A new operation is added to packages/contracts/openapi/modules/closet.yaml (or a sibling module file) with an explicit operationId, pagination, a declared error surface (RFC 9457 problem+json via the shared Problem response), and provenance+confidence fields reusing shared-kernel/contracts components rather than new ad hoc ones. `just generate` is run and gen/** is committed alongside the source. The agent states whether the change is additive.",
+      "expected_output": "A new packages/contracts/openapi/modules/closet.yaml copies the structure of packages/contracts/openapi/modules/platform.yaml and is wired by $ref in openapi.yaml; the operation has an explicit operationId, pagination, the shared Problem response for errors, and provenance+confidence fields reusing existing components. `just generate` regenerates every output (ts-client, events-ts, swift-client, kotlin-client, shared-kernel src/gen, workers/ml/generated), committed with the source. The agent states the change is additive and shows or lists as Not run the Swift/Kotlin compile (`just test ios`, `just test android`).",
       "files": [],
       "assertions": [
-        "The new operation lives under packages/contracts/openapi/, has an explicit operationId, and paginates its list response",
+        "The new operation lives under packages/contracts/openapi/ in a per-module file wired from openapi.yaml, has an explicit operationId, and paginates its list response",
         "Every 4xx/5xx/default response uses the shared Problem/problem+json schema rather than a new inline error shape",
-        "The agent runs `just generate` and reports that packages/contracts/gen/** was regenerated and committed, not hand-edited",
-        "The agent's report states the compatibility statement (additive or breaking) for this change",
+        "The agent runs `just generate` and reports that all generated outputs (including swift-client and kotlin-client) were regenerated and committed, not hand-edited",
+        "The report states the compatibility statement (additive or breaking) and either shows `just test ios` / `just test android` output or lists them under Not run with a reason",
         "The diff does not touch apps/api/src/modules/closet/internal/** (that is backend-module's job, after the contract lands)"
       ]
     },
     {
       "id": 2,
       "prompt": "We're renaming the `status` field on the `Outfit` schema to `lifecycleState` because the recommendation team says `status` is ambiguous with HTTP status. Update the contract.",
-      "expected_output": "The agent recognizes this as a breaking rename (not additive), follows the doc 06 versioning path, adds a deprecation note, and uses a `feat(contracts)!:` commit message with a `BREAKING CHANGE:` footer rather than silently renaming the field in place. It does not proceed without a versioning plan.",
+      "expected_output": "The agent recognizes this as a breaking rename (not additive), follows the doc 06 versioning path, adds a deprecation note, and uses a `feat(contracts)!:` commit message with a `BREAKING CHANGE:` footer rather than silently renaming the field in place. It does not proceed without a versioning plan. If no `Outfit` schema exists in packages/contracts/openapi yet, the agent says so first and answers with the versioning plan only.",
       "files": [],
       "assertions": [
         "The agent explicitly labels the change 'breaking', not additive",
         "The agent's plan follows planning/06-data-api-and-event-contracts.md's versioning/deprecation path rather than an in-place rename with no migration story",
         "The agent's stated commit/PR framing uses `feat(contracts)!:` with a `BREAKING CHANGE:` footer",
-        "The agent does not silently ship the rename without flagging it as breaking to consumers (api-engineer, ios-engineer, android-engineer)"
+        "The agent does not silently ship the rename without flagging it as breaking to consumers (api-engineer, ios-engineer, android-engineer)",
+        "The agent checks whether an `Outfit` schema exists (rg over packages/contracts/openapi) before planning the rename, and reports what it found"
       ]
     },
     {
       "id": 3,
       "prompt": "Doing the P07-T14 taxonomy registry-bump drill: split `cat.tops.shirt` into `cat.tops.shirt` and `cat.tops.overshirt` by `attr.layering-role`, and make sure saved filters referencing the old id keep working.",
-      "expected_output": "The agent reads references/taxonomy-registry.md, adds the split as a major registry bump with an explicit conditional migration rule, regenerates codegen (mobile pickers, API validation, classifier schema), and describes the backfill + saved-filter rewrite so that a filter referencing `cat.tops.shirt` keeps matching via the migration mapping rather than silently breaking. User-corrected (`source: user`) rows are preserved.",
+      "expected_output": "The agent reads references/taxonomy-registry.md, checks packages/shared-kernel/registry/, and reports that no taxonomy registry exists yet (P06-T01 creates v1), so it produces the bump plan without inventing a file. The plan treats the split as a major bump with an explicit conditional migration rule, covers the backfill and the saved-filter rewrite so a filter referencing `cat.tops.shirt` keeps matching, keeps `source: user` rows as user-sourced, and names `just generate` as the step that would regenerate pickers, API validation and the classifier schema.",
       "files": [],
       "assertions": [
-        "The agent treats the split as a major, not minor, registry version bump and states an explicit conditional migration rule (not a bare rename)",
-        "The agent's report addresses backfill of stored closet item attributes and rewriting saved filters, not just the registry edit",
-        "The agent states that rows with source: user keep source: user after migration",
-        "The agent runs `just generate` so mobile pickers, API validation, and the classifier schema stay in sync with the bumped registry"
+        "The agent reports that no taxonomy registry exists yet and does not create one at an invented location",
+        "The plan treats the split as a major, not minor, registry bump with an explicit conditional migration rule (not a bare rename)",
+        "The plan addresses backfill of stored closet item attributes and rewriting saved filters, not just the registry edit",
+        "The plan states that rows with source: user keep source: user after migration"
       ]
     }
   ]

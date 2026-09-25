@@ -1,15 +1,15 @@
 # `billing` — module reference
 
-Last reviewed: 2026-09-13
+Last reviewed: 2026-09-25
 
 ## Contract summary
 
-Plans, entitlements (source of truth), metering/credits, RevenueCat webhooks, and reconciliation. Full contract: [`docs/modules/billing.md`](../../../docs/modules/billing.md).
+Plans, entitlements (source of truth), metering/credits, RevenueCat webhooks, and reconciliation. Full contract: [`docs/modules/billing.md`](../../../../docs/modules/billing.md).
 
 ## Invariants that bite
 
 - The server-side entitlements table is the source of truth — never a receipt, RevenueCat cache, or client/UI-flag state; entitlements are decided server-side here (doc 12; doc 15 §10).
-- Webhook handlers require the `security-privacy-review` skill before PR (root `CLAUDE.md`), must be idempotent (event-id dedup) and out-of-order safe.
+- Webhook handlers require the `security-privacy-review` skill before PR (root `CLAUDE.md`), verify the signature, upsert `billing_events` keyed by the RevenueCat event id (duplicate delivery = no-op, doc 12 §5.2), and are out-of-order safe.
 - This module never imports the RevenueCat SDK directly — access only through a port implemented in `apps/api/src/platform/`.
 
 ## Key files
@@ -28,7 +28,7 @@ None yet — P02 skeleton has no rows in the contract's Events tables. P13-T02 a
 
 ## Allowed / forbidden edges
 
-Allowed: public API of `identity`; `packages/shared-kernel` (entitlement-name registry). RevenueCat access via a port implemented in `platform`. Consumed by `admin`, `assistant`. Forbidden: any other module's `internal/**` or tables (`public-api-only`); provider SDKs — ports only (`domain-no-provider-sdk`); `apps/api/src/platform/**` (`modules-not-platform`); the RevenueCat SDK import ban above.
+Allowed: public API of `identity`; `packages/shared-kernel` (entitlement names in `packages/shared-kernel/registry/entitlements.json`). RevenueCat access via a port implemented in `platform`. Consumed by `admin`, `assistant`. Forbidden: any other module's `internal/**` or tables (`public-api-only`); provider SDKs — ports only (`domain-no-provider-sdk`); `apps/api/src/platform/**` (`modules-not-platform`); the RevenueCat SDK import ban above.
 
 ## Test command
 

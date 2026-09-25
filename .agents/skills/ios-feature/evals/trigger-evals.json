@@ -28,6 +28,18 @@
     "should_trigger": true
   },
   {
+    "query": "you're the iOS lane for the closet count card, here's the brief and Base sha, build it in apps/ios",
+    "should_trigger": true
+  },
+  {
+    "query": "tools/codegen/gen-swift.sh drops the doc comments from the generated client, fix the script",
+    "should_trigger": true
+  },
+  {
+    "query": "add a new AppServices protocol and an APIData service for the outfit list endpoint, copy the version service pattern",
+    "should_trigger": true
+  },
+  {
     "query": "Compose home screen loses the toggle state on rotation in apps/android",
     "should_trigger": false,
     "_near_miss_reason": "same feature, Android side — android-feature."
@@ -61,5 +73,20 @@
     "query": "is build 12 ready for TestFlight, give me a go/no-go",
     "should_trigger": false,
     "_near_miss_reason": "release evidence — release-readiness."
+  },
+  {
+    "query": "implement the settings screen on iOS and Android with identical strings and ids",
+    "should_trigger": false,
+    "_near_miss_reason": "both platforms from the start — cross-platform-feature."
+  },
+  {
+    "query": "review the iOS lane's diff for boundary violations before we merge it",
+    "should_trigger": false,
+    "_near_miss_reason": "review lens — architecture-review."
+  },
+  {
+    "query": "the iOS keychain token storage needs a privacy review before release",
+    "should_trigger": false,
+    "_near_miss_reason": "security lens — security-privacy-review."
   }
 ]

@@ -1,0 +1,92 @@
+[
+  {
+    "query": "you're the android lane in a worktree, the brief says Base 3f2c9a1 — what do you check before editing anything",
+    "should_trigger": true
+  },
+  {
+    "query": "what exactly goes in the hand-back report when an agent finishes, DONE vs PARTIAL vs BLOCKED",
+    "should_trigger": true
+  },
+  {
+    "query": "I'm ios-engineer and just generate --check fails in my worktree because pnpm isn't installed, how do I report that",
+    "should_trigger": true
+  },
+  {
+    "query": "as api-engineer I need to change packages/contracts but it's not in my write set, what do I do",
+    "should_trigger": true
+  },
+  {
+    "query": "before adding a new mapper in the closet module, what search-before-write commands should I run",
+    "should_trigger": true
+  },
+  {
+    "query": "subagent here: my Bash hook denied just lint, do I retry another way or list it somewhere",
+    "should_trigger": true
+  },
+  {
+    "query": "the lockfile and the catalog change have to land together but I can't commit as an agent, where do I say that",
+    "should_trigger": true
+  },
+  {
+    "query": "what should the parity block in my report contain for the retry button lane",
+    "should_trigger": true
+  },
+  {
+    "query": "I found a stale path in a skill file while fixing a module test, the file isn't mine, how do I flag it",
+    "should_trigger": true
+  },
+  {
+    "query": "is it ok for the android agent to peek at apps/ios in its worktree to match the copy",
+    "should_trigger": true
+  },
+  {
+    "query": "implement the closet grid on iOS and Android at the same time and merge both lanes",
+    "should_trigger": false,
+    "_near_miss_reason": "the lead's orchestration — cross-platform-feature."
+  },
+  {
+    "query": "review this diff for module boundary violations and duplicated helpers before merge",
+    "should_trigger": false,
+    "_near_miss_reason": "the review lens itself — architecture-review."
+  },
+  {
+    "query": "wrap up the session: handoff entry in planning/PROGRESS.md and sync the root pointer",
+    "should_trigger": false,
+    "_near_miss_reason": "session close-out in the main checkout — docs-maintenance."
+  },
+  {
+    "query": "add a SwiftUI settings screen with a Linux-testable view model",
+    "should_trigger": false,
+    "_near_miss_reason": "area work on iOS — ios-feature."
+  },
+  {
+    "query": "write a new agent file for a data-export engineer with the right frontmatter",
+    "should_trigger": false,
+    "_near_miss_reason": "authoring the enforcement layer is main-session work with templates/agent.md, not the runtime protocol."
+  },
+  {
+    "query": "the closet wear-event double write is a bug, reproduce it with just test-regression first",
+    "should_trigger": false,
+    "_near_miss_reason": "bug-fix workflow — testing-regression."
+  },
+  {
+    "query": "add a just recipe that runs the Maestro flows on both platforms",
+    "should_trigger": false,
+    "_near_miss_reason": "justfile change — tooling-ci."
+  },
+  {
+    "query": "is build 44 ready for TestFlight, give me GO or NO-GO",
+    "should_trigger": false,
+    "_near_miss_reason": "release evidence — release-readiness."
+  },
+  {
+    "query": "add a reason code RC-WEATHER-RAIN to the shared-kernel registry and regenerate",
+    "should_trigger": false,
+    "_near_miss_reason": "registry change — api-contract-change."
+  },
+  {
+    "query": "commit the two worktree lanes into feat/closet-grid and remove the worktrees",
+    "should_trigger": false,
+    "_near_miss_reason": "integration is the lead's step in cross-platform-feature; agents never commit."
+  }
+]

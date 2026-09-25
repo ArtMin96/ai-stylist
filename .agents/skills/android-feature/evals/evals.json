@@ -3,44 +3,34 @@
   "evals": [
     {
       "id": 1,
-      "prompt": "Add a closet item count card to the Android home screen; GET /v1/closet/items already exists in the contract. Show loading, failure with retry, and the count.",
-      "expected_output": "The agent adds a repository in :core:data over the generated Kotlin client returning domain types, exposes it through DataServices, wires it in AppContainer, extends HomeUiState/HomeViewModel with loading/failure/retry/count, puts strings in strings.xml, adds ViewModel and Robolectric tests under feature/home/src/test/kotlin, and verifies with just android-check.",
+      "prompt": "You are the Android lane in a worktree. Brief: add a closet item count card to Home; GET /v1/closet/items (operationId listClosetItems) exists; states loading \"Counting your closet…\", loaded \"{count} items\", failure \"Could not load your closet\" with a \"Retry\" button; ids closet-count and closet-count-retry. iOS builds the same card in parallel. Base: 3f2c9a1.",
+      "expected_output": "The agent checks the base first, adds a repository in :core:data copied from VersionRepository.kt (domain model like ApiVersion.kt, test like VersionRepositoryTest.kt), exposes it through DataServices, wires it in AppContainer, extends HomeUiState/HomeViewModel with the brief's states and retry, puts the brief's strings in strings.xml and the ids in a TestTags object, adds ViewModel and Robolectric tests under feature/home/src/test/kotlin with fakes from Fakes.kt, runs only `just android-check` / `just test android`, and returns the canonical report with a Parity block copied from the brief. It does not read or edit apps/ios or e2e.",
       "files": [],
       "assertions": [
-        "Only :core:data code depends on the generated client; the feature module sees domain types only",
-        "No new module-graph edge is added without being called out as a separate reviewed change",
-        "User-visible strings are added to res/values/strings.xml, not hard-coded in the composable",
-        "Tests are added under the module's src/test/kotlin and the agent pastes real `just android-check` (or `just test android`) output",
-        "Every catch around suspend code rethrows CancellationException"
+        "The first command is `git log -1 --format='%H %s'` compared with the brief's Base",
+        "Only :core:data code depends on the generated client, and the new repository follows VersionRepository.kt; the feature module sees domain types only",
+        "User-visible strings are in res/values/strings.xml and ids are const vals in a TestTags object, matching the brief byte for byte",
+        "Tests are added under the module's src/test/kotlin and real `just android-check` or `just test android` output is pasted",
+        "Every catch around suspend code rethrows CancellationException",
+        "No file under apps/ios/** or e2e/** is read for parity or changed; generate --check and arch-check are listed under Not run"
       ]
     },
     {
       "id": 2,
-      "prompt": "Android Lint fails with a new warning in HomeScreen.kt. Add a lint baseline so CI goes green and we'll fix it later.",
-      "expected_output": "The agent refuses to add a baseline or lower warningsAsErrors, fixes the warning in code (or, if the check is a genuine false positive, proposes a reasoned entry in config/lint.xml for human review), and re-runs just android-lint.",
+      "prompt": "Bump the Compose BOM to the latest version in the Android app. After the bump Android Lint reports a new warning in HomeScreen.kt — add a lint baseline so CI goes green and we'll fix it later.",
+      "expected_output": "The agent changes the version only in gradle/libs.versions.toml, runs just android-deps-lock, reviews the lockfile and verification-metadata.xml diff and lists them with the catalog under Must be committed together (or stops if the task did not grant a dependency change). It refuses the lint baseline and any lowering of warningsAsErrors or blanket @Suppress, fixes the warning in code (or proposes a reasoned config/lint.xml entry for human review if it is a genuine false positive), and re-runs just android-check.",
       "files": [],
       "assertions": [
-        "The agent does not create a lint baseline file or lower warningsAsErrors/abortOnError",
-        "The agent does not add a blanket @Suppress to silence the warning",
-        "The agent re-runs `just android-lint` or `just android-check` and pastes the real result"
+        "The version change is made only in apps/android/gradle/libs.versions.toml, and `just android-deps-lock` regenerates the locks instead of hand edits",
+        "Lockfiles and verification-metadata.xml are listed under Must be committed together with the catalog change, not committed by the agent",
+        "The agent does not create a lint baseline file, lower warningsAsErrors/abortOnError, or add a blanket @Suppress",
+        "The agent re-runs `just android-check` (or `just android-lint`) and pastes the real result"
       ]
     },
     {
       "id": 3,
-      "prompt": "Bump the Compose BOM to the latest version in the Android app.",
-      "expected_output": "The agent changes the version only in gradle/libs.versions.toml, runs just android-deps-lock, reviews and commits the lockfiles together with verification-metadata.xml, runs just android-check, and flags that a macOS teammate may need to add macOS-only checksums — or stops if the task did not grant a dependency change.",
-      "files": [],
-      "assertions": [
-        "The version change is made only in apps/android/gradle/libs.versions.toml",
-        "The agent runs `just android-deps-lock` rather than hand-editing gradle.lockfile or verification-metadata.xml",
-        "Lockfiles and verification-metadata.xml are committed together with the catalog change",
-        "The agent verifies with `just android-check` and reports the real outcome"
-      ]
-    },
-    {
-      "id": 4,
       "prompt": "On Android the analytics consent toggle flips back to off after rotating the phone, and sometimes a cancelled version request still shows 'Could not reach the API'. Fix both.",
-      "expected_output": "The agent writes failing tests first (a Robolectric/state-restoration test for the toggle and a ViewModel test that cancels the request), shows them failing, then keeps consent state in the ViewModel/SavedStateHandle or rememberSaveable and rethrows CancellationException from the catch around the suspend call, re-runs just test android / just android-check, and reports the self-review list.",
+      "expected_output": "The agent writes the tests first, runs `just test android` and keeps the failing lines (just test-regression cannot run Kotlin), (a Robolectric/state-restoration test for the toggle and a ViewModel test that cancels the request), shows them failing, then keeps consent state in the ViewModel/SavedStateHandle or rememberSaveable and rethrows CancellationException from the catch around the suspend call, re-runs just test android / just android-check, and reports the self-review list.",
       "files": [],
       "assertions": [
         "A regression test is written and shown failing before the fix, and passing after",

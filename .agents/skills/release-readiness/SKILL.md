@@ -3,7 +3,7 @@ name: release-readiness
 description: Verify and prepare promotion of the native iOS and Android builds through release channels — internal → beta (TestFlight / Play internal testing) → staged production. Use when preparing a release, cutting a beta, checking store readiness, or evaluating/halting a staged rollout. Not for implementing the fix behind a blocked gate — hand back to the owning engineer skill; not for signing, uploading, store submission or rollout promotion — those are human-only (this skill, and the `release-manager` agent that runs it, only ever recommends GO/NO-GO).
 metadata:
   modules:
-  last-reviewed: 2026-09-23
+  last-reviewed: 2026-09-25
   owner-agent: release-manager
 ---
 
@@ -40,11 +40,14 @@ metadata:
    target, and the diff since the last release in that channel. Both platforms build from one commit.
 2. Gate checklist, each item with real output: `just ci-parity` green on the SHA plus green `ios`
    and `android` workflow runs; the nightly tier where doc 13 requires it; no open release blocker,
-   no quarantined test past its deadline, no expired flag, every flag with owner/expiry/removal
-   issue; pending migrations applied to staging with rollback proven (`db-migration` evidence);
+   no quarantined test past its deadline; flags per the reference (owner, expiry, removal issue).
+   Flag expiry has no automated report yet (the nightly `expired-flags` job is a placeholder,
+   P02-T09): record it as `unverified: needs a human PostHog check`, which is a NO-GO until a human
+   confirms; pending migrations applied to staging with rollback proven (`db-migration` evidence);
    `just generate --check` clean and no breaking contract without its deprecation plan (older app
    versions stay in the field for weeks: the API must keep serving them); store metadata, privacy
-   manifest (`apps/ios/App/PrivacyInfo.xcprivacy`) and Play data-safety answers current; IAP
+   manifest (`apps/ios/App/PrivacyInfo.xcprivacy`) and Play data-safety answers current (a
+   `security-privacy-review` item 10 verdict on the release diff); IAP
    config matches doc 12; crash reporting symbolicated (dSYMs / R8 mapping) and dashboards ready
    (doc 14); rollback plan per risky change.
 3. Build evidence from the lanes that exist today: `just ios-build --config prod` (unsigned) and
@@ -62,7 +65,8 @@ metadata:
    §10), a different lever from the PostHog flag percentages in the flags reference. No doc states
    a fixed store percentage schedule, so recommend the initial percentage and each step explicitly
    in the release issue, define halt criteria in writing before promotion, and monitor crash-free
-   sessions per platform against the doc 13 §12 gate (≥ 99.5% hypothesis, ratified at P14).
+   sessions per platform against the gate in `planning/phases/P14-hardening-and-launch.md`
+   (≥ 99.5 % hypothesis, ratified at P14; doc 13 carries no crash-free number yet).
 
 ## Validation commands
 
@@ -77,9 +81,21 @@ just android-build release            # unsigned release APK (R8 mapping for sym
 
 ## Output
 
-- Release-readiness report in the release issue/PR: checklist with per-item evidence links,
-  workflow run ids, known risks, rollback plan, and a clear GO / NO-GO with blockers. A proposed
-  `PROGRESS.md` line with the release state.
+The `agent-operating-contract` reviewer variant: the header with the verdict word, the `Agent:`
+line, these sections, then its last three lines (`Suggested PROGRESS.md line:` carries the release
+state):
+
+```
+## Release readiness of <candidate> — GO | NO-GO
+Agent: release-manager · Base: <sha> · Worktree: main checkout · Branch: <name>
+Candidate: <sha> · iOS <CFBundleShortVersionString>(<CFBundleVersion>) · Android <versionName>(<versionCode>) · channel <target>
+### Gate checklist
+- <gate> — <evidence: command → result | workflow run id | unverified: <why>> — pass | fail
+### Known risks and rollback plan
+- <risk> — rollback: <…>
+### Human-only steps requested
+- <signing | upload | submission | rollout promotion> — who: <human>
+```
 
 Done checklist: every gate has evidence or a named blocker · both platform artifacts from one commit
 · rollback plan written · human sign-off and the human-only upload/promotion steps requested, not
@@ -96,7 +112,9 @@ assumed.
 
 ## Overlap
 
-Adjacent: `db-migration` (staging apply evidence), `security-privacy-review` (privacy manifest and
-data-safety declarations), `entitlements-billing` (IAP config), `ios-feature` / `android-feature`
-(the changes being shipped), `e2e-device-testing` (device and Maestro evidence),
-`performance-profiling` (device-matrix perf gate), `testing-regression` (post-halt fixes).
+Adjacent: `db-migration` (staging apply evidence), `security-privacy-review` (item 10: privacy
+manifest and data-safety declarations), `entitlements-billing` (IAP config), `ios-feature` /
+`android-feature` (the changes being shipped), `e2e-device-testing` (device and Maestro evidence),
+`performance-profiling` (device-matrix perf gate), `observability-analytics` (the crash-free and
+error-budget dashboards), `testing-regression` (post-halt fixes). This skill owns no path; the
+`release-manager` agent recommends GO/NO-GO and a human executes every release action.

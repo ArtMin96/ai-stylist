@@ -4,13 +4,13 @@
     {
       "id": 1,
       "prompt": "Users report that marking a closet item as worn twice on the same day sometimes creates two wear_events instead of updating the one from earlier today. Fix it.",
-      "expected_output": "The agent reproduces the double-write, adds a regression test in apps/api/src/modules/closet/tests/, runs `just test-regression <that file>` and pastes its output (fail at the merge-base, pass at HEAD after the fix), states the root cause in one sentence, fixes the smallest coherent thing, then sweeps for the same defect class with `rg` for similar upsert-by-day call shapes and LSP `findReferences` on the fixed function.",
+      "expected_output": "The agent reproduces the double-write, adds a regression test in apps/api/src/modules/closet/tests/, runs `just test-regression <that file>` and pastes its output (fail at the merge-base, pass at HEAD after the fix), states the root cause in one sentence, fixes the smallest coherent thing, then sweeps for the same defect class with `rg` for every caller of the fixed function and for re-exports or aliases of it, and lists the callers it checked.",
       "files": [],
       "assertions": [
         "The agent runs `just test-regression <file>` and pastes its raw output rather than narrating a manual before/after",
         "The regression test lives under apps/api/src/modules/closet/tests/, not scattered elsewhere",
         "The agent states a one-sentence root cause distinct from the symptom",
-        "The sibling-sweep step names both an `rg` search for the same call shape and an LSP `findReferences` check on the fixed symbol",
+        "The sibling-sweep step names an `rg` search for the same call shape (callers plus re-exports/aliases) and lists the callers found",
         "No test is skipped, deleted, or weakened to make this pass"
       ]
     },

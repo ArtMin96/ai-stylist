@@ -16,7 +16,7 @@
     "should_trigger": true
   },
   {
-    "query": "billing module keeps throwing a raw error instead of problem+json, need to fix the application service in apps/api/src/modules/billing",
+    "query": "closet's application service throws a raw Error when an item id is unknown, need it to become a NOT_FOUND problem+json like the platform controllers do",
     "should_trigger": true
   },
   {
@@ -24,15 +24,15 @@
     "should_trigger": true
   },
   {
-    "query": "notifications module — add an internal service that decides whether a push is allowed based on the user's quiet hours setting",
+    "query": "profile needs an application service that converts stored SI body measurements to the user's preferred unit system before returning them",
     "should_trigger": true
   },
   {
-    "query": "just found out the admin module doesn't have an application service for suspending a user account yet, need to build that",
+    "query": "avatar module needs a service that validates an AvatarConfig against the measurement bounds before saving it, and a thin controller that only parses and calls it",
     "should_trigger": true
   },
   {
-    "query": "assistant module calls the closet http endpoint directly instead of going through the shared application service, need to fix that so it goes through the same path as every other client",
+    "query": "the media module needs its upload-session state machine (pending → uploaded → processing) as an application service in apps/api/src/modules/media/internal",
     "should_trigger": true
   },
   {

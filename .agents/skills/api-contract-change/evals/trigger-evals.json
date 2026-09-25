@@ -28,7 +28,7 @@
     "should_trigger": true
   },
   {
-    "query": "mobile's generated ts client is out of date after the last contract PR merged, the types in gen/ts-client don't match what's actually in openapi/modules anymore",
+    "query": "the generated Swift and Kotlin clients are out of date after the last contract PR merged, packages/contracts/gen/swift-client doesn't match openapi/modules anymore",
     "should_trigger": true
   },
   {

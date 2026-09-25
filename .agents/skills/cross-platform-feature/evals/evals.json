@@ -3,36 +3,39 @@
   "evals": [
     {
       "id": 1,
-      "prompt": "Build the closet grid screen on both iOS and Android. The list endpoint exists but the item thumbnail URL field is missing from the contract.",
-      "expected_output": "The lead writes one feature brief (states, exact strings, ids, analytics events), runs contracts-engineer alone to add the field and regenerate all clients, then launches ios-engineer and android-engineer in parallel in separate worktrees with disjoint write sets, collects both reports, and runs a parity review before merge.",
+      "prompt": "Implement the closet grid screen on iOS and Android. The list endpoint exists but the item thumbnail URL field is missing from the contract.",
+      "expected_output": "The main session runs the preflight (git status, HEAD, `.worktree.baseRef` = head, node_modules present) and asks the human once for permission to commit on a local feat/closet-grid branch. It searches for existing screens, ids, events and operations, writes one brief from references/brief-template.md into .claude/plans/<date>-closet-grid-brief.md, runs contracts-engineer alone in the lead checkout to add the field and regenerate, checks `just generate --check`, commits the brief and contract, records BASE, then launches ios-engineer and android-engineer in one message, each with isolation worktree and a prompt that starts with Base, pastes the brief and limits checks to native recipes. It checks each report's Base and each worktree's paths, integrates both lanes, runs the step 8 rg parity commands, launches architecture-reviewer on the integrated diff, has test-engineer extend e2e once, runs the gates, and closes out with docs-maintainer.",
       "files": [],
       "assertions": [
-        "The contract change is sequenced before any app work and is not run in parallel with the platform agents",
-        "ios-engineer and android-engineer run in separate git worktrees with write sets apps/ios/** and apps/android/** only",
-        "A single brief with exact strings, accessibility ids and analytics event names is given to both agents",
-        "A parity review compares states, strings, ids, events and error mapping across both diffs before merge"
+        "The contract change runs alone and before any app lane, and `just generate --check` is run after it",
+        "Lanes start only after the needed contract and generated files are committed (or the lanes run sequentially in the lead checkout when the human refuses commits)",
+        "ios-engineer and android-engineer are launched in one message, each with isolation worktree, and each prompt carries the same Base SHA and the same pasted brief",
+        "Each report's Base line is compared with BASE and each worktree's changed paths are checked against its lane scope before integration",
+        "The parity review uses concrete commands (rg for ids, operations, events and strings; git diff against BASE), not an eyeball comparison",
+        "Nothing is pushed, no PR is opened and nothing is merged to main without asking the human"
       ]
     },
     {
       "id": 2,
-      "prompt": "The Android agent wants to rename the 'api-error' test tag to 'apiError' to match Kotlin naming. Approve?",
-      "expected_output": "The lead rejects the one-sided rename: the id is asserted by the shared Maestro flow and must stay identical on both platforms; a rename would need both apps plus e2e/ changed together, sequenced via test-engineer.",
+      "prompt": "The Android lane wants to rename the 'api-error' test tag to 'apiError' to match Kotlin naming. Approve?",
+      "expected_output": "The lead rejects the one-sided rename: the id is asserted by the shared Maestro flow and must stay identical on both platforms (iOS accessibilityIdentifier == Android testTag). A rename would be a new brief row changed on both apps, then e2e/ updated once by test-engineer through e2e-device-testing, sequenced by the lead.",
       "files": [],
       "assertions": [
         "The agent does not approve a rename on one platform only",
-        "The agent cites the shared e2e flow / parity rule as the reason",
-        "Any rename is described as a coordinated change to both apps and e2e/, not a local edit"
+        "The agent cites the shared e2e flow and the id parity rule as the reason",
+        "Any rename is described as a coordinated change to both apps and e2e/, with test-engineer changing e2e/ once after both apps"
       ]
     },
     {
       "id": 3,
-      "prompt": "The outfit card must show the reason-code label on both apps. The iOS agent proposes copying the RC-* list from packages/shared-kernel into a Swift enum and the Android agent into a Kotlin object. Go ahead?",
-      "expected_output": "The lead refuses: copying shared-kernel constants into either client is forbidden and language-neutral emission is still open (OQ-15). It stops and escalates to a human, or uses only what the OpenAPI contract carries via the generated clients; neither platform agent decides the rule locally.",
+      "prompt": "The outfit card must show the reason-code label on both apps. The iOS lane proposes copying the RC-* list from packages/shared-kernel into a Swift enum and the Android lane into a Kotlin object. Go ahead?",
+      "expected_output": "The lead refuses the copies. Reason codes come from packages/shared-kernel/registry/reason-codes.json through the generated AIStylistKernel (Swift) and app.aistylist.contracts.kernel (Kotlin) that `just generate` emits (DEC-55, ADR-0005). No app target consumes the kernel yet, so the lead fixes the wiring once in the brief (the Swift target that adds the AIStylistKernel product, the Gradle module that adds the kernel srcDir) before relaunching the lanes. A code missing from the registry goes through the contract lane first.",
       "files": [],
       "assertions": [
         "The agent refuses to copy the shared-kernel constants into Swift or Kotlin",
-        "The agent names OQ-15 (or the missing language-neutral emission) as the open question",
-        "The agent escalates or routes the need through the contract and the generated clients instead of a local workaround"
+        "The agent names the generated AIStylistKernel and app.aistylist.contracts.kernel as the source, not OQ-15 as an open question",
+        "The brief fixes the kernel wiring for both platforms before the lanes run",
+        "A missing reason code is routed to contracts-engineer (api-contract-change), not added locally in either app"
       ]
     }
   ]

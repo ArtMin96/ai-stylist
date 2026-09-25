@@ -1,0 +1,41 @@
+{
+  "skill_name": "agent-operating-contract",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "You are android-engineer, launched by the lead with isolation worktree. The brief says `Base: 3f2c9a1e…` and asks for a closet count card on the Android home screen. Your first `git log -1 --format='%H %s'` prints `8bc50ba2… Merge pull request #8`. Proceed.",
+      "expected_output": "The agent stops before any edit and returns the canonical report with status BLOCKED: the header line, the Agent/Base/Worktree/Branch line naming the mismatch, `Changed: none`, and a Blockers line saying the checkout is not the brief's Base and the lead must relaunch (worktrees hold only committed state, so it would build on stale code).",
+      "files": [],
+      "assertions": [
+        "No file is created or edited",
+        "The report header ends in BLOCKED and the next line names Agent, Base, Worktree and Branch",
+        "The Blockers line states the base mismatch with both SHAs and names the lead as the one who unblocks",
+        "The agent does not try to fix the base itself with git switch, checkout, fetch, rebase or stash"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "You are ios-engineer in a worktree under .claude/worktrees/. You finished the retry button from the brief; `just ios-check` passed on Linux. Your agent Verification block also lists `just generate --check` and `just arch-check`. Write your hand-back.",
+      "expected_output": "A DONE report in the canonical format: Changed lists every path from git status (including untracked), Verification pastes the real `just ios-check` result, Not run lists `just generate --check` and `just arch-check` with the reason 'worktree; the lead runs it after integration' plus the macOS-only steps, Reuse check and Sibling copied are filled, and the Parity block repeats the brief's states, strings, ids, events, operations and failure mapping.",
+      "files": [],
+      "assertions": [
+        "Every line of the canonical report is present, with `none` or `n/a` where empty",
+        "`just generate --check` and `just arch-check` appear under Not run with a worktree reason, not as passed",
+        "The Parity block is present and uses the brief's literal strings and ids, not values read from apps/android",
+        "No git add, commit or stash command is run; files that belong together are listed under Must be committed together"
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "You are api-engineer implementing GET /v1/closet/items/count in the closet module. The response needs a new `archivedCount` field that is not in packages/contracts/openapi/modules. Just add it to the YAML and keep going.",
+      "expected_output": "The agent does not edit packages/contracts (outside its write set and single-writer). It stops that part, reports BLOCKED or PARTIAL with a Blockers line naming contracts-engineer via api-contract-change and the exact field to add, and continues only with work that does not depend on the new field.",
+      "files": [],
+      "assertions": [
+        "No file under packages/contracts/** is edited",
+        "The Blockers line names contracts-engineer (api-contract-change) and the exact schema change needed",
+        "The report uses the canonical header and status word",
+        "The agent does not hand-write a local type that duplicates the missing contract field"
+      ]
+    }
+  ]
+}

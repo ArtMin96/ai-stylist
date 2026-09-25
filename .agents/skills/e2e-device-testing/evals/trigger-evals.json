@@ -36,10 +36,6 @@
     "should_trigger": true
   },
   {
-    "query": "our pre-release qualification device-farm run is missing the low-tier android device (galaxy a16 class), need to add that lane",
-    "should_trigger": true
-  },
-  {
     "query": "just ios-e2e can't find the settings button but android-e2e passes, the flow uses the same id on both, what's wrong",
     "should_trigger": true
   },
@@ -80,11 +76,7 @@
     "should_trigger": false
   },
   {
-    "query": "want to add a shared retry-with-backoff utility script under scripts/ that a few different load-test profiles could reuse",
-    "should_trigger": false
-  },
-  {
-    "query": "write the XCTest unit tests for the closet list view model's pagination logic",
+    "query": "write the Swift Testing unit tests for the closet list view model's pagination logic",
     "should_trigger": false
   }
 ]

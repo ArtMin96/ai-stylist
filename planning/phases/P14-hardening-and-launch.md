@@ -168,7 +168,7 @@ P14 runs the accumulated suites as release gates rather than writing new feature
 | `recommendation` | — | Invariant suites | — | **Full simulation suite (N≥10,000): zero hard-constraint violations is a release gate** ([13 §11](../13-testing-quality-and-performance.md)) | Latency evidence per budget |
 | Security | Regression tests for every pen-test/audit finding (fail-first) | — | — | Full `*.sec.test.ts` suite: authZ matrix, signed URLs, webhook replay, rate limits, deletion, redaction canary, hostile uploads, consent gating | Rotation + recovery drills (manual, documented) |
 | `media`/`avatar`/`outfit` | — | — | Asset-manifest schemas | `just assets-validate` full pass | Golden full matrix; device-matrix perf runs with archived raw traces (no hand-summarized numbers) |
-| Mobile (all features) | — | — | Client handshake | RNTL suites | Maestro six journeys on both platforms (nightly + pre-release tier); manual a11y checklist archived; battery/thermal sessions |
+| Mobile (all features) | — | — | Client handshake | native UI tests (Compose/Robolectric; iOS models + simulator) | Maestro six journeys on both platforms (nightly + pre-release tier); manual a11y checklist archived; battery/thermal sessions |
 | Workers / ML | Full pytest | hypothesis suites | Schemathesis | Pipeline goldens | `just ml-eval` all suites incl. cost/latency gates at release-candidate model/prompt versions |
 
 New bug fixes require a regression test that fails before the fix. Tests live in each module's `tests/` directory.
@@ -187,8 +187,8 @@ This phase converts hypotheses to measured, ratified gates (DEC entries for each
 ## 16. Rollout, flags, migration, compatibility, rollback
 
 - Feature flags (owner + expiry date): no new feature flags; expired-flag sweep executed (CI report clean — [14 §11](../14-observability-operations-and-analytics.md)); permanent kill-switch flags verified live; `staged-rollout` configuration is store-native, not a PostHog flag.
-- Migration/backward-compatibility plan: release candidate carries no pending destructive migrations; store builds pinned to contract version; OTA policy honored (JS/assets only; native changes require full build — [15 §10](../15-team-workflow-and-ai-agent-operations.md)).
-- Rollback plan (rehearsed in T15, executed if crash gate trips): halt staged rollout (Play console / iOS phased-release pause) → triage with runbook 9 → fix-forward via expedited build or OTA (JS-only fixes) → if server-side cause, revert deploy in Coolify (previous image) + `just db-rollback` only for contract-phase-safe migrations → post-incident review. Store rollback limitations documented honestly (Play allows halting, not un-shipping; iOS requires new build).
+- Migration/backward-compatibility plan: release candidate carries no pending destructive migrations; store builds pinned to contract version; every change ships as a store build (native apps have no OTA channel — [15 §10](../15-team-workflow-and-ai-agent-operations.md)).
+- Rollback plan (rehearsed in T15, executed if crash gate trips): halt staged rollout (Play console / iOS phased-release pause) → triage with runbook 9 → fix-forward via expedited store build → if server-side cause, revert deploy in Coolify (previous image) + `just db-rollback` only for contract-phase-safe migrations → post-incident review. Store rollback limitations documented honestly (Play allows halting, not un-shipping; iOS requires new build).
 
 ## 17. Risks, mitigations, assumptions, stop/kill criteria
 

@@ -183,7 +183,7 @@ Written before implementation per task; suites per [13 §3–§5, §11](../13-te
 | `outfit` | save/worn/schedule logic | — | outfit events | wear-event write-through to closet | — |
 | `notifications` | quiet-hours/timezone math | — | port contract (fake FCM/APNs) | scheduling job; opt-out honored | device push smoke (both platforms) |
 | `shared-kernel` | reason-code registry completeness (every emitted code registered; every code has a template) | — | enum sync in contracts | — | — |
-| Mobile | card states, template rendering from codes | — | generated client handshake | RNTL: feedback flows, transparency, offline states (MSW) | Maestro: recommendation → explanation → feedback; degraded-provider flow (doc 13 §7) |
+| Mobile | card states, template rendering from codes | — | generated client handshake | native UI tests (Compose/Robolectric; iOS models + simulator): feedback flows, transparency, offline states (fake API) | Maestro: recommendation → explanation → feedback; degraded-provider flow (doc 13 §7) |
 | `recommendation` (explanation templates) | validator rejects unsupported facts | — | — | zero provider calls on the explanation path (test) | faithfulness eval in nightly ML lane |
 
 New bug fixes require a regression test that fails before the fix. Tests live in each module's `tests/`.

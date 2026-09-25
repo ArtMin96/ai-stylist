@@ -1,0 +1,11 @@
+{
+  "session_id": "fixture-session",
+  "transcript_path": "/tmp/fixture-transcript.jsonl",
+  "cwd": "/home/arthur/Projects/app",
+  "hook_event_name": "PreToolUse",
+  "tool_name": "Bash",
+  "tool_input": {
+    "command": "pnpm --filter @ai-stylist/api add zod",
+    "description": "fixture"
+  }
+}

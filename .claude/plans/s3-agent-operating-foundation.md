@@ -1,5 +1,15 @@
 # s3 — Agent Operating Foundation (skills, agents, rules, hooks, docs enforcement)
 
+> Status: EXECUTED 2026-09-13 (commit 2592485; `planning/PROGRESS.md` handoff "2026-09-13 — Agent
+> operating foundation"). The roster below is SUPERSEDED by ADR-0004 (native iOS and Android): the
+> mobile-feature and native-3d-assets skills, the mobile-engineer and render-3d-engineer agents, the
+> mobile.md and render-3d.md rules, the `mobile` test route and apps/mobile no longer exist. Current
+> roster: `.agents/skills/README.md`, `.claude/agents/README.md`, `.claude/rules/`. The C1–C12 boxes
+> were never ticked. Still open: the C4 hook-fixture proof (nothing ran `tools/docs/fixtures/hooks/`
+> until the 2026-09-25 foundation fix wires it into `just docs-check --fixtures`) and C9's automated
+> trigger scores (never produced). The meta-skills named below are not installed: use
+> `anthropic-skills:skill-creator` for skills and `templates/agent.md` for agents. Do not re-execute.
+
 **Scope:** full plan — 22 skills, 13 agents, 11 path-scoped rule files, 5 hooks, 5 new `just` recipes,
 a `docs-check` gate, and two human-approval proposals. Multi-file, shared structure, parallelizable.
 

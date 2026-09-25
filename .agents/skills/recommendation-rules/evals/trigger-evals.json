@@ -47,12 +47,12 @@
   {
     "query": "the Today card on the home screen isn't showing the shuffle button for alternative outfits",
     "should_trigger": false,
-    "_near_miss_reason": "mentions recommendation UI (Today card, shuffle) but it's a mobile screen/component bug — mobile-feature owns the display, not the scoring logic."
+    "_near_miss_reason": "mentions recommendation UI (Today card, shuffle) but it's a mobile screen/component bug — ios-feature / android-feature owns the display, not the scoring logic."
   },
   {
     "query": "the 3D avatar isn't rendering the recommended jacket correctly, looks clipped through the torso",
     "should_trigger": false,
-    "_near_miss_reason": "the garment came from a recommendation, but the defect is in rendering/fit — native-3d-assets, and recommendation must stay renderer-independent anyway."
+    "_near_miss_reason": "the garment came from a recommendation, but the defect is in rendering/fit — the client app's UI (no 3D renderer exists today), and recommendation must stay renderer-independent anyway."
   },
   {
     "query": "need to add a brand-new reason code to the registry for a scenario we haven't covered yet",

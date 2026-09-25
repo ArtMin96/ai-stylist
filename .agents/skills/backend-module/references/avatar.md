@@ -11,7 +11,7 @@ Parametric avatar parameters, calibration, poses, and avatar asset versions. Ful
 
 - Must never be imported by `recommendation` (`recommendation-not-renderer`) — `recommendation` stays a black box that returns reason codes, never a renderer dependency.
 - Honesty invariant: no "exact digital twin" claims; every generated view carries a provenance marker and a confidence value (CLAUDE.md).
-- Rendering output reaches the mobile render boundary (`apps/mobile/src/render/`) through `packages/contracts`, never through a direct import of another domain module.
+- Rendering output reaches the client apps through `packages/contracts`, never through a direct import of another domain module.
 
 ## Key files
 
@@ -44,4 +44,4 @@ Status: skeleton (P02), no domain-phase task has touched it yet. `planning/phase
 ## Escalate when
 
 - Anything would create an import edge between `avatar` and `recommendation` in either direction — stop immediately, this is the `recommendation-not-renderer` rule and it is architecture-review/ADR territory, not a workaround.
-- The actual 3D rendering/asset work starts (Filament scenes, morph targets, glTF/KTX2 assets) — that crosses into `native-3d-assets`, this skill only owns the domain-module side (config, calibration, versioning).
+- The actual 3D rendering/asset work starts (scenes, morph targets, glTF/KTX2 assets) — client-side 3D is deferred (no owner until it resumes), so stop and escalate; this skill only owns the domain-module side (config, calibration, versioning).

@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Shared Android Lint severity overrides (build-logic QualityConventions.kt points every module here).
+  Lint runs with warningsAsErrors + abortOnError and NO baseline: every finding fails the build.
+  Only checks whose job another tool owns may be ignored here, each with the reason.
+-->
+<lint>
+    <!-- Renovate owns dependency and tool bumps (it opens a PR per update). -->
+    <issue id="NewerVersionAvailable" severity="ignore" />
+    <issue id="GradleDependency" severity="ignore" />
+    <issue id="AndroidGradlePluginVersion" severity="ignore" />
+</lint>

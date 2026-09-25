@@ -23,7 +23,8 @@ pnpm exec depcruise --config tools/depcruise/rules.cjs "${SCOPE[@]}"
 echo "==> no-utils-dirs (directory scan)"
 banned="$(find apps packages workers -type d \( -name utils -o -name helpers -o -name common \) \
   -not -path '*/node_modules/*' -not -path '*/.venv/*' -not -path '*/dist/*' -not -path '*/gen/*' \
-  -not -path '*/generated/*' -not -path '*/.expo/*' -not -path '*/android/*' -not -path '*/ios/*' \
+  -not -path '*/generated/*' -not -path '*/build/*' -not -path '*/.build/*' -not -path '*/.gradle/*' \
+  -not -path '*/DerivedData/*' \
   2>/dev/null || true)"
 if [[ -n "$banned" ]]; then
   echo "error no-utils-dirs: banned directory (04 §4.4 — keep helpers with the concept they serve):" >&2

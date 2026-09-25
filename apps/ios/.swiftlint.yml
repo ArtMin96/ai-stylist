@@ -1,0 +1,43 @@
+# SwiftLint: safety rules only. Formatting and style belong to swift-format (.swift-format),
+# so the two tools never disagree. `only_rules` means a rule is off unless it is listed here.
+# On Linux the SourceKit-free `swiftlint-static` binary runs the syntax rules and skips
+# `custom_rules` (they need SourceKit, macOS only); scripts/check-banned.sh is the
+# cross-platform backstop for those bans.
+only_rules:
+  - force_unwrapping
+  - force_try
+  - force_cast
+  - implicitly_unwrapped_optional
+  - unowned_variable_capture
+  - weak_delegate
+  - fatal_error_message
+  - discouraged_optional_boolean
+  - private_swiftui_state
+  - unhandled_throwing_task
+  - custom_rules
+
+force_unwrapping: error
+force_try: error
+force_cast: error
+implicitly_unwrapped_optional: error
+unowned_variable_capture: error
+fatal_error_message: error
+private_swiftui_state: error
+unhandled_throwing_task: error
+
+included:
+  - App
+  - Packages
+excluded:
+  - '**/.build'
+  - scripts/fixtures
+
+custom_rules:
+  no_unchecked_sendable:
+    regex: '@unchecked\s+Sendable'
+    message: 'Use an actor, Mutex, or a value type instead of @unchecked Sendable.'
+    severity: error
+  no_nonisolated_unsafe:
+    regex: 'nonisolated\s*\(\s*unsafe\s*\)'
+    message: 'nonisolated(unsafe) opts out of data-race safety; restructure the code instead.'
+    severity: error

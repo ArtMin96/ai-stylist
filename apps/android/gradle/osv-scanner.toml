@@ -1,0 +1,17 @@
+# osv-scanner ignore list for apps/android/gradle/verification-metadata.xml.
+#
+# Why this file is here and not in the root osv-scanner.toml: `osv-scanner scan --recursive .`
+# (osv-scanner 2.5.1, as `just security-scan` runs it) applies only the osv-scanner.toml in the
+# SAME directory as each scanned lockfile. A root entry for a finding reported from this
+# directory is loaded but never matched ("has unused ignores"), verified 2026-09-23.
+#
+# Policy: docs/security/dependency-ignores.md. Same rules as the root file: one entry per
+# OSV/GHSA id, a reason naming the package, the Gradle configuration that pulls it in and why no
+# fix path works today, and an `ignoreUntil` no more than two months out. Only BUILD-TOOL or
+# test-only findings may be ignored; a finding on an app runtime classpath never is.
+
+[[IgnoredVulns]]
+# BUILD TOOL ONLY (never in the APK). Recorded in docs/security/dependency-ignores.md (2026-09-23).
+id = "GHSA-r937-wjx7-w2jp"
+ignoreUntil = 2026-11-22
+reason = "org.jetbrains.kotlin:kotlin-gradle-plugin 2.4.0 (CVE-2026-53914, build-cache deserialization; fixed 2.4.20). Path: Gradle 9.7.1's bundled kotlin-dsl plugin (gradle-kotlin-dsl-plugins 6.7.3) -> apps/android/build-logic buildscript classpath; appears only in apps/android/gradle/verification-metadata.xml. Every fix path breaks the build on Gradle 9.7.1 (latest GA): a classpath constraint to KGP 2.4.20, or pinning kotlin-dsl 6.7.11 (which uses KGP 2.4.20), both make :build-logic:convention:compileKotlin fail under allWarningsAsErrors (DEPRECATED_CLI_ARG -Xuse-fir-lt) with Gradle's 'Unsupported Kotlin plugin version' warning. Fix: Gradle 9.8.0 (in RC) ships kotlin-dsl 6.7.11; bump the wrapper when it is GA and drop this entry."

@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Placeholder launcher icon, matching the previous app's solid #111111 adaptive icon. -->
+    <color name="ic_launcher_background">#111111</color>
+</resources>

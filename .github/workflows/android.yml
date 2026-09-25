@@ -1,94 +1,225 @@
-# Android build lane (P02-T14). Runs on Linux (brief §4: "Linux can: Android build+sign").
+# Android lane: builds and verifies the native Kotlin + Jetpack Compose app in apps/android.
 #
-# Trigger: manual dispatch, or tags `v*`.
-# Required secrets: none for an unsigned preview build.
-# Optional secrets (signing is skipped when unset - NO Play account exists yet):
-#   ANDROID_KEYSTORE_BASE64   base64 of the upload keystore (.jks)
-#   ANDROID_KEYSTORE_PASSWORD
-#   ANDROID_KEY_ALIAS
-#   ANDROID_KEY_PASSWORD
+# Triggers: pull requests and pushes to main that touch apps/android/**, packages/contracts/** (the
+#           generated Kotlin client and the analytics taxonomy live there), tools/codegen/gen-kotlin.sh,
+#           the justfile, mise.toml, scripts/native-lane.sh or this file; plus manual dispatch.
+# Secrets:  none. The release build is unsigned. Play signing (upload keystore) comes later in a
+#           separate, tag- or dispatch-only job, and uploading to Play stays a human action.
+# Recipes:  just android-sdk install · just android-format --check · just android-lint ·
+#           just android-detekt · just android-test · just android-build <debug|preview|release>
+#           (all go through apps/android/tools/gradle.sh, which checks for JDK 21 and finds the SDK).
+# Dependency verification runs inside every Gradle step: apps/android/gradle/verification-metadata.xml
+# (sha256) plus STRICT lockfiles, so a changed or unknown artifact fails whichever job resolves it.
+#
+# Job tree:
+#   verify ──┬──> test ───┬──> summary
+#            └──> build ──┘
 name: android
 
 on:
-  workflow_dispatch:
-    inputs:
-      profile:
-        description: Build profile
-        type: choice
-        options: [dev, preview, prod]
-        default: preview
+  pull_request:
+    paths:
+      - 'apps/android/**'
+      - 'packages/contracts/**'
+      - 'tools/codegen/gen-kotlin.sh'
+      - 'justfile'
+      - 'mise.toml'
+      - 'scripts/native-lane.sh'
+      - '.github/workflows/android.yml'
   push:
-    tags:
-      - 'v*'
+    branches: [main]
+    paths:
+      - 'apps/android/**'
+      - 'packages/contracts/**'
+      - 'tools/codegen/gen-kotlin.sh'
+      - 'justfile'
+      - 'mise.toml'
+      - 'scripts/native-lane.sh'
+      - '.github/workflows/android.yml'
+  workflow_dispatch:
 
-permissions:
-  contents: read
-
-concurrency:
-  group: android-${{ github.ref }}
-  cancel-in-progress: true
+permissions: {}
 
 env:
   CI: 'true'
   DO_NOT_TRACK: '1'
 
 jobs:
-  build:
-    name: just mobile-android-build
+  verify:
+    name: Verify · Spotless, Android Lint, module graph, detekt
+    # needs: none (root of the job tree)
     runs-on: ubuntu-latest
-    timeout-minutes: 45
-    env:
-      PROFILE: ${{ inputs.profile || 'preview' }}
-      HAS_KEYSTORE: ${{ secrets.ANDROID_KEYSTORE_BASE64 != '' }}
+    timeout-minutes: 30
+    permissions:
+      contents: read
+    concurrency:
+      group: ${{ github.workflow }}-verify-${{ github.ref }}
+      cancel-in-progress: true
     steps:
-      - name: Record start
-        id: start
-        run: echo "ts=$(date +%s)" >> "$GITHUB_OUTPUT"
-      - uses: actions/checkout@v7
-      # Android SDK + platform tools are preinstalled on ubuntu-24.04 images;
-      # Temurin 17 comes from mise.toml via the setup action.
-      - uses: ./.github/actions/setup
-
-      - name: Decode upload keystore
-        id: keystore
-        if: env.HAS_KEYSTORE == 'true'
-        env:
-          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
-        run: |
-          mkdir -p "$RUNNER_TEMP/android-signing"
-          echo "$ANDROID_KEYSTORE_BASE64" | base64 -d > "$RUNNER_TEMP/android-signing/upload.jks"
-          echo "path=$RUNNER_TEMP/android-signing/upload.jks" >> "$GITHUB_OUTPUT"
-          echo "Signing: enabled"
-
-      - name: Signing status
-        if: env.HAS_KEYSTORE != 'true'
-        run: echo "::notice::ANDROID_KEYSTORE_BASE64 not set - producing an unsigned/debug-signed build"
-
-      - name: just mobile-android-build --profile ${{ env.PROFILE }}
-        env:
-          # Consumed by the Gradle signing config when present (T14 wires it).
-          ANDROID_KEYSTORE_PATH: ${{ steps.keystore.outputs.path }}
-          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
-          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
-          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
-        run: just mobile-android-build --profile "$PROFILE"
-
-      - name: Upload AAB/APK
+      - name: Setup · Check out
+        uses: actions/checkout@v7
+      - name: Setup · Install mise tools
+        uses: ./.github/actions/setup
+        with:
+          install: 'false'
+      - name: Setup · Gradle cache
+        uses: gradle/actions/setup-gradle@v6
+        with:
+          cache-provider: basic
+          cache-read-only: ${{ github.ref != 'refs/heads/main' }}
+      - name: Setup · Android SDK
+        run: just android-sdk install
+      - name: Verify · Spotless
+        run: just android-format --check
+      - name: Verify · Android Lint and module graph
+        run: just android-lint
+      - name: Verify · detekt
+        run: just android-detekt
+      - name: Report · Upload reports
+        if: failure()
         uses: actions/upload-artifact@v7
         with:
-          name: android-${{ env.PROFILE }}-${{ github.sha }}
+          name: android-verify-reports-${{ github.sha }}
           path: |
-            apps/mobile/android/app/build/outputs/bundle/**/*.aab
-            apps/mobile/android/app/build/outputs/apk/**/*.apk
-          if-no-files-found: warn
-          retention-days: 30
-
-      - name: Remove keystore
+            apps/android/**/build/reports/**
+          if-no-files-found: ignore
+          retention-days: 14
+      - name: Report · Job summary
         if: always()
-        run: rm -rf "$RUNNER_TEMP/android-signing"
-
-      - name: Record ci.android_build_duration_seconds
-        if: always()
+        env:
+          JOB_STATUS: ${{ job.status }}
         run: |
-          n=$(( $(date +%s) - ${{ steps.start.outputs.ts }} ))
-          echo "ci.android_build_duration_seconds=${n} profile=${PROFILE}" | tee -a "$GITHUB_STEP_SUMMARY"
+          {
+            echo "### Android · Verify: ${JOB_STATUS}"
+            echo "- Spotless (ktlint), Android Lint + compose-lint-checks (warnings are errors), module graph, detekt"
+            echo "- Dependency verification: verification-metadata.xml (sha256) + STRICT lockfiles"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  test:
+    name: Test · Unit and Robolectric
+    needs: verify
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+    concurrency:
+      group: ${{ github.workflow }}-test-${{ github.ref }}
+      cancel-in-progress: true
+    steps:
+      - name: Setup · Check out
+        uses: actions/checkout@v7
+      - name: Setup · Install mise tools
+        uses: ./.github/actions/setup
+        with:
+          install: 'false'
+      - name: Setup · Gradle cache
+        uses: gradle/actions/setup-gradle@v6
+        with:
+          cache-provider: basic
+          cache-read-only: ${{ github.ref != 'refs/heads/main' }}
+      - name: Setup · Android SDK
+        run: just android-sdk install
+      - name: Test · Unit + Robolectric
+        run: just android-test
+      - name: Report · Upload test reports
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: android-test-reports-${{ github.sha }}
+          path: |
+            apps/android/**/build/reports/tests/**
+            apps/android/**/build/test-results/**
+          if-no-files-found: ignore
+          retention-days: 14
+      - name: Report · Job summary
+        if: always()
+        env:
+          JOB_STATUS: ${{ job.status }}
+        run: |
+          {
+            echo "### Android · Test: ${JOB_STATUS}"
+            echo "- JVM unit tests (:core:data, :core:analytics, :app) and Robolectric Compose tests (:feature:home)"
+            echo "- Reports: artifact android-test-reports-${GITHUB_SHA}"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  build:
+    name: Build · Debug, preview and release APKs
+    needs: verify
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+    concurrency:
+      group: ${{ github.workflow }}-build-${{ github.ref }}
+      cancel-in-progress: true
+    steps:
+      - name: Setup · Check out
+        uses: actions/checkout@v7
+      - name: Setup · Install mise tools
+        uses: ./.github/actions/setup
+        with:
+          install: 'false'
+      - name: Setup · Gradle cache
+        uses: gradle/actions/setup-gradle@v6
+        with:
+          cache-provider: basic
+          cache-read-only: ${{ github.ref != 'refs/heads/main' }}
+      - name: Setup · Android SDK
+        run: just android-sdk install
+      - name: Build · Debug APK
+        run: just android-build debug
+      - name: Build · Preview APK
+        run: just android-build preview
+      - name: Build · Release APK (unsigned)
+        run: just android-build release
+      - name: Report · Upload APKs
+        uses: actions/upload-artifact@v7
+        with:
+          name: android-apks-${{ github.sha }}
+          path: |
+            apps/android/app/build/outputs/apk/**/*.apk
+          if-no-files-found: error
+          retention-days: 14
+      - name: Report · Job summary
+        if: always()
+        env:
+          JOB_STATUS: ${{ job.status }}
+        run: |
+          {
+            echo "### Android · Build: ${JOB_STATUS}"
+            echo "| Variant | applicationId | Signing |"
+            echo "|---|---|---|"
+            echo "| debug (dev) | app.aistylist.mobile.dev | debug key |"
+            echo "| preview | app.aistylist.mobile.preview | debug key |"
+            echo "| release (prod) | app.aistylist.mobile | unsigned |"
+            echo "- APKs: artifact android-apks-${GITHUB_SHA}"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  summary:
+    name: Report · Android summary
+    needs: [verify, test, build]
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    permissions:
+      contents: read
+    concurrency:
+      group: ${{ github.workflow }}-summary-${{ github.ref }}
+      cancel-in-progress: true
+    steps:
+      - name: Report · Job results
+        run: |
+          {
+            echo "## Android lane"
+            echo ""
+            echo "| job | result |"
+            echo "|---|---|"
+            echo "| verify | ${{ needs.verify.result }} |"
+            echo "| test | ${{ needs.test.result }} |"
+            echo "| build | ${{ needs.build.result }} |"
+          } >> "$GITHUB_STEP_SUMMARY"
+      - name: Report · Fail when any job failed
+        if: contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled')
+        run: |
+          echo "::error::one or more Android jobs failed"
+          exit 1

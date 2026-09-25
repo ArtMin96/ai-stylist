@@ -2,8 +2,9 @@
 name: s
 description: Do the clean-fixture thing. Not for anything else.
 metadata:
-  last-reviewed: 2026-09-13
+  last-reviewed: '2026-09-25'
   modules: x, platform, shared-kernel
+  owner-agent: a,b
 ---
 
 # s
@@ -14,7 +15,7 @@ Trigger text.
 
 ## Required reading
 
-Reading text.
+Required reading text.
 
 ## Workflow
 
@@ -22,7 +23,7 @@ Workflow text.
 
 ## Validation commands
 
-Validation text.
+Validation commands text.
 
 ## Output
 
@@ -30,7 +31,7 @@ Output text.
 
 ## Stop / escalation
 
-Escalation text.
+Stop / escalation text.
 
 ## Overlap
 

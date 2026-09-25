@@ -8,11 +8,11 @@ It complements the root [`README.md`](../README.md) (local machine setup) and th
 
 No secret ever goes into a committed file. Every value you copy from a vendor dashboard goes to exactly one of three places:
 
-| Where                                                           | What goes there                                                                                                                                                      | Who reads it                                           |
-| --------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------ |
-| `.env` (repo root, gitignored)                                  | Your personal local values. Keys mirror `.env.example`.                                                                                                              | `just` recipes, direnv, the API, the mobile app        |
-| `secrets/<env>.enc.yaml` (committed, encrypted with sops + age) | Shared values for `dev`, `staging`, `prod`. `just secrets-sync` decrypts `dev` into your `.env`. `staging`/`prod` are decrypted only by CI.                          | Developers (`dev`), CI deploy jobs (`staging`, `prod`) |
-| GitHub repository secrets                                       | Only: the CI age private key, store signing credentials, deploy and build tokens. The exact names are listed per service below and in `.github/workflows/README.md`. | GitHub Actions                                         |
+| Where                                                           | What goes there                                                                                                                                                      | Who reads it                                                                 |
+| --------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------- |
+| `.env` (repo root, gitignored)                                  | Your personal local values. Keys mirror `.env.example`.                                                                                                              | `just` recipes, direnv, the API, the workers (the native apps never read it) |
+| `secrets/<env>.enc.yaml` (committed, encrypted with sops + age) | Shared values for `dev`, `staging`, `prod`. `just secrets-sync` decrypts `dev` into your `.env`. `staging`/`prod` are decrypted only by CI.                          | Developers (`dev`), CI deploy jobs (`staging`, `prod`)                       |
+| GitHub repository secrets                                       | Only: the CI age private key, store signing credentials, deploy and build tokens. The exact names are listed per service below and in `.github/workflows/README.md`. | GitHub Actions                                                               |
 
 `.env.example` is the exhaustive, zero-value catalogue of keys. `just doctor` fails when your `.env` lacks any key listed there (empty values are fine). If a service produces a key that is not in `.env.example`, the key is added to `.env.example` with the phase that needs it, never invented ad hoc.
 
@@ -30,7 +30,7 @@ Phase numbers refer to `planning/phases/`. "Needed from" is the first task that 
 | 4   | Server + Coolify                                                        | API, jobs, workers, PostgreSQL hosting                    | P02 (server), P03 (deploy) | Server ~€10–25/month; Coolify $0 self-hosted | `<owner>`     | [ ]  |
 | 5   | pg-boss (no account)                                                    | Durable jobs (outbox relay, media pipeline)               | P02-T08                    | $0, MIT, runs on the app database            | n/a           | [ ]  |
 | 6   | Cloudflare (R2 + DNS/WAF)                                               | Object storage for media and public assets, DNS, WAF      | P02-T13                    | Yes, 10 GB-month, Checked 2026-09-10         | `<owner>`     | [ ]  |
-| 7   | Expo / EAS                                                              | Cloud builds for iOS and Android                          | P02-T14                    | 15 + 15 builds/month, Checked 2026-09-10     | `<owner>`     | [ ]  |
+| 7   | Expo / EAS (removed 2026-09-22)                                         | Nothing: the React Native app and EAS builds are gone     | n/a                        | n/a                                          | n/a           | n/a  |
 | 8   | Apple Developer Program                                                 | iOS signing, TestFlight, App Store, Sign in with Apple    | P02-T14                    | No, 99 USD/year, Checked 2026-09-10          | `<owner>`     | [ ]  |
 | 9   | Google Play Console                                                     | Android signing and distribution                          | P02-T14                    | No, 25 USD once, Checked 2026-09-10          | `<owner>`     | [ ]  |
 | 10  | PostHog                                                                 | Product analytics, replay, error tracking, flags          | P02-T09/P03                | Yes, 1M events/month, Checked 2026-09-10     | `<owner>`     | [ ]  |
@@ -38,6 +38,7 @@ Phase numbers refer to `planning/phases/`. "Needed from" is the first task that 
 | 12  | RevenueCat                                                              | Subscriptions and entitlements                            | P13                        | Yes, up to $2,500 MTR, Checked 2026-09-10    | `<owner>`     | [ ]  |
 | 13  | fal.ai, Open-Meteo, date-holidays (no account), LLM/embedding providers | AI generation, weather, holidays, extraction              | P06 / P08 / P11            | Mixed, see section 13                        | `<owner>`     | [ ]  |
 | 14  | Apple and Google sign-in                                                | Social login for better-auth                              | P03                        | Included in 8 and free Google Cloud project  | `<owner>`     | [ ]  |
+| 15  | Firebase Cloud Messaging + APNs                                         | Push notifications (FCM + APNs direct, server-side)       | P09-T16                    | FCM free; APNs included in 8                 | `<owner>`     | [ ]  |
 
 Replace `<owner>` with a real name once an account exists; keep this table current.
 
@@ -53,7 +54,7 @@ Now (P02). The repository is `https://github.com/ArtMin96/ai-stylist` under a pe
 
 ### Cost
 
-Free. GitHub Actions minutes on Linux runners are free for public repositories; private repositories get a monthly included quota that depends on the plan. Verify on <https://docs.github.com/en/billing/managing-billing-for-your-products/about-billing-for-github-actions>. The `ios-gha-macos.yml` lane uses macOS runners, which are billed per minute even on paid plans; that lane is dispatch-only until ADR-0002 is decided.
+Free. GitHub Actions minutes on Linux runners are free for public repositories; private repositories get a monthly included quota that depends on the plan. Verify on <https://docs.github.com/en/billing/managing-billing-for-your-products/about-billing-for-github-actions>. The `macos` job of `ios.yml` runs on the `xcode-27` macOS runner for every pull request or push to `main` that touches the iOS paths (DEC-51; ADR-0002 was superseded by ADR-0004); on a private repository macOS minutes use up the quota much faster than Linux minutes.
 
 ### Steps
 
@@ -61,7 +62,7 @@ Free. GitHub Actions minutes on Linux runners are free for public repositories; 
 2. Replace the placeholder handles in `CODEOWNERS` (`@team`, `@dev-lead`, `@3d-owner`, `@ml-owner`) with real GitHub usernames. GitHub silently ignores unknown owners, so do this before step 3. With a one-person team every handle can be the same username. Commit the change through a normal pull request.
 3. Protect `main`: **Settings**, **Branches**, **Add classic branch protection rule** (GitHub also offers **Rulesets** under **Settings**, **Rules**; either works, use one, not both). Branch name pattern: `main`.
 4. Tick **Require a pull request before merging**. Tick **Require review from Code Owners** only after step 2 is merged.
-5. Tick **Require status checks to pass before merging** and **Require branches to be up to date before merging**. In the search box add these check names exactly as the jobs in `pr-gate.yml` report them: `just ci-parity`, `contracts (generate --check, spectral, oasdiff)`, `gitleaks (PR diff)`, `.env.example covers apps/api env keys`, `clone detection (NFR-TEAM-040)`. The names only appear in the search box after the workflow has run at least once on a pull request, so open a trivial PR first if the list is empty. `ci.pr_gate_duration` is informational; do not require it.
+5. Tick **Require status checks to pass before merging** and **Require branches to be up to date before merging**. In the search box add these check names exactly as the jobs in `pr-gate.yml` report them: `Gate · just ci-parity` (it also runs the `.env.example` key check), `Gate · Contracts (generate --check, spectral, oasdiff)`, `Gate · Secret scan (PR diff)`, `Gate · Clone detection (placeholder)`, and `Report · PR gate summary`, which fails when any gate job failed or was cancelled and carries `ci.pr_gate_duration_seconds`. The names only appear in the search box after the workflow has run at least once on a pull request, so open a trivial PR first if the list is empty.
 6. Save the rule.
 7. Repository secrets live at **Settings**, **Secrets and variables**, **Actions**, **New repository secret**. Create them as each later section tells you to. Nothing is needed for `pr-gate.yml`, `affected.yml`, or `nightly.yml` today. `GITLEAKS_LICENSE` is only needed when the repository moves under a GitHub organization; skip it.
 8. Turborepo remote cache (optional). `pr-gate.yml` prints "Turborepo remote cache disabled" until `TURBO_TOKEN` and `TURBO_TEAM` exist. Two options: Vercel Remote Cache (free on all Vercel plans, Checked 2026-09-10, <https://turborepo.dev/docs/core-concepts/remote-caching>; create a Vercel account, run `pnpm exec turbo login` then `pnpm exec turbo link` in the repo root, then create a token under the Vercel account settings, **Tokens** (label may differ), and store it as `TURBO_TOKEN` with the Vercel team slug as `TURBO_TEAM`), or a self-hosted cache server (an open-source `turborepo-remote-cache` deployment you run yourself). Recommendation: skip this until `ci.pr_gate_duration_seconds` in the job summary is consistently above the 10 minute budget. Cold CI runs are within budget today.
@@ -74,12 +75,12 @@ Free. GitHub Actions minutes on Linux runners are free for public repositories; 
 ### Do not
 
 - Do not add secrets to workflow YAML or to `.env.example`.
-- Do not require `ios-eas`, `ios-gha-macos`, `android`, or `nightly` checks on `main`; they are dispatch-only or scheduled.
+- Do not require the native `ios` / `android` lanes or `nightly` checks on `main`; the native lanes run only when their paths change (a required check that never runs blocks every other pull request) and `nightly` is scheduled.
 - Do not change required checks, force-push, or rewrite history without explicit human authorization (`CLAUDE.md` "Prohibited").
 
 ### Verify
 
-Open a pull request with any small change. The checks list shows the five `pr-gate` jobs plus `ci.pr_gate_duration`, and the "Merge" button stays disabled until they pass. Locally, `just ci-parity` must be green before you open it.
+Open a pull request with any small change. The checks list shows the four `Gate · …` jobs plus `Report · PR gate summary`, and the "Merge" button stays disabled until they pass. Locally, `just ci-parity` must be green before you open it.
 
 ## 2. sops + age
 
@@ -147,7 +148,7 @@ Run these in a shell where mise is activated (`eval "$(~/.local/bin/mise activat
    just secrets-sync            # same as: just secrets-sync dev
    ```
 
-   This decrypts `secrets/dev.enc.yaml` to a private temp file and merges it into `.env`: every key with a non-empty shared value replaces its `KEY=...` line (or is appended if missing); keys whose shared value is empty are skipped; every other line is kept verbatim, so personal overrides such as `POSTGRES_HOST_PORT` or `EXPO_PUBLIC_API_BASE_URL` survive as long as the shared file leaves them empty. If `.env` does not exist it is created from `.env.example` first. The output lists the key names that were replaced or added and a count; it never prints a value, and `.env` ends up with mode 600. `.envrc` (`dotenv_if_exists .env`) keeps working unchanged.
+   This decrypts `secrets/dev.enc.yaml` to a private temp file and merges it into `.env`: every key with a non-empty shared value replaces its `KEY=...` line (or is appended if missing); keys whose shared value is empty are skipped; every other line is kept verbatim, so personal overrides such as `POSTGRES_HOST_PORT` survive as long as the shared file leaves them empty. If `.env` does not exist it is created from `.env.example` first. The output lists the key names that were replaced or added and a count; it never prints a value, and `.env` ends up with mode 600. `.envrc` (`dotenv_if_exists .env`) keeps working unchanged.
 
    `just secrets-sync staging` and `just secrets-sync prod` refuse to run on a workstation; CI sets `CI=true`, and a human who really needs it locally passes `--i-know-this-is-not-dev`.
 
@@ -155,7 +156,7 @@ Run these in a shell where mise is activated (`eval "$(~/.local/bin/mise activat
 
 9. Onboard another developer: they run `just bootstrap`, which generates their identity, adds their `# developer: <label>` comment and recipient to the `dev` rule of `.sops.yaml` on a new `onboard/<slug>` branch, and prints a compare URL to open a pull request — no manual key exchange needed. Review the diff (it should touch only `.sops.yaml`, adding a label comment and a bare `- age1...` line), then run `just secrets-approve <branch>`: it re-wraps every `secrets/*.enc.yaml` for the new recipient list, commits and pushes onto their branch, and prints the compare URL again. Merge it; the new developer runs `just secrets-sync` (or re-runs `just bootstrap`) to pick up the shared dev values. Only the `dev` rule is automated this way — a deployer who needs `staging` or `prod` access still adds their own recipient under that rule by hand and asks a teammate who can already decrypt to run `just secrets-updatekeys`.
 
-10. `direnv allow` once in the repo root so `.envrc` loads `.env` into every shell (optional; `just` recipes and the db scripts read `.env` themselves).
+10. Nothing to do for direnv: `./scripts/bootstrap.sh` already allowed the repo's `.envrc` and hooked direnv into your shell rc file, so a new terminal loads `.env` when you enter the repo (`just` recipes and the db scripts read `.env` themselves).
 
 ### What to record
 
@@ -215,7 +216,7 @@ $0 for software: PostgreSQL, pgvector, pgBackRest, and PgBouncer are all open so
 
 - Do not run `just db-reset` against any non-local host; it refuses by design, do not work around it.
 - Do not use the pooled (PgBouncer) string for `just db-migrate`.
-- Do not put a connection string into `.env.example` or into the mobile app (`EXPO_PUBLIC_*`).
+- Do not put a connection string into `.env.example` or into the native apps' build configuration.
 - Do not expose port 5432 on the host firewall or through Coolify's proxy.
 - Do not skip the restore drill; a backup that has never been restored is not a backup.
 - Do not create the `production` database before P03 needs it.
@@ -249,7 +250,7 @@ One owned server in the ~€10–25/month class (Hetzner is the working assumpti
 3. Harden before anything else runs: SSH keys only (`PasswordAuthentication no`), a non-root sudo user, `ufw` default deny with 22, 80, and 443 open, unattended upgrades enabled. Record the SSH public key fingerprint in the password manager, not in the repo.
 4. Install Coolify with the official installation script from its docs (read the script first; do not run install scripts from any other source). Open the dashboard, create the admin account, and disable public registration.
 5. Create the project `ai-stylist` with environments `staging` and `production`. Each environment gets its own variables and its own deploy later.
-6. Networking: keep the API, jobs, workers, and PostgreSQL resources on one private Docker network per environment; only the API and, later, the workers' health endpoint are published through Coolify's proxy with HTTPS. PostgreSQL is never published.
+6. Networking: keep the API, jobs, workers, and PostgreSQL resources on one private Docker network per environment; only the API and, later, the workers' health endpoint are published through Coolify's proxy with HTTPS. PostgreSQL is never published. The API hostnames are fixed in the native apps' build configuration: `staging-api.ai-stylist.app` for staging (OQ-17; the iOS Preview and Android `preview` builds call it) and `api.ai-stylist.app` for production. Neither is provisioned yet; point each at the server in Cloudflare DNS (section 6 step 10) and attach it to that environment's API resource when P03 first deploys it.
 7. API token for CI: Coolify dashboard, **Keys & Tokens**, **API tokens** (label may differ), create one named `github-actions` with the narrowest permission that can trigger a deploy. Copy it once and store it as `COOLIFY_TOKEN` in `secrets/staging.enc.yaml` (and `secrets/prod.enc.yaml` in P03); the deploy jobs decrypt it with `SOPS_AGE_KEY`, so no extra GitHub secret is needed. The P03 deploy task adds the key to `.env.example` with a comment. Nothing reads it until then.
 8. Do not connect the GitHub repository or enable automatic deploys in P02; there is nothing to build yet.
 
@@ -268,7 +269,7 @@ One owned server in the ~€10–25/month class (Hetzner is the working assumpti
 
 ### Verify
 
-Over SSH, `docker ps` lists the Coolify containers and nothing else; `ufw status` shows only 22, 80, and 443 open. The dashboard shows project `ai-stylist` with environments `staging` and `production` and zero resources. After P03 lands `apps/api/Dockerfile`, `curl https://<api domain>/v1/health` should return `{"status":"ok","checks":{"db":"ok"}}`.
+Over SSH, `docker ps` lists the Coolify containers and nothing else; `ufw status` shows only 22, 80, and 443 open. The dashboard shows project `ai-stylist` with environments `staging` and `production` and zero resources. After P03 lands `apps/api/Dockerfile`, `curl https://staging-api.ai-stylist.app/v1/health` should return `{"status":"ok","checks":{"db":"ok"}}`.
 
 ## 5. pg-boss (durable jobs)
 
@@ -326,7 +327,7 @@ R2, Checked 2026-09-10 at <https://developers.cloudflare.com/r2/pricing/>: free 
 7. Set `R2_BUCKET=ai-stylist-dev`. Leave `R2_PUBLIC_BASE_URL` empty locally; it is set when a custom domain is attached to the public assets bucket (step 9), which is not needed before P04/P06.
 8. Repeat steps 5 and 6 with a separate token per environment (`ai-stylist-staging`, `ai-stylist-prod`), each scoped to its own bucket, into the matching `secrets/<env>.enc.yaml`.
 9. Custom domain for public assets (P04/P06): create a separate bucket `ai-stylist-assets-<env>` for public app and content assets only, then bucket, **Settings**, **Public access**, **Custom domains**, connect a hostname on the project's Cloudflare zone and set `R2_PUBLIC_BASE_URL` to it in the matching `secrets/<env>.enc.yaml`. The Cloudflare cache in front of that hostname is the only CDN in the design. User media buckets never get a custom domain or `r2.dev` access; they are read through presigned GETs only. A separate backup bucket with its own token is created in section 3 step 5.
-10. WAF (P03 or later): add the API domain to Cloudflare DNS, proxy it (orange cloud), then **Security**, **WAF** managed rules. Rate limits inside the API (`RATE_LIMIT_*`) stay on regardless; never disable one to make the other work.
+10. WAF (P03 or later): add the `ai-stylist.app` zone to Cloudflare DNS with the API hostnames from section 4 step 6 (`staging-api`, `api`), proxy them (orange cloud), then **Security**, **WAF** managed rules. Rate limits inside the API (`RATE_LIMIT_*`) stay on regardless; never disable one to make the other work.
 
 ### What to record
 
@@ -343,75 +344,24 @@ R2, Checked 2026-09-10 at <https://developers.cloudflare.com/r2/pricing/>: free 
 
 No repo command exists until P02-T13 lands the adapter and its `*.sec.test.ts` suite; then `just test platform` exercises presigned PUT/GET against the configured bucket. Until then, `just doctor` confirms the keys are present in `.env`, and the bucket page in the dashboard lists `ai-stylist-dev` with zero objects.
 
-## 7. Expo / EAS
+## 7. Expo / EAS (removed)
 
-### Why we use it
+The React Native / Expo app and its EAS build and submit lanes were removed on 2026-09-22; the native
+iOS app builds with Xcode and the native Android app with Gradle, so no Expo account is needed. The
+section number is kept so references to sections 8 and 9 stay valid.
 
-The team develops on Linux with no Mac (ADR-0002). EAS Build produces iOS and Android binaries in the cloud; `eas submit` uploads to TestFlight from a Linux runner. The `ios-eas.yml` and `android.yml` workflows, and `just mobile-ios-build --cloud eas` / `just mobile-android-build --cloud`, all depend on this account. Profiles are in `apps/mobile/eas.json` (`dev`, `preview`, `prod`).
+If an Expo account or project was already created, a human cleans up:
 
-### When you need it
-
-P02-T14 (both iOS lanes running for about two weeks so P02-T15 can write ADR-0002).
-
-### Cost
-
-Checked 2026-09-10 at <https://expo.dev/pricing>: Free plan 15 Android and 15 iOS builds per month, 45 minute build timeout, low queue priority. Starter $19/month plus usage. The two-week dual-lane experiment in T14 will consume a large part of one month's free quota; watch **Usage** in the dashboard.
-
-### Steps
-
-1. Create an Expo account at <https://expo.dev/signup>. Use the project owner's email; an Expo organization can be added later and the project transferred.
-2. Log in from the repo (eas-cli is not pinned in `mise.toml` yet; the justfile falls back to `pnpm dlx`):
-
-   ```bash
-   cd apps/mobile
-   pnpm dlx eas-cli@latest login
-   ```
-
-3. Create the EAS project and get its id:
-
-   ```bash
-   pnpm dlx eas-cli@latest init
-   ```
-
-   `eas init` creates the project on EAS under your account with the slug `ai-stylist` from `app.config.ts` and prints the project id (a UUID). Because `app.config.ts` is TypeScript, `eas init` cannot write `extra.eas.projectId` for you; the config reads it from `EXPO_PUBLIC_EAS_PROJECT_ID` instead. If the command offers to modify a config file, decline.
-
-4. Put the id into `.env` as `EXPO_PUBLIC_EAS_PROJECT_ID=<uuid>` and into `secrets/dev.enc.yaml`. It is not a secret (it ships in the bundle) but everyone needs the same value.
-5. First build, Android, preview profile, from the repo root:
-
-   ```bash
-   just mobile-android-build --cloud --profile preview
-   ```
-
-   On the first run EAS asks to generate an Android keystore; answer yes and let EAS manage it (see section 9 for how that keystore relates to Play Console). The build page URL is printed; the APK is downloadable there when it finishes.
-
-6. Access token for CI: <https://expo.dev>, account menu, **Access tokens** (under the account settings), **Create token**. Prefer creating a **Robot** user first (same page) and generating the token for it, so the token does not act as you. Name `github-actions`. Copy the token once and store it as GitHub secret `EXPO_TOKEN`. eas-cli honors it as the `EXPO_TOKEN` environment variable without `eas login` (Checked 2026-09-10, <https://docs.expo.dev/accounts/programmatic-access/>).
-7. iOS builds additionally need section 8 done; the first `eas build --platform ios` run asks for the Apple account to create the distribution certificate and provisioning profile, and stores them on EAS.
-
-### What to record
-
-- `.env.example` key: `EXPO_PUBLIC_EAS_PROJECT_ID` (`.env`, `secrets/dev.enc.yaml`).
-- GitHub secret: `EXPO_TOKEN`.
-- `apps/mobile/README.md` "Configuration" already documents the key.
-
-### Do not
-
-- Do not commit `credentials.json` or a downloaded keystore under `apps/mobile/`.
-- Do not hand-edit `app.config.ts` to hardcode the project id; the env var is the mechanism.
-- Do not run `prod` profile builds before the store accounts exist; they consume quota and cannot be submitted.
-
-### Verify
-
-```bash
-cd apps/mobile && pnpm dlx eas-cli@latest whoami
-```
-
-Expected: your Expo username. Then in GitHub, **Actions**, **ios-eas**, **Run workflow** with profile `preview` and submit unchecked; the `Require EXPO_TOKEN` step passes and `just mobile-ios-build --cloud eas` starts (it fails later at signing until section 8 is done, which is expected).
+- ~~delete the GitHub secret `EXPO_TOKEN`~~ — checked 2026-09-23: it was never created (not in the repository's Actions, Dependabot or Codespaces secrets, and no environments exist);
+- ~~remove `EXPO_PUBLIC_EAS_PROJECT_ID` and `EXPO_PUBLIC_API_BASE_URL` from `secrets/dev.enc.yaml`~~ — done
+  2026-09-24 (`sops unset`);
+- optionally delete the Expo project and any robot-user access token on <https://expo.dev>.
 
 ## 8. Apple Developer Program and App Store Connect
 
 ### Why we use it
 
-iOS code signing, TestFlight, App Store distribution, and Sign in with Apple. The `ios-eas.yml` upload job and the `ios-gha-macos.yml` lane read App Store Connect API keys from GitHub secrets.
+iOS code signing, TestFlight, App Store distribution, and Sign in with Apple. Today `.github/workflows/ios.yml` builds unsigned simulator builds only and needs no secret; the signing + TestFlight upload lane is future work a human approves and runs, and it will read the App Store Connect API key and signing material from the GitHub secrets below.
 
 ### When you need it
 
@@ -421,14 +371,14 @@ P02-T14. Apple's approval can take days, so enroll at phase start (`P02` §3).
 
 99 USD per membership year (Checked 2026-09-10, <https://developer.apple.com/programs/whats-included/>). Enrollment needs an Apple Account with two-factor authentication. Individuals enroll with their legal name; organizations need a legal entity, a D-U-N-S Number, a domain-matching work email and a public website (Checked 2026-09-10, <https://developer.apple.com/programs/enroll/>). Decide individual vs organization before enrolling; the seller name shown on the App Store follows from it.
 
-Since 2026-04-28 Apple requires uploads to be built with Xcode 26 or later using the iOS 26 SDK (Checked 2026-09-10, <https://developer.apple.com/news/upcoming-requirements/>). EAS build images and the `macos-15` GitHub runner image must therefore provide Xcode 26; check the image notes when T14 pins them.
+Since 2026-04-28 Apple requires uploads to be built with Xcode 26 or later using the iOS 26 SDK (Checked 2026-09-10, <https://developer.apple.com/news/upcoming-requirements/>). The iOS lane pins Xcode 27 (`apps/ios/.xcode-version`, the `xcode-27` runner image in `ios.yml`), which satisfies this.
 
 ### Steps
 
 1. Enroll at <https://developer.apple.com/programs/enroll/>. Wait for the confirmation email before continuing; App Store Connect stays empty until then.
-2. Decide the bundle identifier. `apps/mobile/app.config.ts` uses the placeholder `app.aistylist.mobile` for both `ios.bundleIdentifier` and `android.package`; it must be replaced by a final reverse-domain id that you own before the first signed build, because Apple ties it to the App ID and it cannot change later. Change it through a pull request.
+2. Decide the bundle identifier. The native apps use the placeholder `app.aistylist.mobile` as both the iOS bundle identifier and the Android `applicationId` for prod, with `.dev` and `.preview` suffixes for the other environments (set in `apps/ios/Config/*.xcconfig` and `apps/android/app/build.gradle.kts`); it must be replaced by a final reverse-domain id that you own before the first signed build, because Apple ties it to the App ID and it cannot change later. Change it through a pull request (both apps and the Maestro `APP_ID` values in the `just` e2e recipes).
 3. Register the App ID: <https://developer.apple.com/account>, **Certificates, Identifiers & Profiles**, **Identifiers**, **+**, **App IDs**, type **App**, description `AI Stylist`, Bundle ID **Explicit** with the id from step 2. Enable the **Sign in with Apple** and **Push Notifications** capabilities now; they are free to enable and needed in P03 and P09. Register.
-4. Copy the **Team ID** from the account **Membership details** page (10 characters). Store it as GitHub secret `APPLE_TEAM_ID`; the `ios-gha-macos.yml` lane and `just mobile-ios-build --cloud gha` read it to sign.
+4. Copy the **Team ID** from the account **Membership details** page (10 characters). Store it as GitHub secret `APPLE_TEAM_ID`; the future signing lane reads it.
 5. Create the app record: <https://appstoreconnect.apple.com>, **Apps**, **+**, **New App**, platform iOS, name `AI Stylist`, primary language, the bundle id from step 3, SKU `ai-stylist`. This makes TestFlight uploads possible.
 6. Create the App Store Connect API key: **Users and Access**, **Integrations** (opens with App Store Connect API selected), **Team Keys**, **Generate API Key** (or **+**). Name `github-actions`. Access: **App Manager** (enough for TestFlight uploads). **Generate**.
 7. The key row now shows **Key ID**; the page header shows **Issuer ID**. Download the `AuthKey_<KEYID>.p8` file; it can be downloaded once only. Store:
@@ -436,13 +386,13 @@ Since 2026-04-28 Apple requires uploads to be built with Xcode 26 or later using
    - **Issuer ID** as GitHub secret `APP_STORE_CONNECT_API_ISSUER_ID`
    - the full text of the `.p8` file (including the `-----BEGIN PRIVATE KEY-----` lines) as GitHub secret `APP_STORE_CONNECT_API_KEY_P8`
 8. Move the `.p8` file into the password manager and delete it from disk.
-9. Distribution certificate and provisioning profile: let EAS create and store them on the first `eas build --platform ios` (section 7 step 7). The `ios-gha-macos.yml` lane instead needs them exported as `IOS_DIST_CERT_P12_BASE64`, `IOS_DIST_CERT_PASSWORD`, and `IOS_PROVISIONING_PROFILE_BASE64`; T14 documents that export (`pnpm dlx eas-cli@latest credentials` can download what EAS holds). Skip until T14 asks for it.
+9. Distribution certificate and provisioning profile: the future signing lane needs them exported as `IOS_DIST_CERT_P12_BASE64`, `IOS_DIST_CERT_PASSWORD`, and `IOS_PROVISIONING_PROFILE_BASE64`. Skip until that lane asks for them.
 
 ### What to record
 
 - GitHub secrets: `APP_STORE_CONNECT_API_KEY_ID`, `APP_STORE_CONNECT_API_ISSUER_ID`, `APP_STORE_CONNECT_API_KEY_P8`, `APPLE_TEAM_ID`; later `IOS_DIST_CERT_P12_BASE64`, `IOS_DIST_CERT_PASSWORD`, `IOS_PROVISIONING_PROFILE_BASE64`.
 - `.env.example` keys `APPLE_SIGNIN_TEAM_ID`, `APPLE_SIGNIN_KEY_ID`, `APPLE_SIGNIN_CLIENT_ID` come from section 14, not from this section.
-- Repo: final bundle id in `apps/mobile/app.config.ts`.
+- Repo: final bundle id in the iOS app's build configuration.
 
 ### Do not
 
@@ -452,17 +402,17 @@ Since 2026-04-28 Apple requires uploads to be built with Xcode 26 or later using
 
 ### Verify
 
-GitHub, **Actions**, **ios-eas**, **Run workflow**, profile `preview`, submit **checked**. The `Require App Store Connect API key secrets` step passes and `eas submit --platform ios --latest` runs; a new build appears under **TestFlight** in App Store Connect within about 30 minutes. If the build step fails on signing, section 7 step 7 has not been completed.
+Once the signing + upload lane exists (it will be listed in `.github/workflows/README.md`), a human runs it; a new build appears under **TestFlight** in App Store Connect within about 30 minutes. Until then, confirm the App ID and app record exist in the portal; nothing in the repo reads these secrets yet.
 
 ## 9. Google Play Console
 
 ### Why we use it
 
-Android distribution. `android.yml` signs release builds when the upload keystore secrets exist, and `just mobile-android-build --profile prod` produces the AAB that Play accepts.
+Android distribution. Today `.github/workflows/android.yml` builds debug, preview and an **unsigned** release APK and needs no secret; a signed release bundle (AAB) and the Play internal-track upload are a future, tag- or dispatch-only lane a human approves and runs.
 
 ### When you need it
 
-P02-T14 (`android.yml` is dispatch-only and unsigned until then).
+P02-T14 (the release build stays unsigned until the signing lane exists).
 
 ### Cost
 
@@ -471,38 +421,39 @@ P02-T14 (`android.yml` is dispatch-only and unsigned until then).
 ### Steps
 
 1. Register at <https://play.google.com/console/signup> with the owner's Google account. Choose organization if a legal entity exists (matches the Apple decision in section 8). Pay the fee and complete verification.
-2. **Create app**: name `AI Stylist`, default language, **App** (not game), **Free**. Accept the declarations. The package name is fixed by the first uploaded bundle; it must equal `android.package` in `apps/mobile/app.config.ts`, so finish section 8 step 2 first.
+2. **Create app**: name `AI Stylist`, default language, **App** (not game), **Free**. Accept the declarations. The package name is fixed by the first uploaded bundle; it must equal the Android app's `applicationId`, so finish section 8 step 2 first.
 3. Signing. Two keys exist: the **upload key** (yours; signs the AAB you upload) and the **app signing key** (Google's; signs what users install). Use **Play App Signing** (default on new apps) so Google holds the app signing key.
-4. Upload keystore. If section 7 step 5 let EAS generate the keystore, download it: `cd apps/mobile && pnpm dlx eas-cli@latest credentials`, platform **Android**, profile `prod`, **credentials.json: Upload/Download credentials between EAS servers and your local json**, **Download credentials from EAS to credentials.json** (Checked 2026-09-10, <https://docs.expo.dev/app-signing/app-credentials/>). The keystore path, its password, the key alias and the key password are in the downloaded `credentials.json`. Otherwise generate one locally with `keytool` from the mise-pinned JDK (`keytool -genkeypair -v -keystore upload.jks -alias upload -keyalg RSA -keysize 2048 -validity 10000`).
-5. Store, as GitHub secrets, exactly as `android.yml` expects:
+4. Upload keystore. Generate one locally with `keytool` from the mise-pinned JDK (`keytool -genkeypair -v -keystore upload.jks -alias upload -keyalg RSA -keysize 2048 -validity 10000`).
+5. Store, as GitHub secrets, under the names the future signing lane will read:
    - `ANDROID_KEYSTORE_BASE64`: `base64 -w0 upload.jks`
    - `ANDROID_KEYSTORE_PASSWORD`
    - `ANDROID_KEY_ALIAS`
    - `ANDROID_KEY_PASSWORD`
-6. Move the keystore and `credentials.json` into the password manager and delete both from the repo checkout (`credentials.json` must never be committed).
-7. First upload: Play Console, **Testing**, **Internal testing**, **Create new release**, upload the signed AAB from the `android` workflow artifact (or from EAS). Play records the upload certificate from this first bundle; every later upload must be signed with the same key.
+6. Move the keystore and its passwords into the password manager and delete the keystore from the repo checkout.
+7. First upload (human, once the signing lane produces a signed AAB): Play Console, **Testing**, **Internal testing**, **Create new release**, upload that AAB. Play records the upload certificate from this first bundle; every later upload must be signed with the same key. Google requires the first bundle to be uploaded by hand; the API cannot create the first release.
+8. Play upload service account (for the future upload lane; skip until it exists). In Google Cloud (the project from section 14 is fine), **IAM & Admin**, **Service Accounts**, create `play-upload`, then **Keys**, **Add key**, **JSON**. In Play Console, **Users and permissions**, **Invite new users**, the service account's email, app access `AI Stylist` only, permissions **Release apps to testing tracks** (add production release rights only when a staged-rollout lane is approved). Store the JSON file's full text as GitHub secret `PLAY_SERVICE_ACCOUNT_JSON`, then move the file into the password manager and delete it from disk.
 
 ### What to record
 
-- GitHub secrets: `ANDROID_KEYSTORE_BASE64`, `ANDROID_KEYSTORE_PASSWORD`, `ANDROID_KEY_ALIAS`, `ANDROID_KEY_PASSWORD`.
+- GitHub secrets: `ANDROID_KEYSTORE_BASE64`, `ANDROID_KEYSTORE_PASSWORD`, `ANDROID_KEY_ALIAS`, `ANDROID_KEY_PASSWORD`, and (step 8) `PLAY_SERVICE_ACCOUNT_JSON`.
 - `.env.example`: nothing; `GOOGLE_SIGNIN_CLIENT_ID` comes from section 14.
-- Repo: final package name in `apps/mobile/app.config.ts`.
+- Repo: final `applicationId` in the Android app's build configuration.
 
 ### Do not
 
 - Do not lose the upload keystore; recovering requires a support request to Google and a key reset.
-- Do not commit `credentials.json`, `*.jks`, or `*.keystore`.
+- Do not commit `*.jks`, `*.keystore`, or the service-account JSON key.
 - Do not opt out of Play App Signing.
 
 ### Verify
 
-GitHub, **Actions**, **android**, **Run workflow**, profile `prod`. The log prints `Signing: enabled` (instead of the `ANDROID_KEYSTORE_BASE64 not set` notice) and the artifact contains an `.aab`. Uploading it to Internal testing succeeds without a signature error.
+Until the signing lane exists, confirm the app record exists in Play Console and the four keystore secrets are set; nothing in the repo reads them yet. Once the lane exists (it will be listed in `.github/workflows/README.md`), a human runs it: the artifact contains a signed `.aab`, and uploading it to Internal testing succeeds without a signature error.
 
 ## 10. PostHog
 
 ### Why we use it
 
-Product analytics, session replay, error tracking, and feature flags (`SPINE.md` §2). The mobile app has an analytics port with a consent stub whose sink is a no-op (`apps/mobile/src/lib/analytics`); the consent default is OFF, so nothing is sent until P03 wires the consent-gated SDK.
+Product analytics, session replay, error tracking, and feature flags (`SPINE.md` §2). The native apps have an analytics port with a consent stub whose sink is a no-op; the consent default is OFF, so nothing is sent until P03 wires the consent-gated SDK.
 
 ### When you need it
 
@@ -654,7 +605,7 @@ better-auth (self-hosted, P03) needs Apple and Google as identity providers. Ove
 
 ### Google Sign-In
 
-- Where it comes from: Google Cloud Console (<https://console.cloud.google.com>), create project `ai-stylist`, **APIs & Services**, **OAuth consent screen** (fill app name, support email, privacy policy URL; label may differ), then **Credentials**, **Create credentials**, **OAuth client ID**. Create three clients: **Android** (package name from `app.config.ts` plus the SHA-1 of the upload certificate from section 9 and of the Play app-signing certificate), **iOS** (bundle id), and **Web application** (used by the API for token verification).
+- Where it comes from: Google Cloud Console (<https://console.cloud.google.com>), create project `ai-stylist`, **APIs & Services**, **OAuth consent screen** (fill app name, support email, privacy policy URL; label may differ), then **Credentials**, **Create credentials**, **OAuth client ID**. Create three clients: **Android** (package name = the `applicationId` in `apps/android/app/build.gradle.kts`, see section 8 step 2, plus the SHA-1 of the upload certificate from section 9 and of the Play app-signing certificate), **iOS** (bundle id), and **Web application** (used by the API for token verification).
 - Record: `GOOGLE_SIGNIN_CLIENT_ID` = the Web client id (server verifies ID tokens against it). The mobile clients are configured in the app in P03.
 - Do not: put the client secret of the web client anywhere client-side; the mobile flow does not use it.
 
@@ -662,17 +613,30 @@ better-auth (self-hosted, P03) needs Apple and Google as identity providers. Ove
 
 Deferred to P03: `just test identity` runs the better-auth provider fixtures.
 
+## 15. Push notifications (FCM + APNs)
+
+Server-side FCM + APNs direct, behind a `platform` port (`SPINE.md` §2); clients register natively: UserNotifications on iOS, the Firebase Cloud Messaging SDK on Android (DEC-52). Overview only; P09-T16 holds the precise configuration. Nothing is built yet.
+
+- When: P09-T16 (daily-outfit notification).
+- Cost: FCM has no per-message charge; APNs is included in the Apple membership (section 8). Verify on <https://firebase.google.com/pricing> before relying on it.
+- Firebase: in the Firebase console, add Firebase to the Google Cloud project from section 14, register the Android app with the `applicationId` (section 8 step 2), then **Project settings**, **Service accounts**, **Generate new private key** (label may differ). Store the JSON base64-encoded as `FCM_SERVICE_ACCOUNT_B64` in the matching `secrets/<env>.enc.yaml`, one service account per environment, and delete the file from disk.
+- APNs: the App ID already has **Push Notifications** enabled (section 8 step 3). In **Certificates, Identifiers & Profiles**, **Keys**, **+**, enable **Apple Push Notifications service (APNs)**, register, download the `.p8` once, and move it into the password manager. Its key names are not in `.env.example` yet; the P09-T16 adapter task adds them.
+- Record: `.env.example` key `FCM_SERVICE_ACCOUNT_B64`; the APNs key names once P09-T16 adds them.
+- Do not: put a service-account JSON or the `.p8` in the native apps, and do not send sensitive data classes in a push payload (`docs/modules/notifications.md`).
+- Verify: deferred to P09: `just test notifications` covers the port with a fake transport; the device push smoke runs on both platforms.
+
 ## Checklist by phase
 
-| Phase     | Do now                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
-| --------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| P02 (now) | 1 GitHub (CODEOWNERS, branch protection, Actions). 2 sops + age (keys, `.sops.yaml`, `secrets/dev.enc.yaml`, `SOPS_AGE_KEY`). 3 PostgreSQL on the server: databases, PgBouncer, pgBackRest to the backup bucket (T07). 4 Server + Coolify: host, hardening, project + environments. 5 pg-boss: nothing to provision (T08). 6 R2 dev bucket + token (T13). 7 Expo/EAS + `EXPO_TOKEN` (T14). 8 Apple enrollment + ASC API key (T14). 9 Play Console + keystore secrets (T14). 10 PostHog project (T09). 11 Grafana Cloud stack + OTel vars (T09). Request Apple and Google approvals first; they take days. |
-| P03       | Coolify first deploy (Dockerfile, `COOLIFY_TOKEN`, sync script), production database + role, `secrets/staging.enc.yaml` and `secrets/prod.enc.yaml`, Cloudflare DNS + WAF for the API domain, PostHog prod project + personal API key, 14 Apple and Google sign-in credentials.                                                                                                                                                                                                                                                                                                                           |
-| P06       | fal.ai key + spend limit, vision-LLM and embedding provider accounts (privacy review first), GPU eval host for the self-hosted eval arms, R2 public assets custom domain (if not done in P04), R2 multipart upload settings.                                                                                                                                                                                                                                                                                                                                                                              |
-| P08       | Open-Meteo Standard plan + key; run the weather comparison (Open-Meteo managed vs self-hosted vs WeatherKit); holidays need nothing (embedded `date-holidays`).                                                                                                                                                                                                                                                                                                                                                                                                                                           |
-| P11       | fal.ai production key, AIC-O2 review passed, Replicate fallback account, per-provider spend caps.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
-| P13       | 12 RevenueCat project, store connections, webhook secret, `REVENUECAT_*` in `secrets/prod.enc.yaml`.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
-| P14       | Rotate every credential created during development that was ever pasted into a shared terminal; confirm each `secrets/prod.enc.yaml` value is production-scoped; restore drill via pgBackRest into a scratch database (section 3 step 9); Play closed-testing requirement; App Store review assets.                                                                                                                                                                                                                                                                                                       |
+| Phase     | Do now                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
+| --------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| P02 (now) | 1 GitHub (CODEOWNERS, branch protection, Actions). 2 sops + age (keys, `.sops.yaml`, `secrets/dev.enc.yaml`, `SOPS_AGE_KEY`). 3 PostgreSQL on the server: databases, PgBouncer, pgBackRest to the backup bucket (T07). 4 Server + Coolify: host, hardening, project + environments. 5 pg-boss: nothing to provision (T08). 6 R2 dev bucket + token (T13). 8 Apple enrollment + ASC API key (T14). 9 Play Console + keystore secrets (T14). 10 PostHog project (T09). 11 Grafana Cloud stack + OTel vars (T09). Request Apple and Google approvals first; they take days. |
+| P03       | Coolify first deploy (Dockerfile, `COOLIFY_TOKEN`, sync script), production database + role, `secrets/staging.enc.yaml` and `secrets/prod.enc.yaml`, Cloudflare DNS + WAF for the API domain, PostHog prod project + personal API key, 14 Apple and Google sign-in credentials.                                                                                                                                                                                                                                                                                          |
+| P06       | fal.ai key + spend limit, vision-LLM and embedding provider accounts (privacy review first), GPU eval host for the self-hosted eval arms, R2 public assets custom domain (if not done in P04), R2 multipart upload settings.                                                                                                                                                                                                                                                                                                                                             |
+| P08       | Open-Meteo Standard plan + key; run the weather comparison (Open-Meteo managed vs self-hosted vs WeatherKit); holidays need nothing (embedded `date-holidays`).                                                                                                                                                                                                                                                                                                                                                                                                          |
+| P09       | 15 Firebase project + FCM service account per environment, APNs key (T16).                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
+| P11       | fal.ai production key, AIC-O2 review passed, Replicate fallback account, per-provider spend caps.                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
+| P13       | 12 RevenueCat project, store connections, webhook secret, `REVENUECAT_*` in `secrets/prod.enc.yaml`.                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
+| P14       | Rotate every credential created during development that was ever pasted into a shared terminal; confirm each `secrets/prod.enc.yaml` value is production-scoped; restore drill via pgBackRest into a scratch database (section 3 step 9); Play closed-testing requirement; App Store review assets.                                                                                                                                                                                                                                                                      |
 
 ## When something goes wrong
 
@@ -680,6 +644,5 @@ Deferred to P03: `just test identity` runs the better-auth provider fixtures.
 2. `sops` says `no key could decrypt the data` or `failed to get the data key`. Your public key is not in the file's recipient list, or your private key is not at `~/.config/sops/age/keys.txt`. Ask a developer who can decrypt to add your key to `.sops.yaml` and run `just secrets-updatekeys`. Check `SOPS_AGE_KEY_FILE` if you keep the key elsewhere.
 3. `just doctor` reports `.env missing N key(s)`. Someone added keys to `.env.example`. Copy the missing lines from `.env.example` into `.env` (values stay empty) or re-run `just secrets-sync` after the shared file is updated.
 4. `just db-migrate` against the staging PostgreSQL fails with a `SET` or `prepared statement` error. You used the pooled (PgBouncer) connection string. Use the direct string from section 3 step 8 and retry.
-5. The `ios-eas` workflow stops at `Require EXPO_TOKEN` or `Require App Store Connect API key secrets`. The GitHub secret is missing or named differently. The names must match `.github/workflows/README.md` exactly; check for trailing spaces in the secret value when the step passes but `eas` still reports `Not logged in`.
-6. `eas build` reports the free build quota is exhausted. Wait for the monthly reset shown under **Usage**, or build Android locally with `just mobile-android-build --profile preview` (needs `ANDROID_HOME`), or upgrade the plan with the owner's approval.
-7. The `android` workflow prints `ANDROID_KEYSTORE_BASE64 not set`. Expected until section 9 is done; the build is unsigned and cannot be uploaded to Play. After adding the four secrets, re-run the workflow and look for `Signing: enabled`.
+5. A native build workflow stops at a missing-secret step (App Store Connect API key or signing material). The GitHub secret is missing or named differently. The names must match `.github/workflows/README.md` exactly; check for trailing spaces in the secret value when the secret step passes but the upload is still rejected as unauthenticated.
+6. The `android` workflow's release APK is unsigned and cannot be uploaded to Play. That is expected: the signing lane is future work (section 9); the job summary lists the signing state per variant.

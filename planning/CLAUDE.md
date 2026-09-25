@@ -5,6 +5,8 @@
 > `CLAUDE.md` § Source-of-truth priority). This file is kept for planning-phase context only. It still
 > names vendors superseded by [ADR-0003](../docs/adr/0003-self-hosted-infrastructure-baseline.md)
 > (e.g. Trigger.dev, Neon, Railway) — treat every tooling name below as historical, not current.
+> It also describes the superseded React Native + Expo stack (`apps/mobile`, Filament via RN): since
+> 2026-09-22 the clients are native Swift/SwiftUI and Kotlin/Compose ([ADR-0004](../docs/adr/0004-native-ios-and-android-clients.md)).
 
 This file is the permanent operating contract for every AI agent session in this repository. Phase-specific detail lives in `planning/phases/`; module detail lives in module contracts. Rules here are permanent and binding.
 

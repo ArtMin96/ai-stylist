@@ -1,6 +1,6 @@
 # 04 — Architecture
 
-**Status:** Draft for ratification · **Date:** 2026-08-24 · **Conforms to:** [SPINE.md](SPINE.md) §2–§3 · **Amended:** 2026-09-13 ([r7](research/r7-third-party-services-and-self-hosting-audit-2026-09-13.md), ADR-0003 — pg-boss jobs, owned servers + Coolify, self-managed PostgreSQL, R2 delivery model)
+**Status:** Draft for ratification · **Date:** 2026-08-24 · **Conforms to:** [SPINE.md](SPINE.md) §2–§3 · **Amended:** 2026-09-13 ([r7](research/r7-third-party-services-and-self-hosting-audit-2026-09-13.md), ADR-0003 — pg-boss jobs, owned servers + Coolify, self-managed PostgreSQL, R2 delivery model) · **Amended:** 2026-09-22 ([ADR-0004](../docs/adr/0004-native-ios-and-android-clients.md), DEC-49–53: native iOS/Android clients replace React Native + Expo; §1, §2, §3, §4.3, §5, §6, §8 updated)
 **Owns:** system context, containers, module boundaries and dependency rules, composition roots, repo layout, key data flows, sync/offline design, job/event flow (outbox), future chat seam, dependency-enforcement tooling.
 **Does not own:** engine internals → [09-recommendation-engine.md](09-recommendation-engine.md) · asset pipeline stages → [07-3d-avatar-and-garment-pipeline.md](07-3d-avatar-and-garment-pipeline.md) · entitlement semantics → [12-pricing-entitlements-and-unit-economics.md](12-pricing-entitlements-and-unit-economics.md) · contract/schema details → [06-data-api-and-event-contracts.md](06-data-api-and-event-contracts.md).
 
@@ -8,7 +8,7 @@
 
 ## 1. Architecture in one paragraph
 
-A **modular monolith** (NestJS on the Fastify adapter, TypeScript) serves all clients over an OpenAPI-3.1 contract. Durable asynchronous work (media pipeline, AI calls, notifications, billing reconciliation, trend ingestion) runs as **pg-boss v12 jobs** on the application database, fed reliably through a **Postgres outbox**. GPU/CV-heavy steps are delegated by those job handlers to separately deployable **Python FastAPI ML workers** over versioned JSON schemas. **Self-managed PostgreSQL 17** (+ pgvector) is the single transactional source of truth; **Cloudflare R2** holds all original and derived media/3D assets (private user media via presigned URLs; public app assets via a cached custom domain). API, jobs, workers and PostgreSQL run as Docker containers on owned servers deployed with Coolify (ADR-0003). The **React Native + Expo** mobile app renders 3D through **Filament** (`react-native-filament`) behind a renderer boundary, keeps an offline local store, and talks only to the generated API client. All external providers sit behind ports implemented in the `platform` module. No microservices until measured need (SPINE §2).
+A **modular monolith** (NestJS on the Fastify adapter, TypeScript) serves all clients over an OpenAPI-3.1 contract. Durable asynchronous work (media pipeline, AI calls, notifications, billing reconciliation, trend ingestion) runs as **pg-boss v12 jobs** on the application database, fed reliably through a **Postgres outbox**. GPU/CV-heavy steps are delegated by those job handlers to separately deployable **Python FastAPI ML workers** over versioned JSON schemas. **Self-managed PostgreSQL 17** (+ pgvector) is the single transactional source of truth; **Cloudflare R2** holds all original and derived media/3D assets (private user media via presigned URLs; public app assets via a cached custom domain). API, jobs, workers and PostgreSQL run as Docker containers on owned servers deployed with Coolify (ADR-0003). Two **native client apps**, Swift/SwiftUI (`apps/ios`) and Kotlin/Jetpack Compose (`apps/android`), talk to the API only through clients generated from the contract (DEC-49, DEC-53). Each keeps an offline local store (introduced in P07). When 3D resumes, each renders through **Filament's C++ engine** behind a renderer boundary (DEC-50). There is no 3D in the apps today. *(Historical: until 2026-09-22 this was one React Native + Expo app rendering through `react-native-filament`.)* All external providers sit behind ports implemented in the `platform` module. No microservices until measured need (SPINE §2).
 
 ## 2. System context
 
@@ -17,7 +17,7 @@ flowchart LR
     user(["User<br/>iOS / Android"])
 
     subgraph system["AI Stylist system"]
-        mobile["Mobile app<br/>React Native + Expo"]
+        mobile["Mobile apps<br/>iOS (SwiftUI) · Android (Compose)"]
         api["API monolith<br/>NestJS"]
         jobs["pg-boss jobs"]
         ml["Python ML workers"]
@@ -59,19 +59,19 @@ Notes:
 - Holidays come from the embedded `date-holidays` library behind `HolidayProvider` — no network call, no account (DEC-45).
 - RevenueCat calls **into** the API (webhooks); the entitlement source of truth is our `billing.entitlements` table (doc 12).
 - better-auth runs **inside** the API monolith (`identity` module) — auth is not an external container.
-- PostHog receives consented analytics events and errors from both mobile and backend; no raw sensitive payloads (doc 14).
+- PostHog receives consented analytics events and errors from both mobile apps and the backend; no raw sensitive payloads (doc 14). The foundation apps ship only a consent-gated no-op analytics port so far; no PostHog SDK is wired yet.
 
 ## 3. Container view
 
 ```mermaid
 flowchart TB
     subgraph device["User device"]
-        subgraph mobile["apps/mobile — React Native + Expo, New Architecture"]
-            ui["Screens / navigation<br/>normal RN UI"]
-            renderer["3D surface<br/>react-native-filament<br/>glTF + KTX2 + Draco"]
-            localdb["Local store<br/>expo-sqlite + Drizzle"]
+        subgraph mobile["apps/ios (Swift 6 + SwiftUI) · apps/android (Kotlin + Compose) — same shape per platform"]
+            ui["Screens / navigation<br/>SwiftUI · Jetpack Compose"]
+            renderer["3D surface (deferred)<br/>Filament C++ when 3D resumes<br/>glTF + KTX2 + Draco"]
+            localdb["Local store<br/>per platform, chosen in P07"]
             upq["Upload & mutation queue<br/>resumable, offline-first"]
-            client["Generated API client<br/>from packages/contracts"]
+            client["Generated API client<br/>Swift / Kotlin, from packages/contracts"]
         end
     end
 
@@ -113,7 +113,8 @@ Container responsibilities:
 
 | Container | Runtime | Deploy | Responsibility |
 |---|---|---|---|
-| `apps/mobile` | React Native + Expo SDK 55+, TS | EAS / stores | All UX; 3D rendering behind renderer boundary; offline store; capture + upload queue |
+| `apps/ios` | Swift 6 + SwiftUI; XcodeGen project + local SwiftPM packages | GitHub Actions macOS runner → TestFlight / App Store (DEC-51) | All iOS UX; offline store; capture + upload queue; 3D behind the renderer boundary once it resumes |
+| `apps/android` | Kotlin + Jetpack Compose; own Gradle root | GitHub Actions Linux runner → Play | All Android UX; same responsibilities as `apps/ios` |
 | `apps/api` | NestJS (Fastify), Node, TS | Owned server, Docker + Coolify | All synchronous business logic; auth; OpenAPI surface; outbox writes + relay; provider ports |
 | pg-boss jobs | pg-boss v12 (job definitions in `apps/api/src/jobs` — see §6); run in the API process or a dedicated `jobs` process | Owned server, Docker + Coolify | Durable async pipelines; retries/DLQ; orchestrate ML workers |
 | `workers/ml` | Python 3.12, FastAPI, Docker | Owned server, Docker + Coolify (GPU host only if a self-hosted model passes its eval) | CV/ML steps needing Python/native tooling; stateless; versioned JSON contracts |
@@ -195,20 +196,20 @@ flowchart TB
 ### 4.2 Dependency rules (binding, CI-enforced)
 
 1. **Public API only.** Every module exposes a single entry point (`apps/api/src/modules/<name>/index.ts`). Importing `modules/<name>/internal/**` from another module is a build failure.
-2. **`recommendation` ⊥ renderer.** `recommendation` never imports `avatar`, any 3D/asset type, or anything from the mobile renderer. It emits structured results (doc 06 §3.5); `outfit` + the mobile renderer consume them. `recommendation → outfit` is allowed only for the item/composition **types** needed for candidates — never for presentation.
+2. **`recommendation` ⊥ renderer.** `recommendation` never imports `avatar`, any 3D/asset type, or anything from the client renderers. It emits structured results (doc 06 §3.5); `outfit` + the client apps consume them. `recommendation → outfit` is allowed only for the item/composition **types** needed for candidates — never for presentation.
 3. **`assistant` → application services only.** The future chat adapter may call the same public application services every client uses (§10). It owns no business logic, no direct table access, no second engine.
 4. **Domain ⊥ provider SDKs.** No domain module imports a provider SDK (`pg-boss`, R2/aws-sdk, RevenueCat, fal.ai, Open-Meteo clients, FCM, PostHog). Domains declare **ports** (interfaces in the module's public API or `shared-kernel`); `platform` implements them; the composition root binds them.
 5. **`platform` is leaf-only.** `platform` depends only on `shared-kernel` and provider SDKs. No domain module depends on `platform` directly — only on ports, wired at the composition root.
 6. **`shared-kernel` depends on nothing** and contains no I/O, no tables, no framework imports. Types, constants, registries, pure functions only.
 7. **No cycles.** The graph above is a DAG; dependency-cruiser fails CI on any cycle.
 8. **Cross-module writes are forbidden.** A module writes only tables it owns (SPINE §3). Cross-module behavior goes through public application services, commands/queries, or events (§9).
-9. **Business logic location.** No business rules in controllers, Drizzle schema files, pg-boss job handlers, provider wrappers, or React components. Controllers/handlers are thin: parse → call application service → map result.
+9. **Business logic location.** No business rules in controllers, Drizzle schema files, pg-boss job handlers, provider wrappers, or UI views (SwiftUI/Compose; *were React components*). Controllers/handlers are thin: parse → call application service → map result.
 
 ### 4.3 Enforcement tooling
 
 - **ESLint boundaries** (`eslint-plugin-boundaries`): element types `module`, `module-internal`, `shared-kernel`, `platform`, `composition-root`, `job-handler`, `contracts`; rules encode §4.2. Runs in `just lint` and PR CI.
 - **dependency-cruiser**: whole-graph validation (`tools/depcruise/rules.cjs`) — cycle detection, forbidden-edge checks (e.g. `recommendation → avatar`, `modules → platform`, `* → **/internal/**`), orphan detection. Runs as `just arch-check` in PR CI; the same config renders the dependency graph SVG for docs.
-- Mobile side: the same ESLint boundary config keeps `apps/mobile/src/renderer/**` (Filament code) importable only from designated 3D screens, so normal screens never touch engine internals.
+- Native apps (DEC-49): ESLint and depcruise do not see Swift or Kotlin. **iOS:** SwiftPM target dependencies are the compiler-enforced boundaries (only `Core/APIData` depends on the generated client, and `Core`/`*Model` targets cannot import UI frameworks), backed by `just ios-check-banned` and its fixtures. **Android:** the Gradle module graph plus the `checkModuleGraph` allow-list (only `:core:data` depends on `:core:api-client`, features never depend on each other). When 3D resumes, the renderer gets its own package/module that only designated 3D screens may depend on. *(Historical: the RN app used an ESLint rule for `apps/mobile/src/render/**`.)*
 - CI fails on violation; there is no warning tier. Exceptions require an ADR.
 
 ### 4.4 No generic `utils` dumping ground
@@ -223,7 +224,8 @@ The only places where concrete adapters meet ports:
 |---|---|---|
 | API | `apps/api/src/main.ts` + `app.module.ts` | NestJS DI: binds every port token to its `platform` adapter; registers module public providers; config/env validation; OpenAPI doc emission |
 | Job handlers | `apps/api/src/jobs/index.ts` | pg-boss job definitions importing **public** application services only; binds ports for the job runtime (R2 client, ML-worker HTTP client) |
-| Mobile | `apps/mobile/src/app/_root.tsx` | Generated API client instance, local DB, upload queue, renderer provider, feature-flag/consent context |
+| iOS | `apps/ios/App/` (`CompositionRoot`) | Config (host-only `API_BASE_URL`), generated API client via `APIData`, analytics port + consent gate; later the local DB, upload queue and renderer |
+| Android | `apps/android/app/` (`AppContainer`, built in `Application`) | The same set as iOS; the only place that reads `BuildConfig` or constructs adapters |
 | ML workers | `workers/ml/<service>/main.py` | FastAPI app factory; model versions pinned; settings from env |
 | Tests | each module's `tests/` support | In-memory/fake port implementations from module-owned test support packages |
 
@@ -234,13 +236,17 @@ Everything else receives dependencies; nothing else constructs adapters.
 ```
 .
 ├── apps/
-│   ├── mobile/                  # React Native + Expo app
-│   │   └── src/
-│   │       ├── app/             # expo-router screens + _root.tsx (composition root)
-│   │       ├── features/<name>/ # feature UI slices (closet, onboarding, recs, …), each with tests/
-│   │       ├── renderer/        # Filament boundary — only 3D screens may import
-│   │       ├── data/            # local store schema, sync engine, upload queue
-│   │       └── lib/             # app-level foundation (owned, small; no dumping ground)
+│   ├── ios/                     # Swift 6 + SwiftUI (DEC-49)
+│   │   ├── project.yml          # XcodeGen spec (generated .xcodeproj is gitignored)
+│   │   ├── App/                 # @main + CompositionRoot, Info.plist, assets
+│   │   └── Packages/
+│   │       ├── Core/            # no UI: AppConfig, Analytics, AppServices, APIData (only generated-client user); tests/
+│   │       └── Features/        # per screen: <Name>Model (view model) + <Name>Feature (SwiftUI); tests/
+│   ├── android/                 # Kotlin + Jetpack Compose, own Gradle root (DEC-49)
+│   │   ├── app/                 # :app, AppContainer (composition root), build types dev/preview/prod
+│   │   ├── feature/<name>/      # feature modules (ViewModel + Compose screen); src/test
+│   │   ├── core/{data,analytics,api-client}/  # pure Kotlin; api-client compiles the generated client
+│   │   └── build-logic/         # convention plugins (compiler, lint, detekt, locking)
 │   └── api/                     # NestJS modular monolith
 │       └── src/
 │           ├── main.ts, app.module.ts        # composition root
@@ -258,7 +264,9 @@ Everything else receives dependencies; nothing else constructs adapters.
 │       └── generated/           # Python models generated from packages/contracts
 ├── packages/
 │   ├── contracts/               # CANONICAL: OpenAPI 3.1, event schemas, generated clients (doc 06)
+│   │   └── gen/                 # generated TS client, swift-client/, kotlin-client/ (never hand-edited)
 │   └── shared-kernel/           # units, IDs, reason codes, entitlement names, event envelope
+├── e2e/                         # shared Maestro flows for both native apps
 ├── assets/
 │   └── 3d/                      # source 3D assets (Git LFS / artifact store), manifests, validation tooling — doc 07
 ├── tools/
@@ -271,7 +279,7 @@ Everything else receives dependencies; nothing else constructs adapters.
 └── turbo.json
 ```
 
-Rules: large 3D binaries go through Git LFS or the R2-backed artifact store (doc 07), never raw Git. `packages/contracts` and `packages/shared-kernel` are the only packages both `apps/*` and `workers/*` may depend on — mobile never imports server internals.
+Rules: large 3D binaries go through Git LFS or the R2-backed artifact store (doc 07), never raw Git. `packages/contracts` and `packages/shared-kernel` are the only packages both `apps/*` and `workers/*` may depend on — the client apps never import server internals. The native apps consume `packages/contracts` only through the generated Swift/Kotlin clients. They cannot import `shared-kernel` (TypeScript) yet, and a language-neutral emission is open (OQ-15).
 
 ## 7. Key request/data flows
 
@@ -367,7 +375,7 @@ sequenceDiagram
 
 **Principle:** the closet must be browsable and capturable offline; the server remains the source of truth for canonical and derived data.
 
-- **Local store:** expo-sqlite + Drizzle. Tables mirror a read-model subset of `closet`, `outfit`, `profile`, plus local-only queues. Item images cached on the file system with an LRU disk budget (default 512 MB, configurable; doc 13 owns budgets).
+- **Local store:** a native store per platform, **to be decided in the phase that introduces the local store (P07)** (DEC-49; *historical: the RN plan used expo-sqlite + Drizzle*). Tables mirror a read-model subset of `closet`, `outfit`, `profile`, plus local-only queues. Item images cached on the file system with an LRU disk budget (default 512 MB, configurable; doc 13 owns budgets).
 - **Upload queue:** every capture and mutation is written locally first as an ordered, durable **mutation log** entry (`opId` ULID = idempotency key). A background drain pushes entries when connectivity returns; uploads to R2 are resumable (multipart, content-hash addressed, so retry never duplicates).
 - **Pull sync:** delta sync via `GET /sync/changes?since=<cursor>` per module read-model; server assigns monotonically increasing change cursors. Push notifications hint "changes available" but sync never depends on push.
 - **Conflict policy (deterministic, per-field class):**

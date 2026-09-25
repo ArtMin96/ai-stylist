@@ -3,7 +3,7 @@ name: observability-analytics
 description: Add or change OpenTelemetry metrics/traces/spans, Grafana dashboards and alert rules, PostHog product-analytics events and taxonomy, runbooks, audit-trail entries, feature-flag policy (owner, expiry, rollout plan), error budgets, or AI/infra spend alerts — the operational instrumentation catalog defined in `planning/14-observability-operations-and-analytics.md`. Use for "metric", "dashboard", "alert", "runbook", "analytics event", "PostHog", "OTel", "trace", "SLO", "p95", "error budget", "audit log"/"audit trail", a feature flag's owner/expiry/rollout plan, or a `stylist.*` metric name. Not for finding out why something is already slow — use `performance-profiling` instead; not for reviewing whether a log line or event payload leaks sensitive data — use `security-privacy-review` instead.
 metadata:
   modules:
-  last-reviewed: 2026-09-13
+  last-reviewed: 2026-09-25
   owner-agent: platform-engineer
 ---
 
@@ -23,14 +23,15 @@ metadata:
 2. `planning/11-security-privacy-and-compliance.md` §8 — the redaction rules this skill's logs/metrics/events must never violate (forbidden-field denylist, allowlist serialization).
 3. `planning/13-testing-quality-and-performance.md` §12 — the latency/error-budget thresholds a dashboard or alert wires to.
 4. `docs/modules/platform.md` — `platform` owns the logger, OTel init, and PostHog server wiring; nothing outside `platform` constructs these adapters directly.
-5. `apps/api/src/platform/logger.ts` and `apps/api/src/platform/tests/logger.redaction.test.ts` — the current redaction canary; `apps/mobile/src/lib/analytics/` (`port.ts`, `index.ts`, `consent-stub.ts`) — the mobile analytics port and its consent gate.
+5. `apps/api/src/platform/logger.ts` and `apps/api/src/platform/tests/logger.redaction.test.ts` — the current redaction canary. The native apps' analytics port and its consent gate (consent off by default, nothing recorded until opt-in): `apps/ios/Packages/Core/Sources/Analytics/AnalyticsPort.swift`, `apps/ios/Packages/Core/Sources/Analytics/ConsentGatedAnalytics.swift`, `apps/android/core/analytics/src/main/kotlin/app/aistylist/core/analytics/Analytics.kt`, `apps/android/core/analytics/src/main/kotlin/app/aistylist/core/analytics/ConsentGatedAnalytics.kt`.
+6. `packages/contracts/events/analytics/events.json`: the analytics taxonomy every client reads.
 
 ## Workflow
 
 1. Restate which catalog row is being added or changed (a metric name, an event name, an alert, a runbook) and cite its doc 14 section — this skill is a sharpening pass against a fixed catalog, not a place to invent new taxonomy freely.
 2. Search before write: check whether the metric/event/dashboard/runbook already exists in doc 14 or in the module contract before adding a new one; a near-duplicate metric name is a drift risk the catalog exists to prevent.
 3. Metrics/traces/spans carry ids and enums only, the same redaction rules as logs (doc 11 §8, no payloads, no free text, no coordinates); a metric or span attribute that would carry a forbidden field is a stop condition, not a design choice.
-4. Analytics events: consent-gated (`analytics` purpose), pseudonymous `user_id`, properties are enums/booleans/counts/ids only; the event schema lives in `packages/contracts` so mobile and backend cannot drift apart — never duplicate the event shape by hand in both places.
+4. Analytics events: consent-gated (`analytics` purpose), pseudonymous `user_id`, properties are enums/booleans/counts/ids only; the event lives in `packages/contracts/events/analytics/events.json` so the native apps and the API cannot drift apart — a new event is a contract change first (`api-contract-change`). Android reads the generated `AnalyticsTaxonomy`; iOS names are hand-written in `ConsentGatedAnalytics.swift` and must equal `events.json` byte for byte.
 5. Every alert maps to a runbook before it ships (doc 14 §7 — "an alert without a runbook cannot ship"); every runbook lands under docs/runbooks/ per §8 (that directory does not exist yet — the first runbook to ship creates it).
 6. Feature flags declare owner, purpose, expiry (≤ 90 days for rollout flags), rollout plan, and a safe "off" state (doc 14 §11); a flag gating a paid capability sits behind the entitlement check, never instead of it.
 7. Be honest in the PR about which piece of the launch-set instrumentation (doc 14 §1, §15) is still a stub in the current phase — do not claim a dashboard or alert is live when the underlying metric is not yet emitted.
@@ -48,7 +49,7 @@ No dedicated `just` recipe exists yet for dashboards, alert rules, or runbooks (
 
 ## Output
 
-- PR with the catalog entry (metric/event/alert/runbook) diff, the dashboard or alert rule config, and — for a new analytics event — the `packages/contracts` schema change plus `just generate --check` output.
+The `agent-operating-contract` report: the catalog entry (metric/event/alert/runbook) diff, the dashboard or alert rule config, and — for a new analytics event — the `packages/contracts` change plus `just generate --check` output; every piece still a stub in this phase named as such.
 
 Done checklist: no forbidden field in any new log/metric/span/event attribute · new analytics event has a `packages/contracts` schema and a consent gate · new alert has a linked runbook and a severity per the ladder in doc 14 §7 · `PROGRESS.md` updated.
 
@@ -61,4 +62,4 @@ Done checklist: no forbidden field in any new log/metric/span/event attribute ·
 
 ## Overlap
 
-Adjacent: `performance-profiling` (root-causes what a dashboard shows; this skill wires the dashboard and alert), `security-privacy-review` (owns the redaction rules this skill's emissions must respect), `media-ml-pipeline` / `backend-module` / `recommendation-rules` (own the call sites that emit metrics/events; this skill owns the catalog entry, dashboard, and alert), `release-readiness` (consumes the crash-free-sessions and error-budget gates this skill defines).
+Adjacent: `performance-profiling` (root-causes what a dashboard shows; this skill wires the dashboard and alert), `security-privacy-review` (owns the redaction rules this skill's emissions must respect), `api-contract-change` (adds the analytics event to `events.json` first), `media-ml-pipeline` / `backend-module` / `recommendation-rules` (own the call sites that emit metrics/events), `ios-feature` / `android-feature` (own the native emission call sites), `release-readiness` (consumes the crash-free-sessions and error-budget gates this skill defines). This skill owns the doc 14 catalog entries, dashboards, alert rules and runbooks; the emission call sites stay with their module's skill.

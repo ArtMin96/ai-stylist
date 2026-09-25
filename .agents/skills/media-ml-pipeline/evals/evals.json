@@ -16,20 +16,19 @@
     {
       "id": 2,
       "prompt": "Users report that when the try-on job fails partway through (fal.ai times out), the item is stuck showing a spinner forever in the app. Fix the pg-boss job so it retries with backoff and eventually surfaces a failed state the user can see.",
-      "expected_output": "The agent identifies this as a job-handler + state-machine problem split across platform-engineer (the pg-boss handler) and api-engineer (the media module's failed/retry state), reproduces or describes the stuck-spinner failure mode, adds bounded retry with backoff and a DLQ path, and adds an idempotency/retry test in apps/api/src/modules/media/tests/ that demonstrably fails before the fix.",
+      "expected_output": "The agent identifies the split: the pg-boss handler (platform-engineer, tests in apps/api/src/jobs/tests/) and the media module's failed/retry state (api-engineer, tests in apps/api/src/modules/media/tests/). It checks apps/api/src/jobs/README.md, reports that no pg-boss handler exists yet (P02-T08 NOT_STARTED), and stops on the handler side; the media-side state machine change, if in scope, adds bounded retry states and a regression test that fails before the fix.",
       "files": [],
       "assertions": [
-        "The agent names both the job-handler side and the media module's state-machine side of the fix, per this skill's Workflow step 3 agent split",
-        "The retry is bounded (an explicit max-attempts or backoff ceiling), not an unbounded loop",
-        "A regression test in apps/api/src/modules/media/tests/ is shown failing before the fix and passing after",
-        "The user-visible outcome is an explicit failed/retry state, not an indefinite spinner",
-        "The agent's report names `just test media` as a command it ran"
+        "The agent names both the job-handler side and the media module's state-machine side of the fix, with their owning agents",
+        "The agent reports that no pg-boss handler exists yet (P02-T08 NOT_STARTED, apps/api/src/jobs/README.md) instead of inventing one",
+        "Any retry it designs is bounded (explicit max attempts or backoff ceiling) and ends in an explicit user-visible failed/retry state",
+        "Any regression test it writes is shown failing before the fix and passing after, with the command named (`just test media` or `just test-regression <file>`)"
       ]
     },
     {
       "id": 3,
       "prompt": "Before shipping the new classification model version, run the eval suite and tell me the accuracy delta and cost delta per 1k items versus the current model.",
-      "expected_output": "The agent runs `just ml-eval`, and — since it is a documented P02 stub that exits 2 — reports honestly that the eval did not run rather than fabricating metrics, naming the phase task (T17) that will implement it.",
+      "expected_output": "The agent runs `just ml-eval`, and — since it is a documented P02 stub that exits 2 — reports honestly that the eval did not run rather than fabricating metrics, naming the phase task (P02-T17) that will implement it.",
       "files": [],
       "assertions": [
         "The agent actually runs `just ml-eval` (or states it would) rather than inventing accuracy/cost numbers",

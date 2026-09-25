@@ -23,16 +23,16 @@ check_dc01() {
   code_names+=("platform" "shared-kernel")
 
   doc_names=()
-  while IFS= read -r name; do doc_names+=("$name"); done < <(module_names_from_docs "$root")
+  while IFS= read -r name; do [[ -n "$name" ]] && doc_names+=("$name"); done <<<"$(module_names_from_docs "$root")"
 
   for name in "${code_names[@]}"; do
     found=0
-    for d in "${doc_names[@]}"; do [[ "$d" == "$name" ]] && found=1 && break; done
+    for d in ${doc_names[@]+"${doc_names[@]}"}; do [[ "$d" == "$name" ]] && found=1 && break; done
     if [[ $found -eq 0 ]]; then
       finding ERROR DC-01 "docs/modules/$name.md" 1 "no module contract for '$name' (apps/api/src/modules or platform/shared-kernel)"
     fi
   done
-  for name in "${doc_names[@]}"; do
+  for name in ${doc_names[@]+"${doc_names[@]}"}; do
     found=0
     for c in "${code_names[@]}"; do [[ "$c" == "$name" ]] && found=1 && break; done
     if [[ $found -eq 0 ]]; then
@@ -72,8 +72,15 @@ check_dc02() {
 }
 
 # check_dc03 ROOT — Status enum + Last-updated date not older than the module's code.
+# The code date comes from git history; on a shallow clone that history is truncated, so the date
+# comparison is refused with ONE loud ERROR (never skipped silently, never a wrong per-module
+# finding). The Status / Last-updated field checks still run.
 check_dc03() {
-  local root="$1" f rel name status_line status_word last_line last_date code_date line
+  local root="$1" f rel name status_line status_word last_line last_date code_date line shallow=0
+  if git_is_shallow "$root"; then
+    shallow=1
+    finding ERROR DC-03 "docs/modules" 1 "shallow git clone: DC-03 needs full git history to date module code; run \`git fetch --unshallow\` or check out with fetch-depth: 0"
+  fi
   for f in $(list_md_files "$root/docs/modules"); do
     name="$(basename "$f" .md)"
     rel="docs/modules/$(basename "$f")"
@@ -101,6 +108,7 @@ check_dc03() {
       continue
     fi
 
+    [[ $shallow -eq 1 ]] && continue
     code_date="$(git_or_mtime_date "$root" "apps/api/src/modules/$name/index.ts" "apps/api/src/modules/$name/internal/schema.ts")"
     if [[ -n "$code_date" && "$last_date" < "$code_date" ]]; then
       finding ERROR DC-03 "$rel" "$line" "Last updated ($last_date) predates the module's last code change ($code_date)"
@@ -116,33 +124,34 @@ check_dc04() {
   adr_nums=()
   if [[ -d "$adr_dir" ]]; then
     while IFS= read -r f; do
+      [[ -n "$f" ]] || continue
       base="$(basename "$f")"
       [[ "$base" == "README.md" ]] && continue
       num="${base%%-*}"
       adr_nums+=("$num")
-    done < <(list_md_files "$adr_dir")
+    done <<<"$(list_md_files "$adr_dir")"
   fi
 
   readme_nums=()
   if [[ -f "$readme" ]]; then
-    while IFS= read -r num; do readme_nums+=("$num"); done < <(
+    while IFS= read -r num; do [[ -n "$num" ]] && readme_nums+=("$num"); done <<<"$(
       grep -oE '\[[0-9]{4}\]\([0-9]{4}-[a-z0-9-]+\.md\)' "$readme" | grep -oE '^\[[0-9]{4}' | tr -d '['
-    )
+    )"
   else
     finding ERROR DC-04 "docs/adr/README.md" 1 "index file missing"
     return
   fi
 
-  for num in "${adr_nums[@]}"; do
+  for num in ${adr_nums[@]+"${adr_nums[@]}"}; do
     found=0
-    for r in "${readme_nums[@]}"; do [[ "$r" == "$num" ]] && found=1 && break; done
+    for r in ${readme_nums[@]+"${readme_nums[@]}"}; do [[ "$r" == "$num" ]] && found=1 && break; done
     if [[ $found -eq 0 ]]; then
       finding ERROR DC-04 "docs/adr/README.md" 1 "ADR $num has no index row in docs/adr/README.md"
     fi
   done
-  for num in "${readme_nums[@]}"; do
+  for num in ${readme_nums[@]+"${readme_nums[@]}"}; do
     found=0
-    for a in "${adr_nums[@]}"; do [[ "$a" == "$num" ]] && found=1 && break; done
+    for a in ${adr_nums[@]+"${adr_nums[@]}"}; do [[ "$a" == "$num" ]] && found=1 && break; done
     if [[ $found -eq 0 ]]; then
       finding ERROR DC-04 "docs/adr/README.md" 1 "index row references ADR $num, no such docs/adr/$num-*.md file"
     fi

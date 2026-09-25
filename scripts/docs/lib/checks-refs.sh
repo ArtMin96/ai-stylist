@@ -3,17 +3,17 @@
 # three "no raw tool invocation, no dead path" directories (doc 15 §5: `just` is the only
 # sanctioned entry point). Source, do not execute; depends on common.sh being sourced first.
 
-DOCS_CHECK_BANNED_INVOCATIONS=("pnpm --filter" "uv run" "npx " "drizzle-kit " "eas ")
+DOCS_CHECK_BANNED_INVOCATIONS=("pnpm --filter" "uv run" "npx " "drizzle-kit " "eas " "gradlew " "xcodebuild ")
 
 # docs_check_ref_scan_files ROOT -> every *.md under the three DC-09/10/11 directories, filtered
-# by file_in_scope (PATH... args) when set.
+# by file_in_scope (PATH... args) when set; gitignored files are skipped (list_repo_files).
 docs_check_ref_scan_files() {
   local root="$1" dir f
   for dir in .agents/skills .claude/agents .claude/rules; do
     [[ -d "$root/$dir" ]] || continue
     while IFS= read -r f; do
-      file_in_scope "$f" && echo "$f"
-    done < <(find "$root/$dir" -type f -name '*.md' | sort)
+      [[ -n "$f" ]] && file_in_scope "$f" && echo "$f"
+    done <<<"$(list_repo_files "$root" "$dir" '*.md')"
   done
 }
 
@@ -60,7 +60,7 @@ check_dc09() {
       [[ -e "$root/$tok" ]] && continue
       is_planned_path "$tok" && continue
       finding ERROR DC-09 "$rel" "$lineno" "backticked path '$tok' does not exist"
-    done < <(grep -noE '`[^`]+`' "$f" 2>/dev/null || true)
+    done <<<"$(grep -noE '`[^`]+`' "$f" 2>/dev/null || true)"
   done
   return 0
 }
@@ -73,7 +73,7 @@ check_dc10() {
   real_recipes=()
   while IFS= read -r known; do
     [[ -n "$known" ]] && real_recipes+=("$known")
-  done < <(cd "$root" && just --summary 2>/dev/null | tr ' ' '\n')
+  done <<<"$(cd "$root" && just --summary 2>/dev/null | tr ' ' '\n')"
   for f in $(docs_check_ref_scan_files "$root"); do
     rel="${f#"$root"/}"
     while IFS=: read -r lineno content; do
@@ -84,18 +84,18 @@ check_dc10() {
           [[ -z "$recipe" ]] && continue
           [[ "$recipe" == *-'*' ]] && continue
           ok=0
-          for known in "${real_recipes[@]}"; do [[ "$known" == "$recipe" ]] && ok=1 && break; done
+          for known in ${real_recipes[@]+"${real_recipes[@]}"}; do [[ "$known" == "$recipe" ]] && ok=1 && break; done
           if [[ $ok -eq 0 ]]; then
             finding ERROR DC-10 "$rel" "$lineno" "'just $recipe' is not in 'just --summary'"
           fi
-        done < <(grep -oE 'just [a-z][a-z0-9*-]*' <<<"$span" | sed -E 's/^just //')
-      done < <(backticked_spans <<<"$content")
-    done < <(grep -n '' "$f")
+        done <<<"$(grep -oE 'just [a-z][a-z0-9*-]*' <<<"$span" | sed -E 's/^just //')"
+      done <<<"$(backticked_spans <<<"$content")"
+    done <<<"$(grep -n '' "$f")"
   done
   return 0
 }
 
-# check_dc11 ROOT — no raw pnpm/uv/npx/drizzle-kit/eas invocation; `just` is the only sanctioned
+# check_dc11 ROOT — no raw pnpm/uv/npx/drizzle-kit/eas/gradlew/xcodebuild invocation; `just` is the only sanctioned
 # entry point (doc 15 §5). Matched on a left word boundary so a banned token embedded inside a
 # longer word (e.g. "eas " inside "areas ") is not a false positive.
 check_dc11() {
@@ -109,7 +109,7 @@ check_dc11() {
           finding ERROR DC-11 "$rel" "$lineno" "raw invocation '$pattern' — use a just recipe"
         fi
       done
-    done < <(grep -n '' "$f")
+    done <<<"$(grep -n '' "$f")"
   done
   return 0
 }

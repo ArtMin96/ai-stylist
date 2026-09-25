@@ -12,10 +12,12 @@ Decisions that add a dependency or provider, change a contract shape, override `
 
 ## Index
 
-| ADR                                                 | Label   | Title                                                                                                             | Status   | Date       | DEC                   |
-| --------------------------------------------------- | ------- | ----------------------------------------------------------------------------------------------------------------- | -------- | ---------- | --------------------- |
-| [0001](0001-monorepo-tooling-and-toolchain-pins.md) | —       | Monorepo layout, tooling, and toolchain pins                                                                      | Accepted | 2026-09-09 | pending (planning/16) |
-| [0002](0002-ios-build-lane.md)                      | ADR-P02 | iOS build lane: EAS Build vs GitHub Actions macOS                                                                 | Proposed | 2026-09-09 | — (OQ-04)             |
-| [0003](0003-self-hosted-infrastructure-baseline.md) | —       | Self-hosted infrastructure baseline: pg-boss, owned servers + Coolify, self-managed PostgreSQL, R2 delivery model | Accepted | 2026-09-13 | DEC-41–48             |
+| ADR                                                         | Label   | Title                                                                                                             | Status                                                 | Date       | DEC                           |
+| ----------------------------------------------------------- | ------- | ----------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------ | ---------- | ----------------------------- |
+| [0001](0001-monorepo-tooling-and-toolchain-pins.md)         | —       | Monorepo layout, tooling, and toolchain pins                                                                      | Accepted (items 1 and 8 partly superseded by ADR-0004) | 2026-09-09 | DEC-37                        |
+| [0002](0002-ios-build-lane.md)                              | ADR-P02 | iOS build lane: EAS Build vs GitHub Actions macOS                                                                 | Superseded by ADR-0004                                 | 2026-09-09 | — (OQ-04, resolved by DEC-51) |
+| [0003](0003-self-hosted-infrastructure-baseline.md)         | —       | Self-hosted infrastructure baseline: pg-boss, owned servers + Coolify, self-managed PostgreSQL, R2 delivery model | Accepted                                               | 2026-09-13 | DEC-41–48                     |
+| [0004](0004-native-ios-and-android-clients.md)              | —       | Native iOS (SwiftUI) and Android (Compose) clients replace React Native + Expo                                    | Accepted                                               | 2026-09-22 | DEC-49–54                     |
+| [0005](0005-shared-kernel-registries-for-native-clients.md) | —       | Shared-kernel registries as language-neutral JSON, generated for TS, Swift and Kotlin                             | Accepted                                               | 2026-09-23 | DEC-55                        |
 
 Planned in P02 (not yet written): ADR-OBS-01 (observability backend; T09) and the P00 decision set (owned by P00, not P02).

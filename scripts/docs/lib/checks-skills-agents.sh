@@ -11,7 +11,12 @@ DOCS_CHECK_SKILL_MAX_LINES=500
 DOCS_CHECK_SKILL_DESC_MAX=1024
 DOCS_CHECK_SKILL_NAME_PLUS_DESC_MAX=1536
 DOCS_CHECK_AGENT_DESC_MAX=1024
-DOCS_CHECK_AGENT_BANNED_TOOLS=("Bash(pnpm:*)" "Bash(uv:*)" "Bash(docker compose:*)")
+# Subagent `color` values Claude Code accepts (https://code.claude.com/docs/en/sub-agents.md).
+DOCS_CHECK_AGENT_COLORS="red blue green yellow purple orange pink cyan"
+# Every agent preloads this skill (SPEC D2): the shared workflow, report format and stop rules.
+DOCS_CHECK_AGENT_BASE_SKILL="agent-operating-contract"
+DOCS_CHECK_AGENT_WRITE_GUARD="scripts/hooks/guard-agent-write-set.sh"
+DOCS_CHECK_AGENT_BASH_GUARD="scripts/hooks/guard-agent-bash.sh"
 
 # check_dc05 ROOT — one skill's SKILL.md against every DC-05 sub-rule (respects PATH... scoping
 # via file_in_scope, common.sh).
@@ -26,7 +31,7 @@ check_dc05() {
     skill_files+=("$f")
   done
 
-  for f in "${skill_files[@]}"; do
+  for f in ${skill_files[@]+"${skill_files[@]}"}; do   # empty when no skill is in scope (bash 3.2 + set -u)
     rel="${f#"$root"/}"
     dir_name="$(basename "$(dirname "$f")")"
 
@@ -71,6 +76,27 @@ check_dc05() {
     if [[ "$n_lines" -gt "$DOCS_CHECK_SKILL_MAX_LINES" ]]; then
       finding ERROR DC-05 "$rel" 1 "$n_lines lines, max $DOCS_CHECK_SKILL_MAX_LINES"
     fi
+
+    # metadata.owner-agent: a comma list of .claude/agents/<name>.md agents, or main-session.
+    local owners owner owner_line
+    owners="$(frontmatter_subfield "$f" metadata owner-agent)"
+    owner_line="$(line_number_of_first_match "$f" '^[[:space:]]+owner-agent:')"
+    if [[ -z "$owners" ]]; then
+      finding ERROR DC-05 "$rel" "$owner_line" "metadata.owner-agent missing (an agent in .claude/agents/, a comma list of them, or main-session)"
+    else
+      while IFS= read -r owner; do
+        owner="$(awk '{$1=$1; print}' <<<"$owner")"
+        [[ -z "$owner" || "$owner" == "main-session" ]] && continue
+        [[ -f "$root/.claude/agents/$owner.md" ]] ||
+          finding ERROR DC-05 "$rel" "$owner_line" "metadata.owner-agent '$owner' has no .claude/agents/$owner.md (use an agent name or main-session)"
+      done <<<"$(tr ',' '\n' <<<"$owners")"
+    fi
+
+    local evals
+    for evals in evals/evals.json evals/trigger-evals.json; do
+      [[ -f "$(dirname "$f")/$evals" ]] ||
+        finding ERROR DC-05 "$rel" 1 "missing $evals next to SKILL.md"
+    done
   done
   return 0
 }
@@ -97,13 +123,13 @@ check_dc06() {
       cell="$(md_table_cells "$row" | head -n1)"
       name="$(first_backticked "$cell")"
       [[ -n "$name" ]] && readme_names+=("$name")
-    done < <(md_table_data_rows "$readme" 'Skill')
+    done <<<"$(md_table_data_rows "$readme" 'Skill')"
   fi
 
   local found name
-  for name in "${dir_names[@]}"; do
+  for name in ${dir_names[@]+"${dir_names[@]}"}; do
     found=0
-    for r in "${readme_names[@]}"; do [[ "$r" == "$name" ]] && found=1 && break; done
+    for r in ${readme_names[@]+"${readme_names[@]}"}; do [[ "$r" == "$name" ]] && found=1 && break; done
     if [[ $found -eq 0 ]]; then
       finding ERROR DC-06 ".agents/skills/README.md" 1 "no index row for skill directory '$name'"
     fi
@@ -114,14 +140,90 @@ check_dc06() {
       finding ERROR DC-06 ".claude/skills/$name" 1 "symlink does not resolve"
     fi
   done
-  for name in "${readme_names[@]}"; do
+  for name in ${readme_names[@]+"${readme_names[@]}"}; do
     found=0
-    for d in "${dir_names[@]}"; do [[ "$d" == "$name" ]] && found=1 && break; done
+    for d in ${dir_names[@]+"${dir_names[@]}"}; do [[ "$d" == "$name" ]] && found=1 && break; done
     if [[ $found -eq 0 ]]; then
       finding ERROR DC-06 ".agents/skills/README.md" 1 "index row '$name' has no matching skill directory"
     fi
   done
   return 0
+}
+
+# matcher_covers MATCHER TOOL -> true when a hook matcher ("Edit|Write|NotebookEdit", "*", "")
+# fires for TOOL.
+matcher_covers() {
+  local m="$1" t="$2" tok
+  [[ -z "$m" || "$m" == "*" ]] && return 0
+  local -a toks
+  IFS='|' read -r -a toks <<<"$m"
+  for tok in "${toks[@]}"; do [[ "$tok" == "$t" ]] && return 0; done
+  return 1
+}
+
+# agent_has_guard FILE SCRIPT TOOL... -> true when FILE's frontmatter has a PreToolUse hook running
+# SCRIPT whose matcher covers every TOOL.
+agent_has_guard() {
+  local file="$1" script="$2" ev matcher cmd t ok
+  shift 2
+  while IFS=$'\t' read -r ev matcher cmd; do
+    [[ "$ev" == "PreToolUse" && "$cmd" == *"/$script" ]] || continue
+    ok=1
+    for t in "$@"; do matcher_covers "$matcher" "$t" || ok=0; done
+    [[ $ok -eq 1 ]] && return 0
+  done <<<"$(frontmatter_hook_commands "$file")"
+  return 1
+}
+
+# check_dc07_frontmatter ROOT FILE REL — the SPEC D2 frontmatter standard for one agent: a valid
+# color; plain tool names (a `Bash(...)` specifier does not restrict Bash); Edit/Write/NotebookEdit
+# ⇒ a guard-agent-write-set.sh PreToolUse hook; Bash ⇒ a guard-agent-bash.sh PreToolUse hook;
+# skills: preloads agent-operating-contract and names only real .agents/skills/<name>/ skills.
+check_dc07_frontmatter() {
+  local root="$1" f="$2" rel="$3" color tool skill line has_base=0
+  local -a tools writes skills
+  color="$(frontmatter_field "$f" color)"
+  line="$(line_number_of_first_match "$f" '^color:')"
+  if [[ -z "$color" ]]; then
+    finding ERROR DC-07 "$rel" 1 "frontmatter 'color' missing (one of: $DOCS_CHECK_AGENT_COLORS)"
+  elif ! grep -qw -- "$color" <<<"$DOCS_CHECK_AGENT_COLORS" || [[ "$color" == *[!a-z]* ]]; then
+    finding ERROR DC-07 "$rel" "$line" "color '$color' is not one of: $DOCS_CHECK_AGENT_COLORS"
+  fi
+
+  tools=() writes=()
+  while IFS= read -r tool; do [[ -n "$tool" ]] && tools+=("$tool"); done <<<"$(frontmatter_list "$f" tools)"
+  line="$(line_number_of_first_match "$f" '^tools:')"
+  if [[ ${#tools[@]} -eq 0 ]]; then
+    finding ERROR DC-07 "$rel" 1 "frontmatter 'tools' missing"
+  fi
+  local has_bash=0
+  for tool in ${tools[@]+"${tools[@]}"}; do
+    if [[ "$tool" == *"("* ]]; then
+      finding ERROR DC-07 "$rel" "$line" "tools entry '$tool' has a '(...)' specifier: tools takes plain names (limit Bash with the $DOCS_CHECK_AGENT_BASH_GUARD hook)"
+    fi
+    case "$tool" in
+      Edit | Write | NotebookEdit) writes+=("$tool") ;;
+      Bash | "Bash("*) has_bash=1 ;;
+    esac
+  done
+  if [[ ${#writes[@]} -gt 0 ]] && ! agent_has_guard "$f" "$DOCS_CHECK_AGENT_WRITE_GUARD" "${writes[@]}"; then
+    finding ERROR DC-07 "$rel" "$line" "tools has ${writes[*]} but no PreToolUse hook runs $DOCS_CHECK_AGENT_WRITE_GUARD with a matcher covering them"
+  fi
+  if [[ $has_bash -eq 1 ]] && ! agent_has_guard "$f" "$DOCS_CHECK_AGENT_BASH_GUARD" Bash; then
+    finding ERROR DC-07 "$rel" "$line" "tools has Bash but no PreToolUse hook runs $DOCS_CHECK_AGENT_BASH_GUARD with a matcher covering Bash"
+  fi
+
+  skills=()
+  while IFS= read -r skill; do [[ -n "$skill" ]] && skills+=("$skill"); done <<<"$(frontmatter_list "$f" skills)"
+  line="$(line_number_of_first_match "$f" '^skills:')"
+  for skill in ${skills[@]+"${skills[@]}"}; do
+    [[ "$skill" == "$DOCS_CHECK_AGENT_BASE_SKILL" ]] && has_base=1
+    [[ -f "$root/.agents/skills/$skill/SKILL.md" ]] ||
+      finding ERROR DC-07 "$rel" "$line" "skills entry '$skill' has no .agents/skills/$skill/SKILL.md"
+  done
+  if [[ $has_base -eq 0 ]]; then
+    finding ERROR DC-07 "$rel" "$line" "skills: must preload '$DOCS_CHECK_AGENT_BASE_SKILL'"
+  fi
 }
 
 # check_dc07 ROOT — .claude/agents/*.md against every DC-07 sub-rule, plus README sync (respects
@@ -139,10 +241,10 @@ check_dc07() {
     agent_files+=("$f")
   done
 
-  local rel name description tools reviewed_line reviewed today banned
+  local rel name description reviewed_line reviewed today
   today="$(today_date)"
   agent_names=()
-  for f in "${agent_files[@]}"; do
+  for f in ${agent_files[@]+"${agent_files[@]}"}; do   # empty when no agent is in scope (bash 3.2 + set -u)
     rel="${f#"$root"/}"
     name="$(frontmatter_field "$f" name)"
     [[ -n "$name" ]] && agent_names+=("$name")
@@ -155,16 +257,7 @@ check_dc07() {
       finding ERROR DC-07 "$rel" 1 "description is ${#description} chars, max $DOCS_CHECK_AGENT_DESC_MAX"
     fi
 
-    tools="$(frontmatter_field "$f" tools)"
-    if [[ -z "$tools" ]]; then
-      finding ERROR DC-07 "$rel" 1 "frontmatter 'tools' missing"
-    else
-      for banned in "${DOCS_CHECK_AGENT_BANNED_TOOLS[@]}"; do
-        if [[ "$tools" == *"$banned"* ]]; then
-          finding ERROR DC-07 "$rel" 1 "tools allowlist has bare '$banned'"
-        fi
-      done
-    fi
+    check_dc07_frontmatter "$root" "$f" "$rel"
 
     reviewed_line="$(grep -nE '^Last reviewed:' "$f" | head -n1 || true)"
     if [[ -z "$reviewed_line" ]]; then
@@ -189,13 +282,13 @@ check_dc07() {
       cell="$(md_table_cells "$row" | head -n1)"
       rname="$(first_backticked "$cell")"
       [[ -n "$rname" ]] && readme_names+=("$rname")
-    done < <(md_table_data_rows "$readme" 'Agent')
+    done <<<"$(md_table_data_rows "$readme" 'Agent')"
   fi
 
   local found n
-  for n in "${agent_names[@]}"; do
+  for n in ${agent_names[@]+"${agent_names[@]}"}; do
     found=0
-    for r in "${readme_names[@]}"; do [[ "$r" == "$n" ]] && found=1 && break; done
+    for r in ${readme_names[@]+"${readme_names[@]}"}; do [[ "$r" == "$n" ]] && found=1 && break; done
     if [[ $found -eq 0 ]]; then
       finding ERROR DC-07 ".claude/agents/README.md" 1 "no index row for agent '$n'"
     fi
@@ -203,9 +296,9 @@ check_dc07() {
   # The reverse direction (README row with no matching file) only makes sense against the full
   # roster: a PATH-scoped run loaded a subset of agent_files on purpose (file_in_scope above).
   if [[ "${#DOCS_CHECK_PATH_FILTERS[@]}" -eq 0 ]]; then
-    for n in "${readme_names[@]}"; do
+    for n in ${readme_names[@]+"${readme_names[@]}"}; do
       found=0
-      for a in "${agent_names[@]}"; do [[ "$a" == "$n" ]] && found=1 && break; done
+      for a in ${agent_names[@]+"${agent_names[@]}"}; do [[ "$a" == "$n" ]] && found=1 && break; done
       if [[ $found -eq 0 ]]; then
         finding ERROR DC-07 ".claude/agents/README.md" 1 "index row '$n' has no matching .claude/agents/$n.md"
       fi

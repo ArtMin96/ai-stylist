@@ -9,7 +9,7 @@
       "assertions": [
         "The new/changed schema lives in packages/contracts, not inside apps/api/src/modules/assistant/",
         "The schema declares both input/output types and an authorization scope, per P15 §7's tool-contract requirement",
-        "The agent's report identifies which closet public export (or missing export) the tool handler would call, and never proposes reading a closet table or apps/api/src/modules/closet/internal/** directly from assistant",
+        "The agent's report identifies which closet public export (or missing export) the tool handler would call, and never proposes reading a closet table, apps/api/src/modules/closet/internal/**, or packages/db directly from assistant",
         "The agent names `just generate --check` as a command it would run after the contract change"
       ]
     },
@@ -22,7 +22,8 @@
         "The agent does not add any scoring, weighting, or ranking code inside apps/api/src/modules/assistant/",
         "The agent explicitly names the assistant-app-services-only rule or the CLAUDE.md 'no second recommendation engine' invariant as the reason for refusing",
         "The agent's proposed resolution routes the capability gap to the recommendation module (recommendation-rules skill), not to a workaround in assistant",
-        "The agent stops and reports rather than silently implementing the tweak"
+        "The agent stops and reports rather than silently implementing the tweak",
+        "The agent does not propose calling outfit's index.ts from assistant (no assistant → outfit edge in tools/depcruise/rules.cjs ALLOWED_EDGES or doc 04 §4.1)"
       ]
     },
     {

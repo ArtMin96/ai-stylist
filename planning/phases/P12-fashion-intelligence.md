@@ -148,7 +148,7 @@ Small enough for one AI-assisted session each. Task IDs `P12-T##`.
 | `fashion-intel` | Rights-basis validation (source without basis unpersistable); freshness/retirement logic; why-shown assembly; dedup thresholds | Personalization determinism: same profile+closet+content set ⇒ identical feed order; hide ⇒ item absent for all subsequent refreshes | Feed API + event schemas validate against `packages/contracts`; recorded-fixture contract test per source adapter | Ingestion job idempotency (run twice, one content row); quarantine excluded from serving; Testcontainers pg + pgvector | Maestro: open Discover → why-shown → hide → refresh shows item gone |
 | `recommendation` | Trend scorer clamp (≤ 0.03 contribution); `RC-TREND-*` emitted only from stage 6 | Trend bonus never changes hard-constraint outcomes (extends [13 §11](../13-testing-quality-and-performance.md) invariants) | Result schema unchanged (additive reason codes only) | SIM suite extension: SIM-01 rerun with max trend boost — still zero violations | — |
 | `admin` | Moderation state transitions for content | — | Admin endpoints in contract | Report → queue → quarantine → excluded-from-feed round trip | — |
-| Mobile `features/discover` | Card/why-shown/attribution components; state machines for §5 states | — | Generated client only | Offline signal queue drain (MSW) | Golden snapshots for empty/failure/upgrade states |
+| Mobile `features/discover` | Card/why-shown/attribution components; state machines for §5 states | — | Generated client only | Offline signal queue drain (fake API) | Golden snapshots for empty/failure/upgrade states |
 
 New bug fixes require a regression test that fails before the fix. Tests live in each module's `tests/` directory.
 

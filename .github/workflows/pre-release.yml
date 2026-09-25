@@ -1,7 +1,18 @@
-# Pre-release tier (tier 4). Skeleton only in P02 (brief §4).
-# Reuses every nightly job via workflow_call, then adds P14 placeholders.
+# Pre-release tier (tier 4): the gates a release branch must pass before promotion. Skeleton only
+# in P02 (brief §4): it reuses the whole nightly tier, then runs P14 placeholders.
 #
-# Required secrets: none (P02). P14 adds device-farm, store, and backup creds.
+# Triggers:  push to release/**, workflow_dispatch.
+# Recipes:   everything nightly.yml calls (via workflow_call); the P14 gates have no recipe yet
+#            and print NOT IMPLEMENTED.
+# Required secrets: none in P02 (secrets: inherit passes the optional nightly ones through).
+#            P14 adds device-farm, store and backup credentials.
+#
+# Job tree (roots run in parallel):
+#   nightly ─────────────┐
+#   device-matrix-perf ──┤
+#   store-size-gate ─────┼──> release-checklist
+#   a11y-checklist ──────┤
+#   restore-drill ───────┘
 name: pre-release
 
 on:
@@ -19,56 +30,87 @@ concurrency:
 
 jobs:
   nightly:
-    name: nightly suite
+    # Reusable-workflow call: its own jobs carry names, permissions, concurrency and timeouts.
+    name: Test · Nightly suite
+    # needs: none (root of the job tree)
+    permissions:
+      contents: read
     uses: ./.github/workflows/nightly.yml
     secrets: inherit
 
   device-matrix-perf:
-    name: device-matrix perf
+    name: Test · Device-matrix performance (placeholder)
+    # needs: none (root of the job tree)
     runs-on: ubuntu-latest
     timeout-minutes: 2
+    permissions:
+      contents: read
+    concurrency:
+      group: ${{ github.workflow }}-device-matrix-perf-${{ github.ref }}
+      cancel-in-progress: false
     steps:
-      - run: |
-          echo "NOT IMPLEMENTED (P14)"
-          exit 0
+      - name: Test · Device-matrix performance (NOT IMPLEMENTED, P14)
+        run: echo "NOT IMPLEMENTED (P14)"
 
   store-size-gate:
-    name: store size gate
+    name: Verify · Store size gate (placeholder)
+    # needs: none (root of the job tree)
     runs-on: ubuntu-latest
     timeout-minutes: 2
+    permissions:
+      contents: read
+    concurrency:
+      group: ${{ github.workflow }}-store-size-gate-${{ github.ref }}
+      cancel-in-progress: false
     steps:
-      - run: |
-          echo "NOT IMPLEMENTED (P14)"
-          exit 0
+      - name: Verify · Store size gate (NOT IMPLEMENTED, P14)
+        run: echo "NOT IMPLEMENTED (P14)"
 
   a11y-checklist:
-    name: a11y checklist
+    name: Verify · Accessibility checklist (placeholder)
+    # needs: none (root of the job tree)
     runs-on: ubuntu-latest
     timeout-minutes: 2
+    permissions:
+      contents: read
+    concurrency:
+      group: ${{ github.workflow }}-a11y-checklist-${{ github.ref }}
+      cancel-in-progress: false
     steps:
-      - run: |
-          echo "NOT IMPLEMENTED (P14)"
-          exit 0
+      - name: Verify · Accessibility checklist (NOT IMPLEMENTED, P14)
+        run: echo "NOT IMPLEMENTED (P14)"
 
   restore-drill:
-    name: restore drill
+    name: Test · Backup restore drill (placeholder)
+    # needs: none (root of the job tree)
     runs-on: ubuntu-latest
     timeout-minutes: 2
+    permissions:
+      contents: read
+    concurrency:
+      group: ${{ github.workflow }}-restore-drill-${{ github.ref }}
+      cancel-in-progress: false
     steps:
-      - run: |
-          echo "NOT IMPLEMENTED (P14)"
-          exit 0
+      - name: Test · Backup restore drill (NOT IMPLEMENTED, P14)
+        run: echo "NOT IMPLEMENTED (P14)"
 
   release-checklist:
-    name: release checklist
+    name: Report · Release checklist
     needs: [nightly, device-matrix-perf, store-size-gate, a11y-checklist, restore-drill]
     if: always()
     runs-on: ubuntu-latest
     timeout-minutes: 2
+    permissions:
+      contents: read
+    concurrency:
+      group: ${{ github.workflow }}-release-checklist-${{ github.ref }}
+      cancel-in-progress: false
     steps:
-      - run: |
+      - name: Report · Pre-release checklist
+        run: |
           {
             echo "## Pre-release checklist (skeleton, P02)"
+            echo ""
             echo "| gate | result |"
             echo "|---|---|"
             echo "| nightly suite | ${{ needs.nightly.result }} |"
@@ -78,4 +120,3 @@ jobs:
             echo "| restore drill | NOT IMPLEMENTED (P14) |"
           } >> "$GITHUB_STEP_SUMMARY"
           echo "NOT IMPLEMENTED (P14)"
-          exit 0

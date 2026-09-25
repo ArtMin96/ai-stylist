@@ -80,13 +80,13 @@
     "_near_miss_reason": "mobile.cold_start_ms is a catalog metric this skill defines, but investigating a suspected regression against the budget is performance-profiling's job, not the catalog/dashboard side."
   },
   {
-    "query": "what's a good way to structure a debounce hook for a search input in react native",
+    "query": "what's a good way to debounce a search text field in SwiftUI",
     "should_trigger": false,
     "_teaches": "unambiguous negative with zero shared vocabulary, included to balance the should_trigger:false set."
   },
   {
     "query": "want to turn off session replay by default and rewrite the onboarding consent screen copy so it's clear to users what recording means",
     "should_trigger": false,
-    "_near_miss_reason": "session replay and consent are both in the catalog's analytics section (§9), but the actual task is UI consent copy on an onboarding screen — mobile-feature."
+    "_near_miss_reason": "session replay and consent are both in the catalog's analytics section (§9), but the actual task is UI consent copy on an onboarding screen — ios-feature / android-feature."
   }
 ]

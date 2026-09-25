@@ -8,7 +8,7 @@
     "should_trigger": true
   },
   {
-    "query": "i created docs/adr/0004-otel-backend-choice.md yesterday but forgot to add the row to the adr index, can you sync that up",
+    "query": "i created docs/adr/0006-otel-backend-choice.md yesterday but forgot to add the row to the adr index, can you sync that up",
     "should_trigger": true
   },
   {
@@ -28,16 +28,21 @@
     "should_trigger": true
   },
   {
-    "query": "someone renamed apps/api/src/jobs/index.ts wrong in a skill file a while back and docs-check is flagging a dead path reference, go find and fix the broken references",
-    "should_trigger": true
-  },
-  {
     "query": "is the billing module contract stale after last week's entitlement changes landed, can you check docs-check and update it if so",
     "should_trigger": true
   },
   {
     "query": "just docs-check --fixtures is red on DC-04, the adr folder and the readme index list are out of sync, please reconcile them",
     "should_trigger": true
+  },
+  {
+    "query": "the lanes for the closet grid are merged, apply their suggested PROGRESS lines and sync the closet module contract",
+    "should_trigger": true
+  },
+  {
+    "query": "someone renamed apps/api/src/jobs/index.ts wrong in a skill file a while back and docs-check is flagging a dead path reference, go find and fix the broken references",
+    "should_trigger": false,
+    "_near_miss_reason": "skill files belong to the enforcement layer (main session with a human); docs-maintenance reports a DC-09 hit there, it does not fix it."
   },
   {
     "query": "add a markWorn command to the closet module in apps/api/src/modules/closet and export it from index.ts",
@@ -73,10 +78,6 @@
   },
   {
     "query": "add a synthetic fixture for a closet item to packages/seed-data for the new wear_events table",
-    "should_trigger": false
-  },
-  {
-    "query": "the fal.ai try-on job for a closet item is stuck pending in pg-boss and never completes, can you look at the worker",
     "should_trigger": false
   }
 ]

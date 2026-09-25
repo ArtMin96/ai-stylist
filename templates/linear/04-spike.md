@@ -1,7 +1,7 @@
 Fill every section; delete nothing; if a section truly does not apply write `N/A — <reason>`.
 
 - **Phase / task:** P##-T## · **Open question:** OQ-NN / RISK-NN (`planning/16-risks-open-questions-and-decision-log.md`)
-- **Type:** spike · **Skill:** `.agents/skills/<architecture-review | performance-profiling | media-ml-pipeline | native-3d-assets>/SKILL.md`
+- **Type:** spike · **Skill:** `.agents/skills/<architecture-review | performance-profiling | media-ml-pipeline>/SKILL.md`
 - **Labels:** `type:spike`, `mod:<owner>`, `phase:P##`
 
 ## Question

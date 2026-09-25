@@ -4,3 +4,4 @@ Implementation of the `billing` module: application services, domain rules, Driz
 `schema.ts` (re-exported from `packages/db/src/schema/index.ts`), repositories, mappers.
 Nothing here may be imported from outside `modules/billing/`; expose behaviour through
 `../index.ts` only. Contract: `docs/modules/billing.md`.
+P02 skeleton: only this README so far (`../index.ts` exports an empty Nest module).

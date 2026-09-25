@@ -11,7 +11,8 @@
         "The in-flight pg-boss job for that purpose is cancelled before new requests are blocked, matching the withdrawal-halts-processing ordering in P03-T05",
         "No second consent table, event, or withdrawal mechanism is introduced alongside the existing consent.changed event",
         "The agent's report names security-privacy-review as run or as the required next step before PR",
-        "The diff stays inside the module(s) that own the touched tables — no direct write to another module's internal/** or tables"
+        "The diff stays inside the module(s) that own the touched tables — no direct write to another module's internal/** or tables",
+        "If the consents table, the consent.changed event, or pg-boss do not exist yet (P03-T05, P02-T08 NOT_STARTED), the agent says so and stops instead of building an ad hoc withdrawal path"
       ]
     },
     {
@@ -24,7 +25,8 @@
         "An R2 prefix-delete step for closet's media objects is added or confirmed already covered",
         "A verification step (FK-coverage test, R2 list-empty check, or both) is exercised for the new coverage, with output pasted",
         "The change is per-step idempotent: the agent states what happens if the job is retried after a partial failure",
-        "The agent's report requests or completes security-privacy-review before PR"
+        "The agent's report requests or completes security-privacy-review before PR",
+        "If the deletion cascade job or closet's tables do not exist yet (P03-T10, P06, P02-T08 NOT_STARTED), the agent says so and delivers the step design only instead of inventing a second mechanism"
       ]
     },
     {
@@ -37,7 +39,8 @@
         "The export code reads billing data through billing's index.ts public API, never apps/api/src/modules/billing/internal/** or a billing table directly",
         "The 1-concurrent, 24-hour signed-link behavior from P03-T09 is preserved and the agent states that it checked this",
         "The agent names the test command it ran (e.g. just test <module>) and pastes real output",
-        "The agent's report requests or completes security-privacy-review before PR"
+        "The agent's report requests or completes security-privacy-review before PR",
+        "If the export job or billing's ledger do not exist yet (P03-T09, P13-T07 NOT_STARTED), the agent says so and stops instead of creating a new export path"
       ]
     }
   ]

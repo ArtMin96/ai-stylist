@@ -28,7 +28,7 @@
     "should_trigger": true
   },
   {
-    "query": "mobile's generated ts client is out of date after the last contract PR merged, the types in gen/ts-client don't match what's actually in openapi/modules anymore",
+    "query": "the generated Swift and Kotlin clients are out of date after the last contract PR merged, packages/contracts/gen/swift-client doesn't match openapi/modules anymore",
     "should_trigger": true
   },
   {
@@ -52,7 +52,7 @@
   {
     "query": "the paywall screen shows the wrong entitlement name string in the copy, it says 'pro_tier' instead of the friendly label, just a text fix in the mobile app",
     "should_trigger": false,
-    "_near_miss_reason": "shares 'entitlement name' vocabulary but the fix is display copy in the mobile UI, not the registry — mobile-feature."
+    "_near_miss_reason": "shares 'entitlement name' vocabulary but the fix is display copy in the mobile UI, not the registry — ios-feature / android-feature."
   },
   {
     "query": "closet's classifier keeps mislabeling shoes as tops way too often, need to retrain or swap the extraction model",
@@ -62,7 +62,7 @@
   {
     "query": "the reason code text shown to the user on the outfit screen reads really awkwardly, can you rewrite the sentence",
     "should_trigger": false,
-    "_near_miss_reason": "reason codes live in shared-kernel, but rewording the displayed explanation is a template/UI concern for mobile-feature, not a registry change."
+    "_near_miss_reason": "reason codes live in shared-kernel, but rewording the displayed explanation is a template/UI concern for ios-feature / android-feature, not a registry change."
   },
   {
     "query": "can you review this PR that adds a new closet endpoint, want a second pair of eyes on whether it crosses any module boundaries before merge",
@@ -87,6 +87,6 @@
   {
     "query": "the new GET /v1/closet/items/{id}/wear-history endpoint just shipped, need to wire up the screen in the mobile app to call it and render the list",
     "should_trigger": false,
-    "_near_miss_reason": "the endpoint already exists in the contract; the task is consuming the generated client from a mobile screen — mobile-feature."
+    "_near_miss_reason": "the endpoint already exists in the contract; the task is consuming the generated client from a mobile screen — ios-feature / android-feature."
   }
 ]

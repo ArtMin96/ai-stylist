@@ -2,7 +2,7 @@
 // Source: packages/contracts/openapi/**
 
 export type ClientOptions = {
-  baseUrl: 'https://api.ai-stylist.app/v1' | 'http://localhost:3000/v1' | (string & {});
+  baseUrl: 'https://api.ai-stylist.app' | 'http://localhost:3000' | (string & {});
 };
 
 /**

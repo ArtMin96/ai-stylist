@@ -44,4 +44,4 @@ Status: skeleton (P02), no domain-phase task has touched it yet. A schema-only `
 ## Escalate when
 
 - `recommendation` asks for anything beyond item/composition types (presentation shape, 3D/asset data) on this edge — that is forbidden by doc 04 §4.2 rule 2, stop rather than widen the export.
-- The task is actually about composing the outfit scene on Filament (avatar + pose + presentation panel) — that crosses into `native-3d-assets`, which owns everything behind the render boundary.
+- The task is actually about composing the outfit scene in 3D (avatar + pose + presentation panel) — that is client rendering, not this module; client-side 3D is deferred (no owner until it resumes), so stop and escalate.

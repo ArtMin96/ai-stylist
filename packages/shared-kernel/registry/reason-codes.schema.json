@@ -1,0 +1,53 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://contracts.ai-stylist.app/shared-kernel/registry/reason-codes.schema.json",
+  "title": "ReasonCodeRegistry",
+  "description": "Recommendation reason-code registry (planning/09 §7). Codes are stable identifiers: add, never rename or reuse. tools/codegen/gen-kernel.mjs validates this file and also checks that every code's namespace and stage are declared and that the code starts with '<namespace>-'.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["namespaces", "stages", "codes"],
+  "properties": {
+    "$schema": { "type": "string" },
+    "namespaces": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["name"],
+        "properties": {
+          "name": { "type": "string", "pattern": "^RC(-[A-Z]+)+$" },
+          "note": { "type": "string", "minLength": 1 }
+        }
+      }
+    },
+    "stages": {
+      "type": "array",
+      "description": "Pipeline stage (doc 09 §2) that may emit a code",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": { "type": "string", "pattern": "^[a-z]+$" }
+    },
+    "codes": {
+      "type": "object",
+      "propertyNames": { "pattern": "^RC(-[A-Z0-9]+)+$" },
+      "additionalProperties": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["namespace", "stage", "params", "description"],
+        "properties": {
+          "namespace": { "type": "string" },
+          "stage": { "type": "string" },
+          "params": {
+            "type": "array",
+            "description": "Names of the typed template params (doc 09 §7)",
+            "uniqueItems": true,
+            "items": { "type": "string", "pattern": "^[a-z][A-Za-z0-9]*$" }
+          },
+          "description": { "type": "string", "minLength": 1 }
+        }
+      }
+    }
+  }
+}

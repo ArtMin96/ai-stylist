@@ -36,6 +36,7 @@ check_dc12() {
 }
 
 # check_dc13 ROOT — banned stale vendor names absent from .agents/**, .claude/**, docs/**, justfile.
+# Gitignored files (e.g. `.claude/worktrees/` agent checkouts) are out of scope via list_repo_files.
 # `.claude/plans/` is exempt: proposals under review legitimately discuss vendors under
 # consideration. `docs/adr/` is exempt for the same reason in the other direction: ADRs are
 # historical decision records that must keep naming the vendors they rejected or superseded.
@@ -45,15 +46,18 @@ check_dc13() {
     for dir in .agents .claude docs; do
       [[ -d "$root/$dir" ]] || continue
       while IFS= read -r f; do
+        case "$f" in ''|*/.claude/plans/*|*/docs/adr/*) continue ;; esac
         while IFS=: read -r lineno content; do
+          [[ -n "$lineno" ]] || continue
           finding ERROR DC-13 "${f#"$root"/}" "$lineno" "banned stale vendor name '$vendor': $content"
-        done < <(grep -nF "$vendor" "$f")
-      done < <(find "$root/$dir" -type f -name '*.md' -not -path '*/.claude/plans/*' -not -path '*/docs/adr/*' | sort)
+        done <<<"$(grep -nF "$vendor" "$f")"
+      done <<<"$(list_repo_files "$root" "$dir" '*.md')"
     done
     if [[ -f "$root/justfile" ]]; then
       while IFS=: read -r lineno content; do
+        [[ -n "$lineno" ]] || continue
         finding ERROR DC-13 "justfile" "$lineno" "banned stale vendor name '$vendor': $content"
-      done < <(grep -nF "$vendor" "$root/justfile")
+      done <<<"$(grep -nF "$vendor" "$root/justfile")"
     fi
   done
   return 0
@@ -67,12 +71,12 @@ check_dc14() {
 
   local -a block_lines block_top
   block_lines=()
-  while IFS= read -r line; do block_lines+=("$line"); done < <(
+  while IFS= read -r line; do block_lines+=("$line"); done <<<"$(
     awk '/^## Repository layout/{f=1;next} f && /^```/{c++; if(c==2) exit; next} f && c==1' "$claude_md"
-  )
+  )"
 
   block_top=()
-  for line in "${block_lines[@]}"; do
+  for line in ${block_lines[@]+"${block_lines[@]}"}; do
     [[ -z "${line// /}" ]] && continue
     token="$(awk '{print $1}' <<<"$line")"
     dir_token="${token%%<*}"
@@ -91,7 +95,7 @@ check_dc14() {
     name="$(basename "$entry")"
     [[ "$name" == .* ]] && continue
     found=0
-    for t in "${block_top[@]}"; do [[ "$t" == "$name" ]] && found=1 && break; done
+    for t in ${block_top[@]+"${block_top[@]}"}; do [[ "$t" == "$name" ]] && found=1 && break; done
     if [[ $found -eq 0 ]]; then
       finding "$level" DC-14 "CLAUDE.md" 1 "top-level directory '$name/' is not mentioned in the layout block"
     fi
@@ -117,25 +121,25 @@ check_dc15() {
     name="${name#just }"
     name="$(awk '{print $1}' <<<"$name")"
     doc_recipes+=("$name")
-  done < <(md_table_data_rows "$doc" 'Recipe')
+  done <<<"$(md_table_data_rows "$doc" 'Recipe')"
 
   real_recipes=()
   local r
   while IFS= read -r r; do
     [[ -n "$r" ]] && real_recipes+=("$r")
-  done < <(cd "$root" && just --summary 2>/dev/null | tr ' ' '\n')
+  done <<<"$(cd "$root" && just --summary 2>/dev/null | tr ' ' '\n')"
 
   local found n
-  for n in "${real_recipes[@]}"; do
+  for n in ${real_recipes[@]+"${real_recipes[@]}"}; do
     found=0
-    for r in "${doc_recipes[@]}"; do [[ "$r" == "$n" ]] && found=1 && break; done
+    for r in ${doc_recipes[@]+"${doc_recipes[@]}"}; do [[ "$r" == "$n" ]] && found=1 && break; done
     if [[ $found -eq 0 ]]; then
       finding "$level" DC-15 "planning/15-team-workflow-and-ai-agent-operations.md" 1 "recipe '$n' (just --summary) missing from the §5 catalog"
     fi
   done
-  for n in "${doc_recipes[@]}"; do
+  for n in ${doc_recipes[@]+"${doc_recipes[@]}"}; do
     found=0
-    for r in "${real_recipes[@]}"; do [[ "$r" == "$n" ]] && found=1 && break; done
+    for r in ${real_recipes[@]+"${real_recipes[@]}"}; do [[ "$r" == "$n" ]] && found=1 && break; done
     if [[ $found -eq 0 ]]; then
       finding "$level" DC-15 "planning/15-team-workflow-and-ai-agent-operations.md" 1 "§5 catalog documents 'just $n', not a real recipe"
     fi

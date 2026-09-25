@@ -1,6 +1,6 @@
 # Module Contract — `x`
 
-- **Status:** skeleton · **Last updated:** 2026-09-13
+- **Status:** skeleton · **Last updated:** 2026-09-25
 
 ## Public interface
 

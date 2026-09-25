@@ -140,7 +140,7 @@ Owning row: [10 §2.6](../10-ai-usage-cost-and-evaluation.md) (Selfie → styliz
 
 ## 13. Parallelization
 
-- Can run in parallel: **T01** (consent, `identity` + settings files) ∥ **T02** (native bridge, `apps/mobile` native dirs) ∥ **T07** (backend module files). Then **T03/T04** in parallel (capture UI vs mapping+assets — disjoint). Later: **T08** (backend cascade) ∥ **T09** (mobile misuse guards) ∥ **T11** (obs/copy audit).
+- Can run in parallel: **T01** (consent, `identity` + settings files) ∥ **T02** (native landmark adapters in `apps/ios` / `apps/android`; *was an RN native bridge in `apps/mobile`*) ∥ **T07** (backend module files). Then **T03/T04** in parallel (capture UI vs mapping+assets — disjoint). Later: **T08** (backend cascade) ∥ **T09** (mobile misuse guards) ∥ **T11** (obs/copy audit).
 - Must be serial: T02 → T03/T04 → T05 → T06/T12 (each consumes the previous surface); `packages/contracts` edits (T07 endpoint schemas, T05 event schema) are single-writer — sequence them; T12 (SPK-1) requires the full loop working.
 
 ## 14. Test-first plan (by module and level)
@@ -150,7 +150,7 @@ Owning row: [10 §2.6](../10-ai-usage-cost-and-evaluation.md) (Selfie → styliz
 | `identity` | Consent purpose gating logic | Consent history append-only invariant | Consent API vs OpenAPI | **Consent-before-processing test: face endpoint 403s and no bytes are processed/stored without an active consent record (REQ-FAC-030)** | Maestro: consent decline path leaves full app value |
 | `avatar` | Landmarks→morph mapping math | Mapping bounded within head blend-shape ranges for arbitrary landmark inputs | Face-vector schema; `avatar.face.applied.v1` pinned | Rig-bump → `needs-recapture` state test | Golden renders: likeness presets across skin tones on avatar head |
 | `media` | Lineage rows for face-derived assets | — | Deletion event schema | **Deletion-cascade test: withdrawal removes selfie refs, vectors, derived assets, any cached copies; orphan scan clean (REQ-FAC-050 / NFR-PRV-040)**; Testcontainers PG + R2-compatible store | — |
-| Mobile | Quality-validation thresholds; misuse heuristics | — | Generated client compile | Capture flow RNTL with mocked bridge | Device tests (real iOS + Android): extraction success/latency on guided captures; low-quality images rejected with specific guidance (REQ-FAC-020); a11y pass on consent + capture + review |
+| Mobile | Quality-validation thresholds; misuse heuristics | — | Generated client compile | Capture-flow native UI tests (Compose/Robolectric; iOS models + simulator) with a mocked landmark adapter | Device tests (real iOS + Android): extraction success/latency on guided captures; low-quality images rejected with specific guidance (REQ-FAC-020); a11y pass on consent + capture + review |
 | Security suite | — | — | — | `*.sec.test.ts`: face fields never in logs/analytics/crash payloads (forbidden-field lint, NFR-PRV-050); S3 access audited | Copy-lexicon check: no "digital twin"/"exact" claims (REQ-FAC-060) |
 
 New bug fixes require a regression test that fails before the fix. Tests live in each module's `tests/` directory.

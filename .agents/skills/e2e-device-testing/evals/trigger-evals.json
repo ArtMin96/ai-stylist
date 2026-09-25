@@ -1,10 +1,10 @@
 [
   {
-    "query": "need to add a maestro flow for the closet single-item capture screen in apps/mobile/e2e, camera should be mocked since we're on the emulator",
+    "query": "need to add a maestro flow for the closet single-item capture screen in e2e/, camera should be mocked since we're on the emulator and simulator",
     "should_trigger": true
   },
   {
-    "query": "the avatar golden render diff is flagging changes after I tweaked the pose camera angles in P04's harness, do I just run golden-accept or what",
+    "query": "the closet grid golden screenshot diff is flagging changes on android after I tweaked the card padding, do I just run golden-accept or what",
     "should_trigger": true
   },
   {
@@ -20,7 +20,7 @@
     "should_trigger": true
   },
   {
-    "query": "screenshot diff baseline for the outfit-on-avatar collage looks different after the P10 morph preset changes, want to review before accepting anything",
+    "query": "screenshot diff baseline for the outfit detail screen looks different on the iOS simulator lane after the typography change, want to review before accepting anything",
     "should_trigger": true
   },
   {
@@ -36,19 +36,19 @@
     "should_trigger": true
   },
   {
-    "query": "our pre-release qualification device-farm run is missing the low-tier android device (galaxy a16 class), need to add that lane",
+    "query": "just ios-e2e can't find the settings button but android-e2e passes, the flow uses the same id on both, what's wrong",
     "should_trigger": true
   },
   {
-    "query": "the closet batch-capture RNTL test keeps flaking in CI, can you fix it so it stops failing intermittently",
+    "query": "the closet batch-capture Robolectric test keeps flaking in CI, can you fix it so it stops failing intermittently",
     "should_trigger": false
   },
   {
-    "query": "3D avatar frame time on the low-tier device dropped below the budget after the last morph change, need to profile where the time is going",
+    "query": "cold start on the low-tier android device blew past the budget after the last release, need to profile where the time is going",
     "should_trigger": false
   },
   {
-    "query": "want to add a new pose + camera preset to the avatar rendering pipeline under apps/mobile/src/render",
+    "query": "want to add the new sign-in screen in SwiftUI with its view model and accessibility identifiers",
     "should_trigger": false
   },
   {
@@ -68,7 +68,7 @@
     "should_trigger": false
   },
   {
-    "query": "need to wire up assets-validate checks for the new garment mesh so glTF/KTX2 budgets are enforced",
+    "query": "the Compose unit test for the home screen's LaunchedEffect keeps failing after the refactor, need it fixed",
     "should_trigger": false
   },
   {
@@ -76,7 +76,7 @@
     "should_trigger": false
   },
   {
-    "query": "want to add a shared retry-with-backoff utility script under scripts/ that a few different load-test profiles could reuse",
+    "query": "write the Swift Testing unit tests for the closet list view model's pagination logic",
     "should_trigger": false
   }
 ]

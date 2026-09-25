@@ -67,12 +67,12 @@
   {
     "query": "the push notification banner on the lock screen looks wrong on iOx — the text is truncated and the icon is missing",
     "should_trigger": false,
-    "_near_miss_reason": "about 'push notification' but it's a mobile UI/rendering bug in how the OS displays it, not backend delivery logic — mobile-feature owns the client side."
+    "_near_miss_reason": "about 'push notification' but it's a mobile UI/rendering bug in how the OS displays it, not backend delivery logic — ios-feature / android-feature owns the client side."
   },
   {
-    "query": "generic module work in apps/api/src/modules/notifications: need a plain CRUD service for reading a user's own notification_prefs row, nothing about sending",
+    "query": "the recommendation engine should skip producing tomorrow's outfit when the weather context is older than 6 hours, change that freshness rule in the engine",
     "should_trigger": false,
-    "_near_miss_reason": "shares the module name and even the table name, but is asking for generic module scaffolding with no scheduling/quiet-hours/port/dedup content — backend-module handles the generic case; this skill is for the delivery-specific rules."
+    "_near_miss_reason": "the daily-outfit push depends on context freshness, but the freshness rule for producing the outfit lives in the recommendation engine — recommendation-rules owns it; notifications only delivers the result."
   },
   {
     "query": "admin needs a queue to review flagged notification content before it goes out to users, similar to the moderation queue",

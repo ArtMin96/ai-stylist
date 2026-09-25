@@ -1,6 +1,10 @@
 # Proposal: `planning/15-team-workflow-and-ai-agent-operations.md` updates, plus a `planning/CLAUDE.md`
 # disposition decision (human-authorized only)
 
+> Status: APPLIED (Part A and Part B) on 2026-09-13 (`planning/PROGRESS.md` handoff "2026-09-13 —
+> Agent operating foundation"). Its Expo, dev-mobile and ios-eas workflow references are pre-ADR-0004
+> history; re-applying it would bring back the superseded React Native stack. Do not re-apply.
+
 **Task:** T20 of `.claude/plans/s3-agent-operating-foundation.md`. `planning/15-*.md` is human-only per
 root `CLAUDE.md`'s "Prohibited without explicit human authorization" section and the
 `guard-protected-paths.sh` PreToolUse hook (`*/planning/15-*.md` pattern). This file is the proposal; a

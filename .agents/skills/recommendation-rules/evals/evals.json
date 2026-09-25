@@ -4,14 +4,14 @@
     {
       "id": 1,
       "prompt": "Users on cold mornings (below 5°C) keep getting linen shirts suggested in their top outfit. This should be a hard exclusion, not just a scoring penalty — add an H-EXCL rule for it per P09's hard-rule registry.",
-      "expected_output": "The agent adds a new hard-constraint rule in apps/api/src/modules/recommendation/internal/ (stage 3, per planning/09-recommendation-engine.md), assigns it a reason code from the shared-kernel registry (or stops to request one), writes unit + fast-check property tests in apps/api/src/modules/recommendation/tests/ proving the rule excludes the candidate before ranking and that no soft signal can resurrect it, and bumps the rule version + changelog.",
+      "expected_output": "The agent finds `RC-EXCL-COLD-SAFETY` already registered in packages/shared-kernel/registry/reason-codes.json and reuses it. It reports that the recommendation module is a P02 skeleton and that no ruleset registry exists until P09-T02, so it does not invent a ruleset location. Any rule it writes is a pure stage-3 exclusion under apps/api/src/modules/recommendation/internal/ with unit and property tests in apps/api/src/modules/recommendation/tests/ proving the candidate is excluded before ranking and never resurrected by a soft score.",
       "files": [],
       "assertions": [
-        "The new rule lives under apps/api/src/modules/recommendation/internal/, not in a controller or job handler",
-        "The agent either uses an already-registered reason code or explicitly stops and reports that a new shared-kernel reason code is needed before proceeding",
-        "A fast-check property test asserts the hard-excluded candidate is never resurrected by a soft score, and the agent's report names `just test recommendation` as the command it ran",
-        "The rule-version registry and changelog are updated, and the agent states whether `just rec-replay <id>` was run or is a stub in the current phase",
-        "No import of apps/api/src/modules/avatar/**, apps/mobile/src/render/**, or a 3D/asset type appears in the diff"
+        "The agent finds and reuses the registered `RC-EXCL-COLD-SAFETY` code instead of defining a new one",
+        "The report states that no ruleset registry/version store exists yet (P09-T02) and the agent does not create one at an invented location",
+        "Any new rule lives under apps/api/src/modules/recommendation/internal/, not in a controller or job handler, and takes time/temperature as inputs",
+        "A property-style test asserts the hard-excluded candidate is never resurrected by a soft score, and the report names `just test recommendation` with real output",
+        "No import of apps/api/src/modules/avatar/**, a renderer, or a 3D/asset type appears in the diff"
       ]
     },
     {
@@ -23,7 +23,7 @@
         "The agent explicitly states the change is a soft signal and cannot resurrect a hard-excluded candidate",
         "The scoring change is deterministic — no wall-clock or random input introduced — and the agent's report says so",
         "The agent reports an eval metric delta from `just ml-eval` with real output, or states plainly that the offline eval is a stub in the current phase and names it as such rather than fabricating a number",
-        "The rule-version registry and changelog are updated to reflect the scoring change"
+        "The agent states that the ruleset version + changelog must change and that no ruleset registry exists until P09-T02, rather than inventing one"
       ]
     },
     {

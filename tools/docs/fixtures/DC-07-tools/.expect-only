@@ -1,0 +1,1 @@
+ERROR DC-07 .claude/agents/specifier.md:4 tools entry 'Bash(just:*)' has a '(...)' specifier: tools takes plain names (limit Bash with the scripts/hooks/guard-agent-bash.sh hook)

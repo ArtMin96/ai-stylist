@@ -1,14 +1,19 @@
 #!/usr/bin/env bash
 # just bootstrap — idempotent developer environment setup (planning/15 §1, §4).
 #
-#   scripts/bootstrap.sh            user-level steps only (no sudo): mise, pins, pnpm, hooks, .env
+#   scripts/bootstrap.sh            user-level steps only (no sudo): mise, pins, pnpm, hooks, .env,
+#                                   and the mise + direnv block in your shell rc file
 #   scripts/bootstrap.sh --system   additionally installs system packages and the native-app SDKs:
-#                                     Linux  apt + udev rules + docker group (sudo); Docker image swift:6.4
-#                                     macOS  Homebrew formulae/casks, no sudo (docs/DEVELOPING-ON-MACOS.md); Xcode check
+#                                     Linux  pacman (Arch, Omarchy) or apt (Debian, Ubuntu): Docker Engine,
+#                                            Android udev rules, docker group (sudo); Docker image swift:6.4
+#                                     macOS  Homebrew: git-lfs, OrbStack (installed and started); Xcode:
+#                                            the pinned version installed with xcodes when missing (Apple ID
+#                                            prompt), selected, licence + first launch, iOS simulator (sudo)
 #                                     both   Android SDK packages (apps/android/tools/sdk.sh install, user-level)
 #                                            and ANDROID_HOME in ~/.config/ai-stylist/env.sh (.envrc sources it)
 #
-# Never edits shell rc files; prints the activation line at the end instead.
+# The rc block (zsh: ~/.zshrc; bash: ~/.bashrc on Linux, ~/.bash_profile on macOS) sits between
+# marker lines and is rewritten in place on every run; other lines are never touched. Not under CI.
 # Runs under macOS /bin/bash 3.2 as well as bash 5: no associative arrays, mapfile, ${var,,} etc.
 set -euo pipefail
 source "$(dirname "${BASH_SOURCE[0]}")/lib.sh"
@@ -18,16 +23,73 @@ SYSTEM=0
 for arg in "$@"; do
   case "$arg" in
     --system) SYSTEM=1 ;;
-    -h|--help) sed -n '2,10p' "$0"; exit 0 ;;
+    -h|--help) sed -n '2,16p' "$0"; exit 0 ;;
     *) die "unknown flag: $arg (accepted: --system)" ;;
   esac
 done
+
+# The functions below run in `f || warn` context, where bash ignores `set -e`: every step that
+# can fail ends in `|| return 1`.
+
+# macOS Docker runtime: OrbStack (Linux uses Docker Engine from pacman/apt). Installs the cask when
+# the app is missing, starts the engine headless (`orb start`, a no-op when running), and makes its
+# `orbstack` docker context the active one. OrbStack itself links docker into /usr/local/bin
+# (after an admin prompt) and adds ~/.orbstack/bin to PATH from ~/.zprofile for new shells.
+setup_orbstack() {
+  if [[ -d /Applications/OrbStack.app ]]; then
+    info "OrbStack installed"
+  else
+    brew install --cask orbstack || return 1
+  fi
+  local orb=/Applications/OrbStack.app/Contents/MacOS/bin/orb
+  "$orb" start || return 1
+  have docker || export PATH="$HOME/.orbstack/bin:$PATH"
+  if [[ "$(docker context show 2>/dev/null)" != "orbstack" ]]; then
+    docker context use orbstack >/dev/null || return 1
+  fi
+  docker info >/dev/null 2>&1 || { error "OrbStack started but 'docker info' fails"; return 1; }
+  info "OrbStack running; docker context: orbstack"
+}
+
+# Xcode for apps/ios: the version pinned in apps/ios/.xcode-version, installed with xcodes when
+# missing (it asks for your Apple ID and downloads about 10 GB), selected, licence accepted,
+# first-launch packages installed, plus an iOS 26+ simulator runtime (just ios-test needs one).
+setup_xcode() {
+  local pinned state app=""
+  pinned="$(tr -d '[:space:]' < apps/ios/.xcode-version)"
+  state="$(darwin_xcode_state "$pinned")"
+  case "$state" in
+    ok) info "Xcode $pinned is the active Xcode" ;;
+    unselected\ *) app="${state#unselected }" ;;
+    *)
+      info "Xcode $pinned is not installed: installing it with xcodes (Apple ID prompt, about 10 GB)"
+      have xcodes || brew install xcodes || return 1
+      xcodes install "$pinned" || return 1
+      app="$(darwin_xcode_app "$pinned")" || { error "xcodes finished, but no Xcode $pinned in ${XCODES_DIRECTORY:-/Applications}"; return 1; }
+      ;;
+  esac
+  if [[ -n "$app" ]]; then
+    info "selecting $app (sudo xcode-select)"
+    sudo xcode-select -s "$app/Contents/Developer" || return 1
+  fi
+  if ! xcodebuild -license check >/dev/null 2>&1 || ! xcodebuild -checkFirstLaunchStatus >/dev/null 2>&1; then
+    info "accepting the Xcode licence and installing its first-launch packages (sudo xcodebuild -runFirstLaunch)"
+    sudo xcodebuild -runFirstLaunch || return 1
+  fi
+  if xcrun simctl list runtimes available 2>/dev/null | command grep -Eq '^iOS (2[6-9]|[3-9][0-9])\.'; then
+    info "iOS 26+ simulator runtime installed"
+  else
+    info "downloading the iOS simulator runtime (xcodebuild -downloadPlatform iOS, several GB)"
+    xcodebuild -downloadPlatform iOS || return 1
+  fi
+  apps/ios/scripts/xcode.sh doctor
+}
 
 heading "AI Stylist bootstrap"
 
 # --- 0. system packages (opt-in) -----------------------------------------------------
 if (( SYSTEM )) && os_is_darwin; then
-  log "system packages (Homebrew) — macOS, no sudo"
+  log "system packages (Homebrew) — macOS"
   # Xcode Command Line Tools: git, clang, and the SDK headers node-gyp needs. The installer
   # is an interactive Apple dialog, so it cannot run from here.
   if xcode-select -p >/dev/null 2>&1; then
@@ -53,42 +115,41 @@ if (( SYSTEM )) && os_is_darwin; then
   else
     brew install git-lfs
   fi
-  log "docker runtime"
-  # Not installed by this script: three runtimes exist and the choice is yours
-  # (docs/DEVELOPING-ON-MACOS.md). Detect only.
-  case "$(darwin_docker_runtime)" in
-    desktop) info "Docker Desktop detected (/Applications/Docker.app) — start it from Launchpad if 'docker info' fails" ;;
-    orbstack) info "OrbStack detected — 'orb start' if 'docker info' fails" ;;
-    colima) info "Colima detected — 'colima start'; Testcontainers needs DOCKER_HOST=unix://\$HOME/.colima/default/docker.sock" ;;
-    *)
-      warn "no Docker runtime found. Install one (docs/DEVELOPING-ON-MACOS.md):"
-      info "  Docker Desktop  brew install --cask docker      GUI, zero config for Testcontainers; check Docker's licence terms for your company size"
-      info "  OrbStack        brew install --cask orbstack    fastest/lightest, zero config for Testcontainers; free for personal use, paid seat commercially"
-      info "  Colima          brew install colima docker      CLI only, free; Testcontainers needs DOCKER_HOST (see the doc)"
-      info "  recommendation: Docker Desktop or OrbStack (no env vars); Colima if you want no GUI"
-      ;;
-  esac
+  log "docker runtime: OrbStack"
+  setup_orbstack || warn "OrbStack is not running; follow the output above, then re-run: just bootstrap --system"
   info "skipping udev rules / docker group / systemctl (Linux only)"
 elif (( SYSTEM )); then
-  log "system packages (apt) — requires sudo"
-  APT_PKGS=(build-essential git git-lfs curl unzip zip ca-certificates gnupg libssl-dev pkg-config
-            docker.io docker-compose-v2 android-sdk-platform-tools-common)
-  # adb itself comes from the Android SDK's platform-tools (step 3), not apt: two adb binaries of
-  # different versions kill each other's server. android-sdk-platform-tools-common = udev rules only.
-  sudo apt-get update -qq
-  sudo DEBIAN_FRONTEND=noninteractive apt-get install -y -qq "${APT_PKGS[@]}"
-  log "udev rules for Android devices"
-  if [[ ! -f /etc/udev/rules.d/51-android.rules ]]; then
-    sudo mkdir -p /etc/udev/rules.d   # absent on minimal/container/WSL images without udev
-    printf 'SUBSYSTEM=="usb", ATTR{idVendor}=="18d1", MODE="0666", GROUP="plugdev"\n' \
-      | sudo tee /etc/udev/rules.d/51-android.rules >/dev/null
-    if have udevadm; then
-      sudo udevadm control --reload-rules && sudo udevadm trigger
+  # adb itself comes from the Android SDK's platform-tools (step 3), not the distro: two adb
+  # binaries of different versions kill each other's server. The distro package adds udev rules only.
+  if have pacman; then
+    log "system packages (pacman: Arch, Omarchy) — requires sudo"
+    # No -y: installing against the synced package database avoids a partial upgrade.
+    # android-udev ships /usr/lib/udev/rules.d/51-android.rules (uaccess for the logged-in user).
+    PACMAN_PKGS=(base-devel git git-lfs curl unzip zip ca-certificates gnupg openssl pkgconf
+                 docker docker-compose docker-buildx android-udev)
+    sudo pacman -S --needed --noconfirm "${PACMAN_PKGS[@]}" \
+      || die "pacman could not install the packages; update the system first (sudo pacman -Syu, or omarchy-update on Omarchy), then re-run: just bootstrap --system"
+  elif have apt-get; then
+    log "system packages (apt: Debian, Ubuntu) — requires sudo"
+    APT_PKGS=(build-essential git git-lfs curl unzip zip ca-certificates gnupg libssl-dev pkg-config
+              docker.io docker-compose-v2 android-sdk-platform-tools-common)
+    sudo apt-get update -qq
+    sudo DEBIAN_FRONTEND=noninteractive apt-get install -y -qq "${APT_PKGS[@]}"
+    log "udev rules for Android devices"
+    if [[ ! -f /etc/udev/rules.d/51-android.rules ]]; then
+      sudo mkdir -p /etc/udev/rules.d   # absent on minimal/container/WSL images without udev
+      printf 'SUBSYSTEM=="usb", ATTR{idVendor}=="18d1", MODE="0666", GROUP="plugdev"\n' \
+        | sudo tee /etc/udev/rules.d/51-android.rules >/dev/null
+      if have udevadm; then
+        sudo udevadm control --reload-rules && sudo udevadm trigger
+      else
+        info "udevadm not present (no udev on this machine) — rules written, will apply once udev runs"
+      fi
     else
-      info "udevadm not present (no udev on this machine) — rules written, will apply once udev runs"
+      info "udev rules already present"
     fi
   else
-    info "udev rules already present"
+    die "bootstrap --system supports pacman (Arch, Omarchy) and apt (Debian, Ubuntu); on this distro install Docker Engine + compose, git-lfs, a C toolchain, curl, unzip and zip by hand, then re-run without --system"
   fi
   log "docker group membership"
   me="$(id -un)"   # $USER is unset in non-login shells (CI, docker exec, systemd)
@@ -101,9 +162,9 @@ elif (( SYSTEM )); then
   sudo systemctl enable --now docker >/dev/null 2>&1 || warn "could not enable docker service"
 else
   if os_is_darwin; then
-    info "skipping Homebrew steps (run with --system to include them: Xcode CLT check, git-lfs, Docker runtime detection)"
+    info "skipping Homebrew steps (run with --system to include them: Xcode CLT check, git-lfs, OrbStack)"
   else
-    info "skipping apt / udev / docker-group steps (run with --system to include them; they need sudo)"
+    info "skipping pacman/apt / udev / docker-group steps (run with --system to include them; they need sudo)"
   fi
 fi
 
@@ -166,7 +227,7 @@ if (( SYSTEM )); then
   fi
   if os_is_darwin; then
     log "Xcode (apps/ios)"
-    apps/ios/scripts/xcode.sh doctor || warn "Xcode is not ready for apps/ios; follow the hints above (Xcode $(cat apps/ios/.xcode-version))"
+    setup_xcode || warn "Xcode is not ready for apps/ios; follow the output above, then re-run: just bootstrap --system"
   else
     log "Swift for the Linux iOS recipes and gen-swift.sh (Docker image swift:6.4)"
     if docker info >/dev/null 2>&1; then
@@ -176,7 +237,7 @@ if (( SYSTEM )); then
     fi
   fi
 else
-  info "skipping native-app SDK steps (run with --system: Android SDK, ANDROID_HOME env file, Xcode check or Docker swift:6.4)"
+  info "skipping native-app SDK steps (run with --system: Android SDK, ANDROID_HOME env file, Xcode setup or Docker swift:6.4)"
 fi
 
 # --- 4. git hooks --------------------------------------------------------------------
@@ -236,6 +297,24 @@ if have direnv || mise_exec direnv --version >/dev/null 2>&1; then
   mise_exec direnv allow . 2>/dev/null || true
 fi
 
+# --- 5b. shell activation (managed block in the rc file) ----------------------------------
+log "shell activation (mise + direnv)"
+if [[ "${CI:-}" == "true" ]]; then
+  info "CI: rc file not changed (CI shells are not interactive)"
+  shell_hint=""
+elif ! rc_file="$(shell_rc_file)"; then
+  warn "login shell '${SHELL:-unknown}' is neither zsh nor bash: add mise and direnv activation to its config by hand"
+  shell_hint="Activate mise and direnv in your shell's config by hand (mise: 'mise activate --help'; direnv: 'direnv hook --help')."
+else
+  direnv_version="$("$MISE_BIN" current direnv 2>/dev/null || true)"
+  if [[ -z "$direnv_version" ]]; then
+    die "mise.toml pins no direnv version ('$MISE_BIN current direnv' is empty); run '$MISE_BIN install --yes' and re-run"
+  fi
+  shell_activation_write "$rc_file" "$(basename "$SHELL")" "$direnv_version"
+  info "mise + direnv block up to date in $rc_file"
+  shell_hint="Open a new terminal so mise and direnv load ($rc_file)."
+fi
+
 # --- 6. age identity + secrets onboarding -----------------------------------------------
 log "age identity + secrets onboarding"
 onboard_status_file="$(mktemp)"
@@ -267,11 +346,10 @@ elif command grep -qx skipped "$onboard_status_file"; then
 else
   secrets_hint="Secrets: onboarding did not finish — follow its output above, then:  just secrets-sync  ·  just doctor"
 fi
+if [[ -n "$shell_hint" ]]; then
+  info "$shell_hint"
+fi
 cat <<MSG
-  Activate mise in your shell (not written to rc files by this script):
-      eval "\$($MISE_BIN activate zsh)"
-      eval "\$(direnv hook zsh)"
-  Then:  direnv allow
   $secrets_hint
   Back up your age identity in the team password manager, then:  just secrets-backup-done
 MSG

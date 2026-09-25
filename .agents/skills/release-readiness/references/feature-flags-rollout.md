@@ -6,7 +6,7 @@
 > first real flag registry and kill-switch wiring (regional gating for A2); until then this file is
 > the flag operating procedure `release-readiness` and every engineer skill point to.
 
-Last reviewed: 2026-09-13
+Last reviewed: 2026-09-25
 
 ## Source of truth
 
@@ -54,9 +54,12 @@ verified end to end yet.
 
 ## Expired and stale flags
 
-Expired flags fail a weekly CI report; more than 30 days overdue is a defect with an owner (doc 14
-§11). `release-readiness`'s gate checklist treats "no expired flag shipping" as a release blocker,
-not a warning — an expired flag that ships anyway is exactly the drift this policy exists to catch.
+Doc 14 §11 calls for a CI report that fails on expired flags; more than 30 days overdue is a defect
+with an owner. That report is not built yet: the nightly `expired-flags` job in
+`.github/workflows/nightly.yml` is a placeholder (P02-T09). Until it exists, a release records flag
+expiry as `unverified: needs a human PostHog check`, and `release-readiness` treats that as a NO-GO
+until a human confirms — an expired flag that ships anyway is exactly the drift this policy exists
+to catch.
 
 ## Experiments never touch the hard-constraint layer
 

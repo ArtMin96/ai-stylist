@@ -17,13 +17,13 @@
     {
       "id": 2,
       "prompt": "Build the P12-T04 source-register admin CRUD: admins can register a new fashion-intel content source, and every source must record a rights basis (license, public-domain, licensed-partner, etc.) before it can be used for ingestion.",
-      "expected_output": "An admin CRUD service enforces rights-basis as a mandatory field at creation (reject the write if absent), records every create/update/takedown in audit_log, and never writes to a fashion-intel-owned table directly — it calls fashion-intel's public API or the two modules agree on which owns the source-register table per docs/modules/admin.md and docs/modules/fashion-intel.md.",
+      "expected_output": "The agent checks ALLOWED_EDGES in tools/depcruise/rules.cjs, finds that admin may import only media, closet, billing and identity (and fashion-intel may not import admin), and stops before building CRUD that calls the fashion-intel source register: the P12-T04 wiring needs the lead's decision (events only, or an ADR adding an edge). It restates the invariants any eventual design must keep: rights basis mandatory at creation (write rejected if absent) and an audit_log row for every create/update/takedown.",
       "files": [],
       "assertions": [
-        "A source cannot be created or approved for ingestion without a non-empty rights-basis value",
-        "Every create/update/takedown action on a source produces an audit_log row",
-        "The diff does not read or write a fashion-intel-owned table directly from apps/api/src/modules/admin/internal/ without going through fashion-intel's public index.ts, or the agent explicitly reports which module owns the table per the two module contracts",
-        "The agent reports `just test admin` output showing the rights-basis rejection case passes"
+        "The agent reports that admin cannot import fashion-intel (ALLOWED_EDGES: admin → media, closet, billing, identity) and does not write code that does",
+        "The agent stops and names the decision needed (events only, or an ADR + DEC adding an edge) instead of reading or writing a fashion-intel table from admin",
+        "The agent states that a source without a non-empty rights basis must be rejected at creation",
+        "The agent states that every create/update/takedown action must produce an audit_log row"
       ]
     },
     {

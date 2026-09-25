@@ -1,0 +1,2 @@
+ERROR DC-07 .claude/agents/nocolor.md:1 frontmatter 'color' missing (one of: red blue green yellow purple orange pink cyan)
+ERROR DC-07 .claude/agents/teal.md:5 color 'teal' is not one of: red blue green yellow purple orange pink cyan

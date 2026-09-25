@@ -60,9 +60,9 @@
     "_near_miss_reason": "names the audit_log table directly, but the ask is a schema + migration change — db-migration's job, even though admin-moderation consumes that column afterward."
   },
   {
-    "query": "generic module work in apps/api/src/modules/admin: need a plain read-only endpoint that lists all admins, nothing about moderation or audit trails",
+    "query": "closet needs its own service so a user can archive one of their items and restore it later — no admin involved, just the owner's action",
     "should_trigger": false,
-    "_near_miss_reason": "shares the admin module name but has no moderation/audit/RBAC content — backend-module handles generic module scaffolding; this skill is for the moderation/audit-specific invariants."
+    "_near_miss_reason": "shares the archive/restore (reversible action) theme with admin's invariant, but it is the owning user's action inside closet — backend-module owns closet; admin-moderation owns only admin actions."
   },
   {
     "query": "the admin dashboard's moderation queue screen in the app looks broken on tablet, the approve/reject buttons overlap",

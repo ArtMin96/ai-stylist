@@ -156,7 +156,7 @@ Run these in a shell where mise is activated (`eval "$(~/.local/bin/mise activat
 
 9. Onboard another developer: they run `just bootstrap`, which generates their identity, adds their `# developer: <label>` comment and recipient to the `dev` rule of `.sops.yaml` on a new `onboard/<slug>` branch, and prints a compare URL to open a pull request — no manual key exchange needed. Review the diff (it should touch only `.sops.yaml`, adding a label comment and a bare `- age1...` line), then run `just secrets-approve <branch>`: it re-wraps every `secrets/*.enc.yaml` for the new recipient list, commits and pushes onto their branch, and prints the compare URL again. Merge it; the new developer runs `just secrets-sync` (or re-runs `just bootstrap`) to pick up the shared dev values. Only the `dev` rule is automated this way — a deployer who needs `staging` or `prod` access still adds their own recipient under that rule by hand and asks a teammate who can already decrypt to run `just secrets-updatekeys`.
 
-10. `direnv allow` once in the repo root so `.envrc` loads `.env` into every shell (optional; `just` recipes and the db scripts read `.env` themselves).
+10. Nothing to do for direnv: `./scripts/bootstrap.sh` already allowed the repo's `.envrc` and hooked direnv into your shell rc file, so a new terminal loads `.env` when you enter the repo (`just` recipes and the db scripts read `.env` themselves).
 
 ### What to record
 

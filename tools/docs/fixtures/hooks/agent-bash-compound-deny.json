@@ -1,0 +1,24 @@
+{
+  "session_id": "fixture-session",
+  "transcript_path": "/tmp/fixture-transcript.jsonl",
+  "cwd": "/home/arthur/Projects/app",
+  "hook_event_name": "PreToolUse",
+  "tool_name": "Bash",
+  "tool_input": {
+    "command": "just ios-check && git commit -am wip",
+    "description": "fixture"
+  },
+  "agent_id": "fixture-agent",
+  "agent_type": "ios-engineer",
+  "scratchpad_dir": "/home/arthur/scratchpad",
+  "_harness": {
+    "args": [
+      "just ios-*",
+      "just test ios*",
+      "just generate --check*",
+      "just lint-file *",
+      "just docs-check*",
+      "just arch-check*"
+    ]
+  }
+}

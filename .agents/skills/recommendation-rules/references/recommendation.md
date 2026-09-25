@@ -1,16 +1,16 @@
 # `recommendation` — module reference
 
-Last reviewed: 2026-09-13
+Last reviewed: 2026-09-25
 
 ## Contract summary
 
-The engine pipeline: hard/soft constraints, candidate generation, scoring, validation, reason codes, and feedback ingestion. Full contract: [`docs/modules/recommendation.md`](../../../docs/modules/recommendation.md).
+The engine pipeline: hard/soft constraints, candidate generation, scoring, validation, reason codes, and feedback ingestion. Full contract: [`docs/modules/recommendation.md`](../../../../docs/modules/recommendation.md).
 
 ## Invariants that bite
 
 - `recommendation-not-renderer`: must not import `apps/api/src/modules/avatar/**`, any renderer, or any 3D/asset type; `→ outfit` is `import type` only, never presentation.
 - Deterministic: same inputs + same rule version → same output, documented tie-breaks, no randomness; explanations come from the decision trace (reason codes), never generated after the fact (root `CLAUDE.md`).
-- This module writes only the tables it owns (doc 04 §4.2 rule 8); a rule/model version bump updates the version registry + changelog so a stored recommendation replays via `just rec-replay <id>`.
+- This module writes only the tables it owns (doc 04 §4.2 rule 8); a ruleset change ships as a new ruleset version + changelog so a stored recommendation replays via `just rec-replay <id>`. No ruleset registry exists until P09-T02 (`rulesets` table, content-hashed config).
 
 ## Key files
 
@@ -28,7 +28,7 @@ None yet — P02 skeleton has no rows in the contract's Events tables. P09-T01 a
 
 ## Allowed / forbidden edges
 
-Allowed: public APIs of `closet`, `profile`, `context`, and `outfit` (item/composition types only); `packages/shared-kernel` (reason-code registry). Consumed by `assistant`. Forbidden: any other module's `internal/**` or tables (`public-api-only`); provider SDKs — ports only (`domain-no-provider-sdk`); `apps/api/src/platform/**` (`modules-not-platform`); the `recommendation-not-renderer` edge above.
+Allowed: public APIs of `closet`, `profile`, `context`, and `outfit` (type-only imports, `recommendation-outfit-types-only`); `packages/shared-kernel` (reason-code registry, and the trend-relevance port interface `fashion-intel` implements — the two modules may not import each other). Consumed by `assistant`. Forbidden: any other module's `internal/**` or tables (`public-api-only`); provider SDKs — ports only (`domain-no-provider-sdk`); `apps/api/src/platform/**` (`modules-not-platform`); the `recommendation-not-renderer` edge above.
 
 ## Test command
 

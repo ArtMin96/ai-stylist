@@ -18,7 +18,7 @@ default:
 
 # --- environment ---------------------------------------------------------------
 
-# Full environment setup, idempotent (`--system` adds apt/udev/docker-group steps with sudo on Linux, Homebrew packages on macOS)
+# Full environment setup, idempotent, incl. the mise + direnv block in your shell rc file (`--system` adds, with sudo: pacman or apt packages, udev rules and the docker group on Linux; Homebrew, OrbStack and the pinned Xcode on macOS)
 bootstrap *args:
     scripts/bootstrap.sh "$@"
 
@@ -60,7 +60,7 @@ dev-workers *args:
 
 # --- quality gates (* = part of ci-parity) -------------------------------------------
 
-# * Run tests: full suite via turbo + the native lanes, or one module's tests/ dir (`just test recommendation`; `just test ios` / `just test android` = that app's unit tests; `just test secrets` = the sops+age shell suite); SKIP_DOCKER_TESTS=1 leaves out the Testcontainers `migrations` project (runners without Docker only)
+# * Run tests: full suite via turbo + the native lanes, or one module's tests/ dir (`just test recommendation`; `just test ios` / `just test android` = that app's unit tests; `just test secrets` = the sops+age shell suite; `just test tooling` = the scripts/test shell suites: bootstrap/doctor, contracts-breaking); SKIP_DOCKER_TESTS=1 leaves out the Testcontainers `migrations` project (runners without Docker only)
 test module='':
     #!/usr/bin/env bash
     set -euo pipefail
@@ -73,12 +73,14 @@ test module='':
         pnpm --filter @ai-stylist/api exec vitest run --project api
         uv run --project workers pytest workers -q
         just test-secrets
+        just test-tooling
         just test-native
         exit 0
     fi
     if [[ -n "{{module}}" ]]; then
         case "{{module}}" in
             secrets) just test-secrets; exit 0 ;;
+            tooling) just test-tooling; exit 0 ;;
             ios) just ios-test-packages; exit 0 ;;
             android) just android-test; exit 0 ;;
             workers) uv run --project workers pytest workers -q; exit 0 ;;
@@ -100,11 +102,17 @@ test module='':
     pnpm turbo run test
     uv run --project workers pytest workers -q
     just test-secrets
+    just test-tooling
     just test-native
 
 [private]
 test-secrets:
     scripts/security/tests/secrets.test.sh
+
+[private]
+test-tooling:
+    scripts/test/bootstrap-doctor.test.sh
+    scripts/test/contracts-breaking.test.sh
 
 # Native unit tests for the full `just test` (lane/toolchain policy: scripts/native-lane.sh)
 [private]
@@ -235,7 +243,7 @@ ci-gitleaks-history:
 ci-osv-source:
     scripts/ci/osv-scan.sh
 
-# Run the PR gates locally: format --check, lint (+ fixtures), typecheck, arch-check (+ fixtures), docs-check --strict, generate --check, test, native builds, security-scan (+ license, gitleaks and osv-scanner fixtures); native toolchains are required (Xcode-only steps skip on Linux with a notice); `--core` = pr-gate's parity job (native lanes run in ios.yml / android.yml)
+# Run the PR gates locally: format --check, lint (+ fixtures), typecheck, arch-check (+ fixtures), docs-check --strict (+ fixtures, incl. the hook replay), generate --check, test, native builds, security-scan (+ license, gitleaks and osv-scanner fixtures); native toolchains are required (Xcode-only steps skip on Linux with a notice); `--core` = pr-gate's parity job (native lanes run in ios.yml / android.yml)
 ci-parity *args:
     #!/usr/bin/env bash
     set -euo pipefail
@@ -253,6 +261,7 @@ ci-parity *args:
     just arch-check
     just arch-check --fixtures
     just docs-check --strict
+    just docs-check --fixtures
     just generate --check
     just test
     scripts/native-lane.sh android android just android-build all
@@ -284,9 +293,9 @@ ios-build *args:
 ios-test:
     apps/ios/scripts/xcode.sh test
 
-# Dev simulator build + the shared Maestro flow e2e/smoke.yaml with APP_ID=app.aistylist.mobile.dev (macOS only; needs maestro)
-ios-e2e:
-    apps/ios/scripts/xcode.sh e2e
+# Dev simulator build + one shared Maestro flow (default e2e/smoke.yaml) with APP_ID=app.aistylist.mobile.dev: `just ios-e2e [flow]` (macOS only; needs maestro)
+ios-e2e flow='e2e/smoke.yaml':
+    apps/ios/scripts/xcode.sh e2e "$1"
 
 # * `swift test` for apps/ios/Packages (Core + Features view models): `just ios-test-packages [core|features]`; macOS and Linux (swift on PATH, else Docker swift:6.4)
 ios-test-packages *args:
@@ -366,13 +375,14 @@ android-sdk mode='check':
 android-deps-lock:
     apps/android/tools/gradle.sh spotlessCheck checkModuleGraph detektMain detektTest :app:lintDebug testDebugUnitTest :core:data:test :core:analytics:test :app:assembleDebug :app:assemblePreview :app:assembleRelease --write-locks --write-verification-metadata sha256
 
-# Install the debug (dev) build on the running emulator/device + run the shared Maestro flow e2e/smoke.yaml with APP_ID=app.aistylist.mobile.dev (needs adb + maestro)
-android-e2e:
+# Install the debug (dev) build on the running emulator/device + run one shared Maestro flow (default e2e/smoke.yaml) with APP_ID=app.aistylist.mobile.dev: `just android-e2e [flow]` (needs adb + maestro)
+android-e2e flow='e2e/smoke.yaml':
     #!/usr/bin/env bash
     set -euo pipefail
     command -v maestro >/dev/null 2>&1 || { echo "android-e2e: maestro not found (mise install maestro; needs a running emulator or device)" >&2; exit 1; }
+    [[ -f "$1" ]] || { echo "android-e2e: Maestro flow '$1' not found" >&2; exit 1; }
     apps/android/tools/gradle.sh :app:installDebug
-    maestro test -e APP_ID=app.aistylist.mobile.dev e2e/smoke.yaml
+    maestro test -e APP_ID=app.aistylist.mobile.dev "$1"
 
 # --- database (drizzle-kit; expand–contract) ----------------------------------------
 

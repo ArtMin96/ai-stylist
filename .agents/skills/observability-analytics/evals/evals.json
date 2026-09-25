@@ -16,7 +16,7 @@
     {
       "id": 2,
       "prompt": "Add a new PostHog event `closet_item_favorited` that fires when a user favorites an item, including the item's care-label text and city name for local context, so we can build a heatmap later.",
-      "expected_output": "The agent flags that care-label free text and a city name both violate the consent-gated, no-free-text, region-bucket-only rules for analytics events (doc 14 §9) and either drops those properties or substitutes an allowed alternative (e.g. a region bucket instead of a city name), and puts the event schema in packages/contracts rather than hand-writing it separately in mobile and backend.",
+      "expected_output": "The agent flags that care-label free text and a city name both violate the consent-gated, no-free-text, region-bucket-only rules for analytics events (doc 14 §9) and either drops those properties or substitutes an allowed alternative (e.g. a region bucket instead of a city name), and puts the event schema in packages/contracts (packages/contracts/events/analytics/events.json) rather than hand-writing it separately in the native apps and the API.",
       "files": [],
       "assertions": [
         "The agent explicitly rejects or reworks the care-label free-text property and the raw city-name property, citing the no-free-text / region-bucket-only rule",

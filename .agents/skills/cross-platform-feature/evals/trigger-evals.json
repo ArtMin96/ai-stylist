@@ -1,6 +1,10 @@
 [
   {
-    "query": "build the outfit detail screen on both iOS and Android, split the work between two agents",
+    "query": "implement the outfit detail screen on iOS and Android",
+    "should_trigger": true
+  },
+  {
+    "query": "build the closet grid on both apps, split the work between the ios and android agents",
     "should_trigger": true
   },
   {
@@ -8,15 +12,31 @@
     "should_trigger": true
   },
   {
-    "query": "merge the ios and android branches for the closet feature, check they match first",
-    "should_trigger": true
-  },
-  {
     "query": "launch ios-engineer and android-engineer in parallel for the daily outfit card",
     "should_trigger": true
   },
   {
-    "query": "the iOS and Android home screens show different error copy, reconcile them",
+    "query": "both worktree lanes finished the closet search, integrate them and check they match",
+    "should_trigger": true
+  },
+  {
+    "query": "the iOS and Android home screens show different error copy and test ids, reconcile them",
+    "should_trigger": true
+  },
+  {
+    "query": "ship the paywall screen on iPhone and Android at the same time with identical states",
+    "should_trigger": true
+  },
+  {
+    "query": "write the brief with the parity table before we start the feedback sheet on both platforms",
+    "should_trigger": true
+  },
+  {
+    "query": "add the same pull-to-refresh behaviour to the closet list in the swift and kotlin apps",
+    "should_trigger": true
+  },
+  {
+    "query": "the android lane's report has a different Base sha than the ios lane, what now",
     "should_trigger": true
   },
   {
@@ -30,18 +50,43 @@
     "_near_miss_reason": "one platform only — android-feature."
   },
   {
-    "query": "add the thumbnailUrl field to the ClosetItem schema",
+    "query": "add the thumbnailUrl field to the ClosetItem schema and regenerate the Swift and Kotlin clients",
     "should_trigger": false,
-    "_near_miss_reason": "the producer step alone — api-contract-change."
+    "_near_miss_reason": "the contract step alone — api-contract-change."
   },
   {
     "query": "implement the closet list endpoint in the API",
     "should_trigger": false,
-    "_near_miss_reason": "backend — backend-module."
+    "_near_miss_reason": "backend only — backend-module."
   },
   {
     "query": "add a Maestro flow that checks the closet grid on both apps",
     "should_trigger": false,
-    "_near_miss_reason": "shared e2e flow — e2e-device-testing."
+    "_near_miss_reason": "shared e2e flow — e2e-device-testing (test-engineer)."
+  },
+  {
+    "query": "review both the iOS and Android PRs for module boundary violations",
+    "should_trigger": false,
+    "_near_miss_reason": "boundary and duplication lens — architecture-review."
+  },
+  {
+    "query": "update the Gradle lockfiles and the Swift Package.resolved after the dependency bumps",
+    "should_trigger": false,
+    "_near_miss_reason": "per-platform dependency locks — android-feature (just android-deps-lock) and ios-feature; no feature and no parity."
+  },
+  {
+    "query": "cut a TestFlight and Play internal beta from this commit",
+    "should_trigger": false,
+    "_near_miss_reason": "release evidence — release-readiness."
+  },
+  {
+    "query": "the ios-e2e recipe should accept a flow path argument like android-e2e",
+    "should_trigger": false,
+    "_near_miss_reason": "recipe change — tooling-ci."
+  },
+  {
+    "query": "the Android ViewModel swallows CancellationException in the version call, fix it with a test",
+    "should_trigger": false,
+    "_near_miss_reason": "one-platform bug fix — android-feature with testing-regression."
   }
 ]

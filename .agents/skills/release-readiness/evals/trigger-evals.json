@@ -32,10 +32,6 @@
     "should_trigger": true
   },
   {
-    "query": "the crash-free session gate tripped overnight during the ios phased rollout, what's the standard response here",
-    "should_trigger": true
-  },
-  {
     "query": "want to know if it's safe to promote the current internal build straight to the beta channel given what changed since the last beta",
     "should_trigger": true
   },
@@ -87,11 +83,6 @@
     "query": "want to check whether our privacy nutrition label / Data safety form values still match what the app actually collects, ahead of next quarter's audit",
     "should_trigger": false,
     "_near_miss_reason": "store privacy declarations show up as a release-readiness gate item, but a standalone compliance audit outside the context of an actual release candidate is security-privacy-review's territory."
-  },
-  {
-    "query": "onboarding is dropping too many users at the paywall step, want to run an experiment on the copy",
-    "should_trigger": false,
-    "_near_miss_reason": "mentions an experiment (flag-adjacent vocabulary) but this is a product/growth change to paywall copy, not a release-channel gate or rollout decision."
   },
   {
     "query": "set up fastlane and the App Store Connect API key secret in CI so TestFlight uploads happen automatically on merge",

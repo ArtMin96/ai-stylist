@@ -29,8 +29,17 @@ ios_require_macos() {
   if ! ios_is_macos; then
     ios_die "$recipe: needs Xcode, which only runs on macOS (this is $(uname -s)). Run it on the Mac, or push and let .github/workflows/ios.yml run it. On Linux you can run: just ios-lint, just ios-format --check, just ios-check-banned, just ios-test-packages."
   fi
+  local fix
+  fix="./scripts/bootstrap.sh --system installs Xcode $(tr -d '[:space:]' <"$IOS_DIR/.xcode-version") if missing, selects it, and finishes its licence and first-launch setup"
   if ! command -v xcodebuild >/dev/null 2>&1; then
-    ios_die "$recipe: xcodebuild not found. Install Xcode $(cat "$IOS_DIR/.xcode-version") and run: sudo xcode-select -s /Applications/Xcode.app"
+    ios_die "$recipe: xcodebuild not found. Fix: $fix"
+  fi
+  # /usr/bin/xcodebuild exists even when only the Command Line Tools are selected; it runs only
+  # against a selected Xcode whose licence and first-launch setup are done.
+  local err
+  if ! err="$(xcodebuild -version 2>&1 >/dev/null)"; then
+    ios_die "$recipe: xcodebuild cannot run: ${err%%$'\n'*}
+Fix: $fix"
   fi
 }
 

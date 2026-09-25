@@ -1,5 +1,11 @@
 # T21 — Trigger-eval optimization report
 
+> Status: HISTORICAL (2026-09-13). Checked 2026-09-25: the "Plan/impl discrepancy" below is resolved;
+> DC-05 now enforces both description ≤ 1024 and name + description ≤ 1536
+> (`scripts/docs/lib/checks-skills-agents.sh`). Still open: C9's automated trigger scores were never
+> produced. The skill-creator plugin named below is no longer installed; use
+> `anthropic-skills:skill-creator`.
+
 ## What failed (precisely) and why the manual pass was used instead
 
 `Skill(skill-creator:skill-creator)` was invoked. A smoke test of `scripts/run_eval.py` (2 queries,

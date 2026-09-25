@@ -3,5 +3,8 @@
   "transcript_path": "/tmp/fixture-transcript.jsonl",
   "cwd": "/home/arthur/Projects/app",
   "hook_event_name": "Stop",
-  "stop_hook_active": false
+  "stop_hook_active": false,
+  "_harness": {
+    "setup": "edit-source"
+  }
 }

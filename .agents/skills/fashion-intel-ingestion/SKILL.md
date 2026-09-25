@@ -1,10 +1,9 @@
 ---
 name: fashion-intel-ingestion
-description: Build or change the `fashion-intel` module (apps/api/src/modules/fashion-intel) — the licensed-content source register (rights basis mandatory per source), the ingestion pipeline (fetch → validate → dedup → LLM summarize → taxonomy-map → publish), freshness/retirement of aging content, moderation/quarantine wiring into `admin`, deterministic feed personalization with why-shown reasons, the `trends.level` tier seam, and the trend-relevance port the recommendation engine's stage-6 soft scorer reads. Use when asked to add a content source, fix ingestion dedup or freshness, wire a `RC-TREND-*` reason code, add a Discover feed field, or work anything under planning/phases/P12-fashion-intelligence.md. Not for scoring or ranking outfits, or anything inside apps/api/src/modules/recommendation/ — use `recommendation-rules`; not for generic pg-boss job scaffolding, worker plumbing, or provider-call caching mechanics with no fashion-intel-specific rule — use `media-ml-pipeline`.
-
+description: Build or change the `fashion-intel` module (apps/api/src/modules/fashion-intel) — the licensed-content source register (rights basis mandatory per source), the ingestion pipeline (fetch → validate → dedup → summarize → taxonomy-map → publish), freshness and retirement of aging content, quarantine events for moderation, deterministic Discover feed personalization with why-shown reasons, the `trends.level` tier seam, and the trend-relevance scores the recommendation engine's stage-6 scorer reads through a port. Use when asked to add a content source, fix ingestion dedup or freshness, wire `RC-TREND-*` relevance, add a Discover feed field, or work on anything in planning/phases/P12-fashion-intelligence.md. Not for scoring or ranking outfits, or anything inside apps/api/src/modules/recommendation/ — use `recommendation-rules`; not for the admin moderation queue itself — use `admin-moderation`; not for generic pg-boss job or worker plumbing — use `media-ml-pipeline`.
 metadata:
   modules: fashion-intel
-  last-reviewed: 2026-09-13
+  last-reviewed: 2026-09-25
   owner-agent: recommendation-engineer
 ---
 
@@ -12,126 +11,67 @@ metadata:
 
 ## Trigger
 
-- Any change inside `apps/api/src/modules/fashion-intel/` — currently a skeleton
-  (`docs/modules/fashion-intel.md` status); real build is phase P12
-  (`planning/phases/P12-fashion-intelligence.md`), gated on its sourcing spike (P12-T01) closing
-  OQ-05 before any build task starts.
-- Source register work: adding/removing a licensed source, its rights basis, or a takedown/retire
-  action (admin CRUD, P12 §8).
-- Ingestion pipeline work: fetch adapters, hash/embedding dedup, LLM-based summarization behind the
-  existing `ExplanationPort`-family LLM port, taxonomy mapping, content-safety screening, freshness
-  aging, or source-disappearance retirement (P12 §6, §9, §12 tasks P12-T04 through P12-T07).
-- Feed personalization: deterministic matching against preferences/closet/region/season/follows/
-  feedback, why-shown reason assembly, the `trends.level` tier seam, or the trend-relevance port
-  consumed by `recommendation`'s stage-6 scorer (P12-T09, P12-T11).
-- Do first, then return here: `api-contract-change` (the feed API, event schemas, and
-  `RC-TREND-*` codes in P12-T02 are contract/shared-kernel work, single-writer, before this module's
-  code consumes them), `db-migration` (the `sources`/`content_items`/`personalization_signals`
-  tables in P12-T03).
+- Any change inside `apps/api/src/modules/fashion-intel/`. Today it is a P02 skeleton (empty `FashionIntelModule`, an internal README, one smoke test). The real build is P12 (`planning/phases/P12-fashion-intelligence.md`), gated on the sourcing spike P12-T01 closing OQ-05 before any build task starts.
+- Source register: adding or retiring a licensed source, its rights basis, a takedown (P12-T04).
+- Ingestion: fetch adapters, hash/embedding dedup, summarization, taxonomy mapping, content-safety screen, freshness aging, source-disappearance retirement (P12-T05 to P12-T07).
+- Feed: deterministic matching against preferences/closet/region/season/follows/feedback, why-shown reasons, the `trends.level` seam, the trend-relevance scores `recommendation` reads (P12-T09, P12-T11).
+- Do first, then return: `api-contract-change` (feed API, event schemas, `RC-TREND-*` codes, the shared trend-relevance port interface — P12-T02, single-writer), `db-migration` (`sources`, `content_items`, `personalization_signals` — P12-T03).
 
 ## Required reading
 
-1. `docs/modules/fashion-intel.md` — current status (skeleton), invariants, allowed/forbidden
-   dependencies (only `profile` and `closet` today per the module dependency graph — outfit,
-   recommendation, and the renderer are not reachable from here).
-2. `planning/phases/P12-fashion-intelligence.md` — full phase file: §4 (in/out of scope), §6
-   (module changes and the arch rule "no `fashion-intel → outfit`/renderer edge; `recommendation`
-   reads trend relevance only through the port"), §7 (endpoints, events, tables), §9 (AI vs
-   deterministic — summarization and dedup are the only AI calls; matching and trend influence are
-   deterministic), §10 (S0/S1/S2 data classification, takedown SLA), §12 (ordered tasks P12-T01
-   through P12-T15).
-3. `planning/09-recommendation-engine.md` §4 — the stage-6 soft-scoring stage this module's
-   trend-relevance port feeds; the weight cap (0.03) and `RC-TREND-*` reason codes live there, not
-   in this module.
-4. `planning/10-ai-usage-cost-and-evaluation.md` §2.8 — the summarization AI-usage entry (per-item,
-   never per-user; cost/cache/fallback/eval requirements) that any new or changed summarization call
-   must satisfy per root `CLAUDE.md`'s AI-usage rule.
-5. `apps/api/src/modules/fashion-intel/index.ts` and the `admin` module's `index.ts` — what is
-   already public for moderation wiring.
+1. `docs/modules/fashion-intel.md` — status (skeleton), invariants, allowed dependencies: `profile` and `closet` public APIs only.
+2. `planning/phases/P12-fashion-intelligence.md` §4 (scope), §6 (module changes and arch rules), §7 (endpoints, events, tables), §9 (AI vs deterministic: summarization and dedup are the only AI calls), §10 (S0/S1/S2 classes, takedown SLA), §12 (tasks P12-T01 to P12-T15).
+3. `planning/09-recommendation-engine.md` §4 — the stage-6 soft scorer; the weight cap (0.03) and `RC-TREND-*` live there, not here.
+4. `planning/10-ai-usage-cost-and-evaluation.md` §2.8 — summarization: once per content item per prompt version, never per user; cost, cache, fallback, eval.
+5. `tools/depcruise/rules.cjs` `ALLOWED_EDGES` — `fashion-intel` → `profile`, `closet`; nothing reaches `fashion-intel` except `assistant`. There is no edge between `fashion-intel` and `admin` or `recommendation` in either direction.
 
 ## Workflow
 
-1. Confirm the sourcing gate: P12-T01 (rights-basis register + build/descope DEC, closing OQ-05)
-   must be logged before any ingestion-pipeline build task starts. If you cannot find that DEC, this
-   is design/contract work only — say so rather than building an adapter for an unlicensed source.
-2. A new content source is a `ContentSourcePort` implementation (one adapter per source) bound in
-   `apps/api/src/platform/`, never a direct fetch call from inside `fashion-intel`'s domain code —
-   the module decides what to do with fetched content, the adapter only fetches it.
-3. Every pipeline stage writes an auditable state transition on `content_items`
-   (`draft → published → quarantined → retired`, P12 §7); do not skip stages or short-circuit
-   dedup/safety-screen checks even under load — the safety screen is fail-closed to quarantine, not
-   fail-open to publish (P12 §9).
-4. Summarization is per-content-item and cached by content hash, never per-user (P12 §4 non-goal:
-   "per-user LLM summarization"); if a change would call the LLM port once per feed request instead
-   of once per ingested item, that is the AI-cost invariant breaking — stop and redesign around the
-   cache.
-5. Feed matching and trend-relevance scoring are deterministic reads over stored preferences,
-   embeddings, and rules — no inference call at feed-request time (P12 §9). If a task asks for an
-   LLM call inside the feed-serving path, that is out of scope for this module's deterministic
-   design; escalate rather than adding it.
-6. The trend-relevance port is the _only_ channel `recommendation` may read this module's data
-   through; the reverse edge (`fashion-intel` importing `outfit`, `recommendation`'s internals, or
-   anything renderer-related) is forbidden by the module dependency graph
-   (`allowed-edges-only` arch-check rule) — `fashion-intel`'s allowed dependencies are `profile` and
-   `closet` only.
-7. Moderation: quarantined content and user reports route into `admin`'s existing moderation queue
-   via its public API, never a new parallel moderation surface inside `fashion-intel`.
-8. Tests in `apps/api/src/modules/fashion-intel/tests/`: unit for dedup/freshness/personalization
-   rules, contract tests for the feed API and events, Testcontainers integration where the pgvector
-   embedding index or repositories are exercised. P12-T15 adds the taxonomy-mapping eval (≥ 90%
-   precision) and a two-profile feed-difference test — reuse those, do not fork a second eval
-   harness.
+1. Confirm the sourcing gate: the P12-T01 DEC (rights-basis register + build/descope decision, closing OQ-05) must be in `planning/16-risks-open-questions-and-decision-log.md`. Without it, this is design work only; say so rather than building an adapter for an unlicensed source.
+2. Search before write:
+
+   ```bash
+   git ls-files apps/api/src/modules/fashion-intel apps/api/src/platform
+   rg -n -i 'source|rights|content_item|trend|feed|dedup|summar' apps/api/src packages/contracts packages/shared-kernel/registry
+   ```
+
+3. Copy the structure from the `backend-module` sibling table (`.agents/skills/backend-module/SKILL.md` Workflow step 4): port type + token shape `apps/api/src/platform/ports/health-probe.port.ts`, adapter `apps/api/src/platform/pg-health-probe.ts`, controller `apps/api/src/platform/version.controller.ts`, fake `packages/test-support/src/clock.ts`, module test `apps/api/src/modules/fashion-intel/tests/fashion-intel.smoke.test.ts`, event schema `packages/contracts/events/demo.event.json`.
+4. A content source is a `ContentSourcePort` implementation (one adapter per source): the port is declared in `fashion-intel`'s `index.ts`, the adapter lives in `apps/api/src/platform/` (`platform-engineer`), and it is bound in `apps/api/src/app.module.ts`. The module decides what to do with fetched content; the adapter only fetches.
+5. Summarization goes through a summarization port this module declares (doc 10 §2.8), cached by content hash and prompt version, called once per ingested item. No LLM port exists in code: `ExplanationPort` was removed (DEC-46), although `planning/phases/P12-fashion-intelligence.md` §6 still names it. The provider must be on the doc 10/11 approved list.
+6. Every pipeline stage writes an auditable state transition on `content_items` (`draft → published → quarantined → retired`, P12 §7). The safety screen fails closed to quarantine, never open to publish, even under load.
+7. Feed matching and trend relevance are deterministic reads over stored preferences, embeddings and rules — no model call at feed-request time (P12 §9).
+8. `recommendation` reads trend relevance only through the stage-6 port. Neither module may import the other, so the port interface lives in `packages/shared-kernel` (two modules share it) and the composition root binds this module's implementation to it.
+9. Moderation: quarantine and user reports leave this module as events (`fashionintel.content.quarantined.v1`, and `fashionintel.signal.recorded.v1` with kind `report`, P12 §7). `admin` consumes them; there is no import edge either way.
+10. Tests in `apps/api/src/modules/fashion-intel/tests/`: unit tests for dedup, freshness and personalization rules with injected time; contract tests for the feed API and events. P12-T15 adds the taxonomy-mapping eval (≥ 90% precision) and a two-profile feed-difference test — extend those, never fork a second harness.
 
 ## Validation commands
 
 ```bash
 just test fashion-intel
-just lint && just typecheck && just arch-check    # arch-check enforces the fashion-intel dependency graph
+just lint && just typecheck && just arch-check    # arch-check enforces ALLOWED_EDGES
 just generate --check                              # only if the feed API, events, or RC-TREND-* codes changed
-just ml-eval                                        # taxonomy-mapping / summarization eval, once P12-T15 exists
-just security-scan                                  # content-source adapters touch external fetches
-just ci-parity                                      # before PR
+just ml-eval                                       # stub (exit 2, P02-T17) until P12-T15; report "Not run: stub"
+just security-scan                                 # content-source adapters fetch external data
+just ci-parity                                     # before PR
 ```
 
 ## Output
 
-- A diff scoped to `apps/api/src/modules/fashion-intel/` (plus `packages/contracts`/
-  `packages/db` in their own commits when the feed API, events, or tables changed, and
-  `apps/api/src/platform/` for a new `ContentSourcePort` adapter), with real test output;
-  `docs/modules/fashion-intel.md` updated when the public surface, invariants, events, or
-  dependencies changed.
+- A diff scoped to `apps/api/src/modules/fashion-intel/` (plus `packages/contracts` / `packages/db` in their own commits when the feed API, events, or tables changed, and `apps/api/src/platform/` for a new adapter), with real test output; `docs/modules/fashion-intel.md` updated when the public surface, invariants, events, or dependencies changed. Report in the `agent-operating-contract` format.
 
-Done checklist: scoped tests green · `lint`/`typecheck`/`arch-check` green (no forbidden edge to
-`outfit`/`recommendation`/renderer) · every content-source fetch behind a `ContentSourcePort`
-adapter · summarization cached per content-item, never per-user · quarantine/report flow lands in
-`admin`'s existing queue · contract doc updated · `PROGRESS.md` updated.
+Done checklist: scoped tests green · `lint`/`typecheck`/`arch-check` green · every fetch behind a `ContentSourcePort` adapter · summarization cached per content item, never per user · quarantine leaves as an event, no `admin` import · contract doc updated · `PROGRESS.md` line suggested.
 
 ## Stop / escalation
 
-- No rights-basis on record for a source, or P12-T01's DEC is missing → stop; this is
-  `RISK-03`/`OQ-05` territory, not something to route around with a "best-effort" fetch.
-- A task asks `fashion-intel` to import `outfit`, `recommendation`'s internals, or anything
-  renderer-related → forbidden edge; the trend-relevance port is the only sanctioned channel — stop
-  and redirect to the port design instead.
-- A task asks for scoring/ranking of outfits, or a second influence path into recommendations
-  outside the stage-6 port → `recommendation-rules` owns that; stop rather than adding a shortcut
-  here.
-- Ingested imagery, licensing terms, or content-safety classification are ambiguous → `admin`
-  moderation and `security-privacy-review` (content-source compromise, report-flooding abuse per
-  P12 §10) before publish.
-- A schema, endpoint, or reason-code change surfaces mid-task → pause, run `db-migration` /
-  `api-contract-change` as their own step, then continue.
+- No rights basis on record for a source, or P12-T01's DEC is missing → stop; `RISK-03`/`OQ-05` territory.
+- The task needs pg-boss jobs, the outbox relay, or event consumption → P02-T08 is `NOT_STARTED` (`apps/api/src/jobs/README.md`); stop and sequence after it.
+- The P12-T04 admin CRUD or the P12-T08 moderation wiring needs a synchronous call between `admin` and `fashion-intel` → doc 04 §4.1 allows neither direction; stop and ask the lead for the decision (events only, or an ADR adding an edge).
+- A task asks `fashion-intel` to import `outfit`, `recommendation`, or anything renderer-related → forbidden edge; redirect to the port design.
+- A task asks for outfit scoring or a second influence path into recommendations outside stage 6 → `recommendation-rules`.
+- The trend-relevance port interface is not in `packages/shared-kernel` yet → request it via `api-contract-change` (P12-T02); do not declare a private copy.
+- A model call at feed-request time, or per-user summarization → breaks doc 10 §2.8; stop and redesign around the cache.
+- Ambiguous imagery, licensing terms, or safety classification → `security-privacy-review` (content-source compromise, report flooding, P12 §10) before publish.
 
 ## Overlap
 
-Adjacent: `api-contract-change` (feed API, event schemas, `RC-TREND-*` codes land in
-`packages/contracts`/`shared-kernel` first), `db-migration` (`sources`/`content_items`/
-`personalization_signals` tables first), `recommendation-rules` (owns stage-6 scoring itself and
-every other engine rule; this skill only produces the relevance scores the port exposes),
-`media-ml-pipeline` (owns the generic pg-boss job runner and LLM/embedding port _implementations_;
-this skill owns the fashion-intel-specific pipeline stages and business rules that call them),
-`admin-moderation` (owns the moderation queue UI/workflow this module's quarantine and reports feed
-into), `assistant-chat` (may read this module's public feed query via `query_trends`, never its
-internals), `architecture-review` (reviews the result). This skill owns
-`apps/api/src/modules/fashion-intel/internal/`, its `index.ts`, and its `ContentSourcePort`/
-trend-relevance port contracts.
+Adjacent: `api-contract-change` (feed API, events, `RC-TREND-*`, the shared port interface land first), `db-migration` (`sources`/`content_items`/`personalization_signals` first), `recommendation-rules` (owns stage-6 scoring and the weight cap; this skill only produces the relevance scores the port exposes), `admin-moderation` (owns the moderation queue that consumes this module's quarantine events), `media-ml-pipeline` (owns pg-boss handler plumbing and embedding/LLM adapters), `assistant-chat` (may call this module's public feed query), `architecture-review` (reviews the result). This skill owns `apps/api/src/modules/fashion-intel/**`, its `ContentSourcePort` and summarization port declarations, and its side of the trend-relevance port.

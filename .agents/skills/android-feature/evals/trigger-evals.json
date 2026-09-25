@@ -28,6 +28,18 @@
     "should_trigger": true
   },
   {
+    "query": "you're the Android lane for the closet count card, here's the brief and the Base sha, build it in apps/android",
+    "should_trigger": true
+  },
+  {
+    "query": "tools/codegen/gen-kotlin.sh should emit @Serializable on the enum types, change the script",
+    "should_trigger": true
+  },
+  {
+    "query": "add a repository in :core:data for the outfit list endpoint, copy how VersionRepository does it",
+    "should_trigger": true
+  },
+  {
     "query": "SwiftUI home screen loses the toggle state in apps/ios",
     "should_trigger": false,
     "_near_miss_reason": "iOS side — ios-feature."
@@ -61,5 +73,20 @@
     "query": "promote the Play internal build to closed testing",
     "should_trigger": false,
     "_near_miss_reason": "release promotion evidence (human-only action) — release-readiness."
+  },
+  {
+    "query": "implement the settings screen on iOS and Android with identical strings and ids",
+    "should_trigger": false,
+    "_near_miss_reason": "both platforms from the start — cross-platform-feature."
+  },
+  {
+    "query": "add :core:closet:test to the android-check recipe so its tests run",
+    "should_trigger": false,
+    "_near_miss_reason": "justfile recipe change — tooling-ci."
+  },
+  {
+    "query": "extend e2e/smoke.yaml to tap the new closet card on both apps",
+    "should_trigger": false,
+    "_near_miss_reason": "shared Maestro flow — e2e-device-testing."
   }
 ]

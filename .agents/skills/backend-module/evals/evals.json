@@ -4,25 +4,26 @@
     {
       "id": 1,
       "prompt": "Add a `markWorn(itemId)` application service to the closet module that records a wear event and updates the item's last-worn date, per docs/modules/closet.md's planned `wear_events` table.",
-      "expected_output": "A markWorn service lives under apps/api/src/modules/closet/internal/ and is exported from index.ts only if docs/modules/closet.md declares it public; a Vitest test in apps/api/src/modules/closet/tests/ exercises it; no other module's internal/** or tables are touched; the agent reports which validation commands it ran.",
+      "expected_output": "The agent runs `git ls-files apps/api/src/modules/closet`, finds a P02 skeleton (empty `ClosetModule`, no `internal/schema.ts`, no `wear_events` table; P07 is NOT_STARTED in planning/PROGRESS.md) and stops before inventing storage, routing the table to `db-migration`. Any code it does write (for example a pure wear rule) lives under apps/api/src/modules/closet/internal/, takes `now` as a parameter instead of importing the platform Clock, copies the named siblings (closet.smoke.test.ts, storage.port.test.ts), and is exported from index.ts only if docs/modules/closet.md declares it public.",
       "files": [],
       "assertions": [
-        "New code lives under apps/api/src/modules/closet/internal/ or tests/, and is only exported from index.ts if docs/modules/closet.md lists markWorn as public",
-        "The service writes only to closet-owned tables (items, wear_events per docs/modules/closet.md), never another module's tables",
-        "A test exists in apps/api/src/modules/closet/tests/ and the agent's report names `just test closet` as the command it ran",
-        "No provider SDK import and no apps/api/src/platform/** import appears in the diff",
-        "The agent's report states whether docs/modules/closet.md needed updating and why"
+        "The agent checks what exists (git ls-files or equivalent) and reports that closet is a P02 skeleton with no schema.ts and no wear_events table",
+        "The agent stops or defers the persistence part and names `db-migration` (and the P07 wear-events task) instead of inventing a table or a parallel store",
+        "Any rule it writes takes the current time as a parameter and does not import apps/api/src/platform/** (modules-not-platform applies to tests too)",
+        "The report names the sibling files it copied and `just test closet` as the command it ran, with real output",
+        "The report states whether docs/modules/closet.md needed updating and why"
       ]
     },
     {
       "id": 2,
       "prompt": "The billing module needs to read a customer's active plan when closet enforces an item-count cap on free-tier users. Wire that up.",
-      "expected_output": "The agent recognizes this crosses two modules and either finds the cap check already exposed via billing's index.ts public API and uses it, or stops and reports that a new public export from billing is needed before it can proceed. It never reads apps/api/src/modules/billing/internal/** or a billing table directly from closet.",
+      "expected_output": "The agent checks `ALLOWED_EDGES` in tools/depcruise/rules.cjs, finds that closet may import only profile and media, and stops: closet cannot read billing's plan through any import, public or internal. It notes that the entitlement name `closet.max_items` already exists in packages/shared-kernel/registry/entitlements.json and reports the edge question (ADR, or gating at the point of use per entitlements-billing) instead of wiring anything.",
       "files": [],
       "assertions": [
-        "The agent never imports apps/api/src/modules/billing/internal/** and never queries a billing table directly from closet code",
-        "If billing's index.ts does not already expose the needed query, the agent stops and reports the gap instead of inventing a workaround inside closet",
-        "The agent's stop/continue decision cites the allowed-edges rule (planning/04-architecture.md §4.1 / the `allowed-edges-only` arch-check rule) as the reason"
+        "The agent never imports apps/api/src/modules/billing/** (index.ts or internal/**) from closet and never queries a billing table",
+        "The agent cites the allowed-edges-only rule / ALLOWED_EDGES (closet → profile, media) as the reason it stops",
+        "The agent finds the existing `closet.max_items` entitlement name instead of proposing a new constant",
+        "The agent reports the decision needed (ADR or entitlements-billing gating) rather than inventing a workaround inside closet"
       ]
     },
     {

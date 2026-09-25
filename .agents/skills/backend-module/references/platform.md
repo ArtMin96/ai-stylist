@@ -1,6 +1,6 @@
 # `platform` — module reference
 
-Last reviewed: 2026-09-13
+Last reviewed: 2026-09-25
 
 ## Contract summary
 
@@ -15,11 +15,14 @@ Infrastructure adapters that implement the ports declared by domain modules: sto
 
 ## Key files
 
-- `apps/api/src/platform/index.ts` — public API; nothing exported yet beyond what composition roots bind directly (P02 skeleton).
-- `apps/api/src/platform/ports/` — port interfaces domain modules declare and `platform` implements.
-- `apps/api/src/platform/outbox/` — the Postgres outbox relay.
+- `apps/api/src/platform/index.ts` — public API: `PlatformModule.forRoot(bindings)` binds each port token to the adapter the composition root built; only composition roots import it.
+- `apps/api/src/platform/ports/` — `clock.port.ts`, `health-probe.port.ts`, `storage.port.ts`: P02-interim platform ports. Copy their shape (type + `Symbol` token), not their placement: a new domain port is declared in the module's `index.ts` (or `packages/shared-kernel` when two modules share it), and its fake goes in `packages/test-support/src/`, not beside the port like `InMemoryStorageProvider`.
+- `apps/api/src/platform/pg-health-probe.ts` — the adapter sibling (implements a port, never throws, no business rule).
+- `apps/api/src/platform/version.controller.ts`, `apps/api/src/platform/health.controller.ts` — thin controller siblings.
+- `apps/api/src/platform/problem.filter.ts` — RFC 9457 mapping for every thrown error.
 - `apps/api/src/platform/logger.ts` — the only sanctioned logger; allowlist serialization + forbidden-key denylist (doc 11 §8).
-- `apps/api/src/platform/tests/` — this module's test suite (test-placement rule: `*.test.ts` only inside a tests/ directory).
+- `apps/api/src/platform/outbox/README.md` — placeholder: the outbox relay is P02-T08 (`NOT_STARTED`).
+- `apps/api/src/platform/tests/` — this module's tests (`*.test.ts` only inside a tests/ directory). pg-boss job-handler tests go in `apps/api/src/jobs/tests/<handler>.test.ts`, created with the first handler.
 
 ## Owned data
 
@@ -46,4 +49,5 @@ Status: skeleton (P02). Unlike the other 7 modules this skill covers, `platform`
 ## Escalate when
 
 - A domain module wants to import a provider SDK directly instead of getting an adapter here — stop, that is `domain-no-provider-sdk`; add the port + adapter instead.
-- A new adapter ships without a corresponding fake in `packages/test-support/` — the module's tests, and every domain module's tests that depend on it, lose their seam; add the fake before merging.
+- A new adapter ships without a corresponding fake in `packages/test-support/src/` (`api-engineer` writes it, copying `packages/test-support/src/clock.ts`) — every domain module's tests that depend on the port lose their seam; report the fake you need before merging.
+- The adapter needs pg-boss, the outbox relay, or R2 — P02-T08 and P02-T13 are `NOT_STARTED`; stop and sequence after them.

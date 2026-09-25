@@ -5,9 +5,12 @@
 #   DC-02  every module contract has the 8 templates/module-contract.md headings, in order
 #   DC-03  module contract Status enum + Last-updated not older than the module's code
 #   DC-04  docs/adr/*.md <-> docs/adr/README.md index rows
-#   DC-05  .agents/skills/*/SKILL.md frontmatter, sections, line count, review date
+#   DC-05  .agents/skills/*/SKILL.md frontmatter (metadata.owner-agent = real agents or main-session),
+#          sections, line count, review date, evals/evals.json + evals/trigger-evals.json present
 #   DC-06  .agents/skills/README.md rows <-> skill dirs <-> .claude/skills/* symlinks
-#   DC-07  .claude/agents/*.md frontmatter, tools allowlist, review date, README rows
+#   DC-07  .claude/agents/*.md frontmatter (valid color; plain tool names; Edit/Write/NotebookEdit =>
+#          guard-agent-write-set.sh hook; Bash => guard-agent-bash.sh hook; skills: exist and include
+#          agent-operating-contract), review date, README rows
 #   DC-08  every SPINE module has skill detail + exactly one README coverage row
 #   DC-09  every backticked repo-relative path in the three dirs below exists
 #   DC-10  every `just <recipe>` token in the three dirs below is a real recipe
@@ -21,6 +24,9 @@
 # PATH... scopes the run to only the five file-scoped checks (DC-05, DC-07, DC-09, DC-10, DC-11),
 # restricted to files under the given paths — every other check always runs full-repo (there is
 # no meaningful way to scope a bijection or a roster-sync check to one file).
+#
+# --fixtures also replays tools/docs/fixtures/hooks/*.json through scripts/hooks/*.sh and checks
+# each decision against tools/docs/fixtures/hooks/README.md (lib/hook-fixtures.sh).
 #
 # Exit 0 = pass (warnings allowed), 1 = a check reported an ERROR, 2 = usage error.
 set -euo pipefail
@@ -38,6 +44,12 @@ source "$HERE/lib/checks-coverage.sh"
 source "$HERE/lib/checks-refs.sh"
 # shellcheck source=lib/checks-repo.sh
 source "$HERE/lib/checks-repo.sh"
+# shellcheck source=lib/hook-fixtures.sh
+source "$HERE/lib/hook-fixtures.sh"
+
+# --fixtures runs as if today were this date, and every staged case is committed at it: fixture
+# results must not depend on the calendar (DC-03 dates code by commit, DC-05/DC-07 age review dates).
+DOCS_CHECK_FIXTURE_DATE="2026-09-25"
 
 usage() {
   echo "usage: docs-check.sh [--strict] [--fixtures] [PATH...]" >&2
@@ -86,18 +98,21 @@ stage_fixture() {
   while IFS= read -r dir; do
     [[ -n "$dir" ]] || continue
     mv "$dir" "$(dirname "$dir")/.${dir##*/dot-}"
-  done < <(find "$dest" -depth \( -name dot-claude -o -name dot-agents \) -type d)
+  done <<<"$(find "$dest" -depth \( -name dot-claude -o -name dot-agents \) -type d)"
   rm -f "$dest/.expect-only" "$dest/.shallow-clone"
   # Each case is its own git work tree so list_repo_files honours the fixture's .gitignore exactly
-  # as it does the real repo's (a staged copy under TMPDIR is otherwise outside any repo).
+  # as it does the real repo's (a staged copy under TMPDIR is otherwise outside any repo). It is
+  # committed at DOCS_CHECK_FIXTURE_DATE: DC-03 then dates the fixture's module code by that commit,
+  # not by the copy's mtime (always "today", which made a dated fixture fail as the calendar moved).
+  local -a gitc
+  gitc=(-c user.name=docs-check -c user.email=docs-check@invalid -c commit.gpgsign=false -c core.hooksPath=/dev/null)
+  local when="${DOCS_CHECK_FIXTURE_DATE}T12:00:00Z"
   git -C "$dest" init -q
+  git -C "$dest" add -A
+  GIT_AUTHOR_DATE="$when" GIT_COMMITTER_DATE="$when" git -C "$dest" "${gitc[@]}" commit -q --allow-empty -m fixture
   if [[ -f "$src/.shallow-clone" ]]; then
     # Reproduce actions/checkout's default fetch-depth: 1 — two commits, cloned at depth 1.
-    local -a gitc
-    gitc=(-c user.name=docs-check -c user.email=docs-check@invalid -c commit.gpgsign=false -c core.hooksPath=/dev/null)
-    git -C "$dest" add -A
-    git -C "$dest" "${gitc[@]}" commit -q -m fixture
-    git -C "$dest" "${gitc[@]}" commit -q --allow-empty -m head
+    GIT_AUTHOR_DATE="$when" GIT_COMMITTER_DATE="$when" git -C "$dest" "${gitc[@]}" commit -q --allow-empty -m head
     mv "$dest" "$dest.full"
     git clone -q --depth 1 "file://$dest.full" "$dest"
   fi
@@ -105,12 +120,14 @@ stage_fixture() {
 
 # run_fixtures — every tools/docs/fixtures/DC-NN/ (or DC-NN-<variant>/) must fail with finding id
 # DC-NN, and exactly as its optional .expect-only file says (tools/docs/fixtures/README.md); the shared
-# tools/docs/fixtures/_clean/ tree must pass every check (including DC-14/DC-15 under --strict).
+# tools/docs/fixtures/_clean/ tree must pass every check (including DC-14/DC-15 under --strict); every
+# tools/docs/fixtures/hooks/*.json payload must get its README decision (run_hook_fixtures).
 # Each fixture is staged into a temp dir via stage_fixture before its checks run.
 run_fixtures() {
   local fixtures_dir="$DOCS_CHECK_REPO_ROOT/tools/docs/fixtures"
   local failures=0 case_dir case_name check_id output rc stage_root
-  stage_root="$(mktemp -d "${TMPDIR:-/tmp}/docs-check-fixtures.XXXXXX")"
+  DOCS_CHECK_TODAY="${DOCS_CHECK_TODAY:-$DOCS_CHECK_FIXTURE_DATE}"
+  stage_root="$(cd -P "$(mktemp -d "${TMPDIR:-/tmp}/docs-check-fixtures.XXXXXX")" && pwd)"
   # shellcheck disable=SC2064  # expand now: stage_root is local to this function
   trap "rm -rf '$stage_root'" EXIT
 
@@ -156,11 +173,34 @@ run_fixtures() {
     echo "ok    _clean -> no findings (exit 0, --strict)"
   fi
 
+  run_hook_fixtures "$fixtures_dir/hooks" "$stage_root/hooks" || failures=$((failures + 1))
+
+  # A PATH-scoped run over a whole directory must end in a verdict (exit 0 or 1), never a signal.
+  # macOS /bin/bash 3.2 keeps each process substitution's fd open until the enclosing function
+  # returns; loops fed that way once killed `just docs-check .agents/skills` with SIGTRAP (exit 133).
+  # Every loop in these scripts therefore reads a here-string, and the grep keeps it so on bash 5.
+  local sh=bash
+  [[ -x /bin/bash ]] && sh=/bin/bash
+  set +e
+  "$sh" "$HERE/docs-check.sh" "$DOCS_CHECK_REPO_ROOT/.agents" >/dev/null 2>&1
+  rc=$?
+  set -e
+  if [[ $rc -gt 1 ]]; then
+    echo "FAIL  scoped run: docs-check .agents died with exit $rc under $sh" >&2
+    failures=$((failures + 1))
+  else
+    echo "ok    scoped run over .agents -> exit $rc under $sh"
+  fi
+  if grep -nE '^[^#]*<[[:space:]]*<\(' "$HERE"/*.sh "$HERE"/lib/*.sh >&2; then
+    echo "FAIL  scripts/docs: a loop above is fed by process substitution; feed it a here-string" >&2
+    failures=$((failures + 1))
+  fi
+
   if [[ $failures -gt 0 ]]; then
     echo "docs-check --fixtures: $failures failure(s)" >&2
     return 1
   fi
-  echo "docs-check --fixtures: all fixtures reported by their own check id"
+  echo "docs-check --fixtures: all fixtures reported by their own check id; every hook payload got its README decision"
   return 0
 }
 
@@ -188,7 +228,8 @@ main() {
     if run_fixtures; then exit 0; else exit 1; fi
   fi
 
-  DOCS_CHECK_PATH_FILTERS=("${paths[@]}")
+  # ${a[@]+"${a[@]}"}: bash 3.2 (macOS /bin/bash) treats an empty array as unbound under set -u.
+  DOCS_CHECK_PATH_FILTERS=(${paths[@]+"${paths[@]}"})
   local scoped=0
   [[ "${#paths[@]}" -gt 0 ]] && scoped=1
 

@@ -68,7 +68,7 @@
   {
     "query": "billing module's chat.stylist entitlement check keeps throwing a raw 500 instead of a typed ENTITLEMENT_REQUIRED error",
     "should_trigger": false,
-    "_near_miss_reason": "the entitlement name references chat, but the bug is inside billing's application service — backend-module (billing) owns fixing that, not assistant-chat."
+    "_near_miss_reason": "the entitlement name references chat, but the bug is inside billing's application service — entitlements-billing owns billing, not assistant-chat."
   },
   {
     "query": "want to run assistant's smoke test after touching apps/api/src/main.ts composition root wiring",

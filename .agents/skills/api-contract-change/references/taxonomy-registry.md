@@ -1,6 +1,13 @@
 # Closet taxonomy registry — bump procedure
 
-Last reviewed: 2026-09-13
+Last reviewed: 2026-09-25
+
+## Status
+
+No taxonomy registry exists yet: `packages/shared-kernel/registry/` holds only
+`reason-codes.json`, `entitlements.json` and `units.json`. P06-T01 scopes the v1 registry and
+decides where it lives. Until that lands, a taxonomy task is design only: stop before inventing a
+file, a location, or a codegen output.
 
 ## Ownership
 
@@ -13,7 +20,7 @@ client. Full governance model: `planning/08-closet-taxonomy-and-organization.md`
 
 ## Why this lives here and not in `backend-module`
 
-A taxonomy bump changes a wire-visible registry consumed by mobile pickers, API validation, and the
+A taxonomy bump changes a wire-visible registry consumed by the native-app pickers, API validation, and the
 classifier's JSON schema simultaneously — the same fan-out as any other contract change, and it is
 single-writer for the same reason (`packages/contracts`/`shared-kernel` "Parallel sessions" rule).
 `backend-module` picks up again once the registry has landed, for any `closet`-module code that
@@ -27,7 +34,7 @@ reacts to the new ids.
    Splits, merges, and deprecations are a major bump and must ship a **migration rule** in the
    registry itself: `deprecates: cat.x → cat.y`, or a conditional split rule
    (`cat.tops.shirt` → `shirt|overshirt` by `attr.layering-role`).
-2. **Codegen.** `just generate` regenerates mobile pickers/labels, API validation, and the
+2. **Codegen.** `just generate` regenerates the native-app pickers/labels, API validation, and the
    classifier JSON schema + prompt artifact from the one registry. Never hand-edit any of the three;
    a stale one is exactly the drift doc 08 §12 exists to prevent.
 3. **Backfill job.** A backfill applies the migration rule(s) to stored `closet` item attributes.

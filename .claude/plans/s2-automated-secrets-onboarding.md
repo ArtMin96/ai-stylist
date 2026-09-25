@@ -1,5 +1,10 @@
 # Plan s2 — Automated developer onboarding for the sops + age secrets workflow
 
+> Status: APPLIED 2026-09-13 (PR #2; `planning/PROGRESS.md` handoff "2026-09-13 — Automated secrets
+> onboarding"). The unticked boxes and the branch name below are history. Still open: the five "Open
+> questions" at the end of this file are not tracked in the decision log or in an issue; the human
+> decides where they go. Do not re-execute.
+
 **Branch:** `fix/repo-sops-age-hardening`
 **Scope:** full plan — 12 files, 3 new scripts, a shared library change other tasks depend on, and work that parallelises cleanly across 4 waves.
 **Owner decisions:** taken as given (see the task brief); this plan does not reopen them.

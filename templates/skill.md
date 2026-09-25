@@ -1,188 +1,115 @@
 # SKILL.md template
 
-> Copy this file to `.agents/skills/<skill-name>/SKILL.md`, then symlink it from
-> `.claude/skills/<skill-name>` (`ln -s ../../.agents/skills/<skill-name>
-.claude/skills/<skill-name>`) — see CLAUDE.md's repository layout note on the
-> `.agents/skills/` + `.claude/skills/` pair. Every `<placeholder>` below is followed
-> by what a good value looks like, with a real example already in this repo. Delete
-> this header and the guidance paragraphs under each heading before shipping —
-> `docs-check` DC-05 requires the six section headings below plus `## Overlap` to
-> all be present.
-
----
+> Copy the fenced block below to `.agents/skills/<skill-name>/SKILL.md`, then create the symlink
+> `.claude/skills/<skill-name>` → `../../.agents/skills/<skill-name>` so Claude Code's skill loader finds
+> it. Author it with `anthropic-skills:skill-creator`; the house standard is in
+> `.claude/rules/agent-authoring.md`, and `just docs-check` (DC-05, DC-06) enforces the checkable parts.
+> Fill every `<placeholder>`, delete every guidance comment (`#` lines in the frontmatter, `<!-- -->` in
+> the body), add the skill's row to `.agents/skills/README.md`, and run `just docs-check`.
+> A worked example of the finished shape: `.agents/skills/backend-module/SKILL.md` with its
+> `.agents/skills/backend-module/evals/` pair.
 
 ````markdown
 ---
-# `name` MUST equal the skill's directory name (`.agents/skills/<name>/SKILL.md`).
-# Lowercase, hyphenated, matches the roster names agreed in the plan that created
-# this skill. Real example: `backend-module` (existing) or `docs-maintenance` (new,
-# from the s3 plan's roster).
+# Equals the directory name `.agents/skills/<name>/`; lowercase and hyphens.
 name: <skill-name>
 
-# `description` is the ONLY trigger mechanism: Claude reads name + description
-# before ever opening this file, and decides whether to consult it from that alone.
-# One paragraph doing three things:
-#  1. Lead with the action, not "helps with" — what does invoking this skill make
-#     an agent do.
-#  2. Give concrete trigger phrases a user would actually type: real file paths,
-#     command names, SPINE module names — not abstract nouns like "backend work".
-#  3. Close with at least one `Not for <adjacent task> — use \`<other-skill>\`
-#     instead.` clause that resolves the nearest overlap, so two skills never
-#     silently compete for the same task (this is what `docs-check` DC-05 checks
-#     for: a negative-trigger clause must be present).
-# Make it "a little bit pushy" per skill-creator — agents under-trigger skills by
-# default, so a description that undersells relevance gets skipped even when it
-# would have helped.
-# Hard rule (checked by DC-05): len(name) + len(description) <= 1536 chars.
-#
-# Real example — existing skill `backend-module`, name+description = 14 + 338 = 352
-# chars:
-#   description: Create or change a NestJS domain module under
-#     apps/api/src/modules/ — application services, domain rules, ports,
-#     module-owned repositories, events, outbox usage — or add a port adapter in
-#     apps/api/src/platform/. Use for server-side domain work whose primary change
-#     is not the DB schema, the API contract, recommendation rules, or billing.
-#
-# Real example — a NEW skill from the s3 roster, `docs-maintenance`, name+description
-# = 16 + 561 = 577 chars:
-#   description: Keep PROGRESS.md, module contracts (docs/modules/*.md), the ADR
-#     index, and the skills/agents README coverage tables in sync with the code and
-#     with each other — module-contract bijection, last-reviewed dates, broken
-#     repo-path references, ADR file-to-index sync. Use when asked to update
-#     PROGRESS.md, refresh a module contract after a public interface changed, fix
-#     ADR index drift, or resolve a `just docs-check` failure. Not for writing the
-#     code behind a doc change — use the owning module's skill (e.g.
-#     `backend-module`) first, then this skill for the doc sync.
-description: <what it does, leading with the action> Use when <concrete trigger phrases: real paths, commands, module names>. Not for <adjacent task> — use `<other-skill>` instead.
+# The listing shows `description` (plus `when_to_use`, if set) truncated at 1,536 characters, and it is
+# the only thing Claude reads before deciding to open this file. Put the key use case first:
+#  1. Lead with the action the skill makes an agent do, not "helps with".
+#  2. Name trigger phrases a user actually types: real paths, `just` recipes, SPINE module names.
+#  3. End with "Not for <adjacent task> — use `<other-skill>` instead." for each nearest neighbour.
+# DC-05: description at most 1024 characters, name + description at most 1536, a "Not for" marker.
+description: <Action verb> <what> in <owned paths>. Use when <trigger phrases>. Not for <adjacent task> — use `<other-skill>` instead.
+
+# Optional keys (official list: name, description, when_to_use, argument-hint, arguments,
+# disable-model-invocation, user-invocable, allowed-tools, disallowed-tools, model, effort, context,
+# agent, background, hooks, paths, shell, metadata, license, compatibility):
+#   user-invocable: false            -> a background skill only Claude loads (e.g. agent-operating-contract)
+#   argument-hint: "[feature description]"  -> a skill the user starts with an argument
+#   disable-model-invocation: true   -> NEVER on a skill an agent lists in `skills:` (it cannot be preloaded)
 
 metadata:
-  # Comma-separated SPINE module names (`planning/SPINE.md` §3) this skill is the
-  # coverage-table owner for — this is what `docs-check` DC-08 cross-checks against
-  # the module → owner table in `.agents/skills/README.md`. Empty string if the
-  # skill is cross-cutting and owns no module directly.
-  # Real example (`backend-module`, per the s3 plan's module → owner table, owns
-  # 8 of the 15 SPINE modules — everything without its own dedicated skill):
-  #   modules: "identity,profile,avatar,closet,media,outfit,context,platform"
-  # Real example (`architecture-review`, cross-cutting, owns none):
-  #   modules: ""
-  modules: "<comma list or empty>"
-  # ISO date this file was last checked against the current code and phase file.
-  # `docs-check` DC-05 fails any date older than 180 days. Real example: "2026-09-13".
-  last-reviewed: "<YYYY-MM-DD>"
-  # The single agent (`.claude/agents/<name>.md`) that primarily executes tasks
-  # under this skill — feeds the module → owner coverage table. Real example:
-  # "api-engineer" for `backend-module`; "recommendation-engineer" for
-  # `recommendation-rules`.
-  owner-agent: "<agent-name>"
+  # Values are unquoted scalars: `.prettierrc` has `singleQuote: true`, so `just format` would rewrite
+  # "…" to '…', and a single-quoted date then fails DC-05 (docs-check strips only double quotes).
+  # SPINE modules (planning/SPINE.md §3) this skill is the coverage owner for; empty when cross-cutting.
+  # DC-08 cross-checks it against the module table in .agents/skills/README.md.
+  modules: # empty, or a comma list such as closet,media
+  # ISO date of the last full re-check against the code and the current phase file; DC-05 fails a date
+  # older than 180 days. Bump it only after re-checking the whole file.
+  last-reviewed: 2026-09-25
+  # Agent(s) that execute this skill: comma list of `.claude/agents/<name>.md` names, or `main-session`
+  # for a skill only the lead runs (e.g. cross-platform-feature). Every agent named here lists this skill
+  # in its `skills:` frontmatter. docs-check validates that each name exists.
+  owner-agent: ios-engineer # or a comma list, or main-session
 ---
 
 # <Skill Title>
 
 ## Trigger
 
-<The concrete situations that mean "read this file": task types, file globs, a
-"do first, then return to X" note for adjacent skills. Keep this consistent with
-`description` — this section is read _after_ triggering, so it can go into more
-detail than the 1536-char budget allows.
-Real example (`backend-module`): "Adding or changing behaviour inside one of the
-13 domain modules (`identity`, `profile`, …). Adding a port implementation in
-`apps/api/src/platform/` and binding it at the composition root. Do first, then
-return: `api-contract-change` (endpoint shapes), `db-migration` (tables),
-`recommendation-rules`, `entitlements-billing`, `media-ml-pipeline` (pipeline
-steps).">
+<!-- The concrete situations that mean "use this skill": task types, file globs, and a "do X first, then
+return here" note for each adjacent skill. Consistent with `description`, but allowed more detail. -->
 
 ## Required reading
 
-<Numbered list, in read order, of the exact files/sections an agent must read
-before acting. Every path must resolve in this repo, or be listed in
-`tools/docs/planned-paths.txt` if a still-in-flight task in the same wave creates
-it — `docs-check` DC-09 fails on a dead path.
-Real example (`backend-module`):
-"1. `docs/modules/<name>.md` — public interface, owned data, invariants,
-allowed/forbidden dependencies, extension points. 2. `planning/phases/P<NN>-*.md` current phase file — what this module delivers
-now; `PROGRESS.md`. 3. `planning/04-architecture.md` §4.2 (rules), §5 (composition roots), §9 (outbox
-semantics); `planning/03-domain-model-and-glossary.md` for terms. 4. `apps/api/src/modules/<name>/index.ts` and neighbours' `index.ts` — what is
-already public.">
+<!-- Numbered, in read order: the exact files and sections to read before acting. Every backticked path
+must exist (DC-09) or be listed in `tools/docs/planned-paths.txt` with the phase task that creates it. -->
 
 ## Workflow
 
-<Numbered, imperative steps — the actual sequence of decisions and edits for this
-repo's real seams (module `internal/`, ports, the outbox, etc.), not generic
-project advice. Motivate a non-obvious rule instead of writing a bare "MUST" line
-(skill-creator style: explain why, don't just command).
-Real example, first two steps (`backend-module`):
-"1. Restate scope, non-goals, acceptance criteria; name the single owning module.
-Behaviour that seems to belong to two modules is a contract question — stop. 2. Search before write (CLAUDE.md): this module's internals, neighbours' public
-APIs, `packages/shared-kernel/`, `packages/test-support/`.">
+<!-- Numbered, imperative steps for this repo's real seams (module `internal/`, ports, the outbox, the
+generated clients). Give the reason for any non-obvious step in one clause instead of a bare MUST. The
+generic workflow (base check, orient, restate, search before write, verify, report) lives in the
+`agent-operating-contract` skill: reference it, never copy it. -->
+
+1. Copy the structure from: <exact sibling files that exist today, one per kind of change>.
+2. <Area step.>
 
 ## Validation commands
 
-Only real `just` recipes that appear in `just --summary` (`docs-check` DC-10
-checks every `just <recipe>` token) — never a raw `pnpm --filter`, `uv run`,
-`npx`, `drizzle-kit`, `eas `, `gradlew `, or `xcodebuild ` invocation (`docs-check` DC-11 bans exactly
-these in `.agents/skills/**`). One fenced
-`bash` block, one command per concern, commented where a command is conditional.
-Real example (`backend-module`):
+<!-- One fenced bash block, one command per concern, conditional ones commented. Only recipes in
+`just --summary` (DC-10), never a raw package-manager, script-runner or build-tool invocation (DC-11;
+the banned list is in `scripts/docs/lib/checks-refs.sh`). -->
 
 ```bash
-just test <module>
-just lint && just typecheck && just arch-check
-just generate --check                 # only if contracts were touched in a prior step
-just ci-parity                        # before PR
+just <recipe> <args>
+just <recipe>                          # only if <condition>
 ```
 
 ## Output
 
-<What the agent produces, plus the exact done-checklist it self-certifies against
-before handing back — mirrors the report the calling agent emits.
-Real example (`backend-module`):
-"PR scoped to the module (plus `platform`/composition-root files when a port was
-added), with real test output; `docs/modules/<name>.md` updated when the public
-surface, invariants, events, or dependencies changed.
-Done checklist: scoped tests green · `lint`/`typecheck`/`arch-check` green ·
-nothing exported beyond the contract · no provider SDK or `platform` import in
-`modules/**` · contract doc updated · `PROGRESS.md` updated.">
+<!-- What the skill produces, plus the area's self-review checklist. An agent running this skill reports
+in the `agent-operating-contract` format; list only the area items it self-certifies here. -->
+
+Done checklist: <item> · <item> · <item>.
 
 ## Stop / escalation
 
-<Bulleted, each condition tied to the skill or agent that takes over next — never
-a vague "ask for help".
-Real example (`backend-module`):
-"- The task needs a forbidden edge or a weaker `arch-check` rule → ADR territory;
-stop.
+<!-- Bulleted; each condition names the skill, agent or human that takes over. Never "ask for help". -->
 
-- A schema or endpoint change surfaces mid-task → pause, run `db-migration` /
-  `api-contract-change` as their own step, then continue.
-- An invariant in `docs/modules/<name>.md` conflicts with the task → surface the
-  conflict; never violate the contract quietly.
-- Auth, consent, deletion, or webhook code → `security-privacy-review` before
-  PR.">
+- <Condition> → <who takes over and what they need>.
 
 ## Overlap
 
-<One paragraph naming every adjacent skill, the seam that separates them, and
-which one wins when a task could plausibly go to either — the module(s) named
-here must match this skill's `metadata.modules` row in the module → owner
-coverage table that `docs-check` DC-08 cross-checks.
-Real example (`backend-module`):
-"Adjacent: `api-contract-change` (wire shape first), `db-migration` (tables
-first), `recommendation-rules` / `entitlements-billing` / `media-ml-pipeline`
-(module-specific invariants take precedence inside those modules),
-`architecture-review` (reviews the result). This skill owns `internal/`,
-`index.ts`, ports, and `platform` adapters for all other modules.">
+<!-- One paragraph: "Adjacent: `<skill>` (<the seam>) …" for every neighbour, which one wins on a shared
+task, then "This skill owns <paths>." The modules named here match `metadata.modules`. -->
 ````
-
----
 
 ## House-style constraints this template establishes
 
-Every skill built from it must satisfy these — `docs-check` enforces them downstream:
+What `just docs-check` checks for every skill:
 
-- `SKILL.md` body ≤ 500 lines. Per-module detail that would push it over goes to
-  `references/<module>.md` (shape: `templates/module-reference.md`), never inline.
-- `evals/evals.json` and `evals/trigger-evals.json` exist alongside `SKILL.md` —
-  shapes: `templates/skill-evals.json`, `templates/skill-trigger-evals.json`.
-- The directory is symlinked from `.claude/skills/<name>`; the symlink is the only
-  copy — never a second physical file.
-- Six sections plus Overlap, unchanged heading names — `docs-check` DC-05
-  requires all seven headings present.
+- DC-05: `name` equals the directory; the description limits and "Not for" marker above;
+  `metadata.last-reviewed` no older than 180 days; the seven headings `## Trigger`, `## Required reading`,
+  `## Workflow`, `## Validation commands`, `## Output`, `## Stop / escalation`, `## Overlap`; fewer than
+  500 lines (move per-module detail to `references/<module>.md`, shape `templates/module-reference.md`);
+  `metadata.owner-agent` names existing agents or `main-session`; the
+  `.agents/skills/<name>/evals/evals.json` and `.agents/skills/<name>/evals/trigger-evals.json` pair
+  exists (shapes: `templates/skill-evals.json`, `templates/skill-trigger-evals.json`).
+- DC-06: a row in `.agents/skills/README.md` and a resolving `.claude/skills/<name>` symlink; the symlink
+  is the only copy, never a second physical file.
+- DC-09, DC-10, DC-11: real paths, real recipes, no raw tool invocations.
+
+Reviewer-checked: the Workflow names real sibling files, nothing from `agent-operating-contract` is
+copied in, and every agent in `owner-agent` preloads the skill.

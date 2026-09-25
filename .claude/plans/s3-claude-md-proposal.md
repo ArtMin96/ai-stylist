@@ -1,5 +1,9 @@
 # Proposal: root `CLAUDE.md` updates (human-authorized only)
 
+> Status: APPLIED to root `CLAUDE.md` on 2026-09-13 (`planning/PROGRESS.md` handoff "2026-09-13 —
+> Agent operating foundation"). Its context lines still show the removed dev-mobile recipe, and its
+> last step (`just docs-check --strict` inside `just ci-parity`) is done. Historical; do not re-apply.
+
 **Task:** T20 of `.claude/plans/s3-agent-operating-foundation.md`. No commit in this plan edits
 `CLAUDE.md` directly — it is human-only per its own "Prohibited without explicit human authorization"
 section and the `guard-protected-paths.sh` PreToolUse hook. This file is the proposal; a human applies it.

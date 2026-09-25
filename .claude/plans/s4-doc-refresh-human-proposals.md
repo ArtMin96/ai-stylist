@@ -1,5 +1,12 @@
 # Proposal — human-only doc edits from the 2026-09-24 doc refresh
 
+> Status: OPEN, checked 2026-09-25: none of items 1–5 is applied. Items 4 and 5 cite "§5", but that
+> text sits in §4 "Bootstrap and doctor" of `planning/15-team-workflow-and-ai-agent-operations.md`, and
+> item 4's quoted "prek/husky" reads "`prek`/husky" there. The 2026-09-25 enforcement audit reports
+> item 4 as superseded by item 3 of the untracked s5 bootstrap proposal
+> (s5-bootstrap-automation-human-proposals.md, main checkout only). The open human proposals are
+> listed together in `.claude/plans/s6-claude-foundation-human-proposals.md`.
+
 `CLAUDE.md` and `planning/15-team-workflow-and-ai-agent-operations.md` are human-only (root `CLAUDE.md`, "Prohibited without explicit human authorization"; `.claude/rules/docs-and-progress.md`). The doc refresh on branch `docs/refresh` found the lines below out of date. Apply them by hand, or authorize an agent to apply exactly these diffs.
 
 ## `CLAUDE.md`

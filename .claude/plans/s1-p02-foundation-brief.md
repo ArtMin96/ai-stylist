@@ -1,5 +1,11 @@
 # P02 Foundation Brief
 
+> Status: EXECUTED 2026-09-10 (P02 foundation, commit 5745cb8); SUPERSEDED 2026-09-22 by ADR-0004
+> (`docs/adr/0004-native-ios-and-android-clients.md`): the clients are native Swift/SwiftUI and
+> Kotlin/Compose. Every React Native, Expo, EAS, apps/mobile and Java 17 line below is history. The
+> current stack lives in root `CLAUDE.md` and `planning/15-team-workflow-and-ai-agent-operations.md`.
+> Do not re-execute.
+
 > Amended 2026-09-13: service consolidation per ADR-0003 ([r7](../../planning/research/r7-third-party-services-and-self-hosting-audit-2026-09-13.md)) — pg-boss replaces Trigger.dev, owned server + Coolify replaces Railway, self-managed PostgreSQL replaces Neon, R2 delivery model fixed.
 
 Sources (`planning/`): P02 phase file, docs 04/05/06/11/13/14/15/16, SPINE, r1, CLAUDE.md. Citations use doc number + §. Repo root today holds only `.claude/`, `planning/`, one prompt file, `solo.yml`.

@@ -90,13 +90,14 @@ committed state and has no `node_modules`, so run only the native recipes; the l
 
 <constraints>
 Self-review items (check every one before reporting):
-- Observable-state ownership: a view that creates its model owns it (`@State` with an `@Observable`
-  model); `@ObservedObject` only for a model passed in.
+- Observable-state ownership: a view that creates its `@Observable` model owns it
+  (`@State private var`); a model passed in is a plain property, or `@Bindable` when the view binds to it.
 - Retain cycles: stored or escaping closures (callbacks, a `Task` kept in a property) capture `[weak self]`.
 - Task cancellation: unstructured `Task {}` is stored and cancelled with its owner (or use `.task {}`);
   `CancellationError` is never shown as a failure.
 - Main-actor hops: UI state mutates on the main actor; `nonisolated`/`@concurrent` only with a comment why.
 - Error paths: no silent `try?` on a user-visible operation; every failure maps to a UI state.
+- Parity ids: every `accessibilityIdentifier` equals the brief's id (and the Android `testTag`).
 - Safety settings unchanged: Swift 6 mode, strict concurrency, warnings as errors, SwiftLint and
   swift-format rules, bans. A fight with the compiler is a design fix.
 - Bug fix: write the test first, run `just test ios` and paste the failure, then fix and paste the
@@ -144,8 +145,8 @@ On Linux the app target and SwiftUI views are never compiled: list every macOS s
 
 ## Report format
 
-Report: the `agent-operating-contract` format. Self-review items: the seven in `<constraints>`.
+Report: the `agent-operating-contract` format. Self-review items: the eight in `<constraints>`.
 Parity block: yes for a client feature.
 </output_format>
 
-Last reviewed: 2026-09-25
+Last reviewed: 2026-09-26

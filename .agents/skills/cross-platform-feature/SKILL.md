@@ -4,7 +4,7 @@ description: Build one client feature on both native apps from the main (lead) s
 argument-hint: '[feature description]'
 metadata:
   modules:
-  last-reviewed: 2026-09-25
+  last-reviewed: 2026-09-26
   owner-agent: main-session
 ---
 
@@ -123,8 +123,8 @@ metadata:
    Brief (the only parity source; never read the other app's sources):
    <brief pasted verbatim>
    Scope: apps/ios/** only. Files expected: <list>. Sibling to copy: <paths from the brief>.
-   Run only: just ios-check, just test ios. Put just generate --check, just lint, just arch-check,
-   just docs-check under Not run (the lead runs them after integration).
+   Run only: just ios-check, just test ios. Put just generate --check, just lint, just typecheck,
+   just arch-check, just docs-check, just ci-parity under Not run (the lead runs them after integration).
    Report: the agent-operating-contract format, with the Parity block.
    ```
 

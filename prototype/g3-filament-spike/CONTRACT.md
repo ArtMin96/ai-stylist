@@ -1,6 +1,6 @@
 # G3 Filament spike — shared contract (single-writer: orchestrator)
 
-Spike code under `prototype/` per planning/CLAUDE.md §4. Disposable. Findings survive, code does not get promoted wholesale.
+Spike code under `prototype/` per the root `CLAUDE.md` repository layout (`prototype/`: throwaway spikes, not shipped). Disposable. Findings survive, code does not get promoted wholesale.
 Goal: clothing photo → template 3D garment (G3, doc 07 §6) → worn on a human GLB → rendered in **Filament** (official WebAssembly build, `filament@1.53.4`).
 
 Honesty rule (doc 07 §1/§6): every UI surface that shows a garment labels it **"Template 3D · approximate"**. Never "your garment in 3D". Shape is the garment type's shell over the body, texture is the user's photo.

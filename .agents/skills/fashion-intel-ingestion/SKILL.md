@@ -3,7 +3,7 @@ name: fashion-intel-ingestion
 description: Build or change the `fashion-intel` module (apps/api/src/modules/fashion-intel) — the licensed-content source register (rights basis mandatory per source), the ingestion pipeline (fetch → validate → dedup → summarize → taxonomy-map → publish), freshness and retirement of aging content, quarantine events for moderation, deterministic Discover feed personalization with why-shown reasons, the `trends.level` tier seam, and the trend-relevance scores the recommendation engine's stage-6 scorer reads through a port. Use when asked to add a content source, fix ingestion dedup or freshness, wire `RC-TREND-*` relevance, add a Discover feed field, or work on anything in planning/phases/P12-fashion-intelligence.md. Not for scoring or ranking outfits, or anything inside apps/api/src/modules/recommendation/ — use `recommendation-rules`; not for the admin moderation queue itself — use `admin-moderation`; not for generic pg-boss job or worker plumbing — use `media-ml-pipeline`.
 metadata:
   modules: fashion-intel
-  last-reviewed: 2026-09-25
+  last-reviewed: 2026-09-26
   owner-agent: recommendation-engineer
 ---
 
@@ -64,7 +64,7 @@ Done checklist: scoped tests green · `lint`/`typecheck`/`arch-check` green · e
 ## Stop / escalation
 
 - No rights basis on record for a source, or P12-T01's DEC is missing → stop; `RISK-03`/`OQ-05` territory.
-- The task needs pg-boss jobs, the outbox relay, or event consumption → P02-T08 is `NOT_STARTED` (`apps/api/src/jobs/README.md`); stop and sequence after it.
+- The task needs pg-boss jobs, the outbox relay, or event consumption → unless P02-T08 is `DONE` in `planning/phases/P02-repo-foundations-and-ci.md` (`apps/api/src/jobs/README.md`), stop and sequence after it.
 - The P12-T04 admin CRUD or the P12-T08 moderation wiring needs a synchronous call between `admin` and `fashion-intel` → doc 04 §4.1 allows neither direction; stop and ask the lead for the decision (events only, or an ADR adding an edge).
 - A task asks `fashion-intel` to import `outfit`, `recommendation`, or anything renderer-related → forbidden edge; redirect to the port design.
 - A task asks for outfit scoring or a second influence path into recommendations outside stage 6 → `recommendation-rules`.

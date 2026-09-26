@@ -3,7 +3,7 @@ name: data-lifecycle
 description: Implement or review the consent registry, the cross-module account-deletion cascade, data-export jobs, retention windows, and purge verification for the AI Stylist API — the mechanics behind planning/06-data-api-and-event-contracts.md §8 and planning/11-security-privacy-and-compliance.md §6–§7 and §13. Use whenever the task is a consent-withdrawal flow, an account-deletion request, a GDPR/CCPA data export, a retention-window job, an orphaned-data purge-verification scan, or extending the ordered deletion chain (Postgres cascade → R2 prefix → provider data → pg-boss cancellation → session revocation) to a new module or data class. Not for the module's own service code — start in `backend-module` (or `entitlements-billing` for credit-ledger retention) and come here for the cross-module ordering, consent/deletion invariants, and the mandatory `security-privacy-review` gate.
 metadata:
   modules:
-  last-reviewed: 2026-09-25
+  last-reviewed: 2026-09-26
   owner-agent: api-engineer,platform-engineer
 ---
 
@@ -17,7 +17,7 @@ metadata:
 - A retention-window job, an orphaned-data purge-verification scan, or an audit finding about data that should have been purged.
 - Trigger phrases: "delete account", "deletion cascade", "export my data", "retention window", "consent withdrawal", "purge", "GDPR", "CCPA", "right to be forgotten".
 - Executing agents: `api-engineer` writes each module's cascade/export step inside that module; `platform-engineer` writes the orchestrating pg-boss job chain in `apps/api/src/jobs/` (tests in `apps/api/src/jobs/tests/<handler>.test.ts`).
-- State on 2026-09-25: none of this exists. P03 (consent registry, export, deletion v1) is `NOT_STARTED`; pg-boss and the outbox relay are P02-T08, `NOT_STARTED`.
+- State at last review (re-check `planning/PROGRESS.md` before relying on it): none of this exists. P03 (consent registry, export, deletion v1) is `NOT_STARTED`; pg-boss and the outbox relay are P02-T08, `NOT_STARTED`.
 
 ## Required reading
 
@@ -67,7 +67,7 @@ Done checklist: the new/changed step is idempotent and audited · a verification
 
 ## Stop / escalation
 
-- The orchestrating job chain, withdrawal-cancels-job, or export job needs pg-boss or the outbox relay → P02-T08 is `NOT_STARTED` (`apps/api/src/platform/outbox/README.md`, `apps/api/src/jobs/README.md`); stop and sequence after T08.
+- The orchestrating job chain, withdrawal-cancels-job, or export job needs pg-boss or the outbox relay → unless P02-T08 is `DONE` in `planning/phases/P02-repo-foundations-and-ci.md` (`apps/api/src/platform/outbox/README.md`, `apps/api/src/jobs/README.md`), stop and sequence after T08.
 - The task assumes `consents`, the export job, or deletion v1 exist → P03-T05/T09/T10 are not built; stop and name the task.
 - A new sensitive-data class (measurement kind, biometric, location) → `security-privacy-review` decides the classification before code lands.
 - A retention window with no source in doc 11 §6, an ADR, or a provider policy → stop and ask; never invent a number.

@@ -1,9 +1,9 @@
 ---
 name: e2e-device-testing
-description: Write, run, and extend the shared Maestro E2E flows in e2e/ for the native iOS and Android apps, drive simulator/emulator/device-lane and nightly device-farm runs, review golden/visual-regression baselines, and scope k6 load profiles against the doc 13 §12.3 budgets. Use whenever a task mentions Maestro, a new `.yaml` flow alongside e2e/smoke.yaml, `just ios-e2e` / `just android-e2e`, an onboarding/capture/offline/two-device-convergence journey test, a device tier or device-farm run, a screenshot-diff or golden baseline, or a k6/load-test profile (steady, morning-spike, onboarding-burst, webhook-storm). Not for unit, integration, or bug-fix regression tests — use `testing-regression`; not for a frame-time, app-size, or API-latency performance budget — use `performance-profiling`; not for the screens, copy or ids a flow asserts — use `ios-feature` / `android-feature`.
+description: Write, run, and extend the shared Maestro E2E flows in e2e/ for the native iOS and Android apps, drive simulator/emulator/device-lane and nightly device-farm runs, review golden/visual-regression baselines, and scope k6 load profiles (doc 13 §12.3) against the §12.2 budgets. Use whenever a task mentions Maestro, a new `.yaml` flow alongside e2e/smoke.yaml, `just ios-e2e` / `just android-e2e`, an onboarding/capture/offline/two-device-convergence journey test, a device tier or device-farm run, a screenshot-diff or golden baseline, or a k6/load-test profile (steady, morning-spike, onboarding-burst, webhook-storm). Not for unit, integration, or bug-fix regression tests — use `testing-regression`; not for a frame-time, app-size, or API-latency performance budget — use `performance-profiling`; not for the screens, copy or ids a flow asserts — use `ios-feature` / `android-feature`.
 metadata:
   modules:
-  last-reviewed: 2026-09-25
+  last-reviewed: 2026-09-26
   owner-agent: test-engineer
 ---
 
@@ -40,8 +40,7 @@ metadata:
    convergence, sync load).
 5. In a two-platform feature: the lead's brief (strings, ids and states the flow asserts).
 6. `justfile` recipes `ios-e2e`, `android-e2e` and `golden-accept`. `golden-accept` is a stub with no
-   open owning task (its `P02 T10` tag predates T10's replacement, and doc 13 §6 has nothing to
-   golden-test until 3D resumes). `.github/workflows/nightly.yml`'s `maestro` job is a placeholder:
+   owning task; doc 13 §6 has nothing to golden-test until 3D resumes. `.github/workflows/nightly.yml`'s `maestro` job is a placeholder:
    no CI workflow runs Maestro.
 
 ## Workflow
@@ -61,9 +60,7 @@ metadata:
 4. Running: `just ios-e2e e2e/<flow>.yaml` builds the Dev configuration for the simulator on macOS
    and runs the flow with `APP_ID=app.aistylist.mobile.dev`; `just android-e2e e2e/<flow>.yaml`
    installs the debug build on a running emulator/device and runs it with the same id. Without an
-   argument both run `e2e/smoke.yaml`. Neither runs on a Linux box without an emulator. If a recipe
-   rejects the flow argument ("takes no arguments"), the flow parameter has not landed in this
-   checkout: report the new flow as statically verified only.
+   argument both run `e2e/smoke.yaml`. Neither runs on a Linux box without an emulator.
 5. Golden/visual regression: never hand-edit a baseline or threshold. Inspect the diff and trace it
    to the intended change. `just golden-accept` only prints NOT IMPLEMENTED, so report baseline
    acceptance as unavailable and never claim an accept.

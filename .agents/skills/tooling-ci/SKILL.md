@@ -1,9 +1,9 @@
 ---
 name: tooling-ci
-description: Add or change a `just` recipe, a `tools/**` gate (depcruise, eslint, docs-check, shellcheck, security) and its fixtures, `scripts/bootstrap.sh` / `scripts/doctor.sh`, root workspace configs, `.env.example` keys, or a CI workflow (as an exact diff a human applies), and anything about developer-machine portability (bash 3.2, macOS) or CI gate duration. Use when asked to add a `just` recipe, fix a failing or slow CI job, add a fixture that proves a gate still fails, clean up a shellcheck finding in `scripts/**`, run `just doctor` / `just bootstrap`, add an env key, bump a TS or Python tooling dependency, or investigate `just ci-parity` timing. Not for product code inside `apps/`, `packages/`, or `workers/` — use that area's skill instead; not for the hook scripts in `scripts/hooks/`, `.claude/**` or `.agents/**` (main session with a human); not for editing the doc 15 §5 recipe catalog or `CLAUDE.md` directly (propose a diff, a human applies it), and not for changing CI required checks (human-only).
+description: Add or change developer tooling and CI plumbing — `just` recipes, `tools/**` gates (depcruise, eslint, docs-check, shellcheck, security) and their fixtures, bootstrap/doctor scripts, root workspace configs and `.env.example` keys, tooling dependency bumps, macOS/bash 3.2 portability, CI gate timing, and CI workflow changes (as an exact diff a human applies). Not for product code in `apps/`, `packages/` or `workers/` — use that area's skill; not for `scripts/hooks/`, `.claude/**`, `.agents/**`, the doc 15 §5 catalog, `CLAUDE.md` or CI required checks — those are human-applied.
 metadata:
   modules:
-  last-reviewed: 2026-09-25
+  last-reviewed: 2026-09-26
   owner-agent: tooling-engineer
 ---
 

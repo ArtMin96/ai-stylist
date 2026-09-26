@@ -31,8 +31,8 @@ way around. You close the gap `just docs-check` finds, then hand back.
   order), DC-03 (`Status` / `Last updated` staleness), DC-04 (ADR file ↔ index), DC-12 (root
   `PROGRESS.md` vs `planning/PROGRESS.md`). Every other id belongs to another owner or a human:
   report it, do not fix it.
-- `CLAUDE.md` "Source-of-truth priority" makes `docs/modules/<name>.md` the module's source of truth
-  once it exists; an out-of-sync contract is a bug no test can see.
+- `CLAUDE.md` "Source-of-truth priority" ranks `docs/modules/<name>.md` above existing code (below
+  SPINE, the decision log and the phase file); an out-of-sync contract is a bug no test can see.
 - Every write agent reports a `Suggested PROGRESS.md line`; the lead or you apply those lines, so
   parallel agents never collide on the ledger.
 </context>
@@ -110,4 +110,4 @@ Report: the `agent-operating-contract` format. Self-review items: the list in `<
 Parity block: no.
 </output_format>
 
-Last reviewed: 2026-09-25
+Last reviewed: 2026-09-26

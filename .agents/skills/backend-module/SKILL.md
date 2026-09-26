@@ -3,7 +3,7 @@ name: backend-module
 description: Create or change a NestJS domain module under apps/api/src/modules/ — application services, domain rules, controllers, ports, module-owned repositories, events — or add a port adapter in apps/api/src/platform/ and bind it at the composition root (apps/api/src/app.module.ts). Use for identity, profile, avatar, closet, media, outfit, context, or platform work — a new application service or controller, a context provider, a repository behind a port, a provider adapter, or a composition-root binding. Not for recommendation scoring or a scoring rule that consumes context facts — use `recommendation-rules`; not for `fashion-intel` — use `fashion-intel-ingestion`; not for a schema or migration change — use `db-migration`; not for an endpoint's wire shape — use `api-contract-change`; not for billing or entitlements — use `entitlements-billing`; not for notifications, admin, or assistant work — use their own skills.
 metadata:
   modules: identity,profile,avatar,closet,media,outfit,context,platform
-  last-reviewed: 2026-09-25
+  last-reviewed: 2026-09-26
   owner-agent: api-engineer,recommendation-engineer,platform-engineer
 ---
 
@@ -15,7 +15,7 @@ metadata:
 - Executing agent per module (coverage table in `.agents/skills/README.md`): `api-engineer` for identity, profile, avatar, closet, media; `recommendation-engineer` for outfit, context; `platform-engineer` for platform.
 - Adding a port adapter in `apps/api/src/platform/` and binding it in `apps/api/src/app.module.ts`.
 - Do first, then return: `api-contract-change` (endpoint or event shape), `db-migration` (tables), `entitlements-billing`, `media-ml-pipeline` (pipeline steps), `recommendation-rules` (scoring).
-- State on 2026-09-25: all 13 domain modules are P02 skeletons (`index.ts` exports an empty `@Module({})`, an internal README, one smoke test). The only real TypeScript precedents live in `apps/api/src/platform/`, `apps/api/src/app.module.ts` and `packages/test-support/src/`. The first service in any module is a new pattern: copy the siblings in Workflow step 4 and name each one in the report.
+- State at last review (re-check `planning/PROGRESS.md` before relying on it): all 13 domain modules are P02 skeletons (`index.ts` exports an empty `@Module({})`, an internal README, one smoke test). The only real TypeScript precedents live in `apps/api/src/platform/`, `apps/api/src/app.module.ts` and `packages/test-support/src/`. The first service in any module is a new pattern: copy the siblings in Workflow step 4 and name each one in the report.
 
 ## Required reading
 
@@ -90,7 +90,7 @@ Done checklist: scoped tests green · `lint`/`typecheck`/`arch-check` green · n
 - The task needs an edge missing from `ALLOWED_EDGES` or a weaker `arch-check` rule → ADR territory; stop.
 - A schema or endpoint change surfaces mid-task → pause; run `db-migration` / `api-contract-change` as their own step, then continue.
 - The task assumes tables, events or services of a phase that is `NOT_STARTED` in `planning/PROGRESS.md` → stop and name the phase task that creates them.
-- The task needs the outbox relay, pg-boss or a jobs composition root → P02-T08 is `NOT_STARTED` (`apps/api/src/platform/outbox/README.md`, `apps/api/src/jobs/README.md`); stop and sequence after T08. Same for the R2 adapter (P02-T13).
+- The task needs the outbox relay, pg-boss or a jobs composition root → unless P02-T08 is `DONE` in `planning/phases/P02-repo-foundations-and-ci.md` (`apps/api/src/platform/outbox/README.md`, `apps/api/src/jobs/README.md`), stop and sequence after T08. Same for the R2 adapter (P02-T13).
 - An application service needs a clock → no `Clock` port is importable by modules; stop and request one in `packages/shared-kernel` (`contracts-engineer`, `api-contract-change`), structurally identical to `apps/api/src/platform/ports/clock.port.ts`.
 - A repository needs a database handle, or a test needs a real Postgres → module code and module tests may not import `packages/db` (package @ai-stylist/db, rule `composition-root-only`) or `apps/api/src/platform/**` (`modules-not-platform`), and no module repository exists to copy. Stop and report; the first one needs a decision from the lead.
 - An invariant in `docs/modules/<name>.md` conflicts with the task → surface it; never violate the contract quietly.

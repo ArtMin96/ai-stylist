@@ -1,9 +1,9 @@
 ---
 name: docs-maintenance
-description: Keep `PROGRESS.md` (root and `planning/PROGRESS.md`), module contracts (`docs/modules/*.md`), the ADR index (`docs/adr/README.md`), and phase-file task-state columns in sync with the code and with each other by running `just docs-check` and fixing every finding inside its write set — module-contract bijection and headings, stale module-contract `Last updated` dates (DC-03), ADR file-to-index sync, and the PROGRESS pointer; DC-05/DC-09 hits in skills, agents and rules are reported, not fixed. Use when asked to update `PROGRESS.md`, refresh a module contract after a public interface or schema change, add an ADR to the index, close out a session, write a handoff entry, or resolve a `just docs-check` failure (DC-01 through DC-04, DC-12). Not for writing the code or schema change behind a doc update — use the owning module's skill (e.g. `backend-module`, `db-migration`) first, then this skill for the doc sync; not for a broken `docs-check.sh` script or a missing `just` recipe itself — use `tooling-ci` for that.
+description: Keep `PROGRESS.md` (root and `planning/PROGRESS.md`), module contracts (`docs/modules/*.md`), the ADR index (`docs/adr/README.md`), and phase-file task-state columns in sync with the code and with each other by running `just docs-check` and fixing every finding inside its write set — module-contract bijection and headings, stale module-contract `Last updated` dates (DC-03), ADR file-to-index sync, and the PROGRESS pointer; DC-05 to DC-11 hits in skills, agents and rules are reported, not fixed. Use when asked to update `PROGRESS.md`, refresh a module contract after a public interface or schema change, add an ADR to the index, close out a session, write a handoff entry, or resolve a `just docs-check` failure (DC-01 through DC-04, DC-12). Not for writing the code or schema change behind a doc update — use the owning module's skill (e.g. `backend-module`, `db-migration`) first, then this skill for the doc sync; not for a broken `docs-check.sh` script or a missing `just` recipe itself — use `tooling-ci` for that.
 metadata:
   modules:
-  last-reviewed: 2026-09-25
+  last-reviewed: 2026-09-26
   owner-agent: docs-maintainer
 ---
 
@@ -75,8 +75,7 @@ metadata:
 
 ```bash
 just docs-check                       # full repo; group findings by check id first
-just docs-check <path you fixed>      # re-check just that file after a targeted fix
-just docs-check --fixtures            # only when you changed scripts/docs/** itself — rare here
+                                      # a PATH argument scopes only DC-05/07/09/10/11; DC-01..04 and DC-12 always run full-repo
 just ci-parity                        # before handing back, if the fix touched anything code-adjacent
 ```
 

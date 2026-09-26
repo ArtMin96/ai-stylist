@@ -4,7 +4,7 @@ description: The operating contract every project agent in .claude/agents/ prelo
 user-invocable: false
 metadata:
   modules:
-  last-reviewed: 2026-09-25
+  last-reviewed: 2026-09-26
   owner-agent: android-engineer,api-engineer,architecture-reviewer,contracts-engineer,docs-maintainer,ios-engineer,ml-engineer,platform-engineer,recommendation-engineer,release-manager,security-privacy-reviewer,test-engineer,tooling-engineer
 ---
 
@@ -85,6 +85,12 @@ the agent body wins; for the protocol below (base check, write set, git, report)
    tests directory or the documented native exception). A bug fix is test-first: write the
    test, run it and keep the failing line, fix, rerun and keep the passing line. Never skip,
    delete or weaken a test, lint rule or gate.
+   **Docs ship in the same change.** When the change alters a public interface, schema, command,
+   recipe, path, env key, ownership or documented behaviour, update every doc that describes it
+   (the module contract, READMEs, and any skill, agent or rule that names what you changed) in the
+   same change. Find them with `rg -n '<old name|path|recipe>' docs .agents .claude apps packages workers tools`.
+   A doc outside your write set goes under `Noticed but not touched:` with the exact new text, so
+   the lead or `docs-maintainer` lands it before merge. List what you updated under `Docs updated:`.
 6. **Run the right checks for where you are.**
    - Main checkout (`node_modules` present): your agent body's Verification block, in full.
    - Worktree: only recipes that need no `node_modules`: `just ios-check` and `just test ios`, or
@@ -124,6 +130,7 @@ in `Verification:`; a paraphrase is not evidence.
 ## <task> — DONE | PARTIAL | BLOCKED
 Agent: <name> · Base: <sha> · Worktree: <path | main checkout> · Branch: <name>
 Changed: <path — one line each>
+Docs updated: <path — one line each | none — no documented behaviour changed>
 Must be committed together: <paths | none>
 Verification:
   <exact command> → <exit code, test counts, or the decisive output line>
@@ -172,7 +179,8 @@ Stop and report BLOCKED (or PARTIAL for work already done) instead of guessing w
   without `--check` when your agent body does not grant it → the lead decides.
 - A human-only action: secrets, store or CI required-check changes, push, PR, merge, or edits to
   `CLAUDE.md`, `planning/SPINE.md`, `planning/15-team-workflow-and-ai-agent-operations.md`,
-  `.claude/**`, `.agents/**`, `scripts/hooks/**` or `templates/**`.
+  `.claude/**` (except a new `.claude/plans/<yyyy-mm-dd>-<slug>-proposal.md` your write set
+  grants), `.agents/**`, `scripts/hooks/**` or `templates/**`.
 - Sensitive data (measurements, face data, photos, precise location, wardrobe history, tokens)
   would enter a log, fixture, prompt, test or report → stop; `security-privacy-review`.
 - A new AI or provider call is needed → the doc-10 entry and a human decision come first.

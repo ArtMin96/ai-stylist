@@ -3,7 +3,7 @@ name: release-readiness
 description: Verify and prepare promotion of the native iOS and Android builds through release channels — internal → beta (TestFlight / Play internal testing) → staged production. Use when preparing a release, cutting a beta, checking store readiness, or evaluating/halting a staged rollout. Not for implementing the fix behind a blocked gate — hand back to the owning engineer skill; not for signing, uploading, store submission or rollout promotion — those are human-only (this skill, and the `release-manager` agent that runs it, only ever recommends GO/NO-GO).
 metadata:
   modules:
-  last-reviewed: 2026-09-25
+  last-reviewed: 2026-09-26
   owner-agent: release-manager
 ---
 
@@ -52,7 +52,7 @@ metadata:
    (doc 14); rollback plan per risky change.
 3. Build evidence from the lanes that exist today: `just ios-build --config prod` (unsigned) and
    `just android-build release` (unsigned). iOS builds only on the GitHub macOS runner
-   (`.github/workflows/ios.yml`) or a Mac, never on Linux. Signing and upload are FUTURE work: an
+   (`.github/workflows/ios.yml`) or a Mac, never on Linux. Signing and upload are future work: an
    App Store Connect API key (TestFlight) and a Play service account (internal/closed track), both
    read from CI secrets, in a lane a human sets up. Store submission stays human-only even then. No
    `just` recipe signs or uploads today; never invent one or run a store tool.

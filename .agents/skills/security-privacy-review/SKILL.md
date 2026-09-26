@@ -3,7 +3,7 @@ name: security-privacy-review
 description: Review a diff or PR that touches auth, authorization, consent, sensitive data (measurements, selfies/face data, photos, location, wardrobe history, tokens), webhooks, uploads/signed URLs, deletion/export, logging, AI-provider data flows, or native-app token storage, network security and privacy declarations — use whenever asked "security review", "privacy review", "is this webhook safe", "does this leak PII", "is this safe to ship", or "consent flow review". Produces a written review, not code changes. Not for module-boundary or duplication findings on the same diff — use `architecture-review` for that lens — and not for writing the fix, which goes back to the owning engineer skill.
 metadata:
   modules:
-  last-reviewed: 2026-09-25
+  last-reviewed: 2026-09-26
   owner-agent: security-privacy-reviewer
 ---
 
@@ -25,8 +25,9 @@ metadata:
 
 ## Required reading
 
-1. `planning/11-security-privacy-and-compliance.md`: threat model (incl. the P02 supply-chain/CI-secret
-   appendix), §4.2 (sessions on device), data classification, retention/deletion, consent scopes,
+1. `planning/11-security-privacy-and-compliance.md`: threat model (§2) and abuse cases (§3) — its
+   supply-chain/CI-secret appendix is a P02 deliverable not yet written, so use doc 15 §9 meanwhile —
+   §4.2 (sessions on device), data classification, retention/deletion, consent scopes,
    §8 logging redaction list, approved AI-provider list.
 2. `CLAUDE.md` "Security and privacy rules" and "Prohibited without explicit human authorization".
 3. The diff under review (scope: `git diff <base>...HEAD`, or `git diff HEAD` plus every untracked
@@ -56,8 +57,8 @@ Walk the checklist against the actual code, not the PR description:
    forbidden-field lint are not bypassed; no `console.*`, no raw `req.body`.
 4. AI-provider egress: payload minimised; provider on the approved list; no-training terms hold;
    prompts carry no unnecessary personal data.
-5. Uploads/media: content-type + size + namespace constraints on presigned URLs, TTL ≤ 15 min, EXIF
-   stripped at ingest, no public buckets; `*.sec.test.ts` cover expired / foreign-namespace /
+5. Uploads/media: content-type + size + namespace constraints on presigned URLs, TTL ≤ 10 min for
+   GET and ≤ 15 min for PUT/multipart (doc 11 §5.4), EXIF stripped at ingest, no public buckets; `*.sec.test.ts` cover expired / foreign-namespace /
    wrong-content-type.
 6. Webhooks/inputs: signature verification, replay protection (event-id dedup + timestamp window),
    rate limits, strict schema validation, idempotency.

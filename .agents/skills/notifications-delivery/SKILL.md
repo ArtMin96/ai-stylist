@@ -3,7 +3,7 @@ name: notifications-delivery
 description: Build or change push notification delivery in the `notifications` module — FCM/APNs sent through a port so the domain never imports a push SDK, per-user quiet hours and timezone-aware scheduling, opt-out/preference checks, delivery receipts, and dedup/idempotency keyed on the outbox event id. Use for any work in `apps/api/src/modules/notifications` (including plain services and endpoints there), the `notification_prefs`/`deliveries` tables, the daily-outfit push (P09-T16), or an FCM/APNs port or adapter. Not for work in other modules — use `backend-module` or that module's skill. Not for deciding who is authorized to receive what or auditing consent — run `security-privacy-review` first.
 metadata:
   modules: notifications
-  last-reviewed: 2026-09-25
+  last-reviewed: 2026-09-26
   owner-agent: api-engineer
 ---
 
@@ -59,7 +59,7 @@ Done checklist: scoped tests green (quiet hours, opt-out, dedup) · `lint`/`type
 
 ## Stop / escalation
 
-- Sending, scheduling, or dedup needs the outbox relay or pg-boss → P02-T08 is `NOT_STARTED`; stop after the pure rules and the port design, and name T08 as the blocker.
+- Sending, scheduling, or dedup needs the outbox relay or pg-boss → unless P02-T08 is `DONE` in `planning/phases/P02-repo-foundations-and-ci.md`, stop after the pure rules and the port design, and name T08 as the blocker.
 - The task needs `notification_prefs` or `deliveries` → no module `schema.ts` exists yet; route the tables to `db-migration`, which has its own first-table stop.
 - An application service needs a clock → no `Clock` port is importable by modules; stop and request one in `packages/shared-kernel` via `api-contract-change`, structurally identical to `apps/api/src/platform/ports/clock.port.ts`.
 - Deciding who may receive a notification (consent, legal opt-out, sensitive data in a payload) → `security-privacy-review` before writing delivery code.

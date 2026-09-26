@@ -35,7 +35,8 @@ paths:
 - `tools/codegen/gen-swift.sh` → `ios-engineer`; `tools/codegen/gen-kotlin.sh` → `android-engineer`;
   `tools/codegen/gen-python.sh` → `ml-engineer`.
 - `.github/workflows/**` and `.github/actions/**` → a human applies the exact diff that
-  `tooling-engineer` writes in its report.
+  `tooling-engineer` writes into a new `.claude/plans/<yyyy-mm-dd>-<slug>-proposal.md` and names
+  under Blockers in its report.
 - `pnpm-lock.yaml` → no standing owner: it is single-writer and changes only through the install that a
   human-granted dependency task runs.
 

@@ -3,7 +3,7 @@ name: admin-moderation
 description: Build or change support tooling, moderation queues, audit logging, and admin CRUD surfaces in the `admin` module — RBAC on admin actions, an append-only audit log, and the rule that any admin action on user content is both logged and reversible. Use for any work in `apps/api/src/modules/admin` (including plain services and endpoints there), the `audit_log`/`moderation_queue` tables, a content-scan quarantine or approve/reject queue (P06-T13), fashion-intel moderation or source-register admin surfaces (P12-T04, P12-T08), or the support/admin minimum + audit-log viewer (P14-T12). Not for work in other modules — use `backend-module` or that module's skill. Not for deciding who may hold an admin role or reviewing an admin diff for auth correctness — run `security-privacy-review` first.
 metadata:
   modules: admin
-  last-reviewed: 2026-09-25
+  last-reviewed: 2026-09-26
   owner-agent: api-engineer
 ---
 
@@ -61,7 +61,7 @@ Done checklist: scoped tests green (RBAC denial, audit write, reversal where app
 ## Stop / escalation
 
 - P12-T04 (source-register CRUD) or P12-T08 (moderation wiring) needs a synchronous call between `admin` and `fashion-intel` → doc 04 §4.1 allows neither direction; stop and ask the lead for the decision (events only, or an ADR adding an edge).
-- Consuming events (fashion-intel quarantine, scan results) needs the outbox relay and pg-boss → P02-T08 is `NOT_STARTED`; stop and name it.
+- Consuming events (fashion-intel quarantine, scan results) needs the outbox relay and pg-boss → unless P02-T08 is `DONE` in `planning/phases/P02-repo-foundations-and-ci.md`, stop and name it.
 - `audit_log` or `moderation_queue` is needed → no module `schema.ts` exists yet; route to `db-migration`, which has its own first-table stop.
 - Who may hold an admin role, a new permission tier, or an authorization review → `security-privacy-review` before writing or merging.
 - A moderation decision needs a new field on another module's data (e.g. a `flagged` state on a closet item) → add it in that module via its skill first.

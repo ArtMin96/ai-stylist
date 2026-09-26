@@ -33,7 +33,7 @@ DC-15 compares the doc 15 §5 recipe catalog with `just --summary`).
    PreToolUse path guard `scripts/hooks/guard-protected-paths.sh` denies it and `permissions.ask` in
    `.claude/settings.json` prompts the human.
 2. The rest of `planning/**` (docs 00–16, phase prose, `planning/research/`, `planning/.agents/`,
-   `planning/templates/`, the historical `planning/CLAUDE.md`) is read-only context. New evidence against
+   `planning/templates/`, the historical `planning/claude-contract-historical.md`) is read-only context. New evidence against
    a recorded decision becomes a proposed ADR and a decision-log entry for
    `planning/16-risks-open-questions-and-decision-log.md`, never a silent edit (reviewer-checked).
 3. `secrets/**` and `.sops.yaml` change only through the secrets recipes a human runs (`just secrets-edit`,

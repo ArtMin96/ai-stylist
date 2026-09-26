@@ -20,8 +20,10 @@ paths:
 installed.
 
 **Agent:** none. This layer belongs to the main session working with the human; no project agent's
-write set includes `.claude/**`, `.agents/**`, `scripts/hooks/**` or `templates/**`. A project agent that
-needs a change here reports the exact text under "Noticed but not touched".
+write set includes `.claude/**`, `.agents/**`, `scripts/hooks/**` or `templates/**`, except that
+`tooling-engineer` and `docs-maintainer` may create a new `.claude/plans/<yyyy-mm-dd>-<slug>-proposal.md`
+(`human-only.md`). A project agent that needs a change here reports the exact text under "Noticed but not
+touched".
 
 **Proof:** `just docs-check` as a full run (about 10 s; DC-06 symlinks and DC-08 coverage run only
 unscoped). For `.claude/settings.json` or `scripts/hooks/**`, also run `just lint-file <path>` and

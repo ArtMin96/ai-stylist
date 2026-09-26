@@ -1,6 +1,6 @@
 # CLAUDE.md — AI Stylist Operating Contract
 
-> **Status: LIVE.** This is the binding operating contract at the repository root as of 2026-09-09 (P02, task T16); the copy in `planning/CLAUDE.md` is historical context only.
+> **Status: LIVE.** This is the binding operating contract; `planning/claude-contract-historical.md` is a superseded planning-era copy kept for reference only.
 
 This file is the permanent operating contract for every AI agent session in this repository. Phase-specific detail lives in `planning/phases/`; module detail lives in module contracts. Rules here are permanent and binding.
 
@@ -102,6 +102,16 @@ Before adding any function, hook, component, service, mapper, validator, schema,
 
 Copy-and-diverge is forbidden. So are speculative abstractions: build for the current requirement, not imagined ones. Smallest coherent change wins.
 
+## Docs stay current (mandatory)
+
+A change is not done until every doc that describes what it changed is updated **in the same change**. If a public interface, schema, event, command or `just` recipe, path, env key, ownership line, or documented behaviour changes, then update:
+
+- the module contract (`docs/modules/<name>.md`) and any README beside the code;
+- every skill, agent and rule file that names the old path, command, recipe or fact. Find them with `rg -n '<old name>' .agents .claude docs`;
+- `PROGRESS.md` (status + next step) and, for a decision, the ADR index.
+
+Stale instructions mislead the next agent, and nothing but this rule catches most of them. `just docs-check` enforces the mechanical part: contract bijection and dates, the ADR index, the PROGRESS pointer, and paths and recipes in skills, agents and rules. Delegated agents that cannot edit a doc report the exact new text under `Noticed but not touched:`, and the lead lands it before merge.
+
 ## Standard commands
 
 Use `just` recipes only — never raw tool invocations that CI does not run. Full catalog: `planning/15-team-workflow-and-ai-agent-operations.md` §5.
@@ -166,7 +176,7 @@ Ask, state exactly what will run, and wait for confirmation.
 - [ ] Regression test failed-then-passed for any bug fix.
 - [ ] No new duplication of schemas/constants/validators/mappings; generated files regenerated, not edited.
 - [ ] No sensitive data introduced into logs/fixtures/prompts/output.
-- [ ] Docs updated where behavior changed (owning doc, module contract).
+- [ ] Docs updated in the same change wherever behavior, interfaces, commands, paths or ownership changed (module contract, READMEs, skills/agents/rules that reference it) — see "Docs stay current".
 - [ ] `PROGRESS.md` updated with status + next step before ending the session.
 - [ ] Repo left buildable (`just ci-parity` green) — or the precise failure reported with output.
 

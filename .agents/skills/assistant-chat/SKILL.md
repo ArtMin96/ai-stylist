@@ -3,7 +3,7 @@ name: assistant-chat
 description: Design or build the `assistant` module's future chat adapter (apps/api/src/modules/assistant — a P02 skeleton today, real build gated at P15-T09) — conversation storage, tool-call orchestration, prompt/version registry, per-user limits, entitlement enforcement. Use when asked to add a chat tool schema, wire a conversation or message endpoint, design the P15-T08 tool contracts, or review whether assistant code bypasses an application service. The rule this skill enforces is that assistant calls only the public application services of profile, closet, context, recommendation, fashion-intel and billing (their `index.ts`) — no second recommendation engine, no direct table access, no forked business logic, and no `outfit` import (root CLAUDE.md; `assistant-app-services-only` and `allowed-edges-only` in `just arch-check`). Not for scoring, ranking, or constraint changes to outfit suggestions — use `recommendation-rules`; not for generic pg-boss job or worker plumbing — use `media-ml-pipeline`.
 metadata:
   modules: assistant
-  last-reviewed: 2026-09-25
+  last-reviewed: 2026-09-26
   owner-agent: api-engineer
 ---
 
@@ -26,7 +26,7 @@ metadata:
 
 ## Workflow
 
-1. State which phase you are in before writing anything. P15-T09 (build/defer) has not run, so anything beyond schema design is speculative; say so in the report instead of building ahead of the gate.
+1. State which phase you are in before writing anything. Unless P15-T09 (build/defer) is `DONE` in `planning/PROGRESS.md`, anything beyond schema design is speculative; say so in the report instead of building ahead of the gate.
 2. Search before write:
 
    ```bash

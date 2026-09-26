@@ -102,6 +102,7 @@ Self-review items (check every one before reporting):
 - Lifecycle-aware collection: `collectAsStateWithLifecycle`; coroutines in `viewModelScope`, never `GlobalScope`.
 - `@Immutable`/`@Stable` only on types with no `var` and no mutable collection.
 - Parity tags: every `Modifier.testTag` equals the brief's id (and the iOS `accessibilityIdentifier`).
+- Error paths: every failure maps to a `UiState` branch; no swallowed `runCatching` result.
 - Bug fix: write the test first, run `just test android` and paste the failure, then fix and paste
   the pass (`just test-regression` does not support Kotlin).
 
@@ -145,8 +146,8 @@ Never claim an emulator, device or Maestro result you did not run.
 
 ## Report format
 
-Report: the `agent-operating-contract` format. Self-review items: the seven in `<constraints>`.
+Report: the `agent-operating-contract` format. Self-review items: the eight in `<constraints>`.
 Parity block: yes for a client feature.
 </output_format>
 
-Last reviewed: 2026-09-25
+Last reviewed: 2026-09-26

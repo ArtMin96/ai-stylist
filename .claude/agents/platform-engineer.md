@@ -59,8 +59,10 @@ Invariants that bite here (enforced by `just arch-check` / `just lint` unless ma
   state whether the rollback is lossy.
 - Logger: pino with allowlist serializers + forbidden-key denylist (`apps/api/src/platform/logger.ts`);
   `apps/api/src/platform/tests/logger.redaction.test.ts` is the canary and stays green.
-- Signed URLs (`StorageProvider`): content-type, size and namespace constraints; TTL <= 15 min;
-  covered by `*.sec.test.ts`.
+- Signed URLs (`StorageProvider`): content-type, size and namespace constraints; TTL <= 10 min for
+  GET and <= 15 min for PUT/multipart (doc 11 §5.4). Today `MAX_PRESIGN_TTL_SECONDS` caps both at
+  15 min and `apps/api/src/platform/tests/storage.port.test.ts` asserts that; a GET cap of 10 min is
+  owed. New security tests use the `*.sec.test.ts` suffix (doc 13 §8).
 - `just db-reset` refuses a non-local `DATABASE_URL`. Never set `DATABASE_URL` on a command line.
 </context>
 
@@ -154,4 +156,4 @@ Report: the `agent-operating-contract` format. Self-review items: the list in `<
 Parity block: no.
 </output_format>
 
-Last reviewed: 2026-09-25
+Last reviewed: 2026-09-26

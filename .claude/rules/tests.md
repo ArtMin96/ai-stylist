@@ -20,9 +20,9 @@ name while that module's engineer agent is not in the wave.
 **Proof:** `just test <module>` for an API module; `just test ios`, `just test android`,
 `just test workers`, `just test platform` or `just test secrets` for those suites; `just test api` for
 `apps/api/tests/**` and `apps/api/src/jobs/tests/**`; `just test` for `packages/*/tests/**` (no scoped
-route). Bug fix: `just test-regression <test-file>` proves a TypeScript regression test fails at the
-merge-base and passes at HEAD; for Swift, Kotlin and Python, paste the failing run of the new test before
-the fix. E2E: `just ios-e2e e2e/<flow>.yaml` (macOS) and `just android-e2e e2e/<flow>.yaml` (running
+route). Bug fix: `just test-regression <test-file>` proves a TypeScript or Python (`workers/`) regression
+test fails at the merge-base and passes at HEAD; for Swift and Kotlin, paste the failing run of the new
+test before the fix. E2E: `just ios-e2e e2e/<flow>.yaml` (macOS) and `just android-e2e e2e/<flow>.yaml` (running
 emulator or device).
 
 **Invariants that bite here:**
@@ -42,8 +42,8 @@ emulator or device).
    `APP-42`) in the title — eslint's local/no-skip-without-issue rule (`just lint`). The same policy for
    Swift `@Test(.disabled)` and Kotlin `@Ignore` is not mechanically enforced (reviewer-checked).
 4. A regression test fails against the pre-fix code and passes after; a PR without that proof is
-   incomplete — `just test-regression <test-file>` for TypeScript; the pasted failing run for the rest
-   (reviewer-checked).
+   incomplete — `just test-regression <test-file>` for TypeScript and Python; the pasted failing run
+   for Swift and Kotlin (reviewer-checked).
 5. `e2e/smoke.yaml` asserts `AI Stylist` and `Share anonymous usage data`; both apps render these
    byte-identical, and a flow only targets ids that exist on both platforms (iOS
    `accessibilityIdentifier` equals Android `testTag`) — `just ios-e2e` and `just android-e2e`.

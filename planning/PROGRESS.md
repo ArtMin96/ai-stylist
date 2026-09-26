@@ -82,6 +82,29 @@ Log hygiene: when this log exceeds ~30 entries, move the oldest entries to `plan
 
 *(newest first)*
 
+### 2026-09-26 — Prompt audit of the Claude Code configuration; docs-in-the-same-change rule
+
+- **Phase / tasks worked:** P02 hygiene (no task ID). Branch `chore/prompt-audit-fixes` off `791ea1e`, fast-forwarded into `main` and pushed at the human's request.
+- **Status changes:** none.
+- **Done this session:** a `/claude-api prompt-audit` of `CLAUDE.md`, rules, agents and skills, targeting Opus 5.5. Few dated-prompt patterns turned up; most findings were stale facts and cross-file conflicts. Fixed:
+  - `planning/CLAUDE.md` → `planning/claude-contract-historical.md`. As a nested `CLAUDE.md` it auto-loaded every session and still called itself binding, with the RN/Expo stack.
+  - Signed-URL TTL in `security-privacy-review` and `platform-engineer` aligned with doc 11 §5.4 (GET ≤ 10 min). The phantom doc-11 supply-chain appendix is now described as unwritten.
+  - `tests.md`: `just test-regression` covers Python. `ios.md` and `ios-engineer`: `@Observable` ownership (`@State` / plain property / `@Bindable`).
+  - Stale commands and sections fixed in `api-contract-change`, `e2e-device-testing`, `docs-maintenance`, `release-manager`, `docs-maintainer`, the skills README and the agents README.
+  - iOS/Android self-review lists back in parity. `ml-engineer` may run `just format --check`.
+  - The `.claude/plans/` proposal exception is now stated in `agent-operating-contract` and `agent-authoring.md`. Workflow diffs go to a proposal file (`tooling-ci.md`).
+  - "State on 2026-09-25" snapshots and "P02-T08 is `NOT_STARTED`" stops are rewritten as conditions against the phase file.
+  - The `tooling-ci` description was shortened; it was missing from the skill listing and now shows.
+  - New rule: root `CLAUDE.md` "Docs stay current (mandatory)" section and checklist line, plus `agent-operating-contract` step 5 "Docs ship in the same change" and a `Docs updated:` report line. The human authorized the `CLAUDE.md` edit this session; it went in by `git apply` because the path guard blocks the Edit tool.
+- **Not done / in flight:**
+  - Product bug found, not fixed: `MAX_PRESIGN_TTL_SECONDS` (`apps/api/src/platform/ports/storage.port.ts:5`) caps GET URLs at 15 min; doc 11 §5.4 says 10. `platform-engineer`, with a regression test first.
+  - Doc 11 lacks the P02 supply-chain/CI-secret threat-model appendix.
+  - Trigger evals for the edited descriptions (`tooling-ci`, `performance-profiling`, `docs-maintenance`, `e2e-device-testing`) were not re-run.
+- **Repository state:** `just docs-check --strict` → 0 errors. `just docs-check --fixtures` → 1 failure (`_clean` DC-15 "just hello"), also present at HEAD with these changes stashed. No code touched; `just lint`/`typecheck`/`arch-check` not run.
+- **New decisions / risks / questions filed:** none.
+- **Surprises / gotchas:** any file named `CLAUDE.md` below the root auto-loads when Claude reads a file in that directory; keep historical copies under another name. A long skill description can push a later skill's description out of the listing budget.
+- **Next session starts:** hand the signed-URL TTL bug to `platform-engineer` (regression test first); re-run trigger evals for the edited skill descriptions.
+
 ### 2026-09-25 — Claude Code foundation: enforced agent scopes, cross-platform flow, drift fixes
 
 - **Phase / tasks worked:** P02 hygiene (no task ID). Branch `fix/bootstrap-automation` off `8bc50ba`: the first commit is the bootstrap work (entry below), the rest is this session. One stacked PR with base `chore/native-foundations`.

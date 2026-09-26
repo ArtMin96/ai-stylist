@@ -1,9 +1,9 @@
 ---
 name: performance-profiling
-description: Investigate or improve performance against documented budgets — API latency, job throughput, native app startup/interaction, frame time, memory, app size, AI cost/latency, CI gate duration. Use when something is slow, a budget from `planning/13-testing-quality-and-performance.md` is exceeded or suspected, or a PR's performance claim needs verified before/after numbers. Not for AI provider spend policy — use `media-ml-pipeline` (doc 10 owns cost budgets). Measurement first, always — no before/after numbers from the same procedure, no perf claim.
+description: Investigate or improve performance against documented budgets — API latency, job throughput, native app startup/interaction, frame time, memory, app size, AI cost/latency, CI gate duration. Use when something is slow, a budget from `planning/13-testing-quality-and-performance.md` is exceeded or suspected, or a PR's performance claim needs verified before/after numbers. Not for AI provider spend policy — use `media-ml-pipeline` (doc 10 owns cost budgets).
 metadata:
   modules:
-  last-reviewed: 2026-09-25
+  last-reviewed: 2026-09-26
   owner-agent: platform-engineer
 ---
 
@@ -14,7 +14,7 @@ metadata:
 - A budget from `planning/13-testing-quality-and-performance.md` (or the P02 `ci.pr_gate_duration` < 10 min budget) is exceeded or suspected.
 - A PR claims a performance improvement — this skill verifies it.
 - Phase work that measures budgets (P01 prototype gate, P14 hardening).
-- Not this skill: AI spend policy (doc 10; `media-ml-pipeline` implements); render-quality trade-offs (client-side 3D is deferred (no owner until it resumes)).
+- Not this skill: AI spend policy (doc 10; `media-ml-pipeline` implements); render-quality trade-offs — client-side 3D is deferred, with no owner until it resumes.
 
 ## Required reading
 
@@ -55,7 +55,7 @@ Done checklist: before/after from the same procedure · ≥ 5 runs, median + p95
 ## Stop / escalation
 
 - **No measurement, no claim (the stop condition, not a suggestion):** if the before/after numbers cannot be captured with the same procedure on the same environment — device unavailable, provider call too costly to repeat, macOS lane unreachable for an iOS trace — stop and report the gap instead of estimating, extrapolating, or "roughly remembering" a number (CLAUDE.md "Testing rules" and "Honesty about results").
-- Meeting the budget needs an architectural change (cache layer, LOD system, schema change, provider swap) → findings + options to a human/ADR.
+- Meeting the budget needs an architectural change (cache layer, schema change, provider swap) → findings + options to a human/ADR.
 - Budget looks wrong (unachievable on the low-tier device, or trivially loose) → propose a revision in doc 13; do not ignore it.
 - Optimisation would degrade output quality → explicit human trade-off.
 

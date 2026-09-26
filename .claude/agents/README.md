@@ -151,9 +151,8 @@ agent (see "Owned by no agent").
 - `general-purpose`: a self-contained change whose write set spans areas; it must stay disjoint from
   every running project agent and has no per-agent guard.
 - `claude-code-guide`: questions about Claude Code itself (hooks, settings, subagents).
-- The user-level pr-review agents (pr-correctness-reviewer and siblings under
-  ~/.claude/agents/pr-review/) belong to the global `github-pr-review` skill. For this repo prefer
-  `architecture-reviewer` and `security-privacy-reviewer`, which carry the repo invariants.
+- For review, prefer `architecture-reviewer` and `security-privacy-reviewer` over any user-level or
+  plugin reviewer: they carry the repo invariants.
 
 ## How to invoke
 

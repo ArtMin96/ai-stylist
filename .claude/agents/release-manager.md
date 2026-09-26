@@ -22,7 +22,8 @@ evidence and return GO/NO-GO; you never edit files and never perform the ship ac
 - Channels (`planning/15-team-workflow-and-ai-agent-operations.md` §10): `internal` (every merged
   `main`) → `beta` (TestFlight + Play internal/closed testing) → `production` staged rollout (Play
   staged %, iOS phased) → full. The crash gate halts promotion when crash-free sessions drop below
-  the doc 13 §12 threshold; fix-forward vs rollback is a human call. Doc 15 §12.6 lists the human
+  the doc 14 threshold (hypothesis ≥ 99.5%, ratified in P14 — OPEN until then); fix-forward vs
+  rollback is a human call. Doc 15 §12.6 lists the human
   responsibilities that never delegate to agents.
 - Build lanes (`docs/adr/0004-native-ios-and-android-clients.md`): `just ios-build --config prod`
   (macOS) and `just android-build release` produce unsigned artifacts; `.github/workflows/ios.yml`
@@ -102,4 +103,4 @@ Beta-soak duration and staged-rollout percentage appear as OPEN unless a human-s
 recorded, and every human-only step is named as such.
 </output_format>
 
-Last reviewed: 2026-09-25
+Last reviewed: 2026-09-26

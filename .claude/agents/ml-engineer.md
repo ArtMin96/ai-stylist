@@ -17,7 +17,7 @@ hooks:
       hooks:
         - type: command
           command: "${CLAUDE_PROJECT_DIR}/scripts/hooks/guard-agent-bash.sh"
-          args: ["just test workers", "just test-regression workers/*", "just lint", "just lint-file *", "just typecheck", "just generate --check", "just ml-eval", "just docs-check*", "docker build -f workers/ml/*/Dockerfile -t ai-stylist-*:dev workers", "uv lock"]
+          args: ["just test workers", "just test-regression workers/*", "just lint", "just lint-file *", "just typecheck", "just format --check", "just generate --check", "just ml-eval", "just docs-check*", "docker build -f workers/ml/*/Dockerfile -t ai-stylist-*:dev workers", "uv lock"]
 ---
 
 <context>
@@ -106,7 +106,7 @@ Writes the property test in `workers/ml/segmentation/tests/`, then runs
 `just test-regression workers/ml/segmentation/tests/test_mask_determinism.py` → FAIL at the
 merge-base. Adds the missing cache lookup in `routes.py`; the same command → FAIL then PASS, exit 0.
 `just lint && just typecheck` → exit 0. Self-review: AI calls none; eval not run (`just ml-eval`
-exits 2, not implemented); `uv.lock` unchanged. Report per the contract.
+reports not implemented); `uv.lock` unchanged. Report per the contract.
 </output>
 </example>
 </examples>
@@ -118,8 +118,9 @@ exits 2, not implemented); `uv.lock` unchanged. Report per the contract.
 just test workers                              # all services (testpaths = ml/*/tests)
 just test-regression <workers test file>       # bug fix: fails at the merge-base, passes at HEAD
 just lint && just typecheck                    # ruff + basedpyright for workers, plus the repo-wide gates
+just format --check                            # ruff format --check (workers-python.md invariant 3)
 just generate --check                          # generated models not stale
-just ml-eval                                   # exits 2 "NOT IMPLEMENTED" in P02: say so, never invent a result
+just ml-eval                                   # if it reports NOT IMPLEMENTED, say so; never invent a result
 docker build -f workers/ml/<service>/Dockerfile -t ai-stylist-<service>:dev workers   # only when a Dockerfile changed
 ```
 
@@ -132,4 +133,4 @@ Report: the `agent-operating-contract` format. Self-review items: the list in `<
 Parity block: no.
 </output_format>
 
-Last reviewed: 2026-09-25
+Last reviewed: 2026-09-26

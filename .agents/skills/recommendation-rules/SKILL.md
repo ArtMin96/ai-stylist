@@ -3,7 +3,7 @@ name: recommendation-rules
 description: Change the recommendation engine's hard constraints, soft constraints, candidate generation, scoring, tie-break rules, validation, or reason-code emission, or run its replay/simulation/eval suites after a rule or feedback change. Use for any change inside apps/api/src/modules/recommendation/, a scorer that consumes context facts or outfit types, a ruleset version bump, `just rec-replay`, `just rec-golden-update`, or a reported bad recommendation. Not for rendering the recommended outfit (the client apps), context providers or outfit mechanics that are not scoring (`backend-module`), the fashion-intel module or its trend-relevance scores (`fashion-intel-ingestion`), adding a reason code to the registry (`api-contract-change`), or displaying the reason code in the app (`ios-feature` / `android-feature`).
 metadata:
   modules: recommendation
-  last-reviewed: 2026-09-25
+  last-reviewed: 2026-09-26
   owner-agent: recommendation-engineer
 ---
 
@@ -13,7 +13,7 @@ metadata:
 
 - Adding or modifying a constraint, compatibility rule, scoring weight, tie-break, context-fact consumer, reason-code emission, feedback mapping, or ruleset version in `recommendation`.
 - A reported bad recommendation, an eval/replay metric regression, or a golden-fixture update request.
-- State on 2026-09-25: `apps/api/src/modules/recommendation/` is a P02 skeleton (empty `RecommendationModule`, an internal README, one smoke test). P09 is `NOT_STARTED`; no ruleset, trace, or scorer code exists. `just rec-replay`, `just rec-golden-update` and `just ml-eval` are stubs that exit 2.
+- State at last review (re-check `planning/PROGRESS.md` before relying on it): `apps/api/src/modules/recommendation/` is a P02 skeleton (empty `RecommendationModule`, an internal README, one smoke test). P09 is `NOT_STARTED`; no ruleset, trace, or scorer code exists. `just rec-replay`, `just rec-golden-update` and `just ml-eval` are stubs that exit 2.
 - Not this skill: context providers themselves (`backend-module` on `context`); `fashion-intel` and the relevance scores it exposes (`fashion-intel-ingestion`); rendering the result (the client apps); explanation display (`ios-feature` / `android-feature`); adding a reason code to the registry (`api-contract-change`, single-writer).
 
 ## Required reading

@@ -3,7 +3,7 @@ name: entitlements-billing
 description: Change subscription plans, entitlements, trials, weighted-credit metering, RevenueCat webhook handling, restore/reconciliation, or server-side paywall gating in the billing module (apps/api/src/modules/billing) — anything that decides who may use which capability or moves money through store billing. Use for a new entitlement or credit meter, a RevenueCat webhook, a trial/grace/expiry lifecycle edge case, the credit ledger, reconciliation, or gating logic at a point of use. Not for the paywall's visual UI — use `ios-feature` / `android-feature` once the entitlement contract exists; not for adding the entitlement name itself to the registry — use `api-contract-change`; not for a price/tier experiment — pricing is a product decision recorded as a doc 12 hypothesis, out of scope for this skill.
 metadata:
   modules: billing
-  last-reviewed: 2026-09-25
+  last-reviewed: 2026-09-26
   owner-agent: api-engineer
 ---
 
@@ -12,7 +12,7 @@ metadata:
 ## Trigger
 
 - Plans/tiers, entitlement resolution or checks, trial logic, weighted-credit metering (DEC-34), the credit ledger, RevenueCat webhook handling, restore/reconciliation, grace/expiry, or server-side gating at a point of use.
-- State on 2026-09-25: `apps/api/src/modules/billing/` is a P02 skeleton; P13 is `NOT_STARTED`. The entitlement names already exist in `packages/shared-kernel/registry/entitlements.json` (e.g. `closet.max_items`, `credits.monthly`, `credits.topup`).
+- State at last review (re-check `planning/PROGRESS.md` before relying on it): `apps/api/src/modules/billing/` is a P02 skeleton; P13 is `NOT_STARTED`. The entitlement names already exist in `packages/shared-kernel/registry/entitlements.json` (e.g. `closet.max_items`, `credits.monthly`, `credits.topup`).
 - Not this skill: PostHog rollout flags (doc 15 §10 — flags are not entitlements); paywall visuals (`ios-feature` / `android-feature`); a price or tier change (doc 12 hypothesis, product decision — this skill implements the resulting entitlement, never the price).
 
 ## Required reading
@@ -57,7 +57,7 @@ Store sandbox test accounts are not provisioned: the staging secrets file (`stag
 
 ## Output
 
-- PR with lifecycle-matrix evidence and registry/contract references; for any price/tier change, the doc 12 hypothesis label and the updated unit-economics note. Never present a price as validated. Report in the `agent-operating-contract` format.
+- PR with lifecycle-matrix evidence and registry/contract references; when the change implements a doc 12 tier hypothesis, cite its hypothesis label. Never present a price as validated. Report in the `agent-operating-contract` format.
 
 Done checklist: lifecycle matrix green · webhook duplicate/out-of-order tests green · every name comes from the registry, none hard-coded · no RevenueCat SDK in `modules/billing/**` · `security-privacy-review` done for webhook handlers · `PROGRESS.md` line suggested.
 
@@ -65,7 +65,7 @@ Done checklist: lifecycle matrix green · webhook duplicate/out-of-order tests g
 
 - A new entitlement name or credit meter → `packages/shared-kernel/registry/entitlements.json` via `api-contract-change` (single-writer) first; stop until it lands.
 - The task needs `plans`, `entitlement_grants`, `billing_events` or the ledger table → no module `schema.ts` exists yet; route to `db-migration`, which has its own first-table stop.
-- Webhook fan-out (`entitlements.changed` on the outbox) or a reconciliation job needs the outbox relay / pg-boss → P02-T08 is `NOT_STARTED`; stop and name it.
+- Webhook fan-out (`entitlements.changed` on the outbox) or a reconciliation job needs the outbox relay / pg-boss → unless P02-T08 is `DONE` in `planning/phases/P02-repo-foundations-and-ci.md`, stop and name it.
 - A module wants to read billing state but has no `billing` edge in `ALLOWED_EDGES` (`tools/depcruise/rules.cjs`; only `admin` and `assistant` import `billing`) → stop; gating at that point of use needs a design decision, never a table read.
 - Any path that could double-charge, strand a paying user, or delete data on downgrade → stop; human review mandatory.
 - Apple/Google policy ambiguity → doc 16 legal register; do not guess.

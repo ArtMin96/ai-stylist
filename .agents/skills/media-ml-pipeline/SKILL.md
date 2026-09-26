@@ -3,7 +3,7 @@ name: media-ml-pipeline
 description: Build or change the asset-processing and AI pipeline — pg-boss job handlers under `apps/api/src/jobs/`, Python FastAPI workers under `workers/ml/<service>/`, segmentation/classification/embedding/try-on steps, provider calls (fal.ai etc.), derived-asset caching and lineage, idempotency/retry/DLQ behaviour, the Python codegen script `tools/codegen/gen-python.sh`, and model evals with `just ml-eval`. Use for "pg-boss job", "workers/ml", "segmentation", "classification", "embedding", "try-on", "fal.ai", "lineage", "provenance", "DLQ", "uv lockfile", or a pipeline eval. Not for choosing a model/provider in the first place (ADR + `planning/10-ai-usage-cost-and-evaluation.md`); not for the `media` module's state machine or public service — use `backend-module`; not for on-device ML — use `ios-feature` / `android-feature`; not for 3D asset formats (client-side 3D is deferred, no owner until it resumes).
 metadata:
   modules:
-  last-reviewed: 2026-09-25
+  last-reviewed: 2026-09-26
   owner-agent: ml-engineer,platform-engineer
 ---
 
@@ -13,7 +13,7 @@ metadata:
 
 - A pg-boss job handler, a `workers/ml/<service>/` endpoint, a provider call (fal.ai etc.), derived-asset generation, caching/lineage, an eval suite, the worker Docker image, or `tools/codegen/gen-python.sh`.
 - Executing agents: `ml-engineer` owns `workers/**` (except the generated `workers/ml/generated/`) and `tools/codegen/gen-python.sh`; `platform-engineer` owns `apps/api/src/jobs/**` and the provider adapters in `apps/api/src/platform/`; the `media` module's state machine and public service belong to `api-engineer` under `backend-module`.
-- State on 2026-09-25: the only worker is the segmentation echo stub; no job handler exists (P02-T08 `NOT_STARTED`, `apps/api/src/jobs/README.md`); `just ml-eval` is a stub that exits 2 (P02-T17).
+- State at last review (re-check `planning/PROGRESS.md` before relying on it): the only worker is the segmentation echo stub; no job handler exists (P02-T08 `NOT_STARTED`, `apps/api/src/jobs/README.md`); `just ml-eval` is a stub that exits 2 (P02-T17).
 - Not this skill: choosing a model/provider (ADR + doc 10 first); on-device ML (`ios-feature` / `android-feature`); 3D asset formats and render output; dashboards/alerts on pipeline metrics (`observability-analytics`).
 
 ## Required reading
@@ -75,7 +75,7 @@ Done checklist: idempotency + retry tests green · provenance fields set · prov
 
 ## Stop / escalation
 
-- A job handler, retry/DLQ behaviour, or worker dispatch needs pg-boss or the outbox relay → P02-T08 is `NOT_STARTED`; stop at the worker side and name T08.
+- A job handler, retry/DLQ behaviour, or worker dispatch needs pg-boss or the outbox relay → unless P02-T08 is `DONE` in `planning/phases/P02-repo-foundations-and-ci.md`, stop at the worker side and name T08.
 - A model call without a doc 10 entry, an eval below threshold, or cost above budget → stop; shipping behind a gate is a human decision.
 - A provider not on the doc 10/11 approved list → stop; `security-privacy-review` first.
 - Reprocessing would destroy user corrections → stop; corrections survive model upgrades (doc 07).

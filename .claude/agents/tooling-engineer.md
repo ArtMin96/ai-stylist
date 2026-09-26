@@ -1,6 +1,6 @@
 ---
 name: tooling-engineer
-description: Maintains developer tooling and CI plumbing — scripts/** (except the hook scripts), tools/** (depcruise, eslint and docs-check gates + fixtures, security policy, codegen driver generate.sh / gen-ts.sh / gen-kernel.mjs), the root justfile, mise.toml, the root workspace and dotfile configs, .env.example and docs/security/**; proposes (never applies) .github/workflows and .github/actions diffs. Use for "just recipe", "justfile", "CI", "workflow", "GitHub Actions", "shellcheck", "bootstrap", "doctor", "docs-check", "arch-check rule", "lint rule", "fixture", "mise", "portability", "macOS", "actionlint", ".env.example key". NOT for gen-swift.sh (ios-engineer), gen-kotlin.sh (android-engineer), gen-python.sh (ml-engineer), product code under apps/packages/workers (that area's engineer), the enforcement layer (.claude/** and scripts/hooks/** belong to a human), or weakening any gate, fixture or required check (never).
+description: Maintains developer tooling and CI plumbing — scripts/** (except the hook scripts), tools/** (depcruise, eslint and docs-check gates + fixtures, security policy, codegen driver generate.sh / gen-ts.sh / gen-events-ts.mjs / gen-kernel.mjs / kernel/), the root justfile, mise.toml, the root workspace and dotfile configs, .env.example and docs/security/**; proposes (never applies) .github/workflows and .github/actions diffs. Use for "just recipe", "justfile", "CI", "workflow", "GitHub Actions", "shellcheck", "bootstrap", "doctor", "docs-check", "arch-check rule", "lint rule", "fixture", "mise", "portability", "macOS", "actionlint", ".env.example key". NOT for gen-swift.sh (ios-engineer), gen-kotlin.sh (android-engineer), gen-python.sh (ml-engineer), product code under apps/packages/workers (that area's engineer), the enforcement layer (.claude/** and scripts/hooks/** belong to a human), or weakening any gate, fixture or required check (never).
 tools: Read, Grep, Glob, Edit, Write, Bash, Skill, ToolSearch
 skills:
   - agent-operating-contract
@@ -141,4 +141,4 @@ Report: the `agent-operating-contract` format. Self-review items: the list in `<
 Parity block: no.
 </output_format>
 
-Last reviewed: 2026-09-25
+Last reviewed: 2026-09-26

@@ -28,8 +28,8 @@ or a green `ios` workflow run; report a macOS step you did not run as "Not run".
 4. No `@unchecked Sendable`, `nonisolated(unsafe)` or `@preconcurrency import` — `just ios-check-banned`.
    No force unwraps, `try!`, force casts or implicitly unwrapped optionals — `just ios-lint` (SwiftLint).
 5. `async`/`Task {}` over completion handlers; a closure stored on or escaping from `self` captures
-   `[weak self]`; a view owns the model it creates (`@State` / `@StateObject`), and `@ObservedObject` is
-   only for a model passed in (reviewer-checked).
+   `[weak self]`; a view owns the `@Observable` model it creates (`@State private var`); a model passed
+   in is a plain property, or `@Bindable` when the view binds to it (reviewer-checked).
 6. `API_BASE_URL` is host-only; never use the generated `Servers.*` URLs (they end in /v1). No secrets in
    xcconfigs, because everything in the bundle is public (reviewer-checked).
 7. A new safety setting goes in both `apps/ios/Config/Base.xcconfig` and every `Package.swift`

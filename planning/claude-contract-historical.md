@@ -8,7 +8,7 @@
 > It also describes the superseded React Native + Expo stack (`apps/mobile`, Filament via RN): since
 > 2026-09-22 the clients are native Swift/SwiftUI and Kotlin/Compose ([ADR-0004](../docs/adr/0004-native-ios-and-android-clients.md)).
 
-This file is the permanent operating contract for every AI agent session in this repository. Phase-specific detail lives in `planning/phases/`; module detail lives in module contracts. Rules here are permanent and binding.
+This was the planning-era operating contract. It is superseded by the root `CLAUDE.md` and binds nothing. (It was renamed from `planning/CLAUDE.md` so Claude Code no longer auto-loads it as a nested instruction file.)
 
 ## Source-of-truth priority
 

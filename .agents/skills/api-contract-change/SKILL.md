@@ -3,7 +3,7 @@ name: api-contract-change
 description: Change the OpenAPI 3.1 API contract, event schemas, the analytics taxonomy, or a shared-kernel registry in packages/contracts and packages/shared-kernel, then regenerate every client with `just generate`. Use for any new or changed endpoint, request/response schema, operationId, event envelope/payload, RFC 9457 error shape, a reason code, entitlement name, credit meter or unit (`packages/shared-kernel/registry/*.json`), an analytics event name, or a shared enum that crosses the iOS / Android / API / workers boundary; a failing `just generate --check`; a spectral lint error; or an oasdiff breaking-change report. Not for implementing the behavior behind an existing endpoint — use `backend-module` instead. Not for a database table or migration — use `db-migration` instead. Not for editing a codegen script in tools/codegen — that belongs to its owner (see Overlap).
 metadata:
   modules: shared-kernel
-  last-reviewed: 2026-09-25
+  last-reviewed: 2026-09-26
   owner-agent: contracts-engineer
 ---
 
@@ -60,13 +60,13 @@ just lint                             # eslint + spectral (fail on warn) incl. p
 just typecheck                        # TS workspaces + workers compile against the new output
 just test                             # full run: covers packages/contracts/tests and packages/shared-kernel/tests (no scoped recipe)
 just test <each consuming module>     # e.g. just test closet
-just test ios                         # compiles the generated Swift client (macOS + Swift toolchain)
+just test ios                         # compiles the generated Swift client (swift on PATH or Docker; macOS or Linux)
 just test android                     # compiles the generated Kotlin client (Android SDK)
 just arch-check
 just ci-parity                        # before opening the PR
 ```
 
-oasdiff runs inside `just lint` only when `OASDIFF_BASE` points at a base bundle, and no recipe produces one. Write `oasdiff: not run (no base bundle)` unless a human supplies one; the contracts job in `.github/workflows/pr-gate.yml` is the authoritative breaking-change check. If a native toolchain is missing, write `Not run: just test ios — <reason>`; never claim the Swift or Kotlin client compiles without that output.
+oasdiff runs inside `just lint` only when `OASDIFF_BASE` is set. The contracts job in `.github/workflows/pr-gate.yml` is the authoritative breaking-change check: it runs `scripts/ci/contracts-breaking.sh` against the PR base. If you did not run oasdiff locally, write `oasdiff: not run — <reason>`. If a native toolchain is missing, write `Not run: just test ios — <reason>`; never claim the Swift or Kotlin client compiles without that output.
 
 ## Output
 

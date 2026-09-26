@@ -7,7 +7,7 @@
 # macos-26 (arm64) has no Docker (actions/runner-images macos-26-arm64 README, checked
 # 2026-09-26): `just doctor` reports the docker check as failed there (its output goes to the job
 # summary, non-blocking), and `just test` runs with SKIP_DOCKER_TESTS=1, which leaves out the
-# apps/api `migrations` vitest project (Testcontainers). ubuntu-latest has Docker and runs the
+# apps/api `migrations` and `platform-docker` vitest projects (Testcontainers). ubuntu-latest has Docker and runs the
 # full suite. macOS minutes bill at 10x on a private repo: pull_request runs only for tooling
 # paths; otherwise weekly + manual.
 #
@@ -146,7 +146,7 @@ jobs:
           if docker info >/dev/null 2>&1; then
             just test
           else
-            echo "::notice::no Docker daemon on ${{ matrix.os }}: apps/api 'migrations' project (Testcontainers) skipped via SKIP_DOCKER_TESTS=1"
+            echo "::notice::no Docker daemon on ${{ matrix.os }}: apps/api 'migrations' and 'platform-docker' projects (Testcontainers) skipped via SKIP_DOCKER_TESTS=1"
             SKIP_DOCKER_TESTS=1 just test
           fi
       - name: Report · Job duration

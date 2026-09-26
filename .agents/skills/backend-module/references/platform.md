@@ -21,7 +21,7 @@ Infrastructure adapters that implement the ports declared by domain modules: sto
 - `apps/api/src/platform/version.controller.ts`, `apps/api/src/platform/health.controller.ts` — thin controller siblings.
 - `apps/api/src/platform/problem.filter.ts` — RFC 9457 mapping for every thrown error.
 - `apps/api/src/platform/logger.ts` — the only sanctioned logger; allowlist serialization + forbidden-key denylist (doc 11 §8).
-- `apps/api/src/platform/outbox/README.md` — placeholder: the outbox relay is P02-T08 (`NOT_STARTED`).
+- `apps/api/src/platform/outbox/README.md` — the outbox relay (P02-T08).
 - `apps/api/src/platform/tests/` — this module's tests (`*.test.ts` only inside a tests/ directory). pg-boss job-handler tests go in `apps/api/src/jobs/tests/<handler>.test.ts`, created with the first handler.
 
 ## Owned data
@@ -34,7 +34,7 @@ None yet.
 
 ## Allowed / forbidden edges
 
-Allowed: `packages/shared-kernel` and provider SDKs only. Adapters are bound to ports at `apps/api/src/main.ts` / `app.module.ts` and, once P02-T08 lands it, the jobs composition root (see `apps/api/src/jobs/README.md`). Forbidden: `apps/api/src/modules/**` entirely (leaf-only); any edge that closes a cycle (`no-cycles`); creating utils/, helpers/, or common/ directories (`no-utils-dirs`); importing `prototype/**` (`prototype-unimportable`).
+Allowed: `packages/shared-kernel` and provider SDKs only. Adapters are bound to ports at `apps/api/src/main.ts` / `app.module.ts` and, the jobs composition root (see `apps/api/src/jobs/README.md`). Forbidden: `apps/api/src/modules/**` entirely (leaf-only); any edge that closes a cycle (`no-cycles`); creating utils/, helpers/, or common/ directories (`no-utils-dirs`); importing `prototype/**` (`prototype-unimportable`).
 
 ## Test command
 
@@ -50,4 +50,4 @@ Status: skeleton (P02). Unlike the other 7 modules this skill covers, `platform`
 
 - A domain module wants to import a provider SDK directly instead of getting an adapter here — stop, that is `domain-no-provider-sdk`; add the port + adapter instead.
 - A new adapter ships without a corresponding fake in `packages/test-support/src/` (`api-engineer` writes it, copying `packages/test-support/src/clock.ts`) — every domain module's tests that depend on the port lose their seam; report the fake you need before merging.
-- The adapter needs pg-boss, the outbox relay, or R2 — P02-T08 and P02-T13 are `NOT_STARTED`; stop and sequence after them.
+- The adapter needs R2 — P02-T13 is `NOT_STARTED`; stop and sequence after it.

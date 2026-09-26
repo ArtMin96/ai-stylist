@@ -53,22 +53,39 @@ dev-api *args:
     docker compose up -d --wait postgres
     pnpm --filter @ai-stylist/api dev "$@"
 
-# Segmentation worker (FastAPI, uvicorn --reload on :8001); TODO(T08): pg-boss handlers run in the API process; starting the segmentation worker only
+# Compose Postgres + pg-boss jobs process (apps/api src/jobs/main.ts, tsx watch; needs `just db-migrate`) in the background + segmentation worker (uvicorn --reload on :8001; args go to uvicorn)
 dev-workers *args:
-    @echo "TODO(T08): pg-boss handlers run in the API process; starting the segmentation worker only"
+    #!/usr/bin/env bash
+    set -euo pipefail
+    docker compose up -d --wait postgres
+    # Non-interactive bash starts background jobs with SIGINT ignored, so Ctrl-C alone would
+    # orphan the jobs process: stop it with SIGTERM (graceful in main.ts) whenever this exits.
+    jobs_pid=''
+    stop_jobs() {
+        if [[ -n "$jobs_pid" ]] && kill -0 "$jobs_pid" 2>/dev/null; then
+            kill -TERM "$jobs_pid" 2>/dev/null || true
+            wait "$jobs_pid" 2>/dev/null || true
+        fi
+    }
+    trap stop_jobs EXIT
+    trap 'exit 130' INT
+    trap 'exit 143' TERM
+    pnpm --filter @ai-stylist/api run dev:jobs &
+    jobs_pid=$!
     uv run --project workers/ml/segmentation uvicorn ai_stylist_segmentation.main:app --reload --port 8001 "$@"
 
 # --- quality gates (* = part of ci-parity) -------------------------------------------
 
-# * Run tests: full suite via turbo + the native lanes, or one module's tests/ dir (`just test recommendation`; `just test ios` / `just test android` = that app's unit tests; `just test secrets` = the sops+age shell suite; `just test tooling` = the scripts/test shell suites: bootstrap/doctor, contracts-breaking, test-regression); SKIP_DOCKER_TESTS=1 leaves out the Testcontainers `migrations` project (runners without Docker only)
+# * Run tests: full suite via turbo + the native lanes, or one module's tests/ dir (`just test recommendation`; `just test ios` / `just test android` = that app's unit tests; `just test secrets` = the sops+age shell suite; `just test tooling` = the scripts/test shell suites: bootstrap/doctor, contracts-breaking, test-regression; `just test platform` = the `api` + `platform-docker` vitest projects); SKIP_DOCKER_TESTS=1 leaves out the Testcontainers `migrations` and `platform-docker` projects (runners without Docker only)
 test module='':
     #!/usr/bin/env bash
     set -euo pipefail
     if [[ "${SKIP_DOCKER_TESTS:-}" == "1" && -z "{{module}}" ]]; then
-        # apps/api/vitest.config.ts has two projects: `api` and `migrations` (Testcontainers; it
-        # FAILS without Docker, never skips). Run every other workspace through turbo, then only
-        # the `api` project. Docker-less hosts only (portability.yml on macos-26): never in pr-gate.
-        echo "SKIP_DOCKER_TESTS=1: skipping apps/api vitest project 'migrations' (Testcontainers needs Docker)" >&2
+        # apps/api/vitest.config.ts has three projects: `api`, plus the Testcontainers projects
+        # `migrations` and `platform-docker` (each FAILS without Docker, never skips). Run every
+        # other workspace through turbo, then only the `api` project. Docker-less hosts only
+        # (portability.yml on macos-26): never in pr-gate.
+        echo "SKIP_DOCKER_TESTS=1: skipping apps/api vitest projects 'migrations' and 'platform-docker' (Testcontainers needs Docker)" >&2
         pnpm turbo run test --filter='!@ai-stylist/api'
         pnpm --filter @ai-stylist/api exec vitest run --project api
         uv run --project workers pytest workers -q
@@ -94,6 +111,14 @@ test module='':
         fi
         if [[ "$dir" == "." ]]; then
             pnpm --filter @ai-stylist/api test
+        elif [[ "{{module}}" == "platform" ]]; then
+            # platform adapters also have Testcontainers tests (`platform-docker`: *.docker.test.ts).
+            if [[ "${SKIP_DOCKER_TESTS:-}" == "1" ]]; then
+                echo "SKIP_DOCKER_TESTS=1: skipping apps/api vitest project 'platform-docker' (Testcontainers needs Docker)" >&2
+                pnpm --filter @ai-stylist/api exec vitest run --project api "$dir"
+            else
+                pnpm --filter @ai-stylist/api exec vitest run --project api --project platform-docker "$dir"
+            fi
         else
             pnpm --filter @ai-stylist/api exec vitest run --project api "$dir"
         fi

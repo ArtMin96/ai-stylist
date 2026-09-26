@@ -13,13 +13,13 @@ metadata:
 
 - A pg-boss job handler, a `workers/ml/<service>/` endpoint, a provider call (fal.ai etc.), derived-asset generation, caching/lineage, an eval suite, the worker Docker image, or `tools/codegen/gen-python.sh`.
 - Executing agents: `ml-engineer` owns `workers/**` (except the generated `workers/ml/generated/`) and `tools/codegen/gen-python.sh`; `platform-engineer` owns `apps/api/src/jobs/**` and the provider adapters in `apps/api/src/platform/`; the `media` module's state machine and public service belong to `api-engineer` under `backend-module`.
-- State at last review (re-check `planning/PROGRESS.md` before relying on it): the only worker is the segmentation echo stub; no job handler exists (P02-T08 `NOT_STARTED`, `apps/api/src/jobs/README.md`); `just ml-eval` is a stub that exits 2 (P02-T17).
+- State at last review (re-check `planning/PROGRESS.md` before relying on it): the only worker is the segmentation echo stub; the only job handler is the `demo.outbox-flow` handler (P02-T08, `apps/api/src/jobs/README.md`); `just ml-eval` is a stub that exits 2 (P02-T17).
 - Not this skill: choosing a model/provider (ADR + doc 10 first); on-device ML (`ios-feature` / `android-feature`); 3D asset formats and render output; dashboards/alerts on pipeline metrics (`observability-analytics`).
 
 ## Required reading
 
 1. `planning/10-ai-usage-cost-and-evaluation.md` — AI/non-AI table (§1), per-feature entries (§2.1–§2.5), cost guardrails (§6), approved providers; `planning/07-3d-avatar-and-garment-pipeline.md` — stages, states, lineage/provenance.
-2. `docs/modules/media.md`; `planning/04-architecture.md` §9 (outbox → pg-boss: `singletonKey = event.id`, retry, DLQ).
+2. `docs/modules/media.md`; `planning/04-architecture.md` §9 (outbox → pg-boss: `idempotencyKey = event.id` → job id = UUIDv5 of it, DEC-57; retry, DLQ).
 3. `apps/api/src/jobs/README.md` and `apps/api/src/platform/outbox/README.md` — what exists today (placeholders), not what you assume.
 4. `workers/README.md`, `workers/pyproject.toml` (uv workspace: members `ml/*`, one shared `workers/uv.lock`), `workers/ml/generated/README.md` (Pydantic models generated from `packages/contracts/events/*.json` by `tools/codegen/gen-python.sh`; never hand-edit).
 5. `planning/11-security-privacy-and-compliance.md` §6 and §8 — data classes and log redaction; face/body media go only to approved providers.
@@ -46,7 +46,7 @@ metadata:
    | Tests (httpx ASGI client, hypothesis, redaction)                      | `workers/ml/segmentation/tests/test_segment.py`, `workers/ml/segmentation/tests/test_redaction.py`, `workers/ml/segmentation/tests/conftest.py` |
    | Image                                                                 | `workers/ml/segmentation/Dockerfile` (built from the workspace root)                                                                            |
 
-   API side: no job handler exists to copy. Provider adapters copy `apps/api/src/platform/pg-health-probe.ts` (implements a port declared by the module); job-handler tests go in `apps/api/src/jobs/tests/<handler>.test.ts`.
+   API side: copy `apps/api/src/jobs/demo-outbox-flow.ts` + `apps/api/src/jobs/tests/demo-outbox-flow.test.ts`. Provider adapters copy `apps/api/src/platform/pg-health-probe.ts` (implements a port declared by the module); job-handler tests go in `apps/api/src/jobs/tests/<handler>.test.ts`.
 
 4. Invariants: jobs idempotent on input hash + step version; cache before call and store lineage (source asset, model + version, params, cost, confidence); provenance marker + confidence on every generated asset; a real photo is never overwritten; bounded retries with backoff, a DLQ state, and a user-visible failed/retry state; EXIF stripped at ingest; face/body media only to approved providers; no sensitive data in logs or payload dumps.
 5. Job handlers are thin: they import public module APIs only and bind provider clients; provider SDKs stay in `apps/api/src/platform/` or the worker, never in `modules/**`.
@@ -65,7 +65,7 @@ just arch-check
 just ci-parity                       # before PR
 ```
 
-`just dev-workers` starts a long-running dev server (uvicorn on :8001); it is not a check — do not run it as one. Report eval metrics and estimated cost delta per 1k items as before → after real numbers only.
+`just dev-workers` starts long-running dev servers (jobs process + uvicorn on :8001); it is not a check — do not run it as one. Report eval metrics and estimated cost delta per 1k items as before → after real numbers only.
 
 ## Output
 

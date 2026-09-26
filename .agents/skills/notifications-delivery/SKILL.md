@@ -21,7 +21,7 @@ metadata:
 1. `docs/modules/notifications.md` — public interface (skeleton), planned `notification_prefs` and `deliveries`, invariants, the ban on importing an FCM/APNs SDK.
 2. `planning/phases/P09-recommendation-engine-v1.md` row P09-T16 — prefs, quiet hours, timezone scheduling, the FCM/APNs port, the daily-outfit push gated on context freshness.
 3. `planning/04-architecture.md` §4.2 (adapters translate, modules decide; a module writes only its own tables) and §9 (outbox → pg-boss semantics).
-4. `apps/api/src/platform/outbox/README.md` and `apps/api/src/jobs/README.md` — the relay and pg-boss are P02-T08 placeholders; delivery cannot run until they exist.
+4. `apps/api/src/platform/outbox/README.md` and `apps/api/src/jobs/README.md` — the relay and pg-boss jobs (P02-T08, landed); copy the job-handler shape from `apps/api/src/jobs/demo-outbox-flow.ts`.
 5. `apps/api/src/modules/notifications/index.ts` and `apps/api/src/modules/identity/index.ts` — `identity` is the only module `notifications` may import (`ALLOWED_EDGES` in `tools/depcruise/rules.cjs`).
 
 ## Workflow
@@ -37,7 +37,7 @@ metadata:
 3. Copy the structure from the `backend-module` sibling table (`.agents/skills/backend-module/SKILL.md` Workflow step 4). The ones this module needs first: pure rule + unit test with fixed time → `apps/api/src/platform/tests/storage.port.test.ts` with `fakeClock` from `packages/test-support/src/clock.ts`; port type + token → `apps/api/src/platform/ports/health-probe.port.ts` (shape only); adapter → `apps/api/src/platform/pg-health-probe.ts`; binding → `apps/api/src/app.module.ts`.
 4. Quiet hours and timezone scheduling are pure functions of (prefs, `now`, user timezone). Pass `now` in as a parameter so every boundary is unit-testable: just before, at, and just after each window edge, plus DST transitions. Modules cannot import the platform `Clock` (`modules-not-platform`).
 5. FCM/APNs: declare the push port in this module's `index.ts`; `platform-engineer` implements it in `apps/api/src/platform/` (`firebase-admin` is a listed provider SDK, never imported in `modules/**`); `api-engineer` writes the fake in `packages/test-support/src/` and binds it in `apps/api/src/app.module.ts`.
-6. Delivery dedup keys off the outbox event id (doc 04 §9: the relay enqueues with `singletonKey = event.id`), not a locally invented dedup table, so relay redelivery is safe by construction.
+6. Delivery dedup keys off the outbox event id (doc 04 §9, DEC-57: the relay enqueues with `idempotencyKey = event.id`, job id = UUIDv5 of it; durable effect dedup uses `PgIdempotencyGuard` on `platform_idempotency_keys`), not a locally invented dedup table, so relay redelivery is safe by construction.
 7. Receipts (sent/delivered/failed/opted-out) live on this module's own `deliveries` table; other modules read delivery history through this module's public API.
 8. Tests in `apps/api/src/modules/notifications/tests/`: quiet-hours boundary matrix, opt-out short-circuit before any port call, port failure/timeout, and redelivery of the same event not double-sending.
 

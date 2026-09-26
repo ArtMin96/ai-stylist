@@ -13,7 +13,21 @@ export default defineConfig({
         test: {
           name: 'api',
           include: ['src/**/tests/**/*.test.ts', 'tests/**/*.test.ts'],
-          exclude: ['tests/migrations/**'],
+          exclude: [
+            'tests/migrations/**',
+            'src/platform/tests/**/*.docker.test.ts',
+            'src/jobs/tests/**/*.docker.test.ts',
+          ],
+        },
+      },
+      {
+        // Platform adapters and job handlers against a real Postgres (Testcontainers: pg-boss
+        // queue, outbox relay). Same rule as `migrations`: it FAILS without Docker, never skips.
+        test: {
+          name: 'platform-docker',
+          include: ['src/platform/tests/**/*.docker.test.ts', 'src/jobs/tests/**/*.docker.test.ts'],
+          testTimeout: 180_000,
+          hookTimeout: 180_000,
         },
       },
       {

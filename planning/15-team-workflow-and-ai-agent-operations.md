@@ -101,7 +101,7 @@ Both scripts live in `scripts/` as readable, commented bash (or TS via `zx` if b
 | `just bootstrap` | Full environment setup (§4), idempotent |
 | `just doctor` | Environment + repo health check (§4) |
 | `just dev-api` | Compose stack (Postgres+pgvector) + NestJS API in watch mode |
-| `just dev-workers` | Python ML workers locally (pg-boss job handlers run inside `just dev-api` or a local `jobs` process — no separate job dev server) |
+| `just dev-workers` | Compose Postgres + the pg-boss `jobs` process (apps/api `src/jobs/main.ts`, tsx watch; needs `just db-migrate`) + the Python segmentation worker (uvicorn on :8001); the outbox relay runs inside `just dev-api` |
 | `just test <module>` | Scoped: one module's `tests/` dir (e.g. `just test recommendation`); `ios`, `android`, `workers`, `secrets`, `platform`, `api` route to their own suites instead of a `modules/<name>/tests` dir (`ios` = `ios-test-packages`, `android` = `android-test`); the full run includes the native unit tests |
 | `just test` | Full suite (all modules + packages), as CI PR gate runs it |
 | `just test-regression <file>` | Prove a regression test fails at the merge-base and passes at HEAD — the structural form of CLAUDE.md's "regression test fails before the fix" |

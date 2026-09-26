@@ -80,3 +80,46 @@ export {
   clampTtl,
 } from './ports/storage.port.js';
 export { PgHealthProbe } from './pg-health-probe.js';
+export {
+  type BackoffPolicy,
+  CircuitBreaker,
+  type CircuitBreakerOptions,
+  CircuitOpenError,
+  type CircuitState,
+  type RetryOptions,
+  TimeoutError,
+  backoffDelayMs,
+  retry,
+  withTimeout,
+} from './resilience/index.js';
+export {
+  PgBossQueue,
+  deadLetterQueueName,
+  type EnqueueOptions,
+  type EnqueueResult,
+  type JobHandler,
+  type PgBossQueueConfig,
+  type QueueDefinition,
+  type QueueJob,
+} from './queue/pg-boss-queue.js';
+export { PGBOSS_SCHEMA_VERSION, pgBossConstructionSql } from './queue/pg-boss-schema.js';
+export { OUTBOX_WRITER, type OutboxWriter } from './ports/outbox-writer.port.js';
+export { PgOutboxWriter } from './outbox/pg-outbox-writer.js';
+export { markOutboxFailed } from './outbox/outbox-dead-letter.js';
+export {
+  MAX_OUTBOX_BATCH_SIZE,
+  OutboxRelay,
+  type OutboxDispatchQueue,
+  type OutboxEnvelope,
+  type OutboxPollResult,
+  type OutboxRelayConfig,
+  type OutboxRelaySettings,
+} from './outbox/outbox-relay.js';
+export {
+  IdempotencyKeyBusyError,
+  IdempotencyKeyConflictError,
+  PgIdempotencyGuard,
+  type IdempotentEffectRequest,
+  type IdempotentEffectResult,
+  type PgIdempotencyGuardOptions,
+} from './idempotency/pg-idempotency-guard.js';

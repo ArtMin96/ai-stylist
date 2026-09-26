@@ -23,7 +23,8 @@ Doc 04 §9.1 step 2 and §9.2. Each poll is one transaction:
 2. For each row, enqueue the stored envelope on the mapped pg-boss queue via
    `PgBossQueue.send(queue, envelope, { idempotencyKey: event.id })` (plus `userId` when the
    injected extractor returns one), then set `status = 'dispatched'`, `dispatched_at = now()`.
-   `enqueued: false` (the job already exists) also counts as dispatched.
+   `enqueued: false` (the job already exists, or its user was cancelled with
+   `PgBossQueue.cancelUser` and the queue refused it) also counts as dispatched.
 3. A failed send (queue error, timeout, unrouted type, non-object payload) sets `attempts + 1`,
    `next_attempt_at = now() + backoffDelayMs(attempts, backoff)` (`../resilience`) and
    `last_error`; the `maxAttempts`-th failure sets `status = 'failed'` instead, left for the DLQ

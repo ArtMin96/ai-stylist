@@ -1,5 +1,6 @@
 // pg-boss v12 adapter (doc 04 §9, DEC-41): lifecycle, queue setup with bounded retries + a
-// dead-letter queue, idempotent enqueue, workers, and per-user cancellation (doc 06 §8 step 4).
+// dead-letter queue, idempotent enqueue, workers, and per-user cancellation, including the
+// deletion-shaped `cancelUser` that refuses a user's later work (doc 06 §8 step 4).
 // Translation only: which queue an event maps to, and what a handler does, are decided by the
 // callers (outbox relay, `apps/api/src/jobs/`). Logs carry job id, queue name and attempt — never
 // job data.
@@ -41,6 +42,12 @@ export type PgBossQueueConfig = {
   readonly pollingIntervalSeconds?: number;
   /** Graceful stop: how long `stop()` waits for active jobs, ms. Default 30 000. */
   readonly stopTimeoutMs?: number;
+  /**
+   * How often this instance's supervisor looks for `active` jobs past their `expireInSeconds`
+   * (a worker that died mid-job) and fails them into retry, seconds (>= 1). Sets pg-boss
+   * `superviseIntervalSeconds` and `monitorIntervalSeconds`. Default 60 (pg-boss default).
+   */
+  readonly superviseIntervalSeconds?: number;
 };
 
 export type EnqueueOptions = {
@@ -52,7 +59,10 @@ export type EnqueueOptions = {
 
 export type EnqueueResult = {
   readonly jobId: string;
-  /** false when a job with this idempotency key already exists on the queue (nothing inserted). */
+  /**
+   * false when nothing was inserted: a job with this idempotency key already exists on the queue,
+   * or `userId` was cancelled with `cancelUser` (its work is refused).
+   */
   readonly enqueued: boolean;
 };
 
@@ -72,8 +82,22 @@ export type JobHandler = (job: QueueJob) => Promise<void>;
 /** Upper bound on ids per `cancel()` call. */
 const CANCEL_CHUNK_SIZE = 100;
 
+/**
+ * Internal queue holding one never-worked job per user cancelled with `cancelUser`: the durable
+ * "refuse this user's work" marker every `PgBossQueue` instance (API, relay, jobs process) reads.
+ * pg-boss deletes a marker after its default created-job retention (14 days).
+ */
+export const CANCELLED_USERS_QUEUE = 'platform.cancelled-users';
+
+/** Job states a cancellation can still stop (pg-boss `cancel` only changes these). */
+const UNFINISHED_STATES: ReadonlySet<string> = new Set(['created', 'retry', 'active']);
+
 export function deadLetterQueueName(queue: string): string {
   return `${queue}.dlq`;
+}
+
+function cancelledUserMarkerId(userId: string): string {
+  return jobIdForKey(`cancelled-user:${userId}`);
 }
 
 export class PgBossQueue {
@@ -89,8 +113,12 @@ export class PgBossQueue {
     if (this.queues.size !== config.queues.length) {
       throw new TypeError('PgBossQueue: queue names must be unique');
     }
+    if (this.queues.has(CANCELLED_USERS_QUEUE)) {
+      throw new TypeError(`PgBossQueue: queue name '${CANCELLED_USERS_QUEUE}' is reserved`);
+    }
     this.pollingIntervalSeconds = config.pollingIntervalSeconds ?? 2;
     this.stopTimeoutMs = config.stopTimeoutMs ?? 30_000;
+    const supervise = config.superviseIntervalSeconds;
     this.boss = new PgBoss({
       connectionString: config.connectionString,
       application_name: 'ai-stylist-jobs',
@@ -99,6 +127,9 @@ export class PgBossQueue {
       migrate: false,
       ...(config.schema !== undefined ? { schema: config.schema } : {}),
       ...(config.maxConnections !== undefined ? { max: config.maxConnections } : {}),
+      ...(supervise !== undefined
+        ? { superviseIntervalSeconds: supervise, monitorIntervalSeconds: supervise }
+        : {}),
     });
     // An unhandled 'error' event would crash the process. Only the error class and pg code are
     // logged: driver messages can echo statement parameters (job data).
@@ -117,6 +148,8 @@ export class PgBossQueue {
    */
   async start(): Promise<void> {
     await this.boss.start();
+    // Never worked: its jobs are the markers `cancelUser` writes and `send` / `work` read.
+    await this.boss.createQueue(CANCELLED_USERS_QUEUE, { policy: 'standard', retryLimit: 0 });
     for (const queue of this.queues.values()) {
       const deadLetter = deadLetterQueueName(queue.name);
       // The DLQ holds exhausted jobs for the ops sweep (doc 04 §9.2); nothing works it, so it
@@ -144,7 +177,8 @@ export class PgBossQueue {
 
   /**
    * Enqueue `data` once per (queue, idempotencyKey). A repeat with the same key is a no-op that
-   * returns the same job id with `enqueued: false`.
+   * returns the same job id with `enqueued: false`; so is a send for a user cancelled with
+   * `cancelUser` (nothing is inserted).
    */
   async send(queue: string, data: object, options: EnqueueOptions): Promise<EnqueueResult> {
     this.requireQueue(queue);
@@ -152,6 +186,10 @@ export class PgBossQueue {
       throw new TypeError('PgBossQueue.send: userId must be a usr_ id');
     }
     const jobId = jobIdForKey(options.idempotencyKey);
+    if (options.userId !== undefined && (await this.isUserCancelled(options.userId))) {
+      this.logger.info({ jobId, queue }, 'job refused: user cancelled');
+      return { jobId, enqueued: false };
+    }
     const inserted = await this.boss.send(queue, data, {
       id: jobId,
       ...(options.userId !== undefined ? { singletonKey: options.userId } : {}),
@@ -162,7 +200,10 @@ export class PgBossQueue {
     return { jobId, enqueued };
   }
 
-  /** Start a worker on `queue`: one job per fetch, `handler` decides the outcome. */
+  /**
+   * Start a worker on `queue`: one job per fetch, `handler` decides the outcome. A job keyed to a
+   * user cancelled with `cancelUser` is cancelled instead; its handler is never called.
+   */
   async work(queue: string, handler: JobHandler): Promise<void> {
     const definition = this.requireQueue(queue);
     const maxAttempts = definition.retryLimit + 1;
@@ -177,6 +218,14 @@ export class PgBossQueue {
         for (const job of jobs) {
           const attempt = job.retryCount + 1;
           const fields = { jobId: job.id, queue, attempt, maxAttempts };
+          // A send that raced `cancelUser` (checked before the marker, inserted after the cancel
+          // sweep) is caught here. pg-boss's completion after this returns only settles `active`
+          // jobs, so the job stays `cancelled`.
+          if (job.singletonKey !== null && (await this.isUserCancelled(job.singletonKey))) {
+            await this.boss.cancel(queue, job.id);
+            this.logger.info(fields, 'job refused: user cancelled');
+            continue;
+          }
           this.logger.debug(fields, 'job started');
           try {
             await handler({ id: job.id, queue, data: job.data, attempt, signal: job.signal });
@@ -197,10 +246,11 @@ export class PgBossQueue {
   }
 
   /**
-   * Cancel every not-yet-active (created/retry) job keyed to `userId` on every configured queue
-   * and its DLQ (doc 06 §8 step 4). Returns the number of jobs cancelled. A job that becomes
-   * active between the lookup and the cancel is cancelled while its handler runs: handlers stay
-   * idempotent and the deletion chain runs its own steps regardless.
+   * Cancel every unfinished (created, retry or active) job keyed to `userId` on every configured
+   * queue and its DLQ (doc 06 §8 step 4). Returns the number of jobs cancelled. A cancelled
+   * `active` job's handler runs to its end (pg-boss cannot interrupt it), but its outcome is
+   * dropped: it can neither complete nor fail into a retry. Later sends for the user are still
+   * accepted; `cancelUser` also refuses those.
    */
   async cancelPendingForUser(userId: string): Promise<number> {
     if (!isId(userId, 'user')) {
@@ -209,8 +259,8 @@ export class PgBossQueue {
     let cancelled = 0;
     for (const name of this.queues.keys()) {
       for (const queue of [name, deadLetterQueueName(name)]) {
-        const pending = await this.boss.findJobs(queue, { key: userId, queued: true });
-        const ids = pending.map((job) => job.id);
+        const keyed = await this.boss.findJobs(queue, { key: userId });
+        const ids = keyed.filter((job) => UNFINISHED_STATES.has(job.state)).map((job) => job.id);
         for (let start = 0; start < ids.length; start += CANCEL_CHUNK_SIZE) {
           await this.boss.cancel(queue, ids.slice(start, start + CANCEL_CHUNK_SIZE));
         }
@@ -221,6 +271,29 @@ export class PgBossQueue {
       }
     }
     return cancelled;
+  }
+
+  /**
+   * Deletion-shaped cancellation (doc 06 §8 step 4): durably mark `userId` as cancelled, then
+   * `cancelPendingForUser`. From the moment this resolves no job keyed to the user reaches a
+   * handler on any instance: `send` inserts nothing for the user and `work` cancels any job for
+   * the user it fetches (a send that raced the marker). The marker is written first, so every
+   * send either sees it or inserted a job the cancel sweep finds. Idempotent; returns the number
+   * of jobs cancelled by the sweep. The marker lasts pg-boss's created-job retention (14 days).
+   */
+  async cancelUser(userId: string): Promise<number> {
+    if (!isId(userId, 'user')) {
+      throw new TypeError('PgBossQueue.cancelUser: userId must be a usr_ id');
+    }
+    await this.boss.send(CANCELLED_USERS_QUEUE, {}, { id: cancelledUserMarkerId(userId) });
+    return this.cancelPendingForUser(userId);
+  }
+
+  private async isUserCancelled(userId: string): Promise<boolean> {
+    const markers = await this.boss.findJobs(CANCELLED_USERS_QUEUE, {
+      id: cancelledUserMarkerId(userId),
+    });
+    return markers.length > 0;
   }
 
   private requireQueue(queue: string): QueueDefinition {

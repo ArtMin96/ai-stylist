@@ -68,7 +68,8 @@ export {
 } from './ports/health-probe.port.js';
 export {
   InMemoryStorageProvider,
-  MAX_PRESIGN_TTL_SECONDS,
+  MAX_PRESIGN_GET_TTL_SECONDS,
+  MAX_PRESIGN_PUT_TTL_SECONDS,
   STORAGE_PROVIDER,
   StorageError,
   type PresignGetRequest,

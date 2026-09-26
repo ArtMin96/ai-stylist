@@ -82,6 +82,22 @@ Log hygiene: when this log exceeds ~30 entries, move the oldest entries to `plan
 
 *(newest first)*
 
+### 2026-09-26 — Prompt-audit follow-ups: signed-URL GET TTL, DC-15 fixture, trigger evals
+
+- **Phase / tasks worked:** P02 hygiene (no task ID). Branch `fix/prompt-audit-followups` off `1ead9bd`. Work done by subagents: `platform-engineer`, `tooling-engineer`, and two general-purpose agents.
+- **Status changes:** none.
+- **Done this session:**
+  - **Security fix:** presigned GET URLs are now capped at 10 min, and PUT/multipart stays at 15 min (doc 11 §5.4). `MAX_PRESIGN_GET_TTL_SECONDS` and `MAX_PRESIGN_PUT_TTL_SECONDS` replace the single constant, and `clampTtl(ttl, method)` takes the method. The regression test in `apps/api/src/platform/tests/storage.port.test.ts` failed before the fix (`expected '…12:15:00.000Z' to be '…12:10:00.000Z'`) and passes after. `docs/modules/platform.md`, `platform-engineer.md` and the `security-privacy-review` eval were updated.
+  - **DC-15:** the check ran `just --summary` from a temp fixture directory, where the mise shim could not resolve `just`, and `2>/dev/null` hid the failure. It now runs `just --justfile <root>/justfile --summary` from the repo root and reports a failed lookup as a finding. The `DC-15` fixture is pinned with `.expect-only`. `just docs-check --fixtures` exits 0 again.
+  - **Trigger evals** (`claude -p`, one run per query, in a scratchpad sandbox): tooling-ci 18/20, performance-profiling 18/20, docs-maintenance 19/20, e2e-device-testing 20/20. The descriptions were tightened for the misses.
+  - Root `CLAUDE.md`: plugin and user-level skills never override this repository's rules.
+  - An upstream suggestion for the Omarchy skill is drafted in the session scratchpad; the human decides whether to post it.
+- **Not done / in flight:** the Android lanes of `just lint`, `arch-check` and `format --check` fail on this machine. Gradle asks for a JDK 25 toolchain that is not installed, after untracked or uncommitted IDE changes (`apps/android/gradle.properties`, `apps/android/gradle/gradle-daemon-jvm.properties`). Those changes are not part of this session and were left uncommitted. The same lanes passed earlier today, before those files changed. No security-privacy-reviewer pass was run on the TTL change (it tightens a cap).
+- **Repository state:** `just docs-check --strict` 0 errors; `just docs-check --fixtures` exit 0; `just test platform` 22 passed; `just typecheck` exit 0; `NATIVE_LANES=none just lint` and `NATIVE_LANES=none just arch-check` exit 0.
+- **New decisions / risks / questions filed:** none.
+- **Surprises / gotchas:** under `just`, the mise shim resolves tool versions from the working directory, so any check that `cd`s into a temp directory outside the repo loses its pinned tools.
+- **Next session starts:** decide what to do with the IDE-generated Android Gradle changes (commit them with a JDK 25 toolchain in `mise.toml`, or discard them), then run the full `just lint`.
+
 ### 2026-09-26 — Prompt audit of the Claude Code configuration; docs-in-the-same-change rule
 
 - **Phase / tasks worked:** P02 hygiene (no task ID). Branch `chore/prompt-audit-fixes` off `791ea1e`, fast-forwarded into `main` and pushed at the human's request.

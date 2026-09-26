@@ -8,7 +8,7 @@ This root file exists so that `PROGRESS.md` resolves at the repository root as t
 
 - **P02 — Repo foundations and CI:** `IN_PROGRESS`, started 2026-09-09 (ahead of P00 for the no-dependency subset, DEC-36). Task list, per-task state and acceptance criteria: [`planning/phases/P02-repo-foundations-and-ci.md`](planning/phases/P02-repo-foundations-and-ci.md) §12 and §19.
 - **Last green:** all 18 CI checks on PR #7 (`chore/native-followups` @ `6f1670a`, 2026-09-24), including the macOS simulator build/test and the Android APK builds; `just ci-parity` locally on Linux the same day.
-- **Latest handoff:** [`planning/PROGRESS.md`](planning/PROGRESS.md) → "Session handoff log" → entry dated 2026-09-26 ("Prompt audit of the Claude Code configuration"; pushed to `main`). Next action: hand the signed-URL TTL bug (`storage.port.ts` caps GET at 15 min, doc 11 §5.4 says 10) to `platform-engineer`. The 2026-09-25 foundation follow-ups (s5/s6 proposals, bootstrap on the Mac) are still pending, as that entry says.
+- **Latest handoff:** [`planning/PROGRESS.md`](planning/PROGRESS.md) → "Session handoff log" → entry dated 2026-09-26 ("Prompt-audit follow-ups"; branch `fix/prompt-audit-followups`). Next action: resolve the IDE-generated Android Gradle changes (JDK 25 toolchain) and run the full `just lint`.
 
 ## How to update status
 

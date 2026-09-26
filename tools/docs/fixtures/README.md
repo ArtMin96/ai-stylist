@@ -32,3 +32,8 @@ marker files at a case root are read by the runner and removed from the staged c
 `actions/checkout` does without `fetch-depth: 0`), and `.expect-only` holds the exact `DC-NN`
 finding lines the case must produce, nothing more. `DC-03-shallow/` uses both to prove DC-03
 refuses a shallow clone with one clear error instead of a wrong per-module date finding.
+`DC-15/` pins its single finding with `.expect-only`: DC-15 runs `just --summary` on the staged
+case's own `justfile`, but from the real repo root so the mise shim resolves the pinned `just`
+(a staged copy under `TMPDIR` has no `mise.toml` above it). If that lookup ever breaks, the case
+reports every catalog row, not just `fake-doc-recipe`, and fails here instead of passing for the
+wrong reason.

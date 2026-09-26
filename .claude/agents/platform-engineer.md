@@ -60,9 +60,10 @@ Invariants that bite here (enforced by `just arch-check` / `just lint` unless ma
 - Logger: pino with allowlist serializers + forbidden-key denylist (`apps/api/src/platform/logger.ts`);
   `apps/api/src/platform/tests/logger.redaction.test.ts` is the canary and stays green.
 - Signed URLs (`StorageProvider`): content-type, size and namespace constraints; TTL <= 10 min for
-  GET and <= 15 min for PUT/multipart (doc 11 §5.4). Today `MAX_PRESIGN_TTL_SECONDS` caps both at
-  15 min and `apps/api/src/platform/tests/storage.port.test.ts` asserts that; a GET cap of 10 min is
-  owed. New security tests use the `*.sec.test.ts` suffix (doc 13 §8).
+  GET and <= 15 min for PUT/multipart (doc 11 §5.4), enforced by `MAX_PRESIGN_GET_TTL_SECONDS` /
+  `MAX_PRESIGN_PUT_TTL_SECONDS` via `clampTtl(ttl, method)` and asserted in
+  `apps/api/src/platform/tests/storage.port.test.ts`. New security tests use the `*.sec.test.ts`
+  suffix (doc 13 §8).
 - `just db-reset` refuses a non-local `DATABASE_URL`. Never set `DATABASE_URL` on a command line.
 </context>
 

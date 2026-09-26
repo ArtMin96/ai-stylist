@@ -103,8 +103,8 @@ check_dc14() {
   return 0
 }
 
-# check_dc15 ROOT — WARN unless --strict: doc 15 §5 recipe table == `just --summary` (run
-# against ROOT, so a --fixtures case supplies its own justfile + doc file, immune to the real
+# check_dc15 ROOT — WARN unless --strict: doc 15 §5 recipe table == `just --summary` (run on
+# ROOT's justfile, so a --fixtures case supplies its own justfile + doc file, immune to the real
 # repo's justfile evolving over time).
 check_dc15() {
   local root="$1" doc="$1/planning/15-team-workflow-and-ai-agent-operations.md" level
@@ -123,11 +123,19 @@ check_dc15() {
     doc_recipes+=("$name")
   done <<<"$(md_table_data_rows "$doc" 'Recipe')"
 
+  # Run `just` from the real repo root with --justfile pointing at ROOT: the justfile puts mise shims
+  # first on PATH, and a shim resolves the pinned `just` from mise.toml by working directory, so a
+  # staged fixture under TMPDIR (no mise.toml above it) would otherwise get no `just` at all. A failed
+  # `--summary` is a finding, never an empty recipe list that turns every §5 row into a false hit.
   real_recipes=()
-  local r
+  local r summary
+  if ! summary="$(cd "$DOCS_CHECK_REPO_ROOT" && just --justfile "$root/justfile" --summary 2>&1)"; then
+    finding "$level" DC-15 "justfile" 1 "'just --summary' failed: $(head -n1 <<<"$summary")"
+    return 0
+  fi
   while IFS= read -r r; do
     [[ -n "$r" ]] && real_recipes+=("$r")
-  done <<<"$(cd "$root" && just --summary 2>/dev/null | tr ' ' '\n')"
+  done <<<"$(tr ' ' '\n' <<<"$summary")"
 
   local found n
   for n in ${real_recipes[@]+"${real_recipes[@]}"}; do

@@ -1,8 +1,10 @@
 // StorageProvider port (brief §6, doc 11 §5): presigned PUT/GET with a hard TTL cap, content-type,
 // size and namespace constraints. Interface + in-memory fake only; the R2 adapter lands in T13.
 
-/** Presigned URLs live at most 15 minutes (doc 11 §5). */
-export const MAX_PRESIGN_TTL_SECONDS = 15 * 60;
+/** Presigned GET (read) URLs live at most 10 minutes (doc 11 §5.4). */
+export const MAX_PRESIGN_GET_TTL_SECONDS = 10 * 60;
+/** Presigned PUT/multipart (write) URLs live at most 15 minutes (doc 11 §5.4). */
+export const MAX_PRESIGN_PUT_TTL_SECONDS = 15 * 60;
 
 export type StorageNamespace = 'uploads' | 'derived' | 'avatars';
 
@@ -13,13 +15,14 @@ export type PresignPutRequest = {
   readonly contentType: string;
   /** Maximum accepted object size in bytes; the adapter enforces it at upload time. */
   readonly sizeLimitBytes: number;
-  /** Seconds until the URL expires; clamped to MAX_PRESIGN_TTL_SECONDS. */
+  /** Seconds until the URL expires; clamped to MAX_PRESIGN_PUT_TTL_SECONDS. */
   readonly ttlSeconds: number;
 };
 
 export type PresignGetRequest = {
   readonly namespace: StorageNamespace;
   readonly key: string;
+  /** Seconds until the URL expires; clamped to MAX_PRESIGN_GET_TTL_SECONDS. */
   readonly ttlSeconds: number;
 };
 
@@ -41,12 +44,16 @@ export class StorageError extends Error {
   override readonly name = 'StorageError';
 }
 
-/** Clamp a requested TTL to the policy cap; non-positive values are rejected. */
-export function clampTtl(ttlSeconds: number): number {
+/**
+ * Clamp a requested TTL to the policy cap for the URL's method (GET 10 min, PUT 15 min);
+ * non-positive values are rejected.
+ */
+export function clampTtl(ttlSeconds: number, method: PresignedUrl['method']): number {
   if (!Number.isFinite(ttlSeconds) || ttlSeconds <= 0) {
     throw new StorageError(`ttlSeconds must be positive, got ${ttlSeconds}`);
   }
-  return Math.min(Math.floor(ttlSeconds), MAX_PRESIGN_TTL_SECONDS);
+  const cap = method === 'GET' ? MAX_PRESIGN_GET_TTL_SECONDS : MAX_PRESIGN_PUT_TTL_SECONDS;
+  return Math.min(Math.floor(ttlSeconds), cap);
 }
 
 type StoredObject = { readonly contentType: string; readonly sizeLimitBytes: number };
@@ -69,7 +76,7 @@ export class InMemoryStorageProvider implements StorageProvider {
         new StorageError(`contentType must be a media type, got "${request.contentType}"`),
       );
     }
-    const ttl = clampTtl(request.ttlSeconds);
+    const ttl = clampTtl(request.ttlSeconds, 'PUT');
     const id = `${request.namespace}/${request.key}`;
     this.objects.set(id, {
       contentType: request.contentType,
@@ -79,7 +86,7 @@ export class InMemoryStorageProvider implements StorageProvider {
   }
 
   presignedGet(request: PresignGetRequest): Promise<PresignedUrl> {
-    const ttl = clampTtl(request.ttlSeconds);
+    const ttl = clampTtl(request.ttlSeconds, 'GET');
     const id = `${request.namespace}/${request.key}`;
     if (!this.objects.has(id)) {
       return Promise.reject(

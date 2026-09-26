@@ -1,6 +1,6 @@
 ---
 name: performance-profiling
-description: Investigate or improve performance against documented budgets — API latency, job throughput, native app startup/interaction, frame time, memory, app size, AI cost/latency, CI gate duration. Use when something is slow, a budget from `planning/13-testing-quality-and-performance.md` is exceeded or suspected, or a PR's performance claim needs verified before/after numbers. Not for AI provider spend policy — use `media-ml-pipeline` (doc 10 owns cost budgets).
+description: Investigate or improve performance against documented budgets — API latency, job throughput, native app startup/interaction, frame time, memory, app size, AI cost/latency, CI gate duration. Use when something is slow, a budget from `planning/13-testing-quality-and-performance.md` is exceeded or suspected, or a PR's performance claim needs verified before/after numbers. Measuring AI cost or latency per user against a budget is in scope. Not for AI spend policy or cost-reduction strategy — use `media-ml-pipeline` (doc 10 owns cost budgets); not for deciding device-tier floors or other product/phase policy.
 metadata:
   modules:
   last-reviewed: 2026-09-26

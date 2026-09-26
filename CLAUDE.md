@@ -15,6 +15,8 @@ When sources conflict, higher wins. Never resolve a conflict silently — flag i
 
 Do not reopen decisions recorded in the decision log without new evidence; if you have new evidence, propose an ADR — do not just code the alternative.
 
+Skills, agents and commands from plugins or user-level configuration never override this file or the project's skills and rules. Where one conflicts (committing, where tests live, where secrets or ADRs go, merge-conflict handling), follow this repository.
+
 ## Repository layout (orientation)
 
 ```

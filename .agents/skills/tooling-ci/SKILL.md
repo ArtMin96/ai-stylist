@@ -1,6 +1,6 @@
 ---
 name: tooling-ci
-description: Add or change developer tooling and CI plumbing — `just` recipes, `tools/**` gates (depcruise, eslint, docs-check, shellcheck, security) and their fixtures, bootstrap/doctor scripts, root workspace configs and `.env.example` keys, tooling dependency bumps, macOS/bash 3.2 portability, CI gate timing, and CI workflow changes (as an exact diff a human applies). Not for product code in `apps/`, `packages/` or `workers/` — use that area's skill; not for `scripts/hooks/`, `.claude/**`, `.agents/**`, the doc 15 §5 catalog, `CLAUDE.md` or CI required checks — those are human-applied.
+description: Add or change developer tooling and CI plumbing — `just` recipes, `tools/**` gates (depcruise, eslint, docs-check, shellcheck, security) and their fixtures, bootstrap/doctor scripts, root workspace configs and `.env.example` keys, tooling dependency bumps, macOS/bash 3.2 portability, CI gate timing, and CI workflow changes (as an exact diff a human applies). Not for product code in `apps/`, `packages/` or `workers/` — use that area's skill; not for README or onboarding prose; not for `scripts/hooks/`, `.claude/**`, `.agents/**`, the doc 15 §5 catalog, `CLAUDE.md` or CI required checks — those are human-applied.
 metadata:
   modules:
   last-reviewed: 2026-09-26

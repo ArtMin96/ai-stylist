@@ -28,7 +28,7 @@
     {
       "id": 3,
       "prompt": "We're about to ship a presigned upload URL for wardrobe photos in `apps/api/src/modules/media/internal/uploads.ts`. Can you check it's locked down correctly before this goes out?",
-      "expected_output": "A checklist walk of item 5 (Uploads/media): content-type + size + namespace constraints, TTL <= 15 minutes, EXIF stripped at ingest, no public bucket. Any missing constraint is a Blocking finding with the specific limit to add; if `*.sec.test.ts` coverage for expired/foreign-namespace/wrong-content-type cases is missing, that absence is itself reported as a finding.",
+      "expected_output": "A checklist walk of item 5 (Uploads/media): content-type + size + namespace constraints, TTL <= 10 minutes for GET and <= 15 minutes for PUT/multipart (doc 11 §5.4), EXIF stripped at ingest, no public bucket. Any missing constraint is a Blocking finding with the specific limit to add; if `*.sec.test.ts` coverage for expired/foreign-namespace/wrong-content-type cases is missing, that absence is itself reported as a finding.",
       "files": [],
       "assertions": [
         "The report explicitly checks TTL, content-type/size/namespace constraints, EXIF stripping, and bucket visibility as separate items, not a single bundled verdict",

@@ -21,7 +21,12 @@ outcome to pg-boss. No business rule lives here. Provider clients are constructe
 - `demo.outbox-flow` consumes `demo.outbox-flow.requested.v1`
   (`packages/contracts/events/demo.event.json`). `retryLimit` 4 (5 attempts, the doc 04 §9.2
   default), exponential jittered backoff from 1 s capped at 60 s. An exhausted job ends `failed`
-  and a copy lands in `demo.outbox-flow.dlq`.
+  and a copy lands in `demo.outbox-flow.dlq`. `batchSize` 10: the worker fetches 10 jobs at a
+  time and keeps fetching while batches come back full, then runs them one after another, each
+  settled on its own (`../platform/queue/README.md`). Batch 1 measured 0.5 jobs/s against the
+  DEC-41 / A11 floor of 20; batch 10 measured ≈99 jobs/s in the acceptance throughput test. Worst
+  case per batch: 10 × `SEGMENTATION_TIMEOUT_MS` = 100 s, below the 900 s job expiry. The
+  effect-once guard pool stays at 2 connections because jobs never run concurrently.
 - The outbox relay's composition imports `JOB_QUEUES` and `queueForEventType` from `./index.js`
   and passes them to the relay (platform cannot import `jobs/**`: `platform-leaf`). Every
   `PgBossQueue` that sends to or works a queue is constructed with the same `JOB_QUEUES`. A new
@@ -74,7 +79,11 @@ consecutive failures, for 30 s).
   contract. One worker call per event id across repeated runs, invalid envelopes rejected without
   a worker call, a worker failure throws and the retry calls again, and a log canary.
 - `segmentation-client.test.ts`: request shape, reply validation, timeout, caller abort, breaker.
-- `queues.test.ts`: routing map and retry bounds.
+- `queues.test.ts`: routing map, retry bounds, and the batch-size bounds (`batchSize` × the
+  segmentation timeout stays below the job expiry; out-of-range sizes are rejected).
+- `batch-settlement.docker.test.ts` (vitest project `platform-docker`, Testcontainers, fails
+  without Docker): one demo-queue batch on real pg-boss; a failing job retries and dead-letters
+  alone, a job for a cancelled user is refused, the rest complete once.
 
 The durable guard and the queue are covered against real Postgres in
 `../platform/tests/idempotency.docker.test.ts` and `../platform/tests/queue.docker.test.ts`. The

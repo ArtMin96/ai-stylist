@@ -9,12 +9,17 @@ export const DEMO_OUTBOX_FLOW_EVENT_TYPE = 'demo.outbox-flow.requested.v1' as co
 /**
  * P02 demo queue. Doc 04 §9.2 default: max 5 attempts (`retryLimit` 4 = 4 retries after the first
  * run), exponential jittered backoff from 1 s capped at 60 s, then `failed` + `<name>.dlq`.
+ * `batchSize` 10: with batch 1 pg-boss waits a poll interval (2 s) after every fetch, about 0.5
+ * jobs/s; batches of 10 fetched back to back while backlog lasts clear the DEC-41 / A11 throughput
+ * floor (apps/api/src/jobs/tests/acceptance-dispatch.docker.test.ts). Jobs still run one at a
+ * time; worst case 10 × `SEGMENTATION_TIMEOUT_MS` (10 s) = 100 s, below the 900 s expiry.
  */
 export const DEMO_OUTBOX_FLOW_QUEUE = {
   name: 'demo.outbox-flow',
   retryLimit: 4,
   retryDelaySeconds: 1,
   retryDelayMaxSeconds: 60,
+  batchSize: 10,
 } as const satisfies QueueDefinition;
 
 /** Every queue the job runtime works; pass the same list to each `PgBossQueue` that sends to it. */

@@ -24,7 +24,8 @@ export const SEGMENTATION_TIMEOUT_MS = 10_000;
 export const SEGMENTATION_BREAKER = { failureThreshold: 5, coolDownMs: 30_000 } as const;
 /**
  * Pool for the effect-once guard. The claim holds one connection while the effect runs, one
- * worker runs one job at a time (`PgBossQueue.work`, batch 1), so 2 leaves one spare.
+ * worker runs one job at a time (`PgBossQueue.work` runs a fetched batch sequentially), so 2
+ * leaves one spare.
  */
 const GUARD_POOL_MAX = 2;
 

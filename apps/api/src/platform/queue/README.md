@@ -19,6 +19,15 @@ are decided by the callers.
 - **Retries:** per queue `retryLimit` (a job runs at most `retryLimit + 1` times), exponential
   jittered backoff from `retryDelaySeconds`, capped by `retryDelayMaxSeconds` (doc 04 §9.2). An
   exhausted job ends `failed` and a copy lands in `<name>.dlq` (`sourceId` = the failed job id).
+- **Workers and batches:** `work(queue, handler)` fetches up to the queue's `batchSize` jobs
+  (1..`MAX_WORK_BATCH_SIZE` = 100, default 1). pg-boss waits `pollingIntervalSeconds` (default 2)
+  after each fetch, so batch 1 works about 0.5 jobs/s under backlog. Above 1 the worker fetches
+  again at once while fetches come back full (pg-boss `burstWhenBatchFull`) and polls normally
+  after a short one. A batch's jobs run one at a time, each with the cancelled-user check before
+  its handler, and settle individually (pg-boss `perJobResults`): a throwing handler fails and
+  retries only its own job. A batch shares one `expireInSeconds` deadline, so `batchSize` × the
+  slowest job must stay below it. On shutdown, jobs of a batch not yet started are left to pg-boss,
+  which fails them into retry.
 - **Exactly-once enqueue:** `send(queue, data, { idempotencyKey, userId? })`. The job id is a
   UUIDv5 of `idempotencyKey` (`job-id.ts`); pg-boss's `(name, id)` primary key plus
   `ON CONFLICT DO NOTHING` makes a repeat a no-op (`enqueued: false`) while pg-boss retains the job

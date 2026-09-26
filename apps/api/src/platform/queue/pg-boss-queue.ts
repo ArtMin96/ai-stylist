@@ -4,7 +4,7 @@
 // Translation only: which queue an event maps to, and what a handler does, are decided by the
 // callers (outbox relay, `apps/api/src/jobs/`). Logs carry job id, queue name and attempt — never
 // job data.
-import { PgBoss } from 'pg-boss';
+import { type JobResult, type JobWithMetadata, PgBoss } from 'pg-boss';
 import type { Logger } from 'pino';
 
 import { isId } from '@ai-stylist/shared-kernel';
@@ -23,7 +23,19 @@ export type QueueDefinition = {
   readonly retryDelayMaxSeconds: number;
   /** Seconds a job may stay `active` before it is failed (and retried). pg-boss default: 900. */
   readonly expireInSeconds?: number;
+  /**
+   * Jobs one worker fetches per poll, 1..`MAX_WORK_BATCH_SIZE`. Default 1. Above 1 the worker
+   * fetches again at once, without the poll delay, while fetches come back full (pg-boss
+   * `burstWhenBatchFull`); a short fetch resumes normal polling. The jobs of a batch still run one
+   * at a time and settle one by one (pg-boss `perJobResults`): a failing job retries alone. The
+   * whole batch shares one `expireInSeconds` deadline, so `batchSize` × the slowest job must stay
+   * below it.
+   */
+  readonly batchSize?: number;
 };
+
+/** Upper bound on `QueueDefinition.batchSize` (the outbox relay's per-poll cap, doc 04 §9). */
+export const MAX_WORK_BATCH_SIZE = 100;
 
 export type PgBossQueueConfig = {
   /** Passed in by the composition root; this adapter never reads `process.env`. */
@@ -116,6 +128,15 @@ export class PgBossQueue {
     if (this.queues.has(CANCELLED_USERS_QUEUE)) {
       throw new TypeError(`PgBossQueue: queue name '${CANCELLED_USERS_QUEUE}' is reserved`);
     }
+    for (const queue of config.queues) {
+      const size = queue.batchSize;
+      const valid = size === undefined || (Number.isInteger(size) && size >= 1);
+      if (!valid || (size ?? 1) > MAX_WORK_BATCH_SIZE) {
+        throw new RangeError(
+          `PgBossQueue: batchSize of '${queue.name}' must be an integer in 1..${MAX_WORK_BATCH_SIZE}`,
+        );
+      }
+    }
     this.pollingIntervalSeconds = config.pollingIntervalSeconds ?? 2;
     this.stopTimeoutMs = config.stopTimeoutMs ?? 30_000;
     const supervise = config.superviseIntervalSeconds;
@@ -201,48 +222,73 @@ export class PgBossQueue {
   }
 
   /**
-   * Start a worker on `queue`: one job per fetch, `handler` decides the outcome. A job keyed to a
-   * user cancelled with `cancelUser` is cancelled instead; its handler is never called.
+   * Start a worker on `queue`: up to the queue's `batchSize` jobs per fetch (default 1), run one at
+   * a time, each settled on its own: `handler` resolving completes that job, throwing fails that
+   * job alone (retried with backoff, then dead-lettered). A job keyed to a user cancelled with
+   * `cancelUser` is cancelled instead; its handler is never called.
    */
   async work(queue: string, handler: JobHandler): Promise<void> {
     const definition = this.requireQueue(queue);
     const maxAttempts = definition.retryLimit + 1;
+    const batchSize = definition.batchSize ?? 1;
     await this.boss.work(
       queue,
       {
-        batchSize: 1,
+        batchSize,
+        // Only takes effect above batch 1: keep fetching while there is a full batch of backlog,
+        // instead of waiting a poll interval after every fetch.
+        burstWhenBatchFull: batchSize > 1,
         includeMetadata: true,
+        perJobResults: true,
         pollingIntervalSeconds: this.pollingIntervalSeconds,
       },
       async (jobs) => {
+        // Never throws: a throw would fail (and retry) the whole batch together.
+        const results: JobResult[] = [];
         for (const job of jobs) {
-          const attempt = job.retryCount + 1;
-          const fields = { jobId: job.id, queue, attempt, maxAttempts };
-          // A send that raced `cancelUser` (checked before the marker, inserted after the cancel
-          // sweep) is caught here. pg-boss's completion after this returns only settles `active`
-          // jobs, so the job stays `cancelled`.
-          if (job.singletonKey !== null && (await this.isUserCancelled(job.singletonKey))) {
-            await this.boss.cancel(queue, job.id);
-            this.logger.info(fields, 'job refused: user cancelled');
-            continue;
-          }
-          this.logger.debug(fields, 'job started');
-          try {
-            await handler({ id: job.id, queue, data: job.data, attempt, signal: job.signal });
-          } catch (error) {
-            // Error message not logged: handler errors may quote the payload.
-            const errorName = error instanceof Error ? error.name : typeof error;
-            if (attempt >= maxAttempts) {
-              this.logger.error({ ...fields, errorName }, 'job failed; dead-lettered');
-            } else {
-              this.logger.warn({ ...fields, errorName }, 'job attempt failed; will retry');
-            }
-            throw error;
-          }
-          this.logger.debug(fields, 'job completed');
+          // pg-boss is shutting down (or the batch deadline passed): start nothing new. The jobs
+          // left without a result are failed by pg-boss and retried.
+          if (job.signal.aborted) break;
+          results.push(await this.runJob(queue, maxAttempts, job, handler));
         }
+        return results;
       },
     );
+  }
+
+  /** One fetched job → its pg-boss disposition. */
+  private async runJob(
+    queue: string,
+    maxAttempts: number,
+    job: JobWithMetadata<unknown>,
+    handler: JobHandler,
+  ): Promise<JobResult> {
+    const attempt = job.retryCount + 1;
+    const fields = { jobId: job.id, queue, attempt, maxAttempts };
+    try {
+      // A send that raced `cancelUser` (checked before the marker, inserted after the cancel
+      // sweep) is caught here, for every job of a batch. Reported `completed`, which pg-boss
+      // applies only to `active` jobs, so the job stays `cancelled`.
+      if (job.singletonKey !== null && (await this.isUserCancelled(job.singletonKey))) {
+        await this.boss.cancel(queue, job.id);
+        this.logger.info(fields, 'job refused: user cancelled');
+        return { id: job.id, status: 'completed' };
+      }
+      this.logger.debug(fields, 'job started');
+      await handler({ id: job.id, queue, data: job.data, attempt, signal: job.signal });
+    } catch (error) {
+      // Error message not logged: handler errors may quote the payload.
+      const errorName = error instanceof Error ? error.name : typeof error;
+      if (attempt >= maxAttempts) {
+        this.logger.error({ ...fields, errorName }, 'job failed; dead-lettered');
+      } else {
+        this.logger.warn({ ...fields, errorName }, 'job attempt failed; will retry');
+      }
+      // pg-boss stores `output` exactly as it stored the thrown error before per-job settling.
+      return { id: job.id, status: 'failed', output: error };
+    }
+    this.logger.debug(fields, 'job completed');
+    return { id: job.id, status: 'completed' };
   }
 
   /**

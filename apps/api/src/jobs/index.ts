@@ -4,10 +4,17 @@
 import postgres from 'postgres';
 import type { Logger } from 'pino';
 
-import { CircuitBreaker, PgBossQueue, PgIdempotencyGuard, SystemClock } from '../platform/index.js';
+import {
+  CircuitBreaker,
+  PgBossQueue,
+  PgIdempotencyGuard,
+  SystemClock,
+  markOutboxFailed,
+} from '../platform/index.js';
 
 import { createDemoOutboxFlowHandler } from './demo-outbox-flow.js';
-import { DEMO_OUTBOX_FLOW_QUEUE, JOB_QUEUES } from './queues.js';
+import { createOutboxDeadLetterHandler } from './outbox-dead-letter.js';
+import { DEMO_OUTBOX_FLOW_QUEUE, JOB_QUEUES, OUTBOX_DEAD_LETTER_QUEUES } from './queues.js';
 import { HttpSegmentationClient } from './segmentation-client.js';
 
 export {
@@ -15,7 +22,9 @@ export {
   DEMO_OUTBOX_FLOW_QUEUE,
   EVENT_QUEUE_ROUTES,
   JOB_QUEUES,
+  OUTBOX_DEAD_LETTER_QUEUES,
   queueForEventType,
+  userIdOf,
 } from './queues.js';
 
 /** One segmentation call, including reading the reply. The P02 stub answers in milliseconds. */
@@ -23,11 +32,12 @@ export const SEGMENTATION_TIMEOUT_MS = 10_000;
 /** Consecutive worker failures that open the circuit, and how long it stays open. */
 export const SEGMENTATION_BREAKER = { failureThreshold: 5, coolDownMs: 30_000 } as const;
 /**
- * Pool for the effect-once guard. The claim holds one connection while the effect runs, one
- * worker runs one job at a time (`PgBossQueue.work` runs a fetched batch sequentially), so 2
+ * Pool for the effect-once guard and the dead-letter handlers. The claim holds one connection
+ * while the effect runs (one worker runs one job at a time: `PgBossQueue.work` runs a fetched
+ * batch sequentially); each dead-letter worker runs one single-statement update at a time. 3
  * leaves one spare.
  */
-const GUARD_POOL_MAX = 2;
+const POOL_MAX = 3;
 
 export type JobsConfig = {
   /** Postgres the pg-boss schema and `platform_idempotency_keys` live in (`just db-migrate`). */
@@ -46,7 +56,7 @@ export type RunningJobs = {
 };
 
 export async function startJobs(config: JobsConfig): Promise<RunningJobs> {
-  const sql = postgres(config.databaseUrl, { max: GUARD_POOL_MAX });
+  const sql = postgres(config.databaseUrl, { max: POOL_MAX });
   const queue = new PgBossQueue({
     connectionString: config.databaseUrl,
     queues: JOB_QUEUES,
@@ -80,6 +90,17 @@ export async function startJobs(config: JobsConfig): Promise<RunningJobs> {
       DEMO_OUTBOX_FLOW_QUEUE.name,
       createDemoOutboxFlowHandler({ guard, segmentation, logger: config.logger }),
     );
+    // Doc 04 §9.2: an exhausted job lands in its DLQ and its outbox row is marked `failed`.
+    for (const { source, deadLetter } of OUTBOX_DEAD_LETTER_QUEUES) {
+      await queue.work(
+        deadLetter.name,
+        createOutboxDeadLetterHandler({
+          sourceQueue: source,
+          markFailed: (eventId, reason) => markOutboxFailed(sql, eventId, reason),
+          logger: config.logger,
+        }),
+      );
+    }
   } catch (error) {
     await stop().catch(() => undefined); // the start failure is the error worth reporting
     throw error;

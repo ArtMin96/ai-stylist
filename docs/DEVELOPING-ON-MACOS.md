@@ -33,10 +33,10 @@ just doctor
 - `just doctor` adds a warn-only Xcode check: does `xcodebuild` run the version in `apps/ios/.xcode-version`? If not, it says whether that version is missing or installed but not selected (for example while the Command Line Tools are the active developer directory), and points at `./scripts/bootstrap.sh --system`.
 - The native iOS app (`apps/ios`) builds and runs only on macOS with Xcode: `just ios-project` (XcodeGen), `just ios-build`, `just ios-test`, `just ios-e2e`, or all Linux-capable checks plus the simulator build and tests with `just ios-check`. Swift comes from Xcode here (Linux uses Docker `swift:6.4`). Its README covers the simulator and device workflow.
 - The native Android app (`apps/android`) builds on macOS and Linux alike (`just android-check`). After a dependency bump, run `just android-deps-lock` once on a Mac too and commit any macOS-only checksums it adds to `apps/android/gradle/verification-metadata.xml`.
-- The pgvector Postgres image is multi-arch (`pgvector/pgvector:pg18` publishes amd64 and arm64), so `just dev-api` needs no emulation.
+- The pgvector Postgres image is multi-arch (`pgvector/pgvector:pg18` publishes amd64 and arm64), so `just dev-api` and `just dev-workers` need no emulation.
 
 ## Known gaps
 
-- `SKIP_DOCKER_TESTS=1 just test` leaves out the Testcontainers `migrations` project; it exists for the macOS CI runner (no Docker) and is not for local use. The project itself still fails, never skips, when Docker is missing.
+- `SKIP_DOCKER_TESTS=1 just test` leaves out the Testcontainers vitest projects `migrations` and `platform-docker` (and `SKIP_DOCKER_TESTS=1 just test platform` runs only the `api` project); it exists for the macOS CI runner (no Docker) and is not for local use. Each project still fails, never skips, when Docker is missing.
 - The `--system` step installs the Android SDK packages but no emulator image; create an emulator with Android Studio (or `sdkmanager` + `avdmanager`) to run `just android-e2e`.
 - Intel Macs are supported by every pin but are not exercised by CI (`macos-26` and `xcode-27` are arm64).

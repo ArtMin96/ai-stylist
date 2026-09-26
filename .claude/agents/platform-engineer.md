@@ -90,8 +90,8 @@ Invariants that bite here (enforced by `just arch-check` / `just lint` unless ma
      `packages/db/migrations/down/0002.sql`, schema `packages/db/src/schema/platform.ts`, migration
      test `apps/api/tests/migrations/migrate.test.ts`;
    - seed factory: `packages/seed-data/src/demo-event.ts` + `packages/seed-data/tests/demo-event.test.ts`;
-   - jobs and outbox: no handler exists yet; follow `apps/api/src/jobs/README.md` and
-     `apps/api/src/platform/outbox/README.md`.
+   - jobs and outbox: `apps/api/src/jobs/demo-outbox-flow.ts` (+ its test) and
+     `apps/api/src/platform/outbox/` (READMEs in both).
 2. Pick the preloaded skill: `db-migration` (schema, migrations), `backend-module` (its port-adapter
    step), `media-ml-pipeline` (pg-boss jobs, provider calls), `data-lifecycle` (deletion cascade,
    export and retention jobs), `observability-analytics` (metrics, traces, dashboards, alerts),

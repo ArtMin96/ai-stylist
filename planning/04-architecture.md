@@ -399,7 +399,7 @@ Brief §3.4 compliance: events and an outbox, no distributed event platform.
 
 | Concern | Policy |
 |---|---|
-| Idempotency keys | pg-boss `singletonKey` = event `id` (ULID) for event-driven jobs; = `entityId + pipelineVersion` for reprocessing jobs. Consumers also guard with a processed-events check where side effects are non-transactional (provider calls). |
+| Idempotency keys | Enqueue: the pg-boss job `id` is a UUIDv5 of the event `id` (ULID) for event-driven jobs, or of `entityId + pipelineVersion` for reprocessing jobs, so a repeated `send()` is a no-op while pg-boss retains the job; `singletonKey` carries the user id for per-user cancellation (DEC-57). Effect: consumers with non-transactional side effects (provider calls) guard them durably on `platform_idempotency_keys` (`PgIdempotencyGuard`, key = event id, retained 90 days = the replay window). |
 | Retries | pg-boss `retryLimit` + `retryBackoff` (exponential, jittered); default max 5 attempts; media/AI pipeline jobs max 3 (expensive), notification sends max 5, billing reconciliation max 8. |
 | DLQ | Exhausted jobs land in the queue's pg-boss dead-letter queue **and** the outbox row is marked `failed`; a nightly job sweeps failed rows into an `admin` moderation/ops queue with alerting (doc 14). Nothing is silently dropped. |
 | Ordering | **No global ordering guaranteed.** Per-aggregate ordering is achieved by consumers using the envelope `sequence` (per-aggregate monotonic) and ignoring stale events (compare against stored version). Jobs needing strict serial execution per entity use a per-entity pg-boss queue (or `singletonKey` = entity id with a short throttle window) so one handler runs per entity at a time. |

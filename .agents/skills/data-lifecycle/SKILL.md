@@ -17,7 +17,7 @@ metadata:
 - A retention-window job, an orphaned-data purge-verification scan, or an audit finding about data that should have been purged.
 - Trigger phrases: "delete account", "deletion cascade", "export my data", "retention window", "consent withdrawal", "purge", "GDPR", "CCPA", "right to be forgotten".
 - Executing agents: `api-engineer` writes each module's cascade/export step inside that module; `platform-engineer` writes the orchestrating pg-boss job chain in `apps/api/src/jobs/` (tests in `apps/api/src/jobs/tests/<handler>.test.ts`).
-- State at last review (re-check `planning/PROGRESS.md` before relying on it): none of this exists. P03 (consent registry, export, deletion v1) is `NOT_STARTED`; pg-boss and the outbox relay are P02-T08, `NOT_STARTED`.
+- State at last review (re-check `planning/PROGRESS.md` before relying on it): none of this exists. P03 (consent registry, export, deletion v1) is `NOT_STARTED`; pg-boss and the outbox relay landed in P02-T08; `PgBossQueue.cancelUser` is the deletion-shaped cancel (doc 06 §8 step 4).
 
 ## Required reading
 
@@ -38,7 +38,7 @@ metadata:
    rg -n -i 'consent|deletion|delete_requested|export|retention|purge|orphan' apps/api/src packages/contracts/events packages/contracts/openapi packages/db/src/schema
    ```
 
-3. Copy the structure from: event schema `packages/contracts/events/demo.event.json` (via `api-contract-change`); envelope construction `apps/api/src/dev/demo-events.controller.ts`; module service and tests per the `backend-module` sibling table (`.agents/skills/backend-module/SKILL.md` Workflow step 4); migration and FK test harness `apps/api/tests/migrations/migrate.test.ts` (`platform-engineer`). No job handler exists yet (`apps/api/src/jobs/README.md`).
+3. Copy the structure from: event schema `packages/contracts/events/demo.event.json` (via `api-contract-change`); envelope construction `apps/api/src/dev/demo-events.controller.ts`; module service and tests per the `backend-module` sibling table (`.agents/skills/backend-module/SKILL.md` Workflow step 4); migration and FK test harness `apps/api/tests/migrations/migrate.test.ts` (`platform-engineer`). Job handler precedent: `apps/api/src/jobs/demo-outbox-flow.ts` (`apps/api/src/jobs/README.md`).
 4. A cascade step that writes to a module's tables lives in that module's `apps/api/src/modules/<name>/internal/`, exposed through its `index.ts`, and is invoked by the orchestrating job — never reached from another module's code.
 5. Consent is append-only: a withdrawal is a new `consents` row, never a mutation of history. Withdrawal cancels the pending pg-boss job for that purpose before it blocks new requests; otherwise a job that started a moment earlier silently ignores the user's choice.
 6. Deletion: extend the doc 06 §8 step table. Add the module's tables to the Postgres step in FK dependency order, an R2 prefix step if it owns objects, a provider step if it calls a provider. Every step is audited and idempotent — resumable from the right point after a partial failure, not just re-runnable from the start.

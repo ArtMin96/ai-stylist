@@ -28,7 +28,7 @@ Phase numbers refer to `planning/phases/`. "Needed from" is the first task that 
 | 2   | sops + age                                                              | Encrypted shared secrets in the repo                      | P02 now                    | Free, no account                             | `<owner>`     | [x]  |
 | 3   | PostgreSQL (self-managed, pgvector)                                     | Postgres 18 + pgvector for staging, prod (docker locally) | P02-T07                    | $0 software; host cost in row 4              | `<owner>`     | [ ]  |
 | 4   | Server + Coolify                                                        | API, jobs, workers, PostgreSQL hosting                    | P02 (server), P03 (deploy) | Server ~€10–25/month; Coolify $0 self-hosted | `<owner>`     | [ ]  |
-| 5   | pg-boss (no account)                                                    | Durable jobs (outbox relay, media pipeline)               | P02-T08                    | $0, MIT, runs on the app database            | n/a           | [ ]  |
+| 5   | pg-boss (no account)                                                    | Durable jobs (outbox relay, media pipeline)               | P02-T08                    | $0, MIT, runs on the app database            | n/a           | [x]  |
 | 6   | Cloudflare (R2 + DNS/WAF)                                               | Object storage for media and public assets, DNS, WAF      | P02-T13                    | Yes, 10 GB-month, Checked 2026-09-10         | `<owner>`     | [ ]  |
 | 7   | Expo / EAS (removed 2026-09-22)                                         | Nothing: the React Native app and EAS builds are gone     | n/a                        | n/a                                          | n/a           | n/a  |
 | 8   | Apple Developer Program                                                 | iOS signing, TestFlight, App Store, Sign in with Apple    | P02-T14                    | No, 99 USD/year, Checked 2026-09-10          | `<owner>`     | [ ]  |
@@ -275,11 +275,11 @@ Over SSH, `docker ps` lists the Coolify containers and nothing else; `ufw status
 
 ### Why we use it
 
-Durable job pipelines with retries and backoff, dead-letter handling, scheduling, and priorities, on the app's own PostgreSQL instead of a separate queue service (DEC-41, ADR-0003, [r7](../planning/research/r7-third-party-services-and-self-hosting-audit-2026-09-13.md)). pg-boss v12 is MIT (Checked 2026-09-13 at <https://github.com/timgit/pg-boss>). Job definitions live in `apps/api/src/jobs/`; the API's outbox relay (P02-T08) hands events to pg-boss jobs, and the handlers run in the API process or in a dedicated `jobs` process. There is no dev server and no dashboard to sign up for.
+Durable job pipelines with retries and backoff, dead-letter handling, scheduling, and priorities, on the app's own PostgreSQL instead of a separate queue service (DEC-41, ADR-0003, [r7](../planning/research/r7-third-party-services-and-self-hosting-audit-2026-09-13.md)). pg-boss v12 is MIT (Checked 2026-09-13 at <https://github.com/timgit/pg-boss>). Job definitions live in `apps/api/src/jobs/`; the outbox relay runs in the API process (P02-T08) and hands events to pg-boss jobs, and the handlers run in the dedicated `jobs` process (`apps/api/src/jobs/main.ts`). There is no dev server and no dashboard to sign up for.
 
 ### When you need it
 
-P02-T08. `just dev-workers` runs the handlers in-process from T08 on.
+P02-T08. `just dev-workers` starts compose Postgres, the pg-boss jobs process (apps/api `src/jobs/main.ts`) and the segmentation worker.
 
 ### Cost
 
@@ -287,11 +287,11 @@ $0. No account.
 
 ### Steps
 
-None beyond adding the `pg-boss` dependency and letting it create its `pgboss` schema in the app database (`DATABASE_URL`). Locally that is the docker compose Postgres; in staging and production it is the database from section 3, so it is covered by the same backups and alerts.
+None beyond the `pg-boss` dependency and `just db-migrate`: migration `0003_pgboss_schema` creates its `pgboss` schema in the app database (`DATABASE_URL`); the app never lets pg-boss run DDL on boot (DEC-57). Locally that is the docker compose Postgres; in staging and production it is the database from section 3, so it is covered by the same backups and alerts.
 
 ### What to record
 
-Nothing. No keys, no dashboard, no GitHub secrets.
+No keys, no dashboard, no GitHub secrets. Gate result (2026-09-26, DEC-57): the P02-T08 acceptance suite passes on pg-boss 12.34.0 — AC-1 idempotency, AC-2 retry + DLQ (worker and relay), AC-3 replay (also after pg-boss dropped the job), AC-4 kill/retry with zero lost events, AC-5 SKIP LOCKED with two relays, AC-6 per-user cancellation, AC-7 deletion scenario, AC-8 export chain. Measured throughput ≈ 95–103 jobs/s end to end (relay → pg-boss → handler → worker, 500 events) against A11 (≤ ~10 jobs/s).
 
 ### Do not
 
@@ -300,7 +300,7 @@ Nothing. No keys, no dashboard, no GitHub secrets.
 
 ### Verify
 
-Until T08 lands: `just doctor` reports `✔ .env has every key from .env.example`. After T08: the T08 acceptance suite is green (`just test platform`) and `just dev-workers` runs the handlers in-process against the local database.
+Until T08 lands: `just doctor` reports `✔ .env has every key from .env.example`. After T08: the T08 acceptance suite is green (`just test platform` and `just test api`) and `just dev-workers` runs the jobs process against the local database.
 
 ## 6. Cloudflare (R2, DNS/WAF)
 

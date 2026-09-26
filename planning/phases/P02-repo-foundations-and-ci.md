@@ -133,7 +133,7 @@ Module names per [SPINE §3](../SPINE.md); every touched module gets its contrac
 ## 7. Public interfaces, contracts, schemas, migrations, events
 
 - API endpoints added/changed (OpenAPI in `packages/contracts`): `GET /v1/health`, `GET /v1/version`; RFC 9457 problem envelope + `Idempotency-Key`/`If-Match` conventions encoded in the spec scaffolding and spectral rules ([06 §2](../06-data-api-and-event-contracts.md)); dev-only `POST /v1/dev/demo-events` (excluded from prod builds).
-- Event schemas added/changed: `envelope.json` ([06 §4](../06-data-api-and-event-contracts.md)); `platform.demo.requested.v1` (demo/testing event, retired in P03); analytics-event taxonomy schema (NFR-OBS-060).
+- Event schemas added/changed: `envelope.json` ([06 §4](../06-data-api-and-event-contracts.md)); `demo.outbox-flow.requested.v1` (`packages/contracts/events/demo.event.json`; demo/testing event, retired in P03); analytics-event taxonomy schema (NFR-OBS-060).
 - DB migrations (Drizzle): `0001_platform_outbox.sql` (outbox table per [06 §6](../06-data-api-and-event-contracts.md) DDL, forward + down), `0002_platform_idempotency_keys.sql` (API idempotency store, 48 h TTL). Rollback proven on a scratch database restored from the staging backup per [06 §7](../06-data-api-and-event-contracts.md).
 - Generated clients to regenerate: TS client (`packages/contracts/gen/ts-client/`), event TS types, Python models (`workers/ml/generated/`) — all via `just generate`, committed, staleness-gated.
 

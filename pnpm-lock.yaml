@@ -218,6 +218,9 @@ importers:
 
   apps/api:
     dependencies:
+      '@ai-stylist/contracts':
+        specifier: workspace:*
+        version: link:../../packages/contracts
       '@ai-stylist/db':
         specifier: workspace:*
         version: link:../../packages/db
@@ -270,9 +273,6 @@ importers:
         specifier: ^4.6.5
         version: 4.6.5
     devDependencies:
-      '@ai-stylist/contracts':
-        specifier: workspace:*
-        version: link:../../packages/contracts
       '@ai-stylist/seed-data':
         specifier: workspace:*
         version: link:../../packages/seed-data

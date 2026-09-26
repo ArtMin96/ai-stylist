@@ -16,6 +16,7 @@
     "test": "vitest run"
   },
   "dependencies": {
+    "@ai-stylist/contracts": "workspace:*",
     "@ai-stylist/db": "workspace:*",
     "@ai-stylist/shared-kernel": "workspace:*",
     "@fastify/rate-limit": "^11.2.0",
@@ -35,7 +36,6 @@
     "zod": "^4.6.5"
   },
   "devDependencies": {
-    "@ai-stylist/contracts": "workspace:*",
     "@ai-stylist/seed-data": "workspace:*",
     "@ai-stylist/test-support": "workspace:*",
     "@nestjs/testing": "^12.1.0",

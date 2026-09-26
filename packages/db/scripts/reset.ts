@@ -24,9 +24,11 @@ if (!isLocalDatabaseUrl(url)) {
 const handle = createDb(url, { max: 1 });
 try {
   await handle.db.execute(sql`drop schema if exists drizzle cascade`);
+  // Created by migration 0003_pgboss_schema; left behind it would make the re-migrate fail.
+  await handle.db.execute(sql`drop schema if exists pgboss cascade`);
   await handle.db.execute(sql`drop schema public cascade`);
   await handle.db.execute(sql`create schema public`);
-  log('db-reset: dropped public + drizzle schemas');
+  log('db-reset: dropped public + drizzle + pgboss schemas');
   await migrate(handle.db);
   log('db-reset: migrated');
 } finally {

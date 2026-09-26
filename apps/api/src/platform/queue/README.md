@@ -4,10 +4,18 @@
 root (`apps/api/src/jobs/`). Translation only: which queue an event maps to and what a handler does
 are decided by the callers.
 
-- **Lifecycle:** `new PgBossQueue({ connectionString, queues, logger })` → `start()` installs the
+- **Lifecycle:** `new PgBossQueue({ connectionString, queues, logger })` → `start()` verifies the
   pg-boss schema (`pgboss`) and creates or updates every queue plus its dead-letter queue
   `<name>.dlq` → `stop()` (graceful, bounded by `stopTimeoutMs`). The connection string is passed
   in; nothing here reads `process.env`.
+- **Schema is a migration, not a boot step:** pg-boss runs with `migrate: false` (planning/06 §7:
+  migrations never run on app boot). Migration `packages/db/migrations/0003_pgboss_schema.sql`
+  (pg-boss schema version 42, generated from pg-boss 12.34.0's `getConstructionPlans()`) installs
+  it through `just db-migrate`; `start()` throws `pg-boss is not installed` /
+  `pg-boss database requires migrations` when it is missing or at another version. A pg-boss
+  upgrade that bumps its schema version (`pgboss.schema` in its `package.json`) needs a new
+  migration generated from `getMigrationPlans()`, applied before the new version boots;
+  the drift test in `apps/api/tests/migrations/` fails until it exists.
 - **Retries:** per queue `retryLimit` (a job runs at most `retryLimit + 1` times), exponential
   jittered backoff from `retryDelaySeconds`, capped by `retryDelayMaxSeconds` (doc 04 §9.2). An
   exhausted job ends `failed` and a copy lands in `<name>.dlq` (`sourceId` = the failed job id).

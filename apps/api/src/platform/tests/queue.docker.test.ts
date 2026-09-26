@@ -8,6 +8,7 @@ import pino from 'pino';
 import postgres, { type Sql } from 'postgres';
 import { afterAll, describe, expect, it } from 'vitest';
 
+import { createDb, migrate } from '@ai-stylist/db';
 import { newId } from '@ai-stylist/shared-kernel';
 import { type StartedPostgres, startPostgres } from '@ai-stylist/test-support';
 
@@ -36,9 +37,21 @@ describe('PgBossQueue (pg-boss v12 on Testcontainers Postgres)', () => {
   });
 
   /** Started lazily inside the first test so a missing Docker daemon FAILS a test (never skips). */
+  async function container(): Promise<StartedPostgres> {
+    pg ??= await startPostgres();
+    return pg;
+  }
+
+  /** Migrated database (0003_pgboss_schema installs pg-boss) + a started queue. */
   async function boot(): Promise<{ queue: PgBossQueue; sql: Sql }> {
     if (queue !== undefined && sql !== undefined) return { queue, sql };
-    pg = await startPostgres();
+    const pg = await container();
+    const handle = createDb(pg.url, { max: 1 });
+    try {
+      await migrate(handle.db);
+    } finally {
+      await handle.close();
+    }
     sql = postgres(pg.url, { max: 2 });
     const sink = new Writable({
       write(chunk: Buffer, _encoding, callback) {
@@ -80,6 +93,25 @@ describe('PgBossQueue (pg-boss v12 on Testcontainers Postgres)', () => {
     }
     throw new Error(`timed out waiting for ${what}`);
   }
+
+  it('refuses to start before `just db-migrate` installed the pg-boss schema (no boot DDL)', async () => {
+    const pg = await container();
+    const unmigrated = new PgBossQueue({
+      connectionString: pg.url,
+      logger: pino({ level: 'silent' }),
+      queues: [{ name: IDEMPOTENT, retryLimit: 0, retryDelaySeconds: 1, retryDelayMaxSeconds: 1 }],
+    });
+    await expect(unmigrated.start()).rejects.toThrow('pg-boss is not installed');
+    await unmigrated.stop();
+    const probe = postgres(pg.url, { max: 1 });
+    try {
+      const schemas = await probe<{ n: number }[]>`
+        select count(*)::int as n from information_schema.schemata where schema_name = 'pgboss'`;
+      expect(schemas[0]?.n).toBe(0);
+    } finally {
+      await probe.end();
+    }
+  });
 
   it('enqueues exactly one job when the same idempotency key is sent twice', async () => {
     const { queue, sql } = await boot();

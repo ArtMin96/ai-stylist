@@ -30,7 +30,10 @@ export type PgBossQueueConfig = {
   readonly queues: readonly QueueDefinition[];
   /** A pino logger built from `loggerOptions()` (apps/api/src/platform/logger.ts). */
   readonly logger: Logger;
-  /** Postgres schema pg-boss installs into. Default `pgboss`. */
+  /**
+   * Postgres schema pg-boss runs in. Default `pgboss`, the only schema migration
+   * `0003_pgboss_schema` installs; any other value fails `start()` unless migrated as well.
+   */
   readonly schema?: string;
   /** pg-boss pool size. Default 10 (pg-boss default). */
   readonly maxConnections?: number;
@@ -91,6 +94,9 @@ export class PgBossQueue {
     this.boss = new PgBoss({
       connectionString: config.connectionString,
       application_name: 'ai-stylist-jobs',
+      // Never install or upgrade the pg-boss schema on boot (planning/06 §7): migration
+      // 0003_pgboss_schema (packages/db) installs it, and start() only checks the version.
+      migrate: false,
       ...(config.schema !== undefined ? { schema: config.schema } : {}),
       ...(config.maxConnections !== undefined ? { max: config.maxConnections } : {}),
     });
@@ -104,7 +110,11 @@ export class PgBossQueue {
     });
   }
 
-  /** Install/migrate the pg-boss schema, then create or update every queue and its DLQ. */
+  /**
+   * Verify the migrated pg-boss schema (pg-boss throws `pg-boss is not installed` or
+   * `pg-boss database requires migrations` when `just db-migrate` has not run), then create or
+   * update every queue and its DLQ. Never runs DDL on the pg-boss schema itself.
+   */
   async start(): Promise<void> {
     await this.boss.start();
     for (const queue of this.queues.values()) {

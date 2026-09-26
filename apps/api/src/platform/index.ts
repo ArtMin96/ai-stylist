@@ -80,3 +80,33 @@ export {
   clampTtl,
 } from './ports/storage.port.js';
 export { PgHealthProbe } from './pg-health-probe.js';
+export {
+  type BackoffPolicy,
+  CircuitBreaker,
+  type CircuitBreakerOptions,
+  CircuitOpenError,
+  type CircuitState,
+  type RetryOptions,
+  TimeoutError,
+  backoffDelayMs,
+  retry,
+  withTimeout,
+} from './resilience/index.js';
+export {
+  PgBossQueue,
+  deadLetterQueueName,
+  type EnqueueOptions,
+  type EnqueueResult,
+  type JobHandler,
+  type PgBossQueueConfig,
+  type QueueDefinition,
+  type QueueJob,
+} from './queue/pg-boss-queue.js';
+export {
+  IdempotencyKeyBusyError,
+  IdempotencyKeyConflictError,
+  PgIdempotencyGuard,
+  type IdempotentEffectRequest,
+  type IdempotentEffectResult,
+  type PgIdempotencyGuardOptions,
+} from './idempotency/pg-idempotency-guard.js';

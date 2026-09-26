@@ -11,6 +11,8 @@ import { memoryLogStream } from '@ai-stylist/test-support';
 
 import { createApp } from '../src/app.module.js';
 import { loadConfig } from '../src/config.js';
+import { DEMO_ID_MAX } from '../src/dev/demo-events.controller.js';
+import { isDevRouteEnabled } from '../src/dev/index.js';
 import { PROBLEM_CONTENT_TYPE } from '../src/platform/index.js';
 
 const CANARY = 'CANARY_SENSITIVE_9f3a';
@@ -149,6 +151,21 @@ describe('api (Fastify in-process)', () => {
     }
   });
 
+  it('POST /v1/dev/demo-events rejects an over-long demoId/correlationId with a 400 problem', async () => {
+    const res = await app.inject({
+      method: 'POST',
+      url: '/v1/dev/demo-events',
+      remoteAddress: '10.1.0.6',
+      payload: { demoId: 'd'.repeat(DEMO_ID_MAX + 1), correlationId: 'c'.repeat(DEMO_ID_MAX + 1) },
+    });
+    expect(res.statusCode).toBe(400);
+    expect(res.headers['content-type']).toContain(PROBLEM_CONTENT_TYPE);
+    const body = res.json<ProblemDetails>();
+    expect(isProblem(body)).toBe(true);
+    expect(body).toMatchObject({ status: 400, code: 'VALIDATION_FAILED' });
+    expect(body.errors?.map((e) => e.pointer)).toEqual(['/demoId', '/correlationId']);
+  });
+
   it('does not log forbidden request material (authorization header, body, query)', async () => {
     const res = await app.inject({
       method: 'POST',
@@ -182,5 +199,44 @@ describe('api (Fastify in-process)', () => {
       code: 'RATE_LIMITED',
       title: ERROR_CODES.RATE_LIMITED.title,
     });
+  });
+});
+
+describe('dev routes fail closed', () => {
+  it.each([
+    ['development', 'local', true],
+    ['test', 'dev', true],
+    ['development', 'staging', false],
+    ['development', 'prod', false],
+    ['production', 'local', false],
+    ['production', 'dev', false],
+  ] as const)('NODE_ENV=%s APP_ENV=%s → enabled=%s', (NODE_ENV, APP_ENV, enabled) => {
+    expect(isDevRouteEnabled({ NODE_ENV, APP_ENV })).toBe(enabled);
+  });
+
+  it('POST /v1/dev/demo-events is not registered when APP_ENV=staging (NODE_ENV=test)', async () => {
+    // No DATABASE_URL: this app only needs routing, not the queue/relay runtime.
+    const { DATABASE_URL: _omit, ...env } = process.env;
+    const config = loadConfig({
+      ...env,
+      NODE_ENV: 'test',
+      APP_ENV: 'staging',
+      LOG_LEVEL: 'silent',
+    });
+    const staging = await createApp({ config, logStream: memoryLogStream() });
+    try {
+      await staging.init();
+      await staging.getHttpAdapter().getInstance().ready();
+      const res = await staging.inject({
+        method: 'POST',
+        url: '/v1/dev/demo-events',
+        payload: { demoId: `demo-run-9-${RUN}` },
+      });
+      expect(res.statusCode).toBe(404);
+      expect(res.headers['content-type']).toContain(PROBLEM_CONTENT_TYPE);
+      expect(res.json<ProblemDetails>()).toMatchObject({ status: 404, code: 'NOT_FOUND' });
+    } finally {
+      await staging.close();
+    }
   });
 });

@@ -17,7 +17,7 @@ import pino from 'pino';
 import { createDb, type DbHandle } from '@ai-stylist/db';
 
 import { type AppConfig, loadConfig } from './config.js';
-import { DevModule } from './dev/index.js';
+import { DevModule, UnconfiguredOutboxWriter, isDevRouteEnabled } from './dev/index.js';
 import { JOB_QUEUES, queueForEventType } from './jobs/index.js';
 import { AdminModule } from './modules/admin/index.js';
 import { AssistantModule } from './modules/assistant/index.js';
@@ -37,6 +37,7 @@ import {
   InMemoryStorageProvider,
   type OutboxEnvelope,
   OutboxRelay,
+  type OutboxWriter,
   PgBossQueue,
   PgHealthProbe,
   PgOutboxWriter,
@@ -154,7 +155,8 @@ export class AppModule {
       });
       runtime = { handle: db, queue, relay };
     }
-    const outboxWriter = db === null ? null : new PgOutboxWriter(db.sql);
+    const outboxWriter: OutboxWriter =
+      db === null ? new UnconfiguredOutboxWriter() : new PgOutboxWriter(db.sql);
     return {
       module: AppModule,
       imports: [
@@ -170,7 +172,7 @@ export class AppModule {
           storage: new InMemoryStorageProvider(() => clock.now()),
         }),
         ...DOMAIN_MODULES,
-        ...(config.NODE_ENV === 'production' ? [] : [DevModule.forRoot(outboxWriter)]),
+        ...(isDevRouteEnabled(config) ? [DevModule.forRoot(outboxWriter)] : []),
       ],
       providers: [{ provide: DB_LIFECYCLE, useValue: new DbLifecycle(runtime) }],
     };

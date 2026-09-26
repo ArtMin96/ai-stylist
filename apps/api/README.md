@@ -19,9 +19,11 @@ SPINE domain module (13, registered in `DOMAIN_MODULES`; public API = `index.ts`
 - Listens on `0.0.0.0:${API_PORT}`, falling back to `PORT` (Coolify), then 3000.
 - Routes (all under `/v1`, matching the contract paths): `GET /v1/health` (200, or 503
   problem+json when `DATABASE_URL` is unset or Postgres is down), `GET /v1/version`, and the
-  dev-only `POST /v1/dev/demo-events` (not registered when `NODE_ENV=production`): appends a
-  `demo.outbox-flow.requested.v1` envelope to `platform_outbox` (202), or a 503 problem when
-  `DATABASE_URL` is unset.
+  dev-only `POST /v1/dev/demo-events` (registered only when `NODE_ENV` is not `production`
+  AND `APP_ENV` is `local` or `dev`, so it fails closed on staging/prod): appends a
+  `demo.outbox-flow.requested.v1` envelope to `platform_outbox` (202), a 503 problem when
+  `DATABASE_URL` is unset, or a 400 `VALIDATION_FAILED` problem when `demoId` or
+  `correlationId` exceeds 128 characters (`note` is truncated to the contract's 200).
 - `just test api` (all projects) / `just test <module>` / `just test platform` — vitest projects
   `api` (unit + in-process HTTP), `platform-docker` and `migrations` (Testcontainers; both fail
   loudly without Docker). With `DATABASE_URL` set (local hosts only), `tests/http.test.ts`

@@ -2,9 +2,10 @@
 // and then SIGKILLs mid-run (AC-4, AC-8): a hard kill, no graceful stop, so its in-flight outbox
 // transaction and its `active` jobs are abandoned exactly as a crashed process leaves them.
 //
-// Env (set by the test): ACCEPTANCE_B_DATABASE_URL (the Testcontainers database) and
-// ACCEPTANCE_B_MODE: `kill-retry` (outbox relay + KILL_RETRY_QUEUE worker) or `export` (the
-// export-chain workers; the step-2 effect is slow so the kill lands inside it). Prints `ready`
+// Arguments (passed by the test on argv, not env, so test-only settings stay out of .env.example):
+// `<mode> <databaseUrl>`, where mode is `kill-retry` (outbox relay + KILL_RETRY_QUEUE worker) or
+// `export` (the export-chain workers; the step-2 effect is slow so the kill lands inside it) and
+// databaseUrl is the Testcontainers database. Prints `ready`
 // on stdout once polling. Exits on its own after 2 minutes so an orphan never outlives the test.
 import pino from 'pino';
 import postgres from 'postgres';
@@ -28,10 +29,9 @@ import {
 const ORPHAN_EXIT_MS = 120_000;
 
 async function main(): Promise<void> {
-  const url = process.env.ACCEPTANCE_B_DATABASE_URL;
-  const mode = process.env.ACCEPTANCE_B_MODE;
+  const [mode, url] = process.argv.slice(2);
   if (url === undefined || (mode !== 'kill-retry' && mode !== 'export')) {
-    throw new Error('ACCEPTANCE_B_DATABASE_URL and ACCEPTANCE_B_MODE are required');
+    throw new Error('usage: acceptance-b-worker-process <kill-retry|export> <databaseUrl>');
   }
   setTimeout(() => process.exit(3), ORPHAN_EXIT_MS);
   const logger = pino(loggerOptions({ level: 'warn', service: 'api-test' }), process.stderr);

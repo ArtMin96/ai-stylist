@@ -208,9 +208,9 @@ describe('DEC-41 pg-boss gate: lifecycle acceptance (AC-4, AC-6, AC-7, AC-8)', (
   }
 
   function spawnWorker(url: string, mode: 'kill-retry' | 'export'): WorkerProcess {
-    const child = spawn(process.execPath, ['--import', 'tsx', WORKER_ENTRY], {
+    // Mode and database URL go on argv, not env: test-only settings stay out of .env.example.
+    const child = spawn(process.execPath, ['--import', 'tsx', WORKER_ENTRY, mode, url], {
       cwd: API_DIR,
-      env: { ...process.env, ACCEPTANCE_B_DATABASE_URL: url, ACCEPTANCE_B_MODE: mode },
       stdio: ['ignore', 'pipe', 'pipe'],
     });
     if (child.pid === undefined) throw new Error('worker process did not spawn');

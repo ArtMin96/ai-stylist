@@ -4,6 +4,7 @@
 import pino from 'pino';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 
+import demoEventSchema from '@ai-stylist/contracts/events/demo.event.json' with { type: 'json' };
 import { demoEvent } from '@ai-stylist/seed-data';
 import { newId } from '@ai-stylist/shared-kernel';
 import { fakeClock, memoryLogStream } from '@ai-stylist/test-support';
@@ -28,7 +29,10 @@ import {
 /** Canary: a payload value that must never reach the log sink. */
 const NOTE_MARKER = 'note-marker-5c1e';
 const demoPayload = demoEvent().payload;
-const LONG_NOTE = 'x'.repeat(201);
+/** The note limit as the contract states it (demo.event.json), not a copy of the number. */
+const NOTE_MAX_LENGTH =
+  demoEventSchema.$defs.DemoOutboxFlowRequestedV1Payload.properties.note.maxLength;
+const LONG_NOTE = 'x'.repeat(NOTE_MAX_LENGTH + 1);
 
 /** PgIdempotencyGuard's contract in memory: the key is recorded only when the effect resolves. */
 type GuardRequest = Parameters<EffectOnceGuard['runOnce']>[0];
@@ -129,12 +133,18 @@ describe('demo.outbox-flow handler', () => {
     ['a malformed event id', { ...demoEvent(), id: 'evt_not-a-ulid' }],
     ['a missing correlationId', { ...demoEvent(), correlationId: undefined }],
     ['an unknown payload field', { ...demoEvent(), payload: { ...demoPayload, extra: 1 } }],
-    ['a note over 200 chars', { ...demoEvent(), payload: { ...demoPayload, note: LONG_NOTE } }],
+    ['a note over maxLength', { ...demoEvent(), payload: { ...demoPayload, note: LONG_NOTE } }],
   ])('rejects %s without calling the worker', async (_label, data) => {
     await expect(handle(job(data))).rejects.toBeInstanceOf(InvalidJobDataError);
 
     expect(worker.requests).toHaveLength(0);
     expect(guard.requests).toHaveLength(0);
+  });
+
+  it('accepts a note of exactly the contract maxLength', async () => {
+    await handle(job(demoEvent({ payload: { note: 'x'.repeat(NOTE_MAX_LENGTH) } })));
+
+    expect(worker.requests).toHaveLength(1);
   });
 
   it('tolerates unknown envelope fields (envelope.json)', async () => {
@@ -179,5 +189,16 @@ describe('demo.outbox-flow handler', () => {
     expect(error).toBeInstanceOf(InvalidJobDataError);
     expect((error as Error).message).toContain('payload.requestedAt');
     expect((error as Error).message).not.toContain(NOTE_MARKER);
+  });
+
+  it('names missing and unknown fields by path', async () => {
+    const { correlationId: _dropped, ...withoutCorrelation } = demoEvent();
+    const data = { ...withoutCorrelation, payload: { ...demoPayload, [NOTE_MARKER]: 1 } };
+
+    const error = await handle(job(data)).catch((e: unknown) => e);
+
+    expect(error).toBeInstanceOf(InvalidJobDataError);
+    expect((error as Error).message).toContain('correlationId');
+    expect((error as Error).message).toContain(`payload.${NOTE_MARKER}`);
   });
 });

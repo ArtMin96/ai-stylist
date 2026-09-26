@@ -18,7 +18,7 @@ import { createDb, type DbHandle } from '@ai-stylist/db';
 
 import { type AppConfig, loadConfig } from './config.js';
 import { DevModule, UnconfiguredOutboxWriter, isDevRouteEnabled } from './dev/index.js';
-import { JOB_QUEUES, queueForEventType } from './jobs/index.js';
+import { JOB_QUEUES, queueForEventType, userIdOf } from './jobs/queues.js';
 import { AdminModule } from './modules/admin/index.js';
 import { AssistantModule } from './modules/assistant/index.js';
 import { AvatarModule } from './modules/avatar/index.js';
@@ -35,7 +35,6 @@ import { RecommendationModule } from './modules/recommendation/index.js';
 import {
   type HealthProbe,
   InMemoryStorageProvider,
-  type OutboxEnvelope,
   OutboxRelay,
   type OutboxWriter,
   PgBossQueue,
@@ -73,11 +72,6 @@ type DbRuntime = {
   readonly queue: PgBossQueue;
   readonly relay: OutboxRelay;
 };
-
-/** The pg-boss job key for per-user cancellation: the actor id of a user-caused event. */
-function userIdOf(envelope: OutboxEnvelope): string | undefined {
-  return envelope.actor.kind === 'user' ? envelope.actor.id : undefined;
-}
 
 /**
  * Starts the pg-boss queue, then the outbox relay, once the app is wired; stops them in reverse
@@ -140,7 +134,8 @@ export class AppModule {
         loggerOptions({ level: config.LOG_LEVEL }),
         ...(logStream !== undefined ? [logStream] : []),
       );
-      // Queue names and routes come from the jobs composition root (single source of truth).
+      // Queue names, routes and the per-user key come from `jobs/queues.ts` (single source of
+      // truth), not `jobs/index.ts`, so the job runtime stays out of the API process.
       const queue = new PgBossQueue({
         connectionString: config.DATABASE_URL,
         logger,

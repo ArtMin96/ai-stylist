@@ -11,8 +11,9 @@ SPINE domain module (13, registered in `DOMAIN_MODULES`; public API = `index.ts`
   once first ([packages/db](../../packages/db/README.md)). tsx does not emit decorator metadata, so every
   injected constructor parameter uses an explicit `@Inject(TOKEN)`.
 - With `DATABASE_URL` set, the API process also runs the outbox relay: on bootstrap it starts a
-  `PgBossQueue` (queues `JOB_QUEUES` from `src/jobs/index.ts`), then an `OutboxRelay` routing
-  each event type with `queueForEventType`; on shutdown it stops the relay, then the queue, then
+  `PgBossQueue` (queues `JOB_QUEUES` from `src/jobs/queues.ts`, never `src/jobs/index.ts`, so the
+  job runtime stays out of the API process), then an `OutboxRelay` routing each event type with
+  `queueForEventType` and keying jobs per user with `userIdOf`; on shutdown it stops the relay, then the queue, then
   closes the pool. Boot fails, naming `just db-migrate`, when the pg-boss schema is missing.
   Job handlers run in the separate jobs process: package scripts `dev:jobs` (watch), `jobs`, and
   `start:jobs` (after `build`), e.g. `pnpm --filter @ai-stylist/api run dev:jobs`.

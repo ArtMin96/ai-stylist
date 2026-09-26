@@ -25,10 +25,25 @@ are decided by the callers.
   (default 7 days after completion). `singletonKey` is not used for this: on a `standard` queue
   pg-boss v12 does not enforce it without `singletonSeconds`.
 - **Per-user cancellation:** `userId` (`usr_…`) is stored as the job's pg-boss key.
-  `cancelPendingForUser(userId)` cancels every `created`/`retry` job with that key on every
-  configured queue and its DLQ (doc 06 §8 step 4) and returns the count.
+  `cancelPendingForUser(userId)` cancels every unfinished (`created`, `retry` or `active`) job
+  with that key on every configured queue and its DLQ (doc 06 §8 step 4) and returns the count. A
+  cancelled `active` job's handler runs to its end (pg-boss cannot interrupt it), but its outcome
+  is dropped: pg-boss completes only `active` jobs and fails only unfinished ones, so it stays
+  `cancelled` and never retries. Later sends for the user are still accepted.
+- **Deletion-shaped cancellation:** `cancelUser(userId)` first writes a durable marker (a
+  never-worked job in the reserved queue `platform.cancelled-users`, id = UUIDv5 of the user id),
+  then runs `cancelPendingForUser`. Once it resolves, no job keyed to the user reaches a handler on
+  any instance: `send` inserts nothing for the user (`enqueued: false`, so the outbox relay marks
+  the row dispatched) and `work` cancels, without calling the handler, any job for the user it
+  fetches (a send that raced the marker). Idempotent. The marker lives for pg-boss's created-job
+  retention (14 days, pg-boss default); no retention number is chosen here.
+- **Supervision:** `superviseIntervalSeconds` (default 60, pg-boss default) is how often an
+  instance fails `active` jobs older than their queue's `expireInSeconds` back into retry: the
+  recovery path for a worker killed mid-job.
 - **Logging:** through the injected pino logger built from `../logger.ts`; fields are job id,
   queue, attempt, max attempts and error class — never job data or error messages.
 
-Tests: `../tests/queue.docker.test.ts` (Testcontainers, `platform-docker` project; fails without
-Docker).
+Tests: `../tests/queue.docker.test.ts` and, for the DEC-41 lifecycle acceptance cases (AC-4
+kill/retry, AC-6 per-user cancel, AC-7 deletion, AC-8 export chain),
+`../tests/acceptance-lifecycle.docker.test.ts` (Testcontainers, `platform-docker` project; fail
+without Docker).

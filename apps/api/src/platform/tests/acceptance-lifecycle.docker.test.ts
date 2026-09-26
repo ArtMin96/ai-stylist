@@ -15,7 +15,7 @@ import pino from 'pino';
 import postgres, { type Sql } from 'postgres';
 import { afterAll, describe, expect, it } from 'vitest';
 
-import { createDb, migrate } from '@ai-stylist/db';
+import { migrateUrl } from '@ai-stylist/db';
 import { DEMO_EVENT_TYPE, type DemoEvent, demoEvent, syntheticRandom } from '@ai-stylist/seed-data';
 import { newId } from '@ai-stylist/shared-kernel';
 import { type StartedPostgres, memoryLogStream, startPostgres } from '@ai-stylist/test-support';
@@ -103,12 +103,7 @@ describe('DEC-41 pg-boss gate: lifecycle acceptance (AC-4, AC-6, AC-7, AC-8)', (
   async function boot(): Promise<{ url: string; sql: Sql }> {
     if (pg === undefined || sql === undefined) {
       pg = await startPostgres();
-      const handle = createDb(pg.url, { max: 1 });
-      try {
-        await migrate(handle.db);
-      } finally {
-        await handle.close();
-      }
+      await migrateUrl(pg.url);
       sql = postgres(pg.url, { max: 8 });
       await createBookkeepingTables(sql);
     }

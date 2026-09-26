@@ -1,6 +1,8 @@
 # @ai-stylist/db
 
-drizzle-kit config, composed schema entry, committed migrations, and the client/migrate helpers.
+drizzle-kit config, composed schema entry, committed migrations, and the client/migrate helpers
+(`migrate(db)` on an open client; `migrateUrl(url)` opens a one-connection client, migrates and
+closes it, as `just db-migrate` and the Testcontainers tests do).
 Table definitions for domain modules live in `apps/api/src/modules/<name>/internal/schema.ts` and
 are re-exported from `src/schema/index.ts` once they exist (none yet in P02); the `platform`
 infrastructure tables live here (`src/schema/platform.ts`). Committed migrations: `0000` pgvector,

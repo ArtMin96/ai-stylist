@@ -6,7 +6,7 @@ import pino from 'pino';
 import postgres, { type Sql } from 'postgres';
 import { afterAll, describe, expect, it } from 'vitest';
 
-import { createDb, migrate } from '@ai-stylist/db';
+import { migrateUrl } from '@ai-stylist/db';
 import { newId } from '@ai-stylist/shared-kernel';
 import { startPostgres, type StartedPostgres } from '@ai-stylist/test-support';
 
@@ -40,12 +40,7 @@ describe('demo.outbox-flow batched fetch settles per job (Testcontainers)', () =
 
   it('one failure in a batch retries alone; a cancelled user is refused; the rest complete once', async () => {
     pg = await startPostgres();
-    const handle = createDb(pg.url, { max: 1 });
-    try {
-      await migrate(handle.db);
-    } finally {
-      await handle.close();
-    }
+    await migrateUrl(pg.url);
     const db = postgres(pg.url, { max: 2 });
     sql = db;
     // The real demo definition (batchSize, retryLimit); backoff shortened so retries finish fast.

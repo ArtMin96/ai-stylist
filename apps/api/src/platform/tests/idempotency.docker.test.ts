@@ -4,7 +4,7 @@
 import postgres, { type Sql } from 'postgres';
 import { afterAll, describe, expect, it } from 'vitest';
 
-import { createDb, migrate } from '@ai-stylist/db';
+import { migrateUrl } from '@ai-stylist/db';
 import { newId } from '@ai-stylist/shared-kernel';
 import { type StartedPostgres, startPostgres } from '@ai-stylist/test-support';
 
@@ -30,12 +30,7 @@ describe('PgIdempotencyGuard (Testcontainers Postgres)', () => {
   async function boot(): Promise<Sql> {
     if (sql !== undefined) return sql;
     pg = await startPostgres();
-    const handle = createDb(pg.url, { max: 1 });
-    try {
-      await migrate(handle.db);
-    } finally {
-      await handle.close();
-    }
+    await migrateUrl(pg.url);
     sql = postgres(pg.url, { max: 4 });
     return sql;
   }

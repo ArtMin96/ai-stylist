@@ -102,6 +102,7 @@ export {
   type QueueDefinition,
   type QueueJob,
 } from './queue/pg-boss-queue.js';
+export { PGBOSS_SCHEMA_VERSION, pgBossConstructionSql } from './queue/pg-boss-schema.js';
 export { OUTBOX_WRITER, type OutboxWriter } from './ports/outbox-writer.port.js';
 export { PgOutboxWriter } from './outbox/pg-outbox-writer.js';
 export { markOutboxFailed } from './outbox/outbox-dead-letter.js';

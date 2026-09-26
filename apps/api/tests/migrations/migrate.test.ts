@@ -1,11 +1,13 @@
 // Forward + rollback migration test on a throwaway Testcontainers Postgres (pgvector image).
 // Requires Docker: startPostgres() throws (test fails, never skips) when the daemon is unreachable.
 import { sql } from 'drizzle-orm';
-import { PgBoss } from 'pg-boss';
+import pino from 'pino';
 import { afterAll, describe, expect, it } from 'vitest';
 
 import { type DbHandle, createDb, migrate, rollbackLast } from '@ai-stylist/db';
 import { type StartedPostgres, startPostgres } from '@ai-stylist/test-support';
+
+import { PGBOSS_SCHEMA_VERSION, PgBossQueue } from '../../src/platform/index.js';
 
 const TABLES = ['platform_outbox', 'platform_idempotency_keys'];
 
@@ -13,8 +15,7 @@ const TABLES = ['platform_outbox', 'platform_idempotency_keys'];
 // fails when the Testcontainers image drifts from it, so migrations are always proven on this major.
 const POSTGRES_MAJOR = 18;
 
-/** pg-boss schema version installed by 0003_pgboss_schema (pg-boss 12.34.0). */
-const PGBOSS_SCHEMA_VERSION = 42;
+const SMOKE_QUEUE = 'migrations.smoke';
 
 describe('packages/db migrations (Testcontainers)', () => {
   let pg: StartedPostgres | undefined;
@@ -51,14 +52,22 @@ describe('packages/db migrations (Testcontainers)', () => {
     return rows[0]?.version ?? null;
   }
 
-  /** pg-boss accepts the migrated schema without migrating it (the PgBossQueue setting). */
+  /** The API's PgBossQueue (pg-boss `migrate: false`) starts on the migrated schema and enqueues. */
   async function pgbossStartsWithoutMigrating(url: string): Promise<void> {
-    const boss = new PgBoss({ connectionString: url, migrate: false, max: 1 });
-    boss.on('error', () => undefined);
-    await boss.start();
-    await boss.createQueue('migrations.smoke');
-    expect(await boss.send('migrations.smoke', {})).not.toBeNull();
-    await boss.stop({ graceful: false });
+    const queue = new PgBossQueue({
+      connectionString: url,
+      logger: pino({ level: 'silent' }),
+      maxConnections: 1,
+      stopTimeoutMs: 1_000,
+      queues: [{ name: SMOKE_QUEUE, retryLimit: 0, retryDelaySeconds: 1, retryDelayMaxSeconds: 1 }],
+    });
+    await queue.start();
+    try {
+      const sent = await queue.send(SMOKE_QUEUE, {}, { idempotencyKey: 'migrations-smoke' });
+      expect(sent.enqueued).toBe(true);
+    } finally {
+      await queue.stop();
+    }
   }
 
   it('migrates up, rolls back the pg-boss schema and both platform tables, and migrates again', async () => {

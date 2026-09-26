@@ -15,10 +15,14 @@ are decided by the callers.
   `pg-boss database requires migrations` when it is missing or at another version. A pg-boss
   upgrade that bumps its schema version (`pgboss.schema` in its `package.json`) needs a new
   migration generated from `getMigrationPlans()`, applied before the new version boots;
-  the drift test in `apps/api/tests/migrations/` fails until it exists.
+  the drift test in `apps/api/tests/migrations/` fails until it exists. That test reads the DDL
+  through `pgBossConstructionSql(schema)` and `PGBOSS_SCHEMA_VERSION` (`pg-boss-schema.ts`), so
+  pg-boss is imported only under `apps/api/src/platform/**` and `apps/api/src/jobs/**`.
 - **Retries:** per queue `retryLimit` (a job runs at most `retryLimit + 1` times), exponential
   jittered backoff from `retryDelaySeconds`, capped by `retryDelayMaxSeconds` (doc 04 §9.2). An
   exhausted job ends `failed` and a copy lands in `<name>.dlq` (`sourceId` = the failed job id).
+  The jobs process works each outbox-fed `<name>.dlq` (`apps/api/src/jobs/README.md` "Dead-letter
+  queues"), which marks the outbox row `failed`.
 - **Workers and batches:** `work(queue, handler)` fetches up to the queue's `batchSize` jobs
   (1..`MAX_WORK_BATCH_SIZE` = 100, default 1). pg-boss waits `pollingIntervalSeconds` (default 2)
   after each fetch, so batch 1 works about 0.5 jobs/s under backlog. Above 1 the worker fetches

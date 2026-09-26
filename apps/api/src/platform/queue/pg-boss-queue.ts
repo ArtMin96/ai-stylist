@@ -188,8 +188,9 @@ export class PgBossQueue {
     await this.boss.updateQueue(CANCELLED_USERS_QUEUE, markerOptions);
     for (const queue of this.queues.values()) {
       const deadLetter = deadLetterQueueName(queue.name);
-      // The DLQ holds exhausted jobs for the ops sweep (doc 04 §9.2); nothing works it, so it
-      // never retries on its own.
+      // The DLQ holds exhausted jobs (doc 04 §9.2). It is created here with retryLimit 0; a
+      // composition root that works it (apps/api/src/jobs OUTBOX_DEAD_LETTER_QUEUES) lists it as
+      // its own QueueDefinition, which sets its retry policy.
       await this.boss.createQueue(deadLetter, { policy: 'standard', retryLimit: 0 });
       const options = {
         retryLimit: queue.retryLimit,

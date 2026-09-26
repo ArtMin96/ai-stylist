@@ -1,14 +1,16 @@
 // `demo.outbox-flow` job handler (P02-T08): the consumer end of the API → outbox → pg-boss →
 // worker round-trip. Translation only: parse the envelope with the contract types, call the
 // segmentation worker at most once per event id, report the outcome to pg-boss. No business rule.
+import { Ajv2020, type ErrorObject, type ValidateFunction } from 'ajv/dist/2020.js';
+import addFormats from 'ajv-formats';
 import type { Logger } from 'pino';
-import { z } from 'zod';
 
 import type {
   DemoOutboxFlowRequestedV1,
   EventEnvelope as ContractEventEnvelope,
 } from '@ai-stylist/contracts/events';
-import { isId } from '@ai-stylist/shared-kernel';
+import demoEventSchema from '@ai-stylist/contracts/events/demo.event.json' with { type: 'json' };
+import envelopeSchema from '@ai-stylist/contracts/events/envelope.json' with { type: 'json' };
 
 import { type JobHandler, type PgIdempotencyGuard } from '../platform/index.js';
 
@@ -31,34 +33,32 @@ export const DEMO_OUTBOX_FLOW_RETENTION_SECONDS = 90 * 24 * 60 * 60;
  */
 export const DEMO_IMAGE_REF = 'demo/outbox-flow';
 
-/**
- * Envelope (packages/contracts/events/envelope.json) narrowed by demo.event.json. Unknown envelope
- * fields are tolerated (envelope.json: "consumers must tolerate unknown fields"); unknown payload
- * fields are rejected (demo.event.json: `additionalProperties: false`). `satisfies` pins the parsed
- * shape to the generated contract types, so a new required contract field fails `just typecheck`.
- */
-const demoEnvelopeSchema = z.looseObject({
-  id: z.string().refine((value) => isId(value, 'event')),
-  type: z.literal(DEMO_OUTBOX_FLOW_EVENT_TYPE),
-  occurredAt: z.iso.datetime({ offset: true }),
-  producer: z.string().regex(/^[a-z][a-z-]*$/),
-  aggregate: z.looseObject({ kind: z.string().regex(/^[a-z][a-z0-9_]*$/), id: z.string() }),
-  sequence: z.number().int().min(0),
-  actor: z.looseObject({
-    kind: z.enum(['user', 'system', 'admin', 'job']),
-    id: z.string().exactOptional(),
-  }),
-  correlationId: z.string().min(1),
-  causationId: z.string().exactOptional(),
-  consentScope: z.string().exactOptional(),
-  payload: z.strictObject({
-    demoId: z.string(),
-    requestedAt: z.iso.datetime({ offset: true }),
-    note: z.string().max(200).exactOptional(),
-  }),
-}) satisfies z.ZodType<ContractEventEnvelope & DemoOutboxFlowRequestedV1>;
+/** The envelope (envelope.json) narrowed by demo.event.json, as generated from the contract. */
+export type DemoOutboxFlowEnvelope = ContractEventEnvelope & DemoOutboxFlowRequestedV1;
 
-export type DemoOutboxFlowEnvelope = z.infer<typeof demoEnvelopeSchema>;
+/**
+ * Validators compiled once, at module load, from the contract JSON Schemas themselves (the Ajv
+ * 2020-12 setup of packages/contracts/tests/events.test.ts), so a contract change applies here
+ * with nothing to copy. Whatever the contract says holds: today unknown envelope fields are
+ * tolerated (envelope.json: "consumers must tolerate unknown fields") and unknown payload fields
+ * are rejected (demo.event.json: `additionalProperties: false`).
+ */
+const ajv = new Ajv2020({ strict: true, allErrors: true });
+addFormats.default(ajv);
+const validateEnvelope: ValidateFunction<ContractEventEnvelope> = ajv.compile(envelopeSchema);
+const validateDemoEvent: ValidateFunction<DemoOutboxFlowRequestedV1> = ajv.compile(demoEventSchema);
+
+/** Ajv error → dotted field path (`payload.note`, `correlationId`); never the offending value. */
+function errorPath(error: ErrorObject): string {
+  const segments = error.instancePath
+    .split('/')
+    .slice(1)
+    .map((segment) => segment.replaceAll('~1', '/').replaceAll('~0', '~'));
+  const params = error.params as { missingProperty?: unknown; additionalProperty?: unknown };
+  const child = params.missingProperty ?? params.additionalProperty;
+  if (typeof child === 'string') segments.push(child);
+  return segments.join('.') || '(root)';
+}
 
 /** Job data is not a valid demo envelope. The message names paths only, never values. */
 export class InvalidJobDataError extends Error {
@@ -69,13 +69,15 @@ export class InvalidJobDataError extends Error {
 }
 
 export function parseDemoOutboxFlowEnvelope(data: unknown): DemoOutboxFlowEnvelope {
-  const parsed = demoEnvelopeSchema.safeParse(data);
-  if (!parsed.success) {
-    throw new InvalidJobDataError(
-      parsed.error.issues.map((issue) => issue.path.join('.') || '(root)'),
-    );
+  // Both validators always run, so the error names every failing path of either schema.
+  const envelopeValid = validateEnvelope(data);
+  const envelopeErrors = validateEnvelope.errors ?? [];
+  const demoValid = validateDemoEvent(data);
+  const demoErrors = validateDemoEvent.errors ?? [];
+  if (!envelopeValid || !demoValid) {
+    throw new InvalidJobDataError([...new Set([...envelopeErrors, ...demoErrors].map(errorPath))]);
   }
-  return parsed.data;
+  return data;
 }
 
 /** The part of `PgIdempotencyGuard` this handler uses. */

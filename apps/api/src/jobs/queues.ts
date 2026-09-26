@@ -1,14 +1,20 @@
 // pg-boss queues and the event-type → queue routing map (doc 04 §9). Single source of truth: the
 // job runtime (`./index.ts`) and the outbox relay's composition both import these values; nothing
 // else declares a queue name or a route.
+import type { DemoOutboxFlowRequestedV1 } from '@ai-stylist/contracts/events';
+
 import {
   type OutboxEnvelope,
   type QueueDefinition,
   deadLetterQueueName,
 } from '../platform/index.js';
 
-/** Event type the demo round-trip dispatches (packages/contracts/events/demo.event.json). */
-export const DEMO_OUTBOX_FLOW_EVENT_TYPE = 'demo.outbox-flow.requested.v1' as const;
+/**
+ * Event type the demo round-trip dispatches (packages/contracts/events/demo.event.json). The
+ * `satisfies` pins it to the contract's `type` const, so a renamed event fails `just typecheck`.
+ */
+export const DEMO_OUTBOX_FLOW_EVENT_TYPE =
+  'demo.outbox-flow.requested.v1' as const satisfies DemoOutboxFlowRequestedV1['type'];
 
 /**
  * P02 demo queue. Doc 04 §9.2 default: max 5 attempts (`retryLimit` 4 = 4 retries after the first

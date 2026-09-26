@@ -34,8 +34,10 @@ outcome to pg-boss. No business rule lives here. Provider clients are constructe
   case per batch: 10 × `SEGMENTATION_TIMEOUT_MS` = 100 s, below the 900 s job expiry. The pool
   shared by the effect-once guard and the dead-letter handlers has 3 connections: demo jobs never
   run concurrently (one claim connection), each dead-letter worker runs one update at a time.
-- The outbox relay's composition imports `JOB_QUEUES` and `queueForEventType` from `./index.js`
-  and passes them to the relay (platform cannot import `jobs/**`: `platform-leaf`). Every
+- The outbox relay's composition (`apps/api/src/app.module.ts`) imports `JOB_QUEUES`,
+  `queueForEventType` and `userIdOf` from `./queues.js`, never `./index.js` (which would pull the
+  job runtime into the API process), and passes them to the relay (platform cannot import
+  `jobs/**`: `platform-leaf`). Every
   `PgBossQueue` that sends to or works a queue is constructed with the same `JOB_QUEUES`. A new
   consumer adds its queue and route to `queues.ts`, and nowhere else.
 
@@ -61,12 +63,15 @@ outbox-fed queue, `OUTBOX_DEAD_LETTER_QUEUES` declares its DLQ as a worked queue
 
 ## `demo.outbox-flow` handler
 
-1. Parse `job.data` as the envelope (`envelope.json`) narrowed by `demo.event.json`. The zod
-   parser `satisfies` the generated contract types, so a new required contract field fails
-   `just typecheck`. Unknown envelope fields are tolerated (envelope.json); unknown payload
-   fields, another `type`, a malformed `evt_` id, a missing required field or a note over 200
-   chars throw `InvalidJobDataError` (paths only, no values). The job fails, is retried and ends
-   in the DLQ: nothing is silently dropped.
+1. Validate `job.data` against the envelope (`envelope.json`) and `demo.event.json` with Ajv
+   (JSON Schema 2020-12, `ajv-formats`) validators compiled once at module load from the contract
+   files themselves (`@ai-stylist/contracts/events/*.json`); no constraint is copied here, and the
+   result is typed with the generated `EventEnvelope & DemoOutboxFlowRequestedV1`. Whatever the
+   contract says holds: today unknown envelope fields are tolerated (envelope.json) while unknown
+   payload fields, another `type`, a malformed `evt_` id, a missing required field or a note over
+   the contract's `maxLength` throw `InvalidJobDataError`, which names field paths only, never
+   values. The job fails, is retried and ends in the DLQ: nothing is silently dropped.
+   `DEMO_OUTBOX_FLOW_EVENT_TYPE` in `queues.ts` `satisfies` the generated `type` const.
 2. `guard.runOnce({ key: envelope.id, scope: 'job:demo.outbox-flow', retentionSeconds: 90 days })`
    wraps the worker call (`PgIdempotencyGuard` on `platform_idempotency_keys`). 90 days is the
    outbox replay window (doc 04 §9.2 "Replay … `outbox` (retained 90 days)"): a replayed event

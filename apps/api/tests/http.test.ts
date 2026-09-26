@@ -5,6 +5,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
 import type { HealthReport, ProblemDetails, VersionInfo } from '@ai-stylist/contracts/types';
 import type { DemoOutboxFlowRequestedV1 } from '@ai-stylist/contracts/events';
+import { type DbHandle, createDb, isLocalDatabaseUrl, migrate } from '@ai-stylist/db';
 import { ERROR_CODES, PROBLEM_TYPE_BASE } from '@ai-stylist/shared-kernel';
 import { memoryLogStream } from '@ai-stylist/test-support';
 
@@ -17,8 +18,12 @@ const RATE_LIMIT_MAX = 3;
 
 // Each test uses its own client IP: the rate limit in this suite is tiny on purpose.
 // Parametric on the environment (brief T05): with DATABASE_URL the docker/CI Postgres must be
-// reachable and the db check is `ok`; without it the check is honestly `down` (503).
+// reachable, the db check is `ok` and the demo event lands in `platform_outbox`; without it the
+// check is honestly `down` (503) and the demo event is refused (503), never silently dropped.
 const databaseUrl = process.env['DATABASE_URL']?.trim() || undefined;
+
+/** One run's demo ids: (aggregate kind, id, sequence) is unique in the outbox across runs. */
+const RUN = crypto.randomUUID();
 
 function isProblem(body: unknown): body is ProblemDetails {
   const p = body as ProblemDetails;
@@ -33,9 +38,19 @@ function isProblem(body: unknown): body is ProblemDetails {
 
 describe('api (Fastify in-process)', () => {
   let app: NestFastifyApplication;
+  let db: DbHandle | undefined;
   const logs = memoryLogStream();
 
   beforeAll(async () => {
+    if (databaseUrl) {
+      // The app boots the pg-boss queue and the outbox relay, which need a migrated database
+      // (`just db-migrate`). Applying pending migrations is idempotent; never on a remote DB.
+      if (!isLocalDatabaseUrl(databaseUrl)) {
+        throw new Error('http.test.ts migrates DATABASE_URL and only runs against a local one');
+      }
+      db = createDb(databaseUrl, { max: 1 });
+      await migrate(db.db);
+    }
     const config = loadConfig({
       ...process.env,
       NODE_ENV: 'test',
@@ -52,7 +67,11 @@ describe('api (Fastify in-process)', () => {
   });
 
   afterAll(async () => {
-    await app.close();
+    try {
+      await db?.close();
+    } finally {
+      await app.close();
+    }
   });
 
   it(`GET /v1/health reports db=${databaseUrl ? 'ok (DATABASE_URL set)' : 'down (no DATABASE_URL)'}`, async () => {
@@ -93,19 +112,41 @@ describe('api (Fastify in-process)', () => {
     });
   });
 
-  it('POST /v1/dev/demo-events returns 202 with a demo.outbox-flow.requested.v1 envelope', async () => {
+  it(`POST /v1/dev/demo-events ${databaseUrl ? 'returns 202 and appends one platform_outbox row' : 'answers a 503 problem (no DATABASE_URL, no outbox)'}`, async () => {
+    const demoId = `demo-run-7-${RUN}`;
     const res = await app.inject({
       method: 'POST',
       url: '/v1/dev/demo-events',
       remoteAddress: '10.1.0.4',
-      payload: { demoId: 'demo-run-7', note: 'hello outbox' },
+      payload: { demoId, note: 'hello outbox' },
     });
-    expect(res.statusCode).toBe(202);
-    const body = res.json<DemoOutboxFlowRequestedV1 & { id: string; aggregate: { id: string } }>();
-    expect(body.type).toBe('demo.outbox-flow.requested.v1');
-    expect(body.id).toMatch(/^evt_[0-7][0-9A-HJKMNP-TV-Z]{25}$/);
-    expect(body.payload).toMatchObject({ demoId: 'demo-run-7', note: 'hello outbox' });
-    expect(body.aggregate.id).toBe('demo-run-7');
+    if (databaseUrl) {
+      expect(res.statusCode, `DATABASE_URL is set but the append failed: ${res.body}`).toBe(202);
+      const body = res.json<
+        DemoOutboxFlowRequestedV1 & { id: string; aggregate: { id: string } }
+      >();
+      expect(body.type).toBe('demo.outbox-flow.requested.v1');
+      expect(body.id).toMatch(/^evt_[0-7][0-9A-HJKMNP-TV-Z]{25}$/);
+      expect(body.payload).toMatchObject({ demoId, note: 'hello outbox' });
+      expect(body.aggregate.id).toBe(demoId);
+      // The relay may already have dispatched it: the row exists either way, exactly once.
+      const rows = await db!.sql<{ type: string; aggregate_id: string; envelope_id: string }[]>`
+        select type, aggregate_id, payload->>'id' as envelope_id
+        from platform_outbox where id = ${body.id}`;
+      expect(rows).toEqual([
+        { type: 'demo.outbox-flow.requested.v1', aggregate_id: demoId, envelope_id: body.id },
+      ]);
+    } else {
+      expect(res.statusCode).toBe(503);
+      expect(res.headers['content-type']).toContain(PROBLEM_CONTENT_TYPE);
+      const body = res.json<ProblemDetails>();
+      expect(isProblem(body)).toBe(true);
+      expect(body).toMatchObject({
+        status: 503,
+        code: 'SERVICE_UNAVAILABLE',
+        detail: 'outbox unavailable: DATABASE_URL is not set',
+      });
+    }
   });
 
   it('does not log forbidden request material (authorization header, body, query)', async () => {
@@ -114,9 +155,9 @@ describe('api (Fastify in-process)', () => {
       url: `/v1/dev/demo-events?token=${CANARY}`,
       remoteAddress: '10.1.0.5',
       headers: { authorization: `Bearer ${CANARY}`, cookie: `session=${CANARY}` },
-      payload: { demoId: 'demo-run-8', note: CANARY, password: CANARY },
+      payload: { demoId: `demo-run-8-${RUN}`, note: CANARY, password: CANARY },
     });
-    expect(res.statusCode).toBe(202);
+    expect(res.statusCode).toBe(databaseUrl ? 202 : 503);
     const text = logs.text();
     expect(text).toContain('/v1/dev/demo-events'); // the request WAS logged ...
     expect(text).not.toContain(CANARY); // ... without any of the planted values

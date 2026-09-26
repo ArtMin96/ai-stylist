@@ -2,16 +2,23 @@
 // to ports. main.ts (part 2) builds the HTTP server around `createApp`.
 import type { Writable } from 'node:stream';
 
-import { type DynamicModule, Module, type OnApplicationShutdown } from '@nestjs/common';
+import {
+  type DynamicModule,
+  Module,
+  type OnApplicationBootstrap,
+  type OnApplicationShutdown,
+} from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { FastifyAdapter, type NestFastifyApplication } from '@nestjs/platform-fastify';
 import rateLimit from '@fastify/rate-limit';
 import { Logger } from 'nestjs-pino';
+import pino from 'pino';
 
 import { createDb, type DbHandle } from '@ai-stylist/db';
 
 import { type AppConfig, loadConfig } from './config.js';
 import { DevModule } from './dev/index.js';
+import { JOB_QUEUES, queueForEventType } from './jobs/index.js';
 import { AdminModule } from './modules/admin/index.js';
 import { AssistantModule } from './modules/assistant/index.js';
 import { AvatarModule } from './modules/avatar/index.js';
@@ -28,11 +35,16 @@ import { RecommendationModule } from './modules/recommendation/index.js';
 import {
   type HealthProbe,
   InMemoryStorageProvider,
+  type OutboxEnvelope,
+  OutboxRelay,
+  PgBossQueue,
   PgHealthProbe,
+  PgOutboxWriter,
   PlatformModule,
   SystemClock,
   UnconfiguredHealthProbe,
   httpLoggerOptions,
+  loggerOptions,
 } from './platform/index.js';
 
 /** Every domain module's public Nest module (SPINE §3 order). */
@@ -52,13 +64,58 @@ export const DOMAIN_MODULES = [
   AssistantModule,
 ] as const;
 
-const DB_HANDLE = Symbol('DbHandle');
+const DB_LIFECYCLE = Symbol('DbLifecycle');
 
-/** Closes the Postgres pool when the Nest app shuts down (tests close apps constantly). */
-class DbLifecycle implements OnApplicationShutdown {
-  constructor(private readonly handle: DbHandle | null) {}
-  async onApplicationShutdown(): Promise<void> {
-    await this.handle?.close();
+/** Everything that exists only when DATABASE_URL is set. */
+type DbRuntime = {
+  readonly handle: DbHandle;
+  readonly queue: PgBossQueue;
+  readonly relay: OutboxRelay;
+};
+
+/** The pg-boss job key for per-user cancellation: the actor id of a user-caused event. */
+function userIdOf(envelope: OutboxEnvelope): string | undefined {
+  return envelope.actor.kind === 'user' ? envelope.actor.id : undefined;
+}
+
+/**
+ * Starts the pg-boss queue, then the outbox relay, once the app is wired; stops them in reverse
+ * and closes the Postgres pool on shutdown (tests close apps constantly).
+ */
+class DbLifecycle implements OnApplicationBootstrap, OnApplicationShutdown {
+  private stopped: Promise<void> | undefined;
+
+  constructor(private readonly runtime: DbRuntime | null) {}
+
+  async onApplicationBootstrap(): Promise<void> {
+    if (this.runtime === null) return;
+    try {
+      await this.runtime.queue.start();
+    } catch (error) {
+      await this.onApplicationShutdown().catch(() => undefined); // the start failure is the error
+      const reason = error instanceof Error ? error.message : typeof error;
+      throw new Error(
+        `pg-boss queue failed to start (${reason}); the outbox relay needs a migrated database: ` +
+          'run `just db-migrate` against DATABASE_URL first',
+        { cause: error },
+      );
+    }
+    this.runtime.relay.start();
+  }
+
+  /** Idempotent: a failed bootstrap already ran it, and `app.close()` may run it again. */
+  onApplicationShutdown(): Promise<void> {
+    const runtime = this.runtime;
+    if (runtime === null) return Promise.resolve();
+    this.stopped ??= (async () => {
+      try {
+        await runtime.relay.stop();
+        await runtime.queue.stop();
+      } finally {
+        await runtime.handle.close();
+      }
+    })();
+    return this.stopped;
   }
 }
 
@@ -72,10 +129,32 @@ export type CreateAppOptions = {
 @Module({})
 export class AppModule {
   static forRoot(config: AppConfig, logStream: Writable | undefined): DynamicModule {
-    const db = config.DATABASE_URL === undefined ? null : createDb(config.DATABASE_URL, { max: 2 });
+    const db = config.DATABASE_URL === undefined ? null : createDb(config.DATABASE_URL, { max: 5 });
     const healthProbe: HealthProbe =
       db === null ? new UnconfiguredHealthProbe() : new PgHealthProbe(db.sql);
     const clock = new SystemClock();
+    let runtime: DbRuntime | null = null;
+    if (db !== null && config.DATABASE_URL !== undefined) {
+      const logger = pino(
+        loggerOptions({ level: config.LOG_LEVEL }),
+        ...(logStream !== undefined ? [logStream] : []),
+      );
+      // Queue names and routes come from the jobs composition root (single source of truth).
+      const queue = new PgBossQueue({
+        connectionString: config.DATABASE_URL,
+        logger,
+        queues: JOB_QUEUES,
+      });
+      const relay = new OutboxRelay({
+        sql: db.sql,
+        queue,
+        logger,
+        routeEvent: queueForEventType,
+        userIdOf,
+      });
+      runtime = { handle: db, queue, relay };
+    }
+    const outboxWriter = db === null ? null : new PgOutboxWriter(db.sql);
     return {
       module: AppModule,
       imports: [
@@ -91,9 +170,9 @@ export class AppModule {
           storage: new InMemoryStorageProvider(() => clock.now()),
         }),
         ...DOMAIN_MODULES,
-        ...(config.NODE_ENV === 'production' ? [] : [DevModule]),
+        ...(config.NODE_ENV === 'production' ? [] : [DevModule.forRoot(outboxWriter)]),
       ],
-      providers: [{ provide: DB_HANDLE, useValue: new DbLifecycle(db) }],
+      providers: [{ provide: DB_LIFECYCLE, useValue: new DbLifecycle(runtime) }],
     };
   }
 }

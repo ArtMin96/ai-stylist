@@ -1,13 +1,14 @@
-// Dev-only: POST /v1/dev/demo-events returns a fresh `demo.outbox-flow.requested.v1` envelope.
-// Registered by the composition root only when NODE_ENV !== 'production'.
-// TODO(P02 T08): persist the envelope to platform_outbox in a transaction so the relay dispatches
-// it to the demo pg-boss job; until then nothing is stored.
+// Dev-only: POST /v1/dev/demo-events appends a fresh `demo.outbox-flow.requested.v1` envelope to
+// `platform_outbox` through the OutboxWriter port; the outbox relay dispatches it to the
+// `demo.outbox-flow` pg-boss job. Registered by the composition root only when
+// NODE_ENV !== 'production'.
 import { Body, Controller, HttpCode, Inject, Post } from '@nestjs/common';
 
 import type { DemoOutboxFlowRequestedV1Payload } from '@ai-stylist/contracts/events';
 import { type EventEnvelope, newId } from '@ai-stylist/shared-kernel';
 
 import { CLOCK, type Clock } from '../platform/ports/clock.port.js';
+import { OUTBOX_WRITER, type OutboxWriter } from '../platform/ports/outbox-writer.port.js';
 
 export type DemoEventEnvelope = EventEnvelope<
   'demo.outbox-flow.requested.v1',
@@ -18,11 +19,14 @@ type DemoEventRequest = { demoId?: unknown; note?: unknown; correlationId?: unkn
 
 @Controller('v1/dev/demo-events')
 export class DemoEventsController {
-  constructor(@Inject(CLOCK) private readonly clock: Clock) {}
+  constructor(
+    @Inject(CLOCK) private readonly clock: Clock,
+    @Inject(OUTBOX_WRITER) private readonly outbox: OutboxWriter,
+  ) {}
 
   @Post()
   @HttpCode(202)
-  request(@Body() body: DemoEventRequest | undefined): DemoEventEnvelope {
+  async request(@Body() body: DemoEventRequest | undefined): Promise<DemoEventEnvelope> {
     const now = this.clock.now();
     const occurredAt = now.toISOString();
     const demoId =
@@ -34,7 +38,7 @@ export class DemoEventsController {
       typeof body?.correlationId === 'string' && body.correlationId !== ''
         ? body.correlationId
         : crypto.randomUUID();
-    return {
+    const envelope: DemoEventEnvelope = {
       id: newId('event', now.getTime()),
       type: 'demo.outbox-flow.requested.v1',
       occurredAt,
@@ -45,5 +49,7 @@ export class DemoEventsController {
       correlationId,
       payload: { demoId, requestedAt: occurredAt, ...(note !== undefined ? { note } : {}) },
     };
+    await this.outbox.append(envelope);
+    return envelope;
   }
 }

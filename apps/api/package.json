@@ -6,8 +6,11 @@
   "type": "module",
   "scripts": {
     "dev": "tsx watch --env-file-if-exists=../../.env src/main.ts",
+    "dev:jobs": "tsx watch --env-file-if-exists=../../.env src/jobs/main.ts",
+    "jobs": "tsx --env-file-if-exists=../../.env src/jobs/main.ts",
     "build": "tsc -p tsconfig.build.json",
     "start": "node --env-file-if-exists=../../.env dist/apps/api/src/main.js",
+    "start:jobs": "node --env-file-if-exists=../../.env dist/apps/api/src/jobs/main.js",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
     "test": "vitest run"

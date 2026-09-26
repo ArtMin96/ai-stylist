@@ -102,6 +102,17 @@ export {
   type QueueDefinition,
   type QueueJob,
 } from './queue/pg-boss-queue.js';
+export { OUTBOX_WRITER, type OutboxWriter } from './ports/outbox-writer.port.js';
+export { PgOutboxWriter } from './outbox/pg-outbox-writer.js';
+export {
+  MAX_OUTBOX_BATCH_SIZE,
+  OutboxRelay,
+  type OutboxDispatchQueue,
+  type OutboxEnvelope,
+  type OutboxPollResult,
+  type OutboxRelayConfig,
+  type OutboxRelaySettings,
+} from './outbox/outbox-relay.js';
 export {
   IdempotencyKeyBusyError,
   IdempotencyKeyConflictError,

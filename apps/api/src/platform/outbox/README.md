@@ -1,8 +1,66 @@
-# platform/outbox — relay (T08)
+# platform/outbox — relay + writer (P02-T08)
 
-Placeholder (P02-T08 `NOT_STARTED`). T08 adds the outbox relay (doc 04 §9.1): poll
-`platform_outbox` with `FOR UPDATE SKIP LOCKED`, batch ≤ 100, ~250 ms interval, enqueue on the
-mapped pg-boss queue via `boss.send()` with `singletonKey = event.id` (doc 04 §9.2), mark
-`dispatched_at` / `status`, retry with backoff (`attempts`, `next_attempt_at`), mark `failed` +
-`last_error` for the DLQ sweep. Table: `packages/db/src/schema/platform.ts` (migration
-`0001_platform_outbox`); `just db-seed` inserts a pending demo row.
+Table: `platform_outbox` (`packages/db/src/schema/platform.ts`, migration `0001_platform_outbox`;
+no schema change here). `just db-seed` inserts a pending demo row.
+
+## Writer: `PgOutboxWriter` (port `../ports/outbox-writer.port.ts`)
+
+`append(envelope, tx?)` inserts the envelope as a `pending` row (id = `envelope.id`, the `evt_`
+idempotency key; `type`, aggregate kind/id and `sequence` copied from the envelope; `payload` = the
+full envelope). Pass the producer's postgres.js transaction (`sql.begin(async (tx) => …)`) so the
+row commits or rolls back with the domain write (doc 04 §9.1 step 1); without `tx` the row is
+written on its own. A duplicate id or (aggregate kind, aggregate id, sequence) rejects. Producers
+depend on the `OutboxWriter` type and the `OUTBOX_WRITER` token only.
+
+## Relay: `OutboxRelay`
+
+Doc 04 §9.1 step 2 and §9.2. Each poll is one transaction:
+
+1. Claim due rows, oldest first, at most `batchSize`:
+   `status = 'pending' AND (next_attempt_at IS NULL OR next_attempt_at <= now())`,
+   `ORDER BY created_at LIMIT <batchSize> FOR UPDATE SKIP LOCKED`, so concurrent relays never
+   claim the same row.
+2. For each row, enqueue the stored envelope on the mapped pg-boss queue via
+   `PgBossQueue.send(queue, envelope, { idempotencyKey: event.id })` (plus `userId` when the
+   injected extractor returns one), then set `status = 'dispatched'`, `dispatched_at = now()`.
+   `enqueued: false` (the job already exists) also counts as dispatched.
+3. A failed send (queue error, timeout, unrouted type, non-object payload) sets `attempts + 1`,
+   `next_attempt_at = now() + backoffDelayMs(attempts, backoff)` (`../resilience`) and
+   `last_error`; the `maxAttempts`-th failure sets `status = 'failed'` instead, left for the DLQ
+   sweep (doc 04 §9.2). `last_error` = error class + message, at most 500 characters, never the
+   payload (a non-Error throw is recorded by its type only).
+4. COMMIT.
+
+At-least-once dispatch, exactly-once job: the send runs on pg-boss's pool, so a relay that dies
+after a send but before COMMIT re-sends that row; the job id is a UUIDv5 of the event id, so the
+re-send is a no-op.
+
+**Config** (`new OutboxRelay({ … })`, all passed in by the composition root; nothing reads
+`process.env`):
+
+- `sql`: postgres.js pool; each poll holds one connection.
+- `queue`: the `PgBossQueue` (anything with its `send`).
+- `logger`: a pino logger built from `loggerOptions()` (`../logger.ts`).
+- `routeEvent(type)`: event type → queue name, or `undefined` (unrouted = a failed attempt). The
+  mapping lives at the composition root, never here.
+- `userIdOf(envelope)`: optional; the `usr_…` id stored as the pg-boss job key for per-user
+  cancellation.
+- `pollIntervalMs`: default 250; a full batch polls again at once.
+- `batchSize`: default and maximum 100 (`MAX_OUTBOX_BATCH_SIZE`).
+- `maxAttempts`: failed sends before `failed`; default 5 (doc 04 §9.2).
+- `backoff`: `{ baseMs, capMs }` for the jittered exponential delay; default 1 s / 5 min.
+- `sendTimeoutMs`: bound on one `queue.send` (`withTimeout`); default 10 000.
+
+**Lifecycle:** `start()` begins polling (polls never overlap within one relay); `stop()` is
+graceful: no new poll starts, and the in-flight poll finishes and commits before it resolves.
+`pollOnce()` runs one poll and returns `{ claimed, dispatched, retrying, failed }`.
+
+**Logging:** event id, type, attempts and `lastError` per row; a failed poll logs error class and
+pg code only. Never the payload.
+
+Not here yet: the 90-day prune of dispatched rows (doc 06 §6), relay-lag and outbox-depth metrics
+(doc 14), and the DLQ sweep of `failed` rows (`admin`).
+
+Tests: `../tests/outbox-relay.test.ts` (unit: backoff scheduling, `failed` after max, batch cap,
+`last_error`) and `../tests/outbox-relay.docker.test.ts` (Testcontainers, `platform-docker`
+project; fails without Docker).

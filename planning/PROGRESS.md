@@ -82,6 +82,17 @@ Log hygiene: when this log exceeds ~30 entries, move the oldest entries to `plan
 
 *(newest first)*
 
+### 2026-09-26 — Red CI on main after the latest-stable upgrade fixed
+
+- **Phase / tasks worked:** P02 hygiene (no task ID). Branch `fix/ci-main-red`; fixes the red `pr-gate` and `android` runs on main @ `d13e1d0`.
+- **Status changes:** none.
+- **Done this session:** prettier fix to `docs/adr/0006-track-latest-stable-toolchains.md` (`just format` in pr-gate); `apps/android/gradle/verification-metadata.xml` gains the `.pom` checksums of `org.apache.groovy:groovy-bom:4.0.29` and `org.junit:junit-bom:5.13.3` (regenerated with `just android-deps-lock` on a cold `GRADLE_USER_HOME`); the human applied the workflow hunks of the guarded patch (`affected.yml` + `nightly.yml` services on `pgvector/pgvector:pg18`, JDK 25 comments in `android.yml`/`pr-gate.yml`); `templates/linear/01-feature.md` adapter list names SwiftUI views / Compose composables / view models.
+- **Not done / in flight:** the SPINE §2 and doc 15 hunks of the guarded patch are still unapplied (human). P02-T08 (Linear AI-9) runs on its own branch.
+- **Repository state:** buildable ✅ — `just ci-parity` and `just android-check` (JDK 25) exit 0 locally.
+- **New decisions / risks / questions filed:** None.
+- **Surprises / gotchas:** `just android-deps-lock` on a warm `~/.gradle` misses `.pom` entries Gradle only fetches on a cold cache — regenerate with a fresh `GRADLE_USER_HOME`. A stale shell `JAVA_HOME` (JDK 17) makes the Android lane skip locally; use `JAVA_HOME=$(mise where java)`.
+- **Next session starts:** confirm the PR's pr-gate, android and ios checks, merge; apply the SPINE/doc 15 hunks.
+
 ### 2026-09-26 — Latest-stable upgrade of the whole repo (ADR-0006, DEC-56)
 
 - **Phase / tasks worked:** P02 hygiene (no task ID). Branch `fix/prompt-audit-followups`, uncommitted. Human-authorized repo-wide upgrade to the latest stable release of every tool and dependency; work done by upgrade subagents plus a docs sweep.

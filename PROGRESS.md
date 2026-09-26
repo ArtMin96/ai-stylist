@@ -8,7 +8,7 @@ This root file exists so that `PROGRESS.md` resolves at the repository root as t
 
 - **P02 — Repo foundations and CI:** `IN_PROGRESS`, started 2026-09-09 (ahead of P00 for the no-dependency subset, DEC-36). Task list, per-task state and acceptance criteria: [`planning/phases/P02-repo-foundations-and-ci.md`](planning/phases/P02-repo-foundations-and-ci.md) §12 and §19.
 - **Last green:** all 18 CI checks on PR #7 (`chore/native-followups` @ `6f1670a`, 2026-09-24), including the macOS simulator build/test and the Android APK builds; `just ci-parity` locally on Linux the same day.
-- **Latest handoff:** [`planning/PROGRESS.md`](planning/PROGRESS.md) → "Session handoff log" → entry dated 2026-09-26 ("Latest-stable upgrade of the whole repo"; branch `fix/prompt-audit-followups`, ADR-0006 / DEC-56). Next action: a human applies the guarded-docs patch (SPINE, doc 15, CI pg18 images), then `just ci-parity` and a CI run to confirm the macOS/iOS lanes.
+- **Latest handoff:** [`planning/PROGRESS.md`](planning/PROGRESS.md) → "Session handoff log" → entry dated 2026-09-26 ("Red CI on main after the latest-stable upgrade fixed"; branch `fix/ci-main-red`). Next action: confirm the PR checks and merge; a human applies the SPINE §2 / doc 15 hunks of the guarded patch.
 
 ## How to update status
 

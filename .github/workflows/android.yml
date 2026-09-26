@@ -7,7 +7,7 @@
 #           separate, tag- or dispatch-only job, and uploading to Play stays a human action.
 # Recipes:  just android-sdk install · just android-format --check · just android-lint ·
 #           just android-detekt · just android-test · just android-build <debug|preview|release>
-#           (all go through apps/android/tools/gradle.sh, which checks for JDK 21 and finds the SDK).
+#           (all go through apps/android/tools/gradle.sh, which checks for JDK 25 and finds the SDK).
 # Dependency verification runs inside every Gradle step: apps/android/gradle/verification-metadata.xml
 # (sha256) plus STRICT lockfiles, so a changed or unknown artifact fails whichever job resolves it.
 #

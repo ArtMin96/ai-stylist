@@ -7,7 +7,7 @@
 # Native apps: the parity job runs `just ci-parity --core` (NATIVE_LANES=none: the iOS and Android
 #            lanes print "not selected"), because ios.yml and android.yml run those lanes on their own
 #            paths. The contracts job runs the FULL `just generate --check`, so every contract change
-#            proves the TS, Python, Swift (Docker swift:6.4) and Kotlin (JDK 21) clients are current.
+#            proves the TS, Python, Swift (Docker swift:6.4) and Kotlin (JDK 25) clients are current.
 #            The PR-diff secret scan uses gitleaks/gitleaks-action directly (no recipe needed).
 # Required secrets: none.
 # Optional secrets (steps degrade gracefully when unset):

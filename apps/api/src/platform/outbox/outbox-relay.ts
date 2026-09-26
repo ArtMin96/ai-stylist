@@ -10,15 +10,17 @@
 //
 // Translation only: which queue an event type goes to and which user a job belongs to are injected
 // by the composition root (`routeEvent`, `userIdOf`). Logs carry event id, type, attempts and
-// last_error — never the payload.
+// last_error (`describeSendError`: error class and pg code, never a foreign error message) —
+// never the payload.
 import type { Logger } from 'pino';
 import type { Sql } from 'postgres';
 
 import type { EventEnvelope, EventType } from '@ai-stylist/shared-kernel';
 
+import { errorSummary } from '../queue/error-summary.js';
 import type { EnqueueOptions, EnqueueResult } from '../queue/pg-boss-queue.js';
 import { type BackoffPolicy, backoffDelayMs } from '../resilience/backoff.js';
-import { withTimeout } from '../resilience/timeout.js';
+import { TimeoutError, withTimeout } from '../resilience/timeout.js';
 
 /** Hard cap on rows per poll (doc 04 §9.1). */
 export const MAX_OUTBOX_BATCH_SIZE = 100;
@@ -120,15 +122,43 @@ export function failureOutcome(
   };
 }
 
+/** The relay's own failure for a row whose event type `routeEvent` maps to no queue. */
+export class UnroutedEventError extends Error {
+  constructor(type: string) {
+    super(`no queue routed for event type '${type}'`);
+    this.name = 'UnroutedEventError';
+  }
+}
+
+/** The relay's own failure for a row whose stored payload is not an envelope object. */
+export class InvalidEnvelopeError extends TypeError {
+  constructor() {
+    super('outbox payload is not an event envelope object');
+    this.name = 'InvalidEnvelopeError';
+  }
+}
+
 /**
- * `last_error` text: error class and message, truncated. Never the payload: a non-Error throw
- * (which could be anything, including the envelope) is recorded by its type only.
+ * `last_error` text (also logged): the error class, plus `(pg <SQLSTATE>)` when present, e.g.
+ * `Error` or `PostgresError (pg 57P01)`. The message is kept only for errors the relay raises
+ * itself, whose text it controls (`TimeoutError`, `UnroutedEventError`, `InvalidEnvelopeError`):
+ * any other message (pg-boss, the driver, the queue) can echo statement parameters, i.e. the
+ * payload. A non-Error throw (which could be the envelope itself) is recorded by its type only.
  */
 export function describeSendError(error: unknown): string {
-  const text =
-    error instanceof Error
-      ? `${error.name}: ${error.message}`
-      : `non-Error thrown (${typeof error})`;
+  let text: string;
+  if (!(error instanceof Error)) {
+    text = `non-Error thrown (${typeof error})`;
+  } else if (
+    error instanceof TimeoutError ||
+    error instanceof UnroutedEventError ||
+    error instanceof InvalidEnvelopeError
+  ) {
+    text = `${error.name}: ${error.message}`;
+  } else {
+    const { errorName, pgCode } = errorSummary(error);
+    text = pgCode === undefined ? errorName : `${errorName} (pg ${pgCode})`;
+  }
   return text.length > MAX_LAST_ERROR_LENGTH
     ? `${text.slice(0, MAX_LAST_ERROR_LENGTH - 1)}…`
     : text;
@@ -245,10 +275,10 @@ export class OutboxRelay {
   private async dispatch(row: ClaimedRow): Promise<void> {
     const queueName = this.routeEvent(row.type);
     if (queueName === undefined) {
-      throw new Error(`no queue routed for event type '${row.type}'`);
+      throw new UnroutedEventError(row.type);
     }
     if (typeof row.payload !== 'object' || row.payload === null || Array.isArray(row.payload)) {
-      throw new TypeError('outbox payload is not an event envelope object');
+      throw new InvalidEnvelopeError();
     }
     const envelope = row.payload as OutboxEnvelope;
     const userId = this.userIdOf?.(envelope);
@@ -280,23 +310,10 @@ export class OutboxRelay {
       if (result.claimed === this.settings.batchSize) next = 0;
     } catch (error) {
       // Class and pg code only: driver messages can echo statement parameters.
-      this.logger.error(
-        {
-          errorName: error instanceof Error ? error.name : typeof error,
-          pgCode: pgCodeOf(error),
-        },
-        'outbox poll failed; retrying next interval',
-      );
+      this.logger.error(errorSummary(error), 'outbox poll failed; retrying next interval');
     }
     if (this.running && this.timer === undefined) this.schedule(next);
   }
-}
-
-function pgCodeOf(error: unknown): string | undefined {
-  if (typeof error === 'object' && error !== null && 'code' in error) {
-    return typeof error.code === 'string' ? error.code : undefined;
-  }
-  return undefined;
 }
 
 function requireInteger(

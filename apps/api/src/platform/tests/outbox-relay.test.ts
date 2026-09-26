@@ -4,12 +4,15 @@
 import { describe, expect, it } from 'vitest';
 
 import {
+  InvalidEnvelopeError,
   MAX_LAST_ERROR_LENGTH,
   MAX_OUTBOX_BATCH_SIZE,
+  UnroutedEventError,
   describeSendError,
   failureOutcome,
   resolveOutboxRelaySettings,
 } from '../outbox/outbox-relay.js';
+import { TimeoutError } from '../resilience/timeout.js';
 
 describe('failureOutcome (retry scheduling)', () => {
   const settings = { maxAttempts: 4, backoff: { baseMs: 100, capMs: 1_000 } };
@@ -74,19 +77,45 @@ describe('resolveOutboxRelaySettings (bounds)', () => {
 });
 
 describe('describeSendError (last_error)', () => {
-  it('records the error class and message', () => {
-    expect(describeSendError(new TypeError('queue unavailable'))).toBe(
-      'TypeError: queue unavailable',
+  /** Canary: a payload value a foreign error message may echo; never in `last_error`. */
+  const PAYLOAD_MARKER = 'payload-marker-5c2e';
+
+  it('records only the class of a foreign error, never its message', () => {
+    expect(describeSendError(new Error(PAYLOAD_MARKER))).toBe('Error');
+    expect(describeSendError(new TypeError(`queue unavailable ${PAYLOAD_MARKER}`))).toBe(
+      'TypeError',
+    );
+  });
+
+  it('adds the pg SQLSTATE of a driver error, never its message or free-text codes', () => {
+    const pgError = Object.assign(new Error(`insert failed: ($1) = (${PAYLOAD_MARKER})`), {
+      name: 'PostgresError',
+      code: '23505',
+    });
+    expect(describeSendError(pgError)).toBe('PostgresError (pg 23505)');
+    const oddCode = Object.assign(new Error('x'), { code: `bad ${PAYLOAD_MARKER}` });
+    expect(describeSendError(oddCode)).toBe('Error');
+  });
+
+  it("keeps the message of the relay's own errors, whose text it controls", () => {
+    expect(describeSendError(new TimeoutError(10_000))).toBe(
+      'TimeoutError: operation timed out after 10000 ms',
+    );
+    expect(describeSendError(new UnroutedEventError('demo.unrouted.v1'))).toBe(
+      "UnroutedEventError: no queue routed for event type 'demo.unrouted.v1'",
+    );
+    expect(describeSendError(new InvalidEnvelopeError())).toBe(
+      'InvalidEnvelopeError: outbox payload is not an event envelope object',
     );
   });
 
   it('records a non-Error throw by type only, so a thrown envelope never reaches the row', () => {
-    const thrown = { payload: { note: 'payload-marker-5c2e' } };
+    const thrown = { payload: { note: PAYLOAD_MARKER } };
     expect(describeSendError(thrown)).toBe('non-Error thrown (object)');
   });
 
   it('truncates long messages', () => {
-    const text = describeSendError(new Error('x'.repeat(5_000)));
+    const text = describeSendError(new UnroutedEventError('x'.repeat(5_000)));
     expect(text.length).toBe(MAX_LAST_ERROR_LENGTH);
   });
 });

@@ -1,7 +1,8 @@
 // pg-boss queue adapter against a real Postgres (Testcontainers, `platform-docker` project).
 // Part of the P02-T08 pg-boss gate (DEC-41): exactly-once enqueue by idempotency key, per-user
-// cancellation (AC-6 / doc 06 §8 step 4), and retry → failed + dead-letter after exactly the
-// configured retries. FAILS without Docker, never skips.
+// cancellation (AC-6 / doc 06 §8 step 4), retry → failed + dead-letter after exactly the
+// configured retries with a message-free job output, and the 100-day cancelled-user marker
+// retention. FAILS without Docker, never skips.
 import { Writable } from 'node:stream';
 
 import pino from 'pino';
@@ -13,7 +14,13 @@ import { newId } from '@ai-stylist/shared-kernel';
 import { type StartedPostgres, startPostgres } from '@ai-stylist/test-support';
 
 import { loggerOptions } from '../logger.js';
-import { PgBossQueue, type QueueJob, deadLetterQueueName } from '../queue/pg-boss-queue.js';
+import {
+  CANCELLED_USERS_QUEUE,
+  CANCELLED_USER_MARKER_RETENTION_SECONDS,
+  PgBossQueue,
+  type QueueJob,
+  deadLetterQueueName,
+} from '../queue/pg-boss-queue.js';
 
 const IDEMPOTENT = 'test.idempotent';
 const PER_USER = 'test.per-user';
@@ -185,10 +192,60 @@ describe('PgBossQueue (pg-boss v12 on Testcontainers Postgres)', () => {
     expect(dead).toHaveLength(1);
     expect(dead[0]).toMatchObject({ source_id: jobId, state: 'created' });
 
+    // The stored job output (pg-boss keeps it on the job row) is the error class, not the thrown
+    // error with its message and stack.
+    const [stored] = await sql<{ output: unknown }[]>`
+      select output from pgboss.job where name = ${RETRYING} and id = ${jobId}::uuid`;
+    expect(stored?.output).toEqual({ errorName: 'Error' });
+    const outputs = await sql<{ output: string | null }[]>`
+      select output::text as output from pgboss.job
+      where name in (${RETRYING}, ${deadLetterQueueName(RETRYING)})`;
+    for (const row of outputs) expect(row.output ?? '').not.toContain(PAYLOAD_MARKER);
+
     // Logs name the job, queue and attempt; never the payload or the error message.
     const log = logLines.join('');
     expect(log).toContain(jobId);
     expect(log).toContain('"attempt":3');
     expect(log).not.toContain(PAYLOAD_MARKER);
+  });
+
+  it('keeps a cancelled-user marker 100 days and corrects a queue created with the 14-day default', async () => {
+    const { queue, sql } = await boot();
+    const retention = async () => {
+      const [row] = await sql<{ retention_seconds: number }[]>`
+        select retention_seconds from pgboss.queue where name = ${CANCELLED_USERS_QUEUE}`;
+      return row?.retention_seconds;
+    };
+    expect(CANCELLED_USER_MARKER_RETENTION_SECONDS).toBe(100 * 24 * 60 * 60);
+    expect(await retention()).toBe(CANCELLED_USER_MARKER_RETENTION_SECONDS);
+
+    // A queue left at pg-boss's default by an earlier version: start() updates it in place.
+    await sql`update pgboss.queue set retention_seconds = 1209600
+              where name = ${CANCELLED_USERS_QUEUE}`;
+    const restarted = new PgBossQueue({
+      connectionString: (await container()).url,
+      logger: pino({ level: 'silent' }),
+      queues: [{ name: IDEMPOTENT, retryLimit: 0, retryDelaySeconds: 1, retryDelayMaxSeconds: 1 }],
+    });
+    try {
+      await restarted.start();
+    } finally {
+      await restarted.stop();
+    }
+    expect(await retention()).toBe(CANCELLED_USER_MARKER_RETENTION_SECONDS);
+
+    // The marker outlives the 14-day default by far (the replay + grace window is 97 days)...
+    const userId = newId('user');
+    await queue.cancelUser(userId);
+    const markers = await sql<{ n: number; lasting: boolean }[]>`
+      select count(*)::int as n,
+             bool_and(keep_until >= now() + interval '99 days') as lasting
+      from pgboss.job where name = ${CANCELLED_USERS_QUEUE}`;
+    expect(markers[0]).toEqual({ n: 1, lasting: true });
+    // ...and refuses the user's work while it lasts.
+    const eventId = newId('event');
+    expect(
+      await queue.send(IDEMPOTENT, { eventId }, { idempotencyKey: eventId, userId }),
+    ).toMatchObject({ enqueued: false });
   });
 });

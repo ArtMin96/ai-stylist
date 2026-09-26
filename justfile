@@ -60,7 +60,7 @@ dev-workers *args:
 
 # --- quality gates (* = part of ci-parity) -------------------------------------------
 
-# * Run tests: full suite via turbo + the native lanes, or one module's tests/ dir (`just test recommendation`; `just test ios` / `just test android` = that app's unit tests; `just test secrets` = the sops+age shell suite; `just test tooling` = the scripts/test shell suites: bootstrap/doctor, contracts-breaking); SKIP_DOCKER_TESTS=1 leaves out the Testcontainers `migrations` project (runners without Docker only)
+# * Run tests: full suite via turbo + the native lanes, or one module's tests/ dir (`just test recommendation`; `just test ios` / `just test android` = that app's unit tests; `just test secrets` = the sops+age shell suite; `just test tooling` = the scripts/test shell suites: bootstrap/doctor, contracts-breaking, test-regression); SKIP_DOCKER_TESTS=1 leaves out the Testcontainers `migrations` project (runners without Docker only)
 test module='':
     #!/usr/bin/env bash
     set -euo pipefail
@@ -113,6 +113,7 @@ test-secrets:
 test-tooling:
     scripts/test/bootstrap-doctor.test.sh
     scripts/test/contracts-breaking.test.sh
+    scripts/test/regression.test.sh
 
 # Native unit tests for the full `just test` (lane/toolchain policy: scripts/native-lane.sh)
 [private]
@@ -120,7 +121,7 @@ test-native:
     scripts/native-lane.sh ios swift just ios-test-packages
     scripts/native-lane.sh android android just android-test
 
-# Prove a regression test fails at the merge-base and passes at HEAD (scripts/test/regression.sh <test-file>); structural version of CLAUDE.md's "regression test fails before the fix"
+# Prove a regression test fails before the fix and passes after it: the working-tree test file runs against the merge-base code (expect FAIL), then at HEAD (expect PASS) (scripts/test/regression.sh <test-file>); structural version of CLAUDE.md's "regression test fails before the fix"
 test-regression file:
     scripts/test/regression.sh "$@"
 

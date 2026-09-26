@@ -64,6 +64,13 @@
       "groupName": "js dev dependencies (non-major)"
     },
     {
+      "description": "Stay current with no manual work: non-major (minor/patch) JS, Python and GitHub Actions updates auto-merge once CI is green. Later rules keep runtimes, mise, Android and SwiftPM manual",
+      "matchManagers": ["npm", "pep621", "github-actions"],
+      "matchUpdateTypes": ["minor", "patch"],
+      "automerge": true,
+      "automergeType": "pr"
+    },
+    {
       "description": "Security-critical scanners: patch updates auto-merge after CI",
       "matchPackageNames": ["gitleaks", "osv-scanner", "syft"],
       "matchUpdateTypes": ["patch"],
@@ -75,6 +82,11 @@
       "matchUpdateTypes": ["major"],
       "automerge": false,
       "labels": ["dependencies", "needs-adr"]
+    },
+    {
+      "description": "Runtime pins (node/pnpm/python/java) mirror mise.toml (package.json#packageManager/engines, workers requires-python), which never automerges: keep every update type manual so the two never drift",
+      "matchPackageNames": ["node", "pnpm", "python", "java"],
+      "automerge": false
     },
     {
       "description": "Android (apps/android: version catalog gradle/libs.versions.toml + Gradle wrapper). Every bump needs `just android-deps-lock` on the branch (gradle.lockfiles + verification-metadata.xml; needs the Android SDK), so never automerge",

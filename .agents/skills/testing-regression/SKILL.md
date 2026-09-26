@@ -44,9 +44,11 @@ Bug fix (mandatory order):
 4. Fix with the smallest coherent change; search before write applies (the bug may be a drifted
    duplicate: fix by unifying).
 5. Prove failed-then-passed:
-   - TypeScript or Python: `just test-regression <test-file>` re-runs the file at the merge-base
-     with the default branch in a throwaway worktree (expects FAIL) and in your tree at HEAD
-     (expects PASS), and exits 1 if either expectation is violated. Paste its output in full.
+   - TypeScript or Python: `just test-regression <test-file>` copies your working-tree version of
+     the file into a throwaway worktree at the merge-base with the default branch and runs it
+     against the pre-fix code (expects FAIL; a test appended to an existing file counts), then runs
+     it in your tree at HEAD (expects PASS), and exits 1 if either expectation is violated. Only the
+     test file is copied: helpers it imports stay at their merge-base versions. Paste its output in full.
    - Swift or Kotlin (`just test-regression` has no native runner): run `just test ios` or
      `just test android` after writing the test and before the fix, keep the failing line, then
      fix, rerun and keep the passing line. Never stash or check out to fake the order.

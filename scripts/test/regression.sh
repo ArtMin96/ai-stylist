@@ -3,11 +3,14 @@
 # after it, making CLAUDE.md's testing rule ("a regression test that demonstrably fails before
 # the fix — run it, show the failure, then fix") structural instead of prose.
 #
-# Runs <test-file> at the merge-base of HEAD and the default branch, in a throwaway `git
-# worktree` (expect FAIL — the fix, or the file itself, isn't there yet); then runs it again in
-# the current working tree, i.e. "at HEAD" including any uncommitted fix (expect PASS). Prints
-# both raw outputs. The merge-base worktree gets the real tree's node_modules symlinked in so
-# pnpm/vitest/jest resolve without a second `pnpm install`.
+# Checks out the merge-base of HEAD and the default branch in a throwaway `git worktree`, copies
+# the CURRENT working-tree version of <test-file> over it (creating parent dirs when the file is
+# new), and runs it there against the pre-fix code (expect FAIL). A regression test appended to an
+# existing test file is proven this way too: the merge-base copy of that file holds only the old
+# tests, which would pass. Then runs the same file in the current working tree, i.e. "at HEAD"
+# including any uncommitted fix (expect PASS). Prints both raw outputs. Only <test-file> is copied:
+# helpers or fixtures it imports resolve to their merge-base versions. The merge-base worktree gets
+# the real tree's node_modules symlinked in so pnpm/vitest resolve without a second `pnpm install`.
 #
 # Usage: scripts/test/regression.sh <test-file>
 # Exit codes: 0 both expectations held · 1 an expectation was violated · 2 usage error.
@@ -20,8 +23,10 @@ usage() {
   cat <<'EOF'
 usage: scripts/test/regression.sh <test-file>
 
-Proves a regression test fails at the merge-base with the default branch (before the fix) and
-passes at HEAD / the current working tree (after the fix).
+Proves a regression test fails before the fix and passes after it: the working-tree version of
+<test-file> is copied into a throwaway worktree at the merge-base with the default branch and run
+against that pre-fix code (expect FAIL), then run in the current working tree (expect PASS). A
+test appended to an existing file counts; a test that passes on the pre-fix code is rejected.
 
   <test-file>   repo-root-relative path to a single test file, e.g.
                 apps/api/src/modules/billing/tests/entitlement.test.ts
@@ -119,17 +124,21 @@ wt="$(mktemp -d)"
 git worktree add --detach --quiet "$wt" "$base"
 link_node_modules "$wt"
 
-heading "test-regression: $test_file @ merge-base ($base) — expect FAIL"
-merge_base_status=0
+# Run the working tree's test file against the merge-base code, never the merge-base's own copy
+# of it (that copy lacks a test appended on this branch and would pass).
 if [[ -f "$wt/$test_file" ]]; then
-  if merge_base_output="$(cd "$wt" && eval "$cmd" 2>&1)"; then
-    merge_base_status=0
-  else
-    merge_base_status=$?
-  fi
+  test_origin="working-tree copy over the merge-base version"
 else
-  merge_base_output="(no such file at the merge-base — the regression test is new)"
-  merge_base_status=1
+  test_origin="working-tree copy; the file is new since the merge-base"
+fi
+mkdir -p "$wt/$(dirname "$test_file")"
+cp "$test_file" "$wt/$test_file"
+
+heading "test-regression: $test_file ($test_origin) @ merge-base ($base) — expect FAIL"
+if merge_base_output="$(cd "$wt" && eval "$cmd" 2>&1)"; then
+  merge_base_status=0
+else
+  merge_base_status=$?
 fi
 printf '%s\n' "$merge_base_output"
 

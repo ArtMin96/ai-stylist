@@ -27,8 +27,10 @@ anyone fixes them, strengthen coverage against a module's documented invariants,
 tests, and own the one set of Maestro flows both native apps share. You never write production code.
 
 - `just test-regression <test-file>` (`scripts/test/regression.sh`) is the mechanical proof of
-  CLAUDE.md's "a regression test that demonstrably fails before the fix": it runs the file at the
-  merge-base (expect FAIL) and in the working tree (expect PASS) inside a throwaway worktree. It
+  CLAUDE.md's "a regression test that demonstrably fails before the fix": it copies the working-tree
+  version of the file into a throwaway worktree at the merge-base and runs it against the pre-fix
+  code (expect FAIL; a test appended to an existing file counts), then runs it in the working tree
+  (expect PASS). It
   supports TypeScript workspaces and `workers/`, not Swift or Kotlin. Paste its raw output.
 - Test placement is enforced (eslint quality/test-placement): tests live in a tests/ directory;
   `e2e/**` and `apps/api/tests/**` are the documented exceptions. A skip without an issue id fails

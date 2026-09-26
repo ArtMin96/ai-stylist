@@ -33,6 +33,10 @@ Doc 04 §9.1 step 2 and §9.2. Each poll is one transaction:
    pg-boss or driver message can echo statement parameters, so it is never stored. Only the
    relay's own errors keep their message (`TimeoutError`, `UnroutedEventError`,
    `InvalidEnvelopeError`). A non-Error throw is recorded by its type only.
+   A consumer job that exhausts its retries marks the row `failed` too:
+   `markOutboxFailed(sql, eventId, reason)` (`outbox-dead-letter.ts`, called by the jobs
+   process's DLQ workers). It only moves a row that is not already `failed`, so a redelivered dead
+   letter changes nothing, and `last_error` is a payload-free reason (`job exhausted: <queue>`).
 4. COMMIT.
 
 At-least-once dispatch, exactly-once job: the send runs on pg-boss's pool, so a relay that dies
@@ -66,5 +70,5 @@ Not here yet: the 90-day prune of dispatched rows (doc 06 §6), relay-lag and ou
 (doc 14), and the DLQ sweep of `failed` rows (`admin`).
 
 Tests: `../tests/outbox-relay.test.ts` (unit: backoff scheduling, `failed` after max, batch cap,
-`last_error`) and `../tests/outbox-relay.docker.test.ts` (Testcontainers, `platform-docker`
-project; fails without Docker).
+`last_error`), `../tests/outbox-relay.docker.test.ts` and `../tests/outbox-dead-letter.docker.test.ts`
+(Testcontainers, `platform-docker` project; fail without Docker).

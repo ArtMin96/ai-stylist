@@ -9,7 +9,7 @@ import pino from 'pino';
 import postgres, { type Sql } from 'postgres';
 import { afterAll, describe, expect, it } from 'vitest';
 
-import { createDb, migrate } from '@ai-stylist/db';
+import { migrateUrl } from '@ai-stylist/db';
 import { newId } from '@ai-stylist/shared-kernel';
 import { type StartedPostgres, startPostgres } from '@ai-stylist/test-support';
 
@@ -53,12 +53,7 @@ describe('PgBossQueue (pg-boss v12 on Testcontainers Postgres)', () => {
   async function boot(): Promise<{ queue: PgBossQueue; sql: Sql }> {
     if (queue !== undefined && sql !== undefined) return { queue, sql };
     const pg = await container();
-    const handle = createDb(pg.url, { max: 1 });
-    try {
-      await migrate(handle.db);
-    } finally {
-      await handle.close();
-    }
+    await migrateUrl(pg.url);
     sql = postgres(pg.url, { max: 2 });
     const sink = new Writable({
       write(chunk: Buffer, _encoding, callback) {

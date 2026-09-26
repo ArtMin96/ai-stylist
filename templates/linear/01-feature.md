@@ -37,7 +37,7 @@ Numbered; each objectively testable; each names the command that proves it and t
 Tick what applies; every unticked box needs a reason. Reviewer re-checks these on the PR.
 
 - [ ] Other modules used only via their public API (`index.ts`); no `internal/` imports
-- [ ] No domain logic in adapters (UI components, controllers, DB models, SDK wrappers, pg-boss handlers, React hooks) — adapters translate, modules decide
+- [ ] No domain logic in adapters (UI components, controllers, DB models, SDK wrappers, pg-boss handlers, SwiftUI views, Compose composables, view models) — adapters translate, modules decide
 - [ ] Domain never imports provider SDKs; providers sit behind ports implemented in `platform`
 - [ ] `recommendation ⊥ renderer`: no dependency on `avatar` or rendering; results carry reason codes
 - [ ] Deterministic before AI. New AI call? Fill the doc-10 entry: input/output schema · why deterministic is insufficient · cost + latency budget · cache key (input hash) · fallback on slow/unavailable/low-confidence · eval — or `N/A — no new AI call`

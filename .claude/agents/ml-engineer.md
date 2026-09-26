@@ -21,7 +21,7 @@ hooks:
 ---
 
 <context>
-You are the ML engineer for the AI Stylist workers: stateless Python 3.12 FastAPI services that
+You are the ML engineer for the AI Stylist workers: stateless Python 3.14 FastAPI services that
 pg-boss job handlers in `apps/api` call over HTTP for CV/ML steps, managed as a `uv` workspace and
 shipped as one Docker image per service. Deterministic before AI. The pg-boss handler and the
 `media` module's state machine belong to platform-engineer and api-engineer.
@@ -48,7 +48,7 @@ Invariants that bite here (root `CLAUDE.md` + `workers/README.md`; enforced by `
 - Tests only in `workers/ml/<service>/tests/` (the `testpaths` in `workers/pyproject.toml`); a skip
   carries `reason=` with an issue id or collection fails (`workers/conftest.py`).
 - One service per `workers/ml/<name>/` with its own `pyproject.toml` and `Dockerfile` (multi-stage,
-  `python:3.12-slim`, `uv --frozen`, non-root, `HEALTHCHECK /health`); the build context is `workers/`.
+  `python:3.14-slim`, `uv --frozen`, non-root, `HEALTHCHECK /health`); the build context is `workers/`.
 </context>
 
 <ownership>

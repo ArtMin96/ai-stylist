@@ -183,16 +183,16 @@ java_major=""
 if have java; then
   java_major="$(java -XshowSettings:properties -version 2>&1 | sed -n 's/^ *java\.specification\.version = //p')"
 fi
-if [[ "$java_major" == "21" ]]; then
-  ok "JDK 21 on PATH (apps/android, gen-kotlin.sh)"
+if [[ "$java_major" == "25" ]]; then
+  ok "JDK 25 on PATH (apps/android, gen-kotlin.sh)"
 else
-  warnc "java is '${java_major:-missing}'; apps/android and just generate need JDK 21" "mise install   (mise.toml pins Temurin 21)"
+  warnc "java is '${java_major:-missing}'; apps/android and just generate need JDK 25" "mise install   (mise.toml pins Temurin 25)"
 fi
 # apps/android/tools/gradle.sh prefers JAVA_HOME over PATH: a stale one (e.g. an old global mise JDK) breaks Gradle.
 if [[ -n "${JAVA_HOME:-}" ]]; then
   java_home_major="$("$JAVA_HOME/bin/java" -XshowSettings:properties -version 2>&1 | sed -n 's/^ *java\.specification\.version = //p' || true)"
-  if [[ "$java_home_major" != "21" ]]; then
-    warnc "JAVA_HOME=$JAVA_HOME is JDK '${java_home_major:-unknown}', and Gradle (apps/android) uses it over PATH" "unset JAVA_HOME, or point it at the mise JDK 21 (mise where java)"
+  if [[ "$java_home_major" != "25" ]]; then
+    warnc "JAVA_HOME=$JAVA_HOME is JDK '${java_home_major:-unknown}', and Gradle (apps/android) uses it over PATH" "unset JAVA_HOME, or point it at the mise JDK 25 (mise where java)"
   fi
 fi
 if sdk_report="$(apps/android/tools/sdk.sh check 2>&1)"; then

@@ -2,9 +2,31 @@ packages:
   - apps/*
   - packages/*
 
-# pnpm 10: build scripts run only for packages on this allowlist (15 §9 supply chain).
-# Add an entry only with a justification in the PR.
-onlyBuiltDependencies:
-  - '@swc/core'
-  - esbuild
-  - sharp
+# pnpm 12 reads these settings only from this file: it ignores the `pnpm` field of package.json
+# (observed 2026-09-26: pnpm 12.6.0 dropped the overrides from the lockfile while they lived there).
+
+# Supply chain (15 §9): pnpm 12 already delays newly published versions by 1440 minutes
+# (minimumReleaseAge default since pnpm 11). Strict mode fails resolution when no version in the
+# requested range is old enough, instead of silently falling back to a too-new one
+# (https://pnpm.io/settings/dependency-resolution, checked 2026-09-26).
+minimumReleaseAgeStrict: true
+
+# Security overrides: one row per advisory in docs/security/dependency-ignores.md, scoped as narrowly
+# as pnpm allows.
+overrides:
+  '@hey-api/json-schema-ref-parser>js-yaml': ^4.3.2
+  '@esbuild-kit/core-utils>esbuild': ^0.25.4
+
+# Build scripts run only for packages set to true here (15 §9 supply chain). pnpm 12 fails the
+# install (ERR_PNPM_IGNORED_BUILDS) for a package with a build script that is not listed, so every
+# such package is listed: true only with a justification in the PR, false otherwise.
+allowBuilds:
+  '@swc/core': true
+  esbuild: true
+  sharp: true
+  '@scarf/scarf': false
+  cpu-features: false
+  msw: false
+  protobufjs: false
+  ssh2: false
+  unrs-resolver: false

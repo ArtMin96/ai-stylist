@@ -12,7 +12,7 @@ This repository is a monorepo: the native iOS and Android apps, the API, the ML 
 | Android app            | `apps/android/`                                 | Kotlin + Jetpack Compose (native)                                                           |
 | Shared E2E flows       | `e2e/`                                          | Maestro, one smoke flow for both apps                                                       |
 | API                    | `apps/api/`                                     | NestJS on Fastify, modular monolith, one dir per module                                     |
-| ML / media workers     | `workers/`                                      | Python 3.12, FastAPI, uv, Docker                                                            |
+| ML / media workers     | `workers/`                                      | Python 3.14, FastAPI, uv, Docker                                                            |
 | API + event contracts  | `packages/contracts/`                           | OpenAPI 3.1 + JSON Schema, generated clients                                                |
 | Shared constants       | `packages/shared-kernel/`                       | IDs, units, error/reason codes, entitlements, event envelope; registries -> TS/Swift/Kotlin |
 | Database               | `packages/db/`                                  | PostgreSQL + pgvector, Drizzle ORM, migrations                                              |

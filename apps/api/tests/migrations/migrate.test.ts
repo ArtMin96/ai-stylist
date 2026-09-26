@@ -8,6 +8,10 @@ import { type StartedPostgres, startPostgres } from '@ai-stylist/test-support';
 
 const TABLES = ['platform_outbox', 'platform_idempotency_keys'];
 
+// Production PostgreSQL major (ADR-0003; compose and CI use pgvector/pgvector:pg<major>). The test
+// fails when the Testcontainers image drifts from it, so migrations are always proven on this major.
+const POSTGRES_MAJOR = 18;
+
 describe('packages/db migrations (Testcontainers)', () => {
   let pg: StartedPostgres | undefined;
   let handle: DbHandle;
@@ -35,6 +39,11 @@ describe('packages/db migrations (Testcontainers)', () => {
     // Inside the test (not beforeAll) so a missing Docker daemon is a FAILED test, not a skip.
     pg = await startPostgres();
     handle = createDb(pg.url, { max: 1 });
+
+    const version = await handle.db.execute<{ n: number }>(
+      sql`select current_setting('server_version_num')::int as n`,
+    );
+    expect(Math.floor((version[0]?.n ?? 0) / 10000)).toBe(POSTGRES_MAJOR);
 
     await migrate(handle.db);
     expect(await tables()).toEqual([...TABLES].sort());

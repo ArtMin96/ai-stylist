@@ -1,4 +1,4 @@
-// swift-tools-version: 6.2
+// swift-tools-version: 6.4
 // Features: one pair of targets per screen.
 //   <Name>Model    @Observable view model; no SwiftUI, so it builds and tests on Linux too.
 //   <Name>Feature  the SwiftUI view; Apple platforms only (left out of this manifest on Linux).

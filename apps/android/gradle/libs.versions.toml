@@ -3,11 +3,11 @@
 # gradle.lockfile + gradle/verification-metadata.xml). Never put a version string in a build script.
 
 [versions]
-agp = "9.3.3"
+agp = "9.4.1"
 kotlin = "2.4.20"
 compose-bom = "2026.09.00"
 activity = "1.13.0"
-androidx-core = "1.19.0"
+androidx-core = "1.19.1"
 lifecycle = "2.11.0"
 coroutines = "1.11.0"
 serialization = "1.11.0"
@@ -15,10 +15,13 @@ okhttp = "5.5.0"
 retrofit = "3.0.0"
 junit4 = "4.13.2"
 robolectric = "4.17"
-# The android-all jar Robolectric 4.17 loads for SDK 36 tests; bump together with robolectric.
-robolectric-android-all = "16-robolectric-13921718-i7"
+# The android-all jar Robolectric 4.17 loads for SDK 37 tests; bump together with robolectric.
+robolectric-android-all = "17-robolectric-15733970-i7"
+# Upgrade-only constraint on the Compose ui-test classpath: the Espresso 3.5.0 that ui-test pulls in
+# fails in the SDK 37 sandbox (reflective InputManager.getInstance(), fixed in 3.7.0).
+espresso = "3.7.0"
 turbine = "1.2.1"
-spotless = "8.10.2"
+spotless = "8.10.3"
 ktlint = "1.8.0"
 detekt = "2.0.0-alpha.6"
 compose-lint-checks = "1.6.0"
@@ -39,7 +42,7 @@ floor-logback = "1.5.34"
 
 # SDK levels (read by build-logic; see apps/android/README.md for why these values).
 sdk-compile = "37"
-sdk-target = "36"
+sdk-target = "37"
 sdk-min = "29"
 
 [libraries]
@@ -71,6 +74,7 @@ junit4 = { module = "junit:junit", version.ref = "junit4" }
 robolectric = { module = "org.robolectric:robolectric", version.ref = "robolectric" }
 robolectric-android-all = { module = "org.robolectric:android-all-instrumented", version.ref = "robolectric-android-all" }
 turbine = { module = "app.cash.turbine:turbine", version.ref = "turbine" }
+androidx-test-espresso-core = { module = "androidx.test.espresso:espresso-core", version.ref = "espresso" }
 
 compose-lint-checks = { module = "com.slack.lint.compose:compose-lint-checks", version.ref = "compose-lint-checks" }
 
@@ -98,6 +102,7 @@ android-lint = { id = "com.android.lint", version.ref = "agp" }
 kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
 kotlin-compose = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
 kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
+kotlin-sam-with-receiver = { id = "org.jetbrains.kotlin.plugin.sam.with.receiver", version.ref = "kotlin" }
 spotless = { id = "com.diffplug.spotless", version.ref = "spotless" }
 detekt = { id = "dev.detekt", version.ref = "detekt" }
 

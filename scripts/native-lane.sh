@@ -11,7 +11,7 @@
 #   swift    a working `swift` on PATH, else Docker (image swift:6.4; Arch's mise swift cannot run)
 #   xcode    macOS + xcodebuild. On Linux the step is SKIPPED with a notice, always (Xcode cannot
 #            exist there); the ios workflow's macOS job runs it.
-#   android  JDK 21 on PATH + the SDK packages apps/android/tools/sdk.sh checks
+#   android  JDK 25 on PATH + the SDK packages apps/android/tools/sdk.sh checks
 #   none     nothing beyond bash
 # Missing toolchain: FAIL when CI=true or NATIVE_STRICT=1 (`just ci-parity` sets it), otherwise a
 # SKIPPED notice on stderr with the install hint. A skip is never silent.
@@ -81,9 +81,9 @@ case "$toolchain" in
     if command -v "$java_bin" >/dev/null 2>&1; then
       java_major="$("$java_bin" -XshowSettings:properties -version 2>&1 | sed -n 's/^ *java\.specification\.version = //p')"
     fi
-    if [[ "$java_major" != "21" ]]; then
-      missing="JDK 21 required, found '${java_major:-none}' (${JAVA_HOME:+JAVA_HOME=$JAVA_HOME, }java=$java_bin)"
-      hint="run \`mise install\` (mise.toml pins Temurin 21); unset or fix a stale JAVA_HOME"
+    if [[ "$java_major" != "25" ]]; then
+      missing="JDK 25 required, found '${java_major:-none}' (${JAVA_HOME:+JAVA_HOME=$JAVA_HOME, }java=$java_bin)"
+      hint="run \`mise install\` (mise.toml pins Temurin 25); unset or fix a stale JAVA_HOME"
     elif ! "$REPO_ROOT/apps/android/tools/sdk.sh" check >/dev/null 2>&1; then
       missing="Android SDK incomplete"
       hint="run \`just android-sdk install\` (user-level, no sudo), then \`just doctor\`"

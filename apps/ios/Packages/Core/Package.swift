@@ -1,4 +1,4 @@
-// swift-tools-version: 6.2
+// swift-tools-version: 6.4
 // Core: everything below the UI. No SwiftUI/UIKit here, so it builds and tests on macOS AND Linux
 // (`just ios-test-packages`). Tests live in tests/<Target>Tests (repo rule: tests in the owning
 // module's tests/ directory).

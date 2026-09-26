@@ -44,8 +44,8 @@ private fun Project.configureKotlinJvm() {
     }
     extensions.configure<KotlinJvmProjectExtension> {
         compilerOptions.jvmTarget.set(JvmTarget.fromTarget(JAVA_VERSION.toString()))
-        // Compile against the JDK 17 API, not the running JDK 21's: these classes run on Android,
-        // which has no JDK 21 APIs, and it keeps JDK-21-only deprecations out of the build.
+        // Compile against the JDK 17 API, not the running JDK 25's: these classes run on Android,
+        // which has no JDK 25 APIs, and it keeps JDK-25-only deprecations out of the build.
         compilerOptions.freeCompilerArgs.add("-Xjdk-release=${JAVA_VERSION.majorVersion}")
     }
     tasks.withType<JavaCompile>().configureEach {

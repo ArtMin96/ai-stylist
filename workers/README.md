@@ -15,7 +15,7 @@ workers/
     ├── generated/          `ai-stylist-generated`: Pydantic models from packages/contracts/events (never hand-edited)
     └── segmentation/       `ai-stylist-segmentation`: FastAPI service
         ├── pyproject.toml  runtime deps only (hatchling build)
-        ├── Dockerfile      multi-stage, python:3.12-slim, uv --frozen, non-root, HEALTHCHECK /health
+        ├── Dockerfile      multi-stage, python:3.14-slim, uv --frozen, non-root, HEALTHCHECK /health
         ├── src/ai_stylist_segmentation/
         │   ├── main.py     composition root: configures logging, builds `app` (uvicorn target)
         │   ├── app.py      `create_app()` factory + body-free access-log middleware
@@ -41,7 +41,7 @@ workers/
 
 ## Toolchain
 
-Python 3.12.x and uv 0.12.x are pinned in the root `mise.toml`; nothing here uses the system
+Python 3.14.x and uv 0.12.x are pinned in the root `mise.toml`; nothing here uses the system
 Python. Either activate mise (`eval "$(~/.local/bin/mise activate zsh)"`) or prefix commands with
 `~/.local/bin/mise exec --`. `just` prepends the mise shims automatically.
 
@@ -95,7 +95,7 @@ Generated files start with a `` # GENERATED — run `just generate` `` banner an
 | no-skip        | `workers/conftest.py`                                        | `@pytest.mark.skip`/`skipif` must carry `reason=` containing `#<n>` or `<PROJECT>-<n>`; otherwise collection fails (exit 4) |
 | test-placement | `testpaths = ["ml/*/tests"]`                                 | tests outside a service's `tests/` are never collected                                                                      |
 | strict pytest  | `--strict-markers`, `xfail_strict`, `filterwarnings = error` | typos and deprecations fail fast                                                                                            |
-| lint           | ruff `E,F,I,B,UP,N,S,ASYNC,RUF`, line length 100, py312      | `S101` allowed in tests                                                                                                     |
+| lint           | ruff `E,F,I,B,UP,N,S,ASYNC,RUF`, line length 100, py314      | `S101` allowed in tests                                                                                                     |
 | types          | basedpyright `standard`                                      | 0 errors, 0 warnings required                                                                                               |
 
 ## Adding a service

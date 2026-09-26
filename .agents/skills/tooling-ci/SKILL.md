@@ -63,7 +63,7 @@ metadata:
    CI YAML calling `just` is what keeps `just ci-parity` an honest local reproduction of the PR gate.
 4. Scripts and recipes stay bash-3.2 / BSD-portable: no associative arrays, `mapfile`/`readarray`,
    `${var,,}`, or GNU-only flags (`sed -i ''` vs `-i`, `readlink -f`, `date -d`, `grep -P`,
-   `find -printf`). `portability.yml` runs every gate on `macos-15` (arm64, no Docker,
+   `find -printf`). `portability.yml` runs every gate on `macos-26` (arm64, no Docker,
    `SKIP_DOCKER_TESTS=1`) and `ubuntu-latest`; you cannot run that leg here, so state the
    portability risk instead of claiming it.
 5. Never weaken a gate: `tools/depcruise/rules.cjs` and `tools/eslint/**` rules stay

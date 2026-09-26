@@ -17,10 +17,16 @@ infrastructure tables live here (`src/schema/platform.ts`). Committed migrations
 | `just db-seed`         | inserts synthetic rows from `@ai-stylist/seed-data`                   |
 
 `DATABASE_URL` comes from the environment or the repo-root `.env` (never overridden if already
-exported). Locally it points at the compose Postgres 17 + pgvector: start it with
+exported). Locally it points at the compose Postgres 18 + pgvector (`pgvector/pgvector:pg18`): start it with
 `docker compose up -d --wait postgres` (or `just dev-api`); set `POSTGRES_HOST_PORT` in `.env` if
 5432 is taken. Migrations never run on API boot. `db-reset` refuses any host other than
 `localhost` / `127.0.0.1` / `::1`.
+
+A PostgreSQL major bump cannot reuse a data directory: PG18 images store data under
+`/var/lib/postgresql/18/docker` and mount the volume at `/var/lib/postgresql`, so the compose
+volume is `postgres-cluster` (the PG17 one was `postgres-data`). After pulling a major bump, run
+`docker compose up -d --wait postgres` (recreates the container on the new image and volume), then
+`just db-reset --yes`. Local data is synthetic seed data only, so nothing is migrated across.
 
 ## Adding a migration
 

@@ -14,6 +14,6 @@ Run:
 - Android: start an emulator (or connect a device; needs `adb` from the SDK, see [apps/android/README.md](../apps/android/README.md)), then `just android-e2e` installs the debug build and runs the flow.
 - By hand: `maestro test -e APP_ID=app.aistylist.mobile.dev e2e/smoke.yaml`.
 
-Both need the Maestro CLI (`mise install maestro`, pinned in `mise.toml`; it runs on the mise JDK 21). CI does not run
+Both need the Maestro CLI (`mise install maestro`, pinned in `mise.toml`; it runs on the mise JDK 25). CI does not run
 these flows yet: the `maestro` job in `.github/workflows/nightly.yml` is a placeholder until an emulator/simulator lane
 exists. Do not claim a flow passed without that transcript.

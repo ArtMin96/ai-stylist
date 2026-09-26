@@ -67,7 +67,7 @@ test module='':
     if [[ "${SKIP_DOCKER_TESTS:-}" == "1" && -z "{{module}}" ]]; then
         # apps/api/vitest.config.ts has two projects: `api` and `migrations` (Testcontainers; it
         # FAILS without Docker, never skips). Run every other workspace through turbo, then only
-        # the `api` project. Docker-less hosts only (portability.yml on macos-15): never in pr-gate.
+        # the `api` project. Docker-less hosts only (portability.yml on macos-26): never in pr-gate.
         echo "SKIP_DOCKER_TESTS=1: skipping apps/api vitest project 'migrations' (Testcontainers needs Docker)" >&2
         pnpm turbo run test --filter='!@ai-stylist/api'
         pnpm --filter @ai-stylist/api exec vitest run --project api
@@ -325,7 +325,7 @@ ios-check:
     scripts/native-lane.sh ios xcode just ios-test
 
 # --- android (apps/android: Kotlin + Jetpack Compose; Gradle via apps/android/tools/gradle.sh) ----
-# Every recipe needs JDK 21 (mise) + the SDK packages `just android-sdk` checks. Only android-e2e
+# Every recipe needs JDK 25 (mise) + the SDK packages `just android-sdk` checks. Only android-e2e
 # needs a running emulator or device.
 
 # Build APKs: debug (= dev, app.aistylist.mobile.dev) | preview | release (= prod, unsigned until Play signing) | all

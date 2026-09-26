@@ -1,7 +1,7 @@
 import { PostgreSqlContainer, type StartedPostgreSqlContainer } from '@testcontainers/postgresql';
 
 /** Same image as docker-compose.yml and CI (production PostgreSQL major + pgvector). */
-export const POSTGRES_TEST_IMAGE = 'pgvector/pgvector:pg17';
+export const POSTGRES_TEST_IMAGE = 'pgvector/pgvector:pg18';
 
 export type StartedPostgres = {
   /** Connection string for the throwaway database. */

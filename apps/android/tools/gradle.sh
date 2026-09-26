@@ -3,7 +3,7 @@
 #
 #   apps/android/tools/gradle.sh <gradle args...>
 #
-# - JDK: the `java` on PATH (mise pins it; must be 21). JAVA_HOME is derived from it when unset.
+# - JDK: the `java` on PATH (mise pins it; must be 25). JAVA_HOME is derived from it when unset.
 # - SDK: ANDROID_HOME, else ANDROID_SDK_ROOT, else ~/Android/Sdk (Linux) or ~/Library/Android/sdk
 #   (macOS). Nothing is written to local.properties.
 # - CI=true adds --no-daemon.
@@ -11,7 +11,7 @@
 set -euo pipefail
 
 ANDROID_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-REQUIRED_JAVA_MAJOR=21
+REQUIRED_JAVA_MAJOR=25
 
 if [[ -z "${JAVA_HOME:-}" ]]; then
   if ! command -v java >/dev/null 2>&1; then

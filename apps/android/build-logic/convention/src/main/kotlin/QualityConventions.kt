@@ -99,8 +99,13 @@ internal fun Project.configureAndroidCommon(extension: CommonExtension) {
         }
     dependencies.add(robolectricRuntime.name, libs.library("robolectric-android-all"))
     tasks.withType<Test>().configureEach {
-        // Robolectric (SDK 36 sandbox) reaches into JDK internals; JDK 21 needs this opened.
-        jvmArgs("--add-opens=java.base/jdk.internal.access=ALL-UNNAMED")
+        // Robolectric (SDK 37 sandbox) reaches into JDK internals; JDK 25 needs this opened.
+        // JDK 25 also warns on (and later JDKs block) native access from the unnamed module,
+        // which Robolectric uses (robolectric/robolectric#11470).
+        jvmArgs(
+            "--add-opens=java.base/jdk.internal.access=ALL-UNNAMED",
+            "--enable-native-access=ALL-UNNAMED",
+        )
         jvmArgumentProviders.add(RobolectricOfflineArguments(robolectricRuntime))
     }
 }

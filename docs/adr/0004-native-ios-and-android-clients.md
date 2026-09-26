@@ -1,6 +1,6 @@
 # ADR-0004 — Native iOS (SwiftUI) and Android (Compose) clients replace React Native + Expo
 
-- **Status:** Accepted
+- **Status:** Accepted. **Amended by [ADR-0006](0006-track-latest-stable-toolchains.md) (2026-09-26):** the toolchain pins in decision 5 moved to AGP 9.4.1, Gradle 9.8.0, targetSdk 37 and JDK Temurin 25; the rest stands. The body below is unchanged.
 - **Date:** 2026-09-22
 - **Deciders:** product owner (user decision, 2026-09-22) + implementing session (native foundations, branch `chore/native-foundations`)
 - **Decision-log entry:** DEC-49–DEC-54 in [planning/16](../../planning/16-risks-open-questions-and-decision-log.md). Supersedes DEC-03, DEC-04, DEC-30 and DEC-38, the `react-native-filament` half of DEC-05, the client half of DEC-20, and the EAS row of DEC-48. Amends DEC-11 and DEC-37.

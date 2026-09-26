@@ -1,6 +1,6 @@
 # 04 — Architecture
 
-**Status:** Draft for ratification · **Date:** 2026-08-24 · **Conforms to:** [SPINE.md](SPINE.md) §2–§3 · **Amended:** 2026-09-13 ([r7](research/r7-third-party-services-and-self-hosting-audit-2026-09-13.md), ADR-0003 — pg-boss jobs, owned servers + Coolify, self-managed PostgreSQL, R2 delivery model) · **Amended:** 2026-09-22 ([ADR-0004](../docs/adr/0004-native-ios-and-android-clients.md), DEC-49–53: native iOS/Android clients replace React Native + Expo; §1, §2, §3, §4.3, §5, §6, §8 updated)
+**Status:** Draft for ratification · **Date:** 2026-08-24 · **Conforms to:** [SPINE.md](SPINE.md) §2–§3 · **Amended:** 2026-09-13 ([r7](research/r7-third-party-services-and-self-hosting-audit-2026-09-13.md), ADR-0003 — pg-boss jobs, owned servers + Coolify, self-managed PostgreSQL, R2 delivery model) · **Amended:** 2026-09-22 ([ADR-0004](../docs/adr/0004-native-ios-and-android-clients.md), DEC-49–53: native iOS/Android clients replace React Native + Expo; §1, §2, §3, §4.3, §5, §6, §8 updated) · **Amended:** 2026-09-26 ([ADR-0006](../docs/adr/0006-track-latest-stable-toolchains.md), DEC-56: PostgreSQL 17 → 18, Python 3.12 → 3.14; §1, §2, §3 updated)
 **Owns:** system context, containers, module boundaries and dependency rules, composition roots, repo layout, key data flows, sync/offline design, job/event flow (outbox), future chat seam, dependency-enforcement tooling.
 **Does not own:** engine internals → [09-recommendation-engine.md](09-recommendation-engine.md) · asset pipeline stages → [07-3d-avatar-and-garment-pipeline.md](07-3d-avatar-and-garment-pipeline.md) · entitlement semantics → [12-pricing-entitlements-and-unit-economics.md](12-pricing-entitlements-and-unit-economics.md) · contract/schema details → [06-data-api-and-event-contracts.md](06-data-api-and-event-contracts.md).
 
@@ -8,7 +8,7 @@
 
 ## 1. Architecture in one paragraph
 
-A **modular monolith** (NestJS on the Fastify adapter, TypeScript) serves all clients over an OpenAPI-3.1 contract. Durable asynchronous work (media pipeline, AI calls, notifications, billing reconciliation, trend ingestion) runs as **pg-boss v12 jobs** on the application database, fed reliably through a **Postgres outbox**. GPU/CV-heavy steps are delegated by those job handlers to separately deployable **Python FastAPI ML workers** over versioned JSON schemas. **Self-managed PostgreSQL 17** (+ pgvector) is the single transactional source of truth; **Cloudflare R2** holds all original and derived media/3D assets (private user media via presigned URLs; public app assets via a cached custom domain). API, jobs, workers and PostgreSQL run as Docker containers on owned servers deployed with Coolify (ADR-0003). Two **native client apps**, Swift/SwiftUI (`apps/ios`) and Kotlin/Jetpack Compose (`apps/android`), talk to the API only through clients generated from the contract (DEC-49, DEC-53). Each keeps an offline local store (introduced in P07). When 3D resumes, each renders through **Filament's C++ engine** behind a renderer boundary (DEC-50). There is no 3D in the apps today. *(Historical: until 2026-09-22 this was one React Native + Expo app rendering through `react-native-filament`.)* All external providers sit behind ports implemented in the `platform` module. No microservices until measured need (SPINE §2).
+A **modular monolith** (NestJS on the Fastify adapter, TypeScript) serves all clients over an OpenAPI-3.1 contract. Durable asynchronous work (media pipeline, AI calls, notifications, billing reconciliation, trend ingestion) runs as **pg-boss v12 jobs** on the application database, fed reliably through a **Postgres outbox**. GPU/CV-heavy steps are delegated by those job handlers to separately deployable **Python FastAPI ML workers** over versioned JSON schemas. **Self-managed PostgreSQL 18** (+ pgvector) is the single transactional source of truth; **Cloudflare R2** holds all original and derived media/3D assets (private user media via presigned URLs; public app assets via a cached custom domain). API, jobs, workers and PostgreSQL run as Docker containers on owned servers deployed with Coolify (ADR-0003). Two **native client apps**, Swift/SwiftUI (`apps/ios`) and Kotlin/Jetpack Compose (`apps/android`), talk to the API only through clients generated from the contract (DEC-49, DEC-53). Each keeps an offline local store (introduced in P07). When 3D resumes, each renders through **Filament's C++ engine** behind a renderer boundary (DEC-50). There is no 3D in the apps today. *(Historical: until 2026-09-22 this was one React Native + Expo app rendering through `react-native-filament`.)* All external providers sit behind ports implemented in the `platform` module. No microservices until measured need (SPINE §2).
 
 ## 2. System context
 
@@ -21,7 +21,7 @@ flowchart LR
         api["API monolith<br/>NestJS"]
         jobs["pg-boss jobs"]
         ml["Python ML workers"]
-        pg[("PostgreSQL 17<br/>+ pgvector, self-managed")]
+        pg[("PostgreSQL 18<br/>+ pgvector, self-managed")]
         r2[("Cloudflare R2")]
         holidays["date-holidays<br/>embedded library"]
     end
@@ -84,7 +84,7 @@ flowchart TB
         subgraph jobsproc["jobs process — pg-boss v12"]
             tasks["Durable job handlers<br/>media pipeline · AI calls · notifications<br/>billing reconciliation · trend ingestion · feedback aggregation"]
         end
-        pg[("PostgreSQL 17 + pgvector<br/>source of truth, outbox + pg-boss tables<br/>(same host at launch; dedicated host once load justifies)")]
+        pg[("PostgreSQL 18 + pgvector<br/>source of truth, outbox + pg-boss tables<br/>(same host at launch; dedicated host once load justifies)")]
     end
 
     subgraph mlhost["Owned server(s) — Docker (GPU host only when a self-hosted model passes its eval)"]
@@ -117,8 +117,8 @@ Container responsibilities:
 | `apps/android` | Kotlin + Jetpack Compose; own Gradle root | GitHub Actions Linux runner → Play | All Android UX; same responsibilities as `apps/ios` |
 | `apps/api` | NestJS (Fastify), Node, TS | Owned server, Docker + Coolify | All synchronous business logic; auth; OpenAPI surface; outbox writes + relay; provider ports |
 | pg-boss jobs | pg-boss v12 (job definitions in `apps/api/src/jobs` — see §6); run in the API process or a dedicated `jobs` process | Owned server, Docker + Coolify | Durable async pipelines; retries/DLQ; orchestrate ML workers |
-| `workers/ml` | Python 3.12, FastAPI, Docker | Owned server, Docker + Coolify (GPU host only if a self-hosted model passes its eval) | CV/ML steps needing Python/native tooling; stateless; versioned JSON contracts |
-| PostgreSQL | PostgreSQL 17 + pgvector (`pgvector/pgvector:pg17`), PgBouncer, pgBackRest | Owned server, Docker (same host at launch; dedicated host once load justifies) | Transactional source of truth; embeddings; outbox + pg-boss tables; PITR to encrypted off-host R2 bucket |
+| `workers/ml` | Python 3.14, FastAPI, Docker | Owned server, Docker + Coolify (GPU host only if a self-hosted model passes its eval) | CV/ML steps needing Python/native tooling; stateless; versioned JSON contracts |
+| PostgreSQL | PostgreSQL 18 + pgvector (`pgvector/pgvector:pg18`), PgBouncer, pgBackRest | Owned server, Docker (same host at launch; dedicated host once load justifies) | Transactional source of truth; embeddings; outbox + pg-boss tables; PITR to encrypted off-host R2 bucket |
 | R2 | Cloudflare | Cloudflare | All binaries: originals, derivations, 3D delivery assets; presigned URLs for private media, cached custom domain for public app assets |
 
 ## 4. Module boundary map

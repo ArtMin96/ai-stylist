@@ -17,7 +17,7 @@ React Native, no Kotlin Multiplatform and no 3D code.
 | `config/` | `detekt.yml`, `lint.xml`, `compose-stability.conf` |
 | `gradle/libs.versions.toml` | The version catalog. Every dependency and plugin version is set here |
 | `gradle/verification-metadata.xml`, `**/gradle.lockfile`, `*-gradle.lockfile` | Supply chain: checksums and the locked dependency graph |
-| `tools/` | `gradle.sh` (runs the wrapper with JDK 21 + the SDK) and `sdk.sh` (SDK check/install), behind the `just android-*` recipes |
+| `tools/` | `gradle.sh` (runs the wrapper with JDK 25 + the SDK) and `sdk.sh` (SDK check/install), behind the `just android-*` recipes |
 
 The generated client also has `app.aistylist.contracts.kernel` (reason codes, entitlement names and units, from
 `packages/shared-kernel/registry/*.json`; [ADR-0005](../../docs/adr/0005-shared-kernel-registries-for-native-clients.md))
@@ -73,7 +73,7 @@ in `build-logic/convention/src/main/kotlin/RootConventionPlugin.kt`.
 
 ## Setup (Linux or macOS; no Android Studio needed)
 
-1. JDK 21: `mise` provides it. `java -version` must print 21.
+1. JDK 25: `mise` provides it. `java -version` must print 25.
 2. Android SDK, installed per user (no sudo) into `~/Android/Sdk` (macOS: `~/Library/Android/sdk`):
    `just android-sdk install` (and `just android-sdk` to check; both run `apps/android/tools/sdk.sh`).
    It pins cmdline-tools 19.0 (sha1-verified) and installs `platform-tools`, `platforms;android-37.0` and `build-tools;36.0.0`.
@@ -85,7 +85,7 @@ in `build-logic/convention/src/main/kotlin/RootConventionPlugin.kt`.
 ## Commands
 
 Use the `just android-*` recipes from the repo root. They call `apps/android/tools/gradle.sh`, which
-checks for JDK 21, finds the SDK and runs the wrapper. CI runs the same recipes in
+checks for JDK 25, finds the SDK and runs the wrapper. CI runs the same recipes in
 `.github/workflows/android.yml`. The Gradle equivalents are:
 
 | Purpose | Recipe | `tools/gradle.sh` arguments |
@@ -109,6 +109,9 @@ checks for JDK 21, finds the SDK and runs the wrapper. CI runs the same recipes 
 - detekt covers only coroutines, exceptions, potential-bugs and complexity. Any finding fails the
   build.
 - Dependency locking is `STRICT`, and `gradle/verification-metadata.xml` holds sha256 checksums.
+- `build-logic/convention` compiles with the catalog's Kotlin Gradle plugin (`kotlin-jvm` +
+  `java-gradle-plugin` + SAM-with-receiver), not Gradle's `kotlin-dsl`. `kotlin-dsl` would bring
+  Gradle's embedded KGP, which is 2.4.10 in Gradle 9.8.0 and affected by GHSA-r937-wjx7-w2jp.
 - Tests live in each module's `src/test/kotlin`. This is Gradle's layout, and a documented exception
   to the repo's `tests/` rule.
 - Generated code (`packages/contracts/gen/kotlin-client`) is never edited by hand. Run `just generate`.

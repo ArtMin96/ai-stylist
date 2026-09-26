@@ -68,7 +68,7 @@ run datamodel-codegen \
   --output "$staged" \
   --output-model-type pydantic_v2.BaseModel \
   --use-schema-description \
-  --target-python-version 3.12 \
+  --target-python-version 3.14 \
   --field-constraints \
   --use-annotated \
   --disable-timestamp \

@@ -82,6 +82,27 @@ Log hygiene: when this log exceeds ~30 entries, move the oldest entries to `plan
 
 *(newest first)*
 
+### 2026-09-26 — Latest-stable upgrade of the whole repo (ADR-0006, DEC-56)
+
+- **Phase / tasks worked:** P02 hygiene (no task ID). Branch `fix/prompt-audit-followups`, uncommitted. Human-authorized repo-wide upgrade to the latest stable release of every tool and dependency; work done by upgrade subagents plus a docs sweep.
+- **Status changes:** none. OQ-13 (NestJS 11 → 12) resolved by DEC-56.
+- **Done this session:**
+  - **Toolchain (`mise.toml`):** Node 22.23.2 → 24.21.0 (Active LTS), pnpm 10.34.5 → 12.6.0 (settings moved from `package.json#pnpm` to `pnpm-workspace.yaml`: `overrides`, `allowBuilds`; `minimumReleaseAgeStrict: true` added), Python 3.12.14 → 3.14.7, Temurin 21 → 25.0.4 LTS, uv 0.12.19, prek/osv-scanner/syft/oasdiff patches.
+  - **Android:** AGP 9.3.3 → 9.4.1, targetSdk 36 → 37, JDK 25, Robolectric test JVM gets `--enable-native-access=ALL-UNNAMED`. Gradle 9.7.1 → 9.8.0 (AGP 9.4.1 emits setVisible deprecation problems; not errors); build-logic uses kotlin-jvm 2.4.20 instead of kotlin-dsl, which clears GHSA-r937-wjx7-w2jp.
+  - **API:** NestJS 11.2.3 → 12.1.0, Fastify 5.12.5, `@types/node` 24; the fastify pnpm override is gone. TypeScript held at 6.0.3 (typescript-eslint peer `<6.1.0`).
+  - **Workers:** Python 3.14 and latest deps; generated models regenerated. **iOS:** swift-tools-version 6.4, swift-collections 1.7.1.
+  - **PostgreSQL 17 → 18** (`pgvector/pgvector:pg18`) in compose (new volume mounted at `/var/lib/postgresql`), Testcontainers and the migration test. Portability runner `macos-15` → `macos-26`. Renovate automerges minor/patch npm, pep621 and GitHub Actions updates after green CI.
+  - **Docs:** [ADR-0006](../docs/adr/0006-track-latest-stable-toolchains.md) + DEC-56; amendment notes in ADR-0001/0003/0004 and on DEC-37/43/54; current-stack versions updated in README, docs/SERVICES-SETUP.md, docs/DEVELOPING-ON-MACOS.md, `.env.example`, `e2e/README.md`, `ml-engineer.md`, docs/security/dependency-ignores.md, planning 04/05 and the P02 phase file.
+- **Not done / in flight (human steps):**
+  - Apply the guarded-file patch (SPINE §2 database row, doc 15 §1.2/§1.4/§9, `affected.yml` + `nightly.yml` pg18 service images, JDK 25 comments in `android.yml`/`pr-gate.yml`): `git apply guarded-docs.patch` from the session scratchpad, with `AGENT_MAY_EDIT_POLICY=1` or by hand. Until then CI still runs pg17 services while the migration test asserts major 18.
+  - Confirm on a Mac or in CI: the iOS simulator build/test (`just ios-build` + `just ios-test`) with swift-tools 6.4, and the `portability.yml` job on `macos-26` (Temurin 25 on macOS not yet confirmed).
+  - `apps/android/gradle/verification-metadata.xml` still lists pre-upgrade AGP entries; prune them after the Android lane is final.
+  - Local developers: the old `postgres-data` compose volume (PG17) is no longer used; remove it once nothing in it is needed.
+- **Repository state:** docs sweep verified with `just docs-check --strict`, `NATIVE_LANES=none just format --check`, `git apply --check` on the guarded patch and `pnpm install --frozen-lockfile`; other lanes are reported by the upgrade agents, not re-run here.
+- **New decisions / risks / questions filed:** DEC-56 ([ADR-0006](../docs/adr/0006-track-latest-stable-toolchains.md)); OQ-13 resolved.
+- **Surprises / gotchas:** pnpm 12 ignores `package.json#pnpm` entirely and silently dropped the overrides from the lockfile while they lived there. PostgreSQL 18 images refuse to start with a volume at the old `/var/lib/postgresql/data` path.
+- **Next session starts:** apply the guarded patch, then run `just ci-parity` and push so CI (including the macOS lanes) confirms the upgrade.
+
 ### 2026-09-26 — Prompt-audit follow-ups: signed-URL GET TTL, DC-15 fixture, trigger evals
 
 - **Phase / tasks worked:** P02 hygiene (no task ID). Branch `fix/prompt-audit-followups` off `1ead9bd`. Work done by subagents: `platform-engineer`, `tooling-engineer`, and two general-purpose agents.

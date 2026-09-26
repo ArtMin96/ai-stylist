@@ -5,7 +5,7 @@
 name = "ai-stylist-workers"
 version = "0.0.0"
 description = "Workspace root for the AI Stylist Python ML workers (dev tooling only)"
-requires-python = ">=3.12,<3.13"
+requires-python = ">=3.14,<3.15"
 dependencies = [
   # Workspace members, so a plain `uv sync --frozen` installs every service in editable mode.
   "ai-stylist-generated",
@@ -14,14 +14,14 @@ dependencies = [
 
 [dependency-groups]
 dev = [
-  "basedpyright>=1.29",
-  "datamodel-code-generator>=0.30",
-  "httpx>=0.28",
-  "hypothesis>=6.130",
-  "pytest>=8.3",
-  "pytest-asyncio>=0.26",
-  "ruff>=0.12",
-  "schemathesis>=4.0",
+  "basedpyright>=1.40.1",
+  "datamodel-code-generator>=0.83.0",
+  "httpx>=0.28.1",
+  "hypothesis>=6.168.1",
+  "pytest>=9.1.1",
+  "pytest-asyncio>=1.4.0",
+  "ruff>=0.16.9",
+  "schemathesis>=4.28.0",
 ]
 
 [tool.uv]
@@ -37,7 +37,7 @@ ai-stylist-segmentation = { workspace = true }
 # --- ruff: lint + format (brief §1 "Lint / format") --------------------------------
 [tool.ruff]
 line-length = 100
-target-version = "py312"
+target-version = "py314"
 src = ["ml/*/src", "ml/*/tests"]
 # Generated models are regenerated, never edited or linted by hand (`just generate`).
 extend-exclude = ["ml/generated/ai_stylist_generated/events/"]
@@ -66,7 +66,7 @@ filterwarnings = ["error"]
 # --- basedpyright (brief §1 "Python": Pyright/BasedPyright) ---------------------------
 [tool.basedpyright]
 typeCheckingMode = "standard"
-pythonVersion = "3.12"
+pythonVersion = "3.14"
 pythonPlatform = "Linux"
 venvPath = "."
 venv = ".venv"

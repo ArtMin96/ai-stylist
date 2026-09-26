@@ -1,6 +1,6 @@
 # ADR-0003 — Self-hosted infrastructure baseline: pg-boss, owned servers + Coolify, self-managed PostgreSQL, R2 delivery model
 
-- **Status:** Accepted
+- **Status:** Accepted. **Amended by [ADR-0006](0006-track-latest-stable-toolchains.md) (2026-09-26):** the PostgreSQL major is now 18 (`pgvector/pgvector:pg18`); the rest of the database decision stands. The body below is unchanged.
 - **Date:** 2026-09-13
 - **Deciders:** owner
 - **Decision-log entry:** DEC-41 … DEC-48 in [16-risks-open-questions-and-decision-log.md](../../planning/16-risks-open-questions-and-decision-log.md)

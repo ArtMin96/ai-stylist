@@ -26,7 +26,7 @@ Phase numbers refer to `planning/phases/`. "Needed from" is the first task that 
 | --- | ----------------------------------------------------------------------- | --------------------------------------------------------- | -------------------------- | -------------------------------------------- | ------------- | ---- |
 | 1   | GitHub repository                                                       | Source, CI (GitHub Actions), branch protection            | P02 now                    | Yes (public repo or personal plan)           | `<owner>`     | [ ]  |
 | 2   | sops + age                                                              | Encrypted shared secrets in the repo                      | P02 now                    | Free, no account                             | `<owner>`     | [x]  |
-| 3   | PostgreSQL (self-managed, pgvector)                                     | Postgres 17 + pgvector for staging, prod (docker locally) | P02-T07                    | $0 software; host cost in row 4              | `<owner>`     | [ ]  |
+| 3   | PostgreSQL (self-managed, pgvector)                                     | Postgres 18 + pgvector for staging, prod (docker locally) | P02-T07                    | $0 software; host cost in row 4              | `<owner>`     | [ ]  |
 | 4   | Server + Coolify                                                        | API, jobs, workers, PostgreSQL hosting                    | P02 (server), P03 (deploy) | Server ~€10–25/month; Coolify $0 self-hosted | `<owner>`     | [ ]  |
 | 5   | pg-boss (no account)                                                    | Durable jobs (outbox relay, media pipeline)               | P02-T08                    | $0, MIT, runs on the app database            | n/a           | [ ]  |
 | 6   | Cloudflare (R2 + DNS/WAF)                                               | Object storage for media and public assets, DNS, WAF      | P02-T13                    | Yes, 10 GB-month, Checked 2026-09-10         | `<owner>`     | [ ]  |
@@ -185,7 +185,7 @@ Expected: `secrets-sync: merged secrets/dev.enc.yaml into .env — N replaced, M
 
 ### Why we use it
 
-Self-managed PostgreSQL 17 with pgvector on an owned host (DEC-43, ADR-0003, [r7](../planning/research/r7-third-party-services-and-self-hosting-audit-2026-09-13.md)). The database runs from the same `pgvector/pgvector:pg17` image that `docker-compose.yml` uses locally, so versions match and the repo's migrations create the extension in both places. Running it ourselves brings obligations that a managed vendor used to carry: WAL archiving and point-in-time recovery through pgBackRest, a nightly logical backup, PgBouncer pooling, disk/backup-age alerts in Grafana, and a quarterly restore drill (RISK-17).
+Self-managed PostgreSQL 18 with pgvector on an owned host (DEC-43, ADR-0003, [r7](../planning/research/r7-third-party-services-and-self-hosting-audit-2026-09-13.md)). The database runs from the same `pgvector/pgvector:pg18` image that `docker-compose.yml` uses locally, so versions match and the repo's migrations create the extension in both places. Running it ourselves brings obligations that a managed vendor used to carry: WAL archiving and point-in-time recovery through pgBackRest, a nightly logical backup, PgBouncer pooling, disk/backup-age alerts in Grafana, and a quarterly restore drill (RISK-17).
 
 ### When you need it
 
@@ -197,7 +197,7 @@ $0 for software: PostgreSQL, pgvector, pgBackRest, and PgBouncer are all open so
 
 ### Steps
 
-1. Provision on the server from section 4, on the private Docker network: either Coolify's built-in PostgreSQL service with the image set to `pgvector/pgvector:pg17`, or a `docker compose` stack that Coolify manages. Put the data directory on the encrypted disk. Publish no port; the API, the jobs process, and the workers reach it over the private network only, with TLS enabled on the server.
+1. Provision on the server from section 4, on the private Docker network: either Coolify's built-in PostgreSQL service with the image set to `pgvector/pgvector:pg18`, or a `docker compose` stack that Coolify manages. Put the data directory on the encrypted disk. PostgreSQL 18+ images store data under /var/lib/postgresql/18/docker; mount the data volume at /var/lib/postgresql, not /var/lib/postgresql/data. Publish no port; the API, the jobs process, and the workers reach it over the private network only, with TLS enabled on the server.
 2. Enable pgvector once per database (`CREATE EXTENSION IF NOT EXISTS vector;`); the committed migrations also do this, matching local.
 3. Create the `staging` database and its application role now (least privilege, own password); create the `production` database and role only when P03 deploys production. Keep one superuser for provisioning and backups, never for the API.
 4. PgBouncer (transaction pooling) in front of the database for the running API; `just db-migrate` uses the direct connection, because transaction pooling does not support everything migration tools need.

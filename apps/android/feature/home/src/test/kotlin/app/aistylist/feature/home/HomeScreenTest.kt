@@ -21,7 +21,7 @@ import org.robolectric.annotation.Config
 
 /** JVM (Robolectric) test of the real screen + view model over a fake repository. */
 @RunWith(RobolectricTestRunner::class)
-@Config(sdk = [36])
+@Config(sdk = [37])
 class HomeScreenTest {
     @get:Rule
     val compose = createComposeRule()

@@ -76,7 +76,7 @@ write_if_changed() {
     printf '%s\n' "$content" >"$path"
   fi
 }
-write_if_changed "$TOOL_DIR/Package.swift" "// swift-tools-version: 6.2
+write_if_changed "$TOOL_DIR/Package.swift" "// swift-tools-version: 6.4
 // Tool manifest written by tools/codegen/gen-swift.sh (cache only, never shipped).
 import PackageDescription
 
@@ -134,7 +134,7 @@ fi
 "${node_cmd[@]}" "$ROOT/tools/codegen/gen-kernel.mjs" swift "$staged/Sources/AIStylistKernel" >/dev/null
 
 cat >"$staged/Package.swift" <<EOF
-// swift-tools-version: 6.2
+// swift-tools-version: 6.4
 $BANNER
 import PackageDescription
 

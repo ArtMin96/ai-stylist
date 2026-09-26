@@ -30,7 +30,7 @@ Sources: `justfile` (`just --summary` is the live catalog); `.github/workflows/R
 and the fixture convention: `tools/<gate>/fixtures/<case>/` must still fail on its rule);
 `scripts/docs/docs-check.sh` header (the `DC-01`..`DC-15` catalog) with fixtures in
 `tools/docs/fixtures/`; `docs/DEVELOPING-ON-MACOS.md` (why bash 3.2 / BSD portability matters:
-`.github/workflows/portability.yml` runs every gate on `macos-15` and `ubuntu-latest`).
+`.github/workflows/portability.yml` runs every gate on `macos-26` and `ubuntu-latest`).
 
 Invariants that bite here (enforced by the named gate unless marked reviewer-checked):
 - CI calls only `just`; a workflow step running a raw tool is a defect. (reviewer-checked)

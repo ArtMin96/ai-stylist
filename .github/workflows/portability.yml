@@ -4,8 +4,8 @@
 # `./scripts/bootstrap.sh` (user-level, no --system) exactly like a new developer would. That
 # step is the one place a workflow runs a script directly: `just` does not exist until it ran.
 #
-# macos-15 (arm64) has no Docker (actions/runner-images macos-15-arm64 README, checked
-# 2026-09-10): `just doctor` reports the docker check as failed there (its output goes to the job
+# macos-26 (arm64) has no Docker (actions/runner-images macos-26-arm64 README, checked
+# 2026-09-26): `just doctor` reports the docker check as failed there (its output goes to the job
 # summary, non-blocking), and `just test` runs with SKIP_DOCKER_TESTS=1, which leaves out the
 # apps/api `migrations` vitest project (Testcontainers). ubuntu-latest has Docker and runs the
 # full suite. macOS minutes bill at 10x on a private repo: pull_request runs only for tooling
@@ -18,7 +18,7 @@
 # Required secrets: none (GITLEAKS_LICENSE only under an org).
 #
 # Job tree:
-#   bootstrap (macos-15, ubuntu-latest) ──> summary
+#   bootstrap (macos-26, ubuntu-latest) ──> summary
 name: portability
 
 on:
@@ -63,7 +63,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [macos-15, ubuntu-latest]
+        os: [macos-26, ubuntu-latest]
     steps:
       - name: Setup · Record start time
         id: start
@@ -172,7 +172,7 @@ jobs:
           {
             echo "## Portability"
             echo ""
-            echo "bootstrap matrix (macos-15, ubuntu-latest): ${{ needs.bootstrap.result }}"
+            echo "bootstrap matrix (macos-26, ubuntu-latest): ${{ needs.bootstrap.result }}"
           } >> "$GITHUB_STEP_SUMMARY"
       - name: Report · Fail when a matrix leg failed
         if: contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled')

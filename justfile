@@ -60,15 +60,16 @@ dev-workers *args:
 
 # --- quality gates (* = part of ci-parity) -------------------------------------------
 
-# * Run tests: full suite via turbo + the native lanes, or one module's tests/ dir (`just test recommendation`; `just test ios` / `just test android` = that app's unit tests; `just test secrets` = the sops+age shell suite; `just test tooling` = the scripts/test shell suites: bootstrap/doctor, contracts-breaking, test-regression); SKIP_DOCKER_TESTS=1 leaves out the Testcontainers `migrations` project (runners without Docker only)
+# * Run tests: full suite via turbo + the native lanes, or one module's tests/ dir (`just test recommendation`; `just test ios` / `just test android` = that app's unit tests; `just test secrets` = the sops+age shell suite; `just test tooling` = the scripts/test shell suites: bootstrap/doctor, contracts-breaking, test-regression; `just test platform` = the `api` + `platform-docker` vitest projects); SKIP_DOCKER_TESTS=1 leaves out the Testcontainers `migrations` and `platform-docker` projects (runners without Docker only)
 test module='':
     #!/usr/bin/env bash
     set -euo pipefail
     if [[ "${SKIP_DOCKER_TESTS:-}" == "1" && -z "{{module}}" ]]; then
-        # apps/api/vitest.config.ts has two projects: `api` and `migrations` (Testcontainers; it
-        # FAILS without Docker, never skips). Run every other workspace through turbo, then only
-        # the `api` project. Docker-less hosts only (portability.yml on macos-26): never in pr-gate.
-        echo "SKIP_DOCKER_TESTS=1: skipping apps/api vitest project 'migrations' (Testcontainers needs Docker)" >&2
+        # apps/api/vitest.config.ts has three projects: `api`, plus the Testcontainers projects
+        # `migrations` and `platform-docker` (each FAILS without Docker, never skips). Run every
+        # other workspace through turbo, then only the `api` project. Docker-less hosts only
+        # (portability.yml on macos-26): never in pr-gate.
+        echo "SKIP_DOCKER_TESTS=1: skipping apps/api vitest projects 'migrations' and 'platform-docker' (Testcontainers needs Docker)" >&2
         pnpm turbo run test --filter='!@ai-stylist/api'
         pnpm --filter @ai-stylist/api exec vitest run --project api
         uv run --project workers pytest workers -q
@@ -94,6 +95,14 @@ test module='':
         fi
         if [[ "$dir" == "." ]]; then
             pnpm --filter @ai-stylist/api test
+        elif [[ "{{module}}" == "platform" ]]; then
+            # platform adapters also have Testcontainers tests (`platform-docker`: *.docker.test.ts).
+            if [[ "${SKIP_DOCKER_TESTS:-}" == "1" ]]; then
+                echo "SKIP_DOCKER_TESTS=1: skipping apps/api vitest project 'platform-docker' (Testcontainers needs Docker)" >&2
+                pnpm --filter @ai-stylist/api exec vitest run --project api "$dir"
+            else
+                pnpm --filter @ai-stylist/api exec vitest run --project api --project platform-docker "$dir"
+            fi
         else
             pnpm --filter @ai-stylist/api exec vitest run --project api "$dir"
         fi

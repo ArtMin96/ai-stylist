@@ -30,10 +30,11 @@ outcome to pg-boss. No business rule lives here. Provider clients are constructe
   "Dead-letter queues" below). `batchSize` 10: the worker fetches 10 jobs at a
   time and keeps fetching while batches come back full, then runs them one after another, each
   settled on its own (`../platform/queue/README.md`). Batch 1 measured 0.5 jobs/s against the
-  DEC-41 / A11 floor of 20; batch 10 measured ≈99 jobs/s in the acceptance throughput test. Worst
-  case per batch: 10 × `SEGMENTATION_TIMEOUT_MS` = 100 s, below the 900 s job expiry. The pool
-  shared by the effect-once guard and the dead-letter handlers has 3 connections: demo jobs never
-  run concurrently (one claim connection), each dead-letter worker runs one update at a time.
+  DEC-41 / A11 floor of 20; batch 10 measured ≈95–103 jobs/s across acceptance runs of the
+  throughput test. Worst case per batch: 10 × `SEGMENTATION_TIMEOUT_MS` = 100 s, below the 900 s
+  job expiry. The pool shared by the effect-once guard and the dead-letter handlers has 3
+  connections: demo jobs never run concurrently (one claim connection), each dead-letter worker
+  runs one update at a time.
 - The outbox relay's composition (`apps/api/src/app.module.ts`) imports `JOB_QUEUES`,
   `queueForEventType` and `userIdOf` from `./queues.js`, never `./index.js` (which would pull the
   job runtime into the API process), and passes them to the relay (platform cannot import
@@ -124,4 +125,6 @@ consecutive failures, for 30 s).
 
 The durable guard and the queue are covered against real Postgres in
 `../platform/tests/idempotency.docker.test.ts` and `../platform/tests/queue.docker.test.ts`. The
-end-to-end API → outbox → pg-boss → worker round-trip is the P02-T08 acceptance suite.
+end-to-end API → outbox → pg-boss → worker round-trip is the P02-T08 acceptance suite
+`tests/acceptance-dispatch.docker.test.ts` (vitest project `platform-docker`; AC-1/2/3/5 +
+throughput; run by `just test api`, not `just test platform`).

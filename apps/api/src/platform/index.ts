@@ -104,6 +104,7 @@ export {
 } from './queue/pg-boss-queue.js';
 export { OUTBOX_WRITER, type OutboxWriter } from './ports/outbox-writer.port.js';
 export { PgOutboxWriter } from './outbox/pg-outbox-writer.js';
+export { markOutboxFailed } from './outbox/outbox-dead-letter.js';
 export {
   MAX_OUTBOX_BATCH_SIZE,
   OutboxRelay,

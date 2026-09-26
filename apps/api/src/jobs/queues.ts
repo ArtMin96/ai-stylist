@@ -1,7 +1,11 @@
 // pg-boss queues and the event-type → queue routing map (doc 04 §9). Single source of truth: the
 // job runtime (`./index.ts`) and the outbox relay's composition both import these values; nothing
 // else declares a queue name or a route.
-import { type QueueDefinition } from '../platform/index.js';
+import {
+  type OutboxEnvelope,
+  type QueueDefinition,
+  deadLetterQueueName,
+} from '../platform/index.js';
 
 /** Event type the demo round-trip dispatches (packages/contracts/events/demo.event.json). */
 export const DEMO_OUTBOX_FLOW_EVENT_TYPE = 'demo.outbox-flow.requested.v1' as const;
@@ -22,8 +26,49 @@ export const DEMO_OUTBOX_FLOW_QUEUE = {
   batchSize: 10,
 } as const satisfies QueueDefinition;
 
-/** Every queue the job runtime works; pass the same list to each `PgBossQueue` that sends to it. */
-export const JOB_QUEUES: readonly QueueDefinition[] = [DEMO_OUTBOX_FLOW_QUEUE];
+/**
+ * The worked dead-letter queue of `source` (doc 04 §9.2 "DLQ"): its handler marks the originating
+ * outbox row `failed`. Default policy (5 attempts, 1–60 s backoff) so a transient database error
+ * does not lose the mark; a dead letter that still fails lands in `<source>.dlq.dlq`, which
+ * nothing works (left for ops).
+ */
+function workedDeadLetterQueue(source: QueueDefinition): QueueDefinition {
+  return {
+    name: deadLetterQueueName(source.name),
+    retryLimit: 4,
+    retryDelaySeconds: 1,
+    retryDelayMaxSeconds: 60,
+  };
+}
+
+/** Source queue → its worked DLQ, for every queue fed from the outbox. */
+export const OUTBOX_DEAD_LETTER_QUEUES: readonly {
+  readonly source: string;
+  readonly deadLetter: QueueDefinition;
+}[] = [
+  {
+    source: DEMO_OUTBOX_FLOW_QUEUE.name,
+    deadLetter: workedDeadLetterQueue(DEMO_OUTBOX_FLOW_QUEUE),
+  },
+];
+
+/**
+ * Every queue the job runtime works, dead-letter queues included; pass the same list to each
+ * `PgBossQueue` that sends to or works one of them.
+ */
+export const JOB_QUEUES: readonly QueueDefinition[] = [
+  DEMO_OUTBOX_FLOW_QUEUE,
+  ...OUTBOX_DEAD_LETTER_QUEUES.map((entry) => entry.deadLetter),
+];
+
+/**
+ * Per-user keying policy (doc 06 §8 step 4): the pg-boss job key used for per-user cancellation
+ * is the actor id of a user-caused event; system, admin and job events carry none. The outbox
+ * relay's composition passes this as `OutboxRelay`'s `userIdOf`.
+ */
+export function userIdOf(envelope: OutboxEnvelope): string | undefined {
+  return envelope.actor.kind === 'user' ? envelope.actor.id : undefined;
+}
 
 /** Outbox event `type` → pg-boss queue name. An event type missing here has no consumer. */
 export const EVENT_QUEUE_ROUTES: Readonly<Record<string, string>> = Object.freeze({

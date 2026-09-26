@@ -9,6 +9,7 @@ import type { Logger } from 'pino';
 
 import { isId } from '@ai-stylist/shared-kernel';
 
+import { errorSummary } from './error-summary.js';
 import { jobIdForKey } from './job-id.js';
 
 /** One application queue. Every queue gets a dead-letter queue named `deadLetterQueueName(name)`. */
@@ -97,9 +98,18 @@ const CANCEL_CHUNK_SIZE = 100;
 /**
  * Internal queue holding one never-worked job per user cancelled with `cancelUser`: the durable
  * "refuse this user's work" marker every `PgBossQueue` instance (API, relay, jobs process) reads.
- * pg-boss deletes a marker after its default created-job retention (14 days).
+ * pg-boss deletes a marker `CANCELLED_USER_MARKER_RETENTION_SECONDS` after it was written.
  */
 export const CANCELLED_USERS_QUEUE = 'platform.cancelled-users';
+
+/**
+ * How long a cancelled-user marker refuses the user's work: 100 days. It must outlive every path
+ * that can still enqueue work for a deleted user: an outbox replay re-dispatches events retained
+ * 90 days (planning/04-architecture.md §9.2, "Replay"), and account deletion runs after a 7-day
+ * grace window (planning/11-security-privacy-and-compliance.md §13.2). 90 + 7, plus 3 days margin.
+ * pg-boss's default created-job retention (14 days) would let a replay reach a deleted user.
+ */
+export const CANCELLED_USER_MARKER_RETENTION_SECONDS = 100 * 24 * 60 * 60;
 
 /** Job states a cancellation can still stop (pg-boss `cancel` only changes these). */
 const UNFINISHED_STATES: ReadonlySet<string> = new Set(['created', 'retry', 'active']);
@@ -154,11 +164,8 @@ export class PgBossQueue {
     });
     // An unhandled 'error' event would crash the process. Only the error class and pg code are
     // logged: driver messages can echo statement parameters (job data).
-    this.boss.on('error', (error: Error & { code?: unknown }) => {
-      this.logger.error(
-        { errorName: error.name, pgCode: typeof error.code === 'string' ? error.code : undefined },
-        'pg-boss error',
-      );
+    this.boss.on('error', (error: Error) => {
+      this.logger.error(errorSummary(error), 'pg-boss error');
     });
   }
 
@@ -169,8 +176,16 @@ export class PgBossQueue {
    */
   async start(): Promise<void> {
     await this.boss.start();
-    // Never worked: its jobs are the markers `cancelUser` writes and `send` / `work` read.
-    await this.boss.createQueue(CANCELLED_USERS_QUEUE, { policy: 'standard', retryLimit: 0 });
+    // Never worked: its jobs are the markers `cancelUser` writes and `send` / `work` read. A job's
+    // keep_until is fixed at insert from the queue's retention; createQueue is a no-op for an
+    // existing queue, so updateQueue corrects one created with another retention (e.g. pg-boss's
+    // 14-day default) for every marker written from now on.
+    const markerOptions = {
+      retryLimit: 0,
+      retentionSeconds: CANCELLED_USER_MARKER_RETENTION_SECONDS,
+    };
+    await this.boss.createQueue(CANCELLED_USERS_QUEUE, { policy: 'standard', ...markerOptions });
+    await this.boss.updateQueue(CANCELLED_USERS_QUEUE, markerOptions);
     for (const queue of this.queues.values()) {
       const deadLetter = deadLetterQueueName(queue.name);
       // The DLQ holds exhausted jobs for the ops sweep (doc 04 §9.2); nothing works it, so it
@@ -277,15 +292,15 @@ export class PgBossQueue {
       this.logger.debug(fields, 'job started');
       await handler({ id: job.id, queue, data: job.data, attempt, signal: job.signal });
     } catch (error) {
-      // Error message not logged: handler errors may quote the payload.
-      const errorName = error instanceof Error ? error.name : typeof error;
+      // Class and pg code only, in the log and in the job's stored `output` (pg-boss persists it
+      // on the job row and its DLQ copy): handler and driver messages may quote the payload.
+      const summary = errorSummary(error);
       if (attempt >= maxAttempts) {
-        this.logger.error({ ...fields, errorName }, 'job failed; dead-lettered');
+        this.logger.error({ ...fields, ...summary }, 'job failed; dead-lettered');
       } else {
-        this.logger.warn({ ...fields, errorName }, 'job attempt failed; will retry');
+        this.logger.warn({ ...fields, ...summary }, 'job attempt failed; will retry');
       }
-      // pg-boss stores `output` exactly as it stored the thrown error before per-job settling.
-      return { id: job.id, status: 'failed', output: error };
+      return { id: job.id, status: 'failed', output: summary };
     }
     this.logger.debug(fields, 'job completed');
     return { id: job.id, status: 'completed' };
@@ -325,7 +340,8 @@ export class PgBossQueue {
    * handler on any instance: `send` inserts nothing for the user and `work` cancels any job for
    * the user it fetches (a send that raced the marker). The marker is written first, so every
    * send either sees it or inserted a job the cancel sweep finds. Idempotent; returns the number
-   * of jobs cancelled by the sweep. The marker lasts pg-boss's created-job retention (14 days).
+   * of jobs cancelled by the sweep. The marker lasts `CANCELLED_USER_MARKER_RETENTION_SECONDS`
+   * (100 days) from its first write; a repeat call does not extend it.
    */
   async cancelUser(userId: string): Promise<number> {
     if (!isId(userId, 'user')) {

@@ -37,7 +37,9 @@ import {
   type RunningJobs,
   queueForEventType,
   startJobs,
+  userIdOf,
 } from '../index.js';
+import { jobExhaustedReason } from '../outbox-dead-letter.js';
 
 import {
   type FakeSegmentationWorker,
@@ -145,7 +147,7 @@ describe('P02-T08 acceptance: outbox → pg-boss → demo job → worker (DEC-41
       queue,
       logger,
       routeEvent: queueForEventType,
-      userIdOf: (envelope) => (envelope.actor.kind === 'user' ? envelope.actor.id : undefined),
+      userIdOf,
       ...overrides,
     });
     relays.push(r);
@@ -272,7 +274,7 @@ describe('P02-T08 acceptance: outbox → pg-boss → demo job → worker (DEC-41
     expect(worker.requests).toHaveLength(1);
   });
 
-  it('AC-2: an injected worker failure is retried retryLimit times, then the job is failed and dead-lettered', async () => {
+  it('AC-2: an injected worker failure is retried retryLimit times, then the job is failed, dead-lettered and its outbox row marked failed', async () => {
     const { sql, sender, worker } = await boot();
     await runJobs(TEST_POLLING_SECONDS);
     worker.behaviour = { status: 503 };
@@ -293,15 +295,30 @@ describe('P02-T08 acceptance: outbox → pg-boss → demo job → worker (DEC-41
     expect(await jobsFor(sql, QUEUE, envelope.id)).toEqual([
       { id: jobId, state: 'failed', retry_count: retryLimit },
     ]);
-    const dead = await sql<{ state: string; source_id: string | null }[]>`
+    // Doc 04 §9.2 DLQ: the exhausted job lands in the DLQ **and** the outbox row is marked
+    // `failed` (by the jobs process's DLQ worker), with a payload-free `last_error`.
+    const deadLetters = async () => sql<{ state: string; source_id: string | null }[]>`
       select state::text as state, source_id::text as source_id
       from pgboss.job where name = ${deadLetterQueueName(QUEUE)} and source_id = ${jobId}::uuid`;
-    expect(dead).toEqual([{ state: 'created', source_id: jobId }]);
-    // The relay's part succeeded; the worker failure is pg-boss's DLQ, not the outbox's.
-    expect(await outboxRow(sql, envelope.id)).toMatchObject({ status: 'dispatched', attempts: 0 });
+    await waitFor(
+      async () => (await outboxRow(sql, envelope.id))?.status === 'failed',
+      'the DLQ worker to mark the outbox row failed',
+    );
+    await waitFor(
+      async () => (await deadLetters())[0]?.state === 'completed',
+      'the dead letter to settle',
+    );
+    expect(await deadLetters()).toEqual([{ state: 'completed', source_id: jobId }]);
+    const row = await outboxRow(sql, envelope.id);
+    // `attempts` counts relay sends: the one send succeeded.
+    expect(row).toEqual({ status: 'failed', attempts: 0, last_error: jobExhaustedReason(QUEUE) });
+    expect(row?.last_error).toBe('job exhausted: demo.outbox-flow');
+    // The relay claims `pending` rows only: a failed row is never re-dispatched.
+    expect(await relay(sql, sender).pollOnce()).toMatchObject({ claimed: 0 });
     // No retry after `failed`.
     await sleep(TEST_POLLING_SECONDS * 1000 * 3);
     expect(workerCalls(worker, envelope.id)).toBe(retryLimit + 1);
+    expect(await jobsFor(sql, QUEUE, envelope.id)).toHaveLength(1);
     expect(logs.text()).not.toContain(PAYLOAD_MARKER);
   });
 
@@ -334,7 +351,7 @@ describe('P02-T08 acceptance: outbox → pg-boss → demo job → worker (DEC-41
     expect(results.reduce((n, x) => n + x.failed, 0)).toBe(1);
     const row = await outboxRow(sql, envelope.id);
     expect(row).toMatchObject({ status: 'failed', attempts: maxAttempts });
-    expect(row?.last_error).toBe('Error: injected queue outage');
+    expect(row?.last_error).toBe('Error');
     for (const value of [
       PAYLOAD_MARKER,
       envelope.payload.demoId,

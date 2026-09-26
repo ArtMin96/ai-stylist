@@ -205,7 +205,8 @@ describe('OutboxRelay + PgOutboxWriter (Testcontainers Postgres, pg-boss v12)', 
       status: 'pending',
       attempts: 1,
       due_later: true,
-      last_error: 'Error: injected queue outage',
+      // Class only: a foreign error's message is never stored (driver messages echo parameters).
+      last_error: 'Error',
     });
     // Not due yet: the backoff holds the row back.
     expect(await r.pollOnce()).toMatchObject({ claimed: 0 });
@@ -219,7 +220,7 @@ describe('OutboxRelay + PgOutboxWriter (Testcontainers Postgres, pg-boss v12)', 
     }
     const failed = await outboxRow(sql, envelope.id);
     expect(failed).toMatchObject({ status: 'failed', attempts: 3, due_later: null });
-    expect(failed?.last_error).toBe('Error: injected queue outage');
+    expect(failed?.last_error).toBe('Error');
     for (const value of [envelope.payload.demoId, envelope.correlationId, PAYLOAD_MARKER]) {
       expect(failed?.last_error).not.toContain(value);
     }
@@ -231,6 +232,40 @@ describe('OutboxRelay + PgOutboxWriter (Testcontainers Postgres, pg-boss v12)', 
     const log = logs.text();
     expect(log).toContain(envelope.id);
     expect(log).toContain('"attempts":3');
+    expect(log).not.toContain(PAYLOAD_MARKER);
+  });
+
+  it('never stores or logs a send error message that echoes the payload (class + pg code only)', async () => {
+    const { sql } = await boot();
+    const envelope = event({
+      payload: { demoId: 'demo-echo', requestedAt: new Date().toISOString(), note: PAYLOAD_MARKER },
+    });
+    await new PgOutboxWriter(sql).append(envelope);
+    // What a driver or pg-boss error can look like: its message quotes the statement parameters.
+    const failures = [
+      new Error(PAYLOAD_MARKER),
+      Object.assign(new Error(`insert into pgboss.job ... (${PAYLOAD_MARKER})`), {
+        name: 'PostgresError',
+        code: '57P01',
+      }),
+    ];
+    let sends = 0;
+    const echoing: OutboxDispatchQueue = {
+      send: () => Promise.reject(failures[sends++] ?? new Error(PAYLOAD_MARKER)),
+    };
+    const r = relay(sql, echoing, SINGLE, { maxAttempts: 2, backoff: { baseMs: 1, capMs: 1 } });
+    const logStart = logs.text().length;
+
+    expect(await r.pollOnce()).toMatchObject({ claimed: 1, retrying: 1 });
+    expect((await outboxRow(sql, envelope.id))?.last_error).toBe('Error');
+    await sql`update platform_outbox set next_attempt_at = now() where id = ${envelope.id}`;
+    expect(await r.pollOnce()).toMatchObject({ claimed: 1, failed: 1 });
+    const failed = await outboxRow(sql, envelope.id);
+    expect(failed).toMatchObject({ status: 'failed', last_error: 'PostgresError (pg 57P01)' });
+
+    const log = logs.text().slice(logStart);
+    expect(log).toContain(envelope.id);
+    expect(log).toContain('"lastError":"PostgresError (pg 57P01)"');
     expect(log).not.toContain(PAYLOAD_MARKER);
   });
 

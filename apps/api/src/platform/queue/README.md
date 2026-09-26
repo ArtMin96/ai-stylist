@@ -44,13 +44,21 @@ are decided by the callers.
   then runs `cancelPendingForUser`. Once it resolves, no job keyed to the user reaches a handler on
   any instance: `send` inserts nothing for the user (`enqueued: false`, so the outbox relay marks
   the row dispatched) and `work` cancels, without calling the handler, any job for the user it
-  fetches (a send that raced the marker). Idempotent. The marker lives for pg-boss's created-job
-  retention (14 days, pg-boss default); no retention number is chosen here.
+  fetches (a send that raced the marker). Idempotent. The marker lives
+  `CANCELLED_USER_MARKER_RETENTION_SECONDS` = 100 days from its first write (a repeat call does not
+  extend it): outbox replays re-dispatch events retained 90 days (planning/04-architecture.md §9.2)
+  and deletion follows a 7-day grace window (planning/11-security-privacy-and-compliance.md §13.2),
+  so 90 + 7 plus margin; pg-boss's 14-day default would let a replay reach a deleted user. `start()`
+  sets it on the reserved queue with `createQueue` and `updateQueue`, so a queue created with the
+  default is corrected. A job's `keep_until` is fixed at insert, so markers written before the
+  correction keep their original expiry.
 - **Supervision:** `superviseIntervalSeconds` (default 60, pg-boss default) is how often an
   instance fails `active` jobs older than their queue's `expireInSeconds` back into retry: the
   recovery path for a worker killed mid-job.
-- **Logging:** through the injected pino logger built from `../logger.ts`; fields are job id,
-  queue, attempt, max attempts and error class — never job data or error messages.
+- **Logging and job output:** through the injected pino logger built from `../logger.ts`; fields
+  are job id, queue, attempt, max attempts, error class and pg code — never job data or error
+  messages. A failed job's stored pg-boss `output` (on the job row and its DLQ copy) is the same
+  `{ errorName, pgCode? }` (`error-summary.ts`), never the thrown error.
 
 Tests: `../tests/queue.docker.test.ts` and, for the DEC-41 lifecycle acceptance cases (AC-4
 kill/retry, AC-6 per-user cancel, AC-7 deletion, AC-8 export chain),

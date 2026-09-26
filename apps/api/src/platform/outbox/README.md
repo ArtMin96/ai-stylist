@@ -28,8 +28,11 @@ Doc 04 §9.1 step 2 and §9.2. Each poll is one transaction:
 3. A failed send (queue error, timeout, unrouted type, non-object payload) sets `attempts + 1`,
    `next_attempt_at = now() + backoffDelayMs(attempts, backoff)` (`../resilience`) and
    `last_error`; the `maxAttempts`-th failure sets `status = 'failed'` instead, left for the DLQ
-   sweep (doc 04 §9.2). `last_error` = error class + message, at most 500 characters, never the
-   payload (a non-Error throw is recorded by its type only).
+   sweep (doc 04 §9.2). `last_error` (`describeSendError`, at most 500 characters) = the error
+   class plus `(pg <SQLSTATE>)` when present, e.g. `Error` or `PostgresError (pg 57P01)`: a queue,
+   pg-boss or driver message can echo statement parameters, so it is never stored. Only the
+   relay's own errors keep their message (`TimeoutError`, `UnroutedEventError`,
+   `InvalidEnvelopeError`). A non-Error throw is recorded by its type only.
 4. COMMIT.
 
 At-least-once dispatch, exactly-once job: the send runs on pg-boss's pool, so a relay that dies
@@ -56,8 +59,8 @@ re-send is a no-op.
 graceful: no new poll starts, and the in-flight poll finishes and commits before it resolves.
 `pollOnce()` runs one poll and returns `{ claimed, dispatched, retrying, failed }`.
 
-**Logging:** event id, type, attempts and `lastError` per row; a failed poll logs error class and
-pg code only. Never the payload.
+**Logging:** event id, type, attempts and `lastError` (the same text as `last_error`) per row; a
+failed poll logs error class and pg code only. Never the payload or a foreign error message.
 
 Not here yet: the 90-day prune of dispatched rows (doc 06 §6), relay-lag and outbox-depth metrics
 (doc 14), and the DLQ sweep of `failed` rows (`admin`).

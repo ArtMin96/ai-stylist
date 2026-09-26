@@ -3,23 +3,49 @@ import { describe, expect, it } from 'vitest';
 
 import pino from 'pino';
 
-import { DEMO_EVENT_TYPE } from '@ai-stylist/seed-data';
+import { newId } from '@ai-stylist/shared-kernel';
+import { DEMO_EVENT_TYPE, demoEvent, syntheticRandom } from '@ai-stylist/seed-data';
 
 import {
   MAX_WORK_BATCH_SIZE,
   PgBossQueue,
   type QueueDefinition,
+  deadLetterQueueName,
 } from '../../platform/queue/pg-boss-queue.js';
 import {
   DEMO_OUTBOX_FLOW_EVENT_TYPE,
   DEMO_OUTBOX_FLOW_QUEUE,
   EVENT_QUEUE_ROUTES,
   JOB_QUEUES,
+  OUTBOX_DEAD_LETTER_QUEUES,
   SEGMENTATION_TIMEOUT_MS,
   queueForEventType,
+  userIdOf,
 } from '../index.js';
 
 describe('job queues', () => {
+  it('works the DLQ of every outbox-fed queue, with bounded retries (doc 04 §9.2)', () => {
+    const worked = new Set(JOB_QUEUES.map((queue) => queue.name));
+    const routed = new Set(Object.values(EVENT_QUEUE_ROUTES));
+    const sources = OUTBOX_DEAD_LETTER_QUEUES.map((entry) => entry.source);
+    expect(new Set(sources)).toEqual(routed);
+    for (const { source, deadLetter } of OUTBOX_DEAD_LETTER_QUEUES) {
+      expect(deadLetter.name).toBe(deadLetterQueueName(source));
+      expect(worked.has(deadLetter.name)).toBe(true);
+      expect(deadLetter.retryLimit + 1).toBe(5);
+      expect(deadLetter.retryDelayMaxSeconds).toBe(60);
+    }
+  });
+
+  it('keys a job to the user only for a user-caused event', () => {
+    const random = syntheticRandom();
+    const userId = newId('user');
+    expect(userIdOf(demoEvent({ actor: { kind: 'user', id: userId } }, random))).toBe(userId);
+    expect(userIdOf(demoEvent({ actor: { kind: 'system' } }, random))).toBeUndefined();
+    const admin = demoEvent({ actor: { kind: 'admin', id: newId('user') } }, random);
+    expect(userIdOf(admin)).toBeUndefined();
+  });
+
   it('routes demo.outbox-flow.requested.v1 to the demo.outbox-flow queue', () => {
     expect(DEMO_OUTBOX_FLOW_EVENT_TYPE).toBe(DEMO_EVENT_TYPE);
     expect(queueForEventType(DEMO_EVENT_TYPE)).toBe('demo.outbox-flow');

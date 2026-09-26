@@ -53,9 +53,25 @@ dev-api *args:
     docker compose up -d --wait postgres
     pnpm --filter @ai-stylist/api dev "$@"
 
-# Segmentation worker (FastAPI, uvicorn --reload on :8001); TODO(T08): pg-boss handlers run in the API process; starting the segmentation worker only
+# Compose Postgres + pg-boss jobs process (apps/api src/jobs/main.ts, tsx watch; needs `just db-migrate`) in the background + segmentation worker (uvicorn --reload on :8001; args go to uvicorn)
 dev-workers *args:
-    @echo "TODO(T08): pg-boss handlers run in the API process; starting the segmentation worker only"
+    #!/usr/bin/env bash
+    set -euo pipefail
+    docker compose up -d --wait postgres
+    # Non-interactive bash starts background jobs with SIGINT ignored, so Ctrl-C alone would
+    # orphan the jobs process: stop it with SIGTERM (graceful in main.ts) whenever this exits.
+    jobs_pid=''
+    stop_jobs() {
+        if [[ -n "$jobs_pid" ]] && kill -0 "$jobs_pid" 2>/dev/null; then
+            kill -TERM "$jobs_pid" 2>/dev/null || true
+            wait "$jobs_pid" 2>/dev/null || true
+        fi
+    }
+    trap stop_jobs EXIT
+    trap 'exit 130' INT
+    trap 'exit 143' TERM
+    pnpm --filter @ai-stylist/api run dev:jobs &
+    jobs_pid=$!
     uv run --project workers/ml/segmentation uvicorn ai_stylist_segmentation.main:app --reload --port 8001 "$@"
 
 # --- quality gates (* = part of ci-parity) -------------------------------------------

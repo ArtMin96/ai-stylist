@@ -127,7 +127,11 @@ test('--check passes on the committed definitions, offline and with no env', asy
 });
 
 test('the just recipe runs the tool: `just observability-sync all --check`', async (t) => {
-  const result = await spawnChecked('just', ['observability-sync', 'all', '--check'], {});
+  // The recipe's `node` is the mise shim that the justfile puts first on PATH, and mise refuses an
+  // untrusted mise.toml. Locally the trust record lives under HOME (kept); CI (jdx/mise-action)
+  // trusts the checkout through env, not a record under HOME, and the scratch env drops it.
+  const env = { MISE_TRUSTED_CONFIG_PATHS: REPO };
+  const result = await spawnChecked('just', ['observability-sync', 'all', '--check'], env);
   t.diagnostic(result.output.trim());
   assert.equal(result.code, 0, result.output);
   assert.match(result.stdout, /grafana \+ posthog definitions OK \(offline\)/);

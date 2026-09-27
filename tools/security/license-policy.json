@@ -2,6 +2,7 @@
   "notes": [
     "Consumed by scripts/security/license-check.sh (planning/15 section 9; docs/security/licenses.md).",
     "Entries are SPDX ids or trove classifier names as pip-licenses prints them, minus any trailing parenthetical (case-insensitive; '*' is a glob).",
+    "A free-text License field is listed verbatim, only after its package's LICENSE file was read: '3-Clause BSD License' is protobuf's BSD-3-Clause.",
     "Precedence per license id: deny > warn > allow. An id in no list is 'unclassified'.",
     "SPDX expressions: OR picks the most permissive alternative, AND the least permissive part, WITH is dropped.",
     "Production dependency: deny/unclassified = FAIL, warn = WARN. Dev-only dependency: never fails, deny/unclassified/warn = WARN.",
@@ -15,6 +16,7 @@
     "ISC",
     "BSD-2-Clause",
     "BSD-3-Clause",
+    "3-Clause BSD License",
     "0BSD",
     "BSD License",
     "Apache-2.0",

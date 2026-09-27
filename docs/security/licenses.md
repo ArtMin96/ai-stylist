@@ -24,7 +24,9 @@ about 7 s.
 `tools/security/license-policy.json` has four lists of license ids (SPDX ids, or trove classifier
 names as pip-licenses prints them minus any trailing parenthetical; case-insensitive; `*` is a
 glob). Precedence per id: `deny` > `warn` > `allow`; an id in none of the lists is
-_unclassified_.
+_unclassified_. A package whose metadata has a free-text License field instead of an SPDX id or
+classifier is classified by that exact string, never a broader glob, and only after its LICENSE
+file was read (protobuf's `3-Clause BSD License` is BSD-3-Clause, so it is in `allow`).
 
 | Verdict        | Production dependency | Dev-only dependency | Contents today                                                                                                                     |
 | -------------- | --------------------- | ------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |

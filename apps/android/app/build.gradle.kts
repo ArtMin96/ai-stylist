@@ -83,7 +83,7 @@ android {
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
             manifestPlaceholders["appName"] = "AI Stylist"
             buildConfigField("String", "API_BASE_URL", apiBaseUrl("https://api.ai-stylist.app"))
-            // Never in prod: no debug tools, so no forced-crash button.
+            // Never in prod: AppContainer injects no crash action, so no debug tools and no forced crash.
             buildConfigField("boolean", "DEBUG_TOOLS", "false")
         }
         create("preview") {

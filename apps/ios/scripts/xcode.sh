@@ -3,17 +3,20 @@
 # message elsewhere.
 #
 #   xcode.sh doctor                       toolchain check (on Linux: reports what can run there)
-#   xcode.sh project                      apps/ios/project.yml -> apps/ios/AIStylist.xcodeproj (XcodeGen)
+#   xcode.sh project                      apps/ios/project.yml -> apps/ios/AIStylist.xcodeproj (XcodeGen), pins from apps/ios/Package.resolved
 #   xcode.sh build [--config dev|preview|prod]   unsigned simulator build (default dev), then the dSYM upload
 #   xcode.sh test                         package unit tests through the AIStylist-Dev scheme on a simulator
 #   xcode.sh e2e [flow]                   Dev simulator build + one Maestro flow, default e2e/smoke.yaml (APP_ID=app.aistylist.mobile.dev)
 #
 # Env: IOS_SIMULATOR_ID  simulator UDID to use (default: first available iPhone on the newest iOS runtime)
 #      POSTHOG_API_KEY, POSTHOG_HOST  PostHog project key (phc_...) + ingestion host, passed to xcodebuild as
-#                        build settings (never committed; empty key = no analytics SDK in the app)
+#                        build settings (never committed; empty key = no analytics SDK in the app). Any other
+#                        key, here or in Config/Local.xcconfig (a personal phx_... key is a secret), stops the build.
 #      POSTHOG_CLI_API_KEY, POSTHOG_CLI_PROJECT_ID, POSTHOG_CLI_HOST  all set: `build` uploads the dSYMs to
-#                        PostHog with posthog-cli; any unset: the upload is skipped with a notice
+#                        PostHog with posthog-cli; any unset: the upload is skipped with a notice. Every
+#                        POSTHOG_CLI_* variable reaches that upload only: never xcodebuild or another tool.
 # Build state goes to apps/ios/.build/ (gitignored): DerivedData, SourcePackages, test.xcresult.
+# scripts/test-xcode-guards.sh sources this file (functions only) to prove the PostHog guards without Xcode.
 set -euo pipefail
 # shellcheck source=lib.sh
 . "$(dirname "${BASH_SOURCE[0]}")/lib.sh"
@@ -23,9 +26,29 @@ DERIVED_DATA="$IOS_BUILD_DIR/DerivedData"
 SOURCE_PACKAGES="$IOS_BUILD_DIR/SourcePackages"
 RESULT_BUNDLE="$IOS_BUILD_DIR/test.xcresult"
 PINNED_XCODE="$(tr -d '[:space:]' <"$IOS_DIR/.xcode-version")"
+# The committed app lockfile: every remote package of the app (Core's and posthog-ios), each pinned to a commit.
+APP_RESOLVED="$IOS_DIR/Package.resolved"
+# Per-machine, gitignored build settings (Config/Base.xcconfig includes it).
+LOCAL_XCCONFIG="$IOS_DIR/Config/Local.xcconfig"
+
+# posthog-cli credentials reach the dSYM upload and nothing else. xcodebuild turns every environment
+# variable into a build setting, and xcodegen, xcbeautify, simctl and maestro need none of them. So every
+# POSTHOG_CLI_* variable leaves the environment here: it stays a plain shell variable (upload_dsyms
+# checks it) and upload_dsyms hands the saved NAME=value pairs to upload-symbols.sh alone.
+POSTHOG_CLI_ENV=()
+for exported in $(compgen -e); do
+  case "$exported" in
+    POSTHOG_CLI_*)
+      POSTHOG_CLI_ENV+=("$exported=${!exported}")
+      # Un-export the variable named by $exported (${exported?}: that indirection is intended).
+      export -n "${exported?}"
+      ;;
+  esac
+done
+unset exported
 
 usage() {
-  sed -n '2,16p' "$0"
+  sed -n '2,19p' "$0"
 }
 
 # Pipe xcodebuild output through xcbeautify when it is installed (GitHub renderer in CI).
@@ -41,7 +64,41 @@ beautify() {
   fi
 }
 
+trim() {
+  local text="$1"
+  text="${text#"${text%%[![:space:]]*}"}"
+  printf '%s' "${text%"${text##*[![:space:]]}"}"
+}
+
+# Only a PostHog project key (phc_..., public by design) may be compiled into Info.plist. Anything else
+# in POSTHOG_API_KEY, e.g. a personal API key (phx_..., a secret), stops the build before xcodebuild
+# runs, whether it comes from the environment or from Config/Local.xcconfig (any line setting
+# POSTHOG_API_KEY, conditional ones such as POSTHOG_API_KEY[config=Dev] too; #include is not followed).
+# The message names the key and where it is set, never the value. The app still rejects a non-phc_ key
+# at launch (PostHogSettings.parse), but by then the key is in the bundle.
+check_posthog_api_key() {
+  local fix="only a PostHog project key (phc_...) may be compiled into Info.plist; a personal API key (phx_...) is a secret. Set the project key or leave it empty (the value is not printed)."
+  local value
+  value="$(trim "${POSTHOG_API_KEY:-}")"
+  if [[ -n "$value" && "$value" != phc_* ]]; then
+    ios_die "ios: POSTHOG_API_KEY in the environment is not a project key: $fix"
+  fi
+  [[ -f "$LOCAL_XCCONFIG" ]] || return 0
+  local re='^[[:space:]]*POSTHOG_API_KEY([[:space:]]*\[[^]]*\])?[[:space:]]*=(.*)$'
+  local line number=0
+  while IFS= read -r line || [[ -n "$line" ]]; do
+    number=$((number + 1))
+    [[ "$line" =~ $re ]] || continue
+    # `//` starts an xcconfig comment.
+    value="$(trim "${BASH_REMATCH[2]%%//*}")"
+    if [[ -n "$value" && "$value" != phc_* ]]; then
+      ios_die "ios: POSTHOG_API_KEY in ${LOCAL_XCCONFIG#"$REPO_ROOT"/} (line $number) is not a project key: $fix"
+    fi
+  done <"$LOCAL_XCCONFIG"
+}
+
 run_xcodebuild() {
+  check_posthog_api_key
   # The PostHog project key + host come from the environment when set; a command-line build setting
   # beats Config/Local.xcconfig and the empty defaults in Config/Base.xcconfig.
   local settings=()
@@ -51,10 +108,14 @@ run_xcodebuild() {
   if [[ -n "${POSTHOG_HOST:-}" ]]; then
     settings+=("POSTHOG_HOST=$POSTHOG_HOST")
   fi
+  # -onlyUsePackageVersionsFromResolvedFile: check out exactly the pins cmd_project seeded from
+  # apps/ios/Package.resolved (each one a commit, so a moved tag changes nothing), and fail instead of
+  # re-resolving when that file no longer matches project.yml or a package manifest.
   xcodebuild \
     -project "$PROJECT" \
     -derivedDataPath "$DERIVED_DATA" \
     -clonedSourcePackagesDirPath "$SOURCE_PACKAGES" \
+    -onlyUsePackageVersionsFromResolvedFile \
     "$@" ${settings[@]+"${settings[@]}"} | beautify
 }
 
@@ -65,6 +126,7 @@ run_xcodebuild() {
 # ENABLE_USER_SCRIPT_SANDBOXING = NO, which Config/Base.xcconfig keeps YES.
 # Credentials: POSTHOG_CLI_API_KEY (a personal API key with "error tracking write" + "organization
 # read"), POSTHOG_CLI_PROJECT_ID, POSTHOG_CLI_HOST. Any of them unset: notice, no upload, success.
+# This is the only step that gets them in its environment (POSTHOG_CLI_ENV, saved at the top).
 upload_dsyms() {
   local name="$1"
   if [[ -z "${POSTHOG_CLI_API_KEY:-}" || -z "${POSTHOG_CLI_PROJECT_ID:-}" || -z "${POSTHOG_CLI_HOST:-}" ]]; then
@@ -83,9 +145,11 @@ upload_dsyms() {
   version="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' "$plist")"
   build="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleVersion' "$plist")"
   echo "==> dSYM upload to PostHog: $bundle_id $version ($build), configuration $name"
-  # The variables are the Xcode build settings upload-symbols.sh reads, pointed at this build.
-  # CONFIGURATION is removed on purpose: unset means "manual run", so the script uploads.
+  # The variables are the Xcode build settings upload-symbols.sh reads, pointed at this build, plus the
+  # posthog-cli credentials. CONFIGURATION is removed on purpose: unset means "manual run", so the
+  # script uploads.
   env -u CONFIGURATION -u INFOPLIST_FILE \
+    ${POSTHOG_CLI_ENV[@]+"${POSTHOG_CLI_ENV[@]}"} \
     DWARF_DSYM_FOLDER_PATH="$products" \
     DWARF_DSYM_FILE_NAME=AIStylist.app.dSYM \
     DEBUG_INFORMATION_FORMAT=dwarf-with-dsym \
@@ -177,11 +241,12 @@ cmd_project() {
   ios_require_macos ios-project
   command -v xcodegen >/dev/null 2>&1 || ios_die "ios-project: xcodegen not found (mise install xcodegen)"
   xcodegen generate --quiet --spec "$IOS_DIR/project.yml" --project "$IOS_DIR"
-  # Seed Xcode's package pins from the committed Core lockfile (Core pulls in every remote package),
-  # so Xcode resolves the same versions as `swift test` does.
+  # Seed Xcode's package pins from the committed app lockfile apps/ios/Package.resolved: posthog-ios
+  # (declared in project.yml) plus the same pins as Packages/*/Package.resolved, so Xcode builds what
+  # `swift test` tests. run_xcodebuild builds from these pins only.
   local resolved_dir="$PROJECT/project.xcworkspace/xcshareddata/swiftpm"
   mkdir -p "$resolved_dir"
-  cp "$IOS_DIR/Packages/Core/Package.resolved" "$resolved_dir/Package.resolved"
+  cp "$APP_RESOLVED" "$resolved_dir/Package.resolved"
   echo "ios-project: generated ${PROJECT#"$REPO_ROOT"/}"
 }
 
@@ -245,6 +310,9 @@ cmd_e2e() {
   xcrun simctl install "$udid" "$app"
   maestro --device "$udid" test -e APP_ID=app.aistylist.mobile.dev "$flow"
 }
+
+# Sourced (scripts/test-xcode-guards.sh): define the functions, run no command.
+[[ "${BASH_SOURCE[0]}" == "$0" ]] || return 0
 
 cmd="${1:-}"
 if [[ $# -gt 0 ]]; then

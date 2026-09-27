@@ -87,6 +87,9 @@ export interface EventEnvelope {
     kind: 'user' | 'system' | 'admin' | 'job';
     id?: string;
   };
+  /**
+   * Correlation id of the logical operation (doc 14 §2): minted by the client per operation (or by the API when a request carried none or an invalid one) and carried request → outbox → job → worker as `x-correlation-id`. Our own correlation metadata, never user data. 1–128 characters of `[A-Za-z0-9._:-]` (a UUID, ULID or `corr-…`); producers and consumers accept exactly this pattern
+   */
   correlationId: string;
   /**
    * Id of the event or request that caused this one; absent for roots

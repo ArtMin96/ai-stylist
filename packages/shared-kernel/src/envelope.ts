@@ -37,7 +37,11 @@ export type EventEnvelope<
   /** Per-aggregate monotonic sequence, assigned in the producing transaction. */
   readonly sequence: number;
   readonly actor: EventActor;
-  /** Trace/request correlation id shared across the whole causal chain. */
+  /**
+   * Correlation id of the logical operation, shared across the whole causal chain (doc 14 §2):
+   * 1–128 characters of `[A-Za-z0-9._:-]` (envelope.json `pattern`; a UUID, ULID or `corr-…`).
+   * Our own correlation metadata, never user data.
+   */
   readonly correlationId: string;
   /** `evt_` id of the event (or request id) that caused this one; absent for roots. */
   readonly causationId?: Id<'event'> | string;

@@ -121,7 +121,10 @@ function main() {
   const keys = Object.keys(registry.flags).sort();
   const judged = keys.map((key) => judge(key, registry.flags[key], today, names));
   const header = ['flag', 'kind', 'owner', 'expiresAt', 'days', 'status'];
-  const lines = formatTable(header, judged.map((j) => j.cells));
+  const lines = formatTable(
+    header,
+    judged.map((j) => j.cells),
+  );
   process.stdout.write(`Feature flags on ${opts.today} (UTC) in ${shown(opts.registry)}\n\n`);
   process.stdout.write(`${lines.join('\n')}\n\n`);
 

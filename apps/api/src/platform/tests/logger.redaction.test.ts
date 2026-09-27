@@ -14,6 +14,7 @@ import { runWithCorrelationId } from '../telemetry/correlation.js';
 import { CANARY, plant } from './redaction-canary.js';
 import {
   FIXTURE_CORRELATION_ID,
+  FIXTURE_TEST_TIMEOUT_MS,
   type OtlpReceiver,
   runTelemetryFixture,
   startOtlpReceiver,
@@ -108,27 +109,32 @@ describe('logger redaction canary', () => {
       await receiver.close();
     });
 
-    it('carries trace_id, span_id and correlation_id; no marker in stdout or OTLP', async () => {
-      const run = await runTelemetryFixture({
-        entry: 'jobs',
-        receiverUrl: receiver.url,
-        env: { OTEL_EXPORTER_OTLP_ENDPOINT: receiver.url },
-      });
+    // Spawns a cold `tsx --import` child: 5 s is too short under full-suite load.
+    it(
+      'carries trace_id, span_id and correlation_id; no marker in stdout or OTLP',
+      { timeout: FIXTURE_TEST_TIMEOUT_MS },
+      async () => {
+        const run = await runTelemetryFixture({
+          entry: 'jobs',
+          receiverUrl: receiver.url,
+          env: { OTEL_EXPORTER_OTLP_ENDPOINT: receiver.url },
+        });
 
-      expect(run.code, run.stderr).toBe(0);
-      const canary = run.records.find((record) => record['msg'] === 'canary');
-      expect(canary).toMatchObject({
-        correlation_id: FIXTURE_CORRELATION_ID,
-        safe: 'visible-value',
-        password: REDACTED,
-      });
-      expect(canary?.['trace_id']).toMatch(/^[0-9a-f]{32}$/);
-      expect(canary?.['span_id']).toMatch(/^[0-9a-f]{16}$/);
-      expect(run.stdout).not.toContain(CANARY);
-      expect(receiver.bodies('/v1/logs').length).toBeGreaterThan(0);
-      for (const request of receiver.requests) {
-        expect(request.body.includes(CANARY), request.path).toBe(false);
-      }
-    });
+        expect(run.code, run.stderr).toBe(0);
+        const canary = run.records.find((record) => record['msg'] === 'canary');
+        expect(canary).toMatchObject({
+          correlation_id: FIXTURE_CORRELATION_ID,
+          safe: 'visible-value',
+          password: REDACTED,
+        });
+        expect(canary?.['trace_id']).toMatch(/^[0-9a-f]{32}$/);
+        expect(canary?.['span_id']).toMatch(/^[0-9a-f]{16}$/);
+        expect(run.stdout).not.toContain(CANARY);
+        expect(receiver.bodies('/v1/logs').length).toBeGreaterThan(0);
+        for (const request of receiver.requests) {
+          expect(request.body.includes(CANARY), request.path).toBe(false);
+        }
+      },
+    );
   });
 });

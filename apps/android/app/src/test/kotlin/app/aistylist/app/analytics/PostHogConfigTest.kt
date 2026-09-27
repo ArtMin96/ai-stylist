@@ -9,16 +9,27 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import java.io.File
 
 /** The SDK configuration is built on the plain JVM: no SDK call, no Android, no network. */
 class PostHogConfigTest {
+    private val queueDirectory = File("build/synthetic-posthog-queue")
+
     private val config =
-        postHogConfig(PostHogSettings(apiKey = "phc_synthetic_test", host = "https://posthog.example.test"))
+        postHogConfig(
+            PostHogSettings(apiKey = "phc_synthetic_test", host = "https://posthog.example.test"),
+            queueDirectory,
+        )
 
     @Test
     fun `reports to the configured project`() {
         assertEquals("phc_synthetic_test", config.apiKey)
         assertEquals("https://posthog.example.test", config.host)
+    }
+
+    @Test
+    fun `queues events in the directory the sink empties on withdrawal`() {
+        assertEquals(queueDirectory.absolutePath, config.storagePrefix)
     }
 
     @Test

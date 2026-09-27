@@ -179,10 +179,14 @@ describe('demo.outbox-flow handler', () => {
     expect(worker.requests.map((r) => r.correlationId)).toEqual(['corr-demo-flow-1']);
   });
 
-  it('omits x-correlation-id for an id outside the accepted format', async () => {
-    await handle(job(demoEvent({ correlationId: 'has spaces and / slashes' })));
+  it('rejects a malformed correlationId without calling the worker', async () => {
+    const data = demoEvent({ correlationId: 'has spaces and / slashes' });
 
-    expect(worker.requests.map((r) => r.correlationId)).toEqual([undefined]);
+    const error = await handle(job(data)).catch((e: unknown) => e);
+
+    expect(error).toBeInstanceOf(InvalidJobDataError);
+    expect((error as Error).message).toContain('correlationId');
+    expect(worker.requests).toHaveLength(0);
   });
 
   it('throws when the worker fails (pg-boss retries) and the retry calls it again', async () => {

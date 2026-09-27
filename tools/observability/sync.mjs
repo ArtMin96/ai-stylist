@@ -116,7 +116,7 @@ function envProblems(targets, env) {
   }
   if (targets.includes('posthog')) {
     if (has('POSTHOG_CLI_HOST') && !isSafeBaseUrl(env.POSTHOG_CLI_HOST)) {
-      problems.push('POSTHOG_CLI_HOST must be an https:// URL, e.g. https://eu.posthog.com');
+      problems.push('POSTHOG_CLI_HOST must be an https:// URL, e.g. https://us.posthog.com');
     }
     if (has('POSTHOG_CLI_PROJECT_ID') && !/^\d+$/.test(env.POSTHOG_CLI_PROJECT_ID.trim())) {
       problems.push('POSTHOG_CLI_PROJECT_ID must be the numeric project id');

@@ -5,6 +5,7 @@ import app.aistylist.core.analytics.AnalyticsPropertyValue
 import app.aistylist.core.data.config.PostHogSettings
 import com.posthog.PersonProfiles
 import com.posthog.android.PostHogAndroidConfig
+import java.io.File
 
 /** Frames from our own code count as in-app (the SDK adds the applicationId, which is not a code package). */
 private const val APP_CODE_PACKAGE = "app.aistylist"
@@ -21,9 +22,18 @@ private const val APP_CODE_PACKAGE = "app.aistylist"
  *   person properties.
  * - Breadcrumbs: none. Exception steps are off, so a crash report carries no trail of earlier
  *   activity (planning/14 §5 allows event names at most; iOS parity is none).
+ * - Queue: the SDK keeps unsent events (and the crash it writes before the process dies) as files
+ *   under [queueDirectory]. [PostHogAnalyticsSink.deactivate] deletes them on withdrawal.
  */
-internal fun postHogConfig(settings: PostHogSettings): PostHogAndroidConfig =
+internal fun postHogConfig(
+    settings: PostHogSettings,
+    queueDirectory: File,
+): PostHogAndroidConfig =
     PostHogAndroidConfig(apiKey = settings.apiKey, host = settings.host).apply {
+        // posthog-android 3.71.1 keeps a preset prefix (PostHogAndroid.setup: `storagePrefix ?: …`)
+        // and queues each event as a file under it (PostHogQueue: File(storagePrefix, apiKey)).
+        storagePrefix = queueDirectory.absolutePath
+
         captureApplicationLifecycleEvents = false
         captureScreenViews = false
         captureDeepLinks = false

@@ -29,7 +29,10 @@ fun interface AnalyticsSink {
     /** Consent was granted (first time or again). Called once per grant, before any [send]. */
     fun activate() = Unit
 
-    /** Consent was withdrawn: stop sending and stop capturing. [send] is not called afterwards. */
+    /**
+     * Consent was withdrawn: stop capturing and sending, and discard whatever was captured but not
+     * sent yet (withdrawal never flushes it). [send] is not called afterwards.
+     */
     fun deactivate() = Unit
 }
 

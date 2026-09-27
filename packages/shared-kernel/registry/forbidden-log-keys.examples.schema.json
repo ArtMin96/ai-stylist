@@ -1,0 +1,28 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://contracts.ai-stylist.app/shared-kernel/registry/forbidden-log-keys.examples.schema.json",
+  "title": "ForbiddenLogKeyExamples",
+  "description": "Word-split examples for forbidden-log-keys.json (planning/11 §8, planning/14 §2): the one set of log keys every matcher (the API logger, the worker logger, the forbidden-field lint) and its tests check against. A key is forbidden when the whole key, or any of its camelCase, snake_case or kebab-case words, lowercased, equals a registry word; whole words only, so a word inside a longer word does not match. `forbidden` keys must match; `allowed` keys must not. Add examples freely; removing one weakens every canary that reads this file.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["forbidden", "allowed"],
+  "properties": {
+    "$schema": { "type": "string" },
+    "forbidden": {
+      "$ref": "#/$defs/logKeys",
+      "description": "Log keys every matcher MUST treat as forbidden (camel, snake, kebab and UPPER variants)"
+    },
+    "allowed": {
+      "$ref": "#/$defs/logKeys",
+      "description": "Log keys every matcher must NOT treat as forbidden: the doc 14 §2 required ids and near-misses that contain a registry word only inside a longer word"
+    }
+  },
+  "$defs": {
+    "logKeys": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": { "type": "string", "pattern": "^[A-Za-z][A-Za-z0-9_-]*$" }
+    }
+  }
+}

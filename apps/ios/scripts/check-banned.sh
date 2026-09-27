@@ -9,7 +9,8 @@
 #   ui-import-in-core      SwiftUI/UIKit imported in Packages/Core or a Features *Model target (must build on Linux)
 #   api-import-outside-apidata  AIStylistAPI/OpenAPI*/HTTPTypes imported outside Core's APIData (+ its tests)
 #
-# --fixtures  prove every rule still fires: each apps/ios/scripts/fixtures/<rule>.swift must be flagged.
+# --fixtures  prove every rule still fires: each apps/ios/scripts/fixtures/<rule>.swift must be flagged,
+#             and scripts/test-xcode-guards.sh proves the PostHog and pin guards of scripts/xcode.sh.
 # Generated code (packages/contracts/gen/swift-client) is outside apps/ios and never scanned.
 set -euo pipefail
 # shellcheck source=lib.sh
@@ -66,7 +67,7 @@ rule_hits() {
 }
 
 if [[ "${1:-}" == "-h" || "${1:-}" == "--help" ]]; then
-  sed -n '2,13p' "$0"
+  sed -n '2,14p' "$0"
   exit 0
 fi
 
@@ -84,6 +85,11 @@ if [[ "${1:-}" == "--fixtures" ]]; then
       echo "ok: $rule flags its fixture"
     fi
   done
+  # scripts/xcode.sh's guards are bans too (no upload credential in xcodebuild's environment, no personal
+  # PostHog key compiled in, pins only from apps/ios/Package.resolved): prove they fire, without Xcode.
+  if ! bash "$IOS_DIR/scripts/test-xcode-guards.sh"; then
+    failed=1
+  fi
   exit "$failed"
 elif [[ $# -gt 0 ]]; then
   ios_die "ios-check-banned: unknown argument '$1' (use --fixtures)"

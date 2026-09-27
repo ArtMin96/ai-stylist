@@ -1,6 +1,7 @@
 package app.aistylist.app
 
 import android.content.Context
+import app.aistylist.app.analytics.AndroidPostHogSdk
 import app.aistylist.app.analytics.PostHogAnalyticsSink
 import app.aistylist.core.analytics.Analytics
 import app.aistylist.core.analytics.AnalyticsSink
@@ -21,8 +22,11 @@ class AppContainer(
     val config: AppConfig,
     val analytics: Analytics,
     val versionRepository: VersionRepository,
-    /** Home's debug tools (consent switch, forced test crash): `debug` and `preview`, never `release`. */
-    val debugTools: Boolean,
+    /**
+     * The forced test crash that turns on Home's debug tools (consent switch, "Force test crash"):
+     * `debug` and `preview` only. Null in `release`, so no code path there can reach the crash.
+     */
+    val forceTestCrash: (() -> Nothing)?,
 ) {
     companion object {
         /** The container for this build variant. Throws [app.aistylist.core.data.config.ConfigError]. */
@@ -34,7 +38,7 @@ class AppContainer(
                 postHogApiKey = BuildConfig.POSTHOG_API_KEY,
                 postHogHost = BuildConfig.POSTHOG_HOST,
                 debugTools = BuildConfig.DEBUG_TOOLS,
-                postHogSink = { settings -> PostHogAnalyticsSink(appContext, settings) },
+                postHogSink = { settings -> PostHogAnalyticsSink(settings, AndroidPostHogSdk(appContext)) },
             )
         }
 
@@ -44,6 +48,8 @@ class AppContainer(
          * Analytics is always the consent gate (off by default). Its sink is [postHogSink] when a
          * PostHog key is configured, else [NoopAnalyticsSink]: then [postHogSink] is never called
          * and no PostHog code runs. Either sink is untouched until the user opts in.
+         *
+         * [debugTools] (`BuildConfig.DEBUG_TOOLS`) decides whether Home gets the forced test crash.
          */
         internal fun create(
             apiBaseUrl: String,
@@ -60,7 +66,7 @@ class AppContainer(
                 config = config,
                 analytics = ConsentGatedAnalytics(sink),
                 versionRepository = data.versionRepository,
-                debugTools = debugTools,
+                forceTestCrash = if (debugTools) ::throwForcedTestCrash else null,
             )
         }
     }

@@ -65,6 +65,32 @@ describe('demo.outbox-flow.requested.v1', () => {
     expect(validateEnvelope({ ...base, traceparent: { traceId: 'x' } })).toBe(false);
   });
 
+  it('accepts a correlationId of 1–128 [A-Za-z0-9._:-], rejects anything else (doc 14 §2)', () => {
+    const base = example as Record<string, unknown>;
+    for (const accepted of [
+      'corr-1',
+      '4f1c9a2e-7b3d-4e7a-9c1f-2a6b8d0e5f13',
+      '01J8Z8Q6X3K9V2N4M7P1R5T0AB',
+      'job:demo.outbox-flow_1',
+      'x',
+      'a'.repeat(128),
+    ]) {
+      expect(validateEnvelope({ ...base, correlationId: accepted }), accepted).toBe(true);
+    }
+    for (const rejected of [
+      '',
+      'a'.repeat(129),
+      'has spaces and / slashes',
+      'corr-1\r\nx-injected: 1',
+      'corr-1\n',
+      'corr/1',
+      'corré-1',
+    ]) {
+      expect(validateEnvelope({ ...base, correlationId: rejected }), rejected).toBe(false);
+    }
+    expect(validateEnvelope({ ...base, correlationId: 7 })).toBe(false);
+  });
+
   it('rejects an envelope with a malformed id or type', () => {
     const base = example as Record<string, unknown>;
     expect(validateEnvelope({ ...base, id: 'evt_not-a-ulid' })).toBe(false);

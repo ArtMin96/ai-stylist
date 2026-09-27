@@ -34,9 +34,14 @@ packages:
     path: Packages/Features
   # Official PostHog iOS SDK (analytics + error tracking with native crash capture; MIT). Linked by the
   # app target only (App/PostHogAnalyticsSink.swift), so Core and Features stay Linux-buildable.
-  # Pinned exactly: tag 3.85.0 = commit 3b6cd1f873cbcdfc654d93c53c69f61d8dde64d0 (2026-09-26). It has
-  # no remote runtime dependencies (the crash reporter, PHPLCrashReporter, is vendored), so this pin is
-  # the whole graph. Its build-tools/upload-symbols.sh uploads dSYMs (scripts/xcode.sh, after a build).
+  # Pinned by commit, not by the tag: apps/ios/Package.resolved (committed; osv-scanner reads it) holds
+  # 3.85.0 = 3b6cd1f873cbcdfc654d93c53c69f61d8dde64d0 (2026-09-26). scripts/xcode.sh seeds Xcode with it
+  # and builds with -onlyUsePackageVersionsFromResolvedFile, so that commit is what gets built even if the
+  # tag moves. `exactVersion` stays so the pin keeps a version osv-scanner can match (`revision:` would
+  # record none). A bump changes this line and that file together, then re-checks the SDK internals
+  # the withdrawal rules mirror (PostHogSettings.swift, "Consent withdrawal"). It has no remote runtime
+  # dependencies (the crash reporter, PHPLCrashReporter, is vendored), so that pin is its whole graph.
+  # Its build-tools/upload-symbols.sh uploads dSYMs (scripts/xcode.sh, after a build).
   PostHog:
     url: https://github.com/PostHog/posthog-ios
     exactVersion: 3.85.0

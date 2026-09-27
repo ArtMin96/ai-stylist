@@ -99,8 +99,10 @@ unchanged: counting lives in the wrappers.
    carries the original id, so the key outlives every redelivery. A repeat returns
    `{ ran: false }` and the worker is not called.
 3. The worker request is `{ request_id: envelope.id, image_ref: 'demo/outbox-flow' }`, with the
-   envelope's `correlationId` as `x-correlation-id` (omitted when it is not a valid correlation
-   id). The demo event carries no image and the P02 segmentation stub only echoes the reference;
+   envelope's `correlationId` as `x-correlation-id`. envelope.json pins `correlationId` to the
+   accepted format, so a malformed id fails step 1 with `InvalidJobDataError` before any worker
+   call; the segmentation client still omits the header for an invalid id (defence in depth).
+   The demo event carries no image and the P02 segmentation stub only echoes the reference;
    no object exists under that key.
 4. A worker failure (non-2xx, a reply that is not a `SegmentResponse` for this request, the
    timeout, an open circuit) throws. The guard rolls its claim back and pg-boss retries.

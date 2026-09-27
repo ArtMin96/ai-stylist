@@ -73,6 +73,15 @@ export async function startOtlpReceiver(): Promise<OtlpReceiver> {
   };
 }
 
+/** The fixture child is killed after this long. */
+const FIXTURE_KILL_AFTER_MS = 30_000;
+/**
+ * Per-test timeout for a test that runs the fixture. A cold `node --import tsx --import <entry>`
+ * start exceeds vitest's 5 s default while the Testcontainers suites run in parallel; the margin
+ * over the kill cap lets a hung child fail on its exit code and stderr, not on the test timeout.
+ */
+export const FIXTURE_TEST_TIMEOUT_MS = FIXTURE_KILL_AFTER_MS + 10_000;
+
 export type FixtureRun = {
   readonly code: number | null;
   readonly stdout: string;
@@ -103,7 +112,7 @@ export async function runTelemetryFixture(options: FixtureOptions): Promise<Fixt
   let stderr = '';
   child.stdout.on('data', (chunk: Buffer) => (stdout += chunk.toString('utf8')));
   child.stderr.on('data', (chunk: Buffer) => (stderr += chunk.toString('utf8')));
-  const timer = setTimeout(() => child.kill('SIGKILL'), 30_000);
+  const timer = setTimeout(() => child.kill('SIGKILL'), FIXTURE_KILL_AFTER_MS);
   const code = await new Promise<number | null>((resolve) => child.once('exit', resolve));
   clearTimeout(timer);
   const records = stdout.split('\n').flatMap((line) => {

@@ -1,7 +1,8 @@
 // JSON Schema validation for the shared-kernel registries that tools/codegen/gen-kernel.mjs does not
-// emit (TS-only data read straight from JSON): forbidden-log-keys, owners and feature-flags. They
-// live in packages/shared-kernel/registry; Ajv lives here (as it does for gen-kernel.mjs). The
-// cross-references a schema cannot express are checked in packages/shared-kernel/tests.
+// emit (TS-only data read straight from JSON): forbidden-log-keys (+ its word-split examples),
+// owners and feature-flags. They live in packages/shared-kernel/registry; Ajv lives here (as it
+// does for gen-kernel.mjs). The cross-references a schema cannot express are checked in
+// packages/shared-kernel/tests.
 import { readFile } from 'node:fs/promises';
 
 import { Ajv2020, type SchemaObject } from 'ajv/dist/2020.js';
@@ -41,6 +42,26 @@ describe('forbidden-log-keys.json', async () => {
     for (const keys of [['Token'], ['refresh_token'], ['api-key'], ['token', 'token'], []]) {
       expect(check({ keys }), JSON.stringify(keys)).toBe(false);
     }
+  });
+});
+
+describe('forbidden-log-keys.examples.json', async () => {
+  const { data, check, errors } = await validatorFor('forbidden-log-keys.examples');
+  const minimal = { forbidden: ['userEmail'], allowed: ['userId'] };
+
+  it('validates against its schema', () => {
+    expect(check(data), errors()).toBe(true);
+    expect(check(minimal), errors()).toBe(true);
+  });
+
+  it('rejects empty or duplicated lists, non-key entries, a missing list, unknown fields', () => {
+    expect(check({ ...minimal, forbidden: [] })).toBe(false);
+    expect(check({ ...minimal, allowed: ['userId', 'userId'] })).toBe(false);
+    for (const key of ['', 'user email', '_token', 'user.email', 7]) {
+      expect(check({ ...minimal, forbidden: [key] }), JSON.stringify(key)).toBe(false);
+    }
+    expect(check({ forbidden: minimal.forbidden })).toBe(false);
+    expect(check({ ...minimal, notes: 'x' })).toBe(false);
   });
 });
 

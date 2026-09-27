@@ -1,8 +1,9 @@
 // How the PostHog sink configures the posthog-ios SDK, as plain values with no SDK import, so the
 // privacy settings are unit-tested on Linux too. The adapter (apps/ios/App/PostHogAnalyticsSink.swift)
-// copies every field onto `PostHogConfig`. Rules: planning/14 §5 (crash reports carry no screenshots,
-// no view hierarchies, no breadcrumbs other than event names) and §9 (only the events the app tracks
-// through the port, consent-gated, pseudonymous).
+// copies every field onto `PostHogConfig` and applies the withdrawal rules at the end of this type.
+// Rules: planning/14 §5 (crash reports carry no screenshots, no view hierarchies, no breadcrumbs other
+// than event names) and §9 (only the events the app tracks through the port, consent-gated,
+// pseudonymous).
 public import AppConfig
 public import Foundation
 
@@ -17,7 +18,8 @@ nonisolated public struct PostHogSettings: Sendable, Equatable {
 
   /// Build setting (xcconfig or environment, never committed) holding the PostHog project key.
   public static let apiKeyKey = "POSTHOG_API_KEY"
-  /// Build setting holding the PostHog ingestion host, e.g. https://eu.i.posthog.com.
+  /// Build setting holding the ingestion host of the PostHog project's region (this project, US Cloud:
+  /// https://us.i.posthog.com). Nothing here assumes a region.
   public static let hostKey = "POSTHOG_HOST"
 
   /// The project key (`phc_…`). It ships in the app bundle, so it is public by design; it is still
@@ -73,7 +75,7 @@ nonisolated public struct PostHogSettings: Sendable, Equatable {
       let name = url.host(), !name.isEmpty,
       url.query() == nil, url.fragment() == nil, url.user() == nil
     else {
-      throw ConfigError(key: hostKey, reason: "must be an absolute https URL such as https://eu.i.posthog.com")
+      throw ConfigError(key: hostKey, reason: "must be an absolute https URL such as https://us.i.posthog.com")
     }
     return PostHogSettings(apiKey: key, host: url)
   }
@@ -81,5 +83,38 @@ nonisolated public struct PostHogSettings: Sendable, Equatable {
   private init(apiKey: String, host: URL) {
     self.apiKey = apiKey
     self.host = host
+  }
+
+  // MARK: Consent withdrawal
+  //
+  // posthog-ios keeps two things across a withdrawal that must not reach PostHog: the events it has
+  // queued but not sent, and a crash written to disk after the withdrawal. Both rules below mirror SDK
+  // internals of the commit pinned in apps/ios/Package.resolved (posthog-ios 3.85.0): re-check them
+  // against the SDK source on every posthog-ios bump.
+
+  /// Where posthog-ios keeps the events it has not sent yet:
+  /// `Application Support/<bundle id>/<project key>/posthog.queueFolder.uuid` (PostHog/PostHogStorage.swift:
+  /// `applicationSupportDirectoryURL()`, `getAppFolderUrl(from:)`, `StorageKey.queue`). The SDK has no
+  /// public call that empties it (`PostHogQueue.clear()` is internal), and `optOut()` leaves the queue
+  /// flushing, so on a withdrawal the sink stops the queue with `close()` and deletes this directory.
+  public func eventQueueDirectory(applicationSupport: URL, bundleIdentifier: String) -> URL {
+    applicationSupport
+      .appending(path: bundleIdentifier, directoryHint: .isDirectory)
+      .appending(path: apiKey, directoryHint: .isDirectory)
+      .appending(path: "posthog.queueFolder.uuid", directoryHint: .isDirectory)
+  }
+
+  /// The sink's `beforeSend` rule: whether to drop an event instead of queueing it.
+  ///
+  /// posthog-ios cannot remove its native crash handler once installed, so after a withdrawal a crash
+  /// in the same run is still written to disk. The next SDK setup, which only follows the next grant,
+  /// turns that report into a `$exception` event timestamped at the crash. `withdrawnSinceArmed` is
+  /// true when consent was withdrawn after crash capture was last armed and not granted again before
+  /// this setup (`setUpAt`): every `$exception` from before this setup is then such a report and is
+  /// dropped. Everything else is kept.
+  public static func dropsEvent(named name: String, timestamp: Date, setUpAt: Date, withdrawnSinceArmed: Bool)
+    -> Bool
+  {
+    withdrawnSinceArmed && name == "$exception" && timestamp < setUpAt
   }
 }

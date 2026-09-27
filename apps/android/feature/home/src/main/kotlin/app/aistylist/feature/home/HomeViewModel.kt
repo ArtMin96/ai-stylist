@@ -21,14 +21,15 @@ import kotlinx.coroutines.launch
 
 /**
  * Home screen state holder: loads the API version (retryable) and owns the analytics-consent
- * toggle. All dependencies come from the composition root through [factory]. [debugTools] (from
- * the build type) shows the debug tools: `debug` and `preview` only.
+ * toggle. All dependencies come from the composition root through [factory]. The debug tools show
+ * only when the composition root hands over [testCrash]: `debug` and `preview`, never `release`.
  */
 class HomeViewModel(
     private val versionRepository: VersionRepository,
     private val analytics: Analytics,
     config: AppConfig,
-    debugTools: Boolean = false,
+    /** The debug tools' forced crash, from the composition root; null (no debug tools) in `release`. */
+    private val testCrash: (() -> Unit)? = null,
 ) : ViewModel() {
     private val state =
         MutableStateFlow(
@@ -36,7 +37,7 @@ class HomeViewModel(
                 apiBaseUrl = config.apiBaseUrl,
                 version = VersionUiState.Loading,
                 analyticsConsent = analytics.hasConsent(),
-                debugTools = debugTools,
+                debugTools = testCrash != null,
             ),
         )
     val uiState: StateFlow<HomeUiState> = state.asStateFlow()
@@ -70,11 +71,13 @@ class HomeViewModel(
     }
 
     /**
-     * Debug tools only (the button is never in `release`): crashes the app on purpose, so a forced
-     * crash proves error tracking and R8 deobfuscation end to end (planning/14 §5). Always throws
-     * [ForcedTestCrash] on the calling (main) thread, where nothing catches it.
+     * The "Force test crash" button: runs the injected [testCrash], which crashes the app on the
+     * calling (main) thread to prove error tracking and R8 deobfuscation (planning/14 §5). Without
+     * debug tools (`release`) there is no crash action, so this does nothing.
      */
-    fun forceTestCrash(): Nothing = throw ForcedTestCrash()
+    fun forceTestCrash() {
+        testCrash?.invoke()
+    }
 
     private fun loadVersion() {
         versionJob?.cancel()
@@ -103,13 +106,10 @@ class HomeViewModel(
             versionRepository: VersionRepository,
             analytics: Analytics,
             config: AppConfig,
-            debugTools: Boolean,
+            testCrash: (() -> Unit)?,
         ): ViewModelProvider.Factory =
             viewModelFactory {
-                initializer { HomeViewModel(versionRepository, analytics, config, debugTools) }
+                initializer { HomeViewModel(versionRepository, analytics, config, testCrash) }
             }
     }
 }
-
-/** The deliberate crash from the debug tools; a distinct name makes it easy to find in PostHog. */
-class ForcedTestCrash : IllegalStateException("Forced test crash from the debug tools")

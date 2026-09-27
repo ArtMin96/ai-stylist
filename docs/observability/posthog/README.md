@@ -12,7 +12,7 @@
 | ---------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `project-settings.json`                              | `project`: the body of one project `PATCH`. `disabledTransformationTemplates`: transformation template ids that must be disabled (`template-geoip`). |
 | `packages/shared-kernel/registry/feature-flags.json` | the flag registry (schema beside it)                                                                                                                 |
-| env `POSTHOG_CLI_HOST`                               | API host, `https://eu.posthog.com` (not the ingestion host)                                                                                          |
+| env `POSTHOG_CLI_HOST`                               | API host, `https://us.posthog.com` (not the ingestion host)                                                                                          |
 | env `POSTHOG_CLI_PROJECT_ID`                         | numeric project id                                                                                                                                   |
 | env `POSTHOG_SYNC_API_KEY`                           | personal API key (`phx_…`), sent as `Authorization: Bearer <key>`                                                                                    |
 

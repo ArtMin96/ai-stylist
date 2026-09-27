@@ -27,6 +27,8 @@ detekt = "2.0.0-alpha.6"
 compose-lint-checks = "1.6.0"
 # PostHog (analytics + error tracking, planning/14 §5): the official open-source Android SDK and its
 # Gradle plugin (R8 mapping upload through posthog-cli, preview/release only; see app/build.gradle.kts).
+# On a bump, re-check the SDK behaviour PostHogAnalyticsSink's discard-on-withdrawal relies on (listed
+# on FakePostHogSdk in PostHogAnalyticsSinkTest): storagePrefix, networkStatus, close() flushing.
 posthog-android = "3.71.1"
 posthog-android-gradle-plugin = "1.7.0"
 

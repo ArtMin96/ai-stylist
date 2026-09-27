@@ -34,7 +34,8 @@ public protocol Analytics: AnyObject {
 public protocol AnalyticsSink {
   /// Consent was granted (the first grant or a later re-grant). Set up or resume here.
   func activate()
-  /// Consent was withdrawn after a grant. Stop capturing and stop sending here.
+  /// Consent was withdrawn after a grant. Stop capturing and stop sending here, and discard what was
+  /// captured but not sent yet: never flush it.
   func deactivate()
   /// Called only between `activate()` and `deactivate()`.
   func send(_ event: AnalyticsEvent)

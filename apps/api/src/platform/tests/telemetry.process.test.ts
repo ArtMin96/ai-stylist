@@ -7,6 +7,7 @@ import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { CANARY } from './redaction-canary.js';
 import {
   FIXTURE_CORRELATION_ID,
+  FIXTURE_TEST_TIMEOUT_MS,
   type OtlpReceiver,
   PROBE_PATH,
   encodedStringAttribute,
@@ -16,7 +17,8 @@ import {
 
 const OTLP_PATHS = ['/v1/traces', '/v1/metrics', '/v1/logs'];
 
-describe('telemetry --import entries', () => {
+// Every test spawns a cold `tsx --import` child: 5 s is too short under full-suite load.
+describe('telemetry --import entries', { timeout: FIXTURE_TEST_TIMEOUT_MS }, () => {
   let receiver: OtlpReceiver;
 
   beforeAll(async () => {

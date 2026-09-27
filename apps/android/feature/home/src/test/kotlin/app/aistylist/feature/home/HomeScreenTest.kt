@@ -33,9 +33,9 @@ class HomeScreenTest {
     private fun show(
         repository: QueuedVersionRepository,
         recording: RecordingAnalytics = RecordingAnalytics(),
-        debugTools: Boolean = false,
+        testCrash: (() -> Unit)? = null,
     ): HomeViewModel {
-        val viewModel = HomeViewModel(repository, recording.analytics, TEST_CONFIG, debugTools)
+        val viewModel = HomeViewModel(repository, recording.analytics, TEST_CONFIG, testCrash)
         compose.setContent { HomeRoute(viewModel) }
         return viewModel
     }
@@ -85,8 +85,8 @@ class HomeScreenTest {
     }
 
     @Test
-    fun debugToolsAreAbsentWhenTheBuildTurnsThemOff() {
-        show(QueuedVersionRepository(VERSION_OK), debugTools = false)
+    fun debugToolsAreAbsentWithoutTheInjectedTestCrash() {
+        show(QueuedVersionRepository(VERSION_OK), testCrash = null)
 
         compose.onNodeWithTag(HomeTestTags.DEBUG_CONSENT_TOGGLE).assertDoesNotExist()
         compose.onNodeWithTag(HomeTestTags.DEBUG_FORCE_CRASH).assertDoesNotExist()
@@ -97,7 +97,7 @@ class HomeScreenTest {
     @Test
     fun debugConsentToggleDrivesTheSameConsentGate() {
         val recording = RecordingAnalytics()
-        show(QueuedVersionRepository(VERSION_OK), recording, debugTools = true)
+        show(QueuedVersionRepository(VERSION_OK), recording, testCrash = SYNTHETIC_TEST_CRASH)
 
         val debugConsent = compose.onNodeWithTag(HomeTestTags.DEBUG_CONSENT_TOGGLE)
         debugConsent.assertIsOff().assert(SemanticsMatcher.expectValue(SemanticsProperties.Role, Role.Switch))
@@ -116,12 +116,12 @@ class HomeScreenTest {
     }
 
     @Test
-    fun forceTestCrashButtonThrowsTheForcedTestCrash() {
-        show(QueuedVersionRepository(VERSION_OK), debugTools = true)
+    fun forceTestCrashButtonRunsTheInjectedCrash() {
+        show(QueuedVersionRepository(VERSION_OK), testCrash = SYNTHETIC_TEST_CRASH)
 
         val button = compose.onNodeWithTag(HomeTestTags.DEBUG_FORCE_CRASH)
         button.assertTextEquals("Force test crash").assertHasClickAction()
 
-        assertThrows(ForcedTestCrash::class.java) { button.performClick() }
+        assertThrows(SyntheticTestCrash::class.java) { button.performClick() }
     }
 }

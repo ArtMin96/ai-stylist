@@ -9,7 +9,6 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertThrows
-import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class AppContainerTest {
@@ -43,7 +42,19 @@ class AppContainerTest {
         assertEquals("http://10.0.2.2:3000", container.config.apiBaseUrl)
         assertEquals("0.1.0", container.config.appVersion)
         assertFalse(container.analytics.hasConsent())
-        assertFalse(container.debugTools)
+    }
+
+    @Test
+    fun `a build without debug tools (release) gets no crash action`() {
+        val container =
+            AppContainer.create(
+                "http://10.0.2.2:3000",
+                "0.1.0",
+                debugTools = false,
+                postHogSink = noPostHog,
+            )
+
+        assertNull(container.forceTestCrash)
     }
 
     @Test
@@ -57,11 +68,18 @@ class AppContainerTest {
     }
 
     @Test
-    fun `the debug build has the debug tools`() {
-        val container = AppContainer.create("http://10.0.2.2:3000", "0.1.0", debugTools = true, postHogSink = noPostHog)
+    fun `the debug build has the debug tools, whose crash action throws the forced test crash`() {
+        val container =
+            AppContainer.create(
+                "http://10.0.2.2:3000",
+                "0.1.0",
+                debugTools = BuildConfig.DEBUG_TOOLS,
+                postHogSink = noPostHog,
+            )
+        val forceTestCrash = checkNotNull(container.forceTestCrash)
 
-        assertTrue(BuildConfig.DEBUG_TOOLS)
-        assertTrue(container.debugTools)
+        val crash = assertThrows(ForcedTestCrash::class.java) { forceTestCrash() }
+        assertEquals("Forced test crash from the debug tools", crash.message)
     }
 
     @Test

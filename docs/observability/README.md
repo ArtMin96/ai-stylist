@@ -1,12 +1,13 @@
 # Observability
 
-Two vendors, both on free tiers in the EU (ADR-0007, DEC-48). Everything else is files in this repo.
+Two vendors, both on free tiers: Grafana Cloud in the EU, PostHog Cloud in the US (ADR-0007, DEC-48;
+OQ-07 decides whether PostHog must move to EU). Everything else is files in this repo.
 
 | Signal                                                                     | Tool                                                                                              | Configured in                                                            | Guide                                                |
 | -------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------ | ---------------------------------------------------- |
 | Traces, metrics and logs from `api` and `jobs`; traces from `segmentation` | OpenTelemetry SDK → OTLP/HTTP → Grafana Cloud (Tempo, Mimir, Loki)                                | env `OTEL_EXPORTER_OTLP_*`                                               | [grafana.md](grafana.md)                             |
 | Dashboards, alert rules, contact point, quiet hours, routing               | Grafana Cloud                                                                                     | [`grafana/*.json`](grafana/README.md) → `just observability-sync`        | [grafana.md](grafana.md)                             |
-| Product analytics (consent-gated), native crash and error tracking         | PostHog Cloud EU                                                                                  | apps' build config, [`posthog/project-settings.json`](posthog/README.md) | [posthog.md](posthog.md)                             |
+| Product analytics (consent-gated), native crash and error tracking         | PostHog Cloud US                                                                                  | apps' build config, [`posthog/project-settings.json`](posthog/README.md) | [posthog.md](posthog.md)                             |
 | Feature flags                                                              | PostHog, declared in `packages/shared-kernel/registry/feature-flags.json`                         | registry → `just observability-sync`                                     | [posthog.md](posthog.md#feature-flags)               |
 | Who owns what                                                              | `packages/shared-kernel/registry/owners.json` (roles `observability`, `feature-flags`, `on-call`) | edit the file → `just observability-sync`                                | [grafana.md](grafana.md#adding-or-changing-a-person) |
 | Analytics event names                                                      | `packages/contracts/events/analytics/events.json`                                                 | contract change                                                          | [posthog.md](posthog.md#privacy-rules)               |

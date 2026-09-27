@@ -18,10 +18,12 @@ import { FastifyAdapter, type NestFastifyApplication } from '@nestjs/platform-fa
 import { Logger } from 'nestjs-pino';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
+import envelopeSchema from '@ai-stylist/contracts/events/envelope.json' with { type: 'json' };
 import { memoryLogStream } from '@ai-stylist/test-support';
 
 import {
   CORRELATION_ID_HEADER,
+  CORRELATION_ID_PATTERN,
   InMemoryStorageProvider,
   PlatformModule,
   SystemClock,
@@ -97,6 +99,10 @@ describe('correlation id (Nest + Fastify, in-process)', () => {
   afterAll(async () => {
     await app.close();
     await telemetry.shutdown();
+  });
+
+  it('accepts exactly the correlationId format the event envelope pins', () => {
+    expect(CORRELATION_ID_PATTERN.source).toBe(envelopeSchema.properties.correlationId.pattern);
   });
 
   it('echoes a valid client id and exposes it to the controller', async () => {

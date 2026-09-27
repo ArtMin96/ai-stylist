@@ -5,12 +5,14 @@
 import { SpanKind, SpanStatusCode, trace } from '@opentelemetry/api';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 
+import envelopeSchema from '@ai-stylist/contracts/events/envelope.json' with { type: 'json' };
+
 import { REDACTED } from '../logger.js';
 import { currentCorrelationId } from '../telemetry/correlation.js';
 import type { Telemetry } from '../telemetry/lifecycle.js';
 import type { ExportedSpan } from '../telemetry/span-sanitizer.js';
 import { startTelemetry } from '../telemetry/telemetry.js';
-import { currentTraceparent, runTraced } from '../telemetry/trace-context.js';
+import { TRACEPARENT_PATTERN, currentTraceparent, runTraced } from '../telemetry/trace-context.js';
 
 import { memorySpanExporter } from './memory-span-exporter.js';
 import { CANARY } from './redaction-canary.js';
@@ -43,6 +45,10 @@ describe('trace context and span redaction (in-process SDK)', () => {
   it('starts nothing, and reports disabled, without an endpoint or a test exporter', () => {
     expect(startTelemetry({ service: 'api', otlpEndpoint: '  ' }).enabled).toBe(false);
     expect(telemetry.enabled).toBe(true);
+  });
+
+  it('accepts exactly the traceparent format the event envelope pins', () => {
+    expect(TRACEPARENT_PATTERN.source).toBe(envelopeSchema.properties.traceparent.pattern);
   });
 
   it('serializes the active span as a W3C traceparent, and nothing outside a span', () => {

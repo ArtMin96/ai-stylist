@@ -62,7 +62,15 @@ class EventEnvelope(BaseModel):
         ),
     ]
     actor: Actor
-    correlationId: Annotated[str, Field(min_length=1)]
+    correlationId: Annotated[
+        str,
+        Field(
+            description="Correlation id of the logical operation (doc 14 §2): minted by the client per operation (or by the API when a request carried none or an invalid one) and carried request → outbox → job → worker as `x-correlation-id`. Our own correlation metadata, never user data. 1–128 characters of `[A-Za-z0-9._:-]` (a UUID, ULID or `corr-…`); producers and consumers accept exactly this pattern",
+            max_length=128,
+            min_length=1,
+            pattern="^[A-Za-z0-9._:-]{1,128}$",
+        ),
+    ]
     causationId: Annotated[
         str | None,
         Field(description="Id of the event or request that caused this one; absent for roots"),

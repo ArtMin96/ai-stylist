@@ -90,7 +90,8 @@ An exception is one entry in the `exceptions` array of `tools/security/license-p
 
 Recorded 2026-09-23. The gate covers npm and PyPI only. The Android app's Maven dependencies
 (`apps/android/gradle/libs.versions.toml`, locked in the `gradle.lockfile`s) and the iOS SwiftPM
-packages (`apps/ios/Packages/*/Package.resolved`) are not checked against
+packages (the app lockfile `apps/ios/Package.resolved`, which pins posthog-ios, and
+`apps/ios/Packages/*/Package.resolved`) are not checked against
 `tools/security/license-policy.json`. Their vulnerabilities are scanned by osv-scanner, but their
 licenses are not. Until this closes, a reviewer checks the license of every new Maven or SwiftPM
 dependency by hand. Candidate fixes:

@@ -22,7 +22,7 @@ class MainActivity : ComponentActivity() {
             versionRepository = container.versionRepository,
             analytics = container.analytics,
             config = container.config,
-            debugTools = container.debugTools,
+            testCrash = container.forceTestCrash,
         )
     }
 

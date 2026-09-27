@@ -567,7 +567,10 @@ test('posthog: a 403 on transformations prints the human step; the run goes on',
     const result = await run(['posthog'], posthogEnv(stub.url));
     assert.equal(result.code, 0, result.output);
     assert.match(result.stderr, /→ 403: .*Data pipelines → Transformations → GeoIP → disable/);
-    assert.ok(stub.calls.some((call) => call.method === 'POST'), 'flags are still created');
+    assert.ok(
+      stub.calls.some((call) => call.method === 'POST'),
+      'flags are still created',
+    );
   });
 });
 

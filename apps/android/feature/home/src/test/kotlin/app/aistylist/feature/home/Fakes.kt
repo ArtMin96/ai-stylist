@@ -38,6 +38,12 @@ internal class QueuedVersionRepository(
     }
 }
 
+/** Thrown by [SYNTHETIC_TEST_CRASH]. */
+internal class SyntheticTestCrash : IllegalStateException("Synthetic test crash")
+
+/** Stands in for the composition root's forced test crash (debug tools on): it throws, uncaught. */
+internal val SYNTHETIC_TEST_CRASH: () -> Unit = { throw SyntheticTestCrash() }
+
 /** The real consent gate over a sink that records what would have been sent. */
 internal class RecordingAnalytics {
     val sent = mutableListOf<AnalyticsEvent>()

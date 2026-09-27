@@ -10,12 +10,14 @@ project.yml              XcodeGen spec: the ONLY project definition (the .xcodep
 .xcode-version           pinned Xcode (27.0); checked by `just ios-doctor`
 .swift-format            formatter + formatter-level safety rules (no force unwrap / force try / IUO)
 .swiftlint.yml           SwiftLint safety rules only (only_rules)
-Config/                  ALL build settings: Base (Swift 6 safety), Dev / Preview / Prod, Release
-App/                     thin app target: @main entry, CompositionRoot, Info.plist, privacy manifest, assets
+Config/                  ALL build settings: Base (Swift 6 safety), Dev / Preview / Prod, Release; optional
+                         gitignored Local.xcconfig (POSTHOG_API_KEY / POSTHOG_HOST, per machine)
+App/                     thin app target: @main entry, CompositionRoot, Info.plist, privacy manifest, assets,
+                         PostHogAnalyticsSink (the only posthog-ios user), ForceTestCrash (DEBUG only)
 Packages/Core/           no UI; builds and tests on macOS AND Linux
   Sources/AppConfig        API_BASE_URL + app version validator (host-only base URL)
-  Sources/Analytics        analytics port + consent-gated no-op stub (consent OFF by default)
-  Sources/AppServices      container handed to features + service protocols (VersionFetching)
+  Sources/Analytics        analytics port, consent gate (OFF by default), NoopSink, SDK-free PostHogSettings
+  Sources/AppServices      container handed to features + service protocols (VersionFetching) + DebugTools
   Sources/APIData          the ONLY code that imports the generated client (AIStylistAPI) / OpenAPI runtime
   tests/<Target>Tests      Swift Testing unit tests
 Packages/Features/       one pair of targets per screen
@@ -44,6 +46,42 @@ The generated client lives in `packages/contracts/gen/swift-client/`. `tools/cod
 xcconfig, `//` starts a comment, so write URLs as `http:/$()/host`. Everything in the bundle is public, so never put
 a secret in an xcconfig.
 
+## Analytics and crash reporting (PostHog)
+
+- One port: features call `Analytics`; `ConsentGatedAnalytics` decides consent (OFF by default, not persisted
+  yet: P03). Before the first grant the sink gets no call at all. A grant calls `activate()`, a withdrawal
+  `deactivate()`, and events tracked while consent is off are dropped, never replayed.
+- `App/PostHogAnalyticsSink.swift` wraps the official SDK [posthog-ios](https://github.com/PostHog/posthog-ios)
+  (pinned exactly in `project.yml`, app target only). `activate()` sets the SDK up on the first grant (and
+  `optIn()`s after a withdrawal); `deactivate()` calls `optOut()`. The settings live in Core's `PostHogSettings`
+  (unit-tested on Linux): no autocapture, screen views, lifecycle events, session replay, surveys, flag preload,
+  `$feature_flag_called` events, swizzling or breadcrumbs; person profiles identified-only (the app never
+  identifies yet); error tracking autocapture ON (native crashes, stored on disk and sent on the next launch
+  once the user has opted in again). No crash handler exists before consent.
+- Keys are never committed. `POSTHOG_API_KEY` (project key `phc_...`, public by design because it ships in
+  Info.plist) and `POSTHOG_HOST` come from `Config/Local.xcconfig` (gitignored) or from the environment of
+  `just ios-build` / `just ios-e2e`. Empty key: the composition root binds `NoopSink` and no PostHog code runs.
+  A personal API key (`phx_...`) is a secret and is rejected at launch.
+
+  ```sh
+  # apps/ios/Config/Local.xcconfig (gitignored). `//` starts an xcconfig comment, hence :/$()/
+  POSTHOG_API_KEY = phc_your_project_key
+  POSTHOG_HOST = https:/$()/eu.i.posthog.com
+  ```
+
+- Debug tools (Dev configuration only, where `DEBUG` is set): the home screen shows "Analytics consent (debug)"
+  (`debug_consent_toggle`) and "Force test crash" (`debug_force_crash`), which calls `forceTestCrash()` in
+  `App/ForceTestCrash.swift`. Preview and Prod compile neither the crash function nor the debug tools.
+- Symbols: every configuration writes a dSYM (Dev too). `just ios-build` uploads them afterwards with
+  posthog-ios's own `build-tools/upload-symbols.sh` (`posthog-cli dsym upload`) when `POSTHOG_CLI_API_KEY`,
+  `POSTHOG_CLI_PROJECT_ID` and `POSTHOG_CLI_HOST` are all set, and prints a notice otherwise. It is not a Run
+  Script phase because that script skips configurations not named "Release" and needs script sandboxing off.
+  Install the CLI with `npm install -g @posthog/cli` or `brew install posthog/tap/posthog-cli`.
+- To see a symbolicated crash, run the app without the debugger (an attached debugger disables the crash
+  handler): build, launch from the simulator's home screen, switch analytics consent on, tap "Force test
+  crash", relaunch, switch consent on again. The crash arrives as a `$exception` event in PostHog error
+  tracking with the `forceTestCrash()` frame.
+
 ## Safety settings (non-negotiable)
 
 - The Swift 6 language mode is on, so strict concurrency is `complete` and data races are compile errors.
@@ -65,7 +103,7 @@ The `just` recipes are wired in the root justfile. The recipe bodies are `apps/i
 | ---------------------------------------------- | :---: | :---: | ------------------------------------------------------------------------------------------------------------------- |
 | `just ios-doctor`                              |  yes  |  yes  | Checks that Xcode matches `.xcode-version` and that the tools are installed. On Linux it reports what can run there |
 | `just ios-project`                             |  yes  |  no   | Runs XcodeGen: `project.yml` to `AIStylist.xcodeproj`                                                               |
-| `just ios-build [--config dev\|preview\|prod]` |  yes  |  no   | Builds the app unsigned for the simulator                                                                           |
+| `just ios-build [--config dev\|preview\|prod]` |  yes  |  no   | Builds the app unsigned for the simulator, then uploads its dSYMs to PostHog when `POSTHOG_CLI_*` are set           |
 | `just ios-test`                                |  yes  |  no   | Runs the package unit tests through the `AIStylist-Dev` scheme on an iOS 26+ iPhone simulator                       |
 | `just ios-e2e`                                 |  yes  |  no   | Builds Dev for the simulator and runs the shared Maestro flow `e2e/smoke.yaml` (`APP_ID=app.aistylist.mobile.dev`) |
 | `just ios-test-packages [core\|features]`      |  yes  |  yes  | Runs `swift test` for Core and the Features view models                                                             |

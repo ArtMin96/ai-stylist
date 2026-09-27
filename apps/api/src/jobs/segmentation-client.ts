@@ -9,7 +9,12 @@
 // generated contract instead (out of scope for P02-T08).
 import { z } from 'zod';
 
-import { type CircuitBreaker, withTimeout } from '../platform/index.js';
+import {
+  CORRELATION_ID_HEADER,
+  type CircuitBreaker,
+  isValidCorrelationId,
+  withTimeout,
+} from '../platform/index.js';
 
 const MASK_LABELS = [
   'top',
@@ -52,9 +57,16 @@ const segmentResponseSchema = z.object({
 /** `SegmentResponse` (schemas.py): mask references plus the provenance/confidence marker. */
 export type SegmentResponse = z.infer<typeof segmentResponseSchema>;
 
+/** Per-call options: cancellation and the operation's correlation id (planning/14 §2). */
+export type SegmentCallOptions = {
+  readonly signal?: AbortSignal;
+  /** Sent as `x-correlation-id` when it is a valid id; the job's envelope `correlationId`. */
+  readonly correlationId?: string;
+};
+
 /** What a job handler depends on; tests may substitute any object of this shape. */
 export type SegmentationClient = {
-  segment(request: SegmentRequest, signal?: AbortSignal): Promise<SegmentResponse>;
+  segment(request: SegmentRequest, options?: SegmentCallOptions): Promise<SegmentResponse>;
 };
 
 /** Non-2xx status or a reply that is not a `SegmentResponse` for this request. Carries no body. */
@@ -92,13 +104,25 @@ export class HttpSegmentationClient implements SegmentationClient {
     this.fetch = options.fetch ?? globalThis.fetch;
   }
 
-  /** Throws `SegmentationError`, `TimeoutError`, `CircuitOpenError` or a network error. */
-  async segment(request: SegmentRequest, signal?: AbortSignal): Promise<SegmentResponse> {
+  /**
+   * Throws `SegmentationError`, `TimeoutError`, `CircuitOpenError` or a network error. The W3C
+   * `traceparent` header comes from the undici instrumentation when telemetry runs.
+   */
+  async segment(
+    request: SegmentRequest,
+    options: SegmentCallOptions = {},
+  ): Promise<SegmentResponse> {
+    const { signal, correlationId } = options;
+    const headers: Record<string, string> = {
+      'content-type': 'application/json',
+      accept: 'application/json',
+      ...(isValidCorrelationId(correlationId) ? { [CORRELATION_ID_HEADER]: correlationId } : {}),
+    };
     return this.breaker.execute(() =>
       withTimeout(async (timeoutSignal) => {
         const response = await this.fetch(this.url, {
           method: 'POST',
-          headers: { 'content-type': 'application/json', accept: 'application/json' },
+          headers,
           body: JSON.stringify(request),
           signal: signal === undefined ? timeoutSignal : AbortSignal.any([timeoutSignal, signal]),
         });

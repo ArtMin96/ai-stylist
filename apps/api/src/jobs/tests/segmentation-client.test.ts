@@ -1,5 +1,5 @@
-// HttpSegmentationClient against a local fake worker: request shape, reply validation, the
-// withTimeout bound and the circuit breaker.
+// HttpSegmentationClient against a local fake worker: request shape, the correlation header,
+// reply validation, the withTimeout bound and the circuit breaker.
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 
 import { fakeClock } from '@ai-stylist/test-support';
@@ -83,10 +83,22 @@ describe('HttpSegmentationClient', () => {
   it('aborts when the caller signal aborts', async () => {
     worker.behaviour = 'hang';
     const controller = new AbortController();
-    const reply = client().segment(REQUEST, controller.signal);
+    const reply = client().segment(REQUEST, { signal: controller.signal });
     controller.abort(new Error('job stopped'));
 
     await expect(reply).rejects.toThrow('job stopped');
+  });
+
+  it('sends a valid correlation id as x-correlation-id, and never an invalid one', async () => {
+    await client().segment(REQUEST, { correlationId: '0192f0c1-7a3b-7c4d-8e5f-a1b2c3d4e5f6' });
+    await client().segment(REQUEST, { correlationId: 'bad id\r\nx-injected: 1' });
+    await client().segment(REQUEST);
+
+    expect(worker.requests.map((r) => r.correlationId)).toEqual([
+      '0192f0c1-7a3b-7c4d-8e5f-a1b2c3d4e5f6',
+      undefined,
+      undefined,
+    ]);
   });
 
   it('opens the circuit after consecutive failures, then fails fast without a request', async () => {

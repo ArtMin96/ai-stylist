@@ -63,6 +63,15 @@ are decided by the callers.
   are job id, queue, attempt, max attempts, error class and pg code — never job data or error
   messages. A failed job's stored pg-boss `output` (on the job row and its DLQ copy) is the same
   `{ errorName, pgCode? }` (`error-summary.ts`), never the thrown error.
+- **Tracing and correlation (planning/14 §2–§3):** each fetched job runs in a CONSUMER span
+  `job.process <queue>` (`messaging.system` `pg-boss`, `messaging.operation.type` `process`,
+  `messaging.destination.name`, `messaging.message.id` = job id, `job.attempt`, `correlation_id`)
+  and in its correlation scope, so every log line of the job, the handler's included, carries
+  `correlation_id`. The trace context comes from the optional `traceContextOf(data)` the
+  composition root injects (`jobs/queues.ts` `envelopeTraceContext`: the envelope's `traceparent`
+  and `correlationId`), so this adapter stays ignorant of the data shape; a missing or malformed
+  `traceparent` starts a new trace, an invalid correlation id is dropped. A failed attempt records
+  the error class on the span, never its message.
 
 Tests: `../tests/queue.docker.test.ts` and, for the DEC-41 lifecycle acceptance cases (AC-4
 kill/retry, AC-6 per-user cancel, AC-7 deletion, AC-8 export chain),

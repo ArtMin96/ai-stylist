@@ -8,7 +8,7 @@ This root file exists so that `PROGRESS.md` resolves at the repository root as t
 
 - **P02 — Repo foundations and CI:** `IN_PROGRESS`, started 2026-09-09 (ahead of P00 for the no-dependency subset, DEC-36). Task list, per-task state and acceptance criteria: [`planning/phases/P02-repo-foundations-and-ci.md`](planning/phases/P02-repo-foundations-and-ci.md) §12 and §19.
 - **Last green:** `just ci-parity` locally on Linux 2026-09-26 on `fix/ci-main-red` (PR #10, merged); earlier all 18 CI checks on PR #7 (`chore/native-followups` @ `6f1670a`, 2026-09-24), including the macOS simulator build/test and the Android APK builds; `just ci-parity` locally on Linux the same day.
-- **Latest handoff:** [`planning/PROGRESS.md`](planning/PROGRESS.md) → "Session handoff log" → entry dated 2026-09-26 ("P02-T08 outbox relay, pg-boss jobs, DEC-41 gate (AI-9)"; branch `artmins96/ai-9-p02-t08-outbox-relay-pg-boss-demo-job-and-worker-round-trip`). P02-T08 is `DONE` (pg-boss gate passed). Next action: a human applies the pending guarded patch (DEC-57 + doc 04 §9.2, SERVICES-SETUP, doc 15 §5, DEVELOPING-ON-MACOS, `portability.yml`, `.agents` skills), then `just ci-parity` and the AI-9 PR.
+- **Latest handoff:** [`planning/PROGRESS.md`](planning/PROGRESS.md) → "Session handoff log" → entry dated 2026-09-27 ("P02-T09 observability (AI-17), session 1 of 2"; branch `artmins96/ai-17-p02-t09-wire-observability-redaction-lint-canary-otel`, all work uncommitted). Next action: `just ci-parity`, then step 1 of the "Session 1 handoff" comment on Linear AI-17 (platform metrics + PostHog flags adapter).
 
 ## How to update status
 

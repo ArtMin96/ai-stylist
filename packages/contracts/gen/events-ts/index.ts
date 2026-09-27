@@ -97,6 +97,10 @@ export interface EventEnvelope {
    */
   consentScope?: string;
   /**
+   * W3C Trace Context `traceparent` of the producing span (doc 14 §3), so one trace covers request → outbox → job → worker. Carries trace context only, never user data; absent when the producer was not traced
+   */
+  traceparent?: string;
+  /**
    * Event-specific payload; the per-event schema (e.g. demo.event.json) narrows it
    */
   payload: {};

@@ -48,6 +48,23 @@ describe('demo.outbox-flow.requested.v1', () => {
     expect(validateDemo(example), JSON.stringify(validateDemo.errors)).toBe(true);
   });
 
+  it('accepts an optional W3C traceparent and rejects a malformed one (doc 14 §3)', () => {
+    const base = example as Record<string, unknown>;
+    const traceparent = '00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01';
+    const traced = { ...base, traceparent };
+    expect(validateEnvelope(traced), JSON.stringify(validateEnvelope.errors)).toBe(true);
+    for (const malformed of [
+      '00-abc-def-01',
+      '00-4BF92F3577B34DA6A3CE929D0E0E4736-00F067AA0BA902B7-01',
+      '00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7',
+      '4bf92f3577b34da6a3ce929d0e0e4736',
+      '',
+    ]) {
+      expect(validateEnvelope({ ...base, traceparent: malformed }), malformed).toBe(false);
+    }
+    expect(validateEnvelope({ ...base, traceparent: { traceId: 'x' } })).toBe(false);
+  });
+
   it('rejects an envelope with a malformed id or type', () => {
     const base = example as Record<string, unknown>;
     expect(validateEnvelope({ ...base, id: 'evt_not-a-ulid' })).toBe(false);

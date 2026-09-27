@@ -30,14 +30,34 @@ public protocol VersionFetching {
   func fetchVersion() async -> VersionResult
 }
 
+/// Developer-only actions. The composition root provides them only in DEBUG builds of the app
+/// target (the Dev configuration); Preview and Prod get nil, so their UI never shows debug tools.
+public struct DebugTools {
+  /// Crashes the app on purpose (the app target's `forceTestCrash()`), to prove crash capture and
+  /// dSYM symbolication (P02 AC-6).
+  public let forceTestCrash: () -> Void
+
+  public init(forceTestCrash: @escaping () -> Void) {
+    self.forceTestCrash = forceTestCrash
+  }
+}
+
 public struct AppServices {
   public let config: AppConfig
   public let version: any VersionFetching
   public let analytics: any Analytics
+  /// nil outside DEBUG builds of the app target.
+  public let debug: DebugTools?
 
-  public init(config: AppConfig, version: any VersionFetching, analytics: any Analytics) {
+  public init(
+    config: AppConfig,
+    version: any VersionFetching,
+    analytics: any Analytics,
+    debug: DebugTools? = nil
+  ) {
     self.config = config
     self.version = version
     self.analytics = analytics
+    self.debug = debug
   }
 }

@@ -20,6 +20,9 @@ public final class HomeModel {
   public private(set) var hasConsent: Bool
   /// The configured API host, shown under the title.
   public let apiBaseURLText: String
+  /// True only when the composition root provides debug tools (DEBUG builds of the app target), so
+  /// Preview and Prod never show the debug consent toggle or the crash button.
+  public let showsDebugTools: Bool
 
   @ObservationIgnored private let services: AppServices
   @ObservationIgnored private var didTrackOpen = false
@@ -28,6 +31,7 @@ public final class HomeModel {
     self.services = services
     hasConsent = services.analytics.hasConsent
     apiBaseURLText = services.config.apiBaseURL.absoluteString
+    showsDebugTools = services.debug != nil
   }
 
   /// Called when the screen appears: records `app_opened` once (dropped by the gate unless the
@@ -44,9 +48,16 @@ public final class HomeModel {
     await loadVersion()
   }
 
+  /// Both consent toggles (the user-facing one and the debug one) call this, so they always agree.
   public func setConsent(_ granted: Bool) {
     services.analytics.setConsent(granted)
     hasConsent = granted
+  }
+
+  /// Debug builds only: crashes the app on purpose to prove crash capture and symbolication.
+  /// Does nothing when the composition root provides no debug tools.
+  public func forceTestCrash() {
+    services.debug?.forceTestCrash()
   }
 
   private func loadVersion() async {

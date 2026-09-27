@@ -73,6 +73,13 @@ class EventEnvelope(BaseModel):
             description="Consent scope required to process the payload (doc 11); present when it touches sensitive data"
         ),
     ] = None
+    traceparent: Annotated[
+        str | None,
+        Field(
+            description="W3C Trace Context `traceparent` of the producing span (doc 14 §3), so one trace covers request → outbox → job → worker. Carries trace context only, never user data; absent when the producer was not traced",
+            pattern="^[0-9a-f]{2}-[0-9a-f]{32}-[0-9a-f]{16}-[0-9a-f]{2}$",
+        ),
+    ] = None
     payload: Annotated[
         dict[str, Any],
         Field(

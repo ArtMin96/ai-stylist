@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.selection.toggleable
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedCard
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
@@ -31,6 +32,8 @@ import app.aistylist.core.data.model.FailureReason
 object HomeTestTags {
     const val API_VERSION: String = "api-version"
     const val API_ERROR: String = "api-error"
+    const val DEBUG_CONSENT_TOGGLE: String = "debug_consent_toggle"
+    const val DEBUG_FORCE_CRASH: String = "debug_force_crash"
 }
 
 /** Stateful entry point: collects [HomeViewModel] state lifecycle-aware. */
@@ -44,16 +47,18 @@ fun HomeRoute(
         state = state,
         onRetry = viewModel::retry,
         onAnalyticsConsentChange = viewModel::onAnalyticsConsentChange,
+        onForceTestCrash = viewModel::forceTestCrash,
         modifier = modifier,
     )
 }
 
-/** Stateless home screen: title, API version card, analytics-consent toggle. */
+/** Stateless home screen: title, API version card, analytics-consent toggle, debug tools. */
 @Composable
 fun HomeScreen(
     state: HomeUiState,
     onRetry: () -> Unit,
     onAnalyticsConsentChange: (Boolean) -> Unit,
+    onForceTestCrash: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Column(
@@ -70,11 +75,52 @@ fun HomeScreen(
             style = MaterialTheme.typography.bodySmall,
         )
         VersionCard(version = state.version, onRetry = onRetry)
-        ConsentRow(checked = state.analyticsConsent, onCheckedChange = onAnalyticsConsentChange)
+        ConsentRow(
+            label = stringResource(R.string.home_consent_label),
+            checked = state.analyticsConsent,
+            onCheckedChange = onAnalyticsConsentChange,
+        )
         Text(
             text = stringResource(R.string.home_consent_caption),
             style = MaterialTheme.typography.bodySmall,
         )
+        if (state.debugTools) {
+            DebugTools(
+                consent = state.analyticsConsent,
+                onConsentChange = onAnalyticsConsentChange,
+                onForceTestCrash = onForceTestCrash,
+            )
+        }
+    }
+}
+
+/**
+ * Debug and preview builds only (never `release`): a consent switch bound to the same consent as
+ * the one above, and the forced test crash that proves error tracking in PostHog.
+ */
+@Composable
+private fun DebugTools(
+    consent: Boolean,
+    onConsentChange: (Boolean) -> Unit,
+    onForceTestCrash: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Column(
+        modifier = modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        ConsentRow(
+            label = stringResource(R.string.home_debug_consent_label),
+            checked = consent,
+            onCheckedChange = onConsentChange,
+            modifier = Modifier.testTag(HomeTestTags.DEBUG_CONSENT_TOGGLE),
+        )
+        OutlinedButton(
+            onClick = onForceTestCrash,
+            modifier = Modifier.testTag(HomeTestTags.DEBUG_FORCE_CRASH),
+        ) {
+            Text(stringResource(R.string.home_debug_force_crash))
+        }
     }
 }
 
@@ -116,6 +162,7 @@ private fun VersionCard(
 /** One accessible control: the whole row toggles, and its label is the switch's name. */
 @Composable
 private fun ConsentRow(
+    label: String,
     checked: Boolean,
     onCheckedChange: (Boolean) -> Unit,
     modifier: Modifier = Modifier,
@@ -129,7 +176,7 @@ private fun ConsentRow(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.SpaceBetween,
     ) {
-        Text(stringResource(R.string.home_consent_label))
+        Text(label)
         Switch(checked = checked, onCheckedChange = null)
     }
 }
@@ -153,9 +200,11 @@ private fun HomeScreenLoadedPreview() {
                     apiBaseUrl = "http://10.0.2.2:3000",
                     version = VersionUiState.Loaded(version = "0.1.0", shortCommit = "abcdef0"),
                     analyticsConsent = false,
+                    debugTools = true,
                 ),
             onRetry = {},
             onAnalyticsConsentChange = {},
+            onForceTestCrash = {},
         )
     }
 }
@@ -170,9 +219,11 @@ private fun HomeScreenErrorPreview() {
                     apiBaseUrl = "http://10.0.2.2:3000",
                     version = VersionUiState.Failed(FailureReason.Unreachable),
                     analyticsConsent = false,
+                    debugTools = false,
                 ),
             onRetry = {},
             onAnalyticsConsentChange = {},
+            onForceTestCrash = {},
         )
     }
 }

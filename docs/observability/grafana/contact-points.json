@@ -1,0 +1,12 @@
+[
+  {
+    "uid": "ai-stylist-oncall",
+    "name": "ai-stylist-oncall",
+    "type": "email",
+    "settings": {
+      "addresses": "${GRAFANA_ALERT_EMAILS}",
+      "singleEmail": false
+    },
+    "disableResolveMessage": false
+  }
+]

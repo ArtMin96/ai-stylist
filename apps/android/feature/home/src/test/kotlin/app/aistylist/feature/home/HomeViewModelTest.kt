@@ -13,6 +13,7 @@ import kotlinx.coroutines.test.setMain
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertThrows
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
@@ -77,6 +78,29 @@ class HomeViewModelTest {
             assertTrue(recording.analytics.hasConsent())
             // app_opened was tracked before opt-in, so it was dropped and is never replayed.
             assertEquals(emptyList<Any>(), recording.sent)
+        }
+
+    @Test
+    fun `debug tools are off unless the build turns them on`() =
+        runTest(dispatcher) {
+            val analytics = RecordingAnalytics().analytics
+            val byDefault = HomeViewModel(QueuedVersionRepository(VERSION_OK), analytics, TEST_CONFIG)
+            val turnedOn = HomeViewModel(QueuedVersionRepository(VERSION_OK), analytics, TEST_CONFIG, debugTools = true)
+
+            assertFalse(byDefault.uiState.value.debugTools)
+            assertTrue(turnedOn.uiState.value.debugTools)
+        }
+
+    @Test
+    fun `forceTestCrash always throws the forced test crash`() =
+        runTest(dispatcher) {
+            val repository = QueuedVersionRepository(VERSION_OK)
+            val viewModel = HomeViewModel(repository, RecordingAnalytics().analytics, TEST_CONFIG, debugTools = true)
+
+            repeat(2) {
+                val crash = assertThrows(ForcedTestCrash::class.java) { viewModel.forceTestCrash() }
+                assertEquals("Forced test crash from the debug tools", crash.message)
+            }
         }
 
     @Test

@@ -4,11 +4,15 @@
 #
 #   xcode.sh doctor                       toolchain check (on Linux: reports what can run there)
 #   xcode.sh project                      apps/ios/project.yml -> apps/ios/AIStylist.xcodeproj (XcodeGen)
-#   xcode.sh build [--config dev|preview|prod]   unsigned simulator build (default dev)
+#   xcode.sh build [--config dev|preview|prod]   unsigned simulator build (default dev), then the dSYM upload
 #   xcode.sh test                         package unit tests through the AIStylist-Dev scheme on a simulator
 #   xcode.sh e2e [flow]                   Dev simulator build + one Maestro flow, default e2e/smoke.yaml (APP_ID=app.aistylist.mobile.dev)
 #
 # Env: IOS_SIMULATOR_ID  simulator UDID to use (default: first available iPhone on the newest iOS runtime)
+#      POSTHOG_API_KEY, POSTHOG_HOST  PostHog project key (phc_...) + ingestion host, passed to xcodebuild as
+#                        build settings (never committed; empty key = no analytics SDK in the app)
+#      POSTHOG_CLI_API_KEY, POSTHOG_CLI_PROJECT_ID, POSTHOG_CLI_HOST  all set: `build` uploads the dSYMs to
+#                        PostHog with posthog-cli; any unset: the upload is skipped with a notice
 # Build state goes to apps/ios/.build/ (gitignored): DerivedData, SourcePackages, test.xcresult.
 set -euo pipefail
 # shellcheck source=lib.sh
@@ -21,7 +25,7 @@ RESULT_BUNDLE="$IOS_BUILD_DIR/test.xcresult"
 PINNED_XCODE="$(tr -d '[:space:]' <"$IOS_DIR/.xcode-version")"
 
 usage() {
-  sed -n '2,13p' "$0"
+  sed -n '2,16p' "$0"
 }
 
 # Pipe xcodebuild output through xcbeautify when it is installed (GitHub renderer in CI).
@@ -38,11 +42,60 @@ beautify() {
 }
 
 run_xcodebuild() {
+  # The PostHog project key + host come from the environment when set; a command-line build setting
+  # beats Config/Local.xcconfig and the empty defaults in Config/Base.xcconfig.
+  local settings=()
+  if [[ -n "${POSTHOG_API_KEY:-}" ]]; then
+    settings+=("POSTHOG_API_KEY=$POSTHOG_API_KEY")
+  fi
+  if [[ -n "${POSTHOG_HOST:-}" ]]; then
+    settings+=("POSTHOG_HOST=$POSTHOG_HOST")
+  fi
   xcodebuild \
     -project "$PROJECT" \
     -derivedDataPath "$DERIVED_DATA" \
     -clonedSourcePackagesDirPath "$SOURCE_PACKAGES" \
-    "$@" | beautify
+    "$@" ${settings[@]+"${settings[@]}"} | beautify
+}
+
+# Upload the dSYMs of a finished simulator build to PostHog error tracking, using the script that
+# ships inside posthog-ios (build-tools/upload-symbols.sh, which runs `posthog-cli dsym upload`).
+# It runs here, after xcodebuild, and not as an Xcode Run Script phase: upload-symbols.sh skips every
+# configuration not named "Release" (ours are Dev, Preview and Prod), and it needs
+# ENABLE_USER_SCRIPT_SANDBOXING = NO, which Config/Base.xcconfig keeps YES.
+# Credentials: POSTHOG_CLI_API_KEY (a personal API key with "error tracking write" + "organization
+# read"), POSTHOG_CLI_PROJECT_ID, POSTHOG_CLI_HOST. Any of them unset: notice, no upload, success.
+upload_dsyms() {
+  local name="$1"
+  if [[ -z "${POSTHOG_CLI_API_KEY:-}" || -z "${POSTHOG_CLI_PROJECT_ID:-}" || -z "${POSTHOG_CLI_HOST:-}" ]]; then
+    echo "ios-build: notice: dSYM upload skipped (set POSTHOG_CLI_API_KEY, POSTHOG_CLI_PROJECT_ID and POSTHOG_CLI_HOST to upload)."
+    return 0
+  fi
+  local products="$DERIVED_DATA/Build/Products/$name-iphonesimulator"
+  local plist="$products/AIStylist.app/Info.plist"
+  local script="$SOURCE_PACKAGES/checkouts/posthog-ios/build-tools/upload-symbols.sh"
+  [[ -d "$products/AIStylist.app.dSYM" ]] \
+    || ios_die "ios-build: no dSYM at ${products#"$REPO_ROOT"/}/AIStylist.app.dSYM (needs DEBUG_INFORMATION_FORMAT = dwarf-with-dsym)"
+  [[ -f "$script" ]] \
+    || ios_die "ios-build: ${script#"$REPO_ROOT"/} not found (is the posthog-ios package resolved?)"
+  local bundle_id version build
+  bundle_id="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleIdentifier' "$plist")"
+  version="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' "$plist")"
+  build="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleVersion' "$plist")"
+  echo "==> dSYM upload to PostHog: $bundle_id $version ($build), configuration $name"
+  # The variables are the Xcode build settings upload-symbols.sh reads, pointed at this build.
+  # CONFIGURATION is removed on purpose: unset means "manual run", so the script uploads.
+  env -u CONFIGURATION -u INFOPLIST_FILE \
+    DWARF_DSYM_FOLDER_PATH="$products" \
+    DWARF_DSYM_FILE_NAME=AIStylist.app.dSYM \
+    DEBUG_INFORMATION_FORMAT=dwarf-with-dsym \
+    TARGET_BUILD_DIR="$products" \
+    EXECUTABLE_NAME=AIStylist \
+    EXECUTABLE_PATH=AIStylist.app/AIStylist \
+    PRODUCT_BUNDLE_IDENTIFIER="$bundle_id" \
+    MARKETING_VERSION="$version" \
+    CURRENT_PROJECT_VERSION="$build" \
+    bash "$script"
 }
 
 config_name() {
@@ -154,6 +207,7 @@ cmd_build() {
     -configuration "$name" \
     -destination 'generic/platform=iOS Simulator' \
     CODE_SIGNING_ALLOWED=NO
+  upload_dsyms "$name"
 }
 
 cmd_test() {

@@ -9,6 +9,8 @@ data class HomeUiState(
     val version: VersionUiState,
     /** Analytics consent (opt-in, default off). */
     val analyticsConsent: Boolean,
+    /** Debug tools (consent switch + forced test crash): `debug` and `preview` builds, never `release`. */
+    val debugTools: Boolean,
 )
 
 sealed interface VersionUiState {

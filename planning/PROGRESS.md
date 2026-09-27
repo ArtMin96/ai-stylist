@@ -82,6 +82,17 @@ Log hygiene: when this log exceeds ~30 entries, move the oldest entries to `plan
 
 *(newest first)*
 
+### 2026-09-27 — P02-T09 observability (AI-17), session 1 of 2
+
+- **Phase / tasks worked:** P02 — P02-T09 (Linear AI-17, In Progress). Branch `artmins96/ai-17-p02-t09-wire-observability-redaction-lint-canary-otel` from `70d0a06`, **all work uncommitted** in the main checkout (~110 paths), nothing pushed.
+- **Status changes:** none (T09 stays `NOT_STARTED` in the phase file until close-out).
+- **Done this session:** ADR-0007 (ADR-OBS-01; Grafana Cloud EU + PostHog Cloud EU, regions confirmed by the owner); envelope `traceparent` + shared-kernel registries (`forbidden-log-keys`, `owners`, `feature-flags` + `FeatureFlags` port); API OTel deps (`pnpm install` done); lint/arch gates (registry-driven forbidden-field rule + fixture, OTel SDK ban, `shared-kernel-pure` allows `registry/*.json`); platform telemetry + correlation id + outbox/job trace propagation (AC-1 local test `jobs/tests/trace-propagation.docker.test.ts`); iOS + Android PostHog sinks behind the consent gate, crash capture, debug crash trigger, dSYM / R8 mapping upload; runbooks 01/02/04; `docs/observability/` (PostHog + Grafana dev docs, dashboard/alert/routing JSON, sync contract).
+- **Not done / in flight:** nothing running. Remaining steps, owners and inputs: the "Session 1 handoff" comment on [AI-17](https://linear.app/ai-stylist-app/issue/AI-17) (platform metrics + PostHog flags adapter → API wiring → worker OTel → tooling unknown-event check + expired-flag report → tooling `just observability-sync`, mise/env/doctor, CI metrics, workflow diffs → one human patch → reviews → docs-maintainer → human secrets, Mac/device AC-6, Grafana screenshots, CI, PR).
+- **Repository state:** agents report green: `just test api` (172), `just test platform` (95), `just lint`, `just typecheck`, `just arch-check`, both `--fixtures` gates, `just ios-check` (Linux), `just android-check` (worktree). Lead re-ran only two gates on the integrated tree: `just format --check` ❌ `docs/adr/0007-observability-backend.md` (prettier) and `just docs-check` ❌ `DC-04 ADR 0007 has no index row`. `just ci-parity` not run.
+- **New decisions / risks / questions filed:** DEC-58 drafted (ADR-0007), lands with the human planning patch. Open: crash reports are gated by the `analytics` consent purpose (no separate diagnostics purpose in doc 11 §7.2) — raise at P03/LR-07.
+- **Surprises / gotchas:** worker `main.py` crashes when `LOG_LEVEL` is set but empty; `src/dev` may import port files only (inject `currentCorrelationId` from the composition root); iOS debug builds need `dwarf-with-dsym` and posthog-ios cannot uninstall its crash handler in-process; Grafana alert provisioning needs an Admin service-account token; the repo slug is `ArtMin96/ai-stylist`; one Android agent worktree under `.claude/worktrees/` is still lock-held (contents already integrated).
+- **Next session starts:** `git status` (expect the uncommitted AI-17 tree), `just ci-parity`, then step 1 of the AI-17 comment (platform-engineer step B).
+
 ### 2026-09-26 — P02-T08 outbox relay, pg-boss jobs, DEC-41 gate (AI-9)
 
 - **Phase / tasks worked:** P02 — P02-T08 (Linear AI-9). Branch `artmins96/ai-9-p02-t08-outbox-relay-pg-boss-demo-job-and-worker-round-trip` @ `cb632a8`, not merged.

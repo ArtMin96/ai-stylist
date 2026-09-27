@@ -1,0 +1,18 @@
+[
+  {
+    "name": "quiet-hours",
+    "time_intervals": [
+      {
+        "times": [
+          { "start_time": "23:00", "end_time": "24:00" },
+          { "start_time": "00:00", "end_time": "08:00" }
+        ],
+        "location": "${ONCALL_TIMEZONE}"
+      }
+    ]
+  },
+  {
+    "name": "no-page",
+    "time_intervals": [{ "weekdays": ["monday:sunday"] }]
+  }
+]

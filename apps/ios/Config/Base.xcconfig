@@ -52,7 +52,20 @@ GCC_TREAT_WARNINGS_AS_ERRORS = YES
 SWIFT_EMIT_LOC_STRINGS = YES
 
 // MARK: Build hygiene
+// Stays YES: the dSYM upload runs after the build (scripts/xcode.sh), not as a Run Script phase.
 ENABLE_USER_SCRIPT_SANDBOXING = YES
 ALWAYS_SEARCH_USER_PATHS = NO
 CLANG_ENABLE_MODULES = YES
 ENABLE_STRICT_OBJC_MSGSEND = YES
+
+// MARK: Product analytics + crash reporting (PostHog; planning/14 §5, §9)
+// Never committed. Set them in the gitignored Config/Local.xcconfig (included below; write the host as
+// https:/$()/eu.i.posthog.com because of the `//` gotcha), or export POSTHOG_API_KEY / POSTHOG_HOST
+// before `just ios-build` / `just ios-e2e` (scripts/xcode.sh passes them to xcodebuild, which wins).
+// POSTHOG_API_KEY is the project key (phc_..., public by design: it ships in Info.plist); a personal
+// API key (phx_...) is a secret and is rejected at launch. Empty key: NoopSink, the SDK never runs.
+POSTHOG_API_KEY =
+POSTHOG_HOST =
+
+// Optional, gitignored, per machine. Must stay the last line so it overrides the defaults above.
+#include? "Local.xcconfig"

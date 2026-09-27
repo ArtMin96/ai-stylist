@@ -22,6 +22,12 @@ nonisolated public struct ConfigError: Error, Equatable, CustomStringConvertible
   public let key: String
   public let reason: String
 
+  /// Public so the other build-time validators (e.g. `PostHogSettings.parse`) report the same error.
+  public init(key: String, reason: String) {
+    self.key = key
+    self.reason = reason
+  }
+
   public var description: String { "\(key) \(reason)" }
 }
 
@@ -41,10 +47,10 @@ nonisolated public struct AppConfig: Sendable, Equatable {
   /// Validates raw values. Blank values fall back to defaults; anything else invalid throws a
   /// `ConfigError` naming the key.
   public static func parse(_ raw: RawConfig) throws(ConfigError) -> AppConfig {
-    let text = blankToNil(raw.apiBaseURL) ?? defaultAPIBaseURL
+    let text = nonBlank(raw.apiBaseURL) ?? defaultAPIBaseURL
     return AppConfig(
       apiBaseURL: try parseHostOnlyURL(text),
-      appVersion: blankToNil(raw.appVersion) ?? "0.0.0"
+      appVersion: nonBlank(raw.appVersion) ?? "0.0.0"
     )
   }
 
@@ -70,7 +76,9 @@ nonisolated public struct AppConfig: Sendable, Equatable {
     return url
   }
 
-  private static func blankToNil(_ value: String?) -> String? {
+  /// A raw build-setting value, trimmed; nil when it is missing or blank (an unset build setting
+  /// expands to "" in Info.plist). Shared by every build-time validator.
+  public static func nonBlank(_ value: String?) -> String? {
     guard let trimmed = value?.trimmingCharacters(in: .whitespacesAndNewlines), !trimmed.isEmpty else {
       return nil
     }

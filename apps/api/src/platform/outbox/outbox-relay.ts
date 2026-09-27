@@ -11,7 +11,10 @@
 // Translation only: which queue an event type goes to and which user a job belongs to are injected
 // by the composition root (`routeEvent`, `userIdOf`). Logs carry event id, type, attempts and
 // last_error (`describeSendError`: error class and pg code, never a foreign error message) —
-// never the payload.
+// never the payload. Each send runs in a PRODUCER span `outbox.dispatch <event type>` parented
+// on the envelope's `traceparent` (doc 14 §3), carrying event id, type, queue and
+// `correlation_id` only.
+import { SpanKind } from '@opentelemetry/api';
 import type { Logger } from 'pino';
 import type { Sql } from 'postgres';
 
@@ -21,6 +24,7 @@ import { errorSummary } from '../queue/error-summary.js';
 import type { EnqueueOptions, EnqueueResult } from '../queue/pg-boss-queue.js';
 import { type BackoffPolicy, backoffDelayMs } from '../resilience/backoff.js';
 import { TimeoutError, withTimeout } from '../resilience/timeout.js';
+import { SPAN_ATTRIBUTES, queueSpanAttributes, runTraced } from '../telemetry/trace-context.js';
 
 /** Hard cap on rows per poll (doc 04 §9.1). */
 export const MAX_OUTBOX_BATCH_SIZE = 100;
@@ -286,11 +290,19 @@ export class OutboxRelay {
       idempotencyKey: row.id,
       ...(userId !== undefined ? { userId } : {}),
     };
+    // PRODUCER span in the producer's trace (the envelope's `traceparent`, doc 14 §3; a new trace
+    // when the event carries none), in the event's correlation scope. Ids and enums only.
+    const attributes = {
+      ...queueSpanAttributes('send', queueName),
+      [SPAN_ATTRIBUTES.outboxEventId]: row.id,
+      [SPAN_ATTRIBUTES.outboxEventType]: row.type,
+    };
     // A timed-out send may still land later; the job id dedupes the re-send.
-    await withTimeout(
-      () => this.queue.send(queueName, envelope, options),
-      this.settings.sendTimeoutMs,
-    );
+    const send = () => this.queue.send(queueName, envelope, options);
+    const spanName = `outbox.dispatch ${row.type}`;
+    await runTraced(spanName, SpanKind.PRODUCER, attributes, envelope, async () => {
+      await withTimeout(send, this.settings.sendTimeoutMs);
+    });
   }
 
   private schedule(delayMs: number): void {

@@ -1,0 +1,51 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://contracts.ai-stylist.app/shared-kernel/registry/owners.schema.json",
+  "title": "OwnersRegistry",
+  "description": "The people who own flags, dashboards, alerts and runbooks, and the roles that group them (planning/14 §7, §11; ADR-0007). Everything else references a person or role by id, so adding or changing an owner is a data edit, never a code change. No contact details: emails and phone numbers never enter the repository (planning/11 §8); alert delivery membership lives in Grafana. Every role member must be a declared person id (checked by packages/shared-kernel/tests).",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["people"],
+  "properties": {
+    "$schema": { "type": "string" },
+    "people": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "name"],
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Stable kebab-case person id; referenced from other registries, never renamed",
+            "pattern": "^[a-z][a-z0-9]*(-[a-z0-9]+)*$"
+          },
+          "name": {
+            "type": "string",
+            "description": "Display name only (no email address)",
+            "minLength": 1,
+            "pattern": "^[^@]+$"
+          },
+          "githubHandle": {
+            "type": "string",
+            "description": "GitHub login without the leading @",
+            "maxLength": 39,
+            "pattern": "^[A-Za-z0-9](-?[A-Za-z0-9])*$"
+          }
+        }
+      }
+    },
+    "roles": {
+      "type": "object",
+      "description": "Role name (kebab-case) to the person ids that hold it, so a dashboard, alert or flag can point at a role instead of a person",
+      "propertyNames": { "pattern": "^[a-z][a-z0-9]*(-[a-z0-9]+)*$" },
+      "additionalProperties": {
+        "type": "array",
+        "minItems": 1,
+        "uniqueItems": true,
+        "items": { "type": "string", "pattern": "^[a-z][a-z0-9]*(-[a-z0-9]+)*$" }
+      }
+    }
+  }
+}

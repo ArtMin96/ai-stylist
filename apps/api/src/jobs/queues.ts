@@ -4,6 +4,7 @@
 import type { DemoOutboxFlowRequestedV1 } from '@ai-stylist/contracts/events';
 
 import {
+  type CarriedTraceContext,
   type OutboxEnvelope,
   type QueueDefinition,
   deadLetterQueueName,
@@ -74,6 +75,21 @@ export const JOB_QUEUES: readonly QueueDefinition[] = [
  */
 export function userIdOf(envelope: OutboxEnvelope): string | undefined {
   return envelope.actor.kind === 'user' ? envelope.actor.id : undefined;
+}
+
+/**
+ * Trace context of an outbox-fed job (doc 14 §2–§3): the envelope's `traceparent` and
+ * `correlationId`, read from untrusted job data without throwing. `PgBossQueue` validates both
+ * before use; this only picks the fields. Every `PgBossQueue` that works a queue gets it as
+ * `traceContextOf`.
+ */
+export function envelopeTraceContext(data: unknown): CarriedTraceContext | undefined {
+  if (typeof data !== 'object' || data === null) return undefined;
+  const { traceparent, correlationId } = data as Record<string, unknown>;
+  return {
+    ...(typeof traceparent === 'string' ? { traceparent } : {}),
+    ...(typeof correlationId === 'string' ? { correlationId } : {}),
+  };
 }
 
 /** Outbox event `type` → pg-boss queue name. An event type missing here has no consumer. */

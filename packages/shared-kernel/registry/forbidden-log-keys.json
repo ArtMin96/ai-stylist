@@ -1,0 +1,27 @@
+{
+  "$schema": "./forbidden-log-keys.schema.json",
+  "keys": [
+    "measurements",
+    "measurement",
+    "selfie",
+    "face",
+    "photo",
+    "image",
+    "location",
+    "lat",
+    "lng",
+    "latitude",
+    "longitude",
+    "coordinates",
+    "token",
+    "authorization",
+    "cookie",
+    "password",
+    "secret",
+    "email",
+    "phone",
+    "body",
+    "prompt",
+    "calendar"
+  ]
+}

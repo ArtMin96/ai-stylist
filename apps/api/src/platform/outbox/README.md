@@ -12,6 +12,11 @@ row commits or rolls back with the domain write (doc 04 §9.1 step 1); without `
 written on its own. A duplicate id or (aggregate kind, aggregate id, sequence) rejects. Producers
 depend on the `OutboxWriter` type and the `OUTBOX_WRITER` token only.
 
+Trace context (planning/14 §3): an envelope without `traceparent` is stored with the active span's
+W3C `traceparent` (the producing request), so the relay's and the job's spans join that trace. An
+envelope that already carries one keeps it; nothing is added when nothing is traced (telemetry off,
+or no active span). The caller's envelope object is not modified.
+
 ## Relay: `OutboxRelay`
 
 Doc 04 §9.1 step 2 and §9.2. Each poll is one transaction:
@@ -66,9 +71,16 @@ graceful: no new poll starts, and the in-flight poll finishes and commits before
 **Logging:** event id, type, attempts and `lastError` (the same text as `last_error`) per row; a
 failed poll logs error class and pg code only. Never the payload or a foreign error message.
 
+**Tracing:** each send runs in a PRODUCER span `outbox.dispatch <event type>` parented on the
+envelope's `traceparent` (a new trace when it has none), inside the envelope's correlation scope,
+with `messaging.system` `pg-boss`, `messaging.operation.type` `send`,
+`messaging.destination.name`, `outbox.event.id`, `outbox.event.type` and `correlation_id` (ids and
+enums only; `../telemetry/README.md`). A failed send records the error class on the span.
+
 Not here yet: the 90-day prune of dispatched rows (doc 06 §6), relay-lag and outbox-depth metrics
 (doc 14), and the DLQ sweep of `failed` rows (`admin`).
 
 Tests: `../tests/outbox-relay.test.ts` (unit: backoff scheduling, `failed` after max, batch cap,
 `last_error`), `../tests/outbox-relay.docker.test.ts` and `../tests/outbox-dead-letter.docker.test.ts`
-(Testcontainers, `platform-docker` project; fail without Docker).
+(Testcontainers, `platform-docker` project; fail without Docker). The writer's `traceparent` and
+the dispatch span: `../../jobs/tests/trace-propagation.docker.test.ts` (P02-T09 AC-1).

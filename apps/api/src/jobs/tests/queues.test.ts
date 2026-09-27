@@ -19,6 +19,7 @@ import {
   JOB_QUEUES,
   OUTBOX_DEAD_LETTER_QUEUES,
   SEGMENTATION_TIMEOUT_MS,
+  envelopeTraceContext,
   queueForEventType,
   userIdOf,
 } from '../index.js';
@@ -44,6 +45,16 @@ describe('job queues', () => {
     expect(userIdOf(demoEvent({ actor: { kind: 'system' } }, random))).toBeUndefined();
     const admin = demoEvent({ actor: { kind: 'admin', id: newId('user') } }, random);
     expect(userIdOf(admin)).toBeUndefined();
+  });
+
+  it("reads a job's trace context from its envelope, without throwing on other data", () => {
+    const traceparent = '00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01';
+    const event = demoEvent({ correlationId: 'corr-1', traceparent }, syntheticRandom());
+    expect(envelopeTraceContext(event)).toEqual({ traceparent, correlationId: 'corr-1' });
+    expect(envelopeTraceContext({ correlationId: 7, traceparent: null })).toEqual({});
+    for (const data of [null, 'evt', 42, undefined]) {
+      expect(envelopeTraceContext(data)).toBeUndefined();
+    }
   });
 
   it('routes demo.outbox-flow.requested.v1 to the demo.outbox-flow queue', () => {

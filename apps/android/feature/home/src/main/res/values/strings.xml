@@ -13,4 +13,7 @@
     <string name="home_retry">Retry</string>
     <string name="home_consent_label">Share anonymous usage data</string>
     <string name="home_consent_caption">Off by default. Nothing is sent until you opt in.</string>
+    <!-- Debug tools (debug and preview builds only, never release). Same text as iOS. -->
+    <string name="home_debug_consent_label">Analytics consent (debug)</string>
+    <string name="home_debug_force_crash">Force test crash</string>
 </resources>

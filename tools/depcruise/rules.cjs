@@ -32,9 +32,12 @@ const COMPOSITION_ROOTS = [
 
 // Provider SDKs that never appear in a domain module (04 §4.2 rule 4). Matched against the
 // resolved path (pnpm realpath contains `node_modules/<pkg>/`) and the bare specifier when the
-// package is not installed, so an unresolvable import still fails.
+// package is not installed, so an unresolvable import still fails. OpenTelemetry: the SDK,
+// exporters and instrumentations (and `@fastify/otel`) are platform wiring (doc 14 §3);
+// `@opentelemetry/api` stays importable, it is the vendor-neutral API for manual spans.
 const PROVIDER_SDKS =
-  '(^|/)(pg-boss|@aws-sdk|@cloudflare|@fal-ai|posthog-[^/]*|firebase-admin|@sentry)(/|$)';
+  '(^|/)(pg-boss|@aws-sdk|@cloudflare|@fal-ai|posthog-[^/]*|firebase-admin|@sentry' +
+  '|@opentelemetry/(sdk-[^/]*|exporter-[^/]*|instrumentation[^/]*)|@fastify/otel)(/|$)';
 
 // --- the allowed module DAG, copied from planning/04 §4.1 ----------------------------------------
 // key → modules it may import (via their index.ts). Every module may also import shared-kernel
@@ -156,9 +159,16 @@ module.exports = {
     {
       name: 'shared-kernel-pure',
       severity: 'error',
-      comment: '04 §4.2 rule 6: shared-kernel imports nothing but ulid (no I/O, no framework)',
+      comment:
+        '04 §4.2 rule 6: shared-kernel imports nothing but its own src, its registry/*.json data and ulid (no I/O, no framework)',
       from: { path: `${SHARED_KERNEL}src/` },
-      to: { pathNot: [`${SHARED_KERNEL}src/`, '(^|/)ulid(/|$)'] },
+      to: {
+        pathNot: [
+          `${SHARED_KERNEL}src/`,
+          `${SHARED_KERNEL}registry/[^/]+\\.json$`,
+          '(^|/)ulid(/|$)',
+        ],
+      },
     },
     {
       name: 'no-utils-dirs',

@@ -25,6 +25,10 @@ spotless = "8.10.3"
 ktlint = "1.8.0"
 detekt = "2.0.0-alpha.6"
 compose-lint-checks = "1.6.0"
+# PostHog (analytics + error tracking, planning/14 §5): the official open-source Android SDK and its
+# Gradle plugin (R8 mapping upload through posthog-cli, preview/release only; see app/build.gradle.kts).
+posthog-android = "3.71.1"
+posthog-android-gradle-plugin = "1.7.0"
 
 # Security floors for BUILD-TOOL configurations only (never the app's runtime classpath): the
 # patched versions of transitive dependencies that AGP's plugin classpath, Android Lint
@@ -78,6 +82,8 @@ androidx-test-espresso-core = { module = "androidx.test.espresso:espresso-core",
 
 compose-lint-checks = { module = "com.slack.lint.compose:compose-lint-checks", version.ref = "compose-lint-checks" }
 
+posthog-android = { module = "com.posthog:posthog-android", version.ref = "posthog-android" }
+
 # Security floors (see the floor-* versions above). Constraints only: none is ever a direct dependency.
 floor-bcprov = { module = "org.bouncycastle:bcprov-jdk18on", version.ref = "floor-bouncycastle" }
 floor-bcpkix = { module = "org.bouncycastle:bcpkix-jdk18on", version.ref = "floor-bouncycastle" }
@@ -105,6 +111,7 @@ kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", versi
 kotlin-sam-with-receiver = { id = "org.jetbrains.kotlin.plugin.sam.with.receiver", version.ref = "kotlin" }
 spotless = { id = "com.diffplug.spotless", version.ref = "spotless" }
 detekt = { id = "dev.detekt", version.ref = "detekt" }
+posthog-android = { id = "com.posthog.android", version.ref = "posthog-android-gradle-plugin" }
 
 # Convention plugins from build-logic/ (no version: included build).
 aistylist-android-application = { id = "aistylist.android.application" }

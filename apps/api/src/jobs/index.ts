@@ -14,7 +14,12 @@ import {
 
 import { createDemoOutboxFlowHandler } from './demo-outbox-flow.js';
 import { createOutboxDeadLetterHandler } from './outbox-dead-letter.js';
-import { DEMO_OUTBOX_FLOW_QUEUE, JOB_QUEUES, OUTBOX_DEAD_LETTER_QUEUES } from './queues.js';
+import {
+  DEMO_OUTBOX_FLOW_QUEUE,
+  JOB_QUEUES,
+  OUTBOX_DEAD_LETTER_QUEUES,
+  envelopeTraceContext,
+} from './queues.js';
 import { HttpSegmentationClient } from './segmentation-client.js';
 
 export {
@@ -23,6 +28,7 @@ export {
   EVENT_QUEUE_ROUTES,
   JOB_QUEUES,
   OUTBOX_DEAD_LETTER_QUEUES,
+  envelopeTraceContext,
   queueForEventType,
   userIdOf,
 } from './queues.js';
@@ -61,6 +67,8 @@ export async function startJobs(config: JobsConfig): Promise<RunningJobs> {
     connectionString: config.databaseUrl,
     queues: JOB_QUEUES,
     logger: config.logger,
+    // Each job joins its envelope's trace and correlation scope (doc 14 §2–§3).
+    traceContextOf: envelopeTraceContext,
     ...(config.pollingIntervalSeconds !== undefined
       ? { pollingIntervalSeconds: config.pollingIntervalSeconds }
       : {}),

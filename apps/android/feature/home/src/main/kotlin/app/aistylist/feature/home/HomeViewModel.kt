@@ -21,12 +21,14 @@ import kotlinx.coroutines.launch
 
 /**
  * Home screen state holder: loads the API version (retryable) and owns the analytics-consent
- * toggle. All dependencies come from the composition root through [factory].
+ * toggle. All dependencies come from the composition root through [factory]. [debugTools] (from
+ * the build type) shows the debug tools: `debug` and `preview` only.
  */
 class HomeViewModel(
     private val versionRepository: VersionRepository,
     private val analytics: Analytics,
     config: AppConfig,
+    debugTools: Boolean = false,
 ) : ViewModel() {
     private val state =
         MutableStateFlow(
@@ -34,6 +36,7 @@ class HomeViewModel(
                 apiBaseUrl = config.apiBaseUrl,
                 version = VersionUiState.Loading,
                 analyticsConsent = analytics.hasConsent(),
+                debugTools = debugTools,
             ),
         )
     val uiState: StateFlow<HomeUiState> = state.asStateFlow()
@@ -66,6 +69,13 @@ class HomeViewModel(
         state.update { it.copy(analyticsConsent = analytics.hasConsent()) }
     }
 
+    /**
+     * Debug tools only (the button is never in `release`): crashes the app on purpose, so a forced
+     * crash proves error tracking and R8 deobfuscation end to end (planning/14 §5). Always throws
+     * [ForcedTestCrash] on the calling (main) thread, where nothing catches it.
+     */
+    fun forceTestCrash(): Nothing = throw ForcedTestCrash()
+
     private fun loadVersion() {
         versionJob?.cancel()
         state.update { it.copy(version = VersionUiState.Loading) }
@@ -93,9 +103,13 @@ class HomeViewModel(
             versionRepository: VersionRepository,
             analytics: Analytics,
             config: AppConfig,
+            debugTools: Boolean,
         ): ViewModelProvider.Factory =
             viewModelFactory {
-                initializer { HomeViewModel(versionRepository, analytics, config) }
+                initializer { HomeViewModel(versionRepository, analytics, config, debugTools) }
             }
     }
 }
+
+/** The deliberate crash from the debug tools; a distinct name makes it easy to find in PostHog. */
+class ForcedTestCrash : IllegalStateException("Forced test crash from the debug tools")

@@ -5,7 +5,9 @@
 //
 // Targets and who may import them:
 //   AppConfig    build-time config (API_BASE_URL, app version); pure validator, no dependencies
-//   Analytics    analytics port + consent-gated no-op stub; no dependencies
+//   Analytics    analytics port + consent gate + NoopSink + the SDK-free PostHog settings; depends on
+//                AppConfig only. The PostHog SDK adapter lives in the app target (posthog-ios is
+//                Apple-only and pinned in project.yml), so this package still builds and tests on Linux.
 //   AppServices  the container the composition root hands to features + the service protocols
 //   APIData      the ONLY target that imports the generated AIStylistAPI client / OpenAPI runtime
 import PackageDescription
@@ -43,7 +45,7 @@ let package = Package(
   ],
   targets: [
     .target(name: "AppConfig", swiftSettings: strictSettings),
-    .target(name: "Analytics", swiftSettings: strictSettings),
+    .target(name: "Analytics", dependencies: ["AppConfig"], swiftSettings: strictSettings),
     .target(name: "AppServices", dependencies: ["AppConfig", "Analytics"], swiftSettings: strictSettings),
     .target(
       name: "APIData",
@@ -64,7 +66,7 @@ let package = Package(
     ),
     .testTarget(
       name: "AnalyticsTests",
-      dependencies: ["Analytics"],
+      dependencies: ["Analytics", "AppConfig"],
       path: "tests/AnalyticsTests",
       swiftSettings: strictSettings
     ),

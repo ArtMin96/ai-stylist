@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 # AC-3: every fixture under tools/depcruise/fixtures/<case>/ must FAIL `depcruise` with the
 # rule named in EXPECTED. Each fixture is a self-contained tree mirroring the real layout, so
-# the production config (rules.cjs) runs against it unchanged from inside the fixture root.
+# the production config (rules.cjs) runs against it unchanged from inside the fixture root; the
+# cruise covers whichever of the fixture's `apps/` and `packages/` trees exist.
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
@@ -10,13 +11,15 @@ FIXTURES="$ROOT/tools/depcruise/fixtures"
 
 # fixture case -> rule it must trip. A case statement instead of an associative array so the
 # script runs under macOS /bin/bash 3.2 (no `declare -A`); keep EXPECTED_CASES in sync.
-EXPECTED_CASES="internal-import recommendation-to-avatar provider-sdk-in-domain assistant-to-internal utils-dir prototype-import"
+EXPECTED_CASES="internal-import recommendation-to-avatar provider-sdk-in-domain otel-sdk-in-domain assistant-to-internal shared-kernel-impure utils-dir prototype-import"
 expected_rule() {
   case "$1" in
     internal-import)          echo public-api-only ;;
     recommendation-to-avatar) echo recommendation-not-renderer ;;
     provider-sdk-in-domain)   echo domain-no-provider-sdk ;;
+    otel-sdk-in-domain)       echo domain-no-provider-sdk ;;
     assistant-to-internal)    echo assistant-app-services-only ;;
+    shared-kernel-impure)     echo shared-kernel-pure ;;
     utils-dir)                echo no-utils-dirs ;;
     prototype-import)         echo prototype-unimportable ;;
     *)                        echo "" ;;
@@ -32,8 +35,23 @@ for case_dir in "$FIXTURES"/*/; do
     failures=$((failures + 1))
     continue
   fi
+  # Source trees to cruise. A counter guards the array: bash 3.2 treats "${a[@]}" of an empty
+  # array as unbound under `set -u`.
+  sources=()
+  n_sources=0
+  for top in apps packages; do
+    if [[ -d "$case_dir$top" ]]; then
+      sources+=("$top")
+      n_sources=$((n_sources + 1))
+    fi
+  done
+  if [[ $n_sources -eq 0 ]]; then
+    echo "FAIL  $name: fixture has neither apps/ nor packages/ to cruise" >&2
+    failures=$((failures + 1))
+    continue
+  fi
   set +e
-  output="$(cd "$case_dir" && "$ROOT/node_modules/.bin/depcruise" --config "$CONFIG" apps 2>&1)"
+  output="$(cd "$case_dir" && "$ROOT/node_modules/.bin/depcruise" --config "$CONFIG" "${sources[@]}" 2>&1)"
   rc=$?
   set -e
   if [[ $rc -eq 0 ]]; then
@@ -45,6 +63,7 @@ for case_dir in "$FIXTURES"/*/; do
     failures=$((failures + 1))
   else
     echo "ok    $name -> $rule (exit $rc)"
+    grep "error $rule:" <<<"$output" | sed 's/^ */        /'
   fi
 done
 

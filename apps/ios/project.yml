@@ -3,7 +3,8 @@
 # XcodeGen 2.46.0 (pinned in mise.toml, macOS only).
 #
 # - Build settings live in Config/*.xcconfig (settingPresets: none, so nothing hidden lands here).
-# - The app target is thin: App/ only (entry point, composition root, Info.plist, assets).
+# - The app target is thin: App/ only (entry point, composition root, Info.plist, assets, and the
+#   Apple-only adapters: the PostHog sink and the DEBUG-only forced crash).
 #   Code goes in the local packages: Packages/Core (no UI) and Packages/Features (screens).
 # - Adding a file under App/ or a package needs no change here; re-run `just ios-project`.
 name: AIStylist
@@ -31,6 +32,14 @@ packages:
     path: Packages/Core
   Features:
     path: Packages/Features
+  # Official PostHog iOS SDK (analytics + error tracking with native crash capture; MIT). Linked by the
+  # app target only (App/PostHogAnalyticsSink.swift), so Core and Features stay Linux-buildable.
+  # Pinned exactly: tag 3.85.0 = commit 3b6cd1f873cbcdfc654d93c53c69f61d8dde64d0 (2026-09-26). It has
+  # no remote runtime dependencies (the crash reporter, PHPLCrashReporter, is vendored), so this pin is
+  # the whole graph. Its build-tools/upload-symbols.sh uploads dSYMs (scripts/xcode.sh, after a build).
+  PostHog:
+    url: https://github.com/PostHog/posthog-ios
+    exactVersion: 3.85.0
 
 targets:
   AIStylist:
@@ -43,6 +52,8 @@ targets:
         products: [AppConfig, Analytics, AppServices, APIData]
       - package: Features
         products: [HomeFeature]
+      - package: PostHog
+        products: [PostHog]
 
 schemes:
   AIStylist-Dev:

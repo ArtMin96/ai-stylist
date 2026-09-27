@@ -123,3 +123,17 @@ export {
   type IdempotentEffectResult,
   type PgIdempotencyGuardOptions,
 } from './idempotency/pg-idempotency-guard.js';
+export {
+  CORRELATION_ID_HEADER,
+  CORRELATION_ID_KEY,
+  CORRELATION_ID_PATTERN,
+  currentCorrelationId,
+  isValidCorrelationId,
+  mintCorrelationId,
+  registerCorrelationId,
+  runWithCorrelationId,
+} from './telemetry/correlation.js';
+export type { CarriedTraceContext } from './telemetry/trace-context.js';
+// `startTelemetry` is not re-exported: the `--import` entries load the SDK only when an OTLP
+// endpoint is set (telemetry/register.ts); a process entry only flushes it on shutdown.
+export { type Telemetry, shutdownTelemetry } from './telemetry/lifecycle.js';

@@ -1,0 +1,52 @@
+{
+  "title": "queue",
+  "folderUid": "ai-stylist",
+  "interval": 60,
+  "rules": [
+    {
+      "uid": "queue-job-dlq",
+      "title": "queue.job.dlq",
+      "ruleGroup": "queue",
+      "folderUID": "ai-stylist",
+      "condition": "B",
+      "data": [
+        {
+          "refId": "A",
+          "relativeTimeRange": { "from": 600, "to": 0 },
+          "datasourceUid": "${PROM_DATASOURCE_UID}",
+          "model": {
+            "refId": "A",
+            "expr": "sum by (job_type, deployment_environment_name) (increase(stylist_queue_job_dlq_total[10m]))",
+            "instant": true,
+            "range": false,
+            "intervalMs": 60000,
+            "maxDataPoints": 43200
+          }
+        },
+        {
+          "refId": "B",
+          "relativeTimeRange": { "from": 0, "to": 0 },
+          "datasourceUid": "__expr__",
+          "model": {
+            "refId": "B",
+            "type": "threshold",
+            "expression": "A",
+            "conditions": [{ "evaluator": { "type": "gt", "params": [0] } }]
+          }
+        }
+      ],
+      "noDataState": "OK",
+      "execErrState": "Error",
+      "for": "0s",
+      "labels": {
+        "severity": "SEV2",
+        "owner_role": "on-call"
+      },
+      "annotations": {
+        "summary": "Jobs of job_type {{ $labels.job_type }} dead-lettered in the last 10 min (env {{ $labels.deployment_environment_name }})",
+        "runbook_url": "https://github.com/ArtMin96/ai-stylist/blob/main/docs/runbooks/04-queue-dlq.md"
+      },
+      "isPaused": false
+    }
+  ]
+}

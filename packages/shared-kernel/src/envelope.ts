@@ -43,5 +43,10 @@ export type EventEnvelope<
   readonly causationId?: Id<'event'> | string;
   /** Consent scope required to process the payload; present when it touches sensitive data (doc 11). */
   readonly consentScope?: string;
+  /**
+   * W3C Trace Context `traceparent` (`<version>-<trace-id>-<parent-id>-<flags>`, lowercase hex) of
+   * the producing span (doc 14 §3). Trace context only, never user data; absent when untraced.
+   */
+  readonly traceparent?: string;
   readonly payload: TPayload;
 };

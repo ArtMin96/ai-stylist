@@ -20,7 +20,7 @@ If a secret ever shows up in a terminal shared with an AI agent, a log, a screen
 
 ## Overview
 
-Phase numbers refer to `planning/phases/`. "Needed from" is the first task that cannot proceed without the account. Regions for the server, R2, and PostHog are provisional until the OQ-07 data-residency memo lands in P00 (DEC-36; OQ-14 covers the server provider and topology). The self-hosting baseline (pg-boss, owned server + Coolify, self-managed PostgreSQL, R2 delivery model) is ADR-0003, from [r7](../planning/research/r7-third-party-services-and-self-hosting-audit-2026-09-13.md).
+Phase numbers refer to `planning/phases/`. "Needed from" is the first task that cannot proceed without the account. Regions for the server, R2, and PostHog are provisional until the OQ-07 data-residency memo lands in P00 (DEC-36; OQ-14 covers the server provider and topology). Grafana Cloud uses an EU region; the PostHog project exists in US Cloud (DEC-58, [ADR-0007](adr/0007-observability-backend.md)), and OQ-07 decides whether a later EU project is required. The self-hosting baseline (pg-boss, owned server + Coolify, self-managed PostgreSQL, R2 delivery model) is ADR-0003, from [r7](../planning/research/r7-third-party-services-and-self-hosting-audit-2026-09-13.md).
 
 | #   | Service                                                                 | What it is for                                            | Needed from                | Free tier?                                   | Account owner | Done |
 | --- | ----------------------------------------------------------------------- | --------------------------------------------------------- | -------------------------- | -------------------------------------------- | ------------- | ---- |
@@ -64,12 +64,12 @@ Free. GitHub Actions minutes on Linux runners are free for public repositories; 
 4. Tick **Require a pull request before merging**. Tick **Require review from Code Owners** only after step 2 is merged.
 5. Tick **Require status checks to pass before merging** and **Require branches to be up to date before merging**. In the search box add these check names exactly as the jobs in `pr-gate.yml` report them: `Gate · just ci-parity` (it also runs the `.env.example` key check), `Gate · Contracts (generate --check, spectral, oasdiff)`, `Gate · Secret scan (PR diff)`, `Gate · Clone detection (placeholder)`, and `Report · PR gate summary`, which fails when any gate job failed or was cancelled and carries `ci.pr_gate_duration_seconds`. The names only appear in the search box after the workflow has run at least once on a pull request, so open a trivial PR first if the list is empty.
 6. Save the rule.
-7. Repository secrets live at **Settings**, **Secrets and variables**, **Actions**, **New repository secret**. Create them as each later section tells you to. Nothing is needed for `pr-gate.yml`, `affected.yml`, or `nightly.yml` today. `GITLEAKS_LICENSE` is only needed when the repository moves under a GitHub organization; skip it.
+7. Repository secrets live at **Settings**, **Secrets and variables**, **Actions**, **New repository secret**. Create them as each later section tells you to. Nothing is required for `pr-gate.yml`, `affected.yml`, or `nightly.yml`. On pushes to `main` only, `pr-gate.yml` pushes CI metrics when the optional `OTEL_EXPORTER_OTLP_ENDPOINT` and `OTEL_EXPORTER_OTLP_HEADERS` secrets exist (section 11), and `ios.yml` / `android.yml` upload debug symbols with the PostHog secret and variables from section 10; pull requests never receive them. Hosts and project ids are repository **variables** (the **Variables** tab on the same page), never secrets. `GITLEAKS_LICENSE` is only needed when the repository moves under a GitHub organization; skip it.
 8. Turborepo remote cache (optional). `pr-gate.yml` prints "Turborepo remote cache disabled" until `TURBO_TOKEN` and `TURBO_TEAM` exist. Two options: Vercel Remote Cache (free on all Vercel plans, Checked 2026-09-10, <https://turborepo.dev/docs/core-concepts/remote-caching>; create a Vercel account, run `pnpm exec turbo login` then `pnpm exec turbo link` in the repo root, then create a token under the Vercel account settings, **Tokens** (label may differ), and store it as `TURBO_TOKEN` with the Vercel team slug as `TURBO_TEAM`), or a self-hosted cache server (an open-source `turborepo-remote-cache` deployment you run yourself). Recommendation: skip this until `ci.pr_gate_duration_seconds` in the job summary is consistently above the 10 minute budget. Cold CI runs are within budget today.
 
 ### What to record
 
-- GitHub secrets: none required today. Optional: `TURBO_TOKEN`, `TURBO_TEAM`, `GITLEAKS_LICENSE` (organization only).
+- GitHub secrets: none required by the PR gate. Optional: `TURBO_TOKEN`, `TURBO_TEAM`, `GITLEAKS_LICENSE` (organization only), `OTEL_EXPORTER_OTLP_ENDPOINT` and `OTEL_EXPORTER_OTLP_HEADERS` (CI metrics with the CI-only `ci-metrics` token, section 11). Native lanes: secret `POSTHOG_CLI_API_KEY` and variables `POSTHOG_CLI_PROJECT_ID`, `POSTHOG_CLI_HOST` (symbol upload on `main`, section 10). CI never gets a PostHog project key.
 - Repo: `CODEOWNERS` with real handles; `.github/workflows/README.md` "Required secrets" column stays the source of truth for names.
 
 ### Do not
@@ -203,7 +203,7 @@ $0 for software: PostgreSQL, pgvector, pgBackRest, and PgBouncer are all open so
 4. PgBouncer (transaction pooling) in front of the database for the running API; `just db-migrate` uses the direct connection, because transaction pooling does not support everything migration tools need.
 5. pgBackRest WAL archiving: create a dedicated R2 bucket `ai-stylist-pg-backups` with its own token scoped to that bucket only (section 6 step 5 pattern, **Object Read & Write**, never the media token). Configure a pgBackRest stanza `ai-stylist` with the S3 repository type pointed at the R2 endpoint, repository encryption on (`repo1-cipher-type`), `archive_mode=on`, and `archive_command` delegated to `pgbackrest archive-push`. Take the first full backup, then schedule a daily differential and a weekly full backup with a retention that keeps at least two full backups.
 6. Nightly `pg_dump` logical backup of each database to the same bucket under a separate prefix, kept for 30 days. It is the fallback when a PITR restore is not possible and the input for the scratch-database migration test.
-7. Grafana alerts (section 11): backup age above 26 hours, WAL archive push failures, disk usage above 80%, and replication lag once a replica exists.
+7. Grafana alerts (section 11): backup age above 26 hours, WAL archive push failures, less than 15 % disk free (`docs/observability/grafana/alerts/host-disk.json`), and replication lag once a replica exists.
 8. Store the direct connection string (TLS on) as `DATABASE_URL` in `secrets/staging.enc.yaml` (create the file per section 2 step 5) and the pooled string under the key the P02-T07 task adds for the API. Your local `.env` keeps the docker value from `.env.example`; only put the staging string in `.env` temporarily when you run the verify step below. Production strings go into `secrets/prod.enc.yaml` in P03.
 9. Restore drill: restore the latest backup into a scratch database and run the migration suite against it. First run at P02-T07, then quarterly and before every P14 release check. The same restored scratch database is where staging migrations are proven before they run on staging (`.agents/skills/db-migration/SKILL.md`).
 
@@ -453,26 +453,29 @@ Until the signing lane exists, confirm the app record exists in Play Console and
 
 ### Why we use it
 
-Product analytics, session replay, error tracking, and feature flags (`SPINE.md` §2). The native apps have an analytics port with a consent stub whose sink is a no-op; the consent default is OFF, so nothing is sent until P03 wires the consent-gated SDK.
+Product analytics, session replay, error tracking, and feature flags (`SPINE.md` §2). The native apps wire PostHog behind a consent-gated analytics port (P02-T09); consent defaults to OFF, and nothing, crash capture included, starts before opt-in. Until P03 ships the consent flow, only a Dev build's debug consent toggle opts in. How it works: [docs/observability/posthog.md](observability/posthog.md).
 
 ### When you need it
 
-P02-T09 (server-side error tracking wiring can start) and P03 (consent-gated mobile events, deletion-API adapter in `platform`).
+P02-T09 (native analytics and crash reporting, symbol upload, API feature flags, `just observability-sync`) and P03 (consent-gated user events, prod project, deletion-API adapter in `platform`).
 
 ### Cost
 
-Free tier, Checked 2026-09-10 at <https://posthog.com/pricing>: 1M events, 5K session recordings, 100K exceptions, 1M feature flag requests per month; no credit card required. PostHog Cloud offers US and EU regions; the EU region is the natural pick if OQ-07 lands on EU residency (verify the region list on the signup page).
+Free tier, Checked 2026-09-10 at <https://posthog.com/pricing>: 1M events, 5K session recordings, 100K exceptions, 1M feature flag requests per month; no credit card required. PostHog Cloud offers US and EU regions; the project exists in US Cloud (DEC-58). A region cannot change after creation, so an EU requirement from OQ-07 means a new EU project.
 
 ### Steps
 
-1. Sign up at <https://posthog.com/signup>. Choose the cloud region (provisional per OQ-07; the host differs per region: `https://us.i.posthog.com` or `https://eu.i.posthog.com`).
+1. Sign up at <https://posthog.com/signup>. The project is in **US** Cloud (DEC-58; provisional per OQ-07, and the region cannot change later). Its hosts: `https://us.i.posthog.com` for ingestion, `https://us.posthog.com` for the app and API.
 2. Create an organization `ai-stylist` and a project `ai-stylist-dev`. Add `ai-stylist-prod` in P03.
-3. **Settings**, **Project**, **Project API key** (label may differ). This key is public-ish (it is embedded in clients) but still stays out of committed files. Store it as `POSTHOG_API_KEY` and the region host as `POSTHOG_HOST`, in `secrets/dev.enc.yaml`. Leave both empty in your personal `.env` if you want to be sure the stub sends nothing locally.
+3. **Settings**, **Project**, **Project API key** (label may differ). This key is public-ish (it is embedded in clients) but still stays out of committed files. Store it as `POSTHOG_API_KEY` and the region host as `POSTHOG_HOST`, in `secrets/dev.enc.yaml`. Leave both empty in your personal `.env` if you want to be sure nothing is sent locally.
 4. A **Personal API key** (account settings) is needed later by the deletion adapter in P03; that task adds its key name to `.env.example`.
+5. For `just observability-sync`: account settings, **Personal API keys**, **Create personal API key**, name `observability-sync`, scopes `project:read`, `project:write`, `feature_flag:read`, `feature_flag:write`, `hog_function:read`, `hog_function:write`, limited to the project. Your account must be a project admin (`anonymize_ips` is admin-only). Store it as `POSTHOG_SYNC_API_KEY` in `secrets/dev.enc.yaml`, with `POSTHOG_CLI_PROJECT_ID` (numeric project id) and `POSTHOG_CLI_HOST` (`https://us.posthog.com`, the app host, not the ingestion host). Never a GitHub secret.
+6. For symbol upload: a second personal key with only `error_tracking:write` and `organization:read`, stored as `POSTHOG_CLI_API_KEY`. The iOS and Android workflows upload with it on `main` only: add the GitHub secret `POSTHOG_CLI_API_KEY` and the variables `POSTHOG_CLI_PROJECT_ID` and `POSTHOG_CLI_HOST` (section 1 step 7), each with its value from `secrets/dev.enc.yaml`. Do not add `POSTHOG_API_KEY` or `POSTHOG_HOST` to GitHub: CI-built apps carry no project key. `.github/workflows/README.md` lists which job reads which.
 
 ### What to record
 
-- `.env.example` keys: `POSTHOG_API_KEY`, `POSTHOG_HOST`.
+- `.env.example` keys: `POSTHOG_API_KEY`, `POSTHOG_HOST`, `POSTHOG_CLI_API_KEY`, `POSTHOG_CLI_PROJECT_ID`, `POSTHOG_CLI_HOST`, `POSTHOG_SYNC_API_KEY`.
+- GitHub secret: `POSTHOG_CLI_API_KEY`; variables: `POSTHOG_CLI_PROJECT_ID`, `POSTHOG_CLI_HOST`.
 
 ### Do not
 
@@ -481,13 +484,13 @@ Free tier, Checked 2026-09-10 at <https://posthog.com/pricing>: 1M events, 5K se
 
 ### Verify
 
-`just doctor` shows `✔ .env has every key from .env.example`. Nothing else is observable yet: with the consent stub OFF, the PostHog **Activity** page must stay empty even after running the app. An event appearing there before P03 is a bug.
+`just doctor` shows `✔ .env has every key from .env.example`. With consent OFF (the default), the PostHog **Activity** page must stay empty even after running the app; an event there while the Dev build's debug consent toggle is off is a bug. The crash demo and symbol upload checks are in [docs/observability/posthog.md](observability/posthog.md#symbol-upload).
 
 ## 11. Grafana Cloud
 
 ### Why we use it
 
-OpenTelemetry backend for traces, metrics, and logs (doc 14; ADR-OBS-01 is written in P02-T09). The API and workers export OTLP to it; the free tier is expected to cover launch.
+OpenTelemetry backend for traces, metrics, and logs (doc 14; ADR-OBS-01 = [ADR-0007](adr/0007-observability-backend.md)). The `api`, `jobs` and `segmentation` processes export OTLP to it; the free tier is expected to cover launch. How it works: [docs/observability/grafana.md](observability/grafana.md).
 
 ### When you need it
 
@@ -499,15 +502,18 @@ Free tier, Checked 2026-09-10 at <https://grafana.com/pricing/>: 10k active metr
 
 ### Steps
 
-1. Sign up at <https://grafana.com/auth/sign-up/create-user>. Create a stack named `ai-stylist`; choose the region closest to the server's (section 4; provisional per OQ-07).
+1. Sign up at <https://grafana.com/auth/sign-up/create-user>. Create a stack named `ai-stylist` in an EU region (DEC-58).
 2. Grafana Cloud portal, your organization **Overview**, select the stack, then **Configure** on the **OpenTelemetry** tile (Checked 2026-09-10, <https://grafana.com/docs/grafana-cloud/send-data/otlp/send-data-otlp/>).
 3. Follow that page to generate an API token (name `api-dev`, role write). It shows ready-made environment variables: `OTEL_EXPORTER_OTLP_ENDPOINT` (`https://otlp-gateway-<region>.grafana.net/otlp`) and `OTEL_EXPORTER_OTLP_HEADERS` (`Authorization=Basic <base64 of instanceId:token>`). Copy both exactly as shown.
-4. Store them in `secrets/dev.enc.yaml` and `.env` under the same names. Set `OTEL_SERVICE_NAME=api` for the API and `workers-ml` for the workers (the workers get their own env in their compose/Coolify config).
+4. Store them in `secrets/dev.enc.yaml` and `.env` under the same names. Leave `OTEL_SERVICE_NAME` empty there: each process has its own name (`api`, `jobs`, `segmentation`), which `just dev-api` / `just dev-workers` set per process and each deployed service sets in its own Coolify config ([docs/observability/grafana.md](observability/grafana.md#configure-a-process)).
 5. Generate a separate token per environment (`api-staging`, `api-prod`) into the matching `secrets/<env>.enc.yaml` so one can be revoked without touching the others.
+6. For `just observability-sync`: in the stack, **Administration**, **Users and access**, **Service accounts**, **Add service account** `observability-sync` with role **Admin** (Admin holds the alerting provisioning writer role; Editor does not), then **Add service account token** with a 90-day expiry (rotation inventory, `planning/11-security-privacy-and-compliance.md` §5.3). Store the `glsa_…` token as `GRAFANA_SERVICE_ACCOUNT_TOKEN`, the stack URL `https://<stack>.grafana.net` as `GRAFANA_URL`, the on-call addresses as `GRAFANA_ALERT_EMAILS` (comma list) and the on-call IANA zone as `GRAFANA_ONCALL_TIMEZONE`, all in `secrets/dev.enc.yaml` (one stack serves every environment). Then `just secrets-sync`, `just observability-sync all --check`, `just observability-sync --dry-run`, `just observability-sync`.
+7. Optional, for the CI row of dashboard 1: GitHub secrets `OTEL_EXPORTER_OTLP_ENDPOINT` and `OTEL_EXPORTER_OTLP_HEADERS` (section 1 step 7), read by the `pr-gate.yml` summary job on pushes to `main` only. `OTEL_EXPORTER_OTLP_HEADERS` must carry a separate token named `ci-metrics` with only the metrics write scope, never the dev token (step 5), so the CI copy can write metrics and nothing else and can be revoked alone.
 
 ### What to record
 
-- `.env.example` keys: `OTEL_EXPORTER_OTLP_ENDPOINT`, `OTEL_EXPORTER_OTLP_HEADERS`, `OTEL_SERVICE_NAME`.
+- `.env.example` keys: `OTEL_EXPORTER_OTLP_ENDPOINT`, `OTEL_EXPORTER_OTLP_HEADERS`, `OTEL_SERVICE_NAME`, `GRAFANA_URL`, `GRAFANA_SERVICE_ACCOUNT_TOKEN`, `GRAFANA_ALERT_EMAILS`, `GRAFANA_ONCALL_TIMEZONE`.
+- GitHub secrets (optional): `OTEL_EXPORTER_OTLP_ENDPOINT`, `OTEL_EXPORTER_OTLP_HEADERS` (CI metrics; the headers hold the `ci-metrics` token only).
 
 ### Do not
 
@@ -516,7 +522,7 @@ Free tier, Checked 2026-09-10 at <https://grafana.com/pricing/>: 10k active metr
 
 ### Verify
 
-Until T09 wires the exporter, test the credentials directly. Take the base64 part after `Authorization=Basic ` from `OTEL_EXPORTER_OTLP_HEADERS`:
+To test the credentials alone, without running a process, take the base64 part after `Authorization=Basic ` from `OTEL_EXPORTER_OTLP_HEADERS`:
 
 ```bash
 curl -sS -o /dev/null -w '%{http_code}\n' -X POST \
@@ -524,7 +530,7 @@ curl -sS -o /dev/null -w '%{http_code}\n' -X POST \
   -d '{"resourceSpans":[]}' "$OTEL_EXPORTER_OTLP_ENDPOINT/v1/traces"
 ```
 
-Expected: `200`. A `401` means the header or token is wrong. After T09, `just dev-api` followed by `curl localhost:3000/v1/health` produces a trace visible under **Explore**, **Tempo** in the stack.
+Expected: `200`. A `401` means the header or token is wrong. With the exporter wired (P02-T09), `just dev-api` followed by `curl localhost:3000/v1/health` produces a trace visible under **Explore**, **Tempo** in the stack.
 
 ## 12. RevenueCat
 

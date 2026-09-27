@@ -7,7 +7,7 @@
 > File name: `phases/P02-repo-foundations-and-ci.md` per [SPINE §5](../SPINE.md). Every section below is REQUIRED (brief §10); "None" is written explicitly rather than deleting a section. Status values per [PROGRESS.md](../PROGRESS.md).
 
 > **Amended 2026-09-22 ([ADR-0004](../../docs/adr/0004-native-ios-and-android-clients.md), DEC-49–54).** React Native + Expo were replaced by native apps: `apps/ios` (Swift 6 + SwiftUI) and `apps/android` (Kotlin + Compose), with generated Swift/Kotlin clients and `.github/workflows/ios.yml` / `android.yml`.
-> - **T10:** done by replacement. The Expo skeleton was deleted and the native foundations cover its scope.
+> - **T10:** done by replacement. The Expo skeleton was deleted and the native foundations cover its scope. PostHog init and crash reporting, not carried over then, were wired in P02-T09 (AI-17).
 > - **T14:** re-scoped to native signing and store-upload lanes.
 > - **T15:** the EAS-vs-GHA ADR is moot (DEC-51 resolves OQ-04). T15 becomes a lane-reliability review.
 > - **A4** (pnpm × EAS) is moot.
@@ -93,7 +93,7 @@ Contributing (primary delivery elsewhere): NFR-TEAM-110 (templates/ADR log — r
 - Observability baseline ([14 §15 P02 row](../14-observability-operations-and-analytics.md)): pino/structlog JSON logging with schema-allowlist redaction, correlation IDs client→API→outbox→job→worker, OTel traces/metrics → Grafana Cloud free tier or a separate-node self-hosted Grafana stack (**ADR-OBS-01** chooses), PostHog project (events/errors/flags; consent-gated client wiring lands P03), crash reporting with sourcemap/dSYM upload, dashboard 1 (service health), severity ladder + first runbooks (API down, PostgreSQL incident, queue stuck), flag registry + expiry lint.
 - Security foundations: sops+age secrets ([15 §6](../15-team-workflow-and-ai-agent-operations.md)), `.env.example`, gitleaks pre-commit + CI, osv-scanner, license/SBOM (syft), Renovate, frozen lockfiles + postinstall allowlist, per-env credential isolation, Cloudflare WAF in front of the API, rate-limit middleware skeleton, **signed-URL skeleton**: `StorageProvider` port + R2 adapter minting presigned PUT/GET with TTL + namespace constraints ([11 §5.4](../11-security-privacy-and-compliance.md)) + its security tests (full media enforcement is P06/NFR-SEC-050).
 - **CLAUDE.md moved from `planning/` to repo root** (verbatim policy content, paths activated) + `.agents/skills/` with one SKILL.md per NFR-TEAM-100 area (13 skills), each with trigger/required-reading/workflow/validation/output/stop-conditions; templates (issue/PR/ADR/session-handoff/module-contract) under `templates/`→repo; CODEOWNERS with real handles; PROGRESS.md operational at root.
-- Mobile + workers skeletons: native iOS and Android apps boot to a home screen with the generated client, a version round-trip, and a consent-gated analytics port (no PostHog/crash SDK yet; *historical: Expo app with PostHog init + crash reporting*); one FastAPI worker (`workers/ml/segmentation` stub) consuming generated Pydantic models behind a versioned endpoint, containerized, hit by the demo outbox flow.
+- Mobile + workers skeletons: native iOS and Android apps boot to a home screen with the generated client, a version round-trip, and a consent-gated analytics port with PostHog analytics and native crash capture behind it (wired in P02-T09, AI-17; *historical: Expo app with PostHog init + crash reporting*); one FastAPI worker (`workers/ml/segmentation` stub) consuming generated Pydantic models behind a versioned endpoint, containerized, hit by the demo outbox flow.
 - `just` catalog complete per [15 §5](../15-team-workflow-and-ai-agent-operations.md) including `assets-validate` (adopting P01 tooling when available) and `ml-eval` stub.
 
 **Out of scope / non-goals for this phase:**
@@ -141,7 +141,7 @@ Module names per [SPINE §3](../SPINE.md); every touched module gets its contrac
 
 | Surface | Work (or "None") |
 |---|---|
-| Mobile | Native skeletons (SwiftUI app + local SwiftPM packages; Compose app + Gradle modules); generated Swift/Kotlin clients wired; consent-gated analytics port; safety settings (Swift 6 strict concurrency, warnings as errors; Kotlin/Lint warnings as errors, detekt, module-graph allow-list); Swift Testing / JUnit + Robolectric harnesses; shared Maestro smoke flow `e2e/smoke.yaml`. PostHog + crash reporting SDKs still to wire (NFR-OBS-040). *(Historical: Expo SDK 55+ skeleton with Jest/RNTL.)* |
+| Mobile | Native skeletons (SwiftUI app + local SwiftPM packages; Compose app + Gradle modules); generated Swift/Kotlin clients wired; consent-gated analytics port; safety settings (Swift 6 strict concurrency, warnings as errors; Kotlin/Lint warnings as errors, detekt, module-graph allow-list); Swift Testing / JUnit + Robolectric harnesses; shared Maestro smoke flow `e2e/smoke.yaml`. PostHog + crash reporting SDKs wired in P02-T09 (AI-17, NFR-OBS-040) behind the consent-gated analytics port; nothing starts before opt-in. *(Historical: Expo SDK 55+ skeleton with Jest/RNTL.)* |
 | Backend | NestJS/Fastify app; 15 module skeletons; DI composition root; health/version; outbox relay; rate-limit middleware skeleton; pino + OTel; contract-conformance test harness |
 | Workers (ML/media) | `segmentation` FastAPI stub (versioned echo endpoint), Dockerfile, pytest + Schemathesis harness, generated Pydantic models |
 | Data / migrations | Drizzle setup; outbox + idempotency migrations; Testcontainers harness; `just db-*` recipes; self-managed PostgreSQL 18 + pgvector per env (staging/prod) with pgBackRest PITR + PgBouncer; ephemeral databases per PR (no branch-per-PR); `packages/seed-data` factories (synthetic only) |
@@ -258,7 +258,7 @@ Exact steps proving the vertical slice end-to-end on a real environment:
 4. Edit the OpenAPI spec without regenerating → `just generate --check` fails; run `just generate`, diff shows only generated files; commit passes.
 5. `just dev-api` + `curl /v1/health` → 200 with problem+json verified on a bad route; trigger the demo event → show one trace in Grafana spanning API → outbox → pg-boss job → Python worker, single correlation ID.
 6. Kill the worker mid-task → retries visible → DLQ row + alert fires → runbook #4 linked from the alert.
-7. Launch the native skeletons on real devices (iOS from Xcode on the team's Mac, Android via `adb install`): version round-trip on screen; force the test crash → symbolicated in PostHog (once crash reporting is wired; see T10 note).
+7. Launch the native skeletons on real devices (iOS from Xcode on the team's Mac, Android via `adb install`): version round-trip on screen; force the test crash → symbolicated in PostHog (crash reporting wired in P02-T09, AI-17).
 8. Open a PR: fast gate completes < 10 min; merge; show `main` green.
 9. Show the same commit built by the GHA macOS lane → TestFlight build appears; Android AAB from CI installs on device (an Ubuntu-only dev shipped both — NFR-TEAM-010).
 10. Open root `CLAUDE.md`, `.agents/skills/` (13 skills), `docs/modules/` (15 contracts), PROGRESS.md at root.

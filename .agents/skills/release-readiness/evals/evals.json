@@ -4,11 +4,11 @@
     {
       "id": 1,
       "prompt": "We're cutting a beta for commit abc123f — Android build 42, iOS build 42. Walk through the readiness checklist and tell me if it's a GO for TestFlight + Play internal.",
-      "expected_output": "The agent identifies the candidate (SHA, version/build numbers, channel), works through the gate checklist item by item citing real evidence sources (CI status, flag expiry via the feature-flags-rollout reference — recorded as unverified pending a human PostHog check because no automated expired-flag report exists, migration state, contract staleness, the ios/android workflow runs, crash symbolication), and produces an explicit GO/NO-GO with blockers named rather than a vague 'looks fine'. It never claims to have run a check it didn't actually run.",
+      "expected_output": "The agent identifies the candidate (SHA, version/build numbers, channel), works through the gate checklist item by item citing real evidence sources (CI status, flag expiry via `just flags-report` or that night's expired-flags job, per the feature-flags-rollout reference, migration state, contract staleness, the ios/android workflow runs, crash symbolication), and produces an explicit GO/NO-GO with blockers named rather than a vague 'looks fine'. It never claims to have run a check it didn't actually run.",
       "files": [],
       "assertions": [
         "The agent names the specific commit SHA and build numbers for both platforms rather than treating the candidate generically",
-        "The agent checks flag owner/expiry/removal-issue status against the feature-flags-rollout reference and records expiry as unverified (a NO-GO until a human confirms) because no automated expired-flag report exists",
+        "The agent checks flag owner/expiry/removal-issue status against the feature-flags-rollout reference, takes expiry from `just flags-report` (or the nightly expired-flags job) rather than assuming it, and treats a failing report as a NO-GO",
         "The final verdict is an explicit GO or NO-GO with each unmet item named as a blocker, not a hedge",
         "The agent does not claim a gate passed without citing the command or evidence that proved it"
       ]

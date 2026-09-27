@@ -1,6 +1,6 @@
 # 11 — Security, Privacy, and Compliance
 
-**Status:** Draft for ratification · **Date:** 2026-08-24 · **Conforms to:** [SPINE.md](SPINE.md) · **Amended:** 2026-09-13 ([r7](research/r7-third-party-services-and-self-hosting-audit-2026-09-13.md), ADR-0003 — self-managed PostgreSQL/pgBackRest, Coolify secrets, pg-boss deletion chain, processor list)
+**Status:** Draft for ratification · **Date:** 2026-08-24 · **Conforms to:** [SPINE.md](SPINE.md) · **Amended:** 2026-09-13 ([r7](research/r7-third-party-services-and-self-hosting-audit-2026-09-13.md), ADR-0003 — self-managed PostgreSQL/pgBackRest, Coolify secrets, pg-boss deletion chain, processor list) · 2026-09-27 (§2, §7.3 — Grafana Cloud EU as an operations processor, DEC-58, P02-T09)
 **Owns:** threat model, abuse cases, authN/authZ design, encryption & key management, data classification, consent registry, logging redaction rules, privacy/regulatory mapping, legal-review register, age policy, export/deletion flows, incident response, abuse prevention, product-ethics rules.
 **Requirement IDs delivered:** `REQ-SEC-*`, `REQ-PRV-*` (defined in [01-requirements-and-traceability.md](01-requirements-and-traceability.md)).
 **Security tests that verify this design:** [13-testing-quality-and-performance.md](13-testing-quality-and-performance.md) §8. **Audit trails, alerting, and monitoring:** [14-observability-operations-and-analytics.md](14-observability-operations-and-analytics.md).
@@ -22,7 +22,7 @@ The app handles data most products never touch: body measurements, selfies and f
 
 ## 2. Threat model (STRIDE-lite, by asset)
 
-Scope: mobile apps (iOS/Android), NestJS API, pg-boss jobs, Python ML workers and self-managed PostgreSQL on owned servers (Docker + Coolify), Cloudflare R2, third-party providers (fal.ai, LLM APIs, RevenueCat, PostHog, Open-Meteo; holidays come from the embedded `date-holidays` library — no provider).
+Scope: mobile apps (iOS/Android), NestJS API, pg-boss jobs, Python ML workers and self-managed PostgreSQL on owned servers (Docker + Coolify), Cloudflare R2, third-party providers (fal.ai, LLM APIs, RevenueCat, PostHog, Grafana Cloud, Open-Meteo; holidays come from the embedded `date-holidays` library — no provider).
 
 Threat classes per asset (S=Spoofing, T=Tampering, R=Repudiation, I=Information disclosure, D=Denial of service, E=Elevation of privilege). Sensitivity classes are defined in §6.
 
@@ -39,7 +39,7 @@ Threat classes per asset (S=Spoofing, T=Tampering, R=Repudiation, I=Information 
 | **Secrets & provider keys** | S3 | I: key leakage via repo, logs, mobile bundle; E: pivot to providers. | No secrets in the mobile bundle (all provider calls server-side except on-device ML); platform secret manager + rotation (§5.3); secret scanning in CI ([15-team-workflow-and-ai-agent-operations.md](15-team-workflow-and-ai-agent-operations.md)). |
 | **Backups & database** | S3 | I: backup exfiltration; T: restore of tampered snapshot. | pgBackRest WAL archiving + PITR to an encrypted off-host R2 bucket, host disk encryption (14 §13); access to production DB restricted to named accounts with MFA; restore drills verify integrity (13 §9). |
 
-**Trust boundaries:** device ↔ API (TLS, authenticated); API/jobs ↔ Postgres (host-private Docker network or private network between hosts, TLS, scoped per-service credentials, host firewall — nothing on the public interface) · API ↔ R2 (TLS, scoped credentials); API/worker ↔ AI providers (data leaves our control — governed by §7.5 and the SPINE AI data policy); API ↔ RevenueCat/PostHog (webhooks in, minimal data out). A Mermaid trust-boundary diagram belongs in [04-architecture.md](04-architecture.md); this doc owns the threat table only.
+**Trust boundaries:** device ↔ API (TLS, authenticated); API/jobs ↔ Postgres (host-private Docker network or private network between hosts, TLS, scoped per-service credentials, host firewall — nothing on the public interface) · API ↔ R2 (TLS, scoped credentials); API/worker ↔ AI providers (data leaves our control — governed by §7.5 and the SPINE AI data policy); API ↔ RevenueCat/PostHog (webhooks in, minimal data out) · API/jobs/workers → Grafana Cloud EU (OTLP egress of logs, traces and metrics over TLS: ids and enums only per §8, pseudonymous `user_id` from P03, never payloads). A Mermaid trust-boundary diagram belongs in [04-architecture.md](04-architecture.md); this doc owns the threat table only.
 
 ## 3. Abuse cases
 
@@ -151,7 +151,7 @@ Each consent record: `user_id`, `purpose` (enum below), `policy_version` (points
 | `training_data` | Use of user data to improve our own models/evals | **Off. Default is NO training use**; only explicit, separate, revocable opt-in (SPINE AI data policy) |
 
 ### 7.3 Per-integration consent & disclosure
-The settings screen lists each third-party processor per purpose (e.g., `ai_generative` → fal.ai; `analytics` → PostHog) with a plain-language description of what is sent. Adding a new provider to a purpose requires a privacy review (checklist in §7.5) and a policy-version bump; materially different processing requires re-consent.
+The settings screen lists each third-party processor per purpose (e.g., `ai_generative` → fal.ai; `analytics` → PostHog) with a plain-language description of what is sent. Operations processors are disclosed alongside them but under no consent purpose: Grafana Cloud (EU) receives logs, traces and metrics to operate the service (ids only, redacted per §8; DEC-58). Adding a new provider to a purpose requires a privacy review (checklist in §7.5) and a policy-version bump; materially different processing requires re-consent.
 
 ### 7.4 Location: coarse by default
 - Default: **manual city entry** (typeahead against an offline city gazetteer) — no device location permission requested at onboarding.

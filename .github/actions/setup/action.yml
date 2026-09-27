@@ -2,8 +2,10 @@
 #
 # The caller is responsible for `actions/checkout`. This action:
 #   1. installs every tool pinned in the root `mise.toml` via jdx/mise-action
-#      (node, pnpm, python, java, just, gitleaks, osv-scanner, syft, uv, prek)
-#      and puts them on PATH;
+#      (node, pnpm, python, java, just, uv, prek, gitleaks, osv-scanner, syft,
+#      oasdiff, shellcheck, actionlint, posthog-cli, ...; mise.toml is the list)
+#      and puts them on PATH, also with `install: 'false'` (that input skips
+#      only steps 2-3);
 #   2. restores/saves the pnpm content-addressable store keyed on pnpm-lock.yaml;
 #   3. runs `pnpm install --frozen-lockfile` (fails if the lockfile is stale);
 #   4. optionally runs `uv sync --frozen` in every `workers/**` project that

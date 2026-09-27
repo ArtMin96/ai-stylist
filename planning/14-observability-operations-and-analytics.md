@@ -1,6 +1,6 @@
 # 14 — Observability, Operations, and Analytics
 
-**Status:** Draft for ratification · **Date:** 2026-08-24 · **Conforms to:** [SPINE.md](SPINE.md) · **Amended:** 2026-09-13 ([r7](research/r7-third-party-services-and-self-hosting-audit-2026-09-13.md), ADR-0003 — host/Coolify supplements, pg-boss, pgBackRest backups, exit triggers for Grafana Cloud/PostHog)
+**Status:** Draft for ratification · **Date:** 2026-08-24 · **Conforms to:** [SPINE.md](SPINE.md) · **Amended:** 2026-09-13 ([r7](research/r7-third-party-services-and-self-hosting-audit-2026-09-13.md), ADR-0003 — host/Coolify supplements, pg-boss, pgBackRest backups, exit triggers for Grafana Cloud/PostHog) · 2026-09-27 (§1, §6, §8, §11 — ADR-OBS-01 confirmed as [ADR-0007](../docs/adr/0007-observability-backend.md), DEC-58; P02-T09 definitions, runbooks and flag registry)
 **Owns:** logging architecture (redaction *rules* owned by [11 §8](11-security-privacy-and-compliance.md)), tracing, metrics catalog, crash reporting, dashboards/alerts/on-call, runbooks, incident review process, product analytics event taxonomy, audit trails, feature-flag policy, backup/restore + DR, support/admin tooling minimum, per-phase observability rule.
 **Requirement IDs delivered:** `NFR-OBS-*` (defined in [01-requirements-and-traceability.md](01-requirements-and-traceability.md)).
 **Error budgets / perf thresholds:** numbers live in [13 §12](13-testing-quality-and-performance.md); this doc wires them to dashboards and alerts.
@@ -14,7 +14,7 @@ Two–three developers operate this system. Observability must be **cheap to run
 **Tooling (per [r4](research/r4-backend-providers.md) + SPINE):**
 - **PostHog** — product analytics, error tracking, session replay (mobile, off by default and consent-gated), feature flags. Kept on the Cloud free tier (DEC-48); exit trigger: before any paid usage, or if OQ-07 residency rejects the region → self-host PostHog OSS only if in-house data is itself a requirement.
 - **OpenTelemetry SDK** everywhere for traces/metrics/logs — vendor-neutral instrumentation is the commitment; the export target is swappable.
-- **Pragmatic trace/metric backend at launch:** OTel → **Grafana Cloud free tier** (Tempo traces, Prometheus-style metrics, Loki logs). Chosen over self-hosting (ops burden for 2 devs) and over PostHog-only (PostHog is not a distributed-tracing backend). Confirmed as **ADR-OBS-01 in P02**; kept on the free tier (DEC-48). Exit trigger: before any paid usage → self-hosted Grafana + Prometheus + Loki + Tempo (AGPL-3.0) on a **separate failure domain**, never on the app server.
+- **Pragmatic trace/metric backend at launch:** OTel → **Grafana Cloud free tier** (Tempo traces, Prometheus-style metrics, Loki logs). Chosen over self-hosting (ops burden for 2 devs) and over PostHog-only (PostHog is not a distributed-tracing backend). Confirmed as **ADR-OBS-01** = [ADR-0007](../docs/adr/0007-observability-backend.md) on 2026-09-27 (P02-T09, DEC-58); kept on the free tier (DEC-48). Exit trigger: before any paid usage → self-hosted Grafana + Prometheus + Loki + Tempo (AGPL-3.0) on a **separate failure domain**, never on the app server.
 - **Sentry (optional):** enable for native iOS/Android crash symbolication only if PostHog error tracking proves insufficient (decision point end of P03; keep the seam — crash reporter behind one init module).
 - Coolify's deploy/container views, host metrics (node exporter), Cloudflare dashboards and pg-boss queue tables are supplements, not the system of record.
 
@@ -73,7 +73,7 @@ Namespace `stylist.*`; all metrics tagged `service`, `env`, and where relevant `
 ## 6. Dashboards
 
 Grafana (launch set — each phase adds its panel, §15):
-1. **Service health** — API latency/errors, availability vs error budget burn (§12).
+1. **Service health** — API latency/errors, availability vs error budget burn (§12). Definition: `docs/observability/grafana/dashboards/01-service-health.json`, synced by `just observability-sync` (P02-T09).
 2. **Pipelines** — queue depth/age, per-stage durations, DLQ, quarantine, provider failures.
 3. **Recommendation** — latency, validity rate, no-valid-outfit rate, feedback mix, engine version distribution.
 4. **AI cost & quality** — cost/user/day by task+model, cache hit rates, fallback + invalid-output counts.
@@ -96,7 +96,7 @@ Grafana (launch set — each phase adds its panel, §15):
 
 ## 8. Runbooks and incident reviews
 
-**Runbook list (each ships with the phase that creates the risk; stored in `planning/runbooks/` → repo `docs/runbooks/` at implementation):**
+**Runbook list (each ships with the phase that creates the risk; stored in repo `docs/runbooks/`; 1, 2 and 4 shipped with P02-T09):**
 1. API down / host or Coolify incident (container restart, rollback, host replacement, status comms).
 2. PostgreSQL incident + pgBackRest PITR restore (with post-restore re-deletion replay, 11 §13.3).
 3. R2 / custom-domain cache incident (asset serving degradation, signed-URL fallback).
@@ -169,7 +169,8 @@ Retention: 2 years; user-targeted entries pseudonymized on account deletion (11 
 
 Every flag declares at creation: **owner** (a person), **purpose**, **expiry date** (≤ 90 d for rollout flags; permanent flags must be reclassified as entitlements or config), **rollout plan** (default staged: internal → 5% → 25% → 100% with metric guardrails named per flag), **rollback** = flag off must always be safe (no flag whose "off" state is broken).
 - Flags are **not** entitlements: paid capability gating uses the server-side entitlements table (SPINE, doc 12); flags gate rollout/experiments only. A flag check on a premium feature sits *behind* the entitlement check, never instead of it.
-- Expired flags fail a weekly CI report; > 30 d overdue = defect with owner. Flag changes in prod are audited (§10).
+- Every flag is declared in the registry `packages/shared-kernel/registry/feature-flags.json` (owner, purpose, kind, expiry, rollout plan, off behaviour); `just observability-sync` pushes it to PostHog.
+- Expired flags fail a CI report (`just flags-report`, run nightly); > 30 d overdue = defect with owner. Flag changes in prod are audited (§10).
 - Kill-switch flags (per AI task, per provider, per pipeline) are permanent operational flags, exempt from expiry, listed in runbook 10 (§8).
 - Experiments must not touch deterministic safety constraints (brief §3.3): the engine's hard-constraint layer is not flag-gated or experimented on, enforced by module boundaries + simulation gate (13 §11).
 

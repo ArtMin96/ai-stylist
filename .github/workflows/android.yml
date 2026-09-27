@@ -3,7 +3,11 @@
 # Triggers: pull requests and pushes to main that touch apps/android/**, packages/contracts/** (the
 #           generated Kotlin client and the analytics taxonomy live there), tools/codegen/gen-kotlin.sh,
 #           the justfile, mise.toml, scripts/native-lane.sh or this file; plus manual dispatch.
-# Secrets:  none. The release build is unsigned. Play signing (upload keystore) comes later in a
+# Secrets:  build job on main only (push, or a dispatch on main): POSTHOG_CLI_API_KEY (R8 mapping
+#           upload of preview and release through posthog-cli, which mise.toml pins); variables
+#           POSTHOG_CLI_PROJECT_ID, POSTHOG_CLI_HOST. Pull requests and other branches upload nothing.
+#           CI never sets POSTHOG_API_KEY or POSTHOG_HOST, so no CI-built APK carries a PostHog
+#           project key (no-op analytics sink). The release build is unsigned. Play signing (upload keystore) comes later in a
 #           separate, tag- or dispatch-only job, and uploading to Play stays a human action.
 # Recipes:  just android-sdk install · just android-format --check · just android-lint ·
 #           just android-detekt · just android-test · just android-build <debug|preview|release>
@@ -152,6 +156,16 @@ jobs:
     concurrency:
       group: ${{ github.workflow }}-build-${{ github.ref }}
       cancel-in-progress: true
+    env:
+      # main only: the preview/release builds upload their R8 mappings
+      # (:app:uploadPostHogProguardMappings{Preview,Release}, run by the PostHog Gradle plugin through
+      # posthog-cli). The setup action installs every mise.toml tool, so posthog-cli is on PATH even
+      # with install: 'false' (that input only skips pnpm install). Everywhere else the values are
+      # empty and nothing is uploaded. POSTHOG_API_KEY / POSTHOG_HOST are never set here: CI-built
+      # APKs carry no PostHog project key (no-op analytics sink).
+      POSTHOG_CLI_API_KEY: ${{ github.ref == 'refs/heads/main' && secrets.POSTHOG_CLI_API_KEY || '' }}
+      POSTHOG_CLI_PROJECT_ID: ${{ github.ref == 'refs/heads/main' && vars.POSTHOG_CLI_PROJECT_ID || '' }}
+      POSTHOG_CLI_HOST: ${{ github.ref == 'refs/heads/main' && vars.POSTHOG_CLI_HOST || '' }}
     steps:
       - name: Setup · Check out
         uses: actions/checkout@v7
@@ -184,6 +198,7 @@ jobs:
         if: always()
         env:
           JOB_STATUS: ${{ job.status }}
+          POSTHOG_SETTINGS: ${{ github.ref == 'refs/heads/main' && 'set (main)' || 'withheld (not main)' }}
         run: |
           {
             echo "### Android · Build: ${JOB_STATUS}"
@@ -193,6 +208,7 @@ jobs:
             echo "| preview | app.aistylist.mobile.preview | debug key |"
             echo "| release (prod) | app.aistylist.mobile | unsigned |"
             echo "- APKs: artifact android-apks-${GITHUB_SHA}"
+            echo "- R8 mapping-upload settings (POSTHOG_CLI_*): ${POSTHOG_SETTINGS}; PostHog project key: never in CI APKs"
           } >> "$GITHUB_STEP_SUMMARY"
 
   summary:

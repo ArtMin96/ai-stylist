@@ -3,7 +3,7 @@ name: release-readiness
 description: Verify and prepare promotion of the native iOS and Android builds through release channels — internal → beta (TestFlight / Play internal testing) → staged production. Use when preparing a release, cutting a beta, checking store readiness, or evaluating/halting a staged rollout. Not for implementing the fix behind a blocked gate — hand back to the owning engineer skill; not for signing, uploading, store submission or rollout promotion — those are human-only (this skill, and the `release-manager` agent that runs it, only ever recommends GO/NO-GO).
 metadata:
   modules:
-  last-reviewed: 2026-09-26
+  last-reviewed: 2026-09-27
   owner-agent: release-manager
 ---
 
@@ -41,9 +41,9 @@ metadata:
 2. Gate checklist, each item with real output: `just ci-parity` green on the SHA plus green `ios`
    and `android` workflow runs; the nightly tier where doc 13 requires it; no open release blocker,
    no quarantined test past its deadline; flags per the reference (owner, expiry, removal issue).
-   Flag expiry has no automated report yet (the nightly `expired-flags` job is a placeholder,
-   P02-T09): record it as `unverified: needs a human PostHog check`, which is a NO-GO until a human
-   confirms; pending migrations applied to staging with rollback proven (`db-migration` evidence);
+   Flag expiry: `just flags-report` on the SHA (the nightly `expired-flags` job runs the same
+   recipe); a failing report is a NO-GO until the flag is retired or re-dated; pending migrations
+   applied to staging with rollback proven (`db-migration` evidence);
    `just generate --check` clean and no breaking contract without its deprecation plan (older app
    versions stay in the field for weeks: the API must keep serving them); store metadata, privacy
    manifest (`apps/ios/App/PrivacyInfo.xcprivacy`) and Play data-safety answers current (a

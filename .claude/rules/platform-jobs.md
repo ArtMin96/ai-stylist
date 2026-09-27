@@ -30,7 +30,9 @@ for `packages/seed-data/**`; `just dev-api` for `docker-compose.yml`; then
 3. Domain modules never import `platform`; they use ports bound at the composition root — depcruise
    `modules-not-platform`.
 4. Provider SDKs (`pg-boss`, `@aws-sdk/*`, `@cloudflare/*`, `@fal-ai/*`, `posthog-*`, `@sentry/*`,
-   `firebase-admin`) are imported only here — depcruise `domain-no-provider-sdk` on the module side.
+   `firebase-admin`, `@opentelemetry/{sdk-*,exporter-*,instrumentation*}`, @fastify/otel) are
+   imported only here (@opentelemetry/api stays importable in modules) — depcruise
+   `domain-no-provider-sdk` on the module side.
 5. A new port interface is declared by the consuming module (or `packages/shared-kernel/`), never under
    `apps/api/src/platform/ports/`; that directory and `InMemoryStorageProvider` are P02-interim layout,
    not a pattern to copy (reviewer-checked).

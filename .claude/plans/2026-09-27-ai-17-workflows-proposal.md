@@ -1,9 +1,15 @@
 # AI-17 (P02-T09) tooling C2: workflow, secret and catalog proposal
 
-> Status: PROPOSED 2026-09-27 by tooling-engineer (C2). A human applies sections A–F and H
-> (`AGENT_MAY_EDIT_POLICY=1`; the path guard denies agents `.github/workflows/**`) and runs G.
-> Section I is the justfile hunk the lead applies after C1's `observability-sync` recipe lands.
-> Base: f625cf2 plus the uncommitted AI-17 working tree (step B's `flags-report` included).
+> Status: PARTIALLY APPLIED (2026-09-27, AI-17) — §I applied (justfile); §A–§H in scratchpad
+> ai-17-human.patch. Per section: §I APPLIED by the lead. §A–§F and §H PENDING in the human-applied
+> ai-17-human.patch, which revises three of them after the security review: §A uploads dSYMs on
+> `main` only, §B sets no PostHog project key in CI, §D pushes CI metrics on pushes to `main` only.
+> The patch also carries the doc 15 `lint` row and the `.github/actions/setup/action.yml` header.
+> §G PENDING: a human runs it from that patch's README (no `POSTHOG_API_KEY` or `POSTHOG_HOST`;
+> the OTLP headers hold a CI-only metrics-write token; the PostHog project is in US Cloud, so
+> `POSTHOG_CLI_HOST` is `https://us.posthog.com`, not the EU host in §G's table below).
+> Proposed 2026-09-27 by tooling-engineer (C2). Base: f625cf2 plus the uncommitted AI-17 working
+> tree (step B's `flags-report` included).
 
 Every diff below was produced with `diff -u` against the current file and checked with
 `actionlint -config-file .github/actionlint.yaml <copy>` (5 files, 0 errors, shellcheck rule on).

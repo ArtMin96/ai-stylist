@@ -1,9 +1,11 @@
 # PR gate (tier 1): the fast, blocking check on every pull request and every push to main.
-# Budget: < 10 min wall clock (AC-1; ci.pr_gate_duration_seconds lands in the job summary).
+# Budget: < 10 min wall clock (AC-1; ci.pr_gate_duration_seconds lands in the job summary, and on a
+# push to main the summary job also pushes it to Grafana Cloud as stylist.ci.pr_gate_duration).
 #
 # Triggers:  pull_request (any path), push to main.
 # Recipes:   just ci-parity --core, just generate --check, and the [private] CI helpers
-#            ci-env-example-check, ci-contracts-spectral, ci-contracts-breaking (justfile).
+#            ci-env-example-check, ci-contracts-spectral, ci-contracts-breaking,
+#            ci-pr-gate-metrics (justfile).
 # Native apps: the parity job runs `just ci-parity --core` (NATIVE_LANES=none: the iOS and Android
 #            lanes print "not selected"), because ios.yml and android.yml run those lanes on their own
 #            paths. The contracts job runs the FULL `just generate --check`, so every contract change
@@ -13,6 +15,12 @@
 # Optional secrets (steps degrade gracefully when unset):
 #   TURBO_TOKEN, TURBO_TEAM   Turborepo remote cache (no Vercel account yet)
 #   GITLEAKS_LICENSE          only needed if the repo lives under a GitHub org
+#   OTEL_EXPORTER_OTLP_ENDPOINT, OTEL_EXPORTER_OTLP_HEADERS
+#                             Grafana Cloud OTLP, push to main only (pull_request runs never get
+#                             them): the summary job pushes stylist.ci.pr_gate_duration and
+#                             stylist.ci.pr_gate.runs (dashboard 01, CI row). The headers hold a
+#                             CI-only metrics-write token, never the dev token. Unset = a notice,
+#                             and a failed push only warns: it never fails the gate
 #
 # Job tree (roots run in parallel; summary fails when any gate job failed or was cancelled):
 #   parity ──────┐
@@ -166,7 +174,8 @@ jobs:
     needs: [parity, contracts, secrets, clone-check]
     if: always()
     runs-on: ubuntu-latest
-    timeout-minutes: 2
+    # The CI-metrics steps add a checkout and a cached node + just install to the old 2 minutes.
+    timeout-minutes: 5
     permissions:
       contents: read
       actions: read
@@ -177,9 +186,11 @@ jobs:
       GH_TOKEN: ${{ github.token }}
     steps:
       - name: Report · Run duration and job results
+        id: duration
         run: |
           started=$(gh api "repos/${{ github.repository }}/actions/runs/${{ github.run_id }}" --jq .run_started_at)
           n=$(( $(date +%s) - $(date -d "$started" +%s) ))
+          echo "seconds=${n}" >> "$GITHUB_OUTPUT"
           {
             echo "## PR gate"
             echo ""
@@ -195,6 +206,35 @@ jobs:
           if [ "$n" -gt 600 ]; then
             echo "::warning::PR gate took ${n}s (> 600s budget, AC-1)"
           fi
+      # CI metrics (planning/14 §4; dashboard 01, CI row): on a push to main only, this run's
+      # duration and one run sample go to Grafana Cloud over OTLP. Pull request runs keep the summary
+      # above and push nothing: the OTLP secrets never reach code from a PR checkout. The steps never
+      # fail the gate: each continues on error, and the recipe exits 0 without the secrets or when
+      # the push fails. The checkout and install run after the duration is taken, so they never
+      # count towards it.
+      - name: Report · Check out for the CI-metrics push
+        if: always() && github.event_name == 'push' && github.ref == 'refs/heads/main'
+        continue-on-error: true
+        timeout-minutes: 1
+        uses: actions/checkout@v7
+      - name: Report · Install node and just for the CI-metrics push
+        if: always() && github.event_name == 'push' && github.ref == 'refs/heads/main'
+        continue-on-error: true
+        timeout-minutes: 2
+        uses: jdx/mise-action@v4
+        with:
+          install_args: node just
+          cache: true
+      - name: Report · Push CI metrics (OTLP; never fails the gate)
+        if: always() && github.event_name == 'push' && github.ref == 'refs/heads/main'
+        continue-on-error: true
+        timeout-minutes: 1
+        env:
+          OTEL_EXPORTER_OTLP_ENDPOINT: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' && secrets.OTEL_EXPORTER_OTLP_ENDPOINT || '' }}
+          OTEL_EXPORTER_OTLP_HEADERS: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' && secrets.OTEL_EXPORTER_OTLP_HEADERS || '' }}
+          DURATION_SECONDS: ${{ steps.duration.outputs.seconds }}
+          CONCLUSION: ${{ contains(needs.*.result, 'failure') && 'failure' || (contains(needs.*.result, 'cancelled') && 'cancelled' || 'success') }}
+        run: just ci-pr-gate-metrics --duration "$DURATION_SECONDS" --conclusion "$CONCLUSION"
       - name: Report · Fail when any gate job failed
         if: contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled')
         run: |

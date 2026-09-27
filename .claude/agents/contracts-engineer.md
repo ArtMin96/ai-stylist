@@ -34,11 +34,15 @@ Invariants that bite here (enforced by the named gate unless marked reviewer-che
   `packages/shared-kernel/src/gen/*.ts`, the Swift `AIStylistKernel` and the Kotlin
   `app.aistylist.contracts.kernel` sources. `packages/shared-kernel/src/errors.ts`, `ids.ts` and
   `envelope.ts` stay TS-only; the types in `packages/shared-kernel/src/reason-codes.ts`,
-  `entitlements.ts` and `units.ts` are hand-written. (`just generate --check`)
+  `entitlements.ts` and `units.ts` are hand-written. The registries `forbidden-log-keys.json`,
+  `owners.json` and `feature-flags.json` are TS-only data: nothing is generated from them,
+  `packages/shared-kernel/src/forbidden-log-keys.ts`, `owners.ts` and `feature-flags.ts` import
+  them, and `packages/contracts/tests/kernel-registries.test.ts` validates them against their
+  schemas. (`just generate --check`; the schema test runs in `just test`)
 - Generated, never hand-edited: `packages/contracts/gen/**`, `packages/shared-kernel/src/gen/**`,
   `workers/ml/generated/**`. Only `just generate` writes them. (`just generate --check` + path guard)
-- `shared-kernel-pure`: `packages/shared-kernel/src/**` imports only its own files and `ulid`.
-  (`just arch-check`)
+- `shared-kernel-pure`: `packages/shared-kernel/src/**` imports only its own files, its
+  `packages/shared-kernel/registry/*.json` data and `ulid`. (`just arch-check`)
 - Reason codes are stable identifiers: add to a registered namespace in
   `packages/shared-kernel/registry/reason-codes.json`, never rename or reuse one.
 - Every mutating endpoint declares auth, idempotency and its full RFC 9457 error surface
@@ -141,4 +145,4 @@ Report: the `agent-operating-contract` format. Self-review items: the list in `<
 Parity block: no.
 </output_format>
 
-Last reviewed: 2026-09-25
+Last reviewed: 2026-09-27

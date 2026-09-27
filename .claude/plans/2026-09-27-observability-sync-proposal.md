@@ -1,8 +1,13 @@
 # Proposal: catalog, CI and setup-doc changes for `just observability-sync` (AI-17, P02-T09 step C1)
 
-> Status: PROPOSED 2026-09-27 by tooling-engineer (worktree agent-af7728db3b1771292, base f625cf2).
-> Part A and Part D are human-only files. Part B and Part C are single-writer `justfile` lines that
-> the lead (or tooling step C2) lands during integration. Nothing here has been applied.
+> Status: PARTIALLY APPLIED (2026-09-27, AI-17) — Parts B and C applied (justfile); Parts A and D
+> in scratchpad ai-17-human.patch. Per part: B APPLIED (`ci-parity` runs `observability-sync all
+> --check`) and C APPLIED (`test-tooling`), both by the lead. A and D PENDING in the human-applied
+> ai-17-human.patch; there, Part A's row ends with "(`ci-parity` runs `all --check`)", Part D's
+> step 6 also names the GitHub secrets and variables (the iOS and Android workflows now upload), and
+> Part D's PostHog host is `https://us.posthog.com`: the project exists in US Cloud (DEC-58), so
+> the `eu.posthog.com` in Part D below is superseded. Proposed 2026-09-27 by tooling-engineer
+> (worktree agent-af7728db3b1771292, base f625cf2).
 
 The recipe itself (`observability-sync` in the root `justfile`), the tool (`tools/observability/`),
 its test (`scripts/test/observability-sync.test.sh`) and the `.env.example` keys are in the same

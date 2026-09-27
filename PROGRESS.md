@@ -7,7 +7,7 @@ This root file exists so that `PROGRESS.md` resolves at the repository root as t
 ## Current phase
 
 - **P02 — Repo foundations and CI:** `IN_PROGRESS`, started 2026-09-09 (ahead of P00 for the no-dependency subset, DEC-36). Task list, per-task state and acceptance criteria: [`planning/phases/P02-repo-foundations-and-ci.md`](planning/phases/P02-repo-foundations-and-ci.md) §12 and §19.
-- **Last green:** `just ci-parity` locally on Linux 2026-09-26 on `fix/ci-main-red` (PR #10, merged); earlier all 18 CI checks on PR #7 (`chore/native-followups` @ `6f1670a`, 2026-09-24), including the macOS simulator build/test and the Android APK builds; `just ci-parity` locally on Linux the same day.
+- **Last green:** all 18 CI checks on PR #12 (`artmins96/ai-17-…` @ `fd036b8`, 2026-09-27), incl. `just ci-parity`, the macOS simulator build/test and the Android APK builds; before that `just ci-parity` locally on Linux 2026-09-26 on `fix/ci-main-red` (PR #10, merged); earlier all 18 CI checks on PR #7 (`chore/native-followups` @ `6f1670a`, 2026-09-24), including the macOS simulator build/test and the Android APK builds; `just ci-parity` locally on Linux the same day.
 - **Latest handoff:** [`planning/PROGRESS.md`](planning/PROGRESS.md) → "Session handoff log" → entry dated 2026-09-27 ("P02-T09 observability (AI-17)"; branch `artmins96/ai-17-p02-t09-wire-observability-redaction-lint-canary-otel`, PR #12 open; P02-T09 `PARTIAL`). Next action: the human key setup + evidence steps listed on Linear AI-17, then P02-T18 close-out.
 
 ## How to update status

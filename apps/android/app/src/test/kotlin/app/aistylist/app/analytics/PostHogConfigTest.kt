@@ -76,8 +76,6 @@ class PostHogConfigTest {
                     mapOf(
                         AnalyticsTaxonomy.AppOpened.PLATFORM to AnalyticsPropertyValue.Text("android"),
                         AnalyticsTaxonomy.AppOpened.COLD_START to AnalyticsPropertyValue.Flag(true),
-                        // No taxonomy event has a number property yet; a synthetic key covers the branch.
-                        "synthetic_number" to AnalyticsPropertyValue.Number(2.0),
                     ),
             )
 
@@ -85,9 +83,17 @@ class PostHogConfigTest {
             mapOf(
                 AnalyticsTaxonomy.AppOpened.PLATFORM to "android",
                 AnalyticsTaxonomy.AppOpened.COLD_START to true,
-                "synthetic_number" to 2.0,
             ),
             event.postHogProperties(),
         )
+    }
+
+    // Per value, without an event: no taxonomy event has a number property yet, and an event
+    // built here must use only declared names and keys (packages/contracts/events/analytics/events.json).
+    @Test
+    fun `each port value maps to its PostHog scalar`() {
+        assertEquals("android", AnalyticsPropertyValue.Text("android").postHogValue())
+        assertEquals(2.0, AnalyticsPropertyValue.Number(2.0).postHogValue())
+        assertEquals(true, AnalyticsPropertyValue.Flag(true).postHogValue())
     }
 }

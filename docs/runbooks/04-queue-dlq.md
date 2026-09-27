@@ -189,9 +189,14 @@ and `OTEL_EXPORTER_OTLP_HEADERS` (`just secrets-sync`).
 1. `just db-migrate`, then in one terminal `just dev-api`.
 2. In a second terminal, `just dev-workers --port 8011`. The worker listens on 8011, but the jobs
    process calls the fixed `http://127.0.0.1:8001` (`apps/api/src/jobs/main.ts`), so every call fails.
-3. `curl -sS -X POST http://localhost:3000/v1/dev/demo-events -H 'content-type: application/json' -d '{"note":"dlq drill"}'`
-   returns 202 with the envelope. Note `id` and `correlationId`. A 404 means either `APP_ENV` is not
-   `local` or `dev` (the route is not registered), or the `demo-outbox-flow` flag is off in PostHog.
+3. `curl -sS -X POST http://localhost:3000/v1/dev/demo-events -H 'content-type: application/json' -H 'x-correlation-id: dlq-drill-1' -d '{"note":"dlq drill"}'`
+   returns 202 with the envelope. Its `correlationId` is `dlq-drill-1`, known in advance, so the
+   drill's logs and trace are found by that id
+   ([grafana.md](../observability/grafana.md#find-one-flow-by-correlation-id)). Note the envelope's
+   `id` for the replay. A 404 means either `APP_ENV` is not `local` or `dev` (the route is not
+   registered), or the `demo-outbox-flow` flag reads as off: `just observability-sync` creates it off,
+   so check the flag in the PostHog project and turn it on there. With an empty `POSTHOG_API_KEY`
+   the registry default (on) applies.
 4. Within about 2 minutes: 5 attempts, one `demo.outbox-flow.dlq` job, the outbox row `failed`. The
    dashboard shows 1 dead letter, and `queue.job.dlq` fires on its next evaluation (the email is held
    during quiet hours).

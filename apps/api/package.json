@@ -5,12 +5,12 @@
   "description": "NestJS (Fastify adapter) modular monolith: composition root, platform adapters, one directory per SPINE domain module (planning/04 \u00a74\u2013\u00a75).",
   "type": "module",
   "scripts": {
-    "dev": "tsx watch --env-file-if-exists=../../.env src/main.ts",
-    "dev:jobs": "tsx watch --env-file-if-exists=../../.env src/jobs/main.ts",
-    "jobs": "tsx --env-file-if-exists=../../.env src/jobs/main.ts",
+    "dev": "tsx watch --env-file-if-exists=../../.env --import ./src/platform/telemetry/instrument-api.ts src/main.ts",
+    "dev:jobs": "tsx watch --env-file-if-exists=../../.env --import ./src/platform/telemetry/instrument-jobs.ts src/jobs/main.ts",
+    "jobs": "tsx --env-file-if-exists=../../.env --import ./src/platform/telemetry/instrument-jobs.ts src/jobs/main.ts",
     "build": "tsc -p tsconfig.build.json",
-    "start": "node --env-file-if-exists=../../.env dist/apps/api/src/main.js",
-    "start:jobs": "node --env-file-if-exists=../../.env dist/apps/api/src/jobs/main.js",
+    "start": "node --env-file-if-exists=../../.env --import ./dist/apps/api/src/platform/telemetry/instrument-api.js dist/apps/api/src/main.js",
+    "start:jobs": "node --env-file-if-exists=../../.env --import ./dist/apps/api/src/platform/telemetry/instrument-jobs.js dist/apps/api/src/jobs/main.js",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
     "test": "vitest run"

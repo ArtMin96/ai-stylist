@@ -1,0 +1,64 @@
+{
+  "$schema": "../../../../packages/shared-kernel/registry/feature-flags.schema.json",
+  "flags": {
+    "fixture-rollout-current": {
+      "owner": "fixture-owner",
+      "purpose": "Fixture: a rollout flag 12 days before its expiry (ok)",
+      "kind": "rollout",
+      "createdAt": "2026-09-01",
+      "expiresAt": "2026-11-01",
+      "rolloutPlan": "fixture only",
+      "offBehavior": "fixture only",
+      "defaultWhenUnavailable": false
+    },
+    "fixture-rollout-due-today": {
+      "owner": "fixture-owner",
+      "purpose": "Fixture: a rollout flag on its expiry date (still ok)",
+      "kind": "rollout",
+      "createdAt": "2026-08-01",
+      "expiresAt": "2026-10-20",
+      "rolloutPlan": "fixture only",
+      "offBehavior": "fixture only",
+      "defaultWhenUnavailable": false
+    },
+    "fixture-rollout-overdue": {
+      "owner": "fixture-owner",
+      "purpose": "Fixture: a rollout flag 5 days past its expiry (EXPIRED)",
+      "kind": "rollout",
+      "createdAt": "2026-07-20",
+      "expiresAt": "2026-10-15",
+      "rolloutPlan": "fixture only",
+      "offBehavior": "fixture only",
+      "defaultWhenUnavailable": false
+    },
+    "fixture-experiment-30-days": {
+      "owner": "fixture-owner",
+      "purpose": "Fixture: an experiment exactly 30 days past its expiry (EXPIRED, not yet a defect)",
+      "kind": "experiment",
+      "createdAt": "2026-08-01",
+      "expiresAt": "2026-09-20",
+      "rolloutPlan": "fixture only",
+      "offBehavior": "fixture only",
+      "defaultWhenUnavailable": false
+    },
+    "fixture-experiment-31-days": {
+      "owner": "fixture-owner",
+      "purpose": "Fixture: an experiment 31 days past its expiry (DEFECT)",
+      "kind": "experiment",
+      "createdAt": "2026-08-01",
+      "expiresAt": "2026-09-19",
+      "rolloutPlan": "fixture only",
+      "offBehavior": "fixture only",
+      "defaultWhenUnavailable": false
+    },
+    "fixture-kill-switch": {
+      "owner": "fixture-owner",
+      "purpose": "Fixture: a kill-switch never expires (exempt)",
+      "kind": "kill-switch",
+      "createdAt": "2026-01-01",
+      "rolloutPlan": "fixture only",
+      "offBehavior": "fixture only",
+      "defaultWhenUnavailable": true
+    }
+  }
+}

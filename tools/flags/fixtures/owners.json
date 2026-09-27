@@ -1,0 +1,4 @@
+{
+  "$schema": "../../../packages/shared-kernel/registry/owners.schema.json",
+  "people": [{ "id": "fixture-owner", "name": "Fixture Owner" }]
+}

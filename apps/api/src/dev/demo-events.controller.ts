@@ -2,10 +2,27 @@
 // `platform_outbox` through the OutboxWriter port; the outbox relay dispatches it to the
 // `demo.outbox-flow` pg-boss job. Registered by the composition root only when
 // `isDevRouteEnabled(config)`: NODE_ENV !== 'production' and APP_ENV is `local` or `dev`.
-import { BadRequestException, Body, Controller, HttpCode, Inject, Post } from '@nestjs/common';
+// Gated by the `demo-outbox-flow` flag (registry `offBehavior`): off → 404, no outbox row.
+// The envelope's `correlationId` is the request's (`x-correlation-id`, or the id the platform
+// minted), so the envelope, the request's logs and span, and the response header carry one id.
+import {
+  BadRequestException,
+  Body,
+  Controller,
+  HttpCode,
+  Inject,
+  NotFoundException,
+  Post,
+} from '@nestjs/common';
 
 import type { DemoOutboxFlowRequestedV1Payload } from '@ai-stylist/contracts/events';
-import { type EventEnvelope, type ProblemFieldError, newId } from '@ai-stylist/shared-kernel';
+import {
+  type EventEnvelope,
+  FEATURE_FLAGS,
+  type FeatureFlags,
+  type ProblemFieldError,
+  newId,
+} from '@ai-stylist/shared-kernel';
 
 import { CLOCK, type Clock } from '../platform/ports/clock.port.js';
 import { OUTBOX_WRITER, type OutboxWriter } from '../platform/ports/outbox-writer.port.js';
@@ -15,15 +32,22 @@ export type DemoEventEnvelope = EventEnvelope<
   DemoOutboxFlowRequestedV1Payload
 >;
 
-type DemoEventRequest = { demoId?: unknown; note?: unknown; correlationId?: unknown };
+/**
+ * The current request's correlation id (the platform's `currentCorrelationId`, bound by the
+ * composition root: `src/dev` may import platform port files only).
+ */
+export type CurrentCorrelationId = () => string | undefined;
+export const CURRENT_CORRELATION_ID = Symbol('CurrentCorrelationId');
+
+/** The correlation id comes from the `x-correlation-id` header only, never from the body. */
+type DemoEventRequest = { demoId?: unknown; note?: unknown };
 
 /** `note` is free text the contract caps (demo.event.json `maxLength: 200`): truncated. */
 const NOTE_MAX = 200;
 
 /**
- * `demoId` and `correlationId` are identifiers (the worker correlates its reply by `demoId`), so
- * an over-long one is rejected with a 400 problem, never truncated: truncation could merge two
- * distinct ids into one.
+ * `demoId` is an identifier (the worker correlates its reply by `demoId`), so an over-long one is
+ * rejected with a 400 problem, never truncated: truncation could merge two distinct ids into one.
  */
 export const DEMO_ID_MAX = 128;
 
@@ -46,22 +70,29 @@ export class DemoEventsController {
   constructor(
     @Inject(CLOCK) private readonly clock: Clock,
     @Inject(OUTBOX_WRITER) private readonly outbox: OutboxWriter,
+    @Inject(FEATURE_FLAGS) private readonly flags: FeatureFlags,
+    @Inject(CURRENT_CORRELATION_ID) private readonly correlationId: CurrentCorrelationId,
   ) {}
 
   @Post()
   @HttpCode(202)
   async request(@Body() body: DemoEventRequest | undefined): Promise<DemoEventEnvelope> {
+    if (!(await this.flags.isEnabled('demo-outbox-flow'))) throw new NotFoundException();
     const errors: ProblemFieldError[] = [];
     const requestedDemoId = clientId(body?.demoId, '/demoId', errors);
-    const requestedCorrelationId = clientId(body?.correlationId, '/correlationId', errors);
     if (errors.length > 0) {
       throw new BadRequestException({ detail: 'demo event request is invalid', errors });
+    }
+    const correlationId = this.correlationId();
+    if (correlationId === undefined) {
+      // A wiring fault (createApp installs the correlation hooks), never minted here: a second id
+      // would split the envelope from the request's logs, span and response header.
+      throw new Error('no correlation scope: registerCorrelationId is not installed');
     }
     const now = this.clock.now();
     const occurredAt = now.toISOString();
     const demoId = requestedDemoId ?? `demo-${now.getTime()}`;
     const note = typeof body?.note === 'string' ? body.note.slice(0, NOTE_MAX) : undefined;
-    const correlationId = requestedCorrelationId ?? crypto.randomUUID();
     const envelope: DemoEventEnvelope = {
       id: newId('event', now.getTime()),
       type: 'demo.outbox-flow.requested.v1',

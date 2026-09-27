@@ -39,6 +39,53 @@ outbox/job spans, span redaction). No business rule lives here.
   class and rethrows), `recordSpanError()`, and the attribute names.
 - `span-sanitizer.ts`: `SanitizingSpanExporter`, the export-side backstop for spans the OSS
   instrumentations produce (see "Redaction").
+- `metrics.ts`, `request-metrics.ts`, `queue-metrics.ts`: the `stylist.*` metrics catalog emitters
+  (see "Metrics").
+
+## Metrics (planning/14 §4)
+
+Instruments come from the global `@opentelemetry/api` meter (`stylistMeter()`, scope
+`@ai-stylist/api`), which the NodeSDK started by the `--import` entry installs; the periodic OTLP
+reader exports them every 60 s. The metrics API has no proxy provider: without the entry (no OTLP
+endpoint, tests) every instrument is a no-op, and a meter taken before the SDK started stays one.
+Names are fixed; the dashboards and alerts in `docs/observability/grafana/**` query them after
+Grafana Cloud's OTLP → Prometheus conversion (`docs/observability/grafana.md`).
+
+Instruments (attributes carry ids and enums only) → Prometheus series:
+
+- `stylist.api.request.duration`: histogram, unit `s`; `http.route` (template),
+  `http.request.method`, `http.response.status_code` →
+  `stylist_api_request_duration_seconds_bucket` / `_sum` / `_count`.
+- `stylist.api.request.errors`: counter; `http.route`, `error.class` = `5xx` →
+  `stylist_api_request_errors_total`.
+- `stylist.queue.depth`: observable gauge; `queue` (dead-letter queues included) →
+  `stylist_queue_depth`.
+- `stylist.queue.job.age_oldest`: observable gauge, unit `s`; `job_type` →
+  `stylist_queue_job_age_oldest_seconds`.
+- `stylist.queue.job.completions` / `.failures` / `.retries` / `.dlq`: counters; `job_type` →
+  `stylist_queue_job_completions_total` / `_failures_total` / `_retries_total` / `_dlq_total`.
+
+Emitters:
+
+- **API** (`request-metrics.ts`): `registerRequestMetrics(fastify, meter?)` adds an `onResponse`
+  hook (duration from `reply.elapsedTime`, in seconds) and an `onRoute` hook that registers the
+  error counter at 0 for every route, plus once without `http.route` for unmatched requests. Call it
+  on the root Fastify instance after `NestFactory.create`, before `app.init()` / `app.listen()`.
+  `http.route` is Fastify's matched template (`request.routeOptions.url`), omitted when no route
+  matched (404), never the raw path; an unknown method is `_OTHER`. Bucket boundaries are explicit,
+  in seconds (`REQUEST_DURATION_BUCKETS_SECONDS`: 0.005 … 10, the HTTP semantic conventions'
+  advice for `http.server.request.duration`), set through the instrument's `advice`, so no SDK
+  view is needed. Series budget: 17 per (route, method, status) combination.
+- **Jobs** (`queue-metrics.ts`): `new QueueMetrics({ jobTypes, deadLetterSources, logger, meter? })`
+  registers every counter at 0 for each known `job_type` at construction (`increase()` misses the
+  first increment of a series that starts at 1). `countOutcomes(definition, handler)` wraps a
+  worker's handler: resolved = completion, thrown = failure, plus a retry below the last attempt
+  (`attempt < retryLimit + 1`). `countDeadLetters(source, handler)` wraps a `<source>.dlq` worker's handler and
+  counts each dead letter once, on its first delivery. `observeQueues(() => queue.readStats())`
+  reads depth and oldest age from `PgBossQueue` at each collection (bounded by
+  `QUEUE_STATS_READ_TIMEOUT_MS`, 10 s; a failed read reports nothing and logs its error class) and
+  returns the function that stops it. Wiring: `apps/api/src/jobs/index.ts`.
+- Never a gauge with unit `1` (Grafana Cloud would suffix `_ratio`); counts carry no unit.
 
 ## Instrumentations
 
@@ -79,7 +126,8 @@ an attribute whose last dot-segment is a forbidden log word (`http.request.heade
 
 - API: `tsx --import ./src/platform/telemetry/instrument-api.ts src/main.ts` (built:
   `node --import ./dist/apps/api/src/platform/telemetry/instrument-api.js dist/apps/api/src/main.js`).
-  Then `registerCorrelationId(app.getHttpAdapter().getInstance())` in the composition root and
+  Then `registerCorrelationId(app.getHttpAdapter().getInstance())` and
+  `registerRequestMetrics(app.getHttpAdapter().getInstance())` in the composition root and
   `shutdownTelemetry()` last on shutdown.
 - Jobs: `tsx --import ./src/platform/telemetry/instrument-jobs.ts src/jobs/main.ts`;
   `jobs/main.ts` calls `shutdownTelemetry()` last. `jobs/index.ts` passes `envelopeTraceContext` to
@@ -98,3 +146,11 @@ an attribute whose last dot-segment is a forbidden log word (`http.request.heade
   parsing, every log line and the request span).
 - `../../jobs/tests/trace-propagation.docker.test.ts`: AC-1, one trace and one correlation id from
   the outbox append to the worker request (Testcontainers).
+- Metrics, against an in-memory reader (`../tests/memory-metrics.ts`, a `MeterProvider` from
+  `@opentelemetry/sdk-metrics`): `request-metrics.test.ts` (names, unit, bucket boundaries,
+  attributes, 5xx only, zero series; on plain Fastify and on a Nest app wired as the composition
+  root does), `queue-metrics.test.ts` (zero series, outcome and dead-letter counting, gauges),
+  `metrics-catalog.test.ts` (every `stylist_api_*` / `stylist_queue_*` series and label the Grafana
+  dashboards and alerts query is emitted), `../tests/queue-stats.docker.test.ts` (`readStats` on
+  pg-boss) and `../../jobs/tests/queue-metrics.docker.test.ts` (an injected worker failure through
+  retry → DLQ moves `stylist.queue.job.dlq` from 0 to 1; Testcontainers).

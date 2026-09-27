@@ -1,0 +1,30 @@
+{
+  "title": "fixture",
+  "folderUid": "ai-stylist",
+  "interval": 60,
+  "rules": [
+    {
+      "uid": "fixture-missing-runbook",
+      "title": "fixture.missing_runbook",
+      "ruleGroup": "fixture",
+      "folderUID": "ai-stylist",
+      "condition": "A",
+      "data": [
+        {
+          "refId": "A",
+          "relativeTimeRange": { "from": 600, "to": 0 },
+          "datasourceUid": "${PROM_DATASOURCE_UID}",
+          "model": { "refId": "A", "expr": "vector(1)", "instant": true }
+        }
+      ],
+      "noDataState": "OK",
+      "execErrState": "Error",
+      "for": "5m",
+      "labels": { "severity": "SEV3", "owner_role": "on-call" },
+      "annotations": {
+        "summary": "An alert whose runbook was never written",
+        "runbook_url": "https://github.com/ArtMin96/ai-stylist/blob/main/docs/runbooks/99-missing.md"
+      }
+    }
+  ]
+}

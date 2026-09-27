@@ -53,12 +53,14 @@ internal fun postHogConfig(settings: PostHogSettings): PostHogAndroidConfig =
         debug = false
     }
 
-/** Port property values → the scalar types PostHog serialises (string, number, boolean). */
+/** The event's port properties as the scalars PostHog serialises, one [postHogValue] per value. */
 internal fun AnalyticsEvent.postHogProperties(): Map<String, Any> =
-    properties.mapValues { (_, value) ->
-        when (value) {
-            is AnalyticsPropertyValue.Text -> value.value
-            is AnalyticsPropertyValue.Number -> value.value
-            is AnalyticsPropertyValue.Flag -> value.value
-        }
+    properties.mapValues { (_, value) -> value.postHogValue() }
+
+/** One port property value → the scalar type PostHog serialises (string, number, boolean). */
+internal fun AnalyticsPropertyValue.postHogValue(): Any =
+    when (this) {
+        is AnalyticsPropertyValue.Text -> value
+        is AnalyticsPropertyValue.Number -> value
+        is AnalyticsPropertyValue.Flag -> value
     }

@@ -19,6 +19,13 @@ export const configSchema = z.object({
   BUILD_TIME: z.iso.datetime({ offset: true }).default('1970-01-01T00:00:00Z'),
   RATE_LIMIT_MAX: z.coerce.number().int().min(1).default(600),
   RATE_LIMIT_WINDOW_MS: z.coerce.number().int().min(1).default(60_000),
+  /** PostHog project key for server-side flag evaluation; unset → the registry defaults. */
+  POSTHOG_API_KEY: z
+    .string()
+    .regex(/^phc_\w+$/, 'must be a PostHog project key (phc_…); a personal phx_ key is refused')
+    .optional(),
+  /** PostHog host, e.g. https://eu.i.posthog.com; required when POSTHOG_API_KEY is set. */
+  POSTHOG_HOST: z.url({ protocol: /^https?$/ }).optional(),
 });
 
 export type AppConfig = z.infer<typeof configSchema> & { readonly listenPort: number };
@@ -42,6 +49,12 @@ export function loadConfig(env: Record<string, string | undefined> = process.env
   if (!parsed.success) {
     const issues = parsed.error.issues.map((i) => `${i.path.join('.')}: ${i.message}`);
     throw new ConfigError(`invalid configuration: ${issues.join('; ')}`);
+  }
+  if (parsed.data.POSTHOG_API_KEY !== undefined && parsed.data.POSTHOG_HOST === undefined) {
+    // posthog-node would otherwise fall back to its US host.
+    throw new ConfigError(
+      'invalid configuration: POSTHOG_HOST: required when POSTHOG_API_KEY is set',
+    );
   }
   return { ...parsed.data, listenPort: parsed.data.API_PORT ?? parsed.data.PORT ?? 3000 };
 }

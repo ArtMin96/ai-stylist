@@ -1,11 +1,13 @@
 // Public API of `platform` (docs/modules/platform.md): ports + the Nest module that serves the
 // operational endpoints. Only composition roots import this (rule: modules-not-platform).
-import { type DynamicModule, Module } from '@nestjs/common';
+import { type DynamicModule, Module, type Provider } from '@nestjs/common';
 import { APP_FILTER } from '@nestjs/core';
 import { LoggerModule, type Params as LoggerParams } from 'nestjs-pino';
 
 import type { VersionInfo } from '@ai-stylist/contracts/types';
+import { FEATURE_FLAGS } from '@ai-stylist/shared-kernel';
 
+import type { FeatureFlagsAdapter } from './feature-flags/registry-default-feature-flags.js';
 import { HealthController } from './health.controller.js';
 import { CLOCK, type Clock } from './ports/clock.port.js';
 import { HEALTH_PROBE, type HealthProbe } from './ports/health-probe.port.js';
@@ -19,7 +21,27 @@ export type PlatformBindings = {
   readonly clock: Clock;
   readonly healthProbe: HealthProbe;
   readonly storage: StorageProvider;
+  /**
+   * Bound to the shared-kernel `FEATURE_FLAGS` port (from `createFeatureFlags`) and shut down with
+   * the app. Optional only until the API composition root passes it; unbound, `FEATURE_FLAGS` does
+   * not resolve (no silent default).
+   */
+  readonly featureFlags?: FeatureFlagsAdapter;
 };
+
+const FEATURE_FLAGS_LIFECYCLE = Symbol('FeatureFlagsLifecycle');
+
+function featureFlagProviders(featureFlags: FeatureFlagsAdapter | undefined): Provider[] {
+  if (featureFlags === undefined) return [];
+  return [
+    { provide: FEATURE_FLAGS, useValue: featureFlags },
+    // Nest runs `onApplicationShutdown` on value providers as well (as app.module.ts's DbLifecycle).
+    {
+      provide: FEATURE_FLAGS_LIFECYCLE,
+      useValue: { onApplicationShutdown: () => featureFlags.shutdown() },
+    },
+  ];
+}
 
 /**
  * Ports are bound to adapters here from values the composition root constructed; nothing in
@@ -40,8 +62,15 @@ export class PlatformModule {
         { provide: CLOCK, useValue: bindings.clock },
         { provide: HEALTH_PROBE, useValue: bindings.healthProbe },
         { provide: STORAGE_PROVIDER, useValue: bindings.storage },
+        ...featureFlagProviders(bindings.featureFlags),
       ],
-      exports: [LoggerModule, CLOCK, HEALTH_PROBE, STORAGE_PROVIDER],
+      exports: [
+        LoggerModule,
+        CLOCK,
+        HEALTH_PROBE,
+        STORAGE_PROVIDER,
+        ...(bindings.featureFlags !== undefined ? [FEATURE_FLAGS] : []),
+      ],
     };
   }
 }
@@ -101,6 +130,7 @@ export {
   type PgBossQueueConfig,
   type QueueDefinition,
   type QueueJob,
+  type QueueStatsSnapshot,
 } from './queue/pg-boss-queue.js';
 export { PGBOSS_SCHEMA_VERSION, pgBossConstructionSql } from './queue/pg-boss-schema.js';
 export { OUTBOX_WRITER, type OutboxWriter } from './ports/outbox-writer.port.js';
@@ -137,3 +167,25 @@ export type { CarriedTraceContext } from './telemetry/trace-context.js';
 // `startTelemetry` is not re-exported: the `--import` entries load the SDK only when an OTLP
 // endpoint is set (telemetry/register.ts); a process entry only flushes it on shutdown.
 export { type Telemetry, shutdownTelemetry } from './telemetry/lifecycle.js';
+export {
+  METRIC_NAMES,
+  REQUEST_DURATION_BUCKETS_SECONDS,
+  STYLIST_METER_NAME,
+} from './telemetry/metrics.js';
+export { registerRequestMetrics } from './telemetry/request-metrics.js';
+export { QueueMetrics, type QueueMetricsOptions } from './telemetry/queue-metrics.js';
+export {
+  type FeatureFlagsConfig,
+  createFeatureFlags,
+} from './feature-flags/create-feature-flags.js';
+export {
+  FEATURE_FLAG_CACHE_TTL_MS,
+  FEATURE_FLAG_TIMEOUT_MS,
+  FEATURE_FLAGS_DISTINCT_ID,
+  PostHogFeatureFlags,
+  type PostHogFeatureFlagsOptions,
+} from './feature-flags/posthog-feature-flags.js';
+export {
+  type FeatureFlagsAdapter,
+  RegistryDefaultFeatureFlags,
+} from './feature-flags/registry-default-feature-flags.js';

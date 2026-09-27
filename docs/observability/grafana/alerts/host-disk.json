@@ -31,7 +31,9 @@
             "refId": "B",
             "type": "threshold",
             "expression": "A",
-            "conditions": [{ "evaluator": { "type": "lt", "params": [0.15] } }]
+            "conditions": [{ "evaluator": { "type": "lt", "params": [0.15] } }],
+            "intervalMs": 1000,
+            "maxDataPoints": 43200
           }
         }
       ],

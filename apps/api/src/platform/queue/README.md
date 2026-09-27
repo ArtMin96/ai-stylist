@@ -72,8 +72,20 @@ are decided by the callers.
   and `correlationId`), so this adapter stays ignorant of the data shape; a missing or malformed
   `traceparent` starts a new trace, an invalid correlation id is dropped. A failed attempt records
   the error class on the span, never its message.
+- **Queue gauges (planning/14 §4):** `readStats()` → `QueueStatsSnapshot` (`queue-stats.ts`), read
+  by `QueueMetrics.observeQueues` at each metric collection in the jobs process
+  (`../telemetry/README.md` "Metrics"). `depth`: waiting jobs (`created` + `retry`, future-dated
+  retries included) for every configured queue and its `<name>.dlq`, from pg-boss's own
+  `getQueueStats(name, { force: true })` (its cached counts, recomputed when older than 60 s).
+  `oldestAgeSeconds`: seconds since the oldest waiting, unblocked job of each configured queue was
+  created, 0 when none waits. pg-boss has no API for that age, so it is one read-only query on
+  `<schema>.job` whose predicate equals pg-boss's partial index `job_i11`; it reads names and
+  timestamps, never job data.
+- **Files:** `queue-definition.ts` holds `QueueDefinition`, `MAX_WORK_BATCH_SIZE` and
+  `deadLetterQueueName` (re-exported from `pg-boss-queue.ts`, so `queue-stats.ts` uses them
+  without an import cycle); `error-summary.ts`, `job-id.ts`, `pg-boss-schema.ts` as above.
 
-Tests: `../tests/queue.docker.test.ts` and, for the DEC-41 lifecycle acceptance cases (AC-4
-kill/retry, AC-6 per-user cancel, AC-7 deletion, AC-8 export chain),
-`../tests/acceptance-lifecycle.docker.test.ts` (Testcontainers, `platform-docker` project; fail
-without Docker).
+Tests: `../tests/queue.docker.test.ts`, `../tests/queue-stats.docker.test.ts` (`readStats`) and,
+for the DEC-41 lifecycle acceptance cases (AC-4 kill/retry, AC-6 per-user cancel, AC-7 deletion,
+AC-8 export chain), `../tests/acceptance-lifecycle.docker.test.ts` (Testcontainers,
+`platform-docker` project; fail without Docker).

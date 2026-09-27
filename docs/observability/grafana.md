@@ -1,9 +1,10 @@
 # Grafana Cloud: traces, metrics, logs, dashboards, alerts
 
 Every server process exports OpenTelemetry (OTLP/HTTP) to one Grafana Cloud free-tier stack in the EU:
-Tempo for traces, Mimir (Prometheus) for metrics, Loki for logs. Dashboards, alert rules and routing
-are JSON files in [`grafana/`](grafana/README.md), pushed by `just observability-sync`. Decision and
-exit path: [ADR-0007](../adr/0007-observability-backend.md). Catalog: planning/14 §3, §4, §6, §7.
+Tempo for traces, Mimir (Prometheus) for metrics, Loki for logs (the segmentation worker exports
+traces only; see below). Dashboards, alert rules and routing are JSON files in
+[`grafana/`](grafana/README.md), pushed by `just observability-sync`. Decision and exit path:
+[ADR-0007](../adr/0007-observability-backend.md). Catalog: planning/14 §3, §4, §6, §7.
 
 ## Configure a process
 
@@ -13,12 +14,12 @@ exit path: [ADR-0007](../adr/0007-observability-backend.md). Catalog: planning/1
 | pg-boss jobs process                | `just dev-workers` | `jobs`         |
 | Segmentation worker (FastAPI)       | `just dev-workers` | `segmentation` |
 
-| Key                           | Value                                                                                                                                                             |
-| ----------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `OTEL_EXPORTER_OTLP_ENDPOINT` | `https://otlp-gateway-<region>.grafana.net/otlp`. **Empty = export disabled**, so tests, CI and local runs need no Grafana account.                               |
-| `OTEL_EXPORTER_OTLP_HEADERS`  | `Authorization=Basic <base64 of instanceId:token>` (secret)                                                                                                       |
-| `OTEL_SERVICE_NAME`           | per process, as in the table above. All three local processes read the one repo-root `.env`; how each process gets its own name is in `docs/modules/platform.md`. |
-| `APP_ENV`                     | becomes the resource attribute `deployment.environment.name`, which dashboards filter by                                                                          |
+| Key                           | Value                                                                                                                                                                                                                            |
+| ----------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `OTEL_EXPORTER_OTLP_ENDPOINT` | `https://otlp-gateway-<region>.grafana.net/otlp`. **Empty = export disabled**, so tests, CI and local runs need no Grafana account.                                                                                              |
+| `OTEL_EXPORTER_OTLP_HEADERS`  | `Authorization=Basic <base64 of instanceId:token>` (secret)                                                                                                                                                                      |
+| `OTEL_SERVICE_NAME`           | per process, as in the table above. `just dev-api` / `just dev-workers` set it on the command line (`api`, `jobs`, `segmentation`), so a shared `.env` value never renames a process (`scripts/test/dev-service-names.test.sh`). |
+| `APP_ENV`                     | becomes the resource attribute `deployment.environment.name`, which dashboards filter by                                                                                                                                         |
 
 1. Human, once per environment: create the stack's OTLP token (`docs/SERVICES-SETUP.md` §11). Use a
    separate token per environment, so one can be revoked alone.
@@ -36,9 +37,14 @@ exit path: [ADR-0007](../adr/0007-observability-backend.md). Catalog: planning/1
   `outbox.dispatch demo.outbox-flow.requested.v1`.
 - **Jobs:** one span `job.process <queue>` per job, for example `job.process demo.outbox-flow`. It
   continues the producer's trace from the envelope's `traceparent`. Metrics `stylist.queue.*`.
-- **Segmentation worker:** the OpenTelemetry Python SDK with FastAPI instrumentation.
-- **CI:** `stylist.ci.pr_gate_duration` and `stylist.ci.pr_gate.runs` from the PR gate. The emitter is
-  not wired yet, so the CI panels stay empty until it is.
+- **Segmentation worker:** the OpenTelemetry Python SDK with FastAPI instrumentation, traces only over
+  OTLP. Its logs are JSON on stdout (with `correlation_id`, `trace_id`, `span_id`) and reach Loki
+  only once the platform ships container logs (the Python OTel logs SDK is still in Development).
+  Details: [`workers/README.md`](../../workers/README.md).
+- **CI:** `stylist.ci.pr_gate_duration` and `stylist.ci.pr_gate.runs`, pushed once per run by
+  `just ci-pr-gate-metrics` ([`tools/ci-metrics/`](../../tools/ci-metrics/README.md)) from the
+  summary job of `.github/workflows/pr-gate.yml`. The CI panels stay empty until that workflow change
+  lands (human) and the `OTEL_EXPORTER_OTLP_*` GitHub secrets exist.
 
 Span attributes, metric labels and log fields carry ids and enums only (planning/11 §8). The keys in
 `packages/shared-kernel/registry/forbidden-log-keys.json` never appear. Never put a user id, event id
@@ -92,29 +98,32 @@ silent.
 How the id and the trace context travel from the API through the outbox and the job to the worker:
 [README.md](README.md#one-request-one-trace-one-correlation-id).
 
-1. In Explore → Loki: `{service_name=~"api|jobs|segmentation"} | correlation_id = "<id>"`. If the
-   attribute is not there, fall back to `{service_name=~"api|jobs|segmentation"} |= "<id>"`. Every
-   record carries `trace_id`.
+1. In Explore → Loki: `{service_name=~"api|jobs"} | correlation_id = "<id>"`. If the attribute is
+   not there, fall back to `{service_name=~"api|jobs"} |= "<id>"`. Every record inside a span carries
+   `trace_id`. The segmentation worker's logs are not in Loki yet (stdout only, see above); locally,
+   read `just dev-workers` output for the same `correlation_id`.
 2. Open that `trace_id` in Explore → Tempo. One trace shows the HTTP request, `outbox.dispatch …`,
-   `job.process …` and the worker call.
+   `job.process …` and the worker call (its span carries `correlation_id` too).
 3. Useful TraceQL: `{ name = "job.process demo.outbox-flow" && status = error }` and
    `{ resource.service.name = "jobs" }`.
 
-The worker receives the event id as `request_id`, so worker logs can also be found by event id.
-Retention is 14 days (ADR-0007). An older flow is gone.
+The worker receives the event id as `request_id` in the request body, which it does not log; its
+log lines carry the `correlation_id` from `x-correlation-id`. Retention is 14 days (ADR-0007). An
+older flow is gone.
 
 ## Dashboards and alerts
 
 Files and the sync contract are in [`grafana/README.md`](grafana/README.md). Run
-`just observability-sync` after changing a file, `owners.json` or an alert address.
+`just observability-sync` after changing a file, `owners.json` or an alert address. Nothing below is
+in the stack before the first sync run, which is a human step once the keys exist.
 
-| Object                                                                       | File                                        | Can show data or fire today                                                               |
-| ---------------------------------------------------------------------------- | ------------------------------------------- | ----------------------------------------------------------------------------------------- |
-| Dashboard 01 Service health: API, SLO, queues                                | `grafana/dashboards/01-service-health.json` | Yes, from any environment that exports (dev today)                                        |
-| Dashboard 01 CI row                                                          | same                                        | No, until the PR-gate workflow exports `stylist.ci.*`                                     |
-| `queue.job.dlq` (SEV2) → [runbook 04](../runbooks/04-queue-dlq.md)           | `grafana/alerts/queue-job-dlq.json`         | Yes. Proof run in runbook 04.                                                             |
-| `db.backup_age` (SEV2) → [runbook 02](../runbooks/02-postgresql-incident.md) | `grafana/alerts/db-backup-age.json`         | No. The metric comes with P02-T07's pgBackRest exporter; no data counts as OK until then. |
-| `host.disk` (SEV2) → [runbook 01](../runbooks/01-api-down.md)                | `grafana/alerts/host-disk.json`             | No. It needs a host with node exporter plus a collector; no data counts as OK until then. |
+| Object                                                                       | File                                        | Can show data or fire once synced                                                                                                      |
+| ---------------------------------------------------------------------------- | ------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
+| Dashboard 01 Service health: API, SLO, queues                                | `grafana/dashboards/01-service-health.json` | Yes, from any environment that exports (dev today)                                                                                     |
+| Dashboard 01 CI row                                                          | same                                        | No, until `just ci-pr-gate-metrics` runs in pr-gate's summary job (workflow change, human) with the `OTEL_EXPORTER_OTLP_*` secrets set |
+| `queue.job.dlq` (SEV2) → [runbook 04](../runbooks/04-queue-dlq.md)           | `grafana/alerts/queue-job-dlq.json`         | Yes. Proof run in runbook 04.                                                                                                          |
+| `db.backup_age` (SEV2) → [runbook 02](../runbooks/02-postgresql-incident.md) | `grafana/alerts/db-backup-age.json`         | No. The metric comes with P02-T07's pgBackRest exporter; no data counts as OK until then.                                              |
+| `host.disk` (SEV2) → [runbook 01](../runbooks/01-api-down.md)                | `grafana/alerts/host-disk.json`             | No. It needs a host with node exporter plus a collector; no data counts as OK until then.                                              |
 
 Add an alert: write or extend its runbook, add `grafana/alerts/<name>.json` with the `severity` and
 `owner_role` labels and the `summary` and `runbook_url` annotations, run `just observability-sync --check`,

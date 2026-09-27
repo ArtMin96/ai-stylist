@@ -1,0 +1,2 @@
+ERROR [settings] docs/observability/posthog/project-settings.json: "project" must be a non-empty object (one PATCH body)
+ERROR [settings] docs/observability/posthog/project-settings.json: "disabledTransformationTemplates" must list template ids

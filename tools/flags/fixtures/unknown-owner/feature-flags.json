@@ -1,0 +1,15 @@
+{
+  "$schema": "../../../../packages/shared-kernel/registry/feature-flags.schema.json",
+  "flags": {
+    "fixture-orphaned": {
+      "owner": "nobody-registered",
+      "purpose": "Fixture: an owner id that owners.json does not declare (malformed, exit 2)",
+      "kind": "rollout",
+      "createdAt": "2026-09-01",
+      "expiresAt": "2026-11-01",
+      "rolloutPlan": "fixture only",
+      "offBehavior": "fixture only",
+      "defaultWhenUnavailable": false
+    }
+  }
+}

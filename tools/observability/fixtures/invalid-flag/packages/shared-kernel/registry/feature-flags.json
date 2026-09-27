@@ -1,0 +1,23 @@
+{
+  "$schema": "./feature-flags.schema.json",
+  "flags": {
+    "BadKey": {
+      "owner": "nobody",
+      "purpose": "",
+      "kind": "forever",
+      "createdAt": "2026-02-30",
+      "rolloutPlan": "fixture",
+      "offBehavior": "fixture",
+      "defaultWhenUnavailable": false
+    },
+    "fixture-rollout": {
+      "owner": "arthur-minasyan",
+      "purpose": "Fixture rollout flag without an expiry",
+      "kind": "rollout",
+      "createdAt": "2026-09-27",
+      "rolloutPlan": "fixture",
+      "offBehavior": "fixture",
+      "defaultWhenUnavailable": false
+    }
+  }
+}

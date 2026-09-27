@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { fakeClock, memoryLogStream } from '../src/index.js';
+import { fakeClock, fakeFeatureFlags, memoryLogStream } from '../src/index.js';
 
 describe('fakeClock', () => {
   it('is deterministic and advances only when told', () => {
@@ -10,6 +10,27 @@ describe('fakeClock', () => {
     expect(clock.now().toISOString()).toBe('2026-03-01T10:01:00.000Z');
     clock.set('2027-01-01T00:00:00.000Z');
     expect(clock.now().getUTCFullYear()).toBe(2027);
+  });
+});
+
+describe('fakeFeatureFlags', () => {
+  it('answers the given values, flips with set, and reads an unset key as off', async () => {
+    const flags = fakeFeatureFlags<'flag-a' | 'flag-b'>({ 'flag-a': true });
+    expect(await flags.isEnabled('flag-a')).toBe(true);
+    expect(await flags.isEnabled('flag-b')).toBe(false);
+    flags.set('flag-a', false);
+    flags.set('flag-b', true);
+    expect(await flags.isEnabled('flag-a')).toBe(false);
+    expect(await flags.isEnabled('flag-b')).toBe(true);
+  });
+
+  it('does not share state between fakes or mutate the given values', async () => {
+    const values = { 'flag-a': true };
+    const first = fakeFeatureFlags(values);
+    const second = fakeFeatureFlags(values);
+    first.set('flag-a', false);
+    expect(await second.isEnabled('flag-a')).toBe(true);
+    expect(values).toEqual({ 'flag-a': true });
   });
 });
 

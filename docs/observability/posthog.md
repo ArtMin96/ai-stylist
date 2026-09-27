@@ -22,31 +22,40 @@ P02, events (only `app_opened`) flow only from a Dev build whose developer switc
 consent toggle. The real consent flow, and with it the first user events, arrives in P03.
 
 **API (server).** The API reads feature flags through the `FeatureFlags` port
-(`packages/shared-kernel/src/feature-flags.ts`). The posthog-node adapter lives in `platform`. Every
-flag is declared in `packages/shared-kernel/registry/feature-flags.json`. When `POSTHOG_API_KEY` is
-empty or PostHog is unreachable, the check returns the flag's `defaultWhenUnavailable` and never
-throws. So local runs, tests and CI need no PostHog project. The server sends no product events.
-Server exceptions are found in Grafana. Routing them to PostHog error tracking (planning/14 §5) is
-not part of the P02 wiring.
+(`packages/shared-kernel/src/feature-flags.ts`). The posthog-node adapter lives in `platform`
+([`apps/api/src/platform/feature-flags/README.md`](../../apps/api/src/platform/feature-flags/README.md)).
+Every flag is declared in `packages/shared-kernel/registry/feature-flags.json`. With an empty
+`POSTHOG_API_KEY` every check returns the flag's `defaultWhenUnavailable`, so local runs, tests and
+CI need no PostHog project. With a key, a flag that is inactive in PostHog reads as off; only an
+unreachable, erroring or quota-limited PostHog returns `defaultWhenUnavailable`. A check never
+throws. The server sends no product events. Server exceptions are found in Grafana. Routing them to
+PostHog error tracking (planning/14 §5) is not part of the P02 wiring.
 
 ## Configuration
 
-| Key                      | Value                                                                                                                                   | Used by                                  | Where it lives                                                                                                                                            |
-| ------------------------ | --------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `POSTHOG_API_KEY`        | project key `phc_…`. Public by design (it ships inside the apps), but never committed. A personal `phx_…` key is rejected by both apps. | apps (compiled in), API flags            | sops → `.env`. iOS: `apps/ios/Config/Local.xcconfig` (gitignored) or the build environment. Android: Gradle property or environment. CI: GitHub variable. |
-| `POSTHOG_HOST`           | `https://eu.i.posthog.com` (ingestion)                                                                                                  | same                                     | same                                                                                                                                                      |
-| `POSTHOG_CLI_API_KEY`    | personal key `phx_…` with only `error_tracking:write` and `organization:read`                                                           | dSYM and R8 mapping upload               | sops → `.env`. CI: GitHub secret for the iOS and Android workflows.                                                                                       |
-| `POSTHOG_CLI_PROJECT_ID` | numeric project id                                                                                                                      | symbol upload, `just observability-sync` | sops → `.env`. CI: GitHub variable.                                                                                                                       |
-| `POSTHOG_CLI_HOST`       | `https://eu.posthog.com` (app and API host, not ingestion)                                                                              | same                                     | same                                                                                                                                                      |
-| `POSTHOG_SYNC_API_KEY`   | personal key `phx_…`, scopes in [posthog/README.md](posthog/README.md)                                                                  | `just observability-sync` only           | sops → `.env` on a developer machine. Never a GitHub secret.                                                                                              |
+| Key                      | Value                                                                                                                                                                                                                                   | Used by                                  | Where it lives                                                                                                                                   |
+| ------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `POSTHOG_API_KEY`        | project key `phc_…`. Public by design (it ships inside the apps), but never committed. A personal `phx_…` key is rejected by both apps and by the API config (`apps/api/src/config.ts`), which also requires `POSTHOG_HOST` with a key. | apps (compiled in), API flags            | sops → `.env`. iOS: `apps/ios/Config/Local.xcconfig` (gitignored) or the build environment. Android: Gradle property or environment. CI: secret. |
+| `POSTHOG_HOST`           | `https://eu.i.posthog.com` (ingestion)                                                                                                                                                                                                  | same                                     | same. CI: variable.                                                                                                                              |
+| `POSTHOG_CLI_API_KEY`    | personal key `phx_…` with only `error_tracking:write` and `organization:read`                                                                                                                                                           | dSYM and R8 mapping upload               | sops → `.env`. CI: secret.                                                                                                                       |
+| `POSTHOG_CLI_PROJECT_ID` | numeric project id                                                                                                                                                                                                                      | symbol upload, `just observability-sync` | sops → `.env`. CI: variable.                                                                                                                     |
+| `POSTHOG_CLI_HOST`       | `https://eu.posthog.com`, the EU app and API host (not ingestion). Required: posthog-cli defaults to the US host.                                                                                                                       | same                                     | sops → `.env`. CI: variable.                                                                                                                     |
+| `POSTHOG_SYNC_API_KEY`   | personal key `phx_…`, scopes in [posthog/README.md](posthog/README.md)                                                                                                                                                                  | `just observability-sync` only           | sops → `.env` on a developer machine. Never a GitHub secret.                                                                                     |
 
 Set values with `just secrets-edit dev`, then `just secrets-sync` (direnv loads `.env`). Staging and
 prod use `secrets/<env>.enc.yaml`. The PostHog prod project arrives in P03.
 
+CI, once the workflow change lands (a human applies it; today no workflow reads a `POSTHOG_*` value):
+API keys are GitHub **secrets**, hosts and the project id are **variables**. The Android `build` job
+(`.github/workflows/android.yml`) gets `POSTHOG_API_KEY`, `POSTHOG_HOST` and the three
+`POSTHOG_CLI_*` values on `main` only. The iOS `macos` job (`.github/workflows/ios.yml`) gets the
+three `POSTHOG_CLI_*` values, the key never on a pull request. Pull requests build key-less.
+
 Human-only steps: creating the organization and projects (`docs/SERVICES-SETUP.md` §10), creating the
-two personal keys with exactly these scopes, and adding the GitHub secret and variables. The CI
-workflows do not read any `POSTHOG_*` value yet. Wiring them into the iOS and Android lanes is a
-workflow change for a human to apply.
+two personal keys, and adding the GitHub secrets and variables. The two personal keys stay separate:
+`POSTHOG_CLI_API_KEY` has only `error_tracking:write` and `organization:read`; `POSTHOG_SYNC_API_KEY`
+has `project`, `feature_flag` and `hog_function` read and write, and its owner is a project admin. A
+leaked CI key then cannot change settings or flags.
 
 ## Project settings
 
@@ -70,7 +79,9 @@ The region (EU) was chosen when the project was created and cannot change.
 - Android: `just android-build preview` or `just android-build release` runs the `com.posthog.android`
   Gradle plugin's `uploadPostHogProguardMappings<Variant>`. The task is `SKIPPED` without all three
   values.
-- `posthog-cli` must be on PATH. Install it as the iOS README says. It is not pinned in `mise.toml` yet.
+- `posthog-cli` must be on PATH. `mise.toml` pins it (`npm:@posthog/cli`), so `just bootstrap`
+  installs it and `just doctor` checks it. `POSTHOG_CLI_HOST` must be `https://eu.posthog.com`: the
+  CLI defaults to the US host.
 
 Crash demo, step by step: the iOS and Android README sections linked above (P02 AC-6).
 
@@ -93,8 +104,11 @@ entitlement check (planning/14 §11).
 **Retire a flag**: remove its last check and its registry entry in the same change. Never rename or
 reuse a key. After the merge, `just observability-sync --prune` soft-deletes it in PostHog.
 
-Kill-switch flags are permanent and listed in runbook 10 (ships with P11). The nightly `expired-flags`
-job in `.github/workflows/nightly.yml` is still a placeholder.
+Kill-switch flags are permanent and listed in runbook 10 (ships with P11). `just flags-report` lists
+every registry flag with its owner and days left ([`tools/flags/README.md`](../../tools/flags/README.md)).
+The nightly `expired-flags` job in `.github/workflows/nightly.yml` runs it, once the workflow change
+lands (it is a placeholder until then), and fails on a rollout or experiment flag past `expiresAt`
+(> 30 days overdue = DEFECT).
 
 ## Privacy rules
 
@@ -109,12 +123,12 @@ job in `.github/workflows/nightly.yml` is still a placeholder.
 
 ## Troubleshooting
 
-| Symptom                         | Check                                                                                                                       |
-| ------------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
-| No events or crashes at all     | Consent is off (expected until opted in), or `POSTHOG_API_KEY` is empty, which binds the no-op sink.                        |
-| Build or launch rejects the key | It is a personal `phx_` key. Use the project `phc_` key.                                                                    |
-| Events sent, nothing in PostHog | `POSTHOG_HOST` must be the ingestion host `https://eu.i.posthog.com`.                                                       |
-| iOS crash never arrives         | A debugger was attached (it disables the crash handler), or consent was not switched on again after the relaunch.           |
-| Stack trace not symbolicated    | The upload was skipped (a `POSTHOG_CLI_*` value missing), the project id is wrong, or `posthog-cli` is not on PATH.         |
-| Flag always returns its default | The API has no `POSTHOG_API_KEY`, PostHog is unreachable, the flag is missing in this project (run the sync), or it is off. |
-| Sync fails with 403             | The sync key lacks a scope, or its owner is not a project admin.                                                            |
+| Symptom                                    | Check                                                                                                                                                                                          |
+| ------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| No events or crashes at all                | Consent is off (expected until opted in), or `POSTHOG_API_KEY` is empty, which binds the no-op sink.                                                                                           |
+| Build, launch or API start rejects the key | It is a personal `phx_` key. Use the project `phc_` key. The API also refuses a key without `POSTHOG_HOST`.                                                                                    |
+| Events sent, nothing in PostHog            | `POSTHOG_HOST` must be the ingestion host `https://eu.i.posthog.com`.                                                                                                                          |
+| iOS crash never arrives                    | A debugger was attached (it disables the crash handler), or consent was not switched on again after the relaunch.                                                                              |
+| Stack trace not symbolicated               | The upload was skipped (a `POSTHOG_CLI_*` value missing), the project id is wrong, `POSTHOG_CLI_HOST` is not `https://eu.posthog.com`, or `posthog-cli` is not on PATH (`just doctor`).        |
+| Flag always returns its default            | The API has no `POSTHOG_API_KEY`, or PostHog is unreachable, erroring or quota-limited. A missing or inactive flag reads as off, not as its default: run the sync, then turn it on in PostHog. |
+| Sync fails with 403                        | The sync key lacks a scope, or its owner is not a project admin.                                                                                                                               |

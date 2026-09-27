@@ -9,6 +9,7 @@ import structlog
 from fastapi import FastAPI, Request, Response
 
 from ai_stylist_segmentation import SERVICE_NAME, __version__
+from ai_stylist_segmentation.correlation import correlation_id_middleware
 from ai_stylist_segmentation.routes import router
 
 log = structlog.get_logger(SERVICE_NAME)
@@ -22,7 +23,9 @@ def create_app() -> FastAPI:
         redoc_url=None,
     )
     app.include_router(router)
+    # The last middleware added runs first: the correlation id is bound before the access line.
     app.middleware("http")(_access_log)
+    app.middleware("http")(correlation_id_middleware)
     return app
 
 

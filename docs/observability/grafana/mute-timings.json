@@ -13,6 +13,6 @@
   },
   {
     "name": "no-page",
-    "time_intervals": [{ "weekdays": ["monday:sunday"] }]
+    "time_intervals": [{ "weekdays": ["sunday:saturday"] }]
   }
 ]

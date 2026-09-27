@@ -1,0 +1,6 @@
+ERROR [flag] packages/shared-kernel/registry/feature-flags.json: BadKey: key must match ^[a-z][a-z0-9]*(-[a-z0-9]+)*$
+ERROR [flag] packages/shared-kernel/registry/feature-flags.json: BadKey: owner 'nobody' is not a person in owners.json
+ERROR [flag] packages/shared-kernel/registry/feature-flags.json: BadKey: needs a "purpose"
+ERROR [flag] packages/shared-kernel/registry/feature-flags.json: BadKey: kind 'forever' is not one of rollout, experiment, kill-switch
+ERROR [flag] packages/shared-kernel/registry/feature-flags.json: BadKey: "createdAt" must be a YYYY-MM-DD date
+ERROR [flag] packages/shared-kernel/registry/feature-flags.json: fixture-rollout: a rollout flag needs "expiresAt"

@@ -15,6 +15,7 @@ import { Logger } from 'nestjs-pino';
 import pino from 'pino';
 
 import { createDb, type DbHandle } from '@ai-stylist/db';
+import type { FeatureFlags } from '@ai-stylist/shared-kernel';
 
 import { type AppConfig, loadConfig } from './config.js';
 import { DevModule, UnconfiguredOutboxWriter, isDevRouteEnabled } from './dev/index.js';
@@ -33,6 +34,7 @@ import { OutfitModule } from './modules/outfit/index.js';
 import { ProfileModule } from './modules/profile/index.js';
 import { RecommendationModule } from './modules/recommendation/index.js';
 import {
+  type FeatureFlagsAdapter,
   type HealthProbe,
   InMemoryStorageProvider,
   OutboxRelay,
@@ -43,8 +45,13 @@ import {
   PlatformModule,
   SystemClock,
   UnconfiguredHealthProbe,
+  createFeatureFlags,
+  currentCorrelationId,
   httpLoggerOptions,
   loggerOptions,
+  registerCorrelationId,
+  registerRequestMetrics,
+  shutdownTelemetry,
 } from './platform/index.js';
 
 /** Every domain module's public Nest module (SPINE §3 order). */
@@ -119,21 +126,44 @@ export type CreateAppOptions = {
   readonly config?: AppConfig;
   /** Where pino writes; defaults to stdout. Tests pass a memory stream. */
   readonly logStream?: Writable;
+  /**
+   * Defaults to `createFeatureFlags` over `POSTHOG_API_KEY` / `POSTHOG_HOST` (the registry
+   * defaults without a key). Tests pass a fake; a passed port is the caller's to stop.
+   */
+  readonly featureFlags?: FeatureFlags;
+  /**
+   * Defaults to `PgOutboxWriter` with `DATABASE_URL`, else a writer that refuses (503). Tests pass
+   * a recording one to see what the dev route appends without a database.
+   */
+  readonly outboxWriter?: OutboxWriter;
 };
 
+/** A flags port the caller built and owns (tests): bound as is, never stopped by the app. */
+function callerOwnedFlags(flags: FeatureFlags): FeatureFlagsAdapter {
+  return {
+    isEnabled: (key) => flags.isEnabled(key),
+    shutdown: () => Promise.resolve(),
+  };
+}
+
 @Module({})
-export class AppModule {
-  static forRoot(config: AppConfig, logStream: Writable | undefined): DynamicModule {
+export class AppModule implements OnApplicationShutdown {
+  static forRoot(config: AppConfig, options: Omit<CreateAppOptions, 'config'> = {}): DynamicModule {
+    const { logStream } = options;
+    const logger = pino(
+      loggerOptions({ level: config.LOG_LEVEL }),
+      ...(logStream !== undefined ? [logStream] : []),
+    );
+    const featureFlags =
+      options.featureFlags === undefined
+        ? createFeatureFlags({ apiKey: config.POSTHOG_API_KEY, host: config.POSTHOG_HOST, logger })
+        : callerOwnedFlags(options.featureFlags);
     const db = config.DATABASE_URL === undefined ? null : createDb(config.DATABASE_URL, { max: 5 });
     const healthProbe: HealthProbe =
       db === null ? new UnconfiguredHealthProbe() : new PgHealthProbe(db.sql);
     const clock = new SystemClock();
     let runtime: DbRuntime | null = null;
     if (db !== null && config.DATABASE_URL !== undefined) {
-      const logger = pino(
-        loggerOptions({ level: config.LOG_LEVEL }),
-        ...(logStream !== undefined ? [logStream] : []),
-      );
       // Queue names, routes and the per-user key come from `jobs/queues.ts` (single source of
       // truth), not `jobs/index.ts`, so the job runtime stays out of the API process.
       const queue = new PgBossQueue({
@@ -151,7 +181,8 @@ export class AppModule {
       runtime = { handle: db, queue, relay };
     }
     const outboxWriter: OutboxWriter =
-      db === null ? new UnconfiguredOutboxWriter() : new PgOutboxWriter(db.sql);
+      options.outboxWriter ??
+      (db === null ? new UnconfiguredOutboxWriter() : new PgOutboxWriter(db.sql));
     return {
       module: AppModule,
       imports: [
@@ -165,12 +196,23 @@ export class AppModule {
           clock,
           healthProbe,
           storage: new InMemoryStorageProvider(() => clock.now()),
+          featureFlags,
         }),
         ...DOMAIN_MODULES,
-        ...(isDevRouteEnabled(config) ? [DevModule.forRoot(outboxWriter)] : []),
+        ...(isDevRouteEnabled(config)
+          ? [DevModule.forRoot(outboxWriter, currentCorrelationId)]
+          : []),
       ],
       providers: [{ provide: DB_LIFECYCLE, useValue: new DbLifecycle(runtime) }],
     };
+  }
+
+  /**
+   * Nest calls the root module's hook last, after every provider's (relay, queue, pool, flags), so
+   * the spans and log lines of the shutdown itself are exported. A no-op when no telemetry runs.
+   */
+  onApplicationShutdown(): Promise<void> {
+    return shutdownTelemetry();
   }
 }
 
@@ -179,10 +221,15 @@ export async function createApp(options: CreateAppOptions = {}): Promise<NestFas
   const config = options.config ?? loadConfig();
   const adapter = new FastifyAdapter({ trustProxy: true });
   const app = await NestFactory.create<NestFastifyApplication>(
-    AppModule.forRoot(config, options.logStream),
+    AppModule.forRoot(config, options),
     adapter,
     { bufferLogs: true, abortOnError: false },
   );
+  // On the root Fastify instance before any route or plugin exists (routes register at init), so
+  // every response, the 404 and 429 problems included, echoes `x-correlation-id` and is measured.
+  const fastify = app.getHttpAdapter().getInstance();
+  registerCorrelationId(fastify);
+  registerRequestMetrics(fastify);
   app.useLogger(app.get(Logger));
   app.enableShutdownHooks();
   await app.register(rateLimit, {

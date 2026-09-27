@@ -21,32 +21,19 @@ import {
 
 import { errorSummary } from './error-summary.js';
 import { jobIdForKey } from './job-id.js';
+import {
+  MAX_WORK_BATCH_SIZE,
+  type QueueDefinition,
+  deadLetterQueueName,
+} from './queue-definition.js';
+import { type QueueStatsSnapshot, readQueueStats } from './queue-stats.js';
 
-/** One application queue. Every queue gets a dead-letter queue named `deadLetterQueueName(name)`. */
-export type QueueDefinition = {
-  /** pg-boss queue name: letters, digits, `_`, `-`, `.`, `/`. */
-  readonly name: string;
-  /** Retries after the first attempt; a job runs at most `retryLimit + 1` times, then `failed`. */
-  readonly retryLimit: number;
-  /** Base of the exponential, jittered retry backoff (pg-boss `retryDelay`, seconds, >= 1). */
-  readonly retryDelaySeconds: number;
-  /** Upper bound of one backoff delay (pg-boss `retryDelayMax`, seconds). */
-  readonly retryDelayMaxSeconds: number;
-  /** Seconds a job may stay `active` before it is failed (and retried). pg-boss default: 900. */
-  readonly expireInSeconds?: number;
-  /**
-   * Jobs one worker fetches per poll, 1..`MAX_WORK_BATCH_SIZE`. Default 1. Above 1 the worker
-   * fetches again at once, without the poll delay, while fetches come back full (pg-boss
-   * `burstWhenBatchFull`); a short fetch resumes normal polling. The jobs of a batch still run one
-   * at a time and settle one by one (pg-boss `perJobResults`): a failing job retries alone. The
-   * whole batch shares one `expireInSeconds` deadline, so `batchSize` × the slowest job must stay
-   * below it.
-   */
-  readonly batchSize?: number;
-};
-
-/** Upper bound on `QueueDefinition.batchSize` (the outbox relay's per-poll cap, doc 04 §9). */
-export const MAX_WORK_BATCH_SIZE = 100;
+export {
+  MAX_WORK_BATCH_SIZE,
+  type QueueDefinition,
+  deadLetterQueueName,
+} from './queue-definition.js';
+export type { QueueStatsSnapshot } from './queue-stats.js';
 
 export type PgBossQueueConfig = {
   /** Passed in by the composition root; this adapter never reads `process.env`. */
@@ -129,10 +116,6 @@ export const CANCELLED_USER_MARKER_RETENTION_SECONDS = 100 * 24 * 60 * 60;
 /** Job states a cancellation can still stop (pg-boss `cancel` only changes these). */
 const UNFINISHED_STATES: ReadonlySet<string> = new Set(['created', 'retry', 'active']);
 
-export function deadLetterQueueName(queue: string): string {
-  return `${queue}.dlq`;
-}
-
 function cancelledUserMarkerId(userId: string): string {
   return jobIdForKey(`cancelled-user:${userId}`);
 }
@@ -144,10 +127,12 @@ export class PgBossQueue {
   private readonly pollingIntervalSeconds: number;
   private readonly stopTimeoutMs: number;
   private readonly traceContextOf: PgBossQueueConfig['traceContextOf'];
+  private readonly schema: string;
 
   constructor(config: PgBossQueueConfig) {
     this.logger = config.logger.child({ component: 'pg-boss-queue' });
     this.traceContextOf = config.traceContextOf;
+    this.schema = config.schema ?? 'pgboss';
     this.queues = new Map(config.queues.map((queue) => [queue.name, queue]));
     if (this.queues.size !== config.queues.length) {
       throw new TypeError('PgBossQueue: queue names must be unique');
@@ -332,6 +317,14 @@ export class PgBossQueue {
       this.logger.debug(fields, 'job completed');
       return { id: job.id, status: 'completed' };
     });
+  }
+
+  /**
+   * Queue gauges (planning/14 §4): waiting jobs per configured queue and per dead-letter queue, and
+   * the age of the oldest waiting job per configured queue (`./queue-stats.ts`).
+   */
+  readStats(): Promise<QueueStatsSnapshot> {
+    return readQueueStats(this.boss, this.schema, [...this.queues.keys()]);
   }
 
   /**

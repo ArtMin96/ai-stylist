@@ -1,0 +1,12 @@
+[
+  {
+    "uid": "ai-stylist-oncall",
+    "name": "ai-stylist-oncall",
+    "type": "email",
+    "settings": {
+      "addresses": "someone@example.invalid",
+      "singleEmail": false
+    },
+    "disableResolveMessage": false
+  }
+]

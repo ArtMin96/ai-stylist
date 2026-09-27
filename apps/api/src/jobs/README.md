@@ -15,8 +15,9 @@ outcome to pg-boss. No business rule lives here. Provider clients are constructe
   event's trace and correlation scope). The only place any of these is declared.
 - `outbox-dead-letter.ts`: the dead-letter handler; reads the envelope id from a dead-lettered
   job and calls `markOutboxFailed` (`../platform/outbox/outbox-dead-letter.ts`).
-- `index.ts`: `startJobs({ databaseUrl, segmentationBaseUrl, logger, pollingIntervalSeconds? })`
-  → `{ stop }`, plus re-exports of `queues.ts`.
+- `index.ts`: `startJobs(config)` → `{ stop }` (config: `databaseUrl`, `segmentationBaseUrl`,
+  `logger`, optional `pollingIntervalSeconds` and `meter`), plus re-exports of `queues.ts`. `meter` is for tests; the default is
+  the global meter of the telemetry `--import` entry (see "Metrics").
 - `demo-outbox-flow.ts`: the `demo.outbox-flow` handler (envelope parsing, effect-once guard,
   segmentation call).
 - `segmentation-client.ts`: `HttpSegmentationClient`, `POST {base}/v1/segment` on
@@ -65,6 +66,20 @@ outbox-fed queue, `OUTBOX_DEAD_LETTER_QUEUES` declares its DLQ as a worked queue
    sweep (`admin`, not built yet) picks it up. The dead-letter job itself ends `completed`, kept
    for the queue's retention.
 4. Logs: job id, queues, event id and whether the row changed. Never the payload.
+
+## Metrics (planning/14 §4)
+
+`startJobs` builds one `QueueMetrics` (`../platform/telemetry/README.md` "Metrics") for
+`JOB_QUEUES` and the sources of `OUTBOX_DEAD_LETTER_QUEUES`, so every
+`stylist.queue.job.{completions,failures,retries}` series (per worked `job_type`) and every
+`stylist.queue.job.dlq` series (per source `job_type`, e.g. `demo.outbox-flow`) exists at 0 from
+process start. Each worker's handler is wrapped with `countOutcomes(definition, handler)`; each
+DLQ worker's handler also with `countDeadLetters(source, handler)`, so a job that reaches
+`<queue>.dlq` counts once for its source queue, whatever the DLQ handler then does. After
+`queue.start()`, `observeQueues(() => queue.readStats())` reports `stylist.queue.depth` (every queue
+and DLQ, `.dlq.dlq` included) and `stylist.queue.job.age_oldest` (per worked queue) at each metric
+collection; `stop()` ends that first, before the queue stops. The handlers themselves are
+unchanged: counting lives in the wrappers.
 
 ## `demo.outbox-flow` handler
 
@@ -143,6 +158,13 @@ consecutive failures, for 30 s).
 - `batch-settlement.docker.test.ts` (vitest project `platform-docker`, Testcontainers, fails
   without Docker): one demo-queue batch on real pg-boss; a failing job retries and dead-letters
   alone, a job for a cancelled user is refused, the rest complete once.
+- `queue-metrics.docker.test.ts` (vitest project `platform-docker`, Testcontainers, fails without
+  Docker): `startJobs` with an in-memory metric reader and an always-failing fake worker. Every
+  series starts at 0; the injected failure's 5 attempts count as 5 failures and 4 retries, its dead
+  letter moves `stylist.queue.job.dlq{job_type="demo.outbox-flow"}` from 0 to 1 (the local
+  counterpart of the `queue.job.dlq` alert proof run in `docs/runbooks/04-queue-dlq.md`), the DLQ
+  worker's run counts as a `demo.outbox-flow.dlq` completion, and the depth and age gauges report
+  every queue.
 
 The durable guard and the queue are covered against real Postgres in
 `../platform/tests/idempotency.docker.test.ts` and `../platform/tests/queue.docker.test.ts`. The

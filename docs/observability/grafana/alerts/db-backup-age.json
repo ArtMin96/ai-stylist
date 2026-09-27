@@ -31,7 +31,9 @@
             "refId": "B",
             "type": "threshold",
             "expression": "A",
-            "conditions": [{ "evaluator": { "type": "gt", "params": [93600] } }]
+            "conditions": [{ "evaluator": { "type": "gt", "params": [93600] } }],
+            "intervalMs": 1000,
+            "maxDataPoints": 43200
           }
         }
       ],

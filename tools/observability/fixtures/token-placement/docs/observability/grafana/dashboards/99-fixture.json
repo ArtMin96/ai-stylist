@@ -1,0 +1,8 @@
+{
+  "id": null,
+  "uid": "fixture-token-placement",
+  "title": "Alerts go to ${GRAFANA_ALERT_EMAILS}",
+  "description": "Owner tags ${OWNER_TAGS:observability} inside a sentence",
+  "tags": ["fixture"],
+  "panels": []
+}

@@ -1,0 +1,29 @@
+{
+  "title": "fixture",
+  "folderUid": "ai-stylist",
+  "interval": 60,
+  "rules": [
+    {
+      "uid": "queue-job-dlq",
+      "title": "fixture.shape",
+      "ruleGroup": "another-group",
+      "folderUID": "ai-stylist",
+      "condition": "A",
+      "data": [
+        {
+          "refId": "A",
+          "relativeTimeRange": { "from": 600, "to": 0 },
+          "datasourceUid": "${PROM_DATASOURCE_UID}",
+          "model": { "refId": "A", "expr": "vector(1)", "instant": true }
+        }
+      ],
+      "noDataState": "OK",
+      "execErrState": "Error",
+      "for": "5m",
+      "labels": { "owner_role": "on-call" },
+      "annotations": {
+        "runbook_url": "https://github.com/ArtMin96/ai-stylist/blob/main/docs/runbooks/04-queue-dlq.md"
+      }
+    }
+  ]
+}

@@ -3,7 +3,8 @@
 Loaded by the root `eslint.config.mjs`, so every workspace's `eslint .` (and `just lint`, which also
 lints `tools/` at the root) runs them. `just lint --fixtures` runs `check-fixtures.sh`: each tree under
 `fixtures/<case>/` must be reported by its named rule (`fixtures/eslint.config.mjs` is the root config
-minus the ignore that hides fixtures from workspace runs). Both run in `just ci-parity`.
+minus the ignore that hides fixtures from workspace runs). The same `--fixtures` run also proves the
+analytics taxonomy check's fixtures (`tools/analytics/README.md`). Both run in `just ci-parity`.
 
 | Rule (as reported)            | File                            | Severity | What it enforces                                                                                                                                        |
 | ----------------------------- | ------------------------------- | -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- |

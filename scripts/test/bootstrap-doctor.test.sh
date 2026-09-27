@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # Black-box regression suite for the machine-setup helpers that bootstrap.sh and doctor.sh share
-# (scripts/lib.sh: Xcode detection, the managed mise + direnv block in the shell rc file) and for the
+# (scripts/lib.sh: Xcode detection, the managed mise + direnv block in the shell rc file, the .env
+# readers behind bootstrap's DATABASE_URL fill and doctor's observability-key lines) and for the
 # Xcode guard of the apps/ios recipes (apps/ios/scripts/lib.sh via xcode.sh doctor).
 # Usage: scripts/test/bootstrap-doctor.test.sh   (run by `just test tooling` and `just test`)
 # Runs on Linux and macOS alike: xcodebuild, plutil and uname are stubs on PATH, Xcode bundles are
@@ -201,6 +202,65 @@ test_block_keeps_a_symlinked_rc_a_symlink() {
   expect_eq "$(cat "$dir/dotfiles/zshrc")" "$(printf 'export FOO=1\n%s' "$(expected_block zsh 2.37.1)")"
 }
 
+# --- .env readers (scripts/lib.sh env_file_value, env_file_key_states: doctor's observability lines)
+
+# lib_call <function> <args...>: runs one scripts/lib.sh function in a subshell.
+lib_call() {
+  (
+    # shellcheck source=scripts/lib.sh
+    source "$ROOT/scripts/lib.sh"
+    "$@"
+  )
+}
+
+ENV_FIXTURE_SECRET='planted-secret-value-7f3a'
+
+write_env_fixture() {
+  local file="$TEST_ROOT/dotenv/.env"
+  mkdir -p "$(dirname "$file")"
+  printf '%s\n' \
+    '# comment' \
+    "OTEL_EXPORTER_OTLP_ENDPOINT=https://otlp.example.test/$ENV_FIXTURE_SECRET" \
+    'OTEL_EXPORTER_OTLP_HEADERS=' \
+    "export POSTHOG_API_KEY=\"phc_$ENV_FIXTURE_SECRET\"" \
+    "POSTHOG_HOST='https://eu.i.posthog.example'" \
+    "GRAFANA_URL=first" \
+    "GRAFANA_URL=$ENV_FIXTURE_SECRET" \
+    >"$file"
+  printf 'POSTHOG_CLI_HOST=https://eu.posthog.example\r\n' >>"$file"
+  printf '%s\n' "$file"
+}
+
+test_env_file_value_reads_like_dotenv() {
+  local file
+  file="$(write_env_fixture)"
+  expect_eq "$(lib_call env_file_value POSTHOG_API_KEY "$file")" "phc_$ENV_FIXTURE_SECRET" \
+    && expect_eq "$(lib_call env_file_value POSTHOG_HOST "$file")" "https://eu.i.posthog.example" \
+    && expect_eq "$(lib_call env_file_value GRAFANA_URL "$file")" "$ENV_FIXTURE_SECRET" \
+    && expect_eq "$(lib_call env_file_value POSTHOG_CLI_HOST "$file")" "https://eu.posthog.example" \
+    && expect_eq "$(lib_call env_file_value OTEL_EXPORTER_OTLP_HEADERS "$file")" "" \
+    && expect_eq "$(lib_call env_file_value NOT_THERE "$file")" "" \
+    && expect_eq "$(lib_call env_file_value POSTHOG_HOST "$TEST_ROOT/dotenv/missing.env")" ""
+}
+
+test_env_file_key_states_names_state_never_value() {
+  local file out
+  file="$(write_env_fixture)"
+  out="$(lib_call env_file_key_states "$file" OTEL_EXPORTER_OTLP_ENDPOINT OTEL_EXPORTER_OTLP_HEADERS \
+    POSTHOG_API_KEY POSTHOG_SYNC_API_KEY GRAFANA_URL POSTHOG_CLI_HOST)"
+  expect_eq "$out" "OTEL_EXPORTER_OTLP_ENDPOINT set, OTEL_EXPORTER_OTLP_HEADERS empty, POSTHOG_API_KEY set, POSTHOG_SYNC_API_KEY absent, GRAFANA_URL set, POSTHOG_CLI_HOST set" \
+    || return 1
+  if [[ "$out" == *"$ENV_FIXTURE_SECRET"* || "$out" == *phc_* || "$out" == *https:* ]]; then
+    echo "  a value leaked into: $out" >&2
+    return 1
+  fi
+}
+
+test_env_file_key_states_without_file() {
+  expect_eq "$(lib_call env_file_key_states "$TEST_ROOT/dotenv/missing.env" POSTHOG_API_KEY POSTHOG_HOST)" \
+    "POSTHOG_API_KEY absent, POSTHOG_HOST absent"
+}
+
 run_test "xcode: installed, command line tools selected -> unselected" test_xcode_installed_but_command_line_tools_selected
 run_test "xcode: pinned version active -> ok" test_xcode_pinned_version_active
 run_test "xcode: other version active, pinned installed -> unselected" test_xcode_other_version_active_pinned_installed
@@ -214,6 +274,9 @@ run_test "rc file: unsupported shell" test_rc_file_unsupported_shell
 run_test "rc block: created when the rc file is missing" test_block_created_in_missing_rc
 run_test "rc block: replaced in place, never duplicated" test_block_replaced_in_place_and_never_duplicated
 run_test "rc block: a symlinked rc file stays a symlink" test_block_keeps_a_symlinked_rc_a_symlink
+run_test ".env: env_file_value reads like dotenv (export, quotes, CRLF, last wins, missing)" test_env_file_value_reads_like_dotenv
+run_test ".env: env_file_key_states prints set/empty/absent, never a value" test_env_file_key_states_names_state_never_value
+run_test ".env: env_file_key_states without a file -> absent" test_env_file_key_states_without_file
 
 if ((failures > 0)); then
   echo "$failures test(s) failed" >&2

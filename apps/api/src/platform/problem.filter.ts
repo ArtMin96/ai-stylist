@@ -11,6 +11,8 @@ import { Logger } from 'nestjs-pino';
 
 import { type ErrorCode, type ProblemDetails, problem } from '@ai-stylist/shared-kernel';
 
+import { stripQuery } from './logger.js';
+
 export const PROBLEM_CONTENT_TYPE = 'application/problem+json';
 
 const STATUS_TO_CODE: Readonly<Record<number, ErrorCode>> = {
@@ -78,11 +80,15 @@ export class ProblemFilter implements ExceptionFilter {
     const http = host.switchToHttp();
     const reply = http.getResponse<FastifyReply>();
     const request = http.getRequest<FastifyRequest>();
-    const body = toProblem(exception, request.url.split('?')[0] ?? request.url);
+    // `instance` is the path only: the same cut as a logged request url (no query, no fragment).
+    const body = toProblem(exception, stripQuery(request.url));
     if (body.status >= 500) {
+      // nestjs-pino reads the last string as the Nest context. Without it 'unhandled error' is that
+      // context, the call has no message, and pino falls back to `err.message` (foreign free text).
       this.logger.error(
         { err: exception, status: body.status, code: body.code },
         'unhandled error',
+        ProblemFilter.name,
       );
     }
     void reply.status(body.status).header('content-type', PROBLEM_CONTENT_TYPE).send(body);

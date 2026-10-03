@@ -82,7 +82,6 @@ export {
   toProblem,
 } from './problem.filter.js';
 export {
-  FORBIDDEN_LOG_KEYS,
   REDACTED,
   httpLoggerOptions,
   isForbiddenLogKey,

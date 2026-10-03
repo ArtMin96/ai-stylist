@@ -5,6 +5,10 @@
 // (driver messages echo statement parameters). `SanitizingSpanExporter` wraps the real exporter and
 // hands it copies without them. Our own spans already comply (./trace-context.ts); this is the
 // backstop for everything else. Translation only: no span is dropped, no id or enum is changed.
+//
+// One attribute rule, `sanitizeAttributes`, covers span, event and link attributes here and the
+// process resource in ./telemetry.ts. The resource is not sanitized per span: metrics and log
+// records carry it too and never pass through this exporter, so it is sanitized where it is built.
 import type { Attributes, AttributeValue } from '@opentelemetry/api';
 import type { NodeSDKConfiguration } from '@opentelemetry/sdk-node';
 import {
@@ -18,14 +22,15 @@ import {
   ATTR_USER_AGENT_ORIGINAL,
 } from '@opentelemetry/semantic-conventions';
 
-import { REDACTED, isForbiddenLogKey } from '../logger.js';
+import { REDACTED, isForbiddenLogKey, stripQuery } from '../logger.js';
 
 /** The SDK's exporter and span types, taken from `NodeSDK`'s own configuration type. */
 export type SpanExporter = NodeSDKConfiguration['traceExporter'];
 export type ExportedSpan = Parameters<SpanExporter['export']>[0][number];
 type TimedEvent = ExportedSpan['events'][number];
+type Link = ExportedSpan['links'][number];
 
-/** Dropped from every span and event: free text, network identity or error detail. */
+/** Dropped wherever `sanitizeAttributes` applies: free text, network identity or error detail. */
 const DROPPED_ATTRIBUTES: ReadonlySet<string> = new Set([
   ATTR_URL_QUERY,
   ATTR_CLIENT_ADDRESS,
@@ -35,7 +40,10 @@ const DROPPED_ATTRIBUTES: ReadonlySet<string> = new Set([
   ATTR_EXCEPTION_STACKTRACE,
 ]);
 
-/** URL-valued attributes kept without their query and fragment (older names included). */
+/**
+ * URL-valued attributes kept without their query and fragment (older names included): the logger's
+ * `stripQuery`, the same cut as a logged request url.
+ */
 const URL_ATTRIBUTES: ReadonlySet<string> = new Set([
   ATTR_URL_FULL,
   ATTR_URL_PATH,
@@ -43,15 +51,23 @@ const URL_ATTRIBUTES: ReadonlySet<string> = new Set([
   'http.target',
 ]);
 
-function stripQuery(value: AttributeValue): AttributeValue {
-  if (typeof value !== 'string') return value;
-  const cut = value.search(/[?#]/);
-  return cut === -1 ? value : value.slice(0, cut);
+/**
+ * A URL attribute's value without query and fragment, whatever its shape: `stripQuery` on the
+ * string, or on each string of an array. The value is cut, not dropped, so the path stays
+ * searchable; numbers and booleans carry no query and pass.
+ */
+function cutUrlValue(value: AttributeValue): AttributeValue {
+  if (typeof value === 'string') return stripQuery(value);
+  if (!Array.isArray(value)) return value;
+  const cut = value.map((item) => (typeof item === 'string' ? stripQuery(item) : item));
+  // Each element keeps its type, so the array is still one of `AttributeValue`'s array types.
+  return cut as AttributeValue;
 }
 
 /**
- * The attribute set a span may carry. The log denylist applies to the last dot-segment of the key
- * (`http.request.header.authorization` is redacted, `http.request.body.size` is kept).
+ * The attribute set a span, an event, a link or the process resource may carry. The log denylist
+ * applies to the last dot-segment of the key (`http.request.header.authorization` is redacted,
+ * `http.request.body.size` is kept).
  */
 export function sanitizeAttributes(attributes: Attributes): Attributes {
   const out: Attributes = {};
@@ -59,7 +75,7 @@ export function sanitizeAttributes(attributes: Attributes): Attributes {
     if (value === undefined || DROPPED_ATTRIBUTES.has(key)) continue;
     const lastSegment = key.slice(key.lastIndexOf('.') + 1);
     if (isForbiddenLogKey(lastSegment)) out[key] = REDACTED;
-    else out[key] = URL_ATTRIBUTES.has(key) ? stripQuery(value) : value;
+    else out[key] = URL_ATTRIBUTES.has(key) ? cutUrlValue(value) : value;
   }
   return out;
 }
@@ -70,10 +86,21 @@ function sanitizeEvent(event: TimedEvent): TimedEvent {
     : { ...event, attributes: sanitizeAttributes(event.attributes) };
 }
 
-/** A copy of `span` that satisfies the redaction rules; ids, times, kind and links unchanged. */
+/** The linked span's context (trace id, span id, flags) is kept; only the attributes change. */
+function sanitizeLink(link: Link): Link {
+  return link.attributes === undefined
+    ? link
+    : { ...link, attributes: sanitizeAttributes(link.attributes) };
+}
+
+/**
+ * A copy of `span` that satisfies the redaction rules; ids, times and kind unchanged. The resource
+ * is passed on as it is: ./telemetry.ts sanitized it when it built it.
+ */
 export function sanitizeSpan(span: ExportedSpan): ExportedSpan {
   return {
-    name: span.name,
+    // A span named from a raw request target or URL carries its query and fragment.
+    name: stripQuery(span.name),
     kind: span.kind,
     spanContext: () => span.spanContext(),
     ...(span.parentSpanContext !== undefined ? { parentSpanContext: span.parentSpanContext } : {}),
@@ -82,7 +109,7 @@ export function sanitizeSpan(span: ExportedSpan): ExportedSpan {
     // The status message is free text (often `error.message`); the code is kept.
     status: { code: span.status.code },
     attributes: sanitizeAttributes(span.attributes),
-    links: span.links,
+    links: span.links.map(sanitizeLink),
     events: span.events.map(sanitizeEvent),
     duration: span.duration,
     ended: span.ended,

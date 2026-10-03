@@ -3,8 +3,8 @@ name: observability-analytics
 description: Add or change OpenTelemetry metrics/traces/spans, Grafana dashboards and alert rules, PostHog product-analytics events and taxonomy, runbooks, audit-trail entries, feature-flag policy (owner, expiry, rollout plan), error budgets, or AI/infra spend alerts — the operational instrumentation catalog defined in `planning/14-observability-operations-and-analytics.md`. Use for "metric", "dashboard", "alert", "runbook", "analytics event", "PostHog", "OTel", "trace", "SLO", "p95", "error budget", "audit log"/"audit trail", a feature flag's owner/expiry/rollout plan, or a `stylist.*` metric name. Not for finding out why something is already slow — use `performance-profiling` instead; not for reviewing whether a log line or event payload leaks sensitive data — use `security-privacy-review` instead.
 metadata:
   modules:
-  last-reviewed: 2026-09-27
-  owner-agent: platform-engineer
+  last-reviewed: 2026-10-03
+  owner-agent: observability-engineer,platform-engineer
 ---
 
 # Observability & Analytics
@@ -26,6 +26,10 @@ metadata:
 5. `apps/api/src/platform/logger.ts` and `apps/api/src/platform/tests/logger.redaction.test.ts` — the current redaction canary. The native apps' analytics port and its consent gate (consent off by default, nothing recorded until opt-in): `apps/ios/Packages/Core/Sources/Analytics/AnalyticsPort.swift`, `apps/ios/Packages/Core/Sources/Analytics/ConsentGatedAnalytics.swift`, `apps/android/core/analytics/src/main/kotlin/app/aistylist/core/analytics/Analytics.kt`, `apps/android/core/analytics/src/main/kotlin/app/aistylist/core/analytics/ConsentGatedAnalytics.kt`.
 6. `packages/contracts/events/analytics/events.json`: the analytics taxonomy every client reads.
 7. `docs/observability/README.md` — where each signal goes and how the Grafana and PostHog definitions under `docs/observability/` are synced; `docs/runbooks/README.md` — the runbook index.
+8. This skill's reference files, each opened only when the task touches its subject. Every vendor statement in them says how it is known (seen live on 2026-10-03, an official page, this repo's code, or unconfirmed). Where a vendor skill or vendor page disagrees with this repo, the repo wins and you report the difference.
+   - `.agents/skills/observability-analytics/references/grafana-cloud.md` — the Grafana Cloud account: the two token kinds and the env key each feeds, the OTLP header format, the API calls the sync makes and the role they need, where to look in the Grafana screens, free-tier limits, the click paths, deprecations.
+   - `.agents/skills/observability-analytics/references/posthog.md` — the PostHog account: ingestion host versus app host, the project token and the two personal keys with their scopes and access modes, what the sync reads and writes, the flag lifecycle, symbol upload and how to tell it worked, free-plan limits.
+   - `.agents/skills/observability-analytics/references/opentelemetry.md` — how telemetry starts in the API, the jobs process and the Python worker, how one trace crosses the outbox and pg-boss, the `OTEL_*` keys, where redaction happens, how to find a flow by correlation id.
 
 ## Workflow
 

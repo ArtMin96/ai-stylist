@@ -13,7 +13,9 @@ paths:
 **Agent:** `docs-maintainer` for `docs/modules/**`, the `docs/adr/README.md` index rows, `PROGRESS.md`,
 the `planning/PROGRESS.md` phase-status table and handoff log, and each phase file's task-state column.
 `docs/modules/<name>.md` is shared with that module's engineer agent and wave-serialized: the two never
-run in the same wave. `docs/security/**` belongs to `tooling-engineer`. ADR bodies (`docs/adr/NNNN-*.md`),
+run in the same wave. `docs/security/**` belongs to `tooling-engineer`. `docs/observability/**` and
+`docs/runbooks/**` belong to `observability-engineer` (skill `observability-analytics`; proof
+`just observability-sync all --check`). ADR bodies (`docs/adr/NNNN-*.md`),
 `docs/SERVICES-SETUP.md`, `docs/DEVELOPING-ON-MACOS.md` and phase-file prose are human-only
 (`human-only.md`).
 

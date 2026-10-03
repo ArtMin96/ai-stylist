@@ -1,6 +1,7 @@
-// The only fields of a thrown value the queue adapter and the outbox relay persist or log: its class
-// name and, for a Postgres error, its SQLSTATE code. Never the message: driver and pg-boss messages
-// can echo statement parameters (job data, event payloads), and handler errors may quote the job.
+// The only fields of a thrown value the queue adapter and the outbox relay persist or log, and the
+// logger writes for an error and each link of its cause chain (../logger.ts): its class name and,
+// for a Postgres error, its SQLSTATE code. Never the message: driver and pg-boss messages can echo
+// statement parameters (job data, event payloads), and handler errors may quote the job.
 
 export type ErrorSummary = {
   /** `Error.name`, or `typeof` for a non-Error throw (which could be anything, even the payload). */

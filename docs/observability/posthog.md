@@ -47,19 +47,24 @@ PostHog error tracking (planning/14 §5) is not part of the P02 wiring.
 | `POSTHOG_SYNC_API_KEY`   | personal key `phx_…`, scopes in [posthog/README.md](posthog/README.md)                                                                                                                                                                  | `just observability-sync` only           | sops → `.env` on a developer machine. Never a GitHub secret.                                                                                          |
 
 Set values with `just secrets-edit dev`, then `just secrets-sync` (direnv loads `.env`). Staging and
-prod use `secrets/<env>.enc.yaml`. The PostHog prod project arrives in P03.
+prod use `secrets/<env>.enc.yaml`. The PostHog prod project is planned for P03. PostHog's Free plan
+allows 1 project and its pay-as-you-go plan 6 (posthog.com/pricing, checked 2026-10-03), so a prod
+project cannot be added beside the dev one on the Free plan. P03 has to settle that against DEC-48
+(exit before any paid usage).
 
 CI: `POSTHOG_CLI_API_KEY` is a GitHub **secret**; `POSTHOG_CLI_HOST` and `POSTHOG_CLI_PROJECT_ID` are
 **variables**. The Android `build` job (`.github/workflows/android.yml`) and the iOS `macos` job
 (`.github/workflows/ios.yml`) get only these three symbol-upload values, and only on `main`. No
 workflow passes `POSTHOG_API_KEY` or `POSTHOG_HOST`, so CI-built APKs and apps carry no ingestion
-key and send nothing. Pull requests upload nothing.
+key and send nothing. Pull requests upload nothing. None of the three is set in GitHub as of
+2026-10-03; until all three exist, the `main` builds skip the upload and still pass.
 
 Human-only steps: creating the organization and projects (`docs/SERVICES-SETUP.md` §10), creating the
 two personal keys, and adding the GitHub secrets and variables. The two personal keys stay separate:
 `POSTHOG_CLI_API_KEY` has only `error_tracking:write` and `organization:read`; `POSTHOG_SYNC_API_KEY`
 has `project`, `feature_flag` and `hog_function` read and write, and its owner is a project admin. A
-leaked CI key then cannot change settings or flags.
+leaked CI key then cannot change settings or flags. What to select in PostHog's key form for each:
+[posthog/README.md](posthog/README.md#inputs).
 
 ## Project settings
 
@@ -74,8 +79,10 @@ reports anything it cannot change.
 | Session replay (`session_recording_opt_in`)                       | off                                           | no screenshots or view hierarchies (planning/14 §5)                            |
 | Surveys, heatmaps, autocapture, console logs, performance capture | off                                           | nothing is captured beyond the declared events                                 |
 
-The region (US Cloud) was set when the project was created and cannot change; moving to EU means a
-new project (ADR-0007, OQ-07).
+The region (US Cloud) was set when the project was created. PostHog moves a project to another
+region only for customers on its Scale or Enterprise plan, and a PostHog engineer runs that move
+(posthog.com/docs/settings/projects, checked 2026-10-03). On the Free plan, moving to EU therefore
+means a new organization and project on EU Cloud (ADR-0007, OQ-07).
 
 ## Symbol upload
 
@@ -111,9 +118,10 @@ reuse a key. After the merge, `just observability-sync --prune` soft-deletes it 
 
 Kill-switch flags are permanent and listed in runbook 10 (ships with P11). `just flags-report` lists
 every registry flag with its owner and days left ([`tools/flags/README.md`](../../tools/flags/README.md)).
-The nightly `expired-flags` job in `.github/workflows/nightly.yml` runs it, once the workflow change
-lands (it is a placeholder until then), and fails on a rollout or experiment flag past `expiresAt`
-(> 30 days overdue = DEFECT).
+The nightly `expired-flags` job in `.github/workflows/nightly.yml` runs it every day at 03:00 UTC
+and fails on a rollout or experiment flag past `expiresAt` (> 30 days overdue = DEFECT). The job
+reads only the flag and owner registries in the repo, so it needs no GitHub secret or variable. A
+red nightly job is investigated; it does not block a merge.
 
 ## Privacy rules
 

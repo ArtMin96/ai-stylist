@@ -1,9 +1,10 @@
 // The platform's span helpers and the span redaction, through a real in-process SDK
 // (`startTelemetry` with an in-memory exporter behind the SanitizingSpanExporter): traceparent
 // serialization, spans that join a carried trace in its correlation scope, failures recorded by
-// error class only, and instrumentation attributes stripped to ids and enums (planning/14 §3).
-import { SpanKind, SpanStatusCode, trace } from '@opentelemetry/api';
-import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
+// error class only, and instrumentation attributes stripped to ids and enums (planning/14 §3). The
+// same rules reach the span name, link attributes and the process resource.
+import { SpanKind, SpanStatusCode, TraceFlags, trace } from '@opentelemetry/api';
+import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import envelopeSchema from '@ai-stylist/contracts/events/envelope.json' with { type: 'json' };
 
@@ -15,22 +16,37 @@ import { startTelemetry } from '../telemetry/telemetry.js';
 import { TRACEPARENT_PATTERN, currentTraceparent, runTraced } from '../telemetry/trace-context.js';
 
 import { memorySpanExporter } from './memory-span-exporter.js';
-import { CANARY } from './redaction-canary.js';
+import { CANARY, PLANTED_RESOURCE_ATTRIBUTES } from './redaction-canary.js';
 
 const CARRIED_TRACE_ID = '4bf92f3577b34da6a3ce929d0e0e4736';
 const CARRIED_SPAN_ID = '00f067aa0ba902b7';
 const CARRIED = `00-${CARRIED_TRACE_ID}-${CARRIED_SPAN_ID}-01`;
+
+/** Names the tests and dashboards find spans by: none has a query or a fragment to cut. */
+const KEPT_SPAN_NAMES = [
+  'GET',
+  'outbox.dispatch demo.outbox-flow.requested.v1',
+  'job.process demo.outbox-flow',
+];
 
 describe('trace context and span redaction (in-process SDK)', () => {
   const exporter = memorySpanExporter();
   let telemetry: Telemetry;
 
   beforeAll(() => {
-    telemetry = startTelemetry({ service: 'jobs', spanExporter: exporter });
+    // The resource is built once, when telemetry starts: planted before that.
+    vi.stubEnv('OTEL_RESOURCE_ATTRIBUTES', PLANTED_RESOURCE_ATTRIBUTES);
+    telemetry = startTelemetry({
+      service: 'jobs',
+      serviceVersion: '1.2.3',
+      environment: 'staging',
+      spanExporter: exporter,
+    });
   });
 
   afterAll(async () => {
     await telemetry.shutdown();
+    vi.unstubAllEnvs();
   });
 
   beforeEach(() => {
@@ -138,5 +154,83 @@ describe('trace context and span redaction (in-process SDK)', () => {
     expect(out?.events.map((event) => event.attributes)).toEqual([{ 'exception.type': 'Error' }]);
     const text = JSON.stringify([out?.name, out?.attributes, out?.events, out?.status]);
     expect(text).not.toContain(CANARY);
+  });
+
+  it('cuts every string of an array-valued URL attribute', async () => {
+    const span = trace.getTracer('test').startSpan('urls', {
+      attributes: {
+        'url.full': [`https://a.example/x?sig=${CANARY}`, `https://b.example/y#${CANARY}`],
+        'http.target': [`/v1/items?token=${CANARY}`, null],
+      },
+    });
+    span.end();
+
+    const out = await exported('urls');
+    expect(out?.attributes).toEqual({
+      'url.full': ['https://a.example/x', 'https://b.example/y'],
+      'http.target': ['/v1/items', null],
+    });
+  });
+
+  it('cuts the query and fragment from a span name, and keeps a name without one', async () => {
+    const tracer = trace.getTracer('test');
+    tracer.startSpan(`GET /v1/items?token=${CANARY}#${CANARY}`).end();
+    for (const name of KEPT_SPAN_NAMES) tracer.startSpan(name).end();
+
+    await telemetry.flush();
+    expect(exporter.spans.map((span) => span.name)).toEqual(['GET /v1/items', ...KEPT_SPAN_NAMES]);
+  });
+
+  it('sanitises link attributes like span attributes, and keeps the linked ids', async () => {
+    const linked = {
+      traceId: CARRIED_TRACE_ID,
+      spanId: CARRIED_SPAN_ID,
+      traceFlags: TraceFlags.SAMPLED,
+    };
+    const span = trace.getTracer('test').startSpan('linked', {
+      links: [
+        {
+          context: linked,
+          attributes: {
+            'url.full': `https://storage.example/object?X-Amz-Signature=${CANARY}`,
+            'url.query': `token=${CANARY}`,
+            'http.request.header.cookie': [CANARY],
+            'messaging.message.id': 'job-1',
+          },
+        },
+        { context: linked },
+      ],
+    });
+    span.end();
+
+    const out = await exported('linked');
+    expect(out?.links).toEqual([
+      {
+        context: linked,
+        attributes: {
+          'url.full': 'https://storage.example/object',
+          'http.request.header.cookie': REDACTED,
+          'messaging.message.id': 'job-1',
+        },
+      },
+      { context: linked },
+    ]);
+  });
+
+  it('sanitises the process resource; the attributes dashboards filter on survive', async () => {
+    trace.getTracer('test').startSpan('resource').end();
+
+    const out = await exported('resource');
+    expect(out?.resource.attributes).toEqual({
+      'service.name': 'jobs',
+      'service.version': '1.2.3',
+      'deployment.environment.name': 'staging',
+      'service.namespace': 'ai-stylist',
+      'telemetry.sdk.language': 'nodejs',
+      'telemetry.sdk.name': 'opentelemetry',
+      'telemetry.sdk.version': expect.any(String) as unknown,
+      'deploy.api_token': REDACTED,
+      'url.full': 'https://deploy.example/hook',
+    });
   });
 });

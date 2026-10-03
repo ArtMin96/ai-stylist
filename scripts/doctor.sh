@@ -4,6 +4,8 @@
 # Linux + macOS (bash 3.2-clean; POSIX df/grep only — see scripts/lib.sh for the helpers).
 set -euo pipefail
 source "$(dirname "${BASH_SOURCE[0]}")/lib.sh"
+# shellcheck source=scripts/github-lib.sh
+source "$(dirname "${BASH_SOURCE[0]}")/github-lib.sh"
 # shellcheck source=scripts/security/secrets-lib.sh
 source "$(dirname "${BASH_SOURCE[0]}")/security/secrets-lib.sh"
 # shellcheck source=scripts/security/secrets-doctor.sh
@@ -87,6 +89,9 @@ if have docker; then
     if os_is_darwin && [[ "$(darwin_docker_runtime)" == "colima" && -z "${DOCKER_HOST:-}" ]]; then
       warnc "Colima is the docker runtime but DOCKER_HOST is unset (Testcontainers cannot find the socket)" "export DOCKER_HOST=$colima_sock   (or switch to OrbStack: ./scripts/bootstrap.sh --system)"
     fi
+    # The Postgres container of docker-compose.yml and the compose project that owns it
+    # (scripts/lib.sh): a container left by another project blocks just dev-api / just dev-workers.
+    doctor_local_postgres
   elif os_is_darwin; then
     case "$(darwin_docker_runtime)" in
       orbstack) fail "docker daemon not reachable (OrbStack installed but not running)" "orb start" ;;
@@ -127,6 +132,8 @@ if [[ -f .env ]]; then
   else
     fail ".env missing ${#missing_keys[@]} key(s): ${missing_keys[*]}" "copy the lines from .env.example (values stay yours), or: just secrets-sync"
   fi
+  # An empty APP_ENV leaves deployment.environment.name off telemetry (scripts/lib.sh).
+  doctor_app_env
 else
   fail ".env not found" "cp .env.example .env   (or: just secrets-sync)"
 fi
@@ -146,6 +153,13 @@ fi
 # --- sops + age identity ---------------------------------------------------------
 secrets_select_env dev
 secrets_doctor_checks
+
+# --- the repository on GitHub (scripts/github-lib.sh; `just repo-setup`) ---------------------------
+# Offline, both of them: whether tracked files name the repository origin points at (a warning with
+# the command that re-points them), and whether gh is installed and logged in. The checks that need
+# the network (Actions secrets and variables, branch protection, labels) are `just repo-setup`.
+doctor_repo_name
+doctor_github_cli
 
 # --- git hooks (prek) -------------------------------------------------------------
 hooks_dir="$(git rev-parse --git-path hooks 2>/dev/null || echo .git/hooks)"

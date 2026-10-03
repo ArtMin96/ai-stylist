@@ -166,6 +166,11 @@ from the outbox append to the worker request, is
   `main.py` in the worker), not the validated API config, whose default `local` applies only to the
   application itself (`apps/api/src/config.ts`). Dashboard 01 still shows such data under
   "All" environments, but there is then no environment to pick and an alert's summary names none.
+  The tooling keeps this from happening locally: `just bootstrap` writes `local` into an empty
+  `APP_ENV` in `.env`, `just doctor` warns while it is empty, and `just dev-api` and
+  `just dev-workers` start each process with the exported value, else the `.env` value, else
+  `local` (`scripts/lib.sh`, `scripts/dev-app-env.sh`). A process started any other way with an
+  empty `APP_ENV` still exports without the attribute.
 - The exporters read the two `OTEL_EXPORTER_OTLP_*` keys themselves; the repository's code only
   tests the endpoint for emptiness. Format and consumers of the header:
   `.agents/skills/observability-analytics/references/grafana-cloud.md`.
@@ -219,14 +224,15 @@ The id is in the `x-correlation-id` response header of the request that started 
 
 1. **Logs first.** In Grafana, **Explore** with the Loki data source:
    `{service_name=~"api|jobs"} | correlation_id = "<id>"`. Every log line written inside a span also
-   carries `trace_id`. This query is given in `docs/observability/grafana.md`; it has not been run
-   against the live stack yet [unconfirmed].
+   carries `trace_id`. This query is given in `docs/observability/grafana.md`. Run against the
+   stack on 2026-10-03, it returned the API and jobs lines of one request with the same trace id.
 2. **Then the trace.** Open that `trace_id` in **Explore** with the Tempo data source. One trace
    shows the HTTP request, `outbox.dispatch …`, `job.process …` and the worker call.
 3. **Or straight to the trace.** The request span, both manual spans and the worker's span carry
-   the attribute `correlation_id`, so the TraceQL query `{ span.correlation_id = "<id>" }` should
-   find the trace. The attribute is [repo]; the query has not been run against the live stack
-   [unconfirmed].
+   the attribute `correlation_id`, so the TraceQL query `{ span.correlation_id = "<id>" }` finds
+   the trace. The attribute is [repo]. Run against the stack on 2026-10-03, the query returned
+   exactly one trace: 9 spans across `api`, `jobs` and `segmentation`, 4 of them carrying the id.
+   The root HTTP server span does not carry it; its child span `request` does.
 4. **Without Grafana.** The output of `just dev-api` and `just dev-workers` carries
    `correlation_id` on every line of the flow. The worker's log lines are only there: they do not
    reach Loki yet.

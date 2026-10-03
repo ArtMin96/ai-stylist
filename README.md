@@ -24,7 +24,7 @@ The operating rules for anyone (human or AI agent) changing code are in [`CLAUDE
 
 ## First-time setup
 
-You need Arch Linux (including Omarchy) or Ubuntu 22.04 or newer, or macOS (Apple Silicon or Intel; see [`docs/DEVELOPING-ON-MACOS.md`](docs/DEVELOPING-ON-MACOS.md) for the two Mac prerequisites), `git`, `curl`, at least 10 GB of free disk (`just doctor` fails below that; the pnpm store, Gradle caches and Docker images need it), and `sudo` for the one system step. Everything else is installed into your home directory by the bootstrap script, with exact versions pinned in `mise.toml`, so nothing here conflicts with tools you already have.
+You need Arch Linux (including Omarchy) or Ubuntu 22.04 or newer, or macOS (Apple Silicon or Intel; see [`docs/DEVELOPING-ON-MACOS.md`](docs/DEVELOPING-ON-MACOS.md) for the two Mac prerequisites), `git`, `curl`, at least 10 GB of free disk (`just doctor` fails below that; the pnpm store, Gradle caches and Docker images need it), and `sudo` for the one system step. Everything else is installed into your home directory by the bootstrap script, with exact versions pinned in `mise.toml`, so nothing here conflicts with tools you already have. If you already work on this repository on another machine, or the code is moving to another GitHub repository, read [`docs/NEW-REPO-SETUP.md`](docs/NEW-REPO-SETUP.md) first: it covers the second machine (Appendix A) and every step tied to the repository.
 
 ### 1. Clone
 
@@ -51,7 +51,7 @@ On both it installs the Android SDK packages into your home directory (no emulat
 ./scripts/bootstrap.sh
 ```
 
-This is safe to re-run at any time. It installs `mise` (the version manager) into `~/.local/bin` unless one is already on your PATH (a system package works; `MISE_BIN=/path/to/mise` forces a specific one), then every pinned tool (Node, pnpm, Python, Java, `just`, security scanners, and so on), then the JavaScript and Python dependencies, sets up git hooks, and creates your local `.env` from `.env.example`, with `DATABASE_URL` pointing at the local Docker Postgres.
+This is safe to re-run at any time. It installs `mise` (the version manager) into `~/.local/bin` unless one is already on your PATH (a system package works; `MISE_BIN=/path/to/mise` forces a specific one), then every pinned tool (Node, pnpm, Python, Java, `just`, security scanners, and so on), then the JavaScript and Python dependencies, sets up git hooks, and creates your local `.env` from `.env.example`, with `DATABASE_URL` pointing at the local Docker Postgres and `APP_ENV` set to `local` (each is filled only while it is empty).
 
 It also writes a short block into your shell's rc file: `~/.zshrc` for zsh, `~/.bashrc` for bash on Linux, `~/.bash_profile` for bash on macOS. The block activates `mise`, which puts the pinned tools on your PATH. It also hooks `direnv`, which loads `.env` and `~/.config/ai-stylist/env.sh` (`ANDROID_HOME`, the SDK's `platform-tools` on PATH) when you enter the repo. The block sits between marker lines, and a re-run replaces it in place without touching your other lines. When bootstrap finishes, open a new terminal; the repo's `.envrc` is already allowed. With a shell other than zsh or bash, bootstrap warns and you add the activation by hand. `just` recipes find the pinned tools without activation, but you need it to run `pnpm`, `node`, `uv`, or the SDK's `adb` by hand.
 
@@ -104,7 +104,7 @@ curl localhost:3000/v1/health     # {"status":"ok","checks":{"db":"ok"}}
 curl localhost:3000/v1/version
 ```
 
-`DATABASE_URL` in `.env` already points at this container (bootstrap filled it in). If port 5432 is already taken on your machine, set `POSTGRES_HOST_PORT=5433` in `.env` and change the port in `DATABASE_URL` to match. On the first run, apply the migrations once from a second terminal while `just dev-api` is up (it starts the database; `just db-migrate` does not): `just db-migrate`.
+`DATABASE_URL` in `.env` already points at this container (bootstrap filled it in). The container belongs to the compose project `ai-stylist` on every machine and from every checkout or worktree (export `COMPOSE_PROJECT_NAME` to use another). If `just dev-api` stops with "container name already in use", run `just doctor`: it prints the fix. If port 5432 is already taken on your machine, set `POSTGRES_HOST_PORT=5433` in `.env` and change the port in `DATABASE_URL` to match. On the first run, apply the migrations once from a second terminal while `just dev-api` is up (it starts the database; `just db-migrate` does not): `just db-migrate`.
 
 ### Workers
 
@@ -172,6 +172,7 @@ If it is green locally, it is green in CI. The CI workflows call the same `just`
 - `docs/adr/` records decisions. `docs/modules/<name>.md` is the contract for each backend module.
 - `secrets/README.md` is the technical guide for encrypted configuration, developer access, and key rotation.
 - `docs/SERVICES-SETUP.md` is the checklist for every external account and credential.
+- `docs/NEW-REPO-SETUP.md` is the guide for moving the code to another GitHub repository and for setting up another machine.
 - `.agents/skills/` holds step-by-step procedures for common task types (migrations, contract changes, security review, and so on).
 
 ## When something is red

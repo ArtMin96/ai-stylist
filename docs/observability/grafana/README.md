@@ -5,9 +5,9 @@ the contact point, mute timings and the notification policy (ADR-0007). `just ob
 pushes them over the Grafana HTTP API. Change a file here and re-run the sync; do not edit these
 objects in the Grafana UI. The sync overwrites the UI copy, and the alerting objects are locked there.
 
-> Status (2026-09-27): `just observability-sync` is implemented in `tools/observability/` (P02-T09)
-> and tested against local stubs; its first run against the stack is a human step once the keys
-> exist.
+> Status (2026-10-03): `just observability-sync` is implemented in `tools/observability/` (P02-T09)
+> and tested against local stubs. Its first run against the dev stack was on 2026-10-03
+> (`just observability-sync grafana`: 8 created, 1 updated; the second run: 9 unchanged).
 
 ## Files and API calls
 
@@ -35,7 +35,9 @@ Field notes the sync relies on:
   (default 43200) filled in, expressions included. Every model in `alerts/*.json` states both, so a
   stored rule equals its file and a second sync leaves it unchanged.
 - A dashboard has a stable `uid` and `"id": null`. Its panels use Grafana's own `${datasource}` variable,
-  so no datasource token is needed there.
+  so no datasource token is needed there. The `message` in row 6 is meant as the version note;
+  Grafana 13.3.0 recorded the first version as "Initial save" instead (seen 2026-10-03), and whether
+  a later version keeps the sync's message has not been seen.
 - Send no `X-Disable-Provenance` header. Provisioned alerting objects then stay read-only in the UI.
 - Every `/api` route in the table is deprecated since Grafana 13 in favour of `/apis/…`. Grafana's
   API reference marks the alerting provisioning routes (`/api/v1/provisioning/…`, rows 2 to 5) with
@@ -65,8 +67,9 @@ Separators in `GRAFANA_ALERT_EMAILS` (checked 2026-10-03). Grafana's source code
 contact point's addresses on `,`, `;` and newlines (`receivers/delimited_strings.go` in
 `github.com/grafana/alerting`), and its description of the **Addresses** field reads "You can enter
 multiple email addresses using a ";", "\n" or "," separator". Grafana's documentation pages state no
-rule; their one example separates two addresses with `;`. No list has been sent to this stack yet,
-because the first sync run is pending, so a single address is the only form that needs no check.
+rule; their one example separates two addresses with `;`. The first sync run (2026-10-03) sent the
+configured value, and the email integration reported no error when the alert fired. A list of
+several addresses has not been checked on this stack.
 
 ## Offline checks (`--check`, no network, CI-safe)
 

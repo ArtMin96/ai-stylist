@@ -52,8 +52,9 @@ difference is stated.
    - change anything in the Grafana Cloud screens: a token, a role, a dashboard, an alert rule, a
      contact point, a silence, the plan.
 3. Creating, storing and replacing credentials is a human task: the owner creates the token in the
-   Grafana screens, stores it with `just secrets-edit dev` and loads it with `just secrets-sync`.
-   An agent prepares the steps and stops.
+   Grafana screens, stores it with `just secrets-push --set <KEY>` (a hidden prompt) or
+   `just secrets-edit dev`, and loads it with `just secrets-sync`. An agent prepares the steps and
+   stops.
 
 ## The account as it exists
 
@@ -75,9 +76,11 @@ difference is stated.
   the user name the "Hosted Metrics instance ID", which contradicts the other pages [doc 22].
 - What the account looks like after the trial ends was not observed [unconfirmed]. The portal showed
   "You have 8 days with unlimited usage" [live]; the free-tier limits below are the planning basis.
-- As of 2026-10-03 `just observability-sync` has not been run against this stack in any mode, so the
-  folder, the dashboard, the alert rules, the contact point and the routing do not exist there yet
-  [live].
+- The first `just observability-sync` ran against this stack on 2026-10-03 [live]: it created the
+  folder, the contact point, the two mute timings, the three alert rule groups and the dashboard,
+  and replaced the stack's default notification policy (8 created, 1 updated). A second run
+  reported all 9 objects unchanged. Before that run the stack held only Grafana Cloud's own
+  objects.
 
 ## Two kinds of token
 
@@ -134,8 +137,9 @@ role that is too small.
 
 ## Env keys on the Grafana side
 
-All values are stored by a human with `just secrets-edit dev` and reach `.env` through
-`just secrets-sync`. What the code checks is [repo] `tools/observability/sync.mjs` unless noted.
+All values are stored by a human with `just secrets-push --set <KEY>` or `just secrets-edit dev`
+and reach `.env` through `just secrets-sync`. What the code checks is [repo]
+`tools/observability/sync.mjs` unless noted.
 
 | Key                             | What it is                                                        | What the code checks                                                                   |
 | ------------------------------- | ----------------------------------------------------------------- | -------------------------------------------------------------------------------------- |
@@ -148,10 +152,11 @@ All values are stored by a human with `just secrets-edit dev` and reach `.env` t
 
 - The sync masks the token, the address list and each single address in every line it prints [repo]
   `tools/observability/output.mjs`.
-- **Several alert addresses:** the repository's docs say Grafana splits the list on commas,
-  semicolons and newlines. The official email page shows only a semicolon between addresses and
-  says "Email addresses are case sensitive" [doc 10]. That a comma works is [unconfirmed]; a single
-  address avoids the question.
+- **Several alert addresses:** `docs/observability/grafana/README.md` quotes Grafana's source
+  code, which splits the list on commas, semicolons and newlines. The official email page shows
+  only a semicolon between addresses and says "Email addresses are case sensitive" [doc 10]. A
+  list of several addresses has not been checked on this stack [unconfirmed]; a single address
+  avoids the question.
 - **Time zone:** write the full area and city name, for example Europe/Berlin. The repository's
   check is looser than that (it also accepts short names such as CET), and what Grafana itself
   accepts in a mute timing is [unconfirmed].
@@ -182,8 +187,8 @@ Three programs read this key:
   `Authorization: Basic …` header. The probe used the installed exporter versions (Node exporters
   0.222.0, Python exporter 1.45.0) and was not re-run for this file. The CI parser's
   percent-decoding is [repo].
-- `docs/SERVICES-SETUP.md` and `.env.example` show the spelling with a space. Both work; store the
-  `%20` form.
+- `.env.example` still shows the spelling with a space in its example. Both work; store the `%20`
+  form, which is what `docs/SERVICES-SETUP.md` §11 step 3 builds.
 - The portal's ready-made environment variables appear only after a token is made through the
   OpenTelemetry tile, which was not used. How the portal itself spells the header is [unconfirmed].
 - The exporters are the protobuf-over-HTTP ones, fixed in code [repo]. The protocol variable the
@@ -226,15 +231,17 @@ Stylist").
 
 ## Where to look in the Grafana screens
 
-The left menu entries **Administration** → **Users and access** were walked [live]. The paths in
-this section come from official pages and were not walked in this stack, because nothing has been
-synced yet.
+The left menu entries **Administration** → **Users and access** were walked [live]. On 2026-10-03,
+after the first sync, the alert rule's page, its History tab, the dashboard's folder and one trace
+in Explore were opened by their addresses [live]. The menu paths in this section still come from
+official pages; they were not clicked through in this stack.
 
 - **A trace by its id:** **Explore** → pick the Tempo data source → **TraceQL** tab → paste the
   trace id → **Run query** [doc 11]. `{ trace:id = "<id>" }` works too.
 - **A trace by correlation id:** in the same tab, `{ span.correlation_id = "<id>" }`. The spans
-  carry that attribute [repo] `apps/api/src/platform/telemetry/correlation.ts`; the query has not
-  been run against this stack [unconfirmed]. The log-first route is in
+  carry that attribute [repo] `apps/api/src/platform/telemetry/correlation.ts`. Sent through
+  Grafana's query API on 2026-10-03, the query returned exactly the one trace of the request: 9
+  spans across `api`, `jobs` and `segmentation` [live]. The log-first route is in
   `.agents/skills/observability-analytics/references/opentelemetry.md`.
 - **A link to a trace:** **Share** in the Explore toolbar gives a short link; choose an option
   under **Time-Sync URL Links** for a fixed time range [doc 12].
@@ -301,7 +308,8 @@ them (Rules).
    only once."). Copy the **Token** field, then click **Close**.
 9. Build the header value in a terminal that no agent can see: join the Instance ID, a colon and
    the token, base64-encode that text without a trailing line break, and put
-   `Authorization=Basic%20` in front.
+   `Authorization=Basic%20` in front. `docs/SERVICES-SETUP.md` §11 step 3 has commands that do
+   this and store the result without showing the token.
 
 The **Generate now** link on the OpenTelemetry page was opened and closed without creating
 anything. Its dialog "Create an API token" has a read-only "Access policy name", a "Token name"
@@ -341,11 +349,11 @@ win.
 - **The older API routes in general.** The same page says that, starting in Grafana 13, the routes
   whose path begins with "api" are being deprecated in favour of routes whose path begins with
   "apis" [doc 9]. This stack already runs Grafana 13.3.0 [live].
-- `tools/observability/README.md` and `docs/observability/grafana/README.md` say these routes
-  "remain operative with no removal date". That is still true as far as a date goes, but the
-  official wording is stronger: removal is announced. A sync call that starts failing with 404 or
-  410 is this deprecation arriving; report it to the owner of `tools/observability/` and do not
-  work around it.
+- `docs/observability/grafana/README.md` quotes the official wording. `tools/observability/README.md`
+  still says these routes "remain operative with no removal date". That is true as far as a date
+  goes, but the official wording is stronger: removal is announced. A sync call that starts
+  failing with 404 or 410 is this deprecation arriving; report it to the owner of
+  `tools/observability/` and do not work around it.
 
 ## Vendor material an agent may read
 
@@ -361,31 +369,23 @@ win.
 
 ## Where this repository's docs differ from what was seen
 
-These are recorded so nobody follows the stale line. The files are outside this skill; their owners
-apply the fix.
+This section records a stale line so nobody follows it. The files are outside this skill; their
+owners apply the fix.
 
-- `docs/SERVICES-SETUP.md` §11 says to create a stack named `ai-stylist`. The stack is named
-  `hugesnail1458`, and a free account has one stack [live] [doc 17].
-- The same section says "select the stack, then **Configure**". The stack card's buttons are
-  **Launch** and **Details**; **Details** leads to the tile page [live].
-- It says to generate a token with "role write" and to copy the ready-made variables. There is no
-  role field, the tile's scopes are fixed and broad, and the variables appear only after a tile
-  token is made [live].
-- It says to add the service account token "with a 90-day expiry". There is no such preset; a date
-  is picked in a calendar [live].
-- Its credential test says to take the text after `Authorization=Basic` and a space. With the
-  stored spelling the text follows `Authorization=Basic%20`.
-- `docs/observability/grafana.md` writes "Alerting → Silences", "Alerting → Alert rules" and
-  "Alerting → History". The official pages put each under **Alerts & IRM** → **Alerting**
-  [doc 13] [doc 14].
-- `docs/observability/grafana.md` and `docs/observability/README.md` say the CI row waits for a
-  workflow change. The push step is already in `.github/workflows/pr-gate.yml`; only the two
-  GitHub secrets are missing [repo].
-- `docs/observability/grafana.md` and `docs/SERVICES-SETUP.md` give the endpoint as one fixed
-  pattern. Newer regions use a longer host name [doc 2].
-- `docs/observability/grafana/README.md` says Grafana splits the alert address list on commas,
-  semicolons and newlines. No page fetched says so; only a semicolon appears in an official example
-  [doc 10].
+The differences recorded here on 2026-10-03 were corrected the same day: `docs/SERVICES-SETUP.md`
+§11 (the stack's name, the **Details** button, the access policy in place of a "role write" token,
+the calendar in place of a 90-day preset, the `Authorization=Basic%20` spelling in the credential
+test, the endpoint copied from the portal), `docs/observability/grafana.md` and
+`docs/observability/README.md` (the **Alerts & IRM** menu paths, the CI row that waits only for
+the two GitHub secrets), and `docs/observability/grafana/README.md` (the separators of the alert
+address list, now with their source).
+
+Still open:
+
+- `.env.example` gives the OTLP header example with a space after `Basic`. The stored value uses
+  `Basic%20`.
+- `tools/observability/README.md` words the alerting API deprecation more weakly than Grafana's
+  reference does (see "Known deprecations").
 
 ## Sources
 

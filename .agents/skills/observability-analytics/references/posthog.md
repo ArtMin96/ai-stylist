@@ -62,8 +62,9 @@ difference is stated.
    - change anything in the PostHog screens: a flag's state or rollout, a project setting, a
      transformation, a key, the project token.
 3. Creating, storing and replacing keys is a human task: the owner creates the key in the PostHog
-   screens, stores it with `just secrets-edit dev` and loads it with `just secrets-sync`. An agent
-   prepares the steps and stops.
+   screens, stores it with `just secrets-push --set <KEY>` (a hidden prompt) or
+   `just secrets-edit dev`, and loads it with `just secrets-sync`. An agent prepares the steps and
+   stops.
 
 ## The account as it exists
 
@@ -98,11 +99,11 @@ PostHog has two addresses per region, and each key belongs to exactly one of the
 
 ## The keys
 
-| Env key                | What it is                                 | Value starts with | Rights                                                                      | Lives in                                                    |
-| ---------------------- | ------------------------------------------ | ----------------- | --------------------------------------------------------------------------- | ----------------------------------------------------------- |
-| `POSTHOG_API_KEY`      | the project token                          | `phc_`            | none to choose; send-only                                                   | sops dev, then `.env`. Never in GitHub                      |
-| `POSTHOG_CLI_API_KEY`  | personal key labelled `symbol-upload`      | `phx_`            | `organization:read`, `error_tracking:write`; access **Organizations**       | sops dev, then `.env`; also a GitHub secret                 |
-| `POSTHOG_SYNC_API_KEY` | personal key labelled `observability-sync` | `phx_`            | `project`, `feature_flag`, `hog_function` at **Write**; access **Projects** | sops dev, then `.env`. Never in GitHub. **Not created yet** |
+| Env key                | What it is                                 | Value starts with | Rights                                                                      | Lives in                                    |
+| ---------------------- | ------------------------------------------ | ----------------- | --------------------------------------------------------------------------- | ------------------------------------------- |
+| `POSTHOG_API_KEY`      | the project token                          | `phc_`            | none to choose; send-only                                                   | sops dev, then `.env`. Never in GitHub      |
+| `POSTHOG_CLI_API_KEY`  | personal key labelled `symbol-upload`      | `phx_`            | `organization:read`, `error_tracking:write`; access **Organizations**       | sops dev, then `.env`; also a GitHub secret |
+| `POSTHOG_SYNC_API_KEY` | personal key labelled `observability-sync` | `phx_`            | `project`, `feature_flag`, `hog_function` at **Write**; access **Projects** | sops dev, then `.env`. Never in GitHub      |
 
 An account can hold up to 10 personal keys [doc 2]. Before 2026-10-03 this account had none
 [live]. A later task (P03) adds one more personal key for the deletion adapter; its env name does
@@ -142,17 +143,13 @@ not exist yet (`docs/SERVICES-SETUP.md` §10).
 
 ### The sync key (`POSTHOG_SYNC_API_KEY`)
 
-**This key did not exist on 2026-10-03.** Its form was partly filled and never submitted [live].
-Everything below is the plan, with its evidence.
-
-- **Label:** `observability-sync`. No key with that label exists, so no dated suffix is needed
-  [live].
-- **Access mode: Projects**, with "Default project" ticked. The screen describes the mode as "This
-  will only allow access to selected projects." and listed that one project [live].
-- **Scopes:** Project, Feature flag and Hog function, each at **Write**; nothing else. The three
-  row labels come from PostHog's frontend source [doc 11]. They were **not reached in the live
-  screen**, so their exact wording there is [unconfirmed]. No preset sets this combination; use the
-  **Search scopes…** box [live].
+- Created on 2026-10-03 with the label `observability-sync` [live].
+- **Access mode: Projects**, with the one project ticked. The screen describes the mode as "This
+  will only allow access to selected projects." [live].
+- **Scopes:** the rows **Project**, **Feature flag** and **Hog function**, each at **Write**;
+  nothing else. Typing each name into the **Search scopes…** box leaves exactly that row [live].
+  No preset sets this combination. After creation the key's row shows `project:write`,
+  `feature_flag:write` and `hog_function:write` [live].
 - **Why Write only:** each row offers one choice of **No access**, **Read** or **Write** [live],
   and PostHog's source says a write scope covers the matching read [doc 11]. The repository's docs
   list six scope names (`project:read`, `project:write` and so on); that is the same thing spelled
@@ -163,9 +160,10 @@ Everything below is the plan, with its evidence.
   `capture_console_log_opt_in` and `capture_performance_opt_in` [doc 11], and the sync always sends
   the whole settings object [repo]. An organization owner is a project admin automatically
   [doc 4].
-- **Untested:** whether a project-scoped key is accepted on the project read and update calls. The
-  source suggests yes. If the owner's dry run answers 403 on that call, the fix is to change the
-  key's access mode to **Organizations** [unconfirmed].
+- **Checked** [live]: with this key the reads of the project, of the flag list and of the
+  transformation list returned 200, and the first real sync run sent its `PATCH` and `POST` calls
+  without an error. So a key limited to **Projects** is accepted on the project read and update
+  calls, and **Organizations** access is not needed.
 - **Never a GitHub secret.** It can change settings and flags; a build needs neither.
 
 ## Click path walked on 2026-10-03
@@ -192,9 +190,9 @@ them (Rules).
    text "the value above will never be shown again".
 8. Copy the value, then click **Okay**.
 
-For the sync key the walk stopped inside step 5: the label was typed, **Projects** was chosen and
-the project list was open. Steps 5 (ticking the project), 6, 7 and 8 remain, and none of the three
-scope rows was seen.
+Both keys were made with these steps: the upload key with **Organizations** and the preset
+**Source map upload**, the sync key with **Projects** and the three rows set by hand through
+**Search scopes…**.
 
 Differences from the official page: it calls the button "+ Create a personal API Key" and does not
 mention the access mode [doc 2]. The live labels win. PostHog's source adds that the form will not
@@ -226,8 +224,10 @@ submit until an access mode is chosen [doc 11].
   project only under the organization (`/api/organizations/<organization id>/projects/<id>/`). The
   shorter path the sync uses is marked as hidden from the API docs but used by PostHog's own app
   [doc 11]. It works today; if the settings step starts failing with 404, this is the first thing
-  to check. `docs/observability/posthog/README.md` calls the shorter path "canonical", which the
-  vendor does not say.
+  to check. `docs/observability/posthog/README.md` records the same.
+- **The first run** [live]: on 2026-10-03 the sync applied the settings, disabled the GeoIP
+  transformation and created the flag `demo-outbox-flow`, with no warning. A second run reported
+  all three objects `unchanged`.
 
 ## The life of a feature flag
 
@@ -246,9 +246,14 @@ Flags gate rollouts and experiments only, never a paid capability. The registry
    registry, so a typo fails `just typecheck`.
 4. **Roll out.** A human, in the PostHog screens, following the entry's rollout plan. Because the
    flag was created at 0 %, switching it on is not enough: the release condition must be raised as
-   well [repo]. The screen names come from PostHog's source and were not walked: open the flag at
-   `https://us.posthog.com/feature_flags`, switch **Enable feature flag**, edit **Release
-   conditions**, then **Save** [doc 11].
+   well [repo]. Walked on 2026-10-03 [live]: open the flag from
+   `https://us.posthog.com/feature_flags` and click **Edit**; under **Release conditions**, in
+   condition set 1, **Rollout percentage**, pick the preset (for example **100%**); switch
+   **Enabled** on (the edit form's name for the Overview switch **Enable feature flag**); click
+   **Save**. To roll back: on the Overview tab switch **Enable feature flag** off and confirm
+   **Disable only** in the dialog "Disable this flag?", never **Disable and archive**. The rollout
+   percentage is kept. The API answered 202 about 15 s after the flag was saved as on, and 404
+   again 13 s after it was switched off.
 5. **Report.** `just flags-report` lists every flag with owner and days left, and exits 1 when a
    rollout or experiment flag is past its expiry. The nightly job `expired-flags` in
    `.github/workflows/nightly.yml` runs it.
@@ -266,7 +271,9 @@ How the API reads a flag, [repo] `apps/api/src/platform/feature-flags/README.md`
 - with an empty `POSTHOG_API_KEY` no request is made and every flag takes that default.
 
 The registry holds one flag today, `demo-outbox-flow` (expires 2026-12-26, default when
-unavailable: on). When it is off, `POST /v1/dev/demo-events` answers 404; when on, 202 [repo].
+unavailable: on). When it is off, `POST /v1/dev/demo-events` answers 404; when on, 202 [repo]. In
+the dev project it was left off with its condition set at 100 % on 2026-10-03 [live], so there the
+Overview switch alone is expected to turn it on (not tried).
 Once the monthly flag-request allowance is used up, PostHog answers with a quota-limited response
 [doc 8], the default applies, and switching that flag off stops having an effect.
 
@@ -285,7 +292,10 @@ uploads nothing.
 - In CI the iOS and Android workflows pass the three values on `main` only; pull requests upload
   nothing [repo] `.github/workflows/ios.yml`, `.github/workflows/android.yml`.
 - `just doctor` checks that posthog-cli is on the path.
-- As of 2026-10-03 no upload has run with the new key: its row shows "Last used: Never" [live].
+- The GitHub secret and the two variables were set on 2026-10-03, and the `main` builds of that
+  day uploaded with them: 4 dSYMs from the iOS job, and R8 mappings for the Android preview and
+  release variants. A crash from a real Mac build or a device, shown symbolicated in PostHog, has
+  not been collected yet (Linear AI-28).
 
 How to tell that an upload worked, beyond the build output:
 
@@ -322,7 +332,7 @@ Things that break quietly:
 | 1,000,000 flag requests a month                                       | the API asks once per 10 seconds while it runs, about 260,000 a month per running API process | [doc 9]    |
 | 100,000 exceptions a month                                            | crash reports count here                                                                      | [doc 9]    |
 | 5,000 session recordings a month                                      | unused: replay is off                                                                         | [doc 9]    |
-| 10 personal API keys per account                                      | two are planned now, a third in P03                                                           | [doc 2]    |
+| 10 personal API keys per account                                      | two exist, a third is planned in P03                                                          | [doc 2]    |
 | moving a project to another region needs the Scale or Enterprise plan | an EU requirement (OQ-07) means a new organization and project on EU Cloud, not a move        | [doc 3]    |
 
 The flag-request estimate is arithmetic on the 10-second cache [repo], not a measured number.
@@ -340,25 +350,22 @@ Leaving the free plan is an ADR, not a setting to change (the skill's "Stop / es
 
 ## Where this repository's docs differ from what was seen
 
-These are recorded so nobody follows the stale line. The files are outside this skill; their owners
-apply the fix.
+This section records a stale line so nobody follows it. The files are outside this skill; their
+owners apply the fix.
 
-- `docs/SERVICES-SETUP.md` §10 names the organization `ai-stylist` and the project
-  `ai-stylist-dev`. They are "Garderi Test" and "Default project" [live].
-- It calls the token "Project API key". The label is **Project token** [live].
-- It lists scopes as six names and says "limited to the project". The form has named rows with
-  three choices and an access mode [live].
-- It does not mention the preset **Source map upload** or that the upload key must use the access
-  mode **Organizations** [live] [doc 11].
-- It, and `docs/observability/posthog.md`, say a region "cannot change". PostHog moves a project
-  between regions for Scale and Enterprise customers only [doc 3].
-- They plan a second project for production without noting the free plan's limit of one [doc 9].
-- `docs/observability/posthog/README.md` says the sync does not request archived flags yet. It
-  does [repo] `tools/observability/posthog.mjs`; `tools/observability/README.md` already says so.
-- `docs/observability/posthog.md` calls the nightly `expired-flags` job a placeholder. The job in
-  `.github/workflows/nightly.yml` already runs `just flags-report` [repo].
-- Code comments in `apps/api/src/config.ts` and under `apps/api/src/platform/feature-flags/` use
-  the EU host as their example. The project is on US Cloud.
+The differences recorded here on 2026-10-03 were corrected the same day: `docs/SERVICES-SETUP.md`
+§10 (account names, the **Project token** label, the key form with its access mode and the preset
+**Source map upload**, the region move, the free plan's one project), `docs/observability/posthog.md`
+and `docs/observability/posthog/README.md` (region move, project limit, archived flags, the nightly
+`expired-flags` job), and the code comments in `apps/api/src/config.ts` and under
+`apps/api/src/platform/feature-flags/` that gave the EU host as their example.
+
+Still open:
+
+- `.env.example` describes the two personal keys by scope names only ("error tracking write +
+  organization read", "project, feature_flag, hog_function read/write"). The form's access mode
+  (**Organizations** for the upload key, **Projects** for the sync key) and the preset **Source
+  map upload** are not mentioned there.
 
 ## Sources
 

@@ -3,8 +3,8 @@
 `just observability-sync` applies these definitions to the PostHog project named by
 `POSTHOG_CLI_PROJECT_ID`. Developer guide: [../posthog.md](../posthog.md).
 
-> Status (2026-09-27): implemented in `tools/observability/` (P02-T09) and tested against local
-> stubs. Until its first run against the project, a human applies the same settings in PostHog.
+> Status (2026-10-03): implemented in `tools/observability/` (P02-T09), tested against local stubs
+> and applied to the dev project; a second run reported every object `unchanged`.
 
 ## Inputs
 
@@ -40,13 +40,11 @@ Click **Create key**. The dialog **Personal API key ready** shows the value once
 closing, because PostHog never shows it again. The symbol-upload key must use **Organizations**: the
 **Organization** row is not available on a key limited to **Projects**.
 
-Not confirmed yet (2026-10-03), because the sync key has not been created:
+Confirmed on the live form and API (2026-10-03):
 
-- The row labels **Project**, **Feature flag** and **Hog function** come from PostHog's frontend
-  source, not from the live form. The rest of the form was seen live.
-- A key limited to **Projects** has not been tried on `GET` and `PATCH /api/projects/<id>/` (step 1
-  under Calls). If `just observability-sync posthog --dry-run` answers 403 on that path, edit the
-  key and change its access to **Organizations**.
+- The scope rows are labelled **Project**, **Feature flag** and **Hog function**.
+- A key limited to **Projects** is accepted on `GET` and `PATCH /api/projects/<id>/` (step 1 under
+  Calls), so **Organizations** access is not needed for the sync key.
 
 ## Calls (base `${POSTHOG_CLI_HOST}/api/projects/${POSTHOG_CLI_PROJECT_ID}`)
 

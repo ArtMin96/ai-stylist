@@ -1,10 +1,24 @@
 # Proposal: `docs/SERVICES-SETUP.md` §10 PostHog and §11 Grafana Cloud key setup, matched to the live UIs and official docs (AI-17, P02-T09)
 
-> Status: OPEN (2026-10-03, AI-17) — nothing applied. Part B is one diff for the human-only
-> `docs/SERVICES-SETUP.md`; Part E lists corrections that belong to other owners; Part F lists the
-> questions to answer before applying. The diff describes the vendor UIs as they were on 2026-10-03:
-> if much time has passed, re-check the labels first. Proposed 2026-10-03 by docs-maintainer
-> (worktree agent-a3450284fcf28af2b, base 1655729).
+> Status: APPLIED (2026-10-03, AI-17), by hand and with changes, by a docs agent in a session for
+> which the owner authorized agents to edit the human-only docs. Do not re-apply the diff.
+> Part B: all six hunks are in `docs/SERVICES-SETUP.md`, adapted to the answers to Part F. F1: the
+> steps stay name-independent. F2: the explicit access policy and `Authorization=Basic%20` are the
+> documented way. F3: the `gh` sentence is kept, in the forms the owner ran that day
+> (`gh secret set <NAME> < <file>`, `gh variable set <NAME> --body '<value>'`). F4: the token is
+> read with `read -rs` and the header is piped into `just secrets-push --set`, so it is never typed
+> on a command line; the Verify test reads the header from the environment. Every "type the line"
+> and `just secrets-edit dev` storing step became `just secrets-push --set <KEY>`
+> (`.claude/plans/2026-10-03-setup-automation-proposal.md`, "Interplay"). D1 is settled: the sync
+> key exists, and its three scope rows and its **Projects** access were confirmed live.
+> Part E: the `docs/observability/**` items were already in the tree, in its own wording, from the
+> observability docs pass of the same day; applied with this banner:
+> `docs/adr/0007-observability-backend.md` line 38 and the three code comments. Not applied:
+> `.env.example` (three comment lines),
+> `tools/observability/README.md` lines 118–119, `secrets/README.md` (the path guard refused the
+> edit), `planning/16-risks-open-questions-and-decision-log.md` lines 68 and 145, and the Linear
+> text. F5 to F10 stay open. Proposed 2026-10-03 by docs-maintainer (worktree
+> agent-a3450284fcf28af2b, base 1655729).
 
 `docs/SERVICES-SETUP.md` is human-only (`.claude/rules/docs-and-progress.md`,
 `.claude/rules/human-only.md`). Apply Part B by hand, or authorize one session to apply exactly that

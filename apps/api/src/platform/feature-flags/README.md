@@ -27,7 +27,9 @@ answer. Policy (owner, expiry, rollout plan, safe off state): planning/14 §11 a
   request. No personal or secret key is configured, so there is no local-evaluation poller.
 - **Bounded.** `FEATURE_FLAG_TIMEOUT_MS` (1.5 s) per request (posthog-node
   `featureFlagsRequestTimeoutMs`, headers and body), no retry, plus an outer `withTimeout`.
-- **Outcomes** (logged as `{ flag, outcome }`, nothing else):
+- **Outcomes** (logged as `{ flag, outcome }` with `component: "feature-flags"` and, inside a
+  request, its `correlation_id`; `on` / `off` / `inactive` at debug, `unavailable` /
+  `unregistered` at warn, so run with `LOG_LEVEL=debug` to see an evaluation):
   - `on` / `off`: the flag's value in the reply.
   - `inactive`: absent from a clean reply → **off**. Remote `/flags` omits a flag that is inactive
     in PostHog (posthog-node `getFeatureFlagResult` docs; PostHog/posthog-js PR #4785, merged

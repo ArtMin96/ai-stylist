@@ -10,6 +10,14 @@
 #
 # Host port defaults to 5432; set POSTGRES_HOST_PORT in .env when another Postgres already
 # listens there (DATABASE_URL must use the same port).
+
+# One compose project on every machine, whatever the checkout directory is called. The container
+# name below is fixed, so a project named after the directory (compose's default) collides with the
+# container of every other checkout and worktree. The justfile exports the same name for its
+# recipes; an exported COMPOSE_PROJECT_NAME overrides both (scripts/lib.sh COMPOSE_PROJECT_DEFAULT;
+# scripts/test/bootstrap-doctor.test.sh fails when the two differ).
+name: ai-stylist
+
 services:
   postgres:
     image: pgvector/pgvector:pg18

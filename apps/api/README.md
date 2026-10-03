@@ -6,9 +6,12 @@ NestJS on the Fastify adapter. `src/main.ts` + `src/app.module.ts` are the compo
 `src/platform/` holds ports and infrastructure adapters; `src/modules/<name>/` one directory per
 SPINE domain module (13, registered in `DOMAIN_MODULES`; public API = `index.ts`).
 
-- `just dev-api` — compose Postgres (`docker compose up -d --wait postgres`) + package script
+- `just dev-api` — compose Postgres (`docker compose up -d --wait postgres`, in compose project
+  `ai-stylist` from every checkout and worktree; `just doctor` reports a container that another
+  project owns) + package script
   `dev` (`tsx watch` of `src/main.ts` behind the telemetry `--import` entry; no build step),
-  reading the repo-root `.env`. Run `just db-migrate`
+  reading the repo-root `.env`. The recipe passes `APP_ENV` as the exported value, else the `.env`
+  value, else `local`. Run `just db-migrate`
   once first ([packages/db](../../packages/db/README.md)). tsx does not emit decorator metadata, so every
   injected constructor parameter uses an explicit `@Inject(TOKEN)`.
 - With `DATABASE_URL` set, the API process also runs the outbox relay: on bootstrap it starts a

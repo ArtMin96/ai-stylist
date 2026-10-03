@@ -19,7 +19,13 @@ traces only; see below). Dashboards, alert rules and routing are JSON files in
 | `OTEL_EXPORTER_OTLP_ENDPOINT` | the stack's OTLP endpoint, a URL ending in `/otlp`, copied from the Grafana Cloud Portal (step 1). **Empty = export disabled**, so tests, CI and local runs need no Grafana account.                                             |
 | `OTEL_EXPORTER_OTLP_HEADERS`  | `Authorization=Basic%20<base64 of instanceId:token>` (secret; step 1)                                                                                                                                                            |
 | `OTEL_SERVICE_NAME`           | per process, as in the table above. `just dev-api` / `just dev-workers` set it on the command line (`api`, `jobs`, `segmentation`), so a shared `.env` value never renames a process (`scripts/test/dev-service-names.test.sh`). |
-| `APP_ENV`                     | becomes the resource attribute `deployment.environment.name`, which dashboards filter by                                                                                                                                         |
+| `APP_ENV`                     | becomes the resource attribute `deployment.environment.name`, which dashboards filter by and the DLQ alert groups by. An empty value leaves the attribute off (see the note below).                                              |
+
+An empty `APP_ENV` is kept from reaching telemetry locally: `just bootstrap` writes `local` into an
+empty `APP_ENV` in `.env`, `just doctor` warns while it is empty, and `just dev-api` /
+`just dev-workers` start each process with the exported value, else the `.env` value, else `local`
+(`scripts/test/bootstrap-doctor.test.sh`). A process started any other way with an empty `APP_ENV`
+exports without the attribute.
 
 1. Human, once per environment: create the stack's OTLP token (`docs/SERVICES-SETUP.md` §11). Use a
    separate token per environment, so one can be revoked alone.
@@ -31,11 +37,14 @@ traces only; see below). Dashboards, alert rules and routing are JSON files in
      2026-10-03).
    - Headers: `Authorization=Basic%20` followed by the base64 of `<Instance ID>:<token>`. The
      Instance ID is the number under "Instance ID" on the same page. Encode the pair in your own
-     terminal, never one an AI agent can read:
-     `printf '%s' '<Instance ID>:<token>' | base64 | tr -d '\n'`. `%20` is an encoded space. The
+     terminal, never one an AI agent can read, with the commands in `docs/SERVICES-SETUP.md` §11
+     step 3: they read the token without showing it and store the finished header, so the token
+     is never typed on a command line. `%20` is an encoded space. The
      Node and Python OTLP exporters and the CI metrics script percent-decode header values, so the
      request carries `Authorization: Basic …` while the stored value holds no space.
-2. `just secrets-edit dev` to store the endpoint and headers, then `just secrets-sync` to write `.env`.
+2. Those commands store the headers; store the endpoint with
+   `just secrets-push --set OTEL_EXPORTER_OTLP_ENDPOINT` (or `just secrets-edit dev`), then
+   `just secrets-sync` to write `.env`.
 3. `just dev-api`, then `curl localhost:3000/v1/health`. The request shows up in Explore → Tempo within
    a minute.
 
@@ -130,8 +139,9 @@ older flow is gone.
 ## Dashboards and alerts
 
 Files and the sync contract are in [`grafana/README.md`](grafana/README.md). Run
-`just observability-sync` after changing a file, `owners.json` or an alert address. Nothing below is
-in the stack before the first sync run, which is a human step once the keys exist.
+`just observability-sync` after changing a file, `owners.json` or an alert address. The first sync
+run was on 2026-10-03: the folder, contact point, mute timings, policy, three rule groups and
+dashboard 01 are in the stack. A new stack holds none of them until its first sync run.
 
 | Object                                                                       | File                                        | Can show data or fire once synced                                                                                                                                                                                         |
 | ---------------------------------------------------------------------------- | ------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |

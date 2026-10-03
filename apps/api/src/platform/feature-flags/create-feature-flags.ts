@@ -12,7 +12,7 @@ import {
 export type FeatureFlagsConfig = {
   /** `POSTHOG_API_KEY`: the project key `phc_…`. Empty or undefined: registry defaults. */
   readonly apiKey: string | undefined;
-  /** `POSTHOG_HOST`, e.g. `https://eu.i.posthog.com`. Required when `apiKey` is set. */
+  /** `POSTHOG_HOST`, e.g. `https://us.i.posthog.com`. Required when `apiKey` is set. */
   readonly host: string | undefined;
   /** A pino logger built from `loggerOptions()`. */
   readonly logger: Logger;

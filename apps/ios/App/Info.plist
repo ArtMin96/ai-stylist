@@ -9,6 +9,15 @@
 <dict>
 	<key>AIStylistAPIBaseURL</key>
 	<string>$(API_BASE_URL)</string>
+	<!--
+	  PostHog project key (phc_..., public by design) and ingestion host, from the build settings
+	  POSTHOG_API_KEY / POSTHOG_HOST: never committed (Config/Base.xcconfig says where they come from).
+	  Empty key = analytics sink is NoopSink and the PostHog SDK never runs.
+	-->
+	<key>AIStylistPostHogAPIKey</key>
+	<string>$(POSTHOG_API_KEY)</string>
+	<key>AIStylistPostHogHost</key>
+	<string>$(POSTHOG_HOST)</string>
 	<key>NSAppTransportSecurity</key>
 	<dict>
 		<!-- Dev talks to http://localhost:3000; local networking only, never arbitrary loads. -->

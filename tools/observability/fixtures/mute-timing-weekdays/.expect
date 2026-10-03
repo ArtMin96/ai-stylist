@@ -1,0 +1,4 @@
+ERROR [weekday] docs/observability/grafana/mute-timings.json: [1].time_intervals[0].weekdays[0]: weekday range 'monday:sunday' runs backwards; Grafana rejects it (use sunday:saturday)
+ERROR [weekday] docs/observability/grafana/mute-timings.json: [2].time_intervals[1].weekdays[0]: weekday range 'friday:tuesday' runs backwards; Grafana rejects it (use sunday:saturday)
+ERROR [weekday] docs/observability/grafana/mute-timings.json: [2].time_intervals[1].weekdays[1]: 'funday' is not a day name or a day:day range (sunday to saturday)
+ERROR [weekday] docs/observability/grafana/mute-timings.json: [2].time_intervals[1].weekdays[2]: 'monday:wednesday:friday' is not a day name or a day:day range (sunday to saturday)

@@ -131,6 +131,18 @@ else
   fail ".env not found" "cp .env.example .env   (or: just secrets-sync)"
 fi
 
+# --- observability keys in .env (informational: set or empty, never a value) -------------------
+# Every group is optional locally: an empty key switches its feature off instead of breaking a
+# recipe. Values come from `just secrets-sync`; env_file_key_states (scripts/lib.sh) prints only
+# "set", "empty" or "absent" per key.
+if [[ -f .env ]]; then
+  note "OTel export, empty endpoint = off: $(env_file_key_states .env OTEL_EXPORTER_OTLP_ENDPOINT OTEL_EXPORTER_OTLP_HEADERS)"
+  note "PostHog SDK, empty key = no events, API flags use registry defaults: $(env_file_key_states .env POSTHOG_API_KEY POSTHOG_HOST)"
+  note "PostHog symbol upload, runs only when all three are set: $(env_file_key_states .env POSTHOG_CLI_API_KEY POSTHOG_CLI_PROJECT_ID POSTHOG_CLI_HOST)"
+  note "PostHog sync (just observability-sync posthog): $(env_file_key_states .env POSTHOG_SYNC_API_KEY)"
+  note "Grafana sync (just observability-sync grafana): $(env_file_key_states .env GRAFANA_URL GRAFANA_SERVICE_ACCOUNT_TOKEN GRAFANA_ALERT_EMAILS GRAFANA_ONCALL_TIMEZONE)"
+fi
+
 # --- sops + age identity ---------------------------------------------------------
 secrets_select_env dev
 secrets_doctor_checks
@@ -157,6 +169,28 @@ elif os_is_darwin; then
   fail "jq not installed (the Claude Code guards in scripts/hooks/ deny every edit and command without it)" "brew install jq   (macOS 15+ ships /usr/bin/jq)"
 else
   fail "jq not installed (the Claude Code guards in scripts/hooks/ deny every edit and command without it)" "sudo pacman -S jq   (or: sudo apt-get install jq)"
+fi
+
+# --- posthog-cli (native symbol uploads) ---------------------------------------------------------
+# mise.toml pins npm:@posthog/cli. `just ios-build` (apps/ios/scripts/xcode.sh) and the Android
+# Gradle plugin (preview/release) run `posthog-cli` from PATH once the POSTHOG_CLI_* keys are set.
+# A mise shim can outlive its install, so the pinned binary is resolved with `mise which`. The CLI
+# itself is not run: its npm wrapper downloads the native binary on first use.
+posthog_cli_path="$(command -v posthog-cli 2>/dev/null || true)"
+posthog_cli_pinned=""
+if [[ -x "$MISE_BIN" ]]; then
+  posthog_cli_pinned="$("$MISE_BIN" which posthog-cli 2>/dev/null || true)"
+fi
+if [[ -n "$posthog_cli_pinned" && -n "$posthog_cli_path" ]]; then
+  ok "posthog-cli on PATH ($posthog_cli_path)"
+elif [[ -n "$posthog_cli_pinned" ]]; then
+  warnc "posthog-cli is installed by mise but not on this shell's PATH (just recipes add the mise shims; an Xcode or Android Studio build started outside just will not find it)" \
+    "open a new terminal after just bootstrap (it activates mise in your shell rc file)"
+elif [[ -n "$posthog_cli_path" && "$posthog_cli_path" != */mise/shims/* ]]; then
+  ok "posthog-cli on PATH ($posthog_cli_path, not the mise.toml pin)"
+else
+  fail "posthog-cli not installed (the dSYM and R8 mapping uploads of just ios-build / just android-build need it)" \
+    "$MISE_BIN install --yes   (mise.toml pins npm:@posthog/cli; or: just bootstrap)"
 fi
 
 # --- git lfs --------------------------------------------------------------------

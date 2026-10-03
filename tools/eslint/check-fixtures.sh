@@ -10,14 +10,15 @@ FIXTURES="$ROOT/tools/eslint/fixtures"
 
 # case → "rule id in ESLint output" + severity expected (error|warn). A case statement instead of
 # an associative array so the script runs under macOS /bin/bash 3.2; keep EXPECTED_CASES in sync.
-EXPECTED_CASES="stray-test skip-without-issue file-size log-request-body"
+EXPECTED_CASES="stray-test skip-without-issue file-size log-request-body log-forbidden-field"
 expected_spec() {
   case "$1" in
-    stray-test)         echo 'quality/test-placement error' ;;
-    skip-without-issue) echo 'local/no-skip-without-issue error' ;;
-    file-size)          echo 'max-lines warn' ;;
-    log-request-body)   echo 'quality/no-log-request-body error' ;;
-    *)                  echo "" ;;
+    stray-test)          echo 'quality/test-placement error' ;;
+    skip-without-issue)  echo 'local/no-skip-without-issue error' ;;
+    file-size)           echo 'max-lines warn' ;;
+    log-request-body)    echo 'quality/no-log-request-body error' ;;
+    log-forbidden-field) echo 'quality/no-log-request-body error' ;;
+    *)                   echo "" ;;
   esac
 }
 
@@ -49,6 +50,7 @@ for case_dir in "$FIXTURES"/*/; do
     failures=$((failures + 1))
   else
     echo "ok    $name -> $rule ($severity, exit $rc)"
+    grep -E "^ +[0-9]+:[0-9]+ +$severity(ing)? .* $rule\$" <<<"$output" | sed 's/^ */        /'
   fi
 done
 

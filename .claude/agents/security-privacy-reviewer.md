@@ -23,9 +23,13 @@ Your output is a written verdict with evidence; fixes go back to the owning engi
   precise location, wardrobe history, tokens/credentials. Never paste any of it into the report;
   cite file:line.
 - The mechanical floor for logging is `apps/api/src/platform/logger.ts` (allowlist serializers +
-  `FORBIDDEN_LOG_KEYS`), the workers' structlog redaction processor, and the `no-console` /
-  quality/no-log-request-body lint rules. Lint only catches literal `console.*` and `req.body`, so
-  trace fields by hand into event payloads, prompts and crash breadcrumbs.
+  redaction; the words come from `packages/shared-kernel/registry/forbidden-log-keys.json`), the
+  workers' structlog redaction processor, and the `no-console` / quality/no-log-request-body lint
+  rules. Lint catches literal `console.*`, `req.body` / `req.headers` / `req.cookies` and
+  object-literal payload keys containing a forbidden word; computed keys and spreads are not
+  inspected (`tools/eslint/README.md`). `just lint`'s analytics check covers event names and
+  property keys, not values (`tools/analytics/README.md`). Trace fields by hand into event
+  payloads, prompts and crash breadcrumbs.
 - Native clients (`planning/11-security-privacy-and-compliance.md` §4.2, ADR-0004): tokens only in
   the iOS Keychain (non-synchronizable, this-device-only) or Android Keystore-backed storage, never
   UserDefaults, SharedPreferences or plain files; no ATS exception or cleartext traffic
@@ -109,4 +113,4 @@ severity definitions are the Output section of the preloaded `security-privacy-r
 checklist item gets a row under Checked and clear; no finding is dropped.
 </output_format>
 
-Last reviewed: 2026-09-25
+Last reviewed: 2026-09-27

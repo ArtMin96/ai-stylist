@@ -12,7 +12,7 @@ hooks:
       hooks:
         - type: command
           command: "${CLAUDE_PROJECT_DIR}/scripts/hooks/guard-agent-bash.sh"
-          args: ["just ci-parity*", "just security-scan", "just generate --check", "just ios-check", "just android-check", "just ios-build*", "just android-build*", "git gh run list*", "git gh run view*", "gh run list*", "gh run view*", "git tag", "git tag -l*", "git tag --list*", "git tag --points-at *", "git describe*"]
+          args: ["just ci-parity*", "just security-scan", "just generate --check", "just flags-report", "just ios-check", "just android-check", "just ios-build*", "just android-build*", "git gh run list*", "git gh run view*", "gh run list*", "gh run view*", "git tag", "git tag -l*", "git tag --list*", "git tag --points-at *", "git describe*"]
 ---
 
 <context>
@@ -87,6 +87,7 @@ soak (human)". No rollout started.
 just ci-parity                  # the PR gate on the candidate SHA (native lanes need their toolchains)
 just security-scan              # no new high+ finding
 just generate --check           # no stale contract
+just flags-report               # no rollout or experiment flag past expiry (exit 1 = NO-GO)
 gh run list --commit <sha>      # CI history (git gh run list when the local account rule exists)
 gh run view <run-id>
 just ios-build --config prod    # macOS only, when fresh iOS evidence is needed
@@ -103,4 +104,4 @@ Beta-soak duration and staged-rollout percentage appear as OPEN unless a human-s
 recorded, and every human-only step is named as such.
 </output_format>
 
-Last reviewed: 2026-09-26
+Last reviewed: 2026-09-27

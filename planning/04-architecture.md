@@ -59,7 +59,7 @@ Notes:
 - Holidays come from the embedded `date-holidays` library behind `HolidayProvider` — no network call, no account (DEC-45).
 - RevenueCat calls **into** the API (webhooks); the entitlement source of truth is our `billing.entitlements` table (doc 12).
 - better-auth runs **inside** the API monolith (`identity` module) — auth is not an external container.
-- PostHog receives consented analytics events and errors from both mobile apps and the backend; no raw sensitive payloads (doc 14). The foundation apps ship only a consent-gated no-op analytics port so far; no PostHog SDK is wired yet.
+- PostHog receives consented analytics events and errors from both mobile apps and the backend; no raw sensitive payloads (doc 14). The iOS and Android apps wire PostHog behind the consent-gated analytics port (P02-T09); nothing, including crash capture, starts before opt-in.
 
 ## 3. Container view
 

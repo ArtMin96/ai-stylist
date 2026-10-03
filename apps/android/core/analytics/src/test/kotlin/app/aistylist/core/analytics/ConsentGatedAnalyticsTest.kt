@@ -13,6 +13,25 @@ class ConsentGatedAnalyticsTest {
             properties = mapOf(AnalyticsTaxonomy.AppOpened.PLATFORM to AnalyticsPropertyValue.Text("android")),
         )
 
+    private val sendAppOpened = "send:${AnalyticsTaxonomy.AppOpened.NAME}"
+
+    /** Records every call the gate makes, in order (the lifecycle hooks included). */
+    private class RecordingSink : AnalyticsSink {
+        val calls = mutableListOf<String>()
+
+        override fun activate() {
+            calls += "activate"
+        }
+
+        override fun deactivate() {
+            calls += "deactivate"
+        }
+
+        override fun send(event: AnalyticsEvent) {
+            calls += "send:${event.name}"
+        }
+    }
+
     @Test
     fun `is off by default and records nothing`() {
         val sent = mutableListOf<AnalyticsEvent>()
@@ -58,5 +77,72 @@ class ConsentGatedAnalyticsTest {
         analytics.track(event)
 
         assertTrue(analytics.hasConsent())
+    }
+
+    @Test
+    fun `the sink receives no call at all before the first grant`() {
+        val sink = RecordingSink()
+        val analytics = ConsentGatedAnalytics(sink)
+
+        analytics.track(event)
+        analytics.setConsent(false)
+        analytics.track(event)
+
+        assertFalse(analytics.hasConsent())
+        assertEquals(emptyList<String>(), sink.calls)
+    }
+
+    @Test
+    fun `granting consent activates the sink once, then sends`() {
+        val sink = RecordingSink()
+        val analytics = ConsentGatedAnalytics(sink)
+
+        analytics.setConsent(true)
+        analytics.setConsent(true)
+        analytics.track(event)
+
+        assertEquals(listOf("activate", sendAppOpened), sink.calls)
+    }
+
+    @Test
+    fun `withdrawing consent deactivates the sink and drops later events`() {
+        val sink = RecordingSink()
+        val analytics = ConsentGatedAnalytics(sink)
+        analytics.setConsent(true)
+        analytics.track(event)
+
+        analytics.setConsent(false)
+        analytics.setConsent(false)
+        analytics.track(event)
+
+        assertFalse(analytics.hasConsent())
+        assertEquals(listOf("activate", sendAppOpened, "deactivate"), sink.calls)
+    }
+
+    @Test
+    fun `events tracked before opt-in are never replayed to the sink`() {
+        val sink = RecordingSink()
+        val analytics = ConsentGatedAnalytics(sink)
+        analytics.track(event)
+        analytics.track(event)
+
+        analytics.setConsent(true)
+
+        assertEquals(listOf("activate"), sink.calls)
+    }
+
+    @Test
+    fun `re-granting consent activates the sink again and sends only new events`() {
+        val sink = RecordingSink()
+        val analytics = ConsentGatedAnalytics(sink)
+        analytics.setConsent(true)
+        analytics.setConsent(false)
+        analytics.track(event)
+
+        analytics.setConsent(true)
+        analytics.track(event)
+
+        assertTrue(analytics.hasConsent())
+        assertEquals(listOf("activate", "deactivate", "activate", sendAppOpened), sink.calls)
     }
 }

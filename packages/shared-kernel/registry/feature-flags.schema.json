@@ -1,0 +1,71 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://contracts.ai-stylist.app/shared-kernel/registry/feature-flags.schema.json",
+  "title": "FeatureFlagRegistry",
+  "description": "Feature-flag registry (planning/14 §11, NFR-OBS-080): every flag declares an owner, purpose, kind, expiry, rollout plan, a safe off state and the value used when the flag provider is unconfigured or unreachable. Flags gate rollout and experiments only, never paid capability (that is an entitlement, planning/12). Keys are stable: retire a flag by removing it with its last check, never rename or reuse a key. packages/shared-kernel/tests also check what a schema cannot express: every owner is a person id in owners.json, expiresAt is after createdAt, and a rollout flag expires at most 90 days after createdAt.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["flags"],
+  "properties": {
+    "$schema": { "type": "string" },
+    "flags": {
+      "type": "object",
+      "description": "Flag key (kebab-case, the provider's flag key) to its declaration",
+      "propertyNames": { "pattern": "^[a-z][a-z0-9]*(-[a-z0-9]+)*$" },
+      "additionalProperties": { "$ref": "#/$defs/FeatureFlag" }
+    }
+  },
+  "$defs": {
+    "FeatureFlag": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "owner",
+        "purpose",
+        "kind",
+        "createdAt",
+        "rolloutPlan",
+        "offBehavior",
+        "defaultWhenUnavailable"
+      ],
+      "properties": {
+        "owner": {
+          "type": "string",
+          "description": "Person id from owners.json (a person, not a role or team)",
+          "pattern": "^[a-z][a-z0-9]*(-[a-z0-9]+)*$"
+        },
+        "purpose": { "type": "string", "minLength": 1 },
+        "kind": {
+          "type": "string",
+          "description": "rollout: staged release, expires within 90 days; experiment: A/B test, expires; kill-switch: permanent operational off switch (per AI task, provider or pipeline), exempt from expiry and listed in runbook 10",
+          "enum": ["rollout", "experiment", "kill-switch"]
+        },
+        "createdAt": { "type": "string", "format": "date" },
+        "expiresAt": {
+          "type": "string",
+          "format": "date",
+          "description": "Required unless kind is kill-switch; the weekly expired-flag report fails after this date"
+        },
+        "rolloutPlan": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Stages and the metric guardrails named for this flag (default: internal → 5% → 25% → 100%)"
+        },
+        "offBehavior": {
+          "type": "string",
+          "minLength": 1,
+          "description": "What the product does with the flag off; off must always be a safe rollback"
+        },
+        "defaultWhenUnavailable": {
+          "type": "boolean",
+          "description": "Value the FeatureFlags adapter returns when the provider is unconfigured or unreachable"
+        }
+      },
+      "if": {
+        "properties": { "kind": { "enum": ["rollout", "experiment"] } },
+        "required": ["kind"]
+      },
+      "then": { "properties": { "expiresAt": true }, "required": ["expiresAt"] }
+    }
+  }
+}

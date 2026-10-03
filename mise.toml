@@ -33,6 +33,10 @@ actionlint = "1.7.12"     # .github/workflows/** lint (just lint); runner label 
 maestro = "cli-2.10.0"                              # e2e/*.yaml flows (just ios-e2e, just android-e2e); runs on the JDK above
 xcodegen = { version = "2.46.0", os = ["macos"] }   # apps/ios/project.yml -> AIStylist.xcodeproj (just ios-project)
 xcbeautify = { version = "3.2.1", os = ["macos"] }  # readable xcodebuild output (just ios-build / ios-test)
+# posthog-cli: dSYM upload after `just ios-build` (apps/ios/scripts/xcode.sh) and the R8 mapping upload
+# of the Android preview/release builds (PostHog Gradle plugin); both run it from PATH and only when
+# POSTHOG_CLI_API_KEY/PROJECT_ID/HOST are set. npm backend: installed with the node pinned above.
+"npm:@posthog/cli" = "0.18.7"
 
 [settings]
 # Tools listed here use the mise-idiomatic version files only; no .nvmrc / .python-version drift.

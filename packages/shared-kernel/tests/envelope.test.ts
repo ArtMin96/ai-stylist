@@ -21,9 +21,11 @@ describe('EventEnvelope (type-level)', () => {
       | 'correlationId'
       | 'causationId'
       | 'consentScope'
+      | 'traceparent'
       | 'payload'
     >();
     expectTypeOf<EventEnvelope['id']>().toEqualTypeOf<Id<'event'>>();
+    expectTypeOf<EventEnvelope['traceparent']>().toEqualTypeOf<string | undefined>();
     expectTypeOf<EventEnvelope['sequence']>().toBeNumber();
     expectTypeOf<EventEnvelope['actor']['kind']>().toEqualTypeOf<ActorKind>();
     expectTypeOf<EventEnvelope['aggregate']>().toEqualTypeOf<{
@@ -51,5 +53,21 @@ describe('EventEnvelope (type-level)', () => {
       payload: { note: 'hello' },
     };
     expectTypeOf(envelope.payload.note).toBeString();
+  });
+
+  it('carries an optional W3C traceparent (doc 14 §3)', () => {
+    const traced: EventEnvelope = {
+      id: newId('event'),
+      type: 'demo.outbox-flow.requested.v1',
+      occurredAt: '2026-09-10T12:00:00Z',
+      producer: 'platform',
+      aggregate: { kind: 'demo', id: 'demo_1' },
+      sequence: 1,
+      actor: { kind: 'system' },
+      correlationId: 'corr-1',
+      traceparent: '00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01',
+      payload: {},
+    };
+    expectTypeOf(traced.traceparent).toEqualTypeOf<string | undefined>();
   });
 });

@@ -1,0 +1,1 @@
+ERROR [email] docs/observability/grafana/contact-points.json: '@' outside a token at [0].settings.addresses: no address may be committed

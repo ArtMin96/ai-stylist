@@ -21,12 +21,15 @@ import kotlinx.coroutines.launch
 
 /**
  * Home screen state holder: loads the API version (retryable) and owns the analytics-consent
- * toggle. All dependencies come from the composition root through [factory].
+ * toggle. All dependencies come from the composition root through [factory]. The debug tools show
+ * only when the composition root hands over [testCrash]: `debug` and `preview`, never `release`.
  */
 class HomeViewModel(
     private val versionRepository: VersionRepository,
     private val analytics: Analytics,
     config: AppConfig,
+    /** The debug tools' forced crash, from the composition root; null (no debug tools) in `release`. */
+    private val testCrash: (() -> Unit)? = null,
 ) : ViewModel() {
     private val state =
         MutableStateFlow(
@@ -34,6 +37,7 @@ class HomeViewModel(
                 apiBaseUrl = config.apiBaseUrl,
                 version = VersionUiState.Loading,
                 analyticsConsent = analytics.hasConsent(),
+                debugTools = testCrash != null,
             ),
         )
     val uiState: StateFlow<HomeUiState> = state.asStateFlow()
@@ -66,6 +70,15 @@ class HomeViewModel(
         state.update { it.copy(analyticsConsent = analytics.hasConsent()) }
     }
 
+    /**
+     * The "Force test crash" button: runs the injected [testCrash], which crashes the app on the
+     * calling (main) thread to prove error tracking and R8 deobfuscation (planning/14 §5). Without
+     * debug tools (`release`) there is no crash action, so this does nothing.
+     */
+    fun forceTestCrash() {
+        testCrash?.invoke()
+    }
+
     private fun loadVersion() {
         versionJob?.cancel()
         state.update { it.copy(version = VersionUiState.Loading) }
@@ -93,9 +106,10 @@ class HomeViewModel(
             versionRepository: VersionRepository,
             analytics: Analytics,
             config: AppConfig,
+            testCrash: (() -> Unit)?,
         ): ViewModelProvider.Factory =
             viewModelFactory {
-                initializer { HomeViewModel(versionRepository, analytics, config) }
+                initializer { HomeViewModel(versionRepository, analytics, config, testCrash) }
             }
     }
 }

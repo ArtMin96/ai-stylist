@@ -1,6 +1,6 @@
 # `shared-kernel` — module reference
 
-Last reviewed: 2026-09-25
+Last reviewed: 2026-09-27
 
 ## Contract summary
 
@@ -25,7 +25,10 @@ envelope type, and the error/reason-code/entitlement registries. Full contract:
 - `packages/shared-kernel/src/units.ts` — canonical metric units, unit systems, measurement provenance, `convert`.
 - `packages/shared-kernel/src/envelope.ts` — `EventEnvelope<T, P>`, the shape every outbox event and consumer shares.
 - `packages/shared-kernel/src/errors.ts` — `ERROR_CODES`, `ProblemDetails`, `problem()`: the RFC 9457 shape the API returns. TS-only: no Swift/Kotlin output (like `ids.ts` and `envelope.ts`).
-- `packages/shared-kernel/registry/*.json` (+ `*.schema.json`) — the data source for reason codes, entitlements and units. `just generate` writes `src/gen/*.ts`, the Swift `AIStylistKernel` target and the Kotlin `app.aistylist.contracts.kernel` package from it (ADR-0005); never edit those outputs.
+- `packages/shared-kernel/registry/*.json` (+ `*.schema.json`) — the data source for reason codes, entitlements and units. `just generate` writes `src/gen/*.ts`, the Swift `AIStylistKernel` target and the Kotlin `app.aistylist.contracts.kernel` package from it (ADR-0005); never edit those outputs. The `forbidden-log-keys`, `owners` and `feature-flags` registries are TS-only: nothing is generated, the files below import the JSON directly, and `packages/contracts/tests/kernel-registries.test.ts` validates each against its schema.
+- `packages/shared-kernel/src/forbidden-log-keys.ts` — `FORBIDDEN_LOG_KEYS`, the redaction denylist every logger applies and the forbidden-field lint reads (non-TS readers read the JSON).
+- `packages/shared-kernel/src/owners.ts` — `OWNERS_REGISTRY`: people and roles that own flags, dashboards, alerts and runbooks.
+- `packages/shared-kernel/src/feature-flags.ts` — the flag registry types and the `FeatureFlags` port (the PostHog adapter lives in `platform`).
 - `packages/shared-kernel/src/reason-codes.ts` — the recommendation reason-code registry types (data from `packages/shared-kernel/src/gen`).
 - `packages/shared-kernel/src/entitlements.ts` — `ENTITLEMENTS`, `CREDIT_METERS`: names shared by billing, recommendation, and the native apps (through the generated Swift/Kotlin kernels, which no app target consumes yet — ADR-0005).
 - `packages/shared-kernel/tests/` — this package's test suite (single-writer, per `CLAUDE.md` "Parallel sessions").

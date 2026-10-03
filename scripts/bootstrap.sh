@@ -255,20 +255,7 @@ fi
 
 # --- 5. .env scaffold ------------------------------------------------------------------
 log ".env"
-# The value of KEY in .env (last assignment wins, as in dotenv), unquoted; empty when absent.
-env_file_value() {
-  awk -v key="$1" -v q="'" '
-    { line = $0; sub(/\r$/, "", line); sub(/^export[[:space:]]+/, "", line) }
-    index(line, key "=") == 1 { val = substr(line, length(key) + 2) }
-    END {
-      sub(/[[:space:]]+$/, "", val)
-      first = substr(val, 1, 1)
-      if (length(val) >= 2 && (first == "\"" || first == q) && substr(val, length(val), 1) == first)
-        val = substr(val, 2, length(val) - 2)
-      print val
-    }' .env
-}
-
+# env_file_value KEY (scripts/lib.sh) reads a value from .env the way dotenv does.
 if [[ -f .env ]]; then
   info ".env exists — only an empty DATABASE_URL is filled in (below)"
 else

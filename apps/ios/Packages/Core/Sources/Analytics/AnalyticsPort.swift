@@ -28,7 +28,15 @@ public protocol Analytics: AnyObject {
   func track(_ event: AnalyticsEvent)
 }
 
-/// Where consented events go (PostHog in a later phase, behind this same port).
+/// Where consented events go: `NoopSink`, or the PostHog adapter in the app target. Only
+/// `ConsentGatedAnalytics` calls a sink, so a sink never decides consent itself. Before the first
+/// grant a sink receives no call at all, so it must not set anything up in its initializer.
 public protocol AnalyticsSink {
+  /// Consent was granted (the first grant or a later re-grant). Set up or resume here.
+  func activate()
+  /// Consent was withdrawn after a grant. Stop capturing and stop sending here, and discard what was
+  /// captured but not sent yet: never flush it.
+  func deactivate()
+  /// Called only between `activate()` and `deactivate()`.
   func send(_ event: AnalyticsEvent)
 }

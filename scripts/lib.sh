@@ -36,8 +36,49 @@ DOCTOR_WARNINGS=0
 ok()       { printf '%s✔%s %s\n' "$C_GREEN" "$C_RESET" "$*"; }
 fail()     { DOCTOR_FAILURES=$((DOCTOR_FAILURES + 1)); printf '%s✘%s %s\n' "$C_RED" "$C_RESET" "$1"; [[ -n "${2:-}" ]] && printf '    %sfix:%s %s\n' "$C_DIM" "$C_RESET" "$2"; return 0; }
 warnc()    { DOCTOR_WARNINGS=$((DOCTOR_WARNINGS + 1)); printf '%s⚠%s %s\n' "$C_YELLOW" "$C_RESET" "$1"; [[ -n "${2:-}" ]] && printf '    %shint:%s %s\n' "$C_DIM" "$C_RESET" "$2"; return 0; }
+# Informational doctor line: never counted as a failure or a warning.
+note()     { printf '%sℹ%s %s\n' "$C_BLUE" "$C_RESET" "$*"; }
 
 have()     { command -v "$1" >/dev/null 2>&1; }
+
+# --- dotenv files (.env) -------------------------------------------------------------------------
+
+# The value of KEY $1 in dotenv file $2 (default .env): the last assignment wins, as in dotenv; an
+# `export ` prefix, a trailing CR and one pair of matching quotes are stripped. Empty when the key
+# or the file is absent.
+env_file_value() {
+  local file="${2:-.env}"
+  [[ -f "$file" ]] || return 0
+  awk -v key="$1" -v q="'" '
+    { line = $0; sub(/\r$/, "", line); sub(/^export[[:space:]]+/, "", line) }
+    index(line, key "=") == 1 { val = substr(line, length(key) + 2) }
+    END {
+      sub(/[[:space:]]+$/, "", val)
+      first = substr(val, 1, 1)
+      if (length(val) >= 2 && (first == "\"" || first == q) && substr(val, length(val), 1) == first)
+        val = substr(val, 2, length(val) - 2)
+      print val
+    }' "$file"
+}
+
+# Whether each KEY in dotenv file $1 has a value, never the value itself: prints
+# "KEY1 set, KEY2 empty, KEY3 absent" (absent = no KEY= line, or no file).
+#   env_file_key_states .env OTEL_EXPORTER_OTLP_ENDPOINT OTEL_EXPORTER_OTLP_HEADERS
+env_file_key_states() {
+  local file="$1" key state out=""
+  shift
+  for key in "$@"; do
+    if [[ ! -f "$file" ]] || ! command grep -qE "^(export[[:space:]]+)?${key}=" "$file"; then
+      state='absent'
+    elif [[ -n "$(env_file_value "$key" "$file")" ]]; then
+      state='set'
+    else
+      state='empty'
+    fi
+    out="${out:+$out, }$key $state"
+  done
+  printf '%s\n' "$out"
+}
 
 # Run a tool through mise without requiring shell activation.
 mise_exec() { "$MISE_BIN" exec -- "$@"; }

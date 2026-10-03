@@ -16,3 +16,11 @@
 # scanned lockfile, so entries here cover the root lockfiles (pnpm-lock.yaml). Findings from a
 # lockfile elsewhere need a file beside it, e.g. apps/android/gradle/osv-scanner.toml for
 # verification-metadata.xml. Every such file follows the same policy and ledger.
+
+[[IgnoredVulns]]
+# DEV/CI LINT TOOLING ONLY (reached only through devDependencies: not in the API, jobs or worker
+# runtime), and no fixed release exists. The same id is in `auditConfig.ignoreGhsas`
+# (pnpm-workspace.yaml); recorded in docs/security/dependency-ignores.md (2026-10-03).
+id = "GHSA-vfj7-8cjw-p6xm"
+ignoreUntil = 2026-12-03
+reason = "braces@3.0.3 (pnpm-lock.yaml; CVE-2026-93687, stack exhaustion on deeply nested brace patterns, availability only). No fixed release: the advisory marks every version through 3.0.3 as affected and 3.0.3 (2024-05-21) is the latest; upstream issue micromatch/braces#70. Dependency paths, both devDependencies and the only ones in the lockfile: root eslint-plugin-boundaries@7.2.0 -> micromatch@4.0.8 (latest; braces ^3.0.3), also through @boundaries/elements@3.1.1; packages/contracts @stoplight/spectral-cli@6.16.3 -> fast-glob@3.2.12 -> micromatch@4.0.8. Reachability: lint-time only (`just lint`, the contracts `lint:openapi` script, scripts/ci/contracts-spectral.sh). Everything that reaches braces is repository content: the patterns in tools/eslint/boundaries.mjs, this repo's own paths and import specifiers, and the spectral document arguments. No request, user or network input reaches it; the worst case is a crashed lint run. Exit: a braces release that fixes the advisory (re-resolve the lockfile, or a scoped override if micromatch's range does not admit it), or eslint-plugin-boundaries and spectral-cli no longer depending on micromatch; then drop this entry and the same id under `auditConfig.ignoreGhsas` in pnpm-workspace.yaml in the same change."

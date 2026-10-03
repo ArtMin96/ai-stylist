@@ -40,6 +40,8 @@ tools/                  depcruise/rules.cjs (arch-check), codegen/ (contract gen
 tools/docs/             docs-check fixtures (tools/docs/fixtures/DC-*) + planned-paths.txt
 planning/               SPINE, docs 00–16, phases/, templates/  (read-only context)
 docs/adr/  docs/modules/                decisions and module contracts
+docs/observability/     observability dev docs + Grafana/PostHog definitions synced by `just observability-sync`
+docs/runbooks/          incident runbooks (doc 14 §8)
 docs/security/          dependency-ignore and license-policy notes (`just security-scan`)
 templates/              issue, PR, ADR, session-handoff, module-contract, phase templates
 templates/linear/       Linear issue-type templates (feature, bug, spike, contract-change, migration, security-review, chore)

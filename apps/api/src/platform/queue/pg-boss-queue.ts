@@ -3,40 +3,37 @@
 // deletion-shaped `cancelUser` that refuses a user's later work (doc 06 §8 step 4).
 // Translation only: which queue an event maps to, and what a handler does, are decided by the
 // callers (outbox relay, `apps/api/src/jobs/`). Logs carry job id, queue name and attempt — never
-// job data.
+// job data. Each job runs in a CONSUMER span in the trace its data carries (doc 14 §3) and in its
+// correlation scope, so every log line of the job carries `correlation_id`.
+import { SpanKind } from '@opentelemetry/api';
 import { type JobResult, type JobWithMetadata, PgBoss } from 'pg-boss';
 import type { Logger } from 'pino';
 
 import { isId } from '@ai-stylist/shared-kernel';
 
+import {
+  type CarriedTraceContext,
+  SPAN_ATTRIBUTES,
+  queueSpanAttributes,
+  recordSpanError,
+  runTraced,
+} from '../telemetry/trace-context.js';
+
 import { errorSummary } from './error-summary.js';
 import { jobIdForKey } from './job-id.js';
+import {
+  MAX_WORK_BATCH_SIZE,
+  type QueueDefinition,
+  deadLetterQueueName,
+} from './queue-definition.js';
+import { type QueueStatsSnapshot, readQueueStats } from './queue-stats.js';
 
-/** One application queue. Every queue gets a dead-letter queue named `deadLetterQueueName(name)`. */
-export type QueueDefinition = {
-  /** pg-boss queue name: letters, digits, `_`, `-`, `.`, `/`. */
-  readonly name: string;
-  /** Retries after the first attempt; a job runs at most `retryLimit + 1` times, then `failed`. */
-  readonly retryLimit: number;
-  /** Base of the exponential, jittered retry backoff (pg-boss `retryDelay`, seconds, >= 1). */
-  readonly retryDelaySeconds: number;
-  /** Upper bound of one backoff delay (pg-boss `retryDelayMax`, seconds). */
-  readonly retryDelayMaxSeconds: number;
-  /** Seconds a job may stay `active` before it is failed (and retried). pg-boss default: 900. */
-  readonly expireInSeconds?: number;
-  /**
-   * Jobs one worker fetches per poll, 1..`MAX_WORK_BATCH_SIZE`. Default 1. Above 1 the worker
-   * fetches again at once, without the poll delay, while fetches come back full (pg-boss
-   * `burstWhenBatchFull`); a short fetch resumes normal polling. The jobs of a batch still run one
-   * at a time and settle one by one (pg-boss `perJobResults`): a failing job retries alone. The
-   * whole batch shares one `expireInSeconds` deadline, so `batchSize` × the slowest job must stay
-   * below it.
-   */
-  readonly batchSize?: number;
-};
-
-/** Upper bound on `QueueDefinition.batchSize` (the outbox relay's per-poll cap, doc 04 §9). */
-export const MAX_WORK_BATCH_SIZE = 100;
+export {
+  MAX_WORK_BATCH_SIZE,
+  type QueueDefinition,
+  deadLetterQueueName,
+} from './queue-definition.js';
+export type { QueueStatsSnapshot } from './queue-stats.js';
 
 export type PgBossQueueConfig = {
   /** Passed in by the composition root; this adapter never reads `process.env`. */
@@ -61,6 +58,11 @@ export type PgBossQueueConfig = {
    * `superviseIntervalSeconds` and `monitorIntervalSeconds`. Default 60 (pg-boss default).
    */
   readonly superviseIntervalSeconds?: number;
+  /**
+   * Reads the trace context a job's data carries (an envelope's `traceparent`, `correlationId`),
+   * from the composition root; must not throw. Omitted: every job starts a new trace, unscoped.
+   */
+  readonly traceContextOf?: (data: unknown) => CarriedTraceContext | undefined;
 };
 
 export type EnqueueOptions = {
@@ -114,10 +116,6 @@ export const CANCELLED_USER_MARKER_RETENTION_SECONDS = 100 * 24 * 60 * 60;
 /** Job states a cancellation can still stop (pg-boss `cancel` only changes these). */
 const UNFINISHED_STATES: ReadonlySet<string> = new Set(['created', 'retry', 'active']);
 
-export function deadLetterQueueName(queue: string): string {
-  return `${queue}.dlq`;
-}
-
 function cancelledUserMarkerId(userId: string): string {
   return jobIdForKey(`cancelled-user:${userId}`);
 }
@@ -128,9 +126,13 @@ export class PgBossQueue {
   private readonly queues: ReadonlyMap<string, QueueDefinition>;
   private readonly pollingIntervalSeconds: number;
   private readonly stopTimeoutMs: number;
+  private readonly traceContextOf: PgBossQueueConfig['traceContextOf'];
+  private readonly schema: string;
 
   constructor(config: PgBossQueueConfig) {
     this.logger = config.logger.child({ component: 'pg-boss-queue' });
+    this.traceContextOf = config.traceContextOf;
+    this.schema = config.schema ?? 'pgboss';
     this.queues = new Map(config.queues.map((queue) => [queue.name, queue]));
     if (this.queues.size !== config.queues.length) {
       throw new TypeError('PgBossQueue: queue names must be unique');
@@ -272,8 +274,8 @@ export class PgBossQueue {
     );
   }
 
-  /** One fetched job → its pg-boss disposition. */
-  private async runJob(
+  /** One fetched job → its disposition, in its `job.process <queue>` span and correlation scope. */
+  private runJob(
     queue: string,
     maxAttempts: number,
     job: JobWithMetadata<unknown>,
@@ -281,30 +283,48 @@ export class PgBossQueue {
   ): Promise<JobResult> {
     const attempt = job.retryCount + 1;
     const fields = { jobId: job.id, queue, attempt, maxAttempts };
-    try {
-      // A send that raced `cancelUser` (checked before the marker, inserted after the cancel
-      // sweep) is caught here, for every job of a batch. Reported `completed`, which pg-boss
-      // applies only to `active` jobs, so the job stays `cancelled`.
-      if (job.singletonKey !== null && (await this.isUserCancelled(job.singletonKey))) {
-        await this.boss.cancel(queue, job.id);
-        this.logger.info(fields, 'job refused: user cancelled');
-        return { id: job.id, status: 'completed' };
+    const attributes = {
+      ...queueSpanAttributes('process', queue),
+      [SPAN_ATTRIBUTES.messagingMessageId]: job.id,
+      [SPAN_ATTRIBUTES.jobAttempt]: attempt,
+    };
+    const name = `job.process ${queue}`;
+    const carried = this.traceContextOf?.(job.data);
+    return runTraced<JobResult>(name, SpanKind.CONSUMER, attributes, carried, async (span) => {
+      try {
+        // A send that raced `cancelUser` (checked before the marker, inserted after the cancel
+        // sweep) is caught here, for every job of a batch. Reported `completed`, which pg-boss
+        // applies only to `active` jobs, so the job stays `cancelled`.
+        if (job.singletonKey !== null && (await this.isUserCancelled(job.singletonKey))) {
+          await this.boss.cancel(queue, job.id);
+          this.logger.info(fields, 'job refused: user cancelled');
+          return { id: job.id, status: 'completed' };
+        }
+        this.logger.debug(fields, 'job started');
+        await handler({ id: job.id, queue, data: job.data, attempt, signal: job.signal });
+      } catch (error) {
+        // Class and pg code only, in the log, the span and the job's stored `output` (pg-boss
+        // persists it on the job row and its DLQ copy): handler and driver messages may quote it.
+        const summary = errorSummary(error);
+        recordSpanError(span, error);
+        if (attempt >= maxAttempts) {
+          this.logger.error({ ...fields, ...summary }, 'job failed; dead-lettered');
+        } else {
+          this.logger.warn({ ...fields, ...summary }, 'job attempt failed; will retry');
+        }
+        return { id: job.id, status: 'failed', output: summary };
       }
-      this.logger.debug(fields, 'job started');
-      await handler({ id: job.id, queue, data: job.data, attempt, signal: job.signal });
-    } catch (error) {
-      // Class and pg code only, in the log and in the job's stored `output` (pg-boss persists it
-      // on the job row and its DLQ copy): handler and driver messages may quote the payload.
-      const summary = errorSummary(error);
-      if (attempt >= maxAttempts) {
-        this.logger.error({ ...fields, ...summary }, 'job failed; dead-lettered');
-      } else {
-        this.logger.warn({ ...fields, ...summary }, 'job attempt failed; will retry');
-      }
-      return { id: job.id, status: 'failed', output: summary };
-    }
-    this.logger.debug(fields, 'job completed');
-    return { id: job.id, status: 'completed' };
+      this.logger.debug(fields, 'job completed');
+      return { id: job.id, status: 'completed' };
+    });
+  }
+
+  /**
+   * Queue gauges (planning/14 §4): waiting jobs per configured queue and per dead-letter queue, and
+   * the age of the oldest waiting job per configured queue (`./queue-stats.ts`).
+   */
+  readStats(): Promise<QueueStatsSnapshot> {
+    return readQueueStats(this.boss, this.schema, [...this.queues.keys()]);
   }
 
   /**

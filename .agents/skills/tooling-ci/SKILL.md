@@ -3,7 +3,7 @@ name: tooling-ci
 description: Add or change developer tooling and CI plumbing — `just` recipes, `tools/**` gates (depcruise, eslint, docs-check, shellcheck, security) and their fixtures, bootstrap/doctor scripts, root workspace configs and `.env.example` keys, tooling dependency bumps, macOS/bash 3.2 portability, CI gate timing, and CI workflow changes (as an exact diff a human applies). Not for product code in `apps/`, `packages/` or `workers/` — use that area's skill; not for README or onboarding prose; not for `scripts/hooks/`, `.claude/**`, `.agents/**`, the doc 15 §5 catalog, `CLAUDE.md` or CI required checks — those are human-applied.
 metadata:
   modules:
-  last-reviewed: 2026-09-26
+  last-reviewed: 2026-09-27
   owner-agent: tooling-engineer
 ---
 
@@ -100,7 +100,8 @@ metadata:
 
 ```bash
 just --list                                   # recipe registered with a doc comment
-just lint && just lint --fixtures             # eslint + ruff + shellcheck + actionlint + native lint lanes; every eslint fixture still fails
+just lint && just lint --fixtures             # analytics taxonomy + eslint + ruff + shellcheck + actionlint + native lint lanes; every eslint and analytics fixture still fails
+just flags-report --fixtures                  # an expired fixture flag registry still fails; the real registry loads
 just arch-check && just arch-check --fixtures # depcruise rules + iOS bans + Android module graph; every fixture still fails
 just docs-check && just docs-check --fixtures # DC-01..DC-15 + every tools/docs/fixtures/DC-NN case still fails
 just lint-file <script>                       # one edited shell script through shellcheck (bash 3.2 mode)

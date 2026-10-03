@@ -1,0 +1,9 @@
+{
+  "$schema": "./owners.schema.json",
+  "people": [{ "id": "arthur-minasyan", "name": "Arthur Minasyan" }],
+  "roles": {
+    "observability": ["arthur-minasyan"],
+    "feature-flags": ["arthur-minasyan"],
+    "on-call": ["arthur-minasyan"]
+  }
+}

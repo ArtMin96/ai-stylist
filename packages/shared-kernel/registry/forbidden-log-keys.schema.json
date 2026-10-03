@@ -1,0 +1,18 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://contracts.ai-stylist.app/shared-kernel/registry/forbidden-log-keys.schema.json",
+  "title": "ForbiddenLogKeyRegistry",
+  "description": "Forbidden log key words (planning/11 §8, planning/14 §2): the one list the API logger, the worker logger, the forbidden-field lint and their drift checks read. Each entry is one lowercase word; a log key is forbidden when any of its camelCase, snake_case or kebab-case words equals an entry. Add words freely; removing one weakens redaction and needs a security-privacy review.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["keys"],
+  "properties": {
+    "$schema": { "type": "string" },
+    "keys": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": { "type": "string", "pattern": "^[a-z][a-z0-9]*$" }
+    }
+  }
+}

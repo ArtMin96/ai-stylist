@@ -7,8 +7,17 @@ export type RecordedRequest = {
   readonly method: string;
   readonly path: string;
   readonly contentType: string | undefined;
+  /** `x-correlation-id` as received (planning/14 §2). */
+  readonly correlationId: string | undefined;
+  /** W3C `traceparent` as received (set by the undici instrumentation when telemetry runs). */
+  readonly traceparent: string | undefined;
   readonly json: unknown;
 };
+
+function header(req: IncomingMessage, name: string): string | undefined {
+  const value = req.headers[name];
+  return Array.isArray(value) ? value.join(',') : value;
+}
 
 /**
  * `echo` mirrors the P02 stub; `status` replies with that code; `reply` answers 200 with that JSON;
@@ -58,6 +67,8 @@ export async function startFakeSegmentationWorker(): Promise<FakeSegmentationWor
         method: req.method ?? '',
         path: req.url ?? '',
         contentType: req.headers['content-type'],
+        correlationId: header(req, 'x-correlation-id'),
+        traceparent: header(req, 'traceparent'),
         json,
       });
       const behaviour = state.behaviour;

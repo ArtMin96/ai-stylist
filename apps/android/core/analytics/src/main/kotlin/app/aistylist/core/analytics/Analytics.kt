@@ -16,9 +16,24 @@ interface Analytics {
     fun track(event: AnalyticsEvent)
 }
 
-/** Where consented events would go (PostHog in a later phase). */
+/**
+ * Where consented events go (PostHog, or the no-op sink when no key is configured).
+ * [ConsentGatedAnalytics] is the only caller and owns the consent decision: it calls [activate]
+ * when consent is granted, [send] only while consent holds, and [deactivate] when consent is
+ * withdrawn. Before the first grant a sink receives no call at all, so an SDK-backed sink sets its
+ * SDK up inside [activate]: no setup, network or crash handler before opt-in.
+ */
 fun interface AnalyticsSink {
     fun send(event: AnalyticsEvent)
+
+    /** Consent was granted (first time or again). Called once per grant, before any [send]. */
+    fun activate() = Unit
+
+    /**
+     * Consent was withdrawn: stop capturing and sending, and discard whatever was captured but not
+     * sent yet (withdrawal never flushes it). [send] is not called afterwards.
+     */
+    fun deactivate() = Unit
 }
 
 /** One analytics event. Property values are restricted to scalars by [AnalyticsPropertyValue]. */

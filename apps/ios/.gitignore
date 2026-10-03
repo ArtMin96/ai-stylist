@@ -11,6 +11,8 @@ build/
 *.ipa
 *.dSYM.zip
 *.dSYM/
+# Per-machine build settings (POSTHOG_API_KEY / POSTHOG_HOST; see Config/Base.xcconfig).
+Config/Local.xcconfig
 # Signing material never lives in the repo.
 *.p12
 *.mobileprovision

@@ -12,9 +12,9 @@
 # paths; otherwise weekly + manual.
 #
 # Triggers:  workflow_dispatch, schedule Monday 04:00 UTC, pull_request touching scripts/**,
-#            justfile, mise.toml, .npmrc, tools/**/*.sh or this file.
-# Recipes:   just doctor, format --check, lint (+ --fixtures), typecheck, arch-check
-#            (+ --fixtures), generate --check, security-scan, test.
+#            justfile, mise.toml, .npmrc, tools/**/*.sh, tools/**/*.mjs or this file.
+# Recipes:   just doctor, format --check, lint (+ --fixtures), flags-report --fixtures, typecheck,
+#            arch-check (+ --fixtures), generate --check, security-scan, test.
 # Required secrets: none (GITLEAKS_LICENSE only under an org).
 #
 # Job tree:
@@ -32,6 +32,7 @@ on:
       - 'mise.toml'
       - '.npmrc'
       - 'tools/**/*.sh'
+      - 'tools/**/*.mjs'
       - '.github/workflows/portability.yml'
 
 permissions:
@@ -129,6 +130,8 @@ jobs:
         run: just lint
       - name: Verify · Lint fixtures
         run: just lint --fixtures
+      - name: Verify · Flag report fixtures
+        run: just flags-report --fixtures
       - name: Verify · Typecheck
         run: just typecheck
       - name: Verify · Architecture boundaries

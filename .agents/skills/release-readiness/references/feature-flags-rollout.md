@@ -1,12 +1,13 @@
 # Feature flags and staged rollout — reference
 
-> This is a reference file inside `release-readiness`, not a standalone skill — the s3 plan decided
-> a dedicated `feature-flags-rollout` skill is premature while no flag registry exists yet. It
-> becomes its own skill once `planning/phases/P05-selfie-face-personalization.md` P05-T10 ships the
-> first real flag registry and kill-switch wiring (regional gating for A2); until then this file is
-> the flag operating procedure `release-readiness` and every engineer skill point to.
+> This is a reference file inside `release-readiness`, not a standalone skill. The flag registry
+> exists since P02-T09 (`packages/shared-kernel/registry/feature-flags.json`, one dev-only
+> flag); the s3 plan's dedicated `feature-flags-rollout` skill waits for the first product flags
+> and kill-switch wiring (`planning/phases/P05-selfie-face-personalization.md` P05-T10, regional
+> gating for A2). Until then this file is the flag operating procedure `release-readiness` and
+> every engineer skill point to.
 
-Last reviewed: 2026-09-25
+Last reviewed: 2026-09-27
 
 ## Source of truth
 
@@ -15,6 +16,11 @@ This file restates it as an operating checklist for release and rollout work. If
 disagree, doc 14 wins — flag the conflict, do not silently follow whichever reads easier here.
 
 ## Every flag declares, at creation
+
+Owner, purpose, expiry, rollout plan and the safe off state are fields of the flag's entry in
+`packages/shared-kernel/registry/feature-flags.json` (owner = a person id from
+`packages/shared-kernel/registry/owners.json`); `just observability-sync` then creates the flag in
+PostHog, off. How to add and retire a flag: `docs/observability/posthog.md`.
 
 - **Owner** — a person, not a team; someone who can answer for the flag at 2am.
 - **Purpose** — one sentence. A flag with no clear purpose is a code smell wearing a rollout tool's
@@ -55,11 +61,12 @@ verified end to end yet.
 ## Expired and stale flags
 
 Doc 14 §11 calls for a CI report that fails on expired flags; more than 30 days overdue is a defect
-with an owner. That report is not built yet: the nightly `expired-flags` job in
-`.github/workflows/nightly.yml` is a placeholder (P02-T09). Until it exists, a release records flag
-expiry as `unverified: needs a human PostHog check`, and `release-readiness` treats that as a NO-GO
-until a human confirms — an expired flag that ships anyway is exactly the drift this policy exists
-to catch.
+with an owner. `just flags-report` is that report: one row per registry flag with its owner,
+`expiresAt` and days left or overdue, exit 1 when a rollout or experiment flag is past expiry
+(kill switches exempt). The nightly `expired-flags` job in `.github/workflows/nightly.yml` runs it.
+A release cites a `just flags-report` run on the candidate SHA (or that night's `expired-flags`
+job); a failing report is a NO-GO until the flag is retired or re-dated with a stated reason — an
+expired flag that ships anyway is exactly the drift this policy exists to catch.
 
 ## Experiments never touch the hard-constraint layer
 
@@ -71,7 +78,7 @@ rollout question.
 ## What this file is not
 
 Not a flag-SDK reference (PostHog's own docs own that) and not the place to add per-flag records —
-those live in the flag dashboard (doc 14 §14) and the owning module's contract. Not yet a skill in
-its own right: once P05-T10 lands the first flag registry, split this content into a standalone
-`feature-flags-rollout` skill with its own evals, mirroring every other skill in this repo — until
-then, this file is where that content lives.
+those live in `packages/shared-kernel/registry/feature-flags.json`. Not yet a skill in its own
+right: once P05-T10 lands the first product flags and kill switches, split this content into a
+standalone `feature-flags-rollout` skill with its own evals, mirroring every other skill in this
+repo — until then, this file is where that content lives.

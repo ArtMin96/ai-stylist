@@ -1,0 +1,15 @@
+{
+  "$schema": "./feature-flags.schema.json",
+  "flags": {
+    "demo-outbox-flow": {
+      "owner": "arthur-minasyan",
+      "purpose": "Gate the dev-only demo outbox flow (P02-T08) to prove flag-off rollback (NFR-OBS-080); retire at P03 start",
+      "kind": "rollout",
+      "createdAt": "2026-09-27",
+      "expiresAt": "2026-12-26",
+      "rolloutPlan": "dev only: on in the dev PostHog project; the route never exists in staging/prod",
+      "offBehavior": "POST /v1/dev/demo-events answers 404 problem+json and writes no outbox row; already-queued jobs still complete",
+      "defaultWhenUnavailable": true
+    }
+  }
+}

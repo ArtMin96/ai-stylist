@@ -1,0 +1,54 @@
+{
+  "title": "database",
+  "folderUid": "ai-stylist",
+  "interval": 60,
+  "rules": [
+    {
+      "uid": "db-backup-age",
+      "title": "db.backup_age",
+      "ruleGroup": "database",
+      "folderUID": "ai-stylist",
+      "condition": "B",
+      "data": [
+        {
+          "refId": "A",
+          "relativeTimeRange": { "from": 600, "to": 0 },
+          "datasourceUid": "${PROM_DATASOURCE_UID}",
+          "model": {
+            "refId": "A",
+            "expr": "min by (stanza) (pgbackrest_backup_since_last_completion_seconds)",
+            "instant": true,
+            "range": false,
+            "intervalMs": 60000,
+            "maxDataPoints": 43200
+          }
+        },
+        {
+          "refId": "B",
+          "relativeTimeRange": { "from": 0, "to": 0 },
+          "datasourceUid": "__expr__",
+          "model": {
+            "refId": "B",
+            "type": "threshold",
+            "expression": "A",
+            "conditions": [{ "evaluator": { "type": "gt", "params": [93600] } }],
+            "intervalMs": 1000,
+            "maxDataPoints": 43200
+          }
+        }
+      ],
+      "noDataState": "OK",
+      "execErrState": "Error",
+      "for": "15m",
+      "labels": {
+        "severity": "SEV2",
+        "owner_role": "on-call"
+      },
+      "annotations": {
+        "summary": "Newest pgBackRest backup of stanza {{ $labels.stanza }} is older than 26 h",
+        "runbook_url": "https://github.com/ArtMin96/ai-stylist/blob/main/docs/runbooks/02-postgresql-incident.md"
+      },
+      "isPaused": false
+    }
+  ]
+}

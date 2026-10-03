@@ -24,9 +24,25 @@ private final class StubVersionFetcher: VersionFetching {
 
 private final class RecordingSink: AnalyticsSink {
   private(set) var sent: [AnalyticsEvent] = []
+  private(set) var activations = 0
+
+  func activate() {
+    activations += 1
+  }
+
+  func deactivate() {}
 
   func send(_ event: AnalyticsEvent) {
     sent.append(event)
+  }
+}
+
+/// Stands in for the app target's crashing `forceTestCrash()`: counts calls instead of crashing.
+private final class CrashRecorder {
+  private(set) var calls = 0
+
+  func record() {
+    calls += 1
   }
 }
 
@@ -36,11 +52,14 @@ private let version = APIVersion(
   builtAt: Date(timeIntervalSince1970: 1_788_998_400)
 )
 
-private func makeModel(_ fetcher: StubVersionFetcher) throws -> (HomeModel, ConsentGatedAnalytics, RecordingSink) {
+private func makeModel(
+  _ fetcher: StubVersionFetcher,
+  debug: DebugTools? = nil
+) throws -> (HomeModel, ConsentGatedAnalytics, RecordingSink) {
   let sink = RecordingSink()
   let analytics = ConsentGatedAnalytics(sink: sink)
   let config = try AppConfig.parse(RawConfig(apiBaseURL: "http://api.test", appVersion: "0.1.0-test"))
-  let services = AppServices(config: config, version: fetcher, analytics: analytics)
+  let services = AppServices(config: config, version: fetcher, analytics: analytics, debug: debug)
   return (HomeModel(services: services), analytics, sink)
 }
 
@@ -93,5 +112,34 @@ struct HomeModelTests {
     await model.onAppear()
     await model.onAppear()
     #expect(sink.sent == [.appOpened(appVersion: "0.1.0-test", coldStart: true)])
+  }
+
+  @Test("opting in activates the analytics sink only then")
+  func optInActivatesSink() async throws {
+    let (model, _, sink) = try makeModel(StubVersionFetcher(.ok(version)))
+    await model.onAppear()
+    #expect(sink.activations == 0)
+    model.setConsent(true)
+    #expect(sink.activations == 1)
+  }
+
+  @Test("hides the debug tools when the composition root provides none (Preview, Prod)")
+  func noDebugTools() throws {
+    let (model, _, _) = try makeModel(StubVersionFetcher(.ok(version)))
+    #expect(model.showsDebugTools == false)
+    model.forceTestCrash()
+  }
+
+  @Test("shows the debug tools and forwards Force test crash to the app's crash action")
+  func debugToolsForwardCrash() throws {
+    let recorder = CrashRecorder()
+    let (model, _, _) = try makeModel(
+      StubVersionFetcher(.ok(version)),
+      debug: DebugTools(forceTestCrash: { recorder.record() })
+    )
+    #expect(model.showsDebugTools)
+    #expect(recorder.calls == 0)
+    model.forceTestCrash()
+    #expect(recorder.calls == 1)
   }
 }

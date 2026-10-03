@@ -1,4 +1,5 @@
-// :core:analytics: the analytics port + the consent-gated no-op stub. Pure Kotlin, no dependencies.
+// :core:analytics: the analytics port, the consent gate and the no-op sink. Pure Kotlin, no
+// dependencies, no SDK (the PostHog sink lives in :app, the composition root).
 // Also compiles the GENERATED event taxonomy (packages/contracts/gen/kotlin-client/analytics).
 plugins {
     alias(libs.plugins.aistylist.jvm.library)

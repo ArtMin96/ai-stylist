@@ -2,36 +2,26 @@
 // url path, request id, status code — nothing else) plus a forbidden-key denylist applied to
 // every merged object at any depth as a backstop. The canary test in tests/ plants marker
 // values under each forbidden key and asserts none reach the sink.
+//
+// Required ids (doc 14 §2): a `mixin` adds `correlation_id` inside a correlation scope
+// (./telemetry/correlation.ts: the API request, the pg-boss job); `trace_id` / `span_id` come from
+// @opentelemetry/instrumentation-pino when telemetry runs (./telemetry/telemetry.ts).
 import type { Writable } from 'node:stream';
 
 import { type LoggerOptions, stdSerializers } from 'pino';
 import type { Options as PinoHttpOptions } from 'pino-http';
 
-/** Forbidden key words (doc 11 §8). A key matches when any of its camel/snake/kebab words does. */
-export const FORBIDDEN_LOG_KEYS = [
-  'measurements',
-  'measurement',
-  'selfie',
-  'face',
-  'photo',
-  'image',
-  'location',
-  'lat',
-  'lng',
-  'latitude',
-  'longitude',
-  'coordinates',
-  'token',
-  'authorization',
-  'cookie',
-  'password',
-  'secret',
-  'email',
-  'phone',
-  'body',
-  'prompt',
-  'calendar',
-] as const;
+import { FORBIDDEN_LOG_KEYS } from '@ai-stylist/shared-kernel';
+
+import { correlationLogFields } from './telemetry/correlation.js';
+
+/**
+ * Forbidden key words (doc 11 §8), one lowercase word each; a key matches when any of its
+ * camel/snake/kebab words does. Single source: the shared-kernel registry
+ * (packages/shared-kernel/registry/forbidden-log-keys.json, also read by the forbidden-field lint);
+ * re-exported here for existing importers.
+ */
+export { FORBIDDEN_LOG_KEYS };
 
 export const REDACTED = '[REDACTED]';
 
@@ -98,6 +88,8 @@ export function loggerOptions(config: LoggerConfig): LoggerOptions {
   return {
     level: config.level,
     base: { service: config.service ?? 'api' },
+    // Merged into each line before `formatters.log`, so the denylist still applies to it.
+    mixin: correlationLogFields,
     serializers: allowlistSerializers,
     formatters: {
       log: pinoLogFormatter,

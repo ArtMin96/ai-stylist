@@ -1,0 +1,13 @@
+{
+  "project": {
+    "anonymize_ips": true,
+    "autocapture_exceptions_opt_in": true,
+    "session_recording_opt_in": false,
+    "surveys_opt_in": false,
+    "autocapture_opt_out": true,
+    "heatmaps_opt_in": false,
+    "capture_console_log_opt_in": false,
+    "capture_performance_opt_in": false
+  },
+  "disabledTransformationTemplates": ["template-geoip"]
+}

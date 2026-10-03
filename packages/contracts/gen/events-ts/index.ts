@@ -87,6 +87,9 @@ export interface EventEnvelope {
     kind: 'user' | 'system' | 'admin' | 'job';
     id?: string;
   };
+  /**
+   * Correlation id of the logical operation (doc 14 §2): minted by the client per operation (or by the API when a request carried none or an invalid one) and carried request → outbox → job → worker as `x-correlation-id`. Our own correlation metadata, never user data. 1–128 characters of `[A-Za-z0-9._:-]` (a UUID, ULID or `corr-…`); producers and consumers accept exactly this pattern
+   */
   correlationId: string;
   /**
    * Id of the event or request that caused this one; absent for roots
@@ -96,6 +99,10 @@ export interface EventEnvelope {
    * Consent scope required to process the payload (doc 11); present when it touches sensitive data
    */
   consentScope?: string;
+  /**
+   * W3C Trace Context `traceparent` of the producing span (doc 14 §3), so one trace covers request → outbox → job → worker. Carries trace context only, never user data; absent when the producer was not traced
+   */
+  traceparent?: string;
   /**
    * Event-specific payload; the per-event schema (e.g. demo.event.json) narrows it
    */

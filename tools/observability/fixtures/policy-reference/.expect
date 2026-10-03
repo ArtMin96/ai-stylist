@@ -1,0 +1,2 @@
+ERROR [policy] docs/observability/grafana/notification-policy.json: routes[0]: receiver 'nobody-receiver' is not in contact-points.json
+ERROR [policy] docs/observability/grafana/notification-policy.json: routes[1]: mute_time_intervals 'weekends' is not in mute-timings.json

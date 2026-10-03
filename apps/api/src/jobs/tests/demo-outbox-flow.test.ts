@@ -148,9 +148,45 @@ describe('demo.outbox-flow handler', () => {
   });
 
   it('tolerates unknown envelope fields (envelope.json)', async () => {
-    await handle(job({ ...demoEvent(), traceparent: '00-abc-def-01' }));
+    await handle(job({ ...demoEvent(), futureEnvelopeField: 'x' }));
 
     expect(worker.requests).toHaveLength(1);
+  });
+
+  it('accepts an envelope carrying a valid W3C traceparent', async () => {
+    const traceparent = '00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01';
+
+    await handle(job({ ...demoEvent(), traceparent }));
+
+    expect(worker.requests).toHaveLength(1);
+  });
+
+  it('rejects a malformed traceparent without calling the worker', async () => {
+    const data = { ...demoEvent(), traceparent: '00-abc-def-01' };
+
+    const error = await handle(job(data)).catch((e: unknown) => e);
+
+    expect(error).toBeInstanceOf(InvalidJobDataError);
+    expect((error as Error).message).toContain('traceparent');
+    expect(worker.requests).toHaveLength(0);
+  });
+
+  it("sends the envelope's correlation id to the worker as x-correlation-id", async () => {
+    const event = demoEvent({ correlationId: 'corr-demo-flow-1' });
+
+    await handle(job(event));
+
+    expect(worker.requests.map((r) => r.correlationId)).toEqual(['corr-demo-flow-1']);
+  });
+
+  it('rejects a malformed correlationId without calling the worker', async () => {
+    const data = demoEvent({ correlationId: 'has spaces and / slashes' });
+
+    const error = await handle(job(data)).catch((e: unknown) => e);
+
+    expect(error).toBeInstanceOf(InvalidJobDataError);
+    expect((error as Error).message).toContain('correlationId');
+    expect(worker.requests).toHaveLength(0);
   });
 
   it('throws when the worker fails (pg-boss retries) and the retry calls it again', async () => {

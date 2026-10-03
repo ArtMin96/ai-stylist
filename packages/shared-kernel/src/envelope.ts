@@ -37,11 +37,20 @@ export type EventEnvelope<
   /** Per-aggregate monotonic sequence, assigned in the producing transaction. */
   readonly sequence: number;
   readonly actor: EventActor;
-  /** Trace/request correlation id shared across the whole causal chain. */
+  /**
+   * Correlation id of the logical operation, shared across the whole causal chain (doc 14 §2):
+   * 1–128 characters of `[A-Za-z0-9._:-]` (envelope.json `pattern`; a UUID, ULID or `corr-…`).
+   * Our own correlation metadata, never user data.
+   */
   readonly correlationId: string;
   /** `evt_` id of the event (or request id) that caused this one; absent for roots. */
   readonly causationId?: Id<'event'> | string;
   /** Consent scope required to process the payload; present when it touches sensitive data (doc 11). */
   readonly consentScope?: string;
+  /**
+   * W3C Trace Context `traceparent` (`<version>-<trace-id>-<parent-id>-<flags>`, lowercase hex) of
+   * the producing span (doc 14 §3). Trace context only, never user data; absent when untraced.
+   */
+  readonly traceparent?: string;
   readonly payload: TPayload;
 };

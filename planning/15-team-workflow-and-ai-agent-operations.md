@@ -35,6 +35,7 @@ adb                         # via google-android-platform-tools-installer or SDK
 | SwiftLint | 0.65.1 | `just ios-lint` (`swiftlint` on macOS, `swiftlint-static` on Linux) |
 | Maestro | 2.10.0 | Shared flows in `e2e/` (`just ios-e2e`, `just android-e2e`) |
 | XcodeGen, xcbeautify | 2.46.0, 3.2.1 (macOS only) | `apps/ios/project.yml` → `.xcodeproj`; readable `xcodebuild` output |
+| posthog-cli | 0.18.7 (`npm:@posthog/cli`) | dSYM upload after `just ios-build` and the R8 mapping upload of the Android preview/release builds (PostHog error tracking); runs only when `POSTHOG_CLI_*` are set |
 
 Not in mise: **Xcode 27.0** (pinned by `apps/ios/.xcode-version`, checked by `just ios-doctor`; it provides Swift 6.4 on macOS); **Swift on Linux** (the iOS scripts and `gen-swift.sh` use Docker `swift:6.4`, because mise's Swift build cannot run on Arch); the **Android SDK** (`just android-sdk install`); Gradle (committed wrapper). Watchman was dropped with Metro (DEC-54).
 
@@ -102,10 +103,10 @@ Both scripts live in `scripts/` as readable, commented bash (or TS via `zx` if b
 | `just doctor` | Environment + repo health check (§4) |
 | `just dev-api` | Compose stack (Postgres+pgvector) + NestJS API in watch mode |
 | `just dev-workers` | Compose Postgres + the pg-boss `jobs` process (apps/api `src/jobs/main.ts`, tsx watch; needs `just db-migrate`) + the Python segmentation worker (uvicorn on :8001); the outbox relay runs inside `just dev-api` |
-| `just test <module>` | Scoped: one module's `tests/` dir (e.g. `just test recommendation`); `ios`, `android`, `workers`, `secrets`, `platform`, `api` route to their own suites instead of a `modules/<name>/tests` dir (`ios` = `ios-test-packages`, `android` = `android-test`); the full run includes the native unit tests |
+| `just test <module>` | Scoped: one module's `tests/` dir (e.g. `just test recommendation`); `ios`, `android`, `workers`, `secrets`, `tooling`, `platform`, `api` route to their own suites (`tooling` = the `scripts/test` shell suites: bootstrap/doctor, contracts-breaking, test-regression, ci-metrics, dev service names, observability-sync) instead of a `modules/<name>/tests` dir (`ios` = `ios-test-packages`, `android` = `android-test`); the full run includes the native unit tests |
 | `just test` | Full suite (all modules + packages), as CI PR gate runs it |
 | `just test-regression <file>` | Prove a regression test fails at the merge-base and passes at HEAD — the structural form of CLAUDE.md's "regression test fails before the fix" |
-| `just lint` | ESLint (incl. boundary rules) + Ruff for workers + shellcheck + actionlint + the native linters (`ios-lint`, `android-lint`, `android-detekt`) |
+| `just lint` | Analytics taxonomy check (`tools/analytics`: every event name and property key the native apps build is declared in `packages/contracts/events/analytics/events.json`, 14 §9) + ESLint (incl. boundary rules) + Ruff for workers + shellcheck + actionlint + the native linters (`ios-lint`, `android-lint`, `android-detekt`); `--fixtures` proves the ESLint rules and the taxonomy check still fail on their fixtures |
 | `just lint-file <path>` | Single-file lint dispatch by extension (eslint/ruff/shellcheck, else no-op); used by the PostToolUse hook so one edit doesn't pay for a whole-repo lint |
 | `just typecheck` | `tsc --noEmit` across workspace + Pyright for workers |
 | `just format` | Prettier + Ruff format + `ios-format` + `android-format`, write mode; `--check` in CI |
@@ -140,7 +141,8 @@ Both scripts live in `scripts/` as readable, commented bash (or TS via `zx` if b
 | `just ml-eval` | Run versioned eval suites for classification/segmentation/try-on against golden datasets (doc 10) |
 | `just security-scan` | gitleaks + osv-scanner + npm/pnpm audit + license check (§9) |
 | `just sbom` | Generate the SPDX + CycloneDX SBOM into `artifacts/sbom/` (same syft invocation `security-scan` runs) |
-| `just ci-parity` | Run the exact PR-gate sequence locally: format-check, lint, typecheck, arch-check, docs-check, generate --check, test, security-scan, including the native lanes (`NATIVE_LANES`, default `ios android`; a missing native toolchain is a loud SKIP locally and a failure in CI; Xcode-only steps skip on Linux); `--core` = what the pr-gate parity job runs (the native lanes run in `ios.yml` / `android.yml`) |
+| `just flags-report` | Feature-flag expiry report (14 §11): one row per flag in `packages/shared-kernel/registry/feature-flags.json` with owner, `expiresAt` and days left or overdue; exit 1 when a rollout or experiment flag is past expiry (> 30 days overdue = DEFECT), kill-switches exempt; runs nightly; `--fixtures` proves it still fails (in `ci-parity`) |
+| `just ci-parity` | Run the exact PR-gate sequence locally: format-check, lint, typecheck, arch-check, docs-check, `observability-sync all --check` (offline: no env, no network), `flags-report --fixtures`, generate --check, test, security-scan, including the native lanes (`NATIVE_LANES`, default `ios android`; a missing native toolchain is a loud SKIP locally and a failure in CI; Xcode-only steps skip on Linux); `--core` = what the pr-gate parity job runs (the native lanes run in `ios.yml` / `android.yml`) |
 | `just golden-accept` | Accept updated golden/visual-regression baselines as a reviewed commit (doc 13 §6) |
 | `just rec-replay <id>` | Re-run a stored recommendation from its snapshots and diff against the stored result (doc 09 §9) |
 | `just rec-golden-update` | Regenerate recommendation golden fixtures for review (doc 09 §13.3) |
@@ -149,6 +151,7 @@ Both scripts live in `scripts/` as readable, commented bash (or TS via `zx` if b
 | `just secrets-updatekeys [env ...]` | Re-wrap `secrets/*.enc.yaml` for the recipient list in `.sops.yaml` after adding or removing a key (§6 onboarding/rotation) |
 | `just secrets-approve <branch>` | Approve a developer's onboarding branch: verify it only adds age recipients to .sops.yaml, re-wrap every secrets/*.enc.yaml, push, print the PR URL (§6 onboarding) |
 | `just secrets-backup-done` | Record that your age identity is backed up in the password manager (marker file checked by just doctor) |
+| `just observability-sync` | `[grafana\|posthog\|all] [--check\|--dry-run\|--prune]`: push the version-controlled Grafana (`docs/observability/grafana/**`) and PostHog (`docs/observability/posthog/project-settings.json`, the flag registry) definitions over the vendors' HTTP APIs; `--check` is offline and CI-safe (`ci-parity` runs `all --check`), `--dry-run` sends only GETs, `--prune` removes what has no file (`tools/observability/README.md`) |
 
 Rules: recipes fail fast; long recipes call `scripts/*.sh`, not inline blobs; every recipe prints what it will do against which environment before touching anything non-local; destructive recipes (`db-reset`, `db-rollback`) require `--yes` or interactive confirm.
 

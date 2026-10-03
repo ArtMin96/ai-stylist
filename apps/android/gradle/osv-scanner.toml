@@ -11,7 +11,9 @@
 # test-only findings may be ignored; a finding on an app runtime classpath never is.
 
 [[IgnoredVulns]]
-# BUILD TOOL ONLY (never in the APK). Recorded in docs/security/dependency-ignores.md (2026-09-23).
+# BUILD TOOL ONLY (never in the APK), and no build resolves it any more: both versions are stale
+# components of verification-metadata.xml. Recorded in docs/security/dependency-ignores.md
+# (2026-09-23); reason re-evaluated 2026-09-27.
 id = "GHSA-r937-wjx7-w2jp"
 ignoreUntil = 2026-11-22
-reason = "org.jetbrains.kotlin:kotlin-gradle-plugin 2.4.0 (CVE-2026-53914, build-cache deserialization; fixed 2.4.20). Path: Gradle 9.7.1's bundled kotlin-dsl plugin (gradle-kotlin-dsl-plugins 6.7.3) -> apps/android/build-logic buildscript classpath; appears only in apps/android/gradle/verification-metadata.xml. Every fix path breaks the build on Gradle 9.7.1 (latest GA): a classpath constraint to KGP 2.4.20, or pinning kotlin-dsl 6.7.11 (which uses KGP 2.4.20), both make :build-logic:convention:compileKotlin fail under allWarningsAsErrors (DEPRECATED_CLI_ARG -Xuse-fir-lt) with Gradle's 'Unsupported Kotlin plugin version' warning. Fix: Gradle 9.8.0 (in RC) ships kotlin-dsl 6.7.11; bump the wrapper when it is GA and drop this entry."
+reason = "org.jetbrains.kotlin:kotlin-gradle-plugin 2.4.0 and 2.4.10 (CVE-2026-53914, build-cache deserialization; fixed 2.4.20-Beta1). No Gradle configuration resolves either version: since d13e1d0 build-logic compiles with the catalog's kotlin-jvm 2.4.20 instead of Gradle's bundled kotlin-dsl (6.7.3 brought KGP 2.4.0 on Gradle 9.7.1, 6.7.6 brought KGP 2.4.10 on Gradle 9.8.0), every gradle.lockfile locks KGP 2.4.20 only, and `just android-check` from an empty GRADLE_USER_HOME on 2026-09-27 fetched KGP 2.4.20 only and no kotlin-dsl artifact. The finding comes solely from stale components left in apps/android/gradle/verification-metadata.xml, which osv-scanner scans: Gradle's --write-verification-metadata (just android-deps-lock) merges and never prunes. Exit: a granted metadata refresh that removes the kotlin-gradle-plugin 2.4.0/2.4.10 and gradle-kotlin-dsl-plugins 6.7.3/6.7.6 components, proven by a strict-verification `just android-check` from an empty GRADLE_USER_HOME (141fe07's prune, checked only against a warm cache, broke CI until de361d1); then drop this entry in the same change."

@@ -2,21 +2,24 @@
 
 > Module names are canonical per [SPINE §3](../../planning/SPINE.md). Path: `packages/shared-kernel`. This contract is the module's source of truth; code that contradicts it is wrong until a DEC entry says otherwise.
 
-- **Responsibility (one sentence):** Pure types, constants, and registries shared by every module: ULID prefixes, units, event envelope type, error/reason/entitlement registries.
-- **Owner:** @team (placeholder — see `CODEOWNERS`) · **Status:** skeleton (P02) · **Last updated:** 2026-09-23
+- **Responsibility (one sentence):** Pure types, constants, and registries shared by every module: ULID prefixes, units, event envelope type, error/reason/entitlement registries, forbidden log keys, and the feature-flag and owners registries.
+- **Owner:** @team (placeholder — see `CODEOWNERS`) · **Status:** skeleton (P02) · **Last updated:** 2026-09-27
 
 ## Public interface
 
-Public interface: `index.ts` only, which re-exports every file below in full. The data behind `reason-codes.ts`, `entitlements.ts` and `units.ts` comes from `registry/*.json` (JSON Schema-validated) through the generated `src/gen/*.ts`; the same registries generate the Swift `AIStylistKernel` target and the Kotlin `app.aistylist.contracts.kernel` package (`just generate`, [ADR-0005](../adr/0005-shared-kernel-registries-for-native-clients.md)). Edit the JSON, never `src/gen`. Everything is importable by every module; nothing here may import anything back (`shared-kernel-pure`; the only dependency is `ulid`).
+Public interface: `index.ts` only, which re-exports every file below in full. The data behind `reason-codes.ts`, `entitlements.ts` and `units.ts` comes from `registry/*.json` (JSON Schema-validated) through the generated `src/gen/*.ts`; the same registries generate the Swift `AIStylistKernel` target and the Kotlin `app.aistylist.contracts.kernel` package (`just generate`, [ADR-0005](../adr/0005-shared-kernel-registries-for-native-clients.md)). Edit the JSON, never `src/gen`. `forbidden-log-keys.ts`, `owners.ts` and `feature-flags.ts` are TS-only: they import `registry/forbidden-log-keys.json`, `registry/owners.json` and `registry/feature-flags.json` directly (no generated output, no Swift/Kotlin), and non-TS readers (lint rules, worker drift tests, the expired-flag report) read those JSON files. `registry/forbidden-log-keys.examples.json` holds the word-split examples for that list: `forbidden` keys (camel, snake, kebab and UPPER variants) every matcher must treat as forbidden, and `allowed` keys (the doc 14 §2 required ids and near-misses such as `latency` or `tokenizerVersion`) it must not. A key is forbidden when the whole key, or any of its words, is a registry word. TS tests import `FORBIDDEN_LOG_KEY_EXAMPLES`; the worker pytest and the forbidden-field lint's check read the JSON. Their schemas are checked by `packages/contracts/tests/kernel-registries.test.ts`, and the cross-references by `tests/feature-flags.test.ts` and `tests/forbidden-log-keys.test.ts` (every `forbidden` example matches a registry word, no `allowed` one does). Everything is importable by every module; nothing here may import anything back (`shared-kernel-pure`; the only dependency is `ulid`).
 
 | Export (by file)                                                                                                                                                                                                      | Kind (service/command/query/type/port) | Purpose                                                                                        |
 | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------- | ---------------------------------------------------------------------------------------------- |
 | `ids.ts`: `ID_PREFIXES`, `IdKind`, `IdPrefix`, `Id<K>`, `ParsedId`, `IdParseError`, `IdParseResult`, `newId`, `formatId`, `parseId`, `isId`                                                                           | constant / type / pure function        | Prefixed ULID identifiers per aggregate kind: mint, format, parse, and narrow                  |
 | `units.ts`: `LENGTH_UNITS`, `MASS_UNITS`, `TEMPERATURE_UNITS`, `*Unit`, `Unit`, `CANONICAL_UNITS`, `Dimension`, `UNIT_SYSTEMS`, `UnitSystem`, `MEASUREMENT_SOURCES`, `MeasurementSource`, `Measurement<U>`, `convert` | constant / type / pure function        | Canonical metric storage units, unit systems, measurement provenance, and conversions          |
-| `envelope.ts`: `EventType`, `ACTOR_KINDS`, `ActorKind`, `EventAggregate`, `EventActor`, `EventEnvelope<T, P>`                                                                                                         | type / constant                        | The event envelope every outbox event and consumer shares (doc 04 §9)                          |
+| `envelope.ts`: `EventType`, `ACTOR_KINDS`, `ActorKind`, `EventAggregate`, `EventActor`, `EventEnvelope<T, P>`                                                                                                         | type / constant                        | The event envelope every outbox event and consumer shares (doc 04 §9; `traceparent` doc 14 §3) |
 | `errors.ts`: `ERROR_CODES`, `ErrorCode`, `PROBLEM_TYPE_BASE`, `ProblemFieldError`, `ProblemDetails`, `ProblemOverrides`, `problem`                                                                                    | constant / type / pure function        | Error-code registry and the RFC 9457 problem-details shape the API returns                     |
 | `reason-codes.ts`: `REASON_CODE_NAMESPACES`, `ReasonCodeNamespace`, `ReasonCodeStage`, `ReasonCodeDefinition`, `REASON_CODES`, `ReasonCode`                                                                           | constant / type                        | Recommendation reason-code registry (explanations come from the decision trace, never prose)   |
 | `entitlements.ts`: `EntitlementValueKind`, `EntitlementDefinition`, `ENTITLEMENTS`, `EntitlementName`, `CREDIT_METERS`, `CreditMeter`                                                                                 | constant / type                        | Entitlement names/kinds and credit meters shared by billing, recommendation, and the mobile UI |
+| `forbidden-log-keys.ts`: `FORBIDDEN_LOG_KEYS`, `ForbiddenLogKeyExamples`, `FORBIDDEN_LOG_KEY_EXAMPLES`                                                                                                                | constant / type                        | Forbidden log key words (doc 11 §8) for every logger and lint, and their word-split examples   |
+| `owners.ts`: `PersonId`, `Person`, `OwnerRole`, `OwnersRegistry`, `OWNERS_REGISTRY`                                                                                                                                   | constant / type                        | People and roles that own flags, dashboards and alerts, referenced by id (ADR-0007)            |
+| `feature-flags.ts`: `FEATURE_FLAG_KINDS`, `FeatureFlagKind`, `FeatureFlagDefinition`, `FeatureFlagKey`, `FEATURE_FLAG_REGISTRY`, `FeatureFlags`, `FEATURE_FLAGS`                                                      | constant / type / port                 | Flag registry (owner, expiry, rollout plan, safe off state; doc 14 §11) and its check port     |
 
 ## Owned data
 
@@ -26,8 +29,9 @@ None yet (P02 skeleton). Planned per SPINE §3: none — types and constants onl
 
 1. No business rule lives in a controller, Drizzle schema file, pg-boss job handler, provider wrapper, or React component (doc 04 §4.2 rule 9); adapters translate, this module decides.
 2. No tables, no I/O, no framework imports; every export is a type, constant, registry entry, or pure function with a test.
-3. Registry data has one source, `registry/*.json`: TS, Swift and Kotlin are generated from it, and `just generate --check` fails when any output is stale.
-4. Further invariants: OPEN until the first domain phase that touches this module fills them in (each needs at least one test).
+3. Registry data has one source, `registry/*.json`: TS, Swift and Kotlin are generated from it, and `just generate --check` fails when any output is stale. The TS-only registries (`forbidden-log-keys` and its `forbidden-log-keys.examples`, `owners`, `feature-flags`) are imported as JSON, not generated. Consumers read the same file and never copy the values.
+4. Every feature flag names a person id from `registry/owners.json` as owner, declares a safe `offBehavior` and `defaultWhenUnavailable`, and has `expiresAt` unless it is a `kill-switch`; a `rollout` flag expires at most 90 days after `createdAt` (doc 14 §11, NFR-OBS-080). Every role member is a declared person (`tests/feature-flags.test.ts`).
+5. Further invariants: OPEN until the first domain phase that touches this module fills them in (each needs at least one test).
 
 ## Events
 
@@ -42,7 +46,7 @@ None yet (P02 skeleton). Planned per SPINE §3: none — types and constants onl
 ## Dependencies (allowed)
 
 - Nothing (`shared-kernel-pure`, doc 04 §4.2 rule 6): no workspace package, no framework, no I/O. Every module and `platform` may import it.
-- Ports: may host port interfaces shared by several modules (doc 04 §4.2 rule 4); never their implementations.
+- Ports: may host port interfaces shared by several modules (doc 04 §4.2 rule 4); never their implementations. Hosted today: `FeatureFlags` + `FEATURE_FLAGS` (the PostHog adapter lives in `platform`).
 
 ## Forbidden dependencies
 
@@ -64,5 +68,6 @@ Derived from P02 brief §5 and doc 04 §4.2; every rule has a failing fixture in
 ## Extension points
 
 - New reason codes, entitlement names, units, or ID prefixes are added to the existing registries with tests; consumers regenerate/import, never copy (`just generate` for contract-facing values).
+- A new feature flag is an entry in `registry/feature-flags.json`. A new person or role is an entry in `registry/owners.json`. Neither needs a code change. A new forbidden log word is an entry in `registry/forbidden-log-keys.json`, and every logger and lint that reads the file picks it up. A new word-split example is an entry under `forbidden` or `allowed` in `registry/forbidden-log-keys.examples.json`, and every matcher's tests that read the file check it.
 
 Status: skeleton (P02).

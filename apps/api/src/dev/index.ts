@@ -3,7 +3,11 @@ import { type DynamicModule, Module, ServiceUnavailableException } from '@nestjs
 import type { AppConfig } from '../config.js';
 import { OUTBOX_WRITER, type OutboxWriter } from '../platform/ports/outbox-writer.port.js';
 
-import { DemoEventsController } from './demo-events.controller.js';
+import {
+  CURRENT_CORRELATION_ID,
+  type CurrentCorrelationId,
+  DemoEventsController,
+} from './demo-events.controller.js';
 
 /**
  * Fail closed: dev routes exist only outside production builds AND in a local or dev deployment,
@@ -27,15 +31,27 @@ export class UnconfiguredOutboxWriter implements OutboxWriter {
   }
 }
 
-/** Imported by the composition root only when `isDevRouteEnabled(config)`. */
+/**
+ * Imported by the composition root only when `isDevRouteEnabled(config)`. `CLOCK` and
+ * `FEATURE_FLAGS` come from the global `PlatformModule`.
+ */
 @Module({})
 export class DevModule {
-  /** `outboxWriter` is the adapter the composition root built (doc 04 §5), never built here. */
-  static forRoot(outboxWriter: OutboxWriter): DynamicModule {
+  /**
+   * `outboxWriter` is the adapter the composition root built (doc 04 §5), never built here;
+   * `currentCorrelationId` is the platform's reader of the request's correlation scope.
+   */
+  static forRoot(
+    outboxWriter: OutboxWriter,
+    currentCorrelationId: CurrentCorrelationId,
+  ): DynamicModule {
     return {
       module: DevModule,
       controllers: [DemoEventsController],
-      providers: [{ provide: OUTBOX_WRITER, useValue: outboxWriter }],
+      providers: [
+        { provide: OUTBOX_WRITER, useValue: outboxWriter },
+        { provide: CURRENT_CORRELATION_ID, useValue: currentCorrelationId },
+      ],
     };
   }
 }

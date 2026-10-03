@@ -4,7 +4,7 @@ dependency-cruiser is the whole-graph architecture gate (planning/04 §4.3, brie
 runs `depcruise --config tools/depcruise/rules.cjs apps packages tools/codegen` from the repo root (the
 cruise covers the codegen scripts too, e.g. `gen-kernel.mjs` and `kernel/*.mjs`, ADR-0005), then scans
 `apps`, `packages` and `workers` for banned `utils/ | helpers/ | common/` directories. `just arch-check --fixtures` runs
-`check-fixtures.sh`: every tree under `fixtures/<case>/` must fail on its named rule. The `just arch-check`
+`check-fixtures.sh`: every tree under `fixtures/<case>/` (it cruises the case's `apps/` and `packages/`) must fail on its named rule. The `just arch-check`
 recipe also runs the native lanes (`just ios-check-banned` and Android `checkModuleGraph`; with
 `--fixtures`, `just ios-check-banned --fixtures`) through `scripts/native-lane.sh`. Both run in
 `just ci-parity`. `prototype/` is never a cruise source; it only ever appears as a forbidden target.
@@ -23,10 +23,10 @@ Every rule is `severity: 'error'` — there is no warning tier.
 | `recommendation-not-renderer`      | `modules/recommendation/**` importing `modules/avatar`, `assets/`, or `.glb/.gltf/.ktx2`                                                                                                                      |
 | `recommendation-outfit-types-only` | `modules/recommendation/**` importing `modules/outfit` for anything but types (`import type`)                                                                                                                 |
 | `assistant-app-services-only`      | `modules/assistant/**` importing any `internal/**`, `platform`, `packages/db`, `drizzle-orm`, or a `schema.ts`                                                                                                |
-| `domain-no-provider-sdk`           | `modules/**` importing `pg-boss`, `@aws-sdk/*`, `@cloudflare/*`, `@fal-ai/*`, `posthog-*`, `firebase-admin`, `@sentry/*`                                                                                      |
+| `domain-no-provider-sdk`           | `modules/**` importing `pg-boss`, `@aws-sdk/*`, `@cloudflare/*`, `@fal-ai/*`, `posthog-*`, `firebase-admin`, `@sentry/*`, `@opentelemetry/{sdk-*,exporter-*,instrumentation*}`, `@fastify/otel`               |
 | `platform-leaf`                    | `apps/api/src/platform/**` (tests excepted) importing workspace code other than `shared-kernel` and `contracts` (generated types)                                                                             |
 | `modules-not-platform`             | `modules/**` importing `apps/api/src/platform/**` at all — ports are bound at the composition root                                                                                                            |
-| `shared-kernel-pure`               | `packages/shared-kernel/src/**` importing anything but its own files and `ulid`                                                                                                                               |
+| `shared-kernel-pure`               | `packages/shared-kernel/src/**` importing anything but its own files, its `registry/*.json` data and `ulid`                                                                                                   |
 | `no-utils-dirs`                    | a file inside, or an import from, a `utils/`, `helpers/`, `common/` directory (`arch-check.sh` also `find`s empty ones)                                                                                       |
 | `prototype-unimportable`           | any import of `prototype/**`                                                                                                                                                                                  |
 | `composition-root-only`            | any file except the composition roots (`app.module.ts`, `main.ts`, `jobs/**`), `apps/api/tests/**`, `platform` and `packages/db` themselves, `dev`, and the seed CLI importing `platform/**` or `packages/db` |
@@ -39,6 +39,13 @@ Notes:
   types are the single source of truth for response shapes (`VersionInfo` in `version.controller.ts`).
 - `modules-not-platform` is strict: the port tokens currently in `platform/ports/*.port.ts` must move to
   `shared-kernel` or a module's public API (04 §4.2 rule 4) before the first module injects one.
+- `domain-no-provider-sdk` leaves `@opentelemetry/api` importable: it is the vendor-neutral API for
+  manual spans (doc 14 §3). The OpenTelemetry SDK, exporters, instrumentations and `@fastify/otel`
+  are wired in `platform` (fixture `otel-sdk-in-domain`). `tools/eslint/boundaries.mjs` mirrors the list.
+- `shared-kernel-pure` allows JSON files directly under `packages/shared-kernel/registry/`: they are the
+  kernel's own registry data (04 §4.2 rule 6 lists registries as kernel content), imported with
+  `with { type: 'json' }`. Code under `registry/`, nested directories there, `node:*` and every other
+  package stay forbidden (fixture `shared-kernel-impure`).
 - `tsconfig.json` here only gives dependency-cruiser a TypeScript config (no `paths` aliases); module
   resolution (NodeNext `.js` → `.ts`, workspace `exports`) is configured in `rules.cjs`.
 - The cruise excludes `apps/ios/**` and `apps/android/**` (no JS/TS there), but the `no-utils-dirs`
@@ -53,4 +60,5 @@ Notes:
 2. Narrow the rule in `rules.cjs` with a `pathNot` (or a `dependencyTypesNot`) that names exactly the
    excepted path — never delete or downgrade the rule, never add a `warn` tier.
 3. Reference the ADR in the rule's `comment` and in the table above.
-4. Keep every fixture failing: `just arch-check --fixtures` must still report all six.
+4. Keep every fixture failing: `just arch-check --fixtures` must still report every case registered
+   in `check-fixtures.sh`.

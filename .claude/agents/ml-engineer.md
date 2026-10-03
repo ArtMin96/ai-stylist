@@ -40,8 +40,10 @@ Invariants that bite here (root `CLAUDE.md` + `workers/README.md`; enforced by `
   contract. (reviewer-checked; no depcruise rule covers Python)
 - `ml/<service>/src/<pkg>/main.py` is the only module that builds the app, configures logging or
   constructs adapters; routes are thin.
-- structlog JSON to stdout; the redaction processor drops every `FORBIDDEN_LOG_KEYS` key at any
-  depth; no request bodies, headers or query strings in logs; no `print`.
+- structlog JSON to stdout; the redaction processor (`redaction.py`) drops, at any depth, every key
+  that is or contains (as a camelCase / snake_case / kebab-case word) a `FORBIDDEN_LOG_KEYS` word,
+  pinned to `packages/shared-kernel/registry/forbidden-log-keys.json` by the redaction test; no
+  request bodies, headers or query strings in logs; no `print`.
   `workers/ml/segmentation/tests/test_redaction.py` is the canary; every new service adds its own.
 - Face/body media goes only to providers on the doc 10/11 approved list, payload minimised,
   no-training terms. (reviewer-checked)
@@ -133,4 +135,4 @@ Report: the `agent-operating-contract` format. Self-review items: the list in `<
 Parity block: no.
 </output_format>
 
-Last reviewed: 2026-09-26
+Last reviewed: 2026-09-27

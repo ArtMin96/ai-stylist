@@ -6,8 +6,9 @@
 //
 // Rules in the P02 lint bundle land here or in tools/eslint/*.mjs:
 //   boundaries (tools/eslint/boundaries.mjs), no-skip (here), forbidden-field + test-placement +
-//   file-size + no-console (tools/eslint/quality.mjs), a11y (T10), expired-flag (T09).
-//   no-utils-dirs is enforced by `just arch-check` (tools/depcruise).
+//   file-size + no-console (tools/eslint/quality.mjs), a11y (T10).
+//   no-utils-dirs is enforced by `just arch-check` (tools/depcruise), and the expired-flag report
+//   is `just flags-report` (tools/flags), not an ESLint rule.
 
 import js from '@eslint/js';
 import tseslint from 'typescript-eslint';

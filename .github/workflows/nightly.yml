@@ -3,8 +3,8 @@
 #
 # Triggers:  schedule 03:00 UTC daily, workflow_dispatch, and workflow_call (pre-release.yml
 #            reuses every job below).
-# Recipes:   just test, just sbom, just ml-eval, and the [private] CI helpers ci-pgvector,
-#            ci-gitleaks-history, ci-osv-source (justfile).
+# Recipes:   just test, just sbom, just ml-eval, just flags-report, and the [private] CI helpers
+#            ci-pgvector, ci-gitleaks-history, ci-osv-source (justfile).
 # Required secrets: none.
 # Optional secrets (steps degrade gracefully when unset):
 #   TURBO_TOKEN, TURBO_TEAM   Turborepo remote cache
@@ -172,7 +172,7 @@ jobs:
           esac
 
   expired-flags:
-    name: Verify · Expired feature flags (placeholder)
+    name: Verify · Expired feature flags
     # needs: none (root of the job tree)
     runs-on: ubuntu-latest
     timeout-minutes: 5
@@ -182,10 +182,14 @@ jobs:
       group: ${{ github.workflow }}-expired-flags-${{ github.ref }}
       cancel-in-progress: false
     steps:
-      - name: Verify · Report flags past expiry (NOT IMPLEMENTED, P02-T09)
-        run: |
-          echo "NOT IMPLEMENTED (P02-T09): flag registry with owner/expiry lands with the logging/lint task"
-          echo "::notice::expired-flag report placeholder - registry not present yet"
+      - name: Setup · Check out
+        uses: actions/checkout@v7
+      - name: Setup · Install toolchain
+        uses: ./.github/actions/setup
+        with:
+          install: 'false'
+      - name: Verify · Report flags past expiry (planning/14 §11; > 30 days overdue = DEFECT)
+        run: just flags-report
 
   maestro:
     name: Test · Maestro E2E (placeholder)
@@ -229,6 +233,6 @@ jobs:
             echo "| osv-scanner | ${{ needs.osv-scanner.result }} |"
             echo "| sbom | ${{ needs.sbom.result }} |"
             echo "| ml-eval | ${{ needs.ml-eval.result }} |"
-            echo "| expired-flags | ${{ needs.expired-flags.result }} (placeholder) |"
+            echo "| expired-flags | ${{ needs.expired-flags.result }} |"
             echo "| maestro | ${{ needs.maestro.result }} (placeholder) |"
           } >> "$GITHUB_STEP_SUMMARY"

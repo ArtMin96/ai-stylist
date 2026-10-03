@@ -1,0 +1,30 @@
+{
+  "title": "fixture",
+  "folderUid": "ai-stylist",
+  "interval": 60,
+  "rules": [
+    {
+      "uid": "fixture-unknown-role",
+      "title": "fixture.unknown_role",
+      "ruleGroup": "fixture",
+      "folderUID": "ai-stylist",
+      "condition": "A",
+      "data": [
+        {
+          "refId": "A",
+          "relativeTimeRange": { "from": 600, "to": 0 },
+          "datasourceUid": "${PROM_DATASOURCE_UID}",
+          "model": { "refId": "A", "expr": "vector(1)", "instant": true }
+        }
+      ],
+      "noDataState": "OK",
+      "execErrState": "Error",
+      "for": "5m",
+      "labels": { "severity": "SEV3", "owner_role": "nobody" },
+      "annotations": {
+        "summary": "Owned by ${OWNERS:nobody}",
+        "runbook_url": "https://github.com/ArtMin96/ai-stylist/blob/main/docs/runbooks/04-queue-dlq.md"
+      }
+    }
+  ]
+}

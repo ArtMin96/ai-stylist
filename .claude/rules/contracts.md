@@ -21,13 +21,15 @@ module, `just test` (the package tests have no scoped route), and
 1. Single-writer (root `CLAUDE.md` "Parallel sessions"): no other session edits `packages/contracts/` or
    `packages/shared-kernel/` at the same time, and a contract lands before its consumers. The dispatch
    prompt must state it (reviewer-checked).
-2. `packages/shared-kernel/src/` imports nothing but `ulid`: no I/O, no framework — depcruise
-   `shared-kernel-pure` (`just arch-check`).
+2. `packages/shared-kernel/src/` imports nothing but its own files, its `registry/*.json` data and
+   `ulid`: no I/O, no framework — depcruise `shared-kernel-pure` (`just arch-check`).
 3. Generated output is never hand-edited: change the YAML/JSON source, then run `just generate` — the
    PreToolUse path guard `scripts/hooks/guard-protected-paths.sh` denies `packages/contracts/gen/`,
    `packages/shared-kernel/src/gen/` and `workers/ml/generated/`; `just generate --check` catches drift.
 4. Reason codes, entitlement names and units live in `packages/shared-kernel/registry/*.json` (ADR-0005).
    Swift consumes the generated `AIStylistKernel`, Kotlin `app.aistylist.contracts.kernel`; nobody copies
-   a constant — `just generate --check` for the generated side; copies are reviewer-checked.
+   a constant — `just generate --check` for the generated side; copies are reviewer-checked. The
+   forbidden-log-keys, owners and feature-flags registries there are TS-only (nothing generated),
+   validated by `packages/contracts/tests/kernel-registries.test.ts` (`just test`).
 5. Analytics event names live in `packages/contracts/events/analytics/events.json`. Android uses the
    generated `AnalyticsTaxonomy`; the hand-written iOS names equal it byte for byte (reviewer-checked).

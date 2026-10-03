@@ -17,6 +17,14 @@ overrides:
   '@hey-api/json-schema-ref-parser>js-yaml': ^4.3.2
   '@esbuild-kit/core-utils>esbuild': ^0.25.4
 
+# Audit ignores: the same GHSA ids as the [[IgnoredVulns]] entries in the root osv-scanner.toml,
+# kept in sync (docs/security/dependency-ignores.md "Ignore policy", DEC-39). `pnpm audit` cannot
+# express an expiry, so the expiry lives in osv-scanner.toml: remove an id here the moment it
+# leaves that file.
+auditConfig:
+  ignoreGhsas:
+    - GHSA-vfj7-8cjw-p6xm # braces@3.0.3: no fixed release, lint tooling only; expires 2026-12-03
+
 # Build scripts run only for packages set to true here (15 §9 supply chain). pnpm 12 fails the
 # install (ERR_PNPM_IGNORED_BUILDS) for a package with a build script that is not listed, so every
 # such package is listed: true only with a justification in the PR, false otherwise.

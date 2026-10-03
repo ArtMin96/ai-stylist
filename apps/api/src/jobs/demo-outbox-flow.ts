@@ -99,13 +99,15 @@ export function createDemoOutboxFlowHandler(deps: DemoOutboxFlowHandlerDeps): Jo
   return async (job) => {
     const envelope = parseDemoOutboxFlowEnvelope(job.data);
     const request: SegmentRequest = { request_id: envelope.id, image_ref: DEMO_IMAGE_REF };
+    // The worker gets the envelope's correlation id as `x-correlation-id` (planning/14 §2).
+    const call = { signal: job.signal, correlationId: envelope.correlationId };
     const result = await deps.guard.runOnce(
       {
         key: envelope.id,
         scope: DEMO_OUTBOX_FLOW_SCOPE,
         retentionSeconds: DEMO_OUTBOX_FLOW_RETENTION_SECONDS,
       },
-      () => deps.segmentation.segment(request, job.signal),
+      () => deps.segmentation.segment(request, call),
     );
     logger.info(
       {

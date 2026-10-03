@@ -18,7 +18,12 @@ import app.aistylist.feature.home.HomeViewModel
 class MainActivity : ComponentActivity() {
     private val homeViewModel: HomeViewModel by viewModels {
         val container = (application as AiStylistApp).container
-        HomeViewModel.factory(container.versionRepository, container.analytics, container.config)
+        HomeViewModel.factory(
+            versionRepository = container.versionRepository,
+            analytics = container.analytics,
+            config = container.config,
+            testCrash = container.forceTestCrash,
+        )
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {

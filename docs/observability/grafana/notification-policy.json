@@ -1,0 +1,25 @@
+{
+  "receiver": "ai-stylist-oncall",
+  "group_by": ["grafana_folder", "alertname"],
+  "group_wait": "30s",
+  "group_interval": "5m",
+  "repeat_interval": "4h",
+  "routes": [
+    {
+      "receiver": "ai-stylist-oncall",
+      "object_matchers": [["severity", "=", "SEV1"]],
+      "repeat_interval": "1h"
+    },
+    {
+      "receiver": "ai-stylist-oncall",
+      "object_matchers": [["severity", "=", "SEV2"]],
+      "mute_time_intervals": ["quiet-hours"],
+      "repeat_interval": "4h"
+    },
+    {
+      "receiver": "ai-stylist-oncall",
+      "object_matchers": [["severity", "=", "SEV3"]],
+      "mute_time_intervals": ["no-page"]
+    }
+  ]
+}

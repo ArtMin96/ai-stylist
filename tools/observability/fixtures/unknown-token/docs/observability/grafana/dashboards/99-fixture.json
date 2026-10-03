@@ -1,0 +1,8 @@
+{
+  "id": null,
+  "uid": "fixture-unknown-token",
+  "title": "Fixture: unknown tokens",
+  "description": "Owners: ${OWNERZ:observability}. Datasource: ${DS_PROMETHEUS}.",
+  "tags": ["fixture"],
+  "panels": []
+}

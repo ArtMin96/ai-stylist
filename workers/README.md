@@ -17,10 +17,13 @@ workers/
         ├── pyproject.toml  runtime deps only (hatchling build)
         ├── Dockerfile      multi-stage, python:3.14-slim, uv --frozen, non-root, HEALTHCHECK /health
         ├── src/ai_stylist_segmentation/
-        │   ├── main.py     composition root: configures logging, builds `app` (uvicorn target)
-        │   ├── app.py      `create_app()` factory + body-free access-log middleware
-        │   ├── routes.py   GET /health, POST /v1/segment (thin adapters, no domain logic)
-        │   └── schemas.py  Pydantic request/response models; re-exports the generated envelope
+        │   ├── main.py        composition root: configures logging + tracing, builds `app` (uvicorn target)
+        │   ├── app.py         `create_app()` factory + correlation-id and body-free access-log middleware
+        │   ├── routes.py      GET /health, POST /v1/segment (thin adapters, no domain logic)
+        │   ├── schemas.py     Pydantic request/response models; re-exports the generated envelope
+        │   ├── redaction.py   forbidden log words + the structlog redaction processor
+        │   ├── correlation.py `x-correlation-id`: validate or mint, bind to logs + span, echo
+        │   └── tracing.py     span sanitizer (OTLP export backstop) + `trace_id`/`span_id` log processor
         └── tests/          the service's tests (always here — test-placement rule)
 ```
 
@@ -33,11 +36,50 @@ workers/
   TypeScript side; `just generate` turns them into `ml/generated/ai_stylist_generated/events/`.
 - **`composition-root-only`:** `ml/<service>/src/<pkg>/main.py` is the only module that builds
   the app, configures logging, or constructs adapters. Everything else is pure, importable code.
-- **Logging:** structlog JSON to stdout. A redaction processor drops every key in
-  `FORBIDDEN_LOG_KEYS` (planning/11 §8: measurements, selfie, face, photo, location, token,
-  authorization, password, email) at any nesting depth, for structlog and stdlib records alike.
-  Request bodies, headers and query strings are never logged. `tests/test_redaction.py` is the canary.
+- **Logging:** structlog JSON to stdout. A redaction processor drops every key that is, or contains
+  as a camelCase / snake_case / kebab-case word, one of the forbidden words (planning/11 §8) at any
+  nesting depth, for structlog and stdlib records alike. The words are the single source
+  `packages/shared-kernel/registry/forbidden-log-keys.json`; the image has no `packages/`, so
+  `FORBIDDEN_LOG_KEYS` in `redaction.py` is a copy that `tests/test_redaction.py` pins to that file
+  (copy the registry's words when it fails). Matching mirrors `isForbiddenLogKey` in
+  `apps/api/src/platform/logger.ts`. Request bodies, headers and query strings are never logged.
+  Inside a request every line carries `correlation_id`; inside a traced request also `trace_id` and
+  `span_id`. `tests/test_redaction.py` is the canary.
 - **Honesty:** every generated result carries `provenance {generated, model, confidence}`.
+
+## Telemetry (planning/14 §2–§3, ADR-0007)
+
+Same pipeline and rules as the API (`apps/api/src/platform/telemetry/README.md`); Grafana setup in
+`docs/observability/grafana.md`.
+
+- **Off unless configured.** An empty or unset `OTEL_EXPORTER_OTLP_ENDPOINT` builds nothing: no
+  tracer provider, no exporter, no network (tests, CI, local runs without Grafana).
+- **Traces** (`main.py`): OpenTelemetry SDK `TracerProvider` → `BatchSpanProcessor` (`OTEL_BSP_*`)
+  → `SanitizingSpanExporter` → OTLP/HTTP protobuf exporter, which reads
+  `OTEL_EXPORTER_OTLP_ENDPOINT` (or `OTEL_EXPORTER_OTLP_TRACES_ENDPOINT`) and
+  `OTEL_EXPORTER_OTLP_HEADERS` itself. Resource: `service.name` = `segmentation`,
+  `service.version` = `APP_VERSION` (else the package version), `deployment.environment.name` =
+  `APP_ENV` (omitted when empty); `OTEL_SERVICE_NAME` and `OTEL_RESOURCE_ATTRIBUTES` win. No host or
+  process detector runs. The provider's `atexit` hook flushes pending spans on a graceful stop.
+- **Instrumentation:** `opentelemetry-instrumentation-fastapi`, one SERVER span per request that
+  continues the caller's W3C `traceparent` (the jobs process's `fetch` span); propagation is
+  `traceparent` only (caller `baggage` is ignored). `/health` is not traced, there are no
+  per-message `receive`/`send` spans, and span attributes use the stable HTTP semantic conventions
+  (`OTEL_SEMCONV_STABILITY_OPT_IN=http` by default).
+- **Span attributes** carry ids and enums only, e.g. `http.request.method`, `http.route`,
+  `url.path`, `http.response.status_code`, `correlation_id`. The
+  exporter wrapper (`tracing.py`) drops `url.query`, `client.address`, `network.peer.address`,
+  `user_agent.original`, `exception.message`, `exception.stacktrace` (and their old-convention
+  names), cuts the query and fragment from `url.full`/`url.path`/`http.url`/`http.target`, drops
+  the status description, keeps `exception.type`, and replaces with `[REDACTED]` any attribute whose
+  last dot-segment is a forbidden word.
+- **Correlation id** (`correlation.py`): the `x-correlation-id` request header is accepted when it
+  matches the API's `CORRELATION_ID_PATTERN` (1–128 chars of `[A-Za-z0-9._:-]`, one header),
+  else a UUID is minted. It is bound as `correlation_id` for every log line of the request, set on
+  the request span and echoed in the response header.
+- **Logs stay on stdout** (JSON); they are not sent over OTLP. The OpenTelemetry Python logs signal
+  is still "Development" (opentelemetry-python README; 1.45.0 changed the Logger API), so shipping
+  stdout to Loki is the platform's log collector's job.
 
 ## Toolchain
 
@@ -67,7 +109,10 @@ curl -X POST localhost:8001/v1/segment -H 'content-type: application/json' \
   -d '{"request_id":"req_1","image_ref":"media/u1/garment.jpg","hint":"top"}'
 ```
 
-Port 8001 keeps the API's 8000 free; inside Docker the service listens on 8000.
+Port 8001 keeps the API's 8000 free; inside Docker the service listens on 8000. To export traces
+locally, set `OTEL_EXPORTER_OTLP_ENDPOINT` / `OTEL_EXPORTER_OTLP_HEADERS` in the environment and
+`OTEL_SERVICE_NAME=segmentation` (or leave it unset) so a shared `.env` value for the API does not
+rename the worker.
 
 ### Docker
 

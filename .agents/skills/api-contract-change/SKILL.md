@@ -3,7 +3,7 @@ name: api-contract-change
 description: Change the OpenAPI 3.1 API contract, event schemas, the analytics taxonomy, or a shared-kernel registry in packages/contracts and packages/shared-kernel, then regenerate every client with `just generate`. Use for any new or changed endpoint, request/response schema, operationId, event envelope/payload, RFC 9457 error shape, a reason code, entitlement name, credit meter or unit (`packages/shared-kernel/registry/*.json`), an analytics event name, or a shared enum that crosses the iOS / Android / API / workers boundary; a failing `just generate --check`; a spectral lint error; or an oasdiff breaking-change report. Not for implementing the behavior behind an existing endpoint — use `backend-module` instead. Not for a database table or migration — use `db-migration` instead. Not for editing a codegen script in tools/codegen — that belongs to its owner (see Overlap).
 metadata:
   modules: shared-kernel
-  last-reviewed: 2026-09-26
+  last-reviewed: 2026-09-27
   owner-agent: contracts-engineer
 ---
 
@@ -83,7 +83,7 @@ Done checklist: `generate --check` clean · contract tests green · typecheck gr
 - Another session is editing `packages/contracts` or `packages/shared-kernel` → stop and sequence.
 - `just generate` fails inside a codegen script, or the generated output is wrong → do not patch `gen/**`; report to the script's owner (Overlap).
 - A registry value has no consumer yet → stop and ask why it cannot wait for the consumer.
-- A taxonomy task: no taxonomy registry exists yet (`packages/shared-kernel/registry/` holds reason codes, entitlements and units only; P06-T01 creates v1) → design only; stop before inventing a location.
+- A taxonomy task: no taxonomy registry exists yet (`packages/shared-kernel/registry/` holds reason codes, entitlements and units, plus the TS-only forbidden-log-keys, owners and feature-flags registries; P06-T01 creates v1) → design only; stop before inventing a location.
 - A taxonomy bump rule cannot decide a case → `.other` + a review nudge, never a silent guess (`.agents/skills/api-contract-change/references/taxonomy-registry.md`).
 
 ## Overlap

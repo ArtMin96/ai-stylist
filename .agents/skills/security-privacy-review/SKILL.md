@@ -3,7 +3,7 @@ name: security-privacy-review
 description: Review a diff or PR that touches auth, authorization, consent, sensitive data (measurements, selfies/face data, photos, location, wardrobe history, tokens), webhooks, uploads/signed URLs, deletion/export, logging, AI-provider data flows, or native-app token storage, network security and privacy declarations — use whenever asked "security review", "privacy review", "is this webhook safe", "does this leak PII", "is this safe to ship", or "consent flow review". Produces a written review, not code changes. Not for module-boundary or duplication findings on the same diff — use `architecture-review` for that lens — and not for writing the fix, which goes back to the owning engineer skill.
 metadata:
   modules:
-  last-reviewed: 2026-09-26
+  last-reviewed: 2026-09-27
   owner-agent: security-privacy-reviewer
 ---
 
@@ -35,7 +35,8 @@ metadata:
    modules; `planning/14-observability-operations-and-analytics.md` for any log/event change.
 4. `planning/15-team-workflow-and-ai-agent-operations.md` §6 (sops + age, `.env.example` rule) and §9
    (supply-chain policy).
-5. `apps/api/src/platform/logger.ts` (`FORBIDDEN_LOG_KEYS`) for the mechanical floor this review
+5. `apps/api/src/platform/logger.ts` (redaction; the words come from
+   `packages/shared-kernel/registry/forbidden-log-keys.json`) for the mechanical floor this review
    checks by hand for anything the lint rule cannot see (indirect leakage, event payloads, prompts).
 6. Native apps: `apps/ios/App/PrivacyInfo.xcprivacy`, `apps/ios/App/Info.plist`,
    `apps/android/app/src/main/AndroidManifest.xml`,

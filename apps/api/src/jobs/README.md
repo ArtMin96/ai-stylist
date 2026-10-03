@@ -8,18 +8,23 @@ outcome to pg-boss. No business rule lives here. Provider clients are constructe
 
 - `queues.ts`: queue definitions (`JOB_QUEUES`, including the worked dead-letter queues
   `OUTBOX_DEAD_LETTER_QUEUES`), the outbox event type → queue map (`EVENT_QUEUE_ROUTES`,
-  `queueForEventType`) and the per-user keying policy `userIdOf(envelope)` (the actor id when
-  `actor.kind === 'user'`, else `undefined`; the relay composition passes it to `OutboxRelay`).
-  The only place any of these is declared.
+  `queueForEventType`), the per-user keying policy `userIdOf(envelope)` (the actor id when
+  `actor.kind === 'user'`, else `undefined`; the relay composition passes it to `OutboxRelay`) and
+  `envelopeTraceContext(data)` (the envelope's `traceparent` and `correlationId`, read without
+  throwing; `startJobs` passes it to `PgBossQueue` as `traceContextOf`, so each job joins its
+  event's trace and correlation scope). The only place any of these is declared.
 - `outbox-dead-letter.ts`: the dead-letter handler; reads the envelope id from a dead-lettered
   job and calls `markOutboxFailed` (`../platform/outbox/outbox-dead-letter.ts`).
-- `index.ts`: `startJobs({ databaseUrl, segmentationBaseUrl, logger, pollingIntervalSeconds? })`
-  → `{ stop }`, plus re-exports of `queues.ts`.
+- `index.ts`: `startJobs(config)` → `{ stop }` (config: `databaseUrl`, `segmentationBaseUrl`,
+  `logger`, optional `pollingIntervalSeconds` and `meter`), plus re-exports of `queues.ts`. `meter` is for tests; the default is
+  the global meter of the telemetry `--import` entry (see "Metrics").
 - `demo-outbox-flow.ts`: the `demo.outbox-flow` handler (envelope parsing, effect-once guard,
   segmentation call).
 - `segmentation-client.ts`: `HttpSegmentationClient`, `POST {base}/v1/segment` on
-  `workers/ml/segmentation`, bounded by `withTimeout` and a `CircuitBreaker`.
-- `main.ts`: process entry for a dedicated `jobs` process.
+  `workers/ml/segmentation`, bounded by `withTimeout` and a `CircuitBreaker`;
+  `segment(request, { signal?, correlationId? })` sends a valid correlation id as
+  `x-correlation-id` (the W3C `traceparent` header comes from the undici instrumentation).
+- `main.ts`: process entry for a dedicated `jobs` process; flushes telemetry last on shutdown.
 
 ## Queues and routing (doc 04 §9.2)
 
@@ -62,25 +67,43 @@ outbox-fed queue, `OUTBOX_DEAD_LETTER_QUEUES` declares its DLQ as a worked queue
    for the queue's retention.
 4. Logs: job id, queues, event id and whether the row changed. Never the payload.
 
+## Metrics (planning/14 §4)
+
+`startJobs` builds one `QueueMetrics` (`../platform/telemetry/README.md` "Metrics") for
+`JOB_QUEUES` and the sources of `OUTBOX_DEAD_LETTER_QUEUES`, so every
+`stylist.queue.job.{completions,failures,retries}` series (per worked `job_type`) and every
+`stylist.queue.job.dlq` series (per source `job_type`, e.g. `demo.outbox-flow`) exists at 0 from
+process start. Each worker's handler is wrapped with `countOutcomes(definition, handler)`; each
+DLQ worker's handler also with `countDeadLetters(source, handler)`, so a job that reaches
+`<queue>.dlq` counts once for its source queue, whatever the DLQ handler then does. After
+`queue.start()`, `observeQueues(() => queue.readStats())` reports `stylist.queue.depth` (every queue
+and DLQ, `.dlq.dlq` included) and `stylist.queue.job.age_oldest` (per worked queue) at each metric
+collection; `stop()` ends that first, before the queue stops. The handlers themselves are
+unchanged: counting lives in the wrappers.
+
 ## `demo.outbox-flow` handler
 
 1. Validate `job.data` against the envelope (`envelope.json`) and `demo.event.json` with Ajv
    (JSON Schema 2020-12, `ajv-formats`) validators compiled once at module load from the contract
    files themselves (`@ai-stylist/contracts/events/*.json`); no constraint is copied here, and the
    result is typed with the generated `EventEnvelope & DemoOutboxFlowRequestedV1`. Whatever the
-   contract says holds: today unknown envelope fields are tolerated (envelope.json) while unknown
-   payload fields, another `type`, a malformed `evt_` id, a missing required field or a note over
-   the contract's `maxLength` throw `InvalidJobDataError`, which names field paths only, never
-   values. The job fails, is retried and ends in the DLQ: nothing is silently dropped.
+   contract says holds: today unknown envelope fields are tolerated (envelope.json) and a valid
+   W3C `traceparent` is accepted, while unknown payload fields, another `type`, a malformed `evt_`
+   id or `traceparent`, a missing required field or a note over the contract's `maxLength` throw
+   `InvalidJobDataError`, which names field paths only, never values. The job fails, is retried
+   and ends in the DLQ: nothing is silently dropped.
    `DEMO_OUTBOX_FLOW_EVENT_TYPE` in `queues.ts` `satisfies` the generated `type` const.
 2. `guard.runOnce({ key: envelope.id, scope: 'job:demo.outbox-flow', retentionSeconds: 90 days })`
    wraps the worker call (`PgIdempotencyGuard` on `platform_idempotency_keys`). 90 days is the
    outbox replay window (doc 04 §9.2 "Replay … `outbox` (retained 90 days)"): a replayed event
    carries the original id, so the key outlives every redelivery. A repeat returns
    `{ ran: false }` and the worker is not called.
-3. The worker request is `{ request_id: envelope.id, image_ref: 'demo/outbox-flow' }`. The demo
-   event carries no image and the P02 segmentation stub only echoes the reference; no object
-   exists under that key.
+3. The worker request is `{ request_id: envelope.id, image_ref: 'demo/outbox-flow' }`, with the
+   envelope's `correlationId` as `x-correlation-id`. envelope.json pins `correlationId` to the
+   accepted format, so a malformed id fails step 1 with `InvalidJobDataError` before any worker
+   call; the segmentation client still omits the header for an invalid id (defence in depth).
+   The demo event carries no image and the P02 segmentation stub only echoes the reference;
+   no object exists under that key.
 4. A worker failure (non-2xx, a reply that is not a `SegmentResponse` for this request, the
    timeout, an open circuit) throws. The guard rolls its claim back and pg-boss retries.
 5. Logs: job id, event id, event type, attempt and whether the effect ran. Never the payload.
@@ -98,7 +121,14 @@ consecutive failures, for 30 s).
 
 - Process entry: `tsx src/jobs/main.ts` from `apps/api`. It reads `DATABASE_URL` and `LOG_LEVEL`
   through `../config.ts` (zod), runs `startJobs`, and on SIGINT/SIGTERM stops gracefully
-  (`PgBossQueue.stop()` waits for active jobs, then the pools close).
+  (`PgBossQueue.stop()` waits for active jobs, then the pools close, then `shutdownTelemetry()`
+  flushes spans, metrics and logs).
+- Telemetry (planning/14 §3): start the process behind the `--import` entry,
+  `tsx --import ./src/platform/telemetry/instrument-jobs.ts src/jobs/main.ts` (built:
+  `node --import ./dist/apps/api/src/platform/telemetry/instrument-jobs.js dist/apps/api/src/jobs/main.js`).
+  It exports over OTLP only when `OTEL_EXPORTER_OTLP_ENDPOINT` is set and does nothing otherwise
+  (`../platform/telemetry/README.md`). Without the entry the process runs untraced; log lines
+  still carry `correlation_id`.
 - Needs a migrated database (`just db-migrate`: migration `0003_pgboss_schema` installs pg-boss;
   `start()` never runs DDL) and the segmentation worker.
 - The segmentation worker URL is the constant `http://127.0.0.1:8001` in `main.ts`, where
@@ -108,13 +138,21 @@ consecutive failures, for 30 s).
 ## Tests (`tests/`, vitest project `api`, no Docker)
 
 - `demo-outbox-flow.test.ts`: the handler with the real HTTP client against a local fake worker
-  (`tests/fake-segmentation-worker.ts`) and an in-memory guard with `PgIdempotencyGuard`'s
-  contract. One worker call per event id across repeated runs, invalid envelopes rejected without
-  a worker call, a worker failure throws and the retry calls again, and a log canary.
-- `segmentation-client.test.ts`: request shape, reply validation, timeout, caller abort, breaker.
+  (`tests/fake-segmentation-worker.ts`, which records the `x-correlation-id` and `traceparent`
+  headers) and an in-memory guard with `PgIdempotencyGuard`'s contract. One worker call per event
+  id across repeated runs, invalid envelopes rejected without a worker call (a malformed
+  `traceparent` included; an unknown envelope field and a valid `traceparent` accepted), the
+  correlation id sent to the worker, a worker failure throws and the retry calls again, and a log
+  canary.
+- `segmentation-client.test.ts`: request shape, the correlation header, reply validation,
+  timeout, caller abort, breaker.
 - `queues.test.ts`: routing map, retry bounds, the batch-size bounds (`batchSize` × the
   segmentation timeout stays below the job expiry; out-of-range sizes are rejected), a worked DLQ
-  per routed queue, and `userIdOf`.
+  per routed queue, `userIdOf` and `envelopeTraceContext`.
+- `trace-propagation.docker.test.ts` (vitest project `platform-docker`, Testcontainers, fails
+  without Docker): P02-T09 AC-1. An outbox append inside a producing span, the relay dispatch, the
+  demo job and its worker call share one trace id (in-process SDK, in-memory exporter), and the
+  worker request carries that trace's `traceparent` and the envelope's `x-correlation-id`.
 - `outbox-dead-letter.test.ts`: the dead-letter handler's translation (envelope id → reason
   `job exhausted: <queue>`, data without an `evt_` id rejected, log canary). The update itself runs
   on Postgres in `../platform/tests/outbox-dead-letter.docker.test.ts` and in the AC-2 acceptance
@@ -122,6 +160,13 @@ consecutive failures, for 30 s).
 - `batch-settlement.docker.test.ts` (vitest project `platform-docker`, Testcontainers, fails
   without Docker): one demo-queue batch on real pg-boss; a failing job retries and dead-letters
   alone, a job for a cancelled user is refused, the rest complete once.
+- `queue-metrics.docker.test.ts` (vitest project `platform-docker`, Testcontainers, fails without
+  Docker): `startJobs` with an in-memory metric reader and an always-failing fake worker. Every
+  series starts at 0; the injected failure's 5 attempts count as 5 failures and 4 retries, its dead
+  letter moves `stylist.queue.job.dlq{job_type="demo.outbox-flow"}` from 0 to 1 (the local
+  counterpart of the `queue.job.dlq` alert proof run in `docs/runbooks/04-queue-dlq.md`), the DLQ
+  worker's run counts as a `demo.outbox-flow.dlq` completion, and the depth and age gauges report
+  every queue.
 
 The durable guard and the queue are covered against real Postgres in
 `../platform/tests/idempotency.docker.test.ts` and `../platform/tests/queue.docker.test.ts`. The

@@ -1,0 +1,2 @@
+ERROR [role] docs/observability/grafana/alerts/zz-fixture.json: ${OWNERS:nobody} at rules[0].annotations.summary: role 'nobody' is not a role with members in owners.json
+ERROR [role] docs/observability/grafana/alerts/zz-fixture.json: rules[0]: labels.owner_role: role 'nobody' is not a role with members in owners.json

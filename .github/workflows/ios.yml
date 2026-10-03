@@ -5,14 +5,18 @@
 #                                  fixtures) and the Core/Features package unit tests, all on Linux
 #                                  (Swift in Docker swift:6.4, the same fallback dev boxes use).
 #   2. macOS build & test          needs 1. Generates the Xcode project, builds the app unsigned for the
-#                                  simulator (Dev) and runs the package test targets through the
-#                                  AIStylist-Dev scheme on an iOS simulator.
+#                                  simulator (Dev), uploads its dSYMs to PostHog (main only)
+#                                  and runs the package test targets through the AIStylist-Dev scheme
+#                                  on an iOS simulator.
 #   3. summary                     needs 1 + 2; fails when either failed.
 #
 # Triggers: pull_request and push to main touching apps/ios/**, packages/contracts/** (the generated
 #           Swift client lives there), tools/codegen/gen-swift.sh, the justfile, mise.toml,
 #           scripts/native-lane.sh or this file; manual workflow_dispatch.
-# Secrets:  none (unsigned simulator builds only). The TestFlight lane (later, human-approved) will add
+# Secrets:  macos job on main only (push, or a dispatch on main): POSTHOG_CLI_API_KEY (dSYM upload
+#           of the Dev build) with variables POSTHOG_CLI_PROJECT_ID, POSTHOG_CLI_HOST. Pull requests
+#           and other branches get none of them: they build without uploading and print a notice.
+#           posthog-cli comes from mise.toml. The TestFlight lane (later, human-approved) will add
 #           APP_STORE_CONNECT_API_KEY_ID, APP_STORE_CONNECT_API_ISSUER_ID, APP_STORE_CONNECT_API_KEY_P8
 #           and DEVELOPMENT_TEAM.
 # Recipes:  just ios-lint, just ios-format --check, just ios-check-banned [--fixtures],
@@ -135,7 +139,8 @@ jobs:
       - name: Setup · Install mise tools
         uses: jdx/mise-action@v4
         with:
-          install_args: just xcodegen xcbeautify
+          # node runs the npm-packaged posthog-cli (dSYM upload in `just ios-build`).
+          install_args: just xcodegen xcbeautify node npm:@posthog/cli
           cache: true
 
       - name: Setup · Check Xcode
@@ -145,7 +150,8 @@ jobs:
         uses: actions/cache@v6
         with:
           path: apps/ios/.build/SourcePackages
-          key: ios-spm-${{ runner.os }}-xcode27-${{ hashFiles('apps/ios/Packages/*/Package.swift', 'apps/ios/Packages/*/Package.resolved', 'packages/contracts/gen/swift-client/Package.swift') }}
+          # project.yml declares the app target's package dependencies (posthog-ios).
+          key: ios-spm-${{ runner.os }}-xcode27-${{ hashFiles('apps/ios/project.yml', 'apps/ios/Packages/*/Package.swift', 'apps/ios/Packages/*/Package.resolved', 'packages/contracts/gen/swift-client/Package.swift') }}
           restore-keys: |
             ios-spm-${{ runner.os }}-xcode27-
 
@@ -154,6 +160,13 @@ jobs:
 
       - name: Build · Simulator app (dev)
         id: build
+        env:
+          # main only, like android.yml: apps/ios/scripts/xcode.sh uploads the dSYMs only when all
+          # three are set, else prints a notice. Pull requests and other branches get empty values
+          # (forks and PR code never see the key).
+          POSTHOG_CLI_API_KEY: ${{ github.ref == 'refs/heads/main' && github.event_name != 'pull_request' && secrets.POSTHOG_CLI_API_KEY || '' }}
+          POSTHOG_CLI_PROJECT_ID: ${{ github.ref == 'refs/heads/main' && github.event_name != 'pull_request' && vars.POSTHOG_CLI_PROJECT_ID || '' }}
+          POSTHOG_CLI_HOST: ${{ github.ref == 'refs/heads/main' && github.event_name != 'pull_request' && vars.POSTHOG_CLI_HOST || '' }}
         run: just ios-build --config dev
 
       - name: Test · App on simulator

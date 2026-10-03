@@ -3,7 +3,7 @@ name: media-ml-pipeline
 description: Build or change the asset-processing and AI pipeline — pg-boss job handlers under `apps/api/src/jobs/`, Python FastAPI workers under `workers/ml/<service>/`, segmentation/classification/embedding/try-on steps, provider calls (fal.ai etc.), derived-asset caching and lineage, idempotency/retry/DLQ behaviour, the Python codegen script `tools/codegen/gen-python.sh`, and model evals with `just ml-eval`. Use for "pg-boss job", "workers/ml", "segmentation", "classification", "embedding", "try-on", "fal.ai", "lineage", "provenance", "DLQ", "uv lockfile", or a pipeline eval. Not for choosing a model/provider in the first place (ADR + `planning/10-ai-usage-cost-and-evaluation.md`); not for the `media` module's state machine or public service — use `backend-module`; not for on-device ML — use `ios-feature` / `android-feature`; not for 3D asset formats (client-side 3D is deferred, no owner until it resumes).
 metadata:
   modules:
-  last-reviewed: 2026-09-26
+  last-reviewed: 2026-09-27
   owner-agent: ml-engineer,platform-engineer
 ---
 
@@ -40,7 +40,8 @@ metadata:
    | --------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
    | Service package (workspace member, depends on `ai-stylist-generated`) | `workers/ml/segmentation/pyproject.toml`; add it to `workers/pyproject.toml` `[tool.uv.sources]`                                                |
    | App factory + access log                                              | `workers/ml/segmentation/src/ai_stylist_segmentation/app.py`                                                                                    |
-   | Composition root + structlog redaction denylist                       | `workers/ml/segmentation/src/ai_stylist_segmentation/main.py`                                                                                   |
+   | Composition root (logging, tracing setup, adapters)                   | `workers/ml/segmentation/src/ai_stylist_segmentation/main.py`                                                                                   |
+   | structlog redaction processor + forbidden-word denylist               | `workers/ml/segmentation/src/ai_stylist_segmentation/redaction.py`                                                                              |
    | Thin routes with a provenance marker                                  | `workers/ml/segmentation/src/ai_stylist_segmentation/routes.py`                                                                                 |
    | Request/response models                                               | `workers/ml/segmentation/src/ai_stylist_segmentation/schemas.py`                                                                                |
    | Tests (httpx ASGI client, hypothesis, redaction)                      | `workers/ml/segmentation/tests/test_segment.py`, `workers/ml/segmentation/tests/test_redaction.py`, `workers/ml/segmentation/tests/conftest.py` |

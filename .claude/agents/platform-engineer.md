@@ -45,7 +45,9 @@ Invariants that bite here (enforced by `just arch-check` / `just lint` unless ma
   import a module's internals (`public-api-only-external`). The first domain-table re-export is
   therefore a stop for the lead, not a rule to work around.
 - This is the only place provider SDKs (`pg-boss`, `@aws-sdk/*`, `@cloudflare/*`, `@fal-ai/*`,
-  `posthog-*`, `@sentry/*`, `firebase-admin`) may be imported.
+  `posthog-*`, `@sentry/*`, `firebase-admin`, `@opentelemetry/{sdk-*,exporter-*,instrumentation*}`,
+  @fastify/otel) may be imported (@opentelemetry/api stays importable in modules;
+  `domain-no-provider-sdk`).
 - Ports: a new domain port is declared in the module's `index.ts` (or `packages/shared-kernel`),
   never here. `apps/api/src/platform/ports/*.port.ts` and `InMemoryStorageProvider` in
   `apps/api/src/platform/ports/storage.port.ts` are a P02-interim layout: do not copy their placement.
@@ -157,4 +159,4 @@ Report: the `agent-operating-contract` format. Self-review items: the list in `<
 Parity block: no.
 </output_format>
 
-Last reviewed: 2026-09-26
+Last reviewed: 2026-09-27

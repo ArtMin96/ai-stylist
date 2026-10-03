@@ -1,0 +1,54 @@
+{
+  "title": "host",
+  "folderUid": "ai-stylist",
+  "interval": 60,
+  "rules": [
+    {
+      "uid": "host-disk",
+      "title": "host.disk",
+      "ruleGroup": "host",
+      "folderUID": "ai-stylist",
+      "condition": "B",
+      "data": [
+        {
+          "refId": "A",
+          "relativeTimeRange": { "from": 600, "to": 0 },
+          "datasourceUid": "${PROM_DATASOURCE_UID}",
+          "model": {
+            "refId": "A",
+            "expr": "min by (instance, mountpoint) (node_filesystem_avail_bytes{fstype!~\"tmpfs|overlay|squashfs|ramfs|nsfs\"} / node_filesystem_size_bytes{fstype!~\"tmpfs|overlay|squashfs|ramfs|nsfs\"})",
+            "instant": true,
+            "range": false,
+            "intervalMs": 60000,
+            "maxDataPoints": 43200
+          }
+        },
+        {
+          "refId": "B",
+          "relativeTimeRange": { "from": 0, "to": 0 },
+          "datasourceUid": "__expr__",
+          "model": {
+            "refId": "B",
+            "type": "threshold",
+            "expression": "A",
+            "conditions": [{ "evaluator": { "type": "lt", "params": [0.15] } }],
+            "intervalMs": 1000,
+            "maxDataPoints": 43200
+          }
+        }
+      ],
+      "noDataState": "OK",
+      "execErrState": "Error",
+      "for": "10m",
+      "labels": {
+        "severity": "SEV2",
+        "owner_role": "on-call"
+      },
+      "annotations": {
+        "summary": "Filesystem {{ $labels.mountpoint }} on {{ $labels.instance }} has less than 15 % free",
+        "runbook_url": "https://github.com/ArtMin96/ai-stylist/blob/main/docs/runbooks/01-api-down.md"
+      },
+      "isPaused": false
+    }
+  ]
+}

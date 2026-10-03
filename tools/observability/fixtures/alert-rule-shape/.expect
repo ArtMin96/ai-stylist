@@ -1,0 +1,4 @@
+ERROR [rule] docs/observability/grafana/alerts/zz-fixture.json: rules[0]: uid 'queue-job-dlq' is used by another rule
+ERROR [rule] docs/observability/grafana/alerts/zz-fixture.json: rules[0]: "ruleGroup" must equal the group title 'fixture'
+ERROR [rule] docs/observability/grafana/alerts/zz-fixture.json: rules[0]: labels.severity must be one of SEV1, SEV2, SEV3
+ERROR [rule] docs/observability/grafana/alerts/zz-fixture.json: rules[0]: needs annotations.summary

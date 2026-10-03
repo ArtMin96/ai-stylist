@@ -13,6 +13,8 @@ import kotlinx.coroutines.test.setMain
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNull
+import org.junit.Assert.assertThrows
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
@@ -77,6 +79,47 @@ class HomeViewModelTest {
             assertTrue(recording.analytics.hasConsent())
             // app_opened was tracked before opt-in, so it was dropped and is never replayed.
             assertEquals(emptyList<Any>(), recording.sent)
+        }
+
+    @Test
+    fun `debug tools are off unless the composition root hands over the test crash`() =
+        runTest(dispatcher) {
+            val analytics = RecordingAnalytics().analytics
+            val byDefault = HomeViewModel(QueuedVersionRepository(VERSION_OK), analytics, TEST_CONFIG)
+            val turnedOn =
+                HomeViewModel(
+                    QueuedVersionRepository(VERSION_OK),
+                    analytics,
+                    TEST_CONFIG,
+                    testCrash = SYNTHETIC_TEST_CRASH,
+                )
+
+            assertFalse(byDefault.uiState.value.debugTools)
+            assertTrue(turnedOn.uiState.value.debugTools)
+        }
+
+    @Test
+    fun `without debug tools (release) forceTestCrash does not crash`() =
+        runTest(dispatcher) {
+            val release =
+                HomeViewModel(QueuedVersionRepository(VERSION_OK), RecordingAnalytics().analytics, TEST_CONFIG)
+
+            val crash = runCatching { release.forceTestCrash() }.exceptionOrNull()
+
+            assertNull(crash)
+            assertFalse(release.uiState.value.debugTools)
+        }
+
+    @Test
+    fun `with debug tools forceTestCrash runs the injected crash every time`() =
+        runTest(dispatcher) {
+            val repository = QueuedVersionRepository(VERSION_OK)
+            val viewModel =
+                HomeViewModel(repository, RecordingAnalytics().analytics, TEST_CONFIG, testCrash = SYNTHETIC_TEST_CRASH)
+
+            repeat(2) {
+                assertThrows(SyntheticTestCrash::class.java) { viewModel.forceTestCrash() }
+            }
         }
 
     @Test

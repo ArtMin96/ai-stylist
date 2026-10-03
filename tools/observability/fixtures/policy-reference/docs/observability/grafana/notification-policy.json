@@ -1,0 +1,15 @@
+{
+  "receiver": "ai-stylist-oncall",
+  "group_by": ["grafana_folder", "alertname"],
+  "routes": [
+    {
+      "receiver": "nobody-receiver",
+      "object_matchers": [["severity", "=", "SEV1"]]
+    },
+    {
+      "receiver": "ai-stylist-oncall",
+      "object_matchers": [["severity", "=", "SEV2"]],
+      "mute_time_intervals": ["weekends"]
+    }
+  ]
+}

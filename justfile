@@ -46,14 +46,26 @@ secrets-approve branch:
 secrets-backup-done:
     scripts/security/secrets-backup-done.sh
 
+# --- observability (Grafana Cloud + PostHog as code; tools/observability/README.md) -------------
+
+# * Push docs/observability/grafana/**, posthog/project-settings.json and the flag registry to Grafana Cloud and PostHog (env from the repo-root .env that `just secrets-sync` writes): `just observability-sync [grafana|posthog|all] [--check|--dry-run|--prune]`; `--check` is offline and CI-safe (ci-parity runs `all --check`), `--dry-run` sends only GETs
+observability-sync *args:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    # Node loads .env without overriding variables that are already exported (direnv, CI).
+    if [[ -f .env ]]; then
+        exec node --env-file=.env tools/observability/sync.mjs "$@"
+    fi
+    exec node tools/observability/sync.mjs "$@"
+
 # --- dev servers ---------------------------------------------------------------
 
-# Compose stack (Postgres+pgvector) + NestJS API in watch mode (tsx; reads the repo-root .env)
+# Compose stack (Postgres+pgvector) + NestJS API in watch mode (tsx; reads the repo-root .env); OTel service.name `api` is set here, so an OTEL_SERVICE_NAME in the shared .env never renames it
 dev-api *args:
     docker compose up -d --wait postgres
-    pnpm --filter @ai-stylist/api dev "$@"
+    OTEL_SERVICE_NAME='api' pnpm --filter @ai-stylist/api dev "$@"
 
-# Compose Postgres + pg-boss jobs process (apps/api src/jobs/main.ts, tsx watch; needs `just db-migrate`) in the background + segmentation worker (uvicorn --reload on :8001; args go to uvicorn)
+# Compose Postgres + pg-boss jobs process (apps/api src/jobs/main.ts, tsx watch; needs `just db-migrate`) in the background + segmentation worker (uvicorn --reload on :8001; args go to uvicorn); both read the repo-root .env, with OTel service.name `jobs` and `segmentation` set per process
 dev-workers *args:
     #!/usr/bin/env bash
     set -euo pipefail
@@ -70,13 +82,17 @@ dev-workers *args:
     trap stop_jobs EXIT
     trap 'exit 130' INT
     trap 'exit 143' TERM
-    pnpm --filter @ai-stylist/api run dev:jobs &
+    # One .env serves every process, so each gets its service name here: an exported variable beats
+    # Node's --env-file-if-exists and uvicorn's --env-file (scripts/test/dev-service-names.test.sh).
+    OTEL_SERVICE_NAME='jobs' pnpm --filter @ai-stylist/api run dev:jobs &
     jobs_pid=$!
-    uv run --project workers/ml/segmentation uvicorn ai_stylist_segmentation.main:app --reload --port 8001 "$@"
+    # The worker reads the repo-root .env like the jobs process; uvicorn --env-file fails on a missing file.
+    if [[ -f .env ]]; then set -- --env-file .env "$@"; fi
+    OTEL_SERVICE_NAME='segmentation' uv run --project workers/ml/segmentation uvicorn ai_stylist_segmentation.main:app --reload --port 8001 "$@"
 
 # --- quality gates (* = part of ci-parity) -------------------------------------------
 
-# * Run tests: full suite via turbo + the native lanes, or one module's tests/ dir (`just test recommendation`; `just test ios` / `just test android` = that app's unit tests; `just test secrets` = the sops+age shell suite; `just test tooling` = the scripts/test shell suites: bootstrap/doctor, contracts-breaking, test-regression; `just test platform` = the `api` + `platform-docker` vitest projects); SKIP_DOCKER_TESTS=1 leaves out the Testcontainers `migrations` and `platform-docker` projects (runners without Docker only)
+# * Run tests: full suite via turbo + the native lanes, or one module's tests/ dir (`just test recommendation`; `just test ios` / `just test android` = that app's unit tests; `just test secrets` = the sops+age shell suite; `just test tooling` = the scripts/test shell suites: bootstrap/doctor, contracts-breaking, test-regression, ci-metrics, dev service names, observability-sync; `just test platform` = the `api` + `platform-docker` vitest projects); SKIP_DOCKER_TESTS=1 leaves out the Testcontainers `migrations` and `platform-docker` projects (runners without Docker only)
 test module='':
     #!/usr/bin/env bash
     set -euo pipefail
@@ -139,6 +155,9 @@ test-tooling:
     scripts/test/bootstrap-doctor.test.sh
     scripts/test/contracts-breaking.test.sh
     scripts/test/regression.test.sh
+    bash scripts/test/ci-metrics.test.sh
+    bash scripts/test/dev-service-names.test.sh
+    bash scripts/test/observability-sync.test.sh
 
 # Native unit tests for the full `just test` (lane/toolchain policy: scripts/native-lane.sh)
 [private]
@@ -150,20 +169,26 @@ test-native:
 test-regression file:
     scripts/test/regression.sh "$@"
 
-# * ESLint per workspace via turbo (boundaries, test-placement, no-skip, no-console, forbidden-field, file-size) + root tools/ + Ruff for workers + shellcheck for scripts/**, tools/**/*.sh and the native apps' scripts + actionlint + the native lanes (SwiftLint; Android Lint + detekt); `--fixtures` asserts tools/eslint/fixtures each fail on their rule
+# * Analytics taxonomy check (tools/analytics: every event name and property key the Swift/Kotlin sources build is in packages/contracts/events/analytics/events.json) + ESLint per workspace via turbo (boundaries, test-placement, no-skip, no-console, forbidden-field, file-size) + root tools/ + Ruff for workers + shellcheck for scripts/**, tools/**/*.sh and the native apps' scripts + actionlint + the native lanes (SwiftLint; Android Lint + detekt); `--fixtures` asserts tools/eslint/fixtures and tools/analytics/fixtures each fail on their rule
 lint *args:
     #!/usr/bin/env bash
     set -euo pipefail
     if [[ "${1:-}" == "--fixtures" ]]; then
-        exec tools/eslint/check-fixtures.sh
+        # Both harnesses always run, so a failing one never hides the other's result.
+        rc=0
+        tools/eslint/check-fixtures.sh || rc=1
+        bash tools/analytics/check-fixtures.sh || rc=1
+        exit "$rc"
     elif [[ -n "${1:-}" ]]; then
         echo "just lint: unknown argument '$1' (use --fixtures)" >&2; exit 2
     fi
+    # Node built-ins only and sub-second: runs before the tools that need `pnpm install`.
+    node tools/analytics/check-events.mjs
     pnpm turbo run lint
     pnpm exec eslint tools eslint.config.mjs
     uv run --project workers ruff check workers
     # -s bash: every script must run under macOS /bin/bash 3.2 as well (docs/DEVELOPING-ON-MACOS.md)
-    shellcheck -s bash -x -P SCRIPTDIR scripts/*.sh scripts/security/*.sh scripts/security/tests/*.sh scripts/docs/*.sh scripts/docs/lib/*.sh scripts/hooks/*.sh scripts/test/*.sh scripts/db/*.sh scripts/ci/*.sh scripts/lint-file.sh scripts/native-lane.sh tools/codegen/*.sh tools/depcruise/*.sh tools/eslint/*.sh apps/ios/scripts/*.sh apps/android/tools/*.sh
+    shellcheck -s bash -x -P SCRIPTDIR scripts/*.sh scripts/security/*.sh scripts/security/tests/*.sh scripts/docs/*.sh scripts/docs/lib/*.sh scripts/hooks/*.sh scripts/test/*.sh scripts/db/*.sh scripts/ci/*.sh scripts/lint-file.sh scripts/native-lane.sh tools/analytics/*.sh tools/codegen/*.sh tools/depcruise/*.sh tools/eslint/*.sh tools/flags/*.sh apps/ios/scripts/*.sh apps/android/tools/*.sh
     actionlint
     scripts/native-lane.sh ios none just ios-lint
     scripts/native-lane.sh android android just android-lint
@@ -237,6 +262,15 @@ security-scan:
 sbom:
     scripts/security/sbom.sh
 
+# * Feature-flag expiry report (planning/14 §11, tools/flags): key, kind, owner name (owners.json), expiresAt and days left/overdue for each flag in packages/shared-kernel/registry/feature-flags.json; exit 1 when a rollout or experiment flag is past expiresAt (UTC; > 30 days overdue = DEFECT), kill-switches exempt; `--today YYYY-MM-DD` pins the date; the report runs nightly, ci-parity runs `--fixtures` (an expired fixture registry must fail, the real registry must load)
+flags-report *args:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    if [[ "${1:-}" == "--fixtures" ]]; then
+        exec bash tools/flags/check-fixtures.sh
+    fi
+    exec node tools/flags/flags-report.mjs "$@"
+
 # --- CI-only helpers ([private]: hidden from `just --list`; called by .github/workflows/**) --
 
 # Enable pgvector on the CI service-container database at DATABASE_URL
@@ -269,7 +303,12 @@ ci-gitleaks-history:
 ci-osv-source:
     scripts/ci/osv-scan.sh
 
-# Run the PR gates locally: format --check, lint (+ fixtures), typecheck, arch-check (+ fixtures), docs-check --strict (+ fixtures, incl. the hook replay), generate --check, test, native builds, security-scan (+ license, gitleaks and osv-scanner fixtures); native toolchains are required (Xcode-only steps skip on Linux with a notice); `--core` = pr-gate's parity job (native lanes run in ios.yml / android.yml)
+# Push this pr-gate run's CI metrics (stylist.ci.pr_gate_duration + stylist.ci.pr_gate.runs, OTLP/HTTP to OTEL_EXPORTER_OTLP_ENDPOINT; tools/ci-metrics): `--duration <s> --conclusion <success|failure|cancelled>`, workflow + attempt from GITHUB_WORKFLOW / GITHUB_RUN_ATTEMPT; an empty endpoint or a failed push exits 0 (never fails the gate)
+[private]
+ci-pr-gate-metrics *args:
+    node tools/ci-metrics/push-pr-gate-metrics.mjs "$@"
+
+# Run the PR gates locally: format --check, lint (+ fixtures), typecheck, arch-check (+ fixtures), docs-check --strict (+ fixtures, incl. the hook replay), observability-sync all --check (offline), flags-report --fixtures, generate --check, test, native builds, security-scan (+ license, gitleaks and osv-scanner fixtures); native toolchains are required (Xcode-only steps skip on Linux with a notice); `--core` = pr-gate's parity job (native lanes run in ios.yml / android.yml)
 ci-parity *args:
     #!/usr/bin/env bash
     set -euo pipefail
@@ -288,6 +327,8 @@ ci-parity *args:
     just arch-check --fixtures
     just docs-check --strict
     just docs-check --fixtures
+    just observability-sync all --check
+    just flags-report --fixtures
     just generate --check
     just test
     scripts/native-lane.sh android android just android-build all

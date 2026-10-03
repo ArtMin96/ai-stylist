@@ -12,6 +12,7 @@ import boundaries from 'eslint-plugin-boundaries';
 const REPO_ROOT = path.resolve(import.meta.dirname, '..', '..');
 
 // Provider SDKs that never appear in a domain module (04 §4.2 rule 4; mirrors depcruise).
+// `@opentelemetry/api` is not listed: it is the vendor-neutral API for manual spans (doc 14 §3).
 export const PROVIDER_SDKS = [
   'pg-boss',
   '@aws-sdk/*',
@@ -20,6 +21,10 @@ export const PROVIDER_SDKS = [
   'posthog-*',
   'firebase-admin',
   '@sentry/*',
+  '@opentelemetry/sdk-*',
+  '@opentelemetry/exporter-*',
+  '@opentelemetry/instrumentation*',
+  '@fastify/otel',
 ];
 
 // Composition roots are single files (04 §5); v7 classifies files through `boundaries/files`.

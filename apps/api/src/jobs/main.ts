@@ -1,13 +1,18 @@
 // Process entry for the dedicated `jobs` process (doc 04 §9.1 step 3): validated config, pino
 // logger, `startJobs`, graceful shutdown on SIGINT/SIGTERM.
+//
+// Telemetry (doc 14 §3) is started before this file by the `--import` entry
+// `../platform/telemetry/instrument-jobs.ts` (no-op without `OTEL_EXPORTER_OTLP_ENDPOINT`), e.g.
+// `tsx --import ./src/platform/telemetry/instrument-jobs.ts src/jobs/main.ts`; this file flushes it
+// last on shutdown. Started without that entry, the process runs untraced.
 import 'reflect-metadata';
 
 import pino from 'pino';
 
 import { ConfigError, loadConfig } from '../config.js';
-import { loggerOptions } from '../platform/index.js';
+import { loggerOptions, shutdownTelemetry } from '../platform/index.js';
 
-import { startJobs } from './index.js';
+import { type RunningJobs, startJobs } from './index.js';
 
 /**
  * Segmentation worker origin: where `just dev-workers` serves it (uvicorn on :8001). A constant,
@@ -21,11 +26,18 @@ if (config.DATABASE_URL === undefined) {
   throw new ConfigError('invalid configuration: DATABASE_URL is required by the jobs process');
 }
 
-const jobs = await startJobs({
-  databaseUrl: config.DATABASE_URL,
-  segmentationBaseUrl: SEGMENTATION_BASE_URL,
-  logger,
-});
+let jobs: RunningJobs;
+try {
+  jobs = await startJobs({
+    databaseUrl: config.DATABASE_URL,
+    segmentationBaseUrl: SEGMENTATION_BASE_URL,
+    logger,
+  });
+} catch (error) {
+  // Export what the failed start traced and logged, then fail the process with the start error.
+  await shutdownTelemetry().catch(() => undefined);
+  throw error;
+}
 
 let shuttingDown = false;
 async function shutdown(signal: NodeJS.Signals): Promise<void> {
@@ -41,6 +53,11 @@ async function shutdown(signal: NodeJS.Signals): Promise<void> {
       'jobs stop failed',
     );
     process.exitCode = 1;
+  } finally {
+    // Last: the stop's own spans and log lines are exported too.
+    await shutdownTelemetry().catch(() => {
+      process.exitCode = 1;
+    });
   }
 }
 

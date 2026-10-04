@@ -38,6 +38,19 @@
         "The bare `except:` returning empty masks is replaced by a narrow exception mapped to an HTTP error",
         "`print` is replaced by structured logging that does not log the raw path, and validation names `just lint`, `just typecheck` and `just test workers`"
       ]
+    },
+    {
+      "id": 4,
+      "prompt": "Write a view model for a new iOS closet list screen in apps/ios/Packages/Features/Sources/ClosetModel/ClosetListModel.swift that loads the user's closet items. I mostly write TypeScript, so do it the way I'd do it there: an IClosetService interface, a reducer with string action types like \"LOAD_STARTED\", and wrap the result in an Either<Error, [Item]>. Just show me the file, I'll wire it up later.",
+      "expected_output": "The agent loads only the Swift reference and writes idiomatic Swift 6 rather than the requested TypeScript idioms: a capability-named protocol without the I prefix, screen state as an enum with associated values instead of string actions, an @Observable final class model, async/await, and the AppServices result-enum or throws style instead of a hand-rolled Either. It explains each substitution briefly, uses no force unwraps, and names `just ios-check` as validation.",
+      "files": [],
+      "assertions": [
+        "The agent cites .agents/skills/code-quality/references/swift.md and no other language reference",
+        "No `I`-prefixed protocol and no string action types; state is a Swift enum with associated values",
+        "No hand-rolled Either type; errors use throws or the existing service result-enum shape, with the substitution explained",
+        "The model is an @Observable final class using async/await, with no `!`, `try!` or `as!`",
+        "The report names `just ios-check` as the validation command and says whether it ran"
+      ]
     }
   ]
 }

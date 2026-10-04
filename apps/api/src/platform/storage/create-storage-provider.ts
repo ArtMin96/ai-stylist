@@ -1,7 +1,9 @@
 // Picks the `StorageProvider` adapter from configuration (the composition root passes the
 // validated `R2_*` keys; this module never reads `process.env`). No R2 key: the in-memory provider,
-// so local runs, tests and CI need no bucket. Some but not all keys: refused, so a half-configured
-// environment never falls back to in-memory URLs silently.
+// so local runs, tests and CI need no bucket (staging, prod and NODE_ENV=production never get here
+// without the keys: `loadConfig` refuses to boot, see `allowsInMemoryStorage` in config.ts). Some
+// but not all keys: refused, so a half-configured environment never falls back to in-memory URLs
+// silently.
 import type { Logger } from 'pino';
 
 import type { Clock } from '../ports/clock.port.js';

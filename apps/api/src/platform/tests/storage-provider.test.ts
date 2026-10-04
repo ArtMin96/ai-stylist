@@ -1,11 +1,12 @@
 // Which StorageProvider the composition root binds (P02-T13): `createStorageProvider` and the R2
-// keys of apps/api/src/config.ts. All four R2 keys → R2; none → in-memory; some → refused.
+// keys of apps/api/src/config.ts. All four R2 keys → R2; none → in-memory (local, dev and test
+// only: staging, prod and NODE_ENV=production refuse to boot); some → refused.
 import { describe, expect, it } from 'vitest';
 import pino from 'pino';
 
 import { fakeClock, memoryLogStream } from '@ai-stylist/test-support';
 
-import { ConfigError, loadConfig } from '../../config.js';
+import { ConfigError, allowsInMemoryStorage, loadConfig } from '../../config.js';
 import { loggerOptions } from '../logger.js';
 import { InMemoryStorageProvider } from '../ports/storage.port.js';
 import { createStorageProvider } from '../storage/create-storage-provider.js';
@@ -98,6 +99,46 @@ describe('config: R2 keys', () => {
       const error = configError({ ...R2, [key]: value });
       expect(error.message).toMatch(new RegExp(`^invalid configuration: ${key}: `));
       expect(error.message).not.toContain(value);
+    }
+  });
+
+  // doc 15 §11: staging and prod use real R2 buckets; in-memory URLs there would be silent loss.
+  const DEPLOYED = [
+    { APP_ENV: 'staging' },
+    { APP_ENV: 'prod' },
+    { NODE_ENV: 'test', APP_ENV: 'staging' },
+    { NODE_ENV: 'development', APP_ENV: 'prod' },
+    { NODE_ENV: 'production' },
+    { NODE_ENV: 'production', APP_ENV: 'local' },
+    { NODE_ENV: 'production', APP_ENV: 'dev' },
+  ];
+
+  it('refuses to boot without R2 keys when APP_ENV is staging or prod or NODE_ENV is production', () => {
+    for (const env of DEPLOYED) {
+      // One fixed message for every environment: it names the keys and the rule, never a value.
+      expect(configError(env).message).toBe(
+        'invalid configuration: R2_ACCOUNT_ID, R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY, R2_BUCKET: ' +
+          'required when APP_ENV is staging or prod or NODE_ENV is production ' +
+          '(the in-memory storage provider is for local and dev only)',
+      );
+      expect(allowsInMemoryStorage(loadConfig({ ...env, ...R2 }))).toBe(false);
+      expect(loadConfig({ ...env, ...R2 })).toMatchObject(R2);
+    }
+  });
+
+  it('keeps the in-memory provider for local, dev and test runs', () => {
+    for (const env of [
+      {},
+      { APP_ENV: 'local' },
+      { APP_ENV: 'dev' },
+      { NODE_ENV: 'test' },
+      { NODE_ENV: 'test', APP_ENV: 'dev' },
+      { NODE_ENV: 'development', APP_ENV: 'local' },
+      { NODE_ENV: '', APP_ENV: ' ' },
+    ]) {
+      const config = loadConfig(env);
+      expect(allowsInMemoryStorage(config)).toBe(true);
+      expect(config.R2_ACCOUNT_ID).toBeUndefined();
     }
   });
 });

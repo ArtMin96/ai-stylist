@@ -455,8 +455,17 @@ describe('dev routes fail closed', () => {
   });
 
   it('POST /v1/dev/demo-events is not registered when APP_ENV=staging (NODE_ENV=test)', async () => {
-    // No DATABASE_URL: this app only needs routing, not the queue/relay runtime.
-    const config = configWithoutDatabase({ APP_ENV: 'staging', LOG_LEVEL: 'silent' });
+    // No DATABASE_URL: this app only needs routing, not the queue/relay runtime. Staging refuses to
+    // boot without R2 keys (`allowsInMemoryStorage`); synthetic ones suffice, minting is offline
+    // (the secret is AWS's public documentation example, never a real credential).
+    const config = configWithoutDatabase({
+      APP_ENV: 'staging',
+      LOG_LEVEL: 'silent',
+      R2_ACCOUNT_ID: 'a1b2c3d4e5f60718293a4b5c6d7e8f90',
+      R2_ACCESS_KEY_ID: 'AKIAIOSFODNN7EXAMPLE',
+      R2_SECRET_ACCESS_KEY: 'wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY',
+      R2_BUCKET: 'ai-stylist-test',
+    });
     const staging = await createApp({ config, logStream: logs });
     try {
       await staging.init();

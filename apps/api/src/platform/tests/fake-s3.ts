@@ -34,7 +34,7 @@ export type FakeS3Object = { readonly contentType: string | undefined; readonly 
 export type FakeS3 = {
   /** `http://127.0.0.1:<port>`. */
   readonly endpoint: string;
-  /** Stored objects by path without the leading slash: `<bucket>/<namespace>/<key>`. */
+  /** Stored objects by path without the leading slash: `<bucket>/u/<userId>/<namespace>/<key>`. */
   readonly objects: Map<string, FakeS3Object>;
   close(): Promise<void>;
 };

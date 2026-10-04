@@ -1,16 +1,20 @@
 // R2 adapter of the StorageProvider port (doc 11 §5.4, DEC-44): presigned PUT and GET URLs on R2's
 // S3 endpoint, signed in process (./sigv4-presign.ts): minting makes no network call. Translation
-// only: which object a caller may address is its module's authorization decision; this adapter
+// only: which user a caller may act for is its module's authorization decision; this adapter
 // enforces the port's constraints and nothing else.
 //
-// - Namespace confinement: the URL points at `/<bucket>/<namespace>/<key>`; `objectKeyOf` refuses
-//   an unknown namespace and any key that could leave it (absolute, empty, `.` or `..` segments,
-//   characters outside `[A-Za-z0-9._-]`). The path is part of the signature, so an edited URL fails.
+// - User and namespace confinement: the URL points at `/<bucket>/u/<userId>/<namespace>/<key>`
+//   (doc 11 §4.3); `objectKeyOf` refuses a user id that is not `usr_<ULID>`, an unknown namespace
+//   and any key that could leave it (absolute, empty, `.` or `..` segments, characters outside
+//   `[A-Za-z0-9._-]`). The path is part of the signature, so a URL edited to another user, namespace
+//   or key fails.
 // - PUT signs `content-type` and `content-length`: an upload of another type or another size
 //   (larger or smaller) fails R2's signature check. GET signs `host` only.
 // - TTL: `clampTtl` (GET ≤ 10 min, PUT ≤ 15 min). `expiresAt` is X-Amz-Date (whole seconds) + TTL.
 // - Logs: method, namespace, TTL and the refusal reason only. Never the URL, its query (the
-//   signature and the access key id), the key, the content type or a credential.
+//   signature and the access key id), the user id, the key, the content type or a credential.
+// - Credentials live in `#private` fields: not an own property, so `util.inspect`,
+//   `JSON.stringify` and a logged provider never show them.
 import type { Logger } from 'pino';
 
 import { type Clock, SystemClock } from '../ports/clock.port.js';
@@ -25,7 +29,7 @@ import {
   objectKeyOf,
 } from '../ports/storage.port.js';
 
-import { presignUrl, uriEncode } from './sigv4-presign.js';
+import { type SigV4Credentials, presignUrl, uriEncode } from './sigv4-presign.js';
 
 /** R2 signs every request for the one region `auto` (the bucket's location is not in the URL). */
 export const R2_SIGNING_REGION = 'auto';
@@ -92,22 +96,29 @@ type SigningPlan = {
 };
 
 export class R2StorageProvider implements StorageProvider {
-  private readonly origin: string;
-  private readonly clock: Clock;
-  private readonly logger: Logger;
+  readonly #origin: string;
+  readonly #bucket: string;
+  readonly #credentials: SigV4Credentials;
+  readonly #clock: Clock;
+  readonly #logger: Logger;
 
-  constructor(private readonly options: R2StorageProviderOptions) {
-    this.origin = endpointOrigin(options);
-    this.clock = options.clock ?? new SystemClock();
-    this.logger = options.logger;
+  constructor(options: R2StorageProviderOptions) {
+    this.#origin = endpointOrigin(options);
+    this.#bucket = options.bucket;
+    this.#credentials = {
+      accessKeyId: options.accessKeyId,
+      secretAccessKey: options.secretAccessKey,
+    };
+    this.#clock = options.clock ?? new SystemClock();
+    this.#logger = options.logger;
   }
 
   // A throw inside a promise executor rejects that promise: every refusal is a rejected promise.
   presignedPut(request: PresignPutRequest): Promise<PresignedUrl> {
     return new Promise((resolve) => {
       resolve(
-        this.mint('PUT', request.namespace, () => {
-          const objectKey = objectKeyOf(request.namespace, request.key);
+        this.#mint('PUT', request.namespace, () => {
+          const objectKey = objectKeyOf(request);
           assertUploadConstraints(request);
           return {
             objectKey,
@@ -126,8 +137,8 @@ export class R2StorageProvider implements StorageProvider {
   presignedGet(request: PresignGetRequest): Promise<PresignedUrl> {
     return new Promise((resolve) => {
       resolve(
-        this.mint('GET', request.namespace, () => ({
-          objectKey: objectKeyOf(request.namespace, request.key),
+        this.#mint('GET', request.namespace, () => ({
+          objectKey: objectKeyOf(request),
           ttlSeconds: clampTtl(request.ttlSeconds, 'GET'),
           headers: {},
         })),
@@ -136,40 +147,33 @@ export class R2StorageProvider implements StorageProvider {
   }
 
   /** Signs the planned request; a refusal is logged by reason and rethrown. */
-  private mint(
-    method: PresignedUrl['method'],
-    namespace: string,
-    plan: () => SigningPlan,
-  ): PresignedUrl {
+  #mint(method: PresignedUrl['method'], namespace: string, plan: () => SigningPlan): PresignedUrl {
     let signing: SigningPlan;
     try {
       signing = plan();
     } catch (error) {
       if (error instanceof StorageError && error.refusal !== undefined) {
-        this.logger.warn(
+        this.#logger.warn(
           { component: 'storage', provider: 'r2', method, refusal: error.refusal },
           'presign refused',
         );
       }
       throw error;
     }
-    const signingDate = new Date(Math.floor(this.clock.now().getTime() / 1000) * 1000);
-    const path = `/${[this.options.bucket, ...signing.objectKey.split('/')].map(uriEncode).join('/')}`;
+    const signingDate = new Date(Math.floor(this.#clock.now().getTime() / 1000) * 1000);
+    const path = `/${[this.#bucket, ...signing.objectKey.split('/')].map(uriEncode).join('/')}`;
     const url = presignUrl({
       method,
-      origin: this.origin,
+      origin: this.#origin,
       path,
       headers: signing.headers,
-      credentials: {
-        accessKeyId: this.options.accessKeyId,
-        secretAccessKey: this.options.secretAccessKey,
-      },
+      credentials: this.#credentials,
       region: R2_SIGNING_REGION,
       service: R2_SIGNING_SERVICE,
       signingDate,
       expiresInSeconds: signing.ttlSeconds,
     });
-    this.logger.debug(
+    this.#logger.debug(
       { component: 'storage', provider: 'r2', method, namespace, ttlSeconds: signing.ttlSeconds },
       'presigned url minted',
     );

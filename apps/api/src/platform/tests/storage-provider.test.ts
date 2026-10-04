@@ -46,6 +46,32 @@ describe('createStorageProvider', () => {
     }
   });
 
+  // Defence in depth behind `loadConfig`: the composition root passes `allowsInMemoryStorage`.
+  it('refuses the in-memory provider when the environment does not allow it', () => {
+    const { config, logs } = factoryConfig({});
+    expect(() => createStorageProvider({ ...config, allowsInMemory: false })).toThrow(
+      'storage: no R2 keys, and this environment does not allow the in-memory provider; set R2_ACCOUNT_ID, R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY, R2_BUCKET',
+    );
+    expect(logs.records()).toEqual([]);
+    for (const env of [
+      { NODE_ENV: 'production', APP_ENV: 'local' },
+      { NODE_ENV: 'development', APP_ENV: 'staging' },
+      { NODE_ENV: 'development', APP_ENV: 'prod' },
+    ] as const) {
+      const allowsInMemory = allowsInMemoryStorage(env);
+      expect(() => createStorageProvider({ ...config, allowsInMemory }), env.APP_ENV).toThrow(
+        /does not allow the in-memory provider/,
+      );
+    }
+    const local = allowsInMemoryStorage({ NODE_ENV: 'development', APP_ENV: 'local' });
+    expect(createStorageProvider({ ...config, allowsInMemory: local })).toBeInstanceOf(
+      InMemoryStorageProvider,
+    );
+    expect(
+      createStorageProvider({ ...factoryConfig(R2).config, allowsInMemory: false }),
+    ).toBeInstanceOf(R2StorageProvider);
+  });
+
   it('binds R2 when all four keys are set, and logs no key value', () => {
     const { config, logs } = factoryConfig(R2);
     expect(createStorageProvider(config)).toBeInstanceOf(R2StorageProvider);

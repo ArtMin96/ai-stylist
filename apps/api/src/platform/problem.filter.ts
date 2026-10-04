@@ -6,7 +6,7 @@ import {
   Inject,
   Injectable,
 } from '@nestjs/common';
-import type { FastifyReply, FastifyRequest } from 'fastify';
+import type { FastifyError, FastifyReply, FastifyRequest } from 'fastify';
 import { Logger } from 'nestjs-pino';
 
 import { type ErrorCode, type ProblemDetails, problem } from '@ai-stylist/shared-kernel';
@@ -79,6 +79,26 @@ export function toProblem(exception: unknown, instance: string): ProblemBody {
 function withoutQueryInDetail(body: ProblemBody, url: string, path: string): ProblemBody {
   if (body.detail === undefined || url === path) return body;
   return { ...body, detail: body.detail.replaceAll(url, () => path) };
+}
+
+/**
+ * Fastify answers a few requests itself, before routing, so ProblemFilter never sees them: a
+ * malformed path (`FST_ERR_BAD_URL`, e.g. `/v1/x%zz`), a too-long path parameter
+ * (`FST_ERR_MAX_PARAM_LENGTH`) and a failing async route constraint (`FST_ERR_ASYNC_CONSTRAINT`).
+ * Its default body is plain JSON whose message quotes the whole URL, query included. This is
+ * Fastify 5's `frameworkErrors` option, `(error, request, reply)`: pass it as
+ * `new FastifyAdapter({ frameworkErrors })`. The reply is the problem body `toProblem` builds for
+ * the status (400 for a request error, 500 otherwise), `instance` the path only (`stripQuery`), and
+ * no `detail`, since Fastify's message is the raw URL.
+ */
+export function frameworkErrors(
+  error: FastifyError,
+  request: FastifyRequest,
+  reply: FastifyReply,
+): void {
+  const status = error.statusCode !== undefined && error.statusCode >= 500 ? 500 : 400;
+  const body = toProblem({ statusCode: status }, stripQuery(request.url));
+  void reply.status(body.status).header('content-type', PROBLEM_CONTENT_TYPE).send(body);
 }
 
 /** Global filter: every error leaves the API as RFC 9457 `application/problem+json`. */

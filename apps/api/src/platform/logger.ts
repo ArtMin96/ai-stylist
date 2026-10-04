@@ -16,7 +16,7 @@ import type { Options as PinoHttpOptions } from 'pino-http';
 
 import { FORBIDDEN_LOG_KEYS } from '@ai-stylist/shared-kernel';
 
-import { errorSummary } from './queue/error-summary.js';
+import { NAME_SHAPE, errorSummary, isError } from './queue/error-summary.js';
 import { correlationLogFields } from './telemetry/correlation.js';
 
 export const REDACTED = '[REDACTED]';
@@ -55,8 +55,8 @@ type SerializedErr = {
  * and every enumerable field); the thrown value is that copy's non-enumerable `raw`.
  */
 function thrownValue(value: unknown): unknown {
-  if (typeof value !== 'object' || value === null || value instanceof Error) return value;
-  return 'raw' in value && value.raw instanceof Error ? value.raw : value;
+  if (typeof value !== 'object' || value === null || isError(value)) return value;
+  return 'raw' in value && isError(value.raw) ? value.raw : value;
 }
 
 function causeOf(value: unknown): unknown {
@@ -83,11 +83,11 @@ function serializeErr(thrown: unknown, depth = 0): SerializedErr {
 
 /**
  * Deep-copy `value`, replacing every forbidden key's value with REDACTED and every Error, under
- * any key, with its `serializeErr` summary. Cycle-safe.
+ * any key and of any realm (`isError`), with its `serializeErr` summary. Cycle-safe.
  */
 export function redactForbidden(value: unknown, seen = new WeakSet<object>()): unknown {
   if (value === null || typeof value !== 'object') return value;
-  if (value instanceof Error) return serializeErr(value);
+  if (isError(value)) return serializeErr(value);
   if (seen.has(value)) return '[Circular]';
   seen.add(value);
   if (Array.isArray(value)) return value.map((item) => redactForbidden(item, seen));
@@ -129,10 +129,23 @@ export const allowlistSerializers = {
   err: (err: unknown) => serializeErr(err),
 } as const;
 
+/**
+ * The key nestjs-pino writes a Nest `Logger` call's last optional argument under (its default
+ * `renameContext`). That argument is meant to be a class name, but `error(message, err.stack)` and
+ * `warn(message, value)` put a stack or a value there, written as it is.
+ */
+const NEST_CONTEXT_KEY = 'context';
+
+/** A Nest logger context is kept only when it is a name (`NAME_SHAPE`); anything else is redacted. */
+function nestContext(entry: unknown): unknown {
+  return typeof entry === 'string' && NAME_SHAPE.test(entry) ? entry : REDACTED;
+}
+
 export const pinoLogFormatter = (object: Record<string, unknown>): Record<string, unknown> => {
   const out: Record<string, unknown> = {};
   for (const [key, entry] of Object.entries(object)) {
     if (isForbiddenLogKey(key)) out[key] = REDACTED;
+    else if (key === NEST_CONTEXT_KEY) out[key] = nestContext(entry);
     else out[key] = SERIALIZED_KEYS.has(key) ? entry : redactForbidden(entry);
   }
   return out;
@@ -153,29 +166,34 @@ export function childLogger(parent: Logger, bindings: Bindings): Logger {
 const ERROR_LOGGED_MESSAGE = 'error logged';
 
 /**
- * Whether pino would copy `err.message` into `msg` for this first argument when no message follows
- * (pino lib/proto.js `write`): an Error, or an object with a truthy `err` and no `msg` of its own.
+ * Whether pino would copy `err.message` into `msg` for this merging object when no message follows
+ * (pino lib/proto.js `write`): an object with a truthy `err` and no `msg` of its own.
  * `loggerOptions` keeps pino's default `errorKey` (`err`) and `messageKey` (`msg`).
  */
-function carriesErrorWithoutMessage(first: object): boolean {
-  if (first instanceof Error) return true;
-  const fields = first as Record<string, unknown>;
+function carriesErrorWithoutMessage(fields: Record<string, unknown>): boolean {
   return Boolean(fields['err']) && fields['msg'] === undefined;
 }
 
 /**
- * `hooks.logMethod`: `msg` is only ever the string the caller wrote. A call keeps its first argument
- * and, after an object, a string message. Dropped: printf-style arguments (pino interpolates them
- * into `msg`, past the serializers and the denylist) and a message that is not a string (written to
- * `msg` as it is). An error logged without a message gets `ERROR_LOGGED_MESSAGE` instead of the
- * `err.message` pino would copy (a driver message can quote statement parameters).
+ * `hooks.logMethod`: `msg` is only ever the string the caller wrote. A string first argument is
+ * kept; an object first argument is kept with, after it, a string message. Dropped: a first argument
+ * that is neither (a number or a boolean would be written to `msg` as it is), printf-style arguments
+ * (pino interpolates them into `msg`, past the serializers and the denylist) and a message that is
+ * not a string. An Error first argument, of any realm, is logged as `{ err }` (pino recognises only
+ * its own realm's, and would merge another realm's enumerable fields into the line). An error logged
+ * without a message gets `ERROR_LOGGED_MESSAGE` instead of the `err.message` pino would copy (a
+ * driver message can quote statement parameters).
  */
 function callerMessageOnly(this: Logger, args: Parameters<LogFn>, method: LogFn): void {
   const [first, message] = args as readonly unknown[];
   let kept: unknown[];
-  if (typeof first !== 'object' || first === null) kept = [first];
-  else if (typeof message === 'string') kept = [first, message];
-  else kept = carriesErrorWithoutMessage(first) ? [first, ERROR_LOGGED_MESSAGE] : [first];
+  if (typeof first === 'string') kept = [first];
+  else if (typeof first !== 'object' || first === null) kept = [{}];
+  else {
+    const fields = isError(first) ? { err: first } : (first as Record<string, unknown>);
+    if (typeof message === 'string') kept = [fields, message];
+    else kept = carriesErrorWithoutMessage(fields) ? [fields, ERROR_LOGGED_MESSAGE] : [fields];
+  }
   method.apply(this, kept as Parameters<LogFn>);
 }
 

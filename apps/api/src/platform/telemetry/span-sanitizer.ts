@@ -2,7 +2,8 @@
 // redaction rules as logs, planning/11 §8). The OSS instrumentations record things our rules
 // forbid: query strings (`url.query`, the query part of `url.full` / `url.path`; signed URLs carry
 // credentials), client IPs and user agents, error messages in span status and `exception` events
-// (driver messages echo statement parameters). `SanitizingSpanExporter` wraps the real exporter and
+// (driver messages echo statement parameters), and an `exception.type` taken from a free-text
+// `err.code` or `err.name`. `SanitizingSpanExporter` wraps the real exporter and
 // hands it copies without them. Our own spans already comply (./trace-context.ts); this is the
 // backstop for everything else. Translation only: no span is dropped, no id or enum is changed.
 //
@@ -15,6 +16,7 @@ import {
   ATTR_CLIENT_ADDRESS,
   ATTR_EXCEPTION_MESSAGE,
   ATTR_EXCEPTION_STACKTRACE,
+  ATTR_EXCEPTION_TYPE,
   ATTR_NETWORK_PEER_ADDRESS,
   ATTR_URL_FULL,
   ATTR_URL_PATH,
@@ -23,6 +25,7 @@ import {
 } from '@opentelemetry/semantic-conventions';
 
 import { REDACTED, isForbiddenLogKey, stripQuery } from '../logger.js';
+import { CODE_SHAPE, NAME_SHAPE } from '../queue/error-summary.js';
 
 /** The SDK's exporter and span types, taken from `NodeSDK`'s own configuration type. */
 export type SpanExporter = NodeSDKConfiguration['traceExporter'];
@@ -65,6 +68,18 @@ function cutUrlValue(value: AttributeValue): AttributeValue {
 }
 
 /**
+ * `exception.type` as the log `err.type` rule keeps it: OTel JS fills it from `String(err.code)`,
+ * else `err.name`, and either can be free text. Kept when name-shaped (`TypeError`,
+ * `grpc.ServiceError`) or code-shaped (`23505`, `ECONNREFUSED`, the same rules as
+ * ../queue/error-summary.ts); anything else, a non-string included, becomes `Error`.
+ */
+function exceptionType(value: AttributeValue): AttributeValue {
+  return typeof value === 'string' && (NAME_SHAPE.test(value) || CODE_SHAPE.test(value))
+    ? value
+    : 'Error';
+}
+
+/**
  * The attribute set a span, an event, a link or the process resource may carry. The log denylist
  * applies to the last dot-segment of the key (`http.request.header.authorization` is redacted,
  * `http.request.body.size` is kept).
@@ -75,6 +90,7 @@ export function sanitizeAttributes(attributes: Attributes): Attributes {
     if (value === undefined || DROPPED_ATTRIBUTES.has(key)) continue;
     const lastSegment = key.slice(key.lastIndexOf('.') + 1);
     if (isForbiddenLogKey(lastSegment)) out[key] = REDACTED;
+    else if (key === ATTR_EXCEPTION_TYPE) out[key] = exceptionType(value);
     else out[key] = URL_ATTRIBUTES.has(key) ? cutUrlValue(value) : value;
   }
   return out;

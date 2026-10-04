@@ -1,7 +1,8 @@
 // The factory output must validate against the canonical event schemas in packages/contracts
-// (not a copy: read from the contracts package on disk, since its exports map only exposes
-// generated TypeScript).
+// (not a copy: resolved through the package's declared `./events/*` export, as the platform
+// acceptance test does, never by a relative path into another package).
 import { readFile } from 'node:fs/promises';
+import { createRequire } from 'node:module';
 
 import { Ajv2020, type AnySchema } from 'ajv/dist/2020.js';
 import addFormats from 'ajv-formats';
@@ -9,10 +10,11 @@ import { describe, expect, it } from 'vitest';
 
 import { demoEvent, syntheticRandom } from '../src/index.js';
 
-const CONTRACTS_EVENTS = new URL('../../contracts/events/', import.meta.url);
+const resolveContract = createRequire(import.meta.url).resolve;
 
 async function loadSchema(name: string): Promise<AnySchema> {
-  return JSON.parse(await readFile(new URL(name, CONTRACTS_EVENTS), 'utf8')) as AnySchema;
+  const path = resolveContract(`@ai-stylist/contracts/events/${name}`);
+  return JSON.parse(await readFile(path, 'utf8')) as AnySchema;
 }
 
 const ajv = new Ajv2020({ strict: true, allErrors: true });

@@ -156,6 +156,31 @@ describe('trace context and span redaction (in-process SDK)', () => {
     expect(text).not.toContain(CANARY);
   });
 
+  // OTel JS fills `exception.type` from `String(err.code)`, else `err.name`; either can be free text.
+  it('keeps exception.type only when it is name- or code-shaped, else writes Error', async () => {
+    const span = trace.getTracer('test').startSpan('exception types');
+    span.recordException(Object.assign(new Error('x'), { code: `bad ${CANARY}` }));
+    span.recordException(Object.assign(new Error('x'), { name: `Error: ${CANARY}` }));
+    span.recordException(Object.assign(new Error('x'), { code: '23505' }));
+    span.recordException(Object.assign(new Error('x'), { code: 'ECONNREFUSED' }));
+    span.recordException(new TypeError('x'));
+    span.recordException(Object.assign(new Error('x'), { name: 'grpc.ServiceError' }));
+    span.setAttribute('exception.type', `free ${CANARY}`);
+    span.end();
+
+    const out = await exported('exception types');
+    expect(out?.events.map((event) => event.attributes?.['exception.type'])).toEqual([
+      'Error',
+      'Error',
+      '23505',
+      'ECONNREFUSED',
+      'TypeError',
+      'grpc.ServiceError',
+    ]);
+    expect(out?.attributes).toEqual({ 'exception.type': 'Error' });
+    expect(JSON.stringify([out?.attributes, out?.events])).not.toContain(CANARY);
+  });
+
   it('cuts every string of an array-valued URL attribute', async () => {
     const span = trace.getTracer('test').startSpan('urls', {
       attributes: {

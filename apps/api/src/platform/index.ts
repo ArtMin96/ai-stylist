@@ -79,6 +79,7 @@ export {
   ProblemFilter,
   PROBLEM_CONTENT_TYPE,
   type ProblemBody,
+  frameworkErrors,
   toProblem,
 } from './problem.filter.js';
 export {

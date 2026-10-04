@@ -18,6 +18,8 @@ bucket, clock, logger })` → `StorageProvider`. The composition root passes the
   same set first). `loadConfig` also refuses to boot with none of the four keys when `APP_ENV` is
   `staging` or `prod` or `NODE_ENV` is `production` (`allowsInMemoryStorage`, doc 15 §11: staging
   and prod use real R2 buckets), so the in-memory provider is bound only in local, dev and test runs.
+  Behind that, the factory refuses the in-memory provider itself when the composition root passes
+  `allowsInMemory: allowsInMemoryStorage(config)` as `false` (defence in depth).
 - `r2-storage-provider.ts`: `R2StorageProvider`, `r2Endpoint(accountId)`.
 - `sigv4-presign.ts`: AWS Signature Version 4 query presigning on `node:crypto` (no SDK; see
   "Signer" below).

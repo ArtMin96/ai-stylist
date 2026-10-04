@@ -9,13 +9,15 @@
 // free text echoes row values, so none of it may reach the sink, in process or through the API's
 // error path (ProblemFilter on a Nest app, where pino-http wraps the serializer). Neither may `msg`
 // (error text, interpolated arguments), child-logger bindings, or an unknown route's 404 `detail`.
-import { Controller, Get } from '@nestjs/common';
+import vm from 'node:vm';
+
+import { Controller, Get, Logger as NestLogger } from '@nestjs/common';
 import type { NestFastifyApplication } from '@nestjs/platform-fastify';
 import { Logger } from 'nestjs-pino';
 import pino from 'pino';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
-import { FORBIDDEN_LOG_KEY_EXAMPLES } from '@ai-stylist/shared-kernel';
+import { FORBIDDEN_LOG_KEY_EXAMPLES, PROBLEM_TYPE_BASE } from '@ai-stylist/shared-kernel';
 import { memoryLogStream } from '@ai-stylist/test-support';
 
 import {
@@ -25,6 +27,7 @@ import {
   isForbiddenLogKey,
   loggerOptions,
 } from '../logger.js';
+import { PROBLEM_CONTENT_TYPE } from '../problem.filter.js';
 import { runWithCorrelationId } from '../telemetry/correlation.js';
 
 import { createPlatformTestApp } from './platform-test-app.js';
@@ -147,6 +150,49 @@ describe('logger redaction canary', () => {
       ['payload %o', undefined],
       [undefined, undefined],
     ]);
+    expect(sink.text()).not.toContain(CANARY);
+  });
+
+  // A message that is not a string reaches `msg` as it is: only a string first argument is kept.
+  it('drops a first argument that is neither a string nor an object', () => {
+    const sink = memoryLogStream();
+    const logger = pino(loggerOptions({ level: 'info' }), sink);
+    const untypedInfo: (...args: unknown[]) => void = logger.info.bind(logger);
+    untypedInfo(31415926);
+    untypedInfo(true);
+    untypedInfo(undefined, 27182818);
+    logger.info('kept message');
+
+    expect(sink.records().map((record) => record['msg'])).toEqual([
+      undefined,
+      undefined,
+      undefined,
+      'kept message',
+    ]);
+    expect(sink.text()).not.toMatch(/31415926|27182818|"msg":true/);
+  });
+
+  // An Error made in another realm (a `vm` context, a worker's structured clone) fails
+  // `instanceof Error`; it is still an Error and gets the same allowlist, never its own fields.
+  it('summarises a cross-realm Error like any Error: no enumerable field reaches the sink', () => {
+    const sink = memoryLogStream();
+    const logger = pino(loggerOptions({ level: 'info' }), sink);
+    const foreign = () =>
+      Object.assign(vm.runInNewContext('new Error("x")') as Error, {
+        code: '23505',
+        detail: `Key (note)=(${CANARY}) already exists.`,
+      });
+    logger.error({ err: foreign() }, 'cross-realm err');
+    logger.error({ failure: foreign(), job: { attempts: [foreign()] } }, 'cross-realm nested');
+    logger.error(foreign());
+    childLogger(logger, { lastFailure: foreign() }).info('cross-realm binding');
+
+    const [err, nested, bare, bound] = sink.records();
+    const summary = { type: 'Error', code: '23505' };
+    expect(err?.['err']).toEqual(summary);
+    expect(nested).toMatchObject({ failure: summary, job: { attempts: [summary] } });
+    expect([bare?.['msg'], bare?.['err']]).toEqual(['error logged', summary]);
+    expect(bound?.['lastFailure']).toEqual(summary);
     expect(sink.text()).not.toContain(CANARY);
   });
 
@@ -314,6 +360,50 @@ describe('logger redaction canary', () => {
       expect(added.map((line) => ({ msg: line['msg'], err: line['err'] }))).toEqual([
         { msg: 'error logged', err: { type: 'Error', cause: DRIVER_ERROR_SUMMARY } },
       ]);
+      expect(logs.text()).not.toContain(CANARY);
+    });
+
+    // nestjs-pino writes the last optional argument of a Nest Logger call as `context`, unchanged:
+    // a stack (`error(message, err.stack)`) or a value (`warn(message, value)`) would be written raw.
+    it('keeps a Nest Logger context only when it is a name; a stack or a value is redacted', () => {
+      const before = logs.records().length;
+      const stack = `Error: ${CANARY}\n    at handler (/app/src/demo.ts:1:1)`;
+      new NestLogger().error('stack as context', stack);
+      NestLogger.error('static stack as context', stack);
+      new NestLogger().warn('value as context', { note: CANARY });
+      new NestLogger().log('free text as context', `note ${CANARY}`);
+      new NestLogger().log('number as context', 31415926);
+      new NestLogger('DemoService').log('named context');
+      NestLogger.log('static named context', 'demo.Worker');
+
+      const added = logs.records().slice(before);
+      expect(added.map((line) => [line['msg'], line['context']])).toEqual([
+        ['stack as context', REDACTED],
+        ['static stack as context', REDACTED],
+        ['value as context', REDACTED],
+        ['free text as context', REDACTED],
+        ['number as context', REDACTED],
+        ['named context', 'DemoService'],
+        ['static named context', 'demo.Worker'],
+      ]);
+      expect(logs.text()).not.toMatch(new RegExp(`${CANARY}|31415926`));
+    });
+
+    // Fastify answers a malformed path (FST_ERR_BAD_URL) itself, before routing and ProblemFilter;
+    // its default body is plain JSON that quotes the whole URL, query included.
+    it('answers a malformed URL with a problem body: path only, no detail, no query', async () => {
+      const res = await app.inject({ method: 'GET', url: `/v1/nope%zz?sig=${CANARY}` });
+
+      expect(res.statusCode).toBe(400);
+      expect(res.headers['content-type']).toContain(PROBLEM_CONTENT_TYPE);
+      expect(res.json()).toEqual({
+        type: `${PROBLEM_TYPE_BASE}/VALIDATION_FAILED`,
+        title: 'Request validation failed',
+        status: 400,
+        code: 'VALIDATION_FAILED',
+        instance: '/v1/nope%zz',
+      });
+      expect(res.body).not.toContain(CANARY);
       expect(logs.text()).not.toContain(CANARY);
     });
 

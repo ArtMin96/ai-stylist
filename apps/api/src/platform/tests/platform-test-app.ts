@@ -1,8 +1,9 @@
 // The one Nest + Fastify app for platform tests that need the HTTP path (ProblemFilter, pino-http,
 // Fastify hooks): `PlatformModule.forRoot` with test bindings (system clock, no database, in-memory
 // storage) plus the test's controllers, built the way `createApp` (apps/api/src/app.module.ts)
-// builds the real one: Nest's buffered logs go to the platform logger, and hooks are registered on
-// the root Fastify instance before init. `platformTestBindings` alone serves a testing module.
+// builds the real one: Fastify's own error replies are problem bodies (`frameworkErrors`), Nest's
+// buffered logs go to the platform logger, and hooks are registered on the root Fastify instance
+// before init. `platformTestBindings` alone serves a testing module.
 import type { Writable } from 'node:stream';
 
 import { type DynamicModule, Module, type Type } from '@nestjs/common';
@@ -18,6 +19,7 @@ import {
   PlatformModule,
   SystemClock,
   UnconfiguredHealthProbe,
+  frameworkErrors,
   httpLoggerOptions,
 } from '../index.js';
 
@@ -61,11 +63,15 @@ export async function createPlatformTestApp(
     imports: [PlatformModule.forRoot(platformTestBindings(options))],
     controllers: [...(options.controllers ?? [])],
   };
-  const app = await NestFactory.create<NestFastifyApplication>(root, new FastifyAdapter(), {
+  const adapter = new FastifyAdapter({ frameworkErrors });
+  const app = await NestFactory.create<NestFastifyApplication>(root, adapter, {
     bufferLogs: true,
     abortOnError: false,
   });
   app.useLogger(app.get(Logger));
+  // Without it Nest's static Logger keeps buffering, and a `new Logger()` (from @nestjs/common)
+  // call made by a test never reaches the sink: a canary on it would assert nothing.
+  app.flushLogs();
   const fastify = app.getHttpAdapter().getInstance();
   options.beforeInit?.(fastify);
   await app.init();

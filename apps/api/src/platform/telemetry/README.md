@@ -127,7 +127,10 @@ Attributes: one rule, `sanitizeAttributes` in `span-sanitizer.ts`. It drops `url
 `client.address`, `network.peer.address`, `user_agent.original`, `exception.message` and
 `exception.stacktrace`; cuts the query and fragment from `url.full`, `url.path`, `http.url` and
 `http.target`; and replaces with `[REDACTED]` the value of an attribute whose last dot-segment is a
-forbidden log word (`http.request.header.authorization`). A URL attribute is cut whatever its shape:
+forbidden log word (`http.request.header.authorization`). It keeps `exception.type` only when it is
+name-shaped (`TypeError`, `grpc.ServiceError`) or code-shaped (`23505`, `ECONNREFUSED`), the
+`NAME_SHAPE` / `CODE_SHAPE` rules of `../queue/error-summary.ts`, and otherwise writes `Error`:
+OTel JS fills it from `String(err.code)`, else `err.name`, and either can be free text. A URL attribute is cut whatever its shape:
 the string, or each string of an array value (cut rather than dropped, so the path stays
 searchable). One function makes that cut, `stripQuery` in `../logger.ts` (everything from the first
 `?` or `#`): the same one the logged `req.url` and the problem `instance` (`../problem.filter.ts`)

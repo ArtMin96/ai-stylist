@@ -3,19 +3,13 @@
 // semantic-convention buckets and route-template attributes (never the raw path), and
 // `stylist.api.request.errors` counts 5xx responses only, from 0 for every route. The second suite
 // wires it the way the API composition root does, on a Nest app's Fastify instance before init.
-import { NestFactory } from '@nestjs/core';
-import { FastifyAdapter, type NestFastifyApplication } from '@nestjs/platform-fastify';
+import type { NestFastifyApplication } from '@nestjs/platform-fastify';
 import fastify, { type FastifyInstance } from 'fastify';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
 import {
-  InMemoryStorageProvider,
   METRIC_NAMES,
-  PlatformModule,
   REQUEST_DURATION_BUCKETS_SECONDS,
-  SystemClock,
-  UnconfiguredHealthProbe,
-  httpLoggerOptions,
   registerRequestMetrics,
 } from '../index.js';
 
@@ -27,6 +21,7 @@ import {
   numberPoints,
   valueAt,
 } from './memory-metrics.js';
+import { createPlatformTestApp } from './platform-test-app.js';
 
 const ITEM_ROUTE = '/v1/test/items/:itemId';
 const BROKEN_ROUTE = '/v1/test/broken';
@@ -132,23 +127,12 @@ describe('API request metrics on a Nest + Fastify app (composition-root wiring)'
 
   beforeAll(async () => {
     metrics = memoryMetrics();
-    const clock = new SystemClock();
-    app = await NestFactory.create<NestFastifyApplication>(
-      PlatformModule.forRoot({
-        logger: { pinoHttp: httpLoggerOptions({ level: 'silent' }) },
-        version: { version: 'test', commit: 'test', builtAt: '2026-09-27T00:00:00Z' },
-        clock,
-        // No database: `/v1/health` answers 503, a real 5xx from a Nest route.
-        healthProbe: new UnconfiguredHealthProbe(),
-        storage: new InMemoryStorageProvider(() => clock.now()),
-      }),
-      new FastifyAdapter(),
-      { logger: false, abortOnError: false },
-    );
-    // Where `createApp` calls it: after NestFactory.create, before the routes are registered.
-    registerRequestMetrics(app.getHttpAdapter().getInstance(), metrics.meter);
-    await app.init();
-    await app.getHttpAdapter().getInstance().ready();
+    // No database: `/v1/health` answers 503, a real 5xx from a Nest route. `beforeInit` is where
+    // `createApp` calls it: after NestFactory.create, before the routes are registered.
+    app = await createPlatformTestApp({
+      level: 'silent',
+      beforeInit: (fastify) => registerRequestMetrics(fastify, metrics.meter),
+    });
   });
 
   afterAll(async () => {

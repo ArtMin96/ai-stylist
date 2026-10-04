@@ -62,7 +62,8 @@ are decided by the callers.
 - **Logging and job output:** through the injected pino logger built from `../logger.ts`; fields
   are job id, queue, attempt, max attempts, error class and pg code — never job data or error
   messages. A failed job's stored pg-boss `output` (on the job row and its DLQ copy) is the same
-  `{ errorName, pgCode? }` (`error-summary.ts`), never the thrown error.
+  `{ errorName, pgCode? }` (`error-summary.ts`: the class name only when identifier-shaped, else
+  `Error`), never the thrown error.
 - **Tracing and correlation (planning/14 §2–§3):** each fetched job runs in a CONSUMER span
   `job.process <queue>` (`messaging.system` `pg-boss`, `messaging.operation.type` `process`,
   `messaging.destination.name`, `messaging.message.id` = job id, `job.attempt`, `correlation_id`)

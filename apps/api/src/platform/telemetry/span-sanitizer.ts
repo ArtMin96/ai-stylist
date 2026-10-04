@@ -80,10 +80,12 @@ export function sanitizeAttributes(attributes: Attributes): Attributes {
   return out;
 }
 
+/** The event name is cut like the span name: one named from a raw URL carries its query. */
 function sanitizeEvent(event: TimedEvent): TimedEvent {
+  const name = stripQuery(event.name);
   return event.attributes === undefined
-    ? event
-    : { ...event, attributes: sanitizeAttributes(event.attributes) };
+    ? { ...event, name }
+    : { ...event, name, attributes: sanitizeAttributes(event.attributes) };
 }
 
 /** The linked span's context (trace id, span id, flags) is kept; only the attributes change. */

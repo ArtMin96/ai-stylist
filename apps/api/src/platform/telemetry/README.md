@@ -135,8 +135,8 @@ go through.
 
 Spans: `SanitizingSpanExporter` applies the attribute rule to the span's attributes, to every
 event's and to every link's (the linked trace id, span id and flags are kept); cuts the span name
-with `stripQuery`, because a span named from a raw request target or URL carries its query; and
-drops span status messages. `GET`, `outbox.dispatch <event type>` and `job.process <queue>` have
+and every event name with `stripQuery`, because a name made from a raw request target or URL
+carries its query; and drops span status messages. `GET`, `outbox.dispatch <event type>` and `job.process <queue>` have
 nothing to cut. A route template that marks an optional parameter with `?` (Fastify's `/:id?`)
 would lose the marker in the span name; `http.route` keeps it. No route does today.
 
@@ -151,8 +151,8 @@ dashboards and queries filter on passes untouched: `service.name` (labels `servi
 (`deploy.api_token`) is exported as `[REDACTED]`.
 
 Not covered: the value under a key that is neither dropped, forbidden nor one of the four URL keys
-is not inspected (a URL with a query under `deploy.hook` passes); a span name is only cut, so a
-value in its path part stays; event names are passed on unchanged.
+is not inspected (a URL with a query under `deploy.hook` passes); a span or event name is only
+cut, so a value in its path part stays.
 
 ## Running
 

@@ -32,6 +32,21 @@ describe('toProblem', () => {
     expect(p).toMatchObject({ status: 429, code: 'RATE_LIMITED', detail: 'slow down' });
   });
 
+  it('maps 415 (Fastify: unsupported request content type) to VALIDATION_FAILED, not INTERNAL', () => {
+    const unsupported = Object.assign(new Error('Unsupported Media Type'), {
+      code: 'FST_ERR_CTP_INVALID_MEDIA_TYPE',
+      statusCode: 415,
+    });
+    expect(toProblem(unsupported, '/v1/x')).toEqual({
+      type: `${PROBLEM_TYPE_BASE}/VALIDATION_FAILED`,
+      title: 'Request validation failed',
+      status: 415,
+      code: 'VALIDATION_FAILED',
+      instance: '/v1/x',
+      detail: 'Unsupported Media Type',
+    });
+  });
+
   it('never leaks internals for 5xx', () => {
     const p = toProblem(new Error('ECONNREFUSED postgres://user:secret@db/x'), '/v1/y');
     expect(p).toEqual({

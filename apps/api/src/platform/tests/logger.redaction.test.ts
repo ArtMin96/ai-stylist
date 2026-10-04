@@ -7,10 +7,10 @@
 //
 // A logged error is an allowlist too (`err`: class, code-shaped code, cause chain): a driver error's
 // free text echoes row values, so none of it may reach the sink, in process or through the API's
-// error path (ProblemFilter on a Nest app, where pino-http wraps the serializer).
-import { Controller, type DynamicModule, Get, Module } from '@nestjs/common';
-import { NestFactory } from '@nestjs/core';
-import { FastifyAdapter, type NestFastifyApplication } from '@nestjs/platform-fastify';
+// error path (ProblemFilter on a Nest app, where pino-http wraps the serializer). Neither may `msg`
+// (error text, interpolated arguments), child-logger bindings, or an unknown route's 404 `detail`.
+import { Controller, Get } from '@nestjs/common';
+import type { NestFastifyApplication } from '@nestjs/platform-fastify';
 import { Logger } from 'nestjs-pino';
 import pino from 'pino';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
@@ -19,15 +19,15 @@ import { FORBIDDEN_LOG_KEY_EXAMPLES } from '@ai-stylist/shared-kernel';
 import { memoryLogStream } from '@ai-stylist/test-support';
 
 import {
-  InMemoryStorageProvider,
-  PlatformModule,
-  SystemClock,
-  UnconfiguredHealthProbe,
-  httpLoggerOptions,
-} from '../index.js';
-import { MAX_ERR_CAUSE_DEPTH, REDACTED, isForbiddenLogKey, loggerOptions } from '../logger.js';
+  MAX_ERR_CAUSE_DEPTH,
+  REDACTED,
+  childLogger,
+  isForbiddenLogKey,
+  loggerOptions,
+} from '../logger.js';
 import { runWithCorrelationId } from '../telemetry/correlation.js';
 
+import { createPlatformTestApp } from './platform-test-app.js';
 import { CANARY, plant } from './redaction-canary.js';
 import {
   FIXTURE_CORRELATION_ID,
@@ -81,9 +81,6 @@ class FailedQueryController {
   }
 }
 
-@Module({})
-class ErrorPathTestModule {}
-
 describe('logger redaction canary', () => {
   it('never writes a planted marker to the sink, at any depth', () => {
     const sink = memoryLogStream();
@@ -106,6 +103,51 @@ describe('logger redaction canary', () => {
     expect((first['user'] as { profile: { measurements: unknown } }).profile.measurements).toBe(
       REDACTED,
     );
+  });
+
+  // pino writes child bindings without the log formatter, so they get the same rules only through
+  // `childLogger`: every forbidden word and word-split variant, at any depth, and Errors summarised.
+  it('redacts child-logger bindings like a logged object, word-split keys and Errors included', () => {
+    const sink = memoryLogStream();
+    const logger = pino(loggerOptions({ level: 'info' }), sink);
+    childLogger(logger, { ...plant(), accessToken: CANARY, lastFailure: driverError() }).info(
+      'child bindings canary',
+    );
+
+    const record = sink.records()[0];
+    expect(record).toMatchObject({
+      safe: 'visible-value',
+      password: REDACTED,
+      accessToken: REDACTED,
+      lastFailure: DRIVER_ERROR_SUMMARY,
+    });
+    expect(sink.text()).not.toContain(CANARY);
+  });
+
+  // Called without a message, pino copies `err.message` into `msg`; printf-style arguments are
+  // interpolated into it. Neither passes the allowlist, so neither may reach the sink.
+  it('never writes error text or interpolation arguments into msg', () => {
+    const sink = memoryLogStream();
+    const logger = pino(loggerOptions({ level: 'info' }), sink);
+    // A message that is not a string is outside pino's types; callers can still pass one.
+    const untypedInfo: (...args: unknown[]) => void = logger.info.bind(logger);
+    logger.error(driverError());
+    logger.error({ err: driverError() });
+    logger.error({ err: { message: CANARY } });
+    logger.info('note %s', CANARY);
+    // eslint-disable-next-line quality/no-log-request-body -- canary plants forbidden keys on purpose
+    logger.info({ id: 'evt_1' }, 'payload %o', { sessionToken: CANARY });
+    untypedInfo({ id: 'evt_2' }, { note: CANARY });
+
+    expect(sink.records().map((record) => [record['msg'], record['err']])).toEqual([
+      ['error logged', DRIVER_ERROR_SUMMARY],
+      ['error logged', DRIVER_ERROR_SUMMARY],
+      ['error logged', { type: 'object' }],
+      ['note %s', undefined],
+      ['payload %o', undefined],
+      [undefined, undefined],
+    ]);
+    expect(sink.text()).not.toContain(CANARY);
   });
 
   it('redacts every forbidden example of the registry and leaves every allowed one readable', () => {
@@ -206,6 +248,16 @@ describe('logger redaction canary', () => {
     expect(sink.text()).not.toContain(CANARY);
   });
 
+  it('logs an error name that is not identifier-shaped as Error, in the cause chain too', () => {
+    const sink = memoryLogStream();
+    const logger = pino(loggerOptions({ level: 'info' }), sink);
+    const freeTextName = Object.assign(new Error('x'), { name: `Error: ${CANARY}` });
+    logger.error({ err: new Error('wrapper', { cause: freeTextName }) }, 'free-text name canary');
+
+    expect(sink.records()[0]?.['err']).toEqual({ type: 'Error', cause: { type: 'Error' } });
+    expect(sink.text()).not.toContain(CANARY);
+  });
+
   it('summarises an Error under any other key, at any depth, the same way', () => {
     const sink = memoryLogStream();
     const logger = pino(loggerOptions({ level: 'info' }), sink);
@@ -226,27 +278,7 @@ describe('logger redaction canary', () => {
     let app: NestFastifyApplication;
 
     beforeAll(async () => {
-      const clock = new SystemClock();
-      const root: DynamicModule = {
-        module: ErrorPathTestModule,
-        imports: [
-          PlatformModule.forRoot({
-            logger: { pinoHttp: httpLoggerOptions({ level: 'info' }, logs) },
-            version: { version: 'test', commit: 'test', builtAt: '2026-10-03T00:00:00Z' },
-            clock,
-            healthProbe: new UnconfiguredHealthProbe(),
-            storage: new InMemoryStorageProvider(() => clock.now()),
-          }),
-        ],
-        controllers: [FailedQueryController],
-      };
-      app = await NestFactory.create<NestFastifyApplication>(root, new FastifyAdapter(), {
-        bufferLogs: true,
-        abortOnError: false,
-      });
-      app.useLogger(app.get(Logger));
-      await app.init();
-      await app.getHttpAdapter().getInstance().ready();
+      app = await createPlatformTestApp({ logs, controllers: [FailedQueryController] });
     });
 
     afterAll(async () => {
@@ -271,6 +303,30 @@ describe('logger redaction canary', () => {
         },
         { msg: 'request errored', err: { type: 'Error' } },
       ]);
+      expect(logs.text()).not.toContain(CANARY);
+    });
+
+    it('logs a Nest Logger.error(error) without a message as error logged; no marker', () => {
+      const before = logs.records().length;
+      app.get(Logger).error(failedQuery());
+
+      const added = logs.records().slice(before);
+      expect(added.map((line) => ({ msg: line['msg'], err: line['err'] }))).toEqual([
+        { msg: 'error logged', err: { type: 'Error', cause: DRIVER_ERROR_SUMMARY } },
+      ]);
+      expect(logs.text()).not.toContain(CANARY);
+    });
+
+    it('answers an unknown route with its path only: no query in detail, instance or logs', async () => {
+      const res = await app.inject({ method: 'GET', url: `/v1/nope?sig=${CANARY}` });
+
+      expect(res.statusCode).toBe(404);
+      expect(res.json()).toMatchObject({
+        code: 'NOT_FOUND',
+        instance: '/v1/nope',
+        detail: 'Cannot GET /v1/nope',
+      });
+      expect(res.body).not.toContain(CANARY);
       expect(logs.text()).not.toContain(CANARY);
     });
   });

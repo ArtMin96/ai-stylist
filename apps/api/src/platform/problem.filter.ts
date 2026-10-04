@@ -22,6 +22,8 @@ const STATUS_TO_CODE: Readonly<Record<number, ErrorCode>> = {
   404: 'NOT_FOUND',
   409: 'CONFLICT',
   410: 'ACCOUNT_DELETED',
+  // A request body in a media type the route does not accept: the request fails validation.
+  415: 'VALIDATION_FAILED',
   429: 'RATE_LIMITED',
   503: 'SERVICE_UNAVAILABLE',
 };
@@ -70,6 +72,15 @@ export function toProblem(exception: unknown, instance: string): ProblemBody {
   return { ...base, ...(detail !== undefined ? { detail } : {}), ...extensions };
 }
 
+/**
+ * `body` with the raw request URL in its `detail` replaced by `path`: Nest's unknown-route 404
+ * quotes the URL (`Cannot GET /v1/x?sig=…`), query string included.
+ */
+function withoutQueryInDetail(body: ProblemBody, url: string, path: string): ProblemBody {
+  if (body.detail === undefined || url === path) return body;
+  return { ...body, detail: body.detail.replaceAll(url, () => path) };
+}
+
 /** Global filter: every error leaves the API as RFC 9457 `application/problem+json`. */
 @Catch()
 @Injectable()
@@ -80,11 +91,13 @@ export class ProblemFilter implements ExceptionFilter {
     const http = host.switchToHttp();
     const reply = http.getResponse<FastifyReply>();
     const request = http.getRequest<FastifyRequest>();
-    // `instance` is the path only: the same cut as a logged request url (no query, no fragment).
-    const body = toProblem(exception, stripQuery(request.url));
+    // `instance` and any URL `detail` quotes are the path only: the same cut as a logged request
+    // url (no query, no fragment).
+    const path = stripQuery(request.url);
+    const body = withoutQueryInDetail(toProblem(exception, path), request.url, path);
     if (body.status >= 500) {
-      // nestjs-pino reads the last string as the Nest context. Without it 'unhandled error' is that
-      // context, the call has no message, and pino falls back to `err.message` (foreign free text).
+      // nestjs-pino reads the last string as the Nest context. Without it 'unhandled error' would
+      // be that context and the line would carry only the logger's generic `error logged`.
       this.logger.error(
         { err: exception, status: body.status, code: body.code },
         'unhandled error',

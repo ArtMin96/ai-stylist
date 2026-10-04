@@ -83,6 +83,7 @@ export {
 } from './problem.filter.js';
 export {
   REDACTED,
+  childLogger,
   httpLoggerOptions,
   isForbiddenLogKey,
   loggerOptions,

@@ -3,18 +3,8 @@
 // `x-correlation-id` is echoed, a missing or bad one is replaced by a minted id, controllers read
 // it with `currentCorrelationId()` (also after body parsing), every pino line of the request
 // carries `correlation_id`, and so does the request span (planning/14 §2–§3).
-import {
-  Body,
-  Controller,
-  type DynamicModule,
-  Get,
-  HttpCode,
-  Inject,
-  Module,
-  Post,
-} from '@nestjs/common';
-import { NestFactory } from '@nestjs/core';
-import { FastifyAdapter, type NestFastifyApplication } from '@nestjs/platform-fastify';
+import { Body, Controller, Get, HttpCode, Inject, Post } from '@nestjs/common';
+import type { NestFastifyApplication } from '@nestjs/platform-fastify';
 import { Logger } from 'nestjs-pino';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
@@ -24,18 +14,14 @@ import { memoryLogStream } from '@ai-stylist/test-support';
 import {
   CORRELATION_ID_HEADER,
   CORRELATION_ID_PATTERN,
-  InMemoryStorageProvider,
-  PlatformModule,
-  SystemClock,
-  UnconfiguredHealthProbe,
   currentCorrelationId,
-  httpLoggerOptions,
   registerCorrelationId,
 } from '../index.js';
 import type { Telemetry } from '../telemetry/lifecycle.js';
 import { startTelemetry } from '../telemetry/telemetry.js';
 
 import { memorySpanExporter } from './memory-span-exporter.js';
+import { createPlatformTestApp } from './platform-test-app.js';
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 const PATH = '/v1/test/correlation';
@@ -60,9 +46,6 @@ class CorrelationProbeController {
   }
 }
 
-@Module({})
-class CorrelationTestModule {}
-
 describe('correlation id (Nest + Fastify, in-process)', () => {
   const logs = memoryLogStream();
   const spans = memorySpanExporter();
@@ -72,28 +55,11 @@ describe('correlation id (Nest + Fastify, in-process)', () => {
   beforeAll(async () => {
     // Before the Fastify instance exists: @fastify/otel instruments it on initialization.
     telemetry = startTelemetry({ service: 'api', spanExporter: spans });
-    const clock = new SystemClock();
-    const root: DynamicModule = {
-      module: CorrelationTestModule,
-      imports: [
-        PlatformModule.forRoot({
-          logger: { pinoHttp: httpLoggerOptions({ level: 'info' }, logs) },
-          version: { version: 'test', commit: 'test', builtAt: '2026-09-27T00:00:00Z' },
-          clock,
-          healthProbe: new UnconfiguredHealthProbe(),
-          storage: new InMemoryStorageProvider(() => clock.now()),
-        }),
-      ],
+    app = await createPlatformTestApp({
+      logs,
       controllers: [CorrelationProbeController],
-    };
-    app = await NestFactory.create<NestFastifyApplication>(root, new FastifyAdapter(), {
-      bufferLogs: true,
-      abortOnError: false,
+      beforeInit: registerCorrelationId,
     });
-    app.useLogger(app.get(Logger));
-    registerCorrelationId(app.getHttpAdapter().getInstance());
-    await app.init();
-    await app.getHttpAdapter().getInstance().ready();
   });
 
   afterAll(async () => {

@@ -181,6 +181,16 @@ describe('trace context and span redaction (in-process SDK)', () => {
     expect(exporter.spans.map((span) => span.name)).toEqual(['GET /v1/items', ...KEPT_SPAN_NAMES]);
   });
 
+  it('cuts the query and fragment from an event name, and keeps a name without one', async () => {
+    const span = trace.getTracer('test').startSpan('events');
+    span.addEvent(`redirect /v1/items?token=${CANARY}#${CANARY}`);
+    span.addEvent('exception');
+    span.end();
+
+    const out = await exported('events');
+    expect(out?.events.map((event) => event.name)).toEqual(['redirect /v1/items', 'exception']);
+  });
+
   it('sanitises link attributes like span attributes, and keeps the linked ids', async () => {
     const linked = {
       traceId: CARRIED_TRACE_ID,

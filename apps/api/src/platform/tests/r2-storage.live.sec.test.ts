@@ -32,6 +32,10 @@ describe.runIf(LIVE_OPT_IN)(
     let config: AppConfig;
     beforeAll(() => {
       config = loadConfig(process.env);
+      // The suite writes a synthetic object; never let it touch a staging or prod bucket.
+      if (config.APP_ENV === 'staging' || config.APP_ENV === 'prod') {
+        throw new Error('the R2 live suite runs against local or dev buckets only');
+      }
     });
     const logger = pino(loggerOptions({ level: 'silent' }));
     const provider = (clock: Clock = new SystemClock()) =>

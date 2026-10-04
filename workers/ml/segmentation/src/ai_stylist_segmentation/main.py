@@ -30,20 +30,20 @@ from opentelemetry.semconv.attributes.service_attributes import SERVICE_VERSION
 from opentelemetry.trace.propagation.tracecontext import TraceContextTextMapPropagator
 from opentelemetry.util.types import AttributeValue
 
-from ai_stylist_segmentation import SERVICE_NAME, __version__
-from ai_stylist_segmentation.app import create_app
-from ai_stylist_segmentation.redaction import (
+from ai_stylist_observability.redaction import (
     caller_message_only,
     drop_positional_args,
     json_default,
     redact_forbidden_keys,
     summarize_exc_info,
 )
-from ai_stylist_segmentation.tracing import (
+from ai_stylist_observability.tracing import (
     SanitizingSpanExporter,
     add_trace_context,
     sanitize_attributes,
 )
+from ai_stylist_segmentation import SERVICE_NAME, __version__
+from ai_stylist_segmentation.app import create_app
 
 # Empty or unset: tracing is off (no provider, no exporter, no network). Standard OTel semantics.
 OTLP_ENDPOINT_ENV = "OTEL_EXPORTER_OTLP_ENDPOINT"
@@ -62,15 +62,15 @@ def _drop_uvicorn_noise(
 def configure_logging(stream: IO[str] = sys.stdout, level: str | None = None) -> None:
     """JSON logs on `stream`, redaction applied to structlog *and* stdlib records.
 
-    Lines carry `correlation_id` inside a request (`correlation.py`, via contextvars) and
-    `trace_id` / `span_id` inside a recorded span (`tracing.add_trace_context`). A logged
-    exception is its class, code and cause chain under `err` (`redaction.summarize_exc_info`),
-    never its message or traceback. The event is the caller's own string: printf-style arguments
-    are dropped, never interpolated (`redaction.drop_positional_args`; stdlib records use their
-    uninterpolated template). A record that still fails to format is dropped silently
-    (`logging.raiseExceptions = False`): `Handler.handleError` would print its message and
-    arguments to stderr. Logs stay on stdout only: the OpenTelemetry Python logs SDK is still in
-    Development status.
+    The processors come from `ai_stylist_observability`. Lines carry `correlation_id` inside a
+    request (`correlation.py`, via contextvars) and `trace_id` / `span_id` inside a recorded span
+    (`tracing.add_trace_context`). A logged exception is its class, code and cause chain under
+    `err` (`redaction.summarize_exc_info`), never its message or traceback. The event is the
+    caller's own string: printf-style arguments are dropped, never interpolated
+    (`redaction.drop_positional_args`; stdlib records use their uninterpolated template). A record
+    that still fails to format is dropped silently (`logging.raiseExceptions = False`):
+    `Handler.handleError` would print its message and arguments to stderr. Logs stay on stdout
+    only: the OpenTelemetry Python logs SDK is still in Development status.
     """
     # `LOG_LEVEL=` (set but empty, the `.env.example` default) means "unset": INFO.
     log_level = logging.getLevelNamesMapping()[

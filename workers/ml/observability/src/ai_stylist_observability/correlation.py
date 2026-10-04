@@ -2,9 +2,10 @@
 (`correlationId`) → pg-boss job → this worker as the `x-correlation-id` request header. It is our
 own metadata, never user data. Mirrors `apps/api/src/platform/telemetry/correlation.ts`.
 
-`correlation_id_middleware` (registered by `app.create_app`) accepts the caller's id when valid,
-else mints one; binds it as `correlation_id` in structlog's context variables for the request (so
-every log line of the request carries it), sets it on the active span, and echoes the header.
+`correlation_id_middleware` (registered by each service's app factory) accepts the caller's id
+when valid, else mints one; binds it as `correlation_id` in structlog's context variables for the
+request (so every log line of the request carries it), sets it on the active span, and echoes the
+header.
 """
 
 from __future__ import annotations

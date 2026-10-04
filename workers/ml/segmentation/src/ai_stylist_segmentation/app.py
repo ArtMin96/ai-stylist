@@ -8,8 +8,8 @@ from collections.abc import Awaitable, Callable
 import structlog
 from fastapi import FastAPI, Request, Response
 
+from ai_stylist_observability.correlation import correlation_id_middleware
 from ai_stylist_segmentation import SERVICE_NAME, __version__
-from ai_stylist_segmentation.correlation import correlation_id_middleware
 from ai_stylist_segmentation.routes import router
 
 log = structlog.get_logger(SERVICE_NAME)

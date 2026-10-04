@@ -1,4 +1,6 @@
-"""Log-redaction canary (brief §6): planted markers must never reach the log stream."""
+"""Log-redaction canary (brief §6): planted markers must never reach the log stream of this
+service's configured logger (`main.configure_logging` wiring `ai_stylist_observability`). The
+processors' unit tests live in `workers/ml/observability/tests/`."""
 
 from __future__ import annotations
 
@@ -12,30 +14,20 @@ import structlog
 from httpx import AsyncClient
 
 from ai_stylist_generated.kernel import (
-    CODE_SHAPE,
-    ERROR_NAME_SHAPE,
-    EXCEPTION_TYPE_KEPT,
-    EXCEPTION_TYPE_REPLACED,
     FORBIDDEN_LOG_KEY_EXAMPLES_ALLOWED,
     FORBIDDEN_LOG_KEY_EXAMPLES_FORBIDDEN,
     FORBIDDEN_LOG_KEYS,
     MAX_CAUSE_DEPTH,
 )
-from ai_stylist_segmentation.redaction import (
-    REDACTED_COUNT_KEY,
-    is_forbidden_log_key,
-    redact_forbidden_keys,
-    summarize_error,
-)
-from ai_stylist_segmentation.tracing import sanitize_attributes
+from ai_stylist_observability.redaction import REDACTED_COUNT_KEY
 
 MARKER = "CANARY-7f3a9c"
 
 # The forbidden words, their word-split examples (`forbidden` keys every matcher must catch,
-# `allowed` keys it must not), the error shapes, the cause depth and the `exception.type` vectors
-# all come from `ai_stylist_generated.kernel`, generated from `packages/shared-kernel/registry/`
-# by `just generate`. `packages/contracts/tests/kernel-python.test.ts` checks that module against
-# the registry JSON, so these tests consume it and read no file by repo path.
+# `allowed` keys it must not) and the cause depth all come from `ai_stylist_generated.kernel`,
+# generated from `packages/shared-kernel/registry/` by `just generate`.
+# `packages/contracts/tests/kernel-python.test.ts` checks that module against the registry JSON,
+# so these tests consume it and read no file by repo path.
 
 
 class DriverError(Exception):
@@ -71,54 +63,6 @@ def _records(stream: io.StringIO) -> list[dict[str, object]]:
     return [json.loads(line) for line in stream.getvalue().splitlines() if line]
 
 
-def _registry_shaped(value: str) -> bool:
-    """The registry's own `exception.type` rule: name-shaped or code-shaped, by `fullmatch`."""
-    return any(shape.fullmatch(value) for shape in (ERROR_NAME_SHAPE, CODE_SHAPE))
-
-
-@pytest.mark.parametrize("value", EXCEPTION_TYPE_KEPT)
-def test_registry_exception_type_kept_vector_is_kept(value: str) -> None:
-    assert _registry_shaped(value)
-    assert sanitize_attributes({"exception.type": value}) == {"exception.type": value}
-
-
-@pytest.mark.parametrize("value", EXCEPTION_TYPE_REPLACED)
-def test_registry_exception_type_replaced_vector_is_written_as_error(value: str) -> None:
-    assert not _registry_shaped(value)
-    assert sanitize_attributes({"exception.type": value}) == {"exception.type": "Error"}
-
-
-@pytest.mark.parametrize("value", EXCEPTION_TYPE_REPLACED)
-def test_a_logged_exception_whose_class_name_is_a_replaced_vector_is_written_as_error(
-    value: str,
-) -> None:
-    # The log side of the same rule: a dynamically created class can carry any text as its name.
-    error = type(value, (Exception,), {})(MARKER)
-
-    assert summarize_error(error) == {"type": "Error"}
-
-
-@pytest.mark.parametrize("key", sorted(FORBIDDEN_LOG_KEYS))
-def test_processor_drops_every_forbidden_key(key: str) -> None:
-    event = {"event": "x", key: MARKER, "safe": "kept"}
-
-    result = redact_forbidden_keys(None, "info", event)
-
-    assert key not in result
-    assert result["safe"] == "kept"
-    assert result[REDACTED_COUNT_KEY] == 1
-
-
-@pytest.mark.parametrize("key", FORBIDDEN_LOG_KEY_EXAMPLES_FORBIDDEN)
-def test_key_with_a_forbidden_word_is_forbidden(key: str) -> None:
-    assert is_forbidden_log_key(key)
-
-
-@pytest.mark.parametrize("key", FORBIDDEN_LOG_KEY_EXAMPLES_ALLOWED)
-def test_key_without_a_forbidden_word_stays_loggable(key: str) -> None:
-    assert not is_forbidden_log_key(key)
-
-
 def test_every_forbidden_example_is_dropped_and_every_allowed_one_kept(
     log_stream: io.StringIO,
 ) -> None:
@@ -146,24 +90,6 @@ def test_every_word_is_matched_in_camel_snake_and_kebab_keys(
     (record,) = _records(log_stream)
     assert record["user_id"] == "u1"
     assert record[REDACTED_COUNT_KEY] == len(keys)
-
-
-def test_processor_is_case_insensitive_and_recursive() -> None:
-    event = {
-        "event": "x",
-        "Authorization": f"Bearer {MARKER}",
-        "user": {"Email": MARKER, "id": "u1", "profile": {"measurements": {"chest": 1}}},
-        "items": [{"photo": MARKER}, {"ok": True}],
-        "request": {"imageRef": MARKER, "sessionCookie": MARKER, "geo": {"lng": 1.0}},
-    }
-
-    result = redact_forbidden_keys(None, "info", event)
-
-    assert MARKER not in json.dumps(result)
-    assert result["user"] == {"id": "u1", "profile": {}}
-    assert result["items"] == [{}, {"ok": True}]
-    assert result["request"] == {"geo": {}}
-    assert result[REDACTED_COUNT_KEY] == 7
 
 
 def test_structlog_canary_never_reaches_stream(log_stream: io.StringIO) -> None:

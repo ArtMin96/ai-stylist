@@ -1,5 +1,6 @@
 """Tracing (planning/14 §3): the worker continues the caller's trace, spans carry ids and enums
-only, logs link to spans, and nothing starts without an OTLP endpoint."""
+only, logs link to spans, and nothing starts without an OTLP endpoint. The span attribute rule and
+the exporter wrapper's unit tests live in `workers/ml/observability/tests/test_tracing.py`."""
 
 from __future__ import annotations
 
@@ -23,21 +24,18 @@ from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
 from opentelemetry.proto.collector.trace.v1.trace_service_pb2 import ExportTraceServiceRequest
 from opentelemetry.sdk.trace import ReadableSpan, TracerProvider
 from opentelemetry.sdk.trace.export.in_memory_span_exporter import InMemorySpanExporter
-from opentelemetry.trace import Link, SpanContext, SpanKind, StatusCode, TraceFlags
-from opentelemetry.util.types import AttributeValue
+from opentelemetry.trace import SpanKind, StatusCode
 
+from ai_stylist_observability.tracing import REDACTED
 from ai_stylist_segmentation import __version__, main
 from ai_stylist_segmentation.app import create_app
 from ai_stylist_segmentation.main import build_tracer_provider, instrument_fastapi
-from ai_stylist_segmentation.tracing import REDACTED, sanitize_attributes
 
 MARKER = "CANARY-5d2e81"
 PAYLOAD = {"request_id": "req_1", "image_ref": "media/u1/garment.jpg"}
 CALLER_TRACE_ID = "4bf92f3577b34da6a3ce929d0e0e4736"
 CALLER_SPAN_ID = "00f067aa0ba902b7"
 TRACEPARENT = f"00-{CALLER_TRACE_ID}-{CALLER_SPAN_ID}-01"
-# Span names the tests and dashboards find spans by: none has a query or a fragment to cut.
-KEPT_SPAN_NAMES = ["POST /v1/segment", "GET", "job.process demo.outbox-flow"]
 # The marker planted in the process resource, as the API's telemetry tests plant it
 # (apps/api/src/platform/tests/redaction-canary.ts): under a forbidden word, in a URL's query and
 # fragment (`=` and `#` percent-encoded, as the variable requires) and under a dropped attribute.
@@ -272,195 +270,6 @@ async def test_exception_keeps_only_its_type(traced: Traced) -> None:
     assert FORBIDDEN_SPAN_ATTRIBUTES.isdisjoint(
         key for event in span.events for key in (event.attributes or {})
     )
-
-
-def test_sanitize_attributes_covers_old_and_new_http_names() -> None:
-    attributes = {
-        "http.url": f"http://worker:8000/v1/segment?token={MARKER}#part",
-        "http.target": f"/v1/segment?token={MARKER}",
-        "url.full": f"http://worker:8000/v1/segment#{MARKER}",
-        "url.path": "/v1/segment",
-        "url.query": f"token={MARKER}",
-        "client.address": "10.0.0.7",
-        "network.peer.address": "10.0.0.7",
-        "net.peer.ip": "10.0.0.7",
-        "http.client_ip": "10.0.0.7",
-        "user_agent.original": MARKER,
-        "http.user_agent": MARKER,
-        "exception.message": MARKER,
-        "exception.stacktrace": MARKER,
-        "exception.type": "ValueError",
-        "http.request.header.authorization": (f"Bearer {MARKER}",),
-        "app.userEmail": MARKER,
-        "http.request.body.size": 12,
-        "correlation_id": "corr-1",
-    }
-
-    assert sanitize_attributes(attributes) == {
-        "http.url": "http://worker:8000/v1/segment",
-        "http.target": "/v1/segment",
-        "url.full": "http://worker:8000/v1/segment",
-        "url.path": "/v1/segment",
-        "exception.type": "ValueError",
-        "http.request.header.authorization": REDACTED,
-        "app.userEmail": REDACTED,
-        "http.request.body.size": 12,
-        "correlation_id": "corr-1",
-    }
-
-
-@pytest.mark.parametrize(
-    ("value", "kept"),
-    [
-        ("ValueError", "ValueError"),
-        ("grpc.ServiceError", "grpc.ServiceError"),
-        ("$Proxy_1", "$Proxy_1"),
-        ("E" * 64, "E" * 64),
-        ("23505", "23505"),
-        ("ECONNREFUSED", "ECONNREFUSED"),
-        (f"Leaky {MARKER}", "Error"),
-        ("E" * 65, "Error"),
-        ("1" * 33, "Error"),
-        ("", "Error"),
-        (42, "Error"),
-        ((MARKER,), "Error"),
-    ],
-    ids=[
-        "name",
-        "dotted-name",
-        "dollar-name",
-        "longest-name",
-        "sqlstate",
-        "system-code",
-        "free-text",
-        "too-long-name",
-        "too-long-code",
-        "empty",
-        "number",
-        "sequence",
-    ],
-)
-def test_exception_type_is_kept_only_when_name_or_code_shaped(
-    value: AttributeValue, kept: str
-) -> None:
-    assert sanitize_attributes({"exception.type": value}) == {"exception.type": kept}
-
-
-def test_a_free_text_exception_class_is_exported_as_error(traced: Traced) -> None:
-    leaky_class = type(f"Leaky {MARKER}", (ValueError,), {})
-    span = traced.provider.get_tracer("test").start_span("failing")
-    span.record_exception(leaky_class("x"))
-    span.end()
-
-    (out,) = traced.spans()
-    assert [dict(event.attributes or {}).get("exception.type") for event in out.events] == ["Error"]
-    assert MARKER not in _values(out)
-
-
-def test_every_string_of_a_sequence_valued_url_attribute_is_cut() -> None:
-    attributes: dict[str, AttributeValue] = {
-        "url.full": (f"https://a.example/x?sig={MARKER}", f"https://b.example/y#{MARKER}"),
-        "http.target": [f"/v1/items?token={MARKER}", "/v1/plain"],
-        "http.url": ("https://worker:8000/v1/segment",),
-    }
-
-    assert sanitize_attributes(attributes) == {
-        "url.full": ("https://a.example/x", "https://b.example/y"),
-        "http.target": ("/v1/items", "/v1/plain"),
-        "http.url": ("https://worker:8000/v1/segment",),
-    }
-
-
-def test_sequence_valued_url_attributes_are_cut_through_the_pipeline(traced: Traced) -> None:
-    span = traced.provider.get_tracer("test").start_span(
-        "urls",
-        attributes={
-            "url.full": [f"https://a.example/x?sig={MARKER}", f"https://b.example/y#{MARKER}"],
-            "http.target": [f"/v1/items?token={MARKER}"],
-        },
-    )
-    span.end()
-
-    (out,) = traced.spans()
-    assert dict(out.attributes or {}) == {
-        "url.full": ("https://a.example/x", "https://b.example/y"),
-        "http.target": ("/v1/items",),
-    }
-
-
-def test_span_name_loses_its_query_and_fragment(traced: Traced) -> None:
-    tracer = traced.provider.get_tracer("test")
-    tracer.start_span(f"GET /v1/segment?token={MARKER}#{MARKER}").end()
-    for name in KEPT_SPAN_NAMES:
-        tracer.start_span(name).end()
-
-    assert [span.name for span in traced.spans()] == ["GET /v1/segment", *KEPT_SPAN_NAMES]
-
-
-def test_event_name_and_attributes_are_sanitized(traced: Traced) -> None:
-    span = traced.provider.get_tracer("test").start_span("evented")
-    span.add_event(
-        f"redirect /v1/items?token={MARKER}#{MARKER}",
-        {
-            "url.full": f"https://storage.example/object?X-Amz-Signature={MARKER}",
-            "url.query": f"token={MARKER}",
-            "http.request.header.cookie": (MARKER,),
-            "messaging.message.id": "job-1",
-        },
-    )
-    span.add_event("job.retried", {"job.attempt": 2})
-    span.end()
-
-    (out,) = traced.spans()
-    assert [(event.name, dict(event.attributes or {})) for event in out.events] == [
-        (
-            "redirect /v1/items",
-            {
-                "url.full": "https://storage.example/object",
-                "http.request.header.cookie": REDACTED,
-                "messaging.message.id": "job-1",
-            },
-        ),
-        ("job.retried", {"job.attempt": 2}),
-    ]
-
-
-def test_link_attributes_are_sanitized_and_the_linked_ids_kept(traced: Traced) -> None:
-    linked = SpanContext(
-        trace_id=int(CALLER_TRACE_ID, 16),
-        span_id=int(CALLER_SPAN_ID, 16),
-        is_remote=True,
-        trace_flags=TraceFlags(TraceFlags.SAMPLED),
-    )
-    span = traced.provider.get_tracer("test").start_span(
-        "linked",
-        links=[
-            Link(
-                linked,
-                {
-                    "url.full": f"https://storage.example/object?X-Amz-Signature={MARKER}",
-                    "url.query": f"token={MARKER}",
-                    "http.request.header.cookie": (MARKER,),
-                    "messaging.message.id": "job-1",
-                },
-            ),
-            Link(linked),
-        ],
-    )
-    span.end()
-
-    (out,) = traced.spans()
-    assert [(link.context, dict(link.attributes or {})) for link in out.links] == [
-        (
-            linked,
-            {
-                "url.full": "https://storage.example/object",
-                "http.request.header.cookie": REDACTED,
-                "messaging.message.id": "job-1",
-            },
-        ),
-        (linked, {}),
-    ]
 
 
 # --- the real process: composition root, env config, OTLP/HTTP, flush at exit ----------------

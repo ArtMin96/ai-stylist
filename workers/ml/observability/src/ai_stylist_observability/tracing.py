@@ -1,6 +1,6 @@
-"""Span hygiene and log/trace correlation (planning/14 §3; planning/11 §8). Pure code: `main.py`
-builds the tracer provider and its resource, and wraps its OTLP exporter in
-`SanitizingSpanExporter`.
+"""Span hygiene and log/trace correlation (planning/14 §3; planning/11 §8). Pure code: each
+service's `main.py` builds the tracer provider and its resource (through `sanitize_attributes`),
+and wraps its OTLP exporter in `SanitizingSpanExporter`.
 
 Span attributes carry ids and enums only. The FastAPI/ASGI instrumentation records things our
 rules forbid: the query string (`url.query`, or inside `http.url` under the old HTTP semantic
@@ -26,8 +26,9 @@ It mirrors apps/api/src/platform/telemetry/span-sanitizer.ts (`sanitizeAttribute
 - the span name is cut at the first `?` or `#` (`_strip_query`, the API's `stripQuery`);
 - the status keeps its code and loses its description; the linked span context (trace id, span id,
   flags) of each link is kept;
-- the resource is sanitized once, where `main.build_tracer_provider` builds it, not per span: the
-  provider hands that one resource to every span, so the exporter passes it on unchanged.
+- the resource is sanitized once, where the service's `main.build_tracer_provider` builds it, not
+  per span: the provider hands that one resource to every span, so the exporter passes it on
+  unchanged.
 
 Every event name is cut the same way as the span name (an event named from a raw URL carries its
 query as a span name can). No span is dropped, no id or enum is changed. Not covered, as in the
@@ -59,7 +60,7 @@ from opentelemetry.trace import Link, Status, format_span_id, format_trace_id
 from opentelemetry.util.types import AttributeValue
 
 from ai_stylist_generated.kernel import CODE_SHAPE, ERROR_NAME_SHAPE
-from ai_stylist_segmentation.redaction import is_forbidden_log_key
+from ai_stylist_observability.redaction import is_forbidden_log_key
 
 REDACTED = "[REDACTED]"
 
@@ -154,7 +155,7 @@ def _sanitize_link(link: Link) -> Link:
 def sanitize_span(span: ReadableSpan) -> ReadableSpan:
     """A copy of `span` that satisfies the redaction rules; ids, times and kind unchanged. The
     status keeps its code; its description is free text (`ExceptionType: message`). The resource is
-    passed on as it is: `main.build_tracer_provider` sanitized it when it built it."""
+    passed on as it is: the service's `main.build_tracer_provider` sanitized it when it built it."""
     return ReadableSpan(
         # A span named from a raw request target or URL carries its query and fragment.
         name=_strip_query(span.name),

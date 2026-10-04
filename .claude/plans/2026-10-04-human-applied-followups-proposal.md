@@ -72,6 +72,20 @@ criterion that enforces them yet. Add to P06-T02's acceptance:
   `.vN+1` schema for any removed, newly required or retyped field, removed enum value or tightened
   `additionalProperties`."
 
+## E2. TS-only registry lists, enforcement layer
+
+`packages/shared-kernel/registry/log-redaction.json` is a new TS-only registry (like forbidden-log-keys).
+- `.claude/rules/contracts.md` invariant 4: read "The forbidden-log-keys, log-redaction, owners and
+  feature-flags registries there are TS-only …".
+- `.agents/skills/api-contract-change/SKILL.md` line 86: read "plus the TS-only forbidden-log-keys,
+  log-redaction, owners and feature-flags registries".
+- `.claude/agents/contracts-engineer.md` `<context>`: add `log-redaction.json` with
+  `packages/shared-kernel/src/log-redaction.ts` to the TS-only registry list.
+
+## E3. `.github/workflows/pr-gate.yml:122`, human-applied
+
+Rename the step to "Verify · No breaking changes against the base branch (oasdiff + event schemas)".
+
 ## F. `scripts/hooks/post-edit-lint.sh`, enforcement layer
 
 - **Problem.** In a cloud container whose proxy blocks the GitHub API, this hook fails on every edit:

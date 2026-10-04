@@ -1,6 +1,8 @@
 # Proposal: repo-split readiness (module and domain separation)
 
-> Status: OPEN (2026-10-04). Nothing in this file is applied. The owner asked that the codebase stay
+> Status: OPEN (2026-10-04), partly applied on PR #15. Do-now items 1, 4, 5, 7 and 8, the E
+> registry for the error-shape constants and the D event gate are DONE (marked below); everything
+> else is open. The owner asked that the codebase stay
 > cleanly separated so it can later be split into separate repositories. This plan comes from an
 > `architecture-reviewer` audit with a repo-split lens of branch `claude/project-next-steps-r6nu70`
 > @ `16b9c30` (verdict APPROVE: that branch adds no boundary violation), followed by a lead review.
@@ -38,7 +40,7 @@
 
 ## Do now (cheap, prevents drift)
 
-1. **ESLint redaction rule vs the shared examples.** Add a RuleTester test that runs every
+1. **DONE (`c56fbaf`): a RuleTester suite runs all shared examples, 298 cases, under `just lint --fixtures`.** ESLint redaction rule vs the shared examples. Add a RuleTester test that runs every
    `forbidden-log-keys.examples.json` example through `tools/eslint/rules/no-log-request-body.mjs`.
    Today its fixture covers 2 keys. Owner: tooling-engineer.
 2. **Python kernel emitter.** `gen-kernel.mjs` writes the forbidden words and examples into
@@ -48,19 +50,19 @@
 3. **Worker HTTP contract in `packages/contracts`.** `apps/api/src/jobs/segmentation-client.ts` and
    `workers/ml/segmentation/.../schemas.py` define the same shapes by hand. Generate both from one
    schema. First settle whether `MaskLabel` restates the `closet` taxonomy.
-4. **Seed-data test path.** `packages/seed-data/tests/demo-event.test.ts:12` reads
+4. **DONE (`b61c260`): resolved through the `@ai-stylist/contracts/events/*` export.** Seed-data test path. `packages/seed-data/tests/demo-event.test.ts:12` reads
    `../../contracts/events/` by path; use the `@ai-stylist/contracts/events/*` export.
-5. **Missing arch-check fixtures.** 10 of the 17 depcruise rules have no failing fixture, including
+5. **DONE (`9ed4262`): 18 fixtures, 17/17 rules caught; `check-fixtures.sh` now fails when a rule has none.** Missing arch-check fixtures. 10 of the 17 depcruise rules have no failing fixture, including
    `allowed-edges-only`, `modules-not-platform`, `platform-leaf`, `public-api-only-external` and
    `no-cycles`. Yet every module contract claims "every rule has a failing fixture". Add one fixture
    per rule. Owner: tooling-engineer.
 6. **Make shared-kernel packable.** Add `registry` to `files` and `./registry/*` to `exports`. Tools
    then resolve the registry through the package instead of a repo path. This changes the lockfile,
    so a human must grant it.
-7. **One oasdiff threshold.** `packages/contracts/package.json` uses `--fail-on WARN`,
+7. **DONE (`7df23b7`, `cd8966f`): `--fail-on WARN` in both places; `packages/contracts/scripts/events-breaking.mjs` (package-relative, `pnpm run breaking:events`) wired through `scripts/ci/contracts-breaking.sh`.** One oasdiff threshold. `packages/contracts/package.json` uses `--fail-on WARN`,
    `scripts/ci/contracts-breaking.sh` uses `ERR`. Add a breaking-change gate for
    `packages/contracts/events/*.json`.
-8. **Port list in the platform contract.** `docs/modules/platform.md:91` should say that three ports
+8. **DONE (`ae53a8a`).** Port list in the platform contract. `docs/modules/platform.md:91` should say that three ports
    move (`CLOCK`, `OUTBOX_WRITER`, `STORAGE_PROVIDER`) and that `HEALTH_PROBE` stays platform-internal.
    It imports `@ai-stylist/contracts/types`, which `shared-kernel-pure` forbids.
 
@@ -78,14 +80,16 @@
 - **D. Contracts + shared-kernel as one versioned artifact.**
   - Needs a JS + `.d.ts` build; today packages ship `.ts` source and `apps/api` compiles with
     `rootDir: "../.."`.
-  - Needs the event-schema compatibility gate from do-now item 7.
+  - The event-schema compatibility gate exists (do-now item 7) and is package-relative, so it travels with the package.
   - Per platform: a SwiftPM release repo or artifact (the local-path dependency in
     `apps/ios/Packages/Core/Package.swift`), a Maven publication (replacing Android `srcDir`
     includes), and a Python wheel.
 - **E. Shared worker observability package.** Extract `workers/ml/observability` (`redaction`,
   `tracing`, `correlation`) before a second worker service exists. Otherwise each new service copies
-  it, as `.claude/rules/workers-python.md` rule 6 currently says. Move the mirrored span/error
-  redaction constants into a shared-kernel registry with test vectors.
+  it, as `.claude/rules/workers-python.md` rule 6 currently says. The error-shape constants
+  are DONE: `packages/shared-kernel/registry/log-redaction.json` (`LOG_REDACTION_RULES` /
+  `LOG_REDACTION_EXAMPLES`) is read by the API and pinned by worker tests. Still open: the span
+  attribute lists in `tracing.py` / `span-sanitizer.ts`.
 - **F. Native repo layout (ADR).** `tools/analytics/check-events.mjs` and `e2e/smoke.yaml` check both
   apps together. Separate repositories would need the event taxonomy and the Maestro flows published
   from the contracts repository.
@@ -112,6 +116,8 @@
   - It depends only on shared-kernel's `Id<'user'>`, which travels with any split.
 
 ## Doc conflicts escalated (human)
+
+Also tracked, with doc 11:229 added, in section C of `2026-10-04-human-applied-followups-proposal.md`.
 
 - `planning/04-architecture.md:426` (§10) lists `outfit` among the assistant's services; §4.1 and
   `rules.cjs:47` exclude it.

@@ -29,7 +29,11 @@ import { emitSwift } from './kernel/emit-swift.mjs';
 import { emitTs } from './kernel/emit-ts.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
-const REGISTRY_DIR = path.join(ROOT, 'packages/shared-kernel/registry');
+// Registry files resolve through the package export `@ai-stylist/shared-kernel/registry/*` (a root
+// devDependency), not a repo path.
+const requireRegistry = createRequire(import.meta.url);
+const registryFile = (file) =>
+  requireRegistry.resolve(`@ai-stylist/shared-kernel/registry/${file}`);
 const NATIVE_REGISTRIES = ['reason-codes', 'entitlements', 'units'];
 const WORKER_REGISTRIES = ['forbidden-log-keys', 'forbidden-log-keys.examples', 'log-redaction'];
 const EMITTERS = {
@@ -65,8 +69,8 @@ async function loadRegistries(errors) {
     let data;
     let schema;
     try {
-      data = JSON.parse(await readFile(path.join(REGISTRY_DIR, `${name}.json`), 'utf8'));
-      schema = JSON.parse(await readFile(path.join(REGISTRY_DIR, `${name}.schema.json`), 'utf8'));
+      data = JSON.parse(await readFile(registryFile(`${name}.json`), 'utf8'));
+      schema = JSON.parse(await readFile(registryFile(`${name}.schema.json`), 'utf8'));
     } catch (err) {
       errors.push(`${rel}: ${err.message}`);
       continue;

@@ -9,15 +9,28 @@
 // Usage: node tools/flags/flags-report.mjs [--today YYYY-MM-DD] [--registry <file>]
 //                                          [--owners <file>]
 //   --today    the UTC date to judge expiry by (default: today in UTC); fixtures pin it
-//   --registry  flag registry (default: packages/shared-kernel/registry/feature-flags.json)
-//   --owners    owner registry (default: packages/shared-kernel/registry/owners.json)
+//   --registry  flag registry (default: @ai-stylist/shared-kernel/registry/feature-flags.json)
+//   --owners    owner registry (default: @ai-stylist/shared-kernel/registry/owners.json)
 // Exit: 0 no flag past expiry, 1 at least one flag past expiry, 2 usage error or malformed registry.
-// Node built-ins only: it runs before `pnpm install`, on Linux and macOS alike.
+// Node built-ins only: it runs before `pnpm install`, on Linux and macOS alike. The defaults resolve
+// through the package export `@ai-stylist/shared-kernel/registry/*`; before `pnpm install` (no
+// node_modules, e.g. the nightly expired-flags job) they fall back to the same files in this
+// repository's packages/shared-kernel/registry.
 import { readFileSync } from 'node:fs';
+import { createRequire } from 'node:module';
 import path from 'node:path';
 
 const REPO_ROOT = path.resolve(import.meta.dirname, '..', '..');
-const REGISTRY_DIR = path.join(REPO_ROOT, 'packages/shared-kernel/registry');
+
+/** A shared-kernel registry file, through the package when it is installed. */
+function registryFile(name) {
+  try {
+    return createRequire(import.meta.url).resolve(`@ai-stylist/shared-kernel/registry/${name}`);
+  } catch (err) {
+    if (err?.code !== 'MODULE_NOT_FOUND') throw err;
+    return path.join(REPO_ROOT, 'packages/shared-kernel/registry', name);
+  }
+}
 const DEFECT_DAYS = 30; // planning/14 §11: "> 30 d overdue = defect with owner"
 const DAY_MS = 86_400_000;
 const OPTIONS = new Map([
@@ -36,8 +49,8 @@ function fatal(message) {
 function parseArgs(argv) {
   const opts = {
     today: new Date().toISOString().slice(0, 10),
-    registry: path.join(REGISTRY_DIR, 'feature-flags.json'),
-    owners: path.join(REGISTRY_DIR, 'owners.json'),
+    registry: registryFile('feature-flags.json'),
+    owners: registryFile('owners.json'),
   };
   for (let i = 0; i < argv.length; i += 2) {
     const key = OPTIONS.get(argv[i]);

@@ -9,10 +9,12 @@
     ".": {
       "types": "./src/index.ts",
       "default": "./src/index.ts"
-    }
+    },
+    "./registry/*": "./registry/*"
   },
   "files": [
-    "src"
+    "src",
+    "registry"
   ],
   "scripts": {
     "lint": "eslint .",

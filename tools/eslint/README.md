@@ -37,7 +37,8 @@ Two checks on every call whose callee ends in `.info/.debug/.warn/.error/.trace/
 - **key check** (AC-2): an object-literal key, shorthand included (`{ userEmail }`), at any depth of
   the literal payload (nested object and array literals, never into calls or functions), whose
   camelCase / snake_case / kebab-case words include a word from
-  `packages/shared-kernel/registry/forbidden-log-keys.json` (`.keys`). The rule reads that JSON once
+  `packages/shared-kernel/registry/forbidden-log-keys.json` (`.keys`), resolved through the package
+  export `@ai-stylist/shared-kernel/registry/*` (a root devDependency). The rule reads that JSON once
   at load and fails the lint run if it is missing or malformed; never copy the words. The word split
   is the one `isForbiddenLogKey` in `apps/api/src/platform/logger.ts` uses, so `userEmail`,
   `refresh_token` and `set-cookie` match while `userId` and `imagination` do not. Computed keys and

@@ -5,7 +5,7 @@
 // this rule's own word split cannot drift from it. Run by tools/eslint/check-fixtures.sh
 // (`just lint --fixtures`) as `node --test`.
 import { readFileSync } from 'node:fs';
-import path from 'node:path';
+import { createRequire } from 'node:module';
 import { describe, it } from 'node:test';
 
 import { RuleTester } from 'eslint';
@@ -16,9 +16,9 @@ RuleTester.describe = describe;
 RuleTester.it = it;
 RuleTester.itOnly = it.only;
 
-const EXAMPLES = path.resolve(
-  import.meta.dirname,
-  '../../../packages/shared-kernel/registry/forbidden-log-keys.examples.json',
+// Resolved through the package export, as the rule resolves its registry.
+const EXAMPLES = createRequire(import.meta.url).resolve(
+  '@ai-stylist/shared-kernel/registry/forbidden-log-keys.examples.json',
 );
 const { forbidden, allowed } = JSON.parse(readFileSync(EXAMPLES, 'utf8'));
 

@@ -132,7 +132,11 @@ Log hygiene: when this log exceeds ~30 entries, move the oldest entries to `plan
       - problem `detail` only from `HttpException` or five fixed Fastify codes;
       - the live-suite bucket guard `-(dev|local)$`;
       - mixed-key worker log lines kept.
-    - A verification review of the final round followed (see Repository state).
+    - Verification reviews of the final round: security APPROVE, architecture CHANGES REQUESTED for three small items. All fixed in `6f80e6a`:
+      - `CONTENT_TOO_LARGE` (413) added to the error registry and mapped (it answered `INTERNAL` before);
+      - the Fastify detail text now comes from Fastify's own `errorCodes`, so it cannot drift, and a test pins every allowlisted code;
+      - `nestContextShape` was tightened (about 13% of random mixed-case secrets passed);
+      - stale `error-summary.ts` references were fixed.
   - *Proposals:*
     - `.claude/plans/2026-10-04-human-applied-followups-proposal.md` collects every human-only edit (SERVICES-SETUP §6, the P06-T02 criterion, planning conflicts, skill and rule text, the hook fix, owner decisions);
     - the split proposal now marks do-now items 1, 4, 5, 7, 8 and the error-shape registry as done.
@@ -157,8 +161,8 @@ Log hygiene: when this log exceeds ~30 entries, move the oldest entries to `plan
     - `just typecheck`, `just lint`, `just arch-check`, `just docs-check --strict`, `just ci-env-example-check`
     - `prettier --check`
     - also `just lint --fixtures`, `just arch-check --fixtures`, `just generate --check`, `just ci-contracts-breaking origin/main`
-    - `SKIP_DOCKER_TESTS=1 just test platform`: 274 passed, 3 skipped (the live suite)
-    - the API vitest project: 364 passed, 3 skipped
+    - `SKIP_DOCKER_TESTS=1 just test platform`: 278 passed, 3 skipped (the live suite)
+    - the API vitest project: 368 passed, 3 skipped
     - `just test workers` with CPython 3.14.7: 201 passed
     - shared-kernel, contracts and seed-data tests: all pass
     - gitleaks over the branch commits: no leaks

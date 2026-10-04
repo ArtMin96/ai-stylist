@@ -89,7 +89,7 @@ The relay dispatches every outbox event but interprets none: event type → queu
 ## Dependencies (allowed)
 
 - `packages/shared-kernel`, `packages/contracts` (generated types only) and provider SDKs (`pg-boss`, `postgres`, `pino`, the OpenTelemetry SDK, exporters and instrumentations, `@fastify/otel`, `posthog-node`, …) only (`platform-leaf`, doc 04 §4.2 rule 5). Domain modules may use `@opentelemetry/api` only (`domain-no-provider-sdk`). Adapters are bound to ports at `apps/api/src/main.ts` / `app.module.ts` and `apps/api/src/jobs/index.ts`.
-- Ports: implements ports declared by modules. P02-interim exception: four port tokens still live in `apps/api/src/platform/ports/` (`CLOCK`, `HEALTH_PROBE`, `STORAGE_PROVIDER`, `OUTBOX_WRITER`); each moves to `packages/shared-kernel` before the first domain module injects it (`OUTBOX_WRITER` before the first module producer; `tools/depcruise/README.md`). Fakes for tests live in `packages/test-support/`.
+- Ports: implements ports declared by modules. P02-interim exception: four port tokens still live in `apps/api/src/platform/ports/` (`CLOCK`, `HEALTH_PROBE`, `STORAGE_PROVIDER`, `OUTBOX_WRITER`); three of them (`CLOCK`, `STORAGE_PROVIDER`, `OUTBOX_WRITER`) move to `packages/shared-kernel` before the first domain module injects them, while `HEALTH_PROBE` stays platform-internal (it imports `@ai-stylist/contracts/types`, which `shared-kernel-pure` forbids, and only `health.controller.ts` injects it) (`OUTBOX_WRITER` before the first module producer; `tools/depcruise/README.md`). Fakes for tests live in `packages/test-support/`.
 
 ## Forbidden dependencies
 

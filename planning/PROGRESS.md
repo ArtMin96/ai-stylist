@@ -26,7 +26,7 @@ Rules:
 | — | Planning package | `ACCEPTED` | This `planning/` directory; ratified 2026-08-24; **prices re-verified and pricing model re-baselined 2026-09-09** (r6, DEC-34/35) |
 | P00 | Product validation and decisions | `NOT_STARTED` | |
 | P01 | 3D and capture prototype gate | `NOT_STARTED` | Re-scoped 2026-09-22 (DEC-50): the RN + Filament gate is moot (RISK-01 retired). The Anny asset pipeline + measurement harness can run now; the native Filament spike runs when 3D resumes |
-| P02 | Repo foundations and CI | `IN_PROGRESS` | Started 2026-09-09 **ahead of P00** for the no-P00-dependency subset (DEC-36). Done: T01, T02, T03, T04, T05, T06, T08, T09, T10, T11, T16; partial: T07 (self-managed PostgreSQL envs — Neon dropped 2026-09-13, ADR-0003; also owns the "rollback proven on a scratch DB restored from the staging backup" clause, AI-16), T12 (Renovate app install, human). **2026-10-03: T09 done (observability, AI-17 closed, PR #12 merged to `main` as `0e8d140`), with one acceptance item not met:** the forced crash on iOS and Android, symbolicated in PostHog, was not run and moved to AI-28 (first native runs on the Mac and devices), so the phase's acceptance clause for symbolicated crashes (phase file §19 AC-6) stays unmet until then. **2026-09-26: T08 done (AI-9) — DEC-41 pg-boss gate passed, pg-boss kept, no Trigger.dev fallback;** merged 2026-09-26 (PR #11). Cloud-touching tasks (T07 staging/prod PostgreSQL hosts, T13, T14/T15) wait for P00 / OQ-07 / OQ-14 and vendor accounts. Vendor set consolidated 2026-09-13 (DEC-41–48). **2026-09-22: React Native + Expo replaced by native `apps/ios` (SwiftUI) + `apps/android` (Compose)** (ADR-0004, DEC-49–54): T10 done by replacement, T14 re-scoped to native signing lanes (`PARTIAL`: unsigned lanes committed), T15 re-scoped (lane decided, DEC-51). iOS app target built and tested on the GitHub macOS runner (PR #6, all 18 checks green); not yet run on a local Mac or device. `chore/native-foundations` merged 2026-09-25 (PR #6). `just ci-parity` last green 2026-09-26 locally on `fix/ci-main-red` (PR #10, merged); iOS simulator build/test green on the CI macOS runner (PR #6). **CI last green: `main` @ `0e8d140`, 2026-10-03** (the `ios`, `android` and `pr-gate` push runs and a manually started `nightly`, after PR #12 merged). **2026-10-03: vulnerability gate** was red on `main` (four failed nightlies, 2026-09-30 to 2026-10-03); fixed by PR #12 (lockfiles re-resolved by the owner, one `braces` ignore until 2026-12-03), and the nightly's scan on `main` then printed "No issues found" (3 filtered) — see the 2026-10-03 handoff entry |
+| P02 | Repo foundations and CI | `IN_PROGRESS` | Started 2026-09-09 **ahead of P00** for the no-P00-dependency subset (DEC-36). Done: T01, T02, T03, T04, T05, T06, T08, T09, T10, T11, T16; partial: T13 (R2 adapter + security suite on `claude/project-next-steps-r6nu70`, 2026-10-04; buckets, live run and WAF are human), T07 (self-managed PostgreSQL envs — Neon dropped 2026-09-13, ADR-0003; also owns the "rollback proven on a scratch DB restored from the staging backup" clause, AI-16), T12 (Renovate app install, human). **2026-10-03: T09 done (observability, AI-17 closed, PR #12 merged to `main` as `0e8d140`), with one acceptance item not met:** the forced crash on iOS and Android, symbolicated in PostHog, was not run and moved to AI-28 (first native runs on the Mac and devices), so the phase's acceptance clause for symbolicated crashes (phase file §19 AC-6) stays unmet until then. **2026-09-26: T08 done (AI-9) — DEC-41 pg-boss gate passed, pg-boss kept, no Trigger.dev fallback;** merged 2026-09-26 (PR #11). Cloud-touching tasks (T07 staging/prod PostgreSQL hosts, T13, T14/T15) wait for P00 / OQ-07 / OQ-14 and vendor accounts. Vendor set consolidated 2026-09-13 (DEC-41–48). **2026-09-22: React Native + Expo replaced by native `apps/ios` (SwiftUI) + `apps/android` (Compose)** (ADR-0004, DEC-49–54): T10 done by replacement, T14 re-scoped to native signing lanes (`PARTIAL`: unsigned lanes committed), T15 re-scoped (lane decided, DEC-51). iOS app target built and tested on the GitHub macOS runner (PR #6, all 18 checks green); not yet run on a local Mac or device. `chore/native-foundations` merged 2026-09-25 (PR #6). `just ci-parity` last green 2026-09-26 locally on `fix/ci-main-red` (PR #10, merged); iOS simulator build/test green on the CI macOS runner (PR #6). **CI last green: `main` @ `0e8d140`, 2026-10-03** (the `ios`, `android` and `pr-gate` push runs and a manually started `nightly`, after PR #12 merged). **2026-10-03: vulnerability gate** was red on `main` (four failed nightlies, 2026-09-30 to 2026-10-03); fixed by PR #12 (lockfiles re-resolved by the owner, one `braces` ignore until 2026-12-03), and the nightly's scan on `main` then printed "No issues found" (3 filtered) — see the 2026-10-03 handoff entry |
 | P03 | Identity, consent, onboarding | `NOT_STARTED` | |
 | P04 | Parametric avatar v1 | `NOT_STARTED` | |
 | P05 | Selfie face personalization | `NOT_STARTED` | |
@@ -52,7 +52,7 @@ Rules:
 Then pick one:
 
 1. **Start P00 — Product validation and decisions** (still the formal gate; P02 was started ahead of it under DEC-36). Read [SPINE.md](SPINE.md) → [00-product-vision-and-scope.md](00-product-vision-and-scope.md) → `phases/P00-product-validation-and-decisions.md` → [16](16-risks-open-questions-and-decision-log.md); set P00 `IN_PROGRESS`; P00 has no code deliverables — outputs are ratified ADRs, measurable definitions, legal/privacy discovery notes, and resolution or scheduling of OQ-03 (age policy) and OQ-07 (data residency).
-2. **Finish P02-T09** (Linear AI-17, PR #12, `PARTIAL`; branch `artmins96/ai-17-p02-t09-wire-observability-redaction-lint-canary-otel`): the human key setup + evidence steps listed on Linear AI-17 (see the 2026-09-27 AI-17 handoff entry), merge PR #12, then **P02-T18 close-out** (AI-26). T13 (R2 signed URLs) still needs the R2 account; T07's staging/prod PostgreSQL hosts wait for OQ-07/OQ-14.
+2. **Land the 2026-10-04 branch** `claude/project-next-steps-r6nu70` (PR to `main`; see the 2026-10-04 handoff entry): CI run, owner review, the owner's R2 steps for P02-T13 (AI-21), and the two ADR decisions due before P03's first table in [`.claude/plans/2026-10-04-repo-split-readiness-proposal.md`](../.claude/plans/2026-10-04-repo-split-readiness-proposal.md) (ADR-0008 schema/migration home, ADR-0009 no cross-module foreign keys). Then **P02-T18 close-out** (AI-26) and AI-28 on the Mac. T07's staging/prod PostgreSQL hosts wait for OQ-07/OQ-14.
 
 **Human-only steps outstanding** (agents stop at config + `.env.example` keys):
 - Create vendor accounts and record regions per OQ-07: server provider (per OQ-07/OQ-14 — Hetzner is the working assumption), Cloudflare R2, Apple Developer, Google Play (Grafana Cloud and PostHog created 2026-09-27; regions in DEC-58). (Neon, Railway and Trigger.dev were removed on 2026-09-13 — DEC-41–43; Expo/EAS on 2026-09-22 — DEC-51.)
@@ -82,15 +82,70 @@ Log hygiene: when this log exceeds ~30 entries, move the oldest entries to `plan
 
 *(newest first)*
 
-### 2026-10-04 — Reviews of the PR #13 platform passes; review fixes; P02-T13 started (in flight)
+### 2026-10-04 — Reviews of the PR #13 platform passes and their fixes; P02-T13 R2 adapter; repo-split audit
 
-*Interim entry, written mid-session; it is rewritten when the session closes.*
+*Claude Code cloud session (Linux container, no Docker, no Mac). "Agent-reported" means the lead did not re-run it.*
 
-- **Phase / tasks worked:** P02 — follow-ups of P02-T09 (AI-17) and P02-T13. Branch `claude/project-next-steps-r6nu70` off `main` @ `27337d4` (PR #13 merged, so the follow-ups branch named in the 2026-10-03 entry is on `main`).
-- **Done so far:** security-privacy review of the three platform passes (`0e8d140..27337d4`): APPROVE, no blocker, all six open findings confirmed real. Architecture review: no boundary finding; changes requested for the stale worker mirror, invariant 17's 404 `detail` gap and a four-times-copied Nest test harness. Worker parity fix committed (`fix(workers): …`): span and event names cut, link attributes, URL arrays, resource sanitized once, logged exceptions as `err: {type, code?, cause?}`, registry examples in tests; `just test workers` 159 passed.
-- **In flight:** API-side review fixes (platform-engineer, worktree) and the P02-T13 R2 adapter + `*.sec.test.ts` (platform-engineer, worktree); not yet integrated.
-- **Repository state:** not verified by a full gate; Docker is unavailable in this cloud session, so the `*.docker.test.ts` suites cannot run here.
-- **Next session starts:** integrate the two in-flight branches, run the gates, open the PR.
+- **Phase / tasks worked:** P02: follow-ups of P02-T09 (AI-17) and P02-T13 (Linear [AI-21](https://linear.app/ai-stylist-app/issue/AI-21), now In Progress). Branch `claude/project-next-steps-r6nu70` off `main` @ `27337d4`. PR #13 (the 2026-10-03 follow-ups branch) was already merged when the session started.
+- **Status changes:** P02-T13 `NOT_STARTED → PARTIAL` (phase file §12); AI-21 Todo → In Progress, with a comment listing the deviations below. P02 stays `IN_PROGRESS`.
+- **Done:**
+  - *Reviews of the three PR #13 platform passes:*
+    - security-privacy: APPROVE; all six open findings confirmed real.
+    - architecture: no boundary finding; changes requested for the stale worker mirror, invariant 17's 404 `detail` gap and a test harness copied four times.
+  - *API redaction fixes (`16b9c30`):*
+    - A message-less error log no longer copies the error message into `msg` (`hooks.logMethod`); interpolation arguments are dropped.
+    - `childLogger` redacts child bindings (six sites); the 404 `detail` loses its query; span event names are cut.
+    - The error name is shape-checked; 415 maps to `VALIDATION_FAILED`.
+    - One shared Nest test harness (`platform-test-app.ts`).
+    - Red then green: 16 failed before the fixes, 184/184 after (agent-reported; the lead re-ran the suites, see Repository state).
+  - *Worker parity (`0baf754`):*
+    - Span and event names cut; link attributes, URL arrays and the resource sanitized.
+    - Logged exceptions become `err: {type, code?, cause?}`; the tests read the shared-kernel examples JSON.
+    - Red then green (agent-reported).
+    - A security re-review of `0baf754` and `16b9c30` approved; residuals N1–N9 are open (below).
+  - *P02-T13 (`04e8930`, `c2fbd7e`):* see the next item.
+- **P02-T13 detail:**
+  - `R2StorageProvider` with an in-process SigV4 presigner on `node:crypto`. It is pinned to AWS's published vector and `@smithy/signature-v4` output, and a reviewer cross-checked it with botocore.
+  - `content-type` and `content-length` are signed.
+  - Per-user keys `u/<user_id>/<namespace>/<key>` (doc 11 §4.3/§13.2); a key naming another user stays nested inside the caller's prefix.
+  - Traversal and encoding refusals; TTL caps; a `clampTtl` sub-second bug fixed with a regression test.
+  - All-or-none `R2_*` config; staging/prod refuse to boot without R2 keys; credentials kept in `#private` fields.
+  - Offline `r2-storage.sec.test.ts` suite against a fake S3 that verifies SigV4.
+  - Live suite behind `R2_LIVE_TEST=1`.
+  - Mint p95 0.16–0.22 ms locally (agent-measured; budget 100 ms).
+  - The first security review requested changes (the key-layout blocker); the fixes are in `c2fbd7e`.
+- **Deviations from AI-21 (owner decides):** no `@aws-sdk/*` dependency (agents cannot change the lockfile; `pnpm --filter @ai-stylist/api add @smithy/signature-v4@^5.7.4` swaps the signer); keys follow doc 11 rather than AI-21's `<namespace>/<key>`; no recorded R2 fixtures (fake S3 plus the live suite instead).
+- **Repo-split audit (owner request: keep modules separable for a later split into repositories):** APPROVE for this branch. Plan, two ADRs due before P03's first table, and do-now items: [`.claude/plans/2026-10-04-repo-split-readiness-proposal.md`](../.claude/plans/2026-10-04-repo-split-readiness-proposal.md). Applied now: platform contract §Dependencies says three ports move to shared-kernel and `HEALTH_PROBE` stays.
+- **Not done / open:**
+  - *Owner, P02-T13:* R2 bucket(s) and token; the R2 values in `secrets/dev.enc.yaml`; one `R2_LIVE_TEST=1 just test platform` run; the Cloudflare WAF. Human-only `docs/SERVICES-SETUP.md` §6 text for the live suite is in the PR description.
+  - *Open residuals from the security re-review (non-blocking):*
+    - N1: nestjs-pino `context` can carry a stack. Fix it before modules adopt Nest `Logger`.
+    - N2: span `exception.type` is not shape-checked.
+    - N3: Fastify's own 400 for a malformed URL echoes the query.
+    - N4–N7: worker printf args, a non-exception `err`, `getattr`/cycle robustness, the walk over non-dict containers.
+    - N8: cross-realm errors.
+    - N9: a non-string primitive is still written to `msg`.
+  - *Open, earlier:* the `APP_ENV` default in `config.ts` (dev routes are enabled when both `NODE_ENV` and `APP_ENV` are unset), which is an owner decision; the content-type allowlist and size cap for presigned PUTs, which belong to `media` (P06 exit criterion).
+- **Repository state:**
+  - Not verified by CI yet.
+  - Run by the lead on the integrated branch (Linux, Node 24.21.0, pnpm 12.6.0), all exit 0:
+    - `just typecheck`, `just lint`, `just arch-check`, `just docs-check --strict`, `just ci-env-example-check`
+    - `prettier --check`
+    - `SKIP_DOCKER_TESTS=1 just test platform`: 221 passed, 3 skipped (the live suite)
+    - the API vitest project: 299 passed, 3 skipped
+    - `just test workers` with CPython 3.14.7: 159 passed
+    - gitleaks over the branch commits: no leaks
+  - **Not run:**
+    - the Testcontainers suites (`platform-docker`, `migrations`): no Docker
+    - osv-scanner (api.osv.dev blocked by the proxy), so `just security-scan` and `just ci-parity` did not complete
+    - swift-format and SwiftLint, the Android lanes (JDK 21 here, 25 pinned), anything on macOS
+- **New decisions / risks / questions filed:** none in doc 16. Proposed: ADR-0008 (home of the composed schema and migrations), ADR-0009 (no cross-module foreign keys), a DEC row extending DEC-55 to a Python kernel emitter.
+- **Surprises / gotchas:**
+  - In this cloud container, mise cannot install from GitHub (API 403 through the proxy). Pinned binaries were fetched from release URLs instead, and pnpm came from npm.
+  - The host Python is 3.14.0rc2, which breaks pydantic; worker tests need CPython 3.14.7 (`UV_PYTHON`).
+  - `scripts/test/regression.sh` reports a false pass under pnpm 12.6: its merge-base leg fails before vitest runs.
+  - `scripts/hooks/post-edit-lint.sh` fails on every edit here, because mise tries to download.
+- **Next session starts:** CI on the PR from `claude/project-next-steps-r6nu70`; owner review and the R2 steps; the ADR-0008/0009 decisions; then P02-T18 (AI-26) and AI-28 on the Mac.
 
 ### 2026-10-03 — P02-T09 closed (AI-17): PR #12 merged, vulnerability gate green on `main`; hardening and setup-automation follow-ups
 

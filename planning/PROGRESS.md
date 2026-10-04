@@ -82,6 +82,16 @@ Log hygiene: when this log exceeds ~30 entries, move the oldest entries to `plan
 
 *(newest first)*
 
+### 2026-10-04 — Research r8: on-device AI, 3D/generative asset sourcing, cost per user (no code, no decision changed)
+
+- **Phase / tasks worked:** none (research requested by the owner; feeds P00 discovery, P01/P04 Anny spike, P06 and P11 eval gates). Branch `claude/mobile-ai-research-iawzfe`.
+- **Status changes:** none. P02 stays `IN_PROGRESS`.
+- **Delivered:** [`docs/research/r8-mobile-ai-and-asset-generation-2026-10-04.md`](../docs/research/r8-mobile-ai-and-asset-generation-2026-10-04.md). It is placed under `docs/` because `planning/research/` is read-only for agents; the owner may move it to `planning/research/`.
+- **Findings, short:** the plan does not use fal.ai for 3D. The avatar is deterministic Anny ($0) and fal.ai does only 2D try-on and missing views. iOS 27 Foundation Models now accepts images (attribute tagging on capable iPhones, a small cost saving). No phone or service can do try-on or riggable 3D garments on-device. Self-hosted try-on (FASHN VTON v1.5) breaks even at ≈ 30–50k try-ons/month sustained. BFL FLUX VTO (≈ $0.0475) is a new value arm for P11. Planned fal.ai prices are unchanged since r6. Cost at 100% credit use is Plus $1.65 and Pro $4.13 per month on the current plan, with Pro-annual gross margin ≥ 59%.
+- **Decisions made:** none. Proposed decision-log entries are listed in r8 §8 for the owner.
+- **Verification:** `just docs-check` → `docs-check: ok (0 errors, 0 warning(s))`. `just` was installed in the cloud container via `pip install rust-just` to run it. Vendor sites were blocked by the environment's network policy, so most prices are Medium confidence (search extracts of official pages). r8 §9 lists what is unverified.
+- **Exact next action:** the owner reviews r8 and decides which §8 proposals go into `planning/16-…`. Before committing money, re-confirm the Medium-confidence prices on live pages and get fal.ai's DPA / no-training terms (AIC-O2).
+
 ### 2026-10-03 — P02-T09 closed (AI-17): PR #12 merged, vulnerability gate green on `main`; hardening and setup-automation follow-ups
 
 *The session ran 2026-10-03 to 2026-10-04. This entry was rewritten in place at 00:20 +04 on 2026-10-04 and replaces the earlier text, which described PR #12 as open and P02-T09 as `PARTIAL`. CI, Linear and vendor results are as reported by the lead; "reported by the agent" means the lead did not re-run it. The follow-ups branch is not pushed, part of its work is uncommitted, and the three platform passes on it are not reviewed.*

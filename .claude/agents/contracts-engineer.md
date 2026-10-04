@@ -35,10 +35,11 @@ Invariants that bite here (enforced by the named gate unless marked reviewer-che
   `app.aistylist.contracts.kernel` sources. `packages/shared-kernel/src/errors.ts`, `ids.ts` and
   `envelope.ts` stay TS-only; the types in `packages/shared-kernel/src/reason-codes.ts`,
   `entitlements.ts` and `units.ts` are hand-written. The registries `forbidden-log-keys.json`,
-  `owners.json` and `feature-flags.json` are TS-only data: nothing is generated from them,
-  `packages/shared-kernel/src/forbidden-log-keys.ts`, `owners.ts` and `feature-flags.ts` import
-  them, and `packages/contracts/tests/kernel-registries.test.ts` validates them against their
-  schemas. (`just generate --check`; the schema test runs in `just test`)
+  `log-redaction.json`, `owners.json` and `feature-flags.json` are imported as JSON in TS (no
+  generated TS): `packages/shared-kernel/src/forbidden-log-keys.ts`, `log-redaction.ts`, `owners.ts`
+  and `feature-flags.ts` import them; `just generate` also emits forbidden-log-keys (+ examples) and
+  log-redaction for Python as `workers/ml/generated/ai_stylist_generated/kernel/` (DEC-59). `packages/contracts/tests/kernel-registries.test.ts` validates
+  them against their schemas. (`just generate --check`; the schema test runs in `just test`)
 - Generated, never hand-edited: `packages/contracts/gen/**`, `packages/shared-kernel/src/gen/**`,
   `workers/ml/generated/**`. Only `just generate` writes them. (`just generate --check` + path guard)
 - `shared-kernel-pure`: `packages/shared-kernel/src/**` imports only its own files, its

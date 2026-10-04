@@ -30,7 +30,8 @@ module, `just test` (the package tests have no scoped route), and
 4. Reason codes, entitlement names and units live in `packages/shared-kernel/registry/*.json` (ADR-0005).
    Swift consumes the generated `AIStylistKernel`, Kotlin `app.aistylist.contracts.kernel`; nobody copies
    a constant — `just generate --check` for the generated side; copies are reviewer-checked. The
-   forbidden-log-keys, owners and feature-flags registries there are TS-only (nothing generated),
-   validated by `packages/contracts/tests/kernel-registries.test.ts` (`just test`).
+   forbidden-log-keys, log-redaction, owners and feature-flags registries there are imported as JSON
+   in TS (no generated TS); `just generate` emits forbidden-log-keys, its examples and log-redaction
+   for Python as `ai_stylist_generated.kernel` (DEC-59). All are validated by `packages/contracts/tests/kernel-registries.test.ts` (`just test`).
 5. Analytics event names live in `packages/contracts/events/analytics/events.json`. Android uses the
    generated `AnalyticsTaxonomy`; the hand-written iOS names equal it byte for byte (reviewer-checked).

@@ -83,7 +83,7 @@ Done checklist: `generate --check` clean · contract tests green · typecheck gr
 - Another session is editing `packages/contracts` or `packages/shared-kernel` → stop and sequence.
 - `just generate` fails inside a codegen script, or the generated output is wrong → do not patch `gen/**`; report to the script's owner (Overlap).
 - A registry value has no consumer yet → stop and ask why it cannot wait for the consumer.
-- A taxonomy task: no taxonomy registry exists yet (`packages/shared-kernel/registry/` holds reason codes, entitlements and units, plus the TS-only forbidden-log-keys, owners and feature-flags registries; P06-T01 creates v1) → design only; stop before inventing a location.
+- A taxonomy task: no taxonomy registry exists yet (`packages/shared-kernel/registry/` holds reason codes, entitlements and units, plus the forbidden-log-keys, log-redaction, owners and feature-flags registries, imported as JSON in TS, with forbidden-log-keys and log-redaction also emitted for Python, DEC-59; P06-T01 creates v1) → design only; stop before inventing a location.
 - A taxonomy bump rule cannot decide a case → `.other` + a review nudge, never a silent guess (`.agents/skills/api-contract-change/references/taxonomy-registry.md`).
 
 ## Overlap

@@ -154,6 +154,21 @@ describe('api (Fastify in-process)', () => {
     });
   });
 
+  it('a malformed URL Fastify rejects before routing answers a problem without its query', async () => {
+    const res = await app.inject({
+      method: 'GET',
+      url: '/v1/nope%zz?sig=CANARY_SIG_4b1e',
+      remoteAddress: '10.1.0.3',
+    });
+    expect(res.statusCode).toBe(400);
+    expect(res.headers['content-type']).toContain(PROBLEM_CONTENT_TYPE);
+    const body = res.json<ProblemDetails>();
+    expect(isProblem(body)).toBe(true);
+    expect(body).toMatchObject({ status: 400, instance: '/v1/nope%zz' });
+    expect(body).not.toHaveProperty('detail');
+    expect(res.body).not.toContain('CANARY_SIG_4b1e');
+  });
+
   it('echoes a valid x-correlation-id and mints one when it is absent or invalid', async () => {
     const given = `corr-http-1-${RUN}`;
     const echoed = await app.inject({

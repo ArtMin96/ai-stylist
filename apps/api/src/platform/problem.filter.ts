@@ -12,6 +12,7 @@ import { Logger } from 'nestjs-pino';
 import { type ErrorCode, type ProblemDetails, problem } from '@ai-stylist/shared-kernel';
 
 import { stripQuery } from './logger.js';
+import { isError } from './queue/error-summary.js';
 
 export const PROBLEM_CONTENT_TYPE = 'application/problem+json';
 
@@ -66,7 +67,7 @@ export function toProblem(exception: unknown, instance: string): ProblemBody {
       detail = typeof d === 'string' ? d : typeof message === 'string' ? message : undefined;
       extensions = rest;
     }
-  } else if (exception instanceof Error) {
+  } else if (isError(exception)) {
     detail = exception.message;
   }
   return { ...base, ...(detail !== undefined ? { detail } : {}), ...extensions };

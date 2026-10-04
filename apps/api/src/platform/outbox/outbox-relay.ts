@@ -21,7 +21,7 @@ import type { Sql } from 'postgres';
 import type { EventEnvelope, EventType } from '@ai-stylist/shared-kernel';
 
 import { childLogger } from '../logger.js';
-import { errorSummary } from '../queue/error-summary.js';
+import { errorSummary, isError } from '../queue/error-summary.js';
 import type { EnqueueOptions, EnqueueResult } from '../queue/pg-boss-queue.js';
 import { type BackoffPolicy, backoffDelayMs } from '../resilience/backoff.js';
 import { TimeoutError, withTimeout } from '../resilience/timeout.js';
@@ -152,7 +152,7 @@ export class InvalidEnvelopeError extends TypeError {
  */
 export function describeSendError(error: unknown): string {
   let text: string;
-  if (!(error instanceof Error)) {
+  if (!isError(error)) {
     text = `non-Error thrown (${typeof error})`;
   } else if (
     error instanceof TimeoutError ||

@@ -17,7 +17,7 @@ import pino from 'pino';
 import { createDb, type DbHandle } from '@ai-stylist/db';
 import type { FeatureFlags } from '@ai-stylist/shared-kernel';
 
-import { type AppConfig, loadConfig } from './config.js';
+import { type AppConfig, allowsInMemoryStorage, loadConfig } from './config.js';
 import { DevModule, UnconfiguredOutboxWriter, isDevRouteEnabled } from './dev/index.js';
 import { JOB_QUEUES, queueForEventType, userIdOf } from './jobs/queues.js';
 import { AdminModule } from './modules/admin/index.js';
@@ -47,6 +47,7 @@ import {
   createFeatureFlags,
   createStorageProvider,
   currentCorrelationId,
+  frameworkErrors,
   httpLoggerOptions,
   loggerOptions,
   registerCorrelationId,
@@ -170,6 +171,8 @@ export class AppModule implements OnApplicationShutdown {
       bucket: config.R2_BUCKET,
       clock,
       logger,
+      // Staging and prod refuse the in-memory fallback (doc 15 §11); the rule lives in config.ts.
+      allowsInMemory: allowsInMemoryStorage(config),
     });
     let runtime: DbRuntime | null = null;
     if (db !== null && config.DATABASE_URL !== undefined) {
@@ -228,7 +231,7 @@ export class AppModule implements OnApplicationShutdown {
 /** Build the Fastify-backed Nest app without listening; `main.ts` and tests both use this. */
 export async function createApp(options: CreateAppOptions = {}): Promise<NestFastifyApplication> {
   const config = options.config ?? loadConfig();
-  const adapter = new FastifyAdapter({ trustProxy: true });
+  const adapter = new FastifyAdapter({ trustProxy: true, frameworkErrors });
   const app = await NestFactory.create<NestFastifyApplication>(
     AppModule.forRoot(config, options),
     adapter,
@@ -240,6 +243,8 @@ export async function createApp(options: CreateAppOptions = {}): Promise<NestFas
   registerCorrelationId(fastify);
   registerRequestMetrics(fastify);
   app.useLogger(app.get(Logger));
+  // Release the buffered boot lines through pino now, so no early `Logger` call bypasses redaction.
+  app.flushLogs();
   app.enableShutdownHooks();
   await app.register(rateLimit, {
     max: config.RATE_LIMIT_MAX,

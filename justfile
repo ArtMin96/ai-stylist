@@ -305,7 +305,7 @@ ci-pgvector:
 ci-contracts-spectral:
     scripts/ci/contracts-spectral.sh
 
-# oasdiff breaking-change check of the OpenAPI bundle against a base commit
+# Breaking-change checks against a base commit: event schemas (events-breaking.mjs) + oasdiff on the OpenAPI bundle
 [private]
 ci-contracts-breaking base:
     scripts/ci/contracts-breaking.sh "$1"

@@ -6,6 +6,7 @@ skills:
   - agent-operating-contract
   - testing-regression
   - e2e-device-testing
+  - code-quality
 color: yellow
 hooks:
   PreToolUse:

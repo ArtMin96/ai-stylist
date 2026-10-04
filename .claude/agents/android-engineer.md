@@ -5,6 +5,7 @@ tools: Read, Grep, Glob, Edit, Write, Bash, Skill, ToolSearch, WebFetch, WebSear
 skills:
   - agent-operating-contract
   - android-feature
+  - code-quality
 color: green
 hooks:
   PreToolUse:

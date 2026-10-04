@@ -8,6 +8,8 @@ paths:
 
 **Skill:** `ios-feature` (both platforms at once: `cross-platform-feature`, run by the main session;
 endpoint or event shape: `api-contract-change` first).
+Line-level quality: `code-quality` with `.agents/skills/code-quality/references/swift.md` only (its
+language lock: never apply another language's idioms here).
 
 **Agent:** `ios-engineer` (Android: `android-engineer`; contracts: `contracts-engineer`; API:
 `api-engineer`; the shared Maestro flows in `e2e/`: `test-engineer`).

@@ -22,6 +22,8 @@ skills win inside their area: recommendation, and scoring or constraint rules in
 `recommendation-rules`; fashion-intel → `fashion-intel-ingestion`; billing → `entitlements-billing`;
 notifications → `notifications-delivery`; admin → `admin-moderation`; assistant → `assistant-chat`;
 consent, deletion and export → `data-lifecycle`. Full map: `.agents/skills/README.md`.
+Line-level quality: `code-quality` with `.agents/skills/code-quality/references/typescript.md` only (its
+language lock: never apply another language's idioms here).
 
 **Agent:** `recommendation-engineer` for `apps/api/src/modules/{recommendation,outfit,context,fashion-intel}/**`.
 `api-engineer` for every other module, the composition root (`apps/api/src/app.module.ts`,

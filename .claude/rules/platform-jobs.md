@@ -11,6 +11,8 @@ paths:
 **Skill:** `backend-module` for port adapters under `apps/api/src/platform/`; `media-ml-pipeline` for
 pg-boss job definitions under `apps/api/src/jobs/` that drive asset or ML processing; `db-migration`
 for seed data.
+Line-level quality: `code-quality` with `.agents/skills/code-quality/references/typescript.md` only (its
+language lock: never apply another language's idioms here).
 
 **Agent:** `platform-engineer` (the Python worker a job calls → `ml-engineer`).
 

@@ -29,6 +29,10 @@ paths:
 # Tooling, CI, and the `just` gate
 
 **Skill:** `tooling-ci`.
+Line-level quality: `code-quality` with the reference for each file's own language:
+`.agents/skills/code-quality/references/shell.md` for scripts,
+`.agents/skills/code-quality/references/typescript.md` for `.mjs`/`.ts` tools (its language lock: one
+reference per file).
 
 **Agent:** `tooling-engineer`, with these exceptions:
 - `scripts/hooks/**` → no project agent (enforcement layer, `agent-authoring.md`).

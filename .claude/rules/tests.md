@@ -9,6 +9,10 @@ paths:
 # Tests
 
 **Skill:** `testing-regression`; Maestro flows in `e2e/`: `e2e-device-testing`.
+Line-level quality: `code-quality` with the reference for the test file's own language
+(`.agents/skills/code-quality/references/swift.md`, `.agents/skills/code-quality/references/kotlin.md`,
+`.agents/skills/code-quality/references/typescript.md`,
+`.agents/skills/code-quality/references/python.md`); Maestro YAML has none.
 
 **Agent:** the agent that the area rule names writes that area's tests, in the same change as the code
 (e.g. `apps/api/src/modules/closet/tests/` → `api-engineer`, `apps/ios/Packages/*/tests/**` →

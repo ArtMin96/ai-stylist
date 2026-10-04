@@ -10,6 +10,7 @@ skills:
   - admin-moderation
   - assistant-chat
   - data-lifecycle
+  - code-quality
 color: cyan
 hooks:
   PreToolUse:

@@ -239,6 +239,16 @@ Log hygiene: when this log exceeds ~30 entries, move the oldest entries to `plan
   - `scripts/hooks/post-edit-lint.sh` fails on every edit here, because mise tries to download.
 - **Next session starts:** CI on the PR from `claude/project-next-steps-r6nu70`; owner review and the R2 steps; the ADR-0008/0009 decisions; then P02-T18 (AI-26) and AI-28 on the Mac.
 
+### 2026-10-04 — `code-quality` skill: per-language quality bar with a language lock
+
+- **Phase / tasks worked:** P02 hygiene (no task ID), at the owner's request. Branch `claude/code-quality-skill-9flbto`.
+- **Status changes:** none.
+- **Done this session:** new skill [`code-quality`](../.agents/skills/code-quality/SKILL.md) (authored with `anthropic-skills:skill-creator`): the language-neutral clean-code principles, a suppression policy, a "gates only ratchet up" rule, and one reference per language (`swift.md`, `kotlin.md`, `typescript.md`, `python.md`, `shell.md`). Each reference is grounded in that language's configured gates and ends with a "Do not import from other languages" table; the skill's language lock applies exactly one reference per file. The skill is preloaded by the ten agents that write or review code, and each area rule in `.claude/rules/` (ios, android, api-modules, platform-jobs, db-schema, contracts, workers-python, tooling-ci, tests) points at its language reference. Evals pair added; the skills index and agents README updated.
+- **Not done / in flight:** the skill-creator benchmark (3 task evals, with and without the skill) was running at the time of this entry; trigger-description optimisation not run. Root `CLAUDE.md` does not mention the skill (human-only file); a one-line addition to "Session workflow" step 3 is suggested to the owner.
+- **Repository state:** `just docs-check` → 0 errors; Prettier check on `.agents` and `.claude` clean. No product code touched; `just lint`/`typecheck`/`arch-check` not run.
+- **New decisions / risks / questions filed:** none.
+- **Next session starts:** read the benchmark results, adjust the references from the owner's feedback; consider ratcheting gates the skill checks by hand (via `tooling-ci`).
+
 ### 2026-10-03 — P02-T09 closed (AI-17): PR #12 merged, vulnerability gate green on `main`; hardening and setup-automation follow-ups
 
 *The session ran 2026-10-03 to 2026-10-04. This entry was rewritten in place at 00:20 +04 on 2026-10-04 and replaces the earlier text, which described PR #12 as open and P02-T09 as `PARTIAL`. CI, Linear and vendor results are as reported by the lead; "reported by the agent" means the lead did not re-run it. The follow-ups branch is not pushed, part of its work is uncommitted, and the three platform passes on it are not reviewed.*

@@ -5,6 +5,7 @@ tools: Read, Grep, Glob, Edit, Write, Bash, Skill, ToolSearch, WebFetch, WebSear
 skills:
   - agent-operating-contract
   - api-contract-change
+  - code-quality
 color: purple
 hooks:
   PreToolUse:

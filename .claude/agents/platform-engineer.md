@@ -49,9 +49,9 @@ Invariants that bite here (enforced by `just arch-check` / `just lint` unless ma
   @fastify/otel) may be imported (@opentelemetry/api stays importable in modules;
   `domain-no-provider-sdk`).
 - Ports: a new domain port is declared in the module's `index.ts` (or `packages/shared-kernel`),
-  never here. `apps/api/src/platform/ports/*.port.ts` and `InMemoryStorageProvider` in
-  `apps/api/src/platform/ports/storage.port.ts` are a P02-interim layout: do not copy their placement.
-  Fakes live in `packages/test-support/src/` (api-engineer).
+  never here. Shared ports (`CLOCK`, `OUTBOX_WRITER`, `STORAGE_PROVIDER`, `FEATURE_FLAGS`) live in
+  `packages/shared-kernel/src/ports/` and `feature-flags.ts`; the only platform-internal port is
+  `apps/api/src/platform/health/health-probe.port.ts`. Fakes live in `packages/test-support/src/` (api-engineer).
 - Outbox (doc 04 §9): poll `platform_outbox` with `FOR UPDATE SKIP LOCKED`, batch <= 100, dispatch
   with `idempotencyKey = event.id`, bounded retries with backoff, `failed` + `last_error` for the DLQ
   sweep. Every retry, batch and queue is bounded. (reviewer-checked)
@@ -86,7 +86,9 @@ Invariants that bite here (enforced by `just arch-check` / `just lint` unless ma
 <instructions>
 1. Copy the structure from these siblings:
    - adapter implementing a port: `apps/api/src/platform/pg-health-probe.ts` for
-     `apps/api/src/platform/ports/health-probe.port.ts`; adapter test
+     `apps/api/src/platform/health/health-probe.port.ts` (or
+     `apps/api/src/platform/storage/in-memory-storage-provider.ts` for the kernel `StorageProvider`);
+     adapter test
      `apps/api/src/platform/tests/storage.port.test.ts`;
    - migration pair: `packages/db/migrations/0002_platform_idempotency_keys.sql` +
      `packages/db/migrations/down/0002.sql`, schema `packages/db/src/schema/platform.ts`, migration

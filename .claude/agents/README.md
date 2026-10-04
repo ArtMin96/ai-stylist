@@ -74,10 +74,9 @@ tooling-engineer and docs-maintainer may create; `.github/workflows/**` and `.gi
 - New port: the module's engineer declares it in the module `index.ts` (or `contracts-engineer` in
   `packages/shared-kernel` when two modules share it) → `api-engineer` adds the fake in
   `packages/test-support/src/`, copying `packages/test-support/src/clock.ts` → `platform-engineer`
-  implements the adapter → `api-engineer` binds it in `apps/api/src/app.module.ts`. The existing
-  `apps/api/src/platform/ports/*.port.ts` layout is P02-interim; do not copy its placement. Modules
-  cannot import the platform `Clock`: a module that needs one asks contracts-engineer for a
-  shared-kernel `Clock`, never a local copy.
+  implements the adapter → `api-engineer` binds it in `apps/api/src/app.module.ts`. Shared ports
+  (`CLOCK`, `OUTBOX_WRITER`, `STORAGE_PROVIDER`, `FEATURE_FLAGS`) live in `packages/shared-kernel`; a
+  module injects them from there, never a local copy.
 - Signal, dashboard, alert or runbook: the emitting engineer (`platform-engineer`, `ml-engineer`,
   `ios-engineer`, `android-engineer`) lands the metric, span or event, and `contracts-engineer` any
   analytics event, flag or owner role → `observability-engineer` updates the definition under

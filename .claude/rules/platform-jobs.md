@@ -33,9 +33,9 @@ for `packages/seed-data/**`; `just dev-api` for `docker-compose.yml`; then
    `firebase-admin`, `@opentelemetry/{sdk-*,exporter-*,instrumentation*}`, @fastify/otel) are
    imported only here (@opentelemetry/api stays importable in modules) — depcruise
    `domain-no-provider-sdk` on the module side.
-5. A new port interface is declared by the consuming module (or `packages/shared-kernel/`), never under
-   `apps/api/src/platform/ports/`; that directory and `InMemoryStorageProvider` are P02-interim layout,
-   not a pattern to copy (reviewer-checked).
+5. A new port interface is declared by the consuming module (or `packages/shared-kernel/src/ports/` when
+   modules share it), never in `apps/api/src/platform/`; platform's only internal port is
+   `apps/api/src/platform/health/health-probe.port.ts` (reviewer-checked).
 6. Seed data is synthetic, never copied from production (root `CLAUDE.md` "Security and privacy
    rules") (reviewer-checked).
 7. A module test in `apps/api/src/modules/<name>/tests/` never imports `packages/db/` — depcruise `composition-root-only` (`just arch-check`). A task that needs a Postgres-backed repository test for a module is a stop for the lead (open question in `.claude/plans/s6-claude-foundation-human-proposals.md` §C2 (b)).

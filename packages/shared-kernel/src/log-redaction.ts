@@ -3,15 +3,16 @@
 // of a logged error are followed. A value that fails its shape is replaced (`Error`, or the
 // redaction marker for a Nest context), never written.
 //
-// Data lives in packages/shared-kernel/registry/log-redaction.json (schema beside it). Non-TS
-// readers (the Python workers' redaction and tracing modules and their tests) read that JSON
-// directly and compile each shape with re.ASCII and a full match; TS code imports these constants.
+// Data lives in packages/shared-kernel/registry/log-redaction.json (schema beside it). TS code
+// imports these constants; the Python workers read the generated ai_stylist_generated.kernel
+// (`just generate`, tools/codegen/gen-kernel.mjs python), which compiles each shape with re.ASCII
+// for a full match.
 // Never copy a shape or the depth into a consumer.
 //
 // The `vectors` in the same file are the labelled values every implementation's tests check:
 // `exceptionType.kept` match errorNameShape or codeShape, `exceptionType.replaced` match neither;
 // `nestContext.kept` match nestContextShape, `nestContext.redacted` do not. TS tests import
-// LOG_REDACTION_EXAMPLES; non-TS tests read the JSON.
+// LOG_REDACTION_EXAMPLES; Python tests use the generated vectors.
 import registry from '../registry/log-redaction.json' with { type: 'json' };
 
 export type LogRedactionRules = {

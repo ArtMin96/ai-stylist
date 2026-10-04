@@ -16,7 +16,7 @@ Infrastructure adapters that implement the ports declared by domain modules: sto
 ## Key files
 
 - `apps/api/src/platform/index.ts` — public API: `PlatformModule.forRoot(bindings)` binds each port token to the adapter the composition root built; only composition roots import it.
-- `apps/api/src/platform/ports/` — `clock.port.ts`, `health-probe.port.ts`, `storage.port.ts`: P02-interim platform ports. Copy their shape (type + `Symbol` token), not their placement: a new domain port is declared in the module's `index.ts` (or `packages/shared-kernel` when two modules share it), and its fake goes in `packages/test-support/src/`, not beside the port like `InMemoryStorageProvider`.
+- `packages/shared-kernel/src/ports/` — `clock.ts`, `outbox-writer.ts`, `storage.ts`: the shared ports platform implements (`SystemClock`, `PgOutboxWriter`, `R2StorageProvider` / `InMemoryStorageProvider`). `apps/api/src/platform/health/health-probe.port.ts` is the one platform-internal port. A new domain port is declared in the module's `index.ts` (or the kernel when two modules share it); its fake goes in `packages/test-support/src/`.
 - `apps/api/src/platform/pg-health-probe.ts` — the adapter sibling (implements a port, never throws, no business rule).
 - `apps/api/src/platform/version.controller.ts`, `apps/api/src/platform/health.controller.ts` — thin controller siblings.
 - `apps/api/src/platform/problem.filter.ts` — RFC 9457 mapping for every thrown error.

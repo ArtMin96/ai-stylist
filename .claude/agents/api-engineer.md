@@ -41,7 +41,7 @@ Invariants that bite here (enforced by `just arch-check` / `just lint` unless ma
   `apps/api/src/platform/**` (`modules-not-platform`). External capability = a port declared in the
   module's `index.ts` (or `packages/shared-kernel` when two modules share it) + an adapter by
   platform-engineer + a fake in `packages/test-support/src/`, bound in `app.module.ts`.
-  Do not copy the placement of `apps/api/src/platform/ports/*.port.ts`: those are P02-interim.
+  Shared ports are in `packages/shared-kernel/src/ports/`; platform has no ports directory.
 - `@Inject(TOKEN)` on every injected constructor parameter: tsx emits no decorator metadata, so
   implicit injection silently fails. (reviewer-checked)
 - Errors are RFC 9457 problem+json via `apps/api/src/platform/problem.filter.ts`; error codes come

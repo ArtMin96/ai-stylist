@@ -34,7 +34,7 @@ metadata:
    rg -n -i 'quiet|timezone|tz|opt.?out|push|fcm|apns|deliver' apps/api/src packages/shared-kernel/src packages/contracts packages/test-support/src
    ```
 
-3. Copy the structure from the `backend-module` sibling table (`.agents/skills/backend-module/SKILL.md` Workflow step 4). The ones this module needs first: pure rule + unit test with fixed time → `apps/api/src/platform/tests/storage.port.test.ts` with `fakeClock` from `packages/test-support/src/clock.ts`; port type + token → `apps/api/src/platform/ports/health-probe.port.ts` (shape only); adapter → `apps/api/src/platform/pg-health-probe.ts`; binding → `apps/api/src/app.module.ts`.
+3. Copy the structure from the `backend-module` sibling table (`.agents/skills/backend-module/SKILL.md` Workflow step 4). The ones this module needs first: pure rule + unit test with fixed time → `apps/api/src/platform/tests/storage.port.test.ts` with `fakeClock` from `packages/test-support/src/clock.ts`; port type + token → `packages/shared-kernel/src/ports/clock.ts` (shape only); adapter → `apps/api/src/platform/pg-health-probe.ts`; binding → `apps/api/src/app.module.ts`.
 4. Quiet hours and timezone scheduling are pure functions of (prefs, `now`, user timezone). Pass `now` in as a parameter so every boundary is unit-testable: just before, at, and just after each window edge, plus DST transitions. Modules cannot import the platform `Clock` (`modules-not-platform`).
 5. FCM/APNs: declare the push port in this module's `index.ts`; `platform-engineer` implements it in `apps/api/src/platform/` (`firebase-admin` is a listed provider SDK, never imported in `modules/**`); `api-engineer` writes the fake in `packages/test-support/src/` and binds it in `apps/api/src/app.module.ts`.
 6. Delivery dedup keys off the outbox event id (doc 04 §9, DEC-57: the relay enqueues with `idempotencyKey = event.id`, job id = UUIDv5 of it; durable effect dedup uses `PgIdempotencyGuard` on `platform_idempotency_keys`), not a locally invented dedup table, so relay redelivery is safe by construction.
@@ -61,7 +61,6 @@ Done checklist: scoped tests green (quiet hours, opt-out, dedup) · `lint`/`type
 
 - Sending, scheduling, or dedup needs the outbox relay or pg-boss → unless P02-T08 is `DONE` in `planning/phases/P02-repo-foundations-and-ci.md`, stop after the pure rules and the port design, and name T08 as the blocker.
 - The task needs `notification_prefs` or `deliveries` → no module `schema.ts` exists yet; route the tables to `db-migration`, which has its own first-table stop.
-- An application service needs a clock → no `Clock` port is importable by modules; stop and request one in `packages/shared-kernel` via `api-contract-change`, structurally identical to `apps/api/src/platform/ports/clock.port.ts`.
 - Deciding who may receive a notification (consent, legal opt-out, sensitive data in a payload) → `security-privacy-review` before writing delivery code.
 - A new notification kind needs a new event/payload shape → `api-contract-change` first.
 - An invariant in `docs/modules/notifications.md` conflicts with the task → surface it; never violate the contract quietly.

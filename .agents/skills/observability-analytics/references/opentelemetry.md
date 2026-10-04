@@ -163,13 +163,14 @@ from the outbox append to the worker request, is
 
 - An empty `APP_ENV` leaves `deployment.environment.name` out of the telemetry altogether. The
   telemetry start reads the raw environment (`apps/api/src/platform/telemetry/register.ts`, and
-  `main.py` in the worker), not the validated API config, whose default `local` applies only to the
-  application itself (`apps/api/src/config.ts`). Dashboard 01 still shows such data under
+  `main.py` in the worker), not the validated API config (`apps/api/src/config.ts`), which requires `APP_ENV` and refuses to
+  boot the API or the jobs process without it, so in practice only the Python worker can export
+  without the attribute. Dashboard 01 still shows such data under
   "All" environments, but there is then no environment to pick and an alert's summary names none.
   The tooling keeps this from happening locally: `just bootstrap` writes `local` into an empty
   `APP_ENV` in `.env`, `just doctor` warns while it is empty, and `just dev-api` and
   `just dev-workers` start each process with the exported value, else the `.env` value, else
-  `local` (`scripts/lib.sh`, `scripts/dev-app-env.sh`). A process started any other way with an
+  `local` (`scripts/lib.sh`, `scripts/dev-app-env.sh`). A worker started any other way with an
   empty `APP_ENV` still exports without the attribute.
 - The exporters read the two `OTEL_EXPORTER_OTLP_*` keys themselves; the repository's code only
   tests the endpoint for emptiness. Format and consumers of the header:

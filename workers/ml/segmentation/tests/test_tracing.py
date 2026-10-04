@@ -23,7 +23,8 @@ from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
 from opentelemetry.proto.collector.trace.v1.trace_service_pb2 import ExportTraceServiceRequest
 from opentelemetry.sdk.trace import ReadableSpan, TracerProvider
 from opentelemetry.sdk.trace.export.in_memory_span_exporter import InMemorySpanExporter
-from opentelemetry.trace import SpanKind, StatusCode
+from opentelemetry.trace import Link, SpanContext, SpanKind, StatusCode, TraceFlags
+from opentelemetry.util.types import AttributeValue
 
 from ai_stylist_segmentation import __version__, main
 from ai_stylist_segmentation.app import create_app
@@ -35,6 +36,20 @@ PAYLOAD = {"request_id": "req_1", "image_ref": "media/u1/garment.jpg"}
 CALLER_TRACE_ID = "4bf92f3577b34da6a3ce929d0e0e4736"
 CALLER_SPAN_ID = "00f067aa0ba902b7"
 TRACEPARENT = f"00-{CALLER_TRACE_ID}-{CALLER_SPAN_ID}-01"
+# Span names the tests and dashboards find spans by: none has a query or a fragment to cut.
+KEPT_SPAN_NAMES = ["POST /v1/segment", "GET", "job.process demo.outbox-flow"]
+# The marker planted in the process resource, as the API's telemetry tests plant it
+# (apps/api/src/platform/tests/redaction-canary.ts): under a forbidden word, in a URL's query and
+# fragment (`=` and `#` percent-encoded, as the variable requires) and under a dropped attribute.
+# `service.namespace` is the legitimate attribute that must survive.
+PLANTED_RESOURCE_ATTRIBUTES = ",".join(
+    [
+        "service.namespace=ai-stylist",
+        f"deploy.api_token={MARKER}",
+        f"url.full=https://deploy.example/hook?sig%3D{MARKER}%23{MARKER}",
+        f"user_agent.original={MARKER}",
+    ]
+)
 # Never exported: free text, network identity, error detail (new and old HTTP semconv names).
 FORBIDDEN_SPAN_ATTRIBUTES = {
     "url.query",
@@ -150,6 +165,24 @@ def test_otel_environment_variables_win(monkeypatch: pytest.MonkeyPatch) -> None
 
     assert attributes["service.name"] == "svc-override"
     assert attributes["deployment.environment.name"] == "from-env"
+
+
+def test_resource_is_sanitized_where_it_is_built(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("APP_ENV", "staging")
+    monkeypatch.setenv("OTEL_RESOURCE_ATTRIBUTES", PLANTED_RESOURCE_ATTRIBUTES)
+    provider = build_tracer_provider(span_exporter=InMemorySpanExporter())
+    assert provider is not None
+
+    attributes = dict(provider.resource.attributes)
+    provider.shutdown()
+
+    assert MARKER not in json.dumps(attributes, default=str)
+    assert attributes["service.name"] == "segmentation"
+    assert attributes["deployment.environment.name"] == "staging"
+    assert attributes["service.namespace"] == "ai-stylist"
+    assert attributes["deploy.api_token"] == REDACTED
+    assert attributes["url.full"] == "https://deploy.example/hook"
+    assert "user_agent.original" not in attributes
 
 
 # --- spans -----------------------------------------------------------------------------------
@@ -276,6 +309,112 @@ def test_sanitize_attributes_covers_old_and_new_http_names() -> None:
     }
 
 
+def test_every_string_of_a_sequence_valued_url_attribute_is_cut() -> None:
+    attributes: dict[str, AttributeValue] = {
+        "url.full": (f"https://a.example/x?sig={MARKER}", f"https://b.example/y#{MARKER}"),
+        "http.target": [f"/v1/items?token={MARKER}", "/v1/plain"],
+        "http.url": ("https://worker:8000/v1/segment",),
+    }
+
+    assert sanitize_attributes(attributes) == {
+        "url.full": ("https://a.example/x", "https://b.example/y"),
+        "http.target": ("/v1/items", "/v1/plain"),
+        "http.url": ("https://worker:8000/v1/segment",),
+    }
+
+
+def test_sequence_valued_url_attributes_are_cut_through_the_pipeline(traced: Traced) -> None:
+    span = traced.provider.get_tracer("test").start_span(
+        "urls",
+        attributes={
+            "url.full": [f"https://a.example/x?sig={MARKER}", f"https://b.example/y#{MARKER}"],
+            "http.target": [f"/v1/items?token={MARKER}"],
+        },
+    )
+    span.end()
+
+    (out,) = traced.spans()
+    assert dict(out.attributes or {}) == {
+        "url.full": ("https://a.example/x", "https://b.example/y"),
+        "http.target": ("/v1/items",),
+    }
+
+
+def test_span_name_loses_its_query_and_fragment(traced: Traced) -> None:
+    tracer = traced.provider.get_tracer("test")
+    tracer.start_span(f"GET /v1/segment?token={MARKER}#{MARKER}").end()
+    for name in KEPT_SPAN_NAMES:
+        tracer.start_span(name).end()
+
+    assert [span.name for span in traced.spans()] == ["GET /v1/segment", *KEPT_SPAN_NAMES]
+
+
+def test_event_name_and_attributes_are_sanitized(traced: Traced) -> None:
+    span = traced.provider.get_tracer("test").start_span("evented")
+    span.add_event(
+        f"redirect /v1/items?token={MARKER}#{MARKER}",
+        {
+            "url.full": f"https://storage.example/object?X-Amz-Signature={MARKER}",
+            "url.query": f"token={MARKER}",
+            "http.request.header.cookie": (MARKER,),
+            "messaging.message.id": "job-1",
+        },
+    )
+    span.add_event("job.retried", {"job.attempt": 2})
+    span.end()
+
+    (out,) = traced.spans()
+    assert [(event.name, dict(event.attributes or {})) for event in out.events] == [
+        (
+            "redirect /v1/items",
+            {
+                "url.full": "https://storage.example/object",
+                "http.request.header.cookie": REDACTED,
+                "messaging.message.id": "job-1",
+            },
+        ),
+        ("job.retried", {"job.attempt": 2}),
+    ]
+
+
+def test_link_attributes_are_sanitized_and_the_linked_ids_kept(traced: Traced) -> None:
+    linked = SpanContext(
+        trace_id=int(CALLER_TRACE_ID, 16),
+        span_id=int(CALLER_SPAN_ID, 16),
+        is_remote=True,
+        trace_flags=TraceFlags(TraceFlags.SAMPLED),
+    )
+    span = traced.provider.get_tracer("test").start_span(
+        "linked",
+        links=[
+            Link(
+                linked,
+                {
+                    "url.full": f"https://storage.example/object?X-Amz-Signature={MARKER}",
+                    "url.query": f"token={MARKER}",
+                    "http.request.header.cookie": (MARKER,),
+                    "messaging.message.id": "job-1",
+                },
+            ),
+            Link(linked),
+        ],
+    )
+    span.end()
+
+    (out,) = traced.spans()
+    assert [(link.context, dict(link.attributes or {})) for link in out.links] == [
+        (
+            linked,
+            {
+                "url.full": "https://storage.example/object",
+                "http.request.header.cookie": REDACTED,
+                "messaging.message.id": "job-1",
+            },
+        ),
+        (linked, {}),
+    ]
+
+
 # --- the real process: composition root, env config, OTLP/HTTP, flush at exit ----------------
 
 
@@ -341,6 +480,7 @@ def test_the_process_exports_sanitized_spans_over_otlp_and_flushes_at_exit() -> 
             **os.environ,
             "OTEL_EXPORTER_OTLP_ENDPOINT": receiver.url,
             "OTEL_EXPORTER_OTLP_HEADERS": "x-otlp-test=stub",
+            "OTEL_RESOURCE_ATTRIBUTES": PLANTED_RESOURCE_ATTRIBUTES,
             "APP_ENV": "test",
             "LOG_LEVEL": "INFO",
         }
@@ -368,6 +508,11 @@ def test_the_process_exports_sanitized_spans_over_otlp_and_flushes_at_exit() -> 
     resource = {kv.key: kv.value.string_value for kv in resource_spans.resource.attributes}
     assert resource["service.name"] == "segmentation"
     assert resource["deployment.environment.name"] == "test"
+    # The planted resource reached the exporter sanitized (the marker check above covers the bytes).
+    assert resource["service.namespace"] == "ai-stylist"
+    assert resource["deploy.api_token"] == REDACTED
+    assert resource["url.full"] == "https://deploy.example/hook"
+    assert "user_agent.original" not in resource
     spans = [span for scope in resource_spans.scope_spans for span in scope.spans]
     assert [span.name for span in spans] == ["POST /v1/segment"]  # /health is not traced
     (span,) = spans

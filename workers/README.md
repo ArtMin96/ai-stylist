@@ -42,14 +42,28 @@ workers/
   `packages/shared-kernel/registry/forbidden-log-keys.json`; the image has no `packages/`, so
   `FORBIDDEN_LOG_KEYS` in `redaction.py` is a copy that `tests/test_redaction.py` pins to that file
   (copy the registry's words when it fails). Matching mirrors `isForbiddenLogKey` in
-  `apps/api/src/platform/logger.ts`. Request bodies, headers and query strings are never logged.
-  Inside a request every line carries `correlation_id`; inside a traced request also `trace_id` and
-  `span_id`. `tests/test_redaction.py` is the canary.
+  `apps/api/src/platform/logger.ts`; the tests also run every example of
+  `packages/shared-kernel/registry/forbidden-log-keys.examples.json` (forbidden and allowed), the
+  file the API's logger test reads. Request bodies, headers and query strings are never logged.
+  A logged exception is an allowlist, as the API logger's `err`: `summarize_exc_info` (in place of
+  structlog's `format_exc_info`) writes `err: {type, code?, cause?}`, the class name (`Error` unless
+  it matches `^[A-Za-z_$][\w$.]{0,63}$`), a `code` attribute only when it is code-shaped
+  (`^[A-Z0-9_]{1,32}$`, e.g. a SQLSTATE or `ECONNREFUSED`) and the same for at most 5 links of the
+  cause chain (`__cause__`, else the unsuppressed `__context__`); an exception under any other key
+  is replaced by the same summary. Never the message or the traceback. Not covered: text the caller
+  builds into the event itself. Inside a request every line carries `correlation_id`; inside a
+  traced request also `trace_id` and `span_id`. `tests/test_redaction.py` is the canary.
 - **Honesty:** every generated result carries `provenance {generated, model, confidence}`.
 
 ## Telemetry (planning/14 §2–§3, ADR-0007)
 
-Same pipeline and rules as the API (`apps/api/src/platform/telemetry/README.md`); Grafana setup in
+Traces only (no metrics or OTLP logs yet), under the API's span and resource redaction rules
+(`apps/api/src/platform/telemetry/README.md`, `docs/modules/platform.md` invariants 11, 17 and 18).
+`tracing.py` mirrors `span-sanitizer.ts` and `main.py` mirrors the resource step of
+`telemetry.ts`: one attribute rule for span, event and link attributes and the resource; the span
+name cut at the first `?` or `#`; the status description dropped; the resource sanitized once,
+where it is built. Event names are cut the same way as the span name, and the old HTTP
+semantic-convention names of the dropped attributes are dropped too. Grafana setup in
 `docs/observability/grafana.md`.
 
 - **Off unless configured.** An empty or unset `OTEL_EXPORTER_OTLP_ENDPOINT` builds nothing: no
@@ -61,7 +75,10 @@ Same pipeline and rules as the API (`apps/api/src/platform/telemetry/README.md`)
   `service.version` = `APP_VERSION` (else the package version), `deployment.environment.name` =
   `APP_ENV` (omitted when empty; `just dev-workers` starts the worker with `local` in that case);
   `OTEL_SERVICE_NAME` and `OTEL_RESOURCE_ATTRIBUTES` win. No host or
-  process detector runs. The provider's `atexit` hook flushes pending spans on a graceful stop.
+  process detector runs. The merged resource goes through the span attribute rule once
+  (`Resource(sanitize_attributes(...))`; the plain constructor runs no detector), so a credential
+  or a URL query in `OTEL_RESOURCE_ATTRIBUTES` is never exported. The provider's `atexit` hook
+  flushes pending spans on a graceful stop.
 - **Instrumentation:** `opentelemetry-instrumentation-fastapi`, one SERVER span per request that
   continues the caller's W3C `traceparent` (the jobs process's `fetch` span); propagation is
   `traceparent` only (caller `baggage` is ignored). `/health` is not traced, there are no
@@ -69,11 +86,14 @@ Same pipeline and rules as the API (`apps/api/src/platform/telemetry/README.md`)
   (`OTEL_SEMCONV_STABILITY_OPT_IN=http` by default).
 - **Span attributes** carry ids and enums only, e.g. `http.request.method`, `http.route`,
   `url.path`, `http.response.status_code`, `correlation_id`. The
-  exporter wrapper (`tracing.py`) drops `url.query`, `client.address`, `network.peer.address`,
+  exporter wrapper (`tracing.py`) applies one rule to the attributes of the span, of every event
+  and of every link: it drops `url.query`, `client.address`, `network.peer.address`,
   `user_agent.original`, `exception.message`, `exception.stacktrace` (and their old-convention
-  names), cuts the query and fragment from `url.full`/`url.path`/`http.url`/`http.target`, drops
-  the status description, keeps `exception.type`, and replaces with `[REDACTED]` any attribute whose
-  last dot-segment is a forbidden word.
+  names), cuts the query and fragment from every string of `url.full`/`url.path`/`http.url`/
+  `http.target` (a string or a sequence of strings; cut, not dropped), keeps `exception.type`, and
+  replaces with `[REDACTED]` any attribute whose last dot-segment is a forbidden word. It also cuts
+  the span name and every event name at the first `?` or `#`, drops the status description and
+  keeps each link's trace id, span id and flags.
 - **Correlation id** (`correlation.py`): the `x-correlation-id` request header is accepted when it
   matches the API's `CORRELATION_ID_PATTERN` (1–128 chars of `[A-Za-z0-9._:-]`, one header),
   else a UUID is minted. It is bound as `correlation_id` for every log line of the request, set on

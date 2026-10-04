@@ -28,6 +28,42 @@ REGISTRY = (
     / "registry"
     / "forbidden-log-keys.json"
 )
+# Its word-split examples: `forbidden` keys every matcher must catch, `allowed` keys it must not.
+# The API's logger test reads the same file (`FORBIDDEN_LOG_KEY_EXAMPLES`); read at collection
+# time because the test ids are its keys.
+EXAMPLES: dict[str, list[str]] = json.loads(
+    REGISTRY.with_name("forbidden-log-keys.examples.json").read_text(encoding="utf-8")
+)
+
+
+class DriverError(Exception):
+    """Shaped like a database driver error: its code names the failure, its message echoes a row."""
+
+    def __init__(self, message: str, code: object = "23505") -> None:
+        super().__init__(message)
+        self.code = code
+
+
+DRIVER_ERROR_SUMMARY = {"type": "DriverError", "code": "23505"}
+# The observable contract of a logged exception, pinned as literals: the field the API logger
+# writes it under (`err`) and the number of cause links followed (its MAX_ERR_CAUSE_DEPTH).
+ERR_KEY = "err"
+MAX_ERR_CAUSE_DEPTH = 5
+
+
+def _driver_error() -> DriverError:
+    return DriverError(f"Key (note)=({MARKER}) already exists.")
+
+
+def _failed_query() -> RuntimeError:
+    """A wrapper whose message lists the statement parameters, raised from the driver error."""
+    try:
+        raise _driver_error()
+    except DriverError as driver_error:
+        try:
+            raise RuntimeError(f"Failed query: params: {MARKER}") from driver_error
+        except RuntimeError as wrapper:
+            return wrapper
 
 
 def _records(stream: io.StringIO) -> list[dict[str, object]]:
@@ -55,19 +91,29 @@ def test_processor_drops_every_forbidden_key(key: str) -> None:
     assert result[REDACTED_COUNT_KEY] == 1
 
 
-# Same cases as apps/api/src/platform/tests/logger.redaction.test.ts (`isForbiddenLogKey`).
-@pytest.mark.parametrize(
-    "key", ["token", "accessToken", "refresh_token", "body", "imageUrl", "lat", "user-email"]
-)
+@pytest.mark.parametrize("key", EXAMPLES["forbidden"])
 def test_key_with_a_forbidden_word_is_forbidden(key: str) -> None:
     assert is_forbidden_log_key(key)
 
 
-@pytest.mark.parametrize(
-    "key", ["userId", "status", "latency", "template", "count", "imagination", "correlation_id"]
-)
+@pytest.mark.parametrize("key", EXAMPLES["allowed"])
 def test_key_without_a_forbidden_word_stays_loggable(key: str) -> None:
     assert not is_forbidden_log_key(key)
+
+
+def test_every_forbidden_example_is_dropped_and_every_allowed_one_kept(
+    log_stream: io.StringIO,
+) -> None:
+    allowed = {key: f"visible-{key}" for key in EXAMPLES["allowed"]}
+
+    structlog.get_logger("canary").info(
+        "examples", **dict.fromkeys(EXAMPLES["forbidden"], MARKER), **allowed
+    )
+
+    assert MARKER not in log_stream.getvalue()
+    (record,) = _records(log_stream)
+    assert {key: record.get(key) for key in allowed} == allowed
+    assert record[REDACTED_COUNT_KEY] == len(EXAMPLES["forbidden"])
 
 
 @pytest.mark.parametrize("word", sorted(FORBIDDEN_LOG_KEYS))
@@ -134,6 +180,111 @@ def test_stdlib_canary_never_reaches_stream(log_stream: io.StringIO) -> None:
     assert record["event"] == "boot"
     assert record["port"] == 8000
     assert record["logger"] == "uvicorn.error"
+
+
+# --- a logged exception is an allowlist: class, code-shaped code, cause chain (planning/11 §8) --
+# Same rule as the API logger's `err` (apps/api/src/platform/logger.ts `serializeErr`, with
+# queue/error-summary.ts for each link): never the message, the traceback or another attribute.
+
+
+def test_logged_exception_keeps_its_class_and_code_only(log_stream: io.StringIO) -> None:
+    try:
+        raise _driver_error()
+    except DriverError:
+        structlog.get_logger("canary").exception("driver error canary")
+
+    assert MARKER not in log_stream.getvalue()
+    (record,) = _records(log_stream)
+    assert record[ERR_KEY] == DRIVER_ERROR_SUMMARY
+    assert "exception" not in record
+    assert "exc_info" not in record
+
+
+def test_cause_chain_is_summarised_the_same_way_and_bounded(log_stream: io.StringIO) -> None:
+    log = structlog.get_logger("canary")
+    circular = ValueError(f"loop {MARKER}")
+    circular.__cause__ = circular
+    try:
+        raise _driver_error()
+    except DriverError:
+        try:
+            # No `from`: Python links the driver error as `__context__` (what a traceback prints).
+            raise ValueError(f"implicit context {MARKER}")
+        except ValueError as implicit:
+            implicit_context = implicit
+    try:
+        raise _driver_error()
+    except DriverError:
+        try:
+            raise ValueError(f"suppressed {MARKER}") from None
+        except ValueError as suppressed:
+            suppressed_context = suppressed
+
+    log.error("wrapped", exc_info=_failed_query())
+    log.error("implicit", exc_info=implicit_context)
+    log.error("suppressed", exc_info=suppressed_context)
+    log.error("circular", exc_info=circular)
+
+    assert MARKER not in log_stream.getvalue()
+    wrapped, implicit, suppressed, loop = (record[ERR_KEY] for record in _records(log_stream))
+    assert wrapped == {"type": "RuntimeError", "cause": DRIVER_ERROR_SUMMARY}
+    assert implicit == {"type": "ValueError", "cause": DRIVER_ERROR_SUMMARY}
+    assert suppressed == {"type": "ValueError"}
+    assert json.dumps(loop).count('"cause"') == MAX_ERR_CAUSE_DEPTH
+
+
+def test_code_is_kept_only_when_code_shaped_and_a_free_text_class_name_is_not_logged(
+    log_stream: io.StringIO,
+) -> None:
+    log = structlog.get_logger("canary")
+    leaky_class = type(f"Leaky {MARKER}", (ValueError,), {})
+    longest = "E" * 64
+
+    log.error("free-text code", exc_info=DriverError("x", code=f"bad {MARKER}"))
+    log.error("numeric code", exc_info=DriverError("x", code=404))
+    log.error("system code", exc_info=DriverError("fetch failed", code="ECONNREFUSED"))
+    log.error("free-text class", exc_info=leaky_class(MARKER))
+    log.error("longest class", exc_info=type(longest, (Exception,), {})())
+    log.error("too long class", exc_info=type(longest + "E", (Exception,), {})())
+
+    assert MARKER not in log_stream.getvalue()
+    assert [record[ERR_KEY] for record in _records(log_stream)] == [
+        {"type": "DriverError"},
+        {"type": "DriverError"},
+        {"type": "DriverError", "code": "ECONNREFUSED"},
+        {"type": "Error"},
+        {"type": longest},
+        {"type": "Error"},
+    ]
+
+
+def test_an_exception_under_any_other_key_is_summarised_the_same_way(
+    log_stream: io.StringIO,
+) -> None:
+    job = {"last_error": _failed_query(), "attempts": [_driver_error()]}
+
+    structlog.get_logger("canary").error("nested", failure=_driver_error(), job=job)
+
+    assert MARKER not in log_stream.getvalue()
+    (record,) = _records(log_stream)
+    assert record["failure"] == DRIVER_ERROR_SUMMARY
+    assert record["job"] == {
+        "last_error": {"type": "RuntimeError", "cause": DRIVER_ERROR_SUMMARY},
+        "attempts": [DRIVER_ERROR_SUMMARY],
+    }
+
+
+def test_stdlib_exception_keeps_its_class_and_code_only(log_stream: io.StringIO) -> None:
+    try:
+        raise _failed_query()
+    except RuntimeError:
+        logging.getLogger("uvicorn.error").exception("Exception in ASGI application")
+
+    assert MARKER not in log_stream.getvalue()
+    (record,) = _records(log_stream)
+    assert record["event"] == "Exception in ASGI application"
+    assert record[ERR_KEY] == {"type": "RuntimeError", "cause": DRIVER_ERROR_SUMMARY}
+    assert "exception" not in record
 
 
 def test_uvicorn_access_logger_is_silenced(log_stream: io.StringIO) -> None:

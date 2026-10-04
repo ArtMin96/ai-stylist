@@ -31,6 +31,12 @@ describe('StorageProvider port (in-memory fake)', () => {
     expect(put.expiresAt).toBe('2026-09-10T12:15:00.000Z');
   });
 
+  it('rejects a TTL under one second, which would floor to an already-expired 0 s URL', () => {
+    expect(() => clampTtl(0.5, 'PUT')).toThrow(StorageError);
+    expect(() => clampTtl(0.999, 'GET')).toThrow(StorageError);
+    expect(clampTtl(1.5, 'GET')).toBe(1);
+  });
+
   it('caps presigned GET TTLs at 10 minutes and PUT TTLs at 15 minutes (doc 11 §5.4)', async () => {
     const clock = fakeClock('2026-09-10T12:00:00.000Z');
     const storage = new InMemoryStorageProvider(() => clock.now());

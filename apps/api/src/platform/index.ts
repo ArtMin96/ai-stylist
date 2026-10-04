@@ -107,6 +107,15 @@ export {
   type StorageProvider,
   clampTtl,
 } from './ports/storage.port.js';
+export {
+  type StorageProviderConfig,
+  createStorageProvider,
+} from './storage/create-storage-provider.js';
+export {
+  R2StorageProvider,
+  type R2StorageProviderOptions,
+  r2Endpoint,
+} from './storage/r2-storage-provider.js';
 export { PgHealthProbe } from './pg-health-probe.js';
 export {
   type BackoffPolicy,

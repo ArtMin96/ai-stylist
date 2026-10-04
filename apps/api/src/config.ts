@@ -29,7 +29,31 @@ export const configSchema = z.object({
    * POSTHOG_API_KEY is set.
    */
   POSTHOG_HOST: z.url({ protocol: /^https?$/ }).optional(),
+  /**
+   * Cloudflare R2 (`StorageProvider`, P02-T13): all four set → presigned URLs on R2's S3 endpoint
+   * `https://<R2_ACCOUNT_ID>.r2.cloudflarestorage.com`; none set → the in-memory provider (local,
+   * tests, CI); some → refused. `R2_PUBLIC_BASE_URL` (public assets, P04/P06) is not read yet.
+   */
+  R2_ACCOUNT_ID: z
+    .string()
+    .regex(/^[0-9a-f]{32}$/, 'must be a Cloudflare account id (32 lowercase hex characters)')
+    .optional(),
+  R2_ACCESS_KEY_ID: z
+    .string()
+    .regex(/^[A-Za-z0-9]+$/, 'must be letters and digits only')
+    .optional(),
+  R2_SECRET_ACCESS_KEY: z.string().regex(/^\S+$/, 'must not contain whitespace').optional(),
+  R2_BUCKET: z
+    .string()
+    .regex(
+      /^[a-z0-9][a-z0-9-]{1,61}[a-z0-9]$/,
+      'must be an R2 bucket name (3-63 lowercase letters, digits and hyphens)',
+    )
+    .optional(),
 });
+
+/** Set together or not at all (`createStorageProvider` refuses a partial set as well). */
+const R2_KEYS = ['R2_ACCOUNT_ID', 'R2_ACCESS_KEY_ID', 'R2_SECRET_ACCESS_KEY', 'R2_BUCKET'] as const;
 
 export type AppConfig = z.infer<typeof configSchema> & { readonly listenPort: number };
 
@@ -57,6 +81,13 @@ export function loadConfig(env: Record<string, string | undefined> = process.env
     // posthog-node would otherwise fall back to its US host.
     throw new ConfigError(
       'invalid configuration: POSTHOG_HOST: required when POSTHOG_API_KEY is set',
+    );
+  }
+  const missingR2 = R2_KEYS.filter((key) => parsed.data[key] === undefined);
+  if (missingR2.length > 0 && missingR2.length < R2_KEYS.length) {
+    // A half-configured environment must not fall back to in-memory URLs silently.
+    throw new ConfigError(
+      `invalid configuration: ${missingR2.join(', ')}: required when any R2_* key is set`,
     );
   }
   return { ...parsed.data, listenPort: parsed.data.API_PORT ?? parsed.data.PORT ?? 3000 };

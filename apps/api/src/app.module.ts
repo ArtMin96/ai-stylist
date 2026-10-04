@@ -36,7 +36,6 @@ import { RecommendationModule } from './modules/recommendation/index.js';
 import {
   type FeatureFlagsAdapter,
   type HealthProbe,
-  InMemoryStorageProvider,
   OutboxRelay,
   type OutboxWriter,
   PgBossQueue,
@@ -46,6 +45,7 @@ import {
   SystemClock,
   UnconfiguredHealthProbe,
   createFeatureFlags,
+  createStorageProvider,
   currentCorrelationId,
   httpLoggerOptions,
   loggerOptions,
@@ -162,6 +162,15 @@ export class AppModule implements OnApplicationShutdown {
     const healthProbe: HealthProbe =
       db === null ? new UnconfiguredHealthProbe() : new PgHealthProbe(db.sql);
     const clock = new SystemClock();
+    // R2 when the four R2_* keys are set (presigned URLs on R2's S3 endpoint), else in-memory.
+    const storage = createStorageProvider({
+      accountId: config.R2_ACCOUNT_ID,
+      accessKeyId: config.R2_ACCESS_KEY_ID,
+      secretAccessKey: config.R2_SECRET_ACCESS_KEY,
+      bucket: config.R2_BUCKET,
+      clock,
+      logger,
+    });
     let runtime: DbRuntime | null = null;
     if (db !== null && config.DATABASE_URL !== undefined) {
       // Queue names, routes and the per-user key come from `jobs/queues.ts` (single source of
@@ -195,7 +204,7 @@ export class AppModule implements OnApplicationShutdown {
           },
           clock,
           healthProbe,
-          storage: new InMemoryStorageProvider(() => clock.now()),
+          storage,
           featureFlags,
         }),
         ...DOMAIN_MODULES,

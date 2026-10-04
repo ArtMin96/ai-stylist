@@ -113,7 +113,7 @@ dev-workers *args:
 
 # --- quality gates (* = part of ci-parity) -------------------------------------------
 
-# * Run tests: full suite via turbo + the native lanes, or one module's tests/ dir (`just test recommendation`; `just test ios` / `just test android` = that app's unit tests; `just test secrets` = the sops+age shell suite; `just test tooling` = the scripts/test shell suites: bootstrap/doctor, contracts-breaking, test-regression, ci-metrics, dev service names, observability-sync, repo-setup; `just test platform` = the `api` + `platform-docker` vitest projects); SKIP_DOCKER_TESTS=1 leaves out the Testcontainers `migrations` and `platform-docker` projects (runners without Docker only)
+# * Run tests: full suite via turbo + the native lanes, or one module's tests/ dir (`just test recommendation`; `just test ios` / `just test android` = that app's unit tests; `just test secrets` = the sops+age shell suite; `just test tooling` = the scripts/test shell suites: bootstrap/doctor, contracts-breaking, generate (a failing generator fails `just generate [--check]`), test-regression, ci-metrics, dev service names, observability-sync, repo-setup; `just test platform` = the `api` + `platform-docker` vitest projects); SKIP_DOCKER_TESTS=1 leaves out the Testcontainers `migrations` and `platform-docker` projects (runners without Docker only)
 test module='':
     #!/usr/bin/env bash
     set -euo pipefail
@@ -175,6 +175,7 @@ test-secrets:
 test-tooling:
     scripts/test/bootstrap-doctor.test.sh
     scripts/test/contracts-breaking.test.sh
+    scripts/test/generate.test.sh
     scripts/test/regression.test.sh
     bash scripts/test/ci-metrics.test.sh
     bash scripts/test/dev-service-names.test.sh
@@ -259,7 +260,7 @@ arch-check *args:
 docs-check *args:
     scripts/docs/docs-check.sh "$@"
 
-# * Contract codegen: OpenAPI bundle -> hey-api, json-schema-to-typescript, datamodel-code-generator, swift-openapi-generator (Swift client), openapi-generator (Kotlin client); `--check` diffs committed output
+# * Contract codegen: OpenAPI bundle -> hey-api, json-schema-to-typescript, datamodel-code-generator, swift-openapi-generator (Swift client), openapi-generator (Kotlin client); `--check` diffs committed output; any failing generator fails both modes and is named
 generate *args:
     tools/codegen/generate.sh "$@"
 

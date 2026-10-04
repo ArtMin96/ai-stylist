@@ -5,49 +5,37 @@ from __future__ import annotations
 import io
 import json
 import logging
-import re
-from pathlib import Path
 from types import MappingProxyType
-from typing import Any
 
 import pytest
 import structlog
 from httpx import AsyncClient
 
-from ai_stylist_segmentation.redaction import (
+from ai_stylist_generated.kernel import (
     CODE_SHAPE,
     ERROR_NAME_SHAPE,
+    EXCEPTION_TYPE_KEPT,
+    EXCEPTION_TYPE_REPLACED,
+    FORBIDDEN_LOG_KEY_EXAMPLES_ALLOWED,
+    FORBIDDEN_LOG_KEY_EXAMPLES_FORBIDDEN,
     FORBIDDEN_LOG_KEYS,
-    MAX_ERR_CAUSE_DEPTH,
+    MAX_CAUSE_DEPTH,
+)
+from ai_stylist_segmentation.redaction import (
     REDACTED_COUNT_KEY,
     is_forbidden_log_key,
     redact_forbidden_keys,
+    summarize_error,
 )
 from ai_stylist_segmentation.tracing import sanitize_attributes
 
 MARKER = "CANARY-7f3a9c"
 
-# The single source of the forbidden words (repo checkout; the Docker image has no `packages/`).
-REGISTRY = (
-    Path(__file__).resolve().parents[4]
-    / "packages"
-    / "shared-kernel"
-    / "registry"
-    / "forbidden-log-keys.json"
-)
-# Its word-split examples: `forbidden` keys every matcher must catch, `allowed` keys it must not.
-# The API's logger test reads the same file (`FORBIDDEN_LOG_KEY_EXAMPLES`); read at collection
-# time because the test ids are its keys.
-EXAMPLES: dict[str, list[str]] = json.loads(
-    REGISTRY.with_name("forbidden-log-keys.examples.json").read_text(encoding="utf-8")
-)
-# The single source of the error shapes and the cause depth (`ERROR_NAME_SHAPE`, `CODE_SHAPE`,
-# `MAX_ERR_CAUSE_DEPTH`, and the `exception.type` rule of `tracing.py`), with its labelled vectors;
-# read at collection time because the vectors are test parameters.
-LOG_REDACTION: dict[str, Any] = json.loads(
-    REGISTRY.with_name("log-redaction.json").read_text(encoding="utf-8")
-)
-EXCEPTION_TYPE_VECTORS: dict[str, list[str]] = LOG_REDACTION["vectors"]["exceptionType"]
+# The forbidden words, their word-split examples (`forbidden` keys every matcher must catch,
+# `allowed` keys it must not), the error shapes, the cause depth and the `exception.type` vectors
+# all come from `ai_stylist_generated.kernel`, generated from `packages/shared-kernel/registry/`
+# by `just generate`. `packages/contracts/tests/kernel-python.test.ts` checks that module against
+# the registry JSON, so these tests consume it and read no file by repo path.
 
 
 class DriverError(Exception):
@@ -60,7 +48,7 @@ class DriverError(Exception):
 
 DRIVER_ERROR_SUMMARY = {"type": "DriverError", "code": "23505"}
 # The field the API logger writes a logged exception under, pinned as a literal. The number of cause
-# links followed is `MAX_ERR_CAUSE_DEPTH`, pinned to the log-redaction registry below.
+# links followed is the generated `MAX_CAUSE_DEPTH`.
 ERR_KEY = "err"
 
 
@@ -83,47 +71,31 @@ def _records(stream: io.StringIO) -> list[dict[str, object]]:
     return [json.loads(line) for line in stream.getvalue().splitlines() if line]
 
 
-def test_forbidden_words_match_the_shared_kernel_registry() -> None:
-    registry_words: list[str] = json.loads(REGISTRY.read_text(encoding="utf-8"))["keys"]
-
-    assert len(registry_words) == len(set(registry_words))
-    assert set(registry_words) == FORBIDDEN_LOG_KEYS, (
-        "FORBIDDEN_LOG_KEYS (ai_stylist_segmentation/redaction.py) drifted from "
-        "packages/shared-kernel/registry/forbidden-log-keys.json; copy the registry's words"
-    )
-
-
-def test_error_shapes_and_cause_depth_match_the_shared_kernel_registry() -> None:
-    drift = (
-        "drifted from packages/shared-kernel/registry/log-redaction.json; copy the registry's value"
-    )
-    # Same source string, compiled as the registry's schema says for Python (`re.ASCII`); every
-    # use is `fullmatch` (asserted through the vectors below).
-    assert ERROR_NAME_SHAPE.pattern == LOG_REDACTION["errorNameShape"], f"ERROR_NAME_SHAPE {drift}"
-    assert CODE_SHAPE.pattern == LOG_REDACTION["codeShape"], f"CODE_SHAPE {drift}"
-    assert ERROR_NAME_SHAPE.flags & re.ASCII
-    assert CODE_SHAPE.flags & re.ASCII
-    assert MAX_ERR_CAUSE_DEPTH == LOG_REDACTION["maxCauseDepth"], f"MAX_ERR_CAUSE_DEPTH {drift}"
-
-
 def _registry_shaped(value: str) -> bool:
-    """The registry's own `exception.type` rule, compiled as its schema says for Python."""
-    return any(
-        re.compile(LOG_REDACTION[shape], re.ASCII).fullmatch(value)
-        for shape in ("errorNameShape", "codeShape")
-    )
+    """The registry's own `exception.type` rule: name-shaped or code-shaped, by `fullmatch`."""
+    return any(shape.fullmatch(value) for shape in (ERROR_NAME_SHAPE, CODE_SHAPE))
 
 
-@pytest.mark.parametrize("value", EXCEPTION_TYPE_VECTORS["kept"])
+@pytest.mark.parametrize("value", EXCEPTION_TYPE_KEPT)
 def test_registry_exception_type_kept_vector_is_kept(value: str) -> None:
     assert _registry_shaped(value)
     assert sanitize_attributes({"exception.type": value}) == {"exception.type": value}
 
 
-@pytest.mark.parametrize("value", EXCEPTION_TYPE_VECTORS["replaced"])
+@pytest.mark.parametrize("value", EXCEPTION_TYPE_REPLACED)
 def test_registry_exception_type_replaced_vector_is_written_as_error(value: str) -> None:
     assert not _registry_shaped(value)
     assert sanitize_attributes({"exception.type": value}) == {"exception.type": "Error"}
+
+
+@pytest.mark.parametrize("value", EXCEPTION_TYPE_REPLACED)
+def test_a_logged_exception_whose_class_name_is_a_replaced_vector_is_written_as_error(
+    value: str,
+) -> None:
+    # The log side of the same rule: a dynamically created class can carry any text as its name.
+    error = type(value, (Exception,), {})(MARKER)
+
+    assert summarize_error(error) == {"type": "Error"}
 
 
 @pytest.mark.parametrize("key", sorted(FORBIDDEN_LOG_KEYS))
@@ -137,12 +109,12 @@ def test_processor_drops_every_forbidden_key(key: str) -> None:
     assert result[REDACTED_COUNT_KEY] == 1
 
 
-@pytest.mark.parametrize("key", EXAMPLES["forbidden"])
+@pytest.mark.parametrize("key", FORBIDDEN_LOG_KEY_EXAMPLES_FORBIDDEN)
 def test_key_with_a_forbidden_word_is_forbidden(key: str) -> None:
     assert is_forbidden_log_key(key)
 
 
-@pytest.mark.parametrize("key", EXAMPLES["allowed"])
+@pytest.mark.parametrize("key", FORBIDDEN_LOG_KEY_EXAMPLES_ALLOWED)
 def test_key_without_a_forbidden_word_stays_loggable(key: str) -> None:
     assert not is_forbidden_log_key(key)
 
@@ -150,16 +122,16 @@ def test_key_without_a_forbidden_word_stays_loggable(key: str) -> None:
 def test_every_forbidden_example_is_dropped_and_every_allowed_one_kept(
     log_stream: io.StringIO,
 ) -> None:
-    allowed = {key: f"visible-{key}" for key in EXAMPLES["allowed"]}
+    allowed = {key: f"visible-{key}" for key in FORBIDDEN_LOG_KEY_EXAMPLES_ALLOWED}
 
     structlog.get_logger("canary").info(
-        "examples", **dict.fromkeys(EXAMPLES["forbidden"], MARKER), **allowed
+        "examples", **dict.fromkeys(FORBIDDEN_LOG_KEY_EXAMPLES_FORBIDDEN, MARKER), **allowed
     )
 
     assert MARKER not in log_stream.getvalue()
     (record,) = _records(log_stream)
     assert {key: record.get(key) for key in allowed} == allowed
-    assert record[REDACTED_COUNT_KEY] == len(EXAMPLES["forbidden"])
+    assert record[REDACTED_COUNT_KEY] == len(FORBIDDEN_LOG_KEY_EXAMPLES_FORBIDDEN)
 
 
 @pytest.mark.parametrize("word", sorted(FORBIDDEN_LOG_KEYS))
@@ -276,7 +248,7 @@ def test_cause_chain_is_summarised_the_same_way_and_bounded(log_stream: io.Strin
     assert wrapped == {"type": "RuntimeError", "cause": DRIVER_ERROR_SUMMARY}
     assert implicit == {"type": "ValueError", "cause": DRIVER_ERROR_SUMMARY}
     assert suppressed == {"type": "ValueError"}
-    assert json.dumps(loop).count('"cause"') == MAX_ERR_CAUSE_DEPTH
+    assert json.dumps(loop).count('"cause"') == MAX_CAUSE_DEPTH
 
 
 def test_code_is_kept_only_when_code_shaped_and_a_free_text_class_name_is_not_logged(

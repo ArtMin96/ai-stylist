@@ -16,10 +16,11 @@ It mirrors apps/api/src/platform/telemetry/span-sanitizer.ts (`sanitizeAttribute
   exception message and stack trace (plus their old HTTP semantic-convention names, which the
   Python instrumentation emits without OTEL_SEMCONV_STABILITY_OPT_IN=http); redact an attribute
   whose last dot-segment is a forbidden log word; keep `exception.type` only when it is name-shaped
-  (`redaction.ERROR_NAME_SHAPE`) or code-shaped (`redaction.CODE_SHAPE`), else write `Error` (the
-  `errorNameShape` and `codeShape` of `packages/shared-kernel/registry/log-redaction.json`, which
-  the API's error summary also reads; `tests/test_redaction.py` pins both constants to that file
-  and runs its `vectors.exceptionType` through `sanitize_attributes`);
+  (`ERROR_NAME_SHAPE`) or code-shaped (`CODE_SHAPE`), else write `Error` (both from
+  `ai_stylist_generated.kernel`, generated from the `errorNameShape` and `codeShape` of
+  `packages/shared-kernel/registry/log-redaction.json`, which the API's error summary also reads;
+  the tests run its generated `EXCEPTION_TYPE_KEPT` / `_REPLACED` vectors through
+  `sanitize_attributes`);
   cut every string of `url.full`, `url.path`, `http.url` and `http.target` (a string or a sequence
   of strings) at the first `?` or `#`;
 - the span name is cut at the first `?` or `#` (`_strip_query`, the API's `stripQuery`);
@@ -57,7 +58,8 @@ from opentelemetry.semconv.attributes.user_agent_attributes import USER_AGENT_OR
 from opentelemetry.trace import Link, Status, format_span_id, format_trace_id
 from opentelemetry.util.types import AttributeValue
 
-from ai_stylist_segmentation.redaction import CODE_SHAPE, ERROR_NAME_SHAPE, is_forbidden_log_key
+from ai_stylist_generated.kernel import CODE_SHAPE, ERROR_NAME_SHAPE
+from ai_stylist_segmentation.redaction import is_forbidden_log_key
 
 REDACTED = "[REDACTED]"
 

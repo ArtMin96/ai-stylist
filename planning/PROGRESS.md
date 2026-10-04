@@ -82,6 +82,16 @@ Log hygiene: when this log exceeds ~30 entries, move the oldest entries to `plan
 
 *(newest first)*
 
+### 2026-10-04 — Reviews of the PR #13 platform passes; review fixes; P02-T13 started (in flight)
+
+*Interim entry, written mid-session; it is rewritten when the session closes.*
+
+- **Phase / tasks worked:** P02 — follow-ups of P02-T09 (AI-17) and P02-T13. Branch `claude/project-next-steps-r6nu70` off `main` @ `27337d4` (PR #13 merged, so the follow-ups branch named in the 2026-10-03 entry is on `main`).
+- **Done so far:** security-privacy review of the three platform passes (`0e8d140..27337d4`): APPROVE, no blocker, all six open findings confirmed real. Architecture review: no boundary finding; changes requested for the stale worker mirror, invariant 17's 404 `detail` gap and a four-times-copied Nest test harness. Worker parity fix committed (`fix(workers): …`): span and event names cut, link attributes, URL arrays, resource sanitized once, logged exceptions as `err: {type, code?, cause?}`, registry examples in tests; `just test workers` 159 passed.
+- **In flight:** API-side review fixes (platform-engineer, worktree) and the P02-T13 R2 adapter + `*.sec.test.ts` (platform-engineer, worktree); not yet integrated.
+- **Repository state:** not verified by a full gate; Docker is unavailable in this cloud session, so the `*.docker.test.ts` suites cannot run here.
+- **Next session starts:** integrate the two in-flight branches, run the gates, open the PR.
+
 ### 2026-10-03 — P02-T09 closed (AI-17): PR #12 merged, vulnerability gate green on `main`; hardening and setup-automation follow-ups
 
 *The session ran 2026-10-03 to 2026-10-04. This entry was rewritten in place at 00:20 +04 on 2026-10-04 and replaces the earlier text, which described PR #12 as open and P02-T09 as `PARTIAL`. CI, Linear and vendor results are as reported by the lead; "reported by the agent" means the lead did not re-run it. The follow-ups branch is not pushed, part of its work is uncommitted, and the three platform passes on it are not reviewed.*

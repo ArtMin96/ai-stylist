@@ -3,7 +3,7 @@
 > Module names are canonical per [SPINE §3](../../planning/SPINE.md). Path: `apps/api/src/modules/closet`. This contract is the module's source of truth; code that contradicts it is wrong until a DEC entry says otherwise.
 
 - **Responsibility (one sentence):** Item catalog, taxonomy, attributes, availability/laundry state, collections, and wear history.
-- **Owner:** @team (placeholder — see `CODEOWNERS`) · **Status:** skeleton (P02) · **Last updated:** 2026-09-13
+- **Owner:** @team (placeholder — see `CODEOWNERS`) · **Status:** skeleton (P02) · **Last updated:** 2026-10-04
 
 ## Public interface
 
@@ -58,5 +58,6 @@ Derived from P02 brief §5 and doc 04 §4.2; every rule has a failing fixture (`
 ## Extension points
 
 - Taxonomy extensions land as data in the owned tables; attribute kinds are declared once here and surfaced via `packages/contracts`.
+- Taxonomy values on the wire before the taxonomy registry exists: the segmentation worker contract (`packages/contracts/workers/segmentation/segmentation.v1.json`, `$defs/MaskLabel`) restates the garment classes `top`, `bottom`, `dress`, `outerwear`, `shoes` and `accessory`. This module owns those values; the contract's description says so, and when the closet taxonomy registry lands (P06-T01) the contract derives them from it instead. `background`, the seventh `MaskLabel` value, is segmentation-only (pixels of no garment) and is not a taxonomy class. A change to the garment values is a taxonomy change decided here, then a contract change (`api-contract-change`; removing a value needs `segmentation.v2.json`).
 
 Status: skeleton (P02).

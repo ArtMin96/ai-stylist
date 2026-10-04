@@ -195,6 +195,104 @@ describe('events-breaking --base-ref', () => {
   });
 });
 
+describe('events-breaking covers the worker HTTP contracts (workers/<service>/*.json)', () => {
+  const WORKER_DIR = path.resolve(HERE, '../workers/segmentation');
+  const WORKER_FILE = 'segmentation.v1.json';
+  type Defs = Record<string, Json & { properties?: Record<string, Json>; required?: string[] }>;
+
+  function workerSchema(): Json & { anyOf: Json[]; $defs: Defs } {
+    return JSON.parse(readFileSync(path.join(WORKER_DIR, WORKER_FILE), 'utf8')) as Json & {
+      anyOf: Json[];
+      $defs: Defs;
+    };
+  }
+
+  function git(cwd: string, ...args: string[]): void {
+    const res = spawnSync(
+      'git',
+      ['-c', 'user.name=t', '-c', 'user.email=t@example.invalid', ...args],
+      { cwd, encoding: 'utf8' },
+    );
+    if (res.status !== 0) throw new Error(`git ${args.join(' ')}: ${res.stderr}`);
+  }
+
+  /** A throwaway repo: the committed worker schema at the base commit, `edit(schema)` on top. */
+  function repoWithWorkerEdit(edit: (s: ReturnType<typeof workerSchema>) => void): string {
+    const repo = tempDir();
+    const events = path.join(repo, 'packages/contracts/events');
+    const workers = path.join(repo, 'packages/contracts/workers/segmentation');
+    cpSync(path.join(FIXTURES, 'base'), events, { recursive: true });
+    cpSync(WORKER_DIR, workers, { recursive: true });
+    git(repo, 'init', '-q');
+    git(repo, 'add', '.');
+    git(repo, 'commit', '-q', '-m', 'base');
+    const schema = workerSchema();
+    edit(schema);
+    writeFileSync(path.join(workers, WORKER_FILE), JSON.stringify(schema, null, 2));
+    return repo;
+  }
+
+  it('accepts the committed worker schemas compared with themselves', () => {
+    const res = compareDirs(WORKER_DIR, WORKER_DIR);
+    expect(res.out).toMatch(/OK - [1-9]\d* base schema version\(s\) compatible/);
+    expect(res.status).toBe(0);
+  });
+
+  it.each<[string, (s: ReturnType<typeof workerSchema>) => void, string]>([
+    [
+      'removed mask label',
+      (s) => (s.$defs.MaskLabel!.enum = ['top', 'bottom']),
+      'enum value(s) removed: "dress"',
+    ],
+    [
+      'removed response field',
+      (s) => delete s.$defs.SegmentResponse!.properties!.provenance,
+      '/$defs/SegmentResponse: property "provenance" removed',
+    ],
+    [
+      'newly required request field',
+      (s) => s.$defs.SegmentRequest!.required!.push('hint'),
+      'property "hint" newly required',
+    ],
+    [
+      'removed message',
+      (s) => (s.anyOf = s.anyOf.slice(0, 2)),
+      'message #/$defs/HealthResponse removed',
+    ],
+    [
+      'removed worker contract version',
+      (s) => (s.$id = 'https://contracts.ai-stylist.app/workers/segmentation/segmentation.v2.json'),
+      'segmentation.v1.json (segmentation.v1.json) /: schema version removed',
+    ],
+  ])('fails on a %s (--base-ref)', (_name, edit, finding) => {
+    const res = run('--base-ref', 'HEAD', '--repo', repoWithWorkerEdit(edit));
+    expect(res.out).toContain(finding);
+    expect(res.status).toBe(1);
+  });
+
+  it.each<[string, (s: ReturnType<typeof workerSchema>) => void]>([
+    [
+      'new optional request field',
+      (s) => (s.$defs.SegmentRequest!.properties!.locale = { type: 'string' }),
+    ],
+    [
+      'new mask label',
+      (s) => (s.$defs.MaskLabel!.enum = [...(s.$defs.MaskLabel!.enum as string[]), 'swimwear']),
+    ],
+    [
+      'new message',
+      (s) => {
+        s.$defs.ReadyResponse = { type: 'object', properties: { ready: { type: 'boolean' } } };
+        s.anyOf.push({ $ref: '#/$defs/ReadyResponse' });
+      },
+    ],
+  ])('passes a %s (--base-ref)', (_name, edit) => {
+    const res = run('--base-ref', 'HEAD', '--repo', repoWithWorkerEdit(edit));
+    expect(res.out).toContain('compatible');
+    expect(res.status).toBe(0);
+  });
+});
+
 describe('the breaking:events package script', () => {
   it('runs this gate, so it travels with the package', () => {
     const manifest = JSON.parse(readFileSync(path.resolve(HERE, '../package.json'), 'utf8')) as {

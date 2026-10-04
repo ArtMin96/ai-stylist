@@ -12,7 +12,7 @@ workers/
 ├── .dockerignore           build context for every image is this directory
 ├── .gitignore              workspace-local caches (.hypothesis/); the root .gitignore covers the rest
 └── ml/
-    ├── generated/          `ai-stylist-generated`: event models + shared-kernel constants (`just generate`; never hand-edited)
+    ├── generated/          `ai-stylist-generated`: event + worker-contract models, kernel constants (`just generate`; never hand-edited)
     └── segmentation/       `ai-stylist-segmentation`: FastAPI service
         ├── pyproject.toml  runtime deps only (hatchling build)
         ├── Dockerfile      multi-stage, python:3.14-slim, uv --frozen, non-root, HEALTHCHECK /health
@@ -32,8 +32,10 @@ workers/
 - **`workers-not-server`** (brief §5; dependency-cruiser covers TypeScript only, so review
   enforces it here): workers may depend only on `packages/contracts` (through the generated
   models) and `packages/shared-kernel`. Never on `apps/api`. The versioned JSON
-  schemas in `packages/contracts/events/*.json` are the _only_ contract shared with the
-  TypeScript side; `just generate` turns them into `ml/generated/ai_stylist_generated/events/`.
+  schemas in `packages/contracts/events/*.json` and `packages/contracts/workers/<service>/*.json`
+  (the API ↔ worker HTTP contracts) are the _only_ contracts shared with the TypeScript side;
+  `just generate` turns them into `ml/generated/ai_stylist_generated/events/` and
+  `ml/generated/ai_stylist_generated/<service>/`.
 - **`composition-root-only`:** `ml/<service>/src/<pkg>/main.py` is the only module that builds
   the app, configures logging, or constructs adapters. Everything else is pure, importable code.
 - **Logging:** structlog JSON to stdout. A redaction processor drops every key that is, or contains
@@ -169,11 +171,16 @@ available; `workers/.dockerignore` keeps tests, caches and venvs out of the cont
 
 ### Generated models (`just generate`)
 
-`tools/codegen/gen-python.sh [--check]` writes two subpackages of `ml/generated/ai_stylist_generated/`,
+`tools/codegen/gen-python.sh [--check]` writes these subpackages of `ml/generated/ai_stylist_generated/`,
 formats them with the workspace ruff config and is idempotent:
 
 - `events/`: `datamodel-codegen` over the top-level `packages/contracts/events/*.json` (one module
   per schema). `CONTRACTS_EVENTS_DIR` overrides the input directory.
+- `<service>/`: `datamodel-codegen` over `packages/contracts/workers/<service>/*.json`, one module
+  per contract version. Today `segmentation/segmentation_v1.py`:
+  `from ai_stylist_generated.segmentation.segmentation_v1 import SegmentRequest, SegmentResponse,
+MaskRef, MaskLabel, Provenance, HealthResponse` (`MaskLabel` is a `StrEnum`; `extra="forbid"`;
+  `Provenance.generated` defaults to `True` and `SegmentResponse.masks` to `[]`).
 - `kernel/`: `tools/codegen/gen-kernel.mjs python` over the shared-kernel registries the workers
   mirror (DEC-55 extended). `from ai_stylist_generated.kernel import ...` gives
   `FORBIDDEN_LOG_KEYS` (`frozenset[str]`), `FORBIDDEN_LOG_KEY_EXAMPLES_FORBIDDEN` / `_ALLOWED`
@@ -183,8 +190,9 @@ formats them with the workspace ruff config and is idempotent:
   with the generated member, so no worker code or test needs `packages/` at run time.
 
 `--check` exits 1 when the committed output is stale. Generated files start with a
-`# GENERATED` banner and are never hand-edited. `events/` is excluded from `ruff check`;
-`kernel/` passes it as generated. Both are type-checked.
+`# GENERATED` banner and are never hand-edited. `events/` is excluded from `ruff check`; the
+other subpackages pass it as generated (a module with a long schema description carries a
+file-level `# ruff: noqa: E501`). All are type-checked.
 
 ## Rules enforced by tooling
 

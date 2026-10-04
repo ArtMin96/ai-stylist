@@ -1,19 +1,21 @@
 #!/usr/bin/env node
-// Breaking-change check for the event JSON Schemas in packages/contracts/events/*.json, base vs
-// head (planning/06 §4 "Versioning rules": additive-only within vN; renaming, removing or
-// retyping needs vN+1). Node built-ins only, so it runs before and without `pnpm install`.
+// Breaking-change check for the versioned JSON Schemas of this package, base vs head
+// (planning/06 §4 "Versioning rules": additive-only within vN; renaming, removing or retyping
+// needs vN+1): the event schemas in events/*.json and the internal worker HTTP contracts in
+// workers/<service>/*.json (e.g. workers/segmentation/segmentation.v1.json). Node built-ins only,
+// so it runs before and without `pnpm install`.
 //
 //   node packages/contracts/scripts/events-breaking.mjs --base-ref <git-ref> [--repo <dir>]
 //   node packages/contracts/scripts/events-breaking.mjs --base-dir <dir> --head-dir <dir>
 //   pnpm --filter @ai-stylist/contracts run breaking:events --base-ref <git-ref>
 //
-// The events dir is this package's events/, resolved from this file (package-relative). --base-ref
-// reads the base schemas from git (`git show <ref>:<events dir>/<f>`, where <events dir> is that
-// directory relative to `git rev-parse --show-toplevel`, `packages/contracts/events` here) and
-// compares them with the working tree of the repository: the package's own, or --repo <dir> with
-// the same layout (the tests' throwaway repos). --base-dir/--head-dir compare two directories (the
-// tests' fixtures). Only top-level *.json files are event schemas; analytics/ is a separate
-// taxonomy.
+// The schema dirs are this package's events/ and every workers/<service>/ on the base or head,
+// resolved from this file (package-relative). --base-ref reads the base schemas from git
+// (`git show <ref>:<dir>/<f>`, where <dir> is that directory relative to
+// `git rev-parse --show-toplevel`, e.g. `packages/contracts/events`) and compares each dir with the
+// working tree of the repository: the package's own, or --repo <dir> with the same layout (the
+// tests' throwaway repos). --base-dir/--head-dir compare two directories (the tests' fixtures).
+// Only top-level *.json files of a schema dir are schemas; events/analytics/ is a separate taxonomy.
 //
 // A schema version is keyed by its `properties.type.const` (the `<module>.<entity>.<action>.vN`
 // event type), else its `$id`, else its file name, so moving a schema to another file is not a
@@ -22,8 +24,10 @@
 //   remove a property · newly require a property · change or narrow a type (integer → number is
 //   a widening and allowed) · remove an enum value, add an enum/const or change a const ·
 //   tighten additionalProperties/unevaluatedProperties (open → schema → false).
-// Additive changes (a new optional property, a new enum value, a new event version) pass.
-// Not compared: allOf/anyOf/oneOf, prefixItems and value constraints (pattern, length, range).
+// A root `anyOf`/`oneOf` of local $refs lists the messages of a contract (the worker contracts):
+// each base message must still be listed, under the same $ref, and is compared like a root.
+// Additive changes (a new optional property, a new enum value, a new message, a new version) pass.
+// Not compared: other allOf/anyOf/oneOf, prefixItems and value constraints (pattern, length, range).
 //
 // Exit codes: 0 no breaking change (or nothing on the base to compare), 1 breaking change,
 // 2 usage, git or JSON error.
@@ -95,6 +99,23 @@ export function loadRef(repo, ref, eventsDir = eventsRepoPath()) {
     );
   }
   return out;
+}
+
+/**
+ * The repo-relative posix paths of this package's workers/<service> schema dirs present at `ref`
+ * or in the working tree of `repo` (`packages/contracts/workers/segmentation`, …), sorted.
+ */
+export function workerDirs(repo, ref, packageDir = path.posix.dirname(eventsRepoPath())) {
+  const dirs = new Set();
+  const listing = git(repo, ['ls-tree', '-d', '--name-only', ref, '--', `${packageDir}/workers/`]);
+  for (const dir of listing.split('\n').filter(Boolean)) dirs.add(dir);
+  const local = path.join(repo, ...packageDir.split(path.posix.sep), 'workers');
+  if (existsSync(local)) {
+    for (const entry of readdirSync(local, { withFileTypes: true })) {
+      if (entry.isDirectory()) dirs.add(`${packageDir}/workers/${entry.name}`);
+    }
+  }
+  return [...dirs].sort();
 }
 
 /** The schema-version key: the event `type` const, else `$id`, else the file name. */
@@ -224,6 +245,19 @@ export function diffSchema(baseRoot, headRoot) {
     if (isObject(b.items) && isObject(h.items)) walk(b.items, h.items, `${at}/items`);
   };
   walk(baseRoot, headRoot, '');
+  // A root anyOf/oneOf of local $refs lists a contract's messages: each must stay, and is compared.
+  const messages = (root) => {
+    const list = isObject(root) ? (root.anyOf ?? root.oneOf) : undefined;
+    if (!Array.isArray(list)) return [];
+    return list
+      .filter((b) => isObject(b) && typeof b.$ref === 'string' && b.$ref.startsWith('#/'))
+      .map((b) => b.$ref);
+  };
+  const headMessages = new Set(messages(headRoot));
+  for (const ref of messages(baseRoot)) {
+    if (!headMessages.has(ref)) findings.push({ path: '/', message: `message ${ref} removed` });
+    else walk({ $ref: ref }, { $ref: ref }, ref.slice(1));
+  }
   return findings;
 }
 
@@ -277,35 +311,52 @@ function parseArgs(argv) {
   return opts;
 }
 
+/** Compares every schema dir at `ref` with the working tree of `repo`; null when the base has none. */
+function compareRef(repo, ref) {
+  const eventsDir = eventsRepoPath();
+  const dirs = [eventsDir, ...workerDirs(repo, ref, path.posix.dirname(eventsDir))];
+  const total = { compared: 0, added: [], breaking: [] };
+  let baseSchemas = 0;
+  for (const dir of dirs) {
+    const baseFiles = loadRef(repo, ref, dir);
+    baseSchemas += baseFiles.size;
+    const headDir = path.join(repo, ...dir.split(path.posix.sep));
+    // A missing events/ is a usage error, as before; a removed worker dir removes its versions.
+    const headFiles = dir === eventsDir || existsSync(headDir) ? loadDir(headDir) : new Map();
+    const { compared, added, breaking } = diffEventSchemas(baseFiles, headFiles);
+    total.compared += compared;
+    total.added.push(...added);
+    total.breaking.push(...breaking);
+  }
+  return baseSchemas === 0 ? null : total;
+}
+
 function main(argv) {
   const opts = parseArgs(argv);
-  let baseFiles;
-  let headFiles;
+  let result;
   if (opts['base-ref']) {
-    const eventsDir = eventsRepoPath();
     const repo =
       opts.repo !== undefined
         ? path.resolve(opts.repo)
         : git(PACKAGE_DIR, ['rev-parse', '--show-toplevel']).trim();
-    baseFiles = loadRef(repo, opts['base-ref'], eventsDir);
-    if (baseFiles.size === 0) {
+    git(repo, ['rev-parse', '--verify', '--quiet', `${opts['base-ref']}^{commit}`]);
+    result = compareRef(repo, opts['base-ref']);
+    if (result === null) {
       process.stdout.write(
-        `events-breaking: no event schemas at ${opts['base-ref']} - nothing to compare\n`,
+        `events-breaking: no event schemas or worker schemas at ${opts['base-ref']} - nothing to compare\n`,
       );
       return 0;
     }
-    headFiles = loadDir(path.join(repo, ...eventsDir.split(path.posix.sep)));
   } else {
-    baseFiles = loadDir(opts['base-dir']);
-    headFiles = loadDir(opts['head-dir']);
+    result = diffEventSchemas(loadDir(opts['base-dir']), loadDir(opts['head-dir']));
   }
-  const { compared, added, breaking } = diffEventSchemas(baseFiles, headFiles);
+  const { compared, added, breaking } = result;
   if (breaking.length) {
     for (const b of breaking) {
       process.stderr.write(`BREAKING ${b.version} (${b.file}) ${b.path}: ${b.message}\n`);
     }
     process.stderr.write(
-      `events-breaking: ${breaking.length} breaking change(s); ship a new event version (.vN+1) instead (planning/06 §4)\n`,
+      `events-breaking: ${breaking.length} breaking change(s); ship a new schema version (.vN+1) instead (planning/06 §4)\n`,
     );
     return 1;
   }

@@ -2,9 +2,9 @@
 # just ci-contracts-breaking <base-sha> — breaking-change checks of the contracts, base ref vs the
 # working tree (pr-gate.yml, pull requests only; planning/06 §4 and §9). Needs the base commit in
 # the local clone (checkout with fetch-depth: 0). Two checks, both always run:
-#   1. Event schemas: packages/contracts/scripts/events-breaking.mjs compares every
-#      packages/contracts/events/*.json schema version on the base with the working tree (Node
-#      built-ins only).
+#   1. Event and worker schemas: packages/contracts/scripts/events-breaking.mjs compares every
+#      packages/contracts/events/*.json and packages/contracts/workers/<service>/*.json schema
+#      version on the base with the working tree (Node built-ins only).
 #   2. OpenAPI: oasdiff on the bundled contract, failing on WARN as well as ERR findings (the same
 #      threshold as the contracts lint's OASDIFF_BASE step). Skips with a notice while the bundle or
 #      oasdiff is absent, or when the base ref has no bundle to diff against.

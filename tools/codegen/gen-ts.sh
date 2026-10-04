@@ -3,6 +3,7 @@
 #   OpenAPI (openapi/**.yaml) --redocly bundle--> gen/openapi.bundle.json
 #   bundle --@hey-api/openapi-ts--> gen/ts-client/   (typed fetch client + types)
 #   events/**.json --json-schema-to-typescript--> gen/events-ts/index.ts
+#   workers/**.json --json-schema-to-typescript--> gen/workers-ts/index.ts   (internal worker HTTP)
 # Deterministic: run twice, diff is empty. Called by generate.sh; do not call the tools directly.
 set -euo pipefail
 
@@ -17,7 +18,7 @@ pnpm exec redocly bundle openapi/openapi.yaml --output gen/openapi.bundle.json -
 echo "==> @hey-api/openapi-ts -> gen/ts-client/"
 pnpm exec openapi-ts --file openapi-ts.config.ts
 
-echo "==> json-schema-to-typescript -> gen/events-ts/index.ts"
+echo "==> json-schema-to-typescript -> gen/events-ts/index.ts, gen/workers-ts/index.ts"
 node "$ROOT/tools/codegen/gen-events-ts.mjs"
 
 echo "==> prettier (normalise generated TypeScript)"

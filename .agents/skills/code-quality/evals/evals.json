@@ -28,15 +28,15 @@
     },
     {
       "id": 3,
-      "prompt": "The segmentation worker's /segment route in workers/ml/segmentation/src/ai_stylist_segmentation/routes.py is getting long. Refactor it to be cleaner and more idiomatic, and make sure the model inference doesn't block anything.",
-      "expected_output": "The agent loads only the Python reference, moves logic out of the route into a typed plain function, keeps Pydantic models at the edge, moves blocking inference off the event loop (anyio.to_thread / run_in_threadpool), keeps narrow excepts with `from err`, and validates with `just lint`, `just typecheck` and `just test workers`.",
+      "prompt": "I'm about to replace the stub in workers/ml/segmentation/src/ai_stylist_segmentation/routes.py with this. Make it cleaner and more idiomatic, and make sure inference doesn't block anything:\n\n@router.post('/v1/segment')\nasync def segment(req: dict):\n    try:\n        img = open(req['path'], 'rb').read()\n        masks = model.predict(img)\n        print('segmented', req['path'])\n        return {'masks': masks}\n    except:\n        return {'masks': []}",
+      "expected_output": "The agent loads only the Python reference and rewrites the route: a Pydantic request/response model instead of dict, no blocking file read or model.predict on the event loop (async I/O or anyio.to_thread / run_in_threadpool, or a sync def route), the model injected via a lifespan-loaded dependency, a narrow except with `from err` instead of the bare except that hides failures, structlog instead of print with no raw path logged, and validation with `just lint`, `just typecheck` and `just test workers`.",
       "files": [],
       "assertions": [
         "The agent cites .agents/skills/code-quality/references/python.md and no other language reference",
-        "Blocking or CPU-heavy work inside `async def` is moved off the event loop or the route is made sync, with the reason stated",
-        "Every new or changed function signature is fully type-annotated using `X | None` and builtin generics",
-        "No bare `except:` or `except Exception: pass` is introduced",
-        "The report names `just lint`, `just typecheck` and `just test workers` as validation"
+        "The blocking file read and model.predict are moved off the event loop (thread offload or sync route), with the reason stated",
+        "The `dict` request is replaced by a typed Pydantic model and every signature is annotated",
+        "The bare `except:` returning empty masks is replaced by a narrow exception mapped to an HTTP error",
+        "`print` is replaced by structured logging that does not log the raw path, and validation names `just lint`, `just typecheck` and `just test workers`"
       ]
     }
   ]

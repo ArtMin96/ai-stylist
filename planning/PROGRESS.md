@@ -95,15 +95,47 @@ Log hygiene: when this log exceeds ~30 entries, move the oldest entries to `plan
   - *API redaction fixes (`16b9c30`):*
     - A message-less error log no longer copies the error message into `msg` (`hooks.logMethod`); interpolation arguments are dropped.
     - `childLogger` redacts child bindings (six sites); the 404 `detail` loses its query; span event names are cut.
-    - The error name is shape-checked; 415 maps to `VALIDATION_FAILED`.
+    - The error name is shape-checked; 415 now maps to the new `UNSUPPORTED_MEDIA_TYPE` code (final round).
     - One shared Nest test harness (`platform-test-app.ts`).
     - Red then green: 16 failed before the fixes, 184/184 after (agent-reported; the lead re-ran the suites, see Repository state).
   - *Worker parity (`0baf754`):*
     - Span and event names cut; link attributes, URL arrays and the resource sanitized.
     - Logged exceptions become `err: {type, code?, cause?}`; the tests read the shared-kernel examples JSON.
     - Red then green (agent-reported).
-    - A security re-review of `0baf754` and `16b9c30` approved; residuals N1–N9 are open (below).
-  - *P02-T13 (`04e8930`, `c2fbd7e`):* see the next item.
+    - A security re-review of `0baf754` and `16b9c30` approved; its residuals N1–N9 were fixed in the second round (below).
+  - *P02-T13 (`04e8930`, `c2fbd7e`, `f886d99`):* see the next item.
+  - *Second round, owner request "finish everything you can" (all red then green):*
+    - Platform N1–N3, N8, N9 (`b61c260`):
+      - a Nest `context` is kept only when it is a class name;
+      - span `exception.type` is shape-gated;
+      - Fastify's pre-routing 400 is answered as a problem without the query (`frameworkErrors`);
+      - cross-realm errors are handled;
+      - a primitive first argument is dropped.
+    - Composition root (`41ff172`): `frameworkErrors`, `flushLogs` (needed: Nest only auto-flushes in `listen()`), the storage environment guard.
+    - Worker N2, N4–N7 (`3fa7a28`): positional args dropped, a non-exception `err` reduced to `{type}`, cycle- and set-safe scrubbing, fail-closed JSON.
+    - Tooling:
+      - a failing depcruise fixture for all 17 rules, and the check fails when a rule has none (`9ed4262`);
+      - the ESLint redaction rule is tested against every shared example (`c56fbaf`);
+      - the `test-regression` false pass is fixed (`5b1a68c`).
+    - Contracts: one oasdiff threshold (WARN) plus a breaking-change gate for event schemas (`7df23b7`), made package-relative (`cd8966f`).
+  - *Final review round:*
+    - security APPROVE (6 low findings) and architecture CHANGES REQUESTED (no boundary violation; duplication and single-source items), all fixed:
+      - shared-kernel `log-redaction.json` (`LOG_REDACTION_RULES`), read by the API and pinned by worker tests (`2e3351a`, `6e83525`);
+      - `UNSUPPORTED_MEDIA_TYPE` (415);
+      - one `isLocalOrDevDeployment` predicate;
+      - R2 key shapes in the adapter only;
+      - required `allowsInMemory`;
+      - config tests moved to `apps/api/tests/config.test.ts`;
+      - `platform/errors/error-shape.ts`;
+      - a PascalCase Nest context;
+      - an `Error.isError` fallback;
+      - problem `detail` only from `HttpException` or five fixed Fastify codes;
+      - the live-suite bucket guard `-(dev|local)$`;
+      - mixed-key worker log lines kept.
+    - A verification review of the final round followed (see Repository state).
+  - *Proposals:*
+    - `.claude/plans/2026-10-04-human-applied-followups-proposal.md` collects every human-only edit (SERVICES-SETUP §6, the P06-T02 criterion, planning conflicts, skill and rule text, the hook fix, owner decisions);
+    - the split proposal now marks do-now items 1, 4, 5, 7, 8 and the error-shape registry as done.
 - **P02-T13 detail:**
   - `R2StorageProvider` with an in-process SigV4 presigner on `node:crypto`. It is pinned to AWS's published vector and `@smithy/signature-v4` output, and a reviewer cross-checked it with botocore.
   - `content-type` and `content-length` are signed.
@@ -118,22 +150,17 @@ Log hygiene: when this log exceeds ~30 entries, move the oldest entries to `plan
 - **Repo-split audit (owner request: keep modules separable for a later split into repositories):** APPROVE for this branch. Plan, two ADRs due before P03's first table, and do-now items: [`.claude/plans/2026-10-04-repo-split-readiness-proposal.md`](../.claude/plans/2026-10-04-repo-split-readiness-proposal.md). Applied now: platform contract §Dependencies says three ports move to shared-kernel and `HEALTH_PROBE` stays.
 - **Not done / open:**
   - *Owner, P02-T13:* R2 bucket(s) and token; the R2 values in `secrets/dev.enc.yaml`; one `R2_LIVE_TEST=1 just test platform` run; the Cloudflare WAF. Human-only `docs/SERVICES-SETUP.md` §6 text for the live suite is in the PR description.
-  - *Open residuals from the security re-review (non-blocking):*
-    - N1: nestjs-pino `context` can carry a stack. Fix it before modules adopt Nest `Logger`.
-    - N2: span `exception.type` is not shape-checked.
-    - N3: Fastify's own 400 for a malformed URL echoes the query.
-    - N4–N7: worker printf args, a non-exception `err`, `getattr`/cycle robustness, the walk over non-dict containers.
-    - N8: cross-realm errors.
-    - N9: a non-string primitive is still written to `msg`.
   - *Open, earlier:* the `APP_ENV` default in `config.ts` (dev routes are enabled when both `NODE_ENV` and `APP_ENV` are unset), which is an owner decision; the content-type allowlist and size cap for presigned PUTs, which belong to `media` (P06 exit criterion).
 - **Repository state:**
-  - Not verified by CI yet.
+  - CI on the first PR #15 head (`f886d99`) was green on all 8 checks, including `just ci-parity` and the Docker-backed integration and migration suites; later pushes re-run CI on the PR.
   - Run by the lead on the integrated branch (Linux, Node 24.21.0, pnpm 12.6.0), all exit 0:
     - `just typecheck`, `just lint`, `just arch-check`, `just docs-check --strict`, `just ci-env-example-check`
     - `prettier --check`
-    - `SKIP_DOCKER_TESTS=1 just test platform`: 221 passed, 3 skipped (the live suite)
-    - the API vitest project: 299 passed, 3 skipped
-    - `just test workers` with CPython 3.14.7: 159 passed
+    - also `just lint --fixtures`, `just arch-check --fixtures`, `just generate --check`, `just ci-contracts-breaking origin/main`
+    - `SKIP_DOCKER_TESTS=1 just test platform`: 274 passed, 3 skipped (the live suite)
+    - the API vitest project: 364 passed, 3 skipped
+    - `just test workers` with CPython 3.14.7: 201 passed
+    - shared-kernel, contracts and seed-data tests: all pass
     - gitleaks over the branch commits: no leaks
   - **Not run:**
     - the Testcontainers suites (`platform-docker`, `migrations`): no Docker
@@ -143,7 +170,8 @@ Log hygiene: when this log exceeds ~30 entries, move the oldest entries to `plan
 - **Surprises / gotchas:**
   - In this cloud container, mise cannot install from GitHub (API 403 through the proxy). Pinned binaries were fetched from release URLs instead, and pnpm came from npm.
   - The host Python is 3.14.0rc2, which breaks pydantic; worker tests need CPython 3.14.7 (`UV_PYTHON`).
-  - `scripts/test/regression.sh` reports a false pass under pnpm 12.6: its merge-base leg fails before vitest runs.
+  - `scripts/test/regression.sh` reported a false pass under pnpm 12.6 (fixed in `5b1a68c`).
+  - `engine-strict=true` in `.npmrc` does not stop pnpm 12 from installing on Node 22 with an up-to-date lockfile, so it was not added; the `isError` fallback covers Node 22 instead.
   - `scripts/hooks/post-edit-lint.sh` fails on every edit here, because mise tries to download.
 - **Next session starts:** CI on the PR from `claude/project-next-steps-r6nu70`; owner review and the R2 steps; the ADR-0008/0009 decisions; then P02-T18 (AI-26) and AI-28 on the Mac.
 

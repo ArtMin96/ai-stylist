@@ -23,13 +23,16 @@ workflow, search-before-write procedure, base check, stop rules and the report f
 | [`tooling-engineer`](tooling-engineer.md) | `scripts/**` except `scripts/hooks/**`; `tools/**` except the three per-platform gen scripts; `justfile`, `mise.toml`, root configs, `.env.example`, `docs/security/**`; proposes `.github/workflows/**` diffs | `tooling-ci` | red | `just lint --fixtures`, `just arch-check --fixtures`, `just docs-check --fixtures`, `just flags-report --fixtures`, `just ci-parity --core` |
 | [`test-engineer`](test-engineer.md) | `e2e/**`; `apps/api/tests/**` except `http.test.ts` and `migrations/**`; conditionally a module's `tests/**` | `testing-regression`, `e2e-device-testing` | yellow | `just test-regression`, `just test`, `just ios-e2e`, `just android-e2e` |
 | [`docs-maintainer`](docs-maintainer.md) | `docs/modules/**`, `docs/adr/README.md` (index), root `PROGRESS.md`, the `planning/PROGRESS.md` table + handoff log, phase-file task-state columns | `docs-maintenance` | cyan | `just docs-check` |
+| [`observability-engineer`](observability-engineer.md) | `docs/observability/**` (Grafana and PostHog guides, sync contracts and definition JSON), `docs/runbooks/**`; offline only, never a real or `--dry-run` sync | `observability-analytics` | pink | `just observability-sync all --check`, `just test tooling`, `just flags-report`, `just docs-check`, `just format --check` |
 | [`architecture-reviewer`](architecture-reviewer.md) | nothing (read-only) — boundaries, duplication, source of truth, parity | `architecture-review` | purple | `just arch-check`, `just lint`, `just typecheck`, `just generate --check`, `just docs-check` |
 | [`security-privacy-reviewer`](security-privacy-reviewer.md) | nothing (read-only) — security and privacy findings | `security-privacy-review` | red | `just security-scan`, `just lint`, `just docs-check` |
 | [`release-manager`](release-manager.md) | nothing (read-only) — GO/NO-GO evidence, never ships | `release-readiness` | orange | `just ci-parity`, `just security-scan`, `just generate --check`, `just flags-report`, `gh run list` |
 
 Colors repeat only between agents that never run in the same wave: the parallel lane (ios, android,
-api) is blue / green / cyan; reviewers, docs-maintainer and test-engineer run after or between
-engineer waves.
+api) is blue / green / cyan; reviewers, docs-maintainer, observability-engineer and test-engineer
+run after or between engineer waves. All eight colors are in use, so observability-engineer shares
+pink with ml-engineer: it documents a signal only after the change that emits it has landed, and the
+lead never puts those two in one wave.
 
 The `cross-platform-feature` skill has no agent: the main (lead) session runs it, because only the
 main session has the Agent tool.
@@ -75,6 +78,12 @@ tooling-engineer and docs-maintainer may create; `.github/workflows/**` and `.gi
   `apps/api/src/platform/ports/*.port.ts` layout is P02-interim; do not copy its placement. Modules
   cannot import the platform `Clock`: a module that needs one asks contracts-engineer for a
   shared-kernel `Clock`, never a local copy.
+- Signal, dashboard, alert or runbook: the emitting engineer (`platform-engineer`, `ml-engineer`,
+  `ios-engineer`, `android-engineer`) lands the metric, span or event, and `contracts-engineer` any
+  analytics event, flag or owner role → `observability-engineer` updates the definition under
+  `docs/observability/`, its runbook in `docs/runbooks/` and the guides → a human runs
+  `just observability-sync` (`--dry-run` first). A new check, token or vendor call in
+  `tools/observability/` is `tooling-engineer`'s and lands before the definition that needs it.
 - Modules without a depcruise edge (for example `admin` and `fashion-intel`) talk through events only.
 - Any diff: `architecture-reviewer`, plus `security-privacy-reviewer` for auth, consent, deletion,
   webhooks, uploads, logging or AI egress; then `docs-maintainer` once the change has landed.
@@ -153,6 +162,11 @@ agent (see "Owned by no agent").
 - `claude-code-guide`: questions about Claude Code itself (hooks, settings, subagents).
 - For review, prefer `architecture-reviewer` and `security-privacy-reviewer` over any user-level or
   plugin reviewer: they carry the repo invariants.
+- For dashboards, alert rules, runbooks and Grafana or PostHog how-to questions, prefer
+  `observability-engineer` over a vendor plugin's agent. A plugin subagent ignores `hooks`
+  frontmatter (https://code.claude.com/docs/en/sub-agents.md, checked 2026-10-03), so neither
+  per-agent guard binds it, and one that can write flags, dashboards or alerts would bypass
+  `just observability-sync`.
 
 ## How to invoke
 

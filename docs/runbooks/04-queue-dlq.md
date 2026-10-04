@@ -26,7 +26,9 @@
 
 ## Detection
 
-1. The `queue.job.dlq` email names `job_type` and `deployment_environment_name`.
+1. The `queue.job.dlq` email names `job_type` and `deployment_environment_name`. An empty
+   environment in that email means the process started with an empty `APP_ENV`: `just doctor` warns
+   about it and `just bootstrap` sets it to `local`.
 2. Dashboard **01 Service health**, row **Queues**: dead-lettered jobs, queue depth, oldest job age
    (budget 15 min), job outcomes.
 3. The SQL below. It is the only detector for relay-path failures.
@@ -35,7 +37,8 @@
 
 Open a SQL shell. There is no `just` recipe for this yet.
 
-- Local: `docker compose exec postgres psql -U ai_stylist -d ai_stylist`
+- Local: `docker exec -it ai-stylist-postgres psql -U ai_stylist -d ai_stylist` (by container name,
+  so it works from any checkout or worktree)
 - Staging/prod (after P03): `psql "$DATABASE_URL"`, with the direct string (not PgBouncer) from
   `secrets/<env>.enc.yaml`, run from a machine on the private network.
 
@@ -189,15 +192,24 @@ and `OTEL_EXPORTER_OTLP_HEADERS` (`just secrets-sync`).
 1. `just db-migrate`, then in one terminal `just dev-api`.
 2. In a second terminal, `just dev-workers --port 8011`. The worker listens on 8011, but the jobs
    process calls the fixed `http://127.0.0.1:8001` (`apps/api/src/jobs/main.ts`), so every call fails.
+   Wait about 70 s after it starts before step 3. The jobs process exports its metrics every 60 s,
+   and the alert needs one export of the dead-letter counter at 0 before the dead letter: a counter
+   first seen at 1 gives `increase()` nothing to count. The drill of 2026-10-03 waited; sending the
+   request at once was not tried.
 3. `curl -sS -X POST http://localhost:3000/v1/dev/demo-events -H 'content-type: application/json' -H 'x-correlation-id: dlq-drill-1' -d '{"note":"dlq drill"}'`
    returns 202 with the envelope. Its `correlationId` is `dlq-drill-1`, known in advance, so the
    drill's logs and trace are found by that id
    ([grafana.md](../observability/grafana.md#find-one-flow-by-correlation-id)). Note the envelope's
    `id` for the replay. A 404 means either `APP_ENV` is not `local` or `dev` (the route is not
-   registered), or the `demo-outbox-flow` flag reads as off: `just observability-sync` creates it off,
-   so check the flag in the PostHog project and turn it on there. With an empty `POSTHOG_API_KEY`
-   the registry default (on) applies.
+   registered), or the `demo-outbox-flow` flag reads as off. With a `POSTHOG_API_KEY` set, a flag
+   that does not exist yet (before the first `just observability-sync`) reads as off, and the sync
+   creates it off and at 0 % rollout. Turn it on in the PostHog project: on the flag's page click
+   **Edit**, set **Rollout percentage** to **100%** under **Release conditions**, switch
+   **Enabled** on and click **Save**
+   ([posthog.md, "Feature flags"](../observability/posthog.md#feature-flags)). With an empty
+   `POSTHOG_API_KEY` the registry default (on) applies.
 4. Within about 2 minutes: 5 attempts, one `demo.outbox-flow.dlq` job, the outbox row `failed`. The
    dashboard shows 1 dead letter, and `queue.job.dlq` fires on its next evaluation (the email is held
-   during quiet hours).
+   during quiet hours). In the drill of 2026-10-03 the row was `failed` about 30 s after the request
+   and the rule was firing about a minute after it.
 5. Restart `just dev-workers` without arguments, replay the id with B, and verify.

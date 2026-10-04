@@ -1,10 +1,16 @@
 #!/usr/bin/env bash
 # Shared checks and helpers for the secrets-management scripts (sops + age, planning/15 §6):
-# secrets-sync.sh, secrets-edit.sh, secrets-updatekeys.sh, and the onboarding scripts built on top
-# of this file. Sourced, not executed. Every function prints an actionable message and returns 1 on
-# failure; none of them ever prints a secret value. All of it is bash 3.2-clean (macOS default
+# secrets-sync.sh, secrets-push.sh, secrets-edit.sh, secrets-updatekeys.sh, and the onboarding
+# scripts built on top of this file. Sourced, not executed. Sourcing has one side effect: it exports
+# SOPS_AGE_KEY_FILE for the default keys file when that file exists and nothing else names an
+# identity (secrets_pin_identity_file). Every function prints an actionable message and returns 1
+# on failure; none of them ever prints a secret value. All of it is bash 3.2-clean (macOS default
 # /bin/bash): no associative arrays, no mapfile, no ${var,,}, no grep -P; awk avoids ERE intervals
 # (macOS's bwk awk only gained them in 2019) in favour of an explicit length() test.
+
+# The origin -> OWNER/REPO parsing is shared with `just repo-setup` (functions only, no side effect).
+# shellcheck source=scripts/github-lib.sh
+source "$(dirname "${BASH_SOURCE[0]}")/../github-lib.sh"
 
 SECRETS_DOC="docs/SERVICES-SETUP.md §2"
 
@@ -188,15 +194,40 @@ secrets_link_node_modules() {
     fi
 }
 
-# The identity file sops would use: $SOPS_AGE_KEY_FILE when set, else the default keys file
-# (https://getsops.io/docs/usage/identities/age/). Never checks whether the file exists.
+# The default keys file of this repo, the same on Linux and macOS:
+# ${XDG_CONFIG_HOME:-$HOME/.config}/sops/age/keys.txt. That is sops's own default on Linux only: for
+# macOS its documentation (https://getsops.io/docs/usage/identities/age/) gives
+# "$HOME/Library/Application Support/sops/age/keys.txt" unless XDG_CONFIG_HOME is set, so
+# secrets_pin_identity_file below tells sops where this file is. Never checks whether the file exists.
+secrets_default_identity_file() {
+    printf '%s\n' "${XDG_CONFIG_HOME:-${HOME:-}/.config}/sops/age/keys.txt"
+}
+
+# The identity file sops uses: $SOPS_AGE_KEY_FILE when set, else the default keys file. Never checks
+# whether the file exists.
 secrets_identity_file() {
     if [[ -n "${SOPS_AGE_KEY_FILE:-}" ]]; then
         printf '%s\n' "$SOPS_AGE_KEY_FILE"
     else
-        printf '%s\n' "${XDG_CONFIG_HOME:-$HOME/.config}/sops/age/keys.txt"
+        secrets_default_identity_file
     fi
 }
+
+# Exports SOPS_AGE_KEY_FILE as the default keys file when that file exists and nothing else names an
+# identity, so every sops call a script makes (and every script it starts) reads the file the
+# scripts create and check, on macOS as on Linux. Nothing is exported when $SOPS_AGE_KEY carries the
+# key (CI), when $SOPS_AGE_KEY_FILE is already set, or when the file is not there: sops fails on a
+# SOPS_AGE_KEY_FILE it cannot open, so without the file its own lookup stays as it is. Runs when
+# this file is sourced.
+secrets_pin_identity_file() {
+    local default_file
+    [[ -z "${SOPS_AGE_KEY:-}" && -z "${SOPS_AGE_KEY_FILE:-}" ]] || return 0
+    default_file="$(secrets_default_identity_file)"
+    if [[ -f "$default_file" ]]; then
+        export SOPS_AGE_KEY_FILE="$default_file"
+    fi
+}
+secrets_pin_identity_file
 
 # Returns 0 when the age private key is passed as environment material ($SOPS_AGE_KEY) rather than a
 # file on disk.
@@ -270,17 +301,82 @@ secrets_default_branch() {
 }
 
 # A GitHub compare URL (.../compare/<base>...<head>?expand=1) for the "origin" remote, accepting
-# https://github.com/O/R[.git], git@github.com:O/R[.git], and ssh://git@github.com/O/R[.git].
+# https://github.com/O/R[.git], git@github.com:O/R[.git], and ssh://git@github.com/O/R[.git]
+# (github_origin_slug, scripts/github-lib.sh).
 # Returns 1 and prints nothing when origin is missing or is not a github.com remote.
 secrets_github_compare_url() {
-    local base="$1" head="$2" url owner_repo
-    url="$(git remote get-url origin 2>/dev/null)" || return 1
-    case "$url" in
-        https://github.com/*)    owner_repo="${url#https://github.com/}" ;;
-        git@github.com:*)        owner_repo="${url#git@github.com:}" ;;
-        ssh://git@github.com/*)  owner_repo="${url#ssh://git@github.com/}" ;;
-        *) return 1 ;;
-    esac
-    owner_repo="${owner_repo%.git}"
+    local base="$1" head="$2" owner_repo
+    owner_repo="$(github_origin_slug)" || return 1
     printf 'https://github.com/%s/compare/%s...%s?expand=1\n' "$owner_repo" "$base" "$head"
+}
+
+# --- key catalogue (.env.example) and the shared file's key names ---------------------------------
+# Used by secrets-edit.sh, secrets-push.sh and secrets-doctor.sh. All of these read names only.
+
+# The key names .env.example declares, one per line, in file order.
+secrets_example_keys() {
+    awk '/^[A-Za-z_][A-Za-z0-9_]*=/ { sub(/=.*/, ""); print }' .env.example
+}
+
+# The declared keys that .env.example tags [machine-local], one per line: each machine keeps its own
+# value, so secrets-push.sh never copies them into a shared file. The tag is a comment line that
+# starts with "# [machine-local]"; it covers every KEY= line directly below its comment block, up to
+# the next comment or blank line.
+secrets_machine_local_keys() {
+    awk '
+        /^#/ {
+            if (after_key) tagged = 0
+            after_key = 0
+            if ($0 ~ /^#[[:space:]]*\[machine-local\]/) tagged = 1
+            next
+        }
+        /^[A-Za-z_][A-Za-z0-9_]*=/ {
+            if (tagged) { key = $0; sub(/=.*/, "", key); print key }
+            after_key = 1
+            next
+        }
+        { tagged = 0; after_key = 0 }
+    ' .env.example
+}
+
+# Every top-level key of ENC_FILE with whether it holds a value, one "KEY set" or "KEY empty" line
+# each, in file order. Needs no identity and decrypts nothing: sops leaves key names readable and
+# writes an empty value as "", a non-empty one as ENC[...]. Stops at the sops: metadata block.
+secrets_shared_key_states() {
+    awk '
+        /^sops:/ { exit }
+        /^[A-Za-z_][A-Za-z0-9_]*:/ {
+            key = $0; sub(/:.*/, "", key)
+            val = $0; sub(/^[^:]*:[[:space:]]*/, "", val); sub(/[[:space:]]+$/, "", val)
+            if (val == "" || val == "\"\"" || val == "\x27\x27" || val == "null" || val == "~") print key, "empty"
+            else print key, "set"
+        }
+    ' "$ENC_FILE"
+}
+
+# Returns 0 when <line> is one of the lines of <list> (a newline-separated string). A pattern match
+# instead of `... | grep -q`, which can end its producer with SIGPIPE under `set -o pipefail`.
+secrets_list_has() {
+    case $'\n'"$1"$'\n' in
+        *$'\n'"$2"$'\n'*) return 0 ;;
+    esac
+    return 1
+}
+
+# stdin: one line of text without control characters (callers check). stdout: that text as a JSON
+# string literal, which is what `sops set --value-stdin` expects. The value only ever travels
+# through pipes: never an argument, never a file. Character by character on purpose: how awk reads
+# a backslash in a gsub() replacement differs between gawk, mawk and macOS awk.
+secrets_json_string() {
+    LC_ALL=C awk '
+        NR == 1 {
+            out = ""
+            n = length($0)
+            for (i = 1; i <= n; i++) {
+                c = substr($0, i, 1)
+                if (c == "\\" || c == "\"") out = out "\\"
+                out = out c
+            }
+            printf "\"%s\"", out
+        }'
 }

@@ -46,20 +46,28 @@ PostHog error tracking (planning/14 §5) is not part of the P02 wiring.
 | `POSTHOG_CLI_HOST`       | `https://us.posthog.com`, the app and API host (not ingestion). Required even though posthog-cli defaults to it: the symbol upload is skipped and the sync refuses to run without it.                                                   | same                                     | sops → `.env`. CI: variable.                                                                                                                          |
 | `POSTHOG_SYNC_API_KEY`   | personal key `phx_…`, scopes in [posthog/README.md](posthog/README.md)                                                                                                                                                                  | `just observability-sync` only           | sops → `.env` on a developer machine. Never a GitHub secret.                                                                                          |
 
-Set values with `just secrets-edit dev`, then `just secrets-sync` (direnv loads `.env`). Staging and
-prod use `secrets/<env>.enc.yaml`. The PostHog prod project arrives in P03.
+Set values with `just secrets-push --set <KEY>` (a hidden prompt) or `just secrets-edit dev`, then
+`just secrets-sync` (direnv loads `.env`); `docs/SERVICES-SETUP.md` §2 step 8 has the details. Staging and
+prod use `secrets/<env>.enc.yaml`. The PostHog prod project is planned for P03. PostHog's Free plan
+allows 1 project and its pay-as-you-go plan 6 (posthog.com/pricing, checked 2026-10-03), so a prod
+project cannot be added beside the dev one on the Free plan. P03 has to settle that against DEC-48
+(exit before any paid usage).
 
 CI: `POSTHOG_CLI_API_KEY` is a GitHub **secret**; `POSTHOG_CLI_HOST` and `POSTHOG_CLI_PROJECT_ID` are
 **variables**. The Android `build` job (`.github/workflows/android.yml`) and the iOS `macos` job
 (`.github/workflows/ios.yml`) get only these three symbol-upload values, and only on `main`. No
 workflow passes `POSTHOG_API_KEY` or `POSTHOG_HOST`, so CI-built APKs and apps carry no ingestion
-key and send nothing. Pull requests upload nothing.
+key and send nothing. Pull requests upload nothing. All three were set in GitHub on 2026-10-03, and
+the `main` builds of that day uploaded with them (4 dSYMs from the iOS job; R8 mappings for the
+Android preview and release variants). Whenever one of the three is missing, the `main` builds skip
+the upload and still pass.
 
 Human-only steps: creating the organization and projects (`docs/SERVICES-SETUP.md` §10), creating the
 two personal keys, and adding the GitHub secrets and variables. The two personal keys stay separate:
 `POSTHOG_CLI_API_KEY` has only `error_tracking:write` and `organization:read`; `POSTHOG_SYNC_API_KEY`
 has `project`, `feature_flag` and `hog_function` read and write, and its owner is a project admin. A
-leaked CI key then cannot change settings or flags.
+leaked CI key then cannot change settings or flags. What to select in PostHog's key form for each:
+[posthog/README.md](posthog/README.md#inputs).
 
 ## Project settings
 
@@ -74,8 +82,10 @@ reports anything it cannot change.
 | Session replay (`session_recording_opt_in`)                       | off                                           | no screenshots or view hierarchies (planning/14 §5)                            |
 | Surveys, heatmaps, autocapture, console logs, performance capture | off                                           | nothing is captured beyond the declared events                                 |
 
-The region (US Cloud) was set when the project was created and cannot change; moving to EU means a
-new project (ADR-0007, OQ-07).
+The region (US Cloud) was set when the project was created. PostHog moves a project to another
+region only for customers on its Scale or Enterprise plan, and a PostHog engineer runs that move
+(posthog.com/docs/settings/projects, checked 2026-10-03). On the Free plan, moving to EU therefore
+means a new organization and project on EU Cloud (ADR-0007, OQ-07).
 
 ## Symbol upload
 
@@ -101,19 +111,26 @@ entitlement check (planning/14 §11).
    `owners.json`), `purpose`, `kind`, `createdAt`, `expiresAt` (at most 90 days for `rollout`; none for
    `kill-switch`), `rolloutPlan`, `offBehavior` (off must be a safe rollback) and
    `defaultWhenUnavailable`. The shared-kernel tests check it. The package is single-writer.
-2. `just observability-sync` creates the flag in PostHog, **off**.
+2. `just observability-sync` creates the flag in PostHog, **off** and at 0 % rollout.
 3. Check it in code with `featureFlags.isEnabled('<key>')`. The key type comes from the registry, so a
    typo fails `just typecheck`.
 4. Roll out in PostHog by the `rolloutPlan`. This is a human decision, and prod changes are audited.
+   On the flag's page click **Edit**; under **Release conditions**, in condition set 1, set
+   **Rollout percentage** (for example the **100%** preset); switch **Enabled** on; click **Save**.
+   The switch alone is not enough, because the sync created the flag at 0 %. To roll back, switch
+   **Enable feature flag** off on the flag's Overview tab and choose **Disable only** in the dialog
+   "Disable this flag?", never **Disable and archive**; the rollout percentage is kept (walked
+   2026-10-03). The API follows a change within about 10 s.
 
 **Retire a flag**: remove its last check and its registry entry in the same change. Never rename or
 reuse a key. After the merge, `just observability-sync --prune` soft-deletes it in PostHog.
 
 Kill-switch flags are permanent and listed in runbook 10 (ships with P11). `just flags-report` lists
 every registry flag with its owner and days left ([`tools/flags/README.md`](../../tools/flags/README.md)).
-The nightly `expired-flags` job in `.github/workflows/nightly.yml` runs it, once the workflow change
-lands (it is a placeholder until then), and fails on a rollout or experiment flag past `expiresAt`
-(> 30 days overdue = DEFECT).
+The nightly `expired-flags` job in `.github/workflows/nightly.yml` runs it every day at 03:00 UTC
+and fails on a rollout or experiment flag past `expiresAt` (> 30 days overdue = DEFECT). The job
+reads only the flag and owner registries in the repo, so it needs no GitHub secret or variable. A
+red nightly job is investigated; it does not block a merge.
 
 ## Privacy rules
 
@@ -128,12 +145,12 @@ lands (it is a placeholder until then), and fails on a rollout or experiment fla
 
 ## Troubleshooting
 
-| Symptom                                    | Check                                                                                                                                                                                          |
-| ------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| No events or crashes at all                | Consent is off (expected until opted in), or `POSTHOG_API_KEY` is empty, which binds the no-op sink.                                                                                           |
-| Build, launch or API start rejects the key | It is a personal `phx_` key. Use the project `phc_` key. The API also refuses a key without `POSTHOG_HOST`.                                                                                    |
-| Events sent, nothing in PostHog            | `POSTHOG_HOST` must be the ingestion host `https://us.i.posthog.com`.                                                                                                                          |
-| iOS crash never arrives                    | A debugger was attached (it disables the crash handler), or consent was not switched on again after the relaunch.                                                                              |
-| Stack trace not symbolicated               | The upload was skipped (a `POSTHOG_CLI_*` value missing), the project id is wrong, `POSTHOG_CLI_HOST` is not `https://us.posthog.com`, or `posthog-cli` is not on PATH (`just doctor`).        |
-| Flag always returns its default            | The API has no `POSTHOG_API_KEY`, or PostHog is unreachable, erroring or quota-limited. A missing or inactive flag reads as off, not as its default: run the sync, then turn it on in PostHog. |
-| Sync fails with 403                        | The sync key lacks a scope, or its owner is not a project admin.                                                                                                                               |
+| Symptom                                    | Check                                                                                                                                                                                                             |
+| ------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| No events or crashes at all                | Consent is off (expected until opted in), or `POSTHOG_API_KEY` is empty, which binds the no-op sink.                                                                                                              |
+| Build, launch or API start rejects the key | It is a personal `phx_` key. Use the project `phc_` key. The API also refuses a key without `POSTHOG_HOST`.                                                                                                       |
+| Events sent, nothing in PostHog            | `POSTHOG_HOST` must be the ingestion host `https://us.i.posthog.com`.                                                                                                                                             |
+| iOS crash never arrives                    | A debugger was attached (it disables the crash handler), or consent was not switched on again after the relaunch.                                                                                                 |
+| Stack trace not symbolicated               | The upload was skipped (a `POSTHOG_CLI_*` value missing), the project id is wrong, `POSTHOG_CLI_HOST` is not `https://us.posthog.com`, or `posthog-cli` is not on PATH (`just doctor`).                           |
+| Flag always returns its default            | The API has no `POSTHOG_API_KEY`, or PostHog is unreachable, erroring or quota-limited. A missing or inactive flag reads as off, not as its default: run the sync, then roll the flag out ("Add a flag", step 4). |
+| Sync fails with 403                        | The sync key lacks a scope, or its owner is not a project admin.                                                                                                                                                  |

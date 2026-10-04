@@ -7,11 +7,13 @@
 // Standard OTel env semantics: the exporters read `OTEL_EXPORTER_OTLP_ENDPOINT` (plus the
 // per-signal `OTEL_EXPORTER_OTLP_{TRACES,METRICS,LOGS}_ENDPOINT` overrides) and
 // `OTEL_EXPORTER_OTLP_HEADERS` themselves; `OTEL_SERVICE_NAME` and `OTEL_RESOURCE_ATTRIBUTES` win
-// over the resource built here (env detector); the sampler follows `OTEL_TRACES_SAMPLER`
+// over the defaults declared here (env detector); the sampler follows `OTEL_TRACES_SAMPLER`
 // (default parent-based always-on: 100 % at launch volume, planning/14 §3).
 //
 // Spans pass through `SanitizingSpanExporter` (ids and enums only); log records are the pino lines
-// after the logger's allowlist and denylist (instrumentation-pino parses the written line).
+// after the logger's allowlist and denylist (instrumentation-pino parses the written line). The
+// resource is one object shared by the trace, metric and log providers, and only spans pass the
+// span exporter, so `processResource` sanitizes it once, before any provider gets it.
 import { FastifyOtelInstrumentation } from '@fastify/otel';
 import { ProxyTracerProvider, trace } from '@opentelemetry/api';
 import { OTLPLogExporter } from '@opentelemetry/exporter-logs-otlp-proto';
@@ -21,14 +23,20 @@ import { HttpInstrumentation } from '@opentelemetry/instrumentation-http';
 import { PgInstrumentation } from '@opentelemetry/instrumentation-pg';
 import { PinoInstrumentation } from '@opentelemetry/instrumentation-pino';
 import { UndiciInstrumentation } from '@opentelemetry/instrumentation-undici';
-import { defaultResource, envDetector, resourceFromAttributes } from '@opentelemetry/resources';
+import {
+  type Resource,
+  defaultResource,
+  detectResources,
+  envDetector,
+  resourceFromAttributes,
+} from '@opentelemetry/resources';
 import { BatchLogRecordProcessor } from '@opentelemetry/sdk-logs';
 import { PeriodicExportingMetricReader } from '@opentelemetry/sdk-metrics';
 import { NodeSDK, type NodeSDKConfiguration, core } from '@opentelemetry/sdk-node';
 import { ATTR_SERVICE_NAME, ATTR_SERVICE_VERSION } from '@opentelemetry/semantic-conventions';
 
 import { type Telemetry, clearActiveTelemetry, setActiveTelemetry } from './lifecycle.js';
-import { SanitizingSpanExporter, type SpanExporter } from './span-sanitizer.js';
+import { SanitizingSpanExporter, type SpanExporter, sanitizeAttributes } from './span-sanitizer.js';
 
 /** Which process is instrumented: picks the default `service.name` and the instrumentations. */
 export type TelemetryService = 'api' | 'jobs';
@@ -111,6 +119,28 @@ function nonEmpty(value: string | undefined): string | undefined {
 }
 
 /**
+ * The resource every span, metric and log record of the process carries: the SDK defaults, then
+ * the declared service attributes, then `OTEL_SERVICE_NAME` / `OTEL_RESOURCE_ATTRIBUTES` (the env
+ * detector only: no host or process detector, so no command line, user or host name leaves the
+ * process). The merged attributes go through the span attribute rule, because an operator-set
+ * variable can carry a credential or a URL with a query, and metrics and logs have no exporter
+ * that would remove it later. None of the three sources sets a schema URL, so none is carried over.
+ */
+function processResource(options: TelemetryOptions): Resource {
+  const version = nonEmpty(options.serviceVersion);
+  const environment = nonEmpty(options.environment);
+  const declared = resourceFromAttributes({
+    [ATTR_SERVICE_NAME]: options.service,
+    ...(version !== undefined ? { [ATTR_SERVICE_VERSION]: version } : {}),
+    ...(environment !== undefined ? { [ATTR_DEPLOYMENT_ENVIRONMENT_NAME]: environment } : {}),
+  });
+  const merged = defaultResource()
+    .merge(declared)
+    .merge(detectResources({ detectors: [envDetector] }));
+  return resourceFromAttributes(sanitizeAttributes(merged.attributes));
+}
+
+/**
  * Start the process's telemetry: instrumentations, context propagation (W3C `traceparent` only;
  * client `baggage` is not propagated) and the three OTLP pipelines. Without an endpoint (and
  * without a test exporter) it returns a disabled handle and starts nothing. Call once per process,
@@ -120,21 +150,12 @@ export function startTelemetry(options: TelemetryOptions): Telemetry {
   const endpoint = nonEmpty(options.otlpEndpoint);
   if (endpoint === undefined && options.spanExporter === undefined) return DISABLED;
 
-  const version = nonEmpty(options.serviceVersion);
-  const environment = nonEmpty(options.environment);
-  const resource = defaultResource().merge(
-    resourceFromAttributes({
-      [ATTR_SERVICE_NAME]: options.service,
-      ...(version !== undefined ? { [ATTR_SERVICE_VERSION]: version } : {}),
-      ...(environment !== undefined ? { [ATTR_DEPLOYMENT_ENVIRONMENT_NAME]: environment } : {}),
-    }),
-  );
   const exporting = options.spanExporter === undefined;
   const sdk = new NodeSDK({
-    resource,
-    // OTEL_SERVICE_NAME / OTEL_RESOURCE_ATTRIBUTES only: no host or process detectors, so no
-    // command line, user or host name leaves the process.
-    resourceDetectors: [envDetector],
+    resource: processResource(options),
+    // `processResource` already ran the env detector. NodeSDK must not detect again: it would
+    // merge the unsanitized environment attributes over the sanitized resource.
+    autoDetectResources: false,
     textMapPropagator: new core.W3CTraceContextPropagator(),
     instrumentations: instrumentationsFor(options.service),
     // Wrapped by NodeSDK in its batch span processor (OTEL_BSP_* env). The plural

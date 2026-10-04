@@ -5,9 +5,9 @@ the contact point, mute timings and the notification policy (ADR-0007). `just ob
 pushes them over the Grafana HTTP API. Change a file here and re-run the sync; do not edit these
 objects in the Grafana UI. The sync overwrites the UI copy, and the alerting objects are locked there.
 
-> Status (2026-09-27): `just observability-sync` is implemented in `tools/observability/` (P02-T09)
-> and tested against local stubs; its first run against the stack is a human step once the keys
-> exist.
+> Status (2026-10-03): `just observability-sync` is implemented in `tools/observability/` (P02-T09)
+> and tested against local stubs. Its first run against the dev stack was on 2026-10-03
+> (`just observability-sync grafana`: 8 created, 1 updated; the second run: 9 unchanged).
 
 ## Files and API calls
 
@@ -35,28 +35,41 @@ Field notes the sync relies on:
   (default 43200) filled in, expressions included. Every model in `alerts/*.json` states both, so a
   stored rule equals its file and a second sync leaves it unchanged.
 - A dashboard has a stable `uid` and `"id": null`. Its panels use Grafana's own `${datasource}` variable,
-  so no datasource token is needed there.
+  so no datasource token is needed there. The `message` in row 6 is meant as the version note;
+  Grafana 13.3.0 recorded the first version as "Initial save" instead (seen 2026-10-03), and whether
+  a later version keeps the sync's message has not been seen.
 - Send no `X-Disable-Provenance` header. Provisioned alerting objects then stay read-only in the UI.
-- Every `/api` route in the table is deprecated since Grafana 13 in favour of `/apis/…` but stays
-  operative (no removal date as of 2026-09). Grafana Cloud stacks upgrade automatically, so the stack
-  may already run Grafana 13; `GET /api/health` shows its version. Every call here behaves the same
-  on 12.x and 13.x.
+- Every `/api` route in the table is deprecated since Grafana 13 in favour of `/apis/…`. Grafana's
+  API reference marks the alerting provisioning routes (`/api/v1/provisioning/…`, rows 2 to 5) with
+  "This API is deprecated and will be removed in a future release" and names the App Platform
+  alerting APIs as the replacement. It gives no removal date or version (checked 2026-10-03), so
+  the routes work until a Grafana release removes them, and that release is not announced. Grafana
+  Cloud stacks upgrade automatically: this stack ran Grafana 13.3.0 on 2026-10-03, and
+  `GET /api/health` shows the current version. Every call here behaves the same on 12.x and 13.x.
 
 ## Tokens
 
 The sync replaces upper-case tokens only. Lower-case `${datasource}` and `$env` are Grafana dashboard
 variables and pass through unchanged.
 
-| Token                     | Allowed in                                  | Replaced with                                                                                                                                                  | Source                                                                              |
-| ------------------------- | ------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------- |
-| `${OWNERS:<role>}`        | any string                                  | display names of the role's members, joined with `, `                                                                                                          | `packages/shared-kernel/registry/owners.json`: `roles.<role>`, then `people[].name` |
-| `${OWNER_TAGS:<role>}`    | a whole element of a dashboard `tags` array | one `owner:<person-id>` tag per member                                                                                                                         | same file                                                                           |
-| `${PROM_DATASOURCE_UID}`  | alert `datasourceUid`                       | uid of the one `prometheus` datasource whose name ends in `-prom` (Grafana Cloud names it `grafanacloud-<stack>-prom`; its uid is usually `grafanacloud-prom`) | `GET /api/datasources`; fail on zero or several matches                             |
-| `${GRAFANA_ALERT_EMAILS}` | contact point `settings.addresses`          | the comma-separated list, verbatim (Grafana splits on `,`, `;` and newlines)                                                                                   | env `GRAFANA_ALERT_EMAILS`                                                          |
-| `${ONCALL_TIMEZONE}`      | mute timing `location`                      | an IANA zone, for example `Europe/Berlin`                                                                                                                      | env `GRAFANA_ONCALL_TIMEZONE`                                                       |
+| Token                     | Allowed in                                  | Replaced with                                                                                                                                           | Source                                                                              |
+| ------------------------- | ------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------- |
+| `${OWNERS:<role>}`        | any string                                  | display names of the role's members, joined with `, `                                                                                                   | `packages/shared-kernel/registry/owners.json`: `roles.<role>`, then `people[].name` |
+| `${OWNER_TAGS:<role>}`    | a whole element of a dashboard `tags` array | one `owner:<person-id>` tag per member                                                                                                                  | same file                                                                           |
+| `${PROM_DATASOURCE_UID}`  | alert `datasourceUid`                       | `grafanacloud-prom` when a `prometheus` datasource has that uid; otherwise the uid of the one `prometheus` datasource named `grafanacloud-<stack>-prom` | `GET /api/datasources`; without that uid, fail on zero or several name matches      |
+| `${GRAFANA_ALERT_EMAILS}` | contact point `settings.addresses`          | the value, verbatim: one address or a comma-separated list (separators: see the note below)                                                             | env `GRAFANA_ALERT_EMAILS`                                                          |
+| `${ONCALL_TIMEZONE}`      | mute timing `location`                      | an IANA zone, for example `Europe/Berlin`                                                                                                               | env `GRAFANA_ONCALL_TIMEZONE`                                                       |
 
 The sync fails on an unknown upper-case token, an unknown or empty role, or an empty env value. People
 and addresses never appear in these files.
+
+Separators in `GRAFANA_ALERT_EMAILS` (checked 2026-10-03). Grafana's source code splits an email
+contact point's addresses on `,`, `;` and newlines (`receivers/delimited_strings.go` in
+`github.com/grafana/alerting`), and its description of the **Addresses** field reads "You can enter
+multiple email addresses using a ";", "\n" or "," separator". Grafana's documentation pages state no
+rule; their one example separates two addresses with `;`. The first sync run (2026-10-03) sent the
+configured value, and the email integration reported no error when the alert fired. A list of
+several addresses has not been checked on this stack.
 
 ## Offline checks (`--check`, no network, CI-safe)
 

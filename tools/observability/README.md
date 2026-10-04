@@ -38,7 +38,12 @@ reported by name; its value is never printed.
 
 1. Create the Grafana service-account token and the PostHog sync key with the roles and scopes the
    two contracts list.
-2. `just secrets-edit dev` and fill the seven keys above, then `just secrets-sync`.
+2. Put the seven keys above into `.env`, run `just secrets-push` (a dry run: it lists the key
+   names it would store) and then `just secrets-push --apply`, which writes them into
+   `secrets/dev.enc.yaml` and creates any key name the file lacks. A key whose shared value already
+   differs from the one in `.env` is named and left alone: run `just secrets-sync` if the shared
+   value is the newer one, or add `--replace` if yours is. Commit that file; every other machine
+   gets the values with `just secrets-sync`.
 3. `just observability-sync all --check`, then `just observability-sync --dry-run` and read the plan.
 4. `just observability-sync`. Run it a second time: every line must say `unchanged`.
 
@@ -83,6 +88,9 @@ status only, never a response body; 401 and 403 add a hint.
 
 - `sync.mjs`: the CLI (arguments, env, order of the two vendors).
 - `check.mjs`: the offline checks. `tokens.mjs`: token scan, placement rules and substitution.
+  `RUNBOOK_URL_PREFIX` in `check.mjs` names this repository; `just repo-setup name` reads the name
+  from that line and, after a repository move, `just repo-setup name --apply` rewrites it together
+  with the alert files and the fixtures (`tools/github/README.md`).
 - `grafana.mjs`, `posthog.mjs`: one vendor each. `http.mjs`: fetch, pagination, dry run.
 - `compare.mjs`: the equality rules above. `inputs.mjs`: file loading. `output.mjs`: masked output.
 - `tests/sync.test.mjs` with `tests/stubs.mjs` (local Grafana and PostHog stand-ins).

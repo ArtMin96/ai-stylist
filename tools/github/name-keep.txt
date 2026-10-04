@@ -1,0 +1,7 @@
+# Paths that keep this repository's old name on purpose after a rename, transfer or move.
+# `just repo-setup name` (scripts/repo-name.sh) never rewrites them; its report names each one
+# that still holds an old name, with the reason below.
+# One entry per line: <path, or directory/> <reason>. A path has no spaces.
+planning/PROGRESS.md    history: its links to pull requests and workflow runs point at where those really live, the old repository
+.claude/plans/          history: plans and proposals record the state of their day and are never edited
+planning/research/      history: research notes are read-only context

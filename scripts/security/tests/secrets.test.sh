@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
-# Black-box regression suite for the sops + age scripts (secrets-sync.sh, secrets-edit.sh,
-# secrets-updatekeys.sh, secrets-onboard.sh, secrets-approve.sh, secrets-backup-done.sh, and the
-# secrets-doctor.sh fragment) and the secrets/ ignore policy (planning/15 §6, P02 T02/T12; plan
-# s2-automated-secrets-onboarding).
+# Black-box regression suite for the sops + age scripts (secrets-sync.sh, secrets-push.sh,
+# secrets-edit.sh, secrets-updatekeys.sh, secrets-onboard.sh, secrets-approve.sh,
+# secrets-backup-done.sh, and the secrets-doctor.sh fragment) and the secrets/ ignore policy
+# (planning/15 §6, P02 T02/T12; plan s2-automated-secrets-onboarding).
 # Usage: scripts/security/tests/secrets.test.sh   (run by `just test secrets` and `just test`)
 # Every fixture is synthetic: throwaway age identities are generated per run inside a private temp
 # dir and deleted on exit; nothing here reads the developer's keys file or the real secrets/ files.
@@ -21,6 +21,11 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.." && pwd)"
 TEST_ROOT="$(mktemp -d "${TMPDIR:-/tmp}/ai-stylist-secrets-tests.XXXXXX")"
 trap 'rm -rf "$TEST_ROOT"' EXIT
+
+# resolve_tool, because, and the recording wrappers (record_wrappers, record_clean) that
+# scripts/test/repo-setup.test.sh uses as well.
+# shellcheck source=scripts/test/recording.sh
+source "$ROOT/scripts/test/recording.sh"
 
 failures=0
 
@@ -43,19 +48,6 @@ file_mode() {
     fi
 }
 
-# Absolute path of a tool that works from any directory. `command -v` may return a mise shim, which
-# resolves the version from the current directory's mise config and fails outside the repo (the
-# justfile puts the shims dir first on PATH).
-resolve_tool() {
-    local path
-    path="$(command -v "$1")" || return 1
-    if [[ "$path" == */mise/shims/* ]] && command -v mise >/dev/null 2>&1; then
-        mise which "$1"
-    else
-        printf '%s\n' "$path"
-    fi
-}
-
 # A copy of the scripts under test plus a minimal repo layout. bin/ is prepended to PATH by the
 # tests that stub sops; bin/file-mode exposes file_mode() to those stubs (single definition above).
 # The wave-3 scripts do not exist yet: each copy is guarded so a missing one cannot abort this
@@ -68,11 +60,14 @@ fixture_repo() {
     cp "$ROOT/scripts/security/secrets-edit.sh" "$fixture/scripts/security/"
     cp "$ROOT/scripts/security/secrets-updatekeys.sh" "$fixture/scripts/security/"
     [[ -f "$ROOT/scripts/lib.sh" ]] && cp "$ROOT/scripts/lib.sh" "$fixture/scripts/"
+    # secrets-lib.sh sources it (the origin -> OWNER/REPO parsing).
+    cp "$ROOT/scripts/github-lib.sh" "$fixture/scripts/"
     [[ -f "$ROOT/scripts/security/secrets-onboard.sh" ]] && cp "$ROOT/scripts/security/secrets-onboard.sh" "$fixture/scripts/security/"
     [[ -f "$ROOT/scripts/security/secrets-approve.sh" ]] && cp "$ROOT/scripts/security/secrets-approve.sh" "$fixture/scripts/security/"
     [[ -f "$ROOT/scripts/security/secrets-backup-done.sh" ]] && cp "$ROOT/scripts/security/secrets-backup-done.sh" "$fixture/scripts/security/"
     [[ -f "$ROOT/scripts/security/secrets-doctor.sh" ]] && cp "$ROOT/scripts/security/secrets-doctor.sh" "$fixture/scripts/security/"
-    for script in secrets-onboard.sh secrets-approve.sh secrets-backup-done.sh; do
+    [[ -f "$ROOT/scripts/security/secrets-push.sh" ]] && cp "$ROOT/scripts/security/secrets-push.sh" "$fixture/scripts/security/"
+    for script in secrets-onboard.sh secrets-approve.sh secrets-backup-done.sh secrets-push.sh; do
         [[ -f "$fixture/scripts/security/$script" ]] && chmod +x "$fixture/scripts/security/$script"
     done
 
@@ -90,18 +85,6 @@ file_mode "$1"
 CALL
     } > "$fixture/bin/file-mode"
     chmod +x "$fixture/bin/file-mode"
-}
-
-# .sops.yaml with one dev rule listing the given recipients, anchored on an '# ADD RECIPIENTS'
-# marker line (secrets_add_recipient inserts directly below it) at the recipients' indentation.
-write_sops_config() {
-    local fixture="$1"
-    shift
-    {
-        printf 'creation_rules:\n  - path_regex: secrets/dev\\.enc\\.yaml$\n    key_groups:\n      - age:\n'
-        printf '          # ADD RECIPIENTS: synthetic marker for tests\n'
-        for recipient in "$@"; do printf '          - %s\n' "$recipient"; done
-    } > "$fixture/.sops.yaml"
 }
 
 # Turns an already-populated fixture (from fixture_repo) into a git repository with a bare "remote"
@@ -168,8 +151,10 @@ synthetic_age_recipient() {
 # Sources secrets-doctor.sh (the sourced fragment, decision 5) inside <fixture> with stub
 # ok/fail/warnc that each append "<tag>|<arg1>|<arg2>" to <record>, then calls
 # secrets_doctor_checks(). Lets the fragment be probed without running the untestable
-# scripts/doctor.sh (mise, docker, pnpm). CI and SOPS_AGE_KEY are neutralised so the outcome is
-# deterministic regardless of the ambient shell (portability.yml runs this suite with CI=true).
+# scripts/doctor.sh (mise, docker, pnpm). scripts/lib.sh is sourced first, as doctor.sh does (the
+# parity checks read .env through its env_file_value); the stubs then replace its ok/fail/warnc.
+# CI and SOPS_AGE_KEY are neutralised so the outcome is deterministic regardless of the ambient
+# shell (portability.yml runs this suite with CI=true).
 # shellcheck disable=SC2329 # ok/fail/warnc are invoked indirectly by the sourced secrets-doctor.sh
 probe_doctor_checks() {
     local fixture="$1" record="$2"
@@ -181,6 +166,8 @@ probe_doctor_checks() {
         export CI=""
         export SOPS_AGE_KEY=""
         export SOPS_AGE_KEY_FILE=""
+        # shellcheck disable=SC1091
+        . scripts/lib.sh
         ok()    { printf 'ok|%s\n' "$1" >> "$record"; }
         fail()  { printf 'fail|%s|%s\n' "$1" "${2:-}" >> "$record"; }
         warnc() { printf 'warnc|%s|%s\n' "$1" "${2:-}" >> "$record"; }
@@ -857,6 +844,989 @@ test_approve_requires_decrypting_identity() {
     [[ "$output" == *"no age private key found"* ]]
 }
 
+# --- age identity path (secrets-lib.sh pins SOPS_AGE_KEY_FILE) ------------------------------------
+
+# sops documents a different default keys file per OS (Linux: ${XDG_CONFIG_HOME:-~/.config}/sops/age/keys.txt;
+# macOS: ~/Library/Application Support/sops/age/keys.txt unless XDG_CONFIG_HOME is set), while the
+# scripts create and check ${XDG_CONFIG_HOME:-~/.config}/sops/age/keys.txt everywhere. The library
+# therefore exports SOPS_AGE_KEY_FILE for that file when it exists, so sops reads the file the
+# scripts use. Each case sources the library in an otherwise empty environment and reads the
+# variable back from a child process. The keys files here are placeholders, never key material.
+test_lib_pins_identity_file() {
+    local home="$TEST_ROOT/identity-home" empty_home="$TEST_ROOT/identity-home-empty"
+    local lib="$ROOT/scripts/security/secrets-lib.sh" out
+    mkdir -p "$home/.config/sops/age" "$home/xdg/sops/age" "$empty_home"
+    printf 'synthetic-not-a-real-key\n' > "$home/.config/sops/age/keys.txt"
+    printf 'synthetic-not-a-real-key\n' > "$home/xdg/sops/age/keys.txt"
+
+    # shellcheck disable=SC2016 # $1 is expanded by the inner bash
+    out="$(env -i PATH="$PATH" HOME="$home" bash -c '. "$1"; env' _ "$lib" | grep '^SOPS_AGE_KEY_FILE=')" || return 1
+    [[ "$out" == "SOPS_AGE_KEY_FILE=$home/.config/sops/age/keys.txt" ]] || return 1
+
+    # shellcheck disable=SC2016
+    out="$(env -i PATH="$PATH" HOME="$home" XDG_CONFIG_HOME="$home/xdg" bash -c '. "$1"; env' _ "$lib" | grep '^SOPS_AGE_KEY_FILE=')" || return 1
+    [[ "$out" == "SOPS_AGE_KEY_FILE=$home/xdg/sops/age/keys.txt" ]] || return 1
+
+    # An explicit file is left alone.
+    # shellcheck disable=SC2016
+    out="$(env -i PATH="$PATH" HOME="$home" SOPS_AGE_KEY_FILE="$home/elsewhere.txt" bash -c '. "$1"; env' _ "$lib" | grep '^SOPS_AGE_KEY_FILE=')" || return 1
+    [[ "$out" == "SOPS_AGE_KEY_FILE=$home/elsewhere.txt" ]] || return 1
+
+    # Key material in the environment (CI): nothing is exported.
+    # shellcheck disable=SC2016
+    out="$(env -i PATH="$PATH" HOME="$home" SOPS_AGE_KEY=synthetic-test-identity bash -c '. "$1"; env' _ "$lib" | grep -c '^SOPS_AGE_KEY_FILE=' || true)"
+    [[ "$out" == "0" ]] || return 1
+
+    # No keys file at the default path: nothing is exported either. sops fails on a
+    # SOPS_AGE_KEY_FILE it cannot open, so its own lookup must stay untouched.
+    # shellcheck disable=SC2016
+    out="$(env -i PATH="$PATH" HOME="$empty_home" bash -c '. "$1"; env' _ "$lib" | grep -c '^SOPS_AGE_KEY_FILE=' || true)"
+    [[ "$out" == "0" ]]
+}
+
+# End to end with the real sops: an identity at the default path, with HOME as the only hint
+# (no XDG_CONFIG_HOME, SOPS_AGE_KEY_FILE or SOPS_AGE_KEY), decrypts. On Linux this passes with or
+# without the pin (sops's own default is the same file); on macOS it is the proof that the pin
+# works (portability.yml's macos-26 leg runs this suite).
+test_default_identity_path_decrypts() {
+    local fixture="$TEST_ROOT/identity-default" path pub
+    if ! command -v sops >/dev/null 2>&1 || ! command -v age-keygen >/dev/null 2>&1; then
+        echo "  sops/age-keygen not on PATH (mise.toml pins them; run 'mise install' / activate mise)" >&2
+        return 1
+    fi
+    fixture_repo "$fixture"
+    rm "$fixture/secrets/dev.enc.yaml" "$fixture/bin/age"
+    for tool in sops age age-keygen; do
+        ln -s "$(resolve_tool "$tool")" "$fixture/bin/$tool" || return 1
+    done
+    path="$fixture/home/.config/sops/age/keys.txt"
+    mkdir -p "$(dirname "$path")"
+    age-keygen -o "$path" >/dev/null 2>&1 || return 1
+    pub="$(age-keygen -y "$path")"
+    write_sops_config "$fixture" "$pub"
+    printf 'BASE: synthetic-default-path-value\n' > "$fixture/secrets/dev.plain.yaml"
+    (cd "$fixture" && PATH="$fixture/bin:$PATH" \
+        sops --encrypt --input-type yaml --output-type yaml --filename-override secrets/dev.enc.yaml secrets/dev.plain.yaml \
+        > secrets/dev.enc.yaml.tmp) || return 1
+    mv "$fixture/secrets/dev.enc.yaml.tmp" "$fixture/secrets/dev.enc.yaml"
+    command rm -f "$fixture/secrets/dev.plain.yaml"
+
+    (cd "$fixture" && env -u XDG_CONFIG_HOME -u SOPS_AGE_KEY_FILE -u SOPS_AGE_KEY CI="" HOME="$fixture/home" \
+        PATH="$fixture/bin:$PATH" scripts/security/secrets-sync.sh dev >/dev/null 2>&1) || return 1
+    grep -Fxq 'BASE=synthetic-default-path-value' "$fixture/.env"
+}
+
+# --- secrets-push.sh and doctor's parity checks (real sops + age, synthetic values only) ----------
+
+# Every secret value in the push fixtures carries the marker "synthetic-", so one pattern proves a
+# command printed no value. Key names, file names and the fixture path never contain it.
+has_no_value() {
+    [[ "$1" != *synthetic-* ]]
+}
+
+# A fixture for the push and parity tests: real sops, age and age-keygen in bin/, a throwaway
+# identity at the default path (home/.config/sops/age/keys.txt) that is the only dev recipient, a
+# seven-key .env.example (one key tagged [machine-local]), a .env, and a secrets/dev.enc.yaml
+# encrypted from a plain YAML that is removed again. One key per case secrets-push.sh tells apart:
+#   SAME          equal on both sides          -> untouched
+#   CHANGED       different                    -> left alone; replaced with --replace only (.env
+#                                                 wins; quotes and `export` stripped)
+#   EMPTY_SHARED  empty in the shared file     -> fill
+#   MISSING       name not in the shared file  -> add, with a value that needs JSON escaping
+#   MISSING_EMPTY name missing, no local value -> add, empty
+#   LOCAL_EMPTY   no local value               -> the shared value survives
+#   LOCAL_ONLY    tagged [machine-local]       -> never pushed
+#   STALE_ONE     only in the shared file, empty          -> removed with --prune only
+#   STALE_TWO     only in the shared file, holds a value  -> removed with --prune --prune-values only
+#   UNDECLARED    only in .env                 -> never pushed
+push_fixture() {
+    local fixture="$1"
+    fixture_repo "$fixture"
+    rm "$fixture/secrets/dev.enc.yaml"
+
+    cat > "$fixture/.env.example" <<'EXAMPLE'
+# Synthetic key catalogue for the push tests.
+# Equal in .env and in the shared file.
+SAME=
+# Different in .env.
+CHANGED=
+# Empty in the shared file, set in .env.
+EMPTY_SHARED=
+# Not in the shared file, set in .env.
+MISSING=
+# Not in the shared file, empty in .env.
+MISSING_EMPTY=
+# Set in the shared file, empty in .env.
+LOCAL_EMPTY=
+# Set in .env, never shared.
+# [machine-local] a per-machine value.
+LOCAL_ONLY=
+EXAMPLE
+    cat > "$fixture/.env" <<'DOTENV'
+# personal comment
+SAME=synthetic-same-value
+export CHANGED="synthetic-new-value"
+EMPTY_SHARED=synthetic-fill-value
+MISSING=synthetic-missing "quoted" back\slash value
+MISSING_EMPTY=
+LOCAL_EMPTY=
+LOCAL_ONLY=synthetic-machine-local-value
+UNDECLARED=synthetic-undeclared-value
+DOTENV
+    cat > "$fixture/secrets/dev.plain.yaml" <<'PLAIN'
+# A leading comment, like the one secrets-edit.sh writes: sops encrypts it into a #ENC[...] line.
+SAME: synthetic-same-value
+CHANGED: synthetic-old-value
+EMPTY_SHARED: ""
+LOCAL_EMPTY: synthetic-shared-only-value
+LOCAL_ONLY: ""
+STALE_ONE: ""
+STALE_TWO: synthetic-stale-value
+PLAIN
+    # Real tools in bin/, the throwaway identity, .sops.yaml, and the encrypted file
+    # (scripts/test/recording.sh).
+    sops_dev_fixture "$fixture"
+}
+
+# The [machine-local] tag of .env.example: only a comment line that starts with it counts, it covers
+# every KEY= line directly below its comment block, and a new comment block or a blank line ends it.
+test_machine_local_tag_rules() {
+    local fixture="$TEST_ROOT/machine-local" out
+    mkdir -p "$fixture"
+    cat > "$fixture/.env.example" <<'EXAMPLE'
+# A header that only mentions the tag "[machine-local]" in the middle of a line.
+# ---
+
+# A plain key.
+PLAIN=
+# A tagged key.
+# [machine-local] with a reason after the tag.
+TAGGED=
+# The tag covers every key directly below its comment block.
+# [machine-local]
+GROUP_ONE=
+GROUP_TWO=
+# A new comment block ends it.
+AFTER_GROUP=
+# [machine-local] a blank line ends it too.
+
+AFTER_BLANK=
+EXAMPLE
+    # shellcheck disable=SC1091
+    out="$(cd "$fixture" && . "$ROOT/scripts/security/secrets-lib.sh" && secrets_machine_local_keys | tr '\n' ' ')" || return 1
+    [[ "$out" == "TAGGED GROUP_ONE GROUP_TWO " ]] || return 1
+    # shellcheck disable=SC1091
+    out="$(cd "$fixture" && . "$ROOT/scripts/security/secrets-lib.sh" && secrets_example_keys | tr '\n' ' ')" || return 1
+    [[ "$out" == "PLAIN TAGGED GROUP_ONE GROUP_TWO AFTER_GROUP AFTER_BLANK " ]]
+}
+
+# Runs secrets-push.sh in <fixture>; further arguments go to the script. The identity is found the
+# way a workstation finds it: no SOPS_AGE_KEY, no SOPS_AGE_KEY_FILE, the default keys file.
+run_push() {
+    local fixture="$1"
+    shift
+    (cd "$fixture" && CI="" SOPS_AGE_KEY="" SOPS_AGE_KEY_FILE="" HOME="$fixture/home" XDG_CONFIG_HOME="$fixture/home/.config" \
+        PATH="$fixture/bin:$PATH" scripts/security/secrets-push.sh "$@")
+}
+
+# The decrypted KEY=value lines of <fixture>'s shared dev file, for assertions only.
+push_decrypt() {
+    (cd "$1" && HOME="$1/home" SOPS_AGE_KEY="" SOPS_AGE_KEY_FILE="$1/home/.config/sops/age/keys.txt" PATH="$1/bin:$PATH" \
+        sops --decrypt --input-type yaml --output-type dotenv secrets/dev.enc.yaml)
+}
+
+test_push_dry_run_lists_names_and_writes_nothing() {
+    local fixture="$TEST_ROOT/push-dry" output
+    push_fixture "$fixture" || return 1
+    cp "$fixture/secrets/dev.enc.yaml" "$fixture/before.enc.yaml"
+
+    output="$(run_push "$fixture" 2>&1)" || return 1
+    cmp -s "$fixture/before.enc.yaml" "$fixture/secrets/dev.enc.yaml" || return 1
+    [[ "$output" == *"dry run for secrets/dev.enc.yaml"* ]] || return 1
+    grep -Eq '^  add +MISSING +\(new name, value from \.env\)$' <<< "$output" || return 1
+    grep -Eq '^  add +MISSING_EMPTY +\(new name, empty value\)$' <<< "$output" || return 1
+    grep -Eq '^  fill +EMPTY_SHARED ' <<< "$output" || return 1
+    # A differing value is "differs" in a bare plan: --apply alone would leave it alone.
+    grep -Eq '^  differs +CHANGED ' <<< "$output" || return 1
+    grep -Eq '^  stale +STALE_ONE ' <<< "$output" || return 1
+    grep -Eq '^  stale +STALE_TWO ' <<< "$output" || return 1
+    grep -Fxq '  held back, tagged [machine-local] in .env.example: LOCAL_ONLY' <<< "$output" || return 1
+    [[ "$output" == *"2 to add, 1 to fill, 1 differing (left alone), 2 stale (1 with a value); 1 already equal, 1 with no value in .env, 1 held back"* ]] || return 1
+    [[ "$output" == *"to write it: just secrets-push dev --apply"* ]] || return 1
+    ! grep -Eq ' (SAME|LOCAL_EMPTY|UNDECLARED)( |$)' <<< "$output" || return 1
+    has_no_value "$output" || return 1
+
+    # --dry-run is the same mode spelled out; --replace and --prune alone are still dry runs.
+    output="$(run_push "$fixture" dev --dry-run 2>&1)" || return 1
+    [[ "$output" == *"dry run for secrets/dev.enc.yaml"* ]] || return 1
+    output="$(run_push "$fixture" dev --dry-run --replace 2>&1)" || return 1
+    grep -Eq '^  replace +CHANGED ' <<< "$output" || return 1
+    [[ "$output" == *"2 to add, 1 to fill, 1 to replace, 2 stale (1 with a value); 1 already equal, 1 with no value in .env, 1 held back"* ]] || return 1
+    [[ "$output" == *"to write it: just secrets-push dev --apply --replace"* ]] || return 1
+    has_no_value "$output" || return 1
+    output="$(run_push "$fixture" --prune 2>&1)" || return 1
+    grep -Eq '^  remove +STALE_ONE ' <<< "$output" || return 1
+    [[ "$output" == *"to write it: just secrets-push dev --apply --prune"* ]] || return 1
+    has_no_value "$output" || return 1
+    cmp -s "$fixture/before.enc.yaml" "$fixture/secrets/dev.enc.yaml"
+}
+
+test_push_apply_adds_fills_replaces_and_keeps_the_rest() {
+    local fixture="$TEST_ROOT/push-apply" output dec same_before local_empty_before
+    push_fixture "$fixture" || return 1
+    same_before="$(grep '^SAME:' "$fixture/secrets/dev.enc.yaml")"
+    local_empty_before="$(grep '^LOCAL_EMPTY:' "$fixture/secrets/dev.enc.yaml")"
+
+    # --replace is what makes --apply overwrite the differing CHANGED; without it that key is left
+    # alone (test_push_apply_leaves_a_differing_value_alone_without_replace).
+    output="$(run_push "$fixture" --apply --replace 2>&1)" || return 1
+    dec="$(push_decrypt "$fixture")" || return 1
+
+    grep -Fxq 'MISSING=synthetic-missing "quoted" back\slash value' <<< "$dec" || return 1
+    grep -Fxq 'MISSING_EMPTY=' <<< "$dec" || return 1
+    grep -Fxq 'EMPTY_SHARED=synthetic-fill-value' <<< "$dec" || return 1
+    grep -Fxq 'CHANGED=synthetic-new-value' <<< "$dec" || return 1
+    grep -Fxq 'SAME=synthetic-same-value' <<< "$dec" || return 1
+    grep -Fxq 'LOCAL_EMPTY=synthetic-shared-only-value' <<< "$dec" || return 1
+    grep -Fxq 'LOCAL_ONLY=' <<< "$dec" || return 1
+    ! grep -q '^UNDECLARED=' <<< "$dec" || return 1
+    # Stale names stay without --prune.
+    grep -Fxq 'STALE_ONE=' <<< "$dec" || return 1
+    grep -Fxq 'STALE_TWO=synthetic-stale-value' <<< "$dec" || return 1
+
+    # Ciphertext only on disk, and a value that was not pushed keeps its ciphertext, so the diff a
+    # reviewer sees names the changed keys only. The encrypted comment line survives too.
+    ! grep -q 'synthetic-' "$fixture/secrets/dev.enc.yaml" || return 1
+    [[ "$(sed -n '1p' "$fixture/secrets/dev.enc.yaml")" == '#ENC['* ]] || return 1
+    [[ "$(grep '^SAME:' "$fixture/secrets/dev.enc.yaml")" == "$same_before" ]] || return 1
+    [[ "$(grep '^LOCAL_EMPTY:' "$fixture/secrets/dev.enc.yaml")" == "$local_empty_before" ]] || return 1
+
+    grep -Eq '^  added +MISSING$' <<< "$output" || return 1
+    grep -Eq '^  added +MISSING_EMPTY +\(name only, empty value\)$' <<< "$output" || return 1
+    grep -Eq '^  filled +EMPTY_SHARED$' <<< "$output" || return 1
+    grep -Eq '^  replaced +CHANGED$' <<< "$output" || return 1
+    [[ "$output" == *"wrote secrets/dev.enc.yaml — 2 added, 1 filled, 1 replaced, 0 removed"* ]] || return 1
+    [[ "$output" == *"2 stale name(s) left"* ]] || return 1
+    has_no_value "$output"
+}
+
+test_push_second_apply_changes_nothing() {
+    local fixture="$TEST_ROOT/push-again" output
+    push_fixture "$fixture" || return 1
+    run_push "$fixture" --apply --replace >/dev/null 2>&1 || return 1
+    cp "$fixture/secrets/dev.enc.yaml" "$fixture/after-first.enc.yaml"
+
+    output="$(run_push "$fixture" --apply --replace 2>&1)" || return 1
+    cmp -s "$fixture/after-first.enc.yaml" "$fixture/secrets/dev.enc.yaml" || return 1
+    [[ "$output" == *"nothing to push"* ]] || return 1
+    has_no_value "$output"
+}
+
+test_push_prune_removes_stale_names_only_with_the_flag() {
+    local fixture="$TEST_ROOT/push-prune" output dec
+    push_fixture "$fixture" || return 1
+
+    run_push "$fixture" --apply --replace >/dev/null 2>&1 || return 1
+    grep -q '^STALE_ONE:' "$fixture/secrets/dev.enc.yaml" || return 1
+    grep -q '^STALE_TWO:' "$fixture/secrets/dev.enc.yaml" || return 1
+
+    # Both names go in one run only with both flags: STALE_TWO holds a value
+    # (test_push_prune_needs_a_second_flag_for_a_stale_value covers --prune alone).
+    output="$(run_push "$fixture" --apply --prune --prune-values 2>&1)" || return 1
+    ! grep -q '^STALE_' "$fixture/secrets/dev.enc.yaml" || return 1
+    grep -Eq '^  removed +STALE_ONE$' <<< "$output" || return 1
+    grep -Eq '^  removed +STALE_TWO$' <<< "$output" || return 1
+    [[ "$output" == *"0 added, 0 filled, 0 replaced, 2 removed"* ]] || return 1
+    has_no_value "$output" || return 1
+
+    # Every declared key is still there, with its value.
+    dec="$(push_decrypt "$fixture")" || return 1
+    grep -Fxq 'SAME=synthetic-same-value' <<< "$dec" || return 1
+    grep -Fxq 'CHANGED=synthetic-new-value' <<< "$dec" || return 1
+    grep -Fxq 'LOCAL_EMPTY=synthetic-shared-only-value' <<< "$dec" || return 1
+    [[ "$(grep -c '=' <<< "$dec")" == "7" ]]
+}
+
+test_push_refuses_protected_environments_and_bad_usage() {
+    local fixture="$TEST_ROOT/push-refuse" output rc env_name
+    fixture_repo "$fixture"
+    printf '#!/usr/bin/env bash\necho "sops must not run" >&2\nexit 99\n' > "$fixture/bin/sops"
+    chmod +x "$fixture/bin/sops"
+    printf 'BASE=synthetic-local-value\n' > "$fixture/.env"
+
+    for env_name in staging prod; do
+        set +e
+        output="$(run_push "$fixture" "$env_name" --apply 2>&1)"
+        rc=$?
+        set -e
+        [[ $rc -eq 1 ]] || return 1
+        [[ "$output" == *"refusing to push a workstation .env into secrets/$env_name.enc.yaml"* ]] || return 1
+        [[ "$output" != *"sops must not run"* ]] || return 1
+
+        set +e
+        output="$(printf 'synthetic-stdin-value\n' | run_push "$fixture" "$env_name" --set BASE 2>&1)"
+        rc=$?
+        set -e
+        [[ $rc -eq 1 ]] || return 1
+        [[ "$output" == *"refusing to push a workstation .env into secrets/$env_name.enc.yaml"* ]] || return 1
+        has_no_value "$output" || return 1
+    done
+
+    # An environment name the script does not know is wrong usage, and like every argument it does
+    # not recognise it is not echoed (test_push_never_echoes_an_argument_it_does_not_recognise).
+    set +e
+    output="$(run_push "$fixture" qa 2>&1)"
+    rc=$?
+    set -e
+    [[ $rc -eq 2 && "$output" == *"unexpected argument"* && "$output" != *qa* ]] || return 1
+
+    set +e
+    output="$(run_push "$fixture" --apply --dry-run 2>&1)"
+    rc=$?
+    set -e
+    [[ $rc -eq 2 && "$output" == *"--apply and --dry-run exclude each other"* ]] || return 1
+
+    set +e
+    output="$(run_push "$fixture" --set BASE --apply 2>&1 </dev/null)"
+    rc=$?
+    set -e
+    [[ $rc -eq 2 && "$output" == *"--set KEY takes no other flag"* ]] || return 1
+
+    set +e
+    output="$(run_push "$fixture" --set 'not-a-key' 2>&1 </dev/null)"
+    rc=$?
+    set -e
+    [[ $rc -eq 2 && "$output" == *"--set needs a key name"* ]] || return 1
+
+    set +e
+    output="$(run_push "$fixture" --force 2>&1)"
+    rc=$?
+    set -e
+    [[ $rc -eq 2 && "$output" == *"unknown flag"* && "$output" != *"--force"* ]] || return 1
+    [[ "$output" != *"sops must not run"* ]]
+}
+
+# A failed decrypt must stop the run: without the shared values every local value would look new.
+test_push_stops_without_a_decrypting_identity_or_an_env_file() {
+    local fixture="$TEST_ROOT/push-no-decrypt" output rc path
+    push_fixture "$fixture" || return 1
+    cp "$fixture/secrets/dev.enc.yaml" "$fixture/before.enc.yaml"
+    path="$fixture/home/.config/sops/age/keys.txt"
+
+    mv "$fixture/.env" "$fixture/env.saved"
+    set +e
+    output="$(run_push "$fixture" --apply 2>&1)"
+    rc=$?
+    set -e
+    [[ $rc -eq 1 && "$output" == *".env not found"* ]] || return 1
+    mv "$fixture/env.saved" "$fixture/.env"
+
+    # An identity that is not a recipient of the file.
+    rm "$path"
+    age-keygen -o "$path" >/dev/null 2>&1 || return 1
+    set +e
+    output="$(run_push "$fixture" --apply --prune 2>&1)"
+    rc=$?
+    set -e
+    [[ $rc -eq 1 && "$output" == *"could not read secrets/dev.enc.yaml with your identity"* ]] || return 1
+    has_no_value "$output" || return 1
+    set +e
+    output="$(printf 'synthetic-stdin-value\n' | run_push "$fixture" --set MISSING 2>&1)"
+    rc=$?
+    set -e
+    [[ $rc -eq 1 && "$output" == *"sops could not write MISSING"* ]] || return 1
+    has_no_value "$output" || return 1
+
+    # No identity at all.
+    rm "$path"
+    set +e
+    output="$(run_push "$fixture" 2>&1)"
+    rc=$?
+    set -e
+    [[ $rc -eq 1 && "$output" == *"no age private key found"* ]] || return 1
+
+    cmp -s "$fixture/before.enc.yaml" "$fixture/secrets/dev.enc.yaml"
+}
+
+test_push_set_stores_one_value_from_stdin() {
+    local fixture="$TEST_ROOT/push-set" output dec rc
+    push_fixture "$fixture" || return 1
+
+    # A name the shared file does not have yet.
+    output="$(printf 'synthetic-stdin-value\n' | run_push "$fixture" --set MISSING 2>&1)" || return 1
+    dec="$(push_decrypt "$fixture")" || return 1
+    grep -Fxq 'MISSING=synthetic-stdin-value' <<< "$dec" || return 1
+    grep -Eq '^  added MISSING$' <<< "$output" || return 1
+    has_no_value "$output" || return 1
+    # Nothing else moved: --set is one key, not a push of .env.
+    grep -Fxq 'CHANGED=synthetic-old-value' <<< "$dec" || return 1
+    grep -Fxq 'EMPTY_SHARED=' <<< "$dec" || return 1
+    grep -Fxq 'STALE_TWO=synthetic-stale-value' <<< "$dec" || return 1
+
+    # An existing name (rotation); no trailing newline on stdin.
+    output="$(printf 'synthetic-rotated-value' | run_push "$fixture" --set CHANGED 2>&1)" || return 1
+    dec="$(push_decrypt "$fixture")" || return 1
+    grep -Fxq 'CHANGED=synthetic-rotated-value' <<< "$dec" || return 1
+    grep -Eq '^  set CHANGED$' <<< "$output" || return 1
+    has_no_value "$output" || return 1
+
+    # The same value again leaves the file byte-identical.
+    cp "$fixture/secrets/dev.enc.yaml" "$fixture/after-set.enc.yaml"
+    output="$(printf 'synthetic-rotated-value\n' | run_push "$fixture" --set CHANGED 2>&1)" || return 1
+    cmp -s "$fixture/after-set.enc.yaml" "$fixture/secrets/dev.enc.yaml" || return 1
+    grep -Eq '^  unchanged CHANGED$' <<< "$output" || return 1
+
+    # Refused: a machine-local key, a name .env.example does not declare, an empty value, a control
+    # character. None of them writes or echoes the value.
+    set +e
+    output="$(printf 'synthetic-refused-value\n' | run_push "$fixture" --set LOCAL_ONLY 2>&1)"
+    rc=$?
+    set -e
+    [[ $rc -eq 1 && "$output" == *"LOCAL_ONLY is tagged [machine-local]"* ]] || return 1
+    has_no_value "$output" || return 1
+
+    set +e
+    output="$(printf 'synthetic-refused-value\n' | run_push "$fixture" --set UNDECLARED 2>&1)"
+    rc=$?
+    set -e
+    [[ $rc -eq 1 && "$output" == *"UNDECLARED is not a key in .env.example"* ]] || return 1
+    has_no_value "$output" || return 1
+
+    set +e
+    output="$(run_push "$fixture" --set SAME 2>&1 </dev/null)"
+    rc=$?
+    set -e
+    [[ $rc -eq 1 && "$output" == *"no value given for SAME"* ]] || return 1
+
+    set +e
+    output="$(printf 'synthetic-tab\tvalue\n' | run_push "$fixture" --set SAME 2>&1)"
+    rc=$?
+    set -e
+    [[ $rc -eq 1 && "$output" == *"contains a control character"* ]] || return 1
+    has_no_value "$output" || return 1
+
+    cmp -s "$fixture/after-set.enc.yaml" "$fixture/secrets/dev.enc.yaml"
+}
+
+# Every external command secrets-push.sh runs, sops included. run_push_recorded makes the wrappers
+# below the whole PATH, so a command missing from this list cannot run at all: the list cannot fall
+# behind the script without a test failing.
+PUSH_WRAPPED_COMMANDS="sops awk mktemp chmod basename dirname cp cmp mv rm tr wc uname"
+
+# Recording wrappers in <fixture>/rec, one per command above, plus plain links for bash and age,
+# which the script only looks up (record_wrappers, scripts/test/recording.sh: each wrapper appends
+# its argument list, an ON-DISK line and an IN-ENV line to $RECORD_FILE, then runs the real command).
+push_record_wrappers() {
+    RECORD_WRAPPER_EXTRA=push_sops_failures record_wrappers "$1" "$PUSH_WRAPPED_COMMANDS" age
+}
+
+# The extra lines of the sops wrapper. PUSH_SOPS_FAIL makes it fail the way the real one can, with
+# text on stderr that carries the value marker: `decrypt` fails every decrypt, `set:<n>` the n-th
+# `sops set` of the record, `hang` turns `sops set` into a 30 s wait (its PID goes to
+# $RECORD_FILE.hang).
+push_sops_failures() {
+    local grep_path sleep_path
+    [[ "$1" == sops ]] || return 0
+    grep_path="$(command -v grep)" || return 1
+    sleep_path="$(command -v sleep)" || return 1
+    cat <<WRAPPER
+case "\${PUSH_SOPS_FAIL:-}" in
+    decrypt) if [[ " \$* " == *" --decrypt "* ]]; then echo 'sops: synthetic-text-in-an-error' >&2; exit 1; fi ;;
+    set:*) if [[ "\${1:-}" == set && "\$PUSH_SOPS_FAIL" == "set:\$('$grep_path' -c '^sops set ' "\$RECORD_FILE")" ]]; then echo 'sops: synthetic-text-in-an-error' >&2; exit 1; fi ;;
+    hang) if [[ "\${1:-}" == set ]]; then echo "\$\$" > "\$RECORD_FILE.hang"; exec '$sleep_path' 30; fi ;;
+esac
+WRAPPER
+}
+
+# run_push with the recording wrappers as the entire PATH and <fixture>/tmp as TMPDIR.
+run_push_recorded() {
+    local fixture="$1"
+    shift
+    (cd "$fixture" && CI="" SOPS_AGE_KEY="" SOPS_AGE_KEY_FILE="" HOME="$fixture/home" XDG_CONFIG_HOME="$fixture/home/.config" \
+        TMPDIR="$fixture/tmp" RECORD_FILE="$fixture/record.txt" PATH="$fixture/rec" scripts/security/secrets-push.sh "$@")
+}
+
+# After run_push_recorded: no value was an argument of any command, in a file under tmp/ or secrets/
+# while any command ran, or in a command's environment; and nothing is left in tmp/ or, beside the
+# encrypted file, in secrets/ (record_clean, scripts/test/recording.sh).
+push_record_clean() {
+    record_clean "$1"
+}
+
+# Every external command the push runs goes through a recording wrapper
+# (push_record_wrappers), on the paths that write and on the paths that refuse. Proves the three
+# "never" rules of secrets-push.sh for all of them: no value on a command line (so none in a
+# process list), none in a file under TMPDIR or secrets/ at the moment any command starts, none in
+# a command's environment; and nothing left behind. The recorder is first shown to see each of the
+# three. The paths that fail (a control character, a failed decrypt, a failed later write, SIGTERM)
+# run under the same wrappers in the cases below.
+# Not covered: the hidden prompt of --set. It needs a terminal; from the `read` on, the typed value
+# and the piped one take the same code. And a file bash creates and unlinks without running a
+# command (how bash 3.2 backs a here-string) is invisible to any wrapper: the script is grepped
+# for `<<` instead.
+test_push_keeps_values_off_command_lines_and_temp_files() {
+    local fixture="$TEST_ROOT/push-leaks" output rc dec
+    push_fixture "$fixture" || return 1
+    push_record_wrappers "$fixture" || return 1
+
+    # The recorder sees a value as an argument, in a file, and in the environment.
+    (export RECORD_FILE="$fixture/probe.txt"; "$fixture/rec/basename" synthetic-probe-argument >/dev/null) || return 1
+    grep -q '^basename synthetic-probe-argument$' "$fixture/probe.txt" || return 1
+    ! grep -Eq '^(ON-DISK|IN-ENV) ' "$fixture/probe.txt" || return 1
+    printf 'synthetic-probe-file\n' > "$fixture/tmp/probe"
+    (export RECORD_FILE="$fixture/probe.txt"; "$fixture/rec/basename" probe >/dev/null) || return 1
+    rm "$fixture/tmp/probe"
+    grep -q '^ON-DISK basename$' "$fixture/probe.txt" || return 1
+    (export RECORD_FILE="$fixture/probe.txt" PROBE=synthetic-probe-environment; "$fixture/rec/basename" probe >/dev/null) || return 1
+    grep -q '^IN-ENV basename$' "$fixture/probe.txt" || return 1
+
+    # The plan, with every flag.
+    output="$(run_push_recorded "$fixture" --replace --prune --prune-values 2>&1)" || return 1
+    has_no_value "$output" || return 1
+
+    # Refused: the value given as an argument. It is on the script's own command line,
+    # which the user typed; it must not reach the output or any command the script starts.
+    set +e
+    output="$(run_push_recorded "$fixture" --set MISSING synthetic-positional-value 2>&1 </dev/null)"
+    rc=$?
+    set -e
+    [[ $rc -eq 2 ]] || return 1
+    has_no_value "$output" || return 1
+
+    # Refused: a .env value followed by an inline comment.
+    cp "$fixture/.env" "$fixture/env.saved"
+    printf 'SAME=synthetic-same-value # an inline note\n' >> "$fixture/.env"
+    set +e
+    output="$(run_push_recorded "$fixture" --apply 2>&1)"
+    rc=$?
+    set -e
+    [[ $rc -eq 1 ]] || return 1
+    has_no_value "$output" || return 1
+    cp "$fixture/env.saved" "$fixture/.env"
+
+    # Left alone: the differing value and the stale name that holds one.
+    output="$(run_push_recorded "$fixture" --apply --prune 2>&1)" || return 1
+    has_no_value "$output" || return 1
+    dec="$(push_decrypt "$fixture")" || return 1
+    grep -Fxq 'CHANGED=synthetic-old-value' <<< "$dec" || return 1
+    grep -Fxq 'STALE_TWO=synthetic-stale-value' <<< "$dec" || return 1
+
+    # Every kind of write: replace, remove a name that holds a value, then --set from standard input.
+    output="$(run_push_recorded "$fixture" --apply --replace --prune --prune-values 2>&1)" || return 1
+    has_no_value "$output" || return 1
+    output="$(printf 'synthetic-stdin-value\n' | run_push_recorded "$fixture" --set MISSING_EMPTY 2>&1)" || return 1
+    has_no_value "$output" || return 1
+    dec="$(push_decrypt "$fixture")" || return 1
+    grep -Fxq 'CHANGED=synthetic-new-value' <<< "$dec" || return 1
+    grep -Fxq 'MISSING_EMPTY=synthetic-stdin-value' <<< "$dec" || return 1
+    ! grep -q '^STALE_' <<< "$dec" || return 1
+
+    grep -q '^sops set --idempotent --value-stdin ' "$fixture/record.txt" || return 1
+    grep -q '^sops unset ' "$fixture/record.txt" || return 1
+    grep -q '^mv secrets/\.push\.' "$fixture/record.txt" || return 1
+    ! grep -q '<<' "$fixture/scripts/security/secrets-push.sh" || because "secrets-push.sh uses a here-string or here-document" || return 1
+    push_record_clean "$fixture"
+}
+
+# A .env.example that declares nothing (truncated, a bad merge) makes every shared key
+# look stale, so the run must stop before it compares anything.
+test_push_refuses_an_env_example_without_keys() {
+    local fixture="$TEST_ROOT/push-no-keys" output rc args
+    push_fixture "$fixture" || return 1
+    cp "$fixture/secrets/dev.enc.yaml" "$fixture/before.enc.yaml"
+    printf '# Synthetic key catalogue, truncated.\n' > "$fixture/.env.example"
+
+    for args in "--apply --prune" "--prune" ""; do
+        set +e
+        # shellcheck disable=SC2086 # each case is a flag list: word splitting is the point
+        output="$(run_push "$fixture" $args 2>&1)"
+        rc=$?
+        set -e
+        cmp -s "$fixture/before.enc.yaml" "$fixture/secrets/dev.enc.yaml" \
+            || because "with a keyless .env.example, 'secrets-push $args' rewrote the shared file: $(grep -c '^[A-Z_]*:' "$fixture/secrets/dev.enc.yaml") of $(grep -c '^[A-Z_]*:' "$fixture/before.enc.yaml") key names left" || return 1
+        [[ $rc -eq 1 && "$output" == *".env.example declares no keys"* ]] \
+            || because "'secrets-push $args' did not refuse a keyless .env.example (exit $rc)" || return 1
+        has_no_value "$output" || return 1
+    done
+
+    rm "$fixture/.env.example"
+    set +e
+    output="$(run_push "$fixture" --apply --prune 2>&1)"
+    rc=$?
+    set -e
+    [[ $rc -eq 1 && "$output" == *".env.example not found"* ]] || return 1
+    cmp -s "$fixture/before.enc.yaml" "$fixture/secrets/dev.enc.yaml"
+}
+
+# --prune removes a stale name that is empty; one that holds a value needs
+# --prune-values as well, so a .env.example that lost most of its keys cannot cost a value.
+test_push_prune_needs_a_second_flag_for_a_stale_value() {
+    local fixture="$TEST_ROOT/push-prune-values" truncated="$TEST_ROOT/push-truncated" output dec rc
+    push_fixture "$truncated" || return 1
+    printf '# Synthetic key catalogue, cut down to one key by a bad merge.\nSAME=\n' > "$truncated/.env.example"
+    output="$(run_push "$truncated" --apply --prune 2>&1)" || return 1
+    dec="$(push_decrypt "$truncated")" || return 1
+    [[ "$(grep -c '=synthetic-' <<< "$dec")" == "4" ]] \
+        || because "a truncated .env.example and --apply --prune left $(grep -c '=synthetic-' <<< "$dec") of 4 shared values" || return 1
+    grep -Fxq 'CHANGED=synthetic-old-value' <<< "$dec" || return 1
+    grep -Fxq 'LOCAL_EMPTY=synthetic-shared-only-value' <<< "$dec" || return 1
+    grep -Fxq 'STALE_TWO=synthetic-stale-value' <<< "$dec" || return 1
+    # The three stale names that were empty are gone; the three with a value are named.
+    ! grep -Eq '^(EMPTY_SHARED|LOCAL_ONLY|STALE_ONE)=' <<< "$dec" || return 1
+    [[ "$output" == *"3 stale name(s) left because they hold a value: CHANGED LOCAL_EMPTY STALE_TWO"* ]] || return 1
+    has_no_value "$output" || return 1
+
+    # The plan says which stale name is empty and which holds a value.
+    push_fixture "$fixture" || return 1
+    output="$(run_push "$fixture" 2>&1)" || return 1
+    grep -Eq '^  stale +STALE_ONE +\(.*empty' <<< "$output" || return 1
+    grep -Eq '^  stale +STALE_TWO +\(.*holds a value.*--prune --prune-values' <<< "$output" || return 1
+    [[ "$output" == *"2 stale (1 with a value)"* ]] || return 1
+    output="$(run_push "$fixture" --prune 2>&1)" || return 1
+    grep -Eq '^  remove +STALE_ONE ' <<< "$output" || return 1
+    grep -Eq '^  stale +STALE_TWO +\(.*holds a value' <<< "$output" || return 1
+    has_no_value "$output" || return 1
+
+    # --prune alone: the empty name goes, the one with a value stays and is named with its flag.
+    output="$(run_push "$fixture" --apply --prune 2>&1)" || return 1
+    dec="$(push_decrypt "$fixture")" || return 1
+    ! grep -q '^STALE_ONE=' <<< "$dec" || return 1
+    grep -Fxq 'STALE_TWO=synthetic-stale-value' <<< "$dec" || return 1
+    grep -Eq '^  removed +STALE_ONE$' <<< "$output" || return 1
+    [[ "$output" == *"1 removed"* ]] || return 1
+    [[ "$output" == *"1 stale name(s) left because they hold a value: STALE_TWO"* ]] || return 1
+    [[ "$output" == *"just secrets-push dev --apply --prune --prune-values"* ]] || return 1
+    has_no_value "$output" || return 1
+
+    # --prune-values is the second opt-in, never the only one.
+    set +e
+    output="$(run_push "$fixture" --apply --prune-values 2>&1)"
+    rc=$?
+    set -e
+    [[ $rc -eq 2 && "$output" == *"--prune-values only adds to --prune"* ]] || return 1
+    dec="$(push_decrypt "$fixture")" || return 1
+    grep -Fxq 'STALE_TWO=synthetic-stale-value' <<< "$dec" || return 1
+
+    output="$(run_push "$fixture" --prune --prune-values 2>&1)" || return 1
+    grep -Eq '^  remove +STALE_TWO +\(.*HOLDS A VALUE' <<< "$output" || return 1
+    grep -q '^STALE_TWO:' "$fixture/secrets/dev.enc.yaml" || return 1
+    output="$(run_push "$fixture" --apply --prune --prune-values 2>&1)" || return 1
+    ! grep -q '^STALE_' "$fixture/secrets/dev.enc.yaml" || return 1
+    grep -Eq '^  removed +STALE_TWO$' <<< "$output" || return 1
+    has_no_value "$output"
+}
+
+# On a machine that has not synced since a credential was rotated elsewhere, .env holds
+# the old value: a bare --apply must not push it back over the shared one.
+test_push_apply_leaves_a_differing_value_alone_without_replace() {
+    local fixture="$TEST_ROOT/push-no-replace" output dec
+    push_fixture "$fixture" || return 1
+
+    output="$(run_push "$fixture" --apply 2>&1)" || return 1
+    dec="$(push_decrypt "$fixture")" || return 1
+    grep -Fxq 'CHANGED=synthetic-old-value' <<< "$dec" \
+        || because "a bare --apply overwrote the differing shared value of CHANGED with the one in .env" || return 1
+    # It still adds and fills.
+    grep -Fxq 'MISSING=synthetic-missing "quoted" back\slash value' <<< "$dec" || return 1
+    grep -Fxq 'MISSING_EMPTY=' <<< "$dec" || return 1
+    grep -Fxq 'EMPTY_SHARED=synthetic-fill-value' <<< "$dec" || return 1
+    ! grep -q '^  replaced ' <<< "$output" || return 1
+    [[ "$output" == *"2 added, 1 filled, 0 replaced, 0 removed"* ]] || return 1
+    # The key it left alone is named, with both ways on.
+    [[ "$output" == *"1 differing value(s) left alone: CHANGED"* ]] || return 1
+    [[ "$output" == *"the newer one"*": just secrets-sync"* ]] || return 1
+    [[ "$output" == *"the newer one"*": just secrets-push dev --apply --replace"* ]] || return 1
+    has_no_value "$output" || return 1
+
+    # Asked again it writes nothing and still names the key.
+    cp "$fixture/secrets/dev.enc.yaml" "$fixture/after-first.enc.yaml"
+    output="$(run_push "$fixture" --apply 2>&1)" || return 1
+    cmp -s "$fixture/after-first.enc.yaml" "$fixture/secrets/dev.enc.yaml" || return 1
+    [[ "$output" == *"nothing to push"* && "$output" == *"left alone: CHANGED"* ]] || return 1
+
+    # The plan says the same: "differs" without the flag, "replace" with it.
+    output="$(run_push "$fixture" 2>&1)" || return 1
+    grep -Eq '^  differs +CHANGED +\(.*--replace' <<< "$output" || return 1
+    [[ "$output" == *"1 differing (left alone)"* && "$output" == *"nothing to write"* ]] || return 1
+    output="$(run_push "$fixture" --replace 2>&1)" || return 1
+    grep -Eq '^  replace +CHANGED ' <<< "$output" || return 1
+    [[ "$output" == *"1 to replace"* && "$output" == *"to write it: just secrets-push dev --apply --replace"* ]] || return 1
+    has_no_value "$output" || return 1
+    cmp -s "$fixture/after-first.enc.yaml" "$fixture/secrets/dev.enc.yaml" || return 1
+
+    output="$(run_push "$fixture" --apply --replace 2>&1)" || return 1
+    dec="$(push_decrypt "$fixture")" || return 1
+    grep -Fxq 'CHANGED=synthetic-new-value' <<< "$dec" || return 1
+    grep -Eq '^  replaced +CHANGED$' <<< "$output" || return 1
+    [[ "$output" == *"0 added, 0 filled, 1 replaced, 0 removed"* ]] || return 1
+    has_no_value "$output"
+}
+
+# Doctor's side of the same rule: each parity hint starts with a dry run, never with --apply.
+test_doctor_parity_hints_lead_with_the_dry_run() {
+    local fixture="$TEST_ROOT/doctor-hints" record
+    push_fixture "$fixture" || return 1
+    record="$fixture/doctor-record.txt"
+    : > "$record"
+    probe_doctor_checks "$fixture" "$record" || return 1
+    [[ "$(grep -c '^warnc|[^|]*|just secrets-push' "$record")" == "3" ]] || return 1
+    ! grep -Eq '^warnc\|[^|]*\|just secrets-push( dev)?( --[a-z-]+)* --apply' "$record" \
+        || because "$(grep -Ec '^warnc\|[^|]*\|just secrets-push( dev)?( --[a-z-]+)* --apply' "$record") doctor hint(s) lead with --apply" || return 1
+    grep -Eq '^warnc\|secrets/dev\.enc\.yaml lacks key\(s\)[^|]*\|just secrets-push   \(a dry run' "$record" || return 1
+    grep -Eq '^warnc\|secrets/dev\.enc\.yaml has stale key name\(s\)[^|]*\|just secrets-push   \(a dry run' "$record" || return 1
+    grep -Eq '^warnc\|value\(s\) that exist only on this machine[^|]*\|just secrets-push   \(a dry run' "$record" || return 1
+    ! grep -q 'synthetic-' "$record"
+}
+
+# The result is staged beside the target, so the last step is a rename inside one
+# filesystem (a `mv` from TMPDIR is a copy plus an unlink wherever TMPDIR is another filesystem,
+# and an interrupted copy leaves the target truncated or missing). The staging path is gitignored
+# and inside the gitleaks allowlist for sops-encrypted files; a leftover of a killed run is swept.
+test_push_stages_beside_the_target() {
+    local fixture="$TEST_ROOT/push-stage" staged
+    push_fixture "$fixture" || return 1
+    push_record_wrappers "$fixture" || return 1
+    mkdir "$fixture/secrets/.push.killed"
+    cp "$fixture/secrets/dev.enc.yaml" "$fixture/secrets/.push.killed/dev.enc.yaml"
+
+    run_push_recorded "$fixture" --apply >/dev/null 2>&1 || return 1
+    staged="$(awk '$1 == "mv" && $3 == "secrets/dev.enc.yaml" { print $2 }' "$fixture/record.txt")"
+    case "$staged" in
+        secrets/.push.*/dev.enc.yaml) ;;
+        *) because "the final mv does not start beside the target: its source is under $([[ "$staged" == "$fixture/tmp/"* ]] && echo TMPDIR || echo "another directory")" || return 1 ;;
+    esac
+    git -C "$ROOT" check-ignore --no-index -q "$staged" || because "the staging path is not gitignored" || return 1
+    grep -Fq "'''.*\.enc\.yaml\$'''" "$ROOT/.gitleaks.toml" || return 1
+    grep -Eq '.*\.enc\.yaml$' <<< "$staged" || because "the staging path is outside the gitleaks allowlist for encrypted files" || return 1
+    # No leftover, the killed run's included; nothing went through TMPDIR.
+    ! grep -q "$fixture/tmp" "$fixture/record.txt" || return 1
+    push_record_clean "$fixture"
+}
+
+# An argument the script does not recognise is never echoed: `--set KEY VALUE` and
+# `--set KEY=VALUE` are the natural wrong guesses, and either one carries a value.
+test_push_never_echoes_an_argument_it_does_not_recognise() {
+    local fixture="$TEST_ROOT/push-echo" output rc
+    fixture_repo "$fixture"
+    printf '#!/usr/bin/env bash\necho "sops must not run" >&2\nexit 99\n' > "$fixture/bin/sops"
+    chmod +x "$fixture/bin/sops"
+    printf 'BASE=synthetic-local-value\n' > "$fixture/.env"
+
+    set +e
+    output="$(run_push "$fixture" --set BASE synthetic-positional-value 2>&1 </dev/null)"
+    rc=$?
+    set -e
+    has_no_value "$output" || because "'--set KEY VALUE' echoed the value" || return 1
+    [[ $rc -eq 2 && "$output" == *"unexpected argument"* && "$output" == *"usage: just secrets-push"* ]] || return 1
+
+    set +e
+    output="$(run_push "$fixture" --set BASE=synthetic-inline-value 2>&1 </dev/null)"
+    rc=$?
+    set -e
+    has_no_value "$output" || because "'--set KEY=VALUE' echoed the value" || return 1
+    [[ $rc -eq 2 && "$output" == *"--set needs a key name"* ]] || return 1
+
+    set +e
+    output="$(run_push "$fixture" --set BASE -synthetic-dash-value 2>&1 </dev/null)"
+    rc=$?
+    set -e
+    has_no_value "$output" || because "a value that starts with a dash was echoed as an unknown flag" || return 1
+    [[ $rc -eq 2 && "$output" == *"unknown flag"* ]] || return 1
+
+    set +e
+    output="$(run_push "$fixture" synthetic-lone-value --apply 2>&1)"
+    rc=$?
+    set -e
+    has_no_value "$output" || because "a lone positional argument was echoed" || return 1
+    [[ $rc -eq 2 && "$output" == *"unexpected argument"* ]] || return 1
+
+    set +e
+    output="$(run_push "$fixture" dev staging 2>&1)"
+    rc=$?
+    set -e
+    [[ $rc -eq 2 && "$output" == *"more than one environment"* ]] || return 1
+    [[ "$output" != *"sops must not run"* ]]
+}
+
+# dotenv reads `KEY=value # note` as "value", and secrets-sync.sh writes every value
+# back as a bare KEY=value line. A value that would not come back the same is refused by key name.
+test_push_refuses_values_dotenv_reads_differently() {
+    local fixture="$TEST_ROOT/push-forms" output rc key dec
+    push_fixture "$fixture" || return 1
+    cp "$fixture/secrets/dev.enc.yaml" "$fixture/before.enc.yaml"
+    cat > "$fixture/.env" <<'DOTENV'
+SAME=synthetic-same-value # an inline note
+export CHANGED="synthetic-new-value" # a note after the closing quote
+EMPTY_SHARED=" synthetic-padded-value "
+MISSING="synthetic-escaped\nvalue"
+MISSING_EMPTY=
+LOCAL_EMPTY=
+LOCAL_ONLY=synthetic-machine-local-value # machine-local: never pushed, so never judged
+UNDECLARED=synthetic-undeclared-value # not a declared key
+DOTENV
+
+    set +e
+    output="$(run_push "$fixture" 2>&1)"
+    rc=$?
+    set -e
+    [[ $rc -eq 1 ]] || because "the plan accepted a .env value that is followed by an inline # comment (exit $rc)" || return 1
+    for key in SAME CHANGED EMPTY_SHARED MISSING; do
+        grep -Eq "^  invalid +$key +\(" <<< "$output" || because "$key is not named as invalid" || return 1
+    done
+    ! grep -Eq 'LOCAL_ONLY|UNDECLARED|MISSING_EMPTY|LOCAL_EMPTY' <<< "$output" || return 1
+    [[ "$output" == *"4 .env value(s)"* && "$output" == *"nothing written"* ]] || return 1
+    has_no_value "$output" || return 1
+
+    set +e
+    output="$(run_push "$fixture" --apply 2>&1)"
+    rc=$?
+    set -e
+    [[ $rc -eq 1 ]] || return 1
+    cmp -s "$fixture/before.enc.yaml" "$fixture/secrets/dev.enc.yaml" || return 1
+    has_no_value "$output" || return 1
+
+    # Quotes around a value that reads the same on a bare line are dropped, the value is pushed, and
+    # it comes back through secrets-sync on a machine that has no .env yet as the same value.
+    cat > "$fixture/.env" <<'DOTENV'
+SAME=synthetic-same-value
+export CHANGED="synthetic-new-value"
+EMPTY_SHARED='synthetic-single quoted\value with spaces'
+MISSING="synthetic-double quoted value=with spaces"
+DOTENV
+    output="$(run_push "$fixture" --apply --replace 2>&1)" || return 1
+    has_no_value "$output" || return 1
+    dec="$(push_decrypt "$fixture")" || return 1
+    grep -Fxq 'CHANGED=synthetic-new-value' <<< "$dec" || return 1
+    grep -Fxq 'EMPTY_SHARED=synthetic-single quoted\value with spaces' <<< "$dec" || return 1
+    grep -Fxq 'MISSING=synthetic-double quoted value=with spaces' <<< "$dec" || return 1
+    rm "$fixture/.env"
+    (cd "$fixture" && CI="" SOPS_AGE_KEY="" SOPS_AGE_KEY_FILE="" HOME="$fixture/home" XDG_CONFIG_HOME="$fixture/home/.config" \
+        PATH="$fixture/bin:$PATH" scripts/security/secrets-sync.sh dev >/dev/null 2>&1) || return 1
+    # shellcheck disable=SC1091
+    [[ "$(cd "$fixture" && . scripts/lib.sh && env_file_value CHANGED .env)" == 'synthetic-new-value' ]] || return 1
+    # shellcheck disable=SC1091
+    [[ "$(cd "$fixture" && . scripts/lib.sh && env_file_value EMPTY_SHARED .env)" == 'synthetic-single quoted\value with spaces' ]] || return 1
+    # shellcheck disable=SC1091
+    [[ "$(cd "$fixture" && . scripts/lib.sh && env_file_value MISSING .env)" == 'synthetic-double quoted value=with spaces' ]] || return 1
+    # The synced file is the plan's fixed point: nothing differs, nothing is invalid.
+    output="$(run_push "$fixture" 2>&1)" || return 1
+    [[ "$output" == *"0 to add, 0 to fill, 0 differing (left alone)"* ]]
+}
+
+# sops can format an offending value into its own error text, so none of it is shown.
+test_push_hides_sops_output_when_the_decrypt_fails() {
+    local fixture="$TEST_ROOT/push-decrypt-fails" output rc
+    push_fixture "$fixture" || return 1
+    push_record_wrappers "$fixture" || return 1
+    cp "$fixture/secrets/dev.enc.yaml" "$fixture/before.enc.yaml"
+
+    set +e
+    output="$(export PUSH_SOPS_FAIL=decrypt; run_push_recorded "$fixture" --apply 2>&1)"
+    rc=$?
+    set -e
+    has_no_value "$output" || because "sops's own error text reached the terminal when the decrypt failed" || return 1
+    [[ $rc -eq 1 && "$output" == *"could not read secrets/dev.enc.yaml with your identity"* ]] || return 1
+    cmp -s "$fixture/before.enc.yaml" "$fixture/secrets/dev.enc.yaml" || return 1
+    push_record_clean "$fixture"
+}
+
+# The paths that fail part-way: a .env value with a control character, a
+# sops failure on a later write of a multi-key apply, and a run that is terminated between writes.
+# In all three the encrypted file is byte-identical afterwards and nothing is left behind.
+test_push_failure_paths_leave_the_file_untouched() {
+    local fixture="$TEST_ROOT/push-failures" output rc pid tries=0
+    push_fixture "$fixture" || return 1
+    push_record_wrappers "$fixture" || return 1
+    cp "$fixture/secrets/dev.enc.yaml" "$fixture/before.enc.yaml"
+    cp "$fixture/.env" "$fixture/env.saved"
+
+    # A tab inside a value (the last assignment of a key wins).
+    printf 'SAME=synthetic-tab\tvalue\n' >> "$fixture/.env"
+    set +e
+    output="$(run_push_recorded "$fixture" --apply 2>&1)"
+    rc=$?
+    set -e
+    [[ $rc -eq 1 ]] || because "control character: exit $rc, not 1" || return 1
+    grep -Eq '^  invalid +SAME( |$)' <<< "$output" || because "control character: SAME is not named as invalid" || return 1
+    [[ "$output" == *"nothing written"* ]] || because "control character: the output does not say that nothing was written" || return 1
+    has_no_value "$output" || because "control character: the output holds a value" || return 1
+    cmp -s "$fixture/before.enc.yaml" "$fixture/secrets/dev.enc.yaml" || because "control character: the encrypted file changed" || return 1
+    push_record_clean "$fixture" || return 1
+    cp "$fixture/env.saved" "$fixture/.env"
+
+    # The second of the writes fails: the first one must not reach the real file.
+    rm "$fixture/record.txt"
+    set +e
+    output="$(export PUSH_SOPS_FAIL=set:2; run_push_recorded "$fixture" --apply 2>&1)"
+    rc=$?
+    set -e
+    [[ $rc -eq 1 && "$output" == *"sops could not write MISSING "*"secrets/dev.enc.yaml is unchanged"* ]] \
+        || because "failed write: exit $rc, or no 'could not write MISSING … is unchanged' line" || return 1
+    [[ "$(grep -c '^sops set ' "$fixture/record.txt")" == "2" ]] \
+        || because "failed write: $(grep -c '^sops set ' "$fixture/record.txt") sops set calls, expected the run to stop at the 2nd" || return 1
+    has_no_value "$output" || because "failed write: the output holds a value" || return 1
+    cmp -s "$fixture/before.enc.yaml" "$fixture/secrets/dev.enc.yaml" || because "failed write: the encrypted file changed" || return 1
+    push_record_clean "$fixture" || return 1
+
+    # SIGTERM while the first write is in progress. `exec` makes $! the script itself.
+    rm "$fixture/record.txt"
+    (cd "$fixture" && exec env CI="" SOPS_AGE_KEY="" SOPS_AGE_KEY_FILE="" HOME="$fixture/home" XDG_CONFIG_HOME="$fixture/home/.config" \
+        TMPDIR="$fixture/tmp" RECORD_FILE="$fixture/record.txt" PUSH_SOPS_FAIL=hang PATH="$fixture/rec" \
+        scripts/security/secrets-push.sh --apply) >/dev/null 2>&1 &
+    pid=$!
+    while [[ ! -s "$fixture/record.txt.hang" && $tries -lt 150 ]]; do
+        sleep 0.1
+        tries=$((tries + 1))
+    done
+    if [[ ! -s "$fixture/record.txt.hang" ]]; then
+        kill "$pid" 2>/dev/null || true
+        because "the script never reached its first sops write"
+        return 1
+    fi
+    rc=0
+    kill -TERM "$pid"
+    wait "$pid" 2>/dev/null || rc=$?
+    kill "$(cat "$fixture/record.txt.hang")" 2>/dev/null || true
+    rm "$fixture/record.txt.hang"
+    [[ $rc -eq 143 ]] || because "SIGTERM: the script exited $rc, not 143" || return 1
+    cmp -s "$fixture/before.enc.yaml" "$fixture/secrets/dev.enc.yaml" || because "SIGTERM: the encrypted file changed" || return 1
+    push_record_clean "$fixture"
+}
+
+test_doctor_parity_reports_names_and_fix_commands() {
+    local fixture="$TEST_ROOT/doctor-parity" record
+    push_fixture "$fixture" || return 1
+
+    record="$fixture/record-before.txt"
+    : > "$record"
+    probe_doctor_checks "$fixture" "$record" || return 1
+    grep -F "warnc|secrets/dev.enc.yaml lacks key(s) that .env.example declares: MISSING MISSING_EMPTY|" "$record" \
+        | grep -q "just secrets-push --apply" || return 1
+    # The hint starts with the dry run that shows which stale name holds a value, then names the
+    # command that removes the empty ones (test_doctor_parity_hints_lead_with_the_dry_run).
+    grep -F "warnc|secrets/dev.enc.yaml has stale key name(s) that .env.example no longer declares: STALE_ONE STALE_TWO|just secrets-push   (a dry run" "$record" \
+        | grep -q "just secrets-push --apply --prune" || return 1
+    # Set locally, empty or absent in the shared file. The machine-local key and the undeclared one
+    # are not in the list; neither is CHANGED (two non-empty values need a decrypt to compare).
+    grep -F "warnc|value(s) that exist only on this machine (set in .env, empty or absent in secrets/dev.enc.yaml): EMPTY_SHARED MISSING|" "$record" \
+        | grep -q "just secrets-push --apply" || return 1
+    grep -Fxq "warnc|shared value(s) not in .env yet: LOCAL_EMPTY|just secrets-sync" "$record" || return 1
+    ! grep -q 'synthetic-' "$record" || return 1
+
+    # After the commands doctor's hints lead to, both sides agree. STALE_TWO holds a value, so the
+    # plan (not the hint) says that removing it takes --prune-values as well.
+    run_push "$fixture" --apply --prune --prune-values >/dev/null 2>&1 || return 1
+    (cd "$fixture" && CI="" SOPS_AGE_KEY="" SOPS_AGE_KEY_FILE="" HOME="$fixture/home" XDG_CONFIG_HOME="$fixture/home/.config" \
+        PATH="$fixture/bin:$PATH" scripts/security/secrets-sync.sh dev >/dev/null 2>&1) || return 1
+    record="$fixture/record-after.txt"
+    : > "$record"
+    probe_doctor_checks "$fixture" "$record" || return 1
+    grep -Fxq "ok|secrets/dev.enc.yaml has exactly the keys of .env.example" "$record" || return 1
+    grep -Fxq "ok|.env and secrets/dev.enc.yaml have a value for the same keys" "$record" || return 1
+    ! grep -Eq '^warnc\|.*(lacks key|stale key|only on this machine|not in \.env yet)' "$record" || return 1
+    ! grep -q 'synthetic-' "$record"
+}
+
 run_test "plaintext secrets ignored; encrypted files and README committable" test_ignore_policy
 run_test "staging secrets refused on a workstation" test_non_dev_refusal
 run_test "sync replaces, adds, skips empty values, preserves local lines, and writes mode 0600" test_sync_merge
@@ -885,6 +1855,29 @@ run_test "approve refuses a branch that touches files other than .sops.yaml" tes
 run_test "approve refuses a branch that removes a recipient" test_approve_refuses_recipient_removal
 run_test "approve re-wraps secrets for the new recipient and pushes; the new identity decrypts" test_approve_rewraps_and_new_identity_decrypts
 run_test "approve requires an identity that can decrypt today" test_approve_requires_decrypting_identity
+
+run_test "secrets-lib pins SOPS_AGE_KEY_FILE to the keys file the scripts use (not with SOPS_AGE_KEY, an explicit file, or no keys file)" test_lib_pins_identity_file
+run_test "real sops: an identity at the default path decrypts with HOME as the only hint" test_default_identity_path_decrypts
+
+run_test "the [machine-local] tag of .env.example covers the key(s) directly below its comment block, nothing else" test_machine_local_tag_rules
+run_test "push: a bare run (and --dry-run, and --replace or --prune alone) lists key names and writes nothing" test_push_dry_run_lists_names_and_writes_nothing
+run_test "push --apply --replace adds a missing key, fills an empty one, replaces a changed one; the rest keeps its ciphertext" test_push_apply_adds_fills_replaces_and_keeps_the_rest
+run_test "push --apply --replace a second time leaves the shared file byte-identical" test_push_second_apply_changes_nothing
+run_test "push removes stale key names only with --prune (--prune-values as well for the one that holds a value)" test_push_prune_removes_stale_names_only_with_the_flag
+run_test "push refuses staging and prod before sops runs; wrong usage exits 2" test_push_refuses_protected_environments_and_bad_usage
+run_test "push stops, shared file untouched, without .env, a decrypting identity or any identity" test_push_stops_without_a_decrypting_identity_or_an_env_file
+run_test "push --set stores one value from stdin; machine-local, undeclared, empty and control-character values are refused" test_push_set_stores_one_value_from_stdin
+run_test "push never puts a value on any command line, in a file under TMPDIR or secrets/, or in a command's environment, and leaves nothing behind" test_push_keeps_values_off_command_lines_and_temp_files
+run_test "push refuses to run when .env.example declares no keys or is missing (every shared key would look stale)" test_push_refuses_an_env_example_without_keys
+run_test "push --prune removes empty stale names; one that holds a value needs --prune-values, and the plan says which is which" test_push_prune_needs_a_second_flag_for_a_stale_value
+run_test "push --apply leaves a differing shared value alone and names it with both next steps; --replace overwrites it" test_push_apply_leaves_a_differing_value_alone_without_replace
+run_test "doctor's parity hints lead with the dry run, never with --apply" test_doctor_parity_hints_lead_with_the_dry_run
+run_test "push stages its result beside the target (a rename, not a copy across filesystems), gitignored and gitleaks-allowlisted, and sweeps a killed run's leftover" test_push_stages_beside_the_target
+run_test "push never echoes an argument it does not recognise (--set KEY VALUE, --set KEY=VALUE, a dash-led value)" test_push_never_echoes_an_argument_it_does_not_recognise
+run_test "push refuses a .env value dotenv reads differently (inline comment, text after a quote, padding, escapes); plain quoted values round-trip through sync" test_push_refuses_values_dotenv_reads_differently
+run_test "push hides sops's own output when the decrypt fails" test_push_hides_sops_output_when_the_decrypt_fails
+run_test "push failure paths (control character in .env, sops failing on a later write, SIGTERM mid-write) leave the file byte-identical and nothing behind" test_push_failure_paths_leave_the_file_untouched
+run_test "doctor's parity checks name missing, stale, only-here and unsynced keys with the fix command, never a value" test_doctor_parity_reports_names_and_fix_commands
 
 if [[ $failures -ne 0 ]]; then
     echo "secrets tests: $failures failed" >&2

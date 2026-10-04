@@ -10,6 +10,15 @@ set positional-arguments := true
 # Pinned tools resolve via mise shims without shell activation.
 export PATH := home_directory() / ".local/share/mise/shims" + ":" + home_directory() / ".local/bin" + ":" + env_var("PATH")
 
+# One compose project for every checkout and worktree. docker-compose.yml fixes the container name
+# (ai-stylist-postgres), so the project that owns it must not follow the checkout directory, which
+# is compose's default: a second checkout would stop with "container name already in use".
+# Override: export a non-empty COMPOSE_PROJECT_NAME (in your shell, or as a prefix on one command).
+# `just doctor` reports a container that another project owns, with the commands that fix it. The
+# default is the same as COMPOSE_PROJECT_DEFAULT in scripts/lib.sh
+# (scripts/test/bootstrap-doctor.test.sh keeps the two in step).
+export COMPOSE_PROJECT_NAME := if env_var_or_default("COMPOSE_PROJECT_NAME", "") == "" { "ai-stylist" } else { env_var("COMPOSE_PROJECT_NAME") }
+
 
 # Show all recipes
 [private]
@@ -30,6 +39,10 @@ doctor:
 secrets-sync env='dev' *args:
     scripts/security/secrets-sync.sh "$@"
 
+# Copy the values .env holds for the .env.example keys into secrets/dev.enc.yaml through sops, no editor (the reverse of secrets-sync): bare = dry run that lists key names and writes nothing; `--apply` creates missing key names and fills empty shared values, and names but leaves alone a shared value that differs from .env; `--replace` also overwrites those; `--prune` also removes empty names .env.example no longer has, `--prune --prune-values` also the ones that hold a value; `--set KEY` stores one value from a hidden prompt or stdin (never an argument); keys tagged [machine-local] in .env.example are never copied; a .env value with an inline comment is refused; staging/prod are refused; prints key names and counts, never a value
+secrets-push *args:
+    bash scripts/security/secrets-push.sh "$@"
+
 # Edit secrets/<env>.enc.yaml in $EDITOR through sops (creates it from the .env.example key list on first run)
 secrets-edit env='dev':
     scripts/security/secrets-edit.sh "$@"
@@ -46,6 +59,12 @@ secrets-approve branch:
 secrets-backup-done:
     scripts/security/secrets-backup-done.sh
 
+# --- the repository on GitHub, as code (tools/github/README.md; docs/NEW-REPO-SETUP.md) ---------
+
+# The GitHub side of a repository move, always for the repository `origin` points at: bare = three read-only checks in order (name, secrets, settings) and the apply commands that are needed, exit 1 when one is; `name [--apply] [--from OWNER/REPO]` = tracked lines that still name this repository's old OWNER/REPO (offline; third-party links and the paths in tools/github/name-keep.txt are left alone); `secrets [--apply [--replace]]` = Actions secrets and variables by name against tools/github/actions-secrets.txt, values piped from secrets/dev.enc.yaml (sops) into gh, never an argument, never printed; `settings [--apply]` = Actions permissions, protection of main with the pr-gate job names as required checks, secret scanning, labels (tools/github/repo-settings.json; a setting the plan does not offer is reported as unavailable); nothing changes without `--apply`, which is owner-run and safe to repeat; `secrets` and `settings` need gh (not pinned in mise.toml) logged in as a repository admin
+repo-setup *args:
+    bash scripts/repo-setup.sh "$@"
+
 # --- observability (Grafana Cloud + PostHog as code; tools/observability/README.md) -------------
 
 # * Push docs/observability/grafana/**, posthog/project-settings.json and the flag registry to Grafana Cloud and PostHog (env from the repo-root .env that `just secrets-sync` writes): `just observability-sync [grafana|posthog|all] [--check|--dry-run|--prune]`; `--check` is offline and CI-safe (ci-parity runs `all --check`), `--dry-run` sends only GETs
@@ -60,12 +79,12 @@ observability-sync *args:
 
 # --- dev servers ---------------------------------------------------------------
 
-# Compose stack (Postgres+pgvector) + NestJS API in watch mode (tsx; reads the repo-root .env); OTel service.name `api` is set here, so an OTEL_SERVICE_NAME in the shared .env never renames it
+# Compose stack (Postgres+pgvector; compose project `ai-stylist` from every checkout and worktree unless COMPOSE_PROJECT_NAME is exported) + NestJS API in watch mode (tsx; reads the repo-root .env); OTel service.name `api` is set here, so an OTEL_SERVICE_NAME in the shared .env never renames it; an APP_ENV that is empty both in the environment and in .env runs as `local`
 dev-api *args:
     docker compose up -d --wait postgres
-    OTEL_SERVICE_NAME='api' pnpm --filter @ai-stylist/api dev "$@"
+    APP_ENV="$(bash scripts/dev-app-env.sh)" OTEL_SERVICE_NAME='api' pnpm --filter @ai-stylist/api dev "$@"
 
-# Compose Postgres + pg-boss jobs process (apps/api src/jobs/main.ts, tsx watch; needs `just db-migrate`) in the background + segmentation worker (uvicorn --reload on :8001; args go to uvicorn); both read the repo-root .env, with OTel service.name `jobs` and `segmentation` set per process
+# Compose Postgres (same compose project as dev-api) + pg-boss jobs process (apps/api src/jobs/main.ts, tsx watch; needs `just db-migrate`) in the background + segmentation worker (uvicorn --reload on :8001; args go to uvicorn); both read the repo-root .env, with OTel service.name `jobs` and `segmentation` set per process and an empty APP_ENV running as `local`
 dev-workers *args:
     #!/usr/bin/env bash
     set -euo pipefail
@@ -84,15 +103,17 @@ dev-workers *args:
     trap 'exit 143' TERM
     # One .env serves every process, so each gets its service name here: an exported variable beats
     # Node's --env-file-if-exists and uvicorn's --env-file (scripts/test/dev-service-names.test.sh).
-    OTEL_SERVICE_NAME='jobs' pnpm --filter @ai-stylist/api run dev:jobs &
+    # APP_ENV is passed the same way, as the exported value, else the .env value, else `local`
+    # (scripts/dev-app-env.sh), so an empty APP_ENV never drops deployment.environment.name.
+    APP_ENV="$(bash scripts/dev-app-env.sh)" OTEL_SERVICE_NAME='jobs' pnpm --filter @ai-stylist/api run dev:jobs &
     jobs_pid=$!
     # The worker reads the repo-root .env like the jobs process; uvicorn --env-file fails on a missing file.
     if [[ -f .env ]]; then set -- --env-file .env "$@"; fi
-    OTEL_SERVICE_NAME='segmentation' uv run --project workers/ml/segmentation uvicorn ai_stylist_segmentation.main:app --reload --port 8001 "$@"
+    APP_ENV="$(bash scripts/dev-app-env.sh)" OTEL_SERVICE_NAME='segmentation' uv run --project workers/ml/segmentation uvicorn ai_stylist_segmentation.main:app --reload --port 8001 "$@"
 
 # --- quality gates (* = part of ci-parity) -------------------------------------------
 
-# * Run tests: full suite via turbo + the native lanes, or one module's tests/ dir (`just test recommendation`; `just test ios` / `just test android` = that app's unit tests; `just test secrets` = the sops+age shell suite; `just test tooling` = the scripts/test shell suites: bootstrap/doctor, contracts-breaking, test-regression, ci-metrics, dev service names, observability-sync; `just test platform` = the `api` + `platform-docker` vitest projects); SKIP_DOCKER_TESTS=1 leaves out the Testcontainers `migrations` and `platform-docker` projects (runners without Docker only)
+# * Run tests: full suite via turbo + the native lanes, or one module's tests/ dir (`just test recommendation`; `just test ios` / `just test android` = that app's unit tests; `just test secrets` = the sops+age shell suite; `just test tooling` = the scripts/test shell suites: bootstrap/doctor, contracts-breaking, test-regression, ci-metrics, dev service names, observability-sync, repo-setup; `just test platform` = the `api` + `platform-docker` vitest projects); SKIP_DOCKER_TESTS=1 leaves out the Testcontainers `migrations` and `platform-docker` projects (runners without Docker only)
 test module='':
     #!/usr/bin/env bash
     set -euo pipefail
@@ -158,6 +179,7 @@ test-tooling:
     bash scripts/test/ci-metrics.test.sh
     bash scripts/test/dev-service-names.test.sh
     bash scripts/test/observability-sync.test.sh
+    bash scripts/test/repo-setup.test.sh
 
 # Native unit tests for the full `just test` (lane/toolchain policy: scripts/native-lane.sh)
 [private]

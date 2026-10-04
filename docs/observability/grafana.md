@@ -16,14 +16,35 @@ traces only; see below). Dashboards, alert rules and routing are JSON files in
 
 | Key                           | Value                                                                                                                                                                                                                            |
 | ----------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `OTEL_EXPORTER_OTLP_ENDPOINT` | `https://otlp-gateway-<region>.grafana.net/otlp`. **Empty = export disabled**, so tests, CI and local runs need no Grafana account.                                                                                              |
-| `OTEL_EXPORTER_OTLP_HEADERS`  | `Authorization=Basic <base64 of instanceId:token>` (secret)                                                                                                                                                                      |
+| `OTEL_EXPORTER_OTLP_ENDPOINT` | the stack's OTLP endpoint, a URL ending in `/otlp`, copied from the Grafana Cloud Portal (step 1). **Empty = export disabled**, so tests, CI and local runs need no Grafana account.                                             |
+| `OTEL_EXPORTER_OTLP_HEADERS`  | `Authorization=Basic%20<base64 of instanceId:token>` (secret; step 1)                                                                                                                                                            |
 | `OTEL_SERVICE_NAME`           | per process, as in the table above. `just dev-api` / `just dev-workers` set it on the command line (`api`, `jobs`, `segmentation`), so a shared `.env` value never renames a process (`scripts/test/dev-service-names.test.sh`). |
-| `APP_ENV`                     | becomes the resource attribute `deployment.environment.name`, which dashboards filter by                                                                                                                                         |
+| `APP_ENV`                     | becomes the resource attribute `deployment.environment.name`, which dashboards filter by and the DLQ alert groups by. An empty value leaves the attribute off (see the note below).                                              |
+
+An empty `APP_ENV` is kept from reaching telemetry locally: `just bootstrap` writes `local` into an
+empty `APP_ENV` in `.env`, `just doctor` warns while it is empty, and `just dev-api` /
+`just dev-workers` start each process with the exported value, else the `.env` value, else `local`
+(`scripts/test/bootstrap-doctor.test.sh`). A process started any other way with an empty `APP_ENV`
+exports without the attribute.
 
 1. Human, once per environment: create the stack's OTLP token (`docs/SERVICES-SETUP.md` §11). Use a
    separate token per environment, so one can be revoked alone.
-2. `just secrets-edit dev` to store the endpoint and headers, then `just secrets-sync` to write `.env`.
+   - Endpoint: in the Grafana Cloud Portal (grafana.com, **My account**), click **Details** on the
+     stack's card, then **Configure** on the **OpenTelemetry** tile, and copy the URL under "OTLP
+     Endpoint". Copy it; never build it from a pattern. Stacks in older regions have a host such as
+     `otlp-gateway-prod-<region>.grafana.net`, and regions created on or after 2026-01-15 have a
+     longer one (Grafana Cloud docs, "Determine Grafana Cloud URLs based on region", checked
+     2026-10-03).
+   - Headers: `Authorization=Basic%20` followed by the base64 of `<Instance ID>:<token>`. The
+     Instance ID is the number under "Instance ID" on the same page. Encode the pair in your own
+     terminal, never one an AI agent can read, with the commands in `docs/SERVICES-SETUP.md` §11
+     step 3: they read the token without showing it and store the finished header, so the token
+     is never typed on a command line. `%20` is an encoded space. The
+     Node and Python OTLP exporters and the CI metrics script percent-decode header values, so the
+     request carries `Authorization: Basic …` while the stored value holds no space.
+2. Those commands store the headers; store the endpoint with
+   `just secrets-push --set OTEL_EXPORTER_OTLP_ENDPOINT` (or `just secrets-edit dev`), then
+   `just secrets-sync` to write `.env`.
 3. `just dev-api`, then `curl localhost:3000/v1/health`. The request shows up in Explore → Tempo within
    a minute.
 
@@ -43,8 +64,12 @@ traces only; see below). Dashboards, alert rules and routing are JSON files in
   Details: [`workers/README.md`](../../workers/README.md).
 - **CI:** `stylist.ci.pr_gate_duration` and `stylist.ci.pr_gate.runs`, pushed once per run by
   `just ci-pr-gate-metrics` ([`tools/ci-metrics/`](../../tools/ci-metrics/README.md)) from the
-  summary job of `.github/workflows/pr-gate.yml`. The CI panels stay empty until that workflow change
-  lands (human) and the `OTEL_EXPORTER_OTLP_*` GitHub secrets exist.
+  summary job of `.github/workflows/pr-gate.yml`, on pushes to `main` only. Pull request runs push
+  nothing. The step is in the workflow, but the CI panels stay empty until the GitHub repository
+  secrets `OTEL_EXPORTER_OTLP_ENDPOINT` and `OTEL_EXPORTER_OTLP_HEADERS` exist (not set as of
+  2026-10-03). The headers secret must hold a separate `ci-metrics` token that can only write
+  metrics, never the dev token. Without the secrets the step prints a notice, pushes nothing, and
+  the gate still passes.
 
 Span attributes, metric labels and log fields carry ids and enums only (planning/11 §8). The keys in
 `packages/shared-kernel/registry/forbidden-log-keys.json` never appear. Never put a user id, event id
@@ -114,36 +139,38 @@ older flow is gone.
 ## Dashboards and alerts
 
 Files and the sync contract are in [`grafana/README.md`](grafana/README.md). Run
-`just observability-sync` after changing a file, `owners.json` or an alert address. Nothing below is
-in the stack before the first sync run, which is a human step once the keys exist.
+`just observability-sync` after changing a file, `owners.json` or an alert address. The first sync
+run was on 2026-10-03: the folder, contact point, mute timings, policy, three rule groups and
+dashboard 01 are in the stack. A new stack holds none of them until its first sync run.
 
-| Object                                                                       | File                                        | Can show data or fire once synced                                                                                                      |
-| ---------------------------------------------------------------------------- | ------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
-| Dashboard 01 Service health: API, SLO, queues                                | `grafana/dashboards/01-service-health.json` | Yes, from any environment that exports (dev today)                                                                                     |
-| Dashboard 01 CI row                                                          | same                                        | No, until `just ci-pr-gate-metrics` runs in pr-gate's summary job (workflow change, human) with the `OTEL_EXPORTER_OTLP_*` secrets set |
-| `queue.job.dlq` (SEV2) → [runbook 04](../runbooks/04-queue-dlq.md)           | `grafana/alerts/queue-job-dlq.json`         | Yes. Proof run in runbook 04.                                                                                                          |
-| `db.backup_age` (SEV2) → [runbook 02](../runbooks/02-postgresql-incident.md) | `grafana/alerts/db-backup-age.json`         | No. The metric comes with P02-T07's pgBackRest exporter; no data counts as OK until then.                                              |
-| `host.disk` (SEV2) → [runbook 01](../runbooks/01-api-down.md)                | `grafana/alerts/host-disk.json`             | No. It needs a host with node exporter plus a collector; no data counts as OK until then.                                              |
+| Object                                                                       | File                                        | Can show data or fire once synced                                                                                                                                                                                         |
+| ---------------------------------------------------------------------------- | ------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Dashboard 01 Service health: API, SLO, queues                                | `grafana/dashboards/01-service-health.json` | Yes, from any environment that exports (dev today)                                                                                                                                                                        |
+| Dashboard 01 CI row                                                          | same                                        | No, until the GitHub repository secrets `OTEL_EXPORTER_OTLP_ENDPOINT` and `OTEL_EXPORTER_OTLP_HEADERS` are set (not yet, 2026-10-03). pr-gate's summary job already runs `just ci-pr-gate-metrics` on each push to `main` |
+| `queue.job.dlq` (SEV2) → [runbook 04](../runbooks/04-queue-dlq.md)           | `grafana/alerts/queue-job-dlq.json`         | Yes. Proof run in runbook 04.                                                                                                                                                                                             |
+| `db.backup_age` (SEV2) → [runbook 02](../runbooks/02-postgresql-incident.md) | `grafana/alerts/db-backup-age.json`         | No. The metric comes with P02-T07's pgBackRest exporter; no data counts as OK until then.                                                                                                                                 |
+| `host.disk` (SEV2) → [runbook 01](../runbooks/01-api-down.md)                | `grafana/alerts/host-disk.json`             | No. It needs a host with node exporter plus a collector; no data counts as OK until then.                                                                                                                                 |
 
 Add an alert: write or extend its runbook, add `grafana/alerts/<name>.json` with the `severity` and
 `owner_role` labels and the `summary` and `runbook_url` annotations, run `just observability-sync --check`,
-then `just observability-sync`. During an incident, silence a noisy alert in Grafana (Alerting →
-Silences). Never edit the rule in the UI.
+then `just observability-sync`. During an incident, silence a noisy alert in Grafana (left-side
+menu: **Alerts & IRM** → **Alerting** → **Silences**). Never edit the rule in the UI.
 
 ## SEV ladder and paging
 
-| Severity | When (planning/14 §7)                                                                                     | Delivery                                                                                    | Acknowledge         |
-| -------- | --------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------- | ------------------- |
-| SEV1     | API hard-down, data exposure, auth bypass, hard-constraint violation, global entitlement failure          | email at any hour                                                                           | 30 min              |
-| SEV2     | error-budget fast burn, DLQ growth, drift, deletion SLA, cost guardrail, provider outage without fallback | email, muted 23:00–08:00 (`quiet-hours`); a muted alert still firing at 08:00 notifies then | 4 h in waking hours |
-| SEV3     | degradation with working fallback, flake-rate rise, cache drop, slow burn                                 | no notification (`no-page` mute); visible under Alerting → Alert rules                      | next working day    |
+| Severity | When (planning/14 §7)                                                                                     | Delivery                                                                                          | Acknowledge         |
+| -------- | --------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------- | ------------------- |
+| SEV1     | API hard-down, data exposure, auth bypass, hard-constraint violation, global entitlement failure          | email at any hour                                                                                 | 30 min              |
+| SEV2     | error-budget fast burn, DLQ growth, drift, deletion SLA, cost guardrail, provider outage without fallback | email, muted 23:00–08:00 (`quiet-hours`); a muted alert still firing at 08:00 notifies then       | 4 h in waking hours |
+| SEV3     | degradation with working fallback, flake-rate rise, cache drop, slow burn                                 | no notification (`no-page` mute); visible under **Alerts & IRM** → **Alerting** → **Alert rules** | next working day    |
 
 - Everything goes to the contact point `ai-stylist-oncall`. Its addresses come from the sops key
   `GRAFANA_ALERT_EMAILS`, and quiet hours follow `GRAFANA_ONCALL_TIMEZONE`. Email is the only channel
   today. A push or phone app (planning/14 §7) would be one more integration in
   `grafana/contact-points.json`.
-- Alert budget: at most 2 pages a week on a rolling average. Check it under Alerting → History. Going
-  over it means a tuning session: fix, demote or delete the noisy alert.
+- Alert budget: at most 2 pages a week on a rolling average. Check it under **Alerts & IRM** →
+  **Alerting** → **History**. Going over it means a tuning session: fix, demote or delete the noisy
+  alert.
 
 ## Free-tier limits
 

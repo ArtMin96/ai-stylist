@@ -24,7 +24,10 @@ export const configSchema = z.object({
     .string()
     .regex(/^phc_\w+$/, 'must be a PostHog project key (phc_…); a personal phx_ key is refused')
     .optional(),
-  /** PostHog host, e.g. https://eu.i.posthog.com; required when POSTHOG_API_KEY is set. */
+  /**
+   * PostHog host, e.g. https://us.i.posthog.com (this project is on US Cloud); required when
+   * POSTHOG_API_KEY is set.
+   */
   POSTHOG_HOST: z.url({ protocol: /^https?$/ }).optional(),
 });
 

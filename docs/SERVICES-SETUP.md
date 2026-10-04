@@ -2,7 +2,7 @@
 
 This document walks a developer through creating every external account and credential the AI Stylist monorepo needs, in the order they become necessary. It assumes you have never used any of these services. Follow it top to bottom; each section is self-contained and ends with a check you can run.
 
-It complements the root [`README.md`](../README.md) (local machine setup) and the operating contract in [`CLAUDE.md`](../CLAUDE.md). The vendor choices themselves are ratified in `planning/SPINE.md` §2; do not swap a vendor here, propose an ADR instead.
+It complements the root [`README.md`](../README.md) (local machine setup) and the operating contract in [`CLAUDE.md`](../CLAUDE.md). When the code moves to another GitHub repository, or another machine has to be set up, follow [`docs/NEW-REPO-SETUP.md`](NEW-REPO-SETUP.md): it lists what is tied to the repository or to a machine and what carries over untouched. The vendor choices themselves are ratified in `planning/SPINE.md` §2; do not swap a vendor here, propose an ADR instead.
 
 ## The one rule
 
@@ -50,7 +50,7 @@ Source control and CI. Every CI job calls a `just` recipe; the workflows live in
 
 ### When you need it
 
-Now (P02). The repository is `https://github.com/ArtMin96/ai-stylist` under a personal account, not an organization.
+Now (P02). The repository is `https://github.com/ArtMin96/ai-stylist` under a personal account, not an organization. It is private (since 2026-10-03). Moving it to another repository is described in [`docs/NEW-REPO-SETUP.md`](NEW-REPO-SETUP.md).
 
 ### Cost
 
@@ -64,7 +64,7 @@ Free. GitHub Actions minutes on Linux runners are free for public repositories; 
 4. Tick **Require a pull request before merging**. Tick **Require review from Code Owners** only after step 2 is merged.
 5. Tick **Require status checks to pass before merging** and **Require branches to be up to date before merging**. In the search box add these check names exactly as the jobs in `pr-gate.yml` report them: `Gate · just ci-parity` (it also runs the `.env.example` key check), `Gate · Contracts (generate --check, spectral, oasdiff)`, `Gate · Secret scan (PR diff)`, `Gate · Clone detection (placeholder)`, and `Report · PR gate summary`, which fails when any gate job failed or was cancelled and carries `ci.pr_gate_duration_seconds`. The names only appear in the search box after the workflow has run at least once on a pull request, so open a trivial PR first if the list is empty.
 6. Save the rule.
-7. Repository secrets live at **Settings**, **Secrets and variables**, **Actions**, **New repository secret**. Create them as each later section tells you to. Nothing is required for `pr-gate.yml`, `affected.yml`, or `nightly.yml`. On pushes to `main` only, `pr-gate.yml` pushes CI metrics when the optional `OTEL_EXPORTER_OTLP_ENDPOINT` and `OTEL_EXPORTER_OTLP_HEADERS` secrets exist (section 11), and `ios.yml` / `android.yml` upload debug symbols with the PostHog secret and variables from section 10; pull requests never receive them. Hosts and project ids are repository **variables** (the **Variables** tab on the same page), never secrets. `GITLEAKS_LICENSE` is only needed when the repository moves under a GitHub organization; skip it.
+7. Repository secrets live at **Settings**, **Secrets and variables**, **Actions**, **New repository secret**. Create them as each later section tells you to. Nothing is required for `pr-gate.yml`, `affected.yml`, or `nightly.yml`. On pushes to `main` only, `pr-gate.yml` pushes CI metrics when the optional `OTEL_EXPORTER_OTLP_ENDPOINT` and `OTEL_EXPORTER_OTLP_HEADERS` secrets exist (section 11), and `ios.yml` / `android.yml` upload debug symbols with the PostHog secret and variables from section 10; pull requests never receive them. Hosts and project ids are repository **variables** (the **Variables** tab on the same page), never secrets. From a terminal in the repo, the GitHub CLI does the same (`gh` is not installed by `just bootstrap`; `gh auth login` signs it in): `gh secret set <NAME> < <file>` reads the secret from a file through standard input, so the value is never typed on a command line, and `gh variable set <NAME> --body '<value>'` sets a variable; `gh secret list` and `gh variable list` show which names exist. Both forms were run for this repository on 2026-10-03. Run them yourself, and delete the file that held the secret afterwards; the repo's Bash guard (`scripts/hooks/guard-bash.sh`) refuses both `set` commands from an AI agent session. `GITLEAKS_LICENSE` is only needed when the repository moves under a GitHub organization; skip it.
 8. Turborepo remote cache (optional). `pr-gate.yml` prints "Turborepo remote cache disabled" until `TURBO_TOKEN` and `TURBO_TEAM` exist. Two options: Vercel Remote Cache (free on all Vercel plans, Checked 2026-09-10, <https://turborepo.dev/docs/core-concepts/remote-caching>; create a Vercel account, run `pnpm exec turbo login` then `pnpm exec turbo link` in the repo root, then create a token under the Vercel account settings, **Tokens** (label may differ), and store it as `TURBO_TOKEN` with the Vercel team slug as `TURBO_TEAM`), or a self-hosted cache server (an open-source `turborepo-remote-cache` deployment you run yourself). Recommendation: skip this until `ci.pr_gate_duration_seconds` in the job summary is consistently above the 10 minute budget. Cold CI runs are within budget today.
 
 ### What to record
@@ -80,7 +80,7 @@ Free. GitHub Actions minutes on Linux runners are free for public repositories; 
 
 ### Verify
 
-Open a pull request with any small change. The checks list shows the four `Gate · …` jobs plus `Report · PR gate summary`, and the "Merge" button stays disabled until they pass. Locally, `just ci-parity` must be green before you open it.
+Open a pull request with any small change. The checks list shows the four `Gate · …` jobs plus `Report · PR gate summary`, and once steps 2 to 6 are done the "Merge" button stays disabled until they pass. On 2026-10-03 they were not done for this repository yet: `main` was not protected and `CODEOWNERS` still held the placeholder handles. Locally, `just ci-parity` must be green before you open it.
 
 ## 2. sops + age
 
@@ -90,17 +90,17 @@ Shared secrets are committed to the repo encrypted, one file per environment (`s
 
 ### When you need it
 
-Now. Every other service in this document stores its values through this mechanism. The initial developer and CI public recipients are listed in `.sops.yaml`, `secrets/dev.enc.yaml` contains every `.env.example` key with an empty value ready to be filled as services are provisioned, and the matching CI private identity is stored in the GitHub repository secret `SOPS_AGE_KEY`. Staging and production files stay absent until those environments exist.
+Now. Every other service in this document stores its values through this mechanism. The initial developer and CI public recipients are listed in `.sops.yaml`, `secrets/dev.enc.yaml` holds the shared dev values (`just secrets-push --apply` adds the key names `.env.example` gained since the file was created, `--prune` removes the ones it dropped, and `just doctor` warns while the two differ), and the matching CI private identity is stored in the GitHub repository secret `SOPS_AGE_KEY`. Staging and production files stay absent until those environments exist.
 
 ### Cost
 
-Free. No account. `sops` 3.13.3 and `age` 1.3.2 are pinned in `mise.toml` and installed by `./scripts/bootstrap.sh`; the two recipes below run them through `scripts/security/secrets-edit.sh` and `scripts/security/secrets-sync.sh`.
+Free. No account. `sops` 3.13.3 and `age` 1.3.2 are pinned in `mise.toml` and installed by `./scripts/bootstrap.sh`; the recipes below run them through `scripts/security/secrets-edit.sh`, `scripts/security/secrets-sync.sh` and `scripts/security/secrets-push.sh`.
 
 ### Steps
 
 Run these in a shell where mise is activated (`eval "$(~/.local/bin/mise activate zsh)"`), or prefix each tool with `~/.local/bin/mise exec --`. `just` recipes need no activation.
 
-1. Run `just bootstrap`. Near the end it generates your age identity if none exists yet, at the resolved path (`SOPS_AGE_KEY` when set — key material in the environment, no file — else `SOPS_AGE_KEY_FILE`, else the default sops looks in on Linux: `$XDG_CONFIG_HOME/sops/age/keys.txt`, falling back to `~/.config/sops/age/keys.txt`, Checked 2026-09-10 at <https://getsops.io/docs/usage/identities/age/>; that order — `SOPS_AGE_KEY`, `SOPS_AGE_KEY_FILE`, the default file — is the precedence), mode 600 (directory mode 700); the private key is never printed. It then adds a `# developer: <label>` comment and your `age1...` recipient under the `dev` rule's `# ADD RECIPIENTS` marker in `.sops.yaml`, on a new `onboard/<slug>` branch, pushes it, and prints a compare URL — open that link as your pull request. Running it again once your identity exists and is already listed is a no-op (`age identity present at <path>` then `your age recipient is already listed in .sops.yaml (dev) — nothing to do`). In CI (`CI` set) or when `SOPS_AGE_KEY` is already set, this step is skipped entirely: no key is generated and no branch is created.
+1. Run `just bootstrap`. Near the end it generates your age identity if none exists yet, at the resolved path (`SOPS_AGE_KEY` when set — key material in the environment, no file — else `SOPS_AGE_KEY_FILE`, else the default keys file `$XDG_CONFIG_HOME/sops/age/keys.txt`, falling back to `~/.config/sops/age/keys.txt`, on Linux and macOS alike. That is where sops itself looks on Linux; on macOS sops alone would look in `~/Library/Application Support/sops/age/keys.txt`, so `scripts/security/secrets-lib.sh` exports `SOPS_AGE_KEY_FILE` for the path above in every recipe that calls sops, whenever that file exists and neither variable is set (covered by a test with made-up keys; not yet confirmed on a real Mac). Checked 2026-09-10 at <https://getsops.io/docs/usage/identities/age/>; that order — `SOPS_AGE_KEY`, `SOPS_AGE_KEY_FILE`, the default file — is the precedence), mode 600 (directory mode 700); the private key is never printed. It then adds a `# developer: <label>` comment and your `age1...` recipient under the `dev` rule's `# ADD RECIPIENTS` marker in `.sops.yaml`, on a new `onboard/<slug>` branch, pushes it, and prints a compare URL — open that link as your pull request. Running it again once your identity exists and is already listed is a no-op (`age identity present at <path>` then `your age recipient is already listed in .sops.yaml (dev) — nothing to do`). In CI (`CI` set) or when `SOPS_AGE_KEY` is already set, this step is skipped entirely: no key is generated and no branch is created.
 
    If the push fails (no remote access yet), bootstrap still exits successfully, warns, and prints the exact `git push -u origin onboard/<slug>` command to run later; the branch and commit already exist locally.
 
@@ -152,7 +152,7 @@ Run these in a shell where mise is activated (`eval "$(~/.local/bin/mise activat
 
    `just secrets-sync staging` and `just secrets-sync prod` refuse to run on a workstation; CI sets `CI=true`, and a human who really needs it locally passes `--i-know-this-is-not-dev`.
 
-8. Edit values later with `just secrets-edit` (or `just secrets-edit staging`); commit the encrypted file through a pull request like any other change, then everyone runs `just secrets-sync` again.
+8. Add or change shared dev values later without an editor: put them in `.env`, run `just secrets-push` (a dry run that lists the key names it would add or fill, and the ones whose shared value differs), then `just secrets-push --apply`. It also creates the key names `.env.example` gained since the file was created. A shared value that differs from `.env` is named and left alone: run `just secrets-sync` if the shared one is newer, add `--replace` if yours is. `--prune` removes the empty names `.env.example` dropped; one that still holds a value needs `--prune --prune-values`. `just secrets-push --set KEY` reads one value from a hidden prompt instead of `.env`; never give the value as an argument. It replaces the value the key already has, so it is also the way to store a renewed token; run `just secrets-sync` afterwards so this machine's `.env` gets it. Keys tagged `[machine-local]` in `.env.example` (`DATABASE_URL`, `POSTGRES_HOST_PORT` and the other per-machine settings) are never pushed. `just secrets-edit` (or `just secrets-edit staging`) still opens a file in `$EDITOR` and is the only way to change `staging` or `prod`. The commands that write (`--apply`, `--set`, `secrets-edit`) are run by a human, never by an AI agent. Commit the encrypted file through a pull request like any other change, then everyone runs `just secrets-sync` again.
 
 9. Onboard another developer: they run `just bootstrap`, which generates their identity, adds their `# developer: <label>` comment and recipient to the `dev` rule of `.sops.yaml` on a new `onboard/<slug>` branch, and prints a compare URL to open a pull request — no manual key exchange needed. Review the diff (it should touch only `.sops.yaml`, adding a label comment and a bare `- age1...` line), then run `just secrets-approve <branch>`: it re-wraps every `secrets/*.enc.yaml` for the new recipient list, commits and pushes onto their branch, and prints the compare URL again. Merge it; the new developer runs `just secrets-sync` (or re-runs `just bootstrap`) to pick up the shared dev values. Only the `dev` rule is automated this way — a deployer who needs `staging` or `prod` access still adds their own recipient under that rule by hand and asks a teammate who can already decrypt to run `just secrets-updatekeys`.
 
@@ -169,7 +169,7 @@ Run these in a shell where mise is activated (`eval "$(~/.local/bin/mise activat
 
 - Do not paste a private key into a chat, a ticket, or a workflow file.
 - Do not commit `secrets/*.dec.*` or `.env`; both are gitignored, keep it that way.
-- Do not put values into `secrets/*.enc.yaml` that are not keys in `.env.example`; the file must mirror it (`secrets/README.md`). `secrets-edit` seeds exactly that key list.
+- Do not put values into `secrets/*.enc.yaml` that are not keys in `.env.example`; the file must mirror it (`secrets/README.md`). `just doctor` warns when it does not and names the command that fixes it.
 - Do not share one age key between two people.
 
 ### Verify
@@ -461,16 +461,41 @@ P02-T09 (native analytics and crash reporting, symbol upload, API feature flags,
 
 ### Cost
 
-Free tier, Checked 2026-09-10 at <https://posthog.com/pricing>: 1M events, 5K session recordings, 100K exceptions, 1M feature flag requests per month; no credit card required. PostHog Cloud offers US and EU regions; the project exists in US Cloud (DEC-58). A region cannot change after creation, so an EU requirement from OQ-07 means a new EU project.
+Free tier, Checked 2026-10-03 at <https://posthog.com/pricing>: 1M events, 5K session recordings, 100K exceptions, 1M feature flag requests per month; no credit card required; 1 project, and at most 10 personal API keys. PostHog Cloud offers US and EU regions; the project exists in US Cloud (DEC-58). PostHog moves a project to the other region only for Scale or Enterprise customers (<https://posthog.com/docs/settings/projects>), so on the free plan an EU requirement from OQ-07 means a new organization and project on EU Cloud (<https://eu.posthog.com/signup>).
 
 ### Steps
 
-1. Sign up at <https://posthog.com/signup>. The project is in **US** Cloud (DEC-58; provisional per OQ-07, and the region cannot change later). Its hosts: `https://us.i.posthog.com` for ingestion, `https://us.posthog.com` for the app and API.
-2. Create an organization `ai-stylist` and a project `ai-stylist-dev`. Add `ai-stylist-prod` in P03.
-3. **Settings**, **Project**, **Project API key** (label may differ). This key is public-ish (it is embedded in clients) but still stays out of committed files. Store it as `POSTHOG_API_KEY` and the region host as `POSTHOG_HOST`, in `secrets/dev.enc.yaml`. Leave both empty in your personal `.env` if you want to be sure nothing is sent locally.
+1. Sign up at <https://posthog.com/signup>, or sign in at <https://us.posthog.com>. The project is in **US** Cloud (DEC-58; provisional per OQ-07; the Cost paragraph above says what a move to EU takes). PostHog has two hosts, and every key below belongs to exactly one of them: `https://us.i.posthog.com` is the ingestion host, where the apps and the API send events and flag requests (`POSTHOG_HOST`); `https://us.posthog.com` is the app and API host, used by the web UI, `posthog-cli` and `just observability-sync` (`POSTHOG_CLI_HOST`). Do not swap the two: the code checks only that each is an http(s) address, so a swapped pair is noticed only when events, the symbol upload or the sync fail.
+
+2. Use the organization and the project the account has after sign-up. Their names do not matter: every step below finds the project by its numeric id. The free plan allows one project, so the production project planned for P03 needs the pay-as-you-go plan (a card on file) or a second organization; P03 has to settle that against DEC-48 (exit before any paid usage).
+
+3. Open <https://us.posthog.com/settings/project>; it redirects to `https://us.posthog.com/project/<project id>/settings/project-details`. The page is **Settings - General**, and its section **Project token & ID** has three boxes:
+
+   - **Project token**: a value of the form `phc_<letters and digits>`. The page notes that integrations often call it the project API key. It is public by design (it is compiled into the apps) but still stays out of committed files. Store it as `POSTHOG_API_KEY`. Do not click the **Reset token** icon next to it: according to PostHog's source it invalidates the current token at once (not tried), and every app build that carries the old token would stop sending.
+   - **Project ID**: digits only, the same number as in the address bar. Store it as `POSTHOG_CLI_PROJECT_ID`.
+   - **Region**: `US Cloud`. Nothing to store; it confirms which hosts from step 1 apply.
+
+   Store these in `secrets/dev.enc.yaml` the way section 2 step 8 describes, together with `POSTHOG_HOST` (`https://us.i.posthog.com`) and `POSTHOG_CLI_HOST` (`https://us.posthog.com`, no path and no trailing slash). Leave `POSTHOG_API_KEY` and `POSTHOG_HOST` empty in your personal `.env` if you want to be sure nothing is sent locally.
+
 4. A **Personal API key** (account settings) is needed later by the deletion adapter in P03; that task adds its key name to `.env.example`.
-5. For `just observability-sync`: account settings, **Personal API keys**, **Create personal API key**, name `observability-sync`, scopes `project:read`, `project:write`, `feature_flag:read`, `feature_flag:write`, `hog_function:read`, `hog_function:write`, limited to the project. Your account must be a project admin (`anonymize_ips` is admin-only). Store it as `POSTHOG_SYNC_API_KEY` in `secrets/dev.enc.yaml`, with `POSTHOG_CLI_PROJECT_ID` (numeric project id) and `POSTHOG_CLI_HOST` (`https://us.posthog.com`, the app host, not the ingestion host). Never a GitHub secret.
-6. For symbol upload: a second personal key with only `error_tracking:write` and `organization:read`, stored as `POSTHOG_CLI_API_KEY`. The iOS and Android workflows upload with it on `main` only: add the GitHub secret `POSTHOG_CLI_API_KEY` and the variables `POSTHOG_CLI_PROJECT_ID` and `POSTHOG_CLI_HOST` (section 1 step 7), each with its value from `secrets/dev.enc.yaml`. Do not add `POSTHOG_API_KEY` or `POSTHOG_HOST` to GitHub: CI-built apps carry no project key. `.github/workflows/README.md` lists which job reads which.
+
+5. For `just observability-sync`, create a personal API key. Open <https://us.posthog.com/settings/user-api-keys> (settings sidebar: **Account**, **Personal API keys**) and click **Create personal API key**. In the dialog of the same name:
+
+   - **Label**: `observability-sync`.
+   - **Organization & project access**: the choices are **All access**, **Organizations** and **Projects**. Choose **Projects**, click **Select projects…** and tick the project.
+   - **Scopes**: every scope is a row with **No access**, **Read** and **Write**. No preset fits this key, so type into **Search scopes…** to find the rows **Project**, **Feature flag** and **Hog function**, and set each to **Write** (Write includes Read). Leave every other row on **No access**. The form shows these names; the `project:write`, `feature_flag:write` and `hog_function:write` spellings appear only in the key list afterwards.
+   - Click **Create key**. The dialog **Personal API key ready** shows the value, which starts with `phx_`, once only. Copy it, then click **Okay**.
+
+   Your account must be a project admin, because the sync changes admin-only settings such as `anonymize_ips`; organization owners and admins are project admins automatically. Store the key with `just secrets-push --set POSTHOG_SYNC_API_KEY`, which asks for the value at a hidden prompt (section 2 step 8), then run `just secrets-sync`. Never a GitHub secret. A key made this way was accepted by every call of the sync on 2026-10-03, so **Organizations** access is not needed.
+
+6. For symbol upload, create a second personal API key in the same dialog:
+
+   - **Label**: `symbol-upload`.
+   - **Organization & project access**: choose **Organizations**, click **Select organizations…** and tick the organization. Do not choose **Projects** for this key: PostHog's source marks the **Organization** scope it needs as not available on a key limited to projects (not tried).
+   - **Scopes**: click **Select preset** and choose **Source map upload**. It sets exactly two rows, **Error tracking** to **Write** and **Organization** to **Read**; the key list shows them as `error_tracking:write` and `organization:read`.
+   - Click **Create key**, copy the `phx_` value from **Personal API key ready**, then click **Okay**.
+
+   Store it with `just secrets-push --set POSTHOG_CLI_API_KEY`, then run `just secrets-sync`. The iOS and Android workflows upload with it on `main` only: add the GitHub secret `POSTHOG_CLI_API_KEY` and the variables `POSTHOG_CLI_PROJECT_ID` and `POSTHOG_CLI_HOST` (section 1 step 7), each with its value from `secrets/dev.enc.yaml`. Do not add `POSTHOG_API_KEY` or `POSTHOG_HOST` to GitHub: CI-built apps carry no project key. `.github/workflows/README.md` lists which job reads which.
 
 ### What to record
 
@@ -481,10 +506,22 @@ Free tier, Checked 2026-09-10 at <https://posthog.com/pricing>: 1M events, 5K se
 
 - Do not call PostHog from anywhere except the analytics port; consent gating is a legal requirement (`planning/11`).
 - Do not enable session replay on screens that show measurements, selfies, or photos; that is a P03 review item.
+- Do not click **Reset token** on the project settings page, and do not put a personal key (`phx_`) into `POSTHOG_API_KEY`: the API and both apps accept only a `phc_` token there.
+- Do not give a personal key **All access**, and do not use one key for both jobs: the key that CI holds must not be able to change settings or flags.
 
 ### Verify
 
 `just doctor` shows `✔ .env has every key from .env.example`. With consent OFF (the default), the PostHog **Activity** page must stay empty even after running the app; an event there while the Dev build's debug consent toggle is off is a bug. The crash demo and symbol upload checks are in [docs/observability/posthog.md](observability/posthog.md#symbol-upload).
+
+To test the two personal keys, in a terminal where direnv has loaded `.env` after `just secrets-sync`:
+
+```bash
+curl -sS -o /dev/null -w '%{http_code}\n' -H "Authorization: Bearer $POSTHOG_CLI_API_KEY" "$POSTHOG_CLI_HOST/api/organizations/@current/"
+curl -sS -o /dev/null -w '%{http_code}\n' -H "Authorization: Bearer $POSTHOG_CLI_API_KEY" "$POSTHOG_CLI_HOST/api/projects/$POSTHOG_CLI_PROJECT_ID/feature_flags/"
+just observability-sync posthog --dry-run
+```
+
+Expected: `200` (the upload key works), then `403` (it cannot read flags, so it holds nothing beyond its two scopes), then the plan of the dry run, which sends only GET requests with `POSTHOG_SYNC_API_KEY`. Both status codes were seen on 2026-10-03. A `403` in the dry run means one of the three scope rows or the selected project is missing on the sync key.
 
 ## 11. Grafana Cloud
 
@@ -498,39 +535,88 @@ P02-T09.
 
 ### Cost
 
-Free tier, Checked 2026-09-10 at <https://grafana.com/pricing/>: 10k active metric series, 50 GB logs, 50 GB traces, 50 GB profiles per month, 14 day retention, 3 active users; no credit card required.
+Free tier, Checked 2026-09-10 at <https://grafana.com/pricing/>: 10k active metric series, 50 GB logs, 50 GB traces, 50 GB profiles per month, 14 day retention, 3 active users; no credit card required. On 2026-10-03 the account was still on a trial: the portal showed "Free trial" with an end date of 2026-10-11. What changes on that date was not checked on any official page, so confirm afterwards that the stack is on the free plan (DEC-48: exit before any paid usage).
 
 ### Steps
 
-1. Sign up at <https://grafana.com/auth/sign-up/create-user>. Create a stack named `ai-stylist` in an EU region (DEC-58).
-2. Grafana Cloud portal, your organization **Overview**, select the stack, then **Configure** on the **OpenTelemetry** tile (Checked 2026-09-10, <https://grafana.com/docs/grafana-cloud/send-data/otlp/send-data-otlp/>).
-3. Follow that page to generate an API token (name `api-dev`, role write). It shows ready-made environment variables: `OTEL_EXPORTER_OTLP_ENDPOINT` (`https://otlp-gateway-<region>.grafana.net/otlp`) and `OTEL_EXPORTER_OTLP_HEADERS` (`Authorization=Basic <base64 of instanceId:token>`). Copy both exactly as shown.
-4. Store them in `secrets/dev.enc.yaml` and `.env` under the same names. Leave `OTEL_SERVICE_NAME` empty there: each process has its own name (`api`, `jobs`, `segmentation`), which `just dev-api` / `just dev-workers` set per process and each deployed service sets in its own Coolify config ([docs/observability/grafana.md](observability/grafana.md#configure-a-process)).
-5. Generate a separate token per environment (`api-staging`, `api-prod`) into the matching `secrets/<env>.enc.yaml` so one can be revoked without touching the others.
-6. For `just observability-sync`: in the stack, **Administration**, **Users and access**, **Service accounts**, **Add service account** `observability-sync` with role **Admin** (Admin holds the alerting provisioning writer role; Editor does not), then **Add service account token** with a 90-day expiry (rotation inventory, `planning/11-security-privacy-and-compliance.md` §5.3). Store the `glsa_…` token as `GRAFANA_SERVICE_ACCOUNT_TOKEN`, the stack URL `https://<stack>.grafana.net` as `GRAFANA_URL`, the on-call addresses as `GRAFANA_ALERT_EMAILS` (comma list) and the on-call IANA zone as `GRAFANA_ONCALL_TIMEZONE`, all in `secrets/dev.enc.yaml` (one stack serves every environment). Then `just secrets-sync`, `just observability-sync all --check`, `just observability-sync --dry-run`, `just observability-sync`.
-7. Optional, for the CI row of dashboard 1: GitHub secrets `OTEL_EXPORTER_OTLP_ENDPOINT` and `OTEL_EXPORTER_OTLP_HEADERS` (section 1 step 7), read by the `pr-gate.yml` summary job on pushes to `main` only. `OTEL_EXPORTER_OTLP_HEADERS` must carry a separate token named `ci-metrics` with only the metrics write scope, never the dev token (step 5), so the CI copy can write metrics and nothing else and can be revoked alone.
+1. Sign up at <https://grafana.com/auth/sign-up/create-user>. Later, sign in at <https://grafana.com/> and click **My account** in the page header to open the Grafana Cloud Portal. Use the stack the account has (the free plan allows one stack per account; if there is none yet, create it in an EU region, DEC-58). The stack's name, written `<stack>` below, is the title of its card under **Manage your Grafana Cloud stack** and the first part of its address `https://<stack>.grafana.net`. No step depends on the name.
+
+2. Read the two OTLP connection values (Checked 2026-10-03, <https://grafana.com/docs/grafana-cloud/send-data/otlp/send-data-otlp/>). On the stack's card click **Details** (not **Launch**); the **Manage Stack** page of that stack opens. On its **OpenTelemetry** tile click **Configure**. The connection-details page shows:
+
+   - **OTLP Endpoint**: a URL such as `https://otlp-gateway-prod-<region>.grafana.net/otlp`. Copy it as shown and keep the `/otlp` ending; never type it by hand, because newer regions use a longer host name. This is `OTEL_EXPORTER_OTLP_ENDPOINT`.
+   - **Instance ID**: a number. It is the user-name half of the header built in step 3. It is not a secret and is not stored under a key of its own.
+
+   Do not click **Generate now** under **Password / API Token** on that page. The token it creates belongs to a ready-made policy (named `stack-<number>-otlp-write`) whose scopes cannot be changed and are broader than this project needs: besides `metrics:write`, `logs:write` and `traces:write` it carries `metrics:import`, `alerts:write`, `rules:write`, `profiles:write` and `datadog:validate`.
+
+3. Create the dev token from an access policy of its own, with only the three scopes the processes use. Go back to **Manage Stack** and click **Launch** on the **Grafana** tile; the stack's Grafana opens at `https://<stack>.grafana.net`. In its left menu choose **Administration**, **Users and access**, **Cloud access policies**, then:
+
+   - Click **Create access policy**. In the dialog **Create new access policy**, type `api-dev` into **Display name** (**Name** fills in by itself). In the **Scopes** table tick **Write** on the rows `metrics`, `logs` and `traces`, and nothing else. Click **Create**.
+   - On the new `api-dev` card click **Add token**. In the dialog **Create new token**, type `api-dev` into **Token name** and choose **90 days** under **Expiration date** (the default is **No expiry**; `planning/11-security-privacy-and-compliance.md` §5.3 sets 90 days for provider keys). Click **Create**.
+   - The dialog **Token successfully added.** shows the token, a value that starts with `glc_`, once only. Copy it before you click **Close**.
+
+   Build the header and store it in a terminal that no AI agent can read, without the token ever being shown or typed on a command line. First run this line on its own; it waits for you to paste the token and press Enter, and shows nothing:
+
+   ```bash
+   read -rs GLC_TOKEN
+   ```
+
+   Then put the Instance ID from step 2 in place of the placeholder, keep the single quotes, and run the rest. The first command does nothing while the token is empty.
+
+   ```bash
+   [ -n "$GLC_TOKEN" ] && printf 'Authorization=Basic%%20%s' "$(printf '%s:%s' '<instance id>' "$GLC_TOKEN" | base64 | tr -d '\n')" |
+     just secrets-push --set OTEL_EXPORTER_OTLP_HEADERS
+   unset GLC_TOKEN
+   ```
+
+   `OTEL_EXPORTER_OTLP_HEADERS` now holds `Authorization=Basic%20<base64 of instance id:token>`, on one line, with no space and no quotes. `%20` stands for the space after `Basic`; the API, the jobs process, the Python worker and the CI metrics push all read this spelling correctly. The header in use since 2026-10-03 has this form and passed the test under Verify. The two commands above were tried with a made-up token only (the header came out right), and the pipe into `just secrets-push --set` is covered by that script's tests, not by a run with a real token.
+
+4. Store the endpoint with `just secrets-push --set OTEL_EXPORTER_OTLP_ENDPOINT` (paste the address at the hidden prompt), then run `just secrets-sync` to copy both values into `.env`. Leave `OTEL_SERVICE_NAME` empty in both places: each process has its own name (`api`, `jobs`, `segmentation`), which `just dev-api` / `just dev-workers` set per process and each deployed service sets in its own Coolify config ([docs/observability/grafana.md](observability/grafana.md#configure-a-process)). `APP_ENV` is per machine as well: it stays empty in `secrets/dev.enc.yaml`, and `just bootstrap` writes `local` into an empty `APP_ENV` in `.env`.
+
+5. For every later environment, repeat step 3 with an access policy and a token of its own (`api-staging`, `api-prod`) and store the header in the matching `secrets/<env>.enc.yaml` with `just secrets-edit <env>` (`just secrets-push` writes `dev` only), so one can be revoked without touching the others. The endpoint and the Instance ID are the same for all of them: one stack serves every environment.
+
+6. For `just observability-sync`, create a service account token. This is a second kind of token: the `glc_` token from step 3 can send telemetry but cannot call Grafana's HTTP API, and a service account token (`glsa_`) is the reverse. In the stack's Grafana choose **Administration**, **Users and access**, **Service accounts**, **Add service account**, then:
+
+   - On the page **Create service account**, type `observability-sync` into **Display name**. Click **Role** (it shows **No roles assigned**), choose **Admin** under **Basic roles** and click **Apply**, then **Create**. Admin holds the alerting provisioning writer role; Editor does not.
+   - On the account's page, under **Tokens**, click **Add service account token**. Fill in **Display name**, for example `observability-sync-<yyyymmdd>`. Under **Expiration** click **Set expiration date**: the default is **No expiration** and there is no 90-day choice, so click the **Expiration date** field and pick the day 90 days from today in the calendar (`planning/11-security-privacy-and-compliance.md` §5.3). Click **Generate token**.
+   - The dialog **Service account token created** shows the token, a value that starts with `glsa_`. Copy it before you click **Close**; treat it as shown once.
+
+   Store the token with `just secrets-push --set GRAFANA_SERVICE_ACCOUNT_TOKEN`, which asks for it at a hidden prompt (section 2 step 8). Store three more values in `secrets/dev.enc.yaml` the same way (one stack serves every environment): the address `https://<stack>.grafana.net` with no path as `GRAFANA_URL`, the on-call addresses as `GRAFANA_ALERT_EMAILS` (one address, or a comma list; `docs/observability/grafana/README.md` records what is known about separators) and the on-call IANA zone as `GRAFANA_ONCALL_TIMEZONE` (for example `Europe/Berlin`; an offset such as `+01:00` is refused). Then `just secrets-sync`, `just observability-sync all --check`, `just observability-sync --dry-run`, `just observability-sync`. Run the last command a second time: every line must then say `unchanged`.
+
+7. Optional, for the CI row of dashboard 1: GitHub secrets `OTEL_EXPORTER_OTLP_ENDPOINT` and `OTEL_EXPORTER_OTLP_HEADERS` (section 1 step 7), read by the `pr-gate.yml` summary job on pushes to `main` only. `OTEL_EXPORTER_OTLP_HEADERS` must carry a separate token named `ci-metrics` with only the metrics write scope, never the dev token (step 3), so the CI copy can write metrics and nothing else and can be revoked alone. Create it as in step 3, with an access policy `ci-metrics` on which **Write** is ticked on the `metrics` row only; the OpenTelemetry tile cannot produce such a token. Build its header the same way, with the same Instance ID, but hand it to `gh secret set` instead of `just secrets-push`: [`docs/NEW-REPO-SETUP.md`](NEW-REPO-SETUP.md), "Grafana Cloud: a token expired, or the account is new", has the commands. GitHub gets the endpoint and the header as raw values, without `export` and without quotes. No such token exists yet (2026-10-03), and no Grafana page states that the gateway accepts a metrics-only token: the first push to `main` after both secrets exist is the test.
 
 ### What to record
 
 - `.env.example` keys: `OTEL_EXPORTER_OTLP_ENDPOINT`, `OTEL_EXPORTER_OTLP_HEADERS`, `OTEL_SERVICE_NAME`, `GRAFANA_URL`, `GRAFANA_SERVICE_ACCOUNT_TOKEN`, `GRAFANA_ALERT_EMAILS`, `GRAFANA_ONCALL_TIMEZONE`.
 - GitHub secrets (optional): `OTEL_EXPORTER_OTLP_ENDPOINT`, `OTEL_EXPORTER_OTLP_HEADERS` (CI metrics; the headers hold the `ci-metrics` token only).
+- Password manager or calendar: the expiry date of every token from steps 3, 6 and 7. After that date the exporters, the sync or the CI push are expected to be refused (not seen yet), and the step is repeated with a new token. Appendix B of [`docs/NEW-REPO-SETUP.md`](NEW-REPO-SETUP.md) lists the tokens that exist and their dates.
 
 ### Do not
 
 - Do not log request bodies or any sensitive field to Loki; the redaction allowlist from T09 applies to OTel attributes too.
 - Do not share the token between environments.
+- Do not use a token from **Generate now** on the OpenTelemetry tile; its scopes are fixed and broader than the three this project needs (step 2).
+- Do not add `GRAFANA_SERVICE_ACCOUNT_TOKEN` to GitHub; the sync runs on a developer machine only.
 
 ### Verify
 
-To test the credentials alone, without running a process, take the base64 part after `Authorization=Basic ` from `OTEL_EXPORTER_OTLP_HEADERS`:
+To test the credentials alone, without running a process, use a terminal where direnv has loaded `.env` after `just secrets-sync`. The command takes the base64 part after `Authorization=Basic%20` out of `OTEL_EXPORTER_OTLP_HEADERS` by itself, so nothing is pasted:
 
 ```bash
 curl -sS -o /dev/null -w '%{http_code}\n' -X POST \
-  -H 'Content-Type: application/json' -H 'Authorization: Basic <base64>' \
+  -H 'Content-Type: application/json' \
+  -H "Authorization: Basic ${OTEL_EXPORTER_OTLP_HEADERS#Authorization=Basic%20}" \
   -d '{"resourceSpans":[]}' "$OTEL_EXPORTER_OTLP_ENDPOINT/v1/traces"
 ```
 
-Expected: `200`. A `401` means the header or token is wrong. With the exporter wired (P02-T09), `just dev-api` followed by `curl localhost:3000/v1/health` produces a trace visible under **Explore**, **Tempo** in the stack.
+Expected: `200`. A `401` means the header or token is wrong: on 2026-10-03 the real token answered `200` and a made-up one `401`. That test took the base64 part from the stored value in another way; the `${…#…}` form above was checked only for the text it produces, with a made-up value. A `ci-metrics` header is expected to answer `401` here too, because it has no traces scope (not tried). With the exporter wired (P02-T09), `just dev-api` followed by `curl localhost:3000/v1/health` produces a trace visible under **Explore**, **Tempo** in the stack.
+
+To test the service account token, in the same terminal:
+
+```bash
+curl -sS -o /dev/null -w '%{http_code}\n' -H "Authorization: Bearer $GRAFANA_SERVICE_ACCOUNT_TOKEN" "$GRAFANA_URL/api/datasources"
+```
+
+Expected: `200` (seen on 2026-10-03). A `401` means the token is wrong or expired.
 
 ## 12. RevenueCat
 
@@ -636,7 +722,7 @@ Server-side FCM + APNs direct, behind a `platform` port (`SPINE.md` §2); client
 | Phase     | Do now                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
 | --------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | P02 (now) | 1 GitHub (CODEOWNERS, branch protection, Actions). 2 sops + age (keys, `.sops.yaml`, `secrets/dev.enc.yaml`, `SOPS_AGE_KEY`). 3 PostgreSQL on the server: databases, PgBouncer, pgBackRest to the backup bucket (T07). 4 Server + Coolify: host, hardening, project + environments. 5 pg-boss: nothing to provision (T08). 6 R2 dev bucket + token (T13). 8 Apple enrollment + ASC API key (T14). 9 Play Console + keystore secrets (T14). 10 PostHog project (T09). 11 Grafana Cloud stack + OTel vars (T09). Request Apple and Google approvals first; they take days. |
-| P03       | Coolify first deploy (Dockerfile, `COOLIFY_TOKEN`, sync script), production database + role, `secrets/staging.enc.yaml` and `secrets/prod.enc.yaml`, Cloudflare DNS + WAF for the API domain, PostHog prod project + personal API key, 14 Apple and Google sign-in credentials.                                                                                                                                                                                                                                                                                          |
+| P03       | Coolify first deploy (Dockerfile, `COOLIFY_TOKEN`, sync script), production database + role, `secrets/staging.enc.yaml` and `secrets/prod.enc.yaml`, Cloudflare DNS + WAF for the API domain, PostHog prod project (the free plan allows one project: section 10 step 2) + personal API key, 14 Apple and Google sign-in credentials.                                                                                                                                                                                                                                    |
 | P06       | fal.ai key + spend limit, vision-LLM and embedding provider accounts (privacy review first), GPU eval host for the self-hosted eval arms, R2 public assets custom domain (if not done in P04), R2 multipart upload settings.                                                                                                                                                                                                                                                                                                                                             |
 | P08       | Open-Meteo Standard plan + key; run the weather comparison (Open-Meteo managed vs self-hosted vs WeatherKit); holidays need nothing (embedded `date-holidays`).                                                                                                                                                                                                                                                                                                                                                                                                          |
 | P09       | 15 Firebase project + FCM service account per environment, APNs key (T16).                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
@@ -647,8 +733,10 @@ Server-side FCM + APNs direct, behind a `platform` port (`SPINE.md` §2); client
 ## When something goes wrong
 
 1. `just secrets-sync` reports `no age recipients in .sops.yaml`. Finish section 2 step 3 for the environment named in the error, then retry. If it reports that `secrets/<env>.enc.yaml` does not exist, create that encrypted file with `just secrets-edit <env>` as described in section 2 step 5.
-2. `sops` says `no key could decrypt the data` or `failed to get the data key`. Your public key is not in the file's recipient list, or your private key is not at `~/.config/sops/age/keys.txt`. Ask a developer who can decrypt to add your key to `.sops.yaml` and run `just secrets-updatekeys`. Check `SOPS_AGE_KEY_FILE` if you keep the key elsewhere.
+2. `sops` says `no key could decrypt the data` or `failed to get the data key`. Your public key is not in the file's recipient list, or your private key is not at `~/.config/sops/age/keys.txt` (the same path on macOS: the recipes point sops at it, a bare `sops` command there needs `SOPS_AGE_KEY_FILE` set to it). Ask a developer who can decrypt to add your key to `.sops.yaml` and run `just secrets-updatekeys`. Check `SOPS_AGE_KEY_FILE` if you keep the key elsewhere.
 3. `just doctor` reports `.env missing N key(s)`. Someone added keys to `.env.example`. Copy the missing lines from `.env.example` into `.env` (values stay empty) or re-run `just secrets-sync` after the shared file is updated.
-4. `just db-migrate` against the staging PostgreSQL fails with a `SET` or `prepared statement` error. You used the pooled (PgBouncer) connection string. Use the direct string from section 3 step 8 and retry.
-5. A native build workflow stops at a missing-secret step (App Store Connect API key or signing material). The GitHub secret is missing or named differently. The names must match `.github/workflows/README.md` exactly; check for trailing spaces in the secret value when the secret step passes but the upload is still rejected as unauthenticated.
-6. The `android` workflow's release APK is unsigned and cannot be uploaded to Play. That is expected: the signing lane is future work (section 9); the job summary lists the signing state per variant.
+4. `just doctor` warns that values exist only on this machine, or that `secrets/dev.enc.yaml` lacks or has stale key names. Run `just secrets-push` to read the plan, then `just secrets-push --apply` and commit `secrets/dev.enc.yaml`. Add `--prune` for empty stale names; a stale name that holds a value needs `--prune-values` as well. A key the plan lists as `differs` needs `just secrets-sync` (the shared value is newer) or `--replace` (yours is). A warning that shared values are not in `.env` yet means `just secrets-sync`.
+5. `just dev-api` or `just dev-workers` stops with `container name "/ai-stylist-postgres" is already in use`. A container left by another compose project owns the name (an older checkout directory, or a `COMPOSE_PROJECT_NAME` you no longer export). Run `just doctor`: it names that project, prints the commands that remove the container, and says where its data stays.
+6. `just db-migrate` against the staging PostgreSQL fails with a `SET` or `prepared statement` error. You used the pooled (PgBouncer) connection string. Use the direct string from section 3 step 8 and retry.
+7. A native build workflow stops at a missing-secret step (App Store Connect API key or signing material). The GitHub secret is missing or named differently. The names must match `.github/workflows/README.md` exactly; check for trailing spaces in the secret value when the secret step passes but the upload is still rejected as unauthenticated.
+8. The `android` workflow's release APK is unsigned and cannot be uploaded to Play. That is expected: the signing lane is future work (section 9); the job summary lists the signing state per variant.

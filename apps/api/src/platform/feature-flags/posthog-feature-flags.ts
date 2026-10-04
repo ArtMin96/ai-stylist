@@ -56,7 +56,10 @@ type ReplyRecord = { clean: boolean };
 export type PostHogFeatureFlagsOptions = {
   /** PostHog project key (`phc_…`), passed in by the composition root. */
   readonly apiKey: string;
-  /** Ingestion host, `https://eu.i.posthog.com`. Required: the SDK's default is the US region. */
+  /**
+   * Ingestion host (`https://us.i.posthog.com` for this project, US Cloud). Required, so the
+   * region is always explicit.
+   */
   readonly host: string;
   /** A pino logger built from `loggerOptions()`. */
   readonly logger: Logger;

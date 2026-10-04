@@ -38,8 +38,10 @@ is the server from `docs/SERVICES-SETUP.md` §4.
    docker system df
    ```
 
-4. API logs in Loki: `{service_name="api"} | severity_text = "error"` for the last 15 min. Traces: Tempo,
-   `{ resource.service.name = "api" && status = error }`.
+4. API logs in Loki: `{service_name="api"} | severity_text = "error"` for the last 15 min. An error
+   line carries the error class and code only (`err.type`, `err.code`, and the same per `err.cause`),
+   never a message or stack; `msg="unhandled error"` marks a 5xx. Follow the line's `trace_id` in
+   Tempo for the failing span. Traces: Tempo, `{ resource.service.name = "api" && status = error }`.
 
 ## Mitigation
 

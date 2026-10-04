@@ -10,16 +10,11 @@ sops + age encrypted configuration, one file per environment (planning/15 §6; s
 | `prod.enc.yaml`    | CI deploy jobs; source of truth that a sync script pushes to Coolify environment variables (P03)  |
 
 **Status (P02 T02): development is operational.** `.sops.yaml` contains the initial developer and
-CI public recipients for every environment, and `dev.enc.yaml` contains all `.env.example` keys
-with empty values ready to be filled as services are provisioned. The matching CI private identity
-is stored as the GitHub repository secret `SOPS_AGE_KEY`. Staging and production files stay absent
+CI public recipients for every environment. `dev.enc.yaml` was created with every key
+`.env.example` had at that time; `just secrets-push --apply` adds the key names `.env.example`
+gained since, and `just doctor` warns while the two differ. The matching CI private identity is
+stored as the GitHub repository secret `SOPS_AGE_KEY`. Staging and production files stay absent
 until those environments exist.
-
-**Pending cleanup (checked 2026-09-24):** `dev.enc.yaml` still carries four empty keys that left
-`.env.example` when Neon and Trigger.dev were removed (ADR-0003): `NEON_API_KEY`, `NEON_PROJECT_ID`,
-`TRIGGER_PROJECT_REF`, `TRIGGER_SECRET_KEY`. `secrets-sync` skips them (empty), but they break the
-"mirror `.env.example` exactly" rule below. Someone who can decrypt removes each with
-`sops unset secrets/dev.enc.yaml '["<KEY>"]'`, as was done for the `EXPO_PUBLIC_*` keys.
 
 ## Mental model
 
@@ -47,39 +42,59 @@ After pulling changes, merge the latest shared development values into your loca
 just secrets-sync
 ```
 
-To change a shared value, edit through sops and commit only the encrypted file:
+To share a value, put it in your `.env`, push it, and commit only the encrypted file:
 
 ```bash
-just secrets-edit dev
+just secrets-push            # dry run: lists the key names it would add or fill, and the ones that differ
+just secrets-push --apply    # adds and fills; a shared value that differs from yours is named and left alone
 git add secrets/dev.enc.yaml
 ```
+
+A key the plan lists as `differs` holds one value in `.env` and another in the shared file. Run
+`just secrets-sync` if the shared one is newer (rotated on another machine); add `--replace` if
+yours is. `--prune` also drops the empty names `.env.example` no longer has; a name that still
+holds a value needs `--prune --prune-values`, which deletes the value with it.
+A value that should not pass through `.env` is typed at a hidden prompt, or piped in:
+`just secrets-push --set KEY` (never give the value as an argument). `just secrets-edit dev` still
+opens the whole file in `$EDITOR`. Keys tagged `[machine-local]` in `.env.example` (for example
+`DATABASE_URL`) are never pushed; an empty `.env` value never overwrites a shared one; a `.env`
+value followed by a comment (`KEY=value # note`) is refused: put the comment on its own line.
 
 Review the diff for changed key names and sops metadata, open a pull request, and tell teammates to
 run `just secrets-sync` after it merges. Do not edit ciphertext directly and do not commit `.env`.
 
 ## Commands
 
-| Recipe                               | Script                                    | What it does                                                                                                                                                                                                                                                                                                |
-| ------------------------------------ | ----------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `just secrets-edit dev`              | `scripts/security/secrets-edit.sh`        | Opens `secrets/<env>.enc.yaml` in `$EDITOR` through `sops`; on the first run creates it with every `.env.example` key and an empty value, encrypted for the `<env>` recipients in `.sops.yaml`                                                                                                              |
-| `just secrets-sync` (default `dev`)  | `scripts/security/secrets-sync.sh`        | Decrypts `secrets/<env>.enc.yaml` and **merges** it into `.env`: each key with a non-empty value replaces its `KEY=` line or is appended; empty values and every other line (personal overrides, comments) are left alone                                                                                   |
-| `just secrets-sync staging` / `prod` | same                                      | Refuses on a workstation unless `CI=true` or `--i-know-this-is-not-dev` is passed (no prod credentials on workstations, planning/15 §6)                                                                                                                                                                     |
-| `just secrets-updatekeys [env ...]`  | `scripts/security/secrets-updatekeys.sh`  | Re-wraps every (or the named) `secrets/<env>.enc.yaml` for the current recipient list in `.sops.yaml` via `sops updatekeys -y`; needs an identity that can decrypt today; values are never written to disk or printed                                                                                       |
-| `just secrets-approve <branch>`      | `scripts/security/secrets-approve.sh`     | Reviews a developer's onboarding branch: refuses (no file written, no `sops` invoked) unless it only adds `# developer:` comments and bare `age1...` recipients to `.sops.yaml`; otherwise re-wraps every `secrets/*.enc.yaml` for the new recipient list, commits, pushes, and prints the pull-request URL |
-| `just secrets-backup-done`           | `scripts/security/secrets-backup-done.sh` | Records today's date in `<identity path>.backed-up` (mode 600) so `just doctor` stops warning that your identity is not backed up                                                                                                                                                                           |
+| Recipe                                                               | Script                                    | What it does                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
+| -------------------------------------------------------------------- | ----------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `just secrets-edit dev`                                              | `scripts/security/secrets-edit.sh`        | Opens `secrets/<env>.enc.yaml` in `$EDITOR` through `sops`; on the first run creates it with every `.env.example` key and an empty value, encrypted for the `<env>` recipients in `.sops.yaml`                                                                                                                                                                                                                                                                                                                                                                                                                                            |
+| `just secrets-sync` (default `dev`)                                  | `scripts/security/secrets-sync.sh`        | Decrypts `secrets/<env>.enc.yaml` and **merges** it into `.env`: each key with a non-empty value replaces its `KEY=` line or is appended; empty values and every other line (personal overrides, comments) are left alone                                                                                                                                                                                                                                                                                                                                                                                                                 |
+| `just secrets-sync staging` / `prod`                                 | same                                      | Refuses on a workstation unless `CI=true` or `--i-know-this-is-not-dev` is passed (no prod credentials on workstations, planning/15 §6)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
+| `just secrets-push [--apply] [--replace] [--prune [--prune-values]]` | `scripts/security/secrets-push.sh`        | Copies the values `.env` holds for the `.env.example` keys into `secrets/dev.enc.yaml` through `sops set`. Without `--apply` it is a dry run that lists key names and writes nothing. `--apply` adds a missing key name and fills an empty shared value; a shared value that differs from `.env` is named and left alone unless `--replace` is given. `--prune` also removes empty names `.env.example` no longer declares; `--prune --prune-values` also the ones that hold a value. Never pushes a `[machine-local]` key, an empty `.env` value, or a value followed by an inline comment. `dev` only: `staging` and `prod` are refused |
+| `just secrets-push --set KEY`                                        | same                                      | Stores one value read from a hidden prompt, or from standard input when that is not a terminal; the value is never an argument                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
+| `just secrets-updatekeys [env ...]`                                  | `scripts/security/secrets-updatekeys.sh`  | Re-wraps every (or the named) `secrets/<env>.enc.yaml` for the current recipient list in `.sops.yaml` via `sops updatekeys -y`; needs an identity that can decrypt today; values are never written to disk or printed                                                                                                                                                                                                                                                                                                                                                                                                                     |
+| `just secrets-approve <branch>`                                      | `scripts/security/secrets-approve.sh`     | Reviews a developer's onboarding branch: refuses (no file written, no `sops` invoked) unless it only adds `# developer:` comments and bare `age1...` recipients to `.sops.yaml`; otherwise re-wraps every `secrets/*.enc.yaml` for the new recipient list, commits, pushes, and prints the pull-request URL                                                                                                                                                                                                                                                                                                                               |
+| `just secrets-backup-done`                                           | `scripts/security/secrets-backup-done.sh` | Records today's date in `<identity path>.backed-up` (mode 600) so `just doctor` stops warning that your identity is not backed up                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
 
-`secrets-edit`, `secrets-sync`, and `secrets-updatekeys` check that `sops` and `age` are on PATH
-(mise), that `.sops.yaml` lists at least one `age1...` recipient for the environment, and (for
-anything that decrypts) that a private key is reachable via `SOPS_AGE_KEY`, `SOPS_AGE_KEY_FILE`, or
-`~/.config/sops/age/keys.txt`. They print key names and counts only, never values. `.env` is written
-with mode 600; if it does not exist it is first created from `.env.example`.
+`secrets-edit`, `secrets-sync`, `secrets-push`, and `secrets-updatekeys` check that `sops` and
+`age` are on PATH (mise), that `.sops.yaml` lists at least one `age1...` recipient for the
+environment, and (for anything that decrypts) that a private key is reachable via `SOPS_AGE_KEY`,
+`SOPS_AGE_KEY_FILE`, or `~/.config/sops/age/keys.txt` (`$XDG_CONFIG_HOME/sops/age/keys.txt` when
+that variable is set). That file is the default on Linux and macOS alike: on macOS sops alone
+would look in `~/Library/Application Support/sops/age/keys.txt`, so the scripts export
+`SOPS_AGE_KEY_FILE` for it. A bare `sops` command on a Mac needs the same variable. This is
+covered by a test with made-up keys and not yet confirmed on a real Mac. They print key names and
+counts only, never values. `.env` is written with mode 600; if it does not exist it is first
+created from `.env.example`.
 
 ## Rules
 
 - Only `*.enc.yaml` is committed. `*.dec.*` and `.env` are gitignored; `.gitleaks.toml` blocks age
   private keys and allowlists the encrypted files.
-- Keys in these files mirror `.env.example` exactly (that is what `secrets-edit` seeds); an empty
-  value means "no shared value, keep whatever the developer has locally".
+- Keys in these files mirror `.env.example` exactly (`secrets-edit` seeds them when it creates a
+  file, `secrets-push --apply` adds later ones and `--prune` removes dropped ones that are empty,
+  `--prune-values` as well for one that holds a value; `just doctor` warns when they differ); an
+  empty value means "no shared value, keep whatever the developer has locally".
 - Never paste a decrypted value into a terminal shared with an AI agent, a log, or a screenshot; if
   it happens, rotate same-day (planning/11).
 - GitHub Actions secrets hold only: the CI age private key (`SOPS_AGE_KEY`), store signing

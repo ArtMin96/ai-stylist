@@ -255,31 +255,17 @@ fi
 
 # --- 5. .env scaffold ------------------------------------------------------------------
 log ".env"
-# env_file_value KEY (scripts/lib.sh) reads a value from .env the way dotenv does.
 if [[ -f .env ]]; then
-  info ".env exists — only an empty DATABASE_URL is filled in (below)"
+  info ".env exists — only an empty DATABASE_URL and an empty APP_ENV are filled in (below)"
 else
   cp .env.example .env
   info "created .env from .env.example (empty values) — shared values come from: just secrets-sync"
 fi
-# .env.example keeps every value empty (scripts/ci/env-example-check.sh), but the API cannot reach a
-# database without one. Point an empty DATABASE_URL at the docker-compose Postgres documented in
-# .env.example, resolving the host port the way compose does: POSTGRES_HOST_PORT from the
-# environment, else from .env, else 5432. A non-empty value (hand-set or synced) is never touched;
-# secrets-sync skips keys whose shared value is empty, so it does not blank this one either.
-if [[ -z "$(env_file_value DATABASE_URL)" ]]; then
-  if [[ -n "${POSTGRES_HOST_PORT+set}" ]]; then pg_port="$POSTGRES_HOST_PORT"; else pg_port="$(env_file_value POSTGRES_HOST_PORT)"; fi
-  pg_port="${pg_port:-5432}"
-  local_db_url="postgres://ai_stylist:ai_stylist@localhost:${pg_port}/ai_stylist"
-  env_tmp="$(mktemp)"
-  awk -v url="$local_db_url" '
-    /^(export[[:space:]]+)?DATABASE_URL=/ { if (!done) print "DATABASE_URL=" url; done = 1; next }
-    { print }
-    END { if (!done) print "DATABASE_URL=" url }' .env > "$env_tmp"
-  cat "$env_tmp" > .env   # rewrite in place: keeps .env's existing mode (secrets-sync makes it 0600)
-  rm -f "$env_tmp"
-  info "DATABASE_URL was empty — set it to the local docker-compose Postgres (localhost:$pg_port)"
-fi
+# .env.example keeps every value empty (scripts/ci/env-example-check.sh), but two keys cannot stay
+# empty on a developer machine: DATABASE_URL (the docker-compose Postgres) and APP_ENV (`local`).
+# env_file_fill_local_defaults (scripts/lib.sh) fills each one only when it is empty; a value that
+# is already there, hand-set or synced, is never touched.
+env_file_fill_local_defaults
 if have direnv || mise_exec direnv --version >/dev/null 2>&1; then
   mise_exec direnv allow . 2>/dev/null || true
 fi

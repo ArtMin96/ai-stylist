@@ -14,6 +14,8 @@ outbox/job spans, span redaction). No business rule lives here.
   `jobs`, `service.version` = `APP_VERSION`, `deployment.environment.name` = `APP_ENV`, merged over
   the SDK defaults; only the env detector runs (`OTEL_SERVICE_NAME` and `OTEL_RESOURCE_ATTRIBUTES`
   win; no host or process detector, so no command line or host name leaves the process).
+  `processResource` runs that detector itself and sanitizes the merged resource before NodeSDK
+  (started with `autoDetectResources: false`) hands it to the three providers (see "Redaction").
   Propagation: W3C `traceparent` only (client `baggage` is not propagated). Sampler:
   `OTEL_TRACES_SAMPLER`, default parent-based always-on (100 % at launch volume).
 - `register.ts` + the `--import` entries `instrument-api.ts` / `instrument-jobs.ts`:
@@ -38,7 +40,8 @@ outbox/job spans, span redaction). No business rule lives here.
   parented on a carried `traceparent`, in the carried correlation scope; a throw records the error
   class and rethrows), `recordSpanError()`, and the attribute names.
 - `span-sanitizer.ts`: `SanitizingSpanExporter`, the export-side backstop for spans the OSS
-  instrumentations produce (see "Redaction").
+  instrumentations produce, and `sanitizeAttributes`, the one attribute rule it and `telemetry.ts`
+  apply (see "Redaction").
 - `metrics.ts`, `request-metrics.ts`, `queue-metrics.ts`: the `stylist.*` metrics catalog emitters
   (see "Metrics").
 
@@ -115,12 +118,41 @@ runs in its span, so the undici span of its worker call (and the header) continu
 
 ## Redaction
 
-Logs: `../logger.ts` (allowlist serializers + the shared-kernel denylist); the OTel log records are
-the pino lines after redaction (instrumentation-pino parses the written line). Spans:
-`SanitizingSpanExporter` drops `url.query`, `client.address`, `network.peer.address`,
-`user_agent.original`, `exception.message` and `exception.stacktrace`; cuts the query and fragment
-from `url.full`, `url.path`, `http.url` and `http.target`; drops span status messages; and redacts
-an attribute whose last dot-segment is a forbidden log word (`http.request.header.authorization`).
+Logs: `../logger.ts` (allowlist serializers for `req`, `res` and errors: an error is written as its
+class, a code-shaped code and its cause chain, never a message or stack; plus the shared-kernel
+denylist); the OTel log records are the pino lines after redaction (instrumentation-pino parses the
+written line).
+
+Attributes: one rule, `sanitizeAttributes` in `span-sanitizer.ts`. It drops `url.query`,
+`client.address`, `network.peer.address`, `user_agent.original`, `exception.message` and
+`exception.stacktrace`; cuts the query and fragment from `url.full`, `url.path`, `http.url` and
+`http.target`; and replaces with `[REDACTED]` the value of an attribute whose last dot-segment is a
+forbidden log word (`http.request.header.authorization`). A URL attribute is cut whatever its shape:
+the string, or each string of an array value (cut rather than dropped, so the path stays
+searchable). One function makes that cut, `stripQuery` in `../logger.ts` (everything from the first
+`?` or `#`): the same one the logged `req.url` and the problem `instance` (`../problem.filter.ts`)
+go through.
+
+Spans: `SanitizingSpanExporter` applies the attribute rule to the span's attributes, to every
+event's and to every link's (the linked trace id, span id and flags are kept); cuts the span name
+with `stripQuery`, because a span named from a raw request target or URL carries its query; and
+drops span status messages. `GET`, `outbox.dispatch <event type>` and `job.process <queue>` have
+nothing to cut. A route template that marks an optional parameter with `?` (Fastify's `/:id?`)
+would lose the marker in the span name; `http.route` keeps it. No route does today.
+
+Resource: NodeSDK gives one resource to the trace, metric and log providers, and only spans pass
+the span exporter, so sanitizing it per span would leave it as it was in metrics and log records.
+`processResource` in `telemetry.ts` therefore applies the attribute rule once to the merged
+resource (SDK defaults, the declared service attributes, then `OTEL_SERVICE_NAME` /
+`OTEL_RESOURCE_ATTRIBUTES`), and the exporter passes a span's resource on unchanged. What the
+dashboards and queries filter on passes untouched: `service.name` (labels `service_name` and
+`job`), `deployment.environment.name`, and with them `service.version`, `service.namespace`,
+`service.instance.id` and `telemetry.sdk.*`. An attribute named with a forbidden word
+(`deploy.api_token`) is exported as `[REDACTED]`.
+
+Not covered: the value under a key that is neither dropped, forbidden nor one of the four URL keys
+is not inspected (a URL with a query under `deploy.hook` passes); a span name is only cut, so a
+value in its path part stays; event names are passed on unchanged.
 
 ## Running
 
@@ -138,10 +170,13 @@ an attribute whose last dot-segment is a forbidden log word (`http.request.heade
 
 - `../tests/telemetry.process.test.ts`: the `--import` entries in a tsx child process against a stub
   OTLP receiver (no endpoint → no export and no `traceparent`; endpoint → traces, metrics and logs
-  with the resource, `OTEL_SERVICE_NAME` override, no query string or planted value exported).
+  with the resource, `OTEL_SERVICE_NAME` override, no query string or planted value exported; a
+  value planted in `OTEL_RESOURCE_ATTRIBUTES` reaches none of the three signals, while
+  `service.name`, `deployment.environment.name` and `service.namespace` reach all of them).
 - `../tests/logger.redaction.test.ts`: the canary, in process (`correlation_id`) and behind the entry
   (`trace_id` / `span_id`, nothing planted on stdout or in any OTLP body).
-- `../tests/trace-context.test.ts`: `runTraced`, `currentTraceparent`, the span sanitizer.
+- `../tests/trace-context.test.ts`: `runTraced`, `currentTraceparent`, the span sanitizer (span,
+  event and link attributes, array-valued URL attributes, the span name) and the sanitized resource.
 - `../tests/correlation.test.ts`: the Fastify hooks on a Nest app (echo, mint, scope across body
   parsing, every log line and the request span).
 - `../../jobs/tests/trace-propagation.docker.test.ts`: AC-1, one trace and one correlation id from

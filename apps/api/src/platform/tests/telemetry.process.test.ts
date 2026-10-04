@@ -1,10 +1,13 @@
 // The telemetry `--import` entries in a real child process (tsx, like `just dev-*`), against a stub
 // OTLP/HTTP receiver: no endpoint → nothing starts and nothing leaves the process; an endpoint →
 // traces, metrics and logs arrive over OTLP/protobuf with the process resource, the fetch carries
-// a W3C `traceparent`, log lines carry `trace_id`, and no planted value or query string is exported.
+// a W3C `traceparent`, log lines carry `trace_id`, and no planted value or query string is exported,
+// in a span or in the resource every signal carries.
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 
-import { CANARY } from './redaction-canary.js';
+import { REDACTED } from '../logger.js';
+
+import { CANARY, PLANTED_RESOURCE_ATTRIBUTES } from './redaction-canary.js';
 import {
   FIXTURE_CORRELATION_ID,
   FIXTURE_TEST_TIMEOUT_MS,
@@ -88,6 +91,35 @@ describe('telemetry --import entries', { timeout: FIXTURE_TEST_TIMEOUT_MS }, () 
       expect(receiver.bodies(path).includes(CANARY), path).toBe(false);
     }
     expect(run.stdout).not.toContain(CANARY);
+  });
+
+  it('sanitises the resource all three signals share; what dashboards filter on survives', async () => {
+    const run = await runTelemetryFixture({
+      entry: 'jobs',
+      receiverUrl: receiver.url,
+      env: {
+        OTEL_EXPORTER_OTLP_ENDPOINT: receiver.url,
+        OTEL_RESOURCE_ATTRIBUTES: PLANTED_RESOURCE_ATTRIBUTES,
+        APP_ENV: 'staging',
+      },
+    });
+
+    expect(run.code, run.stderr).toBe(0);
+    // Metrics and log records carry the resource too, and never pass the span exporter.
+    expect(OTLP_PATHS.filter((path) => receiver.bodies(path).includes(CANARY))).toEqual([]);
+    for (const path of OTLP_PATHS) {
+      const body = receiver.bodies(path);
+      for (const [key, value] of [
+        ['service.name', 'jobs'],
+        ['deployment.environment.name', 'staging'],
+        ['service.namespace', 'ai-stylist'],
+        ['deploy.api_token', REDACTED],
+        ['url.full', 'https://deploy.example/hook'],
+      ] as const) {
+        expect(body.includes(encodedStringAttribute(key, value)), `${path} ${key}`).toBe(true);
+      }
+      expect(body.includes('user_agent.original'), path).toBe(false);
+    }
   });
 
   it('lets OTEL_SERVICE_NAME override the default service name', async () => {

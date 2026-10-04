@@ -59,7 +59,8 @@ Same pipeline and rules as the API (`apps/api/src/platform/telemetry/README.md`)
   `OTEL_EXPORTER_OTLP_ENDPOINT` (or `OTEL_EXPORTER_OTLP_TRACES_ENDPOINT`) and
   `OTEL_EXPORTER_OTLP_HEADERS` itself. Resource: `service.name` = `segmentation`,
   `service.version` = `APP_VERSION` (else the package version), `deployment.environment.name` =
-  `APP_ENV` (omitted when empty); `OTEL_SERVICE_NAME` and `OTEL_RESOURCE_ATTRIBUTES` win. No host or
+  `APP_ENV` (omitted when empty; `just dev-workers` starts the worker with `local` in that case);
+  `OTEL_SERVICE_NAME` and `OTEL_RESOURCE_ATTRIBUTES` win. No host or
   process detector runs. The provider's `atexit` hook flushes pending spans on a graceful stop.
 - **Instrumentation:** `opentelemetry-instrumentation-fastapi`, one SERVER span per request that
   continues the caller's W3C `traceparent` (the jobs process's `fetch` span); propagation is

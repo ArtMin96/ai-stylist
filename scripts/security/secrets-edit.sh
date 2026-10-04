@@ -4,6 +4,8 @@
 # First run for an environment: creates the file from the .env.example key list (every key,
 # empty value) encrypted for the recipients in .sops.yaml, then opens it in $EDITOR like every
 # later run. Save + quit re-encrypts; commit the encrypted file through a PR.
+# Key names are seeded only on that first run. For a key .env.example gained later, or to copy
+# values from .env without typing them, use secrets-push.sh (`just secrets-push`).
 set -euo pipefail
 
 # shellcheck source=scripts/security/secrets-lib.sh
@@ -21,7 +23,7 @@ if [[ ! -f "$ENC_FILE" ]]; then
     trap 'rm -rf "$tmp"' EXIT
     {
         echo "# $ENV_NAME secrets. Keys mirror .env.example; leave a value empty to keep each developer's local .env value."
-        grep -E '^[A-Za-z_][A-Za-z0-9_]*=' .env.example | sed -E 's/=.*$/: ""/'
+        secrets_example_keys | sed 's/$/: ""/'
     } > "$tmp/template.yaml"
     # --filename-override picks the creation_rules entry (recipients) for the final path.
     # Encrypt to a temp file first so a failure never leaves an empty/plaintext $ENC_FILE behind.

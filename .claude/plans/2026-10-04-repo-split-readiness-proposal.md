@@ -14,6 +14,11 @@
 
 ### A. Home of the composed Drizzle schema and migrations (ADR-0008, draft)
 
+> **Owner decision 2026-10-04: keep `packages/db` where it is; no ADR-0008 for now.** The open point
+> stays recorded below: when P03 adds the first module table, its schema composition must be made to
+> pass `public-api-only-external` (e.g. modules export their table definitions through their public
+> `index.ts`), or the owner revisits this item.
+
 - **Problem:** `packages/db/src/schema/index.ts:1-3`, `packages/db/README.md` and ADR-0001 plan to
   re-export each module's `apps/api/src/modules/<name>/internal/schema.ts` from `packages/db`.
   depcruise `public-api-only-external` (`tools/depcruise/rules.cjs:87-93`) rejects exactly that import.

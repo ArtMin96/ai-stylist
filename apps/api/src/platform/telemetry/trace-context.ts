@@ -18,7 +18,7 @@ import {
   trace,
 } from '@opentelemetry/api';
 
-import { errorSummary } from '../queue/error-summary.js';
+import { errorSummary } from '../errors/error-shape.js';
 
 import { CORRELATION_ID_KEY, isValidCorrelationId, runWithCorrelationId } from './correlation.js';
 

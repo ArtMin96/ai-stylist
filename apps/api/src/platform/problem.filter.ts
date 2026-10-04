@@ -12,7 +12,6 @@ import { Logger } from 'nestjs-pino';
 import { type ErrorCode, type ProblemDetails, problem } from '@ai-stylist/shared-kernel';
 
 import { stripQuery } from './logger.js';
-import { isError } from './queue/error-summary.js';
 
 export const PROBLEM_CONTENT_TYPE = 'application/problem+json';
 
@@ -23,8 +22,8 @@ const STATUS_TO_CODE: Readonly<Record<number, ErrorCode>> = {
   404: 'NOT_FOUND',
   409: 'CONFLICT',
   410: 'ACCOUNT_DELETED',
-  // A request body in a media type the route does not accept: the request fails validation.
-  415: 'VALIDATION_FAILED',
+  // A request body in a media type the route does not accept (Fastify's content-type parser).
+  415: 'UNSUPPORTED_MEDIA_TYPE',
   429: 'RATE_LIMITED',
   503: 'SERVICE_UNAVAILABLE',
 };
@@ -33,6 +32,35 @@ const STATUS_TO_CODE: Readonly<Record<number, ErrorCode>> = {
 export type ProblemBody = ProblemDetails & Record<string, unknown>;
 
 type StatusCarrier = { statusCode?: unknown; status?: unknown };
+
+/**
+ * The only non-HttpException errors whose `detail` a 4xx problem carries: Fastify's own request
+ * errors from its content-type parser (fastify lib/errors.js), each with the fixed text Fastify
+ * writes. The detail is this table's text, never the thrown value's message, so even a value that
+ * spoofs one of these codes cannot echo free text. Any other thrown value with a 4xx `status` or
+ * `statusCode` (a provider SDK's HTTP error, whose message can quote a presigned URL with its
+ * signature) gets no `detail`; code that wants one throws an HttpException.
+ */
+const FASTIFY_REQUEST_ERROR_DETAIL: Readonly<Record<string, string>> = {
+  FST_ERR_CTP_INVALID_JSON_BODY:
+    "Body is not valid JSON but content-type is set to 'application/json'",
+  FST_ERR_CTP_EMPTY_JSON_BODY:
+    "Body cannot be empty when content-type is set to 'application/json'",
+  FST_ERR_CTP_INVALID_MEDIA_TYPE: 'Unsupported Media Type',
+  FST_ERR_CTP_BODY_TOO_LARGE: 'Request body is too large',
+  FST_ERR_CTP_INVALID_CONTENT_LENGTH: 'Request body size did not match Content-Length',
+};
+
+/** The table's fixed detail for a known Fastify request error, else none. */
+function fastifyRequestErrorDetail(exception: unknown): string | undefined {
+  if (typeof exception !== 'object' || exception === null || !('code' in exception)) {
+    return undefined;
+  }
+  const { code } = exception;
+  return typeof code === 'string' && Object.hasOwn(FASTIFY_REQUEST_ERROR_DETAIL, code)
+    ? FASTIFY_REQUEST_ERROR_DETAIL[code]
+    : undefined;
+}
 
 function statusOf(exception: unknown): number {
   if (exception instanceof HttpException) return exception.getStatus();
@@ -44,7 +72,11 @@ function statusOf(exception: unknown): number {
   return 500;
 }
 
-/** Map any thrown value to a problem body. 5xx never leak internals (doc 06 §2). */
+/**
+ * Map any thrown value to a problem body. 5xx never leak internals (doc 06 §2); a 4xx carries a
+ * `detail` only from an HttpException or a known Fastify request error
+ * (`FASTIFY_REQUEST_ERROR_DETAIL`), never another thrown value's message.
+ */
 export function toProblem(exception: unknown, instance: string): ProblemBody {
   const status = statusOf(exception);
   const code: ErrorCode = STATUS_TO_CODE[status] ?? 'INTERNAL';
@@ -67,8 +99,8 @@ export function toProblem(exception: unknown, instance: string): ProblemBody {
       detail = typeof d === 'string' ? d : typeof message === 'string' ? message : undefined;
       extensions = rest;
     }
-  } else if (isError(exception)) {
-    detail = exception.message;
+  } else {
+    detail = fastifyRequestErrorDetail(exception);
   }
   return { ...base, ...(detail !== undefined ? { detail } : {}), ...extensions };
 }

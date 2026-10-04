@@ -17,15 +17,20 @@ import { Logger } from 'nestjs-pino';
 import pino from 'pino';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
-import { FORBIDDEN_LOG_KEY_EXAMPLES, PROBLEM_TYPE_BASE } from '@ai-stylist/shared-kernel';
+import {
+  FORBIDDEN_LOG_KEY_EXAMPLES,
+  LOG_REDACTION_EXAMPLES,
+  LOG_REDACTION_RULES,
+  PROBLEM_TYPE_BASE,
+} from '@ai-stylist/shared-kernel';
 import { memoryLogStream } from '@ai-stylist/test-support';
 
 import {
-  MAX_ERR_CAUSE_DEPTH,
   REDACTED,
   childLogger,
   isForbiddenLogKey,
   loggerOptions,
+  pinoLogFormatter,
 } from '../logger.js';
 import { PROBLEM_CONTENT_TYPE } from '../problem.filter.js';
 import { runWithCorrelationId } from '../telemetry/correlation.js';
@@ -270,7 +275,9 @@ describe('logger redaction canary', () => {
 
     const [wrapped, loop] = sink.records();
     expect(wrapped?.['err']).toEqual({ type: 'Error', cause: DRIVER_ERROR_SUMMARY });
-    expect(JSON.stringify(loop?.['err']).match(/"cause"/g)).toHaveLength(MAX_ERR_CAUSE_DEPTH);
+    expect(JSON.stringify(loop?.['err']).match(/"cause"/g)).toHaveLength(
+      LOG_REDACTION_RULES.maxCauseDepth,
+    );
     expect(sink.text()).not.toContain(CANARY);
   });
 
@@ -318,6 +325,22 @@ describe('logger redaction canary', () => {
     });
     expect(sink.text()).not.toContain(CANARY);
   });
+
+  // The shared-kernel vectors every implementation checks (registry/log-redaction.json): a secret
+  // such as an access key id or a `tok_` token is not a PascalCase class name and never passes.
+  it.each(LOG_REDACTION_EXAMPLES.nestContext.kept)(
+    'the log formatter keeps the Nest context vector %j',
+    (context) => {
+      expect(pinoLogFormatter({ context })).toEqual({ context });
+    },
+  );
+
+  it.each(LOG_REDACTION_EXAMPLES.nestContext.redacted)(
+    'the log formatter redacts the Nest context vector %j',
+    (context) => {
+      expect(pinoLogFormatter({ context })).toEqual({ context: REDACTED });
+    },
+  );
 
   describe('through the API error path (Nest app, ProblemFilter, pino-http)', () => {
     const logs = memoryLogStream();
@@ -374,7 +397,9 @@ describe('logger redaction canary', () => {
       new NestLogger().log('free text as context', `note ${CANARY}`);
       new NestLogger().log('number as context', 31415926);
       new NestLogger('DemoService').log('named context');
-      NestLogger.log('static named context', 'demo.Worker');
+      NestLogger.log('static named context', 'OutboxRelay');
+      NestLogger.log('dotted name as context', 'demo.Worker');
+      NestLogger.log('access key as context', 'AKIAIOSFODNN7EXAMPLE');
 
       const added = logs.records().slice(before);
       expect(added.map((line) => [line['msg'], line['context']])).toEqual([
@@ -384,7 +409,9 @@ describe('logger redaction canary', () => {
         ['free text as context', REDACTED],
         ['number as context', REDACTED],
         ['named context', 'DemoService'],
-        ['static named context', 'demo.Worker'],
+        ['static named context', 'OutboxRelay'],
+        ['dotted name as context', REDACTED],
+        ['access key as context', REDACTED],
       ]);
       expect(logs.text()).not.toMatch(new RegExp(`${CANARY}|31415926`));
     });

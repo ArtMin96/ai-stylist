@@ -8,7 +8,7 @@ import type { Logger } from 'pino';
 
 import { childLogger } from '../logger.js';
 import type { JobHandler, QueueDefinition, QueueStatsSnapshot } from '../queue/pg-boss-queue.js';
-import { errorSummary } from '../queue/error-summary.js';
+import { errorSummary } from '../errors/error-shape.js';
 import { withTimeout } from '../resilience/timeout.js';
 
 import { METRIC_NAMES, stylistMeter } from './metrics.js';

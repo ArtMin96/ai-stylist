@@ -24,8 +24,9 @@ import {
   ATTR_USER_AGENT_ORIGINAL,
 } from '@opentelemetry/semantic-conventions';
 
+import { LOG_REDACTION_RULES } from '@ai-stylist/shared-kernel';
+
 import { REDACTED, isForbiddenLogKey, stripQuery } from '../logger.js';
-import { CODE_SHAPE, NAME_SHAPE } from '../queue/error-summary.js';
 
 /** The SDK's exporter and span types, taken from `NodeSDK`'s own configuration type. */
 export type SpanExporter = NodeSDKConfiguration['traceExporter'];
@@ -70,11 +71,13 @@ function cutUrlValue(value: AttributeValue): AttributeValue {
 /**
  * `exception.type` as the log `err.type` rule keeps it: OTel JS fills it from `String(err.code)`,
  * else `err.name`, and either can be free text. Kept when name-shaped (`TypeError`,
- * `grpc.ServiceError`) or code-shaped (`23505`, `ECONNREFUSED`, the same rules as
- * ../queue/error-summary.ts); anything else, a non-string included, becomes `Error`.
+ * `grpc.ServiceError`) or code-shaped (`23505`, `ECONNREFUSED`): `errorNameShape` and `codeShape`
+ * of `LOG_REDACTION_RULES`, the rules of ../errors/error-shape.ts. Anything else, a non-string
+ * included, becomes `Error`.
  */
 function exceptionType(value: AttributeValue): AttributeValue {
-  return typeof value === 'string' && (NAME_SHAPE.test(value) || CODE_SHAPE.test(value))
+  const { errorNameShape, codeShape } = LOG_REDACTION_RULES;
+  return typeof value === 'string' && (errorNameShape.test(value) || codeShape.test(value))
     ? value
     : 'Error';
 }

@@ -62,8 +62,8 @@ are decided by the callers.
 - **Logging and job output:** through the injected pino logger built from `../logger.ts`; fields
   are job id, queue, attempt, max attempts, error class and pg code — never job data or error
   messages. A failed job's stored pg-boss `output` (on the job row and its DLQ copy) is the same
-  `{ errorName, pgCode? }` (`error-summary.ts`: the class name only when identifier-shaped, else
-  `Error`), never the thrown error.
+  `{ errorName, pgCode? }` (`../errors/error-shape.ts`: the class name only when identifier-shaped,
+  else `Error`), never the thrown error.
 - **Tracing and correlation (planning/14 §2–§3):** each fetched job runs in a CONSUMER span
   `job.process <queue>` (`messaging.system` `pg-boss`, `messaging.operation.type` `process`,
   `messaging.destination.name`, `messaging.message.id` = job id, `job.attempt`, `correlation_id`)
@@ -84,7 +84,9 @@ are decided by the callers.
   timestamps, never job data.
 - **Files:** `queue-definition.ts` holds `QueueDefinition`, `MAX_WORK_BATCH_SIZE` and
   `deadLetterQueueName` (re-exported from `pg-boss-queue.ts`, so `queue-stats.ts` uses them
-  without an import cycle); `error-summary.ts`, `job-id.ts`, `pg-boss-schema.ts` as above.
+  without an import cycle); `job-id.ts`, `pg-boss-schema.ts` as above. The error summary is not a
+  queue file: `../errors/error-shape.ts` (`errorSummary`, `isError`) serves the logger, the outbox
+  relay, the problem filter and the span helpers too.
 
 Tests: `../tests/queue.docker.test.ts`, `../tests/queue-stats.docker.test.ts` (`readStats`) and,
 for the DEC-41 lifecycle acceptance cases (AC-4 kill/retry, AC-6 per-user cancel, AC-7 deletion,

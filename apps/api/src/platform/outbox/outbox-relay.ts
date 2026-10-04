@@ -21,7 +21,7 @@ import type { Sql } from 'postgres';
 import type { EventEnvelope, EventType } from '@ai-stylist/shared-kernel';
 
 import { childLogger } from '../logger.js';
-import { errorSummary, isError } from '../queue/error-summary.js';
+import { errorSummary, isError } from '../errors/error-shape.js';
 import type { EnqueueOptions, EnqueueResult } from '../queue/pg-boss-queue.js';
 import { type BackoffPolicy, backoffDelayMs } from '../resilience/backoff.js';
 import { TimeoutError, withTimeout } from '../resilience/timeout.js';

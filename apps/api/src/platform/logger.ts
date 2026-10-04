@@ -14,9 +14,9 @@ import type { Writable } from 'node:stream';
 import type { Bindings, LogFn, Logger, LoggerOptions } from 'pino';
 import type { Options as PinoHttpOptions } from 'pino-http';
 
-import { FORBIDDEN_LOG_KEYS } from '@ai-stylist/shared-kernel';
+import { FORBIDDEN_LOG_KEYS, LOG_REDACTION_RULES } from '@ai-stylist/shared-kernel';
 
-import { NAME_SHAPE, errorSummary, isError } from './queue/error-summary.js';
+import { errorSummary, isError } from './errors/error-shape.js';
 import { correlationLogFields } from './telemetry/correlation.js';
 
 export const REDACTED = '[REDACTED]';
@@ -38,8 +38,11 @@ export function isForbiddenLogKey(key: string): boolean {
     .some((word) => word.length > 0 && FORBIDDEN.has(word));
 }
 
-/** `cause` links of a logged error that are followed; the bound also ends a circular chain. */
-export const MAX_ERR_CAUSE_DEPTH = 5;
+/**
+ * `cause` links of a logged error that are followed; the bound also ends a circular chain. The
+ * registry value (`LOG_REDACTION_RULES.maxCauseDepth`), shared with the workers' logger.
+ */
+const { maxCauseDepth, nestContextShape } = LOG_REDACTION_RULES;
 
 /** Everything of a thrown value that may reach the sink. */
 type SerializedErr = {
@@ -66,14 +69,14 @@ function causeOf(value: unknown): unknown {
 
 /**
  * The allowlist for a logged error: its class, a code-shaped code and the same for its `cause`
- * chain (./queue/error-summary.ts is the rule for each link). Never the message, the stack or any
+ * chain (./errors/error-shape.ts is the rule for each link). Never the message, the stack or any
  * other field: a driver error's `detail`, `where`, `hint`, query and parameters echo row values,
  * and a wrapper's message can list the statement parameters.
  */
 function serializeErr(thrown: unknown, depth = 0): SerializedErr {
   const value = thrownValue(thrown);
   const { errorName, pgCode } = errorSummary(value);
-  const cause = depth < MAX_ERR_CAUSE_DEPTH ? causeOf(value) : undefined;
+  const cause = depth < maxCauseDepth ? causeOf(value) : undefined;
   return {
     type: errorName,
     ...(pgCode !== undefined ? { code: pgCode } : {}),
@@ -136,9 +139,14 @@ export const allowlistSerializers = {
  */
 const NEST_CONTEXT_KEY = 'context';
 
-/** A Nest logger context is kept only when it is a name (`NAME_SHAPE`); anything else is redacted. */
+/**
+ * A Nest logger context is kept only when it is a PascalCase class name (`nestContextShape` of
+ * `LOG_REDACTION_RULES`, e.g. `RoutesResolver`); anything else is redacted. Narrower than an error
+ * class name on purpose: an access key id (`AKIAIOSFODNN7EXAMPLE`), a `tok_…` token or a dotted
+ * path is identifier-shaped but not a class name, and the slot is free-form in a Nest call.
+ */
 function nestContext(entry: unknown): unknown {
-  return typeof entry === 'string' && NAME_SHAPE.test(entry) ? entry : REDACTED;
+  return typeof entry === 'string' && nestContextShape.test(entry) ? entry : REDACTED;
 }
 
 export const pinoLogFormatter = (object: Record<string, unknown>): Record<string, unknown> => {

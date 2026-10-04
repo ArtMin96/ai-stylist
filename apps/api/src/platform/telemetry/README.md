@@ -129,7 +129,8 @@ Attributes: one rule, `sanitizeAttributes` in `span-sanitizer.ts`. It drops `url
 `http.target`; and replaces with `[REDACTED]` the value of an attribute whose last dot-segment is a
 forbidden log word (`http.request.header.authorization`). It keeps `exception.type` only when it is
 name-shaped (`TypeError`, `grpc.ServiceError`) or code-shaped (`23505`, `ECONNREFUSED`), the
-`NAME_SHAPE` / `CODE_SHAPE` rules of `../queue/error-summary.ts`, and otherwise writes `Error`:
+`errorNameShape` / `codeShape` of `LOG_REDACTION_RULES` (`@ai-stylist/shared-kernel`, registry
+`log-redaction.json`; the rules `../errors/error-shape.ts` applies too), and otherwise writes `Error`:
 OTel JS fills it from `String(err.code)`, else `err.name`, and either can be free text. A URL attribute is cut whatever its shape:
 the string, or each string of an array value (cut rather than dropped, so the path stays
 searchable). One function makes that cut, `stripQuery` in `../logger.ts` (everything from the first

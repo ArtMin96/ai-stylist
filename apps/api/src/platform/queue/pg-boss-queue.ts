@@ -20,7 +20,7 @@ import {
   runTraced,
 } from '../telemetry/trace-context.js';
 
-import { errorSummary } from './error-summary.js';
+import { errorSummary } from '../errors/error-shape.js';
 import { jobIdForKey } from './job-id.js';
 import {
   MAX_WORK_BATCH_SIZE,

@@ -32,7 +32,13 @@ from opentelemetry.util.types import AttributeValue
 
 from ai_stylist_segmentation import SERVICE_NAME, __version__
 from ai_stylist_segmentation.app import create_app
-from ai_stylist_segmentation.redaction import redact_forbidden_keys, summarize_exc_info
+from ai_stylist_segmentation.redaction import (
+    caller_message_only,
+    drop_positional_args,
+    json_default,
+    redact_forbidden_keys,
+    summarize_exc_info,
+)
 from ai_stylist_segmentation.tracing import (
     SanitizingSpanExporter,
     add_trace_context,
@@ -59,15 +65,22 @@ def configure_logging(stream: IO[str] = sys.stdout, level: str | None = None) ->
     Lines carry `correlation_id` inside a request (`correlation.py`, via contextvars) and
     `trace_id` / `span_id` inside a recorded span (`tracing.add_trace_context`). A logged
     exception is its class, code and cause chain under `err` (`redaction.summarize_exc_info`),
-    never its message or traceback. Logs stay on stdout only: the OpenTelemetry Python logs SDK is
-    still in Development status.
+    never its message or traceback. The event is the caller's own string: printf-style arguments
+    are dropped, never interpolated (`redaction.drop_positional_args`; stdlib records use their
+    uninterpolated template). A record that still fails to format is dropped silently
+    (`logging.raiseExceptions = False`): `Handler.handleError` would print its message and
+    arguments to stderr. Logs stay on stdout only: the OpenTelemetry Python logs SDK is still in
+    Development status.
     """
     # `LOG_LEVEL=` (set but empty, the `.env.example` default) means "unset": INFO.
     log_level = logging.getLevelNamesMapping()[
         (level or os.environ.get("LOG_LEVEL") or "INFO").upper()
     ]
+    logging.raiseExceptions = False
     shared_processors: list[structlog.typing.Processor] = [
         structlog.contextvars.merge_contextvars,
+        # Before anything renders: never `PositionalArgumentsFormatter`, which interpolates.
+        drop_positional_args,
         structlog.stdlib.add_log_level,
         structlog.stdlib.add_logger_name,
         structlog.processors.TimeStamper(fmt="iso", utc=True),
@@ -79,21 +92,34 @@ def configure_logging(stream: IO[str] = sys.stdout, level: str | None = None) ->
     ]
     structlog.configure(
         processors=[
+            # Level filtering by the stdlib logger (root level below), first so nothing else runs.
+            structlog.stdlib.filter_by_level,
             *shared_processors,
             structlog.stdlib.ProcessorFormatter.wrap_for_formatter,
         ],
-        wrapper_class=structlog.make_filtering_bound_logger(log_level),
+        # Not `make_filtering_bound_logger`: it interpolates `event % args` before any processor
+        # runs. The stdlib `BoundLogger` keeps the args in `positional_args`, which
+        # `drop_positional_args` removes.
+        wrapper_class=structlog.stdlib.BoundLogger,
         logger_factory=structlog.stdlib.LoggerFactory(),
         cache_logger_on_first_use=False,
     )
     formatter = structlog.stdlib.ProcessorFormatter(
         # stdlib records (uvicorn, third parties): merge `extra=` first so it is redacted too.
-        foreign_pre_chain=[structlog.stdlib.ExtraAdder(), _drop_uvicorn_noise, *shared_processors],
+        foreign_pre_chain=[
+            structlog.stdlib.ExtraAdder(),
+            caller_message_only,
+            _drop_uvicorn_noise,
+            *shared_processors,
+        ],
         processors=[
             structlog.stdlib.ProcessorFormatter.remove_processors_meta,
             redact_forbidden_keys,
-            structlog.processors.JSONRenderer(sort_keys=True),
+            # Fails closed: a value JSON cannot encode is its class name, not its repr().
+            structlog.processors.JSONRenderer(sort_keys=True, default=json_default),
         ],
+        # The record's template, not `record.getMessage()` (which interpolates `record.args`).
+        use_get_message=False,
     )
     handler = logging.StreamHandler(stream)
     handler.setFormatter(formatter)

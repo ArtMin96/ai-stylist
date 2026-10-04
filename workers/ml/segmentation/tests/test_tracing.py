@@ -309,6 +309,54 @@ def test_sanitize_attributes_covers_old_and_new_http_names() -> None:
     }
 
 
+@pytest.mark.parametrize(
+    ("value", "kept"),
+    [
+        ("ValueError", "ValueError"),
+        ("grpc.ServiceError", "grpc.ServiceError"),
+        ("$Proxy_1", "$Proxy_1"),
+        ("E" * 64, "E" * 64),
+        ("23505", "23505"),
+        ("ECONNREFUSED", "ECONNREFUSED"),
+        (f"Leaky {MARKER}", "Error"),
+        ("E" * 65, "Error"),
+        ("1" * 33, "Error"),
+        ("", "Error"),
+        (42, "Error"),
+        ((MARKER,), "Error"),
+    ],
+    ids=[
+        "name",
+        "dotted-name",
+        "dollar-name",
+        "longest-name",
+        "sqlstate",
+        "system-code",
+        "free-text",
+        "too-long-name",
+        "too-long-code",
+        "empty",
+        "number",
+        "sequence",
+    ],
+)
+def test_exception_type_is_kept_only_when_name_or_code_shaped(
+    value: AttributeValue, kept: str
+) -> None:
+    assert sanitize_attributes({"exception.type": value}) == {"exception.type": kept}
+
+
+def test_a_free_text_exception_class_is_exported_as_error(traced: Traced) -> None:
+    leaky_class = type(f"Leaky {MARKER}", (ValueError,), {})
+    span = traced.provider.get_tracer("test").start_span("failing")
+    span.record_exception(leaky_class("x"))
+    span.end()
+
+    (out,) = traced.spans()
+    assert [dict(event.attributes or {}).get("exception.type") for event in out.events] == ["Error"]
+    assert MARKER not in _values(out)
+
+
 def test_every_string_of_a_sequence_valued_url_attribute_is_cut() -> None:
     attributes: dict[str, AttributeValue] = {
         "url.full": (f"https://a.example/x?sig={MARKER}", f"https://b.example/y#{MARKER}"),

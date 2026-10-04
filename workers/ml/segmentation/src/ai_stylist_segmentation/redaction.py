@@ -13,15 +13,30 @@ A logged exception mirrors the API logger's `err` serializer (`serializeErr`, wi
 `apps/api/src/platform/queue/error-summary.ts` for each link): `{type, code?, cause?}` only, under
 `err` for the exception being logged (`exc_info`) and in place of an exception under any other key.
 Never the message, the traceback or another attribute: a driver error's message echoes row values,
-and a wrapper's message can list statement parameters. Not covered, as in the API: free text the
-caller builds into the event itself (`log.error(f"failed: {error}")`).
+and a wrapper's message can list statement parameters. A `code` property that raises counts as
+no code. Any other value under `err` is `{type}` only: the API writes a non-Error by its JavaScript
+`typeof`, the worker by its Python class name (`str`, `dict`).
+
+The event is only the string the caller wrote: printf-style arguments are dropped, never
+interpolated (`drop_positional_args`; stdlib records keep their template), as the API logger's
+`hooks.logMethod` drops them. A stdlib message that is not a string is written as its class name.
+
+`_scrub` walks every mapping, list, tuple, set and frozenset. A container that holds itself is
+written as `[Circular]`; unlike the API's `redactForbidden`, which marks every repeated reference,
+a reference repeated outside a cycle is written in full. A value JSON cannot encode is written as
+its class name (`json_default`), never its repr. Unlike the API, which writes `[REDACTED]`, a
+forbidden key is dropped and counted under `redacted_keys`.
+
+Not covered, as in the API: free text the caller builds into the event itself
+(`log.error(f"failed: {error}")`).
 """
 
 from __future__ import annotations
 
+import logging
 import re
 import sys
-from collections.abc import MutableMapping
+from collections.abc import Mapping, MutableMapping
 from typing import Any
 
 FORBIDDEN_LOG_KEYS: frozenset[str] = frozenset(
@@ -70,11 +85,29 @@ ERR_KEY = "err"
 # `cause` links of a logged exception that are followed; the bound also ends a circular chain.
 MAX_ERR_CAUSE_DEPTH = 5
 # What a class name may look like to be logged (else `Error`): a dynamically created class can
-# carry any text as its name. ASCII `\w`, as the API's JavaScript pattern.
-_ERROR_NAME_SHAPE = re.compile(r"[A-Za-z_$][\w$.]{0,63}", re.ASCII)
+# carry any text as its name. ASCII `\w`, as `NAME_SHAPE` of the API's queue/error-summary.ts.
+ERROR_NAME_SHAPE = re.compile(r"[A-Za-z_$][\w$.]{0,63}", re.ASCII)
 # A code worth keeping (a SQLSTATE such as `23505`, a system code such as `ECONNREFUSED`): short and
 # code-shaped, never free text. `CODE_SHAPE` of the API's queue/error-summary.ts.
-_CODE_SHAPE = re.compile(r"[A-Z0-9_]{1,32}", re.ASCII)
+CODE_SHAPE = re.compile(r"[A-Z0-9_]{1,32}", re.ASCII)
+# What `_scrub` writes for a container already on the path from the root (a reference cycle).
+CIRCULAR = "[Circular]"
+
+
+def type_name(value: object) -> str:
+    """The class name of `value` when it is name-shaped, else `Error`."""
+    name = type(value).__name__
+    return name if ERROR_NAME_SHAPE.fullmatch(name) else "Error"
+
+
+def _code_of(error: BaseException) -> str | None:
+    """A code-shaped `code` attribute, or `None`. A `code` property that raises counts as none:
+    letting it escape would hand the record to `logging.Handler.handleError`."""
+    try:
+        code = getattr(error, "code", None)
+    except Exception:
+        return None
+    return code if isinstance(code, str) and CODE_SHAPE.fullmatch(code) else None
 
 
 def _cause_of(error: BaseException) -> BaseException | None:
@@ -88,10 +121,9 @@ def _cause_of(error: BaseException) -> BaseException | None:
 def summarize_error(error: BaseException, depth: int = 0) -> dict[str, Any]:
     """Everything of an exception that may reach a log line: its class name, a code-shaped `code`
     attribute, and the same for at most `MAX_ERR_CAUSE_DEPTH` links of its cause chain."""
-    name = type(error).__name__
-    summary: dict[str, Any] = {"type": name if _ERROR_NAME_SHAPE.fullmatch(name) else "Error"}
-    code = getattr(error, "code", None)
-    if isinstance(code, str) and _CODE_SHAPE.fullmatch(code):
+    summary: dict[str, Any] = {"type": type_name(error)}
+    code = _code_of(error)
+    if code is not None:
         summary["code"] = code
     cause = _cause_of(error) if depth < MAX_ERR_CAUSE_DEPTH else None
     if cause is not None:
@@ -114,33 +146,85 @@ def summarize_exc_info(
     _logger: Any, _method_name: str, event_dict: MutableMapping[str, Any]
 ) -> MutableMapping[str, Any]:
     """structlog processor in place of `format_exc_info`: replaces `exc_info` with the
-    `summarize_error` allowlist under `err`, so no message or traceback is rendered."""
+    `summarize_error` allowlist under `err`, so no message or traceback is rendered. Without a
+    logged exception, a value the caller put under `err` (`err=str(exc)`, a dict, stdlib
+    `extra={"err": ...}`) is the same allowlist when it is an exception, else `{type}` only, as the
+    API's `err` serializer writes a non-Error throw by its type."""
     exc_info = event_dict.pop("exc_info", None)
     error = _logged_exception(exc_info)
     if error is not None:
         event_dict[ERR_KEY] = summarize_error(error)
+    elif ERR_KEY in event_dict:
+        value = event_dict[ERR_KEY]
+        event_dict[ERR_KEY] = (
+            summarize_error(value)
+            if isinstance(value, BaseException)
+            else {"type": type_name(value)}
+        )
     return event_dict
 
 
-def _scrub(value: Any) -> tuple[Any, int]:
+# Where structlog's stdlib `BoundLogger` keeps `log.info("user %s", value)`'s `value`.
+POSITIONAL_ARGS_KEY = "positional_args"
+
+
+def drop_positional_args(
+    _logger: Any, _method_name: str, event_dict: MutableMapping[str, Any]
+) -> MutableMapping[str, Any]:
+    """structlog processor: the event is only the string the caller wrote. printf-style arguments
+    are dropped, never interpolated, as the API logger's `hooks.logMethod` drops them: `"failed
+    %s" % exc` would write the exception's message past every other processor."""
+    event_dict.pop(POSITIONAL_ARGS_KEY, None)
+    return event_dict
+
+
+def caller_message_only(
+    _logger: Any, _method_name: str, event_dict: MutableMapping[str, Any]
+) -> MutableMapping[str, Any]:
+    """`foreign_pre_chain` step for stdlib records: a message that is not a string
+    (`log.error(exc)`) is written as its class name (`type_name`), not as its `str()`. With the
+    formatter's `use_get_message=False`, a string message is its template, uninterpolated."""
+    record = event_dict.get("_record")
+    if isinstance(record, logging.LogRecord) and not isinstance(record.msg, str):
+        event_dict["event"] = type_name(record.msg)
+    return event_dict
+
+
+def _scrub(value: Any, path: set[int] | None = None) -> tuple[Any, int]:
     """Return a copy of `value` with forbidden keys removed at every depth + a drop count. An
-    exception, under any key and at any depth, becomes its `summarize_error` allowlist."""
+    exception, under any key and at any depth, becomes its `summarize_error` allowlist. Every
+    mapping is walked (a read-only `MappingProxyType` too), and lists, tuples, sets and frozensets
+    become lists. `path` holds the ids of the containers being walked: a container that holds
+    itself is written as `[Circular]` (a reference repeated outside a cycle is written in full)."""
     if isinstance(value, BaseException):
         return summarize_error(value), 0
-    if isinstance(value, MutableMapping):
-        dropped = 0
-        cleaned: dict[str, Any] = {}
-        for key, inner in value.items():
-            if is_forbidden_log_key(str(key)):
-                dropped += 1
-                continue
-            cleaned[key], inner_dropped = _scrub(inner)
-            dropped += inner_dropped
-        return cleaned, dropped
-    if isinstance(value, list | tuple):
-        items = [_scrub(item) for item in value]
+    if not isinstance(value, Mapping | list | tuple | set | frozenset):
+        return value, 0
+    path = set() if path is None else path
+    if id(value) in path:
+        return CIRCULAR, 0
+    path.add(id(value))
+    try:
+        if isinstance(value, Mapping):
+            dropped = 0
+            cleaned: dict[Any, Any] = {}
+            for key, inner in value.items():
+                if is_forbidden_log_key(str(key)):
+                    dropped += 1
+                    continue
+                cleaned[key], inner_dropped = _scrub(inner, path)
+                dropped += inner_dropped
+            return cleaned, dropped
+        items = [_scrub(item, path) for item in value]
         return [item for item, _ in items], sum(count for _, count in items)
-    return value, 0
+    finally:
+        path.discard(id(value))
+
+
+def json_default(value: object) -> str:
+    """`JSONRenderer`'s `default=` for a value JSON cannot encode: its class name, never its
+    `repr()` (structlog's own fallback), which can be any text."""
+    return type_name(value)
 
 
 def redact_forbidden_keys(

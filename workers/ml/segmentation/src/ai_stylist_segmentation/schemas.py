@@ -3,8 +3,10 @@
 The event envelope is the generated one (`just generate` → `workers/ml/generated`); it is
 re-exported here so the service consumes the contract and `just typecheck` catches drift.
 
-TODO(P02 T08): the HTTP request/response models below are local until
-`packages/contracts` publishes the worker schemas; then replace them with imports from
+TODO(repo-split readiness, do-now item 3 in
+`.claude/plans/2026-10-04-repo-split-readiness-proposal.md`): the HTTP request/response models
+below are hand-written, as are their twins in `apps/api/src/jobs/segmentation-client.ts`. Once
+the worker HTTP schemas move to `packages/contracts`, replace them with imports from
 `ai_stylist_generated` (single source of truth — root CLAUDE.md "Architectural invariants").
 """
 

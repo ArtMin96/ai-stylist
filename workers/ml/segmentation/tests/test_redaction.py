@@ -6,6 +6,7 @@ import io
 import json
 import logging
 from pathlib import Path
+from types import MappingProxyType
 
 import pytest
 import structlog
@@ -285,6 +286,160 @@ def test_stdlib_exception_keeps_its_class_and_code_only(log_stream: io.StringIO)
     assert record["event"] == "Exception in ASGI application"
     assert record[ERR_KEY] == {"type": "RuntimeError", "cause": DRIVER_ERROR_SUMMARY}
     assert "exception" not in record
+
+
+# --- the line carries only what the caller wrote, and a bad value never breaks it ---------------
+
+
+class RaisingCodeError(Exception):
+    """An exception whose `code` property raises with free text."""
+
+    @property
+    def code(self) -> str:
+        raise RuntimeError(f"code lookup {MARKER}")
+
+
+class Opaque:
+    """A value JSON cannot encode, whose repr is free text."""
+
+    def __repr__(self) -> str:
+        return f"Opaque({MARKER})"
+
+
+class Unprintable:
+    """A stdlib log message whose `str()` raises with free text."""
+
+    def __str__(self) -> str:
+        raise ValueError(f"str {MARKER}")
+
+
+def _worker_handler(stream: io.StringIO) -> logging.Handler:
+    """The JSON handler `configure_logging` installed on `stream` (not pytest's capture handler)."""
+    return next(
+        handler
+        for handler in logging.getLogger().handlers
+        if isinstance(handler, logging.StreamHandler) and handler.stream is stream
+    )
+
+
+def _stdlib_record(
+    msg: object, *args: object, exc_info: BaseException | None = None
+) -> logging.LogRecord:
+    """A stdlib record handed straight to the worker handler: pytest's own capture handler on the
+    root logger would otherwise format it too, and it fails the test on a formatting error."""
+    info = None if exc_info is None else (type(exc_info), exc_info, exc_info.__traceback__)
+    return logging.LogRecord("uvicorn.error", logging.ERROR, __file__, 1, msg, args, info)
+
+
+def test_positional_arguments_never_reach_the_line(log_stream: io.StringIO) -> None:
+    log = structlog.get_logger("canary")
+
+    log.error("failed %s", _driver_error())
+    log.info("user %s from %s", MARKER, MARKER)
+    logging.getLogger("uvicorn.error").error("stdlib failed %s", MARKER)
+
+    assert MARKER not in log_stream.getvalue()
+    records = _records(log_stream)
+    assert [record["event"] for record in records] == [
+        "failed %s",
+        "user %s from %s",
+        "stdlib failed %s",
+    ]
+    assert all("positional_args" not in record for record in records)
+
+
+def test_a_stdlib_message_that_is_not_a_string_is_logged_by_type(log_stream: io.StringIO) -> None:
+    logging.getLogger("uvicorn.error").error(_driver_error())
+
+    assert MARKER not in log_stream.getvalue()
+    (record,) = _records(log_stream)
+    assert record["event"] == "DriverError"
+
+
+def test_a_value_under_err_that_is_not_the_logged_exception_is_reduced_to_its_type(
+    log_stream: io.StringIO,
+) -> None:
+    log = structlog.get_logger("canary")
+
+    log.error("as text", err=str(_driver_error()))
+    log.error("as dict", err={"message": MARKER, "detail": [MARKER]})
+    log.error("as exception", err=_failed_query())
+    logging.getLogger("uvicorn.error").error("stdlib extra", extra={"err": MARKER})
+
+    assert MARKER not in log_stream.getvalue()
+    assert [record[ERR_KEY] for record in _records(log_stream)] == [
+        {"type": "str"},
+        {"type": "dict"},
+        {"type": "RuntimeError", "cause": DRIVER_ERROR_SUMMARY},
+        {"type": "str"},
+    ]
+
+
+def test_a_raising_code_property_is_skipped_on_both_paths(
+    log_stream: io.StringIO, capsys: pytest.CaptureFixture[str]
+) -> None:
+    structlog.get_logger("canary").error("structlog", exc_info=RaisingCodeError(MARKER))
+    stdlib_record = _stdlib_record("stdlib", exc_info=RaisingCodeError(MARKER))
+    _worker_handler(log_stream).handle(stdlib_record)
+
+    captured = capsys.readouterr()
+    assert MARKER not in log_stream.getvalue() + captured.out + captured.err
+    assert [record[ERR_KEY] for record in _records(log_stream)] == [
+        {"type": "RaisingCodeError"},
+        {"type": "RaisingCodeError"},
+    ]
+
+
+def test_a_cycle_is_written_as_circular(log_stream: io.StringIO) -> None:
+    cyclic: dict[str, object] = {"id": "c1"}
+    cyclic["self"] = cyclic
+    looped: list[object] = ["l1"]
+    looped.append(looped)
+    shared = {"id": "s1"}
+
+    structlog.get_logger("canary").info("cycles", job=cyclic, items=looped, a=shared, b=shared)
+
+    (record,) = _records(log_stream)
+    assert record["job"] == {"id": "c1", "self": "[Circular]"}
+    assert record["items"] == ["l1", "[Circular]"]
+    # A repeated reference that is not a cycle is written in full both times.
+    assert record["a"] == record["b"] == {"id": "s1"}
+
+
+def test_a_failing_handler_writes_nothing_to_stderr(
+    log_stream: io.StringIO, capsys: pytest.CaptureFixture[str]
+) -> None:
+    _worker_handler(log_stream).handle(_stdlib_record(Unprintable(), MARKER))
+
+    captured = capsys.readouterr()
+    assert MARKER not in log_stream.getvalue() + captured.out + captured.err
+    assert logging.raiseExceptions is False
+
+
+def test_read_only_mappings_and_sets_are_walked(log_stream: io.StringIO) -> None:
+    structlog.get_logger("canary").info(
+        "containers",
+        meta=MappingProxyType({"email": MARKER, "id": "m1"}),
+        failures={_driver_error()},
+        frozen=frozenset({_driver_error()}),
+        nested=[MappingProxyType({"inner": {_driver_error()}})],
+    )
+
+    assert MARKER not in log_stream.getvalue()
+    (record,) = _records(log_stream)
+    assert record["meta"] == {"id": "m1"}
+    assert record["failures"] == [DRIVER_ERROR_SUMMARY]
+    assert record["frozen"] == [DRIVER_ERROR_SUMMARY]
+    assert record["nested"] == [{"inner": [DRIVER_ERROR_SUMMARY]}]
+    assert record[REDACTED_COUNT_KEY] == 1
+
+
+def test_a_value_json_cannot_encode_is_written_as_its_type_name(log_stream: io.StringIO) -> None:
+    structlog.get_logger("canary").info("opaque", value=Opaque())
+    logging.getLogger("uvicorn.error").warning("opaque", extra={"value": Opaque()})
+
+    assert MARKER not in log_stream.getvalue()
+    assert [record["value"] for record in _records(log_stream)] == ["Opaque", "Opaque"]
 
 
 def test_uvicorn_access_logger_is_silenced(log_stream: io.StringIO) -> None:

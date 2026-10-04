@@ -15,8 +15,11 @@ It mirrors apps/api/src/platform/telemetry/span-sanitizer.ts (`sanitizeAttribute
   every link, and for the process resource: drop `url.query`, network identity, the user agent and
   exception message and stack trace (plus their old HTTP semantic-convention names, which the
   Python instrumentation emits without OTEL_SEMCONV_STABILITY_OPT_IN=http); redact an attribute
-  whose last dot-segment is a forbidden log word; cut every string of `url.full`, `url.path`,
-  `http.url` and `http.target` (a string or a sequence of strings) at the first `?` or `#`;
+  whose last dot-segment is a forbidden log word; keep `exception.type` only when it is name-shaped
+  (`redaction.ERROR_NAME_SHAPE`) or code-shaped (`redaction.CODE_SHAPE`), else write `Error` (the
+  shapes the API's error summary uses for a logged class name and code);
+  cut every string of `url.full`, `url.path`, `http.url` and `http.target` (a string or a sequence
+  of strings) at the first `?` or `#`;
 - the span name is cut at the first `?` or `#` (`_strip_query`, the API's `stripQuery`);
 - the status keeps its code and loses its description; the linked span context (trace id, span id,
   flags) of each link is kept;
@@ -25,7 +28,10 @@ It mirrors apps/api/src/platform/telemetry/span-sanitizer.ts (`sanitizeAttribute
 
 Every event name is cut the same way as the span name (an event named from a raw URL carries its
 query as a span name can). No span is dropped, no id or enum is changed. Not covered, as in the
-API: the value under a key that is neither dropped, forbidden nor a URL attribute is not inspected.
+API: the value under a key that is neither dropped, forbidden, `exception.type` nor a URL attribute
+is not inspected. The Python instrumentation writes `exception.type` as the class's module and name
+(`ValueError` for a builtin, `pkg.module.FooError` otherwise), so a class whose qualified name is
+longer than 64 characters or contains `<locals>` is exported as `Error` too.
 """
 
 from __future__ import annotations
@@ -41,6 +47,7 @@ from opentelemetry.semconv.attributes.client_attributes import CLIENT_ADDRESS
 from opentelemetry.semconv.attributes.exception_attributes import (
     EXCEPTION_MESSAGE,
     EXCEPTION_STACKTRACE,
+    EXCEPTION_TYPE,
 )
 from opentelemetry.semconv.attributes.network_attributes import NETWORK_PEER_ADDRESS
 from opentelemetry.semconv.attributes.url_attributes import URL_FULL, URL_PATH, URL_QUERY
@@ -48,7 +55,7 @@ from opentelemetry.semconv.attributes.user_agent_attributes import USER_AGENT_OR
 from opentelemetry.trace import Link, Status, format_span_id, format_trace_id
 from opentelemetry.util.types import AttributeValue
 
-from ai_stylist_segmentation.redaction import is_forbidden_log_key
+from ai_stylist_segmentation.redaction import CODE_SHAPE, ERROR_NAME_SHAPE, is_forbidden_log_key
 
 REDACTED = "[REDACTED]"
 
@@ -102,6 +109,15 @@ def _cut_url_value(value: AttributeValue) -> AttributeValue:
     return value
 
 
+def _exception_type(value: AttributeValue) -> str:
+    """`exception.type` kept only when it is a name-shaped or code-shaped string, else `Error`: the
+    instrumentation writes the class's module and name, and a dynamically created class can carry
+    any text as its name (the log rule of `redaction.type_name`)."""
+    if not isinstance(value, str):
+        return "Error"
+    return value if ERROR_NAME_SHAPE.fullmatch(value) or CODE_SHAPE.fullmatch(value) else "Error"
+
+
 def sanitize_attributes(
     attributes: Mapping[str, AttributeValue] | None,
 ) -> dict[str, AttributeValue]:
@@ -114,6 +130,8 @@ def sanitize_attributes(
             continue
         if is_forbidden_log_key(key.rsplit(".", 1)[-1]):
             out[key] = REDACTED
+        elif key == EXCEPTION_TYPE:
+            out[key] = _exception_type(value)
         else:
             out[key] = _cut_url_value(value) if key in URL_ATTRIBUTES else value
     return out

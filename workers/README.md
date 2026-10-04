@@ -48,11 +48,21 @@ workers/
   A logged exception is an allowlist, as the API logger's `err`: `summarize_exc_info` (in place of
   structlog's `format_exc_info`) writes `err: {type, code?, cause?}`, the class name (`Error` unless
   it matches `^[A-Za-z_$][\w$.]{0,63}$`), a `code` attribute only when it is code-shaped
-  (`^[A-Z0-9_]{1,32}$`, e.g. a SQLSTATE or `ECONNREFUSED`) and the same for at most 5 links of the
-  cause chain (`__cause__`, else the unsuppressed `__context__`); an exception under any other key
-  is replaced by the same summary. Never the message or the traceback. Not covered: text the caller
-  builds into the event itself. Inside a request every line carries `correlation_id`; inside a
-  traced request also `trace_id` and `span_id`. `tests/test_redaction.py` is the canary.
+  (`^[A-Z0-9_]{1,32}$`, e.g. a SQLSTATE or `ECONNREFUSED`; a `code` property that raises counts as
+  none) and the same for at most 5 links of the cause chain (`__cause__`, else the unsuppressed
+  `__context__`); an exception under any other key is replaced by the same summary. Without a
+  logged exception, any other value under `err` (`err=str(exc)`, a dict, stdlib
+  `extra={"err": ...}`) is `{type}` only, its Python class name (the API writes a non-Error by its
+  `typeof`). Never the message or the traceback. The event is the caller's own string: printf-style
+  arguments are dropped, never interpolated, as the API logger drops them (structlog's stdlib
+  `BoundLogger` + `drop_positional_args`, not `make_filtering_bound_logger`, which interpolates;
+  stdlib records keep their template, and a non-string stdlib message is its class name). Every
+  mapping (also `MappingProxyType`), list, tuple, set and frozenset is walked; a container that
+  holds itself is written as `[Circular]`; a value JSON cannot encode is its class name, never its
+  repr. A record that still fails to format is dropped silently (`logging.raiseExceptions = False`),
+  so `Handler.handleError` never prints its message and arguments to stderr. Not covered: text the
+  caller builds into the event itself. Inside a request every line carries `correlation_id`; inside
+  a traced request also `trace_id` and `span_id`. `tests/test_redaction.py` is the canary.
 - **Honesty:** every generated result carries `provenance {generated, model, confidence}`.
 
 ## Telemetry (planning/14 §2–§3, ADR-0007)
@@ -90,8 +100,11 @@ semantic-convention names of the dropped attributes are dropped too. Grafana set
   and of every link: it drops `url.query`, `client.address`, `network.peer.address`,
   `user_agent.original`, `exception.message`, `exception.stacktrace` (and their old-convention
   names), cuts the query and fragment from every string of `url.full`/`url.path`/`http.url`/
-  `http.target` (a string or a sequence of strings; cut, not dropped), keeps `exception.type`, and
-  replaces with `[REDACTED]` any attribute whose last dot-segment is a forbidden word. It also cuts
+  `http.target` (a string or a sequence of strings; cut, not dropped), keeps `exception.type` only
+  when it is name-shaped (`^[A-Za-z_$][\w$.]{0,63}$`) or code-shaped (`^[A-Z0-9_]{1,32}$`) and
+  writes `Error` otherwise (the instrumentation writes `module.QualName`, so a free-text class name,
+  a qualified name over 64 characters or one with `<locals>` becomes `Error`), and replaces with
+  `[REDACTED]` any attribute whose last dot-segment is a forbidden word. It also cuts
   the span name and every event name at the first `?` or `#`, drops the status description and
   keeps each link's trace id, span id and flags.
 - **Correlation id** (`correlation.py`): the `x-correlation-id` request header is accepted when it

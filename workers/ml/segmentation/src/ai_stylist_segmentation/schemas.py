@@ -1,22 +1,27 @@
 """Request/response models for the segmentation service.
 
-The event envelope is the generated one (`just generate` → `workers/ml/generated`); it is
-re-exported here so the service consumes the contract and `just typecheck` catches drift.
+Every model comes from the generated package (`just generate` → `workers/ml/generated`), never a
+hand-written twin: the HTTP contract from `packages/contracts/workers/segmentation/` and the event
+envelope from `packages/contracts/events/` (single source of truth — root CLAUDE.md
+"Architectural invariants"); `just generate --check` fails when they drift from the schema. The
+API-side twin in `apps/api/src/jobs/segmentation-client.ts` is still hand-written (its owner moves
+it to the generated TS contract).
 
-TODO(repo-split readiness, do-now item 3 in
-`.claude/plans/2026-10-04-repo-split-readiness-proposal.md`): the HTTP request/response models
-below are hand-written, as are their twins in `apps/api/src/jobs/segmentation-client.ts`. Once
-the worker HTTP schemas move to `packages/contracts`, replace them with imports from
-`ai_stylist_generated` (single source of truth — root CLAUDE.md "Architectural invariants").
+`MaskLabel` and `MaskRef` are re-exported as generated. The models this service builds or receives
+whole are thin subclasses that only add `frozen=True` (the generated models are mutable): a
+handler cannot mutate its request, and `routes.STUB_PROVENANCE`, one instance shared by every
+response, cannot be changed by one of them. Fields, constraints and `extra="forbid"` are the
+generated ones; a nested field keeps its generated type, so a reply parsed from JSON holds
+generated (mutable) `Provenance` / `MaskRef` values.
 """
 
 from __future__ import annotations
 
-from typing import Literal
-
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import ConfigDict
 
 from ai_stylist_generated.events.envelope import EventEnvelope
+from ai_stylist_generated.segmentation import segmentation_v1 as contract
+from ai_stylist_generated.segmentation.segmentation_v1 import MaskLabel, MaskRef
 
 __all__ = [
     "EventEnvelope",
@@ -28,59 +33,26 @@ __all__ = [
     "SegmentResponse",
 ]
 
-MaskLabel = Literal["top", "bottom", "dress", "outerwear", "shoes", "accessory", "background"]
+
+class SegmentRequest(contract.SegmentRequest):
+    """`POST /v1/segment` body: an R2 object reference, never image bytes or user data."""
+
+    model_config = ConfigDict(frozen=True)
 
 
-class SegmentRequest(BaseModel):
-    """Segment one garment photo already stored in R2.
-
-    The worker never receives image bytes or user data — only an object reference
-    (doc 04 §2: media lives in R2; workers are stateless glue).
-    """
-
-    model_config = ConfigDict(extra="forbid", frozen=True)
-
-    request_id: str = Field(min_length=1, max_length=128, description="Caller correlation ID")
-    image_ref: str = Field(
-        min_length=1, max_length=1024, description="R2 object key of the source image"
-    )
-    hint: MaskLabel | None = Field(
-        default=None, description="Optional garment class hint from the closet taxonomy"
-    )
-
-
-class Provenance(BaseModel):
+class Provenance(contract.Provenance):
     """Honesty marker: every generated view carries provenance + confidence."""
 
-    model_config = ConfigDict(extra="forbid", frozen=True)
-
-    generated: bool = True
-    model: str = Field(min_length=1, description="Model identifier that produced the result")
-    confidence: float = Field(ge=0.0, le=1.0)
+    model_config = ConfigDict(frozen=True)
 
 
-class MaskRef(BaseModel):
-    """A derived mask stored back to R2 (never inline pixels)."""
+class SegmentResponse(contract.SegmentResponse):
+    """`POST /v1/segment` reply: mask references plus the provenance marker."""
 
-    model_config = ConfigDict(extra="forbid", frozen=True)
-
-    label: MaskLabel
-    mask_ref: str = Field(min_length=1, max_length=1024)
-    score: float = Field(ge=0.0, le=1.0)
+    model_config = ConfigDict(frozen=True)
 
 
-class SegmentResponse(BaseModel):
-    model_config = ConfigDict(extra="forbid", frozen=True)
+class HealthResponse(contract.HealthResponse):
+    """`GET /health` reply."""
 
-    request_id: str
-    image_ref: str
-    masks: list[MaskRef] = Field(default_factory=list)
-    provenance: Provenance
-
-
-class HealthResponse(BaseModel):
-    model_config = ConfigDict(extra="forbid", frozen=True)
-
-    status: Literal["ok"]
-    service: str
-    version: str
+    model_config = ConfigDict(frozen=True)

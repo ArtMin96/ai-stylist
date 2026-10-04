@@ -1,16 +1,18 @@
 from __future__ import annotations
 
 import asyncio
-from typing import get_args
 
+import pytest
 from fastapi import FastAPI
 from httpx import ASGITransport, AsyncClient, Response
 from hypothesis import given, settings
 from hypothesis import strategies as st
+from pydantic import ValidationError
 
+from ai_stylist_segmentation.routes import STUB_PROVENANCE
 from ai_stylist_segmentation.schemas import MaskLabel, SegmentRequest, SegmentResponse
 
-_LABELS: tuple[MaskLabel, ...] = get_args(MaskLabel)
+_LABELS: tuple[MaskLabel, ...] = tuple(MaskLabel)
 
 segment_requests = st.builds(
     SegmentRequest,
@@ -48,6 +50,23 @@ async def test_segment_rejects_missing_image_ref(client: AsyncClient) -> None:
     response = await client.post("/v1/segment", json={"request_id": "r"})
 
     assert response.status_code == 422
+
+
+async def test_segment_rejects_a_hint_outside_the_mask_labels(client: AsyncClient) -> None:
+    payload = {"request_id": "r", "image_ref": "k", "hint": "hat"}
+
+    response = await client.post("/v1/segment", json=payload)
+
+    assert response.status_code == 422
+    assert response.json()["detail"][0]["loc"] == ["body", "hint"]
+
+
+def test_the_shared_stub_provenance_cannot_be_mutated() -> None:
+    # One instance backs every reply; a handler must not be able to change it for the next one.
+    with pytest.raises(ValidationError, match="frozen"):
+        STUB_PROVENANCE.confidence = 1.0
+
+    assert STUB_PROVENANCE.confidence == 0.0
 
 
 async def _post_segment(app: FastAPI, request: SegmentRequest) -> Response:

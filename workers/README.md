@@ -20,7 +20,7 @@ workers/
         │   ├── main.py        composition root: configures logging + tracing, builds `app` (uvicorn target)
         │   ├── app.py         `create_app()` factory + correlation-id and body-free access-log middleware
         │   ├── routes.py      GET /health, POST /v1/segment (thin adapters, no domain logic)
-        │   ├── schemas.py     Pydantic request/response models; re-exports the generated envelope
+        │   ├── schemas.py     the generated HTTP contract + envelope; frozen subclasses of the models it builds
         │   ├── redaction.py   forbidden log words, error shapes + the structlog redaction processor
         │   ├── correlation.py `x-correlation-id`: validate or mint, bind to logs + span, echo
         │   └── tracing.py     span sanitizer (OTLP export backstop) + `trace_id`/`span_id` log processor

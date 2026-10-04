@@ -66,7 +66,7 @@ just arch-check
 just ci-parity                        # before opening the PR
 ```
 
-oasdiff runs inside `just lint` only when `OASDIFF_BASE` is set. The contracts job in `.github/workflows/pr-gate.yml` is the authoritative breaking-change check: it runs `scripts/ci/contracts-breaking.sh` against the PR base. If you did not run oasdiff locally, write `oasdiff: not run — <reason>`. If a native toolchain is missing, write `Not run: just test ios — <reason>`; never claim the Swift or Kotlin client compiles without that output.
+oasdiff runs inside `just lint` only when `OASDIFF_BASE` is set. The contracts job in `.github/workflows/pr-gate.yml` is the authoritative breaking-change check: it runs `scripts/ci/contracts-breaking.sh` against the PR base: oasdiff at `--fail-on WARN` plus the event-schema check, which needs a new `.vN+1` schema for any removed, newly required or retyped field, removed enum value or tightened `additionalProperties`. If you did not run oasdiff locally, write `oasdiff: not run — <reason>`. If a native toolchain is missing, write `Not run: just test ios — <reason>`; never claim the Swift or Kotlin client compiles without that output.
 
 ## Output
 

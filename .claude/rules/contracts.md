@@ -14,8 +14,9 @@ paths:
 
 **Proof:** `just generate && just generate --check`; then `just test <module>` for each consuming API
 module, `just test` (the package tests have no scoped route), and
-`just lint && just typecheck && just arch-check`. The pr-gate also runs spectral and oasdiff through
-`scripts/ci/contracts-spectral.sh` and `scripts/ci/contracts-breaking.sh`.
+`just lint && just typecheck && just arch-check`. The pr-gate also runs spectral, oasdiff (`--fail-on WARN`) and the event-schema breaking check
+(`packages/contracts/scripts/events-breaking.mjs`) through `scripts/ci/contracts-spectral.sh` and
+`scripts/ci/contracts-breaking.sh`.
 
 **Invariants that bite here:**
 1. Single-writer (root `CLAUDE.md` "Parallel sessions"): no other session edits `packages/contracts/` or

@@ -331,7 +331,7 @@ R2, Checked 2026-09-10 at <https://developers.cloudflare.com/r2/pricing/>: free 
 
 ### What to record
 
-- `.env.example` keys: `R2_ACCOUNT_ID`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`, `R2_BUCKET`, `R2_PUBLIC_BASE_URL` (one set per environment).
+- `.env.example` keys: `R2_ACCOUNT_ID`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`, `R2_BUCKET`, `R2_PUBLIC_BASE_URL` (one set per environment); `R2_LIVE_TEST` (machine-local opt-in for the live test suite, empty by default).
 - Overview table: bucket names (media, public assets, backups), jurisdiction chosen.
 
 ### Do not
@@ -342,7 +342,7 @@ R2, Checked 2026-09-10 at <https://developers.cloudflare.com/r2/pricing/>: free 
 
 ### Verify
 
-No repo command exists until P02-T13 lands the adapter and its `*.sec.test.ts` suite; then `just test platform` exercises presigned PUT/GET against the configured bucket. Until then, `just doctor` confirms the keys are present in `.env`, and the bucket page in the dashboard lists `ai-stylist-dev` with zero objects.
+With the four `R2_*` keys in `.env` (`just secrets-sync`; direnv loads them), run `R2_LIVE_TEST=1 just test platform`. The suite `apps/api/src/platform/tests/r2-storage.live.sec.test.ts` checks presigned PUT and GET against the configured bucket: a signed upload succeeds, and R2 refuses another content type, another size, an edited URL, another user's prefix and an expired URL. It overwrites one synthetic object under `u/usr_0000000000000000000000TEST/`. Without `R2_LIVE_TEST=1` it is skipped; it refuses to run with `APP_ENV` staging or prod, or against a bucket whose name does not end in `-dev` or `-local`. Paste one run on Linear AI-21. Without the keys, `just doctor` confirms which are missing, and the bucket page in the dashboard lists `ai-stylist-dev` with zero objects.
 
 ## 7. Expo / EAS (removed)
 

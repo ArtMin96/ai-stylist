@@ -6,5 +6,6 @@ export * from './errors.js';
 export * from './reason-codes.js';
 export * from './entitlements.js';
 export * from './forbidden-log-keys.js';
+export * from './log-redaction.js';
 export * from './owners.js';
 export * from './feature-flags.js';

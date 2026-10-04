@@ -33,6 +33,15 @@ describe('problem()', () => {
     }
   });
 
+  it('has a 415 code of its own, so an unsupported Content-Type is not a 400 validation failure', () => {
+    expect(problem('UNSUPPORTED_MEDIA_TYPE')).toEqual({
+      type: `${PROBLEM_TYPE_BASE}/UNSUPPORTED_MEDIA_TYPE`,
+      title: 'Unsupported media type',
+      status: 415,
+      code: 'UNSUPPORTED_MEDIA_TYPE',
+    });
+  });
+
   it('includes the codes doc 06 §2 names', () => {
     expect(ERROR_CODES).toHaveProperty('CLOSET_LIMIT_REACHED');
     expect(ERROR_CODES).toHaveProperty('ENTITLEMENT_REQUIRED');

@@ -2,7 +2,7 @@
   "name": "@ai-stylist/shared-kernel",
   "version": "0.1.0",
   "private": true,
-  "description": "Pure types, constants, and registries shared by every module: ULID prefixes, units, event envelope, error/reason/entitlement registries, forbidden log keys, feature-flag and owners registries (docs/modules/shared-kernel.md).",
+  "description": "Pure types, constants, and registries shared by every module: ULID prefixes, units, event envelope, error/reason/entitlement registries, forbidden log keys, log and span error-shape rules, feature-flag and owners registries (docs/modules/shared-kernel.md).",
   "type": "module",
   "types": "./src/index.ts",
   "exports": {

@@ -5,10 +5,15 @@
 //
 //   node packages/contracts/scripts/events-breaking.mjs --base-ref <git-ref> [--repo <dir>]
 //   node packages/contracts/scripts/events-breaking.mjs --base-dir <dir> --head-dir <dir>
+//   pnpm --filter @ai-stylist/contracts run breaking:events --base-ref <git-ref>
 //
-// --base-ref reads the base schemas from git (`git show <ref>:packages/contracts/events/<f>`) and
-// compares them with the working tree. --base-dir/--head-dir compare two directories (the tests'
-// fixtures). Only top-level *.json files are event schemas; analytics/ is a separate taxonomy.
+// The events dir is this package's events/, resolved from this file (package-relative). --base-ref
+// reads the base schemas from git (`git show <ref>:<events dir>/<f>`, where <events dir> is that
+// directory relative to `git rev-parse --show-toplevel`, `packages/contracts/events` here) and
+// compares them with the working tree of the repository: the package's own, or --repo <dir> with
+// the same layout (the tests' throwaway repos). --base-dir/--head-dir compare two directories (the
+// tests' fixtures). Only top-level *.json files are event schemas; analytics/ is a separate
+// taxonomy.
 //
 // A schema version is keyed by its `properties.type.const` (the `<module>.<entity>.<action>.vN`
 // event type), else its `$id`, else its file name, so moving a schema to another file is not a
@@ -23,12 +28,13 @@
 // Exit codes: 0 no breaking change (or nothing on the base to compare), 1 breaking change,
 // 2 usage, git or JSON error.
 import { execFileSync } from 'node:child_process';
-import { existsSync, readdirSync, readFileSync } from 'node:fs';
+import { existsSync, readdirSync, readFileSync, realpathSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-const EVENTS_DIR = 'packages/contracts/events';
-const DEFAULT_REPO = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..', '..');
+/** This package's events/ directory, resolved from this file, wherever the package sits. */
+const PACKAGE_DIR = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+const PACKAGE_EVENTS_DIR = path.join(PACKAGE_DIR, 'events');
 
 class UsageError extends Error {}
 
@@ -64,10 +70,23 @@ function git(repo, args) {
   }
 }
 
+/**
+ * The events dir as a repo-relative posix path (`packages/contracts/events` in this monorepo): this
+ * package's events/ relative to the top level of the git repository that holds the package.
+ */
+export function eventsRepoPath() {
+  const top = git(PACKAGE_DIR, ['rev-parse', '--show-toplevel']).trim();
+  const rel = path.relative(realpathSync(top), realpathSync(PACKAGE_EVENTS_DIR));
+  if (rel === '' || rel.startsWith('..') || path.isAbsolute(rel)) {
+    throw new UsageError(`${PACKAGE_EVENTS_DIR} is not inside the git repository ${top}`);
+  }
+  return rel.split(path.sep).join(path.posix.sep);
+}
+
 /** Map<file name, schema> of the top-level event schemas at `ref`; empty when the dir is absent. */
-export function loadRef(repo, ref) {
+export function loadRef(repo, ref, eventsDir = eventsRepoPath()) {
   git(repo, ['rev-parse', '--verify', '--quiet', `${ref}^{commit}`]);
-  const listing = git(repo, ['ls-tree', '--name-only', ref, '--', `${EVENTS_DIR}/`]);
+  const listing = git(repo, ['ls-tree', '--name-only', ref, '--', `${eventsDir}/`]);
   const out = new Map();
   for (const file of listing.split('\n').filter((f) => f.endsWith('.json'))) {
     out.set(
@@ -263,15 +282,19 @@ function main(argv) {
   let baseFiles;
   let headFiles;
   if (opts['base-ref']) {
-    const repo = path.resolve(opts.repo ?? DEFAULT_REPO);
-    baseFiles = loadRef(repo, opts['base-ref']);
+    const eventsDir = eventsRepoPath();
+    const repo =
+      opts.repo !== undefined
+        ? path.resolve(opts.repo)
+        : git(PACKAGE_DIR, ['rev-parse', '--show-toplevel']).trim();
+    baseFiles = loadRef(repo, opts['base-ref'], eventsDir);
     if (baseFiles.size === 0) {
       process.stdout.write(
         `events-breaking: no event schemas at ${opts['base-ref']} - nothing to compare\n`,
       );
       return 0;
     }
-    headFiles = loadDir(path.join(repo, EVENTS_DIR));
+    headFiles = loadDir(path.join(repo, ...eventsDir.split(path.posix.sep)));
   } else {
     baseFiles = loadDir(opts['base-dir']);
     headFiles = loadDir(opts['head-dir']);

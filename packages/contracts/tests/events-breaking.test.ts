@@ -182,4 +182,24 @@ describe('events-breaking --base-ref', () => {
     expect(run('--base-ref', 'no-such-ref', '--repo', repoWith('base')).status).toBe(2);
     expect(run('--base-dir', FIXTURES).status).toBe(2);
   });
+
+  it('finds its own repository and events dir from the script file, whatever the cwd', () => {
+    // HEAD against the committed tree: the package's events/, located without --repo from a cwd
+    // outside the repository.
+    const res = spawnSync(process.execPath, [SCRIPT, '--base-ref', 'HEAD'], {
+      cwd: tempDir(),
+      encoding: 'utf8',
+    });
+    expect(`${res.stdout}${res.stderr}`).toMatch(/events-breaking: (OK|no event schemas)/);
+    expect(res.status).toBe(0);
+  });
+});
+
+describe('the breaking:events package script', () => {
+  it('runs this gate, so it travels with the package', () => {
+    const manifest = JSON.parse(readFileSync(path.resolve(HERE, '../package.json'), 'utf8')) as {
+      scripts: Record<string, string>;
+    };
+    expect(manifest.scripts['breaking:events']).toBe('node scripts/events-breaking.mjs');
+  });
 });

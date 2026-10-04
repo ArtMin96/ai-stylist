@@ -32,5 +32,9 @@ must still have that version and must not remove a property, newly require one, 
 narrow a type, remove an enum value (or add an enum/const), or tighten `additionalProperties` /
 `unevaluatedProperties`. It follows properties, array items and local `$ref`s; it does not compare
 `allOf`/`anyOf`/`oneOf` or value constraints (pattern, length, range). Run it alone with
-`node packages/contracts/scripts/events-breaking.mjs --base-ref <git-ref>`;
-`tests/events-breaking.test.ts` pins it with the fixtures in `tests/fixtures/events-breaking/`.
+`pnpm --filter @ai-stylist/contracts run breaking:events --base-ref <git-ref>` (or
+`node packages/contracts/scripts/events-breaking.mjs --base-ref <git-ref>`, which needs no
+install). The script finds this package's `events/` from its own location and reads the base side
+from git at that directory's path relative to `git rev-parse --show-toplevel`, so it works from any
+cwd and wherever the package sits; `tests/events-breaking.test.ts` pins it with the fixtures in
+`tests/fixtures/events-breaking/`.

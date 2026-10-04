@@ -22,6 +22,7 @@
     "./openapi.bundle.json": "./gen/openapi.bundle.json"
   },
   "scripts": {
+    "breaking:events": "node scripts/events-breaking.mjs",
     "bundle": "redocly bundle openapi/openapi.yaml --output gen/openapi.bundle.json",
     "gen": "../../tools/codegen/gen-ts.sh",
     "generate": "pnpm run gen",

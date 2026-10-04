@@ -8,13 +8,13 @@ writes it. Change a contract with the `api-contract-change` skill.
 
 ## Contract gates
 
-| Gate                        | Command                                                      | Fails on                                                                                                   |
-| --------------------------- | ------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------- |
-| Generated output is current | `just generate --check`                                      | any stale file under `gen/`, the Swift/Kotlin clients, the kernel or `workers/ml/generated`                |
-| OpenAPI lint                | `just lint` (contracts `lint`), `just ci-contracts-spectral` | a spectral finding of severity `warn` or higher (`.spectral.yaml`)                                         |
-| Breaking change, base vs PR | `just ci-contracts-breaking <base-sha>`                      | an oasdiff `WARN` or `ERR` finding on `gen/openapi.bundle.json`, or a breaking event-schema change (below) |
-| Breaking change, local lint | `OASDIFF_BASE=<base bundle> just lint`                       | an oasdiff `WARN` or `ERR` finding; skipped with a message when `OASDIFF_BASE` is unset                    |
-| Contract tests              | `just test` (`tests/`)                                       | schema examples, registries, the generated client and the event-schema checker's fixtures                  |
+| Gate                        | Command                                                      | Fails on                                                                                                                                                                                      |
+| --------------------------- | ------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Generated output is current | `just generate --check`                                      | any stale file under `gen/`, the Swift/Kotlin clients, the kernel or `workers/ml/generated`                                                                                                   |
+| OpenAPI lint                | `just lint` (contracts `lint`), `just ci-contracts-spectral` | a spectral finding of severity `warn` or higher (`.spectral.yaml`)                                                                                                                            |
+| Breaking change, base vs PR | `just ci-contracts-breaking <base-sha>`                      | an oasdiff `WARN` or `ERR` finding on `gen/openapi.bundle.json`, or a breaking event-schema change (below)                                                                                    |
+| Breaking change, local lint | `OASDIFF_BASE=<base bundle> just lint`                       | an oasdiff `WARN` or `ERR` finding; skipped with a message when `OASDIFF_BASE` is unset                                                                                                       |
+| Contract tests              | `just test` (`tests/`)                                       | schema examples, registries, the generated client, the generated Python kernel (`kernel-python.test.ts` imports it with `$PYTHON`, default `python3`) and the event-schema checker's fixtures |
 
 The pr-gate `contracts` job runs `just generate --check`, `just ci-contracts-spectral` and, on pull
 requests, `just ci-contracts-breaking "$BASE_SHA"` (`scripts/ci/contracts-breaking.sh`).

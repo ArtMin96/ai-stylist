@@ -1,8 +1,9 @@
-// JSON Schema validation for the shared-kernel registries that tools/codegen/gen-kernel.mjs does not
-// emit (TS-only data read straight from JSON): forbidden-log-keys (+ its word-split examples),
-// log-redaction, owners and feature-flags. They live in packages/shared-kernel/registry; Ajv lives here (as it
-// does for gen-kernel.mjs). The cross-references a schema cannot express are checked in
-// packages/shared-kernel/tests.
+// JSON Schema validation for the shared-kernel registries that TS reads straight from JSON (no
+// generated TS): forbidden-log-keys (+ its word-split examples), log-redaction, owners and
+// feature-flags. They live in packages/shared-kernel/registry; Ajv lives here (as it does for
+// gen-kernel.mjs, which also validates the first three before emitting them for Python; their
+// Python output is pinned by kernel-python.test.ts). The cross-references a schema cannot express
+// are checked in packages/shared-kernel/tests.
 import { readFile } from 'node:fs/promises';
 
 import { Ajv2020, type SchemaObject } from 'ajv/dist/2020.js';

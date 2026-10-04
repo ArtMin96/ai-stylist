@@ -12,7 +12,7 @@ workers/
 ├── .dockerignore           build context for every image is this directory
 ├── .gitignore              workspace-local caches (.hypothesis/); the root .gitignore covers the rest
 └── ml/
-    ├── generated/          `ai-stylist-generated`: Pydantic models from packages/contracts/events (never hand-edited)
+    ├── generated/          `ai-stylist-generated`: event models + shared-kernel constants (`just generate`; never hand-edited)
     └── segmentation/       `ai-stylist-segmentation`: FastAPI service
         ├── pyproject.toml  runtime deps only (hatchling build)
         ├── Dockerfile      multi-stage, python:3.14-slim, uv --frozen, non-root, HEALTHCHECK /health
@@ -169,12 +169,22 @@ available; `workers/.dockerignore` keeps tests, caches and venvs out of the cont
 
 ### Generated models (`just generate`)
 
-`tools/codegen/gen-python.sh [--check]` runs `datamodel-codegen` over the top-level
-`packages/contracts/events/*.json` into `ml/generated/ai_stylist_generated/events/` (one module
-per schema), formats the result with the workspace ruff config and is idempotent. `--check`
-exits 1 when the committed output is stale. `CONTRACTS_EVENTS_DIR` overrides the input directory.
-Generated files start with a `` # GENERATED — run `just generate` `` banner and are excluded from
-`ruff check`; they are still type-checked.
+`tools/codegen/gen-python.sh [--check]` writes two subpackages of `ml/generated/ai_stylist_generated/`,
+formats them with the workspace ruff config and is idempotent:
+
+- `events/`: `datamodel-codegen` over the top-level `packages/contracts/events/*.json` (one module
+  per schema). `CONTRACTS_EVENTS_DIR` overrides the input directory.
+- `kernel/`: `tools/codegen/gen-kernel.mjs python` over the shared-kernel registries the workers
+  mirror (DEC-55 extended). `from ai_stylist_generated.kernel import ...` gives
+  `FORBIDDEN_LOG_KEYS` (`frozenset[str]`), `FORBIDDEN_LOG_KEY_EXAMPLES_FORBIDDEN` / `_ALLOWED`
+  (`tuple[str, ...]`), `ERROR_NAME_SHAPE`, `CODE_SHAPE`, `NEST_CONTEXT_SHAPE` (`re.Pattern[str]`,
+  compiled with `re.ASCII`; always `fullmatch`), `MAX_CAUSE_DEPTH` (`int`) and the vectors
+  `EXCEPTION_TYPE_KEPT` / `_REPLACED`, `NEST_CONTEXT_KEPT` / `_REDACTED`. The image carries them
+  with the generated member, so no worker code or test needs `packages/` at run time.
+
+`--check` exits 1 when the committed output is stale. Generated files start with a
+`# GENERATED` banner and are never hand-edited. `events/` is excluded from `ruff check`;
+`kernel/` passes it as generated. Both are type-checked.
 
 ## Rules enforced by tooling
 

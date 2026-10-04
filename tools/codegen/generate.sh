@@ -7,7 +7,8 @@
 #                                                                     -> packages/contracts/gen/swift-client
 #   gen-kotlin.sh  openapi-generator Kotlin client + analytics taxonomy + kernel registries
 #                                                                     -> packages/contracts/gen/kotlin-client
-#   gen-python.sh  datamodel-code-generator Pydantic models           -> workers/ml/generated (if present)
+#   gen-python.sh  datamodel-code-generator Pydantic event models + gen-kernel.mjs python (forbidden
+#                  log keys, log-redaction shapes)                   -> workers/ml/generated (if present)
 # The registry emitter runs first (it validates the registries against their JSON Schemas and fails
 # loudly); gen-ts.sh then writes gen/openapi.bundle.json, which the Swift and Kotlin generators read.
 # Toolchains: node (all), java (gen-kotlin.sh; mise pin), swift on PATH or Docker swift:6.4 (gen-swift.sh).
@@ -23,7 +24,7 @@ CHECK=0
 for arg in "$@"; do
   case "$arg" in
     --check) CHECK=1 ;;
-    -h|--help) sed -n '2,17p' "$0"; exit 0 ;;
+    -h|--help) sed -n '2,18p' "$0"; exit 0 ;;
     *) echo "generate.sh: unknown argument '$arg'" >&2; exit 2 ;;
   esac
 done

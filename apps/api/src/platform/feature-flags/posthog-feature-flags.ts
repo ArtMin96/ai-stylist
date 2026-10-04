@@ -17,12 +17,12 @@
 //   `getAllFlagsAndPayloads` (which fires no `$feature_flag_called`), `before_send` drops every
 //   event, and the injected transport refuses every request that is not `<host>/flags/…`.
 // - Logs: flag key and outcome enum only.
-import { FEATURE_FLAG_REGISTRY, type FeatureFlagKey } from '@ai-stylist/shared-kernel';
+import { type Clock, FEATURE_FLAG_REGISTRY, type FeatureFlagKey } from '@ai-stylist/shared-kernel';
 import { PostHog, type PostHogOptions } from 'posthog-node';
 import type { Logger } from 'pino';
 
 import { childLogger } from '../logger.js';
-import { type Clock, SystemClock } from '../ports/clock.port.js';
+import { SystemClock } from '../system-clock.js';
 import { withTimeout } from '../resilience/timeout.js';
 
 import {

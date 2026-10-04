@@ -30,15 +30,17 @@ Every rule is `severity: 'error'` — there is no warning tier.
 | `no-utils-dirs`                    | a file inside, or an import from, a `utils/`, `helpers/`, `common/` directory (`arch-check.sh` also `find`s empty ones)                                                                                       |
 | `prototype-unimportable`           | any import of `prototype/**`                                                                                                                                                                                  |
 | `composition-root-only`            | any file except the composition roots (`app.module.ts`, `main.ts`, `jobs/**`), `apps/api/tests/**`, `platform` and `packages/db` themselves, `dev`, and the seed CLI importing `platform/**` or `packages/db` |
-| `dev-ports-only`                   | `apps/api/src/dev/**` importing anything from `platform/**` other than `platform/ports/*.port.ts`, or `packages/db`                                                                                           |
+| `dev-ports-only`                   | `apps/api/src/dev/**` importing anything from `platform/**` or `packages/db`: dev takes port tokens from `shared-kernel` and adapters from the composition root                                               |
 | `not-to-unresolvable`              | an import that does not resolve (typo, missing workspace dependency)                                                                                                                                          |
 
 Notes:
 
 - `platform-leaf` allows `packages/contracts` on top of 04 §4.2 rule 5 because the generated OpenAPI
   types are the single source of truth for response shapes (`VersionInfo` in `version.controller.ts`).
-- `modules-not-platform` is strict: the port tokens currently in `platform/ports/*.port.ts` must move to
-  `shared-kernel` or a module's public API (04 §4.2 rule 4) before the first module injects one.
+- `modules-not-platform` is strict: shared port tokens live in `shared-kernel` (`src/ports/`,
+  `Symbol.for` tokens), single-module ports in that module's `index.ts` (04 §4.2 rule 4). Platform has
+  no `ports/` directory; its one internal port, `platform/health/health-probe.port.ts`, is importable
+  only by platform and the composition roots.
 - `domain-no-provider-sdk` leaves `@opentelemetry/api` importable: it is the vendor-neutral API for
   manual spans (doc 14 §3). The OpenTelemetry SDK, exporters, instrumentations and `@fastify/otel`
   are wired in `platform` (fixture `otel-sdk-in-domain`). `tools/eslint/boundaries.mjs` mirrors the list.

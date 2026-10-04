@@ -18,15 +18,16 @@ import {
 
 import type { DemoOutboxFlowRequestedV1Payload } from '@ai-stylist/contracts/events';
 import {
+  CLOCK,
+  type Clock,
   type EventEnvelope,
   FEATURE_FLAGS,
   type FeatureFlags,
+  OUTBOX_WRITER,
+  type OutboxWriter,
   type ProblemFieldError,
   newId,
 } from '@ai-stylist/shared-kernel';
-
-import { CLOCK, type Clock } from '../platform/ports/clock.port.js';
-import { OUTBOX_WRITER, type OutboxWriter } from '../platform/ports/outbox-writer.port.js';
 
 export type DemoEventEnvelope = EventEnvelope<
   'demo.outbox-flow.requested.v1',
@@ -35,7 +36,7 @@ export type DemoEventEnvelope = EventEnvelope<
 
 /**
  * The current request's correlation id (the platform's `currentCorrelationId`, bound by the
- * composition root: `src/dev` may import platform port files only).
+ * composition root: `src/dev` may not import platform).
  */
 export type CurrentCorrelationId = () => string | undefined;
 export const CURRENT_CORRELATION_ID = Symbol('CurrentCorrelationId');

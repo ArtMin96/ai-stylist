@@ -1,6 +1,6 @@
 import { type DynamicModule, Module, ServiceUnavailableException } from '@nestjs/common';
 
-import { OUTBOX_WRITER, type OutboxWriter } from '../platform/ports/outbox-writer.port.js';
+import { OUTBOX_WRITER, type OutboxWriter } from '@ai-stylist/shared-kernel';
 
 import {
   CURRENT_CORRELATION_ID,

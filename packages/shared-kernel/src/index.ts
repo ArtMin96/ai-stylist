@@ -9,3 +9,6 @@ export * from './forbidden-log-keys.js';
 export * from './log-redaction.js';
 export * from './owners.js';
 export * from './feature-flags.js';
+export * from './ports/clock.js';
+export * from './ports/outbox-writer.js';
+export * from './ports/storage.js';

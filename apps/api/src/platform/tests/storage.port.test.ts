@@ -1,15 +1,16 @@
 import { describe, expect, it } from 'vitest';
 
-import { formatId } from '@ai-stylist/shared-kernel';
-import { fakeClock } from '@ai-stylist/test-support';
-
 import {
-  InMemoryStorageProvider,
   MAX_PRESIGN_GET_TTL_SECONDS,
   MAX_PRESIGN_PUT_TTL_SECONDS,
   StorageError,
+  type StorageProvider,
   clampTtl,
-} from '../ports/storage.port.js';
+  formatId,
+} from '@ai-stylist/shared-kernel';
+import { fakeClock, fakeStorageProvider } from '@ai-stylist/test-support';
+
+import { InMemoryStorageProvider } from '../storage/in-memory-storage-provider.js';
 
 // Synthetic user ids (valid `usr_<ULID>`).
 const USER_A = formatId('user', '01JA00000000000000000000AA');
@@ -121,5 +122,17 @@ describe('StorageProvider port (in-memory fake)', () => {
     await expect(
       storage.presignedGet({ userId: USER_B, ...upload, key: 'ast_9.jpg' }),
     ).rejects.toThrow(StorageError);
+  });
+
+  it('the module-test fake (@ai-stylist/test-support) satisfies the port structurally', async () => {
+    const clock = fakeClock('2026-09-10T12:00:00.000Z');
+    const port: StorageProvider = fakeStorageProvider(() => clock.now());
+    const url = await port.presignedGet({
+      userId: USER_A,
+      namespace: 'uploads',
+      key: 'a.jpg',
+      ttlSeconds: 60,
+    });
+    expect(url).toMatchObject({ method: 'GET', expiresAt: '2026-09-10T12:01:00.000Z' });
   });
 });

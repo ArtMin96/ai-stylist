@@ -8,17 +8,18 @@ import { inspect } from 'node:util';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import pino from 'pino';
 
-import { type Id, formatId } from '@ai-stylist/shared-kernel';
-import { fakeClock, memoryLogStream } from '@ai-stylist/test-support';
-
-import { loggerOptions } from '../logger.js';
 import {
-  InMemoryStorageProvider,
+  type Id,
   type PresignGetRequest,
   type PresignPutRequest,
   StorageError,
   type StorageProvider,
-} from '../ports/storage.port.js';
+  formatId,
+} from '@ai-stylist/shared-kernel';
+import { fakeClock, memoryLogStream } from '@ai-stylist/test-support';
+
+import { loggerOptions } from '../logger.js';
+import { InMemoryStorageProvider } from '../storage/in-memory-storage-provider.js';
 import { R2StorageProvider, r2Endpoint } from '../storage/r2-storage-provider.js';
 import { presignUrl } from '../storage/sigv4-presign.js';
 

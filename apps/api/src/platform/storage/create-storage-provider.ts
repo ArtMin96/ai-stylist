@@ -7,8 +7,9 @@
 // boot rules of apps/api/src/config.ts (`loadConfig`), which platform does not import.
 import type { Logger } from 'pino';
 
-import type { Clock } from '../ports/clock.port.js';
-import { InMemoryStorageProvider, type StorageProvider } from '../ports/storage.port.js';
+import type { Clock, StorageProvider } from '@ai-stylist/shared-kernel';
+
+import { InMemoryStorageProvider } from './in-memory-storage-provider.js';
 
 import { R2StorageProvider } from './r2-storage-provider.js';
 

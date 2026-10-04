@@ -3,7 +3,9 @@
 NestJS on the Fastify adapter. `src/main.ts` + `src/app.module.ts` are the composition root
 (the only files that construct adapters; `src/jobs/index.ts` is the job composition root
 (`startJobs`; process entry `src/jobs/main.ts`));
-`src/platform/` holds ports and infrastructure adapters; `src/modules/<name>/` one directory per
+`src/platform/` holds infrastructure adapters for the ports in `@ai-stylist/shared-kernel`
+(`CLOCK`, `STORAGE_PROVIDER`, `OUTBOX_WRITER`, `FEATURE_FLAGS`; plus its one internal port,
+`HEALTH_PROBE`); `src/modules/<name>/` one directory per
 SPINE domain module (13, registered in `DOMAIN_MODULES`; public API = `index.ts`).
 
 - `just dev-api` — compose Postgres (`docker compose up -d --wait postgres`, in compose project

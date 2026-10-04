@@ -9,8 +9,8 @@ import pino from 'pino';
 import { fakeClock, memoryLogStream } from '@ai-stylist/test-support';
 
 import { loggerOptions } from '../logger.js';
-import { InMemoryStorageProvider } from '../ports/storage.port.js';
 import { createStorageProvider } from '../storage/create-storage-provider.js';
+import { InMemoryStorageProvider } from '../storage/in-memory-storage-provider.js';
 import { R2StorageProvider } from '../storage/r2-storage-provider.js';
 
 // Synthetic values only (the secret is AWS's public documentation example).

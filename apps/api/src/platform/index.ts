@@ -1,17 +1,21 @@
-// Public API of `platform` (docs/modules/platform.md): ports + the Nest module that serves the
-// operational endpoints. Only composition roots import this (rule: modules-not-platform).
+// Public API of `platform` (docs/modules/platform.md): adapters for the shared-kernel ports + the
+// Nest module that serves the operational endpoints. Only composition roots import this (rule: modules-not-platform).
 import { type DynamicModule, Module, type Provider } from '@nestjs/common';
 import { APP_FILTER } from '@nestjs/core';
 import { LoggerModule, type Params as LoggerParams } from 'nestjs-pino';
 
 import type { VersionInfo } from '@ai-stylist/contracts/types';
-import { FEATURE_FLAGS } from '@ai-stylist/shared-kernel';
+import {
+  CLOCK,
+  type Clock,
+  FEATURE_FLAGS,
+  STORAGE_PROVIDER,
+  type StorageProvider,
+} from '@ai-stylist/shared-kernel';
 
 import type { FeatureFlagsAdapter } from './feature-flags/registry-default-feature-flags.js';
+import { HEALTH_PROBE, type HealthProbe } from './health/health-probe.port.js';
 import { HealthController } from './health.controller.js';
-import { CLOCK, type Clock } from './ports/clock.port.js';
-import { HEALTH_PROBE, type HealthProbe } from './ports/health-probe.port.js';
-import { STORAGE_PROVIDER, type StorageProvider } from './ports/storage.port.js';
 import { ProblemFilter } from './problem.filter.js';
 import { VERSION_INFO, VersionController } from './version.controller.js';
 
@@ -90,25 +94,15 @@ export {
   loggerOptions,
   redactForbidden,
 } from './logger.js';
-export { CLOCK, type Clock, SystemClock } from './ports/clock.port.js';
+// The ports these adapters implement (`CLOCK`, `STORAGE_PROVIDER`, `OUTBOX_WRITER`, `FEATURE_FLAGS`)
+// and the storage request checks are imported from `@ai-stylist/shared-kernel`, not from here.
+export { SystemClock } from './system-clock.js';
 export {
   HEALTH_PROBE,
   type HealthProbe,
   UnconfiguredHealthProbe,
-} from './ports/health-probe.port.js';
-export {
-  InMemoryStorageProvider,
-  MAX_PRESIGN_GET_TTL_SECONDS,
-  MAX_PRESIGN_PUT_TTL_SECONDS,
-  STORAGE_PROVIDER,
-  StorageError,
-  type PresignGetRequest,
-  type PresignPutRequest,
-  type PresignedUrl,
-  type StorageNamespace,
-  type StorageProvider,
-  clampTtl,
-} from './ports/storage.port.js';
+} from './health/health-probe.port.js';
+export { InMemoryStorageProvider } from './storage/in-memory-storage-provider.js';
 export {
   type StorageProviderConfig,
   createStorageProvider,
@@ -143,7 +137,6 @@ export {
   type QueueStatsSnapshot,
 } from './queue/pg-boss-queue.js';
 export { PGBOSS_SCHEMA_VERSION, pgBossConstructionSql } from './queue/pg-boss-schema.js';
-export { OUTBOX_WRITER, type OutboxWriter } from './ports/outbox-writer.port.js';
 export { PgOutboxWriter } from './outbox/pg-outbox-writer.js';
 export { markOutboxFailed } from './outbox/outbox-dead-letter.js';
 export {

@@ -1,4 +1,4 @@
-/** Structural match for the API's `Clock` port (apps/api/src/platform/ports/clock.port.ts). */
+/** Structural match for the shared-kernel `Clock` port (packages/shared-kernel/src/ports/clock.ts). */
 export type FakeClock = {
   now(): Date;
   /** Move time forward by `ms`. */

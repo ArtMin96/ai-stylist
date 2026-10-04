@@ -14,7 +14,7 @@ import type {
 } from '@ai-stylist/contracts/events';
 import { type DbHandle, createDb, isLocalDatabaseUrl, migrate } from '@ai-stylist/db';
 import { ERROR_CODES, type FeatureFlagKey, PROBLEM_TYPE_BASE } from '@ai-stylist/shared-kernel';
-import { fakeFeatureFlags, memoryLogStream } from '@ai-stylist/test-support';
+import { fakeFeatureFlags, memoryLogStream, recordingOutboxWriter } from '@ai-stylist/test-support';
 
 import { createApp } from '../src/app.module.js';
 import { ConfigError, loadConfig } from '../src/config.js';
@@ -23,7 +23,6 @@ import {
   CORRELATION_ID_HEADER,
   CORRELATION_ID_PATTERN,
   METRIC_NAMES,
-  type OutboxWriter,
   PROBLEM_CONTENT_TYPE,
 } from '../src/platform/index.js';
 import {
@@ -380,13 +379,8 @@ describe('api (Fastify in-process)', () => {
 describe('dev demo route: one correlation id end to end (recording outbox, no database)', () => {
   let app: NestFastifyApplication;
   const flags = fakeFeatureFlags<FeatureFlagKey>({ 'demo-outbox-flow': true });
-  const appended: unknown[] = [];
-  const recordingOutbox: OutboxWriter = {
-    append: (envelope) => {
-      appended.push(envelope);
-      return Promise.resolve();
-    },
-  };
+  const recordingOutbox = recordingOutboxWriter<DemoEventEnvelope>();
+  const { appended } = recordingOutbox;
 
   beforeAll(async () => {
     const config = configWithoutDatabase({ APP_ENV: 'local', LOG_LEVEL: 'info' });

@@ -3,14 +3,15 @@
 Table: `platform_outbox` (`packages/db/src/schema/platform.ts`, migration `0001_platform_outbox`;
 no schema change here). `just db-seed` inserts a pending demo row.
 
-## Writer: `PgOutboxWriter` (port `../ports/outbox-writer.port.ts`)
+## Writer: `PgOutboxWriter` (port `OutboxWriter` in `packages/shared-kernel/src/ports/outbox-writer.ts`)
 
 `append(envelope, tx?)` inserts the envelope as a `pending` row (id = `envelope.id`, the `evt_`
 idempotency key; `type`, aggregate kind/id and `sequence` copied from the envelope; `payload` = the
 full envelope). Pass the producer's postgres.js transaction (`sql.begin(async (tx) => …)`) so the
 row commits or rolls back with the domain write (doc 04 §9.1 step 1); without `tx` the row is
 written on its own. A duplicate id or (aggregate kind, aggregate id, sequence) rejects. Producers
-depend on the `OutboxWriter` type and the `OUTBOX_WRITER` token only.
+depend on the `OutboxWriter` type and the `OUTBOX_WRITER` token from `@ai-stylist/shared-kernel`
+only; their tests use `recordingOutboxWriter` from `@ai-stylist/test-support`.
 
 Trace context (planning/14 §3): an envelope without `traceparent` is stored with the active span's
 W3C `traceparent` (the producing request), so the relay's and the job's spans join that trace. An

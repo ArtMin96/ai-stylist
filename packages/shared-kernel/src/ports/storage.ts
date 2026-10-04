@@ -1,6 +1,8 @@
 // StorageProvider port (brief §6, doc 11 §5): presigned PUT/GET with a hard TTL cap, content-type,
-// size, user-prefix and namespace constraints. The interface, the request checks every adapter
-// shares and the in-memory fake; the R2 adapter is ../storage/r2-storage-provider.ts (P02-T13).
+// size, user-prefix and namespace constraints. The interface, its DI token and the request checks
+// every adapter shares; the adapters (R2 and the local in-memory one) live in `platform/storage/`,
+// and module tests use `fakeStorageProvider` from `@ai-stylist/test-support`. Shared by `media` and
+// `avatar` (doc 04 §4.1 has no avatar → media edge), hence the kernel.
 //
 // Object keys are `u/<userId>/<namespace>/<key>` (doc 11 §4.3): all media of one user sits under
 // one prefix, which account deletion lists and deletes (doc 11 §13.2 step 4). No request can name
@@ -13,7 +15,7 @@
 // before it asks for a URL, and that is a P06 exit criterion. P06 workers fetch originals with
 // HTTP decompression disabled: `Content-Encoding` is not a signed header, and whether R2 stores an
 // unsigned `Content-Encoding` sent with a presigned PUT has not been verified against R2.
-import { type Id, isId } from '@ai-stylist/shared-kernel';
+import { type Id, isId } from '../ids.js';
 
 /** Presigned GET (read) URLs live at most 10 minutes (doc 11 §5.4). */
 export const MAX_PRESIGN_GET_TTL_SECONDS = 10 * 60;
@@ -33,7 +35,7 @@ const MEDIA_TYPE =
   /^[A-Za-z0-9][A-Za-z0-9!#$&^_.+-]{0,126}\/[A-Za-z0-9][A-Za-z0-9!#$&^_.+-]{0,126}$/;
 
 /** Where an object lives: `u/<userId>/<namespace>/<key>`. */
-type StorageLocation = {
+export type StorageLocation = {
   /**
    * Owner of the object (`usr_<ULID>`): the authenticated principal whose access the calling module
    * checked. Every object key starts with `u/<userId>/`; a malformed id is refused.
@@ -77,7 +79,8 @@ export type StorageProvider = {
   presignedGet(request: PresignGetRequest): Promise<PresignedUrl>;
 };
 
-export const STORAGE_PROVIDER = Symbol('StorageProvider');
+/** DI token. `Symbol.for`: two installed copies of the kernel resolve to the same token. */
+export const STORAGE_PROVIDER: unique symbol = Symbol.for('ai-stylist.storage-provider');
 
 /** Which request constraint a refused presign broke; adapters log it, never the value. */
 export type PresignRefusal = 'user_id' | 'namespace' | 'key' | 'content_type' | 'size' | 'ttl';
@@ -151,51 +154,5 @@ export function assertUploadConstraints(request: PresignPutRequest): void {
   }
   if (!Number.isSafeInteger(request.sizeLimitBytes) || request.sizeLimitBytes <= 0) {
     throw new StorageError('sizeLimitBytes must be a positive integer', 'size');
-  }
-}
-
-type StoredObject = { readonly contentType: string; readonly sizeLimitBytes: number };
-
-/**
- * In-memory StorageProvider for tests and local runs without R2 credentials (never staging or
- * prod: `loadConfig` refuses that). Refuses the same requests as the R2 adapter (`objectKeyOf`,
- * `assertUploadConstraints`, `clampTtl`); `objects` is keyed by `u/<userId>/<namespace>/<key>`.
- */
-export class InMemoryStorageProvider implements StorageProvider {
-  readonly objects = new Map<string, StoredObject>();
-
-  constructor(
-    private readonly now: () => Date = () => new Date(),
-    private readonly baseUrl = 'memory://storage',
-  ) {}
-
-  // A throw inside a promise executor rejects that promise: every refusal is a rejected promise.
-  presignedPut(request: PresignPutRequest): Promise<PresignedUrl> {
-    return new Promise((resolve) => {
-      const id = objectKeyOf(request);
-      assertUploadConstraints(request);
-      const ttl = clampTtl(request.ttlSeconds, 'PUT');
-      this.objects.set(id, {
-        contentType: request.contentType,
-        sizeLimitBytes: request.sizeLimitBytes,
-      });
-      resolve(this.presign('PUT', id, ttl));
-    });
-  }
-
-  presignedGet(request: PresignGetRequest): Promise<PresignedUrl> {
-    return new Promise((resolve) => {
-      const id = objectKeyOf(request);
-      const ttl = clampTtl(request.ttlSeconds, 'GET');
-      if (!this.objects.has(id)) {
-        throw new StorageError(`object not found in namespace "${request.namespace}"`);
-      }
-      resolve(this.presign('GET', id, ttl));
-    });
-  }
-
-  private presign(method: 'PUT' | 'GET', id: string, ttl: number): PresignedUrl {
-    const expiresAt = new Date(this.now().getTime() + ttl * 1000).toISOString();
-    return { method, url: `${this.baseUrl}/${id}?expires=${expiresAt}`, expiresAt };
   }
 }

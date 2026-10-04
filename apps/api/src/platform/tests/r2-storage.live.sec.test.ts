@@ -15,13 +15,13 @@
 import { beforeAll, describe, expect, it } from 'vitest';
 import pino from 'pino';
 
-import { formatId } from '@ai-stylist/shared-kernel';
+import { type Clock, formatId } from '@ai-stylist/shared-kernel';
 import { fakeClock } from '@ai-stylist/test-support';
 
 import { loggerOptions } from '../logger.js';
-import { type Clock, SystemClock } from '../ports/clock.port.js';
 import { createStorageProvider } from '../storage/create-storage-provider.js';
 import { R2StorageProvider } from '../storage/r2-storage-provider.js';
+import { SystemClock } from '../system-clock.js';
 
 /**
  * Buckets the live suite may write to. Bucket names follow `ai-stylist-<env>` (docs/SERVICES-SETUP.md

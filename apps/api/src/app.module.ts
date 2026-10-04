@@ -16,7 +16,7 @@ import { Logger } from 'nestjs-pino';
 import pino from 'pino';
 
 import { createDb, type DbHandle } from '@ai-stylist/db';
-import type { FeatureFlags } from '@ai-stylist/shared-kernel';
+import type { FeatureFlags, OutboxWriter } from '@ai-stylist/shared-kernel';
 
 import { type AppConfig, isLocalOrDevDeployment, loadConfig } from './config.js';
 import { DevModule, UnconfiguredOutboxWriter } from './dev/index.js';
@@ -38,7 +38,6 @@ import {
   type FeatureFlagsAdapter,
   type HealthProbe,
   OutboxRelay,
-  type OutboxWriter,
   PgBossQueue,
   PgHealthProbe,
   PgOutboxWriter,

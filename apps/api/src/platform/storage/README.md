@@ -1,9 +1,10 @@
-# platform/storage — the `StorageProvider` port's R2 adapter (P02-T13)
+# platform/storage — the `StorageProvider` port's adapters (P02-T13)
 
-The port, its DI token `STORAGE_PROVIDER`, the request checks every adapter shares (`clampTtl`,
-`objectKeyOf`, `assertUploadConstraints`) and the in-memory provider live in
-`../ports/storage.port.ts` (P02-interim placement; the port moves to `packages/shared-kernel` before
-the first domain module injects it). Policy: doc 11 §4.3 (media keys under `u/<user_id>/`), §5.4
+The port, its DI token `STORAGE_PROVIDER` (`Symbol.for('ai-stylist.storage-provider')`), the TTL
+caps and the request checks every adapter shares (`clampTtl`, `objectKeyOf`,
+`assertUploadConstraints`) live in `packages/shared-kernel/src/ports/storage.ts`, imported from
+`@ai-stylist/shared-kernel`; this directory holds the adapters only. Module tests use
+`fakeStorageProvider` from `@ai-stylist/test-support`, never these adapters. Policy: doc 11 §4.3 (media keys under `u/<user_id>/`), §5.4
 (TTL ≤ 10 min GET, ≤ 15 min PUT; content type, size and the caller's own key namespace), DEC-44
 (private user media = presigned GET on R2's S3 endpoint, uncached; public assets only through a
 custom domain, not this adapter).
@@ -22,6 +23,9 @@ bucket, clock, logger, allowsInMemory })` → `StorageProvider`. The composition
   there first), and the refusal to boot with none of the four keys when `APP_ENV` is `staging` or
   `prod` or `NODE_ENV` is `production` (`isLocalOrDevDeployment`, doc 15 §11: staging and prod use
   real R2 buckets), so the in-memory provider is bound only in local, dev and test runs.
+- `in-memory-storage-provider.ts`: `InMemoryStorageProvider(now?, baseUrl?)`, the adapter for local,
+  dev, tests and CI. It refuses the same requests as the R2 adapter (the kernel checks above) and
+  keeps `objects` keyed by `u/<userId>/<namespace>/<key>`; a GET of an object never PUT is refused.
 - `r2-storage-provider.ts`: `R2StorageProvider`, `r2Endpoint(accountId)`. The only check of each
   key's shape (account id 32 lowercase hex, access key id letters and digits, secret without
   whitespace, bucket an R2 bucket name): the composition root builds the adapter in

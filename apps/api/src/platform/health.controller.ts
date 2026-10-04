@@ -2,7 +2,7 @@ import { Controller, Get, Inject, ServiceUnavailableException } from '@nestjs/co
 
 import type { HealthReport } from '@ai-stylist/contracts/types';
 
-import { HEALTH_PROBE, type HealthProbe } from './ports/health-probe.port.js';
+import { HEALTH_PROBE, type HealthProbe } from './health/health-probe.port.js';
 
 /** GET /v1/health — contract: 200 HealthReport, 503 problem+json when a dependency is down. */
 @Controller('v1/health')

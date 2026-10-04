@@ -17,8 +17,8 @@
 //   `JSON.stringify` and a logged provider never show them.
 import type { Logger } from 'pino';
 
-import { type Clock, SystemClock } from '../ports/clock.port.js';
 import {
+  type Clock,
   type PresignGetRequest,
   type PresignPutRequest,
   type PresignedUrl,
@@ -27,7 +27,9 @@ import {
   assertUploadConstraints,
   clampTtl,
   objectKeyOf,
-} from '../ports/storage.port.js';
+} from '@ai-stylist/shared-kernel';
+
+import { SystemClock } from '../system-clock.js';
 
 import { type SigV4Credentials, presignUrl, uriEncode } from './sigv4-presign.js';
 

@@ -1,0 +1,30 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://contracts.ai-stylist.app/events/fixture.sample.recorded.v1.json",
+  "title": "FixtureSampleRecordedV1",
+  "description": "Additive edit of base/sample.event.json: a new optional property, a new enum value, integer widened to number, a new optional tag field in an open object.",
+  "type": "object",
+  "required": ["type", "payload"],
+  "properties": {
+    "type": { "const": "fixture.sample.recorded.v1" },
+    "payload": { "$ref": "#/$defs/SamplePayload" }
+  },
+  "$defs": {
+    "SamplePayload": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["sampleId", "kind"],
+      "properties": {
+        "sampleId": { "type": "string" },
+        "kind": { "type": "string", "enum": ["alpha", "beta", "gamma"] },
+        "count": { "type": "number", "minimum": 0 },
+        "tags": { "type": "array", "items": { "type": "string" } },
+        "meta": {
+          "type": "object",
+          "properties": { "source": { "type": "string" }, "region": { "type": "string" } }
+        },
+        "note": { "type": "string", "maxLength": 200 }
+      }
+    }
+  }
+}

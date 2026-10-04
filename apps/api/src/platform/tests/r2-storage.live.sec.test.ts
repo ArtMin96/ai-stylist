@@ -33,7 +33,10 @@ import { SystemClock } from '../system-clock.js';
  */
 const LIVE_BUCKET_NAME = /-(dev|local)$/;
 
-/** APP_ENV values the live suite runs under (unset means `local`, the config default). */
+/**
+ * APP_ENV values the live suite runs under. Unset is accepted for a developer shell: this suite
+ * never loads the app config (which requires APP_ENV), and the bucket-name guard below still applies.
+ */
 const LIVE_APP_ENVS: ReadonlySet<string> = new Set(['', 'local', 'dev']);
 
 /** Why the live suite refuses this environment, or `undefined` when it may run. Names no value. */

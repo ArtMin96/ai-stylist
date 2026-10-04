@@ -125,7 +125,8 @@ consecutive failures, for 30 s).
 ## Running
 
 - Process entry: `tsx src/jobs/main.ts` from `apps/api`. It reads `DATABASE_URL` and `LOG_LEVEL`
-  through `../config.ts` (zod), runs `startJobs`, and on SIGINT/SIGTERM stops gracefully
+  through `../config.ts` (zod; it refuses to start without `APP_ENV`, which has no default), runs
+  `startJobs`, and on SIGINT/SIGTERM stops gracefully
   (`PgBossQueue.stop()` waits for active jobs, then the pools close, then `shutdownTelemetry()`
   flushes spans, metrics and logs).
 - Telemetry (planning/14 §3): start the process behind the `--import` entry,

@@ -28,6 +28,35 @@ function configError(env: Record<string, string>): ConfigError {
   throw new Error('expected a ConfigError');
 }
 
+// Owner decision: no default deployment. An unset APP_ENV used to mean `local`, which turned on the
+// dev routes and the in-memory storage provider in any process that forgot to name itself.
+describe('config: APP_ENV is required (fail closed)', () => {
+  const MESSAGE = 'invalid configuration: APP_ENV: required, one of local, dev, staging, prod';
+
+  it('refuses to load without APP_ENV, naming the key', () => {
+    for (const env of [
+      {},
+      { APP_ENV: '' },
+      { APP_ENV: '  ' },
+      { NODE_ENV: 'test' },
+      { NODE_ENV: 'development', ...R2 },
+    ]) {
+      expect(configError(env).message).toBe(MESSAGE);
+    }
+  });
+
+  it('refuses an unknown APP_ENV without echoing the value', () => {
+    const value = 'sandbox-synthetic-value';
+    const error = configError({ APP_ENV: value });
+    expect(error.message).toBe(MESSAGE);
+    expect(error.message).not.toContain(value);
+  });
+
+  it.each(['local', 'dev', 'staging', 'prod'])('loads with APP_ENV=%s', (APP_ENV) => {
+    expect(loadConfig({ APP_ENV, ...R2 }).APP_ENV).toBe(APP_ENV);
+  });
+});
+
 describe('isLocalOrDevDeployment (dev routes and the in-memory storage provider) fails closed', () => {
   it.each([
     ['development', 'local', true],
@@ -43,14 +72,14 @@ describe('isLocalOrDevDeployment (dev routes and the in-memory storage provider)
 
 describe('config: R2 keys', () => {
   it('accepts all four keys, and treats empty values as unset', () => {
-    expect(loadConfig({ ...R2 })).toMatchObject(R2);
-    const unset = loadConfig({ R2_ACCOUNT_ID: '', R2_ACCESS_KEY_ID: ' ' });
+    expect(loadConfig({ APP_ENV: 'local', ...R2 })).toMatchObject(R2);
+    const unset = loadConfig({ APP_ENV: 'local', R2_ACCOUNT_ID: '', R2_ACCESS_KEY_ID: ' ' });
     expect(unset.R2_ACCOUNT_ID).toBeUndefined();
     expect(unset.R2_ACCESS_KEY_ID).toBeUndefined();
   });
 
   it('refuses a partial set, naming the missing keys', () => {
-    expect(configError({ R2_BUCKET: R2.R2_BUCKET }).message).toBe(
+    expect(configError({ APP_ENV: 'local', R2_BUCKET: R2.R2_BUCKET }).message).toBe(
       'invalid configuration: R2_ACCOUNT_ID, R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY: required when any R2_* key is set',
     );
   });
@@ -61,7 +90,7 @@ describe('config: R2 keys', () => {
     { APP_ENV: 'prod' },
     { NODE_ENV: 'test', APP_ENV: 'staging' },
     { NODE_ENV: 'development', APP_ENV: 'prod' },
-    { NODE_ENV: 'production' },
+    { NODE_ENV: 'production', APP_ENV: 'prod' },
     { NODE_ENV: 'production', APP_ENV: 'local' },
     { NODE_ENV: 'production', APP_ENV: 'dev' },
   ];
@@ -81,13 +110,12 @@ describe('config: R2 keys', () => {
 
   it('keeps the in-memory provider for local, dev and test runs', () => {
     for (const env of [
-      {},
       { APP_ENV: 'local' },
       { APP_ENV: 'dev' },
-      { NODE_ENV: 'test' },
+      { NODE_ENV: 'test', APP_ENV: 'local' },
       { NODE_ENV: 'test', APP_ENV: 'dev' },
       { NODE_ENV: 'development', APP_ENV: 'local' },
-      { NODE_ENV: '', APP_ENV: ' ' },
+      { NODE_ENV: ' ', APP_ENV: 'dev' },
     ]) {
       const config = loadConfig(env);
       expect(isLocalOrDevDeployment(config)).toBe(true);

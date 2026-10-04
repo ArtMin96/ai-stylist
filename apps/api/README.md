@@ -38,7 +38,13 @@ SPINE domain module (13, registered in `DOMAIN_MODULES`; public API = `index.ts`
   loudly without Docker). With `DATABASE_URL` set (local hosts only), `tests/http.test.ts`
   migrates that database and asserts the demo event's outbox row.
 - Config: `src/config.ts` (zod) — every key must appear in the root `.env.example`. Values never
-  appear in a config error.
+  appear in a config error. `APP_ENV` (`local`, `dev`, `staging` or `prod`) is required and has no
+  default: the API (`src/main.ts`, `createApp` without a `config`) and the jobs process
+  (`src/jobs/main.ts`) refuse to boot without it, with
+  `invalid configuration: APP_ENV: required, one of local, dev, staging, prod` (the key, never a
+  value). `just bootstrap` writes `local` into an empty `APP_ENV` in `.env`, and `just dev-api` /
+  `just dev-workers` always pass one; a deployment sets it in its environment. Tests pass an
+  explicit `APP_ENV` to every `loadConfig` call instead of relying on the ambient environment.
 - Telemetry and flags ([docs/observability](../../docs/observability/README.md) has the flow):
   every process starts behind its `--import` entry (`src/platform/telemetry/instrument-api.ts`
   for `dev` / `start`, `instrument-jobs.ts` for `dev:jobs` / `jobs` / `start:jobs`), which does

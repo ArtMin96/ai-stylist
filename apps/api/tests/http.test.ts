@@ -75,7 +75,7 @@ function isProblem(body: unknown): body is ProblemDetails {
 /** An app without DATABASE_URL: routing, flags and the dev route, no queue/relay runtime. */
 function configWithoutDatabase(overrides: Record<string, string>) {
   const { DATABASE_URL: _omit, ...env } = process.env;
-  return loadConfig({ ...env, NODE_ENV: 'test', ...overrides });
+  return loadConfig({ ...env, NODE_ENV: 'test', APP_ENV: 'local', ...overrides });
 }
 
 describe('api (Fastify in-process)', () => {
@@ -96,6 +96,8 @@ describe('api (Fastify in-process)', () => {
     const config = loadConfig({
       ...process.env,
       NODE_ENV: 'test',
+      // Every deployment names itself (no default); the dev route below needs local or dev.
+      APP_ENV: 'local',
       LOG_LEVEL: 'info',
       APP_VERSION: '1.2.3',
       GIT_COMMIT: 'abc123',
@@ -546,10 +548,13 @@ describe('config: PostHog keys', () => {
   const HOST = 'https://eu.i.posthog.com';
   const PROJECT_KEY = 'phc_synthetic_test';
 
-  /** Only the keys under test (the ambient environment must not decide the outcome). */
+  /**
+   * Only the keys under test plus the required APP_ENV (the ambient environment must not decide
+   * the outcome).
+   */
   function configError(env: Record<string, string>): ConfigError {
     try {
-      loadConfig(env);
+      loadConfig({ APP_ENV: 'local', ...env });
     } catch (error) {
       if (error instanceof ConfigError) return error;
       throw error;
@@ -558,11 +563,13 @@ describe('config: PostHog keys', () => {
   }
 
   it('accepts a project key with an http(s) host, and treats empty values as unset', () => {
-    expect(loadConfig({ POSTHOG_API_KEY: PROJECT_KEY, POSTHOG_HOST: HOST })).toMatchObject({
+    expect(
+      loadConfig({ APP_ENV: 'local', POSTHOG_API_KEY: PROJECT_KEY, POSTHOG_HOST: HOST }),
+    ).toMatchObject({
       POSTHOG_API_KEY: PROJECT_KEY,
       POSTHOG_HOST: HOST,
     });
-    const unset = loadConfig({ POSTHOG_API_KEY: '', POSTHOG_HOST: ' ' });
+    const unset = loadConfig({ APP_ENV: 'local', POSTHOG_API_KEY: '', POSTHOG_HOST: ' ' });
     expect(unset.POSTHOG_API_KEY).toBeUndefined();
     expect(unset.POSTHOG_HOST).toBeUndefined();
   });

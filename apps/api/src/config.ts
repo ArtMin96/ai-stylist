@@ -1,13 +1,19 @@
 // Every env key the API reads, validated once at boot (zod). `.env.example` must list each key
 // (CI: `.env.example` ⊇ this schema, brief §6). Empty strings count as unset so a copied
-// `.env.example` boots with defaults.
+// `.env.example` boots with defaults, except `APP_ENV`, which has none: every process names its
+// deployment or refuses to boot (fail closed; `just bootstrap` writes `local` into a developer's
+// `.env`, and `just dev-api` / `just dev-workers` pass one).
 import { z } from 'zod';
 
 const port = z.coerce.number().int().min(1).max(65535);
 
+/** Deployment names (`APP_ENV`). */
+export const APP_ENVS = ['local', 'dev', 'staging', 'prod'] as const;
+
 export const configSchema = z.object({
   NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
-  APP_ENV: z.enum(['local', 'dev', 'staging', 'prod']).default('local'),
+  /** Required, no default: an unset APP_ENV is a boot error, never `local`. */
+  APP_ENV: z.enum(APP_ENVS, { error: `required, one of ${APP_ENVS.join(', ')}` }),
   LOG_LEVEL: z.enum(['trace', 'debug', 'info', 'warn', 'error', 'fatal', 'silent']).default('info'),
   /** Preferred listen port; `PORT` is the PaaS fallback. */
   API_PORT: port.optional(),
@@ -60,7 +66,8 @@ export class ConfigError extends Error {
 
 /**
  * Fail closed: true only outside production builds AND in a local or dev deployment, so a
- * staging/prod deploy that forgets NODE_ENV=production still counts as deployed. The one predicate
+ * staging/prod deploy that forgets NODE_ENV=production still counts as deployed. `APP_ENV` has no
+ * default (`loadConfig` refuses to load without it), so an unset `APP_ENV` never means local. The one predicate
  * for what only local and dev may have: the dev routes (`DevModule`, apps/api/src/dev/index.ts) and
  * the in-memory storage provider standing in for R2 (`createStorageProvider`'s `allowsInMemory`).
  * Staging and prod use real R2 buckets (doc 15 §11), so there `loadConfig` refuses a configuration

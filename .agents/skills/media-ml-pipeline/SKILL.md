@@ -36,16 +36,16 @@ metadata:
 
 3. Copy the structure from (worker side, all exist):
 
-   | New thing                                                             | Copy from                                                                                                                                       |
-   | --------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
-   | Service package (workspace member, depends on `ai-stylist-generated`) | `workers/ml/segmentation/pyproject.toml`; add it to `workers/pyproject.toml` `[tool.uv.sources]`                                                |
-   | App factory + access log                                              | `workers/ml/segmentation/src/ai_stylist_segmentation/app.py`                                                                                    |
-   | Composition root (logging, tracing setup, adapters)                   | `workers/ml/segmentation/src/ai_stylist_segmentation/main.py`                                                                                   |
-   | structlog redaction processor + forbidden-word denylist               | `workers/ml/segmentation/src/ai_stylist_segmentation/redaction.py`                                                                              |
-   | Thin routes with a provenance marker                                  | `workers/ml/segmentation/src/ai_stylist_segmentation/routes.py`                                                                                 |
-   | Request/response models                                               | `workers/ml/segmentation/src/ai_stylist_segmentation/schemas.py`                                                                                |
-   | Tests (httpx ASGI client, hypothesis, redaction)                      | `workers/ml/segmentation/tests/test_segment.py`, `workers/ml/segmentation/tests/test_redaction.py`, `workers/ml/segmentation/tests/conftest.py` |
-   | Image                                                                 | `workers/ml/segmentation/Dockerfile` (built from the workspace root)                                                                            |
+   | New thing                                                                                            | Copy from                                                                                                                                                        |
+   | ---------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+   | Service package (workspace member, depends on `ai-stylist-generated` and `ai-stylist-observability`) | `workers/ml/segmentation/pyproject.toml`; add it to `workers/pyproject.toml` `[tool.uv.sources]`                                                                 |
+   | App factory + access log                                                                             | `workers/ml/segmentation/src/ai_stylist_segmentation/app.py`                                                                                                     |
+   | Composition root (logging, tracing setup, adapters)                                                  | `workers/ml/segmentation/src/ai_stylist_segmentation/main.py`                                                                                                    |
+   | structlog redaction processor + forbidden-word denylist                                              | `workers/ml/observability/src/ai_stylist_observability/redaction.py`                                                                                             |
+   | Thin routes with a provenance marker                                                                 | `workers/ml/segmentation/src/ai_stylist_segmentation/routes.py`                                                                                                  |
+   | Request/response models                                                                              | `workers/ml/segmentation/src/ai_stylist_segmentation/schemas.py` (re-exports the generated `ai_stylist_generated.<service>` models; thin frozen subclasses only) |
+   | Tests (httpx ASGI client, hypothesis, redaction)                                                     | `workers/ml/segmentation/tests/test_segment.py`, `workers/ml/segmentation/tests/test_redaction.py`, `workers/ml/segmentation/tests/conftest.py`                  |
+   | Image                                                                                                | `workers/ml/segmentation/Dockerfile` (built from the workspace root)                                                                                             |
 
    API side: copy `apps/api/src/jobs/demo-outbox-flow.ts` + `apps/api/src/jobs/tests/demo-outbox-flow.test.ts`. Provider adapters copy `apps/api/src/platform/pg-health-probe.ts` (implements a port declared by the module); job-handler tests go in `apps/api/src/jobs/tests/<handler>.test.ts`.
 

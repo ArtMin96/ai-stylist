@@ -5,19 +5,25 @@ from __future__ import annotations
 import io
 import json
 import logging
+import re
 from pathlib import Path
 from types import MappingProxyType
+from typing import Any
 
 import pytest
 import structlog
 from httpx import AsyncClient
 
 from ai_stylist_segmentation.redaction import (
+    CODE_SHAPE,
+    ERROR_NAME_SHAPE,
     FORBIDDEN_LOG_KEYS,
+    MAX_ERR_CAUSE_DEPTH,
     REDACTED_COUNT_KEY,
     is_forbidden_log_key,
     redact_forbidden_keys,
 )
+from ai_stylist_segmentation.tracing import sanitize_attributes
 
 MARKER = "CANARY-7f3a9c"
 
@@ -35,6 +41,13 @@ REGISTRY = (
 EXAMPLES: dict[str, list[str]] = json.loads(
     REGISTRY.with_name("forbidden-log-keys.examples.json").read_text(encoding="utf-8")
 )
+# The single source of the error shapes and the cause depth (`ERROR_NAME_SHAPE`, `CODE_SHAPE`,
+# `MAX_ERR_CAUSE_DEPTH`, and the `exception.type` rule of `tracing.py`), with its labelled vectors;
+# read at collection time because the vectors are test parameters.
+LOG_REDACTION: dict[str, Any] = json.loads(
+    REGISTRY.with_name("log-redaction.json").read_text(encoding="utf-8")
+)
+EXCEPTION_TYPE_VECTORS: dict[str, list[str]] = LOG_REDACTION["vectors"]["exceptionType"]
 
 
 class DriverError(Exception):
@@ -46,10 +59,9 @@ class DriverError(Exception):
 
 
 DRIVER_ERROR_SUMMARY = {"type": "DriverError", "code": "23505"}
-# The observable contract of a logged exception, pinned as literals: the field the API logger
-# writes it under (`err`) and the number of cause links followed (its MAX_ERR_CAUSE_DEPTH).
+# The field the API logger writes a logged exception under, pinned as a literal. The number of cause
+# links followed is `MAX_ERR_CAUSE_DEPTH`, pinned to the log-redaction registry below.
 ERR_KEY = "err"
-MAX_ERR_CAUSE_DEPTH = 5
 
 
 def _driver_error() -> DriverError:
@@ -79,6 +91,39 @@ def test_forbidden_words_match_the_shared_kernel_registry() -> None:
         "FORBIDDEN_LOG_KEYS (ai_stylist_segmentation/redaction.py) drifted from "
         "packages/shared-kernel/registry/forbidden-log-keys.json; copy the registry's words"
     )
+
+
+def test_error_shapes_and_cause_depth_match_the_shared_kernel_registry() -> None:
+    drift = (
+        "drifted from packages/shared-kernel/registry/log-redaction.json; copy the registry's value"
+    )
+    # Same source string, compiled as the registry's schema says for Python (`re.ASCII`); every
+    # use is `fullmatch` (asserted through the vectors below).
+    assert ERROR_NAME_SHAPE.pattern == LOG_REDACTION["errorNameShape"], f"ERROR_NAME_SHAPE {drift}"
+    assert CODE_SHAPE.pattern == LOG_REDACTION["codeShape"], f"CODE_SHAPE {drift}"
+    assert ERROR_NAME_SHAPE.flags & re.ASCII
+    assert CODE_SHAPE.flags & re.ASCII
+    assert MAX_ERR_CAUSE_DEPTH == LOG_REDACTION["maxCauseDepth"], f"MAX_ERR_CAUSE_DEPTH {drift}"
+
+
+def _registry_shaped(value: str) -> bool:
+    """The registry's own `exception.type` rule, compiled as its schema says for Python."""
+    return any(
+        re.compile(LOG_REDACTION[shape], re.ASCII).fullmatch(value)
+        for shape in ("errorNameShape", "codeShape")
+    )
+
+
+@pytest.mark.parametrize("value", EXCEPTION_TYPE_VECTORS["kept"])
+def test_registry_exception_type_kept_vector_is_kept(value: str) -> None:
+    assert _registry_shaped(value)
+    assert sanitize_attributes({"exception.type": value}) == {"exception.type": value}
+
+
+@pytest.mark.parametrize("value", EXCEPTION_TYPE_VECTORS["replaced"])
+def test_registry_exception_type_replaced_vector_is_written_as_error(value: str) -> None:
+    assert not _registry_shaped(value)
+    assert sanitize_attributes({"exception.type": value}) == {"exception.type": "Error"}
 
 
 @pytest.mark.parametrize("key", sorted(FORBIDDEN_LOG_KEYS))
@@ -432,6 +477,23 @@ def test_read_only_mappings_and_sets_are_walked(log_stream: io.StringIO) -> None
     assert record["frozen"] == [DRIVER_ERROR_SUMMARY]
     assert record["nested"] == [{"inner": [DRIVER_ERROR_SUMMARY]}]
     assert record[REDACTED_COUNT_KEY] == 1
+
+
+def test_a_mapping_with_mixed_key_types_is_still_written(log_stream: io.StringIO) -> None:
+    # `JSONRenderer(sort_keys=True)` cannot order int and str keys together; with
+    # `logging.raiseExceptions = False` the whole line would vanish without a trace.
+    log = structlog.get_logger("canary")
+
+    log.info("mixed", m={1: "a", "b": 2})
+    log.info("mixed nested", job={"attempts": {0: "first", "last": 1, 2.5: "x", None: "n"}})
+    log.info("mixed forbidden", m={1: "a", "email": MARKER, 2: {"userToken": MARKER, 3: "c"}})
+
+    assert MARKER not in log_stream.getvalue()
+    mixed, nested, forbidden = _records(log_stream)
+    assert mixed["m"] == {"1": "a", "b": 2}
+    assert nested["job"] == {"attempts": {"0": "first", "last": 1, "2.5": "x", "None": "n"}}
+    assert forbidden["m"] == {"1": "a", "2": {"3": "c"}}
+    assert forbidden[REDACTED_COUNT_KEY] == 2
 
 
 def test_a_value_json_cannot_encode_is_written_as_its_type_name(log_stream: io.StringIO) -> None:

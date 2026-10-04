@@ -17,7 +17,9 @@ It mirrors apps/api/src/platform/telemetry/span-sanitizer.ts (`sanitizeAttribute
   Python instrumentation emits without OTEL_SEMCONV_STABILITY_OPT_IN=http); redact an attribute
   whose last dot-segment is a forbidden log word; keep `exception.type` only when it is name-shaped
   (`redaction.ERROR_NAME_SHAPE`) or code-shaped (`redaction.CODE_SHAPE`), else write `Error` (the
-  shapes the API's error summary uses for a logged class name and code);
+  `errorNameShape` and `codeShape` of `packages/shared-kernel/registry/log-redaction.json`, which
+  the API's error summary also reads; `tests/test_redaction.py` pins both constants to that file
+  and runs its `vectors.exceptionType` through `sanitize_attributes`);
   cut every string of `url.full`, `url.path`, `http.url` and `http.target` (a string or a sequence
   of strings) at the first `?` or `#`;
 - the span name is cut at the first `?` or `#` (`_strip_query`, the API's `stripQuery`);

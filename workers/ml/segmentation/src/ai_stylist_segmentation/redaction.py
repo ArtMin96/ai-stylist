@@ -10,7 +10,10 @@ key, or any of its camelCase / snake_case / kebab-case words, is a forbidden wor
 (`userEmail`, `refresh_token` and `x-auth-token` are forbidden; `latency` and `userId` are not).
 
 A logged exception mirrors the API logger's `err` serializer (`serializeErr`, with
-`apps/api/src/platform/queue/error-summary.ts` for each link): `{type, code?, cause?}` only, under
+`apps/api/src/platform/queue/error-summary.ts` for each link). The class-name shape, the code
+shape and the cause depth mirror `packages/shared-kernel/registry/log-redaction.json` the same way
+the words mirror theirs: constants here (`ERROR_NAME_SHAPE`, `CODE_SHAPE`, `MAX_ERR_CAUSE_DEPTH`),
+pinned to that file by `tests/test_redaction.py`. A summary is `{type, code?, cause?}` only, under
 `err` for the exception being logged (`exc_info`) and in place of an exception under any other key.
 Never the message, the traceback or another attribute: a driver error's message echoes row values,
 and a wrapper's message can list statement parameters. A `code` property that raises counts as
@@ -82,14 +85,19 @@ def is_forbidden_log_key(key: str) -> bool:
 
 # The log field of the exception being logged, as the API logger's `err`.
 ERR_KEY = "err"
+# The next three mirror `maxCauseDepth`, `errorNameShape` and `codeShape` of
+# `packages/shared-kernel/registry/log-redaction.json`, pinned to it by `tests/test_redaction.py`
+# (the image has no `packages/`). Each source is the registry's anchored string verbatim, compiled
+# with `re.ASCII` (`\w` is `[A-Za-z0-9_]`, as in JavaScript) and always used with `fullmatch`, so
+# `$` never accepts a trailing newline.
 # `cause` links of a logged exception that are followed; the bound also ends a circular chain.
 MAX_ERR_CAUSE_DEPTH = 5
 # What a class name may look like to be logged (else `Error`): a dynamically created class can
-# carry any text as its name. ASCII `\w`, as `NAME_SHAPE` of the API's queue/error-summary.ts.
-ERROR_NAME_SHAPE = re.compile(r"[A-Za-z_$][\w$.]{0,63}", re.ASCII)
+# carry any text as its name.
+ERROR_NAME_SHAPE = re.compile(r"^[A-Za-z_$][\w$.]{0,63}$", re.ASCII)
 # A code worth keeping (a SQLSTATE such as `23505`, a system code such as `ECONNREFUSED`): short and
-# code-shaped, never free text. `CODE_SHAPE` of the API's queue/error-summary.ts.
-CODE_SHAPE = re.compile(r"[A-Z0-9_]{1,32}", re.ASCII)
+# code-shaped, never free text.
+CODE_SHAPE = re.compile(r"^[A-Z0-9_]{1,32}$", re.ASCII)
 # What `_scrub` writes for a container already on the path from the root (a reference cycle).
 CIRCULAR = "[Circular]"
 
@@ -194,8 +202,11 @@ def _scrub(value: Any, path: set[int] | None = None) -> tuple[Any, int]:
     """Return a copy of `value` with forbidden keys removed at every depth + a drop count. An
     exception, under any key and at any depth, becomes its `summarize_error` allowlist. Every
     mapping is walked (a read-only `MappingProxyType` too), and lists, tuples, sets and frozensets
-    become lists. `path` holds the ids of the containers being walked: a container that holds
-    itself is written as `[Circular]` (a reference repeated outside a cycle is written in full)."""
+    become lists. Every key is written as `str(key)`, the string the forbidden-key match checks:
+    `JSONRenderer(sort_keys=True)` cannot order a mapping that mixes `int` and `str` keys, and the
+    failed line would be dropped silently. `path` holds the ids of the containers being walked: a
+    container that holds itself is written as `[Circular]` (a reference repeated outside a cycle is
+    written in full)."""
     if isinstance(value, BaseException):
         return summarize_error(value), 0
     if not isinstance(value, Mapping | list | tuple | set | frozenset):
@@ -207,12 +218,13 @@ def _scrub(value: Any, path: set[int] | None = None) -> tuple[Any, int]:
     try:
         if isinstance(value, Mapping):
             dropped = 0
-            cleaned: dict[Any, Any] = {}
+            cleaned: dict[str, Any] = {}
             for key, inner in value.items():
-                if is_forbidden_log_key(str(key)):
+                name = str(key)
+                if is_forbidden_log_key(name):
                     dropped += 1
                     continue
-                cleaned[key], inner_dropped = _scrub(inner, path)
+                cleaned[name], inner_dropped = _scrub(inner, path)
                 dropped += inner_dropped
             return cleaned, dropped
         items = [_scrub(item, path) for item in value]

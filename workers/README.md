@@ -21,7 +21,7 @@ workers/
         │   ├── app.py         `create_app()` factory + correlation-id and body-free access-log middleware
         │   ├── routes.py      GET /health, POST /v1/segment (thin adapters, no domain logic)
         │   ├── schemas.py     Pydantic request/response models; re-exports the generated envelope
-        │   ├── redaction.py   forbidden log words + the structlog redaction processor
+        │   ├── redaction.py   forbidden log words, error shapes + the structlog redaction processor
         │   ├── correlation.py `x-correlation-id`: validate or mint, bind to logs + span, echo
         │   └── tracing.py     span sanitizer (OTLP export backstop) + `trace_id`/`span_id` log processor
         └── tests/          the service's tests (always here — test-placement rule)
@@ -50,14 +50,22 @@ workers/
   it matches `^[A-Za-z_$][\w$.]{0,63}$`), a `code` attribute only when it is code-shaped
   (`^[A-Z0-9_]{1,32}$`, e.g. a SQLSTATE or `ECONNREFUSED`; a `code` property that raises counts as
   none) and the same for at most 5 links of the cause chain (`__cause__`, else the unsuppressed
-  `__context__`); an exception under any other key is replaced by the same summary. Without a
+  `__context__`); an exception under any other key is replaced by the same summary. The two shapes
+  and the depth are `errorNameShape`, `codeShape` and `maxCauseDepth` of
+  `packages/shared-kernel/registry/log-redaction.json`; as with the words, `ERROR_NAME_SHAPE`,
+  `CODE_SHAPE` and `MAX_ERR_CAUSE_DEPTH` in `redaction.py` are copies (the registry's anchored
+  source verbatim, compiled with `re.ASCII`, always used with `fullmatch`) that
+  `tests/test_redaction.py` pins to that file, and the tests run its `vectors.exceptionType` through
+  the span rule (copy the registry's values when they fail). Without a
   logged exception, any other value under `err` (`err=str(exc)`, a dict, stdlib
   `extra={"err": ...}`) is `{type}` only, its Python class name (the API writes a non-Error by its
   `typeof`). Never the message or the traceback. The event is the caller's own string: printf-style
   arguments are dropped, never interpolated, as the API logger drops them (structlog's stdlib
   `BoundLogger` + `drop_positional_args`, not `make_filtering_bound_logger`, which interpolates;
   stdlib records keep their template, and a non-string stdlib message is its class name). Every
-  mapping (also `MappingProxyType`), list, tuple, set and frozenset is walked; a container that
+  mapping (also `MappingProxyType`), list, tuple, set and frozenset is walked, and every mapping
+  key is written as `str(key)` (a mapping mixing `int` and `str` keys would otherwise fail the
+  sorted JSON render and lose the line); a container that
   holds itself is written as `[Circular]`; a value JSON cannot encode is its class name, never its
   repr. A record that still fails to format is dropped silently (`logging.raiseExceptions = False`),
   so `Handler.handleError` never prints its message and arguments to stderr. Not covered: text the
@@ -101,7 +109,8 @@ semantic-convention names of the dropped attributes are dropped too. Grafana set
   `user_agent.original`, `exception.message`, `exception.stacktrace` (and their old-convention
   names), cuts the query and fragment from every string of `url.full`/`url.path`/`http.url`/
   `http.target` (a string or a sequence of strings; cut, not dropped), keeps `exception.type` only
-  when it is name-shaped (`^[A-Za-z_$][\w$.]{0,63}$`) or code-shaped (`^[A-Z0-9_]{1,32}$`) and
+  when it is name-shaped (`^[A-Za-z_$][\w$.]{0,63}$`) or code-shaped (`^[A-Z0-9_]{1,32}$`, both
+  pinned to `packages/shared-kernel/registry/log-redaction.json`, see Logging) and
   writes `Error` otherwise (the instrumentation writes `module.QualName`, so a free-text class name,
   a qualified name over 64 characters or one with `<locals>` becomes `Error`), and replaces with
   `[REDACTED]` any attribute whose last dot-segment is a forbidden word. It also cuts

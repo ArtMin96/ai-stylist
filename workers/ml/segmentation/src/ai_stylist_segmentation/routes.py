@@ -26,7 +26,8 @@ async def health() -> HealthResponse:
 async def segment(request: SegmentRequest) -> SegmentResponse:
     """P02 echo stub: validates the request and returns an empty, clearly-marked result.
 
-    TODO(P02 T08): wire the real model behind this route; keep the provenance marker.
+    TODO(P06): wire the real server-fallback segmentation model behind this route
+    (P06 "on-device segmentation with server fallback"); keep the provenance marker.
     """
     return SegmentResponse(
         request_id=request.request_id,

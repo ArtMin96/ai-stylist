@@ -34,6 +34,9 @@ import { type SigV4Credentials, presignUrl, uriEncode } from './sigv4-presign.js
 /** R2 signs every request for the one region `auto` (the bucket's location is not in the URL). */
 export const R2_SIGNING_REGION = 'auto';
 const R2_SIGNING_SERVICE = 's3';
+// The shape of each R2_* key lives here only: apps/api/src/config.ts checks presence and
+// all-or-none, and a malformed value fails at boot when the composition root builds this adapter
+// (`AppModule.forRoot` → `createStorageProvider`), with an error naming the key, never the value.
 /** Cloudflare account ids are 32 lowercase hex characters; the id becomes the endpoint host. */
 const CLOUDFLARE_ACCOUNT_ID = /^[0-9a-f]{32}$/;
 /** R2 bucket names: 3–63 lowercase letters, digits and hyphens, not starting or ending with `-`. */
@@ -66,19 +69,26 @@ export function r2Endpoint(accountId: string): string {
   return `https://${accountId}.r2.cloudflarestorage.com`;
 }
 
-/** Checks the options without echoing a value (the secret must never reach an error or a log). */
+/**
+ * Checks the options without echoing a value (the secret must never reach an error or a log). Each
+ * message names the option and its env key; an empty value fails like a malformed one.
+ */
 function endpointOrigin(options: R2StorageProviderOptions): string {
   if (!CLOUDFLARE_ACCOUNT_ID.test(options.accountId)) {
-    throw new TypeError('R2: accountId must be a Cloudflare account id (32 lowercase hex)');
+    throw new TypeError(
+      'R2: accountId (R2_ACCOUNT_ID) must be a Cloudflare account id (32 lowercase hex)',
+    );
   }
   if (!ACCESS_KEY_ID.test(options.accessKeyId)) {
-    throw new TypeError('R2: accessKeyId must be letters and digits only');
+    throw new TypeError('R2: accessKeyId (R2_ACCESS_KEY_ID) must be letters and digits only');
   }
   if (options.secretAccessKey.length === 0 || /\s/.test(options.secretAccessKey)) {
-    throw new TypeError('R2: secretAccessKey must be non-empty without whitespace');
+    throw new TypeError(
+      'R2: secretAccessKey (R2_SECRET_ACCESS_KEY) must be non-empty without whitespace',
+    );
   }
   if (!R2_BUCKET_NAME.test(options.bucket)) {
-    throw new TypeError('R2: bucket must be an R2 bucket name (3-63 of a-z, 0-9, -)');
+    throw new TypeError('R2: bucket (R2_BUCKET) must be an R2 bucket name (3-63 of a-z, 0-9, -)');
   }
   const url = new URL(options.endpoint ?? r2Endpoint(options.accountId));
   const secure =

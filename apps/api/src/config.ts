@@ -32,28 +32,19 @@ export const configSchema = z.object({
   /**
    * Cloudflare R2 (`StorageProvider`, P02-T13): all four set → presigned URLs on R2's S3 endpoint
    * `https://<R2_ACCOUNT_ID>.r2.cloudflarestorage.com`; none set → the in-memory provider (local,
-   * dev, tests, CI; refused on staging, prod and NODE_ENV=production, see `allowsInMemoryStorage`);
-   * some → refused. `R2_PUBLIC_BASE_URL` (public assets, P04/P06) is not read yet.
+   * dev, tests, CI; refused on staging, prod and NODE_ENV=production, see
+   * `isLocalOrDevDeployment`); some → refused. Checked here for presence and all-or-none only: the
+   * shape of each value is the R2 adapter's rule (platform/storage/r2-storage-provider.ts), and a
+   * malformed value fails at boot when `AppModule.forRoot` builds the adapter, with an error that
+   * names the key, never the value. `R2_PUBLIC_BASE_URL` (public assets, P04/P06) is not read yet.
    */
-  R2_ACCOUNT_ID: z
-    .string()
-    .regex(/^[0-9a-f]{32}$/, 'must be a Cloudflare account id (32 lowercase hex characters)')
-    .optional(),
-  R2_ACCESS_KEY_ID: z
-    .string()
-    .regex(/^[A-Za-z0-9]+$/, 'must be letters and digits only')
-    .optional(),
-  R2_SECRET_ACCESS_KEY: z.string().regex(/^\S+$/, 'must not contain whitespace').optional(),
-  R2_BUCKET: z
-    .string()
-    .regex(
-      /^[a-z0-9][a-z0-9-]{1,61}[a-z0-9]$/,
-      'must be an R2 bucket name (3-63 lowercase letters, digits and hyphens)',
-    )
-    .optional(),
+  R2_ACCOUNT_ID: z.string().optional(),
+  R2_ACCESS_KEY_ID: z.string().optional(),
+  R2_SECRET_ACCESS_KEY: z.string().optional(),
+  R2_BUCKET: z.string().optional(),
 });
 
-/** Set together or not at all (`createStorageProvider` refuses a partial set as well). */
+/** Set together or not at all. */
 const R2_KEYS = ['R2_ACCOUNT_ID', 'R2_ACCESS_KEY_ID', 'R2_SECRET_ACCESS_KEY', 'R2_BUCKET'] as const;
 
 export type AppConfig = z.infer<typeof configSchema> & { readonly listenPort: number };
@@ -68,12 +59,14 @@ export class ConfigError extends Error {
 }
 
 /**
- * Fail closed (same shape as `isDevRouteEnabled`): the in-memory storage provider may stand in for
- * R2 only outside production builds AND in a local or dev deployment. Staging and prod use real R2
- * buckets (doc 15 §11), so there `loadConfig` refuses a configuration without the R2 keys instead
- * of minting in-memory URLs that store nothing.
+ * Fail closed: true only outside production builds AND in a local or dev deployment, so a
+ * staging/prod deploy that forgets NODE_ENV=production still counts as deployed. The one predicate
+ * for what only local and dev may have: the dev routes (`DevModule`, apps/api/src/dev/index.ts) and
+ * the in-memory storage provider standing in for R2 (`createStorageProvider`'s `allowsInMemory`).
+ * Staging and prod use real R2 buckets (doc 15 §11), so there `loadConfig` refuses a configuration
+ * without the R2 keys instead of minting in-memory URLs that store nothing.
  */
-export function allowsInMemoryStorage(config: Pick<AppConfig, 'NODE_ENV' | 'APP_ENV'>): boolean {
+export function isLocalOrDevDeployment(config: Pick<AppConfig, 'NODE_ENV' | 'APP_ENV'>): boolean {
   return (
     config.NODE_ENV !== 'production' && (config.APP_ENV === 'local' || config.APP_ENV === 'dev')
   );
@@ -103,7 +96,7 @@ export function loadConfig(env: Record<string, string | undefined> = process.env
       `invalid configuration: ${missingR2.join(', ')}: required when any R2_* key is set`,
     );
   }
-  if (missingR2.length === R2_KEYS.length && !allowsInMemoryStorage(parsed.data)) {
+  if (missingR2.length === R2_KEYS.length && !isLocalOrDevDeployment(parsed.data)) {
     // Names the keys and the rule only, never a configured value.
     throw new ConfigError(
       `invalid configuration: ${R2_KEYS.join(', ')}: required when APP_ENV is staging or prod ` +

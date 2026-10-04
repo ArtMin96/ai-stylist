@@ -1,7 +1,8 @@
 // Dev-only: POST /v1/dev/demo-events appends a fresh `demo.outbox-flow.requested.v1` envelope to
 // `platform_outbox` through the OutboxWriter port; the outbox relay dispatches it to the
 // `demo.outbox-flow` pg-boss job. Registered by the composition root only when
-// `isDevRouteEnabled(config)`: NODE_ENV !== 'production' and APP_ENV is `local` or `dev`.
+// `isLocalOrDevDeployment(config)` (../config.ts): NODE_ENV !== 'production' and APP_ENV is
+// `local` or `dev`.
 // Gated by the `demo-outbox-flow` flag (registry `offBehavior`): off → 404, no outbox row.
 // The envelope's `correlationId` is the request's (`x-correlation-id`, or the id the platform
 // minted), so the envelope, the request's logs and span, and the response header carry one id.

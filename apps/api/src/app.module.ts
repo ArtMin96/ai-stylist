@@ -4,6 +4,7 @@ import type { Writable } from 'node:stream';
 
 import {
   type DynamicModule,
+  HttpException,
   Module,
   type OnApplicationBootstrap,
   type OnApplicationShutdown,
@@ -17,8 +18,8 @@ import pino from 'pino';
 import { createDb, type DbHandle } from '@ai-stylist/db';
 import type { FeatureFlags } from '@ai-stylist/shared-kernel';
 
-import { type AppConfig, allowsInMemoryStorage, loadConfig } from './config.js';
-import { DevModule, UnconfiguredOutboxWriter, isDevRouteEnabled } from './dev/index.js';
+import { type AppConfig, isLocalOrDevDeployment, loadConfig } from './config.js';
+import { DevModule, UnconfiguredOutboxWriter } from './dev/index.js';
 import { JOB_QUEUES, queueForEventType, userIdOf } from './jobs/queues.js';
 import { AdminModule } from './modules/admin/index.js';
 import { AssistantModule } from './modules/assistant/index.js';
@@ -163,7 +164,9 @@ export class AppModule implements OnApplicationShutdown {
     const healthProbe: HealthProbe =
       db === null ? new UnconfiguredHealthProbe() : new PgHealthProbe(db.sql);
     const clock = new SystemClock();
-    // R2 when the four R2_* keys are set (presigned URLs on R2's S3 endpoint), else in-memory.
+    // R2 when the four R2_* keys are set (presigned URLs on R2's S3 endpoint), else in-memory. The
+    // R2 adapter checks each key's shape here, at boot: a malformed key fails `createApp` with an
+    // error naming the key, never the value.
     const storage = createStorageProvider({
       accountId: config.R2_ACCOUNT_ID,
       accessKeyId: config.R2_ACCESS_KEY_ID,
@@ -172,7 +175,7 @@ export class AppModule implements OnApplicationShutdown {
       clock,
       logger,
       // Staging and prod refuse the in-memory fallback (doc 15 §11); the rule lives in config.ts.
-      allowsInMemory: allowsInMemoryStorage(config),
+      allowsInMemory: isLocalOrDevDeployment(config),
     });
     let runtime: DbRuntime | null = null;
     if (db !== null && config.DATABASE_URL !== undefined) {
@@ -211,7 +214,7 @@ export class AppModule implements OnApplicationShutdown {
           featureFlags,
         }),
         ...DOMAIN_MODULES,
-        ...(isDevRouteEnabled(config)
+        ...(isLocalOrDevDeployment(config)
           ? [DevModule.forRoot(outboxWriter, currentCorrelationId)]
           : []),
       ],
@@ -243,17 +246,20 @@ export async function createApp(options: CreateAppOptions = {}): Promise<NestFas
   registerCorrelationId(fastify);
   registerRequestMetrics(fastify);
   app.useLogger(app.get(Logger));
-  // Release the buffered boot lines through pino now, so no early `Logger` call bypasses redaction.
+  // `bufferLogs` holds every Nest `Logger` line until a flush. `NestFactory.create` does not flush
+  // on `useLogger` (only `createApplicationContext` sets `flushLogsOnOverride`); its `autoFlushLogs`
+  // flushes in `listen()`. Flushing here writes the boot lines through pino now and ends buffering,
+  // so lines logged before `listen()`, or by an app that never listens (`app.inject` tests), reach
+  // the sink (apps/api/tests/http.test.ts, "writes Nest Logger lines …").
   app.flushLogs();
   app.enableShutdownHooks();
   await app.register(rateLimit, {
     max: config.RATE_LIMIT_MAX,
     timeWindow: config.RATE_LIMIT_WINDOW_MS,
-    // ProblemFilter maps the thrown error (statusCode 429) to a RATE_LIMITED problem.
+    // ProblemFilter maps the thrown HttpException (429) to a RATE_LIMITED problem with this text
+    // as `detail` (a non-HttpException gets none).
     errorResponseBuilder: (_request, context) =>
-      Object.assign(new Error(`rate limit exceeded, retry in ${context.after}`), {
-        statusCode: context.statusCode,
-      }),
+      new HttpException(`rate limit exceeded, retry in ${context.after}`, context.statusCode),
   });
   return app;
 }

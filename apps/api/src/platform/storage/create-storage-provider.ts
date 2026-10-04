@@ -1,10 +1,10 @@
-// Picks the `StorageProvider` adapter from configuration (the composition root passes the
-// validated `R2_*` keys and `allowsInMemoryStorage(config)`; this module never reads `process.env`).
-// No R2 key: the in-memory provider, so local runs, tests and CI need no bucket. Staging, prod and
-// NODE_ENV=production never get here without the keys (`loadConfig` refuses to boot, see
-// `allowsInMemoryStorage` in config.ts), and the factory refuses too when told the environment
-// does not allow it (defence in depth). Some but not all keys: refused, so a half-configured
-// environment never falls back to in-memory URLs silently.
+// Picks the `StorageProvider` adapter from configuration (the composition root passes the `R2_*`
+// keys and `allowsInMemory: isLocalOrDevDeployment(config)`; this module never reads
+// `process.env`). No R2 key: the in-memory provider, so local runs, tests and CI need no bucket,
+// and only when the caller says the environment allows it (fail closed: `allowsInMemory` is
+// required). Any R2 key: the R2 adapter, whose constructor is the one check of each key's shape
+// and refuses an empty or malformed one by naming the key. Presence and all-or-none are the
+// boot rules of apps/api/src/config.ts (`loadConfig`), which platform does not import.
 import type { Logger } from 'pino';
 
 import type { Clock } from '../ports/clock.port.js';
@@ -25,46 +25,36 @@ export type StorageProviderConfig = {
   /** A pino logger built from `loggerOptions()`. */
   readonly logger: Logger;
   /**
-   * `allowsInMemoryStorage(config)` of apps/api/src/config.ts (platform cannot import it). `false`:
-   * no R2 key is refused instead of binding the in-memory provider. Omitted: allowed (tests).
+   * Whether the in-memory provider may stand in when no R2 key is set: the composition root passes
+   * `isLocalOrDevDeployment(config)` of apps/api/src/config.ts (platform cannot import it).
+   * Required, so a caller that forgets it does not compile; `false` refuses a configuration
+   * without R2 keys instead of binding the in-memory provider.
    */
-  readonly allowsInMemory?: boolean;
+  readonly allowsInMemory: boolean;
 };
 
 /**
- * `R2StorageProvider` when all four R2 keys are set, `InMemoryStorageProvider` when none is and the
- * environment allows it.
+ * `InMemoryStorageProvider` when no R2 key is set and the environment allows it, else
+ * `R2StorageProvider` (which refuses a missing or malformed key).
  */
 export function createStorageProvider(config: StorageProviderConfig): StorageProvider {
   const keys = {
-    R2_ACCOUNT_ID: config.accountId?.trim() ?? '',
-    R2_ACCESS_KEY_ID: config.accessKeyId?.trim() ?? '',
-    R2_SECRET_ACCESS_KEY: config.secretAccessKey?.trim() ?? '',
-    R2_BUCKET: config.bucket?.trim() ?? '',
+    accountId: config.accountId?.trim() ?? '',
+    accessKeyId: config.accessKeyId?.trim() ?? '',
+    secretAccessKey: config.secretAccessKey?.trim() ?? '',
+    bucket: config.bucket?.trim() ?? '',
   };
-  const missing = Object.entries(keys)
-    .filter(([, value]) => value === '')
-    .map(([name]) => name);
-  if (missing.length === Object.keys(keys).length) {
-    if (config.allowsInMemory === false) {
+  if (Object.values(keys).every((value) => value === '')) {
+    if (!config.allowsInMemory) {
       throw new TypeError(
         'storage: no R2 keys, and this environment does not allow the in-memory provider; ' +
-          `set ${missing.join(', ')}`,
+          'set R2_ACCOUNT_ID, R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY, R2_BUCKET',
       );
     }
     config.logger.info({ component: 'storage', provider: 'in-memory' }, 'storage: no R2 keys');
     return new InMemoryStorageProvider(() => config.clock.now());
   }
-  if (missing.length > 0) {
-    throw new TypeError(`storage: R2 is partly configured; set ${missing.join(', ')} as well`);
-  }
+  const provider = new R2StorageProvider({ ...keys, clock: config.clock, logger: config.logger });
   config.logger.info({ component: 'storage', provider: 'r2' }, 'storage: R2 presigned URLs');
-  return new R2StorageProvider({
-    accountId: keys.R2_ACCOUNT_ID,
-    accessKeyId: keys.R2_ACCESS_KEY_ID,
-    secretAccessKey: keys.R2_SECRET_ACCESS_KEY,
-    bucket: keys.R2_BUCKET,
-    clock: config.clock,
-    logger: config.logger,
-  });
+  return provider;
 }

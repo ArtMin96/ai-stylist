@@ -11,16 +11,22 @@ custom domain, not this adapter).
 ## Files
 
 - `create-storage-provider.ts`: `createStorageProvider({ accountId, accessKeyId, secretAccessKey,
-bucket, clock, logger })` → `StorageProvider`. The composition root passes the validated
-  `R2_ACCOUNT_ID`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY` and `R2_BUCKET` (`apps/api/src/config.ts`);
-  nothing here reads `process.env`. All four set → `R2StorageProvider`; none → the
-  `InMemoryStorageProvider`; some → a `TypeError` naming the missing keys (`loadConfig` refuses the
-  same set first). `loadConfig` also refuses to boot with none of the four keys when `APP_ENV` is
-  `staging` or `prod` or `NODE_ENV` is `production` (`allowsInMemoryStorage`, doc 15 §11: staging
-  and prod use real R2 buckets), so the in-memory provider is bound only in local, dev and test runs.
-  Behind that, the factory refuses the in-memory provider itself when the composition root passes
-  `allowsInMemory: allowsInMemoryStorage(config)` as `false` (defence in depth).
-- `r2-storage-provider.ts`: `R2StorageProvider`, `r2Endpoint(accountId)`.
+bucket, clock, logger, allowsInMemory })` → `StorageProvider`. The composition root passes
+  `R2_ACCOUNT_ID`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY` and `R2_BUCKET` as loaded by
+  `apps/api/src/config.ts`, and `allowsInMemory: isLocalOrDevDeployment(config)`; nothing here reads
+  `process.env`. `allowsInMemory` is required (fail closed): `true` lets the in-memory provider stand
+  in when no R2 key is set, `false` refuses that configuration with a `TypeError` naming the four
+  keys. No key (empty and blank count as unset) → `InMemoryStorageProvider` when allowed; any key →
+  `R2StorageProvider`, whose constructor refuses a missing or malformed key. `loadConfig` owns the
+  boot rules, which platform does not import: presence and all-or-none (a partial set is refused
+  there first), and the refusal to boot with none of the four keys when `APP_ENV` is `staging` or
+  `prod` or `NODE_ENV` is `production` (`isLocalOrDevDeployment`, doc 15 §11: staging and prod use
+  real R2 buckets), so the in-memory provider is bound only in local, dev and test runs.
+- `r2-storage-provider.ts`: `R2StorageProvider`, `r2Endpoint(accountId)`. The only check of each
+  key's shape (account id 32 lowercase hex, access key id letters and digits, secret without
+  whitespace, bucket an R2 bucket name): the composition root builds the adapter in
+  `AppModule.forRoot`, so a malformed key fails boot with a `TypeError` that names the option and its
+  env key (`R2: bucket (R2_BUCKET) must be …`), never the value.
 - `sigv4-presign.ts`: AWS Signature Version 4 query presigning on `node:crypto` (no SDK; see
   "Signer" below).
 
@@ -105,12 +111,20 @@ human step. If one is adopted, it replaces `presignUrl` only; the vector tests s
   500 mints < 100 ms, the P02 budget).
 - `../tests/storage.port.test.ts`: TTL clamps and the in-memory provider, including two users at
   the same namespace and key.
-- `../tests/storage-provider.test.ts`: `createStorageProvider` and the `R2_*` config keys,
-  including the boot refusal without R2 keys on staging, prod and `NODE_ENV=production`.
+- `../tests/storage-provider.test.ts`: `createStorageProvider` (in-memory only when allowed, R2
+  otherwise; a partial or malformed key refused by name, no value in the error or the logs). The
+  config rules (presence, all-or-none, the boot refusal without R2 keys on staging, prod and
+  `NODE_ENV=production`, a malformed key failing `createApp`) are in `apps/api/tests/config.test.ts`:
+  platform tests do not import `config.ts`.
 - `../tests/r2-storage.live.sec.test.ts`: the same constraints enforced by R2 itself, plus a URL
   edited to another user's prefix. It runs only on an explicit opt-in, `R2_LIVE_TEST=1` (with the
   four `R2_*` keys in the environment: direnv loads `.env` after `just secrets-sync`), e.g.
   `R2_LIVE_TEST=1 just test platform`; credentials alone never run it, so a shell holding another
-  environment's keys does not write to that bucket. Without the opt-in it is skipped (CI); opted in
-  without the keys it fails. It overwrites one synthetic object of a synthetic user,
+  environment's keys does not write to that bucket. It reads the four keys and `APP_ENV` from
+  `process.env` and calls `createStorageProvider` directly (`allowsInMemory: false`). It also
+  refuses unless `APP_ENV` is unset, `local` or `dev` and `R2_BUCKET` ends in `-dev` or `-local`
+  (bucket names follow `ai-stylist-<env>`, docs/SERVICES-SETUP.md §6: the dev bucket
+  `ai-stylist-dev` passes, `ai-stylist-staging`, `ai-stylist-prod` and `ai-stylist-pg-backups`
+  never do); that guard is tested on every run. Without the opt-in the round trip is skipped (CI);
+  opted in without the keys it fails. It overwrites one synthetic object of a synthetic user,
   `u/usr_0000000000000000000000TEST/uploads/live-test/round-trip.txt`, in the configured bucket.

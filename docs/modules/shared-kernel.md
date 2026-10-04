@@ -50,7 +50,7 @@ None yet (P02 skeleton). Planned per SPINE §3: none — types and constants onl
 
 ## Forbidden dependencies
 
-Derived from P02 brief §5 and doc 04 §4.2; every rule has a failing fixture in `just arch-check`, and exceptions need an ADR.
+Derived from P02 brief §5 and doc 04 §4.2; every rule has a failing fixture (`just arch-check --fixtures`, which also fails when a rule has none), and exceptions need an ADR.
 
 - Any edge that closes a cycle (`no-cycles`); the graph must equal doc 04 §4.1.
 - `apps/api/src/modules/**`, `apps/api/src/platform/**`, `packages/contracts`, and every other workspace package.

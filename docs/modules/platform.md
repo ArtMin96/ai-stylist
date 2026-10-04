@@ -93,7 +93,7 @@ The relay dispatches every outbox event but interprets none: event type → queu
 
 ## Forbidden dependencies
 
-Derived from P02 brief §5 and doc 04 §4.2; every rule has a failing fixture in `just arch-check`, and exceptions need an ADR.
+Derived from P02 brief §5 and doc 04 §4.2; every rule has a failing fixture (`just arch-check --fixtures`, which also fails when a rule has none), and exceptions need an ADR.
 
 - Any edge that closes a cycle (`no-cycles`); the graph must equal doc 04 §4.1.
 - `apps/api/src/modules/**` entirely — public API included (`platform-leaf`); `apps/api/src/jobs/**` too (queue names and routing are injected by the composition root).

@@ -110,10 +110,15 @@ unchanged: counting lives in the wrappers.
 
 ## Segmentation client
 
-`HttpSegmentationClient` mirrors `SegmentRequest` / `SegmentResponse` from
-`workers/ml/segmentation/src/ai_stylist_segmentation/schemas.py` minimally. That file's TODO
-moves the worker schemas into `packages/contracts`; then these types come from the generated
-contract (not part of P02-T08). Bounds, set in `index.ts`: `SEGMENTATION_TIMEOUT_MS` (10 s per
+`HttpSegmentationClient` takes `SegmentRequest`, `SegmentResponse`, `MaskLabel` and `MaskRef` from
+the generated worker contract (`@ai-stylist/contracts/workers`, source
+`packages/contracts/workers/segmentation/segmentation.v1.json`) and validates each reply with Ajv
+2020-12 against that schema's `$defs/SegmentResponse` (compiled once at load, as
+`demo-outbox-flow.ts` does for events): a reply with an unknown field or mask label, a score
+outside 0–1, or another request's `request_id` is a `SegmentationError`. No shape is restated here.
+The client and its `SegmentationClient` type stay in `jobs/` until the `media` module consumes
+segmentation (P06); then the port moves to `apps/api/src/modules/media/index.ts` and the adapter
+to `platform`. Bounds, set in `index.ts`: `SEGMENTATION_TIMEOUT_MS` (10 s per
 call; the job's abort signal also cancels it) and `SEGMENTATION_BREAKER` (opens after 5
 consecutive failures, for 30 s).
 

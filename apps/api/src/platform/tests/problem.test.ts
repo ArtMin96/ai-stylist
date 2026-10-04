@@ -1,9 +1,10 @@
 import { BadRequestException, NotFoundException } from '@nestjs/common';
+import { errorCodes } from 'fastify';
 import { describe, expect, it } from 'vitest';
 
 import { PROBLEM_TYPE_BASE } from '@ai-stylist/shared-kernel';
 
-import { toProblem } from '../problem.filter.js';
+import { FASTIFY_DETAIL_CODES, toProblem } from '../problem.filter.js';
 
 describe('toProblem', () => {
   it('maps HttpException status to the registry code and keeps the detail', () => {
@@ -82,6 +83,25 @@ describe('toProblem', () => {
       instance: '/v1/x',
       detail: 'Unsupported Media Type',
     });
+  });
+
+  it('maps 413 (Fastify: request body too large) to CONTENT_TOO_LARGE', () => {
+    const tooLarge = new errorCodes.FST_ERR_CTP_BODY_TOO_LARGE();
+    expect(toProblem(tooLarge, '/v1/x')).toEqual({
+      type: `${PROBLEM_TYPE_BASE}/CONTENT_TOO_LARGE`,
+      title: 'Content too large',
+      status: 413,
+      code: 'CONTENT_TOO_LARGE',
+      instance: '/v1/x',
+      detail: tooLarge.message,
+    });
+  });
+
+  it("each allowlisted Fastify request error keeps exactly Fastify's own fixed text", () => {
+    for (const code of FASTIFY_DETAIL_CODES) {
+      const fastifyError = new errorCodes[code]();
+      expect(toProblem(fastifyError, '/v1/x').detail).toBe(fastifyError.message);
+    }
   });
 
   it('never leaks internals for 5xx', () => {

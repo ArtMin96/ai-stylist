@@ -6,7 +6,7 @@ import {
   Inject,
   Injectable,
 } from '@nestjs/common';
-import type { FastifyError, FastifyReply, FastifyRequest } from 'fastify';
+import { type FastifyError, type FastifyReply, type FastifyRequest, errorCodes } from 'fastify';
 import { Logger } from 'nestjs-pino';
 
 import { type ErrorCode, type ProblemDetails, problem } from '@ai-stylist/shared-kernel';
@@ -22,6 +22,8 @@ const STATUS_TO_CODE: Readonly<Record<number, ErrorCode>> = {
   404: 'NOT_FOUND',
   409: 'CONFLICT',
   410: 'ACCOUNT_DELETED',
+  // A request body above Fastify's bodyLimit.
+  413: 'CONTENT_TOO_LARGE',
   // A request body in a media type the route does not accept (Fastify's content-type parser).
   415: 'UNSUPPORTED_MEDIA_TYPE',
   429: 'RATE_LIMITED',
@@ -35,21 +37,24 @@ type StatusCarrier = { statusCode?: unknown; status?: unknown };
 
 /**
  * The only non-HttpException errors whose `detail` a 4xx problem carries: Fastify's own request
- * errors from its content-type parser (fastify lib/errors.js), each with the fixed text Fastify
- * writes. The detail is this table's text, never the thrown value's message, so even a value that
+ * errors from its content-type parser, each with the fixed text of Fastify's own error class
+ * (`errorCodes`, so the text cannot drift from Fastify's). The detail is that text, never the thrown
+ * value's message, so even a value that
  * spoofs one of these codes cannot echo free text. Any other thrown value with a 4xx `status` or
  * `statusCode` (a provider SDK's HTTP error, whose message can quote a presigned URL with its
  * signature) gets no `detail`; code that wants one throws an HttpException.
  */
-const FASTIFY_REQUEST_ERROR_DETAIL: Readonly<Record<string, string>> = {
-  FST_ERR_CTP_INVALID_JSON_BODY:
-    "Body is not valid JSON but content-type is set to 'application/json'",
-  FST_ERR_CTP_EMPTY_JSON_BODY:
-    "Body cannot be empty when content-type is set to 'application/json'",
-  FST_ERR_CTP_INVALID_MEDIA_TYPE: 'Unsupported Media Type',
-  FST_ERR_CTP_BODY_TOO_LARGE: 'Request body is too large',
-  FST_ERR_CTP_INVALID_CONTENT_LENGTH: 'Request body size did not match Content-Length',
-};
+export const FASTIFY_DETAIL_CODES = [
+  'FST_ERR_CTP_INVALID_JSON_BODY',
+  'FST_ERR_CTP_EMPTY_JSON_BODY',
+  'FST_ERR_CTP_INVALID_MEDIA_TYPE',
+  'FST_ERR_CTP_BODY_TOO_LARGE',
+  'FST_ERR_CTP_INVALID_CONTENT_LENGTH',
+] as const satisfies readonly (keyof typeof errorCodes)[];
+
+const FASTIFY_REQUEST_ERROR_DETAIL: ReadonlyMap<string, string> = new Map(
+  FASTIFY_DETAIL_CODES.map((code) => [code, new errorCodes[code]().message]),
+);
 
 /** The table's fixed detail for a known Fastify request error, else none. */
 function fastifyRequestErrorDetail(exception: unknown): string | undefined {
@@ -57,9 +62,7 @@ function fastifyRequestErrorDetail(exception: unknown): string | undefined {
     return undefined;
   }
   const { code } = exception;
-  return typeof code === 'string' && Object.hasOwn(FASTIFY_REQUEST_ERROR_DETAIL, code)
-    ? FASTIFY_REQUEST_ERROR_DETAIL[code]
-    : undefined;
+  return typeof code === 'string' ? FASTIFY_REQUEST_ERROR_DETAIL.get(code) : undefined;
 }
 
 function statusOf(exception: unknown): number {

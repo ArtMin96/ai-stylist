@@ -19,6 +19,8 @@ export const ERROR_CODES = {
   CONTEXT_STALE: { status: 409, title: 'Context is stale' },
   /** Account is deleted or deletion is in progress (doc 06 §8). */
   ACCOUNT_DELETED: { status: 410, title: 'Account deleted' },
+  /** Request body larger than the endpoint accepts (RFC 9110 §15.5.14). */
+  CONTENT_TOO_LARGE: { status: 413, title: 'Content too large' },
   /** Request body `Content-Type` the endpoint does not accept (RFC 9110 §15.5.16). */
   UNSUPPORTED_MEDIA_TYPE: { status: 415, title: 'Unsupported media type' },
   RATE_LIMITED: { status: 429, title: 'Too many requests' },

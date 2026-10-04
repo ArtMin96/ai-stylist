@@ -6,7 +6,7 @@
 // is identifier-shaped: any code can set `Error.name` to free text. The shapes are
 // `LOG_REDACTION_RULES` of @ai-stylist/shared-kernel (registry/log-redaction.json), the one source
 // the workers read too; never a local copy. Also `isError`, the Error test of every walk
-// (../logger.ts, ../problem.filter.ts, ../outbox/outbox-relay.ts).
+// (../logger.ts, ../outbox/outbox-relay.ts).
 import { LOG_REDACTION_RULES } from '@ai-stylist/shared-kernel';
 
 export type ErrorSummary = {

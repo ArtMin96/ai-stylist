@@ -230,7 +230,7 @@ def test_stdlib_canary_never_reaches_stream(log_stream: io.StringIO) -> None:
 
 # --- a logged exception is an allowlist: class, code-shaped code, cause chain (planning/11 §8) --
 # Same rule as the API logger's `err` (apps/api/src/platform/logger.ts `serializeErr`, with
-# queue/error-summary.ts for each link): never the message, the traceback or another attribute.
+# errors/error-shape.ts for each link): never the message, the traceback or another attribute.
 
 
 def test_logged_exception_keeps_its_class_and_code_only(log_stream: io.StringIO) -> None:

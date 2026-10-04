@@ -10,7 +10,7 @@ key, or any of its camelCase / snake_case / kebab-case words, is a forbidden wor
 (`userEmail`, `refresh_token` and `x-auth-token` are forbidden; `latency` and `userId` are not).
 
 A logged exception mirrors the API logger's `err` serializer (`serializeErr`, with
-`apps/api/src/platform/queue/error-summary.ts` for each link). The class-name shape, the code
+`apps/api/src/platform/errors/error-shape.ts` for each link). The class-name shape, the code
 shape and the cause depth mirror `packages/shared-kernel/registry/log-redaction.json` the same way
 the words mirror theirs: constants here (`ERROR_NAME_SHAPE`, `CODE_SHAPE`, `MAX_ERR_CAUSE_DEPTH`),
 pinned to that file by `tests/test_redaction.py`. A summary is `{type, code?, cause?}` only, under

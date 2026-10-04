@@ -56,3 +56,13 @@ no file- or directory-wide exemption.
 | `file-size`           | `max-lines` (warning)                        |
 | `log-request-body`    | `quality/no-log-request-body` (member check) |
 | `log-forbidden-field` | `quality/no-log-request-body` (key check)    |
+
+## RuleTester suites
+
+`tests/*.test.mjs` are ESLint `RuleTester` suites run with `node --test` by the same
+`check-fixtures.sh` (`just lint --fixtures`, so `just ci-parity` runs them). A failing suite fails the
+run, and so does an empty `tests/` directory.
+
+| Suite                                | What it proves                                                                                                                                                                                                                                               |
+| ------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `tests/no-log-request-body.test.mjs` | every `forbidden` key in `packages/shared-kernel/registry/forbidden-log-keys.examples.json` is reported (quoted, plain, shorthand, nested and in an array payload) and every `allowed` key is not; the examples file is canonical, so the matcher follows it |

@@ -48,7 +48,7 @@ Not in mise: **Xcode 27.0** (pinned by `apps/ios/.xcode-version`, checked by `ju
 
 ### 1.4 Containers
 
-- **Docker Engine + Compose plugin** (docker.io or docker-ce). Used for: local Postgres (`pgvector/pgvector:pg17`, mirroring the production PostgreSQL major), Python ML workers, and any adapter integration-test dependencies.
+- **Docker Engine + Compose plugin** (docker.io or docker-ce). Used for: local Postgres (`pgvector/pgvector:pg18`, mirroring the production PostgreSQL major), Python ML workers, and any adapter integration-test dependencies.
 - `just dev-api` brings up the compose stack automatically.
 
 ### 1.5 Editor / LSP

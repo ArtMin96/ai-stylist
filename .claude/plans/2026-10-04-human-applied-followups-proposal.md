@@ -1,14 +1,11 @@
 # Proposal: human-applied text from the 2026-10-04 session (PR #15)
 
-> Status: PARTLY APPLIED (2026-10-05, on PR #15, at the owner's request "apply all"). Applied: A, B,
-> C (doc 04 §10 and doc 11 §13.1 amended; doc 06:292 stays with A), D, E, E2, F and the G decisions
-> (APP_ENV required, in-process signer kept, AI-21 ACs amended, `MaskLabel` owned by the worker
-> contract until P06-T01). Not applied, because the path guard denies agents these files and the
-> owner must paste them: `planning/SPINE.md:35` (PostgreSQL 17 → 18, DEC-56) and E3
-> (`.github/workflows/pr-gate.yml:122` step name). The descriptive text in `workers/ml/generated/`
-> (its README, `pyproject.toml` description and package `__init__.py` docstring) still predates the
-> kernel and worker-contract emitters; it was guard-protected generated-tree metadata; applied 2026-10-05 from
-> `2026-10-05-generated-package-docs-proposal.md` at the owner's request. Original text below: These are the exact edits that agents
+> Status: APPLIED (2026-10-05, on PR #15, at the owner's request "apply all"): A, B, C (doc 04 §10
+> and doc 11 §13.1 amended; doc 06:292 stays with A), D, E, E2, E3, F and the G decisions (APP_ENV
+> required, in-process signer kept, AI-21 ACs amended, `MaskLabel` owned by the worker contract until
+> P06-T01). `planning/SPINE.md:35` (PostgreSQL 17 → 18, DEC-56), E3 and the descriptive text in
+> `workers/ml/generated/` (from `2026-10-05-generated-package-docs-proposal.md`) were path-guarded
+> and were written by shell at the owner's request. Original text below: These are the exact edits that agents
 > may not make: files that are human-only per `.claude/rules/human-only.md`, or the enforcement layer
 > (`.agents/**`, `.claude/rules/**`, `scripts/hooks/**`). They came out of the PR #15 work: P02-T13,
 > the PR #13 review fixes and the repo-split audit. Each edit says where it goes and why. The

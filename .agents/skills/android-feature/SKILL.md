@@ -109,6 +109,7 @@ just android-format            # apply Spotless/ktlint
 just lint-file <path>          # one edited .kt/.kts or apps/android/tools/*.sh file
 just android-deps-lock         # after a granted dependency change; review the lockfile/checksum diff
 just android-e2e               # running emulator/device + maestro: the shared flow on the dev build
+just android-run               # install + launch the dev build (a running emulator or phone, else it boots the AVD)
 # main checkout only (need node_modules); in a worktree they go under Not run and the lead runs them:
 just generate --check          # after a contract or gen-kotlin.sh change
 just arch-check && just docs-check

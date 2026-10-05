@@ -1,9 +1,9 @@
-# Generated Pydantic models from `packages/contracts/events/*.json` (doc 06 §1).
-# Regenerate with `just generate` (tools/codegen/gen-python.sh); never edit by hand.
+# Generated Python package: Pydantic models from packages/contracts (events, worker contracts) and
+# the shared-kernel constants (DEC-59). Regenerate with `just generate`; see README.md.
 [project]
 name = "ai-stylist-generated"
 version = "0.1.0"
-description = "Pydantic v2 models generated from the canonical event schemas in packages/contracts"
+description = "Pydantic v2 models and shared-kernel constants generated from packages/contracts and packages/shared-kernel"
 requires-python = ">=3.14,<3.15"
 dependencies = ["pydantic>=2.13.5,<3"]
 

@@ -819,9 +819,8 @@ Then open a new terminal, so mise and direnv load, and run `just doctor` in the 
 
 1. Once per machine, after the identity is in the password manager: `just secrets-backup-done`.
 2. Now, and again after every pull that changed `secrets/dev.enc.yaml`: `just secrets-sync`.
-3. Start Postgres and the API: `just dev-api`.
-4. In a second terminal, once per new database: `just db-migrate`.
-5. `curl localhost:3000/v1/health` answers `{"status":"ok","checks":{"db":"ok"}}`.
+3. Start Postgres, the migrations, the API and the workers: `just dev backend` (or `just dev` to open the apps as well).
+4. `curl localhost:3000/v1/health` answers `{"status":"ok","checks":{"db":"ok"}}`.
 
 ### A.6 What differs between the two systems
 

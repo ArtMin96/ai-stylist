@@ -165,6 +165,7 @@ The Android app needs the Android SDK (`just android-sdk install`) and, to run i
 | Command                      | What it does                                                                                              |
 | ---------------------------- | --------------------------------------------------------------------------------------------------------- |
 | `just --list`                | Every recipe with a one-line description                                                                  |
+| `just dev`                   | Run everything this machine can run: backend + Android app (+ iOS app on macOS). `just dev down` stops it |
 | `just test`                  | Full test suite. `just test closet` runs one module's tests                                               |
 | `just lint`                  | ESLint (with architecture boundaries), Ruff, shellcheck, actionlint, SwiftLint, Android Lint + detekt     |
 | `just typecheck`             | TypeScript and Python type checks                                                                         |

@@ -11,7 +11,7 @@ flavour has its own id: `app.aistylist.mobile.dev` (dev), `app.aistylist.mobile.
 Run:
 
 - iOS (macOS): `just ios-e2e` builds the Dev configuration for the simulator, installs it and runs the flow.
-- Android: start an emulator (or connect a device; needs `adb` from the SDK, see [apps/android/README.md](../apps/android/README.md)), then `just android-e2e` installs the debug build and runs the flow.
+- Android: have an emulator or device online (`just android-run` boots the AVD `aistylist-dev` when none is, creating it on first use; a phone needs USB debugging; see [apps/android/README.md](../apps/android/README.md)), then `just android-e2e` installs the debug build and runs the flow.
 - By hand: `maestro test -e APP_ID=app.aistylist.mobile.dev e2e/smoke.yaml`.
 
 Both need the Maestro CLI (`mise install maestro`, pinned in `mise.toml`; it runs on the mise JDK 25). CI does not run

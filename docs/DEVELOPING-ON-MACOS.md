@@ -22,6 +22,7 @@ git clone https://github.com/ArtMin96/ai-stylist.git && cd ai-stylist
 ./scripts/bootstrap.sh            # mise -> pinned toolchain (incl. xcodegen, xcbeautify, SwiftLint, maestro) -> pnpm install -> uv sync -> git hooks -> .env -> mise + direnv block in ~/.zshrc -> doctor
 # open a new terminal: the ~/.zshrc block activates mise and direnv (.envrc loads .env and ANDROID_HOME)
 just doctor
+just dev                          # Postgres in OrbStack, API + workers, the Android app on an emulator and the iOS app in the simulator
 ```
 
 When this Mac is a second machine for a developer who already works on another one, read Appendix A of [`docs/NEW-REPO-SETUP.md`](NEW-REPO-SETUP.md) before you run bootstrap: it says how to restore the age identity first, so bootstrap does not create a second one, and how the shared values reach `.env`.

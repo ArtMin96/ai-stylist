@@ -41,7 +41,7 @@ Not in mise: **Xcode 27.0** (pinned by `apps/ios/.xcode-version`, checked by `ju
 
 ### 1.3 Android tooling
 
-- **Android Studio** (current stable) is optional, for the emulator and profiler. It is not needed for builds or tests: the Gradle wrapper and Robolectric run everything on the JVM.
+- **Android Studio** (current stable) is optional, for the profiler; `just dev` and `just android-run` install the emulator and create the AVD `aistylist-dev` without it. It is not needed for builds or tests: the Gradle wrapper and Robolectric run everything on the JVM.
 - **SDK components** (installed user-level by `just android-sdk install`, no sudo): cmdline-tools 19.0 (sha1-verified; 23.0's new `android` CLI shim hung on first run), `platform-tools`, `platforms;android-37.0`, `build-tools;36.0.0`. **No NDK** (there is no native 3D code; *historical: the RN plan pinned the NDK `react-native-filament` needed*). An emulator + one x86_64 system image (mid-tier profile, e.g. Pixel 6a class) is optional, for Maestro runs.
 - **Physical devices**: udev rules installed by bootstrap; verify with `adb devices`. Real-device testing is mandatory for camera + 3D work (r2) — the emulator is for UI iteration only.
 - `ANDROID_HOME` and PATH entries are written to `~/.config/ai-stylist/env.sh` and sourced by direnv, not scattered in dotfiles.

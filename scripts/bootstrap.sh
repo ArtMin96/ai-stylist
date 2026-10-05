@@ -290,10 +290,10 @@ heading "Next steps"
 # The Secrets line follows what onboarding actually did (status words: secrets-onboard.sh header).
 if command grep -qx pushed "$onboard_status_file"; then
   secrets_hint="Secrets: open the onboarding pull request printed above, then ask an approver to run
-           'just secrets-approve <branch>'. Once it merges:  just secrets-sync  ·  just doctor  ·  just dev-api"
+           'just secrets-approve <branch>'. Once it merges:  just secrets-sync  ·  just doctor  ·  just dev"
 elif command grep -qx synced "$onboard_status_file"; then
   secrets_hint="Secrets: your age recipient is already approved; the shared dev values were synced into .env
-           (refresh any time with: just secrets-sync). Then:  just doctor  ·  just dev-api"
+           (refresh any time with: just secrets-sync). Then:  just doctor  ·  just dev"
 elif command grep -qx skipped "$onboard_status_file"; then
   secrets_hint="Secrets: onboarding skipped (CI or SOPS_AGE_KEY is set); fill .env with:  just secrets-sync"
 else

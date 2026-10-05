@@ -140,9 +140,10 @@ for steps 3 and 4:
 - The parent is the span named by the carried `traceparent`, or a new trace when the value is
   missing or malformed. It is never the surrounding context: the relay's or the queue's polling loop
   did not cause the work.
-- A `traceparent` must match `TRACEPARENT_PATTERN`; a correlation id must match
-  `CORRELATION_ID_PATTERN` (1 to 128 characters of letters, digits, dot, underscore, colon and
-  hyphen). An invalid value is dropped, never rejected, and the worker uses the same pattern.
+- A `traceparent` must match `TRACEPARENT_PATTERN`; a correlation id must pass
+  `isValidCorrelationId`, the event envelope's `correlationId` rule (today 1 to 128 characters of
+  letters, digits, dot, underscore, colon and hyphen). An invalid value is dropped, never rejected,
+  and the worker checks the same rule (generated into `ai_stylist_generated.kernel`).
 - A failure marks the span with the error's class only (`recordSpanError`): no message, no stack.
 - With telemetry off, the same code runs and creates nothing.
 

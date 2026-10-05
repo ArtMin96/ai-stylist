@@ -1,7 +1,7 @@
 // JSON Schema validation for the shared-kernel registries that TS reads straight from JSON (no
-// generated TS): forbidden-log-keys (+ its word-split examples), log-redaction, owners and
-// feature-flags. They live in packages/shared-kernel/registry; Ajv lives here (as it does for
-// gen-kernel.mjs, which also validates the first three before emitting them for Python; their
+// generated TS): forbidden-log-keys (+ its word-split examples), log-redaction, correlation, owners
+// and feature-flags. They live in packages/shared-kernel/registry; Ajv lives here (as it does for
+// gen-kernel.mjs, which also validates the first four before emitting them for Python; their
 // Python output is pinned by kernel-python.test.ts). The cross-references a schema cannot express
 // are checked in packages/shared-kernel/tests.
 import { readFile } from 'node:fs/promises';
@@ -170,5 +170,37 @@ describe('feature-flags.json', async () => {
     const { offBehavior: _off, ...noOffBehavior } = rollout;
     expect(one(noOffBehavior)).toBe(false);
     expect(one(rollout, 'demoOutboxFlow')).toBe(false);
+  });
+});
+
+describe('correlation.json', async () => {
+  const { data, check, errors } = await validatorFor('correlation');
+  const minimal = {
+    header: 'x-correlation-id',
+    logKey: 'correlation_id',
+    vectors: { accepted: ['corr-1'], rejected: [''] },
+  };
+
+  it('validates against its schema', () => {
+    expect(check(data), errors()).toBe(true);
+    expect(check(minimal), errors()).toBe(true);
+  });
+
+  it('rejects a header or log key that is not lowercase kebab or snake case', () => {
+    for (const header of ['X-Correlation-Id', 'x_correlation_id', 'x-correlation-', '']) {
+      expect(check({ ...minimal, header }), header).toBe(false);
+    }
+    for (const logKey of ['correlationId', 'correlation-id', 'correlation_', '']) {
+      expect(check({ ...minimal, logKey }), logKey).toBe(false);
+    }
+  });
+
+  it('rejects a missing field, a missing or empty vector list, duplicates and unknown fields', () => {
+    const { logKey: _dropped, ...noLogKey } = minimal;
+    expect(check(noLogKey)).toBe(false);
+    expect(check({ ...minimal, vectors: { accepted: ['corr-1'] } })).toBe(false);
+    expect(check({ ...minimal, vectors: { accepted: [], rejected: [''] } })).toBe(false);
+    expect(check({ ...minimal, vectors: { accepted: ['a', 'a'], rejected: [''] } })).toBe(false);
+    expect(check({ ...minimal, pattern: '^.*$' })).toBe(false);
   });
 });

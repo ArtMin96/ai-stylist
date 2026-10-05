@@ -2,8 +2,19 @@
 # Source: packages/shared-kernel/registry/forbidden-log-keys.json
 # Source: packages/shared-kernel/registry/forbidden-log-keys.examples.json
 # Source: packages/shared-kernel/registry/log-redaction.json
+# Source: packages/shared-kernel/registry/correlation.json
+# Source: packages/contracts/events/envelope.json#/properties/correlationId
 """shared-kernel registries the workers read (packages/shared-kernel/registry, DEC-55)."""
 
+from ai_stylist_generated.kernel.correlation import (
+    CORRELATION_ID_ACCEPTED,
+    CORRELATION_ID_HEADER,
+    CORRELATION_ID_KEY,
+    CORRELATION_ID_MAX_LENGTH,
+    CORRELATION_ID_MIN_LENGTH,
+    CORRELATION_ID_PATTERN,
+    CORRELATION_ID_REJECTED,
+)
 from ai_stylist_generated.kernel.forbidden_log_keys import (
     FORBIDDEN_LOG_KEY_EXAMPLES_ALLOWED,
     FORBIDDEN_LOG_KEY_EXAMPLES_FORBIDDEN,
@@ -22,6 +33,13 @@ from ai_stylist_generated.kernel.log_redaction import (
 
 __all__ = [
     "CODE_SHAPE",
+    "CORRELATION_ID_ACCEPTED",
+    "CORRELATION_ID_HEADER",
+    "CORRELATION_ID_KEY",
+    "CORRELATION_ID_MAX_LENGTH",
+    "CORRELATION_ID_MIN_LENGTH",
+    "CORRELATION_ID_PATTERN",
+    "CORRELATION_ID_REJECTED",
     "ERROR_NAME_SHAPE",
     "EXCEPTION_TYPE_KEPT",
     "EXCEPTION_TYPE_REPLACED",

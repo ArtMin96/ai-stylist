@@ -159,7 +159,6 @@ export {
 export {
   CORRELATION_ID_HEADER,
   CORRELATION_ID_KEY,
-  CORRELATION_ID_PATTERN,
   currentCorrelationId,
   isValidCorrelationId,
   mintCorrelationId,

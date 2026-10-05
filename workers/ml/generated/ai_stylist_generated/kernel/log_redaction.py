@@ -40,7 +40,7 @@ EXCEPTION_TYPE_REPLACED: Final[tuple[str, ...]] = (
     "duplicate key value violates unique constraint",
     "Error: boom",
     "TypeError\n",
-    "Erreuré",
+    "Erreur\u00e9",
     "9abc",
     "ECONN REFUSED",
     "someone@example.test",
@@ -67,7 +67,7 @@ NEST_CONTEXT_REDACTED: Final[tuple[str, ...]] = (
     "Routes Resolver",
     "grpc.ServiceError",
     "ProblemFilter\n",
-    "ProblèmeFilter",
+    "Probl\u00e8meFilter",
     "AbCDEF123xyz",
     "Qx7Lm2Np9Rt4Vw8Yz3Bc6Df1Gh5Jk0",
 )

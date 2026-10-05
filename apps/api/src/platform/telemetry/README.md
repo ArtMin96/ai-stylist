@@ -29,8 +29,11 @@ outbox/job spans, span redaction). No business rule lives here.
 - `lifecycle.ts`: `shutdownTelemetry()` (flush and stop; a no-op when nothing started) and the
   process-wide handle, kept on `globalThis` so the `--import` entry and the process entry share it.
   Imports nothing, so a process entry can call it without loading the SDK.
-- `correlation.ts`: the correlation id (planning/14 §2). `x-correlation-id` accepted when it matches
-  `CORRELATION_ID_PATTERN` (1–128 chars of `[A-Za-z0-9._:-]`), else a minted UUID.
+- `correlation.ts`: the correlation id (planning/14 §2). `x-correlation-id` accepted when
+  `isValidCorrelationId` accepts it, else a minted UUID. Validity is the event envelope's
+  `correlationId` rule (pattern, minLength, maxLength in `packages/contracts/events/envelope.json`,
+  today 1–128 chars of `[A-Za-z0-9._:-]`), compiled from the schema by Ajv; the header and log key
+  come from the shared-kernel `registry/correlation.json`. Neither is restated here.
   `registerCorrelationId(fastify)` adds an `onRequest` hook (read or mint, echo it in the response
   header, set `correlation_id` on the active span, run the request in its scope) and a
   `preValidation` hook (re-enters the scope after body parsing). `currentCorrelationId()` reads the

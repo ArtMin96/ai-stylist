@@ -129,9 +129,12 @@ semantic-convention names of the dropped attributes are dropped too. Grafana set
   `[REDACTED]` any attribute whose last dot-segment is a forbidden word. It also cuts
   the span name and every event name at the first `?` or `#`, drops the status description and
   keeps each link's trace id, span id and flags.
-- **Correlation id** (`ai_stylist_observability.correlation`): the `x-correlation-id` request header is accepted when it
-  matches the API's `CORRELATION_ID_PATTERN` (1–128 chars of `[A-Za-z0-9._:-]`, one header),
-  else a UUID is minted. It is bound as `correlation_id` for every log line of the request, set on
+- **Correlation id** (`ai_stylist_observability.correlation`): the `x-correlation-id` request header is accepted when
+  exactly one was sent and it satisfies the event envelope's `correlationId` rule
+  (`packages/contracts/events/envelope.json`, today 1–128 chars of `[A-Za-z0-9._:-]`), else a UUID
+  is minted. The rule (pattern compiled with `re.ASCII`, always `fullmatch`, plus the length
+  bounds) and the header and log key (shared-kernel `registry/correlation.json`) come from
+  `ai_stylist_generated.kernel`; edit those sources and run `just generate`, never this package. It is bound as `correlation_id` for every log line of the request, set on
   the request span and echoed in the response header.
 - **Logs stay on stdout** (JSON); they are not sent over OTLP. The OpenTelemetry Python logs signal
   is still "Development" (opentelemetry-python README; 1.45.0 changed the Logger API), so shipping

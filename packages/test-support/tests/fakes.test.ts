@@ -1,6 +1,13 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, expectTypeOf, it } from 'vitest';
 
-import type { Clock, FeatureFlags, OutboxWriter, StorageProvider } from '@ai-stylist/shared-kernel';
+import type {
+  Clock,
+  EventEnvelope,
+  FeatureFlagKey,
+  FeatureFlags,
+  OutboxWriter,
+  StorageProvider,
+} from '@ai-stylist/shared-kernel';
 
 import {
   fakeClock,
@@ -10,14 +17,28 @@ import {
   recordingOutboxWriter,
 } from '../src/index.js';
 
-// Compile-time pin: the fakes stay assignable to the shared-kernel ports they stand in for, so the
-// pin travels with this package (`just typecheck` covers tests/).
+// Type-level pins, checked by vitest's typecheck mode (vitest.config.ts) on every `vitest run`, so
+// `just test` fails when a fake stops satisfying the shared-kernel port it stands in for. Each pin
+// covers the default instantiation and the generic form consumers use (apps/api/tests/http.test.ts:
+// `fakeFeatureFlags<FeatureFlagKey>`, `recordingOutboxWriter<a narrowed envelope>`).
 describe('fakes satisfy the shared-kernel ports', () => {
-  it('type-checks', () => {
-    expect(fakeClock() satisfies Clock).toBeDefined();
-    expect(fakeFeatureFlags() satisfies FeatureFlags).toBeDefined();
-    expect(recordingOutboxWriter() satisfies OutboxWriter).toBeDefined();
-    expect(fakeStorageProvider() satisfies StorageProvider).toBeDefined();
+  it('fakeClock is a Clock', () => {
+    expectTypeOf(fakeClock()).toExtend<Clock>();
+  });
+
+  it('fakeFeatureFlags is a FeatureFlags, also typed with the kernel flag keys', () => {
+    expectTypeOf(fakeFeatureFlags()).toExtend<FeatureFlags>();
+    expectTypeOf(fakeFeatureFlags<FeatureFlagKey>()).toExtend<FeatureFlags>();
+  });
+
+  it('recordingOutboxWriter is an OutboxWriter, also typed with a narrowed envelope', () => {
+    type DemoEnvelope = EventEnvelope<'demo.outbox-flow.requested.v1', { demoId: string }>;
+    expectTypeOf(recordingOutboxWriter()).toExtend<OutboxWriter>();
+    expectTypeOf(recordingOutboxWriter<DemoEnvelope>()).toExtend<OutboxWriter>();
+  });
+
+  it('fakeStorageProvider is a StorageProvider', () => {
+    expectTypeOf(fakeStorageProvider()).toExtend<StorageProvider>();
   });
 });
 

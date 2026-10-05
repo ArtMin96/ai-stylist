@@ -68,7 +68,7 @@
 7. **DONE (`7df23b7`, `cd8966f`): `--fail-on WARN` in both places; `packages/contracts/scripts/events-breaking.mjs` (package-relative, `pnpm run breaking:events`) wired through `scripts/ci/contracts-breaking.sh`.** One oasdiff threshold. `packages/contracts/package.json` uses `--fail-on WARN`,
    `scripts/ci/contracts-breaking.sh` uses `ERR`. Add a breaking-change gate for
    `packages/contracts/events/*.json`.
-8. **DONE (`ae53a8a`; after C the port text is in `docs/modules/platform.md` §Public API and §Ports, and `HEALTH_PROBE` lives at `apps/api/src/platform/health/health-probe.port.ts`).** Port list in the platform contract. `docs/modules/platform.md` should say that three ports
+8. **DONE (`ae53a8a`; after C the port text is in `docs/modules/platform.md` under "Public interface" and in the Ports bullet of "Dependencies (allowed)", and `HEALTH_PROBE` lives at `apps/api/src/platform/health/health-probe.port.ts`).** Port list in the platform contract. `docs/modules/platform.md` should say that three ports
    move (`CLOCK`, `OUTBOX_WRITER`, `STORAGE_PROVIDER`) and that `HEALTH_PROBE` stays platform-internal.
    It imports `@ai-stylist/contracts/types`, which `shared-kernel-pure` forbids.
 
@@ -94,9 +94,12 @@
     includes), and a Python wheel.
 - **E. Shared worker observability package. DONE (`fb3cbea`):** `workers/ml/observability`
   (`ai_stylist_observability`: `redaction`, `tracing`, `correlation`) is a uv workspace member, and
-  `.claude/rules/workers-python.md` rule 6 points at it. The correlation-id pattern is read from the
-  event envelope schema on both sides (API `platform/telemetry/correlation.ts`, worker
-  `correlation.py`); the `x-correlation-id` header name is still a named literal on each side. The
+  `.claude/rules/workers-python.md` rule 6 points at it. The correlation-id rule (pattern and length
+  bounds) comes from the event envelope schema on both sides: the API compiles it with Ajv
+  (`platform/telemetry/correlation.ts`), the worker imports it from the generated
+  `ai_stylist_generated.kernel` (`re.ASCII`, `fullmatch`). The header and log key names are in
+  `packages/shared-kernel/registry/correlation.json` (TS import, Python generated), and its vectors
+  test all three checks (2026-10-05). The
   error-shape constants are DONE: `packages/shared-kernel/registry/log-redaction.json` (`LOG_REDACTION_RULES` /
   `LOG_REDACTION_EXAMPLES`) is read by the API and pinned by worker tests. Still open: the span
   attribute lists in `tracing.py` / `span-sanitizer.ts`.

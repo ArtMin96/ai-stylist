@@ -1,0 +1,29 @@
+{
+  "$schema": "./correlation.schema.json",
+  "header": "x-correlation-id",
+  "logKey": "correlation_id",
+  "vectors": {
+    "accepted": [
+      "corr-1",
+      "4f1c9a2e-7b3d-4e7a-9c1f-2a6b8d0e5f13",
+      "01J8Z8Q6X3K9V2N4M7P1R5T0AB",
+      "job:demo.outbox-flow_1",
+      "a.b_c:d-e",
+      "x",
+      "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+    ],
+    "rejected": [
+      "",
+      "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "has space",
+      "semi;colon",
+      "slash/id",
+      "corr-1\n",
+      "corr-1\r\nx-injected: 1",
+      "corr\u00e9-1",
+      "\u0661\u0662\u0663",
+      "\uff43\uff4f\uff52\uff52-1",
+      "corr-\ud83d\ude00"
+    ]
+  }
+}

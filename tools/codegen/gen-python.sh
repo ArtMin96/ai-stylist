@@ -3,7 +3,8 @@
 #
 #   packages/contracts/events/*.json  ──datamodel-codegen──▶  workers/ml/generated/ai_stylist_generated/events/
 #   packages/contracts/workers/<service>/*.json  ──datamodel-codegen──▶  .../ai_stylist_generated/<service>/
-#   packages/shared-kernel/registry/{forbidden-log-keys,forbidden-log-keys.examples,log-redaction}.json
+#   packages/shared-kernel/registry/{forbidden-log-keys,forbidden-log-keys.examples,log-redaction,correlation}.json
+#   (+ the correlationId rule of packages/contracts/events/envelope.json)
 #                                     ──gen-kernel.mjs python──▶  workers/ml/generated/ai_stylist_generated/kernel/
 #
 # Called by `just generate` (and `just generate --check`). Deterministic and idempotent:
@@ -28,7 +29,7 @@ check_only=false
 for arg in "$@"; do
   case "$arg" in
     --check) check_only=true ;;
-    -h | --help) sed -n '2,16p' "$0"; exit 0 ;;
+    -h | --help) sed -n '2,17p' "$0"; exit 0 ;;
     *) echo "gen-python.sh: unknown argument: $arg" >&2; exit 2 ;;
   esac
 done

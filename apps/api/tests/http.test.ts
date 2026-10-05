@@ -21,9 +21,9 @@ import { ConfigError, loadConfig } from '../src/config.js';
 import { DEMO_ID_MAX, type DemoEventEnvelope } from '../src/dev/demo-events.controller.js';
 import {
   CORRELATION_ID_HEADER,
-  CORRELATION_ID_PATTERN,
   METRIC_NAMES,
   PROBLEM_CONTENT_TYPE,
+  isValidCorrelationId,
 } from '../src/platform/index.js';
 import {
   histogramPoints,
@@ -242,7 +242,7 @@ describe('api (Fastify in-process)', () => {
     const absent = await app.inject({ method: 'GET', url: '/nope', remoteAddress: '10.1.0.7' });
     expect(absent.statusCode).toBe(404); // a problem response carries it too
     expect(absent.headers[CORRELATION_ID_HEADER]).toMatch(UUID);
-    expect(absent.headers[CORRELATION_ID_HEADER]).toMatch(CORRELATION_ID_PATTERN);
+    expect(isValidCorrelationId(absent.headers[CORRELATION_ID_HEADER])).toBe(true);
 
     const invalid = await app.inject({
       method: 'GET',

@@ -8,13 +8,13 @@ import type { NestFastifyApplication } from '@nestjs/platform-fastify';
 import { Logger } from 'nestjs-pino';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
-import envelopeSchema from '@ai-stylist/contracts/events/envelope.json' with { type: 'json' };
+import { CORRELATION_ID_EXAMPLES } from '@ai-stylist/shared-kernel';
 import { memoryLogStream } from '@ai-stylist/test-support';
 
 import {
   CORRELATION_ID_HEADER,
-  CORRELATION_ID_PATTERN,
   currentCorrelationId,
+  isValidCorrelationId,
   registerCorrelationId,
 } from '../index.js';
 import type { Telemetry } from '../telemetry/lifecycle.js';
@@ -67,8 +67,18 @@ describe('correlation id (Nest + Fastify, in-process)', () => {
     await telemetry.shutdown();
   });
 
-  it('accepts exactly the correlationId format the event envelope pins', () => {
-    expect(CORRELATION_ID_PATTERN.source).toBe(envelopeSchema.properties.correlationId.pattern);
+  // The shared-kernel vectors, which the envelope schema itself is tested on in
+  // packages/contracts/tests/events.test.ts: the header check accepts exactly what an envelope does.
+  it.each(CORRELATION_ID_EXAMPLES.accepted)('accepts the envelope-valid id %j', (id) => {
+    expect(isValidCorrelationId(id)).toBe(true);
+  });
+
+  it.each(CORRELATION_ID_EXAMPLES.rejected)('rejects the envelope-invalid id %j', (id) => {
+    expect(isValidCorrelationId(id)).toBe(false);
+  });
+
+  it.each([undefined, 7, ['corr-1']])('rejects a non-string %j', (value) => {
+    expect(isValidCorrelationId(value)).toBe(false);
   });
 
   it('echoes a valid client id and exposes it to the controller', async () => {

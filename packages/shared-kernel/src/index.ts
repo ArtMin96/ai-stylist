@@ -7,6 +7,7 @@ export * from './reason-codes.js';
 export * from './entitlements.js';
 export * from './forbidden-log-keys.js';
 export * from './log-redaction.js';
+export * from './correlation.js';
 export * from './owners.js';
 export * from './feature-flags.js';
 export * from './ports/clock.js';

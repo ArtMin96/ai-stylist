@@ -8,27 +8,33 @@ import { AsyncLocalStorage } from 'node:async_hooks';
 import { randomUUID } from 'node:crypto';
 
 import { trace } from '@opentelemetry/api';
+import { Ajv2020 } from 'ajv/dist/2020.js';
 import type { FastifyInstance, FastifyRequest } from 'fastify';
 
 import envelopeSchema from '@ai-stylist/contracts/events/envelope.json' with { type: 'json' };
+import { CORRELATION_ID_HEADER, CORRELATION_ID_KEY } from '@ai-stylist/shared-kernel';
 
-/** Request and response header (lowercase, as Node exposes incoming headers). */
-export const CORRELATION_ID_HEADER = 'x-correlation-id';
-/** Log key and span attribute name. */
-export const CORRELATION_ID_KEY = 'correlation_id';
+// The request and response header, and the log key and span attribute name
+// (packages/shared-kernel/registry/correlation.json).
+export { CORRELATION_ID_HEADER, CORRELATION_ID_KEY };
+
 /**
- * An accepted client id: the event envelope's `correlationId` pattern
- * (`packages/contracts/events/envelope.json`), read from the schema so it is never restated here.
- * Today 1–128 characters of `[A-Za-z0-9._:-]` (a UUID, ULID or `corr-…`).
+ * An accepted client id: the event envelope's `correlationId` rule
+ * (`packages/contracts/events/envelope.json`: pattern, minLength and maxLength), compiled from the
+ * schema with the Ajv 2020-12 options the jobs validate envelopes with, so an id this accepts is one
+ * an envelope accepts and nothing here restates the rule. Today 1–128 characters of `[A-Za-z0-9._:-]`
+ * (a UUID, ULID or `corr-…`).
  */
-export const CORRELATION_ID_PATTERN = new RegExp(envelopeSchema.properties.correlationId.pattern);
+const correlationIdRule = new Ajv2020({ strict: true, allErrors: true }).compile<string>(
+  envelopeSchema.properties.correlationId,
+);
 
 type CorrelationScope = { readonly correlationId: string };
 
 const scopes = new AsyncLocalStorage<CorrelationScope>();
 
 export function isValidCorrelationId(value: unknown): value is string {
-  return typeof value === 'string' && CORRELATION_ID_PATTERN.test(value);
+  return typeof value === 'string' && correlationIdRule(value);
 }
 
 /** A fresh id for an operation that arrived without a valid one. */

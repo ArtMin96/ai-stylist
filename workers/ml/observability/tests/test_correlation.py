@@ -27,3 +27,10 @@ def test_accepts_uuid_ulid_and_prefixed_ids(value: str) -> None:
 @pytest.mark.parametrize("values", [["corr-1", "corr-2"], ["corr-1\n"]])
 def test_duplicate_headers_or_a_trailing_newline_are_replaced(values: list[str]) -> None:
     assert UUID.match(correlation_id_from_header(values))
+
+
+@pytest.mark.parametrize("value", ["", "x" * 129, "has space", "semi;colon", "slash/id", None])
+def test_rejects_ids_outside_the_envelope_pattern(value: str | None) -> None:
+    assert not is_valid_correlation_id(value)
+    if value is not None:
+        assert UUID.match(correlation_id_from_header([value]))

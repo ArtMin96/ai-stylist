@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
+import type { Clock, FeatureFlags, OutboxWriter, StorageProvider } from '@ai-stylist/shared-kernel';
+
 import {
   fakeClock,
   fakeFeatureFlags,
@@ -7,6 +9,17 @@ import {
   memoryLogStream,
   recordingOutboxWriter,
 } from '../src/index.js';
+
+// Compile-time pin: the fakes stay assignable to the shared-kernel ports they stand in for, so the
+// pin travels with this package (`just typecheck` covers tests/).
+describe('fakes satisfy the shared-kernel ports', () => {
+  it('type-checks', () => {
+    expect(fakeClock() satisfies Clock).toBeDefined();
+    expect(fakeFeatureFlags() satisfies FeatureFlags).toBeDefined();
+    expect(recordingOutboxWriter() satisfies OutboxWriter).toBeDefined();
+    expect(fakeStorageProvider() satisfies StorageProvider).toBeDefined();
+  });
+});
 
 describe('fakeClock', () => {
   it('is deterministic and advances only when told', () => {

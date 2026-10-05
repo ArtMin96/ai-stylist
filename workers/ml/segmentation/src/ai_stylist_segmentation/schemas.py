@@ -4,8 +4,8 @@ Every model comes from the generated package (`just generate` → `workers/ml/ge
 hand-written twin: the HTTP contract from `packages/contracts/workers/segmentation/` and the event
 envelope from `packages/contracts/events/` (single source of truth — root CLAUDE.md
 "Architectural invariants"); `just generate --check` fails when they drift from the schema. The
-API-side twin in `apps/api/src/jobs/segmentation-client.ts` is still hand-written (its owner moves
-it to the generated TS contract).
+API side (`apps/api/src/jobs/segmentation-client.ts`) uses the generated TS contract
+`@ai-stylist/contracts/workers` from the same schema.
 
 `MaskLabel` and `MaskRef` are re-exported as generated. The models this service builds or receives
 whole are thin subclasses that only add `frozen=True` (the generated models are mutable): a

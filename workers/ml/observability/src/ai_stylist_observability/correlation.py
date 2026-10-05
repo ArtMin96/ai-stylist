@@ -1,6 +1,6 @@
 """Correlation id (planning/14 §2): one id per logical operation, carried API → outbox envelope
 (`correlationId`) → pg-boss job → this worker as the `x-correlation-id` request header. It is our
-own metadata, never user data. Mirrors `apps/api/src/platform/telemetry/correlation.ts`.
+own metadata, never user data. The Python side of `apps/api/src/platform/telemetry/correlation.ts`.
 
 `correlation_id_middleware` (registered by each service's app factory) accepts the caller's id
 when valid, else mints one; binds it as `correlation_id` in structlog's context variables for the
@@ -13,19 +13,28 @@ from __future__ import annotations
 import re
 import uuid
 from collections.abc import Awaitable, Callable
+from typing import cast
 
 import structlog
 from fastapi import Request, Response
 from opentelemetry import trace
 
+from ai_stylist_generated.events.envelope import EventEnvelope
+
 # Request and response header.
 CORRELATION_ID_HEADER = "x-correlation-id"
 # Log key and span attribute name.
 CORRELATION_ID_KEY = "correlation_id"
-# An accepted caller id: 1-128 characters of `[A-Za-z0-9._:-]` (a UUID, ULID or `corr-...`).
-# Same pattern as `CORRELATION_ID_PATTERN` in apps/api/src/platform/telemetry/correlation.ts;
-# change both together. `fullmatch` keeps JavaScript's `$` semantics (no trailing newline).
-CORRELATION_ID_PATTERN = re.compile(r"^[A-Za-z0-9._:-]{1,128}$")
+# An accepted caller id: the event envelope's `correlationId` pattern
+# (`packages/contracts/events/envelope.json`), read from the generated model, as the API reads it
+# from the schema, so neither side restates it. Today 1-128 characters of `[A-Za-z0-9._:-]` (a
+# UUID, ULID or `corr-...`). `fullmatch` keeps JavaScript's `$` semantics (no trailing newline).
+CORRELATION_ID_PATTERN = re.compile(
+    cast(
+        "str",
+        EventEnvelope.model_json_schema()["properties"]["correlationId"]["pattern"],
+    )
+)
 
 
 def is_valid_correlation_id(value: str | None) -> bool:

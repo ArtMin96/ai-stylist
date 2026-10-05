@@ -52,7 +52,7 @@ Rules:
 Then pick one:
 
 1. **Start P00 — Product validation and decisions** (still the formal gate; P02 was started ahead of it under DEC-36). Read [SPINE.md](SPINE.md) → [00-product-vision-and-scope.md](00-product-vision-and-scope.md) → `phases/P00-product-validation-and-decisions.md` → [16](16-risks-open-questions-and-decision-log.md); set P00 `IN_PROGRESS`; P00 has no code deliverables — outputs are ratified ADRs, measurable definitions, legal/privacy discovery notes, and resolution or scheduling of OQ-03 (age policy) and OQ-07 (data residency).
-2. **Land the 2026-10-04 branch** `claude/project-next-steps-r6nu70` (PR to `main`; see the 2026-10-04 handoff entry): CI run, owner review, the owner's R2 steps for P02-T13 (AI-21), and the two ADR decisions due before P03's first table in [`.claude/plans/2026-10-04-repo-split-readiness-proposal.md`](../.claude/plans/2026-10-04-repo-split-readiness-proposal.md) (ADR-0008 schema/migration home, ADR-0009 no cross-module foreign keys). Then **P02-T18 close-out** (AI-26) and AI-28 on the Mac. T07's staging/prod PostgreSQL hosts wait for OQ-07/OQ-14.
+2. **Land the 2026-10-04 branch** `claude/project-next-steps-r6nu70` (PR to `main`; see the 2026-10-04 handoff entry): CI run (blocked since 2026-10-04 ~20:56 UTC: every job fails with no runner, which looks like the GitHub Actions billing limit; see the 2026-10-05 entry), owner review, the owner's R2 steps for P02-T13 (AI-21), and the open split items in [`.claude/plans/2026-10-04-repo-split-readiness-proposal.md`](../.claude/plans/2026-10-04-repo-split-readiness-proposal.md): ADR-0009 (no cross-module foreign keys) before P03's first table; the owner keeps `packages/db` as is (no ADR-0008), so P03's first module table must compose without breaking `public-api-only-external`. Then **P02-T18 close-out** (AI-26) and AI-28 on the Mac. T07's staging/prod PostgreSQL hosts wait for OQ-07/OQ-14.
 
 **Human-only steps outstanding** (agents stop at config + `.env.example` keys):
 - Create vendor accounts and record regions per OQ-07: server provider (per OQ-07/OQ-14 — Hetzner is the working assumption), Cloudflare R2, Apple Developer, Google Play (Grafana Cloud and PostHog created 2026-09-27; regions in DEC-58). (Neon, Railway and Trigger.dev were removed on 2026-09-13 — DEC-41–43; Expo/EAS on 2026-09-22 — DEC-51.)
@@ -81,6 +81,30 @@ Log hygiene: when this log exceeds ~30 entries, move the oldest entries to `plan
 ## Session handoff log
 
 *(newest first)*
+
+### 2026-10-05 — Repo-split round two (kernel emitter, worker contract, ports in shared-kernel, observability package); APP_ENV required; human-only edits applied
+
+*Claude Code cloud session (Linux container, no Docker, no Mac), continuing the 2026-10-04 entry on the same branch and PR #15.*
+
+- **Phase / tasks worked:** P02 (P02-T13 stays `PARTIAL`, AI-21 In Progress) and the repo-split plan, at the owner's request to keep every module separable. Owner answers this session: apply every human-only edit; do all four split items (Python kernel emitter, worker contract in contracts, ports to shared-kernel, packable shared-kernel incl. the lockfile change); pick the long-term option on open decisions; keep `packages/db` where it is (no ADR-0008).
+- **Done:**
+  - *Split items:*
+    - DEC-59: `gen-kernel.mjs` emits the worker-mirrored registries as Python (`workers/ml/generated/ai_stylist_generated/kernel`); `redaction.py` imports them (`e1187ed`, `fc7c141`).
+    - Segmentation worker HTTP contract `packages/contracts/workers/segmentation/segmentation.v1.json`, generated for TS (`@ai-stylist/contracts/workers`) and Python; the worker schemas and the API client use it, and the client validates replies against the schema and fails at startup if it is missing (`0922d2f`, `8730566`, `d489f35`, `85b3b52`).
+    - shared-kernel ships `registry/`, and tools resolve it through the package export (`fc82772`).
+    - `CLOCK`, `OUTBOX_WRITER` and `STORAGE_PROVIDER` moved to `packages/shared-kernel/src/ports/` (`Symbol.for` tokens); `PLATFORM_PORTS` removed from depcruise; module-test fakes in `packages/test-support`, now type-pinned to the ports in its own tests (`2b92b52`, this round).
+    - `ai-stylist-observability` uv member (`workers/ml/observability`: redaction, tracing, correlation) (`fb3cbea`).
+    - The correlation-id pattern is read from the event envelope schema in both the API and the worker, so neither restates it (this round).
+    - `just generate --check` fails on any failing generator (`8b8d109`).
+  - *Owner decisions applied:* `APP_ENV` is required and an unset value fails closed (`7ac0128`); the in-process SigV4 signer stays; the AI-21 acceptance criteria were amended; P02-T17 is skipped while 3D is deferred (DEC-49/50).
+  - *Human-only edits applied* (owner: "apply all"): `docs/SERVICES-SETUP.md` §6, P06-T02 acceptance, doc 04 §10, doc 11 §13.1, DEC-59, the ADR-0005 debt line, skill/rule/agent text, `scripts/hooks/post-edit-lint.sh` (`MISE_OFFLINE`). Status in `.claude/plans/2026-10-04-human-applied-followups-proposal.md`; the split plan's status lines are refreshed.
+  - *Final reviews of `f74c547..HEAD`:* security APPROVE; architecture CHANGES REQUESTED with no boundary violation (a stale docstring, the test-support port pin, the correlation-pattern mirror, plan status lines), all fixed this round.
+- **Not done / open:**
+  - *Owner:* the GitHub Actions billing/runner problem; the R2 bucket, token, `R2_LIVE_TEST=1 just test platform` run and WAF (AI-21); set `APP_ENV` in every deployment and in `secrets/dev.enc.yaml` (empty there today), since the API now refuses to boot without it; paste the guard-protected texts: `planning/SPINE.md:35` (PostgreSQL 18), the `.github/workflows/pr-gate.yml:122` step name, and the descriptive text in `workers/ml/generated/`.
+  - *Open plan items:* ADR-0009 before P03's first table; the span attribute lists shared by `tracing.py` and `span-sanitizer.ts`; D (versioned artifact build), F, G, and H's port move at P06.
+- **Repository state:** run by the lead on HEAD (Linux, Node 24.21.0, pnpm 12.6.0), all exit 0: `just typecheck`, `just lint`, `just arch-check` (no violations, 269 modules), `just test workers` (218 passed, CPython 3.14.7), `SKIP_DOCKER_TESTS=1 just test platform` (279 passed, 3 skipped), test-support tests (7 passed), and earlier in this round `just lint --fixtures`, `just arch-check --fixtures` (17/17 rules), `just docs-check --strict`, `NATIVE_LANES=android just generate --check`, `just ci-contracts-breaking`. The API vitest projects: 378 passed; the 38 failures are all in the Testcontainers projects (`platform-docker`, `migrations`), which need Docker. **Not run:** the Docker suites, osv-scanner (blocked), the Android lanes (JDK 21 here, 25 pinned), anything on macOS. CI has not run on any commit since 2026-10-04 ~20:56 UTC (no runner assigned).
+- **New decisions / risks / questions filed:** DEC-59 (doc 16).
+- **Next session starts:** fix the Actions runner/billing problem and re-run CI on PR #15; owner review and merge; then the R2 steps, ADR-0009, P02-T18 (AI-26) and AI-28 on the Mac.
 
 ### 2026-10-04 — Reviews of the PR #13 platform passes and their fixes; P02-T13 R2 adapter; repo-split audit
 

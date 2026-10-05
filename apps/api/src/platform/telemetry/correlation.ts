@@ -10,12 +10,18 @@ import { randomUUID } from 'node:crypto';
 import { trace } from '@opentelemetry/api';
 import type { FastifyInstance, FastifyRequest } from 'fastify';
 
+import envelopeSchema from '@ai-stylist/contracts/events/envelope.json' with { type: 'json' };
+
 /** Request and response header (lowercase, as Node exposes incoming headers). */
 export const CORRELATION_ID_HEADER = 'x-correlation-id';
 /** Log key and span attribute name. */
 export const CORRELATION_ID_KEY = 'correlation_id';
-/** An accepted client id: 1–128 characters of `[A-Za-z0-9._:-]` (a UUID, ULID or `corr-…`). */
-export const CORRELATION_ID_PATTERN = /^[A-Za-z0-9._:-]{1,128}$/;
+/**
+ * An accepted client id: the event envelope's `correlationId` pattern
+ * (`packages/contracts/events/envelope.json`), read from the schema so it is never restated here.
+ * Today 1–128 characters of `[A-Za-z0-9._:-]` (a UUID, ULID or `corr-…`).
+ */
+export const CORRELATION_ID_PATTERN = new RegExp(envelopeSchema.properties.correlationId.pattern);
 
 type CorrelationScope = { readonly correlationId: string };
 

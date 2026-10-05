@@ -35,9 +35,15 @@ export type {
 const ajv = new Ajv2020({ strict: true, allErrors: true });
 addFormats.default(ajv);
 ajv.addSchema(segmentationSchema);
-const validateSegmentResponse = ajv.getSchema<SegmentResponse>(
+const segmentResponseValidator = ajv.getSchema<SegmentResponse>(
   `${segmentationSchema.$id}#/$defs/SegmentResponse`,
-) as ValidateFunction<SegmentResponse>;
+);
+// Fail at module load (process start), not on the first request, if the contract's $id or
+// $defs name ever changes.
+if (segmentResponseValidator === undefined) {
+  throw new Error('segmentation contract: $defs/SegmentResponse not found in the worker schema');
+}
+const validateSegmentResponse: ValidateFunction<SegmentResponse> = segmentResponseValidator;
 
 /** Per-call options: cancellation and the operation's correlation id (planning/14 §2). */
 export type SegmentCallOptions = {

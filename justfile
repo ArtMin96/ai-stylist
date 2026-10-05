@@ -79,6 +79,10 @@ observability-sync *args:
 
 # --- dev servers ---------------------------------------------------------------
 
+# Run the whole app with one command (scripts/dev.sh): setup checks (bootstrap on a first run, dependencies whose lockfile changed, .env, the container runtime: Docker Engine on Linux, OrbStack on macOS, the Android SDK, Xcode), Postgres + migrations, the API and workers in the background, then the Dev app on an Android emulator or phone (Linux and macOS) and an iPhone simulator (macOS): `just dev [backend|android|ios|all] [-d|--detach] [--seed] [--no-workers] [--no-backend] [--no-setup] [--android-serial S] [--ios-simulator UDID] [-y] [-n|--dry-run]`; `just dev down [--keep-db] [--keep-devices]`, `just dev status`, `just dev logs [api|workers|emulator]`
+dev *args:
+    scripts/dev.sh "$@"
+
 # Compose stack (Postgres+pgvector; compose project `ai-stylist` from every checkout and worktree unless COMPOSE_PROJECT_NAME is exported) + NestJS API in watch mode (tsx; reads the repo-root .env); OTel service.name `api` is set here, so an OTEL_SERVICE_NAME in the shared .env never renames it; an APP_ENV that is empty both in the environment and in .env runs as `local`
 dev-api *args:
     docker compose up -d --wait postgres
@@ -113,7 +117,7 @@ dev-workers *args:
 
 # --- quality gates (* = part of ci-parity) -------------------------------------------
 
-# * Run tests: full suite via turbo + the native lanes, or one module's tests/ dir (`just test recommendation`; `just test ios` / `just test android` = that app's unit tests; `just test secrets` = the sops+age shell suite; `just test tooling` = the scripts/test shell suites: bootstrap/doctor, contracts-breaking, generate (a failing generator fails `just generate [--check]`), test-regression, ci-metrics, dev service names, observability-sync, repo-setup; `just test platform` = the `api` + `platform-docker` vitest projects); SKIP_DOCKER_TESTS=1 leaves out the Testcontainers `migrations` and `platform-docker` projects (runners without Docker only)
+# * Run tests: full suite via turbo + the native lanes, or one module's tests/ dir (`just test recommendation`; `just test ios` / `just test android` = that app's unit tests; `just test secrets` = the sops+age shell suite; `just test tooling` = the scripts/test shell suites: bootstrap/doctor, contracts-breaking, generate (a failing generator fails `just generate [--check]`), test-regression, ci-metrics, dev service names, dev (the `just dev` plan, ports, logs, stop, device choice), observability-sync, repo-setup; `just test platform` = the `api` + `platform-docker` vitest projects); SKIP_DOCKER_TESTS=1 leaves out the Testcontainers `migrations` and `platform-docker` projects (runners without Docker only)
 test module='':
     #!/usr/bin/env bash
     set -euo pipefail
@@ -179,6 +183,7 @@ test-tooling:
     scripts/test/regression.test.sh
     bash scripts/test/ci-metrics.test.sh
     bash scripts/test/dev-service-names.test.sh
+    bash scripts/test/dev.test.sh
     bash scripts/test/observability-sync.test.sh
     bash scripts/test/repo-setup.test.sh
 
@@ -383,6 +388,10 @@ ios-build *args:
 ios-test:
     apps/ios/scripts/xcode.sh test
 
+# Dev simulator build, then boot an iPhone simulator (IOS_SIMULATOR_ID, else the first iPhone on the newest iOS 26+ runtime), open Simulator.app, install and launch the app (macOS only; `just dev ios` also starts the backend)
+ios-run:
+    apps/ios/scripts/xcode.sh run
+
 # Dev simulator build + one shared Maestro flow (default e2e/smoke.yaml) with APP_ID=app.aistylist.mobile.dev: `just ios-e2e [flow]` (macOS only; needs maestro)
 ios-e2e flow='e2e/smoke.yaml':
     apps/ios/scripts/xcode.sh e2e "$1"
@@ -457,13 +466,17 @@ android-format *args:
 android-check:
     apps/android/tools/gradle.sh spotlessCheck checkModuleGraph detektMain detektTest :app:lintDebug testDebugUnitTest :core:data:test :core:analytics:test :app:assembleDebug :app:assemblePreview :app:assembleRelease
 
-# Check (default) or install the Android SDK packages apps/android needs: `just android-sdk [check|install]` (user-level, no emulator, no sudo)
+# Check (default) or install the Android SDK packages apps/android needs: `just android-sdk [check|install]` (user-level, no emulator, no sudo); `just android-sdk emulator` also installs the emulator and a system image
 android-sdk mode='check':
     apps/android/tools/sdk.sh "$@"
 
 # Refresh the Gradle lockfiles + gradle/verification-metadata.xml after a version bump (review the diff; run once on macOS too)
 android-deps-lock:
     apps/android/tools/gradle.sh spotlessCheck checkModuleGraph detektMain detektTest :app:lintDebug testDebugUnitTest :core:data:test :core:analytics:test :app:assembleDebug :app:assemblePreview :app:assembleRelease --write-locks --write-verification-metadata sha256
+
+# Install and launch the debug (dev) build on a running emulator, else the connected phone (through `adb reverse`), else the AVD it creates and boots (apps/android/tools/device.sh run): `just android-run [--serial S] [--api-port N]` (`just dev android` also starts the backend)
+android-run *args:
+    apps/android/tools/device.sh run "$@"
 
 # Install the debug (dev) build on the running emulator/device + run one shared Maestro flow (default e2e/smoke.yaml) with APP_ID=app.aistylist.mobile.dev: `just android-e2e [flow]` (needs adb + maestro)
 android-e2e flow='e2e/smoke.yaml':

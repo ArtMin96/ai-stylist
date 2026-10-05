@@ -153,6 +153,7 @@ The `just` recipes are wired in the root justfile. The recipe bodies are `apps/i
 | `just ios-build [--config dev\|preview\|prod]` |  yes  |  no   | Builds the app unsigned for the simulator, then uploads its dSYMs to PostHog when `POSTHOG_CLI_*` are set           |
 | `just ios-test`                                |  yes  |  no   | Runs the package unit tests through the `AIStylist-Dev` scheme on an iOS 26+ iPhone simulator                       |
 | `just ios-e2e`                                 |  yes  |  no   | Builds Dev for the simulator and runs the shared Maestro flow `e2e/smoke.yaml` (`APP_ID=app.aistylist.mobile.dev`) |
+| `just ios-run`                                 |  yes  |  no   | Builds Dev, opens Simulator.app and installs and launches the app (`just dev ios` also starts the backend)          |
 | `just ios-test-packages [core\|features]`      |  yes  |  yes  | Runs `swift test` for Core and the Features view models                                                             |
 | `just ios-lint`                                |  yes  |  yes  | Runs the SwiftLint safety rules (on Linux: `swiftlint-static`)                                                      |
 | `just ios-format [--check]`                    |  yes  |  yes  | Runs swift-format, in place or as a check                                                                           |
@@ -171,6 +172,7 @@ just ios-doctor              # Xcode 27.0 selected?
 just ios-project             # generate AIStylist.xcodeproj
 open apps/ios/AIStylist.xcodeproj   # scheme AIStylist-Dev, any iPhone simulator
 just ios-build && just ios-test
+just dev                     # or all of it at once: backend + the app in the simulator (and the Android app)
 ```
 
 To add a file, create it under `App/` or in a package, then re-run `just ios-project`. XcodeGen picks it up, so you

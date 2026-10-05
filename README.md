@@ -43,7 +43,7 @@ On Linux this installs the system packages with pacman (Arch, Omarchy) or apt (U
 
 On macOS it first checks for the Xcode Command Line Tools and Homebrew, whose installers you run yourself (see the macOS guide). Then it installs git-lfs and OrbStack (the Docker runtime) with Homebrew and starts OrbStack. It also sets up the Xcode version pinned in `apps/ios/.xcode-version`. If that version is missing, it installs it with `xcodes`, which asks for your Apple ID and downloads about 10 GB. It selects that Xcode, accepts its licence, runs its first-launch setup, and downloads an iOS simulator runtime if none is installed. Selecting Xcode and the first-launch setup ask for your password (sudo).
 
-On both it installs the Android SDK packages into your home directory (no emulator) and writes `ANDROID_HOME` to `~/.config/ai-stylist/env.sh`, which `.envrc` loads; on Linux it also pulls the `swift:6.4` Docker image the Linux iOS checks use. Skip this step if Docker already works for your user and you do not work on the apps.
+On both it installs the Android SDK packages into your home directory (no emulator: `just dev` adds one when it first needs it) and writes `ANDROID_HOME` to `~/.config/ai-stylist/env.sh`, which `.envrc` loads; on Linux it also pulls the `swift:6.4` Docker image the Linux iOS checks use. Skip this step if Docker already works for your user and you do not work on the apps.
 
 ### 3. Install the toolchain and dependencies
 
@@ -89,7 +89,34 @@ Nothing above needs a vendor account. When a phase does (a server provider + Coo
 
 ## Running the app
 
-Open one terminal per process, or use the `solo.yml` process list if you use Soloist.
+One command runs everything this machine can run:
+
+```bash
+just dev        # Linux: backend + Android app · macOS: backend + Android app + iOS app
+```
+
+It checks the setup and fixes what is missing or stale: bootstrap on a fresh clone, dependencies after a pull, `.env`,
+the container runtime (Docker Engine on Linux, OrbStack on macOS), the Android SDK and, after asking, the pinned Xcode.
+Then it starts Postgres, applies the migrations and starts the API (`:3000`) and the workers (`:8001`) in the
+background. It builds the Dev app and opens it on a running Android emulator, else on your connected phone (USB
+debugging on; the API is forwarded with `adb reverse`), else on an emulator it creates and boots (the first time this
+downloads about 1.5 GB), and on macOS also in an iPhone simulator. Finally it follows the API and worker logs; Ctrl-C
+stops them. On a fresh clone, before `just` is installed, run `./scripts/dev.sh` instead.
+
+| Command                                                      | Does                                                                                                                                   |
+| ------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------- |
+| `just dev android` / `just dev ios`                          | One app plus the backend. Re-run it after a change: it rebuilds and relaunches the app and reuses the running backend                  |
+| `just dev backend`                                           | Postgres, the API and the workers only                                                                                                 |
+| `just dev -d`                                                | Starts everything and returns instead of following the logs                                                                            |
+| `just dev status` / `just dev logs [api\|workers\|emulator]` | What runs (processes, health, devices) / follow the logs (`artifacts/dev/logs/`)                                                       |
+| `just dev down`                                              | Stops the API and workers, the emulator or simulator `just dev` booted, and Postgres (its data is kept; `--keep-db`, `--keep-devices`) |
+| `just dev --dry-run`                                         | Prints the plan for this machine and changes nothing                                                                                   |
+
+Options: `--seed` (synthetic seed data), `--no-workers`, `--no-backend`, `--no-setup` (skip the checks), `--android-serial S`,
+`--ios-simulator UDID`, `-y` (agree to the setup questions). `just dev --help` lists them all. On Linux the x86_64 emulator
+needs KVM: `just dev` says how to enable it when `/dev/kvm` is missing or not yours.
+
+To run the pieces by hand instead, open one terminal per process, or use the `solo.yml` process list if you use Soloist.
 
 ### API
 

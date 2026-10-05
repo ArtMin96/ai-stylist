@@ -31,26 +31,6 @@ done
 # The functions below run in `f || warn` context, where bash ignores `set -e`: every step that
 # can fail ends in `|| return 1`.
 
-# macOS Docker runtime: OrbStack (Linux uses Docker Engine from pacman/apt). Installs the cask when
-# the app is missing, starts the engine headless (`orb start`, a no-op when running), and makes its
-# `orbstack` docker context the active one. OrbStack itself links docker into /usr/local/bin
-# (after an admin prompt) and adds ~/.orbstack/bin to PATH from ~/.zprofile for new shells.
-setup_orbstack() {
-  if [[ -d /Applications/OrbStack.app ]]; then
-    info "OrbStack installed"
-  else
-    brew install --cask orbstack || return 1
-  fi
-  local orb=/Applications/OrbStack.app/Contents/MacOS/bin/orb
-  "$orb" start || return 1
-  have docker || export PATH="$HOME/.orbstack/bin:$PATH"
-  if [[ "$(docker context show 2>/dev/null)" != "orbstack" ]]; then
-    docker context use orbstack >/dev/null || return 1
-  fi
-  docker info >/dev/null 2>&1 || { error "OrbStack started but 'docker info' fails"; return 1; }
-  info "OrbStack running; docker context: orbstack"
-}
-
 # Xcode for apps/ios: the version pinned in apps/ios/.xcode-version, installed with xcodes when
 # missing (it asks for your Apple ID and downloads about 10 GB), selected, licence accepted,
 # first-launch packages installed, plus an iOS 26+ simulator runtime (just ios-test needs one).

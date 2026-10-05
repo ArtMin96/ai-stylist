@@ -234,6 +234,26 @@ darwin_docker_runtime() {
   fi
 }
 
+# macOS Docker runtime: OrbStack (Linux uses Docker Engine from pacman/apt), for bootstrap.sh --system
+# and `just dev` (scripts/dev.sh). Installs the cask when the app is missing, starts the engine
+# headless (`orb start`, a no-op when running), and makes its `orbstack` docker context the active one. OrbStack itself links docker into /usr/local/bin
+# (after an admin prompt) and adds ~/.orbstack/bin to PATH from ~/.zprofile for new shells.
+setup_orbstack() {
+  if [[ -d /Applications/OrbStack.app ]]; then
+    info "OrbStack installed"
+  else
+    brew install --cask orbstack || return 1
+  fi
+  local orb=/Applications/OrbStack.app/Contents/MacOS/bin/orb
+  "$orb" start || return 1
+  have docker || export PATH="$HOME/.orbstack/bin:$PATH"
+  if [[ "$(docker context show 2>/dev/null)" != "orbstack" ]]; then
+    docker context use orbstack >/dev/null || return 1
+  fi
+  docker info >/dev/null 2>&1 || { error "OrbStack started but 'docker info' fails"; return 1; }
+  info "OrbStack running; docker context: orbstack"
+}
+
 # --- local compose stack (docker-compose.yml: the Postgres that just dev-api / dev-workers start) --
 
 # docker-compose.yml fixes the container name, so on one machine exactly one compose project can

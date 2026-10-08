@@ -18,7 +18,7 @@ import {
   trace,
 } from '@opentelemetry/api';
 
-import { errorSummary } from '../queue/error-summary.js';
+import { errorSummary } from '../errors/error-shape.js';
 
 import { CORRELATION_ID_KEY, isValidCorrelationId, runWithCorrelationId } from './correlation.js';
 
@@ -48,7 +48,7 @@ export const SPAN_ATTRIBUTES = {
 export type CarriedTraceContext = {
   /** W3C `traceparent` of the span that caused the work. */
   readonly traceparent?: string | undefined;
-  /** Correlation id; a value outside `CORRELATION_ID_PATTERN` is dropped. */
+  /** Correlation id; a value `isValidCorrelationId` rejects is dropped. */
   readonly correlationId?: string | undefined;
 };
 

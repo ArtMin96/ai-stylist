@@ -102,6 +102,7 @@ just test ios                  # fast loop: swift test for the Core and Features
 just lint-file <path>          # one edited .swift or apps/ios/scripts/*.sh file
 just ios-project               # macOS only: XcodeGen after project.yml or new files
 just ios-build --config dev    # macOS only: compiles the app target and SwiftUI views
+just ios-run                   # macOS only: Dev build, installed and launched in the simulator
 just ios-test                  # macOS only: package tests on the simulator
 # main checkout only (need node_modules); in a worktree they go under Not run and the lead runs them:
 just generate --check          # after a contract or gen-swift.sh change

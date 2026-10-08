@@ -7,11 +7,12 @@ import { SpanKind, SpanStatusCode, TraceFlags, trace } from '@opentelemetry/api'
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import envelopeSchema from '@ai-stylist/contracts/events/envelope.json' with { type: 'json' };
+import { LOG_REDACTION_EXAMPLES } from '@ai-stylist/shared-kernel';
 
 import { REDACTED } from '../logger.js';
 import { currentCorrelationId } from '../telemetry/correlation.js';
 import type { Telemetry } from '../telemetry/lifecycle.js';
-import type { ExportedSpan } from '../telemetry/span-sanitizer.js';
+import { type ExportedSpan, sanitizeAttributes } from '../telemetry/span-sanitizer.js';
 import { startTelemetry } from '../telemetry/telemetry.js';
 import { TRACEPARENT_PATTERN, currentTraceparent, runTraced } from '../telemetry/trace-context.js';
 
@@ -156,6 +157,31 @@ describe('trace context and span redaction (in-process SDK)', () => {
     expect(text).not.toContain(CANARY);
   });
 
+  // OTel JS fills `exception.type` from `String(err.code)`, else `err.name`; either can be free text.
+  it('keeps exception.type only when it is name- or code-shaped, else writes Error', async () => {
+    const span = trace.getTracer('test').startSpan('exception types');
+    span.recordException(Object.assign(new Error('x'), { code: `bad ${CANARY}` }));
+    span.recordException(Object.assign(new Error('x'), { name: `Error: ${CANARY}` }));
+    span.recordException(Object.assign(new Error('x'), { code: '23505' }));
+    span.recordException(Object.assign(new Error('x'), { code: 'ECONNREFUSED' }));
+    span.recordException(new TypeError('x'));
+    span.recordException(Object.assign(new Error('x'), { name: 'grpc.ServiceError' }));
+    span.setAttribute('exception.type', `free ${CANARY}`);
+    span.end();
+
+    const out = await exported('exception types');
+    expect(out?.events.map((event) => event.attributes?.['exception.type'])).toEqual([
+      'Error',
+      'Error',
+      '23505',
+      'ECONNREFUSED',
+      'TypeError',
+      'grpc.ServiceError',
+    ]);
+    expect(out?.attributes).toEqual({ 'exception.type': 'Error' });
+    expect(JSON.stringify([out?.attributes, out?.events])).not.toContain(CANARY);
+  });
+
   it('cuts every string of an array-valued URL attribute', async () => {
     const span = trace.getTracer('test').startSpan('urls', {
       attributes: {
@@ -179,6 +205,16 @@ describe('trace context and span redaction (in-process SDK)', () => {
 
     await telemetry.flush();
     expect(exporter.spans.map((span) => span.name)).toEqual(['GET /v1/items', ...KEPT_SPAN_NAMES]);
+  });
+
+  it('cuts the query and fragment from an event name, and keeps a name without one', async () => {
+    const span = trace.getTracer('test').startSpan('events');
+    span.addEvent(`redirect /v1/items?token=${CANARY}#${CANARY}`);
+    span.addEvent('exception');
+    span.end();
+
+    const out = await exported('events');
+    expect(out?.events.map((event) => event.name)).toEqual(['redirect /v1/items', 'exception']);
   });
 
   it('sanitises link attributes like span attributes, and keeps the linked ids', async () => {
@@ -232,5 +268,16 @@ describe('trace context and span redaction (in-process SDK)', () => {
       'deploy.api_token': REDACTED,
       'url.full': 'https://deploy.example/hook',
     });
+  });
+});
+
+// The shared-kernel vectors every implementation checks (registry/log-redaction.json).
+describe('span sanitizer: exception.type vectors of LOG_REDACTION_EXAMPLES', () => {
+  it.each(LOG_REDACTION_EXAMPLES.exceptionType.kept)('keeps %j', (type) => {
+    expect(sanitizeAttributes({ 'exception.type': type })).toEqual({ 'exception.type': type });
+  });
+
+  it.each(LOG_REDACTION_EXAMPLES.exceptionType.replaced)('replaces %j with Error', (type) => {
+    expect(sanitizeAttributes({ 'exception.type': type })).toEqual({ 'exception.type': 'Error' });
   });
 });

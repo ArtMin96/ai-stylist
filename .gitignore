@@ -39,7 +39,8 @@ Thumbs.db
 !.vscode/settings.json
 !.vscode/extensions.json
 
-# security scan artifacts (`just security-scan` / `just sbom` write artifacts/sbom/, never committed)
+# generated output, never committed: `just security-scan` / `just sbom` write artifacts/sbom/;
+# `just dev` keeps its logs, pid files and stamps in artifacts/dev/
 artifacts/
 sbom.*.json
 gitleaks-report.json

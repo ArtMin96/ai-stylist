@@ -1,17 +1,24 @@
 #!/usr/bin/env node
-// shared-kernel JSON registries -> TypeScript / Swift / Kotlin constants (OQ-15, planning/16).
+// shared-kernel JSON registries -> TypeScript / Swift / Kotlin / Python constants (OQ-15, DEC-55).
 //
 //   packages/shared-kernel/registry/{reason-codes,entitlements,units}.json  (+ *.schema.json)
 //     ts      -> <out>/{reason-codes,entitlements,units}.ts   (packages/shared-kernel/src/gen)
 //     swift   -> <out>/{ReasonCodes,Entitlements,Units}.swift (swift-client Sources/AIStylistKernel)
 //     kotlin  -> <out>/{ReasonCodes,Entitlements,Units}.kt    (kotlin-client kernel/..., package
 //                app.aistylist.contracts.kernel)
+//   packages/shared-kernel/registry/{forbidden-log-keys,forbidden-log-keys.examples,log-redaction,
+//   correlation}.json  (+ the `correlationId` rule of packages/contracts/events/envelope.json)
+//     python  -> <out>/{__init__,forbidden_log_keys,log_redaction,correlation}.py
+//                (workers/ml/generated/ai_stylist_generated/kernel, the registries the workers mirror)
 //
-// Usage: node tools/codegen/gen-kernel.mjs <ts|swift|kotlin> <out-dir>
-// Called by generate.sh (ts), gen-swift.sh (swift) and gen-kotlin.sh (kotlin); not run by hand.
-// Every run validates each registry against its JSON Schema (Ajv, draft 2020-12, resolved from the
-// packages/contracts devDependency) plus the cross-references a schema cannot express, and exits 1
-// on any finding. Deterministic: registry order is preserved, output is byte-identical per input.
+// Usage: node tools/codegen/gen-kernel.mjs <ts|swift|kotlin|python> <out-dir>
+// Called by generate.sh (ts), gen-swift.sh (swift), gen-kotlin.sh (kotlin) and gen-python.sh
+// (python); not run by hand.
+// Every run validates each registry it emits against its JSON Schema (Ajv, draft 2020-12, with
+// ajv-formats, resolved from the packages/contracts devDependencies) plus the cross-references a
+// schema cannot express (and, for python, that the envelope's correlationId rule is portable), and
+// exits 1 on any finding. Deterministic: registry order is preserved, output is byte-identical per
+// input.
 // <out-dir> holds only generated files and is replaced wholesale. Never edit the output by hand.
 import { mkdir, readFile, rm, writeFile } from 'node:fs/promises';
 import { createRequire } from 'node:module';
@@ -19,17 +26,33 @@ import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
 import { emitKotlin } from './kernel/emit-kotlin.mjs';
+import { emitPython } from './kernel/emit-python.mjs';
 import { emitSwift } from './kernel/emit-swift.mjs';
 import { emitTs } from './kernel/emit-ts.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
-const REGISTRY_DIR = path.join(ROOT, 'packages/shared-kernel/registry');
-const REGISTRIES = ['reason-codes', 'entitlements', 'units'];
-const EMITTERS = { ts: emitTs, swift: emitSwift, kotlin: emitKotlin };
+// Registry files resolve through the package export `@ai-stylist/shared-kernel/registry/*` (a root
+// devDependency), not a repo path.
+const requireRegistry = createRequire(import.meta.url);
+const registryFile = (file) =>
+  requireRegistry.resolve(`@ai-stylist/shared-kernel/registry/${file}`);
+const NATIVE_REGISTRIES = ['reason-codes', 'entitlements', 'units'];
+const WORKER_REGISTRIES = [
+  'forbidden-log-keys',
+  'forbidden-log-keys.examples',
+  'log-redaction',
+  'correlation',
+];
+const EMITTERS = {
+  ts: [emitTs, NATIVE_REGISTRIES],
+  swift: [emitSwift, NATIVE_REGISTRIES],
+  kotlin: [emitKotlin, NATIVE_REGISTRIES],
+  python: [emitPython, WORKER_REGISTRIES],
+};
 
 const [lang, outArg] = process.argv.slice(2);
-if (!lang || !(lang in EMITTERS) || !outArg) {
-  console.error('usage: gen-kernel.mjs <ts|swift|kotlin> <out-dir>');
+if (!lang || !Object.hasOwn(EMITTERS, lang) || !outArg) {
+  console.error('usage: gen-kernel.mjs <ts|swift|kotlin|python> <out-dir>');
   process.exit(2);
 }
 const outDir = path.resolve(outArg);
@@ -38,7 +61,13 @@ const requireFromContracts = createRequire(path.join(ROOT, 'packages/contracts/p
 const { Ajv2020 } = await import(
   pathToFileURL(requireFromContracts.resolve('ajv/dist/2020.js')).href
 );
+const { default: addFormats } = await import(
+  pathToFileURL(requireFromContracts.resolve('ajv-formats')).href
+);
 const ajv = new Ajv2020({ strict: true, allErrors: true });
+addFormats(ajv);
+const [emit, REGISTRIES] = EMITTERS[lang];
+const ENVELOPE = 'packages/contracts/events/envelope.json';
 
 /** Schema validation per file; returns the parsed registries keyed by name. */
 async function loadRegistries(errors) {
@@ -48,8 +77,8 @@ async function loadRegistries(errors) {
     let data;
     let schema;
     try {
-      data = JSON.parse(await readFile(path.join(REGISTRY_DIR, `${name}.json`), 'utf8'));
-      schema = JSON.parse(await readFile(path.join(REGISTRY_DIR, `${name}.schema.json`), 'utf8'));
+      data = JSON.parse(await readFile(registryFile(`${name}.json`), 'utf8'));
+      schema = JSON.parse(await readFile(registryFile(`${name}.schema.json`), 'utf8'));
     } catch (err) {
       errors.push(`${rel}: ${err.message}`);
       continue;
@@ -64,6 +93,43 @@ async function loadRegistries(errors) {
     }
   }
   return reg;
+}
+
+/**
+ * The event envelope's `correlationId` rule (Python only: the workers check caller ids against it
+ * and the API checks them with Ajv on the schema itself). JSON Schema reads `pattern` as an ECMA-262
+ * search; the worker compiles it with `re.ASCII` and `fullmatch`, which agree with it only for an
+ * anchored, printable-ASCII source, so anything else fails here instead of drifting.
+ */
+async function loadCorrelationIdRule(errors) {
+  let envelope;
+  try {
+    envelope = JSON.parse(
+      await readFile(
+        requireFromContracts.resolve('@ai-stylist/contracts/events/envelope.json'),
+        'utf8',
+      ),
+    );
+  } catch (err) {
+    errors.push(`${ENVELOPE}: ${err.message}`);
+    return undefined;
+  }
+  const rule = envelope.properties?.correlationId ?? {};
+  const where = `${ENVELOPE}: properties.correlationId`;
+  const { pattern, minLength, maxLength } = rule;
+  if (typeof pattern !== 'string' || !/^\^[\x20-\x7e]*\$$/.test(pattern)) {
+    errors.push(`${where}.pattern: must be an anchored (^…$), printable-ASCII string`);
+  } else {
+    try {
+      new RegExp(pattern, 'u');
+    } catch (err) {
+      errors.push(`${where}.pattern: ${err.message}`);
+    }
+  }
+  if (!Number.isInteger(minLength) || !Number.isInteger(maxLength) || minLength > maxLength) {
+    errors.push(`${where}: minLength and maxLength must be integers, minLength <= maxLength`);
+  }
+  return { pattern, minLength, maxLength };
 }
 
 /** Cross-references JSON Schema cannot express (declared namespace/stage/kind/canonical unit). */
@@ -100,21 +166,33 @@ function checkReferences(reg, errors) {
       }
     }
   }
+  const lr = reg['log-redaction'];
+  if (lr) {
+    // Emitted verbatim for Python's `re.ASCII`; the shared-kernel tests run every vector in TS.
+    for (const key of ['errorNameShape', 'codeShape', 'nestContextShape']) {
+      if (/[^\x20-\x7e]/.test(lr[key])) {
+        errors.push(`log-redaction.json: ${key}: must be printable ASCII`);
+      }
+    }
+  }
 }
 
 const errors = [];
 const reg = await loadRegistries(errors);
 checkReferences(reg, errors);
+const contracts = lang === 'python' ? { correlationId: await loadCorrelationIdRule(errors) } : {};
 let files = {};
 if (errors.length === 0) {
   try {
-    files = EMITTERS[lang](reg);
+    files = emit(reg, contracts);
   } catch (err) {
     errors.push(err.message);
   }
 }
 if (errors.length > 0) {
-  console.error('gen-kernel.mjs: invalid shared-kernel registry (nothing written):');
+  console.error(
+    'gen-kernel.mjs: invalid shared-kernel registry or contract input (nothing written):',
+  );
   for (const e of errors) console.error(`  ${e}`);
   process.exit(1);
 }

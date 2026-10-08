@@ -54,7 +54,7 @@ templates/linear/       Linear issue-type templates (feature, bug, spike, contra
 scripts/  justfile  mise.toml           tooling; `just` is the only entry point
 scripts/hooks/          `.claude/settings.json` hook scripts (path guard, Bash guard, scoped lint, PROGRESS gate, orientation)
 scripts/docs/           docs-check.sh + lib/ (`just docs-check`)
-artifacts/              generated build output (e.g. sbom/); gitignored, not read for orientation
+artifacts/              generated output (sbom/; dev/ = `just dev` logs and state); gitignored, not read for orientation
 node_modules/           package-manager output; gitignored, never read or edited directly
 prototype/              throwaway spikes (e.g. g3-filament-spike); not shipped
 secrets/                sops+age encrypted per-environment config (planning/15 §6); never plaintext
@@ -121,7 +121,8 @@ Stale instructions mislead the next agent, and nothing but this rule catches mos
 Use `just` recipes only — never raw tool invocations that CI does not run. Full catalog: `planning/15-team-workflow-and-ai-agent-operations.md` §5.
 
 - `just doctor` — environment check (run when anything is weird)
-- `just dev-api` / `just dev-workers`
+- `just dev` — run the whole app: setup checks, Postgres + API + workers, the Android app (Linux, macOS) and the iOS app (macOS); `just dev down` stops it
+- `just dev-api` / `just dev-workers` (one backend process each)
 - `just ios-check` (lint, format, bans, package tests; on macOS also the simulator build + tests) · Mac-only: `just ios-project` / `just ios-build` / `just ios-test`
 - `just android-check` (Spotless, module graph, detekt, Android Lint, unit + Robolectric tests, APKs)
 - `just test <module>` (scoped) · `just test` (full)

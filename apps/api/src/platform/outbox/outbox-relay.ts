@@ -20,7 +20,8 @@ import type { Sql } from 'postgres';
 
 import type { EventEnvelope, EventType } from '@ai-stylist/shared-kernel';
 
-import { errorSummary } from '../queue/error-summary.js';
+import { childLogger } from '../logger.js';
+import { errorSummary, isError } from '../errors/error-shape.js';
 import type { EnqueueOptions, EnqueueResult } from '../queue/pg-boss-queue.js';
 import { type BackoffPolicy, backoffDelayMs } from '../resilience/backoff.js';
 import { TimeoutError, withTimeout } from '../resilience/timeout.js';
@@ -151,7 +152,7 @@ export class InvalidEnvelopeError extends TypeError {
  */
 export function describeSendError(error: unknown): string {
   let text: string;
-  if (!(error instanceof Error)) {
+  if (!isError(error)) {
     text = `non-Error thrown (${typeof error})`;
   } else if (
     error instanceof TimeoutError ||
@@ -186,7 +187,7 @@ export class OutboxRelay {
   constructor(config: OutboxRelayConfig) {
     this.sql = config.sql;
     this.queue = config.queue;
-    this.logger = config.logger.child({ component: 'outbox-relay' });
+    this.logger = childLogger(config.logger, { component: 'outbox-relay' });
     this.routeEvent = config.routeEvent;
     this.userIdOf = config.userIdOf;
     this.random = config.random ?? Math.random;

@@ -7,9 +7,13 @@
 // is added when nothing is traced (telemetry off, or no active span).
 import type { Sql, TransactionSql } from 'postgres';
 
-import { type EventEnvelope, type EventType, isId } from '@ai-stylist/shared-kernel';
+import {
+  type EventEnvelope,
+  type EventType,
+  type OutboxWriter,
+  isId,
+} from '@ai-stylist/shared-kernel';
 
-import type { OutboxWriter } from '../ports/outbox-writer.port.js';
 import { currentTraceparent } from '../telemetry/trace-context.js';
 
 export class PgOutboxWriter implements OutboxWriter<TransactionSql> {

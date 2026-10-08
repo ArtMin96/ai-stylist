@@ -12,6 +12,7 @@
     "test": "turbo run test"
   },
   "devDependencies": {
+    "@ai-stylist/shared-kernel": "workspace:*",
     "@commitlint/cli": "^21.2.3",
     "@commitlint/config-conventional": "^21.2.3",
     "@eslint/js": "^10.0.1",

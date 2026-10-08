@@ -1,6 +1,8 @@
 // Boots the real Nest/Fastify app in-process (same composition root as main.ts) and checks the
 // platform endpoints against the generated contract types, the correlation id and request metrics
-// wiring, the `demo-outbox-flow` flag gate, and the config rules of the keys the root binds.
+// wiring, the `demo-outbox-flow` flag gate, and the config rules of the keys the root binds
+// (the storage and local-or-dev rules are in config.test.ts).
+import { Logger as NestLogger } from '@nestjs/common';
 import { metrics } from '@opentelemetry/api';
 import type { NestFastifyApplication } from '@nestjs/platform-fastify';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
@@ -12,18 +14,16 @@ import type {
 } from '@ai-stylist/contracts/events';
 import { type DbHandle, createDb, isLocalDatabaseUrl, migrate } from '@ai-stylist/db';
 import { ERROR_CODES, type FeatureFlagKey, PROBLEM_TYPE_BASE } from '@ai-stylist/shared-kernel';
-import { fakeFeatureFlags, memoryLogStream } from '@ai-stylist/test-support';
+import { fakeFeatureFlags, memoryLogStream, recordingOutboxWriter } from '@ai-stylist/test-support';
 
 import { createApp } from '../src/app.module.js';
 import { ConfigError, loadConfig } from '../src/config.js';
 import { DEMO_ID_MAX, type DemoEventEnvelope } from '../src/dev/demo-events.controller.js';
-import { isDevRouteEnabled } from '../src/dev/index.js';
 import {
   CORRELATION_ID_HEADER,
-  CORRELATION_ID_PATTERN,
   METRIC_NAMES,
-  type OutboxWriter,
   PROBLEM_CONTENT_TYPE,
+  isValidCorrelationId,
 } from '../src/platform/index.js';
 import {
   histogramPoints,
@@ -75,7 +75,7 @@ function isProblem(body: unknown): body is ProblemDetails {
 /** An app without DATABASE_URL: routing, flags and the dev route, no queue/relay runtime. */
 function configWithoutDatabase(overrides: Record<string, string>) {
   const { DATABASE_URL: _omit, ...env } = process.env;
-  return loadConfig({ ...env, NODE_ENV: 'test', ...overrides });
+  return loadConfig({ ...env, NODE_ENV: 'test', APP_ENV: 'local', ...overrides });
 }
 
 describe('api (Fastify in-process)', () => {
@@ -96,6 +96,8 @@ describe('api (Fastify in-process)', () => {
     const config = loadConfig({
       ...process.env,
       NODE_ENV: 'test',
+      // Every deployment names itself (no default); the dev route below needs local or dev.
+      APP_ENV: 'local',
       LOG_LEVEL: 'info',
       APP_VERSION: '1.2.3',
       GIT_COMMIT: 'abc123',
@@ -154,6 +156,78 @@ describe('api (Fastify in-process)', () => {
     });
   });
 
+  it('a malformed URL Fastify rejects before routing answers a problem without its query', async () => {
+    const res = await app.inject({
+      method: 'GET',
+      url: '/v1/nope%zz?sig=CANARY_SIG_4b1e',
+      remoteAddress: '10.1.0.3',
+    });
+    expect(res.statusCode).toBe(400);
+    expect(res.headers['content-type']).toContain(PROBLEM_CONTENT_TYPE);
+    const body = res.json<ProblemDetails>();
+    expect(isProblem(body)).toBe(true);
+    expect(body).toMatchObject({ status: 400, instance: '/v1/nope%zz' });
+    expect(body).not.toHaveProperty('detail');
+    expect(res.body).not.toContain('CANARY_SIG_4b1e');
+  });
+
+  // Fastify's content-type parser rejects these before the route; the problem keeps Fastify's fixed
+  // text as `detail` (ProblemFilter's allowlist), never anything from the request.
+  it('a malformed JSON body answers a 400 problem with a fixed detail', async () => {
+    const res = await app.inject({
+      method: 'POST',
+      url: DEMO_PATH,
+      remoteAddress: '10.1.0.9',
+      headers: { 'content-type': 'application/json' },
+      payload: `{"demoId": "${CANARY}"`,
+    });
+    expect(res.statusCode).toBe(400);
+    expect(res.headers['content-type']).toContain(PROBLEM_CONTENT_TYPE);
+    const body = res.json<ProblemDetails>();
+    expect(isProblem(body)).toBe(true);
+    expect(body).toEqual({
+      type: `${PROBLEM_TYPE_BASE}/VALIDATION_FAILED`,
+      title: ERROR_CODES.VALIDATION_FAILED.title,
+      status: 400,
+      code: 'VALIDATION_FAILED',
+      instance: DEMO_PATH,
+      detail: "Body is not valid JSON but content-type is set to 'application/json'",
+    });
+    expect(res.body).not.toContain(CANARY);
+  });
+
+  it('a body in an unsupported media type answers a 415 UNSUPPORTED_MEDIA_TYPE problem', async () => {
+    const res = await app.inject({
+      method: 'POST',
+      url: DEMO_PATH,
+      remoteAddress: '10.1.0.10',
+      headers: { 'content-type': 'application/xml' },
+      payload: `<demo>${CANARY}</demo>`,
+    });
+    expect(res.statusCode).toBe(415);
+    expect(res.headers['content-type']).toContain(PROBLEM_CONTENT_TYPE);
+    const body = res.json<ProblemDetails>();
+    expect(isProblem(body)).toBe(true);
+    expect(body).toEqual({
+      type: `${PROBLEM_TYPE_BASE}/UNSUPPORTED_MEDIA_TYPE`,
+      title: ERROR_CODES.UNSUPPORTED_MEDIA_TYPE.title,
+      status: 415,
+      code: 'UNSUPPORTED_MEDIA_TYPE',
+      instance: DEMO_PATH,
+      detail: 'Unsupported Media Type',
+    });
+    expect(res.body).not.toContain(CANARY);
+  });
+
+  // `createApp` flushes Nest's log buffer (`bufferLogs`) itself: `NestFactory.create` would hold
+  // every Nest `Logger` line until `listen()`, which an `app.inject` test never calls.
+  it('writes Nest Logger lines to the sink without listen()', () => {
+    const marker = `nest-logger-line-${RUN}`;
+    new NestLogger('HttpTest').log(marker);
+    const line = logs.records().find((record) => record['msg'] === marker);
+    expect(line).toMatchObject({ context: 'HttpTest' });
+  });
+
   it('echoes a valid x-correlation-id and mints one when it is absent or invalid', async () => {
     const given = `corr-http-1-${RUN}`;
     const echoed = await app.inject({
@@ -168,7 +242,7 @@ describe('api (Fastify in-process)', () => {
     const absent = await app.inject({ method: 'GET', url: '/nope', remoteAddress: '10.1.0.7' });
     expect(absent.statusCode).toBe(404); // a problem response carries it too
     expect(absent.headers[CORRELATION_ID_HEADER]).toMatch(UUID);
-    expect(absent.headers[CORRELATION_ID_HEADER]).toMatch(CORRELATION_ID_PATTERN);
+    expect(isValidCorrelationId(absent.headers[CORRELATION_ID_HEADER])).toBe(true);
 
     const invalid = await app.inject({
       method: 'GET',
@@ -299,19 +373,16 @@ describe('api (Fastify in-process)', () => {
       code: 'RATE_LIMITED',
       title: ERROR_CODES.RATE_LIMITED.title,
     });
+    // The rate-limit builder throws an HttpException, so its own text is the detail.
+    expect(body.detail).toMatch(/^rate limit exceeded, retry in /);
   });
 });
 
 describe('dev demo route: one correlation id end to end (recording outbox, no database)', () => {
   let app: NestFastifyApplication;
   const flags = fakeFeatureFlags<FeatureFlagKey>({ 'demo-outbox-flow': true });
-  const appended: unknown[] = [];
-  const recordingOutbox: OutboxWriter = {
-    append: (envelope) => {
-      appended.push(envelope);
-      return Promise.resolve();
-    },
-  };
+  const recordingOutbox = recordingOutboxWriter<DemoEventEnvelope>();
+  const { appended } = recordingOutbox;
 
   beforeAll(async () => {
     const config = configWithoutDatabase({ APP_ENV: 'local', LOG_LEVEL: 'info' });
@@ -442,21 +513,19 @@ describe('createApp wires request metrics (global meter) without changing respon
   });
 });
 
-describe('dev routes fail closed', () => {
-  it.each([
-    ['development', 'local', true],
-    ['test', 'dev', true],
-    ['development', 'staging', false],
-    ['development', 'prod', false],
-    ['production', 'local', false],
-    ['production', 'dev', false],
-  ] as const)('NODE_ENV=%s APP_ENV=%s → enabled=%s', (NODE_ENV, APP_ENV, enabled) => {
-    expect(isDevRouteEnabled({ NODE_ENV, APP_ENV })).toBe(enabled);
-  });
-
+describe('dev routes fail closed (isLocalOrDevDeployment, config.test.ts)', () => {
   it('POST /v1/dev/demo-events is not registered when APP_ENV=staging (NODE_ENV=test)', async () => {
-    // No DATABASE_URL: this app only needs routing, not the queue/relay runtime.
-    const config = configWithoutDatabase({ APP_ENV: 'staging', LOG_LEVEL: 'silent' });
+    // No DATABASE_URL: this app only needs routing, not the queue/relay runtime. Staging refuses to
+    // boot without R2 keys (`isLocalOrDevDeployment`); synthetic ones suffice, minting is offline
+    // (the secret is AWS's public documentation example, never a real credential).
+    const config = configWithoutDatabase({
+      APP_ENV: 'staging',
+      LOG_LEVEL: 'silent',
+      R2_ACCOUNT_ID: 'a1b2c3d4e5f60718293a4b5c6d7e8f90',
+      R2_ACCESS_KEY_ID: 'AKIAIOSFODNN7EXAMPLE',
+      R2_SECRET_ACCESS_KEY: 'wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY',
+      R2_BUCKET: 'ai-stylist-test',
+    });
     const staging = await createApp({ config, logStream: logs });
     try {
       await staging.init();
@@ -479,10 +548,13 @@ describe('config: PostHog keys', () => {
   const HOST = 'https://eu.i.posthog.com';
   const PROJECT_KEY = 'phc_synthetic_test';
 
-  /** Only the keys under test (the ambient environment must not decide the outcome). */
+  /**
+   * Only the keys under test plus the required APP_ENV (the ambient environment must not decide
+   * the outcome).
+   */
   function configError(env: Record<string, string>): ConfigError {
     try {
-      loadConfig(env);
+      loadConfig({ APP_ENV: 'local', ...env });
     } catch (error) {
       if (error instanceof ConfigError) return error;
       throw error;
@@ -491,11 +563,13 @@ describe('config: PostHog keys', () => {
   }
 
   it('accepts a project key with an http(s) host, and treats empty values as unset', () => {
-    expect(loadConfig({ POSTHOG_API_KEY: PROJECT_KEY, POSTHOG_HOST: HOST })).toMatchObject({
+    expect(
+      loadConfig({ APP_ENV: 'local', POSTHOG_API_KEY: PROJECT_KEY, POSTHOG_HOST: HOST }),
+    ).toMatchObject({
       POSTHOG_API_KEY: PROJECT_KEY,
       POSTHOG_HOST: HOST,
     });
-    const unset = loadConfig({ POSTHOG_API_KEY: '', POSTHOG_HOST: ' ' });
+    const unset = loadConfig({ APP_ENV: 'local', POSTHOG_API_KEY: '', POSTHOG_HOST: ' ' });
     expect(unset.POSTHOG_API_KEY).toBeUndefined();
     expect(unset.POSTHOG_HOST).toBeUndefined();
   });

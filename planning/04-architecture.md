@@ -418,12 +418,12 @@ Per brief §2.9 and SPINE P15: no chat implementation before P15, but the seams 
 
 | Service (module) | Available from | Chat would use it for |
 |---|---|---|
-| `identity`: session/consent queries | P03 | authZ, consent gating per tool call |
+| *(no `identity` edge, §4.1)*: the caller principal and consent scope arrive with every call; authN/authZ run at the adapter boundary, not as an assistant→identity call | P03 | authZ, consent gating per tool call |
 | `profile`: get/update measurements & preferences | P03 | "make my style more casual" |
 | `closet`: query items, availability, wear history | P06–P07 | "what black shoes do I own?" |
 | `context`: resolve context facts | P08 | "what's the weather for Saturday?" |
 | `recommendation`: request recommendation, submit feedback | P09 | "what should I wear tomorrow?" — same engine, same reason codes |
-| `outfit`: compose/save outfits | P09–P10 | "save that second look" |
+| *(no `outfit` edge, §4.1 and `tools/depcruise/rules.cjs`)*: saving or composing a look is reached through an allowed service's public API; the exact tool contract is decided in P15-T08 (aligned 2026-10-04) | P09–P10 | "save that second look" |
 | `billing`: entitlement check, credit balance | P13 | gating chat itself and G2 credits |
 | `fashion-intel`: personalized feed query | P12 | "what's trending in my style?" |
 

@@ -132,7 +132,7 @@ event envelope carries it instead: `packages/contracts/events/envelope.json` has
 | 3    | API, outbox relay              | Opens the span `outbox.dispatch <event type>`, with the envelope's `traceparent` as parent, and sends the whole envelope as the job's data                                            | `apps/api/src/platform/outbox/outbox-relay.ts`                                |
 | 4    | Jobs process                   | For each fetched job, `envelopeTraceContext` picks `traceparent` and `correlationId` out of the job data, and the queue opens the span `job.process <queue>` with that parent         | `apps/api/src/jobs/queues.ts`, `apps/api/src/platform/queue/pg-boss-queue.ts` |
 | 5    | Jobs process, worker call      | The handler calls the worker with `fetch`. The undici instrumentation adds the `traceparent` header; the client adds `x-correlation-id`. The body's `request_id` is the event id      | `apps/api/src/jobs/segmentation-client.ts`                                    |
-| 6    | Segmentation worker            | The FastAPI instrumentation continues the trace. The middleware accepts or mints the correlation id, sets it on the span, binds it to every log line and echoes it                    | `workers/ml/segmentation/src/ai_stylist_segmentation/correlation.py`          |
+| 6    | Segmentation worker            | The FastAPI instrumentation continues the trace. The middleware accepts or mints the correlation id, sets it on the span, binds it to every log line and echoes it                    | `workers/ml/observability/src/ai_stylist_observability/correlation.py`        |
 
 Rules the shared helper `runTraced` in `apps/api/src/platform/telemetry/trace-context.ts` enforces
 for steps 3 and 4:
@@ -140,9 +140,10 @@ for steps 3 and 4:
 - The parent is the span named by the carried `traceparent`, or a new trace when the value is
   missing or malformed. It is never the surrounding context: the relay's or the queue's polling loop
   did not cause the work.
-- A `traceparent` must match `TRACEPARENT_PATTERN`; a correlation id must match
-  `CORRELATION_ID_PATTERN` (1 to 128 characters of letters, digits, dot, underscore, colon and
-  hyphen). An invalid value is dropped, never rejected, and the worker uses the same pattern.
+- A `traceparent` must match `TRACEPARENT_PATTERN`; a correlation id must pass
+  `isValidCorrelationId`, the event envelope's `correlationId` rule (today 1 to 128 characters of
+  letters, digits, dot, underscore, colon and hyphen). An invalid value is dropped, never rejected,
+  and the worker checks the same rule (generated into `ai_stylist_generated.kernel`).
 - A failure marks the span with the error's class only (`recordSpanError`): no message, no stack.
 - With telemetry off, the same code runs and creates nothing.
 
@@ -163,13 +164,14 @@ from the outbox append to the worker request, is
 
 - An empty `APP_ENV` leaves `deployment.environment.name` out of the telemetry altogether. The
   telemetry start reads the raw environment (`apps/api/src/platform/telemetry/register.ts`, and
-  `main.py` in the worker), not the validated API config, whose default `local` applies only to the
-  application itself (`apps/api/src/config.ts`). Dashboard 01 still shows such data under
+  `main.py` in the worker), not the validated API config (`apps/api/src/config.ts`), which requires `APP_ENV` and refuses to
+  boot the API or the jobs process without it, so in practice only the Python worker can export
+  without the attribute. Dashboard 01 still shows such data under
   "All" environments, but there is then no environment to pick and an alert's summary names none.
   The tooling keeps this from happening locally: `just bootstrap` writes `local` into an empty
   `APP_ENV` in `.env`, `just doctor` warns while it is empty, and `just dev-api` and
   `just dev-workers` start each process with the exported value, else the `.env` value, else
-  `local` (`scripts/lib.sh`, `scripts/dev-app-env.sh`). A process started any other way with an
+  `local` (`scripts/lib.sh`, `scripts/dev-app-env.sh`). A worker started any other way with an
   empty `APP_ENV` still exports without the attribute.
 - The exporters read the two `OTEL_EXPORTER_OTLP_*` keys themselves; the repository's code only
   tests the endpoint for emptiness. Format and consumers of the header:
@@ -189,15 +191,15 @@ from the outbox append to the worker request, is
 The rule is planning doc 11 §8: logs, spans and metrics carry ids and enums only. The forbidden key
 words have one source, `packages/shared-kernel/registry/forbidden-log-keys.json`.
 
-| Signal            | Process   | Where it is cleaned                                                                                                                 | File                                                               |
-| ----------------- | --------- | ----------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------ |
-| Logs              | API, jobs | allowlist serializers for request and response, the forbidden-key denylist at any depth, and redact paths for child-logger bindings | `apps/api/src/platform/logger.ts`                                  |
-| Logs sent to OTLP | API, jobs | nothing extra: the records are the already-redacted pino lines                                                                      | `apps/api/src/platform/telemetry/telemetry.ts`                     |
-| Spans             | API, jobs | `SanitizingSpanExporter`, just before export                                                                                        | `apps/api/src/platform/telemetry/span-sanitizer.ts`                |
-| Spans we create   | API, jobs | written clean in the first place: ids and enums, the error class only                                                               | `apps/api/src/platform/telemetry/trace-context.ts`                 |
-| Metrics           | API, jobs | attributes are fixed enums and the route template, never the raw path                                                               | `apps/api/src/platform/telemetry/request-metrics.ts`               |
-| Logs              | worker    | a structlog processor with the same word list, pinned to the registry by a test                                                     | `workers/ml/segmentation/src/ai_stylist_segmentation/redaction.py` |
-| Spans             | worker    | a second `SanitizingSpanExporter` that mirrors the Node one and also covers the older attribute names                               | `workers/ml/segmentation/src/ai_stylist_segmentation/tracing.py`   |
+| Signal            | Process   | Where it is cleaned                                                                                                                                                                                                                                                                                                                                                                         | File                                                                 |
+| ----------------- | --------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------- |
+| Logs              | API, jobs | allowlist serializers for request and response; the forbidden-key denylist at any depth; `msg` limited to the caller's own string (`hooks.logMethod`; interpolation arguments and non-string first arguments dropped); a Nest `Logger` context kept only when it is a PascalCase class name; `childLogger` for child-logger bindings (redact paths only as a backstop for a raw `.child()`) | `apps/api/src/platform/logger.ts`                                    |
+| Logs sent to OTLP | API, jobs | nothing extra: the records are the already-redacted pino lines                                                                                                                                                                                                                                                                                                                              | `apps/api/src/platform/telemetry/telemetry.ts`                       |
+| Spans             | API, jobs | `SanitizingSpanExporter`, just before export                                                                                                                                                                                                                                                                                                                                                | `apps/api/src/platform/telemetry/span-sanitizer.ts`                  |
+| Spans we create   | API, jobs | written clean in the first place: ids and enums, the error class only                                                                                                                                                                                                                                                                                                                       | `apps/api/src/platform/telemetry/trace-context.ts`                   |
+| Metrics           | API, jobs | attributes are fixed enums and the route template, never the raw path                                                                                                                                                                                                                                                                                                                       | `apps/api/src/platform/telemetry/request-metrics.ts`                 |
+| Logs              | worker    | a structlog processor chain with the same word list, generated from the registry (`ai_stylist_generated.kernel`); positional arguments dropped; a logged exception is `err: {type, code?, cause?}` only (`summarize_exc_info`)                                                                                                                                                              | `workers/ml/observability/src/ai_stylist_observability/redaction.py` |
+| Spans             | worker    | a second `SanitizingSpanExporter` that mirrors the Node one and also covers the older attribute names                                                                                                                                                                                                                                                                                       | `workers/ml/observability/src/ai_stylist_observability/tracing.py`   |
 
 What the span sanitizer does, in both languages:
 
@@ -208,6 +210,12 @@ What the span sanitizer does, in both languages:
 - removes the free-text status message of a span and keeps its status code;
 - replaces the value of any attribute whose last dot-separated part is a forbidden word, so
   `http.request.header.authorization` is redacted and `http.request.body.size` is kept;
+- applies the attribute rule to every event's and every link's attributes (link ids kept) and to
+  the process resource, sanitized once where it is built;
+- cuts every string of an array-valued URL attribute;
+- cuts the span name and every event name at the first `?` or `#`;
+- keeps `exception.type` only when it is name-shaped or code-shaped (`log-redaction.json`), else
+  writes `Error`;
 - never drops a span and never changes an id or an enum.
 
 The sanitizer is a backstop for spans made by third-party instrumentations. It is not a licence to

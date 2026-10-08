@@ -153,6 +153,11 @@ be on PATH (pinned in `mise.toml`). Without them the task is `SKIPPED`, so the b
    It pins cmdline-tools 19.0 (sha1-verified) and installs `platform-tools`, `platforms;android-37.0` and `build-tools;36.0.0`.
    On a host with a broken IPv6 route, set `SDKMANAGER_OPTS=-Djava.net.preferIPv4Stack=true`.
    You don't need an emulator: the screen tests run on the JVM with Robolectric.
+   To run the app, `just dev android` (or `just android-run` with the backend already up) uses a running emulator, else
+   the connected phone (`adb reverse` plus a build pointed at `localhost`), else creates the AVD `aistylist-dev` and boots
+   it: `tools/sdk.sh emulator` installs the emulator and a Google APIs system image for the host CPU (API 36, or the
+   newest one offered; `ANDROID_SYSTEM_IMAGE` picks another). `tools/device.sh` also has `boot`, `avd [--recreate]`,
+   `stop` and `list`. On Linux the x86_64 emulator needs read and write access to `/dev/kvm`.
 3. AGP reads `ANDROID_HOME` (`tools/gradle.sh` falls back to `ANDROID_SDK_ROOT`, then the default path above).
    Don't commit `local.properties`.
 
@@ -172,6 +177,7 @@ checks for JDK 25, finds the SDK and runs the wrapper. CI runs the same recipes 
 | detekt (type-resolved) | `just android-detekt` | `detektMain detektTest` |
 | The whole local gate in one invocation | `just android-check` | all of the above except `spotlessApply` |
 | Install the debug build + run the Maestro smoke flow | `just android-e2e` | `:app:installDebug`, then `maestro test` ([e2e/README.md](../../e2e/README.md)) |
+| Install and launch the debug build (emulator or phone) | `just android-run [--serial S] [--api-port N]` (`just dev android` also starts the backend) | `tools/device.sh run`: `:app:installDebug`, then `am start` |
 | Refresh locks + checksums after a version bump | `just android-deps-lock` | the `android-check` tasks `--write-locks --write-verification-metadata sha256`, then review the diff |
 
 ## Strictness (don't relax these to get green)

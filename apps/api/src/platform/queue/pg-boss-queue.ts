@@ -11,6 +11,7 @@ import type { Logger } from 'pino';
 
 import { isId } from '@ai-stylist/shared-kernel';
 
+import { childLogger } from '../logger.js';
 import {
   type CarriedTraceContext,
   SPAN_ATTRIBUTES,
@@ -19,7 +20,7 @@ import {
   runTraced,
 } from '../telemetry/trace-context.js';
 
-import { errorSummary } from './error-summary.js';
+import { errorSummary } from '../errors/error-shape.js';
 import { jobIdForKey } from './job-id.js';
 import {
   MAX_WORK_BATCH_SIZE,
@@ -130,7 +131,7 @@ export class PgBossQueue {
   private readonly schema: string;
 
   constructor(config: PgBossQueueConfig) {
-    this.logger = config.logger.child({ component: 'pg-boss-queue' });
+    this.logger = childLogger(config.logger, { component: 'pg-boss-queue' });
     this.traceContextOf = config.traceContextOf;
     this.schema = config.schema ?? 'pgboss';
     this.queues = new Map(config.queues.map((queue) => [queue.name, queue]));

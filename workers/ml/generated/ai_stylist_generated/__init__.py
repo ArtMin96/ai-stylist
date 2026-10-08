@@ -1,5 +1,7 @@
-"""Pydantic models generated from ``packages/contracts/events`` — see README.md.
+"""Generated from ``packages/contracts`` and ``packages/shared-kernel`` by ``just generate`` — see
+README.md.
 
-The ``events`` submodule only exists after ``just generate`` has run; nothing in this
-package is hand-written except this docstring.
+Subpackages: ``events`` (event schemas), one per worker contract (``segmentation``) and ``kernel``
+(shared-kernel constants, including the correlation id rule). Nothing in this package is
+hand-written except this docstring.
 """

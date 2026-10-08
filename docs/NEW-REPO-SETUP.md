@@ -819,9 +819,8 @@ Then open a new terminal, so mise and direnv load, and run `just doctor` in the 
 
 1. Once per machine, after the identity is in the password manager: `just secrets-backup-done`.
 2. Now, and again after every pull that changed `secrets/dev.enc.yaml`: `just secrets-sync`.
-3. Start Postgres and the API: `just dev-api`.
-4. In a second terminal, once per new database: `just db-migrate`.
-5. `curl localhost:3000/v1/health` answers `{"status":"ok","checks":{"db":"ok"}}`.
+3. Start Postgres, the migrations, the API and the workers: `just dev backend` (or `just dev` to open the apps as well).
+4. `curl localhost:3000/v1/health` answers `{"status":"ok","checks":{"db":"ok"}}`.
 
 ### A.6 What differs between the two systems
 
@@ -851,7 +850,7 @@ just doctor
 ### A.8 Optional, per machine
 
 - **Linear API key**, only for `templates/linear/create-templates.sh`: the file `~/.config/ai-stylist/linear-api-key` with mode 600, or the variable `LINEAR_API_KEY`.
-- **An Android emulator**, only for `just android-e2e`: create one with Android Studio. Bootstrap installs no emulator image.
+- **An Android emulator**, for `just dev`, `just android-run` and `just android-e2e`: `just dev` (or `just android-run`) installs the emulator and a system image and creates the AVD `aistylist-dev` the first time no device is online. Bootstrap installs no emulator image.
 - **The Xcode-only settings file**, only for builds started from the Xcode window (section 11).
 
 ## Appendix B. Where each credential lives

@@ -60,7 +60,9 @@ metadata:
 4. Running: `just ios-e2e e2e/<flow>.yaml` builds the Dev configuration for the simulator on macOS
    and runs the flow with `APP_ID=app.aistylist.mobile.dev`; `just android-e2e e2e/<flow>.yaml`
    installs the debug build on a running emulator/device and runs it with the same id. Without an
-   argument both run `e2e/smoke.yaml`. Neither runs on a Linux box without an emulator.
+   argument both run `e2e/smoke.yaml`. `just android-run` boots the AVD `aistylist-dev` when no
+   device is online (on Linux it needs read/write access to the KVM device); without a device or KVM the
+   Android flow does not run, so report it as `Not run`.
 5. Golden/visual regression: never hand-edit a baseline or threshold. Inspect the diff and trace it
    to the intended change. `just golden-accept` only prints NOT IMPLEMENTED, so report baseline
    acceptance as unavailable and never claim an accept.

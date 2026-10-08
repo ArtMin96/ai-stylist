@@ -14,8 +14,9 @@ paths:
 
 **Proof:** `just generate && just generate --check`; then `just test <module>` for each consuming API
 module, `just test` (the package tests have no scoped route), and
-`just lint && just typecheck && just arch-check`. The pr-gate also runs spectral and oasdiff through
-`scripts/ci/contracts-spectral.sh` and `scripts/ci/contracts-breaking.sh`.
+`just lint && just typecheck && just arch-check`. The pr-gate also runs spectral, oasdiff (`--fail-on WARN`) and the event-schema breaking check
+(`packages/contracts/scripts/events-breaking.mjs`) through `scripts/ci/contracts-spectral.sh` and
+`scripts/ci/contracts-breaking.sh`.
 
 **Invariants that bite here:**
 1. Single-writer (root `CLAUDE.md` "Parallel sessions"): no other session edits `packages/contracts/` or
@@ -29,7 +30,9 @@ module, `just test` (the package tests have no scoped route), and
 4. Reason codes, entitlement names and units live in `packages/shared-kernel/registry/*.json` (ADR-0005).
    Swift consumes the generated `AIStylistKernel`, Kotlin `app.aistylist.contracts.kernel`; nobody copies
    a constant — `just generate --check` for the generated side; copies are reviewer-checked. The
-   forbidden-log-keys, owners and feature-flags registries there are TS-only (nothing generated),
-   validated by `packages/contracts/tests/kernel-registries.test.ts` (`just test`).
+   forbidden-log-keys, log-redaction, correlation, owners and feature-flags registries there are
+   imported as JSON in TS (no generated TS); `just generate` emits forbidden-log-keys, its examples,
+   log-redaction and correlation (with the envelope's `correlationId` rule) for Python as
+   `ai_stylist_generated.kernel` (DEC-59). All are validated by `packages/contracts/tests/kernel-registries.test.ts` (`just test`).
 5. Analytics event names live in `packages/contracts/events/analytics/events.json`. Android uses the
    generated `AnalyticsTaxonomy`; the hand-written iOS names equal it byte for byte (reviewer-checked).

@@ -24,8 +24,8 @@ traces only; see below). Dashboards, alert rules and routing are JSON files in
 An empty `APP_ENV` is kept from reaching telemetry locally: `just bootstrap` writes `local` into an
 empty `APP_ENV` in `.env`, `just doctor` warns while it is empty, and `just dev-api` /
 `just dev-workers` start each process with the exported value, else the `.env` value, else `local`
-(`scripts/test/bootstrap-doctor.test.sh`). A process started any other way with an empty `APP_ENV`
-exports without the attribute.
+(`scripts/test/bootstrap-doctor.test.sh`). Started any other way with an empty `APP_ENV`, the API and the jobs process refuse to boot
+(`apps/api/src/config.ts` has no default); only the Python worker still exports without the attribute.
 
 1. Human, once per environment: create the stack's OTLP token (`docs/SERVICES-SETUP.md` §11). Use a
    separate token per environment, so one can be revoked alone.

@@ -1,7 +1,10 @@
 #!/usr/bin/env node
-// JSON Schema (packages/contracts/events/**/*.json with a `$schema` key) -> gen/events-ts/index.ts
-// via json-schema-to-typescript. Deterministic: schemas are compiled in sorted path order.
-// Invoked by tools/codegen/gen-ts.sh with cwd = packages/contracts.
+// JSON Schema -> TypeScript via json-schema-to-typescript, one output file per source tree:
+//   packages/contracts/events/**/*.json   -> gen/events-ts/index.ts   (@ai-stylist/contracts/events)
+//   packages/contracts/workers/**/*.json  -> gen/workers-ts/index.ts  (@ai-stylist/contracts/workers:
+//                                            the internal API <-> worker HTTP contracts)
+// Only files with a `$schema` key are schemas. Deterministic: schemas are compiled in sorted path
+// order. Invoked by tools/codegen/gen-ts.sh with cwd = packages/contracts.
 import { mkdir, readdir, readFile, writeFile } from 'node:fs/promises';
 import { createRequire } from 'node:module';
 import path from 'node:path';
@@ -14,14 +17,17 @@ const { compile } = await import(
   pathToFileURL(requireFromContracts.resolve('json-schema-to-typescript')).href
 );
 
-const BANNER = [
-  '// GENERATED — do not edit. Run `just generate`.',
-  '// Source: packages/contracts/events/**/*.json (JSON Schema 2020-12)',
-  '',
-].join('\n');
+const TARGETS = [
+  { src: 'events', out: path.join('gen', 'events-ts') },
+  { src: 'workers', out: path.join('gen', 'workers-ts') },
+];
 
-const eventsDir = path.join(root, 'events');
-const outDir = path.join(root, 'gen', 'events-ts');
+const banner = (src) =>
+  [
+    '// GENERATED — do not edit. Run `just generate`.',
+    `// Source: packages/contracts/${src}/**/*.json (JSON Schema 2020-12)`,
+    '',
+  ].join('\n');
 
 async function* walk(dir) {
   const entries = (await readdir(dir, { withFileTypes: true })).sort((a, b) =>
@@ -34,29 +40,32 @@ async function* walk(dir) {
   }
 }
 
-const schemaFiles = [];
-for await (const file of walk(eventsDir)) {
-  const doc = JSON.parse(await readFile(file, 'utf8'));
-  if (typeof doc.$schema === 'string') schemaFiles.push({ file, doc });
-}
-schemaFiles.sort((a, b) => a.file.localeCompare(b.file, 'en'));
+for (const target of TARGETS) {
+  const schemaFiles = [];
+  for await (const file of walk(path.join(root, target.src))) {
+    const doc = JSON.parse(await readFile(file, 'utf8'));
+    if (typeof doc.$schema === 'string') schemaFiles.push({ file, doc });
+  }
+  schemaFiles.sort((a, b) => a.file.localeCompare(b.file, 'en'));
 
-const chunks = [BANNER];
-for (const { file, doc } of schemaFiles) {
-  const rel = path.relative(root, file).split(path.sep).join('/');
-  const name = doc.title ?? path.basename(file, '.json');
-  // `examples` are data, not types; drop them so they cannot influence the output.
-  const { examples: _examples, ...schema } = doc;
-  const ts = await compile(schema, name, {
-    cwd: path.dirname(file),
-    bannerComment: `// ---- ${rel} ----`,
-    additionalProperties: false,
-    declareExternallyReferenced: true,
-    strictIndexSignatures: true,
-    style: { singleQuote: true, printWidth: 100, trailingComma: 'all', semi: true },
-  });
-  chunks.push(ts.trimEnd(), '');
-}
+  const chunks = [banner(target.src)];
+  for (const { file, doc } of schemaFiles) {
+    const rel = path.relative(root, file).split(path.sep).join('/');
+    const name = doc.title ?? path.basename(file, '.json');
+    // `examples` are data, not types; drop them so they cannot influence the output.
+    const { examples: _examples, ...schema } = doc;
+    const ts = await compile(schema, name, {
+      cwd: path.dirname(file),
+      bannerComment: `// ---- ${rel} ----`,
+      additionalProperties: false,
+      declareExternallyReferenced: true,
+      strictIndexSignatures: true,
+      style: { singleQuote: true, printWidth: 100, trailingComma: 'all', semi: true },
+    });
+    chunks.push(ts.trimEnd(), '');
+  }
 
-await mkdir(outDir, { recursive: true });
-await writeFile(path.join(outDir, 'index.ts'), chunks.join('\n'));
+  const outDir = path.join(root, target.out);
+  await mkdir(outDir, { recursive: true });
+  await writeFile(path.join(outDir, 'index.ts'), chunks.join('\n'));
+}

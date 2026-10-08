@@ -6,8 +6,9 @@
 import type { BatchObservableCallback, Counter, Meter, ObservableGauge } from '@opentelemetry/api';
 import type { Logger } from 'pino';
 
+import { childLogger } from '../logger.js';
 import type { JobHandler, QueueDefinition, QueueStatsSnapshot } from '../queue/pg-boss-queue.js';
-import { errorSummary } from '../queue/error-summary.js';
+import { errorSummary } from '../errors/error-shape.js';
 import { withTimeout } from '../resilience/timeout.js';
 
 import { METRIC_NAMES, stylistMeter } from './metrics.js';
@@ -39,7 +40,7 @@ export class QueueMetrics {
   constructor(options: QueueMetricsOptions) {
     const meter = options.meter ?? stylistMeter();
     this.meter = meter;
-    this.logger = options.logger.child({ component: 'queue-metrics' });
+    this.logger = childLogger(options.logger, { component: 'queue-metrics' });
     this.completions = meter.createCounter(METRIC_NAMES.jobCompletions, {
       description: 'Job attempts that completed, by job type',
     });

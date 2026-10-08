@@ -41,14 +41,14 @@ Not in mise: **Xcode 27.0** (pinned by `apps/ios/.xcode-version`, checked by `ju
 
 ### 1.3 Android tooling
 
-- **Android Studio** (current stable) is optional, for the emulator and profiler. It is not needed for builds or tests: the Gradle wrapper and Robolectric run everything on the JVM.
+- **Android Studio** (current stable) is optional, for the profiler; `just dev` and `just android-run` install the emulator and create the AVD `aistylist-dev` without it. It is not needed for builds or tests: the Gradle wrapper and Robolectric run everything on the JVM.
 - **SDK components** (installed user-level by `just android-sdk install`, no sudo): cmdline-tools 19.0 (sha1-verified; 23.0's new `android` CLI shim hung on first run), `platform-tools`, `platforms;android-37.0`, `build-tools;36.0.0`. **No NDK** (there is no native 3D code; *historical: the RN plan pinned the NDK `react-native-filament` needed*). An emulator + one x86_64 system image (mid-tier profile, e.g. Pixel 6a class) is optional, for Maestro runs.
 - **Physical devices**: udev rules installed by bootstrap; verify with `adb devices`. Real-device testing is mandatory for camera + 3D work (r2) — the emulator is for UI iteration only.
 - `ANDROID_HOME` and PATH entries are written to `~/.config/ai-stylist/env.sh` and sourced by direnv, not scattered in dotfiles.
 
 ### 1.4 Containers
 
-- **Docker Engine + Compose plugin** (docker.io or docker-ce). Used for: local Postgres (`pgvector/pgvector:pg17`, mirroring the production PostgreSQL major), Python ML workers, and any adapter integration-test dependencies.
+- **Docker Engine + Compose plugin** (docker.io or docker-ce). Used for: local Postgres (`pgvector/pgvector:pg18`, mirroring the production PostgreSQL major), Python ML workers, and any adapter integration-test dependencies.
 - `just dev-api` brings up the compose stack automatically.
 
 ### 1.5 Editor / LSP
@@ -101,9 +101,10 @@ Both scripts live in `scripts/` as readable, commented bash (or TS via `zx` if b
 |---|---|
 | `just bootstrap` | Full environment setup (§4), idempotent |
 | `just doctor` | Environment + repo health check (§4) |
+| `just dev` | Run the whole app with one command (`scripts/dev.sh`): setup checks (bootstrap on a first run, dependencies whose lockfile changed, `.env`, the container runtime: Docker Engine on Linux, OrbStack on macOS, the Android SDK, Xcode after asking), Postgres + migrations, the API and workers in the background, then the Dev app on an Android emulator or phone (Linux, macOS) and an iPhone simulator (macOS); `down`, `status`, `logs`; `--dry-run` prints the plan |
 | `just dev-api` | Compose stack (Postgres+pgvector; compose project `ai-stylist` from every checkout unless `COMPOSE_PROJECT_NAME` is exported) + NestJS API in watch mode; an empty `APP_ENV` runs as `local` |
 | `just dev-workers` | Compose Postgres + the pg-boss `jobs` process (apps/api `src/jobs/main.ts`, tsx watch; needs `just db-migrate`) + the Python segmentation worker (uvicorn on :8001); the outbox relay runs inside `just dev-api` |
-| `just test <module>` | Scoped: one module's `tests/` dir (e.g. `just test recommendation`); `ios`, `android`, `workers`, `secrets`, `tooling`, `platform`, `api` route to their own suites (`tooling` = the `scripts/test` shell suites: bootstrap/doctor, contracts-breaking, test-regression, ci-metrics, dev service names, observability-sync, repo-setup) instead of a `modules/<name>/tests` dir (`ios` = `ios-test-packages`, `android` = `android-test`); the full run includes the native unit tests |
+| `just test <module>` | Scoped: one module's `tests/` dir (e.g. `just test recommendation`); `ios`, `android`, `workers`, `secrets`, `tooling`, `platform`, `api` route to their own suites (`tooling` = the `scripts/test` shell suites: bootstrap/doctor, contracts-breaking, test-regression, ci-metrics, dev service names, dev (the `just dev` plan, ports, logs, stop, device choice), observability-sync, repo-setup) instead of a `modules/<name>/tests` dir (`ios` = `ios-test-packages`, `android` = `android-test`); the full run includes the native unit tests |
 | `just test` | Full suite (all modules + packages), as CI PR gate runs it |
 | `just test-regression <file>` | Prove a regression test fails at the merge-base and passes at HEAD — the structural form of CLAUDE.md's "regression test fails before the fix" |
 | `just lint` | Analytics taxonomy check (`tools/analytics`: every event name and property key the native apps build is declared in `packages/contracts/events/analytics/events.json`, 14 §9) + ESLint (incl. boundary rules) + Ruff for workers + shellcheck + actionlint + the native linters (`ios-lint`, `android-lint`, `android-detekt`); `--fixtures` proves the ESLint rules and the taxonomy check still fail on their fixtures |
@@ -123,6 +124,7 @@ Both scripts live in `scripts/` as readable, commented bash (or TS via `zx` if b
 | `just ios-build` | Unsigned iOS simulator build, `--config dev\|preview\|prod` (default dev; macOS only) |
 | `just ios-test` | iOS package unit tests through the `AIStylist-Dev` scheme on an iOS 26+ simulator (macOS only) |
 | `just ios-e2e` | Dev simulator build + the shared Maestro flow `e2e/smoke.yaml` with `APP_ID=app.aistylist.mobile.dev` (macOS only) |
+| `just ios-run` | Dev simulator build, then boot an iPhone simulator, open Simulator.app, install and launch the app (macOS only) |
 | `just ios-test-packages` | `swift test` for `apps/ios/Packages` (Core + Features view models), `[core\|features]`; macOS and Linux (Docker `swift:6.4` fallback) |
 | `just ios-lint` | SwiftLint safety rules (`apps/ios/.swiftlint.yml`) |
 | `just ios-format` | swift-format over `apps/ios`; `--check` = lint `--strict` |
@@ -134,9 +136,10 @@ Both scripts live in `scripts/` as readable, commented bash (or TS via `zx` if b
 | `just android-detekt` | detekt (coroutines / exceptions / potential-bugs / complexity), type-resolved |
 | `just android-format` | Spotless + ktlint; `--check` = verify only |
 | `just android-check` | Android local gate in one Gradle invocation: Spotless, module graph, detekt, Lint, tests, all three APKs |
-| `just android-sdk` | `check` (default) or `install` the Android SDK packages `apps/android` needs (user-level, no emulator) |
+| `just android-sdk` | `check` (default) or `install` the Android SDK packages `apps/android` needs (user-level, no emulator); `emulator` also installs the emulator and a system image |
 | `just android-deps-lock` | Refresh Gradle lockfiles + `verification-metadata.xml` after a version bump (review the diff) |
 | `just android-e2e` | Install the debug build on a running emulator/device + the Maestro flow `e2e/smoke.yaml` with `APP_ID=app.aistylist.mobile.dev` |
+| `just android-run` | Install and launch the debug build on a running emulator, else the connected phone, else the AVD it creates and boots (`apps/android/tools/device.sh run`) |
 | `just assets-validate` | 3D asset gate: glTF 2.0 validity, KTX2 encoding, poly/texture budgets, manifest schema, morph-target names (doc 07) |
 | `just ml-eval` | Run versioned eval suites for classification/segmentation/try-on against golden datasets (doc 10) |
 | `just security-scan` | gitleaks + osv-scanner + npm/pnpm audit + license check (§9) |

@@ -13,7 +13,7 @@ endpoint or event shape: `api-contract-change` first).
 `api-engineer`; the shared Maestro flows in `e2e/`: `test-engineer`).
 
 **Proof:** `just android-check` (Spotless, module graph, detekt, Android Lint, unit + Robolectric tests,
-all three APKs; runs on Linux). `just android-e2e` needs a running emulator or device. A
+all three APKs; runs on Linux). `just android-e2e` needs a running emulator or device; `just android-run` boots the AVD when none is online. A
 `tools/codegen/gen-kotlin.sh` change needs `just generate --check`.
 
 **Invariants that bite here:**

@@ -12,7 +12,7 @@ import type {
 import demoEventSchema from '@ai-stylist/contracts/events/demo.event.json' with { type: 'json' };
 import envelopeSchema from '@ai-stylist/contracts/events/envelope.json' with { type: 'json' };
 
-import { type JobHandler, type PgIdempotencyGuard } from '../platform/index.js';
+import { type JobHandler, type PgIdempotencyGuard, childLogger } from '../platform/index.js';
 
 import { DEMO_OUTBOX_FLOW_EVENT_TYPE, DEMO_OUTBOX_FLOW_QUEUE } from './queues.js';
 import { type SegmentRequest, type SegmentationClient } from './segmentation-client.js';
@@ -95,7 +95,7 @@ export type DemoOutboxFlowHandlerDeps = {
  * of being dropped (doc 04 §9.2 "Nothing is silently dropped"). Logs ids, type and attempt only.
  */
 export function createDemoOutboxFlowHandler(deps: DemoOutboxFlowHandlerDeps): JobHandler {
-  const logger = deps.logger.child({ component: 'job.demo-outbox-flow' });
+  const logger = childLogger(deps.logger, { component: 'job.demo-outbox-flow' });
   return async (job) => {
     const envelope = parseDemoOutboxFlowEnvelope(job.data);
     const request: SegmentRequest = { request_id: envelope.id, image_ref: DEMO_IMAGE_REF };

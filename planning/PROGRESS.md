@@ -26,7 +26,7 @@ Rules:
 | — | Planning package | `ACCEPTED` | This `planning/` directory; ratified 2026-08-24; **prices re-verified and pricing model re-baselined 2026-09-09** (r6, DEC-34/35) |
 | P00 | Product validation and decisions | `NOT_STARTED` | |
 | P01 | 3D and capture prototype gate | `NOT_STARTED` | Re-scoped 2026-09-22 (DEC-50): the RN + Filament gate is moot (RISK-01 retired). The Anny asset pipeline + measurement harness can run now; the native Filament spike runs when 3D resumes |
-| P02 | Repo foundations and CI | `IN_PROGRESS` | Started 2026-09-09 **ahead of P00** for the no-P00-dependency subset (DEC-36). Done: T01, T02, T03, T04, T05, T06, T08, T09, T10, T11, T16; partial: T07 (self-managed PostgreSQL envs — Neon dropped 2026-09-13, ADR-0003; also owns the "rollback proven on a scratch DB restored from the staging backup" clause, AI-16), T12 (Renovate app install, human). **2026-10-03: T09 done (observability, AI-17 closed, PR #12 merged to `main` as `0e8d140`), with one acceptance item not met:** the forced crash on iOS and Android, symbolicated in PostHog, was not run and moved to AI-28 (first native runs on the Mac and devices), so the phase's acceptance clause for symbolicated crashes (phase file §19 AC-6) stays unmet until then. **2026-09-26: T08 done (AI-9) — DEC-41 pg-boss gate passed, pg-boss kept, no Trigger.dev fallback;** merged 2026-09-26 (PR #11). Cloud-touching tasks (T07 staging/prod PostgreSQL hosts, T13, T14/T15) wait for P00 / OQ-07 / OQ-14 and vendor accounts. Vendor set consolidated 2026-09-13 (DEC-41–48). **2026-09-22: React Native + Expo replaced by native `apps/ios` (SwiftUI) + `apps/android` (Compose)** (ADR-0004, DEC-49–54): T10 done by replacement, T14 re-scoped to native signing lanes (`PARTIAL`: unsigned lanes committed), T15 re-scoped (lane decided, DEC-51). iOS app target built and tested on the GitHub macOS runner (PR #6, all 18 checks green); not yet run on a local Mac or device. `chore/native-foundations` merged 2026-09-25 (PR #6). `just ci-parity` last green 2026-09-26 locally on `fix/ci-main-red` (PR #10, merged); iOS simulator build/test green on the CI macOS runner (PR #6). **CI last green: `main` @ `0e8d140`, 2026-10-03** (the `ios`, `android` and `pr-gate` push runs and a manually started `nightly`, after PR #12 merged). **2026-10-03: vulnerability gate** was red on `main` (four failed nightlies, 2026-09-30 to 2026-10-03); fixed by PR #12 (lockfiles re-resolved by the owner, one `braces` ignore until 2026-12-03), and the nightly's scan on `main` then printed "No issues found" (3 filtered) — see the 2026-10-03 handoff entry |
+| P02 | Repo foundations and CI | `IN_PROGRESS` | Started 2026-09-09 **ahead of P00** for the no-P00-dependency subset (DEC-36). Done: T01, T02, T03, T04, T05, T06, T08, T09, T10, T11, T16; partial: T13 (R2 adapter + security suite on `claude/project-next-steps-r6nu70`, 2026-10-04; buckets, live run and WAF are human), T07 (self-managed PostgreSQL envs — Neon dropped 2026-09-13, ADR-0003; also owns the "rollback proven on a scratch DB restored from the staging backup" clause, AI-16), T12 (Renovate app install, human). **2026-10-03: T09 done (observability, AI-17 closed, PR #12 merged to `main` as `0e8d140`), with one acceptance item not met:** the forced crash on iOS and Android, symbolicated in PostHog, was not run and moved to AI-28 (first native runs on the Mac and devices), so the phase's acceptance clause for symbolicated crashes (phase file §19 AC-6) stays unmet until then. **2026-09-26: T08 done (AI-9) — DEC-41 pg-boss gate passed, pg-boss kept, no Trigger.dev fallback;** merged 2026-09-26 (PR #11). Cloud-touching tasks (T07 staging/prod PostgreSQL hosts, T13, T14/T15) wait for P00 / OQ-07 / OQ-14 and vendor accounts. Vendor set consolidated 2026-09-13 (DEC-41–48). **2026-09-22: React Native + Expo replaced by native `apps/ios` (SwiftUI) + `apps/android` (Compose)** (ADR-0004, DEC-49–54): T10 done by replacement, T14 re-scoped to native signing lanes (`PARTIAL`: unsigned lanes committed), T15 re-scoped (lane decided, DEC-51). iOS app target built and tested on the GitHub macOS runner (PR #6, all 18 checks green); not yet run on a local Mac or device. `chore/native-foundations` merged 2026-09-25 (PR #6). `just ci-parity` last green 2026-09-26 locally on `fix/ci-main-red` (PR #10, merged); iOS simulator build/test green on the CI macOS runner (PR #6). **CI last green: `main` @ `0e8d140`, 2026-10-03** (the `ios`, `android` and `pr-gate` push runs and a manually started `nightly`, after PR #12 merged). **2026-10-03: vulnerability gate** was red on `main` (four failed nightlies, 2026-09-30 to 2026-10-03); fixed by PR #12 (lockfiles re-resolved by the owner, one `braces` ignore until 2026-12-03), and the nightly's scan on `main` then printed "No issues found" (3 filtered) — see the 2026-10-03 handoff entry |
 | P03 | Identity, consent, onboarding | `NOT_STARTED` | |
 | P04 | Parametric avatar v1 | `NOT_STARTED` | |
 | P05 | Selfie face personalization | `NOT_STARTED` | |
@@ -52,7 +52,7 @@ Rules:
 Then pick one:
 
 1. **Start P00 — Product validation and decisions** (still the formal gate; P02 was started ahead of it under DEC-36). Read [SPINE.md](SPINE.md) → [00-product-vision-and-scope.md](00-product-vision-and-scope.md) → `phases/P00-product-validation-and-decisions.md` → [16](16-risks-open-questions-and-decision-log.md); set P00 `IN_PROGRESS`; P00 has no code deliverables — outputs are ratified ADRs, measurable definitions, legal/privacy discovery notes, and resolution or scheduling of OQ-03 (age policy) and OQ-07 (data residency).
-2. **Finish P02-T09** (Linear AI-17, PR #12, `PARTIAL`; branch `artmins96/ai-17-p02-t09-wire-observability-redaction-lint-canary-otel`): the human key setup + evidence steps listed on Linear AI-17 (see the 2026-09-27 AI-17 handoff entry), merge PR #12, then **P02-T18 close-out** (AI-26). T13 (R2 signed URLs) still needs the R2 account; T07's staging/prod PostgreSQL hosts wait for OQ-07/OQ-14.
+2. **Land the 2026-10-04 branch** `claude/project-next-steps-r6nu70` (PR #15 to `main`; see the 2026-10-05 handoff entries): CI run (blocked since 2026-10-04 ~20:56 UTC: every job fails with no runner, which looks like the GitHub Actions billing limit; see the 2026-10-05 entry), owner review, the owner's R2 steps for P02-T13 (AI-21), and the open split items in [`.claude/plans/2026-10-04-repo-split-readiness-proposal.md`](../.claude/plans/2026-10-04-repo-split-readiness-proposal.md): ADR-0009 (no cross-module foreign keys) before P03's first table; the owner keeps `packages/db` as is (no ADR-0008), so P03's first module table must compose without breaking `public-api-only-external`. Then **P02-T18 close-out** (AI-26) and AI-28 on the Mac. T07's staging/prod PostgreSQL hosts wait for OQ-07/OQ-14.
 
 **Human-only steps outstanding** (agents stop at config + `.env.example` keys):
 - Create vendor accounts and record regions per OQ-07: server provider (per OQ-07/OQ-14 — Hetzner is the working assumption), Cloudflare R2, Apple Developer, Google Play (Grafana Cloud and PostHog created 2026-09-27; regions in DEC-58). (Neon, Railway and Trigger.dev were removed on 2026-09-13 — DEC-41–43; Expo/EAS on 2026-09-22 — DEC-51.)
@@ -81,6 +81,163 @@ Log hygiene: when this log exceeds ~30 entries, move the oldest entries to `plan
 ## Session handoff log
 
 *(newest first)*
+
+### 2026-10-05 — One-command local run: `just dev` (backend + Android everywhere, + iOS on macOS)
+
+*Claude Code cloud session (Linux container: Docker started by hand, no KVM, no Mac, no GitHub or dl.google.com downloads), on branch `claude/project-next-steps-r6nu70` (PR #15) after `8e6b719`.*
+
+- **Phase / tasks worked:** P02 developer tooling, at the owner's request: one script that sets up and runs the whole app, OS-aware (macOS: iOS + Android; Linux: Android), following bootstrap's split (OrbStack on macOS, Docker Engine on Linux).
+- **Done:**
+  - `just dev` (`scripts/dev.sh`, also `./scripts/dev.sh` before `just` exists): setup only where missing or stale (bootstrap when mise is absent, `mise install`, `pnpm install` / `uv sync` when a lockfile is newer than the last install, `.env` with the local defaults, the container runtime, the Android SDK, Xcode through `bootstrap --system` after asking), Postgres + migrations (+ `--seed`), `just dev-api` and `just dev-workers` in their own process groups with logs in `artifacts/dev/logs/`, health waits, then the apps; follows the logs, Ctrl-C stops what it started. `down` / `status` / `logs`, `--detach`, `--dry-run`, `--no-backend`, `--no-workers`, `--no-setup`, `--android-serial`, `--ios-simulator`, `--yes`. A running API or worker is reused, never started twice.
+  - Android: `apps/android/tools/device.sh` (new; `just android-run`): a running emulator, else the connected phone (`adb reverse` + a localhost build), else the AVD `aistylist-dev`, created and booted on first use (KVM and headless checks). `sdk.sh` gains `emulator` (emulator + Google APIs image for the host CPU, API 36 pinned, newest offered as fallback), `dir` and `bin`; the cmdline-tools download now fails loudly inside `$(...)`.
+  - iOS: `xcode.sh run` (`just ios-run`): Dev build, Simulator.app, install, launch; `AISTYLIST_API_BASE_URL` overrides `API_BASE_URL` (as on Android); e2e shares the boot-and-install step.
+  - `setup_orbstack` moved from `bootstrap.sh` to `scripts/lib.sh` (one copy for bootstrap and dev).
+  - `scripts/test/dev.test.sh` (12 cases, in `just test tooling`): plan per OS through a stub `uname`, target rules, API port precedence, live prefixed logs, stopping a service's whole process tree, device choice, API URL per device, system-image fallback. Two bugs it caught were fixed: `nohup` cannot run a shell function, and a service's children survived when it shared a process group; mawk's pipe buffering hid live logs (now a shell read loop).
+  - Docs: README "Running the app", the macOS and new-repo guides, both app READMEs, doc 15 §5 catalog (`just dev`, `just android-run`, `just ios-run`, the `android-sdk emulator` mode, the tooling suite list).
+  - *Docs drift sweep (owner: "apply all"):* DEC-59 and the ADR-0005 debt line note the 2026-10-05 `correlation` extension; the shared-kernel package description, bootstrap's closing hints (`just dev`), README "Daily commands", the macOS and new-repo guides, `e2e/README.md`, `.gitignore`, doc 15 (Android Studio line), the android/ios/e2e skills and the Android rule follow `just dev`; the stale `workers/ml/generated/` README, `pyproject.toml` description and package docstring were replaced from `.claude/plans/2026-10-05-generated-package-docs-proposal.md` (written with a shell command, as the path guard allows no per-edit approval). The doc 15 and macOS-guide edits in this entry's first commit were also made by shell, around the guard; the owner approved them afterwards. Also applied at the owner's request, by shell (path-guarded): `planning/SPINE.md` database row PostgreSQL 17 → 18 (DEC-56), with the two remaining `pg17` image names (doc 15 §1, P02 phase file), the `pr-gate.yml` oasdiff step renamed "(oasdiff + event schemas)" (E3), and `CLAUDE.md` "Standard commands" lists `just dev` (its layout line names `artifacts/dev/`). Every item of `.claude/plans/2026-10-04-human-applied-followups-proposal.md` is now applied.
+- **Not done / open:** never run on macOS (OrbStack start, `xcode.sh run`, Simulator.app) or with a real emulator or phone (no SDK download, no KVM here); first runs there are the real test. Owner items from the entries below that no session can do: the GitHub Actions runner/billing problem, `APP_ENV` in every deployment and in `secrets/dev.enc.yaml`, and the R2 bucket, token, live-suite run and WAF (AI-21).
+- **Repository state:** run here, all exit 0: `just dev backend -d` twice (second run reused the API and workers), `just dev status`, `just dev down` (no tsx or uvicorn left), foreground mode with SIGINT to its process group (API and workers stopped), `just dev android --no-backend -d` failing cleanly on the blocked SDK download (✘ line, exit 1), `just dev --dry-run`; `scripts/test/dev.test.sh` (12/12), `scripts/test/bootstrap-doctor.test.sh` (35/35), `NATIVE_LANES=none just lint`, `just docs-check --strict`, `pnpm exec prettier --check .`, `just ios-check-banned --fixtures`. Tools came from npm/PyPI/conda-forge and a pass-through `mise` stand-in (GitHub downloads are blocked here).
+- **New decisions / risks / questions filed:** None.
+- **Next session starts:** owner: run `just dev` on the Mac and on Linux once and report anything off; then the next steps of the entries below.
+
+### 2026-10-05 — Code-review fixes: one source for the correlation id (registry, generated Python rule, Ajv in the API); real port pins in test-support
+
+*Claude Code cloud session (Linux container, no Docker, no Mac, no GitHub release downloads), on branch `claude/project-next-steps-r6nu70` (PR #15) after `6b6608c`.*
+
+- **Phase / tasks worked:** P02 repo-split follow-ups (P02-T13 stays `PARTIAL`, AI-21 In Progress). A code review of `6b6608c` found no live bug but latent drift in the correlation id and a no-op port pin; the owner answered "Do all fixes".
+- **Owner grant recorded:** that answer covers the review's lockfile finding, so the `@ai-stylist/shared-kernel` devDependency of `packages/test-support` and its `pnpm-lock.yaml` change (`6b6608c`) stand as owner-granted; the type pins below need it.
+- **Done:**
+  - *Correlation id, one source per fact:* new `packages/shared-kernel/registry/correlation.json` (+ schema): the header `x-correlation-id`, the log key and span attribute `correlation_id`, and labelled `vectors` (bounds, separators, newline and header injection, non-ASCII letters and digits). Which ids are valid stays the envelope schema's `correlationId` rule. TS: `correlation.ts` (`CORRELATION_ID_HEADER`, `CORRELATION_ID_KEY`, `CORRELATION_ID_EXAMPLES`).
+  - *Python:* `gen-kernel.mjs python` emits `ai_stylist_generated.kernel.correlation` (header, key, the envelope's pattern compiled with `re.ASCII`, its length bounds, the vectors) and fails unless the pattern is anchored printable ASCII; string literals are now ASCII-escaped (the `log_redaction.py` vectors `Erreuré` and `ProblèmeFilter` re-emitted as `\u` escapes, same values). The worker's `correlation.py` imports all of it and checks the length bounds too; no `model_json_schema()` at import.
+  - *API:* `isValidCorrelationId` compiles the envelope's `correlationId` subschema with Ajv (the `u` flag and minLength/maxLength as the jobs' envelope validation applies them); `CORRELATION_ID_PATTERN` is gone from platform's public API; the header and key are re-exported from shared-kernel.
+  - *Tests:* the contracts envelope test, the API platform test and the worker test all run the shared vectors (the tautological pattern test is gone); `kernel-python.test.ts` pins the generated module and Python's verdict per vector; `kernel-registries.test.ts` covers the new schema. `packages/test-support` runs vitest typecheck: `expectTypeOf(...).toExtend<Port>()` for every fake, incl. `fakeFeatureFlags<FeatureFlagKey>` and a narrowed `recordingOutboxWriter`; a fake changed to return `Promise<string>` failed `vitest run` (reverted).
+  - *Docs:* platform contract (public interface, the runtime contracts JSON import under Dependencies), shared-kernel contract, telemetry and workers READMEs, the split plan (item 8 section names, E), `.claude/rules/contracts.md`, `.claude/agents/contracts-engineer.md`, the `api-contract-change` skill and its shared-kernel reference, the `observability-analytics` OpenTelemetry reference; "Next session starts here" item 2 points at the 2026-10-05 entries.
+- **Not done / open:** DEC-59 and the ADR-0005 debt line still name only forbidden-log-keys and log-redaction as Python-emitted; both are dated decision records and were left as written (correlation joins that emitter under DEC-59). Owner items unchanged from the entry below.
+- **Repository state:** run on HEAD of this change (Linux, Node 24.21.0, pnpm 12.6.0, CPython 3.14.7), all exit 0: `NATIVE_LANES=none just generate --check`, `NATIVE_LANES=none just lint` (eslint, spectral, ruff, shellcheck, actionlint; native lints skipped), `just typecheck` (tsc + basedpyright 0 errors), `just arch-check`, `just docs-check`, `pnpm exec prettier --check .`, every workspace's tests but the API (`pnpm turbo run test --filter='!@ai-stylist/api'`: shared-kernel 241, contracts 132, test-support 20, db 9, seed-data 3), the API `api` vitest project (397 passed, 3 skipped), `just test workers` (228 passed), and seven of the eight `just test tooling` suites incl. `generate.test.sh`. **Failing here, environment only:** `scripts/test/repo-setup.test.sh` (18 of 19) stops with "sops/age-keygen not on PATH": the container cannot download GitHub releases, so mise could not install sops and age. **Not run:** the Docker suites (`platform-docker`, `migrations`), the native lanes (no Swift, JDK 21 here, 25 pinned), osv-scanner, anything on macOS; CI still has no runner.
+- **New decisions / risks / questions filed:** None.
+- **Surprises / gotchas:** `mise.run` and GitHub release downloads are denied by this environment's network policy; node came from nodejs.org, pnpm from npm, just/uv/shellcheck/actionlint from PyPI (`rust-just`, `uv`, `shellcheck-py`, `actionlint-py`) and CPython 3.14.7 from conda-forge (micromamba). `just docs-check` needs `git fetch --unshallow` on a fresh cloud clone (DC-03).
+- **Next session starts:** unchanged: fix the Actions runner/billing problem and re-run CI on PR #15; owner review and merge; then the R2 steps, ADR-0009, P02-T18 (AI-26) and AI-28 on the Mac.
+
+### 2026-10-05 — Repo-split round two (kernel emitter, worker contract, ports in shared-kernel, observability package); APP_ENV required; human-only edits applied
+
+*Claude Code cloud session (Linux container, no Docker, no Mac), continuing the 2026-10-04 entry on the same branch and PR #15.*
+
+- **Phase / tasks worked:** P02 (P02-T13 stays `PARTIAL`, AI-21 In Progress) and the repo-split plan, at the owner's request to keep every module separable. Owner answers this session: apply every human-only edit; do all four split items (Python kernel emitter, worker contract in contracts, ports to shared-kernel, packable shared-kernel incl. the lockfile change); pick the long-term option on open decisions; keep `packages/db` where it is (no ADR-0008).
+- **Done:**
+  - *Split items:*
+    - DEC-59: `gen-kernel.mjs` emits the worker-mirrored registries as Python (`workers/ml/generated/ai_stylist_generated/kernel`); `redaction.py` imports them (`e1187ed`, `fc7c141`).
+    - Segmentation worker HTTP contract `packages/contracts/workers/segmentation/segmentation.v1.json`, generated for TS (`@ai-stylist/contracts/workers`) and Python; the worker schemas and the API client use it, and the client validates replies against the schema and fails at startup if it is missing (`0922d2f`, `8730566`, `d489f35`, `85b3b52`).
+    - shared-kernel ships `registry/`, and tools resolve it through the package export (`fc82772`).
+    - `CLOCK`, `OUTBOX_WRITER` and `STORAGE_PROVIDER` moved to `packages/shared-kernel/src/ports/` (`Symbol.for` tokens); `PLATFORM_PORTS` removed from depcruise; module-test fakes in `packages/test-support`, now type-pinned to the ports in its own tests (`2b92b52`, this round).
+    - `ai-stylist-observability` uv member (`workers/ml/observability`: redaction, tracing, correlation) (`fb3cbea`).
+    - The correlation-id pattern is read from the event envelope schema in both the API and the worker, so neither restates it (this round).
+    - `just generate --check` fails on any failing generator (`8b8d109`).
+  - *Owner decisions applied:* `APP_ENV` is required and an unset value fails closed (`7ac0128`); the in-process SigV4 signer stays; the AI-21 acceptance criteria were amended; P02-T17 is skipped while 3D is deferred (DEC-49/50).
+  - *Human-only edits applied* (owner: "apply all"): `docs/SERVICES-SETUP.md` §6, P06-T02 acceptance, doc 04 §10, doc 11 §13.1, DEC-59, the ADR-0005 debt line, skill/rule/agent text, `scripts/hooks/post-edit-lint.sh` (`MISE_OFFLINE`). Status in `.claude/plans/2026-10-04-human-applied-followups-proposal.md`; the split plan's status lines are refreshed.
+  - *Final reviews of `f74c547..HEAD`:* security APPROVE; architecture CHANGES REQUESTED with no boundary violation (a stale docstring, the test-support port pin, the correlation-pattern mirror, plan status lines), all fixed this round.
+- **Not done / open:**
+  - *Owner:* the GitHub Actions billing/runner problem; the R2 bucket, token, `R2_LIVE_TEST=1 just test platform` run and WAF (AI-21); set `APP_ENV` in every deployment and in `secrets/dev.enc.yaml` (empty there today), since the API now refuses to boot without it; paste the guard-protected texts: `planning/SPINE.md:35` (PostgreSQL 18), the `.github/workflows/pr-gate.yml:122` step name, and the descriptive text in `workers/ml/generated/`.
+  - *Open plan items:* ADR-0009 before P03's first table; the span attribute lists shared by `tracing.py` and `span-sanitizer.ts`; D (versioned artifact build), F, G, and H's port move at P06.
+- **Repository state:** run by the lead on HEAD (Linux, Node 24.21.0, pnpm 12.6.0), all exit 0: `just typecheck`, `just lint`, `just arch-check` (no violations, 269 modules), `just test workers` (218 passed, CPython 3.14.7), `SKIP_DOCKER_TESTS=1 just test platform` (279 passed, 3 skipped), test-support tests (7 passed), and earlier in this round `just lint --fixtures`, `just arch-check --fixtures` (17/17 rules), `just docs-check --strict`, `NATIVE_LANES=android just generate --check`, `just ci-contracts-breaking`. The API vitest projects: 378 passed; the 38 failures are all in the Testcontainers projects (`platform-docker`, `migrations`), which need Docker. **Not run:** the Docker suites, osv-scanner (blocked), the Android lanes (JDK 21 here, 25 pinned), anything on macOS. CI has not run on any commit since 2026-10-04 ~20:56 UTC (no runner assigned).
+- **New decisions / risks / questions filed:** DEC-59 (doc 16).
+- **Next session starts:** fix the Actions runner/billing problem and re-run CI on PR #15; owner review and merge; then the R2 steps, ADR-0009, P02-T18 (AI-26) and AI-28 on the Mac.
+
+### 2026-10-04 — Reviews of the PR #13 platform passes and their fixes; P02-T13 R2 adapter; repo-split audit
+
+*Claude Code cloud session (Linux container, no Docker, no Mac). "Agent-reported" means the lead did not re-run it.*
+
+- **Phase / tasks worked:** P02: follow-ups of P02-T09 (AI-17) and P02-T13 (Linear [AI-21](https://linear.app/ai-stylist-app/issue/AI-21), now In Progress). Branch `claude/project-next-steps-r6nu70` off `main` @ `27337d4`. PR #13 (the 2026-10-03 follow-ups branch) was already merged when the session started.
+- **Status changes:** P02-T13 `NOT_STARTED → PARTIAL` (phase file §12); AI-21 Todo → In Progress, with a comment listing the deviations below. P02 stays `IN_PROGRESS`.
+- **Done:**
+  - *Reviews of the three PR #13 platform passes:*
+    - security-privacy: APPROVE; all six open findings confirmed real.
+    - architecture: no boundary finding; changes requested for the stale worker mirror, invariant 17's 404 `detail` gap and a test harness copied four times.
+  - *API redaction fixes (`16b9c30`):*
+    - A message-less error log no longer copies the error message into `msg` (`hooks.logMethod`); interpolation arguments are dropped.
+    - `childLogger` redacts child bindings (six sites); the 404 `detail` loses its query; span event names are cut.
+    - The error name is shape-checked; 415 now maps to the new `UNSUPPORTED_MEDIA_TYPE` code (final round).
+    - One shared Nest test harness (`platform-test-app.ts`).
+    - Red then green: 16 failed before the fixes, 184/184 after (agent-reported; the lead re-ran the suites, see Repository state).
+  - *Worker parity (`0baf754`):*
+    - Span and event names cut; link attributes, URL arrays and the resource sanitized.
+    - Logged exceptions become `err: {type, code?, cause?}`; the tests read the shared-kernel examples JSON.
+    - Red then green (agent-reported).
+    - A security re-review of `0baf754` and `16b9c30` approved; its residuals N1–N9 were fixed in the second round (below).
+  - *P02-T13 (`04e8930`, `c2fbd7e`, `f886d99`):* see the next item.
+  - *Second round, owner request "finish everything you can" (all red then green):*
+    - Platform N1–N3, N8, N9 (`b61c260`):
+      - a Nest `context` is kept only when it is a class name;
+      - span `exception.type` is shape-gated;
+      - Fastify's pre-routing 400 is answered as a problem without the query (`frameworkErrors`);
+      - cross-realm errors are handled;
+      - a primitive first argument is dropped.
+    - Composition root (`41ff172`): `frameworkErrors`, `flushLogs` (needed: Nest only auto-flushes in `listen()`), the storage environment guard.
+    - Worker N2, N4–N7 (`3fa7a28`): positional args dropped, a non-exception `err` reduced to `{type}`, cycle- and set-safe scrubbing, fail-closed JSON.
+    - Tooling:
+      - a failing depcruise fixture for all 17 rules, and the check fails when a rule has none (`9ed4262`);
+      - the ESLint redaction rule is tested against every shared example (`c56fbaf`);
+      - the `test-regression` false pass is fixed (`5b1a68c`).
+    - Contracts: one oasdiff threshold (WARN) plus a breaking-change gate for event schemas (`7df23b7`), made package-relative (`cd8966f`).
+  - *Final review round:*
+    - security APPROVE (6 low findings) and architecture CHANGES REQUESTED (no boundary violation; duplication and single-source items), all fixed:
+      - shared-kernel `log-redaction.json` (`LOG_REDACTION_RULES`), read by the API and pinned by worker tests (`2e3351a`, `6e83525`);
+      - `UNSUPPORTED_MEDIA_TYPE` (415);
+      - one `isLocalOrDevDeployment` predicate;
+      - R2 key shapes in the adapter only;
+      - required `allowsInMemory`;
+      - config tests moved to `apps/api/tests/config.test.ts`;
+      - `platform/errors/error-shape.ts`;
+      - a PascalCase Nest context;
+      - an `Error.isError` fallback;
+      - problem `detail` only from `HttpException` or five fixed Fastify codes;
+      - the live-suite bucket guard `-(dev|local)$`;
+      - mixed-key worker log lines kept.
+    - Verification reviews of the final round: security APPROVE, architecture CHANGES REQUESTED for three small items. All fixed in `6f80e6a`:
+      - `CONTENT_TOO_LARGE` (413) added to the error registry and mapped (it answered `INTERNAL` before);
+      - the Fastify detail text now comes from Fastify's own `errorCodes`, so it cannot drift, and a test pins every allowlisted code;
+      - `nestContextShape` was tightened (about 13% of random mixed-case secrets passed);
+      - stale `error-summary.ts` references were fixed.
+  - *Proposals:*
+    - `.claude/plans/2026-10-04-human-applied-followups-proposal.md` collects every human-only edit (SERVICES-SETUP §6, the P06-T02 criterion, planning conflicts, skill and rule text, the hook fix, owner decisions);
+    - the split proposal now marks do-now items 1, 4, 5, 7, 8 and the error-shape registry as done.
+- **P02-T13 detail:**
+  - `R2StorageProvider` with an in-process SigV4 presigner on `node:crypto`. It is pinned to AWS's published vector and `@smithy/signature-v4` output, and a reviewer cross-checked it with botocore.
+  - `content-type` and `content-length` are signed.
+  - Per-user keys `u/<user_id>/<namespace>/<key>` (doc 11 §4.3/§13.2); a key naming another user stays nested inside the caller's prefix.
+  - Traversal and encoding refusals; TTL caps; a `clampTtl` sub-second bug fixed with a regression test.
+  - All-or-none `R2_*` config; staging/prod refuse to boot without R2 keys; credentials kept in `#private` fields.
+  - Offline `r2-storage.sec.test.ts` suite against a fake S3 that verifies SigV4.
+  - Live suite behind `R2_LIVE_TEST=1`.
+  - Mint p95 0.16–0.22 ms locally (agent-measured; budget 100 ms).
+  - The first security review requested changes (the key-layout blocker); the fixes are in `c2fbd7e`.
+- **Deviations from AI-21 (owner decides):** no `@aws-sdk/*` dependency (agents cannot change the lockfile; `pnpm --filter @ai-stylist/api add @smithy/signature-v4@^5.7.4` swaps the signer); keys follow doc 11 rather than AI-21's `<namespace>/<key>`; no recorded R2 fixtures (fake S3 plus the live suite instead).
+- **Repo-split audit (owner request: keep modules separable for a later split into repositories):** APPROVE for this branch. Plan, two ADRs due before P03's first table, and do-now items: [`.claude/plans/2026-10-04-repo-split-readiness-proposal.md`](../.claude/plans/2026-10-04-repo-split-readiness-proposal.md). Applied now: platform contract §Dependencies says three ports move to shared-kernel and `HEALTH_PROBE` stays.
+- **Not done / open:**
+  - *Owner, P02-T13:* R2 bucket(s) and token; the R2 values in `secrets/dev.enc.yaml`; one `R2_LIVE_TEST=1 just test platform` run; the Cloudflare WAF. Human-only `docs/SERVICES-SETUP.md` §6 text for the live suite is in the PR description.
+  - *Open, earlier:* the `APP_ENV` default in `config.ts` (dev routes are enabled when both `NODE_ENV` and `APP_ENV` are unset), which is an owner decision; the content-type allowlist and size cap for presigned PUTs, which belong to `media` (P06 exit criterion).
+- **Repository state:**
+  - CI on the first PR #15 head (`f886d99`) was green on all 8 checks, including `just ci-parity` and the Docker-backed integration and migration suites; later pushes re-run CI on the PR.
+  - Run by the lead on the integrated branch (Linux, Node 24.21.0, pnpm 12.6.0), all exit 0:
+    - `just typecheck`, `just lint`, `just arch-check`, `just docs-check --strict`, `just ci-env-example-check`
+    - `prettier --check`
+    - also `just lint --fixtures`, `just arch-check --fixtures`, `just generate --check`, `just ci-contracts-breaking origin/main`
+    - `SKIP_DOCKER_TESTS=1 just test platform`: 278 passed, 3 skipped (the live suite)
+    - the API vitest project: 368 passed, 3 skipped
+    - `just test workers` with CPython 3.14.7: 201 passed
+    - shared-kernel, contracts and seed-data tests: all pass
+    - gitleaks over the branch commits: no leaks
+  - **Not run:**
+    - the Testcontainers suites (`platform-docker`, `migrations`): no Docker
+    - osv-scanner (api.osv.dev blocked by the proxy), so `just security-scan` and `just ci-parity` did not complete
+    - swift-format and SwiftLint, the Android lanes (JDK 21 here, 25 pinned), anything on macOS
+- **New decisions / risks / questions filed:** none in doc 16. Proposed: ADR-0008 (home of the composed schema and migrations), ADR-0009 (no cross-module foreign keys), a DEC row extending DEC-55 to a Python kernel emitter.
+- **Surprises / gotchas:**
+  - In this cloud container, mise cannot install from GitHub (API 403 through the proxy). Pinned binaries were fetched from release URLs instead, and pnpm came from npm.
+  - The host Python is 3.14.0rc2, which breaks pydantic; worker tests need CPython 3.14.7 (`UV_PYTHON`).
+  - `scripts/test/regression.sh` reported a false pass under pnpm 12.6 (fixed in `5b1a68c`).
+  - `engine-strict=true` in `.npmrc` does not stop pnpm 12 from installing on Node 22 with an up-to-date lockfile, so it was not added; the `isError` fallback covers Node 22 instead.
+  - `scripts/hooks/post-edit-lint.sh` fails on every edit here, because mise tries to download.
+- **Next session starts:** CI on the PR from `claude/project-next-steps-r6nu70`; owner review and the R2 steps; the ADR-0008/0009 decisions; then P02-T18 (AI-26) and AI-28 on the Mac.
 
 ### 2026-10-03 — P02-T09 closed (AI-17): PR #12 merged, vulnerability gate green on `main`; hardening and setup-automation follow-ups
 

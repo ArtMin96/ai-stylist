@@ -44,4 +44,5 @@ export type FeatureFlags = {
   isEnabled(key: FeatureFlagKey): Promise<boolean>;
 };
 
-export const FEATURE_FLAGS = Symbol('FeatureFlags');
+/** DI token. `Symbol.for`: two installed copies of the kernel resolve to the same token. */
+export const FEATURE_FLAGS: unique symbol = Symbol.for('ai-stylist.feature-flags');

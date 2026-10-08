@@ -39,8 +39,9 @@ Rules you enforce, each with its source:
 - Prose rules with no fixture: no domain logic in adapters; explanations from the decision trace;
   deterministic before AI (doc-10 entry); provenance + confidence on generated content;
   `@Inject(TOKEN)` on injected constructor params; ports declared in the module `index.ts` (or
-  `packages/shared-kernel`) with fakes in `packages/test-support/src/`, never a copy of the
-  P02-interim `apps/api/src/platform/ports/` placement.
+  `packages/shared-kernel`) with fakes in `packages/test-support/src/`; shared ports live in
+  `packages/shared-kernel/src/ports/`, and `apps/api/src/platform/` declares no port except the internal
+  `apps/api/src/platform/health/health-probe.port.ts`.
 </context>
 
 <ownership>

@@ -3,6 +3,7 @@
 # rule named in EXPECTED (error, or warning for the warn-only file-size rule). Fixtures are
 # ignored by every workspace `eslint .` (root ignores `tools/**/fixtures/**`); this script lints
 # them with tools/eslint/fixtures/eslint.config.mjs, which is the root config minus that ignore.
+# Then every RuleTester suite under tools/eslint/tests/ must pass under `node --test`.
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
@@ -54,6 +55,32 @@ for case_dir in "$FIXTURES"/*/; do
   fi
 done
 
+# RuleTester suites under tools/eslint/tests/ (node:test): e.g. quality/no-log-request-body against
+# every example in packages/shared-kernel/registry/forbidden-log-keys.examples.json.
+n_suites=0
+for suite in "$ROOT"/tools/eslint/tests/*.test.mjs; do
+  [[ -f "$suite" ]] || continue
+  n_suites=$((n_suites + 1))
+  rel="${suite#"$ROOT"/}"
+  set +e
+  output="$(cd "$ROOT" && node --test "$rel" 2>&1)"
+  rc=$?
+  set -e
+  if [[ $rc -ne 0 ]]; then
+    echo "FAIL  $rel: node --test exited $rc:" >&2
+    echo "$output" >&2
+    failures=$((failures + 1))
+  else
+    # node --test summary lines look like "<info glyph> pass 298"; keep the ASCII part only.
+    counts="$(sed -nE 's/^[^a-z]*(pass|fail) ([0-9]+)$/\1 \2/p' <<<"$output" | tr '\n' ' ')"
+    echo "ok    $rel (${counts% })"
+  fi
+done
+if [[ $n_suites -eq 0 ]]; then
+  echo "FAIL  tools/eslint/tests: no *.test.mjs RuleTester suite found" >&2
+  failures=$((failures + 1))
+fi
+
 n_expected=0
 for name in $EXPECTED_CASES; do
   n_expected=$((n_expected + 1))
@@ -64,4 +91,4 @@ if [[ $failures -gt 0 ]]; then
   echo "check-fixtures: $failures failure(s)" >&2
   exit 1
 fi
-echo "check-fixtures: $n_expected lint fixtures reported by their named rule"
+echo "check-fixtures: $n_expected lint fixtures reported by their named rule; $n_suites RuleTester suite(s) green"

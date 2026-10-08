@@ -30,15 +30,17 @@ Every rule is `severity: 'error'` — there is no warning tier.
 | `no-utils-dirs`                    | a file inside, or an import from, a `utils/`, `helpers/`, `common/` directory (`arch-check.sh` also `find`s empty ones)                                                                                       |
 | `prototype-unimportable`           | any import of `prototype/**`                                                                                                                                                                                  |
 | `composition-root-only`            | any file except the composition roots (`app.module.ts`, `main.ts`, `jobs/**`), `apps/api/tests/**`, `platform` and `packages/db` themselves, `dev`, and the seed CLI importing `platform/**` or `packages/db` |
-| `dev-ports-only`                   | `apps/api/src/dev/**` importing anything from `platform/**` other than `platform/ports/*.port.ts`, or `packages/db`                                                                                           |
+| `dev-ports-only`                   | `apps/api/src/dev/**` importing anything from `platform/**` or `packages/db`: dev takes port tokens from `shared-kernel` and adapters from the composition root                                               |
 | `not-to-unresolvable`              | an import that does not resolve (typo, missing workspace dependency)                                                                                                                                          |
 
 Notes:
 
 - `platform-leaf` allows `packages/contracts` on top of 04 §4.2 rule 5 because the generated OpenAPI
   types are the single source of truth for response shapes (`VersionInfo` in `version.controller.ts`).
-- `modules-not-platform` is strict: the port tokens currently in `platform/ports/*.port.ts` must move to
-  `shared-kernel` or a module's public API (04 §4.2 rule 4) before the first module injects one.
+- `modules-not-platform` is strict: shared port tokens live in `shared-kernel` (`src/ports/`,
+  `Symbol.for` tokens), single-module ports in that module's `index.ts` (04 §4.2 rule 4). Platform has
+  no `ports/` directory; its one internal port, `platform/health/health-probe.port.ts`, is importable
+  only by platform and the composition roots.
 - `domain-no-provider-sdk` leaves `@opentelemetry/api` importable: it is the vendor-neutral API for
   manual spans (doc 14 §3). The OpenTelemetry SDK, exporters, instrumentations and `@fastify/otel`
   are wired in `platform` (fixture `otel-sdk-in-domain`). `tools/eslint/boundaries.mjs` mirrors the list.
@@ -52,6 +54,37 @@ Notes:
   directory scan covers the native app trees too; only dependency, generated and build output
   (`node_modules/`, `.venv/`, `dist/`, `gen/`, `generated/`, `build/`, `.build/`, `.gradle/`,
   `DerivedData/`) is skipped.
+
+## Fixtures
+
+Every rule above has a failing fixture under `fixtures/<case>/`, registered in `check-fixtures.sh`.
+A case passes only when depcruise fails with its named rule and with no other rule except the inherent
+overlaps the script declares (`overlap_rules`), and the run fails when any rule name in `rules.cjs` is
+not the named rule of some case, so a new rule cannot land without its fixture.
+
+| Fixture                       | Rule                               | Declared overlap        |
+| ----------------------------- | ---------------------------------- | ----------------------- |
+| `internal-import`             | `public-api-only`                  | —                       |
+| `root-to-internal`            | `public-api-only-external`         | —                       |
+| `module-cycle`                | `no-cycles`                        | —                       |
+| `closet-to-outfit`            | `allowed-edges-only`               | —                       |
+| `unknown-module-dir`          | `unknown-module`                   | —                       |
+| `recommendation-to-avatar`    | `recommendation-not-renderer`      | `allowed-edges-only`    |
+| `recommendation-outfit-value` | `recommendation-outfit-types-only` | —                       |
+| `assistant-to-internal`       | `assistant-app-services-only`      | `public-api-only`       |
+| `provider-sdk-in-domain`      | `domain-no-provider-sdk`           | `not-to-unresolvable`   |
+| `otel-sdk-in-domain`          | `domain-no-provider-sdk`           | `not-to-unresolvable`   |
+| `platform-to-module`          | `platform-leaf`                    | —                       |
+| `module-to-platform`          | `modules-not-platform`             | `composition-root-only` |
+| `shared-kernel-impure`        | `shared-kernel-pure`               | —                       |
+| `utils-dir`                   | `no-utils-dirs`                    | —                       |
+| `prototype-import`            | `prototype-unimportable`           | —                       |
+| `module-to-db`                | `composition-root-only`            | —                       |
+| `dev-to-adapter`              | `dev-ports-only`                   | —                       |
+| `unresolvable-import`         | `not-to-unresolvable`              | —                       |
+
+Coverage is per rule name: `allowed-edges-only` has one instance per source module and `no-utils-dirs`
+has two (a file inside, an import from); one fixture exercises one instance of each.
 
 ## Adding an ADR-backed exception
 

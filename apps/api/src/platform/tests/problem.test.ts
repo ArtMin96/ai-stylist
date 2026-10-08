@@ -1,9 +1,10 @@
 import { BadRequestException, NotFoundException } from '@nestjs/common';
+import { errorCodes } from 'fastify';
 import { describe, expect, it } from 'vitest';
 
 import { PROBLEM_TYPE_BASE } from '@ai-stylist/shared-kernel';
 
-import { toProblem } from '../problem.filter.js';
+import { FASTIFY_DETAIL_CODES, toProblem } from '../problem.filter.js';
 
 describe('toProblem', () => {
   it('maps HttpException status to the registry code and keeps the detail', () => {
@@ -27,9 +28,80 @@ describe('toProblem', () => {
     expect(p['errors']).toEqual([{ pointer: '/a', message: 'x' }]);
   });
 
-  it('maps plain errors with a 4xx statusCode (fastify plugins) by status', () => {
+  it('maps a non-HttpException with a 4xx statusCode by status, without its message', () => {
     const p = toProblem(Object.assign(new Error('slow down'), { statusCode: 429 }), '/');
-    expect(p).toMatchObject({ status: 429, code: 'RATE_LIMITED', detail: 'slow down' });
+    expect(p).toEqual({
+      type: `${PROBLEM_TYPE_BASE}/RATE_LIMITED`,
+      title: 'Too many requests',
+      status: 429,
+      code: 'RATE_LIMITED',
+      instance: '/',
+    });
+  });
+
+  // A provider SDK's HTTP error (status 403) can quote the presigned URL it was given, signature
+  // included: only an HttpException or a known Fastify request error may carry a `detail`.
+  it('never echoes the message of a non-HttpException 4xx (a provider error quoting a signed URL)', () => {
+    const message = 'https://x/y?X-Amz-Signature=CANARY';
+    for (const thrown of [
+      { status: 403, message },
+      Object.assign(new Error(message), { status: 403 }),
+      Object.assign(new Error(message), { statusCode: 403, code: 'AccessDenied' }),
+      Object.assign(new Error(message), { statusCode: 400, code: 'FST_ERR_NOT_ALLOWLISTED' }),
+    ]) {
+      const p = toProblem(thrown, '/v1/x');
+      expect(p).not.toHaveProperty('detail');
+      expect(JSON.stringify(p)).not.toContain('CANARY');
+    }
+  });
+
+  it('keeps the fixed detail of a known Fastify request error, never its message', () => {
+    const spoofed = Object.assign(new Error('https://x/y?X-Amz-Signature=CANARY'), {
+      code: 'FST_ERR_CTP_INVALID_JSON_BODY',
+      statusCode: 400,
+    });
+    expect(toProblem(spoofed, '/v1/x')).toEqual({
+      type: `${PROBLEM_TYPE_BASE}/VALIDATION_FAILED`,
+      title: 'Request validation failed',
+      status: 400,
+      code: 'VALIDATION_FAILED',
+      instance: '/v1/x',
+      detail: "Body is not valid JSON but content-type is set to 'application/json'",
+    });
+  });
+
+  it('maps 415 (Fastify: unsupported request content type) to UNSUPPORTED_MEDIA_TYPE', () => {
+    const unsupported = Object.assign(new Error('Unsupported Media Type'), {
+      code: 'FST_ERR_CTP_INVALID_MEDIA_TYPE',
+      statusCode: 415,
+    });
+    expect(toProblem(unsupported, '/v1/x')).toEqual({
+      type: `${PROBLEM_TYPE_BASE}/UNSUPPORTED_MEDIA_TYPE`,
+      title: 'Unsupported media type',
+      status: 415,
+      code: 'UNSUPPORTED_MEDIA_TYPE',
+      instance: '/v1/x',
+      detail: 'Unsupported Media Type',
+    });
+  });
+
+  it('maps 413 (Fastify: request body too large) to CONTENT_TOO_LARGE', () => {
+    const tooLarge = new errorCodes.FST_ERR_CTP_BODY_TOO_LARGE();
+    expect(toProblem(tooLarge, '/v1/x')).toEqual({
+      type: `${PROBLEM_TYPE_BASE}/CONTENT_TOO_LARGE`,
+      title: 'Content too large',
+      status: 413,
+      code: 'CONTENT_TOO_LARGE',
+      instance: '/v1/x',
+      detail: tooLarge.message,
+    });
+  });
+
+  it("each allowlisted Fastify request error keeps exactly Fastify's own fixed text", () => {
+    for (const code of FASTIFY_DETAIL_CODES) {
+      const fastifyError = new errorCodes[code]();
+      expect(toProblem(fastifyError, '/v1/x').detail).toBe(fastifyError.message);
+    }
   });
 
   it('never leaks internals for 5xx', () => {

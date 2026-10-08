@@ -40,9 +40,11 @@ Invariants that bite here (root `CLAUDE.md` + `workers/README.md`; enforced by `
   contract. (reviewer-checked; no depcruise rule covers Python)
 - `ml/<service>/src/<pkg>/main.py` is the only module that builds the app, configures logging or
   constructs adapters; routes are thin.
-- structlog JSON to stdout; the redaction processor (`redaction.py`) drops, at any depth, every key
-  that is or contains (as a camelCase / snake_case / kebab-case word) a `FORBIDDEN_LOG_KEYS` word,
-  pinned to `packages/shared-kernel/registry/forbidden-log-keys.json` by the redaction test; no
+- structlog JSON to stdout; the redaction processor
+  (`workers/ml/observability/src/ai_stylist_observability/redaction.py`, shared by every service
+  through the `ai-stylist-observability` workspace member, never copied) drops, at any depth, every key
+  that is or contains (as a camelCase / snake_case / kebab-case word) a `FORBIDDEN_LOG_KEYS` word from
+  `ai_stylist_generated.kernel` (generated from `packages/shared-kernel/registry/forbidden-log-keys.json`); no
   request bodies, headers or query strings in logs; no `print`.
   `workers/ml/segmentation/tests/test_redaction.py` is the canary; every new service adds its own.
 - Face/body media goes only to providers on the doc 10/11 approved list, payload minimised,
@@ -70,7 +72,9 @@ Invariants that bite here (root `CLAUDE.md` + `workers/README.md`; enforced by `
    `workers/ml/segmentation/src/ai_stylist_segmentation/main.py` (composition root),
    `workers/ml/segmentation/src/ai_stylist_segmentation/app.py` (factory),
    `workers/ml/segmentation/src/ai_stylist_segmentation/routes.py`,
-   `workers/ml/segmentation/src/ai_stylist_segmentation/schemas.py`,
+   `workers/ml/segmentation/src/ai_stylist_segmentation/schemas.py` (generated models from
+   `ai_stylist_generated.<service>`; thin frozen subclasses only; depend on `workers/ml/observability/`
+   rather than copying redaction, tracing or correlation),
    tests `workers/ml/segmentation/tests/test_segment.py`, `workers/ml/segmentation/tests/test_redaction.py`,
    `workers/ml/segmentation/tests/conftest.py`, and `workers/ml/segmentation/Dockerfile` +
    `workers/ml/segmentation/pyproject.toml`.

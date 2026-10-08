@@ -2,7 +2,7 @@
   "name": "@ai-stylist/contracts",
   "version": "0.1.0",
   "private": true,
-  "description": "Canonical API + event contracts: OpenAPI 3.1 per module, JSON Schema 2020-12 events, and the generated TypeScript outputs (planning/06 \u00a71).",
+  "description": "Canonical API + event contracts: OpenAPI 3.1 per module, JSON Schema 2020-12 events and internal worker HTTP contracts, and the generated TypeScript outputs (planning/06 \u00a71).",
   "type": "module",
   "types": "./gen/ts-client/index.ts",
   "exports": {
@@ -19,9 +19,15 @@
       "default": "./gen/events-ts/index.ts"
     },
     "./events/*": "./events/*",
+    "./workers": {
+      "types": "./gen/workers-ts/index.ts",
+      "default": "./gen/workers-ts/index.ts"
+    },
+    "./workers/*": "./workers/*",
     "./openapi.bundle.json": "./gen/openapi.bundle.json"
   },
   "scripts": {
+    "breaking:events": "node scripts/events-breaking.mjs",
     "bundle": "redocly bundle openapi/openapi.yaml --output gen/openapi.bundle.json",
     "gen": "../../tools/codegen/gen-ts.sh",
     "generate": "pnpm run gen",

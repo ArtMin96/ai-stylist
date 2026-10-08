@@ -40,7 +40,7 @@ None yet (P02 skeleton). Planned per SPINE §3: `users`, `sessions`, `consents`.
 
 ## Forbidden dependencies
 
-Derived from P02 brief §5 and doc 04 §4.2; every rule has a failing fixture in `just arch-check`, and exceptions need an ADR.
+Derived from P02 brief §5 and doc 04 §4.2; every rule has a failing fixture (`just arch-check --fixtures`, which also fails when a rule has none), and exceptions need an ADR.
 
 - Any module edge absent from the doc 04 §4.1 graph (`allowed-edges-only`), and any edge that closes a cycle (`no-cycles`).
 - `apps/api/src/modules/<other>/internal/**` of any other module (`public-api-only`); another module's tables.

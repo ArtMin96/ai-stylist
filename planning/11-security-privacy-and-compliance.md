@@ -226,7 +226,7 @@ When calendar context ships: process only start/end time, coarse event type, and
 ## 13. Export and deletion
 
 ### 13.1 Export (always available, all tiers — SPINE §6)
-Self-serve, async job: ZIP with machine-readable JSON (profile, measurements, preferences, closet items + attributes, outfits, wear history, consent history, recommendation history with reason codes) + original media files the user uploaded + generated assets marked with provenance. Delivered via signed URL (24 h TTL), notification on completion. Rate-limited (1 concurrent export). Export contains **only the requesting user's data**; tested in 13 §8.1.
+Self-serve, async job: ZIP with machine-readable JSON (profile, measurements, preferences, closet items + attributes, outfits, wear history, consent history, recommendation history with reason codes) + original media files the user uploaded + generated assets marked with provenance. The finished archive is kept for 24 h and a notification is sent on completion; each download is a presigned GET minted on request after the same authz check, with the §5.4 TTL cap (≤ 10 min), so a leaked link expires quickly (aligned 2026-10-04 with §5.4 and the storage port). Rate-limited (1 concurrent export). Export contains **only the requesting user's data**; tested in 13 §8.1.
 
 ### 13.2 Account deletion cascade
 Ordered, resumable pg-boss job chain (idempotent steps, each step audited):

@@ -3,7 +3,10 @@
 `flags-report.mjs` reads the flag registry, `packages/shared-kernel/registry/feature-flags.json`,
 and prints one row per flag: key, kind, owner, `expiresAt`, days left or overdue, and a status
 (planning/14 §11, NFR-OBS-080, P02-T09 AC-10). Owner display names are resolved from
-`packages/shared-kernel/registry/owners.json` at run time, never copied. Node built-ins only.
+`packages/shared-kernel/registry/owners.json` at run time, never copied. Both defaults resolve
+through the package export `@ai-stylist/shared-kernel/registry/*`; without `node_modules` (before
+`pnpm install`, as in the nightly expired-flags job) they fall back to the same files in this
+repository. Node built-ins only.
 
 - `ok` / `expires today`: not past `expiresAt` (the flag is still valid on its expiry date).
 - `EXPIRED`: a `rollout` or `experiment` flag past `expiresAt`, compared as UTC dates.

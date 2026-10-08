@@ -5,6 +5,8 @@ description = "AI Stylist garment segmentation worker (FastAPI). P02: echo stub.
 requires-python = ">=3.14,<3.15"
 dependencies = [
   "ai-stylist-generated",
+  # Log redaction, span sanitizer and correlation id, shared by every worker service.
+  "ai-stylist-observability",
   "fastapi>=0.141.1",
   # OpenTelemetry (planning/14 §3, ADR-0007): traces over OTLP/HTTP protobuf; started in main.py
   # only when OTEL_EXPORTER_OTLP_ENDPOINT is set. Contrib packages are versioned 0.x bN.
@@ -27,3 +29,4 @@ packages = ["src/ai_stylist_segmentation"]
 
 [tool.uv.sources]
 ai-stylist-generated = { workspace = true }
+ai-stylist-observability = { workspace = true }

@@ -252,6 +252,7 @@ All hypotheses per [13 §12](../13-testing-quality-and-performance.md) / [10 §2
 - AC-21: Cache-hit test: resubmitting an identical photo triggers zero provider calls; cache hit rate is a live metric.
 - AC-22: `just ml-eval` runs the three suites on versioned datasets and meets: segmentation IoU ≥0.92 mean / catastrophic <2%; classification category ≥92%, macro-F1 ≥0.80, invalid <0.5%; dedup 0.90/0.95 — with documented slices; the provider picks (Gemini-class vs Haiku-class vs self-hosted Qwen3-VL; self-hosted BiRefNet vs fal.ai; Voyage vs self-hosted SigLIP) are logged as a DEC with eval evidence.
 - AC-23: A capture-to-published trace is viewable as one trace tree including queue hops.
+- AC-24 (P06-T02; added 2026-10-04 with P02-T13): before `media` requests a presigned PUT from the platform `StorageProvider`, it enforces the doc 11 §5.5 content-type allowlist (JPEG/PNG/HEIC) and maximum size, and passes the exact client-declared size (a presigned PUT signs an exact `content-length`; the platform port deliberately leaves these business rules to `media`, `docs/modules/platform.md` invariant 19). `*.sec.test.ts` covers the wrong-type and over-size cases and "user A's URL used by user B after account deletion" (doc 11 §5.4). Workers fetch originals with HTTP decompression disabled (R2's handling of an unsigned `Content-Encoding` is not verified).
 
 ## 20. Definition of done
 

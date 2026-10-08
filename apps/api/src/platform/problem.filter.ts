@@ -6,7 +6,7 @@ import {
   Inject,
   Injectable,
 } from '@nestjs/common';
-import type { FastifyReply, FastifyRequest } from 'fastify';
+import { type FastifyError, type FastifyReply, type FastifyRequest, errorCodes } from 'fastify';
 import { Logger } from 'nestjs-pino';
 
 import { type ErrorCode, type ProblemDetails, problem } from '@ai-stylist/shared-kernel';
@@ -22,6 +22,10 @@ const STATUS_TO_CODE: Readonly<Record<number, ErrorCode>> = {
   404: 'NOT_FOUND',
   409: 'CONFLICT',
   410: 'ACCOUNT_DELETED',
+  // A request body above Fastify's bodyLimit.
+  413: 'CONTENT_TOO_LARGE',
+  // A request body in a media type the route does not accept (Fastify's content-type parser).
+  415: 'UNSUPPORTED_MEDIA_TYPE',
   429: 'RATE_LIMITED',
   503: 'SERVICE_UNAVAILABLE',
 };
@@ -30,6 +34,36 @@ const STATUS_TO_CODE: Readonly<Record<number, ErrorCode>> = {
 export type ProblemBody = ProblemDetails & Record<string, unknown>;
 
 type StatusCarrier = { statusCode?: unknown; status?: unknown };
+
+/**
+ * The only non-HttpException errors whose `detail` a 4xx problem carries: Fastify's own request
+ * errors from its content-type parser, each with the fixed text of Fastify's own error class
+ * (`errorCodes`, so the text cannot drift from Fastify's). The detail is that text, never the thrown
+ * value's message, so even a value that
+ * spoofs one of these codes cannot echo free text. Any other thrown value with a 4xx `status` or
+ * `statusCode` (a provider SDK's HTTP error, whose message can quote a presigned URL with its
+ * signature) gets no `detail`; code that wants one throws an HttpException.
+ */
+export const FASTIFY_DETAIL_CODES = [
+  'FST_ERR_CTP_INVALID_JSON_BODY',
+  'FST_ERR_CTP_EMPTY_JSON_BODY',
+  'FST_ERR_CTP_INVALID_MEDIA_TYPE',
+  'FST_ERR_CTP_BODY_TOO_LARGE',
+  'FST_ERR_CTP_INVALID_CONTENT_LENGTH',
+] as const satisfies readonly (keyof typeof errorCodes)[];
+
+const FASTIFY_REQUEST_ERROR_DETAIL: ReadonlyMap<string, string> = new Map(
+  FASTIFY_DETAIL_CODES.map((code) => [code, new errorCodes[code]().message]),
+);
+
+/** The table's fixed detail for a known Fastify request error, else none. */
+function fastifyRequestErrorDetail(exception: unknown): string | undefined {
+  if (typeof exception !== 'object' || exception === null || !('code' in exception)) {
+    return undefined;
+  }
+  const { code } = exception;
+  return typeof code === 'string' ? FASTIFY_REQUEST_ERROR_DETAIL.get(code) : undefined;
+}
 
 function statusOf(exception: unknown): number {
   if (exception instanceof HttpException) return exception.getStatus();
@@ -41,7 +75,11 @@ function statusOf(exception: unknown): number {
   return 500;
 }
 
-/** Map any thrown value to a problem body. 5xx never leak internals (doc 06 §2). */
+/**
+ * Map any thrown value to a problem body. 5xx never leak internals (doc 06 §2); a 4xx carries a
+ * `detail` only from an HttpException or a known Fastify request error
+ * (`FASTIFY_REQUEST_ERROR_DETAIL`), never another thrown value's message.
+ */
 export function toProblem(exception: unknown, instance: string): ProblemBody {
   const status = statusOf(exception);
   const code: ErrorCode = STATUS_TO_CODE[status] ?? 'INTERNAL';
@@ -64,10 +102,39 @@ export function toProblem(exception: unknown, instance: string): ProblemBody {
       detail = typeof d === 'string' ? d : typeof message === 'string' ? message : undefined;
       extensions = rest;
     }
-  } else if (exception instanceof Error) {
-    detail = exception.message;
+  } else {
+    detail = fastifyRequestErrorDetail(exception);
   }
   return { ...base, ...(detail !== undefined ? { detail } : {}), ...extensions };
+}
+
+/**
+ * `body` with the raw request URL in its `detail` replaced by `path`: Nest's unknown-route 404
+ * quotes the URL (`Cannot GET /v1/x?sig=…`), query string included.
+ */
+function withoutQueryInDetail(body: ProblemBody, url: string, path: string): ProblemBody {
+  if (body.detail === undefined || url === path) return body;
+  return { ...body, detail: body.detail.replaceAll(url, () => path) };
+}
+
+/**
+ * Fastify answers a few requests itself, before routing, so ProblemFilter never sees them: a
+ * malformed path (`FST_ERR_BAD_URL`, e.g. `/v1/x%zz`), a too-long path parameter
+ * (`FST_ERR_MAX_PARAM_LENGTH`) and a failing async route constraint (`FST_ERR_ASYNC_CONSTRAINT`).
+ * Its default body is plain JSON whose message quotes the whole URL, query included. This is
+ * Fastify 5's `frameworkErrors` option, `(error, request, reply)`: pass it as
+ * `new FastifyAdapter({ frameworkErrors })`. The reply is the problem body `toProblem` builds for
+ * the status (400 for a request error, 500 otherwise), `instance` the path only (`stripQuery`), and
+ * no `detail`, since Fastify's message is the raw URL.
+ */
+export function frameworkErrors(
+  error: FastifyError,
+  request: FastifyRequest,
+  reply: FastifyReply,
+): void {
+  const status = error.statusCode !== undefined && error.statusCode >= 500 ? 500 : 400;
+  const body = toProblem({ statusCode: status }, stripQuery(request.url));
+  void reply.status(body.status).header('content-type', PROBLEM_CONTENT_TYPE).send(body);
 }
 
 /** Global filter: every error leaves the API as RFC 9457 `application/problem+json`. */
@@ -80,11 +147,13 @@ export class ProblemFilter implements ExceptionFilter {
     const http = host.switchToHttp();
     const reply = http.getResponse<FastifyReply>();
     const request = http.getRequest<FastifyRequest>();
-    // `instance` is the path only: the same cut as a logged request url (no query, no fragment).
-    const body = toProblem(exception, stripQuery(request.url));
+    // `instance` and any URL `detail` quotes are the path only: the same cut as a logged request
+    // url (no query, no fragment).
+    const path = stripQuery(request.url);
+    const body = withoutQueryInDetail(toProblem(exception, path), request.url, path);
     if (body.status >= 500) {
-      // nestjs-pino reads the last string as the Nest context. Without it 'unhandled error' is that
-      // context, the call has no message, and pino falls back to `err.message` (foreign free text).
+      // nestjs-pino reads the last string as the Nest context. Without it 'unhandled error' would
+      // be that context and the line would carry only the logger's generic `error logged`.
       this.logger.error(
         { err: exception, status: body.status, code: body.code },
         'unhandled error',

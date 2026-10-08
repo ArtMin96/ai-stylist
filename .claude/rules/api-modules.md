@@ -43,9 +43,9 @@ the API workspace files (`apps/api/package.json`, `apps/api/tsconfig.json`,
    `domain-no-provider-sdk` and `modules-not-platform`.
 4. A new port is declared in the module's `index.ts`, or in `packages/shared-kernel/` when two modules
    share it. Its fake goes in `packages/test-support/src/`, copying `packages/test-support/src/clock.ts`;
-   `platform-engineer` writes the adapter; `api-engineer` binds it in `apps/api/src/app.module.ts`. Do not
-   copy the P02-interim `apps/api/src/platform/ports/*.port.ts` and `InMemoryStorageProvider` placement
-   (reviewer-checked).
+   `platform-engineer` writes the adapter; `api-engineer` binds it in `apps/api/src/app.module.ts`. Shared
+   ports live in `packages/shared-kernel/src/ports/` (tokens via `Symbol.for`); platform declares none a
+   module may import (reviewer-checked).
 5. `assistant` calls only other modules' public application services — depcruise
    `assistant-app-services-only`. `recommendation` never depends on `avatar` or a renderer — depcruise
    `recommendation-not-renderer`.

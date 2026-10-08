@@ -5,7 +5,7 @@ import type { Logger } from 'pino';
 
 import { isId } from '@ai-stylist/shared-kernel';
 
-import { type JobHandler } from '../platform/index.js';
+import { type JobHandler, childLogger } from '../platform/index.js';
 
 /** Dead-lettered job data carries no `evt_` envelope id. The message names no value. */
 export class DeadLetterWithoutEventIdError extends Error {
@@ -34,7 +34,7 @@ export type OutboxDeadLetterHandlerDeps = {
  * outbox row and stays visible to ops in `<queue>.dlq.dlq` instead of being dropped. Logs ids only.
  */
 export function createOutboxDeadLetterHandler(deps: OutboxDeadLetterHandlerDeps): JobHandler {
-  const logger = deps.logger.child({ component: 'job.outbox-dead-letter' });
+  const logger = childLogger(deps.logger, { component: 'job.outbox-dead-letter' });
   const reason = jobExhaustedReason(deps.sourceQueue);
   return async (job) => {
     const data = job.data;

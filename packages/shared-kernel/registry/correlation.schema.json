@@ -1,0 +1,45 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://contracts.ai-stylist.app/shared-kernel/registry/correlation.schema.json",
+  "title": "CorrelationRegistry",
+  "description": "Correlation id propagation (planning/14 §2): the names every hop uses to carry one id per logical operation (client → API → outbox → job → worker), read by the API and, through the generated `ai_stylist_generated.kernel`, by the workers. Which ids are valid is the event envelope's `correlationId` rule (packages/contracts/events/envelope.json: pattern, minLength, maxLength), never restated here. `vectors` are the labelled ids every check of that rule (the envelope schema, the API header, the worker header) is tested against. Renaming `header` or `logKey` breaks every client, worker, dashboard and alert that uses it; adding vectors is free.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["header", "logKey", "vectors"],
+  "properties": {
+    "$schema": { "type": "string" },
+    "header": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9-]*[a-z0-9]$",
+      "description": "HTTP request and response header that carries the id, lowercase (Node and Starlette expose incoming headers lowercased)."
+    },
+    "logKey": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_]*[a-z0-9]$",
+      "description": "Log key and span attribute name the id is written under, snake_case."
+    },
+    "vectors": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["accepted", "rejected"],
+      "properties": {
+        "accepted": {
+          "$ref": "#/$defs/ids",
+          "description": "Ids every check MUST accept (a UUID, a ULID, prefixed ids, both length bounds)."
+        },
+        "rejected": {
+          "$ref": "#/$defs/ids",
+          "description": "Ids every check MUST reject: out of the length bounds, separators, a trailing newline, header injection, and non-ASCII letters and digits that `\\w` or `\\d` would match in a Unicode-mode regex."
+        }
+      }
+    }
+  },
+  "$defs": {
+    "ids": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": { "type": "string" }
+    }
+  }
+}

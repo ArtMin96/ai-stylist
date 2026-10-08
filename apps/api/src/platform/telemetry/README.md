@@ -29,8 +29,11 @@ outbox/job spans, span redaction). No business rule lives here.
 - `lifecycle.ts`: `shutdownTelemetry()` (flush and stop; a no-op when nothing started) and the
   process-wide handle, kept on `globalThis` so the `--import` entry and the process entry share it.
   Imports nothing, so a process entry can call it without loading the SDK.
-- `correlation.ts`: the correlation id (planning/14 §2). `x-correlation-id` accepted when it matches
-  `CORRELATION_ID_PATTERN` (1–128 chars of `[A-Za-z0-9._:-]`), else a minted UUID.
+- `correlation.ts`: the correlation id (planning/14 §2). `x-correlation-id` accepted when
+  `isValidCorrelationId` accepts it, else a minted UUID. Validity is the event envelope's
+  `correlationId` rule (pattern, minLength, maxLength in `packages/contracts/events/envelope.json`,
+  today 1–128 chars of `[A-Za-z0-9._:-]`), compiled from the schema by Ajv; the header and log key
+  come from the shared-kernel `registry/correlation.json`. Neither is restated here.
   `registerCorrelationId(fastify)` adds an `onRequest` hook (read or mint, echo it in the response
   header, set `correlation_id` on the active span, run the request in its scope) and a
   `preValidation` hook (re-enters the scope after body parsing). `currentCorrelationId()` reads the
@@ -127,7 +130,11 @@ Attributes: one rule, `sanitizeAttributes` in `span-sanitizer.ts`. It drops `url
 `client.address`, `network.peer.address`, `user_agent.original`, `exception.message` and
 `exception.stacktrace`; cuts the query and fragment from `url.full`, `url.path`, `http.url` and
 `http.target`; and replaces with `[REDACTED]` the value of an attribute whose last dot-segment is a
-forbidden log word (`http.request.header.authorization`). A URL attribute is cut whatever its shape:
+forbidden log word (`http.request.header.authorization`). It keeps `exception.type` only when it is
+name-shaped (`TypeError`, `grpc.ServiceError`) or code-shaped (`23505`, `ECONNREFUSED`), the
+`errorNameShape` / `codeShape` of `LOG_REDACTION_RULES` (`@ai-stylist/shared-kernel`, registry
+`log-redaction.json`; the rules `../errors/error-shape.ts` applies too), and otherwise writes `Error`:
+OTel JS fills it from `String(err.code)`, else `err.name`, and either can be free text. A URL attribute is cut whatever its shape:
 the string, or each string of an array value (cut rather than dropped, so the path stays
 searchable). One function makes that cut, `stripQuery` in `../logger.ts` (everything from the first
 `?` or `#`): the same one the logged `req.url` and the problem `instance` (`../problem.filter.ts`)
@@ -135,8 +142,8 @@ go through.
 
 Spans: `SanitizingSpanExporter` applies the attribute rule to the span's attributes, to every
 event's and to every link's (the linked trace id, span id and flags are kept); cuts the span name
-with `stripQuery`, because a span named from a raw request target or URL carries its query; and
-drops span status messages. `GET`, `outbox.dispatch <event type>` and `job.process <queue>` have
+and every event name with `stripQuery`, because a name made from a raw request target or URL
+carries its query; and drops span status messages. `GET`, `outbox.dispatch <event type>` and `job.process <queue>` have
 nothing to cut. A route template that marks an optional parameter with `?` (Fastify's `/:id?`)
 would lose the marker in the span name; `http.route` keeps it. No route does today.
 
@@ -151,8 +158,8 @@ dashboards and queries filter on passes untouched: `service.name` (labels `servi
 (`deploy.api_token`) is exported as `[REDACTED]`.
 
 Not covered: the value under a key that is neither dropped, forbidden nor one of the four URL keys
-is not inspected (a URL with a query under `deploy.hook` passes); a span name is only cut, so a
-value in its path part stays; event names are passed on unchanged.
+is not inspected (a URL with a query under `deploy.hook` passes); a span or event name is only
+cut, so a value in its path part stays.
 
 ## Running
 

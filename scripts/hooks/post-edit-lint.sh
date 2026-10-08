@@ -55,7 +55,9 @@ case "$path" in
     ;;
 esac
 
-lint_output="$(just lint-file "$path" 2>&1)"
+# Never let mise download a missing tool from inside a hook (a proxy that blocks the GitHub API turns
+# every edit into a 403 failure); use the installed toolchain, and let lint-file report a missing one.
+lint_output="$(MISE_OFFLINE=1 MISE_AUTO_INSTALL=0 MISE_NOT_FOUND_AUTO_INSTALL=0 MISE_EXEC_AUTO_INSTALL=0 just lint-file "$path" 2>&1)"
 lint_status=$?
 
 if [[ -n "$doc_hint" ]]; then

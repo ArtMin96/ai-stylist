@@ -35,5 +35,5 @@ A is the only option where the source is readable by every language without goin
 ## Consequences and revisit triggers
 
 - Positive: native apps can import reason codes, entitlements and units instead of copying them; the staleness gate catches drift in all three languages (verified: changing one entitlement description flagged the TS, Swift and Kotlin outputs as stale).
-- Negative/accepted debt: no app target consumes `AIStylistKernel` or the Kotlin `kernel` sources yet; that wiring lands with the first feature that needs it (P03/P09). Python workers have no kernel emission yet. Swift analytics names are still hand-written (ADR-0004).
+- Negative/accepted debt: no app target consumes `AIStylistKernel` or the Kotlin `kernel` sources yet; that wiring lands with the first feature that needs it (P03/P09). Python workers now get a kernel emission for the worker-mirrored registries (forbidden-log-keys, its examples, log-redaction; DEC-59, 2026-10-04; since 2026-10-05 also correlation, with the event envelope's `correlationId` rule); reason codes, entitlements and units are not emitted for Python yet. Swift analytics names are still hand-written (ADR-0004).
 - **Revisit when:** a registry needs a shape JSON Schema cannot express, or a fourth consumer language needs emission and the emitter layout no longer fits. Reversal requires a new DEC entry.

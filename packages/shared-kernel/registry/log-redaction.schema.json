@@ -1,0 +1,71 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://contracts.ai-stylist.app/shared-kernel/registry/log-redaction.schema.json",
+  "title": "LogRedactionRegistry",
+  "description": "Error-shape rules for logs and spans (planning/11 §8, planning/14 §2-3): the one source the API logger, the API span sanitizer, the worker logger and the worker tracer read for which error class names, codes and Nest logger contexts may reach a sink, and how deep a cause chain is followed. Each shape is a regular-expression source anchored with ^ and $ that compiles unchanged in JavaScript (no flags) and Python (re.ASCII, full match): use ASCII classes only, so `\\w` means [A-Za-z0-9_] in both. `vectors` are the labelled test values every implementation's tests check. Loosening a shape, raising maxCauseDepth or removing a vector weakens redaction and needs a security-privacy review; adding vectors is free.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["errorNameShape", "codeShape", "maxCauseDepth", "nestContextShape", "vectors"],
+  "properties": {
+    "$schema": { "type": "string" },
+    "errorNameShape": {
+      "$ref": "#/$defs/shape",
+      "description": "An error class name kept in a log `err.type` or a span `exception.type`: an identifier, dots allowed, at most 64 characters. Anything else is written as `Error`."
+    },
+    "codeShape": {
+      "$ref": "#/$defs/shape",
+      "description": "An error code kept in a log `err.code` or a span `exception.type`: a Postgres SQLSTATE or a system code (upper case, digits, `_`), at most 32 characters."
+    },
+    "maxCauseDepth": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 16,
+      "description": "Cause links of a logged error that are followed; the bound also ends a circular chain."
+    },
+    "nestContextShape": {
+      "$ref": "#/$defs/shape",
+      "description": "A Nest logger `context` kept as written: a PascalCase class name (`RoutesResolver`). Anything else is written as the redaction marker."
+    },
+    "vectors": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["exceptionType", "nestContext"],
+      "properties": {
+        "exceptionType": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["kept", "replaced"],
+          "description": "A span `exception.type` is kept when it matches errorNameShape or codeShape, else replaced by `Error`.",
+          "properties": {
+            "kept": { "$ref": "#/$defs/values" },
+            "replaced": { "$ref": "#/$defs/values" }
+          }
+        },
+        "nestContext": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["kept", "redacted"],
+          "description": "A Nest logger `context` is kept when it matches nestContextShape, else redacted.",
+          "properties": {
+            "kept": { "$ref": "#/$defs/values" },
+            "redacted": { "$ref": "#/$defs/values" }
+          }
+        }
+      }
+    }
+  },
+  "$defs": {
+    "shape": {
+      "type": "string",
+      "format": "regex",
+      "pattern": "^\\^.+\\$$",
+      "description": "A regular-expression source anchored at both ends"
+    },
+    "values": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": { "type": "string", "maxLength": 256 }
+    }
+  }
+}

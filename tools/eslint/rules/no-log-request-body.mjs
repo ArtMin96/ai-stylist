@@ -6,18 +6,18 @@
 //      as an argument, directly, as an object property value or as a spread.
 //   2. key: an object-literal key (shorthand `{ userEmail }` included), at any depth of the literal
 //      payload (nested object and array literals), whose camel/snake/kebab words include a word from
-//      packages/shared-kernel/registry/forbidden-log-keys.json (`.keys`). That JSON is the single
-//      source of truth, read once here; never copy the words. Computed keys and spreads are not
-//      inspected (their keys are unknown here); the redaction backstop still covers them.
+//      packages/shared-kernel/registry/forbidden-log-keys.json (`.keys`), resolved through the
+//      package export `@ai-stylist/shared-kernel/registry/*`. That JSON is the single source of
+//      truth, read once here; never copy the words. Computed keys and spreads are not inspected
+//      (their keys are unknown here); the redaction backstop still covers them.
 import { readFileSync } from 'node:fs';
-import path from 'node:path';
+import { createRequire } from 'node:module';
 
 const LOG_METHODS = new Set(['info', 'debug', 'warn', 'error', 'trace', 'fatal']);
 const FORBIDDEN_MEMBERS = new Set(['body', 'headers', 'cookies']);
 
-const REGISTRY = path.resolve(
-  import.meta.dirname,
-  '../../../packages/shared-kernel/registry/forbidden-log-keys.json',
+const REGISTRY = createRequire(import.meta.url).resolve(
+  '@ai-stylist/shared-kernel/registry/forbidden-log-keys.json',
 );
 
 function loadForbiddenWords() {

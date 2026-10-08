@@ -68,6 +68,9 @@ describe('HttpSegmentationClient', () => {
     ['for another request', { ...ECHO_REPLY, request_id: 'evt_01J8Z8Q6X3K9V2N4M7P1R5T0AC' }],
     ['missing provenance', { ...ECHO_REPLY, provenance: undefined }],
     ['with an unknown mask label', { ...ECHO_REPLY, masks: [UNKNOWN_LABEL_MASK] }],
+    // The contract closes SegmentResponse (`additionalProperties: false`).
+    ['with a field the contract does not declare', { ...ECHO_REPLY, extra: true }],
+    ['with a score above 1', { ...ECHO_REPLY, masks: [{ label: 'top', mask_ref: 'm', score: 2 }] }],
   ])('throws SegmentationError on a reply %s', async (_label, reply) => {
     worker.behaviour = { reply };
 

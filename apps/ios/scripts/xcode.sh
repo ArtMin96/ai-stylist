@@ -7,8 +7,11 @@
 #   xcode.sh build [--config dev|preview|prod]   unsigned simulator build (default dev), then the dSYM upload
 #   xcode.sh test                         package unit tests through the AIStylist-Dev scheme on a simulator
 #   xcode.sh e2e [flow]                   Dev simulator build + one Maestro flow, default e2e/smoke.yaml (APP_ID=app.aistylist.mobile.dev)
+#   xcode.sh run                          Dev simulator build, then boot the simulator, open Simulator.app, install and launch the app
 #
 # Env: IOS_SIMULATOR_ID  simulator UDID to use (default: first available iPhone on the newest iOS runtime)
+#      AISTYLIST_API_BASE_URL  host-only API base URL (scheme://host[:port]) instead of the configuration's
+#                        API_BASE_URL (Dev: http://localhost:3000); the same variable the Android build reads
 #      POSTHOG_API_KEY, POSTHOG_HOST  PostHog project key (phc_...) + ingestion host, passed to xcodebuild as
 #                        build settings (never committed; empty key = no analytics SDK in the app). Any other
 #                        key, here or in Config/Local.xcconfig (a personal phx_... key is a secret), stops the build.
@@ -48,8 +51,11 @@ done
 unset exported
 
 usage() {
-  sed -n '2,19p' "$0"
+  sed -n '2,22p' "$0"
 }
+
+# The Dev build's bundle id: the installable one on both platforms (and the shared flows' APP_ID).
+DEV_BUNDLE_ID="app.aistylist.mobile.dev"
 
 # Pipe xcodebuild output through xcbeautify when it is installed (GitHub renderer in CI).
 beautify() {
@@ -107,6 +113,10 @@ run_xcodebuild() {
   fi
   if [[ -n "${POSTHOG_HOST:-}" ]]; then
     settings+=("POSTHOG_HOST=$POSTHOG_HOST")
+  fi
+  # `just dev` sets it when the API listens on another port than 3000.
+  if [[ -n "${AISTYLIST_API_BASE_URL:-}" ]]; then
+    settings+=("API_BASE_URL=$AISTYLIST_API_BASE_URL")
   fi
   # -onlyUsePackageVersionsFromResolvedFile: check out exactly the pins cmd_project seeded from
   # apps/ios/Package.resolved (each one a commit, so a moved tag changes nothing), and fail instead of
@@ -291,6 +301,29 @@ cmd_test() {
     CODE_SIGNING_ALLOWED=NO
 }
 
+# Boot simulator $1 (a no-op when it already runs), wait for it, and install app bundle $2.
+install_on_simulator() {
+  local udid="$1" app="$2"
+  [[ -d "$app" ]] || ios_die "ios: built app not found at $app"
+  xcrun simctl boot "$udid" 2>/dev/null || true
+  xcrun simctl bootstatus "$udid" -b
+  xcrun simctl install "$udid" "$app"
+}
+
+cmd_run() {
+  [[ $# -eq 0 ]] || ios_die "ios-run: takes no arguments (IOS_SIMULATOR_ID picks the simulator)"
+  ios_require_macos ios-run
+  cmd_build --config dev
+  local udid
+  udid="$(pick_simulator)"
+  # Simulator.app shows that device's window; booting from simctl alone stays headless.
+  open -a Simulator --args -CurrentDeviceUDID "$udid"
+  install_on_simulator "$udid" "$DERIVED_DATA/Build/Products/Dev-iphonesimulator/AIStylist.app"
+  # --terminate-running-process: a re-run replaces the running copy with the fresh build.
+  xcrun simctl launch --terminate-running-process "$udid" "$DEV_BUNDLE_ID" >/dev/null
+  echo "ios-run: launched $DEV_BUNDLE_ID on simulator $udid"
+}
+
 cmd_e2e() {
   [[ $# -le 1 ]] || ios_die "ios-e2e: takes at most one argument, a Maestro flow path (default e2e/smoke.yaml)"
   ios_require_macos ios-e2e
@@ -301,14 +334,10 @@ cmd_e2e() {
   # The shared flow takes its appId from APP_ID; the Dev build (bundle id app.aistylist.mobile.dev)
   # is the installable one on both platforms.
   cmd_build --config dev
-  local app="$DERIVED_DATA/Build/Products/Dev-iphonesimulator/AIStylist.app"
-  [[ -d "$app" ]] || ios_die "ios-e2e: built app not found at $app"
   local udid
   udid="$(pick_simulator)"
-  xcrun simctl boot "$udid" 2>/dev/null || true
-  xcrun simctl bootstatus "$udid" -b
-  xcrun simctl install "$udid" "$app"
-  maestro --device "$udid" test -e APP_ID=app.aistylist.mobile.dev "$flow"
+  install_on_simulator "$udid" "$DERIVED_DATA/Build/Products/Dev-iphonesimulator/AIStylist.app"
+  maestro --device "$udid" test -e "APP_ID=$DEV_BUNDLE_ID" "$flow"
 }
 
 # Sourced (scripts/test-xcode-guards.sh): define the functions, run no command.
@@ -324,6 +353,7 @@ case "$cmd" in
   build) cmd_build "$@" ;;
   test) cmd_test "$@" ;;
   e2e) cmd_e2e "$@" ;;
+  run) cmd_run "$@" ;;
   -h | --help | "") usage ;;
-  *) ios_die "xcode.sh: unknown command '$cmd' (doctor|project|build|test|e2e)" ;;
+  *) ios_die "xcode.sh: unknown command '$cmd' (doctor|project|build|test|e2e|run)" ;;
 esac

@@ -8,7 +8,7 @@
 import { Test } from '@nestjs/testing';
 import pino from 'pino';
 import type { PostHog } from 'posthog-node';
-import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest';
+import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 
 import {
   FEATURE_FLAGS,
@@ -23,18 +23,15 @@ import {
   FEATURE_FLAG_CACHE_TTL_MS,
   FEATURE_FLAG_TIMEOUT_MS,
   type FeatureFlagsAdapter,
-  InMemoryStorageProvider,
   PlatformModule,
   PostHogFeatureFlags,
   RegistryDefaultFeatureFlags,
-  SystemClock,
-  UnconfiguredHealthProbe,
   createFeatureFlags,
-  httpLoggerOptions,
   loggerOptions,
 } from '../index.js';
 
 import { type FakePostHog, startFakePostHog } from './fake-posthog.js';
+import { platformTestBindings } from './platform-test-app.js';
 
 /** Synthetic project key (the shape PostHog issues; public by design, never a real one). */
 const API_KEY = 'phc_synthetic_test';
@@ -268,6 +265,26 @@ describe('PostHogFeatureFlags (posthog-node against a fake PostHog host)', () =>
       flag_keys_to_evaluate: Object.keys(FEATURE_FLAG_REGISTRY),
     });
   });
+
+  it('logs a failed client shutdown through the err allowlist: error class only', async () => {
+    const shutdownLogs = memoryLogStream();
+    const flags = new PostHogFeatureFlags({
+      apiKey: API_KEY,
+      host: posthog.host,
+      logger: pino(loggerOptions({ level: 'info' }), shutdownLogs),
+      registry: REGISTRY,
+    });
+    const marker = 'shutdown-failure-marker-4e2b';
+    const failure = Object.assign(new Error(marker), { name: `Error: ${marker}` });
+    const client = (flags as unknown as { client: PostHog }).client;
+    vi.spyOn(client, 'shutdown').mockRejectedValueOnce(failure);
+
+    await flags.shutdown();
+
+    const record = shutdownLogs.records().find((r) => r.msg === 'posthog client shutdown failed');
+    expect(record).toMatchObject({ component: 'feature-flags', err: { type: 'Error' } });
+    expect(shutdownLogs.text()).not.toContain(marker);
+  });
 });
 
 describe('RegistryDefaultFeatureFlags and createFeatureFlags', () => {
@@ -309,17 +326,9 @@ describe('PlatformModule FEATURE_FLAGS binding', () => {
         return Promise.resolve();
       },
     };
-    const clock = new SystemClock();
     const moduleRef = await Test.createTestingModule({
       imports: [
-        PlatformModule.forRoot({
-          logger: { pinoHttp: httpLoggerOptions({ level: 'silent' }) },
-          version: { version: 'test', commit: 'test', builtAt: '2026-09-27T00:00:00Z' },
-          clock,
-          healthProbe: new UnconfiguredHealthProbe(),
-          storage: new InMemoryStorageProvider(() => clock.now()),
-          featureFlags: adapter,
-        }),
+        PlatformModule.forRoot(platformTestBindings({ level: 'silent', featureFlags: adapter })),
       ],
     }).compile();
 

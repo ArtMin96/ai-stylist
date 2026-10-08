@@ -89,7 +89,7 @@ describe('feature-flag registry comes from registry/feature-flags.json', () => {
       (key: FeatureFlagKey) => Promise<boolean>
     >();
     expectTypeOf(FEATURE_FLAGS).toExtend<symbol>();
-    expect(FEATURE_FLAGS.description).toBe('FeatureFlags');
+    expect(FEATURE_FLAGS).toBe(Symbol.for('ai-stylist.feature-flags'));
   });
 
   it('registers the P02 rollback-demo flag (NFR-OBS-080)', () => {

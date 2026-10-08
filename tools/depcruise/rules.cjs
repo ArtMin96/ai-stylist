@@ -15,7 +15,6 @@ const MODULES = '^apps/api/src/modules/';
 const MODULE = `${MODULES}([^/]+)/`; // capture group 1 = module name
 const ANY_MODULE_INTERNAL = `${MODULES}[^/]+/internal/`;
 const PLATFORM = '^apps/api/src/platform/';
-const PLATFORM_PORTS = '^apps/api/src/platform/ports/[^/]+\\.port\\.ts$';
 const DEV = '^apps/api/src/dev/';
 const SHARED_KERNEL = '^packages/shared-kernel/';
 const CONTRACTS = '^packages/contracts/';
@@ -212,9 +211,9 @@ module.exports = {
       name: 'dev-ports-only',
       severity: 'error',
       comment:
-        'apps/api/src/dev is dev-only: it may import platform port files, never adapters or db',
+        'apps/api/src/dev is dev-only: it takes ports from shared-kernel and adapters from the composition root, never platform or db',
       from: { path: DEV },
-      to: { path: [PLATFORM, DB], pathNot: PLATFORM_PORTS },
+      to: { path: [PLATFORM, DB] },
     },
     {
       name: 'not-to-unresolvable',

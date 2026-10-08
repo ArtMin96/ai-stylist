@@ -1,0 +1,29 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://contracts.ai-stylist.app/events/fixture.sample.recorded.v1.json",
+  "title": "FixtureSampleRecordedV1",
+  "description": "Breaking edit of base/sample.event.json in the same version: tags removed, count newly required, sampleId retyped, enum value beta removed, meta closed.",
+  "type": "object",
+  "required": ["type", "payload"],
+  "properties": {
+    "type": { "const": "fixture.sample.recorded.v1" },
+    "payload": { "$ref": "#/$defs/Payload" }
+  },
+  "$defs": {
+    "Payload": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["sampleId", "kind", "count"],
+      "properties": {
+        "sampleId": { "type": "integer" },
+        "kind": { "type": "string", "enum": ["alpha"] },
+        "count": { "type": "integer", "minimum": 0 },
+        "meta": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": { "source": { "type": "string" } }
+        }
+      }
+    }
+  }
+}

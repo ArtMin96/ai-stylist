@@ -12,19 +12,24 @@ workers/
 ├── .dockerignore           build context for every image is this directory
 ├── .gitignore              workspace-local caches (.hypothesis/); the root .gitignore covers the rest
 └── ml/
-    ├── generated/          `ai-stylist-generated`: Pydantic models from packages/contracts/events (never hand-edited)
+    ├── generated/          `ai-stylist-generated`: event + worker-contract models, kernel constants (`just generate`; never hand-edited)
+    ├── observability/      `ai-stylist-observability`: library every service depends on (no app, no Dockerfile)
+    │   ├── pyproject.toml  runtime deps only (hatchling build)
+    │   ├── src/ai_stylist_observability/
+    │   │   ├── redaction.py   structlog processors: forbidden-key drop, exception allowlist (kernel constants)
+    │   │   ├── tracing.py     span attribute rule, `SanitizingSpanExporter`, `trace_id`/`span_id` log processor
+    │   │   └── correlation.py `x-correlation-id` middleware: validate or mint, bind to logs + span, echo
+    │   └── tests/          unit tests of those three modules
     └── segmentation/       `ai-stylist-segmentation`: FastAPI service
         ├── pyproject.toml  runtime deps only (hatchling build)
         ├── Dockerfile      multi-stage, python:3.14-slim, uv --frozen, non-root, HEALTHCHECK /health
         ├── src/ai_stylist_segmentation/
-        │   ├── main.py        composition root: configures logging + tracing, builds `app` (uvicorn target)
+        │   ├── main.py        composition root: wires observability into logging + tracing, builds `app` (uvicorn target)
         │   ├── app.py         `create_app()` factory + correlation-id and body-free access-log middleware
         │   ├── routes.py      GET /health, POST /v1/segment (thin adapters, no domain logic)
-        │   ├── schemas.py     Pydantic request/response models; re-exports the generated envelope
-        │   ├── redaction.py   forbidden log words + the structlog redaction processor
-        │   ├── correlation.py `x-correlation-id`: validate or mint, bind to logs + span, echo
-        │   └── tracing.py     span sanitizer (OTLP export backstop) + `trace_id`/`span_id` log processor
-        └── tests/          the service's tests (always here — test-placement rule)
+        │   └── schemas.py     the generated HTTP contract + envelope; frozen subclasses of the models it builds
+        └── tests/          the service's tests (always here — test-placement rule): the redaction canary
+                            through its configured logger, request/trace/correlation integration
 ```
 
 ## Boundaries (brief §5, root CLAUDE.md)
@@ -32,24 +37,64 @@ workers/
 - **`workers-not-server`** (brief §5; dependency-cruiser covers TypeScript only, so review
   enforces it here): workers may depend only on `packages/contracts` (through the generated
   models) and `packages/shared-kernel`. Never on `apps/api`. The versioned JSON
-  schemas in `packages/contracts/events/*.json` are the _only_ contract shared with the
-  TypeScript side; `just generate` turns them into `ml/generated/ai_stylist_generated/events/`.
+  schemas in `packages/contracts/events/*.json` and `packages/contracts/workers/<service>/*.json`
+  (the API ↔ worker HTTP contracts) are the _only_ contracts shared with the TypeScript side;
+  `just generate` turns them into `ml/generated/ai_stylist_generated/events/` and
+  `ml/generated/ai_stylist_generated/<service>/`.
 - **`composition-root-only`:** `ml/<service>/src/<pkg>/main.py` is the only module that builds
   the app, configures logging, or constructs adapters. Everything else is pure, importable code.
-- **Logging:** structlog JSON to stdout. A redaction processor drops every key that is, or contains
-  as a camelCase / snake_case / kebab-case word, one of the forbidden words (planning/11 §8) at any
-  nesting depth, for structlog and stdlib records alike. The words are the single source
-  `packages/shared-kernel/registry/forbidden-log-keys.json`; the image has no `packages/`, so
-  `FORBIDDEN_LOG_KEYS` in `redaction.py` is a copy that `tests/test_redaction.py` pins to that file
-  (copy the registry's words when it fails). Matching mirrors `isForbiddenLogKey` in
-  `apps/api/src/platform/logger.ts`. Request bodies, headers and query strings are never logged.
-  Inside a request every line carries `correlation_id`; inside a traced request also `trace_id` and
-  `span_id`. `tests/test_redaction.py` is the canary.
+- **Logging:** structlog JSON to stdout, through the processors of `ai-stylist-observability`
+  (`ml/observability/src/ai_stylist_observability/redaction.py`), which each service's `main.py`
+  wires into its logger; no service keeps its own copy. A redaction processor drops every key that
+  is, or contains as a camelCase / snake_case / kebab-case word, one of the forbidden words
+  (planning/11 §8) at any nesting depth, for structlog and stdlib records alike. The words are `FORBIDDEN_LOG_KEYS` of
+  `ai_stylist_generated.kernel`, generated by `just generate` from the single source
+  `packages/shared-kernel/registry/forbidden-log-keys.json` (the image carries the generated
+  member, so nothing reads `packages/` at run time; `packages/contracts/tests/kernel-python.test.ts`
+  checks the generated module against the registry). Matching mirrors `isForbiddenLogKey` in
+  `apps/api/src/platform/logger.ts`; the tests also run every generated example
+  (`FORBIDDEN_LOG_KEY_EXAMPLES_FORBIDDEN` / `_ALLOWED`, from
+  `packages/shared-kernel/registry/forbidden-log-keys.examples.json`, the file the API's logger
+  test reads). Request bodies, headers and query strings are never logged.
+  A logged exception is an allowlist, as the API logger's `err`: `summarize_exc_info` (in place of
+  structlog's `format_exc_info`) writes `err: {type, code?, cause?}`, the class name (`Error` unless
+  it matches `^[A-Za-z_$][\w$.]{0,63}$`), a `code` attribute only when it is code-shaped
+  (`^[A-Z0-9_]{1,32}$`, e.g. a SQLSTATE or `ECONNREFUSED`; a `code` property that raises counts as
+  none) and the same for at most 5 links of the cause chain (`__cause__`, else the unsuppressed
+  `__context__`); an exception under any other key is replaced by the same summary. The two shapes
+  and the depth are `ERROR_NAME_SHAPE`, `CODE_SHAPE` and `MAX_CAUSE_DEPTH` of
+  `ai_stylist_generated.kernel` (generated from `errorNameShape`, `codeShape` and `maxCauseDepth`
+  of `packages/shared-kernel/registry/log-redaction.json`; each shape is the registry's anchored
+  source verbatim, compiled with `re.ASCII`, always used with `fullmatch`), and the tests run the
+  generated `EXCEPTION_TYPE_KEPT` / `_REPLACED` vectors through the span rule and the replaced ones
+  through the log rule. Without a
+  logged exception, any other value under `err` (`err=str(exc)`, a dict, stdlib
+  `extra={"err": ...}`) is `{type}` only, its Python class name (the API writes a non-Error by its
+  `typeof`). Never the message or the traceback. The event is the caller's own string: printf-style
+  arguments are dropped, never interpolated, as the API logger drops them (structlog's stdlib
+  `BoundLogger` + `drop_positional_args`, not `make_filtering_bound_logger`, which interpolates;
+  stdlib records keep their template, and a non-string stdlib message is its class name). Every
+  mapping (also `MappingProxyType`), list, tuple, set and frozenset is walked, and every mapping
+  key is written as `str(key)` (a mapping mixing `int` and `str` keys would otherwise fail the
+  sorted JSON render and lose the line); a container that
+  holds itself is written as `[Circular]`; a value JSON cannot encode is its class name, never its
+  repr. A record that still fails to format is dropped silently (`logging.raiseExceptions = False`),
+  so `Handler.handleError` never prints its message and arguments to stderr. Not covered: text the
+  caller builds into the event itself. Inside a request every line carries `correlation_id`; inside
+  a traced request also `trace_id` and `span_id`. The processors' unit tests are
+  `ml/observability/tests/test_redaction.py`; each service's own `tests/test_redaction.py` is its
+  canary through its configured logger (`ml/segmentation/tests/test_redaction.py`).
 - **Honesty:** every generated result carries `provenance {generated, model, confidence}`.
 
 ## Telemetry (planning/14 §2–§3, ADR-0007)
 
-Same pipeline and rules as the API (`apps/api/src/platform/telemetry/README.md`); Grafana setup in
+Traces only (no metrics or OTLP logs yet), under the API's span and resource redaction rules
+(`apps/api/src/platform/telemetry/README.md`, `docs/modules/platform.md` invariants 11, 17 and 18).
+`ai_stylist_observability.tracing` mirrors `span-sanitizer.ts` and the service's `main.py` mirrors
+the resource step of `telemetry.ts`: one attribute rule for span, event and link attributes and
+the resource; the span name cut at the first `?` or `#`; the status description dropped; the resource sanitized once,
+where it is built. Event names are cut the same way as the span name, and the old HTTP
+semantic-convention names of the dropped attributes are dropped too. Grafana setup in
 `docs/observability/grafana.md`.
 
 - **Off unless configured.** An empty or unset `OTEL_EXPORTER_OTLP_ENDPOINT` builds nothing: no
@@ -61,7 +106,10 @@ Same pipeline and rules as the API (`apps/api/src/platform/telemetry/README.md`)
   `service.version` = `APP_VERSION` (else the package version), `deployment.environment.name` =
   `APP_ENV` (omitted when empty; `just dev-workers` starts the worker with `local` in that case);
   `OTEL_SERVICE_NAME` and `OTEL_RESOURCE_ATTRIBUTES` win. No host or
-  process detector runs. The provider's `atexit` hook flushes pending spans on a graceful stop.
+  process detector runs. The merged resource goes through the span attribute rule once
+  (`Resource(sanitize_attributes(...))`; the plain constructor runs no detector), so a credential
+  or a URL query in `OTEL_RESOURCE_ATTRIBUTES` is never exported. The provider's `atexit` hook
+  flushes pending spans on a graceful stop.
 - **Instrumentation:** `opentelemetry-instrumentation-fastapi`, one SERVER span per request that
   continues the caller's W3C `traceparent` (the jobs process's `fetch` span); propagation is
   `traceparent` only (caller `baggage` is ignored). `/health` is not traced, there are no
@@ -69,14 +117,24 @@ Same pipeline and rules as the API (`apps/api/src/platform/telemetry/README.md`)
   (`OTEL_SEMCONV_STABILITY_OPT_IN=http` by default).
 - **Span attributes** carry ids and enums only, e.g. `http.request.method`, `http.route`,
   `url.path`, `http.response.status_code`, `correlation_id`. The
-  exporter wrapper (`tracing.py`) drops `url.query`, `client.address`, `network.peer.address`,
+  exporter wrapper (`ai_stylist_observability.tracing`) applies one rule to the attributes of the span, of every event
+  and of every link: it drops `url.query`, `client.address`, `network.peer.address`,
   `user_agent.original`, `exception.message`, `exception.stacktrace` (and their old-convention
-  names), cuts the query and fragment from `url.full`/`url.path`/`http.url`/`http.target`, drops
-  the status description, keeps `exception.type`, and replaces with `[REDACTED]` any attribute whose
-  last dot-segment is a forbidden word.
-- **Correlation id** (`correlation.py`): the `x-correlation-id` request header is accepted when it
-  matches the API's `CORRELATION_ID_PATTERN` (1–128 chars of `[A-Za-z0-9._:-]`, one header),
-  else a UUID is minted. It is bound as `correlation_id` for every log line of the request, set on
+  names), cuts the query and fragment from every string of `url.full`/`url.path`/`http.url`/
+  `http.target` (a string or a sequence of strings; cut, not dropped), keeps `exception.type` only
+  when it is name-shaped (`^[A-Za-z_$][\w$.]{0,63}$`) or code-shaped (`^[A-Z0-9_]{1,32}$`, both
+  from `ai_stylist_generated.kernel`, see Logging) and
+  writes `Error` otherwise (the instrumentation writes `module.QualName`, so a free-text class name,
+  a qualified name over 64 characters or one with `<locals>` becomes `Error`), and replaces with
+  `[REDACTED]` any attribute whose last dot-segment is a forbidden word. It also cuts
+  the span name and every event name at the first `?` or `#`, drops the status description and
+  keeps each link's trace id, span id and flags.
+- **Correlation id** (`ai_stylist_observability.correlation`): the `x-correlation-id` request header is accepted when
+  exactly one was sent and it satisfies the event envelope's `correlationId` rule
+  (`packages/contracts/events/envelope.json`, today 1–128 chars of `[A-Za-z0-9._:-]`), else a UUID
+  is minted. The rule (pattern compiled with `re.ASCII`, always `fullmatch`, plus the length
+  bounds) and the header and log key (shared-kernel `registry/correlation.json`) come from
+  `ai_stylist_generated.kernel`; edit those sources and run `just generate`, never this package. It is bound as `correlation_id` for every log line of the request, set on
   the request span and echoed in the response header.
 - **Logs stay on stdout** (JSON); they are not sent over OTLP. The OpenTelemetry Python logs signal
   is still "Development" (opentelemetry-python README; 1.45.0 changed the Logger API), so shipping
@@ -122,17 +180,33 @@ docker build -f workers/ml/segmentation/Dockerfile -t ai-stylist-segmentation:de
 docker run --rm -p 8001:8000 ai-stylist-segmentation:dev
 ```
 
-The build context is `workers/` so the shared `uv.lock` and the generated-models member are
-available; `workers/.dockerignore` keeps tests, caches and venvs out of the context.
+The build context is `workers/` so the shared `uv.lock` and the generated-models and
+observability members are available; `workers/.dockerignore` keeps tests, caches and venvs out of the context.
 
 ### Generated models (`just generate`)
 
-`tools/codegen/gen-python.sh [--check]` runs `datamodel-codegen` over the top-level
-`packages/contracts/events/*.json` into `ml/generated/ai_stylist_generated/events/` (one module
-per schema), formats the result with the workspace ruff config and is idempotent. `--check`
-exits 1 when the committed output is stale. `CONTRACTS_EVENTS_DIR` overrides the input directory.
-Generated files start with a `` # GENERATED — run `just generate` `` banner and are excluded from
-`ruff check`; they are still type-checked.
+`tools/codegen/gen-python.sh [--check]` writes these subpackages of `ml/generated/ai_stylist_generated/`,
+formats them with the workspace ruff config and is idempotent:
+
+- `events/`: `datamodel-codegen` over the top-level `packages/contracts/events/*.json` (one module
+  per schema). `CONTRACTS_EVENTS_DIR` overrides the input directory.
+- `<service>/`: `datamodel-codegen` over `packages/contracts/workers/<service>/*.json`, one module
+  per contract version. Today `segmentation/segmentation_v1.py`:
+  `from ai_stylist_generated.segmentation.segmentation_v1 import SegmentRequest, SegmentResponse,
+MaskRef, MaskLabel, Provenance, HealthResponse` (`MaskLabel` is a `StrEnum`; `extra="forbid"`;
+  `Provenance.generated` defaults to `True` and `SegmentResponse.masks` to `[]`).
+- `kernel/`: `tools/codegen/gen-kernel.mjs python` over the shared-kernel registries the workers
+  mirror (DEC-55 extended). `from ai_stylist_generated.kernel import ...` gives
+  `FORBIDDEN_LOG_KEYS` (`frozenset[str]`), `FORBIDDEN_LOG_KEY_EXAMPLES_FORBIDDEN` / `_ALLOWED`
+  (`tuple[str, ...]`), `ERROR_NAME_SHAPE`, `CODE_SHAPE`, `NEST_CONTEXT_SHAPE` (`re.Pattern[str]`,
+  compiled with `re.ASCII`; always `fullmatch`), `MAX_CAUSE_DEPTH` (`int`) and the vectors
+  `EXCEPTION_TYPE_KEPT` / `_REPLACED`, `NEST_CONTEXT_KEPT` / `_REDACTED`. The image carries them
+  with the generated member, so no worker code or test needs `packages/` at run time.
+
+`--check` exits 1 when the committed output is stale. Generated files start with a
+`# GENERATED` banner and are never hand-edited. `events/` is excluded from `ruff check`; the
+other subpackages pass it as generated (a module with a long schema description carries a
+file-level `# ruff: noqa: E501`). All are type-checked.
 
 ## Rules enforced by tooling
 
@@ -146,8 +220,14 @@ Generated files start with a `` # GENERATED — run `just generate` `` banner an
 
 ## Adding a service
 
-1. `mkdir ml/<name>` with a `pyproject.toml` (copy segmentation's; package `ai_stylist_<name>`).
-2. `main.py` composition root, `app.py` factory, `routes.py`, `schemas.py`, `tests/`, `Dockerfile`.
+1. `mkdir ml/<name>` with a `pyproject.toml` (copy segmentation's; package `ai_stylist_<name>`). It
+   depends on `ai-stylist-generated` and `ai-stylist-observability` (both `{ workspace = true }` in
+   its `[tool.uv.sources]`); never copy `redaction.py`, `tracing.py` or `correlation.py`.
+2. `main.py` composition root (wire the `ai_stylist_observability` processors and exporter as
+   segmentation's does), `app.py` factory (register `correlation_id_middleware`), `routes.py`,
+   `schemas.py` (generated models only), `tests/` with the service's own redaction canary (copy
+   `ml/segmentation/tests/test_redaction.py`: it runs against the service's configured logger),
+   and a `Dockerfile` that copies `ml/generated`, `ml/observability` and the service.
 3. In the root `workers/pyproject.toml`, add `ai-stylist-<name>` to `dependencies` and to
    `[tool.uv.sources]` (`{ workspace = true }`) so `uv sync --frozen` installs it, and add
    `ai_stylist_<name>` to ruff's `known-first-party`.

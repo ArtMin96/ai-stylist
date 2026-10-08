@@ -1,4 +1,4 @@
-import type { Clock } from '../ports/clock.port.js';
+import type { Clock } from '@ai-stylist/shared-kernel';
 
 export type CircuitState = 'closed' | 'open' | 'half-open';
 

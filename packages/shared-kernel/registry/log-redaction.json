@@ -1,0 +1,58 @@
+{
+  "$schema": "./log-redaction.schema.json",
+  "errorNameShape": "^[A-Za-z_$][\\w$.]{0,63}$",
+  "codeShape": "^[A-Z0-9_]{1,32}$",
+  "maxCauseDepth": 5,
+  "nestContextShape": "^(?=.{1,48}$)[A-Z][a-z]+(?:[A-Z][a-z]+)*[0-9]*$",
+  "vectors": {
+    "exceptionType": {
+      "kept": [
+        "Error",
+        "TypeError",
+        "grpc.ServiceError",
+        "requests.exceptions.ConnectionError",
+        "_InternalError",
+        "$Error",
+        "23505",
+        "57P01",
+        "ECONNREFUSED",
+        "ERR_SOCKET_TIMEOUT"
+      ],
+      "replaced": [
+        "",
+        "duplicate key value violates unique constraint",
+        "Error: boom",
+        "TypeError\n",
+        "Erreuré",
+        "9abc",
+        "ECONN REFUSED",
+        "someone@example.test",
+        "Aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+      ]
+    },
+    "nestContext": {
+      "kept": [
+        "RoutesResolver",
+        "InstanceLoader",
+        "ProblemFilter",
+        "NestFactory",
+        "NestApplication",
+        "OutboxRelay2"
+      ],
+      "redacted": [
+        "",
+        "AKIAIOSFODNN7EXAMPLE",
+        "tok_0123456789abcdef0123456789abcdef",
+        "Error: boom\n    at ProblemFilter.catch (/app/dist/platform/problem.filter.js:42:13)",
+        "someone@example.test",
+        "routesResolver",
+        "Routes Resolver",
+        "grpc.ServiceError",
+        "ProblemFilter\n",
+        "ProblèmeFilter",
+        "AbCDEF123xyz",
+        "Qx7Lm2Np9Rt4Vw8Yz3Bc6Df1Gh5Jk0"
+      ]
+    }
+  }
+}

@@ -48,10 +48,8 @@ async function shutdown(signal: NodeJS.Signals): Promise<void> {
     await jobs.stop();
     logger.info('jobs stopped');
   } catch (error) {
-    logger.error(
-      { errorName: error instanceof Error ? error.name : typeof error },
-      'jobs stop failed',
-    );
+    // `err` is the logger's error allowlist: class (identifier-shaped) and code only.
+    logger.error({ err: error }, 'jobs stop failed');
     process.exitCode = 1;
   } finally {
     // Last: the stop's own spans and log lines are exported too.

@@ -3,11 +3,19 @@
 // it, with what, is decided by the handler. Every call is bounded by `withTimeout` and passes
 // through a `CircuitBreaker` (doc 04 §9, NFR-PERF-040).
 //
-// The request/response shapes mirror
-// `workers/ml/segmentation/src/ai_stylist_segmentation/schemas.py` minimally. That file's own
-// TODO moves the worker schemas into `packages/contracts`; once it does, these types come from the
-// generated contract instead (out of scope for P02-T08).
-import { z } from 'zod';
+// The request/response types are the generated worker contract (`@ai-stylist/contracts/workers`,
+// source `packages/contracts/workers/segmentation/segmentation.v1.json`); the reply is validated at
+// runtime against that schema's `$defs/SegmentResponse`, so a contract change applies here with
+// nothing to copy (the Ajv 2020-12 setup of `demo-outbox-flow.ts`). Whatever the contract says
+// holds: today an unknown field or mask label is rejected (`additionalProperties: false`, the
+// `MaskLabel` enum). This client and its `SegmentationClient` type stay in `jobs/` until `media`
+// consumes segmentation (P06); then the port moves to `modules/media/index.ts` and the adapter to
+// `platform`.
+import { Ajv2020, type ValidateFunction } from 'ajv/dist/2020.js';
+import addFormats from 'ajv-formats';
+
+import type { SegmentRequest, SegmentResponse } from '@ai-stylist/contracts/workers';
+import segmentationSchema from '@ai-stylist/contracts/workers/segmentation/segmentation.v1.json' with { type: 'json' };
 
 import {
   CORRELATION_ID_HEADER,
@@ -16,46 +24,26 @@ import {
   withTimeout,
 } from '../platform/index.js';
 
-const MASK_LABELS = [
-  'top',
-  'bottom',
-  'dress',
-  'outerwear',
-  'shoes',
-  'accessory',
-  'background',
-] as const;
+export type {
+  MaskLabel,
+  MaskRef,
+  SegmentRequest,
+  SegmentResponse,
+} from '@ai-stylist/contracts/workers';
 
-export type MaskLabel = (typeof MASK_LABELS)[number];
-
-/** `SegmentRequest` (schemas.py): an object reference only, never image bytes or user data. */
-export type SegmentRequest = {
-  /** Caller correlation id, 1–128 chars. */
-  readonly request_id: string;
-  /** R2 object key of the source image, 1–1024 chars. */
-  readonly image_ref: string;
-  readonly hint?: MaskLabel;
-};
-
-const segmentResponseSchema = z.object({
-  request_id: z.string(),
-  image_ref: z.string(),
-  masks: z.array(
-    z.object({
-      label: z.enum(MASK_LABELS),
-      mask_ref: z.string().min(1),
-      score: z.number().min(0).max(1),
-    }),
-  ),
-  provenance: z.object({
-    generated: z.boolean(),
-    model: z.string().min(1),
-    confidence: z.number().min(0).max(1),
-  }),
-});
-
-/** `SegmentResponse` (schemas.py): mask references plus the provenance/confidence marker. */
-export type SegmentResponse = z.infer<typeof segmentResponseSchema>;
+/** Compiled once, at module load, from the contract schema itself. */
+const ajv = new Ajv2020({ strict: true, allErrors: true });
+addFormats.default(ajv);
+ajv.addSchema(segmentationSchema);
+const segmentResponseValidator = ajv.getSchema<SegmentResponse>(
+  `${segmentationSchema.$id}#/$defs/SegmentResponse`,
+);
+// Fail at module load (process start), not on the first request, if the contract's $id or
+// $defs name ever changes.
+if (segmentResponseValidator === undefined) {
+  throw new Error('segmentation contract: $defs/SegmentResponse not found in the worker schema');
+}
+const validateSegmentResponse: ValidateFunction<SegmentResponse> = segmentResponseValidator;
 
 /** Per-call options: cancellation and the operation's correlation id (planning/14 §2). */
 export type SegmentCallOptions = {
@@ -130,11 +118,11 @@ export class HttpSegmentationClient implements SegmentationClient {
           await response.body?.cancel();
           throw new SegmentationError(`segmentation worker responded ${response.status}`);
         }
-        const parsed = segmentResponseSchema.safeParse(await response.json());
-        if (!parsed.success || parsed.data.request_id !== request.request_id) {
+        const reply: unknown = await response.json();
+        if (!validateSegmentResponse(reply) || reply.request_id !== request.request_id) {
           throw new SegmentationError('segmentation worker reply does not match the request');
         }
-        return parsed.data;
+        return reply;
       }, this.timeoutMs),
     );
   }

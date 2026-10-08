@@ -17,11 +17,12 @@
 //   `getAllFlagsAndPayloads` (which fires no `$feature_flag_called`), `before_send` drops every
 //   event, and the injected transport refuses every request that is not `<host>/flags/…`.
 // - Logs: flag key and outcome enum only.
-import { FEATURE_FLAG_REGISTRY, type FeatureFlagKey } from '@ai-stylist/shared-kernel';
+import { type Clock, FEATURE_FLAG_REGISTRY, type FeatureFlagKey } from '@ai-stylist/shared-kernel';
 import { PostHog, type PostHogOptions } from 'posthog-node';
 import type { Logger } from 'pino';
 
-import { type Clock, SystemClock } from '../ports/clock.port.js';
+import { childLogger } from '../logger.js';
+import { SystemClock } from '../system-clock.js';
 import { withTimeout } from '../resilience/timeout.js';
 
 import {
@@ -112,7 +113,7 @@ export class PostHogFeatureFlags implements FeatureFlagsAdapter {
     if (protocol !== 'https:' && protocol !== 'http:') {
       throw new TypeError('PostHogFeatureFlags: host must be an http(s) URL');
     }
-    this.logger = options.logger.child({ component: 'feature-flags' });
+    this.logger = childLogger(options.logger, { component: 'feature-flags' });
     this.clock = options.clock ?? new SystemClock();
     this.timeoutMs = options.timeoutMs ?? FEATURE_FLAG_TIMEOUT_MS;
     this.cacheTtlMs = options.cacheTtlMs ?? FEATURE_FLAG_CACHE_TTL_MS;
@@ -147,8 +148,8 @@ export class PostHogFeatureFlags implements FeatureFlagsAdapter {
 
   shutdown(): Promise<void> {
     this.stopped ??= this.client.shutdown(SHUTDOWN_TIMEOUT_MS).catch((error: unknown) => {
-      const errorName = error instanceof Error ? error.name : typeof error;
-      this.logger.warn({ errorName }, 'posthog client shutdown failed');
+      // `err` is the logger's error allowlist: class (identifier-shaped) and code only.
+      this.logger.warn({ err: error }, 'posthog client shutdown failed');
     });
     return this.stopped;
   }

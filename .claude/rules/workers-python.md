@@ -28,6 +28,8 @@ change.
    catches drift.
 5. `workers/uv.lock` is single-writer and changes only when the task grants a dependency change — the
    path guard denies hand edits; `scripts/hooks/guard-bash.sh` denies `uv add`.
-6. Logs go through the structlog redaction and never carry sensitive data;
-   `workers/ml/segmentation/tests/test_redaction.py` is the test to copy for a new service
+6. Logs go through the structlog redaction of `workers/ml/observability/` (`ai_stylist_observability`:
+   `redaction.py`, `tracing.py`, `correlation.py`), which every service depends on and never copies;
+   its unit tests are in `workers/ml/observability/tests/`. Each service keeps its own canary through
+   its configured logger: copy `workers/ml/segmentation/tests/test_redaction.py` for a new service
    (reviewer-checked).

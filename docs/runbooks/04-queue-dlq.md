@@ -27,7 +27,8 @@
 ## Detection
 
 1. The `queue.job.dlq` email names `job_type` and `deployment_environment_name`. An empty
-   environment in that email means the process started with an empty `APP_ENV`: `just doctor` warns
+   environment in that email means a worker process started with an empty `APP_ENV` (the API and
+   the jobs process refuse to boot without it): `just doctor` warns
    about it and `just bootstrap` sets it to `local`.
 2. Dashboard **01 Service health**, row **Queues**: dead-lettered jobs, queue depth, oldest job age
    (budget 15 min), job outcomes.

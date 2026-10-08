@@ -1,6 +1,46 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, expectTypeOf, it } from 'vitest';
 
-import { fakeClock, fakeFeatureFlags, memoryLogStream } from '../src/index.js';
+import type {
+  Clock,
+  EventEnvelope,
+  FeatureFlagKey,
+  FeatureFlags,
+  OutboxWriter,
+  StorageProvider,
+} from '@ai-stylist/shared-kernel';
+
+import {
+  fakeClock,
+  fakeFeatureFlags,
+  fakeStorageProvider,
+  memoryLogStream,
+  recordingOutboxWriter,
+} from '../src/index.js';
+
+// Type-level pins, checked by vitest's typecheck mode (vitest.config.ts) on every `vitest run`, so
+// `just test` fails when a fake stops satisfying the shared-kernel port it stands in for. Each pin
+// covers the default instantiation and the generic form consumers use (apps/api/tests/http.test.ts:
+// `fakeFeatureFlags<FeatureFlagKey>`, `recordingOutboxWriter<a narrowed envelope>`).
+describe('fakes satisfy the shared-kernel ports', () => {
+  it('fakeClock is a Clock', () => {
+    expectTypeOf(fakeClock()).toExtend<Clock>();
+  });
+
+  it('fakeFeatureFlags is a FeatureFlags, also typed with the kernel flag keys', () => {
+    expectTypeOf(fakeFeatureFlags()).toExtend<FeatureFlags>();
+    expectTypeOf(fakeFeatureFlags<FeatureFlagKey>()).toExtend<FeatureFlags>();
+  });
+
+  it('recordingOutboxWriter is an OutboxWriter, also typed with a narrowed envelope', () => {
+    type DemoEnvelope = EventEnvelope<'demo.outbox-flow.requested.v1', { demoId: string }>;
+    expectTypeOf(recordingOutboxWriter()).toExtend<OutboxWriter>();
+    expectTypeOf(recordingOutboxWriter<DemoEnvelope>()).toExtend<OutboxWriter>();
+  });
+
+  it('fakeStorageProvider is a StorageProvider', () => {
+    expectTypeOf(fakeStorageProvider()).toExtend<StorageProvider>();
+  });
+});
 
 describe('fakeClock', () => {
   it('is deterministic and advances only when told', () => {
@@ -31,6 +71,40 @@ describe('fakeFeatureFlags', () => {
     first.set('flag-a', false);
     expect(await second.isEnabled('flag-a')).toBe(true);
     expect(values).toEqual({ 'flag-a': true });
+  });
+});
+
+describe('recordingOutboxWriter', () => {
+  it('records every appended envelope in order and resolves', async () => {
+    const outbox = recordingOutboxWriter<{ id: string }>();
+    await outbox.append({ id: 'evt_a' });
+    await outbox.append({ id: 'evt_b' }, { tx: 'ignored' });
+    expect(outbox.appended).toEqual([{ id: 'evt_a' }, { id: 'evt_b' }]);
+  });
+});
+
+describe('fakeStorageProvider', () => {
+  it('signs deterministic URLs, expires at now + ttl, and records each request', async () => {
+    const clock = fakeClock('2026-03-01T10:00:00.000Z');
+    const storage = fakeStorageProvider(() => clock.now());
+    const location = { userId: 'usr_x', namespace: 'uploads', key: 'a/b.jpg' };
+
+    const put = await storage.presignedPut({
+      ...location,
+      contentType: 'image/jpeg',
+      sizeLimitBytes: 10,
+      ttlSeconds: 60,
+    });
+    const get = await storage.presignedGet({ ...location, ttlSeconds: 30 });
+
+    expect(put).toEqual({
+      method: 'PUT',
+      url: 'fake://storage/u/usr_x/uploads/a/b.jpg?method=PUT',
+      expiresAt: '2026-03-01T10:01:00.000Z',
+    });
+    expect(get.method).toBe('GET');
+    expect(get.expiresAt).toBe('2026-03-01T10:00:30.000Z');
+    expect(storage.requests.map((r) => r.method)).toEqual(['PUT', 'GET']);
   });
 });
 

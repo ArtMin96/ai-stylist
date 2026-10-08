@@ -148,9 +148,10 @@ env_file_fill_empty() {
   rm -f "$tmp"
 }
 
-# APP_ENV on a developer machine. The API's config defaults an empty APP_ENV to this name, but
-# telemetry start-up reads the raw environment, so an empty value leaves the resource attribute
-# deployment.environment.name off every span, metric and log. The Grafana dashboard filters by that
+# APP_ENV on a developer machine. The API and the jobs process refuse to boot with an empty APP_ENV
+# (apps/api/src/config.ts has no default), and the Python worker's telemetry start-up reads the raw
+# environment, so an empty value leaves the resource attribute deployment.environment.name off its
+# spans, metrics and logs. The Grafana dashboard filters by that
 # label and the DLQ alert groups by it and names the environment with it. Bootstrap, doctor and the
 # dev recipes all use this one name.
 APP_ENV_LOCAL='local'
@@ -192,7 +193,7 @@ doctor_app_env() {
   if [[ -n "$(env_file_value APP_ENV "${1:-.env}")" ]]; then
     ok "APP_ENV is set in .env (telemetry reports it as deployment.environment.name)"
   else
-    warnc "APP_ENV is empty in .env: a process started outside just dev-api / just dev-workers then sends telemetry without deployment.environment.name, the label the Grafana dashboard filters by and the DLQ alert names its environment with" \
+    warnc "APP_ENV is empty in .env: a process started outside just dev-api / just dev-workers then refuses to boot (API, jobs) or sends telemetry without deployment.environment.name (worker), the label the Grafana dashboard filters by and the DLQ alert names its environment with" \
       "just bootstrap   (fills an empty APP_ENV with '$APP_ENV_LOCAL', never changes a value that is set); or write APP_ENV=$APP_ENV_LOCAL into .env"
   fi
 }
@@ -231,6 +232,26 @@ darwin_docker_runtime() {
   elif have colima; then echo colima
   else echo none
   fi
+}
+
+# macOS Docker runtime: OrbStack (Linux uses Docker Engine from pacman/apt), for bootstrap.sh --system
+# and `just dev` (scripts/dev.sh). Installs the cask when the app is missing, starts the engine
+# headless (`orb start`, a no-op when running), and makes its `orbstack` docker context the active one. OrbStack itself links docker into /usr/local/bin
+# (after an admin prompt) and adds ~/.orbstack/bin to PATH from ~/.zprofile for new shells.
+setup_orbstack() {
+  if [[ -d /Applications/OrbStack.app ]]; then
+    info "OrbStack installed"
+  else
+    brew install --cask orbstack || return 1
+  fi
+  local orb=/Applications/OrbStack.app/Contents/MacOS/bin/orb
+  "$orb" start || return 1
+  have docker || export PATH="$HOME/.orbstack/bin:$PATH"
+  if [[ "$(docker context show 2>/dev/null)" != "orbstack" ]]; then
+    docker context use orbstack >/dev/null || return 1
+  fi
+  docker info >/dev/null 2>&1 || { error "OrbStack started but 'docker info' fails"; return 1; }
+  info "OrbStack running; docker context: orbstack"
 }
 
 # --- local compose stack (docker-compose.yml: the Postgres that just dev-api / dev-workers start) --

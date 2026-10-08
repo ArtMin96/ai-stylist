@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1.7
 # AI Stylist — segmentation worker. Build from the workspace root so the shared lockfile
-# and the generated-models member are in context:
+# and the generated-models and observability members are in context:
 #   docker build -f workers/ml/segmentation/Dockerfile workers
 ARG PYTHON_VERSION=3.14
 ARG UV_VERSION=0.12.19
@@ -18,12 +18,14 @@ WORKDIR /app
 # Layer 1: third-party deps only (cache survives source edits).
 COPY pyproject.toml uv.lock ./
 COPY ml/generated/pyproject.toml ml/generated/
+COPY ml/observability/pyproject.toml ml/observability/
 COPY ml/segmentation/pyproject.toml ml/segmentation/
 RUN --mount=type=cache,target=/root/.cache/uv \
     uv sync --frozen --no-install-workspace --package ai-stylist-segmentation
 
 # Layer 2: workspace sources, installed non-editable so the venv is self-contained.
 COPY ml/generated ml/generated
+COPY ml/observability ml/observability
 COPY ml/segmentation ml/segmentation
 RUN --mount=type=cache,target=/root/.cache/uv \
     uv sync --frozen --no-editable --package ai-stylist-segmentation

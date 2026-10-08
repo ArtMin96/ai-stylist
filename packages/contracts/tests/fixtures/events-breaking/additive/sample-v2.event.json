@@ -1,0 +1,20 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://contracts.ai-stylist.app/events/fixture.sample.recorded.v2.json",
+  "title": "FixtureSampleRecordedV2",
+  "description": "A breaking redesign shipped the doc 06 way: a new event version next to v1, which stays.",
+  "type": "object",
+  "required": ["type", "payload"],
+  "properties": {
+    "type": { "const": "fixture.sample.recorded.v2" },
+    "payload": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["sampleId", "kinds"],
+      "properties": {
+        "sampleId": { "type": "string" },
+        "kinds": { "type": "array", "items": { "type": "string", "enum": ["alpha"] } }
+      }
+    }
+  }
+}

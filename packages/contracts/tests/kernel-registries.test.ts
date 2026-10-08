@@ -1,8 +1,9 @@
-// JSON Schema validation for the shared-kernel registries that tools/codegen/gen-kernel.mjs does not
-// emit (TS-only data read straight from JSON): forbidden-log-keys (+ its word-split examples),
-// owners and feature-flags. They live in packages/shared-kernel/registry; Ajv lives here (as it
-// does for gen-kernel.mjs). The cross-references a schema cannot express are checked in
-// packages/shared-kernel/tests.
+// JSON Schema validation for the shared-kernel registries that TS reads straight from JSON (no
+// generated TS): forbidden-log-keys (+ its word-split examples), log-redaction, correlation, owners
+// and feature-flags. They live in packages/shared-kernel/registry; Ajv lives here (as it does for
+// gen-kernel.mjs, which also validates the first four before emitting them for Python; their
+// Python output is pinned by kernel-python.test.ts). The cross-references a schema cannot express
+// are checked in packages/shared-kernel/tests.
 import { readFile } from 'node:fs/promises';
 
 import { Ajv2020, type SchemaObject } from 'ajv/dist/2020.js';
@@ -65,6 +66,57 @@ describe('forbidden-log-keys.examples.json', async () => {
   });
 });
 
+describe('log-redaction.json', async () => {
+  const { data, check, errors } = await validatorFor('log-redaction');
+  const vectors = {
+    exceptionType: { kept: ['TypeError'], replaced: ['Error: boom'] },
+    nestContext: { kept: ['ProblemFilter'], redacted: ['someone@example.test'] },
+  };
+  const minimal = {
+    errorNameShape: '^[A-Za-z_$][\\w$.]{0,63}$',
+    codeShape: '^[A-Z0-9_]{1,32}$',
+    maxCauseDepth: 5,
+    nestContextShape: '^[A-Z][a-z]+(?:[A-Z][a-z0-9]*)*$',
+    vectors,
+  };
+
+  it('validates against its schema', () => {
+    expect(check(data), errors()).toBe(true);
+    expect(check(minimal), errors()).toBe(true);
+  });
+
+  it('rejects an unanchored or invalid shape', () => {
+    for (const codeShape of ['[A-Z0-9_]{1,32}', '^[A-Z0-9_]{1,32}', '[A-Z]$', '^[A-Z$', '^$']) {
+      expect(check({ ...minimal, codeShape }), codeShape).toBe(false);
+    }
+  });
+
+  it('rejects a cause depth outside 1..16 or not an integer', () => {
+    for (const maxCauseDepth of [0, 17, 2.5, '5']) {
+      expect(check({ ...minimal, maxCauseDepth }), JSON.stringify(maxCauseDepth)).toBe(false);
+    }
+  });
+
+  it('rejects a missing field, a missing or empty vector list, duplicates and unknown fields', () => {
+    const { nestContextShape: _dropped, ...noNestShape } = minimal;
+    expect(check(noNestShape)).toBe(false);
+    expect(check({ ...minimal, vectors: { exceptionType: vectors.exceptionType } })).toBe(false);
+    expect(
+      check({ ...minimal, vectors: { ...vectors, nestContext: { kept: ['ProblemFilter'] } } }),
+    ).toBe(false);
+    expect(
+      check({ ...minimal, vectors: { ...vectors, exceptionType: { kept: [], replaced: ['x'] } } }),
+    ).toBe(false);
+    expect(
+      check({
+        ...minimal,
+        vectors: { ...vectors, exceptionType: { kept: ['A', 'A'], replaced: ['x'] } },
+      }),
+    ).toBe(false);
+    expect(check({ ...minimal, notes: 'x' })).toBe(false);
+  });
+});
+
 describe('owners.json', async () => {
   const { data, check, errors } = await validatorFor('owners');
   const person = { id: 'test-person', name: 'Test Person' };
@@ -118,5 +170,37 @@ describe('feature-flags.json', async () => {
     const { offBehavior: _off, ...noOffBehavior } = rollout;
     expect(one(noOffBehavior)).toBe(false);
     expect(one(rollout, 'demoOutboxFlow')).toBe(false);
+  });
+});
+
+describe('correlation.json', async () => {
+  const { data, check, errors } = await validatorFor('correlation');
+  const minimal = {
+    header: 'x-correlation-id',
+    logKey: 'correlation_id',
+    vectors: { accepted: ['corr-1'], rejected: [''] },
+  };
+
+  it('validates against its schema', () => {
+    expect(check(data), errors()).toBe(true);
+    expect(check(minimal), errors()).toBe(true);
+  });
+
+  it('rejects a header or log key that is not lowercase kebab or snake case', () => {
+    for (const header of ['X-Correlation-Id', 'x_correlation_id', 'x-correlation-', '']) {
+      expect(check({ ...minimal, header }), header).toBe(false);
+    }
+    for (const logKey of ['correlationId', 'correlation-id', 'correlation_', '']) {
+      expect(check({ ...minimal, logKey }), logKey).toBe(false);
+    }
+  });
+
+  it('rejects a missing field, a missing or empty vector list, duplicates and unknown fields', () => {
+    const { logKey: _dropped, ...noLogKey } = minimal;
+    expect(check(noLogKey)).toBe(false);
+    expect(check({ ...minimal, vectors: { accepted: ['corr-1'] } })).toBe(false);
+    expect(check({ ...minimal, vectors: { accepted: [], rejected: [''] } })).toBe(false);
+    expect(check({ ...minimal, vectors: { accepted: ['a', 'a'], rejected: [''] } })).toBe(false);
+    expect(check({ ...minimal, pattern: '^.*$' })).toBe(false);
   });
 });

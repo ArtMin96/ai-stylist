@@ -30,10 +30,20 @@ from opentelemetry.semconv.attributes.service_attributes import SERVICE_VERSION
 from opentelemetry.trace.propagation.tracecontext import TraceContextTextMapPropagator
 from opentelemetry.util.types import AttributeValue
 
+from ai_stylist_observability.redaction import (
+    caller_message_only,
+    drop_positional_args,
+    json_default,
+    redact_forbidden_keys,
+    summarize_exc_info,
+)
+from ai_stylist_observability.tracing import (
+    SanitizingSpanExporter,
+    add_trace_context,
+    sanitize_attributes,
+)
 from ai_stylist_segmentation import SERVICE_NAME, __version__
 from ai_stylist_segmentation.app import create_app
-from ai_stylist_segmentation.redaction import redact_forbidden_keys
-from ai_stylist_segmentation.tracing import SanitizingSpanExporter, add_trace_context
 
 # Empty or unset: tracing is off (no provider, no exporter, no network). Standard OTel semantics.
 OTLP_ENDPOINT_ENV = "OTEL_EXPORTER_OTLP_ENDPOINT"
@@ -52,41 +62,64 @@ def _drop_uvicorn_noise(
 def configure_logging(stream: IO[str] = sys.stdout, level: str | None = None) -> None:
     """JSON logs on `stream`, redaction applied to structlog *and* stdlib records.
 
-    Lines carry `correlation_id` inside a request (`correlation.py`, via contextvars) and
-    `trace_id` / `span_id` inside a recorded span (`tracing.add_trace_context`). Logs stay on
-    stdout only: the OpenTelemetry Python logs SDK is still in Development status.
+    The processors come from `ai_stylist_observability`. Lines carry `correlation_id` inside a
+    request (`correlation.py`, via contextvars) and `trace_id` / `span_id` inside a recorded span
+    (`tracing.add_trace_context`). A logged exception is its class, code and cause chain under
+    `err` (`redaction.summarize_exc_info`), never its message or traceback. The event is the
+    caller's own string: printf-style arguments are dropped, never interpolated
+    (`redaction.drop_positional_args`; stdlib records use their uninterpolated template). A record
+    that still fails to format is dropped silently (`logging.raiseExceptions = False`):
+    `Handler.handleError` would print its message and arguments to stderr. Logs stay on stdout
+    only: the OpenTelemetry Python logs SDK is still in Development status.
     """
     # `LOG_LEVEL=` (set but empty, the `.env.example` default) means "unset": INFO.
     log_level = logging.getLevelNamesMapping()[
         (level or os.environ.get("LOG_LEVEL") or "INFO").upper()
     ]
+    logging.raiseExceptions = False
     shared_processors: list[structlog.typing.Processor] = [
         structlog.contextvars.merge_contextvars,
+        # Before anything renders: never `PositionalArgumentsFormatter`, which interpolates.
+        drop_positional_args,
         structlog.stdlib.add_log_level,
         structlog.stdlib.add_logger_name,
         structlog.processors.TimeStamper(fmt="iso", utc=True),
         add_trace_context,
         structlog.processors.StackInfoRenderer(),
-        structlog.processors.format_exc_info,
+        # Not `format_exc_info`: it writes the exception message and traceback into the line.
+        summarize_exc_info,
         redact_forbidden_keys,
     ]
     structlog.configure(
         processors=[
+            # Level filtering by the stdlib logger (root level below), first so nothing else runs.
+            structlog.stdlib.filter_by_level,
             *shared_processors,
             structlog.stdlib.ProcessorFormatter.wrap_for_formatter,
         ],
-        wrapper_class=structlog.make_filtering_bound_logger(log_level),
+        # Not `make_filtering_bound_logger`: it interpolates `event % args` before any processor
+        # runs. The stdlib `BoundLogger` keeps the args in `positional_args`, which
+        # `drop_positional_args` removes.
+        wrapper_class=structlog.stdlib.BoundLogger,
         logger_factory=structlog.stdlib.LoggerFactory(),
         cache_logger_on_first_use=False,
     )
     formatter = structlog.stdlib.ProcessorFormatter(
         # stdlib records (uvicorn, third parties): merge `extra=` first so it is redacted too.
-        foreign_pre_chain=[structlog.stdlib.ExtraAdder(), _drop_uvicorn_noise, *shared_processors],
+        foreign_pre_chain=[
+            structlog.stdlib.ExtraAdder(),
+            caller_message_only,
+            _drop_uvicorn_noise,
+            *shared_processors,
+        ],
         processors=[
             structlog.stdlib.ProcessorFormatter.remove_processors_meta,
             redact_forbidden_keys,
-            structlog.processors.JSONRenderer(sort_keys=True),
+            # Fails closed: a value JSON cannot encode is its class name, not its repr().
+            structlog.processors.JSONRenderer(sort_keys=True, default=json_default),
         ],
+        # The record's template, not `record.getMessage()` (which interpolates `record.args`).
+        use_get_message=False,
     )
     handler = logging.StreamHandler(stream)
     handler.setFormatter(formatter)
@@ -119,6 +152,10 @@ def build_tracer_provider(span_exporter: SpanExporter | None = None) -> TracerPr
     `OTEL_EXPORTER_OTLP_HEADERS` itself; the batch processor follows `OTEL_BSP_*`. The provider
     registers an `atexit` hook (`shutdown_on_exit`), so a graceful stop flushes pending spans.
     `span_exporter` replaces the OTLP exporter and starts without an endpoint (tests only).
+
+    The resource is sanitized here, once, as the API's `processResource` does: an operator-set
+    `OTEL_RESOURCE_ATTRIBUTES` can carry a credential or a URL with a query, and the exporter
+    passes the provider's resource on unchanged.
     """
     if span_exporter is None and _env(OTLP_ENDPOINT_ENV) is None:
         return None
@@ -133,7 +170,11 @@ def build_tracer_provider(span_exporter: SpanExporter | None = None) -> TracerPr
     # `Resource.create` lets explicit attributes override the environment; merging the env
     # detector last restores the standard precedence: OTEL_SERVICE_NAME and
     # OTEL_RESOURCE_ATTRIBUTES win. No host or process detector runs.
-    resource = Resource.create(attributes).merge(OTELResourceDetector().detect())
+    merged = Resource.create(attributes).merge(OTELResourceDetector().detect())
+    # The span attribute rule on the merged attributes. The plain constructor runs no detector
+    # (unlike `Resource.create`), so nothing merges an unsanitized value back in; none of the
+    # sources sets a schema URL, so none is carried over.
+    resource = Resource(sanitize_attributes(merged.attributes))
     exporter = OTLPSpanExporter() if span_exporter is None else span_exporter
     provider = TracerProvider(resource=resource)
     provider.add_span_processor(BatchSpanProcessor(SanitizingSpanExporter(exporter)))

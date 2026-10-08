@@ -66,7 +66,7 @@ just arch-check
 just ci-parity                        # before opening the PR
 ```
 
-oasdiff runs inside `just lint` only when `OASDIFF_BASE` is set. The contracts job in `.github/workflows/pr-gate.yml` is the authoritative breaking-change check: it runs `scripts/ci/contracts-breaking.sh` against the PR base. If you did not run oasdiff locally, write `oasdiff: not run — <reason>`. If a native toolchain is missing, write `Not run: just test ios — <reason>`; never claim the Swift or Kotlin client compiles without that output.
+oasdiff runs inside `just lint` only when `OASDIFF_BASE` is set. The contracts job in `.github/workflows/pr-gate.yml` is the authoritative breaking-change check: it runs `scripts/ci/contracts-breaking.sh` against the PR base: oasdiff at `--fail-on WARN` plus the event-schema check, which needs a new `.vN+1` schema for any removed, newly required or retyped field, removed enum value or tightened `additionalProperties`. If you did not run oasdiff locally, write `oasdiff: not run — <reason>`. If a native toolchain is missing, write `Not run: just test ios — <reason>`; never claim the Swift or Kotlin client compiles without that output.
 
 ## Output
 
@@ -83,7 +83,7 @@ Done checklist: `generate --check` clean · contract tests green · typecheck gr
 - Another session is editing `packages/contracts` or `packages/shared-kernel` → stop and sequence.
 - `just generate` fails inside a codegen script, or the generated output is wrong → do not patch `gen/**`; report to the script's owner (Overlap).
 - A registry value has no consumer yet → stop and ask why it cannot wait for the consumer.
-- A taxonomy task: no taxonomy registry exists yet (`packages/shared-kernel/registry/` holds reason codes, entitlements and units, plus the TS-only forbidden-log-keys, owners and feature-flags registries; P06-T01 creates v1) → design only; stop before inventing a location.
+- A taxonomy task: no taxonomy registry exists yet (`packages/shared-kernel/registry/` holds reason codes, entitlements and units, plus the forbidden-log-keys, log-redaction, correlation, owners and feature-flags registries, imported as JSON in TS, with forbidden-log-keys, log-redaction and correlation also emitted for Python, DEC-59; P06-T01 creates v1) → design only; stop before inventing a location.
 - A taxonomy bump rule cannot decide a case → `.other` + a review nudge, never a silent guess (`.agents/skills/api-contract-change/references/taxonomy-registry.md`).
 
 ## Overlap

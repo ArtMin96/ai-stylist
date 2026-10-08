@@ -5,6 +5,7 @@ tools: Read, Grep, Glob, Edit, Write, Bash, Skill, ToolSearch
 skills:
   - agent-operating-contract
   - tooling-ci
+  - code-quality
 color: red
 hooks:
   PreToolUse:

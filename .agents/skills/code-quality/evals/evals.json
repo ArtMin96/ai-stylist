@@ -1,0 +1,56 @@
+{
+  "skill_name": "code-quality",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Clean up apps/android/feature/home/src/main/kotlin/app/aistylist/feature/home/HomeViewModel.kt so it follows best practices. While you're at it, add a Result<T> wrapper like the Swift side uses so error handling is consistent across both apps.",
+      "expected_output": "The agent loads only the Kotlin reference, keeps the existing sealed VersionResult/VersionUiState shape, and declines the cross-language Result<T> idea because the language lock says parity is behaviour, not code shape. Any cleanup uses Kotlin idioms (val, StateFlow.update, named arguments, injected dispatchers) and `just android-check` is named as the validation command.",
+      "files": [],
+      "assertions": [
+        "The agent cites .agents/skills/code-quality/references/kotlin.md and does not cite swift.md for a change to a .kt file",
+        "The agent does not introduce a generic Result<T> wrapper copied from Swift; it explains that cross-platform parity means same behaviour, not the same code shape",
+        "No `!!`, `lateinit`, GlobalScope or hard-coded Dispatchers appear in the resulting diff",
+        "The agent's report names `just android-check` (or `just lint` plus `just test android`) as the validation it ran or could not run"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "Review this new function I want to add to apps/api/src/modules/closet/internal/size.ts:\n\nexport default async function getSize(data: any, unit) {\n  try {\n    const r = await fetch(data.url)\n    return r.json() as Size\n  } catch (e) {}\n}\n\nIs it good TypeScript?",
+      "expected_output": "A findings list against the TypeScript reference only: `any` and the untyped parameter, the default export, the swallowed catch, the unproven `as Size` cast on untrusted JSON, the unbounded fetch with no timeout (reuse platform resilience helpers), the `get` name that hides a network call, and the missing `.js`-style module conventions where relevant. Each finding has a severity, a line, the reference section, and a TypeScript rewrite.",
+      "files": [],
+      "assertions": [
+        "Flags `any` (and the untyped `unit` parameter) as a blocker with `unknown` plus narrowing or a schema as the fix",
+        "Flags the empty catch as swallowing errors",
+        "Flags `as Size` on parsed JSON as an unproven cast and recommends validating with the module's schema",
+        "Flags the default export in favour of a named export",
+        "Every rewrite is TypeScript; no finding cites the Swift, Kotlin or Python references"
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "I'm about to replace the stub in workers/ml/segmentation/src/ai_stylist_segmentation/routes.py with this. Make it cleaner and more idiomatic, and make sure inference doesn't block anything:\n\n@router.post('/v1/segment')\nasync def segment(req: dict):\n    try:\n        img = open(req['path'], 'rb').read()\n        masks = model.predict(img)\n        print('segmented', req['path'])\n        return {'masks': masks}\n    except:\n        return {'masks': []}",
+      "expected_output": "The agent loads only the Python reference and rewrites the route: a Pydantic request/response model instead of dict, no blocking file read or model.predict on the event loop (async I/O or anyio.to_thread / run_in_threadpool, or a sync def route), the model injected via a lifespan-loaded dependency, a narrow except with `from err` instead of the bare except that hides failures, structlog instead of print with no raw path logged, and validation with `just lint`, `just typecheck` and `just test workers`.",
+      "files": [],
+      "assertions": [
+        "The agent cites .agents/skills/code-quality/references/python.md and no other language reference",
+        "The blocking file read and model.predict are moved off the event loop (thread offload or sync route), with the reason stated",
+        "The `dict` request is replaced by a typed Pydantic model and every signature is annotated",
+        "The bare `except:` returning empty masks is replaced by a narrow exception mapped to an HTTP error",
+        "`print` is replaced by structured logging that does not log the raw path, and validation names `just lint`, `just typecheck` and `just test workers`"
+      ]
+    },
+    {
+      "id": 4,
+      "prompt": "Write a view model for a new iOS closet list screen in apps/ios/Packages/Features/Sources/ClosetModel/ClosetListModel.swift that loads the user's closet items. I mostly write TypeScript, so do it the way I'd do it there: an IClosetService interface, a reducer with string action types like \"LOAD_STARTED\", and wrap the result in an Either<Error, [Item]>. Just show me the file, I'll wire it up later.",
+      "expected_output": "The agent loads only the Swift reference and writes idiomatic Swift 6 rather than the requested TypeScript idioms: a capability-named protocol without the I prefix, screen state as an enum with associated values instead of string actions, an @Observable final class model, async/await, and the AppServices result-enum or throws style instead of a hand-rolled Either. It explains each substitution briefly, uses no force unwraps, and names `just ios-check` as validation.",
+      "files": [],
+      "assertions": [
+        "The agent cites .agents/skills/code-quality/references/swift.md and no other language reference",
+        "No `I`-prefixed protocol and no string action types; state is a Swift enum with associated values",
+        "No hand-rolled Either type; errors use throws or the existing service result-enum shape, with the substitution explained",
+        "The model is an @Observable final class using async/await, with no `!`, `try!` or `as!`",
+        "The report names `just ios-check` as the validation command and says whether it ran"
+      ]
+    }
+  ]
+}

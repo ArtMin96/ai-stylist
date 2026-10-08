@@ -64,7 +64,7 @@ secrets/                sops+age encrypted per-environment config (planning/15 �
 
 1. **Orient:** read `planning/SPINE.md` (product + architecture canon; skim if already loaded this session), `PROGRESS.md`, the current phase file, and the contract of every module in scope. Check the decision log for anything touching the task.
 2. **Restate** the task's scope, non-goals, and acceptance criteria in your own words. If they are unclear, or conflict with what you read, **stop and ask** — do not guess.
-3. **Match a skill:** if a skill in `.agents/skills/` covers the task type, follow its workflow; skills compose (e.g., contract change first, then module work). Path-scoped rules in `.claude/rules/` load automatically when you touch matching files — treat them as binding, not optional reading.
+3. **Match a skill:** if a skill in `.agents/skills/` covers the task type, follow its workflow; skills compose (e.g., contract change first, then module work). Path-scoped rules in `.claude/rules/` load automatically when you touch matching files — treat them as binding, not optional reading. For any code edit or review, also apply `code-quality` with the reference for that file's language only (`.agents/skills/code-quality/SKILL.md`).
 4. **Search before write** (below), then implement the smallest coherent change.
 5. **Verify** with the scoped checks for what you touched; paste real output.
 6. **Close out:** update `PROGRESS.md` and affected docs (the `docs-maintenance` skill and `just docs-check` cover this); leave the repo buildable or report the precise failure; write a handoff note if work remains.

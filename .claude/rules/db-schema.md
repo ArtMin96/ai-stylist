@@ -8,6 +8,8 @@ paths:
 # Drizzle schema and migrations
 
 **Skill:** `db-migration`.
+Line-level quality: `code-quality` with `.agents/skills/code-quality/references/typescript.md` only (its
+language lock: never apply another language's idioms here).
 
 **Agent:** the module's agent writes `apps/api/src/modules/<name>/internal/schema.ts` (`api-engineer`, or
 `recommendation-engineer` for recommendation, outfit, context and fashion-intel). `platform-engineer`

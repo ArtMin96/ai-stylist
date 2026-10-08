@@ -7,6 +7,8 @@ paths:
 # Python ML/media workers (FastAPI)
 
 **Skill:** `media-ml-pipeline`.
+Line-level quality: `code-quality` with `.agents/skills/code-quality/references/python.md` only (its
+language lock: never apply another language's idioms here).
 
 **Agent:** `ml-engineer`, except `workers/ml/generated/**`, which belongs to `contracts-engineer` and is
 written only by `just generate`.

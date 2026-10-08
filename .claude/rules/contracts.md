@@ -8,6 +8,8 @@ paths:
 # API/event contracts and shared-kernel
 
 **Skill:** `api-contract-change`.
+Line-level quality: `code-quality` with `.agents/skills/code-quality/references/typescript.md` only (its
+language lock: never apply another language's idioms here).
 
 **Agent:** `contracts-engineer` (single-writer). The generated trees `packages/contracts/gen/**`,
 `packages/shared-kernel/src/gen/**` and `workers/ml/generated/**` are rewritten only by `just generate`.

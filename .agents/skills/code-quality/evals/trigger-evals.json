@@ -1,0 +1,82 @@
+[
+  {
+    "query": "can you make apps/ios/Packages/Features/Sources/HomeModel/HomeModel.swift more idiomatic swift 6? it feels clunky to me, especially the state handling",
+    "should_trigger": true
+  },
+  {
+    "query": "detekt is failing on my branch with TooGenericExceptionCaught and LongMethod in the android home feature, how should I restructure the code properly instead of suppressing it",
+    "should_trigger": true
+  },
+  {
+    "query": "I wrote a new retry helper in apps/api/src/platform — is this clean typescript? I used a couple of `as any` casts to get it compiling",
+    "should_trigger": true
+  },
+  {
+    "query": "refactor scripts/db/reset.sh for readability, it's a 200 line wall of commands with no functions",
+    "should_trigger": true
+  },
+  {
+    "query": "add a /classify endpoint to the segmentation worker and make sure it follows python best practices, ruff and basedpyright are strict here",
+    "should_trigger": true
+  },
+  {
+    "query": "review my PR diff for code smells and naming, it touches HomeScreen.kt and HomeScreen.swift — want both to look like a senior wrote them",
+    "should_trigger": true
+  },
+  {
+    "query": "should I use a kotlin sealed interface or an enum class for the outfit loading state in the new :feature:outfit module? what's the idiomatic choice",
+    "should_trigger": true
+  },
+  {
+    "query": "the nestjs closet controller has a bunch of if/else business logic and a try/catch that just returns null. clean it up the right way",
+    "should_trigger": true
+  },
+  {
+    "query": "swiftlint keeps flagging force_unwrapping in the new APIData service I wrote, what's the clean way to write it without the !",
+    "should_trigger": true
+  },
+  {
+    "query": "our ios dev wants to copy the Kotlin Result pattern into swift so both apps match, is that good practice?",
+    "should_trigger": true
+  },
+  {
+    "query": "does apps/api/src/modules/closet importing billing/internal/ledger.ts break our module boundaries? arch-check is red",
+    "should_trigger": false
+  },
+  {
+    "query": "is it safe to log the user's body measurements in the profile service debug output? security review please",
+    "should_trigger": false
+  },
+  {
+    "query": "bump detekt's LongMethod allowedLines from 80 to 120 in apps/android/config/detekt.yml, our compose screens keep tripping it",
+    "should_trigger": false
+  },
+  {
+    "query": "the /recommendations endpoint p95 is 900ms, way over the budget in doc 13 — profile it and find what's slow",
+    "should_trigger": false
+  },
+  {
+    "query": "add a new reason code RC-WEATHER-RAIN to the shared kernel registry and regenerate the clients",
+    "should_trigger": false
+  },
+  {
+    "query": "update PROGRESS.md and the closet module contract after yesterday's merge, docs-check is complaining about DC-03",
+    "should_trigger": false
+  },
+  {
+    "query": "write a regression test that fails first for the bug where the consent toggle resets after relaunch on android",
+    "should_trigger": false
+  },
+  {
+    "query": "create a new just recipe that runs swift-format and ktlint together for pre-commit",
+    "should_trigger": false
+  },
+  {
+    "query": "is there already a slugify helper somewhere in shared-kernel before I write one in the closet module?",
+    "should_trigger": false
+  },
+  {
+    "query": "cut a beta build for testflight and play internal, is the release ready?",
+    "should_trigger": false
+  }
+]

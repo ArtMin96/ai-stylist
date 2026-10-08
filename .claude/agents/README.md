@@ -3,6 +3,9 @@
 One Claude Code subagent per area of the AI Stylist monorepo. Each runs in its own context with a
 plain tool list, preloads the `agent-operating-contract` skill plus the skills it owns, and carries
 two per-agent hooks: a write-set guard and a Bash allowlist. `CLAUDE.md` always applies on top.
+Every agent that writes or reviews code (all except `docs-maintainer`, `observability-engineer` and
+`release-manager`) also preloads `code-quality`, the per-language line-level quality bar; the table
+below lists only the area skills.
 
 The authoritative write set of each agent is its own `<ownership>` section, mirrored in its
 `guard-agent-write-set.sh` args. The table below is a summary and never overrides either. The

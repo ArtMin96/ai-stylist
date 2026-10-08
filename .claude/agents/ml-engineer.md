@@ -5,6 +5,7 @@ tools: Read, Grep, Glob, Edit, Write, Bash, Skill, ToolSearch, WebFetch, WebSear
 skills:
   - agent-operating-contract
   - media-ml-pipeline
+  - code-quality
 color: pink
 hooks:
   PreToolUse:

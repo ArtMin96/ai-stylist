@@ -7,6 +7,7 @@ skills:
   - backend-module
   - recommendation-rules
   - fashion-intel-ingestion
+  - code-quality
 color: yellow
 hooks:
   PreToolUse:

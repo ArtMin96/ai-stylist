@@ -10,6 +10,7 @@ skills:
   - media-ml-pipeline
   - observability-analytics
   - performance-profiling
+  - code-quality
 color: orange
 hooks:
   PreToolUse:

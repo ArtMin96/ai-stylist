@@ -54,7 +54,7 @@ Never gated, on any plan: capture and manual organization within the item cap, a
 - **Free→Essentials** monetizes *scale + frequency* (closet > 40 items, > 1 rec/day) — the first walls an engaged user hits, both zero-marginal-cost to serve (doc 10 §1: recs are deterministic), so Free stays genuinely useful without cost risk. Essentials' 10 credits buy missing views only (cheap, ≈ $0.013 each) so the credit concept is learned before the try-on upsell.
 - **Essentials→Plus** monetizes the *wow capability* (G2 try-on, missing views) — exactly the features with real marginal cost, aligned to credits.
 - **Plus→Pro** monetizes *intensity and priority* (150 credits = 50 try-ons, priority queue, exports, chat later). Pro is also the trial tier, so day-1 users see the ceiling product. Beyond the cap, top-up packs price a try-on at ≈ $0.50 retail vs ≈ $0.08 cost.
-- Experiments to run before/at P13 (§5.8): price points per store region, 10/60/150 credit quantities and the 3:1 weight, Free cap 40 vs 100 items, a weekly Plus SKU ($3.99/wk hypothesis), annual discount depth, trial length 3 vs 7 days, top-up pack sizes.
+- Experiments to run before/at P13 (§5.6): price points per store region, 10/60/150 credit quantities and the 3:1 weight, Free cap 40 vs 100 items, a weekly Plus SKU ($3.99/wk hypothesis), annual discount depth, trial length 3 vs 7 days, top-up pack sizes.
 
 ---
 
@@ -94,7 +94,7 @@ Mobile caches the resolved entitlement set (with `etag`/short TTL) for **renderi
 
 ### 3.4 Downgrade handling on limits
 
-Downgrade below current usage (e.g. 300 items on Free's 40-cap) never deletes data: items over the cap become **read-only** (visible, searchable, exportable; excluded from new recommendations candidate pool beyond the cap by deterministic rule: most-recently-worn first). Documented user-facing rule; see §6.
+Downgrade below current usage (e.g. 300 items on Free's 40-cap) never deletes data: items over the cap become **read-only** (visible, searchable, exportable; excluded from new recommendations candidate pool beyond the cap by deterministic rule: most-recently-worn first). Archived items count toward the cap (DEC-69). Documented user-facing rule; see §6.
 
 ---
 
@@ -114,10 +114,10 @@ Provider cost per credit: **≈ $0.0275 blended** (try-on $0.0825 ÷ 3; missing 
 
 Append-only ledger; balance is a materialized sum. Entry: `{id, user_id, type: grant|consume|expire|refund|topup, amount, reason, job_id?, entitlement_source, idempotency_key, created_at, expires_at?}`.
 
-- **Grant:** on billing-period start (aligned to subscription renewal date), grant `credits.monthly` with `expires_at` = period end. **No rollover** (v1; rollover is a pricing experiment lever, not a promise).
+- **Grant:** on billing-period start (aligned to subscription renewal date), grant `credits.monthly` with `expires_at` = period end. **No rollover** (decided, DEC-73).
 - **Consume:** the task's weight (3 try-on / 1 missing view) per generated image, written in the same transaction that accepts the generation job; a job is rejected up-front if balance < weight; `idempotency_key = job_id` so retries/duplicate webhooks can never double-charge. Job failure or discarded output → compensating `refund` entry (doc 10 §2.4–2.5 rules).
 - **Expire:** period-end job writes `expire` entries for unused grant remainder; deterministic, auditable.
-- **Top-up packs:** consumable IAP SKUs **30 credits $4.99** and **100 credits $12.99** (`type: topup`; no expiry or 90-day — decide at P13). Purchasable on any paid tier; consumed after monthly grant credits. Economics: 30-pack nets ≈ $4.19 at 15% commission vs ≈ $0.83 worst-case cost (10 try-ons) → ~80% margin; 100-pack nets ≈ $10.91 vs ≈ $2.75 → ~75%. **P13 stretch goal; if cut, ships in v1.1** — the ledger already supports it. `[PRICING HYPOTHESIS]`
+- **Top-up packs:** consumable IAP SKUs **30 credits $4.99** and **100 credits $12.99** (`type: topup`; no expiry — DEC-73). Purchasable on any paid tier; consumed after monthly grant credits. Economics: 30-pack nets ≈ $4.19 at 15% commission vs ≈ $0.83 worst-case cost (10 try-ons) → ~80% margin; 100-pack nets ≈ $10.91 vs ≈ $2.75 → ~75%. **P13 stretch goal; if cut, ships in v1.1** — the ledger already supports it. `[PRICING HYPOTHESIS]`
 - **Ordering/concurrency:** consume uses `SELECT … FOR UPDATE` on the balance row (or serializable retry); balance may never go negative; oldest-expiring credits consumed first.
 - Balance and history are user-visible (Settings → Usage) — predictability over surprise.
 
@@ -146,7 +146,7 @@ RevenueCat (free < $2.5k MTR, then 1% — r4 §subscriptions) fronts StoreKit 2 
 - **Downgrade:** takes effect at period end (store-native). Entitlements stay at the higher tier until then; §3.4 rules after.
 - **Cancellation:** store-managed; we show status + expiry date, run win-back (§2), never obstruct (store policy + basic decency).
 - **Refunds:** store-decided; webhook `REFUND` → revoke grants from refund time, ledger keeps history (no clawback of already-consumed credits; abuse pattern monitoring in `admin`).
-- **Family sharing stance:** **not enabled in v1** — entitlements are personal (closet/body data are inherently personal; a shared subscription across family members' separate accounts is a future product question, not a toggle). Revisit post-launch. `[PRICING HYPOTHESIS]`
+- **Family sharing stance:** **not enabled in v1** — entitlements are personal (closet/body data are inherently personal; a shared subscription across family members' separate accounts is a future product question, not a toggle). Decided for v1 by DEC-74 (resolves OQ-09); revisit post-launch. `[PRICING HYPOTHESIS]`
 - **Regional availability/pricing:** launch in all storefronts where compliance allows; use Apple/Google regional price tiers seeded from USD anchors with store-suggested local equivalents; treat per-region price as an experiment dimension (§5.8). `[PRICING HYPOTHESIS + VERIFY-P13]`
 
 ### 5.5 Grandfathering & plan versioning
@@ -168,7 +168,7 @@ Paywall/pricing experiments via **PostHog feature flags**: vary paywall copy, la
 Published in-app verbatim (plain-language version):
 
 1. **Your data is never deleted by a downgrade.** Closet, photos, outfits, history, preferences, avatar — all retained; export (`data.export`) is free forever (doc 11 owns export format/flows).
-2. **Paid-derived assets remain viewable.** Generated try-ons, missing views, and the A2 face you created while paid stay visible in your closet/history with their provenance badges. **Regeneration** (new try-ons, new views, re-processing) is gated by the current plan's entitlements/credits.
+2. **Paid-derived assets remain viewable.** Generated try-ons, missing views, and the A2 face you created while paid (which plan includes A2 is OQ-22) stay visible in your closet/history with their provenance badges. **Regeneration** (new try-ons, new views, re-processing) is gated by the current plan's entitlements/credits.
 3. Items over a lowered `closet.max_items` cap become read-only (§3.4) — never hidden, never deleted.
 4. Unused **monthly** credits expire at period end (§4.2); they have no cash value. Top-up credits follow the pack's stated expiry. A try-on costs 3 credits, a missing view 1 — shown before every generation. `[PRICING HYPOTHESIS: rollover experiment]`
 5. Account deletion (any tier, incl. Free/expired) deletes everything per doc 11 — subscription status never blocks deletion.
@@ -177,7 +177,7 @@ Published in-app verbatim (plain-language version):
 
 ## 7. Unit economics
 
-Inputs (all verified 2026-09-09, [r6](research/r6-pricing-verification-2026-09-09.md)): AI cost/user/mo from **doc 10 §5** (light ≈ $0.02, medium ≈ $0.06, heavy ≈ $0.12–0.17 annualized, excl. credits; try-on ≈ $0.0825 and missing view ≈ $0.013 incl. retry allowance; onboarding $0.10–0.30 once). Infra: **≈ $25–45/mo at launch** (owned server ~$10–25/mo per OQ-14, R2/PostHog/Grafana free tiers — [r7](research/r7-third-party-services-and-self-hosting-audit-2026-09-13.md), ADR-0003); **≈ $370–450/mo at 5k MAU → ≈ $0.08 per active user** kept as the upper-bound hypothesis until re-baselined at P02 (r4's $30–35 / $150–180 was ~2× too low). Store commission: **15% base case** (Apple Small Business Program; Google Play 15% for auto-renewing subscriptions (10% service + 5% billing fee in the EEA/UK/US program from 2026-06-30; 15% elsewhere) — verified 2026-09-13 ([r7](research/r7-third-party-services-and-self-hosting-audit-2026-09-13.md)); base case 15% unchanged; 30% shown as sensitivity; Apple EU DMA structure from 2026-10-01 is 15–26% by payment route). RevenueCat: $0 under $2.5k MTR, then 1% (modeled as 1% throughout).
+Inputs (all verified 2026-09-09, [r6](research/r6-pricing-verification-2026-09-09.md)): AI cost/user/mo from **doc 10 §5** (light ≈ $0.02, medium ≈ $0.06, heavy ≈ $0.12–0.17 annualized, excl. credits; try-on ≈ $0.0825 and missing view ≈ $0.013 incl. retry allowance; onboarding $0.10–0.30 once). Infra: **≈ $25–45/mo at launch** (owned server ~$10–25/mo, Hetzner (DEC-62), R2/PostHog/Grafana free tiers — [r7](research/r7-third-party-services-and-self-hosting-audit-2026-09-13.md), ADR-0003); **≈ $370–450/mo at 5k MAU → ≈ $0.08 per active user** kept as the upper-bound hypothesis until re-baselined at P02 (r4's $30–35 / $150–180 was ~2× too low). Store commission: **15% base case** (Apple Small Business Program; Google Play 15% for auto-renewing subscriptions (10% service + 5% billing fee in the EEA/UK/US program from 2026-06-30; 15% elsewhere) — verified 2026-09-13 ([r7](research/r7-third-party-services-and-self-hosting-audit-2026-09-13.md)); base case 15% unchanged; 30% shown as sensitivity; Apple EU DMA structure from 2026-10-01 is 15–26% by payment route). RevenueCat: $0 under $2.5k MTR, then 1% (modeled as 1% throughout).
 
 ### 7.1 Net revenue per subscriber per month (unchanged prices)
 
@@ -225,7 +225,7 @@ Onboarding adds a one-time $0.10–0.30 in month 1 plus ≈ $0.41 of trial try-o
 
 ### 7.4 Break-even
 
-Fixed monthly at launch: infra ≈ $25–45 (owned server ~$10–25/mo per OQ-14, dev-program fees amortised, R2/PostHog/Grafana free tiers — r7; EAS removed 2026-09-22) + hosted iOS CI $10–30 ≈ **$35–75/mo** (Open-Meteo Standard $29/mo is added when the weather feature goes live — not $500/mo as r4 stated). Assumed subscriber mix hypothesis 60% Essentials / 30% Plus / 10% Pro at cap costs, excluding the infra share (counted in the fixed pool): margins $4.00 / $6.66 / $12.51 → **blended ≈ $5.65/mo per paid subscriber** (monthly prices). At expected 40% utilisation the blend is ≈ $6.30.
+Fixed monthly at launch: infra ≈ $25–45 (owned server ~$10–25/mo, Hetzner (DEC-62), dev-program fees amortised, R2/PostHog/Grafana free tiers — r7; EAS removed 2026-09-22) + hosted iOS CI $10–30 ≈ **$35–75/mo** (Open-Meteo Standard $29/mo is added when the weather feature goes live — not $500/mo as r4 stated). Assumed subscriber mix hypothesis 60% Essentials / 30% Plus / 10% Pro at cap costs, excluding the infra share (counted in the fixed pool): margins $4.00 / $6.66 / $12.51 → **blended ≈ $5.65/mo per paid subscriber** (monthly prices). At expected 40% utilisation the blend is ≈ $6.30.
 
 - **Launch break-even: ≈ 13–18 paying subscribers** cover $70–100 fixed.
 - **At 5k MAU** (infra ≈ $400 + free-user AI ≈ 4,850 × $0.02 ≈ $100 → ≈ $500/mo pool): break-even ≈ **89 paying subscribers ≈ 1.8% paid conversion**. At a 3% conversion hypothesis (150 paid), monthly contribution ≈ 150 × $5.65 − $500 ≈ **+$350/mo** (≈ +$445 at expected utilisation).
@@ -263,10 +263,10 @@ Plan-level cost caps, alerting, and the degradation ladder that keep §7.2 true 
 | BIL-O1 | Store compliance verification checklist (§2, §5 `[VERIFY-P13]` items) with qualified review | P13 |
 | BIL-O2 | Regional price-tier sheet + store-suggested local prices | P13 |
 | BIL-O3 | Open-Meteo Standard ($29/mo, 1M calls) vs WeatherAPI Starter ($7/mo) vs Apple WeatherKit (500k free) — pick at P08 (r6 §3). P08 runs the measured comparison Open-Meteo managed vs self-hosted Open-Meteo (AGPL-3.0; ≥ 8 GB RAM/100 GB disk, continuous ingestion) vs Apple WeatherKit REST on coverage, freshness, outage behaviour, privacy, total cost; do not self-host solely to avoid $29/mo ([r7](research/r7-third-party-services-and-self-hosting-audit-2026-09-13.md), DEC-48) | P08 |
-| BIL-O4 | Credit top-up packs (P13 stretch → v1.1) & rollover experiments | P13 / post-launch |
+| BIL-O4 | Credit top-up packs (P13 stretch → v1.1). Rollover and top-up expiry are decided: no rollover, no expiry (DEC-73) | P13 / post-launch |
 | BIL-O7 | **Resolved 2026-09-13** ([r7](research/r7-third-party-services-and-self-hosting-audit-2026-09-13.md), DEC-48): Google Play is 15% for auto-renewing subscriptions (10% service + 5% billing fee in the EEA/UK/US program from 2026-06-30; 15% elsewhere) — §7 base case 15% unchanged. Apple EU DMA route check remains part of the P13 price re-verification (AIC-O6) | Resolved |
 | BIL-O8 | Re-run §7 with P11 shadow-credit utilisation data and the FLUX 2 LoRA gate outcome (AIC-O5); relax `credits.weights` if warranted | P11 → P13 |
-| BIL-O5 | Family sharing product decision | post-launch |
+| BIL-O5 | Family sharing product decision — **closed for v1 by DEC-74 (2026-10-09): not in v1** | post-launch |
 | BIL-O6 | Small Business Program enrollment (Apple) / Play reduced-rate confirmation | P13 |
 
 Requirement IDs delivered by this doc are registered in [01-requirements-and-traceability.md](01-requirements-and-traceability.md) under `BIL` / `NFR-BIL`.

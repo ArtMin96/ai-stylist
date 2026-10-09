@@ -2,6 +2,8 @@
 
 > Amended 2026-09-13 ([r7](../research/r7-third-party-services-and-self-hosting-audit-2026-09-13.md), ADR-0003 — service consolidation: pg-boss jobs, owned server + Coolify, self-managed PostgreSQL, R2 delivery model).
 
+> Amended 2026-10-09 (DEC-71: the default occasion is the stored "typical day". DEC-53: generated Swift and Kotlin clients. Open here: OQ-29 geocoder and coverage countries; BIL-O3 weather comparison — [proposal](../../.claude/plans/2026-10-09-open-questions-decisions-proposal.md)).
+
 > File name per [SPINE §5](../SPINE.md). Template: [templates/phase.md](../templates/phase.md). Status values per [PROGRESS.md](../PROGRESS.md).
 
 ## 1. Overview
@@ -49,7 +51,7 @@ Journey detail owned by [02 §8.2](../02-user-journeys-and-information-architect
 |---|---|---|---|---|---|
 | Location setup (Settings → Privacy) | Coarse location default (OS permission, geohash precision ~city); precise opt-in with "why we ask"; manual city search works with zero permissions | No permission + no city → context strip shows "Set a city for weather" prompt; nothing else blocked | Geocoding failure → retry + free-text city retained; permission denied → manual city path highlighted | Last chosen city persists locally | All controls labeled; permission states announced; no gesture-only interactions |
 | Context strip (Today placeholder) | Weather (temp/feels-like/precip icon), holiday chip if any, occasion chip; each shows provider + "as of <time>" on tap | New user, no facts yet → skeleton then facts; no holiday → no chip (not an empty error) | Provider error → chip per missing fact: "Weather unavailable — using nothing, not guesses" + retry; typed `MissingFact` underneath | Cached facts render with staleness label ("Based on this morning's forecast") once past `staleAfter`; "expired" label past `expiresAt` | Chips are buttons with full labels ("Weather, 21 degrees, feels like 20, fetched 6:05"); freshness announced |
-| Occasion picker | Preset occasions (from P03 lifestyle presets) + dress code, activity, location type, time of day, travel, desired style, comfort/formality goals; selection stored as `occasion` fact (provider `user`, confidence 1.0) | No presets configured → generic preset list | n/a (local-first, synced) | Fully offline-capable; syncs later | Standard form controls; grouped and labeled |
+| Occasion picker | Preset occasions (from P03 lifestyle presets) + dress code, activity, location type, time of day, travel, desired style, comfort/formality goals; selection stored as `occasion` fact (provider `user`, confidence 1.0); when the user selects nothing, the stored "typical day" applies (DEC-71) | No presets configured → generic preset list | n/a (local-first, synced) | Fully offline-capable; syncs later | Standard form controls; grouped and labeled |
 | Override sheet | Per-fact override ("Actually indoors all day", manual temp band, holiday matters yes/no); provider value stays visible ("Open-Meteo says 21°") | — | Failed sync → queued with idempotency key, retried | Override applies locally immediately | Override state visibly and audibly distinct from provider value |
 | Future-day picker | Date picker bounded by provider horizon (Open-Meteo ≤ 16 days); facts for the chosen date with lead-day-decayed confidence | — | Beyond-horizon date selectable but yields explicit `MissingFact{reason:'not_configured'}` note ("No forecast that far out"), never fake weather | Cached future facts render with freshness labels | Calendar control accessible; horizon limit explained in text |
 
@@ -60,7 +62,7 @@ Module names per [SPINE §3](../SPINE.md); update each touched module's contract
 | Module | Change | Contract update needed? |
 |---|---|---|
 | `context` | **New module**: `ContextProvider` port + registry, `collect()` orchestration, `context_facts` cache, freshness derivation, override handling, `MissingFact` semantics, `ContextSnapshot` assembly (consumed by P09) | Yes — new module contract |
-| `platform` | `OpenMeteoWeatherProvider`, `DateHolidaysHolidayProvider` (provider id `'date-holidays'`) adapters (SDK/HTTP/library code lives here only); geocoding adapter for manual city | Yes |
+| `platform` | `OpenMeteoWeatherProvider`, `DateHolidaysHolidayProvider` (provider id `'date-holidays'`) adapters (SDK/HTTP/library code lives here only); geocoding adapter for manual city (geocoder: OQ-29) | Yes |
 | `shared-kernel` | Context enums (`ContextFactKind`, `ConsentScope` additions `coarse-location`/`precise-location`, occasion/dress-code enums), geohash precision constants | Yes (single-writer, sequence first) |
 | `identity` | Consent scopes for coarse/precise location registered; withdrawal halts collection | Yes |
 | `profile` | Manual-city field + location-mode preference (reads existing locale/timezone) | Yes (minor) |
@@ -73,7 +75,7 @@ Architecture invariants exercised: domain never imports provider SDKs (`just arc
 - **API (OpenAPI 3.1, `packages/contracts`):** `GET /v1/context-facts?date=&kinds=` (envelope per [06 §3.4](../06-data-api-and-event-contracts.md)); `PUT /v1/context-overrides/{kind}` (+ delete); `PUT /v1/me/occasion-defaults`; `PUT /v1/me/location` (mode: coarse|precise|manual-city). All mutations take `Idempotency-Key`.
 - **Event schemas:** `context.fact.overridden.v1` (per doc 06 catalog). No other new events.
 - **DB migrations (Drizzle, expand-only):** `context_facts` cache table (kind, value jsonb, provider, source_time, fetched_at, expires_at, confidence, consent_scope, user geohash/date subject, schema_version); `context_overrides`; profile column for manual city/location mode. Rollback: tables are additive caches — down migration drops them; overrides are user data, so the down path is documented `-- IRREVERSIBLE` for `context_overrides` with export note (doc 06 §7 policy).
-- **Generated clients to regenerate:** TS mobile client, event TS types, Python worker models (`just generate`, CI `--check`).
+- **Generated clients to regenerate:** TS client (API side), the Swift and Kotlin clients (DEC-53; *was: TS mobile client*), event TS types, Python worker models (`just generate`, CI `--check`).
 
 ## 8. Work breakdown by surface
 
@@ -122,7 +124,7 @@ Small enough for one AI-assisted session each. Task IDs `P08-T##`.
 | P08-T06 | `UserOccasionProvider` + occasion-defaults endpoints + REQ-CTX-060 input set | T03 | 1 |
 | P08-T07 | `context_facts` cache + TTL/freshness derivation (`fresh|stale|expired` from `staleAfter`/`expiresAt`) + migrations + prune job | T03 | 1 |
 | P08-T08 | Overrides: endpoint, precedence (override wins, provider value retained), event emission, cache invalidation on override | T07 | 1 |
-| P08-T09 | Consent gating + location modes: coarse default, precise opt-in, manual city + geocoding adapter; purge-on-withdrawal | T03, T07 | 1–2 |
+| P08-T09 | Consent gating + location modes: coarse default, precise opt-in, manual city + geocoding adapter (OQ-29); purge-on-withdrawal | T03, T07 | 1–2 |
 | P08-T10 | Mobile: location settings UI + occasion picker (offline-capable) | T01 | 1–2 |
 | P08-T11 | Mobile: context strip, freshness labels, override sheet, future-day picker with horizon bound | T10, T08 | 2 |
 | P08-T12 | Degradation: chaos tests per provider (down, slow, garbage payload), beyond-horizon behavior, `ContextSnapshot` immutability + content hash | T04–T08 | 1 |
@@ -166,7 +168,7 @@ Per [13](../13-testing-quality-and-performance.md); tests live in each module's 
 Registry in [16](../16-risks-open-questions-and-decision-log.md); add new phase risks there, not here.
 
 - Risks in play: **RISK-11** (small-vendor/provider concentration — mitigated by ports + the Tomorrow.io weather fallback per DEC-22; holidays are an embedded library with no vendor, DEC-45); **ASM-08** (Open-Meteo + `date-holidays` global coverage adequacy — this phase validates it).
-- **Stop/kill criteria:** coverage spot-check across ≥ 10 launch-relevant countries shows Open-Meteo hourly forecast or `date-holidays` data materially missing/wrong for > 20% of them → swap the failing provider behind its port (Tomorrow.io for weather; another holiday library or the hosted Nager.Date API for holidays), log a DEC entry; the port means this is an adapter task, not a redesign. If the commercial-plan procurement blocks > 1 week → develop against the free tier with a hard pre-launch gate item (never launch on the free tier — DEC-22).
+- **Stop/kill criteria:** coverage spot-check across ≥ 10 launch-relevant countries (list: OQ-29) shows Open-Meteo hourly forecast or `date-holidays` data materially missing/wrong for > 20% of them → swap the failing provider behind its port (Tomorrow.io for weather; another holiday library or the hosted Nager.Date API for holidays), log a DEC entry; the port means this is an adapter task, not a redesign. If the commercial-plan procurement blocks > 1 week → develop against the free tier with a hard pre-launch gate item (never launch on the free tier — DEC-22).
 
 ## 18. Demo script
 

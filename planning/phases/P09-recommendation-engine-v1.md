@@ -2,6 +2,8 @@
 
 > Amended 2026-09-13 ([r7](../research/r7-third-party-services-and-self-hosting-audit-2026-09-13.md), ADR-0003 — service consolidation: pg-boss jobs, owned server + Coolify, self-managed PostgreSQL, R2 delivery model).
 
+> Amended 2026-10-09 (DEC-72: notification categories start off and each needs an opt-in. DEC-71: default occasion. DEC-69: over-cap items are read-only for composition. Open here: OQ-24 safety-threshold sign-off and weight vector, OQ-25 trace retention, OQ-33 which latency budget is the gate. DEC-53: generated Swift and Kotlin clients — [proposal](../../.claude/plans/2026-10-09-open-questions-decisions-proposal.md)).
+
 > File name per [SPINE §5](../SPINE.md). Template: [templates/phase.md](../templates/phase.md). Status values per [PROGRESS.md](../PROGRESS.md). Engine design is owned by [09-recommendation-engine.md](../09-recommendation-engine.md) — this file sequences its delivery; on conflict, doc 09 wins.
 
 ## 1. Overview
@@ -49,7 +51,7 @@ IDs from [01-requirements-and-traceability.md](../01-requirements-and-traceabili
 | REQ-CTX-080 | Cached/offline context usable with staleness warnings *(P09 part: engine + result surfaces)* | AC-9 |
 | REQ-ORG-070 | Outfit history / wear tracking *(partial — P07 delivered tracking + display; P09 writes wear events via mark-worn and consumes them in repeat/wear-history scoring)* | AC-11 |
 | REQ-NOT-010 | Push via FCM + APNs behind a platform port, delivery tracked | AC-13 |
-| REQ-NOT-020 | Notification preferences: opt-in, categories, quiet hours, timezone | AC-13 |
+| REQ-NOT-020 | Notification preferences: opt-in, categories, quiet hours, timezone (every category starts off — DEC-72) | AC-13 |
 | REQ-NOT-030 | Daily outfit notification honoring preferences + context freshness | AC-13 |
 | NFR-TST-100 | Simulation suite proves zero hard-constraint violations (incl. cold-weather-holiday) | AC-2 |
 | NFR-TST-020 | Property-based suites for ranking/constraint invariants *(P09 slice per doc 13 §4; units P03, taxonomy P07)* | AC-3, AC-12 |
@@ -62,7 +64,7 @@ Consumed, not delivered: REQ-ONB-070 (climate tolerance, P03), REQ-ORG-090 avail
 ## 3. Prerequisites and blocking dependencies
 
 - Hard depends on (must be `ACCEPTED`): **P07** (closet attributes, availability states, wear history, offline sync), **P08** (ContextSnapshot) — per SPINE §5.
-- External blockers: none hard. OQ (doc 09 §14): default weight vector values and safety-threshold table need review — conservative defaults unblock the build; ratification is a phase task (P09-T02), not a blocker. FCM/APNs credentials provisioned for T16.
+- External blockers: none hard. OQ-24 (doc 09 §14): default weight vector values and safety-threshold table need review — conservative defaults unblock the build; ratification is a phase task (P09-T02), not a blocker. FCM/APNs credentials provisioned for T16.
 
 ## 4. In scope / out of scope
 
@@ -104,7 +106,7 @@ Invariants enforced this phase: `recommendation` ⊥ `avatar`/renderer (dependen
 - **API (OpenAPI 3.1):** `POST /v1/recommendations` (targetDate, occasion, shuffleCounter, safetyAcknowledgment?); `GET /v1/recommendations/{id}` (result per [06 §3.5](../06-data-api-and-event-contracts.md)); `POST /v1/recommendations/{id}/feedback`; `GET/DELETE /v1/me/preferences/learned` + never-pair CRUD (transparency); `POST /v1/outfits` / `POST /v1/outfits/{id}/worn` / schedule; notification-prefs endpoints. Idempotency keys on all mutations.
 - **Event schemas:** `recommendation.generated.v1`, `recommendation.feedback_received.v1`, `outfit.saved.v1`, `outfit.worn.v1` (doc 06 catalog); consumers per catalog.
 - **DB migrations (Drizzle, expand-only):** `recommendations`, `reason_traces`, `feedback_events` (event-sourced, undo-capable), `user_weights` (+ version hashes), `rulesets` (content-hashed config), `item_pair_scores`, `outfits`, `outfit_items`, `deliveries` (the `notification_prefs` table exists from P03's preference-storage migration — extended additively here only if scheduling needs new columns). Rollback: additive; down paths drop tables; `feedback_events`/`outfits` are user data → documented `-- IRREVERSIBLE` down + export coverage (doc 06 §7/§8; add all to the deletion-cascade coverage test).
-- **Generated clients:** TS client, event types, Python models — `just generate`, CI `--check`.
+- **Generated clients:** TS, Swift and Kotlin clients (DEC-53), event types, Python models — `just generate`, CI `--check`.
 
 ## 8. Work breakdown by surface
 
@@ -133,7 +135,7 @@ Per doc 09 §0 the engine is ~95% deterministic; after DEC-46 there is no paid A
 
 - **New sensitive data:** wardrobe-history-derived preference weights and feedback events; decision traces referencing context (location-coarse) facts. Classified per [11](../11-security-privacy-and-compliance.md); traces carry IDs and codes, never free text or media.
 - **Consent:** no new consent scopes; explanations are rendered from templates on our own API — nothing leaves the system for explanations (DEC-46). Analytics on feedback are consent-gated (NFR-PRV-110).
-- **Retention/deletion/export:** trace retention window per doc 11 (open item doc 09 §14 — resolve to a number in P09-T02 and record in doc 11); recommendations/feedback/outfits/weights included in export and the deletion cascade (coverage test extended).
+- **Retention/deletion/export:** trace retention window per doc 11 (OQ-25, doc 09 §14 — resolve to a number in P09-T02 and record in doc 11); recommendations/feedback/outfits/weights included in export and the deletion cascade (coverage test extended).
 - **Threat/abuse cases added:** feedback-poisoning of another user (authz: feedback only on own recs — sec suite matrix); replay endpoint information disclosure (support role + audit log per NFR-OBS-070); notification content leaking wardrobe details (template review — codes only).
 - **Explanation language:** template layer enforces REQ-EXP-020 (no body-data or inferred-trait phrasing); blocklist per 11 §17 wired into the template validator.
 
@@ -148,7 +150,7 @@ Per doc 09 §0 the engine is ~95% deterministic; after DEC-46 there is no paid A
 | ID | Task | Depends on | Est. sessions |
 |---|---|---|---|
 | P09-T01 | Contracts + `shared-kernel`: reason-code registry, `RecommendationResult`/`RecommendationRecord`/feedback schemas, OpenAPI paths, events; regenerate | — | 1–2 |
-| P09-T02 | Versioned ruleset config: hard-rule thresholds (conservative safety defaults), base weights w₀ + clamps, K/B params; content-hash versioning; threshold-review sign-off recorded | T01 | 1 |
+| P09-T02 | Versioned ruleset config: hard-rule thresholds (conservative safety defaults), base weights w₀ + clamps, K/B params; content-hash versioning; threshold-review sign-off recorded (OQ-24); the latency gate is settled first (OQ-33) | T01 | 1 |
 | P09-T03 | Stage 3 hard rules: `H-SAFE/H-EXCL/H-PAIR/H-AVAIL/H-DRESS/H-COMP` registry, precedence, violation reason codes; unit + property tests first | T02 | 2 |
 | P09-T04 | Candidate generation: slot model, per-slot pre-scoring, top-K, beam-B composition, complexity-bound tests (1,000-item synthetic closet) | T03 | 2 |
 | P09-T05 | `item_pair_scores` precompute + incremental maintenance consuming `closet.item.*` events (idempotent job); ruleset-version cache keying | T02 | 1 |

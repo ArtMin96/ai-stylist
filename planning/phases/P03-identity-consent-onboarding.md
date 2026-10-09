@@ -2,6 +2,8 @@
 
 > Amended 2026-09-13 ([r7](../research/r7-third-party-services-and-self-hosting-audit-2026-09-13.md), ADR-0003 — service consolidation: pg-boss jobs, owned server + Coolify, self-managed PostgreSQL, R2 delivery model).
 
+> Amended 2026-10-09 (decided: DEC-60 age 16+, DEC-64 no email+password at launch, DEC-65 7-day deletion grace, DEC-66 crash reports under the `analytics` consent (resolves OQ-19). DEC-61: `users.home_region` from the first user table. DEC-67 / ADR-0009: no cross-module foreign keys; the deletion-step coverage test and the migration lint land with the first table. Counsel is not engaged yet (P00-T04). Still open here: OQ-20 email provider, OQ-21 Sentry — [proposal](../../.claude/plans/2026-10-09-open-questions-decisions-proposal.md)).
+
 > File name: `phases/P03-identity-consent-onboarding.md` per [SPINE §5](../SPINE.md). Every section below is REQUIRED (brief §10); "None" is written explicitly rather than deleting a section. Status values per [PROGRESS.md](../PROGRESS.md).
 
 ## 1. Overview
@@ -47,14 +49,14 @@ Contributing (primary delivery elsewhere): NFR-PRV-010 (classification enforced 
 
 - Hard depends on (must be `ACCEPTED`): **P02** ([SPINE §5](../SPINE.md)) — module skeletons, contracts pipeline, CI, observability, signed-URL skeleton, secrets.
 - External blockers:
-  - **LR-02, LR-03, LR-04, LR-07, LR-09** ([11 §12](../11-security-privacy-and-compliance.md)) are due at P03: consent-basis mapping, DPAs/transfer mechanisms, consent-record retention, analytics-consent defaults per jurisdiction, age-policy confirmation. They gate P03 **exit** (`DONE`), not entry; counsel was engaged in P00. If unresolved at exit time → `BLOCKED` naming the LR items.
+  - **LR-02, LR-03, LR-04, LR-07, LR-09** ([11 §12](../11-security-privacy-and-compliance.md)) are due at P03: consent-basis mapping, DPAs/transfer mechanisms, consent-record retention, analytics-consent defaults per jurisdiction, age-policy confirmation. They gate P03 **exit** (`DONE`), not entry; counsel engagement is P00-T04 — not engaged as of 2026-10-09; the owner will engage one. If unresolved at exit time → `BLOCKED` naming the LR items.
   - Apple "Sign in with Apple" capability + Google OAuth credentials on the developer accounts (created in P02's store setup).
-  - Product owner decisions consumed: OQ-03 outcome (age floor), DO-SEC-01 (launch without passwords if store review allows — decide here, log DEC), deletion grace-window duration ([02 §11.3](../02-user-journeys-and-information-architecture.md) open item — decide here, log DEC).
+  - Product owner decisions consumed, all decided on 2026-10-09: OQ-03 outcome (16+, DEC-60), DO-SEC-01 (no email+password at launch, DEC-64), crash diagnostics under the `analytics` consent (OQ-19, DEC-66; LR-07 confirms the withdrawal semantics), deletion grace-window duration (7 days, DEC-65; [02 §11.3](../02-user-journeys-and-information-architecture.md)).
 
 ## 4. In scope / out of scope
 
 **In scope:**
-- `identity`: better-auth mounted in NestJS (Apple, Google, passkeys; email+password only if DO-SEC-01 decides so), Postgres session store, age gate at signup (16+ per OQ-03 pending LR-09), session rotation + reuse-detection revocation, device list + sign-out-all, account recovery per [11 §15](../11-security-privacy-and-compliance.md), rate limits per [11 §14](../11-security-privacy-and-compliance.md) (auth/signup/recovery buckets), consent registry (`consents` append-only, purposes per [11 §7.2](../11-security-privacy-and-compliance.md)) + `identity.consent.changed.v1` events, `identity.account.created.v1`, deletion request + grace window + `identity.account.deletion_requested.v1`.
+- `identity`: better-auth mounted in NestJS (Apple, Google, passkeys; no email+password at launch — DEC-64), Postgres session store, age gate at signup (16+ per DEC-60, pending LR-09), session rotation + reuse-detection revocation, device list + sign-out-all, account recovery per [11 §15](../11-security-privacy-and-compliance.md), rate limits per [11 §14](../11-security-privacy-and-compliance.md) (auth/signup/recovery buckets), consent registry (`consents` append-only, purposes per [11 §7.2](../11-security-privacy-and-compliance.md)) + `identity.consent.changed.v1` events, `identity.account.created.v1`, deletion request + 7-day grace window (DEC-65) + `identity.account.deletion_requested.v1`; `users.home_region` (`eu` at launch, DEC-61).
 - `profile`: measurements (SI-canonical values with unit/provenance/confidence per [06 §3.1](../06-data-api-and-event-contracts.md); plausibility bounds from [07 §3.3](../07-3d-avatar-and-garment-pipeline.md), validation symmetric, never silent clamping — conflicts surfaced), presentation + base-model selection (decoupled fields), fit preferences, style preferences incl. hard exclusions vs soft dislikes, climate tolerance, occasion presets, locale/units/timezone/region/accessibility settings, `profile.measurements.updated.v1`.
 - `shared-kernel`: unit converters finalized + property-tested; measurement definitions + bounds registry; preference/climate enums; error codes for this surface.
 - `billing` (seam only): `entitlements` table + resolver ([12 §3](../12-pricing-entitlements-and-unit-economics.md)); consumer of `identity.account.created.v1` writes the **trial grant** (Pro-level payloads, `expires_at = signup + 72h`, `source = trial_grant` per [12 §2](../12-pricing-entitlements-and-unit-economics.md)); expiry resolver behavior implemented; `GET /v1/me/entitlements`. **Dormant:** flag `entitlement-enforcement` (owner BE, expiry P13) stays **off** — nothing is gated yet, no paywall, no trial UI beyond a settings line; RevenueCat not integrated (P13).
@@ -94,15 +96,15 @@ Module names per [SPINE §3](../SPINE.md); each touched module's contract file i
 | `billing` | entitlements table + resolver; trial-grant consumer; `GET /v1/me/entitlements`; **no enforcement activated** | Yes |
 | `shared-kernel` | unit converters + measurement bounds registry finalized; enums (climate tolerance, presentation, purposes); error codes (`AGE_GATE_FAILED`, `CONSENT_REQUIRED`, `MEASUREMENT_IMPLAUSIBLE`, …) | Yes |
 | `admin` | `audit_log` table live (consent + deletion + entitlement-grant entries); deletion-status query for support (metadata only per [11 §4.4](../11-security-privacy-and-compliance.md)) | Yes |
-| `platform` | PostHog deletion-API adapter; export-archive builder + R2 upload via `StorageProvider`; email adapter stub for deletion/export notifications | Yes |
+| `platform` | PostHog deletion-API adapter; export-archive builder + R2 upload via `StorageProvider`; email adapter stub for deletion/export notifications (provider: OQ-20) | Yes |
 | `notifications` | Preference storage only (per-category opt-in rows, quiet hours schema) — no sending yet | Yes |
 
 ## 7. Public interfaces, contracts, schemas, migrations, events
 
 - API endpoints added/changed (OpenAPI in `packages/contracts`, per [06 §2](../06-data-api-and-event-contracts.md) conventions): better-auth surface under `/v1/auth/*`; `GET|PATCH /v1/me/profile`; `GET|PUT /v1/me/measurements`; `GET|PATCH /v1/me/preferences`; `GET|POST /v1/me/consents`; `GET /v1/me/entitlements`; `POST /v1/me/exports` + `GET /v1/me/exports/{id}`; `POST /v1/me/deletion` + `DELETE /v1/me/deletion` (grace-window cancel); `GET|PATCH /v1/me/onboarding-progress`. All mutating routes take `Idempotency-Key`; profile carries `version` + `If-Match`.
 - Event schemas added/changed: `identity.account.created.v1`, `identity.consent.changed.v1`, `identity.account.deletion_requested.v1`, `profile.measurements.updated.v1` (payloads per [06 §4](../06-data-api-and-event-contracts.md) catalog); P02's `demo.outbox-flow.requested.v1` retired.
-- DB migrations (Drizzle, one module per file per [06 §7](../06-data-api-and-event-contracts.md)): `00xx_identity_users_sessions_consents`, `00xx_profile_profiles_measurements_preferences`, `00xx_billing_entitlements`, `00xx_admin_audit_log`, `00xx_notifications_prefs` — all expand-phase additive, each with down path, tested forward+rollback on a scratch database restored from the staging backup; deletion-cascade coverage test extended to every new user-FK table.
-- Generated clients to regenerate: TS client + TanStack hooks (mobile), event TS types, Python models — `just generate` in the same PR as each spec change (staleness gate enforces).
+- DB migrations (Drizzle, one module per file per [06 §7](../06-data-api-and-event-contracts.md); no cross-module `REFERENCES` — ADR-0009, DEC-67; `users` carries `home_region` — DEC-61): `00xx_identity_users_sessions_consents`, `00xx_profile_profiles_measurements_preferences`, `00xx_billing_entitlements`, `00xx_admin_audit_log`, `00xx_notifications_prefs` — all expand-phase additive, each with down path, tested forward+rollback on a scratch database restored from the staging backup; deletion-cascade coverage test extended to every new user-FK table.
+- Generated clients to regenerate: TS client (API side), the Swift and Kotlin clients (DEC-53; *was: TS client + TanStack hooks for mobile*), event TS types, Python models — `just generate` in the same PR as each spec change (staleness gate enforces).
 
 ## 8. Work breakdown by surface
 
@@ -112,7 +114,7 @@ Module names per [SPINE §3](../SPINE.md); each touched module's contract file i
 | Backend | `identity`/`profile`/`billing`-seam/`admin`-audit services + controllers; rate limits; deletion + export pg-boss job chains; authz matrix middleware conventions |
 | Workers (ML/media) | None (no ML in P03) |
 | Data / migrations | Five module migrations above; FK cascade map regeneration; seed personas (synthetic) for staging |
-| Infrastructure | Apple/Google OAuth credentials into sops; email provider account (transactional) behind `platform` port; staging test accounts per [15 §11](../15-team-workflow-and-ai-agent-operations.md) |
+| Infrastructure | Apple/Google OAuth credentials into sops; email provider account (transactional; provider: OQ-20) behind `platform` port; staging test accounts per [15 §11](../15-team-workflow-and-ai-agent-operations.md) |
 | 3D / assets | None (base-model choice stores an ID; assets arrive P04) |
 | Admin / internal tools | `audit_log` + deletion-status query endpoint (support role, metadata only) |
 
@@ -145,20 +147,20 @@ Small enough for one AI-assisted session each (~half-day). Task IDs `P03-T##` ar
 |---|---|---|---|
 | P03-T01 | `shared-kernel`: unit converters + measurement bounds registry + enums + error codes, with property tests (metric↔imperial round-trip, symmetric bounds) | — | 1 |
 | P03-T02 | Contracts: author all §7 endpoints + the four event schemas; `just generate`; spectral/oasdiff green (single-writer task — lands before consumers) | P03-T01 | 2 |
-| P03-T03 | `identity` core: better-auth mount (Apple/Google/passkey per DO-SEC-01 decision), Postgres sessions, age gate, `account.created` event + migration | P03-T02 | 2 |
+| P03-T03 | `identity` core: better-auth mount (Apple/Google/passkey; no email+password — DEC-64), Postgres sessions, age gate (16+, DEC-60), `account.created` event + migration (`users.home_region`, DEC-61; no cross-module foreign keys, ADR-0009, with the migration lint that rejects a cross-module `REFERENCES`) | P03-T02 | 2 |
 | P03-T04 | `identity` hardening: session rotation + reuse revocation, device list/sign-out-all, recovery flow, rate limits + `*.sec.test.ts` | P03-T03 | 2 |
 | P03-T05 | Consent registry: `consents` append-only + purposes, `consent.changed` event, audit rows, withdrawal-halts-processing wiring (analytics gate) | P03-T03 | 1 |
 | P03-T06 | `profile`: schema + services (measurements w/ SI canonical + provenance + bounds validation, presentation/base-model, preferences incl. hard exclusions, settings values) + migration + unit/property tests | P03-T02 | 2 |
 | P03-T07 | `billing` seam: entitlements table + resolver, trial-grant consumer of `account.created` (72 h Pro grant, `source=trial_grant`), `GET /v1/me/entitlements`, flag `entitlement-enforcement` off; idempotent grant (replay-safe) | P03-T02, P03-T03 | 1 |
 | P03-T08 | AuthZ matrix harness: generated endpoint × principal (anon/userA/userB/support) suite over all §7 routes (NFR-SEC-030; the harness every later phase extends) | P03-T03…T07 | 1 |
 | P03-T09 | Export job: pg-boss job chain → ZIP (profile/measurements/preferences/consent history) → R2 signed link 24 h, 1-concurrent, notification stub | P03-T06, P03-T05 | 1 |
-| P03-T10 | Deletion cascade v1: grace window + cancel, ordered chain per [06 §8](../06-data-api-and-event-contracts.md) (sessions → providers → R2 prefix → Postgres cascade → retained set → verification), per-step audit + idempotency, FK coverage test | P03-T09 | 2 |
+| P03-T10 | Deletion cascade v1: 7-day grace window (DEC-65) + cancel, ordered chain per [06 §8](../06-data-api-and-event-contracts.md) (sessions → providers → R2 prefix → Postgres cascade → retained set → verification), per-step audit + idempotency, deletion-step coverage test (every table with a `user_id` column registers a step — ADR-0009, DEC-67; *was: FK coverage test*) | P03-T09 | 2 |
 | P03-T11 | Mobile: onboarding steps 1–5 (welcome, sign-in + age gate, core consents, units/locale, presentation + base model) with per-step server persistence + resume | P03-T02 (client), P03-T03, P03-T05 | 2 |
 | P03-T12 | Mobile: onboarding steps 6–9 + 11 (height/weight, measurements, preferences, occasions, capture nudge) + stub Today tab; unit-aware inline validation UX | P03-T06, P03-T11 | 2 |
 | P03-T13 | Mobile: settings baseline — consent toggles, profile edit/clear-field, units/accessibility, export, delete (re-auth + caveats), subscription trial line; consent-gated PostHog + P03 events | P03-T05…T07, P03-T09, P03-T10 | 2 |
 | P03-T14 | Observability: §11 metrics/alerts/panels, deletion/export SLA wiring, A12 measurement run + record, runbook #7 | P03-T08…T10 | 1 |
 | P03-T15 | E2E: Maestro onboarding journey (incl. consent choices, skip paths, resume-after-kill) + export + deletion flows on iOS and Android; nightly-tier wiring (NFR-TST-050) | P03-T11…T13 | 2 |
-| P03-T16 | Close-out: LR-02/03/04/07/09 status verified (or `BLOCKED`); DO-SEC-01 + grace-window + Sentry DECs logged; device demo (§18) recorded; docs + PROGRESS + handoff | all | 1 |
+| P03-T16 | Close-out: LR-02/03/04/07/09 status verified (or `BLOCKED`); Sentry DEC logged (OQ-21; DO-SEC-01 and the grace window are decided — DEC-64, DEC-65); device demo (§18) recorded; docs + PROGRESS + handoff | all | 1 |
 
 ## 13. Parallelization
 
@@ -189,7 +191,7 @@ New bug fixes require a regression test that fails before the fix (failing run p
 | Budget | Target (hypothesis until measured) | How measured |
 |---|---|---|
 | Performance | API CRUD p50/p95/p99 ≤ 80/250/600 ms ([13 §12.2](../13-testing-quality-and-performance.md), first real measurement — **A12** incl. realistic idle patterns against self-managed PostgreSQL); onboarding blocking calls < 2 s each ([02 §3.3](../02-user-journeys-and-information-architecture.md)); 5xx ≤ 0.5% | `api.request.duration` panels over the E2E + k6 smoke; results recorded in doc 13 with hypothesis labels flipped |
-| Cost | Infra stays within the ~$35/mo envelope with real (team+beta) signups; transactional email in free tier | Provider billing screenshots at phase end |
+| Cost | Infra stays within the ~$35/mo envelope with real (team+beta) signups; transactional email in free tier (provider: OQ-20) | Provider billing screenshots at phase end |
 | AI quality | n/a — no AI in P03 | n/a |
 | Reliability | Deletion cascade completion 100% within SLA in tests (prod SLA ≤ 30 d, typical ≤ 8 d); export job success ≥ 99% in staging soak; signup→trial-grant loss rate 0 across outbox chaos tests | deletion/export SLA metrics + outbox suite runs |
 

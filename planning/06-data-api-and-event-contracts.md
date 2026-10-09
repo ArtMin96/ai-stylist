@@ -14,19 +14,19 @@ One canonical owner per concept. Everyone else generates or imports — never co
 
 | Concept | Canonical owner | Consumed as |
 |---|---|---|
-| API request/response shapes | `packages/contracts` — OpenAPI 3.1 (`contracts/openapi/*.yaml`) | Generated TS client (mobile), generated Python models (ML workers), NestJS DTO validation |
-| Domain event schemas + envelope | `packages/contracts` (`contracts/events/*.json`, JSON Schema 2020-12) | TS types (api/trigger), Pydantic models (workers) |
-| Units, IDs, color values, measurement definitions | `packages/shared-kernel` | Imported by api/mobile/contracts; mirrored into generated Python models |
+| API request/response shapes | `packages/contracts` — OpenAPI 3.1 (`contracts/openapi/*.yaml`) | Generated TS client (API side), generated Swift and Kotlin clients (native apps, DEC-53), generated Python models (ML workers), NestJS DTO validation |
+| Domain event schemas + envelope | `packages/contracts` (`contracts/events/*.json`, JSON Schema 2020-12) | TS types (api/jobs — pg-boss, DEC-41), Pydantic models (workers) |
+| Units, IDs, color values, measurement definitions | `packages/shared-kernel` | Imported by api/contracts; generated for Swift, Kotlin and Python from the JSON registries (DEC-55, DEC-59) |
 | Reason-code registry | `packages/shared-kernel` (semantics: doc 09) | Referenced by contracts as enums |
 | Entitlement names | `packages/shared-kernel` (semantics: doc 12) | Referenced by contracts as enums |
-| Category taxonomy | `closet` module data (seeded, versioned; doc 08) | Read via API; IDs stable |
+| Category taxonomy | `closet` module data (seeded, versioned; doc 08) | Read via API; IDs stable *(doc 08 §2 names a generated registry artifact instead — OQ-37)* |
 | Asset manifests / 3D formats | `assets/3d` schemas (doc 07) | Validated by asset tooling + mobile loader |
 | DB schema | `apps/api/src/modules/<name>/internal/schema.ts` (Drizzle, per owning module) | Never exposed outside the module |
 
 **Generation pipeline** (runs via `just generate`, checked in CI):
 
 1. OpenAPI 3.1 specs are authored per module in `packages/contracts/openapi/`, bundled to one `openapi.bundle.json`.
-2. TS client for mobile: `@hey-api/openapi-ts` → `packages/contracts/gen/ts-client/` (typed fetch client + TanStack Query hooks).
+2. TS client: `@hey-api/openapi-ts` → `packages/contracts/gen/ts-client/`, consumed by `apps/api`. The native apps use the generated Swift and Kotlin clients (`gen/swift-client/`, `gen/kotlin-client/`, DEC-53). *(Was: TS client for mobile with TanStack Query hooks.)*
 3. Python models for ML workers and event consumers: **`datamodel-code-generator`** → `workers/ml/generated/` (Pydantic v2 models from OpenAPI components + event JSON Schemas).
 4. Event TS types: JSON Schema → TS via `json-schema-to-typescript` → `packages/contracts/gen/events-ts/`.
 5. All generated files carry a `GENERATED — DO NOT EDIT` header and are committed. **CI runs `just generate --check`; stale generation fails the build.** Generators are version-pinned via the root toolchain (`mise`).
@@ -35,7 +35,7 @@ NestJS controllers validate against the same contract: the OpenAPI spec is the s
 
 ## 2. API style conventions
 
-- **Base:** `https://api.<domain>/v1` — URI major version only. Within `v1`, changes are additive (new optional fields, new endpoints). Breaking change ⇒ `v2` side-by-side with a deprecation window ≥ 2 mobile release cycles (mobile apps update slowly; server supports N and N−1 app versions).
+- **Base:** host only (`https://api.<domain>`); every path starts with `/v1` (OQ-16, resolved 2026-09-23) — URI major version only. Within `v1`, changes are additive (new optional fields, new endpoints). Breaking change ⇒ `v2` side-by-side with a deprecation window ≥ 2 mobile release cycles (mobile apps update slowly; server supports N and N−1 app versions).
 - **Resources:** plural kebab-case nouns: `/closet-items`, `/media-assets`, `/recommendations`, `/context-facts`, `/entitlements`, `/me/*` for the caller's own scope. Verbs only as sub-resource actions where a state transition isn't CRUD: `POST /media-uploads/{id}/complete`, `POST /recommendations/{id}/feedback`.
 - **IDs:** ULIDs, prefixed (`itm_`, `ast_`, `rec_`, `out_`, `ent_`, `evt_`) — sortable, greppable, unambiguous in logs.
 - **Pagination:** cursor-based everywhere (`?cursor=&limit=`, default 25, max 100); response `{ items: [...], nextCursor: string | null }`. No offset pagination (closets grow; offsets break under concurrent edits).
@@ -199,9 +199,9 @@ Structured, UI- and renderer-independent (brief §2.3/§3.3). Reasons come from 
   "planId": "plan_plus",
   "state": "active_paid",                     // trial|free|active_paid|grace|cancelled_active — lifecycle in doc 03 §4.3; store mechanics in doc 12 §5.3
   "source": "revenuecat",                     // revenuecat|server_grant (trial)|admin_grant
-  "entitlements": [ { "name": "ent.tryon.g2", "granted": true },
-                    { "name": "ent.closet.limit", "value": null },        // null = unlimited
-                    { "name": "ent.recs.future_day", "granted": true } ],
+  "entitlements": [ { "name": "tryon.generative", "granted": true },
+                    { "name": "closet.max_items", "value": null },        // null = unlimited
+                    { "name": "recs.future_planning", "granted": true } ],
   "credits": { "generative": { "remaining": 37, "resetsAt": "2026-09-01T00:00:00Z" } },
   "effectiveAt": "2026-08-24T00:00:00Z",
   "version": 12
@@ -289,7 +289,7 @@ Retention: `dispatched` rows pruned after **90 days** (replay window, §9.2 of d
 
 ## 7. Migration policy (Drizzle)
 
-- **Tooling:** drizzle-kit generated SQL migrations, committed under `apps/api/drizzle/`; applied via `just db-migrate` locally and by a release step in CI (never on app boot). Ephemeral databases (Testcontainers) give every PR an isolated migrated copy in CI; migration + rollback are tested there before merge and then proven on a staging scratch database restored from the latest backup (DEC-43).
+- **Tooling:** drizzle-kit generated SQL migrations, committed under `packages/db/migrations/` (DEC-37; the owner kept `packages/db` on 2026-10-04); applied via `just db-migrate` locally and by a release step in CI (never on app boot). Ephemeral databases (Testcontainers) give every PR an isolated migrated copy in CI; migration + rollback are tested there before merge and then proven on a staging scratch database restored from the latest backup (DEC-43).
 - **Expand–contract, always:**
   1. *Expand:* additive migration (new nullable column/table/index `CONCURRENTLY`), deploy code that writes both/reads old.
   2. *Migrate:* backfill via idempotent batched job (pg-boss job, ≤ 5k rows/batch), verify counts.
@@ -304,7 +304,7 @@ Trigger: `identity.account.deletion_requested.v1` (user action or admin). Orches
 
 | Step | Target | Action | Notes |
 |---|---|---|---|
-| 1 | Postgres (all modules) | Hard-delete user-owned rows in dependency order (closet → media metadata → profile → …), keep an anonymized `deleted_accounts` stub (userId hash, deletedAt) for audit/idempotency | Cascade map generated from Drizzle FK graph; contract test asserts every user-FK table is covered |
+| 1 | Postgres (all modules) | Hard-delete user-owned rows in dependency order (closet → media metadata → profile → …), keep an anonymized `deleted_accounts` stub (userId hash, deletedAt) for audit/idempotency | Each module's registered deletion step (ADR-0009, DEC-67: no cross-module foreign keys); a contract test asserts every table with a `user_id` column is covered *(was: cascade map generated from the Drizzle FK graph)* |
 | 2 | R2 | Delete all objects under the user prefix (originals + derived + avatar + generated views) | Prefix-scoped; verified by a follow-up list call returning empty |
 | 3 | Provider data | fal.ai / LLM providers: zero-or-short retention by policy (SPINE §2, r3) — nothing to delete; RevenueCat: delete subscriber via API; PostHog: deletion request API; push tokens revoked | Each provider step recorded with response evidence |
 | 4 | pg-boss | Cancel pending jobs keyed to the user (queue/singleton keys carry the user id); job payloads carry IDs only and are purged by pg-boss's completed-job retention | |
@@ -319,6 +319,6 @@ SLA: user-visible completion target ≤ 30 days (GDPR-aligned; typically minutes
 
 - `just generate --check` reproducibility check (stale generation fails).
 - OpenAPI lint (spectral: naming, pagination, problem+json, idempotency-header presence on mutating routes).
-- Contract tests: mobile client ↔ API (generated-client round-trips), Trigger tasks ↔ ML workers (Pydantic models vs fixtures), event consumers ↔ envelope versions.
-- Drizzle schema ↔ migration drift check; deletion-cascade coverage test (§8 step 1).
+- Contract tests: mobile client ↔ API (generated-client round-trips), pg-boss jobs ↔ ML workers (Pydantic models vs fixtures), event consumers ↔ envelope versions.
+- Drizzle schema ↔ migration drift check; deletion-step coverage test (§8 step 1, ADR-0009).
 - Breaking-change detector (`oasdiff`) on `openapi.bundle.json` against `main` — breaking diff requires an ADR label.

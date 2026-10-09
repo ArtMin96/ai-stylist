@@ -2,6 +2,8 @@
 
 > Amended 2026-09-13 ([r7](../research/r7-third-party-services-and-self-hosting-audit-2026-09-13.md), ADR-0003 — service consolidation: pg-boss jobs, owned server + Coolify, self-managed PostgreSQL, R2 delivery model).
 
+> Amended 2026-10-09 (DEC-76: P11 depends on P10, which waits for the garment 3D research go/no-go; the photo-based try-on path can be split from the avatar-render path if it is wanted earlier. Prices: the try-on gate is the verified r6 price, ≤ $0.0825 per image including retries (DEC-28, DEC-34); §9 and AC-2 use $0.025 per missing view while §15 uses $0.012 — reconcile at the kickoff price re-check (AIC-O6). DEC-73: monthly credits do not roll over, and top-ups never expire. DEC-53: generated Swift and Kotlin clients — [proposal](../../.claude/plans/2026-10-09-open-questions-decisions-proposal.md)).
+
 > File name per [SPINE §5](../SPINE.md). Template: [templates/phase.md](../templates/phase.md). Status values per [PROGRESS.md](../PROGRESS.md). Capability design owned by [07-3d-avatar-and-garment-pipeline.md](../07-3d-avatar-and-garment-pipeline.md) §6–§7; AI specs/costs by [10-ai-usage-cost-and-evaluation.md](../10-ai-usage-cost-and-evaluation.md) §2.4–§2.5; on conflict, those docs win.
 
 ## 1. Overview
@@ -72,7 +74,7 @@ Journey anchors: [02 §6](../02-user-journeys-and-information-architecture.md) (
 - **API (OpenAPI 3.1):** `POST /v1/closet-items/{id}/views/generate` (target view `back|side`); `POST /v1/outfits/{id}/tryon` (base: `photo|avatar`, photoAssetId?); `GET /v1/media-assets/{id}` already returns provenance/lineage (doc 06 §3.3); `POST /v1/media-assets/{id}/keep|discard` for generated-view review. Idempotency keys on all; entitlement errors typed (`ENTITLEMENT_REQUIRED`, `CREDITS_EXHAUSTED` — dormant path).
 - **Event schemas:** reuse `media.derivation.completed.v1` / `media.asset.processing_failed.v1`; add `billing.credits.consumed.v1` emission from the seam (shadow-flagged) per doc 06 catalog.
 - **DB migrations (Drizzle, expand-only):** generation-job metadata columns on `media.derivations` (model id/version, prompt/config hash, auto-check scores); `credit_ledger` shadow-entry flag column (if P13's table pre-landed via doc 12 design, else create per doc 12 §4.2 schema now, marked seam). Rollback: additive; down paths documented; ledger rows are audit data → `-- IRREVERSIBLE` down with export note.
-- **Generated clients:** TS client, event types, Python worker models — `just generate`, CI `--check`.
+- **Generated clients:** TS, Swift and Kotlin clients (DEC-53), event types, Python worker models — `just generate`, CI `--check`.
 
 ## 8. Work breakdown by surface
 
@@ -93,7 +95,7 @@ Owning rows: [10 §1 #4–#5, §2.4–§2.5](../10-ai-usage-cost-and-evaluation.
 | Capability | AI or deterministic | Why | Fallback | Budget |
 |---|---|---|---|---|
 | Missing-view synthesis | **GEN** (fal.ai Flux-class; Gemini image batch → Replicate as fallbacks) | Inventing unseen geometry/texture is inherently generative (doc 10 §2.4) | Feature paused (rung 5); closet fully works on real views | **$0.025/image**; p95 < 20 s |
-| G2 photo try-on | **GEN** (fal.ai VTON-class; Replicate batch fallback) | Draping a real garment photo on a real body photo is the core G2 capability (doc 10 §2.5) | G0 collage (rung 6); credit not consumed on failure | **≤ $0.01/image blended**; p95 < 15 s |
+| G2 photo try-on | **GEN** (fal.ai VTON-class; Replicate batch fallback) | Draping a real garment photo on a real body photo is the core G2 capability (doc 10 §2.5) | G0 collage (rung 6); credit not consumed on failure | **≤ $0.0825/image incl. retries** (AC-1, §15; *was ≤ $0.01 blended, a pre-r6 figure*); p95 < 15 s |
 | Auto quality checks (category agreement, palette ΔE, face-region untouched) | **Deterministic/CV** (existing classifier reuse + color math + pixel diff) | Gate must be cheap, reproducible, and non-generative | Reject-and-fallback | ~$0 marginal |
 | Cache/dedup | **Deterministic** — one generation per (hash, view/composition, model version); re-viewing free; regenerate = explicit action + new credit | NFR-AIC-030 hash-before-spend | n/a | $0 |
 | Provenance/lineage/supersession | **Deterministic** | Data rules, not inference | n/a | $0 |
@@ -172,7 +174,7 @@ Thresholds are the **enablement gate** (doc 10 §2.4–2.5, doc 16 SPK-2/RISK-02
 
 ## 17. Risks, mitigations, assumptions, stop/kill criteria
 
-- Risks in play: **RISK-02** (G2 quality/cost — this phase *is* its validation point), **RISK-10** (fal.ai concentration — fallback adapter + port), **RISK-08** (AI cost overrun — caps + shadow metering), **RISK-07**-adjacent (user photos to a provider — AIC-O2 gate), **ASM-03** (G2 clears gates at ~$0.003–0.025/image, as of Aug 2026).
+- Risks in play: **RISK-02** (G2 quality/cost — this phase *is* its validation point), **RISK-10** (fal.ai concentration — fallback adapter + port), **RISK-08** (AI cost overrun — caps + shadow metering), **RISK-07**-adjacent (user photos to a provider — AIC-O2 gate), **ASM-03** (G2 clears the quality gate at $0.075/image, verified 2026-09-09, r6 — *earlier wording:* ~$0.003–0.025/image, as of Aug 2026).
 - **Stop/kill criteria (from doc 16 RISK-02 + SPK-2 — binding):**
   - G2: user-satisfaction eval **< 80% on diverse-body slices**, or measured unit cost > $0.11/image → **ship P11 with G2 disabled behind its flag**; MVP remains valid via G0 + avatar (doc 00 §7); log DEC.
   - Missing-view: keep-rate **< 50%**, or provider cost/latency breaks credit economics → kill/hold the feature (SPK-2 kill row); closet works on real views only; G2 unaffected; log DEC.

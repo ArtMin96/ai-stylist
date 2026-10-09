@@ -1,10 +1,32 @@
 # Proposal: open-question sweep and owner decisions (2026-10-09)
 
-> Status: OPEN (2026-10-09) — nothing in this file is applied. The owner answered seven rounds of
-> questions in the main session on 2026-10-09. This file turns those answers into text for the
-> human-only files (`.claude/rules/human-only.md`): doc 16, the phase files, the planning docs, two
-> ADR bodies, and `planning/SPINE.md` (path-guarded). Structure copied from
-> `2026-10-04-human-applied-followups-proposal.md`.
+> Status: APPLIED (2026-10-09, at the owner's word "apply everything"), with the exceptions and
+> changes listed here. The text below is the original proposal.
+>
+> **Not applied:**
+> - `planning/SPINE.md` lines 28, 40, 94 and 122 (§E): the path guard denies agent edits. The owner
+>   applies them, or authorizes the sanctioned exception.
+> - `planning/15-*.md` lines (§F): same guard; not attempted.
+> - §F rows that need investigation or belong to P00's own tasks: the "Draft for …" doc headers and
+>   the provider-register dates (P00-T07, P00-T08); the dangling references in docs 11, 12 (one
+>   fixed: §5.8 → §5.6), 13, 14 and 15; the fps mismatch between doc 07 and doc 05; the r7 banner;
+>   the stale lines inside ADR-0004, ADR-0006 and ADR-0007; the banners of five older plan files;
+>   the missing DEC row for the owner's 2026-09-25 setup decisions.
+> - §K (code work) is not started.
+>
+> **Applied differently from the text below:**
+> - P11: only the try-on figure (≤ $0.01 → ≤ $0.0825) and the ASM-03 wording changed. The $0.025
+>   missing-view ceiling in §9 and AC-2 was kept; the banner flags it against §15's $0.012.
+> - Doc 08 §2 (taxonomy registry home) was not rewritten. The conflict with doc 06 §1 is filed as
+>   **OQ-37**, so the register now runs to OQ-37.
+> - P13's "8 SKUs" is consistent (6 subscription + 2 top-up); only the missing OQ-12 task is noted.
+> - P01 keeps `prototype/p01-filament/` as the planned spike location.
+> - DEC-76 gained one sentence: the owner does not require Filament and named three.js as a
+>   candidate, so the renderer is reviewed in the same research.
+> - The four stale keys in `secrets/dev.enc.yaml` were checked by key name and are gone.
+> - §A rows went into doc 16 as written; §B2 rows went in without line numbers.
+>
+> Structure copied from `2026-10-04-human-applied-followups-proposal.md`.
 
 ## 0. Source, checks and apply order
 
@@ -52,7 +74,7 @@ DEC-58 amended — owner decisions,
 | DEC-73 | **(2026-10-09) Monthly generative credits do not roll over; purchased top-up credits never expire.** A plan change mid-cycle follows doc 12. Amends the SPINE §6 top-up row ("no expiry (or 90-day — decide at P13)") | Credits a user paid for stay until used; expiry on paid packs invites complaints and store-review questions. Closes the rollover and expiry parts of BIL-O4 | [SPINE §6](SPINE.md); [12 §8](12-pricing-entitlements-and-unit-economics.md) BIL-O4; [03 §6](03-domain-model-and-glossary.md) item 7 |
 | DEC-74 | **(2026-10-09) Family sharing and shared closets are not in v1.** One user per account. Resolves OQ-09; closes BIL-O5 | Single-user is assumed in every doc, and P13 AC-6 needs the decision recorded | [12 §8](12-pricing-entitlements-and-unit-economics.md); [03 §6](03-domain-model-and-glossary.md) item 9; [P13](phases/P13-monetization-and-entitlements.md) |
 | DEC-75 | **(2026-10-09) Device floor confirmed: iOS 26.0 and Android 10 (minSdk 29).** P14 re-checks it with measurements on the device matrix. Updates OQ-08; confirms the DEC-54 working values | The product must not be limited to new phones; the owner accepts these floors as the product floor | Owner decision 2026-10-09; DEC-54; [13](13-testing-quality-and-performance.md) |
-| DEC-76 | **(2026-10-09) 3D track: garment 3D research reopens RB-2, and its go/no-go is the "3D resumes" trigger.** Scope: a garment photo becomes a 3D garment shown on the avatar. The body stays the measurement-based A1 avatar, and A3 stays a non-goal. Hard constraints from the owner: the result works on every supported phone with the same quality on all of them, so a server path is mandatory, and on-device AI is allowed only as a cost or latency optimization whose output matches the server path. The research compares image-to-3D services, self-hosted open models, on-device options, and on-device versus server rendering. Deliverable: a written comparison first; then the owner picks 2–3 candidates for a hands-on test on about 30 real garment photos with pass/fail criteria; no provider spend without the owner's approval. P01's native spike, P04, P05, P10 and P11 wait for the go/no-go; P03 and P06–P09 proceed in parallel. The outcome lands as an ADR and a new DEC before DEC-07, DEC-08 or DEC-50 changes | RB-2 said to reopen "only when a new model class demonstrably changes r5's conclusion"; the owner asks for that evidence to be gathered again with current tools. DEC-50 named no trigger for resuming 3D, which left P01, P04, P05 and P10 without a start condition | Owner direction 2026-10-09; [00 §9.1](00-product-vision-and-scope.md) RB-2; [07 §6, §11](07-3d-avatar-and-garment-pipeline.md); §L of the 2026-10-09 proposal |
+| DEC-76 | **(2026-10-09) 3D track: garment 3D research reopens RB-2, and its go/no-go is the "3D resumes" trigger.** Scope: a garment photo becomes a 3D garment shown on the avatar. The body stays the measurement-based A1 avatar, and A3 stays a non-goal. Hard constraints from the owner: the result works on every supported phone with the same quality on all of them, so a server path is mandatory, and on-device AI is allowed only as a cost or latency optimization whose output matches the server path. The research compares image-to-3D services, self-hosted open models, on-device options, and on-device versus server rendering. The renderer is part of it: the owner does not require Filament and names three.js as a candidate (2026-10-09), so Filament, three.js in a web view and server-side rendering are compared on quality, cost and consistency. Deliverable: a written comparison first; then the owner picks 2–3 candidates for a hands-on test on about 30 real garment photos with pass/fail criteria; no provider spend without the owner's approval. P01's native spike, P04, P05, P10 and P11 wait for the go/no-go; P03 and P06–P09 proceed in parallel. The outcome lands as an ADR and a new DEC before DEC-07, DEC-08 or DEC-50 changes | RB-2 said to reopen "only when a new model class demonstrably changes r5's conclusion"; the owner asks for that evidence to be gathered again with current tools. DEC-50 named no trigger for resuming 3D, which left P01, P04, P05 and P10 without a start condition | Owner direction 2026-10-09; [00 §9.1](00-product-vision-and-scope.md) RB-2; [07 §6, §11](07-3d-avatar-and-garment-pipeline.md); §L of the 2026-10-09 proposal |
 | DEC-77 | **(2026-10-09) Repository and local gates.** The repository stays private and is never made public. It moves to a GitHub organization later, at the owner's timing. Branch protection on `main` waits for that move: the `just repo-setup` report of 2026-10-04 found it unavailable on a private repository under a personal free account. Until then the local hooks and the no-push-to-`main` rule are the control. The secret scan allow-lists the gitignored repo-root `.env` only, because `just secrets-sync` writes real keys there by design; CI has no `.env`, so the CI gate does not change | The owner's call on visibility and timing. The allow-list is the smallest change that lets `just ci-parity` pass on a developer machine | Owner decision 2026-10-09; `docs/NEW-REPO-SETUP.md`; `.gitleaks.toml`; PROGRESS handoff 2026-10-03 |
 
 ## B. Doc 16 — open-question table
@@ -414,6 +436,9 @@ drafted.
   on-device AI where the phone has it, with the service as fallback. (3) A service only.
 - **Hard constraints.** Works on iOS 26+ and Android 10+ (DEC-75). Same quality on every phone. So
   option 2 passes only if the on-device output matches the server output side by side.
+- **Renderer is open.** The owner does not require Filament (2026-10-09) and is considering
+  three.js. The research compares Filament, three.js in a web view and server-side rendering on
+  quality, cost and consistency. DEC-50 changes only through a new DEC.
 - **Lanes.** Managed image-to-3D services; self-hosted open models and their licences; on-device
   options on iOS and Android; on-device versus server rendering; garment-specific methods (template
   plus texture projection, G3) as the baseline to beat.

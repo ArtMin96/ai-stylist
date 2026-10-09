@@ -37,7 +37,7 @@
 | **iOS app** (Swift/SwiftUI) | **Swift Testing**: config, services and `*Model` view models (`just ios-test-packages` runs on Linux and macOS) | property tests where logic warrants (library choice deferred to the first need) | builds only against the generated Swift client; contract drift caught in §5 | package tests through the app scheme on the iOS simulator (`just ios-test`); an in-memory `ClientTransport` fake under the real generated client | **Maestro** flows on simulator/device (§7); golden renders (§6) once 3D resumes |
 | **Android app** (Kotlin/Compose) | **JUnit 4 + kotlinx-coroutines-test + Turbine**: config, repositories, ViewModels | as iOS | builds only against the generated Kotlin client; contract drift caught in §5 | **Robolectric + Compose UI test** on the JVM (no emulator); OkHttp MockWebServer for the API | **Maestro** flows on emulator/device (§7); golden renders (§6) once 3D resumes |
 | **ML/media workers** (Python FastAPI) | **pytest** — pure functions, schema validation (Pydantic) | **hypothesis** — parsing/geometry invariants | Schemathesis against worker OpenAPI; versioned JSON schema round-trip tests vs `packages/contracts` | pytest + Testcontainers (Postgres) where workers touch state; golden-file pipeline tests on fixture images | eval suites (§10) on nightly GPU lane |
-| **Jobs/pipelines** (pg-boss) | handler logic extracted to pure functions → Vitest | — | payload schemas from `packages/contracts` | **Idempotency/retry/DLQ suite** (the P02-T08 acceptance suite that gates pg-boss vs the self-hosted Trigger.dev fallback, DEC-41): run job twice with same singleton key → one effect; inject failure at each step → retry then DLQ; resume-after-crash replays safely; cancellation mid-pipeline leaves no orphan asset (media state machine, doc 07) | pipeline E2E on staging nightly |
+| **Jobs/pipelines** (pg-boss) | handler logic extracted to pure functions → Vitest | — | payload schemas from `packages/contracts` | **Idempotency/retry/DLQ suite** (the P02-T08 acceptance suite that gates pg-boss vs the self-hosted Trigger.dev fallback, DEC-41): run job twice with the same derived job id → one effect (DEC-57); inject failure at each step → retry then DLQ; resume-after-crash replays safely; cancellation mid-pipeline leaves no orphan asset (media state machine, doc 07) | pipeline E2E on staging nightly |
 | **Recommendation engine** | Vitest on rules/scoring/tie-breaks | ranking + constraint invariants (§4) | recommendation result schema contract | simulations (§11) with seeded closets | latency measured in §12 budgets |
 | **3D/avatar/garments** | param-mapping math (Vitest) | morph-bound invariants (§4) | asset-manifest schema tests | asset validation CLI on every committed asset (formats per SPINE) | **golden/visual regression** (§6) + device perf (§7) |
 | **Billing/entitlements** | Vitest on entitlement logic | metering arithmetic invariants | RevenueCat webhook payload contracts (recorded fixtures) | webhook idempotency/replay (also in security suite §8); reconciliation-drift tests | purchase/restore E2E on store sandbox (P13) |
@@ -68,7 +68,7 @@
 ## 7. Mobile E2E and real-device performance
 
 - **Maestro** flows in `e2e/`, one flow per journey shared by both apps (`appId: ${APP_ID}`; user-facing strings and accessibility ids must match across platforms, RISK-19), run in CI on emulators/simulators and nightly on a device farm, covering: onboarding incl. consent choices; profile/measurement entry with unit switching; closet single + batch capture (camera mocked in emulator, real on device); recommendation request → explanation → feedback; purchase/restore (store sandbox, P13); account export + deletion; degraded-provider behavior (weather down → cached context warning, doc 09).
-- **Device tiers** (representative matrix — hypothesis, revisit yearly; final selection is a P01 output):
+- **Device tiers** (representative matrix — hypothesis, revisit yearly; final selection was planned as a P01 output; P01's spike now waits on DEC-76, the OS floor is confirmed by DEC-75, and the tiers are measured at P14):
 
 | Tier | Android | iOS | Rationale |
 |---|---|---|---|
@@ -141,7 +141,7 @@ Measurement rules: real devices per §7 matrix, cold vs warm distinguished, raw 
 | Recommendation request → results rendered (warm context) | ≤ 3.5 s | ≤ 2.5 s | ≤ 2.0 s | hypothesis → P09 |
 | Camera capture → item visible in catalog (processing async; this is capture→queued+thumbnail) | ≤ 6 s | ≤ 4 s | ≤ 3 s | hypothesis → P06 |
 | Full item processing (upload→classified, server-side, p95) | ≤ 60 s | — | — | hypothesis → P06 |
-| 3D first render (avatar visible) | ≤ 5 s | ≤ 3 s | ≤ 2 s | hypothesis → **P01 prototype gate** |
+| 3D first render (avatar visible) | ≤ 5 s | ≤ 3 s | ≤ 2 s | hypothesis → **P01 prototype gate** (waits on DEC-76) |
 | 3D viewer frame rate (rotate/pose-switch) | ≥ 30 fps | ≥ 60 fps | ≥ 60 fps | hypothesis → **P01 gate** (P01 go/no-go thresholds are doc 05 §2.3: 60 fps iPhone 13-class / 50 fps Galaxy A52-class, < 50 ms touch, < 100 MB prototype package, < 300 MB prototype memory; the full-app budgets in this table apply from P04 onward) |
 | App memory (3D screen, RSS) | ≤ 700 MB | ≤ 900 MB | ≤ 1.2 GB | hypothesis → P01/P04 |
 | GPU memory (avatar + outfit) | ≤ 250 MB | ≤ 400 MB | ≤ 600 MB | hypothesis → P01/P04 |
@@ -155,7 +155,7 @@ Measurement rules: real devices per §7 matrix, cold vs warm distinguished, raw 
 | Metric | Budget | Status |
 |---|---|---|
 | API latency p50 / p95 / p99 (CRUD reads) | 80 / 250 / 600 ms | hypothesis → P03 |
-| Recommendation endpoint p50 / p95 (200-item closet) | 400 ms / 1.5 s | hypothesis → P09 (candidate-gen strategy in doc 09) |
+| Recommendation endpoint p50 / p95 (200-item closet) | 400 ms / 1.5 s | hypothesis → P09 (candidate-gen strategy in doc 09; doc 09 §8 states a different budget — OQ-33) |
 | Availability (API, monthly) | ≥ 99.5% (error budget 3.6 h/mo — 14 §12) | hypothesis → P14 ratification |
 | Queue: job pickup latency p95 | ≤ 30 s | hypothesis → P06 |
 | Queue: media pipeline completion p95 | ≤ 60 s (single item), ≤ 15 min (50-item batch) | hypothesis → P06 |

@@ -19,7 +19,7 @@
 ## 2. Canonical identifiers
 
 - Identifier grammar: dot-namespaced slugs — `cat.tops.tshirt`, `attr.neckline`, `attr.neckline.crew`, `tag.user.<uuid>`. Stable forever once published; renames change display labels (localizable), never ids.
-- The registry (categories, attribute definitions, enum values, display labels, category→attribute applicability) is owned by `packages/contracts` / `shared-kernel` (SPINE §3) and versioned per [06](06-data-api-and-event-contracts.md). Mobile, backend, workers, and classification prompts all consume the same generated artifact — the classification prompt's allowed-label list is *generated from the registry*, which is what structurally prevents model-invented labels (§10.1).
+- The registry (categories, attribute definitions, enum values, display labels, category→attribute applicability) is owned by `packages/contracts` / `shared-kernel` (SPINE §3; *doc 06 §1 and `CLAUDE.md` place the taxonomy in `closet`, read through the API — the conflict is OQ-37*) and versioned per [06](06-data-api-and-event-contracts.md). Mobile, backend, workers, and classification prompts all consume the same generated artifact — the classification prompt's allowed-label list is *generated from the registry*, which is what structurally prevents model-invented labels (§10.1).
 - Color values: canonical palette of named colors (id + Lab/hex reference value) in shared-kernel; items store palette ids *plus* the measured raw hex, so re-binning is possible when the palette evolves.
 
 ## 3. Category taxonomy
@@ -97,13 +97,13 @@ Per item: `brand` (normalized brand table + free-text fallback), `size` (label s
 `available | laundry | packed | lent | repair | archived` — single state field with optional metadata (return date for lent/packed, note). Rules:
 
 - Only `available` items are candidates for recommendations ([09](09-recommendation-engine.md) hard constraint); `laundry` items may appear in a "back when washed" hint, never in the outfit itself.
-- Transitions are user actions plus assists: "mark worn" can prompt laundry per user-configurable wear-count-per-wash by category (default: 1 for underwear/tops, more for jeans/outerwear — user tunable, never nagging).
+- Transitions are user actions plus assists: "mark worn" can prompt laundry per user-configurable wear-count-per-wash by category (default: 1 for underwear/tops, more for jeans/outerwear — user tunable, never nagging). The prompt never moves items by itself (DEC-70). A pair is one item and a suit is two linked items (DEC-69).
 - `archived` removes items from all default views and candidate sets but preserves history; unarchive restores fully. Deletion is separate and propagates per [11-security-privacy-and-compliance.md](11-security-privacy-and-compliance.md).
 - State changes emit `closet.item.availability_changed` events (outbox per [06](06-data-api-and-event-contracts.md)) so cached recommendation candidates invalidate.
 
 ## 7. Wear history & cost-per-wear
 
-- `wear_events`: item id(s), outfit id (if worn as a recommended/saved outfit), date, source (`user-marked | outfit-worn | inferred-prompt`). Never auto-inferred silently; "did you wear this?" prompts are opt-in.
+- `wear_events`: item id(s), outfit id (if worn as a recommended/saved outfit), date, source (`user-marked | outfit-worn | inferred-prompt`). Never auto-inferred silently; "did you wear this?" prompts are opt-in. In v1 wear is user-marked only, so no such prompt ships and the `inferred-prompt` source stays reserved (DEC-70).
 - Derived per item (materialized, recomputed on event): wear count, last-worn date, wear frequency, and **cost-per-wear = purchasePrice / max(wearCount, 1)** — shown only when the user supplied a price, labeled as based on their logged wears.
 - Wear history feeds doc 09's repeat-avoidance and rarely-worn-item scoring, and the "closet insights" views (§9). Tone rule: insights are neutral and useful ("worn 2× since January"), never guilt-framed.
 

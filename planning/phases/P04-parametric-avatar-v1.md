@@ -2,6 +2,8 @@
 
 > Amended 2026-09-13 ([r7](../research/r7-third-party-services-and-self-hosting-audit-2026-09-13.md), ADR-0003 — service consolidation: pg-boss jobs, owned server + Coolify, self-managed PostgreSQL, R2 delivery model).
 
+> Amended 2026-10-09 (DEC-76: this phase waits for the garment 3D research go/no-go, which also reviews the renderer — Filament, three.js in a web view, or server-side rendering. Open at phase start: OQ-10 pose set, OQ-34 how the mapping engine runs in Swift and Kotlin, OQ-28 device farm. DEC-53: generated Swift and Kotlin clients replace the mobile TS client — [proposal](../../.claude/plans/2026-10-09-open-questions-decisions-proposal.md)).
+
 > File name: `phases/P04-parametric-avatar-v1.md` per [SPINE §5](../SPINE.md). Every section below is REQUIRED (brief §10); write "None" explicitly rather than deleting a section. Status values per [PROGRESS.md](../PROGRESS.md).
 
 ## 1. Overview
@@ -34,9 +36,9 @@ IDs from [01-requirements-and-traceability.md](../01-requirements-and-traceabili
 
 ## 3. Prerequisites and blocking dependencies
 
-- Hard depends on (must be `ACCEPTED`): **P01** (render gate passed, formats ratified per REQ-MED-100), **P03** (measurements in `profile`, onboarding walking skeleton) — per SPINE §5.
+- Hard depends on (must be `ACCEPTED`): **P01** (render gate passed, formats ratified per REQ-MED-100; that gate waits on the garment 3D research go/no-go, DEC-76), **P03** (measurements in `profile`, onboarding walking skeleton) — per SPINE §5.
 - External blockers:
-  - **OQ-10** (which pose set: 3 vs 4, which occasion pose) — resolve at phase start, log DEC; the plan below assumes the 4-pose set of doc 07 §4.1.
+  - **OQ-10** (which pose set: 3 vs 4, which occasion pose) — resolve at phase start, log DEC; the plan below assumes the 4-pose set of doc 07 §4.1. The phase start itself waits on DEC-76.
   - **RISK-06** (Anny production-asset readiness) — the P04-T01 asset-pipeline task is the validation point; MPFB2 fallback stays warm.
   - No vendor accounts or legal reviews block this phase (face/biometric items belong to P05).
 
@@ -81,13 +83,13 @@ Module names per [SPINE §3](../SPINE.md); update each touched module's contract
   - `GET /v1/avatar/assets/manifest?topology=&rig=` (compatibility-resolved manifest)
 - Event schemas added/changed: `avatar.config.updated.v1` (already cataloged in doc 06 §4), `avatar.calibrated.v1` (new; payload: avatarId, paramsVersion, refinementCount, confidenceTier). Consumer registration: `media` (asset regeneration), `outfit`.
 - DB migrations (Drizzle): `00XX_avatar_add_configs.sql` (avatar_configs, avatar_assets, avatar_config_migrations audit table). Forward: additive only. Rollback: drop tables (safe pre-launch; expand–contract per doc 06 §7 once data exists).
-- Generated clients to regenerate: mobile TS client + event types (`just generate`); asset-manifest JSON schema in `packages/contracts`.
+- Generated clients to regenerate: the Swift and Kotlin clients (DEC-53; *was: mobile TS client*) + event types (`just generate`); asset-manifest JSON schema in `packages/contracts`.
 
 ## 8. Work breakdown by surface
 
 | Surface | Work (or "None") |
 |---|---|
-| Mobile | Calibration screen (3D + non-3D variants); pose gallery/viewer (orbit, zoom, camera presets, reduced motion); appearance pickers; rendering-tier capability detection + fallback ladder; asset download/cache (LRU ≤300 MB per doc 07 §9); local mapping engine (shared TS package so server and client agree) |
+| Mobile | Calibration screen (3D + non-3D variants); pose gallery/viewer (orbit, zoom, camera presets, reduced motion); appearance pickers; rendering-tier capability detection + fallback ladder; asset download/cache (LRU ≤300 MB per doc 07 §9); local mapping engine (*was: shared TS package so server and client agree*; how it runs in Swift and Kotlin is OQ-34) |
 | Backend | `avatar` module (config CRUD, derive, versioning/migration jobs); manifest resolution endpoint; events + outbox wiring |
 | Workers (ML/media) | None (mapping is deterministic; no ML worker in this phase) |
 | Data / migrations | avatar tables migration; seed fixtures: 6 diverse body-preset configs + extreme-parameter configs for tests |
@@ -130,7 +132,7 @@ Small enough for one AI-assisted session each. Task IDs `P04-T##` are referenced
 | P04-T01 | Anny asset pipeline: Blender-headless export → glTF/KTX2/Draco, topology/rig validation in `just assets-validate`; produce `anny-adult-v1` base + LOD chain (RISK-06 validation point) | — | 2 |
 | P04-T02 | Morph-target library + shared-kernel name registry; CI checks (vertex count/order identical across morphs, joint weights sum 1) | P04-T01 | 1 |
 | P04-T03 | Pose clips (4, per OQ-10 DEC) + neutral IBL + manifest schema in `packages/contracts`; `just generate` | P04-T01 | 1 |
-| P04-T04 | Mapping engine package (TS, shared mobile/server): regression, bounds, imputation w/ `source: "estimated"`, conflict severities 1–3, unit-confusion checks; property tests | — | 2 |
+| P04-T04 | Mapping engine package (TS on the server; its native-client form is OQ-34 — *was: TS, shared mobile/server*): regression, bounds, imputation w/ `source: "estimated"`, conflict severities 1–3, unit-confusion checks; property tests | — | 2 |
 | P04-T05 | `avatar` backend module: tables, config CRUD + derive endpoint, events, outbox wiring, migration `00XX_avatar_add_configs.sql` up/down | P04-T04 | 1 |
 | P04-T06 | Manifest resolution endpoint + R2 publication + client asset cache (LRU, hash verification) | P04-T03, P04-T05 | 1 |
 | P04-T07 | Mobile 3D viewer: scene setup, orbit/zoom/camera presets, pose switching, reduced-motion, thermal/fps caps | P04-T03, P04-T06 | 2 |

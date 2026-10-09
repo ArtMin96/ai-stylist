@@ -436,7 +436,7 @@ Target: photo → confirmed catalog entry in under ~30 seconds of user attention
 1. Entry: Settings → Data → Delete account. Requires re-authentication.
 2. Pre-deletion screen states plainly: what is deleted (profile, measurements, selfie and all face-derived assets, closet media and derived assets, avatar assets, recommendations, feedback), the deletion timeline including backup constraints, and the subscription caveat: **deleting the account does not cancel a store subscription** — link to store cancellation (§12.5) with explicit instructions.
 3. Offer export first (one tap into §11.2).
-4. Grace window (duration = product decision, see open questions in [16-risks-open-questions-and-decision-log.md](16-risks-open-questions-and-decision-log.md)): account deactivated immediately, sign-in during the window offers cancellation of the deletion; after the window, purge cascades per the deletion propagation contract ([11-security-privacy-and-compliance.md](11-security-privacy-and-compliance.md), [06-data-api-and-event-contracts.md](06-data-api-and-event-contracts.md)).
+4. Grace window (7 days — DEC-65 in [16-risks-open-questions-and-decision-log.md](16-risks-open-questions-and-decision-log.md)): account deactivated immediately, sign-in during the window offers cancellation of the deletion; after the window, purge cascades per the deletion propagation contract ([11-security-privacy-and-compliance.md](11-security-privacy-and-compliance.md), [06-data-api-and-event-contracts.md](06-data-api-and-event-contracts.md)).
 5. Confirmation email/push at request and at completion.
 - **Failure/retry:** deletion job failures are retried server-side and surfaced to support/admin; the user-facing promise (completion within stated timeline) is monitored ([14-observability-operations-and-analytics.md](14-observability-operations-and-analytics.md)).
 - **Offline:** deletion cannot be requested offline (requires re-auth); the screen says so.
@@ -454,7 +454,7 @@ Target: photo → confirmed catalog entry in under ~30 seconds of user attention
 
 ### 12.2 Trial expiry
 
-- On expiry: account transitions to Free tier. **No data is deleted or hidden destructively** (SPINE §6): closet items above the Free cap remain visible and exportable but are read-only for new recommendation composition (exact over-cap behavior is a product decision → [16-risks-open-questions-and-decision-log.md](16-risks-open-questions-and-decision-log.md)); paid-derived assets (G2 try-on images, generated views) remain viewable with provenance intact.
+- On expiry: account transitions to Free tier. **No data is deleted or hidden destructively** (SPINE §6): closet items above the Free cap remain visible and exportable but are read-only for new recommendation composition (decided by DEC-69 in [16-risks-open-questions-and-decision-log.md](16-risks-open-questions-and-decision-log.md): archived items count toward the cap, and the most recently worn items up to the cap stay active); paid-derived assets (G2 try-on images, generated views) remain viewable with provenance intact.
 - First open after expiry: a single, dismissible full-screen recap — what the user did during trial (items captured, outfits worn), what changes on Free, and tier options. Dismiss lands on a fully functional Free-tier Today tab.
 
 ### 12.3 Paywall and upgrade
@@ -535,4 +535,4 @@ Users who cannot or do not want to use the 3D view (motion sensitivity, screen-r
 
 ## 15. Open items surfaced by this document
 
-Logged as open questions in [16-risks-open-questions-and-decision-log.md](16-risks-open-questions-and-decision-log.md): Free-tier over-cap closet behavior after downgrade (§12.2); account-deletion grace window duration (§11.3); whether "mark as worn" should ever be inferred (vs strictly explicit); default occasion when none selected; notification defaults (opt-in vs opt-out per category).
+Decided on 2026-10-09 and logged in [16-risks-open-questions-and-decision-log.md](16-risks-open-questions-and-decision-log.md): Free-tier over-cap closet behavior after downgrade (§12.2) — DEC-69; account-deletion grace window (§11.3) — 7 days, DEC-65; "mark as worn" is never inferred — DEC-70; default occasion when none is selected — the stored "typical day", DEC-71; notification defaults — every category off until opted in, DEC-72.

@@ -2,6 +2,8 @@
 
 > Amended 2026-09-13 ([r7](../research/r7-third-party-services-and-self-hosting-audit-2026-09-13.md), ADR-0003 — service consolidation: pg-boss jobs, owned server + Coolify, self-managed PostgreSQL, R2 delivery model).
 
+> Amended 2026-10-09 (DEC-69: a pair is one item, a suit is two linked items, and archived items count toward `closet.max_items`. DEC-53: generated Swift and Kotlin clients. Open here: OQ-27 on-device store for the upload queue, decided in one ADR with P07's offline store; OQ-30 malware scanner and NSFW classifier. Where the taxonomy registry lives is OQ-37 — [proposal](../../.claude/plans/2026-10-09-open-questions-decisions-proposal.md)).
+
 > File name: `phases/P06-closet-capture-pipeline.md` per [SPINE §5](../SPINE.md). Every section below is REQUIRED (brief §10); write "None" explicitly rather than deleting a section. Status values per [PROGRESS.md](../PROGRESS.md).
 
 ## 1. Overview
@@ -89,7 +91,7 @@ Journey detail owned by [02-user-journeys §6](../02-user-journeys-and-informati
 | `shared-kernel` | Taxonomy registry v1 (ids per doc 08 §2–3), color palette values, attribute enums — codegen to mobile pickers, API validation, classifier JSON schema | Yes |
 | `platform` | Ports: `SegmentationPort`, `AttributeExtractionPort`, `EmbeddingPort` + managed adapters (fal.ai / Gemini-or-Haiku / Voyage-or-Cohere) and self-hosted eval-arm adapters (BiRefNet / Qwen3-VL / SigLIP-SigLIP2, DEC-47); R2 upload/multipart; pgvector setup (HNSW index) | Yes |
 | `admin` | Moderation/quarantine queue UI + DLQ ops queue view | Yes |
-| `billing` | Dormant seam: `closet.max_items` entitlement check point in the closet item-create service, behind flag `entitlement-enforcement` (off) — returns unlimited until P13 | Yes (seam documented) |
+| `billing` | Dormant seam: `closet.max_items` entitlement check point in the closet item-create service, behind flag `entitlement-enforcement` (off) — returns unlimited until P13; counting rule per DEC-69 (pair = 1 item, suit = 2 linked items, archived items count) | Yes (seam documented) |
 | `outfit` | `garment_representations` table with G-level field; every item gets a G0 record (REQ-CAP-100 slice) | Yes |
 
 Dependency rules: vision/embedding provider SDKs live only in `platform` adapters (NFR-AIC-090); `closet` consumes extraction results as data via events; the classification prompt's allowed-label list is **generated from the registry** (doc 08 §10.1).
@@ -103,13 +105,13 @@ Dependency rules: vision/embedding provider SDKs live only in `platform` adapter
   - `POST /v1/closet-items/{id}/dedup-decision` (merge / keep-both / replace)
 - Event schemas added/changed (doc 06 §4 catalog): `media.asset.uploaded.v1`, `media.asset.ready_for_processing.v1`, `media.asset.processing_failed.v1`, `media.derivation.completed.v1`, `closet.item.draft_ready.v1`, `closet.item.created.v1`, `closet.item.correction_applied.v1` — all on the P02 outbox/envelope.
 - DB migrations (Drizzle): closet tables (items, item_attributes, taxonomy refs), media tables (media_assets, derivations, upload_sessions), `garment_representations`, pgvector extension + embeddings table + HNSW index, moderation queue. Forward additive; each with tested down path (`just db-rollback` on a scratch database restored from the staging backup).
-- Generated clients to regenerate: mobile TS client, event types, **taxonomy registry artifacts** (mobile pickers/labels, API validation, classifier JSON schema + prompt artifact) — all via `just generate`; CI fails on staleness (NFR-TEAM-080).
+- Generated clients to regenerate: the Swift and Kotlin clients (DEC-53; *was: mobile TS client*), event types, **taxonomy registry artifacts** (mobile pickers/labels, API validation, classifier JSON schema + prompt artifact) — all via `just generate`; CI fails on staleness (NFR-TEAM-080).
 
 ## 8. Work breakdown by surface
 
 | Surface | Work (or "None") |
 |---|---|
-| Mobile | Capture screens (single/batch/library import); on-device segmentation bridge (Apple Vision subject lift / ML Kit); local quality checks; durable mutation-log upload queue + resumable uploads; confirmation/correction cards + registry pickers; dedup compare UI; manual mask/crop editor; pending-review stack |
+| Mobile | Capture screens (single/batch/library import); on-device segmentation bridge (Apple Vision subject lift / ML Kit); local quality checks; durable mutation-log upload queue (on-device store: OQ-27) + resumable uploads; confirmation/correction cards + registry pickers; dedup compare UI; manual mask/crop editor; pending-review stack |
 | Backend | `closet` + `media` modules; upload session + signed URL flow; state-machine enforcement (illegal transitions rejected); correction semantics; dedup orchestration (ANN query within the user's closet only); moderation queue; entitlement seam |
 | Workers (ML/media) | Python worker endpoints (versioned JSON schemas): server segmentation (fal.ai call-through and the self-hosted BiRefNet eval arm), quality scoring, perspective correction, deterministic color extraction; pg-boss pipeline jobs wiring stages with idempotency keys (`hash + task + model_version`) |
 | Data / migrations | §7 migrations; taxonomy registry v1 seed; synthetic capture fixtures (garments/shoes/accessories — no real user data); eval datasets (segmentation 300-image, classification 500-item, dedup 200-triplet per doc 10 §2) |
@@ -152,7 +154,7 @@ Cache rule (NFR-AIC-030): all paid calls keyed by `content hash + model/prompt v
 |---|---|---|---|
 | P06-T01 | Taxonomy registry v1 in `packages/contracts`/`shared-kernel` (all doc 08 §3 categories incl. shoes/accessories + attribute applicability map) + codegen: pickers, API validation, classifier JSON schema; `just generate` wiring | — | 2 |
 | P06-T02 | `media` tables + state machine skeleton: upload sessions, signed URLs, content hash, immutability, EXIF strip, state-transition enforcement + migrations | — | 2 |
-| P06-T03 | Mobile durable upload queue: mutation log (ULID opIds), resumable R2 multipart, background drain, queue screen, survive-kill tests | P06-T02 | 2 |
+| P06-T03 | Mobile durable upload queue (store per OQ-27): mutation log (ULID opIds), resumable R2 multipart, background drain, queue screen, survive-kill tests | P06-T02 | 2 |
 | P06-T04 | On-device segmentation bridge (Apple Vision / ML Kit) + local quality checks + cutout preview | — | 2 |
 | P06-T05 | Pipeline jobs on pg-boss (`apps/api/src/jobs/`): validate→strip→segment→extract stages with idempotency keys, retries (max 3), DLQ sweep to admin queue | P06-T02 | 2 |
 | P06-T06 | Worker services: server segmentation (fal.ai and self-hosted BiRefNet eval arm via `SegmentationPort`), quality scoring, perspective correction, deterministic color extraction — versioned JSON schemas | P06-T05 | 2 |
@@ -162,9 +164,9 @@ Cache rule (NFR-AIC-030): all paid calls keyed by `content hash + model/prompt v
 | P06-T10 | Batch capture + library import + pending-review stack + "accept all high-confidence" | P06-T09 | 2 |
 | P06-T11 | Dedup: `EmbeddingPort` + Voyage adapter (Cohere alternative) + self-hosted SigLIP/SigLIP2 eval arm, pgvector HNSW, exact-hash + near-dup prompts, merge/keep-both/replace flow (user-scoped ANN only) | P06-T08 | 2 |
 | P06-T12 | Manual-edit paths: mask/crop editor, re-run segmentation, re-categorize; reprocessing preserves corrections (REQ-MED-080 regression test) | P06-T09 | 2 |
-| P06-T13 | Moderation: malware/content scan stage, quarantine states, admin queue (approve/reject audited), 30 d purge job; LR-11 conformance notes | P06-T05 | 1–2 |
+| P06-T13 | *(Scanner and classifier pick: OQ-30.)* Moderation: malware/content scan stage, quarantine states, admin queue (approve/reject audited), 30 d purge job; LR-11 conformance notes | P06-T05 | 1–2 |
 | P06-T14 | Derivative publication: fixed derivative set (cutout, thumbnails ×2–3, palette swatch) produced once by the workers and stored in R2 (no Cloudflare Images); presigned read path for user media; custom-domain cached manifests for public assets only, with invalidation (DEC-44) | P06-T06 | 1 |
-| P06-T15 | Entitlement seam: `closet.max_items` check point behind `entitlement-enforcement` flag (dormant), remaining-count advisory API field | P06-T08 | 1 |
+| P06-T15 | Entitlement seam: `closet.max_items` check point behind `entitlement-enforcement` flag (dormant), remaining-count advisory API field; counts per DEC-69 | P06-T08 | 1 |
 | P06-T16 | Eval suites + datasets: segmentation (IoU), classification (accuracy/F1/invalid-rate, provider pick DEC), dedup (recall/precision) wired into `just ml-eval` | P06-T06, P06-T07, P06-T11 | 2 |
 | P06-T17 | Observability + analytics + dashboards + runbooks; end-to-end trace verification; load check of upload burst profile (50 uploads/user) | P06-T05…T14 | 1–2 |
 

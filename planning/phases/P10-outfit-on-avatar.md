@@ -2,6 +2,8 @@
 
 > Amended 2026-09-13 ([r7](../research/r7-third-party-services-and-self-hosting-audit-2026-09-13.md), ADR-0003 — service consolidation: pg-boss jobs, owned server + Coolify, self-managed PostgreSQL, R2 delivery model).
 
+> Amended 2026-10-09 (DEC-76: the avatar scene (T05 and the tasks that need it) waits with P04 for the garment 3D research go/no-go; that research also decides on-device versus server rendering and reviews the renderer — Filament, three.js in a web view, or server-side. The G0 collage tasks need no 3D and can be split out to run earlier. DEC-75: device floor confirmed. DEC-53: generated Swift and Kotlin clients — [proposal](../../.claude/plans/2026-10-09-open-questions-decisions-proposal.md)).
+
 > File name per [SPINE §5](../SPINE.md). Template: [templates/phase.md](../templates/phase.md). Status values per [PROGRESS.md](../PROGRESS.md). Presentation design owned by [07-3d-avatar-and-garment-pipeline.md](../07-3d-avatar-and-garment-pipeline.md) §4.3, §6, §10; on conflict, doc 07 wins.
 
 ## 1. Overview
@@ -29,8 +31,8 @@ Consumed, not delivered: REQ-AVA-090 poses (P04), REQ-REC-110 structured results
 
 ## 3. Prerequisites and blocking dependencies
 
-- Hard depends on (must be `ACCEPTED`): **P04** (A1 avatar, poses, rig, asset manifests, render tiers), **P09** (`RecommendationResult`, saved outfits) — per SPINE §5.
-- External blockers: none. OQ-08 (device floor) still open — P10 measures against the doc 13 §7 provisional matrix and feeds OQ-08 evidence; it does not block.
+- Hard depends on (must be `ACCEPTED`): **P04** (A1 avatar, poses, rig, asset manifests, render tiers; P04 waits on DEC-76), **P09** (`RecommendationResult`, saved outfits) — per SPINE §5.
+- External blockers: none. OQ-08: floor confirmed by DEC-75 (iOS 26.0 / Android minSdk 29); P10 measures against the doc 13 §7 provisional matrix and feeds the P14 re-check; it does not block.
 
 ## 4. In scope / out of scope
 
@@ -57,7 +59,7 @@ Journey detail: [02 §8](../02-user-journeys-and-information-architecture.md) (T
 | `outfit` | `OutfitPresentation` assembly service: slot mapping, representation resolution per item from `garment_representations` + asset manifests, `fallbackChain` policy; compare-view composition | Yes |
 | `shared-kernel` | Slot IDs, representation-level enum (G0–G3), camera/pose preset identifiers (pose IDs exist from P04 — referenced, not redefined) | Yes (single-writer, first) |
 | `media` | Outfit-presentation derivative set: collage-ready cutout sizes + static posed avatar renders for the non-3D path (server-rendered per doc 02 §13.3), published via versioned manifests | Yes (minor) |
-| Mobile render boundary (a dedicated renderer package/module in `apps/ios` and `apps/android`, created when 3D resumes — DEC-50; *was `apps/mobile/src/render/`*) | Outfit scene composition on Filament (C++ engine, per platform): avatar + pose + presentation panel; render-tier ladder; nothing outside the renderer module imports Filament types | No (internal, behind the boundary) |
+| Mobile render boundary (a dedicated renderer package/module in `apps/ios` and `apps/android`, created when 3D resumes — DEC-50; trigger and renderer review: DEC-76; *was `apps/mobile/src/render/`*) | Outfit scene composition on Filament (C++ engine, per platform): avatar + pose + presentation panel; render-tier ladder; nothing outside the renderer module imports Filament types | No (internal, behind the boundary) |
 | `recommendation` | **No change.** The engine emits `RecommendationResult` only; if this phase needs anything new from it, that is a P09 contract change, sequenced separately | No |
 | `avatar` | Read-only consumption of avatar config/assets; no changes | No |
 
@@ -69,13 +71,13 @@ Invariant checked continuously: dependency-cruiser forbids `recommendation` → 
 - **API (OpenAPI 3.1):** `GET /v1/outfits/{id}/presentation` (+ `?pose=&camera=`); `GET /v1/recommendations/{id}/presentation` (per-rank). Read-only; no new mutations (actions reuse P09 endpoints).
 - **Event schemas:** none new (consumes `media.derivation.completed.v1` for derivative availability).
 - **DB migrations (Drizzle):** none beyond a nullable `presentation_prefs` (view-mode preference) on profile — additive, trivially reversible. `garment_representations` exists from P06.
-- **Generated clients:** regenerate TS client (`just generate`, CI `--check`).
+- **Generated clients:** regenerate the TS, Swift and Kotlin clients (DEC-53; `just generate`, CI `--check`).
 
 ## 8. Work breakdown by surface
 
 | Surface | Work (or "None") |
 |---|---|
-| Mobile | Outfit-on-avatar scene (inside `render/` boundary), pose/camera controls, view toggle, collage renderer, compare view, fallback-ladder integration, asset prefetch + LRU cache under disk cap, reduced-motion handling |
+| Mobile | Outfit-on-avatar scene (inside the renderer module boundary; *was `render/`*), pose/camera controls, view toggle, collage renderer, compare view, fallback-ladder integration, asset prefetch + LRU cache under disk cap, reduced-motion handling |
 | Backend | `outfit` presentation assembly, representation resolution, presentation endpoints |
 | Workers (ML/media) | Static posed avatar render job (server-side 2D renders per pose for the non-3D path) — deterministic Filament/headless render, no AI |
 | Data / migrations | `presentation_prefs` column |
@@ -115,7 +117,7 @@ P10 introduces **zero AI calls**. Every generated pixel that will arrive in P11 
 | P10-T02 | `outfit` presentation assembly: slot mapping from `RecommendationResult`/saved outfits, representation resolution from `garment_representations` + manifests, `fallbackChain` policy; tests first (fixtures at every representation mix) | T01 | 2 |
 | P10-T03 | Media: collage derivative sizes + versioned manifest entries; static posed-render job (headless, deterministic) for the non-3D path | T01 | 2 |
 | P10-T04 | Mobile: G0 collage renderer + item labels + structured-list parity view | T01 | 2 |
-| P10-T05 | Mobile: outfit-on-avatar scene inside `render/` — avatar + pose + outfit panel, pose switcher, orbit/zoom/camera presets, reduced-motion | T02 | 2–3 |
+| P10-T05 | Mobile: outfit-on-avatar scene inside the renderer module (created when 3D resumes, DEC-76; *was `render/`*) — avatar + pose + outfit panel, pose switcher, orbit/zoom/camera presets, reduced-motion | T02 | 2–3 |
 | P10-T06 | Render-tier fallback ladder integration: capability detection reuse (P04), automatic downgrade on init failure, telemetry hook | T05, T03 | 1–2 |
 | P10-T07 | View toggle + preference persistence + compare-alternatives surface | T04, T05 | 1 |
 | P10-T08 | Asset prefetch + LRU disk-cache cap + manifest-invalidation handling on the outfit path (NFR-PERF-050) | T03, T05 | 1 |
@@ -128,7 +130,7 @@ P10 introduces **zero AI calls**. Every generated pixel that will arrive in P11 
 ## 13. Parallelization
 
 - **Can run in parallel:** after T01: {T02 backend} ∥ {T03 media/worker} ∥ {T04 mobile collage} (disjoint modules/apps); T09 goldens split collage (after T04) ∥ avatar-scene (after T05); T10 ∥ T09.
-- **Must be serial:** T01 alone first (`packages/contracts` + `shared-kernel` single-writer); T05 → T06 → T08 (same `render/` files); T11/T12/T13 last. One agent per worktree; `render/` boundary files are single-writer within the phase.
+- **Must be serial:** T01 alone first (`packages/contracts` + `shared-kernel` single-writer); T05 → T06 → T08 (same renderer-module files); T11/T12/T13 last. One agent per worktree; renderer-module boundary files are single-writer within the phase.
 
 ## 14. Test-first plan (by module and level)
 

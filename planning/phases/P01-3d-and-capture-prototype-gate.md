@@ -1,5 +1,7 @@
 # P01 — 3D and Capture Prototype Gate
 
+> Amended 2026-10-09 (DEC-76: the native spike (T01 and the tasks that need it) and the go/no-go wait for the garment 3D research; that research also reviews the renderer itself — Filament, three.js in a web view, or server-side rendering. DEC-63: the asset-tooling hand-off is P02-T17, now on the 3D track. The gate thresholds are not ratified yet: P00 is `IN_PROGRESS` — [proposal](../../.claude/plans/2026-10-09-open-questions-decisions-proposal.md)).
+
 > File name: `phases/P01-3d-and-capture-prototype-gate.md` per [SPINE §5](../SPINE.md). Every section below is REQUIRED (brief §10); "None" is written explicitly rather than deleting a section. Status values per [PROGRESS.md](../PROGRESS.md).
 
 > **Re-scoped 2026-09-22 ([ADR-0004](../../docs/adr/0004-native-ios-and-android-clients.md), DEC-49/DEC-50).** React Native and Expo are gone, so the RN + `react-native-filament` go/no-go gate is **moot**. RISK-01 and ASM-01 are retired. What survives:
@@ -7,7 +9,7 @@
 > 2. The **measurement harness** design and gate-report collation (P01-T07), rebuilt on native profiling hooks.
 > 3. The **gate thresholds** G1–G6.
 >
-> The 3D vertical prototype becomes a **native Filament spike**, run when 3D resumes: Filament's C++ engine with Metal on iOS and the official AARs on Android, with the capture leg included. No 3D is in the apps today. Text below that names Expo, RN or EAS is kept only where marked *historical*; the tasks and gates are restated for the native spike.
+> The 3D vertical prototype becomes a **native Filament spike**, run when 3D resumes (the trigger is the garment 3D research go/no-go, DEC-76): Filament's C++ engine with Metal on iOS and the official AARs on Android, with the capture leg included. No 3D is in the apps today. Text below that names Expo, RN or EAS is kept only where marked *historical*; the tasks and gates are restated for the native spike.
 
 ## 1. Overview
 
@@ -34,7 +36,7 @@ Contributing (primary delivery elsewhere): REQ-AVA-010 (Anny base renders — "p
 
 ## 3. Prerequisites and blocking dependencies
 
-- Hard depends on (must be `ACCEPTED`): **P00** (ratified gate thresholds and ADR set; per [SPINE §5](../SPINE.md)). P02 is **not** required — P01 may run in parallel with it and its prototype code never merges into the product monorepo (§4).
+- Hard depends on (must be `ACCEPTED`): **P00** (ratified gate thresholds and the decision-log ratification, ADR-0010; per [SPINE §5](../SPINE.md)). P02 is **not** required — P01 may run in parallel with it and its prototype code never merges into the product monorepo (§4).
 - External blockers:
   - **Physical devices in hand:** iPhone 13-class, Galaxy A52-class, plus one low-tier Android ([00 §9.1 RB-5](../00-product-vision-and-scope.md); [13 §7](../13-testing-quality-and-performance.md) tiers). No emulator numbers are acceptable evidence (brief §13; [05 §2.3](../05-technology-decisions.md)).
   - **Apple Developer Program + Play Console accounts**, the team's Mac, and the GitHub Actions macOS lane (G7 requires TestFlight + Play internal-track delivery; the signing lanes are OQ-18). *(EAS is no longer used, DEC-51.)*
@@ -124,8 +126,8 @@ Small enough for one AI-assisted session each (~half-day). Task IDs `P01-T##` ar
 
 | ID | Task | Depends on | Est. sessions |
 |---|---|---|---|
-| P01-T01 | Workspace bring-up: `prototype/p01-filament/` native spike apps (Xcode project + Gradle project) linking Filament's C++ engine (Metal / official AARs; record exact Filament pins); runs on both dev devices. **Deferred until 3D resumes.** *(Superseded: Expo SDK 55+ prebuild app with `react-native-filament`.)* | — | 1–2 |
-| P01-T02 | **(Can run now; renderer-agnostic.)** Anny asset spike: Blender-headless export of one Anny base → `.glb` with ≥4 morph targets + skeleton; gltfpack (Draco/meshopt) + glTF-Transform (KTX2, morph pruning); document mesh stats + conventions vs [07 §9](../07-3d-avatar-and-garment-pipeline.md) | — | 2 |
+| P01-T01 | Workspace bring-up: `prototype/p01-filament/` native spike apps (Xcode project + Gradle project) linking Filament's C++ engine (Metal / official AARs; record exact Filament pins); runs on both dev devices. **Deferred until 3D resumes (DEC-76).** *(Superseded: Expo SDK 55+ prebuild app with `react-native-filament`.)* | — | 1–2 |
+| P01-T02 | **(Renderer-agnostic; it can run ahead of the native spike. Starting it before P00 is `ACCEPTED` needs a recorded exception like DEC-36 — none exists as of 2026-10-09 — and the garment 3D research, DEC-76, may change the asset approach.)** Anny asset spike: Blender-headless export of one Anny base → `.glb` with ≥4 morph targets + skeleton; gltfpack (Draco/meshopt) + glTF-Transform (KTX2, morph pruning); document mesh stats + conventions vs [07 §9](../07-3d-avatar-and-garment-pipeline.md) | — | 2 |
 | P01-T03 | Pose clips: author/adapt 3–4 pose animations (neutral, walking/casual, seated-or-occasion, fit-reveal per [07 §4.1](../07-3d-avatar-and-garment-pipeline.md)) into the GLB; verify topology stable across morph extremes (A6) | P01-T02 | 1 |
 | P01-T04 | Filament scene (per platform, native): load GLB, IBL + PBR setup, morph-weight animation loop (≥4 blend shapes), pose switching | P01-T01, P01-T02 | 2–3 |
 | P01-T05 | Interaction: orbit camera 360°/90°, pinch zoom 2–8×, with touch-timestamp instrumentation for the <50 ms G2 measurement | P01-T04 | 1 |
@@ -140,7 +142,7 @@ Small enough for one AI-assisted session each (~half-day). Task IDs `P01-T##` ar
 
 - Can run in parallel: **Group A** {P01-T01} ∥ **Group B** {P01-T02→T03} — app scaffold and asset pipeline are disjoint (different directories, different toolchains). After T01+T02: **Group C** {P01-T04→T05} ∥ **Group D** {P01-T06} — renderer code vs capture code are disjoint files. P01-T07 and P01-T08 are disjoint from each other (harness code vs build config) once T04/T06 exist.
 - Must be serial: T09 needs everything green; T10 strictly after T09 (it exists only on a red G5/G6); T11 last. Physical-device time in T09 is inherently serial per device — schedule both devs' devices concurrently.
-- One git worktree per agent; `prototype/p01-filament/` package.json/lockfile is single-writer (sequence dependency changes) per [15 §12.3](../15-team-workflow-and-ai-agent-operations.md).
+- One git worktree per agent; the `prototype/p01-filament/` build files and lockfiles are single-writer (sequence dependency changes) per [15 §12.3](../15-team-workflow-and-ai-agent-operations.md).
 
 ## 14. Test-first plan (by module and level)
 
@@ -157,7 +159,7 @@ New bug fixes require a regression test that fails before the fix. Tests live in
 
 ## 15. Budgets introduced or measured
 
-**This phase converts hypotheses into measurements** — the first real numbers in the project ([13 §12.1](../13-testing-quality-and-performance.md) rows marked P01). Gate thresholds ratified in P00 from [05 §2.3](../05-technology-decisions.md):
+**This phase converts hypotheses into measurements** — the first real numbers in the project ([13 §12.1](../13-testing-quality-and-performance.md) rows marked P01). Gate thresholds to be ratified in P00 (`IN_PROGRESS` since 2026-10-09) from [05 §2.3](../05-technology-decisions.md):
 
 | Budget | Target (hypothesis until measured) | How measured |
 |---|---|---|
@@ -241,4 +243,4 @@ Evidence to attach/link: gate report with per-device measurement tables; raw tra
 
 Written at phase end; interim handoffs go to the PROGRESS.md log via [session-handoff.md](../templates/session-handoff.md).
 
-Next session starts: **on GO** → P04 planning is unblocked but P04 also requires P03 (`ACCEPTED`); if P02 is still in flight, join it (its next open task per PROGRESS.md) — first command: `just doctor` in the monorepo. Hand the asset-pipeline tooling (`prototype/p01-filament/tools/`) to P02-T13 (assets-validate recipe) and P04. **On NO-GO** → next session executes the chosen pivot rung: write the pivot ADR, update SPINE via a superseding DEC entry, and re-estimate P04/P10 before any further product work.
+Next session starts: **on GO** → P04 planning is unblocked but P04 also requires P03 (`ACCEPTED`); if P02 is still in flight, join it (its next open task per PROGRESS.md) — first command: `just doctor` in the monorepo. Hand the asset-pipeline tooling (`prototype/p01-filament/tools/`) to P02-T17 (assets-validate recipe; on the 3D track since DEC-63) and P04. **On NO-GO** → next session executes the chosen pivot rung: write the pivot ADR, update SPINE via a superseding DEC entry, and re-estimate P04/P10 before any further product work.

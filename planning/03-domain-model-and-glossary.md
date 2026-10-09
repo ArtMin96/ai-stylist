@@ -112,7 +112,7 @@ Grouped by owning module (SPINE §3). "Owner" = the single module whose data/def
 |---|---|
 | **Plan** | A sellable tier (Free / Essentials / Plus / Pro — SPINE §6) with a versioned capability bundle. |
 | **Entitlement** | Server-side grant of one named capability (from the shared-kernel entitlement registry) to a user, with source (`trial | subscription | grant`), validity window, and state. The entitlements table is the source of truth; store receipts and RevenueCat events are inputs to it. |
-| **GenerativeCredit** | The metering unit for expensive generative operations: 1 credit = one G2 try-on image or one missing-view synthesis (SPINE §6). Monthly allowance per plan; consumption is idempotent per processing job (a retry never double-spends). |
+| **GenerativeCredit** | The metering unit for expensive generative operations: weighted since DEC-34: a G2 try-on image costs 3 credits and a missing-view synthesis 1 credit (SPINE §6). Monthly allowance per plan; consumption is idempotent per processing job (a retry never double-spends). |
 | **Trial** | The server-granted 3-day Pro-level entitlement starting at account creation; independent of any store transaction. |
 | **Grace period** | Store-reported billing-retry window during which entitlements remain active. |
 | **Reconciliation** | The scheduled comparison of store/RevenueCat state against the entitlements table, repairing drift. |
@@ -327,17 +327,17 @@ Semantics: a Recommendation is immutable from `issued` onward (§2.1); `supersed
 
 ## 6. Ambiguous terms needing a product decision
 
-To be logged as open questions in [16-risks-open-questions-and-decision-log.md](16-risks-open-questions-and-decision-log.md); until decided, documents must reference the open question rather than assume an answer.
+Items 1–9 were decided on 2026-10-09 and are logged in [16-risks-open-questions-and-decision-log.md](16-risks-open-questions-and-decision-log.md); item 10 is OQ-26. Documents reference the DEC or the OQ rather than assume an answer.
 
 | # | Term / ambiguity | The decision needed |
 |---|---|---|
-| 1 | **"Worn"** | Strictly user-marked in v1 (assumed here), or may "scheduled + day passed" auto-suggest a wear confirmation prompt? Affects wear stats integrity. |
-| 2 | **"Laundry" auto-transition** | Should marking an outfit worn prompt/auto-move items to `laundry` (per-category)? Assumed prompt-only; needs confirmation. |
-| 3 | **"Occasion" default** | What context applies when the user selects nothing — a stored "typical day", a neutral default, or ask-every-time? |
-| 4 | **"Item" granularity** | Is a pair (shoes, earrings) one item? A suit two items or one with linkage? Affects taxonomy, counts against Free-tier caps, and slot composition. |
-| 5 | **Free-tier over-cap semantics** | Exact behavior of items beyond the 40-item Free cap after downgrade (visible read-only assumed — see doc 02 §12.2). |
-| 6 | **"Archive" vs Free cap** | Do archived items count toward the Free-tier item cap? |
-| 7 | **GenerativeCredit rollover** | Do unused monthly credits roll over, and what happens on plan change mid-cycle? Owner: doc 12; needs product call. |
-| 8 | **Deletion grace window** | Duration of the account-deletion grace period (doc 02 §11.3). |
-| 9 | **"Household" / shared closets** | Single-user assumed everywhere; family/shared-wardrobe explicitly out of scope for v1 — needs an explicit non-goal statement in doc 00. |
-| 10 | **"Repair" vs "lent" evidence** | Whether these low-frequency states are worth distinct UI in v1 or collapse into "unavailable (reason)". Model keeps them distinct (SPINE §8); UI treatment is the open call. |
+| 1 | **"Worn"** | Strictly user-marked in v1 (assumed here), or may "scheduled + day passed" auto-suggest a wear confirmation prompt? Affects wear stats integrity. **Decided (DEC-70): strictly user-marked in v1.** |
+| 2 | **"Laundry" auto-transition** | Should marking an outfit worn prompt/auto-move items to `laundry` (per-category)? Assumed prompt-only; needs confirmation. **Decided (DEC-70): prompt-only, never automatic.** |
+| 3 | **"Occasion" default** | What context applies when the user selects nothing — a stored "typical day", a neutral default, or ask-every-time? **Decided (DEC-71): the stored "typical day".** |
+| 4 | **"Item" granularity** | Is a pair (shoes, earrings) one item? A suit two items or one with linkage? Affects taxonomy, counts against Free-tier caps, and slot composition. **Decided (DEC-69): a pair is one item; a suit is two linked items.** |
+| 5 | **Free-tier over-cap semantics** | Exact behavior of items beyond the 40-item Free cap after downgrade (visible read-only assumed — see doc 02 §12.2). **Decided (DEC-69): visible and exportable, read-only for composition; the most recently worn items up to the cap stay active.** |
+| 6 | **"Archive" vs Free cap** | Do archived items count toward the Free-tier item cap? **Decided (DEC-69): yes.** |
+| 7 | **GenerativeCredit rollover** | Do unused monthly credits roll over, and what happens on plan change mid-cycle? Owner: doc 12; needs product call. **Decided (DEC-73): no rollover; purchased top-ups never expire; a mid-cycle plan change follows doc 12.** |
+| 8 | **Deletion grace window** | Duration of the account-deletion grace period (doc 02 §11.3). **Decided (DEC-65): 7 days.** |
+| 9 | **"Household" / shared closets** | Single-user assumed everywhere; family/shared-wardrobe explicitly out of scope for v1 — needs an explicit non-goal statement in doc 00. **Decided (DEC-74): not in v1; doc 00's non-goals state it.** |
+| 10 | **"Repair" vs "lent" evidence** | Whether these low-frequency states are worth distinct UI in v1 or collapse into "unavailable (reason)". Model keeps them distinct (SPINE §8); UI treatment is the open call. **Open: OQ-26.** |

@@ -413,8 +413,9 @@ drafted.
    (A4, C, D, E, F), `2026-10-03-setup-automation-proposal.md` (E1–E4),
    `s4-doc-refresh-human-proposals.md` (1, 2, 3, 5), `s5-bootstrap-automation-human-proposals.md`
    (1–3), `s6-claude-foundation-human-proposals.md` (A1–A4, B1, B1b, B2, C1).
-7. `gh` on this machine is logged in as `D90-dev` and cannot see `ArtMin96/ai-stylist`; CI state was
-   not verified on 2026-10-09.
+7. Bump `werkzeug` (3.1.9 or later) and `source-map-js` (1.2.2 or later): CI on `main` has been red
+   since 2026-10-06 in `just security-scan`. The default `gh` login on the owner's machine cannot see
+   the repository; the repository's own wrapper at `<git-common-dir>/account/gh.sh` can.
 
 ## K. Code work the decisions create (not started)
 

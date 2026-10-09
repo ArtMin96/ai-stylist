@@ -82,6 +82,21 @@ Log hygiene: when this log exceeds ~30 entries, move the oldest entries to `plan
 
 *(newest first)*
 
+### 2026-10-09 — Open-question sweep and owner decisions (no code)
+
+*Claude Code session on the owner's Mac, worktree branch `D90-dev/p00-open-questions-readiness` at `a5da55e` (same commit as `main`): a read-only sweep by five agents, then seven question rounds with the owner.*
+
+- **Phase / tasks worked:** P00 preparation (P00-T05 age policy, P00-T06 data residency) and a readiness sweep of doc 16, docs 00–15, phases P00–P15, `.claude/plans/`, the ADRs and this ledger.
+- **Status changes:** none yet. Proposed together with the proposal below: P00 `NOT_STARTED → IN_PROGRESS`.
+- **Done:**
+  - Sweep result: 14 of 19 OQ rows are open; about 45 undecided items have no doc 16 row, although docs 02 §15, 03 §6 and 09 §14 say they are logged there; LR-01…LR-12 are all "Open", the table has no owner column, and no counsel is engaged; about 50 passages are stale or conflict with a later decision.
+  - Owner decisions of 2026-10-09, written as exact text in [`.claude/plans/2026-10-09-open-questions-decisions-proposal.md`](../.claude/plans/2026-10-09-open-questions-decisions-proposal.md): proposed DEC-60–77 (age 16+; one EU home region with `home_region` on accounts; Hetzner, one server; P02 re-scope "staging now, stores later"; no passwords at launch; 7-day deletion grace; crash reports under the `analytics` consent; no cross-module foreign keys; one ratification ADR for P00; closet counting rules; worn and laundry; default occasion; notification defaults; credits; no family sharing in v1; device floor; the garment 3D research as the "3D resumes" trigger; repository and local gates), OQ-20–36, the ADR-0009 and ADR-0010 bodies, and a fix list for every passage those decisions contradict.
+- **Not done / open:** nothing in the proposal is applied: doc 16, the phase files, the planning docs, `docs/adr/` and `SPINE.md` are unchanged. The garment 3D research (proposal §L) has not started. Deferred by the owner: store enrollment type, the permanent bundle id (OQ-18), and branch protection until the repository moves to a GitHub organization.
+- **Repository state:** no code changed. `just docs-check` → `docs-check: ok (0 errors, 0 warning(s))`. PR #15 and PR #16 are merged (`1fbee4e` and `a5da55e`, 2026-10-08). CI on `main` was not verified: this machine's `gh` login cannot see the repository.
+- **New decisions / risks / questions filed:** none in doc 16 yet; DEC-60–77 and OQ-20–36 wait in the proposal.
+- **Surprises / gotchas:** the vendor accounts that exist are test accounts and will be replaced (owner, 2026-10-09), so the PostHog US project of DEC-58 is not the production project. The Grafana Cloud trial ends 2026-10-11 (`docs/SERVICES-SETUP.md` §10); confirm the stack lands on the free plan. `planning/adr/` (P00-T01) was never created; `docs/adr/` holds 0001–0007. The "Human-only steps outstanding" list above is partly stale: the four keys are already removed, and branch protection is unavailable on the current GitHub plan.
+- **Next session starts:** the owner approves the proposal ("apply"); then land its §A–§F, set P00 `IN_PROGRESS`, run `just docs-check --strict`, and start P00-T02, T03, T07, T08 and T09 and the garment 3D comparison.
+
 ### 2026-10-05 — One-command local run: `just dev` (backend + Android everywhere, + iOS on macOS)
 
 *Claude Code cloud session (Linux container: Docker started by hand, no KVM, no Mac, no GitHub or dl.google.com downloads), on branch `claude/project-next-steps-r6nu70` (PR #15) after `8e6b719`.*

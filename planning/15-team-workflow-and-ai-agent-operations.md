@@ -1,7 +1,7 @@
 # 15 — Team Workflow and AI-Agent Operations
 
 **Owner of:** developer environment (Ubuntu), command catalog, secrets strategy, branching/review, ADR/DoR/DoD process, supply-chain policy, release channels, environment isolation, and the AI-agent operating procedures.
-**Conforms to:** [SPINE.md](SPINE.md) §2 (stack), §3 (modules), §5 (phases). **Amended:** 2026-09-13 ([r7](research/r7-third-party-services-and-self-hosting-audit-2026-09-13.md), ADR-0003 — Coolify secrets/environments, ephemeral DBs, pg-boss) · 2026-09-22 ([ADR-0004](../docs/adr/0004-native-ios-and-android-clients.md), DEC-49–54 — native iOS/Android replace React Native + Expo: §1, §3, §4, §5, §7, §10, §12.5 updated). Evidence: [research/r1-linux-ios-build.md](research/r1-linux-ios-build.md), [research/r2-mobile-3d-stack.md](research/r2-mobile-3d-stack.md), [research/r4-backend-providers.md](research/r4-backend-providers.md).
+**Conforms to:** [SPINE.md](SPINE.md) §2 (stack), §3 (modules), §5 (phases). **Amended:** 2026-09-13 ([r7](research/r7-third-party-services-and-self-hosting-audit-2026-09-13.md), ADR-0003 — Coolify secrets/environments, ephemeral DBs, pg-boss) · 2026-09-22 ([ADR-0004](../docs/adr/0004-native-ios-and-android-clients.md), DEC-49–54 — native iOS/Android replace React Native + Expo: §1, §3, §4, §5, §7, §10, §12.5 updated). Evidence: [research/r1-linux-ios-build.md](research/r1-linux-ios-build.md), [research/r2-mobile-3d-stack.md](research/r2-mobile-3d-stack.md), [research/r4-backend-providers.md](research/r4-backend-providers.md). · 2026-10-09 (§1.2 pins and §9 Renovate policy aligned with DEC-56; §3 signing lane deferred by DEC-63; two dangling references fixed)
 **Related:** root operating contract [CLAUDE.md](CLAUDE.md) · skills in `.agents/skills/` · templates in `templates/` · migrations policy in [06-data-api-and-event-contracts.md](06-data-api-and-event-contracts.md) · CI tiers in [13-testing-quality-and-performance.md](13-testing-quality-and-performance.md).
 
 Requirement IDs delivered: `REQ-TEAM-*` / `NFR-TEAM-*` (defined in [01-requirements-and-traceability.md](01-requirements-and-traceability.md)). Set up in phase **P02**; refined in every later phase.
@@ -23,15 +23,15 @@ adb                         # via google-android-platform-tools-installer or SDK
 
 ### 1.2 Pinned toolchain via `mise`
 
-`mise` (SPINE §2) is the single version manager. Versions are pinned in a committed `mise.toml` at repo root; `mise install` reproduces the exact toolchain. **No global installs of node/pnpm/java outside mise.** Pins (as of Aug 2026 — bump via Renovate PRs only, §9):
+`mise` (SPINE §2) is the single version manager. Versions are pinned in a committed `mise.toml` at repo root; `mise install` reproduces the exact toolchain. **No global installs of node/pnpm/java outside mise.** Pins (major lines as of 2026-09-26, DEC-56; the exact versions live in `mise.toml` — bump through Renovate PRs, with runtime majors handled manually, §9):
 
 | Tool | Pin | Notes |
 |---|---|---|
-| Node.js | 22.x (active LTS) | Exact patch pinned in `mise.toml`; matches CI |
-| pnpm | 10.x | Workspace manager (SPINE §2); exact version also in `packageManager` field of root `package.json` |
-| Java | Temurin 21 | Android Gradle Plugin 9 + Robolectric (`apps/android`), `gen-kotlin.sh`, Maestro (DEC-54; was Temurin 17 for RN/Expo) |
+| Node.js | 24.x (active LTS) | Exact patch pinned in `mise.toml`; matches CI |
+| pnpm | 12.x | Workspace manager (SPINE §2); exact version also in `packageManager` field of root `package.json` |
+| Java | Temurin 25 (LTS) | Android Gradle Plugin 9 + Robolectric (`apps/android`), `gen-kotlin.sh`, Maestro (DEC-56; was Temurin 21 under DEC-54, and Temurin 17 for RN/Expo) |
 | just | 1.x | Task runner |
-| Python | 3.12.x | ML workers (`workers/`), uv for deps |
+| Python | 3.14.x | ML workers (`workers/`), uv for deps |
 | SwiftLint | 0.65.1 | `just ios-lint` (`swiftlint` on macOS, `swiftlint-static` on Linux) |
 | Maestro | 2.10.0 | Shared flows in `e2e/` (`just ios-e2e`, `just android-e2e`) |
 | XcodeGen, xcbeautify | 2.46.0, 3.2.1 (macOS only) | `apps/ios/project.yml` → `.xcodeproj`; readable `xcodebuild` output |
@@ -76,7 +76,7 @@ Target: first merged PR within day one; anything blocking that is a bootstrap bu
 
 - **What runs where.** Linux (any workstation, and the `ios` workflow's Linux job): `just ios-test-packages`, `just ios-lint`, `just ios-format --check`, `just ios-check-banned`, and `just generate`. Mac (the team's Mac, and the `ios` workflow's macOS job): `just ios-project`, `just ios-build`, `just ios-test`, `just ios-e2e`, Instruments, and device installs.
 
-- **Builds + signing:** GitHub Actions macOS runner (`xcode-27` image, `DEVELOPER_DIR` pinned; ~$0.062–0.12/min). Today it only does unsigned simulator builds. The signed archive + TestFlight lane is still to be built (OQ-18). The team's Mac is the fallback when the lane is down (RISK-12).
+- **Builds + signing:** GitHub Actions macOS runner (`xcode-27` image, `DEVELOPER_DIR` pinned; ~$0.062–0.12/min). Today it only does unsigned simulator builds. The signed archive + TestFlight lane is still to be built (OQ-18; moved out of P02 and deferred with store enrollment by DEC-63). The team's Mac is the fallback when the lane is down (RISK-12).
 - **TestFlight upload:** App Store Connect API from a **Linux** runner (fastlane `upload_to_testflight` or `Apple-Actions/upload-testflight-build`) — works without macOS (r1 §3).
 - **App Store submission:** macOS CI step (Xcode 26+ mandatory since 2026-04-28, r1 §2). Automated in the release lane, never manual.
 - **Signing assets:** an App Store Connect API key (cloud-managed signing via `xcodebuild -allowProvisioningUpdates`) lives in CI secret storage (§6); the exact mechanism is decided with OQ-18. Distribution signing happens in CI, not on developer machines.
@@ -210,17 +210,17 @@ Sized for 2–3 people shipping tracer bullets, not a 50-person org.
 
 ## 9. Dependency, vulnerability, and supply-chain policy
 
-- **Renovate** (app, not cron scripts): weekly batched minor/patch PRs, immediate PRs for security advisories, majors one-per-PR with changelog link. `mise.toml` pins and GitHub Actions versions included. Automerge only for dev-dependency patches with green full CI.
+- **Renovate** (app, not cron scripts): weekly batched minor/patch PRs, immediate PRs for security advisories, majors one-per-PR with changelog link. `mise.toml` pins and GitHub Actions versions included. Automerge after green CI covers minor and patch updates of npm, pep621 and GitHub Actions dependencies (DEC-56, `renovate.json`); `mise.toml` runtimes, Android and SwiftPM updates and every major stay manual.
 - **Vulnerability scanning:** `osv-scanner` (covers npm + PyPI + GitHub Actions) in CI on every PR + nightly; `pnpm audit` as secondary. Failing severity threshold: high+ blocks merge; mediums get an issue with owner + deadline.
 - **Secret scanning:** `gitleaks` in pre-commit **and** CI (history-aware on nightly). A leaked secret = rotate same day (§6) + incident note.
-- **License / SBOM:** `syft` generates SBOM per release artifact (kept with release); license-checker gate denies GPL/AGPL in shipped mobile/backend bundles (it covers npm and PyPI today; Gradle/Maven and SwiftPM licenses are not checked yet, a known gap after DEC-49) (Apache-2.0 Anny model is fine — attribution tracked in doc 07). Legal-flagged licenses go to the doc 16 legal-review register.
+- **License / SBOM:** `syft` generates SBOM per release artifact (kept with release); license-checker gate denies GPL/AGPL in shipped mobile/backend bundles (it covers npm and PyPI today; Gradle/Maven and SwiftPM licenses are not checked yet, a known gap after DEC-49) (Apache-2.0 Anny model is fine — attribution tracked in doc 07). Legal-flagged licenses go to the legal-review register (doc 11 §12).
 - **Supply chain:** committed lockfiles required (`pnpm-lock.yaml`, `uv.lock`, Gradle `gradle.lockfile`s + `apps/android/gradle/verification-metadata.xml`, `Package.resolved` for the iOS packages); frozen-lockfile installs in CI; no `postinstall` scripts from new deps without review (`pnpm` config restricts build scripts to an allowlist); provenance/signature verification enabled where the registry provides it; new runtime dependency = ADR-lite justification in the PR description (what it replaces, why not stdlib/existing dep — the semantic-reuse rule applies to dependencies too).
 
 ## 10. Migrations, flags, and release channels
 
 - **DB migrations:** policy owned by [06-data-api-and-event-contracts.md](06-data-api-and-event-contracts.md). Operationally here: drizzle-kit migrations are committed files, reviewed like code; expand→migrate→contract for anything touching live data; `just db-rollback` must be proven against staging before the corresponding deploy; destructive migrations need explicit human authorization (never agent-initiated — see CLAUDE.md).
 - **Feature flags:** PostHog flags (SPINE §2). Every flag has: owner, creation date, expiry date, removal issue. Flags are for **rollout control**; paid capability gating uses **entitlements** (server-side, doc 12) — never a UI-only flag. Flag review monthly; expired flags fail a lint check.
-- **Release channels:** `internal` (team devices; every merged `main`, auto) → `beta` (TestFlight + Play internal/closed testing; weekly-ish) → `production` **staged rollout** (Play staged %; iOS phased release) → full. **Crash gate:** promotion halts automatically if crash-free sessions drop below the doc 13 threshold (PostHog/Sentry signal); rollback = halt rollout + fix-forward or store rollback.
+- **Release channels:** `internal` (team devices; every merged `main`, auto — it starts when the signing lanes land, DEC-63) → `beta` (TestFlight + Play internal/closed testing; weekly-ish) → `production` **staged rollout** (Play staged %; iOS phased release) → full. **Crash gate:** promotion halts automatically if crash-free sessions drop below the crash-free threshold of doc 14 §5 (≥ 99.5%, a hypothesis until P14) (PostHog/Sentry signal); rollback = halt rollout + fix-forward or store rollback.
 - **No OTA channel.** Native apps ship every change as a store build through the channels above. *(Historical: the RN plan allowed EAS Update for JS + assets only; removed with EAS on 2026-09-22, DEC-51.)*
 
 ## 11. Environments, data isolation, and seed data

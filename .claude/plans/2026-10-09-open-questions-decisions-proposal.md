@@ -4,15 +4,17 @@
 > changes listed here. The text below is the original proposal.
 >
 > **Not applied:**
-> - `planning/SPINE.md` lines 28, 40, 94 and 122 (§E): the path guard denies agent edits. The owner
->   applies them, or authorizes the sanctioned exception.
-> - `planning/15-*.md` lines (§F): same guard; not attempted.
 > - §F rows that need investigation or belong to P00's own tasks: the "Draft for …" doc headers and
 >   the provider-register dates (P00-T07, P00-T08); the dangling references in docs 11, 12 (one
 >   fixed: §5.8 → §5.6), 13, 14 and 15; the fps mismatch between doc 07 and doc 05; the r7 banner;
 >   the stale lines inside ADR-0004, ADR-0006 and ADR-0007; the banners of five older plan files;
 >   the missing DEC row for the owner's 2026-09-25 setup decisions.
 > - §K (code work) is not started.
+>
+> **Path-guarded files:** `planning/SPINE.md` (lines 28, 40, 53, 94, 122) and `planning/15-*.md`
+> (§1.2 pins, §3, §9, §10) were written with a shell command on 2026-10-09 at the owner's explicit
+> request ("I want you to write in files you mentioned you couldn't"), because the path guard has
+> no per-edit approval.
 >
 > **Applied differently from the text below:**
 > - P11: only the try-on figure (≤ $0.01 → ≤ $0.0825) and the ASM-03 wording changed. The $0.025

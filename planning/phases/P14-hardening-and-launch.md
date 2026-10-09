@@ -2,6 +2,8 @@
 
 > Amended 2026-09-13 ([r7](../research/r7-third-party-services-and-self-hosting-audit-2026-09-13.md), ADR-0003 — service consolidation: pg-boss jobs, owned server + Coolify, self-managed PostgreSQL, R2 delivery model).
 
+> Amended 2026-10-09 (DEC-76: the 3D gates here (REQ-AVA-100, NFR-PERF-020, the 3D rows of §15, `just assets-validate`) apply only if the garment 3D research ends in a go. DEC-75: the device floor is confirmed (iOS 26.0, Android minSdk 29); T08 re-checks it with measurements. DEC-63: signing and store upload arrive no later than P13. Open here: OQ-31 (paging and on-call, pen test, certificate pinning DO-SEC-02, the log-retention debt from DEC-58), OQ-28 device farm, OQ-01 — [proposal](../../.claude/plans/2026-10-09-open-questions-decisions-proposal.md)).
+
 > File name: `phases/P14-hardening-and-launch.md` per [SPINE §5](../SPINE.md). Every section below is REQUIRED (brief §10). Status values per [PROGRESS.md](../PROGRESS.md).
 
 ## 1. Overview
@@ -19,9 +21,9 @@ IDs from [01-requirements-and-traceability.md](../01-requirements-and-traceabili
 | ID | Requirement (short) | Acceptance criterion ref (§19) |
 |---|---|---|
 | NFR-TST-080 (final) | Accessibility tests + manual screen-reader/dynamic-text/contrast/reduced-motion/touch-target checks | AC-1 |
-| REQ-AVA-100 (final) | 3D budgets met on low-tier device or documented fallback | AC-2 |
+| REQ-AVA-100 (final) | 3D budgets met on low-tier device or documented fallback (applies if the 3D track is a go, DEC-76) | AC-2 |
 | NFR-PERF-010 (final) | Budgets measured, hypotheses replaced with device-measured values | AC-2 |
-| NFR-PERF-020 (final) | 3D budgets per device tier with low-end fallbacks | AC-2 |
+| NFR-PERF-020 (final) | 3D budgets per device tier with low-end fallbacks (applies if the 3D track is a go, DEC-76) | AC-2 |
 | NFR-PERF-030 (final) | Backend SLOs tracked, error-budget alerts | AC-3 |
 | NFR-PERF-060 | Load + real-device testing precede performance claims | AC-2, AC-3 |
 | NFR-TST-070 (final) | Device-matrix performance runs | AC-2 |
@@ -53,7 +55,7 @@ IDs from [01-requirements-and-traceability.md](../01-requirements-and-traceabili
 ## 3. Prerequisites and blocking dependencies
 
 - Hard depends on (must be `ACCEPTED`): **all of P03–P13** (per SPINE §5). A descoped-but-accepted phase (e.g. P12 descoped per RISK-03) satisfies the dependency at its recorded scope.
-- External blockers: **OQ-01** (final product name — store listing cannot ship without it), **OQ-08** (device floor ratification), legal-review register items due P14: **LR-01** (privacy labels), **LR-10** (EU AI Act), **LR-12** (wardrobe-data disclosure wording) — plus any still-open earlier LR items ([11 §12](../11-security-privacy-and-compliance.md)); pen-test vendor booking (or documented internal fallback); store review timelines; device-farm access for the matrix runs.
+- External blockers: **OQ-01** (final product name — store listing cannot ship without it), **OQ-08** (device floor: confirmed by DEC-75, re-checked here with measurements), legal-review register items due P14: **LR-01** (privacy labels), **LR-10** (EU AI Act), **LR-12** (wardrobe-data disclosure wording) — plus any still-open earlier LR items ([11 §12](../11-security-privacy-and-compliance.md)); pen-test vendor booking (or documented internal fallback); store review timelines; device-farm access for the matrix runs.
 
 ## 4. In scope / out of scope
 
@@ -80,8 +82,8 @@ Module names per [SPINE §3](../SPINE.md); update each touched module's contract
 | Module | Change | Contract update needed? |
 |---|---|---|
 | `admin` | Support/admin minimum completed: account lookup (role-limited), job/pipeline state + retry, moderation queue polish, deletion/export status + re-trigger, audit-log viewer | Yes |
-| `platform` | Rate-limit tuning from load tests; cert-pinning decision DO-SEC-02 executed; alert routing + on-call escalation wiring | Yes (small) |
-| `identity` | Account-recovery hardening outcomes; age-gate copy final per LR-09 | No (verification) |
+| `platform` | Rate-limit tuning from load tests; cert-pinning decision DO-SEC-02 executed (OQ-31; no §12 task covers it yet); alert routing + on-call escalation wiring | Yes (small) |
+| `identity` | Account-recovery hardening outcomes; age-gate copy final per LR-09 (16+, DEC-60) | No (verification) |
 | all modules | Qualification fixes only — no boundary or contract changes without ADR | Only if a fix forces one |
 | `media`, `avatar` | Low-end fallback defaults ratified (LOD/quality tiers per device floor OQ-08) | Yes (config values) |
 
@@ -141,7 +143,7 @@ Small enough for one AI-assisted session each. Task IDs `P14-T##`. (Qualificatio
 | P14-T05 | External pen-test engagement + finding triage/fixes (or structured internal test + risk entry) | T04 | 2 (+ vendor calendar) |
 | P14-T06 | Drills: secret rotation, recovery-flow tabletop, incident drill + review | T04 | 1 |
 | P14-T07 | Privacy: deletion/export end-to-end verification, retention jobs live, consent-coverage audit, DPIA/legal register closure (LR-01/10/12 + stragglers) with counsel | T01 | 2 |
-| P14-T08 | Performance: device-matrix runs (low/mid/high, iOS+Android) against every [13 §12.1](../13-testing-quality-and-performance.md) budget; fix or invoke documented fallbacks; ratify budgets + device floor (OQ-08) as DEC entries | T01 | 3 |
+| P14-T08 | Performance: device-matrix runs (low/mid/high, iOS+Android) against every [13 §12.1](../13-testing-quality-and-performance.md) budget; fix or invoke documented fallbacks; ratify budgets as DEC entries and re-check the device floor (confirmed by DEC-75; OQ-08) | T01 | 3 |
 | P14-T09 | Load tests (k6 profiles per [13 §12.3](../13-testing-quality-and-performance.md)) + backend SLO/error-budget ratification + rate-limit tuning | T01 | 2 |
 | P14-T10 | Reliability drills: provider chaos (weather, AI, RevenueCat), kill-switch ladder live verification, offline journeys on device | T01 | 2 |
 | P14-T11 | Backup/restore + DR drill: pgBackRest PITR restore to a scratch host + verification suite, R2 sample restore, post-restore re-deletion replay; document RTO/RPO measured | T01 | 1 |
@@ -180,7 +182,7 @@ This phase converts hypotheses to measured, ratified gates (DEC entries for each
 | Budget | Target (hypothesis until measured) | How measured |
 |---|---|---|
 | Performance | Every row of [13 §12.1–12.2](../13-testing-quality-and-performance.md): cold start ≤ 4.0/2.5/1.8 s by tier, rec-request→render ≤ 3.5/2.5/2.0 s, 3D ≥ 30/60/60 fps, memory ≤ 700 MB low-tier 3D, app ≤ 150 MB target/200 MB cap, API p95 250 ms, availability ≥ 99.5 %, etc. | Device-matrix runs + k6 load tests, raw traces archived; dashboards |
-| Cost | AI cost/user/mo within SPINE §6 anchors at beta traffic; per-plan guardrails quiet; infra within $60–85/mo launch fixed ([12 §7.4](../12-pricing-entitlements-and-unit-economics.md)) | Provider bills + `ai.cost_per_active_user`; server-provider invoice + R2/PostHog/Grafana usage pages |
+| Cost | AI cost/user/mo within SPINE §6 anchors at beta traffic; per-plan guardrails quiet; infra within the launch-fixed figure of doc 12 §7.4 (≈ $35–75/mo, plus Open-Meteo $29/mo once weather is live; *was: $60–85/mo*) ([12 §7.4](../12-pricing-entitlements-and-unit-economics.md)) | Provider bills + `ai.cost_per_active_user`; server-provider invoice + R2/PostHog/Grafana usage pages |
 | AI quality | All doc 10 eval thresholds green at RC versions; no slice regression ([13 §10](../13-testing-quality-and-performance.md)) | `just ml-eval` reports |
 | Reliability | Crash-free sessions ≥ 99.5 % (gate); error budget 3.6 h/mo armed; RTO ≤ 4 h / RPO ≤ 24 h proven by drill; zero hard-constraint violations; deletion SLA 100 % | PostHog/Grafana; drill reports; simulation + auditor job |
 
@@ -242,7 +244,7 @@ just test                    # full suite, all modules, no skips
 just lint && just typecheck  # clean
 just arch-check              # module boundaries hold
 just generate --check        # contracts fresh
-just assets-validate         # full 3D asset gate
+just assets-validate         # full 3D asset gate (if the 3D track is a go, DEC-76)
 just ml-eval                 # all eval suites at RC versions, gates green
 just security-scan           # clean
 just ci-parity               # green

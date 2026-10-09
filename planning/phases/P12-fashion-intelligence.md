@@ -2,6 +2,8 @@
 
 > Amended 2026-09-13 ([r7](../research/r7-third-party-services-and-self-hosting-audit-2026-09-13.md), ADR-0003 — service consolidation: pg-boss jobs, owned server + Coolify, self-managed PostgreSQL, R2 delivery model).
 
+> Amended 2026-10-09 (open here: OQ-32 content budget amount and the AC-4 feed-overlap threshold; OQ-31 admin UI surface. DEC-46 removed LLM polish from explanations, so this phase names its own summarization port. DEC-53: generated Swift and Kotlin clients — [proposal](../../.claude/plans/2026-10-09-open-questions-decisions-proposal.md)).
+
 > File name: `phases/P12-fashion-intelligence.md` per [SPINE §5](../SPINE.md). Every section below is REQUIRED (brief §10). Status values per [PROGRESS.md](../PROGRESS.md).
 
 ## 1. Overview
@@ -63,7 +65,7 @@ Module names per [SPINE §3](../SPINE.md); update each touched module's contract
 | `recommendation` | Activate stage-6 trend scorer: consume trend-relevance port, `RC-TREND-*` reason codes, weight 0.03 within clamp; zero before this phase | Yes — note trend-port dependency |
 | `admin` | Moderation queue accepts fashion-intel quarantine + user reports; editor spot-check queue for summaries ([10 §2.8](../10-ai-usage-cost-and-evaluation.md)) | Yes |
 | `shared-kernel` | `RC-TREND-*` reason-code entries finalized; content-type/source-rights enums | Yes (single-writer task) |
-| `platform` | Content-source fetch adapters behind a `ContentSourcePort` (one adapter per licensed source/API); summarization via existing `ExplanationPort`-family LLM port | Yes — port additions |
+| `platform` | Content-source fetch adapters behind a `ContentSourcePort` (one adapter per licensed source/API); summarization via an LLM summarization port that this phase defines (*was: the existing `ExplanationPort`-family LLM port; DEC-46 removed LLM explanation polish*) | Yes — port additions |
 | `billing` | None beyond consuming the existing entitlement-check seam (`trends.level`) | No |
 
 Arch rules enforced: no `fashion-intel → outfit`/renderer edge; `recommendation` reads trend relevance only through the port (`just arch-check` rule added).
@@ -73,7 +75,7 @@ Arch rules enforced: no `fashion-intel → outfit`/renderer edge; `recommendatio
 - API endpoints added/changed (OpenAPI in `packages/contracts`): `GET /feed` (cursor-paginated, tier-shaped), `GET /feed/items/:id`, `POST /feed/items/:id/signal` (save|hide|not_interested|report), `POST /feed/follows` + `DELETE /feed/follows/:id`, admin: `GET/POST /admin/moderation/content` (extends existing moderation surface).
 - Event schemas added/changed: `fashionintel.content.ingested.v1`, `fashionintel.content.retired.v1`, `fashionintel.content.quarantined.v1`, `fashionintel.signal.recorded.v1` (envelope per doc 06).
 - DB migrations (Drizzle): `sources` (id, name, rights_basis, license_ref, contract_ref, status, added_at), `content_items` (source_id, content_type, canonical_url/ref, license/attribution fields, fetch_time, freshness/expiry, dedup_hash, embedding vector, structured summary, taxonomy IDs, state: `draft|published|quarantined|retired`), `personalization_signals` (user, kind: save|hide|follow|not_interested|report, target, created_at), plus indexes (pgvector HNSW on content embeddings). Forward + rollback per doc 06 expand/contract policy; no destructive change to existing tables.
-- Generated clients to regenerate: TS mobile client, worker Python models (`just generate`).
+- Generated clients to regenerate: the TS, Swift and Kotlin clients (DEC-53; *was: TS mobile client*), worker Python models (`just generate`).
 
 ## 8. Work breakdown by surface
 
@@ -81,11 +83,11 @@ Arch rules enforced: no `fashion-intel → outfit`/renderer edge; `recommendatio
 |---|---|
 | Mobile | Discover tab: feed list, card detail, why-shown affordance, attribution display, save/follow/hide/report, starter-feed empty state, offline cache + queued signals, upgrade card |
 | Backend | `fashion-intel` module (ingestion orchestration, feed query, personalization matching, trend-relevance port); `recommendation` stage-6 activation; `admin` moderation extension |
-| Workers (ML/media) | None new — summarization + embedding calls go through existing LLM/embedding ports from pg-boss jobs |
+| Workers (ML/media) | None new — summarization + embedding calls go through the P12 summarization port and the embedding port from pg-boss jobs |
 | Data / migrations | Tables + indexes per §7; seed: synthetic licensed-sample content fixtures in `packages/seed-data` |
 | Infrastructure | pg-boss cron schedules for ingestion per source (idempotent, per-source `singletonKey`); kill-switch flag for trend summarization ([10 §6.3](../10-ai-usage-cost-and-evaluation.md) rung 2) |
 | 3D / assets | None |
-| Admin / internal tools | Moderation queue view for content, source register CRUD (rights basis mandatory field — cannot save a source without one), editor spot-check queue |
+| Admin / internal tools | Moderation queue view for content (UI surface: OQ-31), source register CRUD (rights basis mandatory field — cannot save a source without one), editor spot-check queue |
 
 ## 9. AI vs deterministic decisions
 
@@ -148,7 +150,7 @@ Small enough for one AI-assisted session each. Task IDs `P12-T##`.
 | `fashion-intel` | Rights-basis validation (source without basis unpersistable); freshness/retirement logic; why-shown assembly; dedup thresholds | Personalization determinism: same profile+closet+content set ⇒ identical feed order; hide ⇒ item absent for all subsequent refreshes | Feed API + event schemas validate against `packages/contracts`; recorded-fixture contract test per source adapter | Ingestion job idempotency (run twice, one content row); quarantine excluded from serving; Testcontainers pg + pgvector | Maestro: open Discover → why-shown → hide → refresh shows item gone |
 | `recommendation` | Trend scorer clamp (≤ 0.03 contribution); `RC-TREND-*` emitted only from stage 6 | Trend bonus never changes hard-constraint outcomes (extends [13 §11](../13-testing-quality-and-performance.md) invariants) | Result schema unchanged (additive reason codes only) | SIM suite extension: SIM-01 rerun with max trend boost — still zero violations | — |
 | `admin` | Moderation state transitions for content | — | Admin endpoints in contract | Report → queue → quarantine → excluded-from-feed round trip | — |
-| Mobile `features/discover` | Card/why-shown/attribution components; state machines for §5 states | — | Generated client only | Offline signal queue drain (fake API) | Golden snapshots for empty/failure/upgrade states |
+| Mobile Discover feature (native feature modules on both platforms; *was `features/discover`*) | Card/why-shown/attribution components; state machines for §5 states | — | Generated client only | Offline signal queue drain (fake API) | Golden snapshots for empty/failure/upgrade states |
 
 New bug fixes require a regression test that fails before the fix. Tests live in each module's `tests/` directory.
 
@@ -173,7 +175,7 @@ Link RISK-NN/ASM-NN in [16](../16-risks-open-questions-and-decision-log.md); add
 
 - Risks in play: **RISK-03** (content licensing — primary), RISK-08 (AI cost), RISK-16 (scope — P12 feed is first on the cut ladder), ASM-04, OQ-05.
 - **Stop/kill criteria for this phase:**
-  - T01 finds no licensable source within content budget → **descope the trend feed to closet-derived inspiration** (deterministic, zero licensing), log DEC, close the phase at that reduced scope (RISK-03 kill criterion). An unlicensed feed never launches.
+  - T01 finds no licensable source within content budget (amount: OQ-32) → **descope the trend feed to closet-derived inspiration** (deterministic, zero licensing), log DEC, close the phase at that reduced scope (RISK-03 kill criterion). An unlicensed feed never launches.
   - Simulation shows any trend-induced hard-constraint violation → `engine-trend-scorer` stays off; sev-2 defect; phase cannot pass AC-8 until zero.
   - Post-launch hide-rate kill signal per source ([00 §8.2](../00-product-vision-and-scope.md)) → source curation action, not a phase blocker.
 
@@ -197,7 +199,7 @@ Objectively verifiable statements — no "works well".
 - AC-1: Every row in `sources` has a non-null, reviewed rights basis (license, API terms, or owned content); a source insert without one is rejected by test and by admin UI. Zero content rows reference a source outside the register.
 - AC-2: Replaying any ingestion event/job produces zero duplicate published content rows (idempotency test output attached); every published content row stores source, license/attribution, fetch time, and freshness expiry.
 - AC-3: Each content type (trend, runway, seasonal, inspiration) exists in the ingestion taxonomy and at least one item of each renders in the feed in the demo.
-- AC-4: The two-profile test asserts feed difference: overlap of top-20 items between seeded users A and B is below the documented threshold, and each feed item's stored personalization inputs are queryable.
+- AC-4: The two-profile test asserts feed difference: overlap of top-20 items between seeded users A and B is below the documented threshold (value: OQ-32), and each feed item's stored personalization inputs are queryable.
 - AC-5: 100 % of rendered feed cards display a why-shown reason derived from stored personalization inputs (UI test); a hide signal removes the target from the next refresh (integration test) and is recorded for personalization.
 - AC-6: Duplicate stories across two fixture sources collapse into one published item (hash + embedding dedup test).
 - AC-7: Quarantined/reported content is excluded from all feed queries (test), and retiring a source retires its content gracefully with no feed errors.

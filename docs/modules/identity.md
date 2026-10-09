@@ -3,7 +3,7 @@
 > Module names are canonical per [SPINE §3](../../planning/SPINE.md). Path: `apps/api/src/modules/identity`. This contract is the module's source of truth; code that contradicts it is wrong until a DEC entry says otherwise.
 
 - **Responsibility (one sentence):** Accounts, sessions, auth providers, consent records, and the age gate.
-- **Owner:** @team (placeholder — see `CODEOWNERS`) · **Status:** skeleton (P02) · **Last updated:** 2026-09-13
+- **Owner:** @team (placeholder — see `CODEOWNERS`) · **Status:** skeleton (P02) · **Last updated:** 2026-10-09
 
 ## Public interface
 
@@ -47,7 +47,7 @@ Derived from P02 brief §5 and doc 04 §4.2; every rule has a failing fixture (`
 - Provider SDKs — `pg-boss`, aws-sdk/R2, RevenueCat, fal.ai, Open-Meteo, FCM, PostHog SDKs (`domain-no-provider-sdk`); ports only.
 - `apps/api/src/platform/**` (`modules-not-platform`); ports are bound at composition roots only.
 - Creating `utils/`, `helpers/`, or `common/` directories (`no-utils-dirs`); importing `prototype/**` (`prototype-unimportable`).
-- Auth/authorization and consent changes require the `security-privacy-review` skill before PR (CLAUDE.md, Security and privacy rules). Age policy is OPEN — see planning/16 OQ-03.
+- Auth/authorization and consent changes require the `security-privacy-review` skill before PR (CLAUDE.md, Security and privacy rules). Age policy: 16+ at launch (DEC-60, pending LR-09). Sign-in at launch is Apple, Google and passkeys, with no email+password (DEC-64). The account-deletion grace window is 7 days (DEC-65). No foreign key crosses a module boundary (ADR-0009, DEC-67), and `users` carries `home_region` (DEC-61).
 
 ## Tests
 

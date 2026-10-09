@@ -85,7 +85,7 @@ reports anything it cannot change.
 The region (US Cloud) was set when the project was created. PostHog moves a project to another
 region only for customers on its Scale or Enterprise plan, and a PostHog engineer runs that move
 (posthog.com/docs/settings/projects, checked 2026-10-03). On the Free plan, moving to EU therefore
-means a new organization and project on EU Cloud (ADR-0007, OQ-07).
+means a new organization and project on EU Cloud (ADR-0007, OQ-07). Decided on 2026-10-09 (DEC-61): the US project is a test project, and the production project is created on EU Cloud with the real account.
 
 ## Symbol upload
 

@@ -2,6 +2,8 @@
 
 > Amended 2026-09-13 ([r7](../research/r7-third-party-services-and-self-hosting-audit-2026-09-13.md), ADR-0003 — service consolidation: pg-boss jobs, owned server + Coolify, self-managed PostgreSQL, R2 delivery model).
 
+> Amended 2026-10-09 (DEC-74: family sharing and shared closets are not in v1 (resolves OQ-09, closes BIL-O5). DEC-73: monthly credits do not roll over; purchased top-ups never expire. DEC-69: counting and over-cap rules. DEC-63: store enrollment, the signing lanes and store upload (formerly P02-T14 and T15) arrive here at the latest, after OQ-18 (permanent bundle id) and OQ-01 (name) close. Still open: OQ-02, OQ-12 (no task yet), BIL-O1, O2, O6, O8. DEC-53: generated Swift and Kotlin clients. ASM-13 is the store-commission assumption, numbered ASM-09 until 2026-10-09 — [proposal](../../.claude/plans/2026-10-09-open-questions-decisions-proposal.md)).
+
 > File name: `phases/P13-monetization-and-entitlements.md` per [SPINE §5](../SPINE.md). Every section below is REQUIRED (brief §10). Status values per [PROGRESS.md](../PROGRESS.md). All prices in this file are **PRICING HYPOTHESES** per [12](../12-pricing-entitlements-and-unit-economics.md); store-compliance statements carry `[VERIFY-P13]` and require qualified review.
 
 ## 1. Overview
@@ -39,7 +41,7 @@ IDs from [01-requirements-and-traceability.md](../01-requirements-and-traceabili
 ## 3. Prerequisites and blocking dependencies
 
 - Hard depends on (must be `ACCEPTED`): **P03** (per SPINE §5). Consumes entitlement seams built into P06+ features (flags + shared entitlement check) and the credit-consuming operations from P11; if P11/P12 shipped descoped, the corresponding entitlements stay dormant (no blocker).
-- External blockers: **RISK-04** / **OQ-02** (store approval of server-granted trial — compliance review is P13-T01 and gates submission strategy); **ASM-05**; **OQ-01** (product name needed for store listing — must be decided by P13 for store metadata); **OQ-09**/BIL-O5 (family sharing — default: not in v1); **BIL-O1/O2/O6** ([12 §8](../12-pricing-entitlements-and-unit-economics.md)); **LR-08** (CCPA sale/share classification of RevenueCat/PostHog flows, [11 §12](../11-security-privacy-and-compliance.md)); Apple/Play developer accounts, RevenueCat account, store sandbox testers, Small Business Program enrollment.
+- External blockers: **RISK-04** / **OQ-02** (store approval of server-granted trial — compliance review is P13-T01 and gates submission strategy); **ASM-05**; **OQ-01** (product name needed for store listing — must be decided by P13 for store metadata); **OQ-12** (Free cap 40 vs 100 and a weekly Plus SKU — a P13 experiment per doc 16; no task below covers it yet); **OQ-18** (permanent bundle id, with store enrollment and the signing lanes moved here by DEC-63); **OQ-09**/BIL-O5 (family sharing — decided: not in v1, DEC-74); **BIL-O1/O2/O6** ([12 §8](../12-pricing-entitlements-and-unit-economics.md)); **LR-08** (CCPA sale/share classification of RevenueCat/PostHog flows, [11 §12](../11-security-privacy-and-compliance.md)); Apple/Play developer accounts, RevenueCat account, store sandbox testers, Small Business Program enrollment.
 
 ## 4. In scope / out of scope
 
@@ -47,7 +49,7 @@ IDs from [01-requirements-and-traceability.md](../01-requirements-and-traceabili
 
 **Stretch (build if T01–T16 land early, else v1.1):** consumable top-up SKUs 30 credits $4.99 / 100 credits $12.99 (BIL-O4; ledger `type: topup` already designed).
 
-**Out of scope / non-goals:** credit rollover (BIL-O4 experiment); family sharing (BIL-O5 — decision recorded: not in v1); web checkout or any purchase path outside store IAP; localization of pricing pages (English-first; store regional price tiers only); store submission itself and final privacy labels (P14); changing tier structure or prices (owned by SPINE §6 / doc 12 — this phase implements, never re-prices).
+**Out of scope / non-goals:** credit rollover (decided: none, DEC-73); family sharing (BIL-O5 — decided: not in v1, DEC-74); web checkout or any purchase path outside store IAP; localization of pricing pages (English-first; store regional price tiers only); store submission itself and final privacy labels (P14); changing tier structure or prices (owned by SPINE §6 / doc 12 — this phase implements, never re-prices).
 
 ## 5. Product/UX behavior
 
@@ -72,9 +74,9 @@ Module names per [SPINE §3](../SPINE.md); update each touched module's contract
 | Module | Change | Contract update needed? |
 |---|---|---|
 | `billing` | Full implementation: plans + SKU map (versioned), entitlement grants/resolver, trial grant/expiry, credit ledger, billing_events, webhook projection state machine, reconciliation job, cost guardrails, paywall offering config (server-driven) | Yes — new module contract |
-| `shared-kernel` | Entitlement-name registry finalized (15 names, [12 §3.1](../12-pricing-entitlements-and-unit-economics.md)); `ENTITLEMENT_REQUIRED` error code; ledger entry types | Yes (single-writer) |
+| `shared-kernel` | Entitlement-name registry finalized (17 names, [12 §3.1](../12-pricing-entitlements-and-unit-economics.md)); `ENTITLEMENT_REQUIRED` error code; ledger entry types | Yes (single-writer) |
 | `platform` | RevenueCat SDK wrapper (webhook verify, REST refetch) behind `SubscriptionProviderPort`; no domain import of RevenueCat SDK | Yes |
-| `closet` / `recommendation` / `media` / `outfit` / `fashion-intel` | No code refactoring — existing seam checks flip from trial-grant-always-Pro to real resolved entitlements; closet adds over-cap read-only candidate rule ([12 §3.4](../12-pricing-entitlements-and-unit-economics.md)) | closet: yes (over-cap rule); others: no |
+| `closet` / `recommendation` / `media` / `outfit` / `fashion-intel` | No code refactoring — existing seam checks flip from trial-grant-always-Pro to real resolved entitlements; closet adds over-cap read-only candidate rule (DEC-69: archived items count; the most recently worn items up to the cap stay active) ([12 §3.4](../12-pricing-entitlements-and-unit-economics.md)) | closet: yes (over-cap rule); others: no |
 | `identity` | Signup flow calls billing trial-grant service (transactional) | Yes (small) |
 | `notifications` | Trial T-24h reminder + plan-updated push categories | Yes (small) |
 | `admin` | Billing panel: subscription/entitlement state per user, reconcile-now, credit adjustments (audited) | Yes |
@@ -84,7 +86,7 @@ Module names per [SPINE §3](../SPINE.md); update each touched module's contract
 - API endpoints added/changed (OpenAPI in `packages/contracts`): `GET /me/entitlements` (etag/short-TTL), `GET /me/subscription`, `GET /me/credits` + `GET /me/credits/history`, `GET /paywall/offerings` (server-driven experiment config), `POST /webhooks/revenuecat` (signed), admin: `GET /admin/users/:id/billing`, `POST /admin/users/:id/billing/reconcile`, `POST /admin/users/:id/credits/adjust` (audited). Typed error `ENTITLEMENT_REQUIRED` added to the shared error envelope.
 - Event schemas added/changed: `billing.entitlement.changed.v1`, `billing.trial.granted.v1`, `billing.trial.expired.v1`, `billing.credits.granted.v1` / `consumed.v1` / `refunded.v1` / `expired.v1`, `billing.reconciliation.completed.v1`.
 - DB migrations (Drizzle): `plans` (plan_version, entitlement payloads), `sku_map` (versioned), `entitlement_grants` (source: plan|trial|promo|grandfather, payloads, expires_at), `billing_events` (raw immutable, unique on RevenueCat event id), `subscription_state` (per store subscription, state machine of [12 §5.3](../12-pricing-entitlements-and-unit-economics.md)), `credit_ledger` (append-only per [12 §4.2](../12-pricing-entitlements-and-unit-economics.md), unique idempotency_key; pre-created by the P11 shadow seam if that landed — finalized here, never duplicated) + `usage_meters`. Forward + rollback plan per doc 06; ledger and billing_events are append-only (rollback = contract-phase only, never row deletion).
-- Generated clients to regenerate: TS mobile client, admin client, worker models (`just generate`).
+- Generated clients to regenerate: the TS, Swift and Kotlin clients (DEC-53; *was: TS mobile client*), admin client, worker models (`just generate`).
 
 ## 8. Work breakdown by surface
 
@@ -160,7 +162,7 @@ Small enough for one AI-assisted session each. Task IDs `P13-T##`.
 | `closet`/`media`/`outfit`/`recommendation`/`fashion-intel` | Seam checks respond to resolved entitlements (409/403 + upsell code) | — | `ENTITLEMENT_REQUIRED` error envelope | Direct API call without entitlement → 403 regardless of client state; over-cap read-only rule | Free-tier journey: browse closet, 1 rec/day, export |
 | `identity` | Signup+grant transactionality | — | — | Signup rollback if grant fails | — |
 | Security (`*.sec.test.ts`) | — | — | — | Webhook forgery rejected; replay exactly-once; entitlement tamper; credit double-spend; deletion incl. RevenueCat step | — |
-| Mobile `features/billing` | Paywall/pill/recap components; pending-purchase state machine | — | Generated client only | Fake-API UI tests for grace/expiry/restore errors | Maestro purchase+restore (sandbox); golden snapshots of paywall/recap states |
+| Mobile billing feature (native feature modules on both platforms; *was `features/billing`*) | Paywall/pill/recap components; pending-purchase state machine | — | Generated client only | Fake-API UI tests for grace/expiry/restore errors | Maestro purchase+restore (sandbox); golden snapshots of paywall/recap states |
 
 New bug fixes require a regression test that fails before the fix. Tests live in each module's `tests/` directory.
 
@@ -183,7 +185,7 @@ New bug fixes require a regression test that fails before the fix. Tests live in
 
 Link RISK-NN/ASM-NN in [16](../16-risks-open-questions-and-decision-log.md); add phase-local ones there, not here.
 
-- Risks in play: **RISK-04** (store approval of trial/paywall model — primary), RISK-08 (AI cost vs anchors, checked at P13 per register), RISK-11 (RevenueCat vendor risk — entitlement truth is our table), ASM-05, ASM-09 (closed 2026-09-13 per DEC-48); OQ-01, OQ-02, OQ-09; LR-08.
+- Risks in play: **RISK-04** (store approval of trial/paywall model — primary), RISK-08 (AI cost vs anchors, checked at P13 per register), RISK-11 (RevenueCat vendor risk — entitlement truth is our table), ASM-05, ASM-13 (store commission; closed 2026-09-13 per DEC-48; numbered ASM-09 until 2026-10-09); OQ-01, OQ-02, OQ-09; LR-08.
 - **Stop/kill criteria for this phase:**
   - T01 compliance review or store rejection finds a written policy conflict with the server-granted trial → **switch to store-managed intro-offer variant** (RevenueCat supports both; fallback per RISK-04), log DEC; pricing copy never promises the non-compliant variant.
   - Reconciliation drift alert fires persistently (> 0.1 % for 3 consecutive days) in beta → halt paid rollout (`entitlement-enforcement` stays limited to internal) until root-caused.
@@ -212,7 +214,7 @@ Objectively verifiable statements — no "works well".
 - AC-3: Plans table matches [SPINE §6](../SPINE.md) exactly (payload diff test against the registry); every price string in app copy and store metadata carries the hypothesis label until validated (copy audit checklist).
 - AC-4: For each enforcement point in [12 §3.3](../12-pricing-entitlements-and-unit-economics.md), a direct API call without the entitlement returns 403/409 with `ENTITLEMENT_REQUIRED` regardless of client state (generated authZ-matrix test); no gated feature's code changed beyond its pre-existing seam call (diff review evidence).
 - AC-5: Sandbox purchase (monthly and annual), monthly↔annual switch, and restore-on-new-device succeed on both iOS and Android test builds (Maestro/store-sandbox evidence).
-- AC-6: Every lifecycle event in the [12 §5.4](../12-pricing-entitlements-and-unit-economics.md) outcome table has a webhook-driven test asserting its entitlement outcome; family-sharing decision (not in v1) recorded as DEC.
+- AC-6: Every lifecycle event in the [12 §5.4](../12-pricing-entitlements-and-unit-economics.md) outcome table has a webhook-driven test asserting its entitlement outcome; family-sharing decision (not in v1) recorded as DEC-74.
 - AC-7: The compliance checklist covers every `[VERIFY-P13]` item with a verdict and a named qualified-review label; unresolved conflicts have a decided fallback (OQ-02 closed by DEC). Final store sign-off completes in P14 (REQ-BIL-070).
 - AC-8: Replaying any recorded webhook produces zero state change (test); nightly reconciliation repairs injected drift and raises the drift alert (test + staging demo); webhook forgery/tamper tests pass.
 - AC-9: Credit grants match SPINE §6 per tier (0 / 10 / 60 / 150; trial 15); **consume debits the task weight from `credits.weights` (try-on 3, missing view 1) and rejects a job whose weight exceeds the balance** (test); capture/recommendation/browsing consume zero credits (test); consume is atomic with job acceptance and double-delivery cannot double-charge (idempotency test); failed jobs refund the full weight.
@@ -243,7 +245,7 @@ Evidence to attach/link: sandbox purchase/restore recordings (both platforms); w
 
 ## 21. Documentation and PROGRESS.md updates
 
-- Docs to update: new `docs/modules/billing.md` contract; `shared-kernel` registry docs; doc 12 (fill measured baselines placeholder §7.6 note, close BIL-O1/O2/O6, record `[VERIFY-P13]` outcomes); doc 16 (DEC for OQ-01/OQ-02/OQ-09 + RISK-04 outcome; update ASM-05/ASM-09); doc 11 per-integration disclosure + LR-08 status; doc 14 runbook 8; identity/closet contracts touched.
+- Docs to update: new `docs/modules/billing.md` contract; `shared-kernel` registry docs; doc 12 (fill measured baselines placeholder §7.6 note, close BIL-O1/O2/O6, record `[VERIFY-P13]` outcomes); doc 16 (DEC for OQ-01/OQ-02 + RISK-04 outcome — OQ-09 is closed by DEC-74; update ASM-05/ASM-09); doc 11 per-integration disclosure + LR-08 status; doc 14 runbook 8; identity/closet contracts touched.
 - [PROGRESS.md](../PROGRESS.md): set status per its rules; `DONE` only with §20 evidence.
 
 ## 22. Handoff note

@@ -1,6 +1,6 @@
 # Proposal: repo-split readiness (module and domain separation)
 
-> Status: OPEN (2026-10-04, refreshed 2026-10-05), mostly applied on PR #15. DONE (marked below):
+> Status: OPEN (2026-10-04, refreshed 2026-10-05), mostly applied on PR #15 (merged 2026-10-08). **§B is accepted: ADR-0009, DEC-67 (2026-10-09).** DONE (marked below):
 > do-now items 1–8, C, E (except the span attribute lists), the D event gate and the type half of
 > H. Open: A (owner keeps `packages/db`, revisit at P03), B, the rest of D, F, G and the rest of H.
 > The owner asked that the codebase stay

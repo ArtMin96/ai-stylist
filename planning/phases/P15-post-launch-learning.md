@@ -1,5 +1,7 @@
 # P15 — Post-Launch Learning
 
+> Amended 2026-10-09 (decided ahead of this phase on 2026-10-09: notification defaults (DEC-72), Free over-cap behaviour (DEC-69), default occasion (DEC-71), worn inference (DEC-70); T03 keeps only what is still open. Open here: OQ-36 chat and calendar gates. `assistant` may not import `outfit` (doc 04, `just arch-check`). DEC-53: generated Swift and Kotlin clients — [proposal](../../.claude/plans/2026-10-09-open-questions-decisions-proposal.md)).
+
 > File name: `phases/P15-post-launch-learning.md` per [SPINE §5](../SPINE.md). Every section below is REQUIRED (brief §10). Status values per [PROGRESS.md](../PROGRESS.md).
 
 ## 1. Overview
@@ -34,7 +36,7 @@ IDs from [01-requirements-and-traceability.md](../01-requirements-and-traceabili
 
 ## 4. In scope / out of scope
 
-**In scope:** structured metric review against every [00 §8](../00-product-vision-and-scope.md) table (activation, core-loop, monetization, guardrails) producing written keep/change/kill decisions (DEC entries); closing deferred decide-by-data items — pricing/paywall experiment readouts ([12 §5.8](../12-pricing-entitlements-and-unit-economics.md)), trial length 3-vs-7-day experiment decision, notification defaults, Free over-cap behavior, feed-source curation from hide rates, credit quantities; **calendar/schedule `ContextProvider`: privacy-first design ratified (fact schema, minimization, consent purpose) — implementation only if the metric case justifies it** (design-only is the default posture); **chat foundations: assistant-module adapter design + tool contracts + cost model; implementation of a minimal Pro-gated chat only if the §17 gate passes**; instrumentation gaps found by the review; doc updates converting "baseline first" placeholders to measured baselines.
+**In scope:** structured metric review against every [00 §8](../00-product-vision-and-scope.md) table (activation, core-loop, monetization, guardrails) producing written keep/change/kill decisions (DEC entries); closing deferred decide-by-data items — pricing/paywall experiment readouts ([12 §5.6](../12-pricing-entitlements-and-unit-economics.md)), trial length 3-vs-7-day experiment decision, notification defaults, Free over-cap behavior, feed-source curation from hide rates, credit quantities; **calendar/schedule `ContextProvider`: privacy-first design ratified (fact schema, minimization, consent purpose) — implementation only if the metric case justifies it** (design-only is the default posture); **chat foundations: assistant-module adapter design + tool contracts + cost model; implementation of a minimal Pro-gated chat only if the §17 gate passes**; instrumentation gaps found by the review; doc updates converting "baseline first" placeholders to measured baselines.
 
 **Out of scope / non-goals:** any second recommendation engine or chat-side business logic (forbidden — [SPINE §3](../SPINE.md), REQ-CHT-020); storing raw calendar event titles/descriptions/attendees/locations server-side (forbidden by design, [11 §7.6](../11-security-privacy-and-compliance.md)); localization, commerce, social features (still deferred per [00 §5](../00-product-vision-and-scope.md)); G3/G4 and other research bets (their own gates, [00 §9.1](../00-product-vision-and-scope.md)); repricing outside the experiment framework; scaling/infra re-architecture without measured need.
 
@@ -58,7 +60,7 @@ Module names per [SPINE §3](../SPINE.md); update each touched module's contract
 |---|---|---|
 | `context` | (Design always; build if justified) `CalendarProvider` implementing the existing `ContextProvider` interface ([09 §2.2](../09-recommendation-engine.md)): produces `calendar.event` facts with occasion classification only; consent-checked before `collect()` | Yes — provider registry entry; **zero engine changes** (AC-3) |
 | `identity` | `calendar` consent purpose activated in the registry (schema exists since P03 design) | Yes (small) |
-| `assistant` | (Design always; build if gate passes) New module: conversation storage, prompt/version registry, tool-call orchestration, per-user limits, model routing config. **Adapter only** — imports exclusively public application services of `profile`/`closet`/`context`/`recommendation`/`fashion-intel`/`outfit`/`billing` per [04 §4.1/§10](../04-architecture.md) | Yes — new module contract |
+| `assistant` | (Design always; build if gate passes) New module: conversation storage, prompt/version registry, tool-call orchestration, per-user limits, model routing config. **Adapter only** — imports exclusively public application services of `profile`/`closet`/`context`/`recommendation`/`fashion-intel`/`billing` per [04 §4.1/§10] (not `outfit`: doc 04 and `just arch-check` exclude it; *`outfit` was listed here in error*)(../04-architecture.md) | Yes — new module contract |
 | `shared-kernel` | Tool-contract schemas' shared types; chat reason-code passthrough (no new codes — chat reuses engine codes) | Yes (single-writer) |
 | `platform` | LLM chat port (shares prompt registry conventions with [10 §2.7](../10-ai-usage-cost-and-evaluation.md)); calendar OS adapters live client-side (on-device read; server sees derived facts only) | Yes |
 | `billing` | `chat.stylist` entitlement enforcement point + chat spend guardrail (REQ-BIL-100 pattern) | Yes (small) |
@@ -66,10 +68,10 @@ Module names per [SPINE §3](../SPINE.md); update each touched module's contract
 
 ## 7. Public interfaces, contracts, schemas, migrations, events
 
-- API endpoints added/changed (OpenAPI in `packages/contracts`): design-ratified in all cases; shipped only behind their gates — `POST /context/calendar/sync` (client-derived facts submission; server never receives raw event text), `POST /assistant/conversations` + `POST /assistant/conversations/:id/messages` (SSE/stream), `GET /assistant/conversations`, `DELETE /assistant/conversations/:id`. **Tool-contract schemas** (REQ-CHT-030): one schema per tool (`get_profile`, `query_closet`, `resolve_context`, `request_recommendation`, `submit_feedback`, `query_trends`, `compose_outfit`, `check_entitlement`) each with typed input/output and a declared authorization scope; contract tests generated for each.
+- API endpoints added/changed (OpenAPI in `packages/contracts`): design-ratified in all cases; shipped only behind their gates — `POST /context/calendar/sync` (client-derived facts submission; server never receives raw event text), `POST /assistant/conversations` + `POST /assistant/conversations/:id/messages` (SSE/stream), `GET /assistant/conversations`, `DELETE /assistant/conversations/:id`. **Tool-contract schemas** (REQ-CHT-030): one schema per tool (`get_profile`, `query_closet`, `resolve_context`, `request_recommendation`, `submit_feedback`, `query_trends`, `compose_outfit` (through an allowed module's public API, since `assistant` may not import `outfit`; contract settled in T08, OQ-36), `check_entitlement`) each with typed input/output and a declared authorization scope; contract tests generated for each.
 - Event schemas added/changed: `assistant.conversation.created.v1`, `assistant.message.completed.v1` (ids/counts/versions only — no message text in events), `context.fact.calendar_synced.v1`.
 - DB migrations (Drizzle): `conversations` + `messages` (user-scoped, S2/S3-classified content, retention policy field, deleted with account), `prompt_versions` registry, `assistant_usage` (per-user tool-call + token counters). All additive; forward + rollback per doc 06; none applied unless the respective gate passes.
-- Generated clients to regenerate: TS mobile client, admin client (`just generate`) — on build only.
+- Generated clients to regenerate: the TS, Swift and Kotlin clients (DEC-53; *was: TS mobile client*), admin client (`just generate`) — on build only.
 
 ## 8. Work breakdown by surface
 
@@ -115,7 +117,7 @@ Small enough for one AI-assisted session each. Task IDs `P15-T##`.
 |---|---|---|---|
 | P15-T01 | Metric review part 1 — activation + core loop vs [00 §8.1–8.2](../00-product-vision-and-scope.md): readouts, keep/change/kill decisions drafted | — (2–4 wk data) | 1 |
 | P15-T02 | Metric review part 2 — monetization + guardrails vs [00 §8.3–8.4](../00-product-vision-and-scope.md); pricing/trial/credit experiment readouts ([12 §7.6](../12-pricing-entitlements-and-unit-economics.md) baselines filled) | T01 | 1 |
-| P15-T03 | Decide-by-data closure: notification defaults, Free over-cap behavior, feed-source curation, doc 02/16 open items → DEC entries; instrumentation-gap fixes filed | T02 | 1 |
+| P15-T03 | Decide-by-data closure: feed-source curation and the remaining doc 02/16 open items → DEC entries (notification defaults and Free over-cap behavior were decided on 2026-10-09: DEC-72, DEC-69); instrumentation-gap fixes filed | T02 | 1 |
 | P15-T04 | Backlog re-rank + doc updates: doc 00 baselines recorded, doc 12 LTV section seeded from cohort data, PROGRESS next-arc definition | T03 | 1 |
 | P15-T05 | **Calendar design (always):** fact schema (occasion classification only), on-device derivation rules, consent purpose + disclosure copy, doc 11 §7.6 ratification, mock-provider test proving zero engine changes (REQ-CTX-070 seam exercise) | — (parallel with T01) | 1 |
 | P15-T06 | **Calendar gate decision:** metric case (occasion-context usage, planning-feature usage) → build / defer DEC | T03, T05 | 1 |

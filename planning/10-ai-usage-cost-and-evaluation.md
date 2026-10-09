@@ -46,7 +46,7 @@ Classification vocabulary is the brief's §3.1 taxonomy:
 Common policies (apply to every feature below; exceptions noted inline):
 
 - **Ports & versioning:** each task has a port in `platform` (e.g. `SegmentationPort`, `AttributeExtractionPort`, `EmbeddingPort`, `ImageGenPort`, `ExplanationPort`). Every stored derived result records `{provider, model_id, prompt_id+version, port_version, input_content_hash, created_at, confidence}` — the lineage row in `media.derivations`. Reproducibility = replay inputs against the recorded versions.
-- **Caching/dedup/batch:** inputs are content-hashed **before** any paid call; identical hash + same model/prompt version → serve stored result, never reprocess. Jobs are idempotent (idempotency key = `hash + task + model_version`, enforced by pg-boss singleton keys). Derived results are stored with lineage and invalidated only when their specific input or model version changes. Async work uses provider Batch APIs (−50%) wherever the user is not waiting.
+- **Caching/dedup/batch:** inputs are content-hashed **before** any paid call; identical hash + same model/prompt version → serve stored result, never reprocess. Jobs are idempotent (idempotency key = `hash + task + model_version`, enforced by a derived pg-boss job id plus the consumer-side idempotency guard — DEC-57; `singletonKey` alone does not dedupe). Derived results are stored with lineage and invalidated only when their specific input or model version changes. Async work uses provider Batch APIs (−50%) wherever the user is not waiting.
 - **Retention/no-training:** default **no provider training on customer data**; prefer zero/short retention (Anthropic 7-day, no training on API data — r3 §1.3). Face/body media may only go to providers passing the doc 11 privacy review; selfies never leave the device in v1 (feature 6). We keep originals + derivations in R2 under our own retention policy (doc 11).
 
 ### 2.1 Segmentation / background removal (CV)
@@ -325,7 +325,7 @@ Rungs 4–5 are also the automatic response to provider outage. Nothing on the l
 5. Embedding-model migrations additionally require the background re-embed job (§2.3).
 6. Record as ADR; update this doc's §3 table + prices with new as-of date.
 
-Known migration triggers already on file: Gemini 2.5 Flash sunset Oct 16 2026; Anthropic pricing review Sep 1 2026; embeddings self-host evaluated as a P06 arm rather than at a volume threshold (DEC-47).
+Known migration triggers already on file: Gemini 2.5 Flash sunset Oct 16 2026; Anthropic pricing review Sep 1 2026; embeddings self-host evaluated as a P06 arm rather than at a volume threshold (DEC-47). *(2026-10-09: no outcome is recorded for the 2026-09-01 Anthropic pricing review; record it at the next price re-verification, AIC-O6.)*
 
 ---
 

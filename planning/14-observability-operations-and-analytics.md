@@ -12,10 +12,10 @@
 Two–three developers operate this system. Observability must be **cheap to run, honest, and quiet**: few tools, aggressive redaction, alerts only for things a human must act on. Every phase ships the observability for what it introduces (§15) — no "instrument it later."
 
 **Tooling (per [r4](research/r4-backend-providers.md) + SPINE):**
-- **PostHog** — product analytics, error tracking, session replay (mobile, off by default and consent-gated), feature flags. Kept on the Cloud free tier (DEC-48); exit trigger: before any paid usage, or if OQ-07 residency rejects the region → self-host PostHog OSS only if in-house data is itself a requirement.
+- **PostHog** — product analytics, error tracking, session replay (mobile, off by default and consent-gated), feature flags. Kept on the Cloud free tier (DEC-48), on EU Cloud for the production project (DEC-61; the accounts created so far are test accounts); exit trigger: before any paid usage, or if OQ-07 residency rejects the region → self-host PostHog OSS only if in-house data is itself a requirement.
 - **OpenTelemetry SDK** everywhere for traces/metrics/logs — vendor-neutral instrumentation is the commitment; the export target is swappable.
 - **Pragmatic trace/metric backend at launch:** OTel → **Grafana Cloud free tier** (Tempo traces, Prometheus-style metrics, Loki logs). Chosen over self-hosting (ops burden for 2 devs) and over PostHog-only (PostHog is not a distributed-tracing backend). Confirmed as **ADR-OBS-01** = [ADR-0007](../docs/adr/0007-observability-backend.md) on 2026-09-27 (P02-T09, DEC-58); kept on the free tier (DEC-48). Exit trigger: before any paid usage → self-hosted Grafana + Prometheus + Loki + Tempo (AGPL-3.0) on a **separate failure domain**, never on the app server.
-- **Sentry (optional):** enable for native iOS/Android crash symbolication only if PostHog error tracking proves insufficient (decision point end of P03; keep the seam — crash reporter behind one init module).
+- **Sentry (optional):** enable for native iOS/Android crash symbolication only if PostHog error tracking proves insufficient (decision point end of P03, OQ-21; keep the seam — crash reporter behind one init module).
 - Coolify's deploy/container views, host metrics (node exporter), Cloudflare dashboards and pg-boss queue tables are supplements, not the system of record.
 
 ## 2. Structured logging
@@ -25,7 +25,7 @@ Two–three developers operate this system. Observability must be **cheap to run
 - **Correlation IDs:** minted at the mobile client per logical operation (UUIDv7), sent as `x-correlation-id`, propagated through API → outbox events → pg-boss jobs → Python workers → provider calls (as our own metadata, never as user data). One capture-to-catalog flow is traceable end-to-end by one ID.
 - **Redaction enforced by the logger, not by discipline:** serializer allowlist per log schema — only declared fields are emitted; denylist backstop drops keys matching the forbidden list in [11 §8](11-security-privacy-and-compliance.md) (tokens, image data, measurements, coordinates, calendar text, emails, prompt payloads).
 - **Forbidden-field lint (CI):** ESLint/Ruff rules ban `console.*`, logging of `req.body`/`request.json()` wholesale, and any identifier matching the forbidden-field patterns inside logging calls. The runtime canary test lives in [13 §8.1](13-testing-quality-and-performance.md).
-- Retention: 30 d hot, 90 d archived (S1 data per 11 §6). Log access is itself restricted (logs are internal data, but treated as if a leak is possible — hence redaction at source).
+- Retention: 30 d hot, 90 d archived (target; the Grafana Cloud free tier keeps 14 days — accepted debt until P14, DEC-58, OQ-31) (S1 data per 11 §6). Log access is itself restricted (logs are internal data, but treated as if a leak is possible — hence redaction at source).
 
 ## 3. Tracing
 
@@ -66,7 +66,7 @@ Namespace `stylist.*`; all metrics tagged `service`, `env`, and where relevant `
 
 ## 5. Crash reporting
 
-- **Mobile:** PostHog error tracking + native crash capture on iOS and Android; dSYMs (iOS) and R8 mapping files (Android) uploaded from CI per release. *(Updated 2026-09-22: no JS source maps, no EAS.)* If native symbolication is inadequate → Sentry per §1 decision. Crash reports scrubbed: no screenshots, no view hierarchies containing user content, breadcrumbs limited to event names.
+- **Mobile:** PostHog error tracking + native crash capture on iOS and Android, both under the `analytics` consent purpose (DEC-66); dSYMs (iOS) and R8 mapping files (Android) uploaded from CI per release. *(Updated 2026-09-22: no JS source maps, no EAS.)* If native symbolication is inadequate → Sentry per §1 decision. Crash reports scrubbed: no screenshots, no view hierarchies containing user content, breadcrumbs limited to event names.
 - **Backend/workers:** unhandled exceptions → PostHog error tracking with trace_id link; panics in jobs also surface as DLQ entries (§4).
 - **Crash-free-sessions** is a release-gate metric (staged rollout halts below threshold — rollout policy in doc 15 §10; hypothesis ≥ 99.5%, ratified in P14).
 

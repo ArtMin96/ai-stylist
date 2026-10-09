@@ -2,6 +2,8 @@
 
 > Amended 2026-09-13 ([r7](../research/r7-third-party-services-and-self-hosting-audit-2026-09-13.md), ADR-0003 — service consolidation: pg-boss jobs, owned server + Coolify, self-managed PostgreSQL, R2 delivery model).
 
+> Amended 2026-10-09 (DEC-76: this phase waits with P04 for the garment 3D research go/no-go. Open at phase start: OQ-22 which plan includes the A2 face, OQ-23 apparent-minor detection versus the no-age-inference rule, OQ-06. DEC-60: the app floor is 16+; LR-09 decides whether face features need 18+. DEC-53: generated Swift and Kotlin clients — [proposal](../../.claude/plans/2026-10-09-open-questions-decisions-proposal.md)).
+
 > File name: `phases/P05-selfie-face-personalization.md` per [SPINE §5](../SPINE.md). Every section below is REQUIRED (brief §10); write "None" explicitly rather than deleting a section. Status values per [PROGRESS.md](../PROGRESS.md).
 
 ## 1. Overview
@@ -32,7 +34,7 @@ IDs from [01-requirements-and-traceability.md](../01-requirements-and-traceabili
 
 ## 3. Prerequisites and blocking dependencies
 
-- Hard depends on (must be `ACCEPTED`): **P04** (avatar head, appearance system, asset versioning) — per SPINE §5.
+- Hard depends on (must be `ACCEPTED`): **P04** (avatar head, appearance system, asset versioning) — per SPINE §5. P04 waits on DEC-76, so P05 does too.
 - External blockers:
   - **LR-05** (BIPA-class compliance: consent wording, retention/destruction schedule) — **blocks shipping** this phase; engineering may build behind the flag, but the flag stays off until counsel signs off ([11 §12](../11-security-privacy-and-compliance.md)).
   - **LR-06** (DPIA for face processing) — due P05.
@@ -81,7 +83,7 @@ Architectural invariant reaffirmed: the selfie image never leaves the device in 
   - Consent endpoints from P03 reused (`identity`); no new consent API shape.
 - Event schemas added/changed: `identity.consent.changed.v1` consumers extended (`media`, `avatar` halt/purge on `face_processing` withdrawal); new `avatar.face.applied.v1` (avatarId, rigVersion, confidenceTier — no biometric payload, ids only per doc 06 outbox rules); new `media.face_assets.deleted.v1` (cascade completion, audited).
 - DB migrations (Drizzle): `00XX_avatar_add_face_vector.sql` (encrypted face-parameter vector column/table keyed to rig version + consent record id), `00XX_media_add_face_lineage.sql`. Forward additive; rollback = drop (expand–contract per doc 06 §7 once live).
-- Generated clients to regenerate: mobile TS client + event types (`just generate`).
+- Generated clients to regenerate: the Swift and Kotlin clients (DEC-53; *was: mobile TS client*) + event types (`just generate`).
 
 ## 8. Work breakdown by surface
 
@@ -126,7 +128,7 @@ Owning row: [10 §2.6](../10-ai-usage-cost-and-evaluation.md) (Selfie → styliz
 | ID | Task | Depends on | Est. sessions |
 |---|---|---|---|
 | P05-T01 | Consent screen + `face_processing` wiring: policy-versioned copy (LR-05 wording placeholder pending counsel), grant/withdraw flows, consent-gate integration test (no processing before record exists) | — | 1 |
-| P05-T02 | Native landmark bridge: one TS interface, ARKit + MediaPipe implementations, extraction confidence output; device smoke tests both platforms | — | 2 |
+| P05-T02 | Native landmark adapters: one interface per platform, ARKit + MediaPipe implementations (*was: one TS interface over an RN bridge*), extraction confidence output; device smoke tests both platforms | — | 2 |
 | P05-T03 | Guided capture UX: overlay, on-device quality validation with specific guidance, retake loop, crop/review | P05-T02 | 2 |
 | P05-T04 | Landmarks→head-morph deterministic mapping + head blend-shape assets; stylized-likeness tuning; unit + golden tests | P05-T02 | 2 |
 | P05-T05 | Review screen: confidence indicator, accept/adjust/reject, apply-to-avatar (`avatar.face.applied.v1`), honest-copy strings | P05-T03, P05-T04 | 1 |

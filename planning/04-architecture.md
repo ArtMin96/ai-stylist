@@ -222,7 +222,7 @@ The only places where concrete adapters meet ports:
 
 | Root | Path | Wires |
 |---|---|---|
-| API | `apps/api/src/main.ts` + `app.module.ts` | NestJS DI: binds every port token to its `platform` adapter; registers module public providers; config/env validation; OpenAPI doc emission |
+| API | `apps/api/src/main.ts` + `app.module.ts` | NestJS DI: binds every port token to its `platform` adapter; registers module public providers; config/env validation *(not OpenAPI emission: the spec is authored in `packages/contracts`, doc 06 §1)* |
 | Job handlers | `apps/api/src/jobs/index.ts` | pg-boss job definitions importing **public** application services only; binds ports for the job runtime (R2 client, ML-worker HTTP client) |
 | iOS | `apps/ios/App/` (`CompositionRoot`) | Config (host-only `API_BASE_URL`), generated API client via `APIData`, analytics port + consent gate; later the local DB, upload queue and renderer |
 | Android | `apps/android/app/` (`AppContainer`, built in `Application`) | The same set as iOS; the only place that reads `BuildConfig` or constructs adapters |
@@ -272,14 +272,14 @@ Everything else receives dependencies; nothing else constructs adapters.
 ├── tools/
 │   ├── depcruise/               # architecture rules
 │   ├── codegen/                 # contract generation scripts
-│   └── bootstrap/               # Ubuntu setup + doctor
-├── docs/ → planning/            # this planning package; ADRs in planning/16 + templates
+│   └── bootstrap/               # historical: bootstrap + doctor live in scripts/ (DEC-37)
+├── docs/ → planning/            # this planning package; decision log in planning/16, ADR files in docs/adr/ (DEC-37)
 ├── justfile                     # root task runner (SPINE §2)
 ├── pnpm-workspace.yaml
 └── turbo.json
 ```
 
-Rules: large 3D binaries go through Git LFS or the R2-backed artifact store (doc 07), never raw Git. `packages/contracts` and `packages/shared-kernel` are the only packages both `apps/*` and `workers/*` may depend on — the client apps never import server internals. The native apps consume `packages/contracts` only through the generated Swift/Kotlin clients. They cannot import `shared-kernel` (TypeScript) yet, and a language-neutral emission is open (OQ-15).
+Rules: large 3D binaries go through Git LFS or the R2-backed artifact store (doc 07), never raw Git. `packages/contracts` and `packages/shared-kernel` are the only packages both `apps/*` and `workers/*` may depend on — the client apps never import server internals. The native apps consume `packages/contracts` only through the generated Swift/Kotlin clients. They read `shared-kernel` constants through the generated Swift and Kotlin kernel outputs (OQ-15, resolved by DEC-55).
 
 ## 7. Key request/data flows
 
@@ -304,7 +304,7 @@ sequenceDiagram
     M->>R2: PUT original (resumable)
     M->>A: POST /media-uploads/:id/complete
     A->>PG: state=uploaded, outbox: media.asset.ready_for_processing
-    PG-->>T: outbox relay enqueues processing job (singleton key = asset id + pipeline version)
+    PG-->>T: outbox relay enqueues processing job (job id derived from the event id — DEC-57; `singletonKey` carries the user id for per-user cancellation)
     T->>R2: fetch original
     T->>W: segment / quality-score / attributes (versioned JSON)
     W-->>T: results + confidence
@@ -375,7 +375,7 @@ sequenceDiagram
 
 **Principle:** the closet must be browsable and capturable offline; the server remains the source of truth for canonical and derived data.
 
-- **Local store:** a native store per platform, **to be decided in the phase that introduces the local store (P07)** (DEC-49; *historical: the RN plan used expo-sqlite + Drizzle*). Tables mirror a read-model subset of `closet`, `outfit`, `profile`, plus local-only queues. Item images cached on the file system with an LRU disk budget (default 512 MB, configurable; doc 13 owns budgets).
+- **Local store:** a native store per platform, **to be decided in the phase that introduces the local store (P07; OQ-27 — P06-T03 needs the queue store one phase earlier, so one ADR covers both)** (DEC-49; *historical: the RN plan used expo-sqlite + Drizzle*). Tables mirror a read-model subset of `closet`, `outfit`, `profile`, plus local-only queues. Item images cached on the file system with an LRU disk budget (default 512 MB, configurable; doc 13 owns budgets).
 - **Upload queue:** every capture and mutation is written locally first as an ordered, durable **mutation log** entry (`opId` ULID = idempotency key). A background drain pushes entries when connectivity returns; uploads to R2 are resumable (multipart, content-hash addressed, so retry never duplicates).
 - **Pull sync:** delta sync via `GET /sync/changes?since=<cursor>` per module read-model; server assigns monotonically increasing change cursors. Push notifications hint "changes available" but sync never depends on push.
 - **Conflict policy (deterministic, per-field class):**

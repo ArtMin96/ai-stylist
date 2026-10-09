@@ -2,6 +2,8 @@
 
 > Amended 2026-09-13 ([r7](../research/r7-third-party-services-and-self-hosting-audit-2026-09-13.md), ADR-0003 — service consolidation: pg-boss jobs, owned server + Coolify, self-managed PostgreSQL, R2 delivery model).
 
+> Amended 2026-10-09 (DEC-70: worn is user-marked only, and laundry is prompt-only. DEC-69: item counting and over-cap rules. DEC-53: generated Swift and Kotlin clients. Open here: OQ-26 repair/lent UI; OQ-27 on-device store, one ADR shared with P06-T03 — [proposal](../../.claude/plans/2026-10-09-open-questions-decisions-proposal.md)).
+
 > File name: `phases/P07-closet-organization-and-sync.md` per [SPINE §5](../SPINE.md). Every section below is REQUIRED (brief §10); write "None" explicitly rather than deleting a section. Status values per [PROGRESS.md](../PROGRESS.md).
 
 ## 1. Overview
@@ -53,8 +55,8 @@ Journey detail owned by [02-user-journeys §7](../02-user-journeys-and-informati
 | Closet browse (grid/list) | Cached closet renders instantly; sync deltas apply in place with subtle indicators; grouping switcher | Empty closet → illustrated empty state, single primary action (Capture) + "how it works"; never an empty grid | Sync failure → non-blocking banner; local view stays browsable; per-item errors on the item tile | Full browse over the local index (metadata + thumbnails) | Grid tiles labeled (name, category, color, availability); grouping announced; dynamic type reflows |
 | Search/filter/sort | Free text + structured chips; results as you type; saved-filter shortcut row | No results → suggestions to relax filters; filters warn when still-processing items are excluded | Search index rebuild on corruption (automatic, logged) | Search/filter/sort run entirely on the offline index | Filter chips are accessible toggles; result count announced |
 | Item detail | All photos (provenance markers where relevant), attributes with confidence + edit, wear history, cost-per-wear (only when price supplied), notes, availability control, collections | Missing attributes → "add" affordances, provisional markers | Edit save failure → local retain + retry | Fully editable offline; edits queue | Every attribute row labeled; provenance/confidence conveyed in text |
-| Availability changes | One-tap state chip among the six canonical states; optional metadata (return date for lent/packed); bulk select → "all packed" | — | Illegal transition impossible (UI only offers valid ones); server guard as backstop | State changes queue offline | State change announced; states also color-blind-safe (icon + label, doc 13 manual check) |
-| Laundry assist | "Mark worn" can prompt laundry per user-tunable wear-count-per-category; defaults per doc 08 §6; never nagging | — | — | Works offline | Prompt dismissible; setting discoverable |
+| Availability changes | One-tap state chip among the six canonical states (separate repair/lent UI versus one "unavailable (reason)": OQ-26); optional metadata (return date for lent/packed); bulk select → "all packed" | — | Illegal transition impossible (UI only offers valid ones); server guard as backstop | State changes queue offline | State change announced; states also color-blind-safe (icon + label, doc 13 manual check) |
+| Laundry assist | "Mark worn" can prompt laundry per user-tunable wear-count-per-category; defaults per doc 08 §6; never nagging (DEC-70: worn is user-marked only, and the prompt never moves items by itself) | — | — | Works offline | Prompt dismissible; setting discoverable |
 | Tags & collections | Tag creation shows existing-tag suggestions by prefix/similarity first; merge tool rewrites references; collections with ordered membership, item-in-many | No tags/collections → inline hints | Merge is transactional; failure leaves both tags intact | Create/edit offline | Tag pickers accessible; merge confirm labeled |
 | Wear history | Mark outfit/item worn → wear event; item shows count, last worn, frequency, cost-per-wear = price ÷ max(wears,1), "based on your logged wears" | No wears → neutral "no wears logged yet" | — | Wear marks queue offline | Neutral, never guilt-framed copy (doc 08 §7 tone rule) |
 | Two-device conflict | Edit same field on two devices offline → deterministic winner (server version); loser preserved as "conflicted copy" with one-tap re-apply | — | Conflict surfaced, never silent | Resolution occurs at sync | Conflict card screen-reader complete |
@@ -70,7 +72,7 @@ Journey detail owned by [02-user-journeys §7](../02-user-journeys-and-informati
 | `media` | None beyond serving thumbnails to the offline index (existing) | No |
 | `recommendation` | **No change** — but `closet` public API now exposes everything doc 09 will consume (availability, practical attributes, wear stats); reviewed against doc 09 §inputs | No (consumer note only) |
 
-Mobile: local store (native per platform, chosen in P07-T07) mirroring read-model subsets of `closet`/`outfit`/`profile` + mutation log; image cache LRU disk budget default 512 MB (doc 04 §8).
+Mobile: local store (native per platform, chosen in P07-T07; OQ-27 — one ADR shared with the P06-T03 upload queue) mirroring read-model subsets of `closet`/`outfit`/`profile` + mutation log; image cache LRU disk budget default 512 MB (doc 04 §8).
 
 ## 7. Public interfaces, contracts, schemas, migrations, events
 
@@ -82,7 +84,7 @@ Mobile: local store (native per platform, chosen in P07-T07) mirroring read-mode
   - `GET /v1/sync/changes?since=<cursor>` per module read-model (doc 04 §8 pull sync)
 - Event schemas added/changed: `closet.item.availability_changed.v1` (activated with real consumers: recommendation cache invalidation later, sync now), `closet.item.updated.v1` payload extended additively (tags/collections refs), new `outfit.worn.v1` **stub schema only** (full producer in P09; schema landed now so wear_events ingestion is stable), new `closet.wear_event.recorded.v1`.
 - DB migrations (Drizzle): wear_events, tags, saved_filters, collections (+membership), availability metadata columns, tsvector index (`CONCURRENTLY`), practical-attribute rule-version table, tombstones + change-cursor tables. Forward additive per doc 06 §7 expand–contract; each with tested down path.
-- Generated clients to regenerate: mobile TS client (incl. saved-filter query-object types), event types, shared-kernel enums — `just generate`.
+- Generated clients to regenerate: the Swift and Kotlin clients (DEC-53; *was: mobile TS client*; incl. saved-filter query-object types), event types, shared-kernel enums — `just generate`.
 
 ## 8. Work breakdown by surface
 
@@ -132,7 +134,7 @@ Mobile: local store (native per platform, chosen in P07-T07) mirroring read-mode
 | P07-T04 | Wear events + materialized stats + cost-per-wear; `wear_event.recorded` + `outfit.worn` stub schemas | P07-T01 | 1 |
 | P07-T05 | Tags (dedupe suggestions, merge tool), saved filters (structured query objects), collections/capsules — backend + contracts | — | 2 |
 | P07-T06 | Server search: tsvector + attribute indexes (`CONCURRENTLY`), filter grammar, sort options | P07-T03 | 1–2 |
-| P07-T07 | Mobile local store: choose and record (ADR) the native store per platform, then schema, read-model mirror, image cache LRU (512 MB), hydration from server | — | 2 |
+| P07-T07 | Mobile local store: choose and record (ADR, OQ-27 — shared with the P06-T03 upload queue) the native store per platform, then schema, read-model mirror, image cache LRU (512 MB), hydration from server | — | 2 |
 | P07-T08 | Mutation-log sync: ordered durable log, background drain, `GET /sync/changes` delta pull with cursors, tombstones | P07-T07 | 2 |
 | P07-T09 | Conflict policy implementation per doc 04 §8 classes 1–4 + conflicted-copy UX; two-device convergence test harness | P07-T08 | 2 |
 | P07-T10 | Browse UI: grid/list, grouping (category/season/color/formality/recency/wear), season + color views | P07-T07 | 2 |

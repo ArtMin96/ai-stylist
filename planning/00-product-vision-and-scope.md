@@ -54,6 +54,7 @@ Global, English-first at launch; USD pricing modeled with store regional tiers (
 - **Calendar access in v1** — the context-provider seam ships (P08); the calendar provider itself is P15+.
 - **AI stylist chat in v1** — architectural seams only ([SPINE §3](SPINE.md) `assistant` module); implementation gated on post-launch metrics (P15).
 - **Social network / sharing feed** — not planned; single-user product at launch.
+- **Family sharing and shared closets** — not in v1; one user per account (DEC-74, 2026-10-09).
 - **Localization at launch** — English-first; localization deferred post-launch ([SPINE §1](SPINE.md)).
 - **Unauthorized scraping as a content source** — fashion intelligence uses licensed/authorized sources only (P12).
 - **Microservices, dedicated vector DB, Kubernetes, event-streaming platforms** — modular monolith + workers until measured need ([SPINE §2](SPINE.md)).
@@ -196,7 +197,7 @@ Each bet carries the full brief-§11 contract. Costs limits are planning caps, n
 - **Cost limit:** ≤ $1,000 spike; ≤ $0.10/garment at scale.
 - **Privacy review:** Low sensitivity (garment photos), standard media consent applies.
 - **Fallback:** G2 generative try-on + G0 collage (MVP path); G3 templates later.
-- **Kill decision:** Expected outcome is kill-for-now; re-open only when a new model class demonstrably changes r5's conclusion.
+- **Kill decision:** Expected outcome is kill-for-now; re-open only when a new model class demonstrably changes r5's conclusion. **Reopened 2026-10-09 by DEC-76:** the owner asked for the evidence to be gathered again with current tools; the desk comparison is `.claude/plans/2026-10-09-garment-3d-research.md`.
 
 #### RB-3 — Realistic cloth fit / simulation on mobile (G4)
 - **User problem:** Users want to see how fabric actually drapes and fits on their body.

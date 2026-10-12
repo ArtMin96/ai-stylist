@@ -3,7 +3,7 @@
 > Module names are canonical per [SPINE §3](../../planning/SPINE.md). Path: `apps/api/src/modules/admin`. This contract is the module's source of truth; code that contradicts it is wrong until a DEC entry says otherwise.
 
 - **Responsibility (one sentence):** Support tooling, moderation queues, audit trails, and ops dashboards (application-services layer).
-- **Owner:** @team (placeholder — see `CODEOWNERS`) · **Status:** skeleton (P02) · **Last updated:** 2026-09-13
+- **Owner:** @ArtMin96 (see `CODEOWNERS`) · **Status:** skeleton (P02) · **Last updated:** 2026-10-13
 
 ## Public interface
 

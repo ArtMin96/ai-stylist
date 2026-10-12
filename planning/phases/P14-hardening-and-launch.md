@@ -4,6 +4,8 @@
 
 > Amended 2026-10-09 (DEC-76: the 3D gates here (REQ-AVA-100, NFR-PERF-020, the 3D rows of §15, `just assets-validate`) apply only if the garment 3D research ends in a go. DEC-75: the device floor is confirmed (iOS 26.0, Android minSdk 29); T08 re-checks it with measurements. DEC-63: signing and store upload arrive no later than P13. Open here: OQ-31 (paging and on-call, pen test, certificate pinning DO-SEC-02, the log-retention debt from DEC-58), OQ-28 device farm, OQ-01 — [proposal](../../.claude/plans/2026-10-09-open-questions-decisions-proposal.md)).
 
+> Amended 2026-10-13 (P00-T05, AI-39: the store age-rating consequence of the 16+ floor, DEC-60, joins T14).
+
 > File name: `phases/P14-hardening-and-launch.md` per [SPINE §5](../SPINE.md). Every section below is REQUIRED (brief §10). Status values per [PROGRESS.md](../PROGRESS.md).
 
 ## 1. Overview
@@ -149,7 +151,7 @@ Small enough for one AI-assisted session each. Task IDs `P14-T##`. (Qualificatio
 | P14-T11 | Backup/restore + DR drill: pgBackRest PITR restore to a scratch host + verification suite, R2 sample restore, post-restore re-deletion replay; document RTO/RPO measured | T01 | 1 |
 | P14-T12 | Support/admin minimum complete ([14 §14](../14-observability-operations-and-analytics.md)) + support email templates + audit-log viewer demo | T01 | 2 |
 | P14-T13 | Observability closure: metric-gap sweep, alert-budget tuning, on-call rota + paging test, all runbooks written | T09, T10 | 2 |
-| P14-T14 | Store readiness: name (OQ-01) final, listings, privacy nutrition labels / Data safety (LR-01), permission strings, review-guideline self-check, billing compliance final sign-off (REQ-BIL-070), size gate | T02, T07 | 2 |
+| P14-T14 | Store readiness: name (OQ-01) final, listings, privacy nutrition labels / Data safety (LR-01), permission strings, review-guideline self-check, billing compliance final sign-off (REQ-BIL-070), size gate, store age ratings on the App Store and Google Play set to match the 16+ floor (DEC-60; doc 11 §10), final after LR-09; read the current store rating forms when the task starts | T02, T07 | 2 |
 | P14-T15 | Release engineering: production env finalization, store CI/CD lanes exercised (signing, TestFlight + Play internal upload), staged-rollout config + crash-gate thresholds, **rollback rehearsal** | T01 | 2 |
 | P14-T16 | Internal beta (team devices, `internal` channel) → fix loop → beta channel (TestFlight + Play closed testing) with entry/exit criteria | T14, T15, all fix loops closed | 2 (+ soak time) |
 | P14-T17 | Store submission both platforms; respond to review; **staged production rollout** (Play staged %, iOS phased) with crash gates; monitor → full availability | T16 | 2 (+ review/rollout calendar) |

@@ -1,6 +1,6 @@
 # 09 — Recommendation Engine
 
-**Status:** Draft for ratification · **Date:** 2026-08-24 · **Amended:** 2026-09-13 ([r7](research/r7-third-party-services-and-self-hosting-audit-2026-09-13.md), ADR-0003 — LLM explanation polish removed, `date-holidays` provider) · **Owning module:** `recommendation` (with `context`, `closet`, `outfit`, `shared-kernel`)
+**Status:** Draft for ratification · **Date:** 2026-08-24 · **Amended:** 2026-09-13 ([r7](research/r7-third-party-services-and-self-hosting-audit-2026-09-13.md), ADR-0003 — LLM explanation polish removed, `date-holidays` provider) · 2026-10-13 (§3.3, §13.1 — P00-T02 audit, applied with the P00 sign-off: a hard-constraint violation is a SEV1 page per doc 14 §7; the rubric-rated practical validity is named apart from the user-judged product metric of doc 00 §8.2; the §13.1 heading points at docs 00 and 14) · **Owning module:** `recommendation` (with `context`, `closet`, `outfit`, `shared-kernel`)
 **Delivered in:** P09 (`P09-recommendation-engine-v1`); context providers in P08 (`P08-context-providers`)
 **Requirement areas covered:** REQ-REC-\*, REQ-EXP-\*, REQ-CTX-\* (IDs owned by [01-requirements-and-traceability.md](01-requirements-and-traceability.md))
 **Related docs:** contracts & events → [06-data-api-and-event-contracts.md](06-data-api-and-event-contracts.md) · item attributes & taxonomy → [08-closet-taxonomy-and-organization.md](08-closet-taxonomy-and-organization.md) · AI usage/cost/eval → [10-ai-usage-cost-and-evaluation.md](10-ai-usage-cost-and-evaluation.md) · presentation → [07-3d-avatar-and-garment-pipeline.md](07-3d-avatar-and-garment-pipeline.md)
@@ -171,7 +171,7 @@ Scenario (this is also golden simulation `SIM-01`, §13.2): target date is a pub
 2. **Stage 3:** `H-SAFE-COLD` evaluates: feels-like −5 °C < clamped threshold (say 8 °C for this user) ⇒ every item with attribute `legCoverage: none|short` or category `bottoms.shorts`, `footwear.sandals` is marked excluded with reason code `RC-EXCL-COLD-SAFETY{threshold: 8, feelsLike: -5}`.
 3. **Stage 4:** candidate generation draws slot candidates **only from the non-excluded set**. Shorts are not in the pool; no composition can contain them.
 4. **Stage 6:** the holiday soft scorer adds a *capped bonus* (§4) to festive/casual candidates that survived — e.g. a red knit + jeans. It scores what exists in the pool; it cannot add to the pool.
-5. **Stage 7:** every ranked outfit is re-validated against the full hard ruleset, including `H-SAFE-COLD`, as a complete outfit. If any violating outfit appeared through any defect, it is dropped here and an invariant-violation alert fires (this firing in production is a sev-2 bug, metric §13.1).
+5. **Stage 7:** every ranked outfit is re-validated against the full hard ruleset, including `H-SAFE-COLD`, as a complete outfit. If any violating outfit appeared through any defect, it is dropped here and an invariant-violation alert fires (this firing in production is a SEV1 page per [14 §7](14-observability-operations-and-analytics.md), metric §13.1).
 6. **Trace:** the result's decision trace contains `RC-EXCL-COLD-SAFETY` entries for the shorts, so "why no shorts on the 4th of July?" is answerable from stored data.
 
 Guarantee mechanism, summarized: *holiday is architecturally a soft signal; safety is architecturally a filter; filters run before and after scoring; property tests + the simulation suite assert violation rate = 0* (§13).
@@ -358,12 +358,12 @@ The engine runs **server-side only** in v1 (no on-device rules fork — one sour
 
 ## 13. Evaluation
 
-### 13.1 Metrics (owners/events/privacy in [14-observability-operations-and-analytics.md](14-observability-operations-and-analytics.md); targets are initial hypotheses per brief §3.7)
+### 13.1 Metrics (events and metric registrations in [14 §4 and §9](14-observability-operations-and-analytics.md); owner, source and privacy class of the product-level metrics in the [doc 00 §8](00-product-vision-and-scope.md) metric tree; targets are initial hypotheses per brief §3.7)
 
 | Metric | Definition | Target |
 |---|---|---|
-| **Hard-constraint violation rate** | Violating outfits shown / outfits shown (measured by independent post-hoc auditor job re-running stage-7 rules on served results) | **0 — invariant, not a KPI.** Any violation = sev-2 incident |
-| Practical validity | % of served outfits rated valid by rubric (weather-appropriate, complete, available) on sampled + simulated traffic | baseline first, then ≥ 95% |
+| **Hard-constraint violation rate** | Violating outfits shown / outfits shown (measured by independent post-hoc auditor job re-running stage-7 rules on served results) | **0 — invariant, not a KPI.** Any violation = SEV1 ([14 §7](14-observability-operations-and-analytics.md)) |
+| Practical validity, rubric-rated (the user-judged rate is the product metric of [doc 00 §8.2](00-product-vision-and-scope.md), hypothesis ≥ 80%) | % of served outfits rated valid by rubric (weather-appropriate, complete, available) on sampled + simulated traffic | baseline first, then ≥ 95% |
 | Acceptance / save / wear | outfit accepted (not immediately regenerated) %, saved %, marked-worn % | baseline first |
 | Diversity | distinct items across a user's trailing 7 recommendations / total slots | baseline first |
 | Repetition complaints | "repetitive" feedback per 100 recommendations | baseline first, trend down |

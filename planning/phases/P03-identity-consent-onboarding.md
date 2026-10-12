@@ -4,6 +4,10 @@
 
 > Amended 2026-10-09 (decided: DEC-60 age 16+, DEC-64 no email+password at launch, DEC-65 7-day deletion grace, DEC-66 crash reports under the `analytics` consent (resolves OQ-19). DEC-61: `users.home_region` from the first user table. DEC-67 / ADR-0009: no cross-module foreign keys; the deletion-step coverage test and the migration lint land with the first table. Counsel is not engaged yet (P00-T04). Still open here: OQ-20 email provider, OQ-21 Sentry — [proposal](../../.claude/plans/2026-10-09-open-questions-decisions-proposal.md)).
 
+> Amended 2026-10-12 (owner decisions. DEC-79: counsel engagement and the legal items LR-02/03/04/07/09 gate the first minimal release, not the end of P03; the server, the staging and production environments and the EU production vendor accounts wait for the same release. DEC-81: the first run of both apps on the Mac and on phones, the Maestro smoke run, the macOS Android checksum and the symbolicated-crash evidence move from P02 to the first P03 client task that needs the Mac. The sections below are not reworded yet).
+
+> Amended 2026-10-13 (DEC-80, reading settled with the P00 sign-off: only the vendor side of observability is frozen. P03 still adds its logs, metric and span names and analytics events in code; the dashboard panels and alert rules planned in §11 and T14 are listed as owed at the first minimal release. OQ-40 asks where the P03 budgets are measured while there is no server. The sections below are not reworded yet).
+
 > File name: `phases/P03-identity-consent-onboarding.md` per [SPINE §5](../SPINE.md). Every section below is REQUIRED (brief §10); "None" is written explicitly rather than deleting a section. Status values per [PROGRESS.md](../PROGRESS.md).
 
 ## 1. Overview

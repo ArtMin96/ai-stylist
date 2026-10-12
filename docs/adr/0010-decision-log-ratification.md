@@ -1,6 +1,6 @@
 # ADR-0010 — P00 ratification of the decision log
 
-- **Status:** Proposed
+- **Status:** Accepted
 - **Date:** 2026-10-09
 - **Deciders:** product owner
 - **Decision-log entry:** DEC-68 in [16-risks-open-questions-and-decision-log.md](../../planning/16-risks-open-questions-and-decision-log.md)
@@ -25,9 +25,10 @@ The product owner ratifies the decision log in doc 16 as it stands on the ratifi
 - Doc 16 remains the only per-decision record. Rationale, evidence and the supersession chain live there.
 - No `planning/adr/` directory is created.
 - A separate ADR is written for a decision only under the doc 15 §8 triggers: a new dependency or provider, a contract shape, a SPINE override, or security-relevant design.
+- Rows in the log on the ratification date need no ADR of their own, the security-relevant ones included (DEC-61, DEC-64, DEC-66, DEC-77 and DEC-82): the owner accepts them as logged. A security-relevant decision made after that date still gets its own ADR.
 
-**Ratification line (the product owner fills it in; the ADR then becomes `Accepted`):**
-`Ratified <YYYY-MM-DD> by <name>, covering DEC-01 … DEC-<NN>.`
+**Ratification line (the product owner's sign-off, given on 2026-10-13 and entered at his instruction):**
+`Ratified 2026-10-13 by Arthur Minasyan, covering DEC-01 … DEC-82.`
 
 ## Rationale
 
@@ -36,5 +37,5 @@ The owner's rule is that no data is left stale and that plans reference each oth
 ## Consequences and revisit triggers
 
 - Positive: P00 AC-1 becomes a check on one file and on doc 16's own consistency.
-- Negative/accepted debt: decisions made before 2026-09-09 have no ADR file of their own; their matrices stay in doc 05.
+- Negative/accepted debt: decisions not covered by ADR-0001…0010 have no ADR file of their own; doc 16 is their record, and the pre-2026-09-09 matrices stay in doc 05.
 - **Revisit when:** an auditor, a partner or a store review asks for per-decision records. Reversal requires a new DEC entry.

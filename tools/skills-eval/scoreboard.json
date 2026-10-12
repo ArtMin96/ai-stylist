@@ -1,0 +1,26 @@
+{
+  "code-quality": {
+    "triggers": {
+      "current": {
+        "hash": "sha256:8c74a06b435535591f02dc9307defe32beb6ae0362e5c574f5551f98d8480560",
+        "date": "2026-10-12",
+        "model": "claude-opus-5-5",
+        "judgeModel": null,
+        "effort": "high",
+        "cliVersion": "2.1.296",
+        "gitSha": "d4affb5beee7946c452f81c1c4010136555c6045",
+        "cases": 20,
+        "runs": 1,
+        "score": 0.95,
+        "interval": {
+          "low": 0.8545,
+          "high": 1.0455
+        },
+        "n": 20,
+        "passed": 19,
+        "costUsd": 2.1359,
+        "costPerCaseRunUsd": 0.1068
+      }
+    }
+  }
+}

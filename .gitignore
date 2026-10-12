@@ -6,9 +6,11 @@ build/
 coverage/
 *.tsbuildinfo
 
-# env & secrets (only *.enc.yaml under secrets/ is committed; `just secrets-sync` merges into .env)
+# env & secrets (only .env.example, the key catalogue with empty values, and *.enc.yaml under
+# secrets/ are committed; `just secrets-sync` merges into .env)
 .env
-.env.*.local
+.env.*
+!.env.example
 secrets/*
 !secrets/README.md
 !secrets/*.enc.yaml

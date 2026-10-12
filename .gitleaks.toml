@@ -1,5 +1,9 @@
 # gitleaks configuration (P02-T12). Used by the pre-commit hook, `just security-scan`,
 # the PR-diff scan in pr-gate.yml, and the full-history scan in nightly.yml.
+# The working-tree scan of `just security-scan` (`gitleaks dir .`) reads
+# tools/security/gitleaks-worktree.toml, which extends this file with one path: the gitignored
+# repo-root .env (DEC-77). That path is not allowlisted here, so every scan of committed content
+# still reports a .env.
 #
 # Extends the default ruleset shipped inside the gitleaks binary (v8.x).
 # Syntax reference: gitleaks README "Configuration" (v8.25+ uses [[allowlists]]).
@@ -38,7 +42,8 @@ paths = [
 # rule is allowlisted) and limited to the build-output directory names under apps/ios/ and
 # apps/android/ — source trees, build scripts (build.gradle.kts), build-logic/ and every other
 # path stay fully scanned. `(^|/)` keeps it valid for both `gitleaks dir .` and an absolute scan
-# root. Proven by scripts/security/gitleaks-fixtures.sh (run by `just ci-parity`).
+# root. Proven for `gitleaks dir .`, the form `just security-scan` runs, by
+# scripts/security/gitleaks-fixtures.sh (run by `just ci-parity`).
 [[allowlists]]
 description = "gitignored native build caches (apps/ios .build/DerivedData, apps/android build/.gradle/.kotlin)"
 paths = [

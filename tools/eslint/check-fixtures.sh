@@ -55,8 +55,9 @@ for case_dir in "$FIXTURES"/*/; do
   fi
 done
 
-# RuleTester suites under tools/eslint/tests/ (node:test): e.g. quality/no-log-request-body against
-# every example in packages/shared-kernel/registry/forbidden-log-keys.examples.json.
+# Suites under tools/eslint/tests/ (node:test): RuleTester for quality/no-log-request-body against
+# every example in packages/shared-kernel/registry/forbidden-log-keys.examples.json, and the ESLint
+# class for boundaries/dependencies, which has no fixture tree (tools/eslint/README.md).
 n_suites=0
 for suite in "$ROOT"/tools/eslint/tests/*.test.mjs; do
   [[ -f "$suite" ]] || continue

@@ -699,7 +699,7 @@ test_settings_report_then_apply_on_a_public_repository() {
     writes "$fx" | grep -Fq "PUT repos/$NEW/actions/permissions/workflow {\"default_workflow_permissions\":\"read\",\"can_approve_pull_request_reviews\":false}" || return 1
     ! writes "$fx" | grep -Fq "PUT repos/$NEW/actions/permissions {" || because "a setting that already matched was sent" || return 1
     writes "$fx" | grep -F "PUT repos/$NEW/branches/main/protection " > "$fx/gh/protection.txt" || return 1
-    for check in 'Gate · just ci-parity' 'Gate · Contracts (generate --check, spectral, oasdiff)' 'Gate · Secret scan (PR diff)' 'Gate · Clone detection (placeholder)' 'Report · PR gate summary'; do
+    for check in 'Gate · just ci-parity' 'Gate · Contracts (generate --check, spectral, oasdiff)' 'Gate · Secret scan (PR diff)' 'Gate · Clone detection' 'Report · PR gate summary'; do
         grep -Fq "\"$check\"" "$fx/gh/protection.txt" || because "required check missing from the protection call: $check" || return 1
     done
     grep -Fq '"strict":true' "$fx/gh/protection.txt" || return 1

@@ -1,6 +1,6 @@
 # 01 — Requirements and Traceability
 
-**Status:** Ratified for planning · **Date:** 2026-08-24 · **Amended:** 2026-09-13 ([r7](research/r7-third-party-services-and-self-hosting-audit-2026-09-13.md), ADR-0003 — REQ-CTX-050 holiday provider; asset-delivery wording)
+**Status:** Ratified for planning · **Date:** 2026-08-24 · **Amended:** 2026-09-13 ([r7](research/r7-third-party-services-and-self-hosting-audit-2026-09-13.md), ADR-0003 — REQ-CTX-050 holiday provider; asset-delivery wording) · 2026-10-12 (P00-T09 brief-coverage audit re-run, AI-45: §4 and §5 rows completed, REQ-EXP-085 and NFR-TEAM-135 added, NFR-TEAM-090 completed; NFR-OBS-100 corrected (P00-T02); note under §4) · 2026-10-13 (NFR-OBS-090 amended: under DEC-80 a phase that closes before the first minimal release owes its dashboards and alerts at that release)
 **Owns:** the requirement ID registry (SPINE §7). Every phase file and planning doc references IDs defined here; only IDs defined in this file may be referenced anywhere in `planning/`.
 
 ---
@@ -168,6 +168,7 @@
 | REQ-EXP-060 | Users must be able to save an outfit, schedule it for later, mark it as worn, and compare alternatives. | All four actions demoed; mark-as-worn writes wear history (REQ-ORG-070); scheduling binds to a future-day forecast (REQ-CTX-030). | `outfit`, `recommendation` | P09, P10 | 09 |
 | REQ-EXP-070 | "Never suggest this pairing" and similar durable negative constraints must persist as hard rules until the user removes them. | The banned pairing never reappears across sessions/versions (simulation); the constraint is listed and revocable in preference transparency (REQ-EXP-090). | `recommendation` | P09 | 09 |
 | REQ-EXP-080 | Every feedback type must be classified as hard rule, preference weight, temporary session signal, or training/eval data, with the mapping documented. | Doc 09 contains the complete feedback-classification table; implementation matches it (test per class). | `recommendation` | P09 | 09 |
+| REQ-EXP-085 | Implicit feedback — behaviour the user does not state as feedback, such as saving an outfit, marking it worn or replacing an item — must be listed and classified in the same table as explicit feedback (REQ-EXP-080), bounded by REQ-EXP-100, visible and resettable through REQ-EXP-090, and used as eval or training data only under the `training_data` consent purpose; the app never infers wear from a scheduled day (DEC-70). | Doc 09 §8.1 marks every feedback row explicit or implicit; each implicit row has a test of its classified effect; a test proves that no feedback event reaches an eval or training set while `training_data` consent is off. | `recommendation` | P09 | 09, 11 |
 | REQ-EXP-090 | Undo, reset-personalization, and preference transparency must be provided. | User can view every learned/stated preference, undo the last feedback action, and reset personalization to stated-preferences-only. | `recommendation`, `profile` | P09 | 09 |
 | REQ-EXP-100 | Guardrails must prevent one accidental action from overfitting the profile. | A single feedback event changes any weight by no more than the documented bounded step; property test enforces the bound. | `recommendation` | P09 | 09 |
 
@@ -280,8 +281,8 @@
 | NFR-OBS-060 | Product analytics must follow an explicit owned event taxonomy (consent-gated per NFR-PRV-110). | Event taxonomy doc lists every event, owner, and properties; unknown events are rejected in CI schema check. | `platform` | P02 | 14 |
 | NFR-OBS-070 | Audit trails must record admin access, consent changes, asset deletions, recommendation versions, and entitlement changes. | Each action type produces an immutable audit row; audit query demoed in P14. | `admin` | P03–P14 | 14 |
 | NFR-OBS-080 | Feature flags must have owners, expiry dates, and safe rollout/rollback. | Flag registry lists owner + expiry per flag; CI warns on expired flags; a rollback is demoed. | `platform` | P02 | 14 |
-| NFR-OBS-090 | Every phase must add the observability needed to operate what it introduces. | Phase template contains a mandatory observability section; phase DoD includes its dashboards/alerts live. | all | P02–P15 | 14 |
-| NFR-OBS-100 | A product-metric tree with guardrails must exist: onboarding completion, time-to-first-value, avatar/closet/recommendation quality rates, conversion/retention, AI cost, crash-free sessions, privacy guardrails, and fairness slices — each with owner, source, privacy class, target-or-baseline, and the decision it informs; engagement must never be optimized at the expense of trust, wellbeing, or privacy. | Doc 14 metric tree covers every brief-§12 metric with all five attributes; guardrail metrics (constraint violations, consent, deletion completion, sensitive-logging incidents) have alerts. | `platform`, all | P00, P14, P15 | 14 |
+| NFR-OBS-090 | Every phase must add the observability needed to operate what it introduces. | Phase template contains a mandatory observability section; phase DoD includes its dashboards/alerts live. *Amended 2026-10-13 (DEC-80): PostHog and Grafana work is frozen until the first minimal release; a phase that closes before it adds its logs, metrics, traces and analytics events in code and lists its dashboards and alerts as owed at that release.* | all | P02–P15 | 14 |
+| NFR-OBS-100 | A product-metric tree with guardrails must exist: onboarding completion, time-to-first-value, avatar/closet/recommendation quality rates, conversion/retention, AI cost, crash-free sessions, privacy guardrails, and fairness slices — each with owner, source, privacy class, target-or-baseline, and the decision it informs; engagement must never be optimized at the expense of trust, wellbeing, or privacy. | The doc 00 §8 metric tree covers every brief-§12 metric with all five attributes; guardrail metrics (constraint violations, consent, deletion completion, sensitive-logging incidents) have alerts (doc 14). | `platform`, all | P00, P14, P15 | 00, 14 |
 
 ### 3.5 TST — Testing & quality
 
@@ -313,11 +314,12 @@
 | NFR-TEAM-060 | A root `just` task runner must provide memorable commands for bootstrap, dev, test, lint, typecheck, format, architecture checks, generation, migrations, mobile builds, 3D asset validation, ML evaluation, security checks, and CI parity; scripts must be readable, idempotent where practical, fail-fast, and print actionable errors. | `just --list` shows all listed commands; each CI job runs the same `just` target a developer runs locally; script review checklist applied. | `platform` | P02 | 15 |
 | NFR-TEAM-070 | Toolchain versions must be pinned (mise/asdf) with a one-command Ubuntu bootstrap and an environment doctor. | Fresh Ubuntu machine reaches a running dev environment with one documented command; `just doctor` diagnoses missing pieces. | `platform` | P02 | 15 |
 | NFR-TEAM-080 | Every shared concept — API schemas, event schemas, taxonomy, units, color values, measurement definitions, asset manifests, reason codes, entitlement names — must have one canonical owner with generated clients/types; generated files clearly marked; CI fails on stale generation. | Ownership table in doc 06; regeneration in CI is diff-clean or the build fails; mobile/backend/workers import, never copy, shared schemas. | `shared-kernel` | P02 | 06 |
-| NFR-TEAM-090 | A strict root `CLAUDE.md` operating contract must exist covering: required reading order, scope restatement, semantic search-before-write, module-boundary preservation, single source of truth, deterministic-before-AI, current-docs-not-guessing, smallest coherent change, per-module tests with failing-regression proof, scoped checks and full gates, performance measured before/after, no fabricated results, sensitive-data protection, no destructive actions without authorization, progress-ledger updates, and leave-buildable-or-report — plus source-of-truth priority, invariants, standard commands, completion checklist, and handoff protocol. | root `CLAUDE.md` contains every listed rule; permanent rules live there while phase detail stays in phase files; spot-check finds no contradiction with SPINE. | all | P02 | 15, CLAUDE.md |
+| NFR-TEAM-090 | A strict root `CLAUDE.md` operating contract must exist covering: required reading order, scope restatement, semantic search-before-write, module-boundary preservation, no domain logic in adapters, single source of truth, deterministic-before-AI, current-docs-not-guessing, smallest coherent change, per-module tests with failing-regression proof, scoped checks and full gates, performance measured before/after, no fabricated results, sensitive-data protection, no destructive actions without authorization, progress-ledger updates, and leave-buildable-or-report — plus source-of-truth priority, invariants, standard commands, completion checklist, and handoff protocol. | root `CLAUDE.md` contains every listed rule; permanent rules live there while phase detail stays in phase files; spot-check finds no contradiction with SPINE. | all | P02 | 15, CLAUDE.md |
 | NFR-TEAM-100 | A small, focused project-specific AI skill library must ship as actual SKILL.md files — each with trigger, required reading, workflow, validation commands, output, and stop/escalation conditions — covering at minimum: mobile features/native bridges, 3D asset changes + device validation, backend module changes, recommendation rules + evals, media/ML pipeline, DB migrations, API/event schema changes + regeneration, security/privacy review, subscription/entitlement changes, testing/regression, performance profiling, release readiness, and architecture/duplicate review — with no two skills overlapping completely. | `.agents/skills/` contains a SKILL.md per listed area with all six sections; overlap review documented. | all | P02 | 15 |
 | NFR-TEAM-110 | Branching/review model for small tracer-bullet changes, commit/PR conventions, CODEOWNERS, an ADR template + decision log, definition of ready/done, and an issue template (scope, non-goals, dependencies, acceptance criteria, test plan, observability, rollout, rollback) must exist. | All templates exist under `templates/`; ADR log seeded with SPINE decisions in P00; sample PR follows conventions. | all | P00, P02 | 15, 16 |
 | NFR-TEAM-120 | Secrets strategy with `.env.example` (no real secrets) and secret-scanning must be in place. | `.env.example` covers every required variable with placeholders; secret scanner blocks real credentials in CI. | `platform` | P02 | 15 |
 | NFR-TEAM-130 | Database migration and rollback policy plus dev/staging/production data isolation with safe seed data must exist. | drizzle-kit migrations have a tested rollback path; environments use separate databases/credentials; seeds contain no real user data. | `platform` | P02 | 06, 15 |
+| NFR-TEAM-135 | Environment setup must be reproducible from the repository: local development dependencies run in containers, every hosted environment (server, database, object storage) has a written setup procedure with a verify step or committed code/config, and the plan records its choice on an infrastructure-as-code tool and on preview deployments (adopted, or declined with the reason). | `just dev` starts the local stack from `docker-compose.yml`; `docs/SERVICES-SETUP.md` gives steps and a verify step for the server, the database and object storage; a DEC row in doc 16 states the infrastructure-as-code and preview-deployment choices no later than the first deploy (DEC-79). | `platform` | P02 (local stack, setup procedure); first deploy (the two choices, DEC-79) | 05, 15 |
 | NFR-TEAM-140 | Android and iOS CI/CD must cover signing, internal distribution, staged rollout, crash gates, and rollback strategy. | Both store pipelines run from CI; staged rollout config + crash-gate thresholds documented; a rollback is rehearsed pre-launch. | `platform` | P02, P14 | 15 |
 | NFR-TEAM-150 | `PROGRESS.md` must be a durable status ledger with exact status vocabulary and next-session instructions, updated before every session end, plus a session-handoff template. | Ledger exists with the defined vocabulary; CLAUDE.md completion checklist requires the update; handoff template in `templates/`. | all | P02+ | 15 |
 | NFR-TEAM-160 | Phase completion requires tests, evidence, documentation, operability, privacy/security work, and a working vertical demo — never just code existing. | Phase template's definition-of-done lists exact commands/evidence; PROGRESS.md marks a phase complete only with the evidence linked. | all | P02–P15 | 15 |
@@ -345,30 +347,32 @@ Every section of `AI-STYLIST-FABLE-PROMPT.md` mapped to the requirement IDs that
 
 | Brief section | Topic | Covering requirement IDs |
 |---|---|---|
-| §1 | Product vision; grounded, explainable, never invent facts | R-REC-010/020/190, R-EXP-010, R-AVA-010, R-CAP-010, R-TRD-010; docs 00 |
+| Preamble | Planning task, no product code; one file per delivery phase; sessions must not lose context, duplicate logic or erode the architecture | Meta — SPINE §5 and §9; N-TEAM-150 (context across sessions), N-TEAM-040 (no duplication), N-TEAM-030 (architecture) |
+| §1 | Product vision; grounded, explainable, never invent facts | R-REC-010/020/180/190, R-EXP-010/030, R-AVA-010/090, R-CAP-010, R-ORG-100, R-CTX-020…060, R-TRD-010; docs 00 |
 | §2 (intro) | Full journey incl. empty/loading/partial/failure/retry/recovery | R-ONB-130 |
 | §2.1 | Onboarding and profile | R-ONB-010…130, R-ONB-120 + N-PRV-020/030/040 (consent/correction/export/deletion) |
 | §2.2 | Optional selfie and personalized face | R-FAC-010…080, N-PRV-020/040/050 |
 | §2.3 | Parametric 3D avatar | R-AVA-010…120, R-ONB-050, N-PERF-020/070, R-MED-100 |
 | §2.4 | Virtual closet capture | R-CAP-010…140, R-MED-010…080, N-AIC-030/050 |
 | §2.5 | Closet organization | R-ORG-010…120 |
-| §2.6 | Daily and future outfit recommendations | R-REC-010…190, R-CTX-010…080 |
+| §2.6 | Daily and future outfit recommendations | R-REC-010…190, R-CTX-010…080, R-EXP-080/085 (step 10: explicit and implicit feedback) |
 | §2.7 | Recommendation explanation and feedback | R-EXP-010…100 |
 | §2.8 | Fashion intelligence | R-TRD-010…080, R-REC-160 |
 | §2.9 | Future AI stylist chat | R-CHT-010…050 |
 | §2.10 | Pricing and subscriptions | R-BIL-010…130 |
 | §3.1 | AI as bounded capability | N-AIC-010…100 |
-| §3.2 | Modular-monolith architecture, modules, single source of truth | N-TEAM-030/080, R-AVA-120; SPINE §3, doc 04 |
-| §3.3 | Recommendation engine as first-class domain | R-REC-020…170, R-CTX-010/070, R-EXP-010/080/100, N-TST-100 |
+| §3.2 | Modular-monolith architecture, modules, single source of truth | N-TEAM-030/080, R-AVA-120, R-NOT-010…030 (Notifications module); SPINE §3, doc 04 |
+| §3.3 | Recommendation engine as first-class domain | R-REC-020…170, R-CTX-010/070, R-EXP-010/080/100, N-TST-100, N-OBS-030/100 (evaluation metrics; table in doc 09 §13.1) |
 | §3.4 | Event-driven extension without premature distribution | R-MED-090/110 |
-| §3.5 | 3D and media asset pipeline | R-MED-010…110, R-AVA-080 |
-| §3.6 | Security, privacy, and safety by design | N-SEC-010…110, N-PRV-010…110, N-AIC-070 |
+| §3.5 | 3D and media asset pipeline | R-MED-010…110, R-AVA-040/080, R-CAP-060/070 (attribute confirmation, missing views), R-CAP-100/140 and N-AIC-100 (texture, proxy, reconstruction, attachment and cloth behaviour as gated levels; doc 07 §3, §6, §8, §11) |
+| §3.6 | Security, privacy, and safety by design | N-SEC-010…110, N-PRV-010…110, N-AIC-070, R-CTX-090 (calendar minimization), N-OBS-070 (auditable access) |
 | §3.7 | Performance and reliability | N-PERF-010…070, R-CAP-130, R-ORG-120 |
 | §4 (intro) | Weighted decision matrices, primary sources, prototype gates | N-PERF-070; SPINE §2, doc 05 |
-| §4.1 | Mobile application and 3D surface choice | N-PERF-070, R-AVA-100/120; doc 05 (native SwiftUI/Compose + Filament C++ decision, DEC-49/50; originally RN+Expo+Filament) |
+| §4.1 | Mobile application and 3D surface choice | N-PERF-070, R-AVA-100/120, N-AIC-100 (engine size and battery bet); doc 05 (native SwiftUI/Compose + Filament C++ decision, DEC-49/50; the renderer is reviewed again by the garment-3D research, DEC-76; originally RN+Expo+Filament). The prototype's camera leg is gate G4 in doc 05 §2.3 (camera or gallery import to local storage); upload from the app is first proven in P06 (R-CAP-130) |
 | §4.2 | Linux-first development reality | N-TEAM-010 |
-| §4.3 | Backend and data | N-TEAM-020/080/130, R-MED-090/110, R-CAP-120 (pgvector); doc 05 |
-| §4.4 | External providers behind ports | R-CTX-020/050, R-NOT-010, N-AIC-070/090, N-OBS-040; doc 05 |
+| §4.3 | Backend and data | N-TEAM-020/080/130/135, R-MED-060/090/110, R-CAP-120 (pgvector), N-TST-040 (backups, restore drill); doc 05 (§5.4 records "Redis only when justified") |
+| §4.4 | External providers behind ports | R-CTX-020/050, N-SEC-020 (auth), R-NOT-010, R-BIL-050/080, R-MED-060 (storage), N-OBS-020/040/060/080, N-AIC-070/090, R-TRD-050 (content sources); doc 05 §6 (ten fields per provider) |
+| §5 (intro) | Recognizable architectural signature: predictable locations, clear module contracts, few ways to do the same thing, low cognitive load | N-TEAM-020 (locations), N-TEAM-030 (module contracts), N-TEAM-040/080 (one way, one owner) |
 | §5.1 | Repository structure | N-TEAM-020 |
 | §5.2 | Deep modules and dependency rules | N-TEAM-030, R-AVA-120, R-CHT-020 |
 | §5.3 | No duplication and semantic reuse checks | N-TEAM-040 |
@@ -376,7 +380,7 @@ Every section of `AI-STYLIST-FABLE-PROMPT.md` mapped to the requirement IDs that
 | §5.5 | Schema and generation discipline | N-TEAM-080 |
 | §6 | Testing and quality strategy | N-TST-010…130, N-SEC-100 |
 | §7 | Observability, analytics, and operations | N-OBS-010…090, N-PRV-080/110, N-SEC-080 |
-| §8 | Small-team and AI-assisted development setup | N-TEAM-010/070/110/120/130/140, N-SEC-110 |
+| §8 | Small-team and AI-assisted development setup | N-TEAM-010/070/110/120/130/140, N-SEC-110, N-OBS-080 (feature-flag policy); release channels in doc 15 §10 |
 | §8.1 | Required `CLAUDE.md` | N-TEAM-090, N-TEAM-150 |
 | §8.2 | Project-specific AI skills | N-TEAM-100 |
 | §9 | Required planning deliverables | SPINE §9 file map (meta — the planning package itself); N-TEAM-110/150 |
@@ -384,15 +388,19 @@ Every section of `AI-STYLIST-FABLE-PROMPT.md` mapped to the requirement IDs that
 | §11 | MVP boundaries and progressive fidelity | R-CAP-100/140, N-AIC-100, R-FAC-060; docs 00, 16 |
 | §12 | Product metrics and quality bars | N-OBS-100 |
 | §13 | Output quality rules | Meta-rules for authors — enforced by SPINE §10 writing rules; determinism/honesty instances: R-REC-070/190, R-FAC-060, N-PERF-060, N-AIC-010 |
-| §14 | Final audit | This file §4+§5 are the audit instrument; audit executed in P00 and re-run at P14 |
+| §14 | Final audit | This file §4+§5 are the audit instrument; audit re-run in P00 on 2026-10-12 (note below) and again at P14. The six closing items: [README.md](README.md) holds the architecture decisions, the five highest risks, the critical path, the first-session instructions and the coverage statement; SPINE §9 holds the file tree |
 
-Sections §9, §10, §13, §14 are instructions about the planning package itself rather than product requirements; they are satisfied by the existence and structure of `planning/` (SPINE §5/§9/§10) plus the meta-requirements cited. **No brief section is unmapped.**
+The preamble and sections §9, §10, §13, §14 are instructions about the planning package itself rather than product requirements; they are satisfied by the existence and structure of `planning/` (SPINE §5/§9/§10) plus the meta-requirements cited. §3 is a heading with no text of its own; its subsections §3.1–§3.7 carry the rows. **No brief section is unmapped.**
+
+**Audit re-run 2026-10-12 (P00-T09, AI-45).** The brief (`AI-STYLIST-FABLE-PROMPT.md`, unchanged since commit `a423bc6`) was walked against this file at commit `aa50e96`: the preamble, 42 section headings, 320 bullet items, 84 numbered items and 98 paragraphs, including the 17 bullets and 6 closing items of brief §14. Found: 40 of the 42 headings had a row (§3 has no text of its own; the §5 introduction had no row) and the preamble had none; §5 fully named 10 of the 17 bullets of brief §14 (bullets 8, 10, 14 and 15 were named in part, bullets 12 and 16 not at all, and bullet 1 is this matrix), and every missing specific was already covered by an existing ID; two brief specifics had no requirement ID: implicit feedback with privacy controls (§2.6 step 10) and the infrastructure-as-code, preview-deployment and local-container items of §4.3. Fixed on the same date: rows added for the preamble and §5 (intro); 11 rows of §4 completed; §5 rows 15, 34 and 35 completed and rows 36–39 added; REQ-EXP-085 and NFR-TEAM-135 inserted at unused numbers (steps-of-10 rule); NFR-TEAM-090 completed with the adapter rule of brief §8.1. Result: zero unmapped brief sections and zero unmapped named specifics. All 217 IDs are defined exactly once, every ID cited in §4 and §5 is defined, and every ID is named in at least one phase file.
+
+**Later decisions.** The IDs above stand. Where a decision in [doc 16](16-risks-open-questions-and-decision-log.md) changed how or when a brief item is delivered, the row names it (§4.1: DEC-49, DEC-50, DEC-76; NFR-PERF-070: DEC-50; NFR-TEAM-010: DEC-51; REQ-EXP-010 and NFR-AIC-040: DEC-46) or it is listed here. §2.2, §2.3, step 9 of §2.6, the generated views of §2.4 and the 3D stages of §3.5: the native foundation has no 3D, and P01's device spike, P04, P05, P10 and P11 wait for the go/no-go of the garment-3D research, which also reviews the renderer (DEC-50, DEC-76). §5.1 and §8: signing, store upload and the 3D asset scaffold left P02 (DEC-63). §8.2: the skill library has one skill per native platform (DEC-49) and no 3D-asset skill while 3D is deferred (DEC-50). §3.6, §4.3 and §8: the server, the staging and production environments, counsel and the legal items LR-01…LR-12 wait for the first minimal release (DEC-79). §7: PostHog and Grafana work is frozen until the first minimal release (DEC-80), and the first Mac and device runs move to the first P03 client task that needs the Mac (DEC-81).
 
 ---
 
 ## 5. Named-specifics coverage list
 
-The brief's explicitly named specifics (brief §14 audit list), each with its owning requirement ID(s):
+The brief's explicitly named specifics (brief §14 audit list), each with its owning requirement ID(s). The first bullet of that list (map every paragraph to a requirement ID and a phase) is §4 above together with the Phase(s) column of §2 and §3:
 
 | # | Brief-named specific | ID(s) |
 |---|---|---|
@@ -410,7 +418,7 @@ The brief's explicitly named specifics (brief §14 audit list), each with its ow
 | 12 | Deterministic tie-breaks; no hidden randomness | REQ-REC-070 |
 | 13 | "Never suggest this pairing" durable negative constraint | REQ-EXP-070 |
 | 14 | Laundry/availability states (available/laundry/packed/lent/repair/archived) | REQ-ORG-090, REQ-REC-120 |
-| 15 | Season, color, and category organization (+ richer metadata) | REQ-ORG-010/020/030/080 |
+| 15 | Season, color, and category organization (+ richer metadata) | REQ-ORG-010…080 |
 | 16 | Cost-per-wear when purchase price supplied | REQ-ORG-070 |
 | 17 | Duplicate detection by visual + semantic similarity, not filename | REQ-CAP-120 |
 | 18 | Offline/interrupted upload queues, resumable processing | REQ-CAP-130, REQ-ORG-120 |
@@ -429,8 +437,12 @@ The brief's explicitly named specifics (brief §14 audit list), each with its ow
 | 31 | Trends influence recommendations only after hard constraints pass | REQ-REC-160, REQ-TRD-070 |
 | 32 | Valuable fallback if advanced 3D reconstruction fails its R&D gate | REQ-CAP-140, NFR-AIC-100 |
 | 33 | Linux-first development + real macOS requirement for iOS delivery | NFR-TEAM-010 |
-| 34 | Per-module `tests/` directories; module isolation; single sources of truth; small files; readable scripts | NFR-TST-010, NFR-TEAM-030/050/060/080 |
-| 35 | `CLAUDE.md`, AI skills, progress/handoff rules | NFR-TEAM-090/100/150 |
+| 34 | Per-module `tests/` directories; module isolation; semantic reuse checks; single sources of truth; small files; readable scripts | NFR-TST-010, NFR-TEAM-030/040/050/060/080 |
+| 35 | `CLAUDE.md`, AI skills, progress/handoff rules, all standard commands | NFR-TEAM-060/090/100/150 |
+| 36 | Fashion trends, runway collections, seasonal styles and inspiration, personalized, with a reason shown | REQ-TRD-010/020/030 |
+| 37 | Billing lifecycle (monthly/annual, restore, grace, retry, cancellation, refunds, plan changes, reconciliation) and cost-to-serve | REQ-BIL-050/060/070/080, REQ-BIL-100 |
+| 38 | AI use minimized, measured, cached, evaluated and replaceable | NFR-AIC-010 (minimized), NFR-AIC-080 (measured), NFR-AIC-030 (cached), NFR-AIC-020 + NFR-TST-090 (evaluated), NFR-AIC-090 (replaceable) |
+| 39 | Every phase has dependencies, tasks, tests, acceptance criteria, performance/cost/security work, rollout/rollback, a demo and a definition of done | NFR-TEAM-160, NFR-OBS-090; SPINE §5 and `templates/phase.md` (22 sections in each of the 16 phase files) |
 
 ---
 
@@ -443,14 +455,14 @@ The brief's explicitly named specifics (brief §14 audit list), each with its ow
 | FAC | 8 | | PERF | 7 |
 | CAP | 14 | | OBS | 10 |
 | ORG | 12 | | TST | 13 |
-| MED | 11 | | TEAM | 16 |
+| MED | 11 | | TEAM | 17 |
 | CTX | 9 | | AIC | 10 |
 | REC | 19 | | | |
-| EXP | 10 | | | |
+| EXP | 11 | | | |
 | TRD | 8 | | | |
 | CHT | 5 | | | |
 | BIL | 13 | | | |
 | NOT | 3 | | | |
-| **Functional** | **137** | | **Non-functional** | **78** |
+| **Functional** | **138** | | **Non-functional** | **79** |
 
-**Total: 215 requirements.** Insert new requirements at unused numbers (steps of 10 leave room, e.g. `REQ-REC-085`); never renumber or reuse an ID.
+**Total: 217 requirements.** Insert new requirements at unused numbers (steps of 10 leave room, e.g. `REQ-REC-085`); never renumber or reuse an ID.

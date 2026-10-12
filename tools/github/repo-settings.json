@@ -22,7 +22,7 @@
         "Gate · just ci-parity",
         "Gate · Contracts (generate --check, spectral, oasdiff)",
         "Gate · Secret scan (PR diff)",
-        "Gate · Clone detection (placeholder)",
+        "Gate · Clone detection",
         "Report · PR gate summary"
       ]
     },

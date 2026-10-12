@@ -117,7 +117,7 @@ dev-workers *args:
 
 # --- quality gates (* = part of ci-parity) -------------------------------------------
 
-# * Run tests: full suite via turbo + the native lanes, or one module's tests/ dir (`just test recommendation`; `just test ios` / `just test android` = that app's unit tests; `just test secrets` = the sops+age shell suite; `just test tooling` = the scripts/test shell suites: bootstrap/doctor, contracts-breaking, generate (a failing generator fails `just generate [--check]`), test-regression, ci-metrics, dev service names, dev (the `just dev` plan, ports, logs, stop, device choice), observability-sync, repo-setup; `just test platform` = the `api` + `platform-docker` vitest projects); SKIP_DOCKER_TESTS=1 leaves out the Testcontainers `migrations` and `platform-docker` projects (runners without Docker only)
+# * Run tests: full suite via turbo + the native lanes, or one module's tests/ dir (`just test recommendation`; `just test ios` / `just test android` = that app's unit tests; `just test secrets` = the sops+age shell suite; `just test tooling` = the scripts/test shell suites: bootstrap/doctor, contracts-breaking, generate (a failing generator fails `just generate [--check]`), test-regression, ci-metrics, dev service names, dev (the `just dev` plan, ports, logs, stop, device choice), observability-sync, repo-setup, skills-eval; `just test platform` = the `api` + `platform-docker` vitest projects); SKIP_DOCKER_TESTS=1 leaves out the Testcontainers `migrations` and `platform-docker` projects (runners without Docker only)
 test module='':
     #!/usr/bin/env bash
     set -euo pipefail
@@ -186,6 +186,7 @@ test-tooling:
     bash scripts/test/dev.test.sh
     bash scripts/test/observability-sync.test.sh
     bash scripts/test/repo-setup.test.sh
+    bash scripts/test/skills-eval.test.sh
 
 # Native unit tests for the full `just test` (lane/toolchain policy: scripts/native-lane.sh)
 [private]
@@ -216,7 +217,7 @@ lint *args:
     pnpm exec eslint tools eslint.config.mjs
     uv run --project workers ruff check workers
     # -s bash: every script must run under macOS /bin/bash 3.2 as well (docs/DEVELOPING-ON-MACOS.md)
-    shellcheck -s bash -x -P SCRIPTDIR scripts/*.sh scripts/security/*.sh scripts/security/tests/*.sh scripts/docs/*.sh scripts/docs/lib/*.sh scripts/hooks/*.sh scripts/test/*.sh scripts/db/*.sh scripts/ci/*.sh scripts/lint-file.sh scripts/native-lane.sh tools/analytics/*.sh tools/codegen/*.sh tools/depcruise/*.sh tools/eslint/*.sh tools/flags/*.sh apps/ios/scripts/*.sh apps/android/tools/*.sh
+    shellcheck -s bash -x -P SCRIPTDIR scripts/*.sh scripts/security/*.sh scripts/security/tests/*.sh scripts/docs/*.sh scripts/docs/lib/*.sh scripts/hooks/*.sh scripts/test/*.sh scripts/db/*.sh scripts/ci/*.sh scripts/lint-file.sh scripts/native-lane.sh tools/analytics/*.sh tools/codegen/*.sh tools/depcruise/*.sh tools/eslint/*.sh tools/flags/*.sh tools/jscpd/*.sh apps/ios/scripts/*.sh apps/android/tools/*.sh
     actionlint
     scripts/native-lane.sh ios none just ios-lint
     scripts/native-lane.sh android android just android-lint
@@ -261,6 +262,10 @@ arch-check *args:
         scripts/native-lane.sh android android apps/android/tools/gradle.sh -q checkModuleGraph
     fi
 
+# * Clone detection (tools/jscpd, NFR-TEAM-040): jscpd over the hand-written TypeScript/JavaScript, Python, Kotlin, Swift and shell sources in apps, packages, workers, scripts and tools (tools/jscpd/jscpd.json excludes generated trees, fixtures, lockfiles, build output and dependencies; prototype/ and planning/ are never scanned); exit 1 when the share of duplicated lines is above `threshold` in that file, which never goes up; JSON report in artifacts/clone-check/; `--fixtures` asserts every case under tools/jscpd/fixtures fails on its format and `_clean` passes
+clone-check *args:
+    bash tools/jscpd/clone-check.sh "$@"
+
 # * Docs enforcement gate (scripts/docs/docs-check.sh): module<->contract bijection, ADR/skill/agent README sync, PROGRESS.md sync, stale last-reviewed dates, dead repo paths, undocumented just recipes, raw pnpm/uv/npx/drizzle-kit/eas/gradlew/xcodebuild invocations in .agents|.claude|.claude/rules; `--strict` errors on the two human-approval-pending checks, `--fixtures` proves every check fails on its own fixture
 docs-check *args:
     scripts/docs/docs-check.sh "$@"
@@ -269,14 +274,23 @@ docs-check *args:
 generate *args:
     tools/codegen/generate.sh "$@"
 
-# * gitleaks + osv-scanner + pnpm audit + license gate (tools/security/license-policy.json) + syft SBOM (artifacts/sbom/, gitignored)
+# * gitleaks (history + working tree; a tracked or staged repo-root .env fails) + osv-scanner + pnpm audit + license gate (tools/security/license-policy.json) + syft SBOM (artifacts/sbom/, gitignored)
 security-scan:
     #!/usr/bin/env bash
     set -euo pipefail
     echo "==> gitleaks (git history)"
     gitleaks detect --source . --no-banner --redact
+    echo "==> repo-root .env is not tracked or staged"
+    # The working-tree scan below allow-lists the repo-root .env, and the history scan above reads
+    # commits only. A .env that was force-added to the index and is not committed yet is therefore
+    # the one case neither scan sees; without the pre-commit hook nothing else reports it before
+    # the commit, and the repository is public.
+    bash scripts/security/env-untracked-check.sh
     echo "==> gitleaks (working tree)"
-    gitleaks dir . --no-banner --redact
+    # Own config: .gitleaks.toml plus one path, the gitignored repo-root .env, which holds real keys
+    # by design (DEC-77). Every scan of committed content, the history scan above included, reads
+    # .gitleaks.toml alone, so a committed .env is still reported.
+    gitleaks dir . --config tools/security/gitleaks-worktree.toml --no-banner --redact
     echo "==> osv-scanner"
     scripts/ci/osv-scan.sh
     echo "==> pnpm audit"
@@ -336,7 +350,7 @@ ci-osv-source:
 ci-pr-gate-metrics *args:
     node tools/ci-metrics/push-pr-gate-metrics.mjs "$@"
 
-# Run the PR gates locally: format --check, lint (+ fixtures), typecheck, arch-check (+ fixtures), docs-check --strict (+ fixtures, incl. the hook replay), observability-sync all --check (offline), flags-report --fixtures, generate --check, test, native builds, security-scan (+ license, gitleaks and osv-scanner fixtures); native toolchains are required (Xcode-only steps skip on Linux with a notice); `--core` = pr-gate's parity job (native lanes run in ios.yml / android.yml)
+# Run the PR gates locally: format --check, lint (+ fixtures), typecheck, arch-check (+ fixtures), clone-check (+ fixtures), docs-check --strict (+ fixtures, incl. the hook replay), observability-sync all --check (offline), flags-report --fixtures, generate --check, test, native builds, security-scan (+ license, gitleaks and osv-scanner fixtures); native toolchains are required (Xcode-only steps skip on Linux with a notice); `--core` = pr-gate's parity job (native lanes run in ios.yml / android.yml)
 ci-parity *args:
     #!/usr/bin/env bash
     set -euo pipefail
@@ -353,6 +367,8 @@ ci-parity *args:
     just typecheck
     just arch-check
     just arch-check --fixtures
+    just clone-check
+    just clone-check --fixtures
     just docs-check --strict
     just docs-check --fixtures
     just observability-sync all --check
@@ -525,6 +541,10 @@ assets-validate:
 # Run versioned eval suites (classification/segmentation/try-on) against golden datasets
 ml-eval:
     @echo "NOT IMPLEMENTED (P02 T17): ml eval stub"; exit 2
+
+# Score the skill eval files with Claude Code's eval runner `claude plugin eval` in one run (tools/skills-eval/README.md; needs Claude Code 2.1.269+; spends model usage on your own credential, never part of CI): `just skills-eval [skill|all] [tasks|triggers] [--force] [--max-cost-usd N] [--runs N] [--effort low|medium|high|xhigh|max] [--model ID] [--judge-model ID] [--concurrency N] [--case GLOB] [--generate-only]`; no argument = every skill in both modes, all `triggers` (evals/trigger-evals.json against a plugin that holds every skill) before all `tasks` (evals/evals.json with and without the skill), skills by name; a skill and mode whose inputs are unchanged since its last stored score in tools/skills-eval/scoreboard.json is up to date and skipped (`--force` runs it); `--max-cost-usd` is one budget for the invocation (the runner's ceiling is what is left of it minus the runs that can be in flight, so the total stays inside it), what does not fit is left, and running the command again continues; a new score is compared with the last one (better, worse, or no measurable change inside the interval); cases are generated into one run directory per invocation under artifacts/skills-eval/ (gitignored) with result.json, report.html, run-config.json and summary.txt per skill and mode; defaults: 3 runs per case for tasks and 1 for triggers, effort high; the report is never published
+skills-eval *args:
+    node tools/skills-eval/skills-eval.mjs "$@"
 
 # Accept updated golden / visual-regression baselines as a reviewed commit
 golden-accept:

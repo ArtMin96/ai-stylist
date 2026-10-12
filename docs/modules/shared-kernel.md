@@ -3,7 +3,7 @@
 > Module names are canonical per [SPINE §3](../../planning/SPINE.md). Path: `packages/shared-kernel`. This contract is the module's source of truth; code that contradicts it is wrong until a DEC entry says otherwise.
 
 - **Responsibility (one sentence):** Pure types, constants, and registries shared by every module: ULID prefixes, units, event envelope type, error/reason/entitlement registries, forbidden log keys, the log and span error-shape rules, the correlation id header and log key, the feature-flag and owners registries, and the ports several modules share (clock, outbox writer, storage, feature flags).
-- **Owner:** @team (placeholder — see `CODEOWNERS`) · **Status:** skeleton (P02) · **Last updated:** 2026-10-05
+- **Owner:** @ArtMin96 (see `CODEOWNERS`) · **Status:** skeleton (P02) · **Last updated:** 2026-10-13
 
 ## Public interface
 
@@ -64,7 +64,7 @@ Derived from P02 brief §5 and doc 04 §4.2; every rule has a failing fixture (`
 - Provider SDKs — `pg-boss`, aws-sdk/R2, RevenueCat, fal.ai, Open-Meteo, FCM, PostHog SDKs (`domain-no-provider-sdk`); ports only.
 - Creating `utils/`, `helpers/`, or `common/` directories (`no-utils-dirs`); importing `prototype/**` (`prototype-unimportable`).
 - Must not import any workspace package, NestJS, Drizzle, Node I/O, or provider SDK; pure functions only.
-- Single-writer path (CLAUDE.md, Parallel sessions): sequence changes, never parallelize them; owner `@dev-lead` in `CODEOWNERS`.
+- Single-writer path (CLAUDE.md, Parallel sessions): sequence changes, never parallelize them; owner `@ArtMin96` in `CODEOWNERS`.
 
 ## Tests
 

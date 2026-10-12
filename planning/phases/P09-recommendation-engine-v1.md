@@ -4,6 +4,8 @@
 
 > Amended 2026-10-09 (DEC-72: notification categories start off and each needs an opt-in. DEC-71: default occasion. DEC-69: over-cap items are read-only for composition. Open here: OQ-24 safety-threshold sign-off and weight vector, OQ-25 trace retention, OQ-33 which latency budget is the gate. DEC-53: generated Swift and Kotlin clients — [proposal](../../.claude/plans/2026-10-09-open-questions-decisions-proposal.md)).
 
+> Amended 2026-10-13 (P00 audits, applied with the P00 sign-off: REQ-EXP-085, implicit feedback, joins §2 and AC-11; any hard-constraint violation is a SEV1 page per doc 14 §7, was "sev-2", in §11).
+
 > File name per [SPINE §5](../SPINE.md). Template: [templates/phase.md](../templates/phase.md). Status values per [PROGRESS.md](../PROGRESS.md). Engine design is owned by [09-recommendation-engine.md](../09-recommendation-engine.md) — this file sequences its delivery; on conflict, doc 09 wins.
 
 ## 1. Overview
@@ -46,6 +48,7 @@ IDs from [01-requirements-and-traceability.md](../01-requirements-and-traceabili
 | REQ-EXP-060 | Save, schedule, mark worn, compare alternatives *(partial — actions + data now; avatar presentation surfaces P10)* | AC-11 |
 | REQ-EXP-070 | "Never suggest this pairing" durable hard rule | AC-2, AC-11 |
 | REQ-EXP-080 | Every feedback type classified (hard rule / weight / session / eval data) | AC-11 |
+| REQ-EXP-085 | Implicit feedback listed and classified beside explicit feedback; eval or training use only under `training_data` consent | AC-11, AC-12 |
 | REQ-EXP-090 | Undo, reset-personalization, preference transparency | AC-12 |
 | REQ-EXP-100 | Guardrails against one-action overfitting | AC-12 |
 | REQ-CTX-080 | Cached/offline context usable with staleness warnings *(P09 part: engine + result surfaces)* | AC-9 |
@@ -141,7 +144,7 @@ Per doc 09 §0 the engine is ~95% deterministic; after DEC-46 there is no paid A
 
 ## 11. Observability and analytics added in this phase
 
-- **Metrics (doc 14 §4 registrations):** hard-constraint violation rate from the **independent post-hoc auditor job** re-running stage-7 rules on served results (target 0 — invariant; any nonzero = sev-2 alert, doc 09 §13.1); practical validity; engine p95 / end-to-end p95; candidate-pool sizes; no-valid-outfit rate; feedback-undo rate; weight-clamp saturation; notification delivery success; explanation template-render failure rate.
+- **Metrics (doc 14 §4 registrations):** hard-constraint violation rate from the **independent post-hoc auditor job** re-running stage-7 rules on served results (target 0 — invariant; any nonzero = SEV1 page, doc 14 §7 and doc 09 §13.1); practical validity; engine p95 / end-to-end p95; candidate-pool sizes; no-valid-outfit rate; feedback-undo rate; weight-clamp saturation; notification delivery success; explanation template-render failure rate.
 - **Product analytics events:** `rec_requested`, `rec_shown`, `rec_shuffle`, `rec_feedback` (kind enum only), `rec_item_replaced`, `outfit_saved|worn|scheduled`, `prefs_reset`, `transparency_viewed` — schema-validated, no attribute values or item names.
 - **Alerts/dashboards/runbooks:** violation-rate alert (page immediately); rec-validity dashboard; runbooks: "violation alert fired" (freeze ruleset rollout → replay offending rec → fix + regression sim), "engine latency regression", "notification delivery failures". Replay (`just rec-replay <id>`) documented as the support entry point (audit-trailed).
 
@@ -237,7 +240,7 @@ Real device + staging backend, fixture closet (~60 items incl. laundry states):
 - **AC-8:** cold-start, sparse-closet, missing-context, and no-valid-outfit each return the doc 09 §10 structured responses in tests and demo — never an error, never invented data; missing-data notes appear whenever an assumption was used.
 - **AC-9:** offline device serves the cached recommendation flagged as cached with staleness notes naming fact + age (Maestro artifact).
 - **AC-10:** experiment config schema has no `hard.*`/`validation.*` fields; CI rejects a fixture experiment definition touching them (doc 09 §12 structural test).
-- **AC-11:** every feedback type in the doc 09 §8.1 table has a test proving its distinct classified effect; single-item replace preserves + revalidates the rest; "unavailable" flips closet state.
+- **AC-11:** every feedback type in the doc 09 §8.1 table has a test proving its distinct classified effect; single-item replace preserves + revalidates the rest; "unavailable" flips closet state; the table marks each row explicit or implicit (REQ-EXP-085), and a test proves that no feedback event reaches an eval or training set while `training_data` consent is off.
 - **AC-12:** property test enforces the bounded-step guardrail (no single event moves any weight > ε); undo reverses the exact delta; reset returns to onboarding baseline keeping hard exclusions.
 - **AC-13:** opted-in device receives the daily notification at local time with a fresh recommendation on both platforms; opted-out receives nothing; quiet hours honored (scheduling tests + device evidence).
 - **AC-14:** explanations are rendered from reason-code templates only: zero provider calls occur on the explanation path (test); the faithfulness validator rejects any template output with unsupported facts (eval report). LLM polish removed per DEC-46.

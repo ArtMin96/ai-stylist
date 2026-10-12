@@ -46,6 +46,33 @@ const R2_BUCKET_NAME = /^[a-z0-9][a-z0-9-]{1,61}[a-z0-9]$/;
 const ACCESS_KEY_ID = /^[A-Za-z0-9]+$/;
 const LOOPBACK_HOSTS = new Set(['127.0.0.1', 'localhost', '[::1]']);
 
+/**
+ * The R2 jurisdictions `R2_JURISDICTION` may name: the one list (the factory, the adapter and the
+ * tests read it). A bucket created in a jurisdiction is reachable only through that jurisdiction's
+ * S3 endpoint, `https://<accountId>.<jurisdiction>.r2.cloudflarestorage.com` (Cloudflare R2
+ * reference "Data location", read 2026-10-12). Every bucket of this project is `eu` (DEC-61), set
+ * by configuration, never here.
+ */
+export const R2_JURISDICTIONS = ['eu', 'us', 'fedramp'] as const;
+/** One of `R2_JURISDICTIONS`. */
+export type R2Jurisdiction = (typeof R2_JURISDICTIONS)[number];
+
+/**
+ * A configured `R2_JURISDICTION` as a jurisdiction, or `undefined` (unset or empty) for the
+ * default endpoint. Throws a `TypeError` for any other value: it would become part of the host the
+ * URLs are signed for. The message names the key and the allowed values, never the value.
+ */
+export function parseR2Jurisdiction(value: string | undefined): R2Jurisdiction | undefined {
+  if (value === undefined || value === '') return undefined;
+  const jurisdiction = R2_JURISDICTIONS.find((known) => known === value);
+  if (jurisdiction === undefined) {
+    throw new TypeError(
+      `R2: jurisdiction (R2_JURISDICTION) must be empty or one of ${R2_JURISDICTIONS.join(', ')}`,
+    );
+  }
+  return jurisdiction;
+}
+
 export type R2StorageProviderOptions = {
   /** `R2_ACCOUNT_ID`. */
   readonly accountId: string;
@@ -56,9 +83,13 @@ export type R2StorageProviderOptions = {
   /** `R2_BUCKET`: the private user-media bucket of this environment. */
   readonly bucket: string;
   /**
-   * S3 endpoint origin, default `https://<accountId>.r2.cloudflarestorage.com` (an EU-jurisdiction
-   * bucket is served from `https://<accountId>.eu.r2.cloudflarestorage.com`). `http:` is accepted
-   * for a loopback host only (the tests' local endpoint).
+   * `R2_JURISDICTION`: the jurisdiction `bucket` was created in, one of `R2_JURISDICTIONS`; unset
+   * or empty for a bucket without one. It selects the endpoint host (`r2Endpoint`).
+   */
+  readonly jurisdiction?: string | undefined;
+  /**
+   * S3 endpoint origin, used instead of the one `accountId` and `jurisdiction` select. `http:` is
+   * accepted for a loopback host only (the tests' local endpoint).
    */
   readonly endpoint?: string;
   /** A pino logger built from `loggerOptions()`. */
@@ -66,9 +97,13 @@ export type R2StorageProviderOptions = {
   readonly clock?: Clock;
 };
 
-/** The S3 endpoint of an account's default-jurisdiction buckets. */
-export function r2Endpoint(accountId: string): string {
-  return `https://${accountId}.r2.cloudflarestorage.com`;
+/**
+ * The S3 endpoint of an account's buckets: `https://<accountId>.r2.cloudflarestorage.com`, or
+ * `https://<accountId>.<jurisdiction>.r2.cloudflarestorage.com` for the buckets of a jurisdiction.
+ */
+export function r2Endpoint(accountId: string, jurisdiction?: R2Jurisdiction): string {
+  const subdomain = jurisdiction === undefined ? accountId : `${accountId}.${jurisdiction}`;
+  return `https://${subdomain}.r2.cloudflarestorage.com`;
 }
 
 /**
@@ -92,7 +127,9 @@ function endpointOrigin(options: R2StorageProviderOptions): string {
   if (!R2_BUCKET_NAME.test(options.bucket)) {
     throw new TypeError('R2: bucket (R2_BUCKET) must be an R2 bucket name (3-63 of a-z, 0-9, -)');
   }
-  const url = new URL(options.endpoint ?? r2Endpoint(options.accountId));
+  // Checked even when an explicit endpoint wins: a misspelt jurisdiction never passes unnoticed.
+  const jurisdiction = parseR2Jurisdiction(options.jurisdiction);
+  const url = new URL(options.endpoint ?? r2Endpoint(options.accountId, jurisdiction));
   const secure =
     url.protocol === 'https:' || (url.protocol === 'http:' && LOOPBACK_HOSTS.has(url.hostname));
   if (!secure || url.pathname !== '/' || url.search !== '' || url.username !== '') {

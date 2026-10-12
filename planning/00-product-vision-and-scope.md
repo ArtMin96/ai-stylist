@@ -1,7 +1,7 @@
 # 00 — Product Vision and Scope
 
 **Status:** Ratified for planning · **Date:** 2026-08-24
-**Amended:** 2026-09-13 ([r7](research/r7-third-party-services-and-self-hosting-audit-2026-09-13.md), ADR-0003 — pg-boss metrics, try-on eval arm).
+**Amended:** 2026-09-13 ([r7](research/r7-third-party-services-and-self-hosting-audit-2026-09-13.md), ADR-0003 — pg-boss metrics, try-on eval arm) · 2026-10-12 (§8 — P00-T02 metric-definition audit, AI-35: privacy-class pointer, cost anchor, guardrail labels, audit note; §9.1 — P00-T03 budget-label audit, AI-37: RB-5 size wording aligned with the P01 gate, DEC-76 wait noted) · 2026-10-13 (§8.2 — with the P00 sign-off: the user-judged practical-validity rate is named apart from the rubric-rated engine metric of doc 09 §13.1).
 **Conforms to:** [SPINE.md](SPINE.md) (canonical decisions). Requirement IDs live in [01-requirements-and-traceability.md](01-requirements-and-traceability.md). Risks, assumptions, and open questions referenced here are tracked in [16-risks-open-questions-and-decision-log.md](16-risks-open-questions-and-decision-log.md).
 
 ---
@@ -95,7 +95,7 @@ The production MVP is the vertical slice completed through **P14** (see [SPINE �
 
 ## 8. Success metrics summary (metric tree)
 
-Owner roles: **PO** = product owner, **MOB** = mobile lead, **BE** = backend/platform lead, **ML** = AI/media pipeline owner. Privacy classes (defined in [11-security-privacy-and-compliance.md](11-security-privacy-and-compliance.md)): **C0** anonymous/aggregate · **C1** pseudonymous behavioral event · **C2** sensitive-adjacent (consent-gated, no raw payloads) · **C3** highly sensitive (never leaves server-side audit scope; no analytics payloads). Event taxonomy and instrumentation are owned by [14-observability-operations-and-analytics.md](14-observability-operations-and-analytics.md); unit-economics math by [12-pricing-entitlements-and-unit-economics.md](12-pricing-entitlements-and-unit-economics.md). All targets are **hypotheses until baselined**; "baseline first" means measure before setting a target.
+Owner roles: **PO** = product owner, **MOB** = mobile lead, **BE** = backend/platform lead, **ML** = AI/media pipeline owner. Privacy classes (defined here; the data-classification scheme S0–S3 is in [11 §6](11-security-privacy-and-compliance.md)): **C0** anonymous/aggregate · **C1** pseudonymous behavioral event · **C2** sensitive-adjacent (consent-gated, no raw payloads) · **C3** highly sensitive (never leaves server-side audit scope; no analytics payloads). Event taxonomy and instrumentation are owned by [14-observability-operations-and-analytics.md](14-observability-operations-and-analytics.md); unit-economics math by [12-pricing-entitlements-and-unit-economics.md](12-pricing-entitlements-and-unit-economics.md). All targets are **hypotheses until baselined**; "baseline first" means measure before setting a target.
 
 ```mermaid
 graph TD
@@ -122,10 +122,10 @@ graph TD
 
 | Metric | Owner | Source | Privacy | Target / baseline | Decision it informs |
 |---|---|---|---|---|---|
-| Closet items captured per active user; median time per item | MOB | PostHog | C1 | Hypothesis: ≤ 45 s/item single, faster in batch | Capture-flow investment (P06) |
+| Closet items captured per active user; median time per item | MOB | PostHog | C1 | Items per active user: baseline first. Time per item: hypothesis ≤ 45 s single, faster in batch | Capture-flow investment (P06) |
 | Item processing success rate (no manual rescue needed) | ML | pipeline metrics | C0 | Baseline first; hypothesis ≥ 85% | Model escalation ladder ([10-ai-usage-cost-and-evaluation.md](10-ai-usage-cost-and-evaluation.md)) |
 | Classification correction rate & duplicate-detection precision | ML | pipeline + app events | C1 | Baseline first | Whether to escalate to specialist tagging provider |
-| Recommendation practical-validity rate (user-judged wearable) | PO | feedback events | C1 | Baseline first; hypothesis ≥ 80% | Engine rule/weight tuning (P09) |
+| Recommendation practical-validity rate (user-judged wearable; the rubric-rated rate of [09 §13.1](09-recommendation-engine.md) is a separate engine metric) | PO | feedback events | C1 | Baseline first; hypothesis ≥ 80% | Engine rule/weight tuning (P09) |
 | **Hard-constraint violation rate** | BE | engine simulation + prod traces | C0 | **0 — hard target, release gate** | Blocks release if > 0 ([13-testing-quality-and-performance.md](13-testing-quality-and-performance.md)) |
 | Outfit save / wear / replace-one-item / reject / repeat rates | PO | app events | C1 | Baseline first | Ranking weights; diversity controls |
 | Cold-start & sparse-closet success (valid rec with < 15 items) | PO | app events | C1 | Baseline first | Sparse-closet strategy priority (P09) |
@@ -137,22 +137,24 @@ graph TD
 |---|---|---|---|---|---|
 | Trial→paid conversion; plan mix | PO | RevenueCat + entitlements table | C1 | Baseline first (all prices hypotheses, [SPINE §6](SPINE.md)) | Tier/packaging experiments (P13) |
 | D7/D30 retention (free vs paid) | PO | PostHog | C1 | Baseline first | Roadmap priority after launch (P15) |
-| Restore-purchase success; refund rate | BE | RevenueCat webhooks | C1 | Restore success hypothesis ≥ 99% | Billing reliability work |
-| Variable cost per active user / per paid user per month | BE | provider billing + usage_meters | C0 | Anchors: $0.02–0.15/user/mo steady (SPINE §6, as of Aug 2026) | Pricing floor; credit limits |
-| AI calls, tokens/GPU-s, cache hit rate, cost per processed item, failure/fallback rate | ML | provider metering + job metadata | C0 | Cache hit baseline first; cost per item vs doc 10 budgets | Provider/model migration ([10](10-ai-usage-cost-and-evaluation.md)) |
+| Restore-purchase success; refund rate | BE | RevenueCat webhooks | C1 | Restore success hypothesis ≥ 99%; refund rate baseline first ([12 §7.6](12-pricing-entitlements-and-unit-economics.md)) | Billing reliability work |
+| Variable cost per active user / per paid user per month | BE | provider billing + usage_meters | C0 | Baseline first: modeled anchors until P06/P11 telemetry ([10 §5](10-ai-usage-cost-and-evaluation.md)). AI $0.01–0.06/user/mo steady (light–medium), $0.10–0.15 heavy, excluding credits ([SPINE §6](SPINE.md), r6, verified 2026-09-09); cost-to-serve per plan in [12 §7.2](12-pricing-entitlements-and-unit-economics.md); alert thresholds and hard caps in [10 §6.1](10-ai-usage-cost-and-evaluation.md) | Pricing floor; credit limits |
+| AI calls, tokens/GPU-s, cache hit rate, cost per processed item, failure/fallback rate | ML | provider metering + job metadata | C0 | Baseline first (calls, tokens/GPU-s, cache hit, failure/fallback rate); cost per item vs doc 10 budgets | Provider/model migration ([10](10-ai-usage-cost-and-evaluation.md)) |
 
 ### 8.4 Guardrails (never traded for engagement)
 
 | Metric | Owner | Source | Privacy | Target / baseline | Decision it informs |
 |---|---|---|---|---|---|
-| Crash-free sessions | MOB | PostHog/Sentry | C1 | Hypothesis ≥ 99.5% | Release gate (P14) |
-| Recommendation latency; 3D first-render; frame rate on device tiers | MOB | perf monitoring + device lab | C0 | Budgets set in [13](13-testing-quality-and-performance.md); P01 gate: 60 fps iPhone 13-class / 50 fps Galaxy A52-class (r2) | P01 go/no-go; perf work priority |
-| Asset/job pipeline reliability (job age, DLQ depth) | BE | pg-boss queue metrics | C0 | Budgets in [14](14-observability-operations-and-analytics.md) | Ops/alerting investment |
+| Crash-free sessions | MOB | PostHog/Sentry | C1 | Baseline first; hypothesis ≥ 99.5%, ratified as the release gate at P14 ([14 §5](14-observability-operations-and-analytics.md)) | Release gate (P14) |
+| Recommendation latency; 3D first-render; frame rate on device tiers | MOB | perf monitoring + device lab | C0 | Baseline first; hypothesis budgets in [13 §12.1–§12.2](13-testing-quality-and-performance.md), each with its measuring phase (recommendation P09, see OQ-33; 3D at the P01 gate, which waits on DEC-76); P01 gate: 60 fps iPhone 13-class / 50 fps Galaxy A52-class (r2) | P01 go/no-go; perf work priority |
+| Asset/job pipeline reliability (job age, DLQ depth) | BE | pg-boss queue metrics | C0 | Baseline first; hypothesis: oldest unfinished job ≤ 15 min, measured at P06 ([13 §12.2](13-testing-quality-and-performance.md)); DLQ depth above 0 alerts ([14 §4](14-observability-operations-and-analytics.md)) | Ops/alerting investment |
 | Consent coverage (sensitive processing without valid consent) | BE | audit trail | C3 | **0 — hard target** | Immediate incident (11) |
-| Deletion completion within SLA (incl. derived assets) | BE | audit trail | C3 | **100% within stated SLA** | Compliance gate (P14) |
+| Deletion completion within SLA (incl. derived assets) | BE | audit trail | C3 | **100% within stated SLA** (≤ 30 days from the request, [11 §13.2](11-security-privacy-and-compliance.md)) | Compliance gate (P14) |
 | Sensitive-data logging incidents; unauthorized access events | BE | log audits + security tests | C3 | **0 — hard target** | Incident response ([11](11-security-privacy-and-compliance.md)) |
-| Fairness/inclusivity slices (capture + avatar quality across skin tones/body shapes, consent-safe eval sets only) | ML | offline eval suites | C2 | No slice materially worse than aggregate; thresholds in doc 10 evals | Model acceptance gates; no irresponsible protected-trait inference |
+| Fairness/inclusivity slices (capture + avatar quality across skin tones/body shapes, consent-safe eval sets only) | ML | offline eval suites | C2 | Baseline first; no slice materially worse than aggregate. The per-slice regression threshold is a hypothesis set in each capability's phase and read against its 95% interval ([13 §10](13-testing-quality-and-performance.md)); eval sets in [10 §2](10-ai-usage-cost-and-evaluation.md) | Model acceptance gates; no irresponsible protected-trait inference |
 | Battery/thermal signals during 3D + capture sessions | MOB | device lab + OS signals | C0 | Baseline first at P01 | LOD/quality-tier defaults |
+
+**Audit note (2026-10-12, P00-T02, AI-35).** Walked: the four tables of §8.1–§8.4 (26 metric rows: 5 activation, 8 core loop, 5 monetization and cost, 8 guardrails) and the event table of [14 §9](14-observability-operations-and-analytics.md) (33 rows, 38 events). Every metric row carries an owner, a source, a privacy class, a target or baseline, and the decision it informs (scripted walk: 26 rows, 0 empty cells). Guardrails: 4 of the 8 rows in §8.4 already had a hard target or a baseline-first label; the other 4 (crash-free sessions, latency and 3D budgets, pipeline reliability, fairness slices) were hypotheses or pointers and now say baseline first, with no value added or changed, so 8 of 8 comply. Two guardrail-class metrics sit outside §8.4: the hard-constraint violation rate (§8.2, hard target 0) and variable cost (§8.3, baseline first, caps in doc 10 §6.1). Corrected on the same date: the privacy-class pointer (C0–C3 are defined in this section; doc 11 §6 defines the data classes S0–S3), the cost anchor (SPINE §6 as verified 2026-09-09), and the missing baseline-first labels in three multi-metric rows. The 14 §9 table lists events, not metrics: the five attributes are recorded here only.
 
 ## 9. Release ladder: MVP / beta / later / research bets / non-goals
 
@@ -225,8 +227,8 @@ Each bet carries the full brief-§11 contract. Costs limits are planning caps, n
 
 #### RB-5 — Embedded shared 3D engine within size/battery budgets
 - **User problem:** The whole avatar experience depends on a 3D engine that must not bloat the app or drain batteries.
-- **Hypothesis:** Filament (C++ engine, used natively on iOS and Android) stays within ≤ 100 MB install size and acceptable battery/thermal load (r2 prototype-gate numbers). *(Restated 2026-09-22, DEC-50; originally RN + `react-native-filament`.)*
-- **Prototype:** This *is* the P01 gate — morphing avatar, 3–4 poses, rotate/zoom, camera→upload on real devices; it is scheduled work, listed here because it is also a falsifiable bet.
+- **Hypothesis:** Filament (C++ engine, used natively on iOS and Android) stays within the < 100 MB app package (IPA/APK) of the P01 gate and acceptable battery/thermal load (r2 prototype-gate numbers). *(Restated 2026-09-22, DEC-50; originally RN + `react-native-filament`.)*
+- **Prototype:** This *is* the P01 gate — morphing avatar, 3–4 poses, rotate/zoom, camera→upload on real devices; it is scheduled work, listed here because it is also a falsifiable bet. *(2026-10-09, DEC-76: the spike waits for the garment 3D research go/no-go, which also reviews the renderer.)*
 - **Dataset:** Draco/KTX2-compressed Anny-derived avatar assets.
 - **Target devices:** iPhone 13-class, Galaxy A52-class (mid-tier baseline), plus one low-tier Android.
 - **Success metric:** P01 gate criteria — 60/50 fps, < 300 MB memory, < 100 MB app size, touch response < 50 ms (r2).

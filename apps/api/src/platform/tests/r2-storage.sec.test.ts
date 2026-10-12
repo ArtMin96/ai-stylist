@@ -261,16 +261,23 @@ describe('R2StorageProvider signed URLs against a verifying endpoint (doc 11 §5
     expect(s3.objects.size).toBe(0);
   });
 
-  it('mints a URL far inside the P02 signed-URL budget (p95 ≤ 100 ms)', async () => {
-    const durations: number[] = [];
-    for (let i = 0; i < 500; i += 1) {
-      const started = performance.now();
-      await r2.presignedPut(put({ key: `ast_${i}.jpg` }));
-      durations.push(performance.now() - started);
-    }
-    durations.sort((a, b) => a - b);
-    expect(durations[Math.ceil(durations.length * 0.95) - 1]).toBeLessThan(100);
-  });
+  // P02 signed-URL budget (AI-21 AC-4): p95 of 500 mints under 100 ms, for each method.
+  it.each([
+    ['PUT', (key: string) => r2.presignedPut(put({ key }))],
+    ['GET', (key: string) => r2.presignedGet(get({ key }))],
+  ] as const)(
+    'mints a %s URL far inside the P02 signed-URL budget (p95 ≤ 100 ms)',
+    async (_method, mint) => {
+      const durations: number[] = [];
+      for (let i = 0; i < 500; i += 1) {
+        const started = performance.now();
+        await mint(`ast_${i}.jpg`);
+        durations.push(performance.now() - started);
+      }
+      durations.sort((a, b) => a - b);
+      expect(durations[Math.ceil(durations.length * 0.95) - 1]).toBeLessThan(100);
+    },
+  );
 
   describe('per-user key layout u/<user id>/<namespace>/<key> (doc 11 §4.3, §13.2)', () => {
     const userPrefix = (userId: string) => `/${BUCKET}/u/${userId}/`;
@@ -543,6 +550,28 @@ describe('R2StorageProvider options', () => {
     ).toBe(true);
   });
 
+  // DEC-61: a jurisdictional bucket is served only from its own endpoint host.
+  it('signs for https://<account>.<jurisdiction>.r2.cloudflarestorage.com/<bucket>/ when a jurisdiction is given', async () => {
+    const r2 = new R2StorageProvider({ ...base, jurisdiction: 'eu', clock: fakeClock(T0) });
+    const { url } = await r2.presignedGet(get({ namespace: 'avatars', key: 'a.glb' }));
+    expect(
+      url.startsWith(
+        `https://${ACCOUNT_ID}.eu.r2.cloudflarestorage.com/${BUCKET}/u/${USER_A}/avatars/a.glb?`,
+      ),
+    ).toBe(true);
+    expect(r2Endpoint(ACCOUNT_ID, 'eu')).toBe(`https://${ACCOUNT_ID}.eu.r2.cloudflarestorage.com`);
+    expect(r2Endpoint(ACCOUNT_ID)).toBe(`https://${ACCOUNT_ID}.r2.cloudflarestorage.com`);
+  });
+
+  it('lets an explicit endpoint win over a jurisdiction, which is still checked', async () => {
+    const endpoint = 'http://127.0.0.1:9000';
+    const r2 = new R2StorageProvider({ ...base, jurisdiction: 'eu', endpoint });
+    expect(new URL((await r2.presignedGet(get())).url).origin).toBe(endpoint);
+    expect(() => new R2StorageProvider({ ...base, jurisdiction: 'ue', endpoint })).toThrow(
+      /R2: jurisdiction/,
+    );
+  });
+
   it('keeps the credentials out of util.inspect, JSON.stringify and own properties', () => {
     const r2 = new R2StorageProvider({ ...base, clock: fakeClock(T0) });
     const views = [
@@ -558,12 +587,17 @@ describe('R2StorageProvider options', () => {
   });
 
   it('refuses malformed options without echoing a value', () => {
-    const cases: Record<string, Partial<typeof base> & { endpoint?: string }> = {
+    const cases: Record<
+      string,
+      Partial<typeof base> & { endpoint?: string; jurisdiction?: string }
+    > = {
       accountId: { accountId: 'evil.example/x?' },
       accessKeyId: { accessKeyId: 'AKIA/../x' },
       secretAccessKey: { secretAccessKey: 'has whitespace in it' },
       bucket: { bucket: 'Bad_Bucket' },
       endpoint: { endpoint: 'http://r2.example' },
+      // Would otherwise become part of the host: `https://<account>.evil.example#.r2…`.
+      jurisdiction: { jurisdiction: 'evil.example#' },
     };
     for (const [option, override] of Object.entries(cases)) {
       const build = () => new R2StorageProvider({ ...base, ...override });

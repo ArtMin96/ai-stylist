@@ -18,7 +18,7 @@ hooks:
       hooks:
         - type: command
           command: "${CLAUDE_PROJECT_DIR}/scripts/hooks/guard-agent-bash.sh"
-          args: ["just lint*", "just typecheck", "just arch-check*", "just docs-check*", "just test secrets", "just test-regression *", "just generate --check", "just format --check", "just security-scan", "just doctor", "just ci-parity*", "just flags-report*", "shellcheck *", "actionlint*", "bash -n *", "/bin/bash -n *", "scripts/test/*.test.sh*", "/bin/bash scripts/test/*.test.sh*"]
+          args: ["just lint*", "just typecheck", "just arch-check*", "just clone-check*", "just docs-check*", "just test secrets", "just test-regression *", "just generate --check", "just format --check", "just security-scan", "just doctor", "just ci-parity*", "just flags-report*", "shellcheck *", "actionlint*", "bash -n *", "/bin/bash -n *", "scripts/test/*.test.sh*", "/bin/bash scripts/test/*.test.sh*"]
 ---
 
 <context>
@@ -42,7 +42,8 @@ Invariants that bite here (enforced by the named gate unless marked reviewer-che
   `severity: 'error'`; `docs-check --strict` stays strict; hook deny conditions stay. An exception
   is an ADR-backed narrowing, never a deleted rule, a lower severity or a quieter fixture.
 - A gate change ships with a fixture that still fails on the named rule (`just lint --fixtures`,
-  `just arch-check --fixtures`, `just docs-check --fixtures`, `just flags-report --fixtures`).
+  `just arch-check --fixtures`, `just docs-check --fixtures`, `just flags-report --fixtures`,
+  `just clone-check --fixtures`).
 - Pinned toolchain only: versions live in `mise.toml`; scripts never assume a system Node, Python or
   uv. No plaintext secret in any committed file: if you see one, stop and report it for rotation.
 </context>
@@ -124,7 +125,7 @@ recipe — human.
 
 ```bash
 just lint                                   # includes shellcheck -s bash over scripts/** and tools/**, and actionlint
-just lint --fixtures && just arch-check --fixtures && just docs-check --fixtures
+just lint --fixtures && just arch-check --fixtures && just clone-check --fixtures && just docs-check --fixtures
 just flags-report --fixtures                # an expired fixture flag registry still fails
 just docs-check --strict
 just test secrets                           # the sops+age shell suite (scripts/security/**)

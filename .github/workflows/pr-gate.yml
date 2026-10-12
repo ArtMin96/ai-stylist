@@ -3,14 +3,15 @@
 # push to main the summary job also pushes it to Grafana Cloud as stylist.ci.pr_gate_duration).
 #
 # Triggers:  pull_request (any path), push to main.
-# Recipes:   just ci-parity --core, just generate --check, and the [private] CI helpers
-#            ci-env-example-check, ci-contracts-spectral, ci-contracts-breaking,
-#            ci-pr-gate-metrics (justfile).
+# Recipes:   just ci-parity --core, just generate --check, just clone-check (+ --fixtures), and
+#            the [private] CI helpers ci-env-example-check, ci-contracts-spectral,
+#            ci-contracts-breaking, ci-pr-gate-metrics (justfile).
 # Native apps: the parity job runs `just ci-parity --core` (NATIVE_LANES=none: the iOS and Android
 #            lanes print "not selected"), because ios.yml and android.yml run those lanes on their own
 #            paths. The contracts job runs the FULL `just generate --check`, so every contract change
 #            proves the TS, Python, Swift (Docker swift:6.4) and Kotlin (JDK 25) clients are current.
 #            The PR-diff secret scan uses gitleaks/gitleaks-action directly (no recipe needed).
+#            The clone-check job runs the gate that `just ci-parity` also runs, as its own check.
 # Required secrets: none.
 # Optional secrets (steps degrade gracefully when unset):
 #   TURBO_TOKEN, TURBO_TEAM   Turborepo remote cache (no Vercel account yet)
@@ -81,7 +82,7 @@ jobs:
           fi
       - name: Verify · .env.example covers every API env key
         run: just ci-env-example-check
-      - name: Verify · Run the PR gate sequence (format, lint, typecheck, arch, docs, generate, test, security)
+      - name: Verify · Run the PR gate sequence (format, lint, typecheck, arch, clones, docs, generate, test, security)
         run: just ci-parity --core
       - name: Report · Job duration
         if: always()
@@ -152,20 +153,25 @@ jobs:
           GITLEAKS_ENABLE_UPLOAD_ARTIFACT: 'false'
 
   clone-check:
-    name: Gate · Clone detection (placeholder)
+    name: Gate · Clone detection
     # needs: none (root of the job tree)
     runs-on: ubuntu-latest
-    timeout-minutes: 2
+    # Same budget as the parity job: on a cold cache the setup action installs every pinned tool.
+    timeout-minutes: 10
     permissions:
       contents: read
     concurrency:
       group: ${{ github.workflow }}-clone-check-${{ github.ref }}
       cancel-in-progress: true
     steps:
-      - name: Verify · Clone detection (NOT IMPLEMENTED, NFR-TEAM-040)
-        run: |
-          echo "NOT IMPLEMENTED (NFR-TEAM-040): clone detection tool undecided"
-          echo "::notice::clone-check placeholder - tool undecided (brief §9)"
+      - name: Setup · Check out
+        uses: actions/checkout@v7
+      - name: Setup · Install toolchain and dependencies
+        uses: ./.github/actions/setup
+      - name: Verify · Duplication within the threshold (jscpd, NFR-TEAM-040)
+        run: just clone-check
+      - name: Verify · Clone fixtures still fail
+        run: just clone-check --fixtures
 
   summary:
     # Whole-run wall clock (all jobs above), the number AC-1 is measured on. Also the single job a

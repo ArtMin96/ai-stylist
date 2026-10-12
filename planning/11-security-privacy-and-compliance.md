@@ -1,6 +1,7 @@
 # 11 — Security, Privacy, and Compliance
 
-**Status:** Draft for ratification · **Date:** 2026-08-24 · **Conforms to:** [SPINE.md](SPINE.md) · **Amended:** 2026-09-13 ([r7](research/r7-third-party-services-and-self-hosting-audit-2026-09-13.md), ADR-0003 — self-managed PostgreSQL/pgBackRest, Coolify secrets, pg-boss deletion chain, processor list) · 2026-09-27 (§2, §7.3 — Grafana Cloud EU as an operations processor, DEC-58, P02-T09)
+**Status:** Ratified for the baselines of §2–§3, §6, §8 and §17 (ratification line below); §9–§12 still await legal review · **Date:** 2026-08-24 · **Conforms to:** [SPINE.md](SPINE.md) · **Amended:** 2026-09-13 ([r7](research/r7-third-party-services-and-self-hosting-audit-2026-09-13.md), ADR-0003 — self-managed PostgreSQL/pgBackRest, Coolify secrets, pg-boss deletion chain, processor list) · 2026-09-27 (§2, §7.3 — Grafana Cloud EU as an operations processor, DEC-58, P02-T09) · 2026-10-12 (§12 — DEC-79: counsel is engaged for the first minimal release; LR-02, LR-03, LR-04, LR-07 and LR-09 gate that release, not the end of P03)
+**Ratified 2026-10-13 by Arthur Minasyan** (product owner, P00-T07): the threat model and abuse cases (§2–§3), the data classification (§6), the logging redaction rules (§8) and the product-ethics rules (§17), as the baseline every later phase extends. This is not a legal sign-off: the notice below stands, and counsel is engaged for the first minimal release (DEC-79).
 **Owns:** threat model, abuse cases, authN/authZ design, encryption & key management, data classification, consent registry, logging redaction rules, privacy/regulatory mapping, legal-review register, age policy, export/deletion flows, incident response, abuse prevention, product-ethics rules.
 **Requirement IDs delivered:** `REQ-SEC-*`, `REQ-PRV-*` (defined in [01-requirements-and-traceability.md](01-requirements-and-traceability.md)).
 **Security tests that verify this design:** [13-testing-quality-and-performance.md](13-testing-quality-and-performance.md) §8. **Audit trails, alerting, and monitoring:** [14-observability-operations-and-analytics.md](14-observability-operations-and-analytics.md).
@@ -210,17 +211,19 @@ When calendar context ships: process only start/end time, coarse event type, and
 
 Owner column added 2026-10-09 (P00 AC-3): the product owner owns every item until counsel is engaged (P00-T04; not engaged as of that date). Decided product positions that these items confirm: LR-09 → DEC-60 (age 16+), LR-07 → DEC-66 (crash diagnostics under `analytics`), LR-03 → DEC-61 (EU home region, exclusion list).
 
+**Amended 2026-10-12 (DEC-79):** counsel is engaged for the first minimal release, not in P00. LR-02, LR-03, LR-04, LR-07 and LR-09, which gated the end of P03, now gate that release, and so does any other item whose phase ends before it. Until counsel confirms them, DEC-60, DEC-61 and DEC-66 stand as product positions. The date of the release is not set.
+
 | ID | Item | Sections | Owner | Needed by | Status |
 |---|---|---|---|---|---|
 | LR-01 | App-store privacy label accuracy (Apple nutrition label, Play Data safety) | §11 | PO | P14 | Open |
-| LR-02 | GDPR/UK GDPR basis mapping per purpose; UK divergences | §9, §7 | PO | P03 | Open |
-| LR-03 | International transfer mechanisms + DPAs for all processors | §9 | PO | P03 | Open |
-| LR-04 | Consent-record retention post-deletion (evidence vs. erasure tension) | §6, §13 | PO | P03 | Open |
+| LR-02 | GDPR/UK GDPR basis mapping per purpose; UK divergences | §9, §7 | PO | First minimal release (DEC-79; was P03) | Open |
+| LR-03 | International transfer mechanisms + DPAs for all processors | §9 | PO | First minimal release (DEC-79; was P03) | Open |
+| LR-04 | Consent-record retention post-deletion (evidence vs. erasure tension) | §6, §13 | PO | First minimal release (DEC-79; was P03) | Open |
 | LR-05 | BIPA-class compliance for face landmarks/geometry; consent wording; retention schedule | §11 | PO | **P05 (blocks selfie feature)** | Open |
 | LR-06 | DPIA for face processing + measurements | §9 | PO | P05 | Open |
-| LR-07 | Analytics consent defaults per jurisdiction (ePrivacy/cookie-law analogues in apps) | §7.2 | PO | P03 | Open |
+| LR-07 | Analytics consent defaults per jurisdiction (ePrivacy/cookie-law analogues in apps) | §7.2 | PO | First minimal release (DEC-79; was P03) | Open |
 | LR-08 | CCPA/CPRA sale/share classification of PostHog/RevenueCat data flows | §9 | PO | P13 | Open |
-| LR-09 | Age policy 16+ confirmation; whether face features need 18+ anywhere | §10 | PO | P03 | Open |
+| LR-09 | Age policy 16+ confirmation; whether face features need 18+ anywhere | §10 | PO | First minimal release (DEC-79; was P03) | Open |
 | LR-10 | EU AI Act classification + deployer obligations | §11 | PO | P14 | Open |
 | LR-11 | CSAM scanning/reporting obligations for user uploads by region | §5.5 | PO | P06 | Open |
 | LR-12 | Wardrobe/wear history as inferable sensitive data (religion via garments etc.) — disclosure wording | §6 | PO | P14 | Open |
@@ -289,4 +292,4 @@ Violations of these rules are release blockers in the P14 review checklist and t
 
 ---
 
-**Phase hooks:** P00 (processing register, DPIA scoping, LR items opened) · P02 (secret management, signed URLs, redaction lint, rate-limit middleware) · P03 (consent registry, auth, isolation tests, LR-02/03/04/07/09) · P05 (face consent, envelope encryption DO-SEC-03, LR-05/06 **blocking**) · P06 (upload scanning, quarantine, LR-11) · P13 (billing fraud controls, LR-08) · P14 (pen-test/security review, rotation drill, store labels LR-01, ethics checklist, LR-10/12).
+**Phase hooks:** P00 (LR items opened; the processing register and the DPIA scoping note moved to the first minimal release by DEC-79) · P02 (secret management, signed URLs, redaction lint, rate-limit middleware) · P03 (consent registry, auth, isolation tests) · first minimal release (counsel engaged; LR-02/03/04/07/09 — moved from P03 by DEC-79, 2026-10-12) · P05 (face consent, envelope encryption DO-SEC-03, LR-05/06 **blocking**) · P06 (upload scanning, quarantine, LR-11) · P13 (billing fraud controls, LR-08) · P14 (pen-test/security review, rotation drill, store labels LR-01, ethics checklist, LR-10/12).

@@ -36,7 +36,7 @@ packages/shared-kernel/ units, IDs, reason codes, entitlement names, event envel
 packages/db/            drizzle-kit config, composed schema entry, migrations/ (table definitions live in modules/<name>/internal/schema.ts)
 packages/seed-data/     synthetic fixtures/factories (never real user data)
 packages/test-support/  shared test builders/fakes
-tools/                  depcruise/rules.cjs (arch-check), codegen/ (contract generators)
+tools/                  depcruise/rules.cjs (arch-check), codegen/ (contract generators), jscpd/ (clone-check)
 tools/docs/             docs-check fixtures (tools/docs/fixtures/DC-*) + planned-paths.txt
 planning/               SPINE, docs 00–16, phases/, templates/  (read-only context)
 docs/adr/  docs/modules/                decisions and module contracts
@@ -126,7 +126,7 @@ Use `just` recipes only — never raw tool invocations that CI does not run. Ful
 - `just ios-check` (lint, format, bans, package tests; on macOS also the simulator build + tests) · Mac-only: `just ios-project` / `just ios-build` / `just ios-test`
 - `just android-check` (Spotless, module graph, detekt, Android Lint, unit + Robolectric tests, APKs)
 - `just test <module>` (scoped) · `just test` (full)
-- `just lint` · `just typecheck` · `just format` · `just arch-check` · `just docs-check`
+- `just lint` · `just typecheck` · `just format` · `just arch-check` · `just clone-check` · `just docs-check`
 - `just generate` — contracts → clients (`--check` = staleness gate)
 - `just db-migrate` / `just db-rollback` / `just db-reset` (local only)
 - `just assets-validate` · `just ml-eval` · `just security-scan`

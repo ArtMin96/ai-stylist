@@ -47,6 +47,8 @@ Rules:
 
 **First command, always:** `just bootstrap && just doctor && just ci-parity` — must be green before any other work (last green: 2026-09-26 locally on `fix/ci-main-red`, Linux, merged as PR #10; iOS simulator build/test green on the CI macOS runner in PR #6, see the 2026-09-22 handoff).
 
+**Skill evals (2026-10-12):** `just skills-eval` scores the skills' eval files in one run and stores each score in `tools/skills-eval/scoreboard.json` (DEC-78; costs and limits in the two 2026-10-12 handoff entries). Run it for a skill after editing that skill. A full baseline (estimated at a few hundred dollars at list price) and any hillclimb are the owner's spending decision.
+
 **Native migration (2026-09-22):** `chore/native-foundations` merged 2026-09-25 (PR #6). Still outstanding: `just ios-doctor && just ios-check` on the team's Mac (the iOS app target has only been built on the CI macOS runner; checklist in the 2026-09-22 handoff entry).
 
 Then pick one:
@@ -55,7 +57,7 @@ Then pick one:
 2. **Finish P02.** PR #15 (`claude/project-next-steps-r6nu70`) merged on 2026-10-08 (`1fbee4e`); CI has two problems. On 2026-10-09 jobs did not start at all (GitHub Actions billing: failed payments or the spending limit). The last runs that did start, on 2026-10-08, were red in `just security-scan` (`werkzeug` 3.1.8 and `source-map-js` 1.2.1 need their fixed versions). Remaining: the owner's R2 steps for P02-T13 (AI-21), and the open split items in [`.claude/plans/2026-10-04-repo-split-readiness-proposal.md`](../.claude/plans/2026-10-04-repo-split-readiness-proposal.md): ADR-0009 (no cross-module foreign keys) is accepted (DEC-67, 2026-10-09); the owner keeps `packages/db` as is (no ADR-0008), so P03's first module table must compose without breaking `public-api-only-external`. Then **P02-T18 close-out** (AI-26) and AI-28 on the Mac. T07's staging host can be provisioned now: Hetzner, EU, one server (DEC-61, DEC-62, DEC-63).
 
 **Human-only steps outstanding** (agents stop at config + `.env.example` keys):
-- **By 2026-10-11:** confirm the Grafana Cloud stack lands on the free plan when its trial ends (`docs/SERVICES-SETUP.md` §10; DEC-48).
+- **Overdue since 2026-10-11 (owner):** confirm the Grafana Cloud stack landed on the free plan after its trial ended (`docs/SERVICES-SETUP.md` §10; DEC-48). Not checked in the 2026-10-12 session.
 - Engage counsel (P00-T04); P00's stop criterion allows two calendar weeks from 2026-10-09.
 - Create the real vendor accounts in the EU home region (DEC-61): Hetzner (DEC-62) and Cloudflare R2 with EU jurisdiction now; PostHog EU and Grafana EU when the test accounts of 2026-09-27 are replaced. Apple Developer and Google Play are deferred by the owner (DEC-63). (Neon, Railway and Trigger.dev were removed on 2026-09-13 — DEC-41–43; Expo/EAS on 2026-09-22 — DEC-51.)
 - Native-migration cleanup (2026-09-22; updated 2026-09-24): decide whether to keep or delete the Expo account/project; provision `https://staging-api.ai-stylist.app` (OQ-17 decided, host not yet live; ties to OQ-14); the device floors iOS 26.0 / Android minSdk 29 are confirmed (DEC-75); the permanent bundle id (OQ-18) is deferred with store enrollment (DEC-63).
@@ -83,6 +85,52 @@ Log hygiene: when this log exceeds ~30 entries, move the oldest entries to `plan
 ## Session handoff log
 
 *(newest first)*
+
+### 2026-10-12 (later) — `just skills-eval` landed: one command scores the skill evals (tooling, no product code)
+
+*Same session and branch as the entry below (`docs/eval-measurement-validity`, base `d4affb5`). It supersedes that entry's open items: the runner is chosen and DEC-78 is filed.*
+
+- **Phase / tasks worked:** none from a phase task list. Agent-operations tooling.
+- **Status changes:** none.
+- **Done:**
+  - New command `just skills-eval [skill] [mode]` ([`tools/skills-eval/README.md`](../tools/skills-eval/README.md)): generates cases from the existing `evals.json` and `trigger-evals.json` files for Claude Code's `claude plugin eval`. The file format, DC-05 and the templates are unchanged. It skips what is unchanged since the last stored score, runs under one cost budget, compares a new score with the last one (better, worse, no measurable change) and keeps the report local.
+  - Scores are stored in `tools/skills-eval/scoreboard.json`. First entry: `code-quality` triggers 0.950 (20 cases, 1 run, 95% half-width 0.096; should-trigger 9/10, should-not-trigger 10/10).
+  - Owner-approved edits: the doc 15 §5 catalog row; two repaired checks in `.agents/skills/code-quality/evals/evals.json` (task 2 check 1 reworded, task 3 check 5 split in two). Record: [`.claude/plans/2026-10-12-skills-eval-runner-proposal.md`](../.claude/plans/2026-10-12-skills-eval-runner-proposal.md).
+  - DEC-78 filed in doc 16 for the measurement rules and the command.
+- **Not done / open:** no full baseline and no hillclimb loop. Task mode was not re-run on the real runner after the last snapshot and budget fixes (free tests and `--generate-only` only). At the default budget a skill with more than three task cases (today only `code-quality`) is reported "not run: budget" with the budget it needs.
+- **Repository state:** see the PR for the gate output. `just lint` without `NATIVE_LANES=none` fails on macOS in `android-lint` (a missing `aapt2` entry in `apps/android/gradle/verification-metadata.xml`); unrelated to this change.
+- **New decisions / risks / questions filed:** DEC-78.
+- **Surprises / gotchas:**
+  - Measured list prices on `claude-opus-5-5` at effort high: about $0.107 per trigger run (one turn), about $0.40 per task run in either arm (one case, one run each, in a repo snapshot). ESTIMATE for all 25 skills: triggers about $53, tasks about $189.
+  - The runner checks its cost ceiling only before each launch; the tool holds back room for runs in flight so the budget is a real ceiling.
+  - The task workspace is a snapshot of tracked files without any `.agents` or `.claude` directory; `planning/.agents/skills/` holds old copies of 11 current skills and leaked into the no-skill arm before the fix.
+  - Trigger cases stop after the first turn. A skill loaded after another skill counts as not called.
+  - The `tooling-engineer` Bash guard does not allow `just skills-eval`, `claude plugin validate` or `just test tooling`, so that agent cannot run this command.
+  - Six worktrees under `.claude/worktrees/` date from 2026-09-25; `fx-enforcement` has 26 uncommitted files. Left untouched for the owner.
+- **Next session starts:** run `just skills-eval <skill>` when a skill is edited and commit the scoreboard change. A full baseline or a hillclimb is the owner's spending decision.
+
+### 2026-10-12 — Eval method review, measurement-validity amendments to docs 10 and 13, and a `claude plugin eval` pilot on `code-quality` (no product code)
+
+*Claude Code session on the owner's Mac in the main checkout, local branch `docs/eval-measurement-validity` at `d4affb5`, uncommitted.*
+
+- **Phase / tasks worked:** none from a phase task list. Agent-operations research (how the repo's skills are evaluated) plus a planning-doc amendment that binds the P06 eval gates.
+- **Status changes:** none.
+- **Done:**
+  - Reviewed Anthropic's ["Automating eval design and hillclimbing"](https://claude.dev/blog/automating-eval-design-and-hillclimbing/) (2026-09-28) against the repo. Result: the 25 skills carry 500 trigger queries and 76 task cases but nothing scores them; per-skill sets are too small to resolve a change (20 queries at 3 repetitions is about ±13 points); every case is model-written; `just ml-eval` is a stub and no LLM SDK is in product code.
+  - Owner-approved amendments (2026-10-12), applied directly: [doc 13](13-testing-quality-and-performance.md) §10 gains "Measurement validity" (noise floor before any gate, same cases for every arm, held-out split for anything tuned, grader checked) and the run-record line now includes effort, split id and repetitions; [doc 10](10-ai-usage-cost-and-evaluation.md) §2 gains an "Eval validity" policy bullet and §7 gains open item AIC-O8 (gates the stated set sizes cannot resolve).
+  - Pilot of `claude plugin eval` (CLI 2.1.296) on a scratch copy of the `code-quality` skill, outside the repo, report kept local (`--no-publish`): 4 cases × 3 runs × 2 arms at effort `high` on `claude-opus-5-5`. With the skill 0.883, without 0.554, difference +0.329. Per case: Kotlin +0.667, Swift +0.583, TypeScript +0.067, Python 0.000. Treating the 12 runs per arm as independent, the interval is +0.158 to +0.500; treating the 4 cases as the sample, it is −0.219 to +0.877, which includes zero. List-price cost: $4.09 for the main run, $4.77 with three probe runs; about $0.22 per with-skill run and $0.13 per without-skill run; 452 s wall time.
+- **Not done / open:** the owner has not chosen an eval runner. No row was added to doc 16 for the amendments. Doc 09 (weights "tuned via eval") and doc 15 (skill evals) were not amended. Nothing is committed. The pilot's files live in the session scratchpad and are temporary, so this entry is the durable record of its numbers.
+- **Repository state:** no code changed. `just docs-check` → `docs-check: ok (0 errors, 0 warning(s))` on 2026-10-12 after the amendments. CI state was not re-checked this session; see the 2026-10-09 entry.
+- **New decisions / risks / questions filed:** none in doc 16. AIC-O8 added in doc 10 §7.
+- **Surprises / gotchas:**
+  - Each `claude plugin eval` run is an isolated child: empty workspace, no project `CLAUDE.md`, rules, hooks or other project skills, and it cannot run `just` gates. It measures a skill alone.
+  - The runner has no effort flag. Exporting `CLAUDE_CODE_EFFORT_LEVEL` in the launching shell pins the child's effort (confirmed in the child transcripts). The result JSON records no model, effort or token counts.
+  - The runner publishes its HTML report to claude.ai by default. The repository stays private (DEC-77), so every run passes `--no-publish` and the report stays local.
+  - The runner records no judge reasoning, only the three votes. One `code-quality` grader gave inconsistent verdicts on near-identical answers (case 2, "flags `any` as a blocker"), and case 3's last assertion failed in all 6 runs across both arms.
+  - The `code-quality` [`SKILL.md`](../.agents/skills/code-quality/SKILL.md) names its references by repo-relative path (`.agents/skills/code-quality/references/<lang>.md`); in the isolated child the first read fails, and 2 of 12 with-skill runs never read the reference. Not tested: whether skill-relative paths fix it.
+  - skill-creator's `run_eval.py` still writes a temporary command file into the `.claude/commands/` folder of the nearest `.claude` directory above the working directory (the hazard in [`.claude/plans/s3-trigger-eval-report.md`](../.claude/plans/s3-trigger-eval-report.md)).
+  - The runner rewrote `~/.claude.json` on each invocation, and the pilot's `--keep-temp` flag left 27 run directories under `/private/tmp/e-*`.
+- **Next session starts:** the owner picks the runner. If it is `claude plugin eval`: write a `.claude/plans/<date>-<slug>-proposal.md` for the new `just` recipe and its doc 15 §5 row (and for DC-05 and `templates/skill-evals.json` only if the eval file format itself changes), then `tooling-engineer` builds a generator from `evals.json`. Before any hillclimb: repair the two `code-quality` graders named above and grow the case sets with cases taken from real agent mistakes.
 
 ### 2026-10-09 — Open-question sweep, owner decisions, and their application to the plans (no code)
 

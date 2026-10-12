@@ -16,7 +16,7 @@ metadata:
   or CI gate ordering/timing. The path guard denies agent edits there: write the exact diff into
   the report for a human to apply.
 - Adding or extending a gate under `tools/**` (`tools/depcruise`, `tools/eslint`, `tools/docs`,
-  `tools/security`) — including its fixture.
+  `tools/security`, `tools/jscpd`) — including its fixture.
 - `scripts/bootstrap.sh`, `scripts/doctor.sh`, `scripts/lib.sh`, or anything about running the same
   command correctly on macOS's bash 3.2 as well as Linux bash.
 - A new or renamed key in `.env.example`, or how to use the `just secrets-*` recipes. Human-only:
@@ -103,6 +103,7 @@ just --list                                   # recipe registered with a doc com
 just lint && just lint --fixtures             # analytics taxonomy + eslint + ruff + shellcheck + actionlint + native lint lanes; every eslint and analytics fixture still fails
 just flags-report --fixtures                  # an expired fixture flag registry still fails; the real registry loads
 just arch-check && just arch-check --fixtures # depcruise rules + iOS bans + Android module graph; every fixture still fails
+just clone-check && just clone-check --fixtures # jscpd threshold; every clone fixture still fails
 just docs-check && just docs-check --fixtures # DC-01..DC-15 + every tools/docs/fixtures/DC-NN case still fails
 just lint-file <script>                       # one edited shell script through shellcheck (bash 3.2 mode)
 just test secrets                             # after scripts/security/** or secrets tooling changes

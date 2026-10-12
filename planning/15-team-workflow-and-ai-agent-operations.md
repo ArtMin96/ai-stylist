@@ -112,6 +112,7 @@ Both scripts live in `scripts/` as readable, commented bash (or TS via `zx` if b
 | `just typecheck` | `tsc --noEmit` across workspace + Pyright for workers |
 | `just format` | Prettier + Ruff format + `ios-format` + `android-format`, write mode; `--check` in CI |
 | `just arch-check` | dependency-cruiser: module dependency rules, public-API-only imports (SPINE §3); plus `ios-check-banned` and the Android `checkModuleGraph` allow-list; `--fixtures` proves each rule still fires |
+| `just clone-check` | Clone detection (NFR-TEAM-040): jscpd over the hand-written TypeScript/JavaScript, Python, Kotlin, Swift and shell sources in `apps`, `packages`, `workers`, `scripts` and `tools` (`tools/jscpd/jscpd.json`; generated trees, fixtures, lockfiles and build output excluded); exit 1 when the share of duplicated lines is above the recorded threshold, which never goes up; `--fixtures` proves it still fails (in `ci-parity`) |
 | `just docs-check [--strict]` | Repo self-consistency gate: module↔contract bijection, ADR/skill/agent README sync, PROGRESS.md sync, stale review dates, dead repo paths, undocumented recipes, raw package-manager invocations in `.agents`/`.claude`; `--strict` turns the two human-approval-pending checks (this table, the CLAUDE.md layout block) into errors |
 | `just generate` | OpenAPI contract → TS client + types, Swift client (swift-openapi-generator), Kotlin client (openapi-generator), Python models; event schema types; `--check` fails on stale output |
 | `just db-generate <name>` | Generate a Drizzle migration from `packages/db` schema changes (`drizzle-kit generate --name`); reminds you `packages/db/migrations/down/<idx>.sql` is required by `db-rollback` |
@@ -146,7 +147,7 @@ Both scripts live in `scripts/` as readable, commented bash (or TS via `zx` if b
 | `just security-scan` | gitleaks + osv-scanner + npm/pnpm audit + license check (§9) |
 | `just sbom` | Generate the SPDX + CycloneDX SBOM into `artifacts/sbom/` (same syft invocation `security-scan` runs) |
 | `just flags-report` | Feature-flag expiry report (14 §11): one row per flag in `packages/shared-kernel/registry/feature-flags.json` with owner, `expiresAt` and days left or overdue; exit 1 when a rollout or experiment flag is past expiry (> 30 days overdue = DEFECT), kill-switches exempt; runs nightly; `--fixtures` proves it still fails (in `ci-parity`) |
-| `just ci-parity` | Run the exact PR-gate sequence locally: format-check, lint, typecheck, arch-check, docs-check, `observability-sync all --check` (offline: no env, no network), `flags-report --fixtures`, generate --check, test, security-scan, including the native lanes (`NATIVE_LANES`, default `ios android`; a missing native toolchain is a loud SKIP locally and a failure in CI; Xcode-only steps skip on Linux); `--core` = what the pr-gate parity job runs (the native lanes run in `ios.yml` / `android.yml`) |
+| `just ci-parity` | Run the exact PR-gate sequence locally: format-check, lint, typecheck, arch-check, clone-check, docs-check, `observability-sync all --check` (offline: no env, no network), `flags-report --fixtures`, generate --check, test, security-scan, including the native lanes (`NATIVE_LANES`, default `ios android`; a missing native toolchain is a loud SKIP locally and a failure in CI; Xcode-only steps skip on Linux); `--core` = what the pr-gate parity job runs (the native lanes run in `ios.yml` / `android.yml`) |
 | `just golden-accept` | Accept updated golden/visual-regression baselines as a reviewed commit (doc 13 §6) |
 | `just rec-replay <id>` | Re-run a stored recommendation from its snapshots and diff against the stored result (doc 09 §9) |
 | `just rec-golden-update` | Regenerate recommendation golden fixtures for review (doc 09 §13.3) |
@@ -253,7 +254,7 @@ Before adding a function, hook, component, service, mapper, validator, schema, c
 3. **Read the complete candidates** — not just signatures.
 4. **Reuse or extend** the canonical implementation when it fits.
 5. If new code is genuinely needed, **state in the PR why each candidate does not fit**.
-6. Run `just arch-check` + lint (duplication rules) before completion.
+6. Run `just arch-check`, `just clone-check` and lint before completion.
 
 Copy-and-diverge is banned; speculative generic abstraction is equally banned. One requirement, one obvious place to change.
 

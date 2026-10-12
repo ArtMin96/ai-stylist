@@ -60,10 +60,16 @@ no file- or directory-wide exemption.
 
 ## RuleTester suites
 
-`tests/*.test.mjs` are ESLint `RuleTester` suites run with `node --test` by the same
-`check-fixtures.sh` (`just lint --fixtures`, so `just ci-parity` runs them). A failing suite fails the
-run, and so does an empty `tests/` directory.
+`tests/*.test.mjs` are suites run with `node --test` by the same `check-fixtures.sh`
+(`just lint --fixtures`, so `just ci-parity` runs them): ESLint `RuleTester` for a rule written here,
+the `ESLint` class for the plugin rule. A failing suite fails the run, and so does an empty `tests/`
+directory.
+
+`boundaries/dependencies` has no fixture tree: the plugin ignores `**/fixtures/**` and its element
+patterns start at the repo root. `tests/boundaries.test.mjs` lints source text as a file that does
+not exist, under `apps/api/src/modules/closet/`, importing files that do exist.
 
 | Suite                                | What it proves                                                                                                                                                                                                                                               |
 | ------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | `tests/no-log-request-body.test.mjs` | every `forbidden` key in `packages/shared-kernel/registry/forbidden-log-keys.examples.json` is reported (quoted, plain, shorthand, nested and in an array payload) and every `allowed` key is not; the examples file is canonical, so the matcher follows it |
+| `tests/boundaries.test.mjs`          | `boundaries/dependencies` reports and renders its templates (`pnpm-workspace.yaml` overrides the plugin's `handlebars`): a module importing `platform`, a provider SDK or another module's `internal/` is reported by name; its own `internal/` is not       |

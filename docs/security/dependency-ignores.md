@@ -46,6 +46,27 @@ The license gate that runs in the same recipe follows the same discipline; see
   the pnpm list: remove the id from `ignoreGhsas` the moment it leaves `osv-scanner.toml`.
 - Never ignore a finding that has a working fix path.
 
+## Re-resolving a lockfile for one package
+
+When no dependent has to change (every dependent's declared range already admits the fixed
+release), only the lockfile moves. A human runs these from the repo root: the agents' Bash guard
+denies them, and the path guard denies a hand edit of a lockfile.
+
+- `pnpm-lock.yaml`: `pnpm update -r <package> [<package> ...]`. Bare names only: for a package that
+  is not a direct dependency, pnpm 12.6.0 rejects a version there
+  (`ERR_PNPM_UPDATE_VERSION_ON_INDIRECT_DEP`: "An update resolves a transitive dependency the way a
+  fresh install would, so a version on the command line has no effect on it"). `-r` covers every
+  workspace project, and `--depth` already defaults to unlimited.
+- `workers/uv.lock`: `uv lock --project workers --upgrade-package <package>`.
+- An npm lockfile (`prototype/g3-filament-spike/viewer/package-lock.json`): in its directory,
+  `npm update <package> --package-lock-only`.
+
+Read the dependent's own manifest first (`package.json` under `node_modules/`, or the
+`Requires-Dist` lines of the Python package's `METADATA`). A dependent that pins the vulnerable
+version exactly cannot be re-resolved: it needs a newer dependent or a scoped override (steps 2 and
+3 above). Afterwards review the lockfile diff (only the named packages may move), run
+`just security-scan`, and add the rows to the ledger.
+
 ## Ledger (2026-09-10)
 
 Findings from `just security-scan` on 2026-09-10 (osv-scanner 2.5.1), and what was done.
@@ -97,6 +118,51 @@ Next review of the ignored entry: **before 2026-12-03** (check `braces` for a fi
 `eslint-plugin-boundaries` and `@stoplight/spectral-cli` for a release that no longer depends on
 `micromatch`). The id leaves `auditConfig.ignoreGhsas` in the same change that removes it from
 `osv-scanner.toml`.
+
+2026-10-13: `just security-scan` went red again, on advisories for three packages (osv-scanner
+2.6.0: 4 lockfile entries, 6 advisories, 2 Critical, 2 High, 2 Medium). None is a direct
+dependency. For `source-map-js` and `werkzeug` every dependent's declared range admits the fixed
+release, so nothing was bumped or overridden: the owner re-resolved the three lockfiles for the
+named packages only (`pnpm-lock.yaml`, the spike viewer's `package-lock.json`, `workers/uv.lock`),
+with the commands in "Re-resolving a lockfile for one package" above, and no `package.json`,
+`pyproject.toml` or override changed for them. `handlebars` is different: both packages that pull
+it in pin it exactly, so a re-resolution cannot move it. Two scoped overrides in
+`pnpm-workspace.yaml` raise it to the fixed release instead (last row).
+
+The same day `jscpd@4.3.0`, the tool behind `just clone-check` (a root devDependency, DEC-83),
+entered `pnpm-lock.yaml` (additions only). It brings a third dependency path to the ignored `braces`
+advisory GHSA-vfj7-8cjw-p6xm: `jscpd` -> `@jscpd/finder@4.3.0` -> `fast-glob@3.3.3` ->
+`micromatch@4.0.8`. That path is gate tooling only, and what reaches `braces` on it is repository
+content (the globs in `tools/jscpd/jscpd.json` and the scan roots). The reason in `osv-scanner.toml`
+names the path, and the review before 2026-12-03 checks `@jscpd/finder` as well.
+
+| Package (vulnerable version)                                                   | Advisories                                                    | Dependency path                                                                                                                                                                                                                                                                                                                          | Action                                                                                                                                                                                                                                                                                                                       | Verification run                                                                       |
+| ------------------------------------------------------------------------------ | ------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------- |
+| `source-map-js@1.2.1` (`pnpm-lock.yaml`)                                       | GHSA-68fv-2mgg-jv7q                                           | `vitest@5.0.2` (root and workspace devDependency) -> `vite@8.2.2` -> `postcss@8.5.28` (`source-map-js ^1.2.1`); test tooling only                                                                                                                                                                                                        | Lockfile re-resolved to `1.2.2`                                                                                                                                                                                                                                                                                              | `just security-scan` (2026-10-13, after the re-resolve): exit 0, no longer reported    |
+| `source-map-js@1.2.1` (`prototype/g3-filament-spike/viewer/package-lock.json`) | GHSA-68fv-2mgg-jv7q                                           | the spike viewer devDependency `vite ^6.0.0` -> `postcss` (`source-map-js ^1.2.1`); `prototype/**` is not shipped                                                                                                                                                                                                                        | Lockfile re-resolved to `1.2.2` (npm, lockfile only)                                                                                                                                                                                                                                                                         | `just security-scan` (2026-10-13, after the re-resolve): exit 0, no longer reported    |
+| `werkzeug@3.1.8` (`workers/uv.lock`)                                           | GHSA-g6x2-hccm-hh4m                                           | dev group `schemathesis@4.28.0` (`werkzeug<4,>=0.16.0`), the only dependent; dev-only, in no worker runtime                                                                                                                                                                                                                              | Lockfile re-resolved to `3.1.9`                                                                                                                                                                                                                                                                                              | `just security-scan` (2026-10-13, after the re-resolve): exit 0, no longer reported    |
+| `handlebars@4.7.9` (`pnpm-lock.yaml`)                                          | GHSA-8r5x-fm3f-whwj, GHSA-p8wg-vrv2-v86f, GHSA-xw65-4hp5-5hc7 | root `eslint-plugin-boundaries@7.2.0` and its `@boundaries/elements@3.1.1`. Each declares `handlebars: 4.7.9` exactly, and both are the latest releases (registry metadata of 2026-10-12). Lint tooling only (`just lint`): it renders the message and selector templates of `tools/eslint/boundaries.mjs`, which are repository content | Overrides `eslint-plugin-boundaries>handlebars: ^4.7.10` and `@boundaries/elements>handlebars: ^4.7.10` in `pnpm-workspace.yaml` (resolve `4.7.10`): step 3 of the order above, because an exact pin admits no other version and neither dependent has a newer release. Remove both when both dependents pin a fixed release | `just security-scan`, `just lint` and `just lint --fixtures`: exited 0 (details below) |
+
+Results of 2026-10-13, after the owner's install and re-resolve:
+
+- `just security-scan`: exit 0. Both gitleaks scans: "no leaks found" (225 commits, then the
+  working tree). osv-scanner: "Filtered 3 vulnerabilities", "No issues found", all 15 tracked
+  lockfiles covered; the three are the ignored `braces` entry and the ignored Kotlin Gradle plugin
+  entry, which is listed twice. `pnpm audit --audit-level=high`: "1 ignored: 1 high". License check,
+  the first one over jscpd's tree: npm 944 packages (307 production), pypi 77 packages (38
+  production), 0 failures, 0 warnings. SBOM written (41,519 packages).
+- The lockfile diffs. `pnpm-lock.yaml` gained jscpd's tree, `handlebars@4.7.10` and
+  `source-map-js@1.2.2`, and lost `handlebars@4.7.9` and `source-map-js@1.2.1`. One entry moved that
+  no command named: the `tsx` that `drizzle-kit@0.31.11` resolves went from `4.23.13` to `4.23.15`,
+  the version the workspaces depend on directly. Both `tsx` versions were in the lockfile before and
+  both still are. `workers/uv.lock` changed for `werkzeug` only, and the spike viewer's
+  `package-lock.json` for `source-map-js` only.
+- `handlebars`. `just lint` (exit 0) shows only that ESLint loads the plugin: no import in today's
+  tree breaks a boundary policy, and no module has a source file under `internal/` yet. The proof is
+  `tools/eslint/tests/boundaries.test.mjs`, added the same day and run by `just lint --fixtures`
+  (exit 0). On `handlebars@4.7.10` the rule reports a module that imports `platform`, a provider SDK
+  or another module's `internal/`, each with the names rendered into the message, and it accepts a
+  module's own `internal/`, which the rendered `captured` selector decides.
 
 2026-09-23: the native apps' lockfiles are in the scan (osv-scanner 2.5.1 reads Gradle lockfiles,
 `verification-metadata.xml` and SwiftPM `Package.resolved` natively; no configuration needed). The

@@ -14,7 +14,8 @@
 # Triggers:  workflow_dispatch, schedule Monday 04:00 UTC, pull_request touching scripts/**,
 #            justfile, mise.toml, .npmrc, tools/**/*.sh, tools/**/*.mjs or this file.
 # Recipes:   just doctor, format --check, lint (+ --fixtures), flags-report --fixtures, typecheck,
-#            arch-check (+ --fixtures), generate --check, security-scan, test.
+#            arch-check (+ --fixtures), clone-check (+ --fixtures), generate --check, security-scan,
+#            test.
 # Required secrets: none (GITLEAKS_LICENSE only under an org).
 #
 # Job tree:
@@ -138,6 +139,10 @@ jobs:
         run: just arch-check
       - name: Verify · Architecture fixtures
         run: just arch-check --fixtures
+      - name: Verify · Clone detection
+        run: just clone-check
+      - name: Verify · Clone fixtures
+        run: just clone-check --fixtures
       - name: Verify · Generated clients are up to date
         run: just generate --check
       - name: Verify · Security scan

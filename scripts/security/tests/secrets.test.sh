@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 # Black-box regression suite for the sops + age scripts (secrets-sync.sh, secrets-push.sh,
 # secrets-edit.sh, secrets-updatekeys.sh, secrets-onboard.sh, secrets-approve.sh,
-# secrets-backup-done.sh, and the secrets-doctor.sh fragment) and the secrets/ ignore policy
+# secrets-backup-done.sh, and the secrets-doctor.sh fragment), the secrets/ and dotenv ignore policy,
+# and env-untracked-check.sh, the staged-.env check of `just security-scan`
 # (planning/15 §6, P02 T02/T12; plan s2-automated-secrets-onboarding).
 # Usage: scripts/security/tests/secrets.test.sh   (run by `just test secrets` and `just test`)
 # Every fixture is synthetic: throwaway age identities are generated per run inside a private temp
@@ -181,10 +182,37 @@ probe_doctor_checks() {
 }
 
 test_ignore_policy() {
+    local name
     git -C "$ROOT" check-ignore --no-index -q secrets/plain.yaml || return 1
     git -C "$ROOT" check-ignore --no-index -q secrets/dev.dec.yaml || return 1
     ! git -C "$ROOT" check-ignore --no-index -q secrets/dev.enc.yaml || return 1
-    ! git -C "$ROOT" check-ignore --no-index -q secrets/README.md
+    ! git -C "$ROOT" check-ignore --no-index -q secrets/README.md || return 1
+    # Every dotenv name is ignored; the key catalogue .env.example (values always empty) and the
+    # direnv file .envrc are the committed exceptions.
+    for name in .env .env.local .env.production; do
+        git -C "$ROOT" check-ignore --no-index -q "$name" || because "$name is not gitignored" || return 1
+    done
+    for name in .env.example .envrc; do
+        ! git -C "$ROOT" check-ignore --no-index -q "$name" || because "$name is gitignored" || return 1
+    done
+}
+
+# `just security-scan` runs env-untracked-check.sh before its working-tree gitleaks scan. That scan
+# allow-lists the repo-root .env (DEC-77), so a .env that is staged and not committed yet is the
+# one case it cannot see. The check fails closed: where git cannot answer, it does not pass.
+test_env_untracked_check() {
+    local repo="$TEST_ROOT/env-untracked" check="$ROOT/scripts/security/env-untracked-check.sh" output rc=0
+    mkdir -p "$repo"
+    printf 'SYNTHETIC_KEY=synthetic-value\n' > "$repo/.env"
+    # Not a repository yet. The ceiling keeps git from finding one above TEST_ROOT.
+    ! GIT_CEILING_DIRECTORIES="$TEST_ROOT" bash "$check" "$repo" 2>/dev/null \
+        || because "the check passes where git cannot list files" || return 1
+    git -C "$repo" init -q
+    bash "$check" "$repo" || because "an untracked root .env is refused" || return 1
+    git -C "$repo" add -f .env
+    output="$(bash "$check" "$repo" 2>&1 >/dev/null)" || rc=$?
+    [[ $rc -eq 1 ]] || because "a staged root .env exits $rc, not 1" || return 1
+    [[ "$output" == *"git rm --cached .env"* ]] || because "stderr does not name the fix for a staged .env"
 }
 
 test_non_dev_refusal() {
@@ -1827,7 +1855,8 @@ test_doctor_parity_reports_names_and_fix_commands() {
     ! grep -q 'synthetic-' "$record"
 }
 
-run_test "plaintext secrets ignored; encrypted files and README committable" test_ignore_policy
+run_test "plaintext secrets and every dotenv file but .env.example ignored; encrypted files and README committable" test_ignore_policy
+run_test "security-scan's .env check passes an untracked root .env, refuses a staged one, and fails where git cannot answer" test_env_untracked_check
 run_test "staging secrets refused on a workstation" test_non_dev_refusal
 run_test "sync replaces, adds, skips empty values, preserves local lines, and writes mode 0600" test_sync_merge
 run_test "sync accepts a first encrypted file whose shared values are all empty" test_sync_all_empty

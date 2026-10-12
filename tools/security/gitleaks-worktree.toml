@@ -1,0 +1,23 @@
+# gitleaks configuration for the working-tree scan only: `gitleaks dir .` in `just security-scan`,
+# run from the repo root. It extends .gitleaks.toml and adds one path.
+#
+# The gitignored repo-root .env holds real keys by design (`just secrets-sync` writes them there),
+# and `gitleaks dir` does not honour .gitignore, so without this entry the scan fails on every
+# developer machine (DEC-77). The entry lives here and not in .gitleaks.toml because that file also
+# drives the pre-commit hook, the PR-diff scan and the history scans: there a root .env must still
+# be reported, so a force-added .env cannot be committed unnoticed. The one case this scan then
+# cannot see, a root .env that is staged and not committed yet, is refused by
+# scripts/security/env-untracked-check.sh, which `just security-scan` runs before it.
+#
+# `^\.env$` matches the repo-root file only: `gitleaks dir .` reports paths relative to the scan
+# root, so apps/api/.env, .env.local and every other name stay scanned. Both directions are proven
+# by scripts/security/gitleaks-fixtures.sh (run by `just ci-parity`).
+title = "ai-stylist gitleaks config: working-tree scan"
+
+# gitleaks resolves this path from the directory it runs in (the repo root), not from this file.
+[extend]
+path = ".gitleaks.toml"
+
+[[allowlists]]
+description = "gitignored repo-root .env (DEC-77)"
+paths = ['''^\.env$''']

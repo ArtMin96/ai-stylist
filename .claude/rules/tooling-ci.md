@@ -46,7 +46,8 @@ reference per file).
 
 **Proof:** `just ci-parity` before a PR. Per change: `just lint` (shellcheck, actionlint),
 `just lint --fixtures`, `just arch-check --fixtures`, `just docs-check --fixtures`,
-`just flags-report --fixtures`; `just test secrets` after a `scripts/security/**` change.
+`just flags-report --fixtures`, `just clone-check --fixtures`; `just test secrets` after a
+`scripts/security/**` change.
 
 **Invariants that bite here:**
 1. `scripts/**` and every recipe body run under macOS /bin/bash 3.2. `just lint` shellchecks with
@@ -60,7 +61,8 @@ reference per file).
 3. Never weaken a gate: every `tools/depcruise/rules.cjs` rule stays `severity: 'error'`, and every
    fixture under `tools/*/fixtures/` keeps failing its rule; an exception needs an ADR —
    `just arch-check --fixtures`, `just lint --fixtures`, `just docs-check --fixtures`,
-   `just flags-report --fixtures`, and `just test tooling` for `tools/observability/fixtures/`.
+   `just flags-report --fixtures`, `just clone-check --fixtures`, and `just test tooling` for
+   `tools/observability/fixtures/`.
 4. `tools/docs/fixtures/hooks/*.json` record each hook's expected decision; change an expectation only
    together with a hook change the human approved — `just docs-check --fixtures` replays them.
 5. `tools/codegen/generate.sh` always runs every generator (there is no per-client mode), so

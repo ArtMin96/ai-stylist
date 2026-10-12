@@ -71,11 +71,19 @@ describe('isLocalOrDevDeployment (dev routes and the in-memory storage provider)
 });
 
 describe('config: R2 keys', () => {
-  it('accepts all four keys, and treats empty values as unset', () => {
+  it('accepts all four keys and a jurisdiction, and treats empty values as unset', () => {
     expect(loadConfig({ APP_ENV: 'local', ...R2 })).toMatchObject(R2);
-    const unset = loadConfig({ APP_ENV: 'local', R2_ACCOUNT_ID: '', R2_ACCESS_KEY_ID: ' ' });
+    const withJurisdiction = loadConfig({ APP_ENV: 'local', ...R2, R2_JURISDICTION: 'eu' });
+    expect(withJurisdiction.R2_JURISDICTION).toBe('eu');
+    const unset = loadConfig({
+      APP_ENV: 'local',
+      R2_ACCOUNT_ID: '',
+      R2_ACCESS_KEY_ID: ' ',
+      R2_JURISDICTION: '  ',
+    });
     expect(unset.R2_ACCOUNT_ID).toBeUndefined();
     expect(unset.R2_ACCESS_KEY_ID).toBeUndefined();
+    expect(unset.R2_JURISDICTION).toBeUndefined();
   });
 
   it('refuses a partial set, naming the missing keys', () => {
@@ -129,6 +137,8 @@ describe('config: R2 keys', () => {
     ['R2_ACCESS_KEY_ID', 'key/with/slashes'],
     ['R2_SECRET_ACCESS_KEY', 'synthetic secret with spaces'],
     ['R2_BUCKET', 'Not_A_Bucket'],
+    // Would become part of the endpoint host; the storage factory parses it for either provider.
+    ['R2_JURISDICTION', 'eu.evil.example'],
   ])(
     'a malformed %s loads but fails boot, naming the key and never the value',
     async (key, value) => {

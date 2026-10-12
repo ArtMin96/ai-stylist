@@ -165,12 +165,14 @@ export class AppModule implements OnApplicationShutdown {
     const clock = new SystemClock();
     // R2 when the four R2_* keys are set (presigned URLs on R2's S3 endpoint), else in-memory. The
     // R2 adapter checks each key's shape here, at boot: a malformed key fails `createApp` with an
-    // error naming the key, never the value.
+    // error naming the key, never the value. R2_JURISDICTION selects the endpoint host (DEC-61) and
+    // is checked the same way whichever provider is bound.
     const storage = createStorageProvider({
       accountId: config.R2_ACCOUNT_ID,
       accessKeyId: config.R2_ACCESS_KEY_ID,
       secretAccessKey: config.R2_SECRET_ACCESS_KEY,
       bucket: config.R2_BUCKET,
+      jurisdiction: config.R2_JURISDICTION,
       clock,
       logger,
       // Staging and prod refuse the in-memory fallback (doc 15 §11); the rule lives in config.ts.

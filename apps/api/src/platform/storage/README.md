@@ -12,10 +12,11 @@ custom domain, not this adapter).
 ## Files
 
 - `create-storage-provider.ts`: `createStorageProvider({ accountId, accessKeyId, secretAccessKey,
-bucket, clock, logger, allowsInMemory })` → `StorageProvider`. The composition root passes
-  `R2_ACCOUNT_ID`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY` and `R2_BUCKET` as loaded by
-  `apps/api/src/config.ts`, and `allowsInMemory: isLocalOrDevDeployment(config)`; nothing here reads
-  `process.env`. `allowsInMemory` is required (fail closed): `true` lets the in-memory provider stand
+bucket, jurisdiction, clock, logger, allowsInMemory })` → `StorageProvider`. The composition root
+  passes `R2_ACCOUNT_ID`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`, `R2_BUCKET` and
+  `R2_JURISDICTION` as loaded by `apps/api/src/config.ts`, and
+  `allowsInMemory: isLocalOrDevDeployment(config)`; nothing here reads `process.env`.
+  `allowsInMemory` is required (fail closed): `true` lets the in-memory provider stand
   in when no R2 key is set, `false` refuses that configuration with a `TypeError` naming the four
   keys. No key (empty and blank count as unset) → `InMemoryStorageProvider` when allowed; any key →
   `R2StorageProvider`, whose constructor refuses a missing or malformed key. `loadConfig` owns the
@@ -23,12 +24,20 @@ bucket, clock, logger, allowsInMemory })` → `StorageProvider`. The composition
   there first), and the refusal to boot with none of the four keys when `APP_ENV` is `staging` or
   `prod` or `NODE_ENV` is `production` (`isLocalOrDevDeployment`, doc 15 §11: staging and prod use
   real R2 buckets), so the in-memory provider is bound only in local, dev and test runs.
+  `jurisdiction` (`R2_JURISDICTION`, see "Endpoint" below) is required too (`string | undefined`),
+  so a composition root that forgets it does not compile. It is not one of the four keys: it
+  selects the R2 adapter's endpoint host, never the provider. The factory trims it and refuses an
+  unknown value before it chooses a provider, so a typo fails the first boot even while the
+  in-memory provider is bound.
 - `in-memory-storage-provider.ts`: `InMemoryStorageProvider(now?, baseUrl?)`, the adapter for local,
   dev, tests and CI. It refuses the same requests as the R2 adapter (the kernel checks above) and
   keeps `objects` keyed by `u/<userId>/<namespace>/<key>`; a GET of an object never PUT is refused.
-- `r2-storage-provider.ts`: `R2StorageProvider`, `r2Endpoint(accountId)`. The only check of each
+- `r2-storage-provider.ts`: `R2StorageProvider`, `r2Endpoint(accountId, jurisdiction?)`,
+  `R2_JURISDICTIONS` (`eu`, `us`, `fedramp`: the one list of allowed jurisdictions) and
+  `parseR2Jurisdiction`. The only check of each
   key's shape (account id 32 lowercase hex, access key id letters and digits, secret without
-  whitespace, bucket an R2 bucket name): the composition root builds the adapter in
+  whitespace, bucket an R2 bucket name, jurisdiction empty or one of the list): the composition root
+  builds the adapter in
   `AppModule.forRoot`, so a malformed key fails boot with a `TypeError` that names the option and its
   env key (`R2: bucket (R2_BUCKET) must be …`), never the value.
 - `sigv4-presign.ts`: AWS Signature Version 4 query presigning on `node:crypto` (no SDK; see
@@ -60,10 +69,18 @@ could inflate a small upload far past the signed size.
 
 - **No network.** A URL is signed in process; minting never calls R2. A presigned GET is not
   checked for existence (R2 answers 404), unlike the in-memory provider.
-- **Endpoint.** `https://<R2_ACCOUNT_ID>.r2.cloudflarestorage.com/<R2_BUCKET>/u/<userId>/<namespace>/<key>`,
-  path style, signing region `auto`, service `s3`. An EU-jurisdiction bucket is served from
-  `https://<account>.eu.r2.cloudflarestorage.com`: pass it as the `endpoint` option (no env key
-  yet; OQ-07). `http:` is accepted for a loopback endpoint only (the tests).
+- **Endpoint.** `https://<R2_ACCOUNT_ID>.<R2_JURISDICTION>.r2.cloudflarestorage.com/<R2_BUCKET>/u/<userId>/<namespace>/<key>`,
+  path style, signing region `auto`, service `s3`. `R2_JURISDICTION` is `eu`, `us` or `fedramp`
+  (`R2_JURISDICTIONS`); empty means the default endpoint,
+  `https://<R2_ACCOUNT_ID>.r2.cloudflarestorage.com`. Every bucket of this project is in the EU
+  jurisdiction (DEC-61), so every environment sets `eu`: R2 serves a jurisdictional bucket from its
+  own endpoint only (Cloudflare R2 reference "Data location", read 2026-10-12), and the host is a
+  signed header, so a URL minted for another host is refused. Any other value (`EU`, `europe`, a
+  typo) refuses to boot with
+  `R2: jurisdiction (R2_JURISDICTION) must be empty or one of eu, us, fedramp`, which names the key
+  and the allowed values, never the value. The `endpoint` option is for the tests' loopback
+  endpoint and has no env key: when given it wins over the jurisdiction (which is still checked),
+  and `http:` is accepted for a loopback host only.
 - **User and namespace confinement.** `objectKeyOf` refuses a malformed user id, a namespace outside
   `uploads`, `derived`, `avatars` and a key that is absolute, has an empty, `.` or `..` segment, or
   contains anything but `[A-Za-z0-9._-]` and `/` (no backslash, percent-encoding, whitespace or
@@ -111,21 +128,30 @@ human step. If one is adopted, it replaces `presignUrl` only; the vector tests s
   namespace and key kept apart, a key spelling another user's prefix kept inside the caller's own,
   TTL clamps, refusals of malformed user ids, escaping keys, foreign namespaces, bad types, sizes
   and TTLs for both adapters, no URL, query, user id, key, type or credential in the logs,
-  credentials absent from `util.inspect` and `JSON.stringify`, and a mint-latency guard (p95 of
-  500 mints < 100 ms, the P02 budget).
+  credentials absent from `util.inspect` and `JSON.stringify`, the jurisdiction option (its
+  endpoint host, an explicit `endpoint` winning over it, an unknown value refused), and two
+  mint-latency guards, one for PUT and one for GET (p95 of 500 mints < 100 ms each, the P02
+  budget).
 - `../tests/storage.port.test.ts`: TTL clamps and the in-memory provider, including two users at
   the same namespace and key.
 - `../tests/storage-provider.test.ts`: `createStorageProvider` (in-memory only when allowed, R2
-  otherwise; a partial or malformed key refused by name, no value in the error or the logs). The
+  otherwise; a partial or malformed key refused by name, no value in the error or the logs), and
+  `R2_JURISDICTION`: `eu`, `us` and `fedramp` each mint PUT and GET URLs on their own host whose
+  signature a SigV4 verifier accepts for that host and refuses for the default one; unset, empty
+  and blank give the default host; surrounding whitespace is trimmed; an unknown value is refused
+  with the exact message above, also when no R2 key is set (in-memory). The
   config rules (presence, all-or-none, the boot refusal without R2 keys on staging, prod and
   `NODE_ENV=production`, a malformed key failing `createApp`) are in `apps/api/tests/config.test.ts`:
   platform tests do not import `config.ts`.
 - `../tests/r2-storage.live.sec.test.ts`: the same constraints enforced by R2 itself, plus a URL
   edited to another user's prefix. It runs only on an explicit opt-in, `R2_LIVE_TEST=1` (with the
-  four `R2_*` keys in the environment: direnv loads `.env` after `just secrets-sync`), e.g.
+  four `R2_*` keys and `R2_JURISDICTION` in the environment: direnv loads `.env` after
+  `just secrets-sync`), e.g.
   `R2_LIVE_TEST=1 just test platform`; credentials alone never run it, so a shell holding another
-  environment's keys does not write to that bucket. It reads the four keys and `APP_ENV` from
-  `process.env` and calls `createStorageProvider` directly (`allowsInMemory: false`). It also
+  environment's keys does not write to that bucket. It reads the four keys, `R2_JURISDICTION` and
+  `APP_ENV` from `process.env` and calls `createStorageProvider` directly (`allowsInMemory: false`),
+  so a run against the EU dev bucket signs for the EU host; a test that needs no network checks
+  that pass-through on every run, with synthetic keys. It also
   refuses unless `APP_ENV` is unset, `local` or `dev` and `R2_BUCKET` ends in `-dev` or `-local`
   (bucket names follow `ai-stylist-<env>`, docs/SERVICES-SETUP.md §6: the dev bucket
   `ai-stylist-dev` passes, `ai-stylist-staging`, `ai-stylist-prod` and `ai-stylist-pg-backups`

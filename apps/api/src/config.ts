@@ -37,7 +37,7 @@ export const configSchema = z.object({
   POSTHOG_HOST: z.url({ protocol: /^https?$/ }).optional(),
   /**
    * Cloudflare R2 (`StorageProvider`, P02-T13): all four set → presigned URLs on R2's S3 endpoint
-   * `https://<R2_ACCOUNT_ID>.r2.cloudflarestorage.com`; none set → the in-memory provider (local,
+   * (`R2_JURISDICTION` below selects its host); none set → the in-memory provider (local,
    * dev, tests, CI; refused on staging, prod and NODE_ENV=production, see
    * `isLocalOrDevDeployment`); some → refused. Checked here for presence and all-or-none only: the
    * shape of each value is the R2 adapter's rule (platform/storage/r2-storage-provider.ts), and a
@@ -48,6 +48,18 @@ export const configSchema = z.object({
   R2_ACCESS_KEY_ID: z.string().optional(),
   R2_SECRET_ACCESS_KEY: z.string().optional(),
   R2_BUCKET: z.string().optional(),
+  /**
+   * Jurisdiction of the R2 bucket: selects the S3 endpoint host the URLs are signed for,
+   * `https://<R2_ACCOUNT_ID>.<R2_JURISDICTION>.r2.cloudflarestorage.com`; unset → the default
+   * endpoint `https://<R2_ACCOUNT_ID>.r2.cloudflarestorage.com`. Every environment of this project
+   * sets `eu` (DEC-61: the storage jurisdiction comes from config, never from code). Not one of
+   * `R2_KEYS`: it never selects the provider, so it loads with or without them. A string and
+   * nothing more here: the allowed values have one owner, `R2_JURISDICTIONS` in
+   * platform/storage/r2-storage-provider.ts, and any other value fails at boot when
+   * `AppModule.forRoot` builds the storage provider (in-memory or R2), with an error that names
+   * the key and the allowed values, never the value.
+   */
+  R2_JURISDICTION: z.string().optional(),
 });
 
 /** Set together or not at all. */

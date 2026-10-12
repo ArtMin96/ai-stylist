@@ -1,6 +1,6 @@
 # 14 — Observability, Operations, and Analytics
 
-**Status:** Draft for ratification · **Date:** 2026-08-24 · **Conforms to:** [SPINE.md](SPINE.md) · **Amended:** 2026-09-13 ([r7](research/r7-third-party-services-and-self-hosting-audit-2026-09-13.md), ADR-0003 — host/Coolify supplements, pg-boss, pgBackRest backups, exit triggers for Grafana Cloud/PostHog) · 2026-09-27 (§1, §6, §8, §11 — ADR-OBS-01 confirmed as [ADR-0007](../docs/adr/0007-observability-backend.md), DEC-58; P02-T09 definitions, runbooks and flag registry)
+**Status:** Draft for ratification · **Date:** 2026-08-24 · **Conforms to:** [SPINE.md](SPINE.md) · **Amended:** 2026-09-13 ([r7](research/r7-third-party-services-and-self-hosting-audit-2026-09-13.md), ADR-0003 — host/Coolify supplements, pg-boss, pgBackRest backups, exit triggers for Grafana Cloud/PostHog) · 2026-09-27 (§1, §6, §8, §11 — ADR-OBS-01 confirmed as [ADR-0007](../docs/adr/0007-observability-backend.md), DEC-58; P02-T09 definitions, runbooks and flag registry) · 2026-10-12 (§4, §7, §9 — P00-T02 metric-definition audit, AI-35: two section references corrected; §9 states how the five NFR-OBS-100 attributes apply to events) · 2026-10-13 (§4 — with the P00 sign-off: `reco.validity_rate` is named apart from the two practical-validity metrics)
 **Owns:** logging architecture (redaction *rules* owned by [11 §8](11-security-privacy-and-compliance.md)), tracing, metrics catalog, crash reporting, dashboards/alerts/on-call, runbooks, incident review process, product analytics event taxonomy, audit trails, feature-flag policy, backup/restore + DR, support/admin tooling minimum, per-phase observability rule.
 **Requirement IDs delivered:** `NFR-OBS-*` (defined in [01-requirements-and-traceability.md](01-requirements-and-traceability.md)).
 **Error budgets / perf thresholds:** numbers live in [13 §12](13-testing-quality-and-performance.md); this doc wires them to dashboards and alerts.
@@ -50,7 +50,7 @@ Namespace `stylist.*`; all metrics tagged `service`, `env`, and where relevant `
 | `provider.call.duration` / `errors` / `timeouts` (provider) | histogram/counter | per-port; failure rate → A-3 |
 | `provider.circuit.state` (provider) | gauge | context providers degrade gracefully (doc 09) |
 | `cache.hit_ratio` (cache: context, signed-url, custom-domain asset cache, prompt-cache) | gauge | 13 §12.2 cache target |
-| `reco.request.duration` / `reco.validity_rate` / `reco.no_valid_outfit.count` | histogram/gauge/counter | validity = share passing final validation; **hard-constraint violation count must be 0 — any >0 is A-1** (engine must fail closed; metric exists to prove it) |
+| `reco.request.duration` / `reco.validity_rate` / `reco.no_valid_outfit.count` | histogram/gauge/counter | validity = share passing final validation (stage 7), which is neither the user-judged rate of doc 00 §8.2 nor the rubric-rated rate of 09 §13.1; **hard-constraint violation count must be 0 — any >0 is A-1** (engine must fail closed; metric exists to prove it) |
 | `reco.feedback.count` (kind) | counter | feeds doc 09 eval metrics |
 | `asset.3d.load_failures` (asset_type, tier) | counter | 3D asset failure metric; A-5 |
 | `asset.render.first_render_ms` (device_tier) | histogram (mobile) | 13 §12.1 |
@@ -61,7 +61,7 @@ Namespace `stylist.*`; all metrics tagged `service`, `env`, and where relevant `
 | `ai.fallback.count` / `ai.invalid_output.count` (task) | counter | eval-gate online counterpart (13 §10) |
 | `auth.signin.failures` / `auth.ratelimit.hits` (limit) | counter | 11 §14; anomaly → A-6 |
 | `deletion.cascade.duration` / `deletion.cascade.incomplete` | histogram/gauge | incomplete > 0 for > 24 h → A-2 (privacy SLA, 11 §13) |
-| `consent.changes` (purpose, direction) | counter | audit complement (§11) |
+| `consent.changes` (purpose, direction) | counter | audit complement (§10) |
 | `ci.pr_gate_duration` / `ci.flake_rate` | histogram/gauge | 13 §1, §13 |
 
 ## 5. Crash reporting
@@ -89,7 +89,7 @@ Grafana (launch set — each phase adds its panel, §15):
   - **SEV1 (page, any hour):** API hard-down > 5 min; data-exposure signal (11 §16); auth bypass indicator; hard-constraint violation count > 0; entitlement grants failing globally. Target ack 30 min.
   - **SEV2 (page in waking hours 08–23 local, else morning):** error-budget fast burn; DLQ growth; billing reconciliation drift; deletion SLA breach; AI cost guardrail breach; provider outage with failed fallback. Ack 4 h in-hours.
   - **SEV3 (ticket, no page):** single-provider degradation with working fallback, flake-rate rise, cache-ratio drop, slow-burn budget consumption. Reviewed next working day.
-- **Alert budget:** ≤ 2 pages/week rolling average. Exceeding it triggers a mandatory tuning session — noisy alerts get fixed or demoted; an alert nobody acts on is deleted. Every page must map to a runbook (§9); an alert without a runbook cannot ship.
+- **Alert budget:** ≤ 2 pages/week rolling average. Exceeding it triggers a mandatory tuning session — noisy alerts get fixed or demoted; an alert nobody acts on is deleted. Every page must map to a runbook (§8); an alert without a runbook cannot ship.
 - **Quiet hours:** 23:00–08:00 local — only SEV1 pages. Store-release weeks may temporarily promote SEV2 to full paging (release-gate checklist, doc 15).
 - Rotation: weekly primary swap between the two devs; vacation = documented degraded mode (SEV1 only, longer ack targets) — pretending otherwise would be fiction.
 - Delivery: Grafana alerting → push/phone escalation app; provider status webhooks ingested (Cloudflare, Grafana Cloud, fal.ai, RevenueCat status pages); host alerts (disk, CPU/memory, container health via Coolify) and backup-age / WAL-archive-lag alerts from pgBackRest metrics are first-class (RISK-17).
@@ -152,7 +152,7 @@ Core events (~30, launch set — names are canonical `snake_case`):
 | `credits_exhausted_prompt_shown` | `op` | P13 |
 | `data_export_requested` / `account_deletion_requested` | — | P03 |
 
-Funnels/metrics built on these (owners in doc 00 metric tree): time-to-first-value, capture funnel, recommendation acceptance, trial→paid conversion.
+Funnels/metrics built on these: time-to-first-value, capture funnel, recommendation acceptance, trial→paid conversion. **How the five NFR-OBS-100 attributes apply to this table (P00-T02 audit, 2026-10-12):** the table lists events, not metrics. A metric's owner, source, privacy class, target or baseline and decision are recorded once, in the [doc 00 §8](00-product-vision-and-scope.md) metric tree. An event has an owning module (field `owner` in `packages/contracts/events/analytics/events.json`, the canonical taxonomy), PostHog as its source, and one privacy class for all events: C1 in doc 00 §8 terms, S1 in [11 §6](11-security-privacy-and-compliance.md) (pseudonymous, consent-gated, no payloads). An event has no target. Three metrics of the tree have no event here yet; the owning phase adds the event or names another source: the avatar-satisfaction survey answer (P04), duplicate-detection precision (P06), trend save and unfollow (P12).
 
 ## 10. Audit trails (append-only, `admin` module owns `audit_log`; 11 §4.4)
 

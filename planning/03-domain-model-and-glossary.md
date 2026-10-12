@@ -1,6 +1,7 @@
 # 03 — Domain Model & Glossary
 
-**Status:** Draft for review · **Date:** 2026-08-24
+**Status:** Ratified for the invariants of §2.1 (ratification line below); the other sections remain draft for review · **Date:** 2026-08-24
+**Ratified 2026-10-13 by Arthur Minasyan** (product owner, P00 AC-4): the domain rules of this document, that is the per-aggregate invariants of §2.1.
 **Conforms to:** [SPINE.md](SPINE.md) (modules §3, capability codes §4, terminology §8) · **Amended:** 2026-09-13 ([r7](research/r7-third-party-services-and-self-hosting-audit-2026-09-13.md), ADR-0003 — cache-purge wording)
 **Owns:** the canonical glossary (full definitions extending SPINE §8), module ownership of every concept, aggregate/entity/value-object sketches, per-aggregate invariants, and the four domain state machines (media processing — domain-level summary; canonical pipeline stage names are owned by [07 §8.1](07-3d-avatar-and-garment-pipeline.md) per SPINE §8 —, closet item availability, subscription/entitlement, recommendation).
 **Does not own:** database schemas and API contracts ([06-data-api-and-event-contracts.md](06-data-api-and-event-contracts.md)), pipeline stage implementations ([07-3d-avatar-and-garment-pipeline.md](07-3d-avatar-and-garment-pipeline.md)), taxonomy contents ([08-closet-taxonomy-and-organization.md](08-closet-taxonomy-and-organization.md)), engine mechanics ([09-recommendation-engine.md](09-recommendation-engine.md)), billing mechanics ([12-pricing-entitlements-and-unit-economics.md](12-pricing-entitlements-and-unit-economics.md)).

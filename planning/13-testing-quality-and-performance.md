@@ -1,6 +1,6 @@
 # 13 — Testing, Quality, and Performance
 
-**Status:** Draft for ratification · **Date:** 2026-08-24 · **Conforms to:** [SPINE.md](SPINE.md) · **Amended:** 2026-09-13 ([r7](research/r7-third-party-services-and-self-hosting-audit-2026-09-13.md), ADR-0003 — pg-boss job tests, pgBackRest restore drills, Coolify staging load tests, `date-holidays`) · **Amended:** 2026-09-22 ([ADR-0004](../docs/adr/0004-native-ios-and-android-clients.md), DEC-49: native iOS/Android replace React Native + Expo; §2, §3, §5, §6, §7 updated) · **Amended:** 2026-10-12 (§10 "Measurement validity" added: noise floor, same-case arm comparison, held-out split, grader checks; owner-approved)
+**Status:** Draft for ratification · **Date:** 2026-08-24 · **Conforms to:** [SPINE.md](SPINE.md) · **Amended:** 2026-09-13 ([r7](research/r7-third-party-services-and-self-hosting-audit-2026-09-13.md), ADR-0003 — pg-boss job tests, pgBackRest restore drills, Coolify staging load tests, `date-holidays`) · **Amended:** 2026-09-22 ([ADR-0004](../docs/adr/0004-native-ios-and-android-clients.md), DEC-49: native iOS/Android replace React Native + Expo; §2, §3, §5, §6, §7 updated) · **Amended:** 2026-10-12 (§10 "Measurement validity" added: noise floor, same-case arm comparison, held-out split, grader checks; owner-approved) · **Amended:** 2026-10-12 (P00-T03 budget-label audit, AI-37: §12 status labels completed, 3D rows marked as waiting on DEC-76, five rows that named P02 re-pointed after DEC-63, DEC-79 and DEC-81, one section pointer fixed; no budget value changed)
 **Owns:** test organization rules, per-subsystem test pyramid + tooling, quality rules (regression-first, no-skip, flaky policy), CI tiers, security test suite, AI/ML evaluation strategy, recommendation simulations, performance budget table, load testing, device matrix.
 **Requirement IDs delivered:** `NFR-TST-*`, `NFR-PERF-*` (defined in [01-requirements-and-traceability.md](01-requirements-and-traceability.md)).
 **Referenced by:** every phase file (each phase's "test-first plan" and "budgets" sections cite this doc); [11-security-privacy-and-compliance.md](11-security-privacy-and-compliance.md) (security tests §8); [14-observability-operations-and-analytics.md](14-observability-operations-and-analytics.md) (error budgets §12); [10-ai-usage-cost-and-evaluation.md](10-ai-usage-cost-and-evaluation.md) (eval datasets, cost gates).
@@ -136,39 +136,41 @@ Nightly simulation harness (also PR-gated when `recommendation`/`context` change
 
 Measurement rules: real devices per §7 matrix, cold vs warm distinguished, raw traces archived, p50/p95 reported. "Budget" = release-gate threshold once ratified.
 
+**Budget-label audit, 2026-10-12 (P00-T03, AI-37; tree at `aa50e96`).** Walked: doc 13 §12.1 (14 rows) and §12.2 (10 rows), doc 07 §10.1 (7 rows), the P01 gate table in doc 05 §2.3 (7 criteria), doc 00 §8.4 and §9.1 RB-5, and P00 §15 (4 rows). That is 59 budget values and 3 pass/fail rows in docs 13 and 07, 5 numeric gate thresholds, and 14 figures in P00 §15. Result: all 24 rows of §12 read "hypothesis" and name a measuring phase (two rows, thermal and offline, lacked the word); doc 07 §10.1 is labelled for the whole table in its heading. The five P01 gate thresholds (60 fps iPhone 13-class / 50 fps Galaxy A52-class, < 50 ms touch, < 100 MB package, < 300 MB memory) are identical in doc 05 §2.3 and §8, doc 13 §12.1, doc 00 §8.4 (frame rates) and RB-5, P00 §15 and P01 §15; one wording slip in RB-5 ("≤ 100 MB install size") was corrected. P00 §15 carried the superseded infra figure ($60–70/mo, r6) and now carries the $25–45/mo of SPINE §6. Five rows that named P02 as their measuring phase were re-pointed after DEC-63, DEC-79 and DEC-81. No budget value was changed and nothing was measured. Not reconciled: doc 07 §10.1 and doc 13 §12.1 differ on five 3D rows (the mid-tier frame rate, ≥30 fps against ≥ 60 fps, is one) and on the phones each tier names. The 3D track is on hold, so the difference is registered as OQ-38 and is settled with the garment 3D go/no-go (DEC-76).
+
 ### 12.1 Mobile
 
 | Metric | Low tier | Mid tier | High tier | Status |
 |---|---|---|---|---|
-| Cold start → interactive home | ≤ 4.0 s | ≤ 2.5 s | ≤ 1.8 s | hypothesis → measure P02 (skeleton), gate P14 |
-| Warm start | ≤ 1.5 s | ≤ 1.0 s | ≤ 0.7 s | hypothesis → P02/P14 |
-| Interaction response (tap → feedback) | ≤ 100 ms | ≤ 100 ms | ≤ 100 ms | hypothesis → P02 |
+| Cold start → interactive home | ≤ 4.0 s | ≤ 2.5 s | ≤ 1.8 s | hypothesis → first measured at the first P03 client task that needs the Mac (left P02, DEC-81), gate P14 |
+| Warm start | ≤ 1.5 s | ≤ 1.0 s | ≤ 0.7 s | hypothesis → P03 (left P02, DEC-81) / P14 |
+| Interaction response (tap → feedback) | ≤ 100 ms | ≤ 100 ms | ≤ 100 ms | hypothesis → P03 (left P02, DEC-81) |
 | Recommendation request → results rendered (warm context) | ≤ 3.5 s | ≤ 2.5 s | ≤ 2.0 s | hypothesis → P09 |
 | Camera capture → item visible in catalog (processing async; this is capture→queued+thumbnail) | ≤ 6 s | ≤ 4 s | ≤ 3 s | hypothesis → P06 |
 | Full item processing (upload→classified, server-side, p95) | ≤ 60 s | — | — | hypothesis → P06 |
 | 3D first render (avatar visible) | ≤ 5 s | ≤ 3 s | ≤ 2 s | hypothesis → **P01 prototype gate** (waits on DEC-76) |
-| 3D viewer frame rate (rotate/pose-switch) | ≥ 30 fps | ≥ 60 fps | ≥ 60 fps | hypothesis → **P01 gate** (P01 go/no-go thresholds are doc 05 §2.3: 60 fps iPhone 13-class / 50 fps Galaxy A52-class, < 50 ms touch, < 100 MB prototype package, < 300 MB prototype memory; the full-app budgets in this table apply from P04 onward) |
-| App memory (3D screen, RSS) | ≤ 700 MB | ≤ 900 MB | ≤ 1.2 GB | hypothesis → P01/P04 |
-| GPU memory (avatar + outfit) | ≤ 250 MB | ≤ 400 MB | ≤ 600 MB | hypothesis → P01/P04 |
-| App download size (store) | ≤ 150 MB target, 200 MB hard cap | same | same | hypothesis → P02, gate P14 |
-| Battery: 10-min 3D session drain | ≤ 4% | ≤ 3% | ≤ 3% | hypothesis → P04 device lane |
-| Thermal: no sustained throttle in 10-min 3D session | required | required | required | measure P01/P04 |
-| Offline: closet browse + capture queue works with no network | required (functional, not a number) | — | — | verified from P07 |
+| 3D viewer frame rate (rotate/pose-switch) | ≥ 30 fps | ≥ 60 fps | ≥ 60 fps | hypothesis → **P01 gate** (waits on DEC-76; P01 go/no-go thresholds are doc 05 §2.3: 60 fps iPhone 13-class / 50 fps Galaxy A52-class, < 50 ms touch, < 100 MB prototype package, < 300 MB prototype memory; the full-app budgets in this table apply from P04 onward; [07 §10.1](07-3d-avatar-and-garment-pipeline.md) gives other 3D values, the mid tier at ≥ 30 fps among them — not reconciled, OQ-38) |
+| App memory (3D screen, RSS) | ≤ 700 MB | ≤ 900 MB | ≤ 1.2 GB | hypothesis → P01/P04 (waits on DEC-76) |
+| GPU memory (avatar + outfit) | ≤ 250 MB | ≤ 400 MB | ≤ 600 MB | hypothesis → P01/P04 (waits on DEC-76) |
+| App download size (store) | ≤ 150 MB target, 200 MB hard cap | same | same | hypothesis → first store build sent to testers (left P02 with P02-T14, DEC-63; P13 at the latest), gate P14 |
+| Battery: 10-min 3D session drain | ≤ 4% | ≤ 3% | ≤ 3% | hypothesis → P01 baseline (P01 AC-8) / P04 device lane (waits on DEC-76) |
+| Thermal: no sustained throttle in 10-min 3D session | required | required | required | hypothesis (pass/fail) → P01/P04 (waits on DEC-76) |
+| Offline: closet browse + capture queue works with no network | required (functional, not a number) | — | — | hypothesis (pass/fail) → verified from P07 |
 
 ### 12.2 Backend & pipeline
 
 | Metric | Budget | Status |
 |---|---|---|
 | API latency p50 / p95 / p99 (CRUD reads) | 80 / 250 / 600 ms | hypothesis → P03 |
-| Recommendation endpoint p50 / p95 (200-item closet) | 400 ms / 1.5 s | hypothesis → P09 (candidate-gen strategy in doc 09; doc 09 §8 states a different budget — OQ-33) |
+| Recommendation endpoint p50 / p95 (200-item closet) | 400 ms / 1.5 s | hypothesis → P09 (candidate-gen strategy in doc 09; doc 09 §5.2 and §13.1 state a different budget — OQ-33) |
 | Availability (API, monthly) | ≥ 99.5% (error budget 3.6 h/mo — 14 §12) | hypothesis → P14 ratification |
 | Queue: job pickup latency p95 | ≤ 30 s | hypothesis → P06 |
 | Queue: media pipeline completion p95 | ≤ 60 s (single item), ≤ 15 min (50-item batch) | hypothesis → P06 |
 | Job max age before alert (oldest unfinished) | 15 min | hypothesis → P06 (alert in 14 §7) |
 | Webhook processing p95 | ≤ 5 s | hypothesis → P13 |
-| Signed URL mint p95 | ≤ 100 ms | hypothesis → P02 |
+| Signed URL mint p95 | ≤ 100 ms | hypothesis → P02 on a local run (P02-T13); staging run for the first minimal release (DEC-79) |
 | 5xx error rate | ≤ 0.5% of requests (part of error budget, 14 §12) | hypothesis → P03 |
-| Custom-domain asset cache hit rate (public delivery assets) | ≥ 90% | hypothesis → P04 |
+| Custom-domain asset cache hit rate (public delivery assets) | ≥ 90% | hypothesis → P04 (waits on DEC-76) |
 
 AI per-call cost/latency budgets live in doc 10 (owned there; gated here via §10). Cost-per-active-user guardrails live in doc 12; the alert lives in 14 §7.
 

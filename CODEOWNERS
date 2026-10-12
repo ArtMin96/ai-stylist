@@ -4,45 +4,46 @@
 # single-writer list in CLAUDE.md ("Parallel sessions"). With a 2–3 person team this
 # routes review; it does not gate.
 #
-# PLACEHOLDER HANDLES: @dev-lead, @3d-owner, @ml-owner, @team are NOT real GitHub
-# handles. Replace every one of them with real user or team handles BEFORE enabling
-# branch protection / "require review from code owners" — GitHub silently ignores
-# unknown owners, which would leave these paths unrouted.
+# One owner today: every path names the repository owner's handle (set 2026-10-12,
+# Linear AI-6; the placeholder handles are gone). The path groups below stay, so another
+# owner can take a group over by changing its lines. GitHub silently ignores an unknown
+# owner, which leaves the path unrouted: check that a new handle exists before
+# "require review from code owners" is enabled.
 #
 # Later rules override earlier ones: default first, module ownership next,
 # single-writer paths last so they always win.
 
-*                                        @team
+*                                        @ArtMin96
 
 # --- Module ownership (doc 15 §7) ---
-/apps/api/src/modules/recommendation/    @dev-lead
-/apps/api/src/modules/billing/           @dev-lead
-/apps/ios/                               @dev-lead
-/apps/android/                           @dev-lead
-/e2e/                                    @dev-lead
-/assets/3d/                              @3d-owner
-/workers/                                @ml-owner
+/apps/api/src/modules/recommendation/    @ArtMin96
+/apps/api/src/modules/billing/           @ArtMin96
+/apps/ios/                               @ArtMin96
+/apps/android/                           @ArtMin96
+/e2e/                                    @ArtMin96
+/assets/3d/                              @ArtMin96
+/workers/                                @ArtMin96
 
 # --- Decisions and planning (doc 15 §7) ---
-/planning/                               @dev-lead
-/docs/adr/                               @dev-lead
-/.agents/skills/                         @dev-lead
+/planning/                               @ArtMin96
+/docs/adr/                               @ArtMin96
+/.agents/skills/                         @ArtMin96
 
 # --- Single-writer paths (CLAUDE.md "Parallel sessions"; P02 §13) -> dev lead ---
-/CLAUDE.md                               @dev-lead
-/CODEOWNERS                              @dev-lead
-/justfile                                @dev-lead
-/mise.toml                               @dev-lead
-/package.json                            @dev-lead
-/pnpm-workspace.yaml                     @dev-lead
-/pnpm-lock.yaml                          @dev-lead
-/workers/**/uv.lock                      @dev-lead
-/turbo.json                              @dev-lead
-/.github/workflows/                      @dev-lead
-/packages/contracts/                     @dev-lead
-/packages/shared-kernel/                 @dev-lead
+/CLAUDE.md                               @ArtMin96
+/CODEOWNERS                              @ArtMin96
+/justfile                                @ArtMin96
+/mise.toml                               @ArtMin96
+/package.json                            @ArtMin96
+/pnpm-workspace.yaml                     @ArtMin96
+/pnpm-lock.yaml                          @ArtMin96
+/workers/**/uv.lock                      @ArtMin96
+/turbo.json                              @ArtMin96
+/.github/workflows/                      @ArtMin96
+/packages/contracts/                     @ArtMin96
+/packages/shared-kernel/                 @ArtMin96
 
 # --- Generated native clients (never hand-edited; `just generate`). Listed after
 # /packages/contracts/ so they stay explicit if contract ownership changes. ---
-/packages/contracts/gen/swift-client/    @dev-lead
-/packages/contracts/gen/kotlin-client/   @dev-lead
+/packages/contracts/gen/swift-client/    @ArtMin96
+/packages/contracts/gen/kotlin-client/   @ArtMin96

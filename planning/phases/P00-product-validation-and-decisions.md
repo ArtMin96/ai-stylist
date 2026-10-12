@@ -4,12 +4,18 @@
 
 > Amended 2026-10-09 (owner decisions: DEC-60 age policy, DEC-61 EU home region, DEC-62 hosting, DEC-68 one ratification ADR instead of 33 — [proposal](../../.claude/plans/2026-10-09-open-questions-decisions-proposal.md)).
 
+> Amended 2026-10-12 (owner decision DEC-79: counsel engagement and the legal items LR-01…LR-12 wait for the first minimal release. T04, the counsel confirmation in T05 and the memo of T06 leave P00; the two-week counsel stop criterion in §17 no longer applies; P00 may reach `DONE` without them. The legal items gate that release, not the end of P03. Marked in place in §3, §4, §12, §17, §19, §20 and §22; §13 and §18 still describe the earlier plan).
+
+> Amended 2026-10-12 (P00-T02 and P00-T03 audits, AI-35 and AI-37: the §15 infra figure and the §9 AI cost anchor now match SPINE §6; the 3D gate in §15 is marked as waiting on DEC-76).
+
+> Amended 2026-10-13 (P00 sign-off by the product owner: ADR-0010 is `Accepted` and covers DEC-01…DEC-82; docs 11, 10 and 03 carry their ratification lines. §12 records the task states, §19 AC-2 gains the budget-label check, §20 holds the evidence index. The phase is `DONE` on 2026-10-13, self-assessed, and `ACCEPTED` only when the owner says so; the deferred tasks are in §12 and the accepted gap in §20).
+
 > File name: `phases/P00-product-validation-and-decisions.md` per [SPINE §5](../SPINE.md). Every section below is REQUIRED (brief §10); "None" is written explicitly rather than deleting a section. Status values per [PROGRESS.md](../PROGRESS.md).
 
 ## 1. Overview
 
 - **Phase:** P00 — Product Validation and Decisions
-- **Status:** `IN_PROGRESS` *(mirror of PROGRESS.md; PROGRESS.md wins on conflict)*
+- **Status:** `DONE` on 2026-10-13, self-assessed; `ACCEPTED` only when the owner says so. §12 lists what DEC-79 deferred, and §20 (AC-5) names the one accepted gap *(mirror of PROGRESS.md; PROGRESS.md wins on conflict)*
 - **Goal (one sentence):** Convert the ratified planning package into executable ground truth — measurable metric definitions, a kicked-off legal/privacy discovery track, and formally ratified ADRs for every SPINE decision — so no later phase starts on an unratified assumption or an unmeasurable "success".
 - **User-visible outcome:** None directly (no code ships). Indirectly: every later user-facing promise (trial mechanics, privacy posture, age policy, performance targets) now has a written, owned, testable definition.
 - **Why now:** P00 has no dependencies and everything depends on it. P01's go/no-go gate needs ratified pass criteria; P02's repo needs the ADR log and templates it will enforce; P03's consent flows are blocked by legal-review items (LR-02/03/04/07/09) that need weeks of counsel lead time — the clock must start immediately.
@@ -38,7 +44,7 @@ Contributing (primary delivery elsewhere): the brief-coverage audit re-run of [d
 
 - Hard depends on (must be `ACCEPTED`): none — P00 is the root phase ([SPINE §5](../SPINE.md)).
 - External blockers:
-  - **Qualified legal counsel engagement** — LR-02, LR-03, LR-04, LR-07, LR-09 in [11 §12](../11-security-privacy-and-compliance.md) are due by P03; counsel must be engaged in P00 or P03 slips. This is the only item that can block P00 exit (see §17 stop criteria).
+  - **Qualified legal counsel engagement** — LR-02, LR-03, LR-04, LR-07, LR-09 in [11 §12](../11-security-privacy-and-compliance.md) are due by P03; counsel must be engaged in P00 or P03 slips. This is the only item that can block P00 exit (see §17 stop criteria). *(Amended 2026-10-12 by DEC-79: counsel is engaged for the first minimal release, these items gate that release, and counsel no longer blocks P00 exit.)*
   - **Product-owner availability** for ratification sign-offs (DEC entries, OQ-03 age policy) — decisions in §2 cannot be self-ratified by an agent ([15 §12.6](../15-team-workflow-and-ai-agent-operations.md)).
   - No vendor accounts required in P00 (first accounts are P01/P02 work).
 
@@ -47,7 +53,7 @@ Contributing (primary delivery elsewhere): the brief-coverage audit re-run of [d
 **In scope:**
 - ADR ratification: one ratification ADR ([ADR-0010](../../docs/adr/0010-decision-log-ratification.md), DEC-68) in which the product owner ratifies the decision log in [doc 16](../16-risks-open-questions-and-decision-log.md) as it stands. Doc 16 stays the per-decision record. *(Was: one ADR file per DEC-01…DEC-33.)*
 - Measurable definitions: every metric in [doc 00 §8](../00-product-vision-and-scope.md) and every budget row in [13 §12](../13-testing-quality-and-performance.md) checked for the five NFR-OBS-100 attributes and "hypothesis/measured/baseline-first" labeling.
-- Legal/privacy discovery kickoff: LR-01…LR-12 register items each assigned an owner and due phase; counsel engaged; processing-activity register (Art. 30 skeleton, [11 §9](../11-security-privacy-and-compliance.md)) started; DPIA scoping note for face/measurement processing (LR-06 pre-work).
+- Legal/privacy discovery kickoff: LR-01…LR-12 register items each assigned an owner and due phase; counsel engaged; processing-activity register (Art. 30 skeleton, [11 §9](../11-security-privacy-and-compliance.md)) started; DPIA scoping note for face/measurement processing (LR-06 pre-work). *(Moved out of P00 to the first minimal release by DEC-79, 2026-10-12; the register in doc 11 §12 already lists an owner and a due phase for each item.)*
 - Decisions closed or formally scheduled: **OQ-03** (age policy — P00-due) decided as a product position pending counsel confirmation (LR-09); **OQ-07** (data residency) discovery output handed to P02 infra. Decided 2026-10-09: DEC-60 (16+), DEC-61 (one EU home region) and DEC-62 (Hetzner, one server; resolves OQ-14).
 - Ratification of the threat model ([11 §2–§3](../11-security-privacy-and-compliance.md)), data classification ([11 §6](../11-security-privacy-and-compliance.md)), product-ethics rules ([11 §17](../11-security-privacy-and-compliance.md)), AI decision table + provider data policy ([doc 10 §1, §3](../10-ai-usage-cost-and-evaluation.md)), and research-bet register ([doc 00 §9.1](../00-product-vision-and-scope.md), [doc 16](../16-risks-open-questions-and-decision-log.md)).
 - Re-run of the brief-coverage audit (doc 01 §4/§5 instrument) and fixing any gap found.
@@ -103,7 +109,7 @@ No AI runs in P00. The phase's job is ratifying the rules that govern all later 
 | Capability | AI or deterministic | Why | Fallback | Budget |
 |---|---|---|---|---|
 | P00 deliverables themselves | Deterministic (human/agent document work) | Ratification and legal discovery are judgment work, not model calls | n/a | $0 provider spend |
-| AI/non-AI decision table (all product features) | Ratified in [10 §1](../10-ai-usage-cost-and-evaluation.md) | NFR-AIC-010: every AI use classified, deterministic-first justified | Per-feature fallbacks in doc 10 §2 | Anchors: $0.02–0.15/user/mo steady, $0.10–0.30 onboarding spike (as of Aug 2026, r3) — hypotheses |
+| AI/non-AI decision table (all product features) | Ratified in [10 §1](../10-ai-usage-cost-and-evaluation.md) | NFR-AIC-010: every AI use classified, deterministic-first justified | Per-feature fallbacks in doc 10 §2 | Anchors: $0.01–0.06/user/mo steady (light–medium), $0.10–0.15 heavy, excluding credits; $0.10–0.30 onboarding spike (SPINE §6; r6, verified 2026-09-09) — hypotheses |
 | AI data policy | Ratified (DEC-29) | NFR-AIC-070: no training on customer data, zero/short retention, privacy-reviewed providers for face/body media | Provider removal via ports (NFR-AIC-090) | n/a |
 
 ## 10. Security, privacy, consent, and data lifecycle
@@ -128,13 +134,15 @@ Small enough for one AI-assisted session each (~half-day). Task IDs `P00-T##` ar
 | P00-T01 | Write [ADR-0010](../../docs/adr/0010-decision-log-ratification.md) from `templates/adr.md` (DEC-68; drafted 2026-10-09). Check that every DEC row in [doc 16](../16-risks-open-questions-and-decision-log.md) is either standing or names the DEC that supersedes or amends it. **[PO]** ratifies by filling in the ratification line. *(Was: 33 ADR files in `planning/adr/`.)* | — | 1 |
 | P00-T02 | Metric-definition audit: walk [00 §8](../00-product-vision-and-scope.md) + [14 §9](../14-observability-operations-and-analytics.md) metric tree; verify every metric carries owner/source/privacy-class/target-or-baseline/decision; fix gaps in the owning docs; confirm guardrail metrics ([00 §8.4](../00-product-vision-and-scope.md)) have hard targets. | — | 1 |
 | P00-T03 | Budget-label audit: walk [13 §12](../13-testing-quality-and-performance.md) and [07 §10.1](../07-3d-avatar-and-garment-pipeline.md); verify every number is labeled hypothesis with its measuring phase; verify the P01 gate table ([05 §2.3](../05-technology-decisions.md)) is internally consistent with 13 §12.1 and [doc 00 §9.1 RB-5](../00-product-vision-and-scope.md). | — | 1 |
-| P00-T04 | Legal/privacy discovery kickoff: engage counsel; for LR-01…LR-12 record owner, due phase, and briefing note per item; start the Art. 30 processing-activity register ([11 §9](../11-security-privacy-and-compliance.md)); write the DPIA scoping note (LR-06 pre-work). **[PO]** engages counsel. On 2026-10-09 the owner confirmed that no counsel is engaged yet and that he will engage one. | — | 2 |
-| P00-T05 | Age-policy decision (OQ-03): ratify the 16+ launch proposal ([11 §10](../11-security-privacy-and-compliance.md)) as a DEC entry marked "pending LR-09 counsel confirmation"; record signup-enforcement + store-rating implications for P03/P14. **[PO]** decides. **Decided 2026-10-09: DEC-60**; the P03 and P14 implications are still to be recorded. | P00-T04 | 1 |
-| P00-T06 | Data-residency discovery (OQ-07): memo on EU-hosting requirements vs server-provider (OQ-14: Hetzner vs alternative, single-host vs DB-separate topology), R2 and PostHog region options (as-of dated); hand recommendation to P02 as an input to infra setup; log DEC or keep OQ-07 open with a P02 due date. **Decided 2026-10-09: DEC-61 (region) and DEC-62 (provider, topology).** The memo still records the as-of-dated region options and the counsel framing. | P00-T04 | 1 |
+| P00-T04 | Legal/privacy discovery kickoff: engage counsel; for LR-01…LR-12 record owner, due phase, and briefing note per item; start the Art. 30 processing-activity register ([11 §9](../11-security-privacy-and-compliance.md)); write the DPIA scoping note (LR-06 pre-work). **[PO]** engages counsel. On 2026-10-09 the owner confirmed that no counsel is engaged yet and that he will engage one. **Moved out of P00 by DEC-79 (2026-10-12):** counsel engagement, the briefing notes, the Art. 30 register and the DPIA scoping note wait for the first minimal release. | — | 2 |
+| P00-T05 | Age-policy decision (OQ-03): ratify the 16+ launch proposal ([11 §10](../11-security-privacy-and-compliance.md)) as a DEC entry marked "pending LR-09 counsel confirmation"; record signup-enforcement + store-rating implications for P03/P14. **[PO]** decides. **Decided 2026-10-09: DEC-60.** The implications are recorded (2026-10-13, AI-39): signup enforcement in [P03](P03-identity-consent-onboarding.md) §4, §5 and T03, and the store age rating in [P14](P14-hardening-and-launch.md) T14. Only the LR-09 counsel confirmation remains open; it waits for the first minimal release (DEC-79, 2026-10-12). | ~~P00-T04~~ — (DEC-79) | 1 |
+| P00-T06 | Data-residency discovery (OQ-07): memo on EU-hosting requirements vs server-provider (OQ-14: Hetzner vs alternative, single-host vs DB-separate topology), R2 and PostHog region options (as-of dated); hand recommendation to P02 as an input to infra setup; log DEC or keep OQ-07 open with a P02 due date. **Decided 2026-10-09: DEC-61 (region) and DEC-62 (provider, topology).** The memo still records the as-of-dated region options and the counsel framing. **Moved out of P00 by DEC-79 (2026-10-12):** the memo is written with counsel, for the first minimal release; DEC-61 and DEC-62 stand as product positions until then. | P00-T04 | 1 |
 | P00-T07 | Ratify security/privacy/ethics baselines: threat model + abuse cases (11 §2–§3), data classification (11 §6), product-ethics rules (11 §17), logging redaction rules (11 §8) — each gets a ratification line (date + **[PO]**) in its doc header. | — | 1 |
 | P00-T08 | Ratify AI governance: decision table (10 §1), per-feature specs' deterministic-first justifications (10 §2), provider data policy + provider register (10 §3), research-bet register RB-1…RB-5 with all ten fields (00 §9.1 / 16 prototype needs). | — | 1 |
 | P00-T09 | Re-run the brief-coverage audit: verify [01 §4](../01-requirements-and-traceability.md) maps every brief section and [01 §5](../01-requirements-and-traceability.md) every named specific; fix any gap by adding requirement IDs in doc 01 (steps-of-10 insertion rule), never by hand-waving. | — | 1 |
-| P00-T10 | Phase close-out: DEC entries for everything decided; update doc 16 (OQ table, risks unchanged or amended); write the P00 evidence index (§20); update [PROGRESS.md](../PROGRESS.md) + handoff (§22). | P00-T01…T09 | 1 |
+| P00-T10 | Phase close-out: DEC entries for everything decided; update doc 16 (OQ table, risks unchanged or amended); write the P00 evidence index (§20); update [PROGRESS.md](../PROGRESS.md) + handoff (§22). The close-out lists what DEC-79 (2026-10-12) moved to the first minimal release (T04, the LR-09 confirmation of T05, the memo of T06) as carried forward, not as done. | P00-T01…T09, except T04 and T06 (DEC-79) | 1 |
+
+**Task states on 2026-10-13.** The table has no state column; the state of each task lives in its Linear ticket. Complete: T01 (AI-34), T02 (AI-35), T03 (AI-37), T07 (AI-43), T08 (AI-44), T09 (AI-45), the document part of T05 (AI-39) and T10 (AI-46), which closed with the ledger row, the handoff entry of 2026-10-13 and the evidence index in §20. Deferred to the first minimal release by DEC-79, not done: T04 (AI-38), the LR-09 counsel confirmation of T05, and T06 (AI-40). With that the phase is `DONE` on 2026-10-13, self-assessed; it becomes `ACCEPTED` only when the owner says so.
 
 ## 13. Parallelization
 
@@ -157,8 +165,8 @@ P00 *introduces* (labels and ratifies) budgets; it measures nothing (no system e
 
 | Budget | Target (hypothesis until measured) | How measured |
 |---|---|---|
-| Performance | Full table ratified in [13 §12](../13-testing-quality-and-performance.md) incl. P01 gate thresholds (60 fps iPhone 13-class / 50 fps Galaxy A52-class, <50 ms touch, <100 MB package, <300 MB memory) | P01 gate (3D), P02+ per phase, ratified P14 |
-| Cost | Infra ~$60–70/mo launch (~$370–450 at 5k MAU); AI $0.01–0.15/user/mo steady excl. credits, $0.10–0.30 onboarding spike; try-on ≈ $0.0825/image = 3 credits; iOS CI $10–30/mo (verified 2026-09-09, [r6](../research/r6-pricing-verification-2026-09-09.md)) | Provider billing + `usage_meters` from P06; checked P13 (RISK-08) |
+| Performance | Full table ratified in [13 §12](../13-testing-quality-and-performance.md) incl. P01 gate thresholds (60 fps iPhone 13-class / 50 fps Galaxy A52-class, <50 ms touch, <100 MB package, <300 MB memory) | P01 gate (3D; waits on DEC-76), P02+ per phase, ratified P14 |
+| Cost | Infra ≈ $25–45/mo launch (ADR-0003; ≈ $370–450 at 5k MAU as an upper-bound hypothesis); AI $0.01–0.15/user/mo steady excl. credits, $0.10–0.30 onboarding spike; try-on ≈ $0.0825/image = 3 credits; iOS CI $10–30/mo (verified 2026-09-09, [r6](../research/r6-pricing-verification-2026-09-09.md)) | Provider billing + `usage_meters` from P06; checked P13 (RISK-08) |
 | AI quality | Eval-gate structure ratified ([13 §10](../13-testing-quality-and-performance.md), doc 10); numeric thresholds set in owning phases (P06/P09/P11) | `just ml-eval` from P06 |
 | Reliability | API ≥ 99.5% monthly, error budget 3.6 h/mo; crash-free ≥ 99.5% (hypotheses) | Dashboards from P02; ratified P14 |
 
@@ -174,7 +182,7 @@ Link RISK-NN/ASM-NN in [16](../16-risks-open-questions-and-decision-log.md); pha
 
 - Risks in play: **RISK-07** (face/biometric compliance — P00 is its discovery step), **RISK-16** (team capacity/planning-discipline decay — P00 sets the ledger discipline), **RISK-04** (store trial compliance — LR framing starts here). Assumptions: **ASM-06** (cadence), **ASM-10** (consent UX acceptance — framed by the discovery work).
 - **Stop/kill criteria for this phase:**
-  - Counsel cannot be engaged within 2 calendar weeks of P00 start → mark P00 `BLOCKED` in PROGRESS.md naming LR-02/LR-09, escalate to **[PO]**; do not "resolve" legal items in-house to unblock.
+  - ~~Counsel cannot be engaged within 2 calendar weeks of P00 start → mark P00 `BLOCKED` in PROGRESS.md naming LR-02/LR-09, escalate to **[PO]**~~ **No longer applies (DEC-79, 2026-10-12):** counsel engagement waits for the first minimal release, so a missing counsel does not block P00. What stays: do not "resolve" legal items in-house.
   - Coverage audit (P00-T09) finds an unmapped brief requirement that changes scope materially → stop, add the requirement IDs to doc 01, and re-check affected phase files before P00 exit.
   - P00 itself is never killed — it has no falsifiable technical bet; it can only complete or block.
 
@@ -194,8 +202,8 @@ No device demo exists; the P00 demo is an evidence walkthrough with the product 
 Objectively verifiable statements — no "works well". Verification commands run from `planning/`:
 
 - AC-1: `docs/adr/0010-decision-log-ratification.md` is `Accepted` and carries a ratification date and decider. A scripted check finds every `DEC-NN` row in doc 16 either standing or naming the DEC that supersedes or amends it. No `planning/adr/` directory exists. *(Amended 2026-10-09 by DEC-68; was ≥ 33 ADR files.)*
-- AC-2: every metric row in [00 §8.1–8.4](../00-product-vision-and-scope.md) has non-empty Owner, Source, Privacy, Target/baseline, and Decision columns (scripted table walk finds zero empty cells), and every guardrail row in §8.4 has a hard target or "baseline first" label.
-- AC-3: [11 §12](../11-security-privacy-and-compliance.md) shows LR-01…LR-12 each with an owner and due phase; LR-02/03/04/07/09 show counsel engaged (engagement evidence linked); OQ-03 has a DEC entry (16+ pending LR-09) and OQ-07 has a memo linked from doc 16.
+- AC-2: every metric row in [00 §8.1–8.4](../00-product-vision-and-scope.md) has non-empty Owner, Source, Privacy, Target/baseline, and Decision columns (scripted table walk finds zero empty cells), and every guardrail row in §8.4 has a hard target or "baseline first" label. Every row of [13 §12.1–12.2](../13-testing-quality-and-performance.md) carries the word "hypothesis" and a measuring phase in its Status cell (a scripted table walk finds zero rows without both), and the P01 gate numbers are identical in [05 §2.3](../05-technology-decisions.md), 13 §12.1 and [00 §9.1](../00-product-vision-and-scope.md) RB-5 (NFR-PERF-010; added 2026-10-13 from the P00-T03 audit).
+- AC-3: [11 §12](../11-security-privacy-and-compliance.md) shows LR-01…LR-12 each with an owner and due phase; LR-02/03/04/07/09 show counsel engaged (engagement evidence linked); OQ-03 has a DEC entry (16+ pending LR-09) and OQ-07 has a memo linked from doc 16. *(Amended 2026-10-12 by DEC-79: the counsel-engagement evidence and the OQ-07 memo moved out of P00 to the first minimal release; in P00 this criterion checks the owner and due phase of each LR item and the DEC entries for OQ-03 and OQ-07.)*
 - AC-4: docs 11 (threat model §2–3, classification §6, redaction §8, ethics §17) and doc 03 invariants carry a "Ratified <date> by <name>" header line; `grep -L "Ratified" 11-security-privacy-and-compliance.md` returns empty.
 - AC-5: doc 10 §1 table has a classification + why-not-deterministic entry for every AI-touching feature (zero rows marked TBD); provider register (10 §3) carries as-of-dated training/retention terms; research-bet register shows RB-1…RB-5 with all ten fields each.
 - AC-6: brief-coverage audit re-run recorded: [01 §4](../01-requirements-and-traceability.md) has zero unmapped brief sections and §5 zero unmapped named specifics, with a dated audit note; any IDs added follow the steps-of-10 rule.
@@ -213,7 +221,25 @@ grep -n 'OQ-03\|OQ-07' 16-risks-open-questions-and-decision-log.md  # closed or 
 git log --oneline -- planning/                     # ratification commits, PO sign-off noted
 ```
 
-Evidence to attach/link: ADR-0010 with the ratification line; counsel engagement evidence (redacted as needed); the OQ-07 residency memo; dated ratification headers; the coverage-audit note in doc 01 — never fabricated sign-offs.
+Evidence to attach/link: ADR-0010 with the ratification line; counsel engagement evidence (redacted as needed); the OQ-07 residency memo; dated ratification headers; the coverage-audit note in doc 01 — never fabricated sign-offs. *(Amended 2026-10-12 by DEC-79: the counsel engagement evidence and the OQ-07 residency memo are evidence for the first minimal release, not for P00.)*
+
+### Evidence index (written 2026-10-13 for P00-T10)
+
+How the sign-off was recorded: the product owner gave it in the working session of 2026-10-13 ("Sign all four"; name on record: Arthur Minasyan), and the four ratification lines were entered at his instruction. The commit that carries them is the lasting evidence; this index points at it and does not replace it.
+
+| Criterion | State on 2026-10-13 | Where the evidence is |
+|---|---|---|
+| AC-1 | Met | [ADR-0010](../../docs/adr/0010-decision-log-ratification.md): status `Accepted`, with the line "Ratified 2026-10-13 by Arthur Minasyan, covering DEC-01 … DEC-82". The scripted pointer check of the P00-T01 report (AI-34), last run on 2026-10-13: 82 decision rows, 40 forward and 40 back pointers, 0 findings. No `planning/adr/` directory exists |
+| AC-2 | Met | The audit notes in [00 §8](../00-product-vision-and-scope.md) (P00-T02) and [13 §12](../13-testing-quality-and-performance.md) (P00-T03). Table walks re-run on 2026-10-13: 26 metric rows with 0 empty cells; 8 of 8 guardrail rows labelled; 24 budget rows, 0 without "hypothesis" and 0 without a phase. The P01 gate numbers are compared in the 13 §12 note |
+| AC-3 | Met as amended by DEC-79 | [11 §12](../11-security-privacy-and-compliance.md): 12 `LR-` rows, each with an owner and a due phase or release. In [doc 16](../16-risks-open-questions-and-decision-log.md), OQ-03 is resolved by DEC-60 and OQ-07 by DEC-61. Counsel engagement and the OQ-07 memo are evidence for the first minimal release |
+| AC-4 | Met | The header line "Ratified 2026-10-13 by Arthur Minasyan" in [doc 11](../11-security-privacy-and-compliance.md) (§2–§3, §6, §8, §17) and in [doc 03](../03-domain-model-and-glossary.md) (invariants, §2.1). `grep -L "Ratified" 11-security-privacy-and-compliance.md` returns nothing |
+| AC-5 | Two of three clauses met | [10 §1](../10-ai-usage-cost-and-evaluation.md): 20 rows, no empty cell and no "TBD". [00 §9.1](../00-product-vision-and-scope.md): RB-1…RB-5 with ten fields each. The doc 10 header carries the ratification line. Not met: 10 §3 dates its prices (verified 2026-09-09) but not the providers' training and retention terms. The owner signed with this gap listed; no row tracks it yet |
+| AC-6 | Met | The note "Audit re-run 2026-10-12" in [01 §4](../01-requirements-and-traceability.md): 217 ids, each defined once; §4 has 42 rows and §5 has 39; REQ-EXP-085 and NFR-TEAM-135 sit at unused numbers |
+| AC-7 | Met | [PROGRESS.md](../PROGRESS.md): P00 is `DONE` on 2026-10-13, self-assessed, and the handoff entry of that date links the artifacts above. `ACCEPTED` only when the owner says so |
+
+The commands above, run on 2026-10-13: the `Ratified 20` count in ADR-0010 is 1; the `LR-` row count is 12; OQ-03 and OQ-07 name DEC-60 and DEC-61. `git log` shows no ratification commit yet: the change was not committed when this index was written.
+
+Carried forward, not done: the three items that DEC-79 deferred, listed in §12. Left open at the sign-off, each with a row in doc 16: OQ-38 (3D budget numbers, deferral confirmed), OQ-39 (infrastructure-as-code and preview deployments), OQ-40 (who measures what P02 and the staging server were to measure), OQ-41 (a note on DEC-32) and the host-name note in OQ-17.
 
 ## 21. Documentation and PROGRESS.md updates
 
@@ -224,4 +250,4 @@ Evidence to attach/link: ADR-0010 with the ratification line; counsel engagement
 
 Written at phase end; interim handoffs go to the PROGRESS.md log via [session-handoff.md](../templates/session-handoff.md).
 
-Next session starts: **P01-T01** (prototype workspace bring-up) and/or **P02-T01** (monorepo scaffold) — P01 and P02 may run in parallel per [SPINE §5](../SPINE.md) (P02 depends on P00 only; P01 depends on P00). First command for either: read `PROGRESS.md`, then the target phase file end-to-end, then confirm P00 is `ACCEPTED` (a phase may only depend on `ACCEPTED` phases). If counsel items LR-02/09 are still open, that does **not** block P01/P02 — it blocks P03 exit; carry the tracking line forward in PROGRESS.md notes.
+Next session starts: **P01-T01** (prototype workspace bring-up) and/or **P02-T01** (monorepo scaffold) — P01 and P02 may run in parallel per [SPINE §5](../SPINE.md) (P02 depends on P00 only; P01 depends on P00). First command for either: read `PROGRESS.md`, then the target phase file end-to-end, then confirm P00 is `ACCEPTED` (a phase may only depend on `ACCEPTED` phases). If counsel items LR-02/09 are still open, that does **not** block P01/P02 — ~~it blocks P03 exit~~ it blocks the first minimal release (DEC-79, 2026-10-12; was: P03 exit); carry the tracking line forward in PROGRESS.md notes.

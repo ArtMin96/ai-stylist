@@ -2,7 +2,7 @@
 
 **Status:** Planning-ratified · **Date:** 2026-08-24
 **Owns:** parametric avatar system (A0–A2), selfie→face path, poses/camera/lighting, renderer boundary contract, garment capability ladder (G0–G4), missing-view synthesis rules, media/asset pipeline state machine, asset formats/manifests, GPU/memory budgets, 3D R&D spikes.
-**Conforms to:** [SPINE.md](SPINE.md) §2 (Anny, Filament, glTF/KTX2/Draco, fal.ai), §4 (capability codes). **Amended:** 2026-09-13 ([r7](research/r7-third-party-services-and-self-hosting-audit-2026-09-13.md), ADR-0003 — pg-boss jobs, R2 delivery model, BiRefNet self-host eval arm).
+**Conforms to:** [SPINE.md](SPINE.md) §2 (Anny, Filament, glTF/KTX2/Draco, fal.ai), §4 (capability codes). **Amended:** 2026-09-13 ([r7](research/r7-third-party-services-and-self-hosting-audit-2026-09-13.md), ADR-0003 — pg-boss jobs, R2 delivery model, BiRefNet self-host eval arm). **Amended:** 2026-10-12 (P00-T03 budget-label audit, AI-37: status paragraph added under §10.1 — the values stay hypotheses until the DEC-76 go/no-go, and the differences from doc 13 §12.1 are listed; no value changed).
 **Evidence:** [research/r5-avatar-garment-3d.md](research/r5-avatar-garment-3d.md) (primary), [research/r2-mobile-3d-stack.md](research/r2-mobile-3d-stack.md) (renderer/formats), [research/r3-ai-providers-costs.md](research/r3-ai-providers-costs.md) (per-image costs).
 **Related docs:** schema/event conventions → [06-data-api-and-event-contracts.md](06-data-api-and-event-contracts.md) · how attributes feed the engine → [09-recommendation-engine.md](09-recommendation-engine.md) · AI cost/eval detail → [10-ai-usage-cost-and-evaluation.md](10-ai-usage-cost-and-evaluation.md) · face/body data privacy → [11-security-privacy-and-compliance.md](11-security-privacy-and-compliance.md) · credits/entitlements → [12-pricing-entitlements-and-unit-economics.md](12-pricing-entitlements-and-unit-economics.md).
 
@@ -295,6 +295,8 @@ Conventions (locked so every tool agrees): meters, Y-up, right-handed, glTF PBR 
 | Thermal | no sustained throttle in 10-min session | same | — |
 
 P01 (prototype gate) replaces hypotheses with measurements on real devices; [13](13-testing-quality-and-performance.md) owns the recurring device-lab regression gates. Thermal/battery responses: dynamic resolution scale, capped frame rate on `thermalState >= serious`, idle-animation pause.
+
+**Status 2026-10-12 (P00-T03 audit).** Every value in the table above is still a hypothesis. P01's native spike waits on the garment 3D research go/no-go (DEC-76), which also reviews the renderer, so nothing here is measured or re-tuned before that outcome. P01 measures the mid-tier pair and one low-tier Android; the high-tier column is first measured on the P04 device lane. The table is **not reconciled** with [13 §12.1](13-testing-quality-and-performance.md) and the P01 gate in [05 §2.3](05-technology-decisions.md) (OQ-38): frame rate, mid tier ≥30 fps here against ≥ 60 fps there (the P01 gate asks 60 fps iPhone 13-class / 50 fps Galaxy A52-class), and low tier "3D off" here against ≥ 30 fps there; first render, mid tier <4 s here against ≤ 3 s there; app memory, <300 MB here (the P01 prototype gate G6) against the full-app ≤ 900 MB mid / ≤ 1.2 GB high there; GPU memory, <150 MB high / <100 MB mid texture memory here against ≤ 600 MB / ≤ 400 MB there; battery, a 5-minute window here against a 10-minute window there; and the phones each tier names (13 §7). The audit changed no value; the differences are settled with the DEC-76 outcome.
 
 ### 10.2 Low-end fallbacks
 

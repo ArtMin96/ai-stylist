@@ -117,7 +117,7 @@ dev-workers *args:
 
 # --- quality gates (* = part of ci-parity) -------------------------------------------
 
-# * Run tests: full suite via turbo + the native lanes, or one module's tests/ dir (`just test recommendation`; `just test ios` / `just test android` = that app's unit tests; `just test secrets` = the sops+age shell suite; `just test tooling` = the scripts/test shell suites: bootstrap/doctor, contracts-breaking, generate (a failing generator fails `just generate [--check]`), test-regression, ci-metrics, dev service names, dev (the `just dev` plan, ports, logs, stop, device choice), observability-sync, repo-setup; `just test platform` = the `api` + `platform-docker` vitest projects); SKIP_DOCKER_TESTS=1 leaves out the Testcontainers `migrations` and `platform-docker` projects (runners without Docker only)
+# * Run tests: full suite via turbo + the native lanes, or one module's tests/ dir (`just test recommendation`; `just test ios` / `just test android` = that app's unit tests; `just test secrets` = the sops+age shell suite; `just test tooling` = the scripts/test shell suites: bootstrap/doctor, contracts-breaking, generate (a failing generator fails `just generate [--check]`), test-regression, ci-metrics, dev service names, dev (the `just dev` plan, ports, logs, stop, device choice), observability-sync, repo-setup, skills-eval; `just test platform` = the `api` + `platform-docker` vitest projects); SKIP_DOCKER_TESTS=1 leaves out the Testcontainers `migrations` and `platform-docker` projects (runners without Docker only)
 test module='':
     #!/usr/bin/env bash
     set -euo pipefail
@@ -186,6 +186,7 @@ test-tooling:
     bash scripts/test/dev.test.sh
     bash scripts/test/observability-sync.test.sh
     bash scripts/test/repo-setup.test.sh
+    bash scripts/test/skills-eval.test.sh
 
 # Native unit tests for the full `just test` (lane/toolchain policy: scripts/native-lane.sh)
 [private]
@@ -525,6 +526,10 @@ assets-validate:
 # Run versioned eval suites (classification/segmentation/try-on) against golden datasets
 ml-eval:
     @echo "NOT IMPLEMENTED (P02 T17): ml eval stub"; exit 2
+
+# Score the skill eval files with Claude Code's eval runner `claude plugin eval` in one run (tools/skills-eval/README.md; needs Claude Code 2.1.269+; spends model usage on your own credential, never part of CI): `just skills-eval [skill|all] [tasks|triggers] [--force] [--max-cost-usd N] [--runs N] [--effort low|medium|high|xhigh|max] [--model ID] [--judge-model ID] [--concurrency N] [--case GLOB] [--generate-only]`; no argument = every skill in both modes, all `triggers` (evals/trigger-evals.json against a plugin that holds every skill) before all `tasks` (evals/evals.json with and without the skill), skills by name; a skill and mode whose inputs are unchanged since its last stored score in tools/skills-eval/scoreboard.json is up to date and skipped (`--force` runs it); `--max-cost-usd` is one budget for the invocation (the runner's ceiling is what is left of it minus the runs that can be in flight, so the total stays inside it), what does not fit is left, and running the command again continues; a new score is compared with the last one (better, worse, or no measurable change inside the interval); cases are generated into one run directory per invocation under artifacts/skills-eval/ (gitignored) with result.json, report.html, run-config.json and summary.txt per skill and mode; defaults: 3 runs per case for tasks and 1 for triggers, effort high; the report is never published
+skills-eval *args:
+    node tools/skills-eval/skills-eval.mjs "$@"
 
 # Accept updated golden / visual-regression baselines as a reviewed commit
 golden-accept:

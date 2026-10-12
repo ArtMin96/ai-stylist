@@ -19,7 +19,7 @@
       "expected_output": "A findings list against the TypeScript reference only: `any` and the untyped parameter, the default export, the swallowed catch, the unproven `as Size` cast on untrusted JSON, the unbounded fetch with no timeout (reuse platform resilience helpers), the `get` name that hides a network call, and the missing `.js`-style module conventions where relevant. Each finding has a severity, a line, the reference section, and a TypeScript rewrite.",
       "files": [],
       "assertions": [
-        "Flags `any` (and the untyped `unit` parameter) as a blocker with `unknown` plus narrowing or a schema as the fix",
+        "Flags `data: any` and the untyped `unit` parameter as blockers and replaces each with a precise type (`unknown` plus narrowing, a schema-derived type, or a specific parameter type)",
         "Flags the empty catch as swallowing errors",
         "Flags `as Size` on parsed JSON as an unproven cast and recommends validating with the module's schema",
         "Flags the default export in favour of a named export",
@@ -36,7 +36,8 @@
         "The blocking file read and model.predict are moved off the event loop (thread offload or sync route), with the reason stated",
         "The `dict` request is replaced by a typed Pydantic model and every signature is annotated",
         "The bare `except:` returning empty masks is replaced by a narrow exception mapped to an HTTP error",
-        "`print` is replaced by structured logging that does not log the raw path, and validation names `just lint`, `just typecheck` and `just test workers`"
+        "`print` is replaced by structured logging that does not log the raw path",
+        "The report names `just lint`, `just typecheck` and `just test workers` as the validation commands"
       ]
     },
     {

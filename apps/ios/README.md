@@ -108,6 +108,9 @@ a secret in an xcconfig.
   Script phase because that script skips configurations not named "Release" and needs script sandboxing off.
   Only that upload sees the `POSTHOG_CLI_*` variables: `scripts/xcode.sh` takes them out of the environment
   first, because xcodebuild turns every environment variable into a build setting.
+  The upload passes `POSTHOG_SKIP_ON_CONFLICT=1`: a dSYM whose UUID PostHog already holds with other
+  content is skipped, not a build failure. An equal UUID means equal code, so the stored symbols still
+  fit; only debug metadata differs, e.g. after a CI runner image update.
   `mise.toml` pins the CLI (`npm:@posthog/cli`): `just bootstrap` installs it and `just doctor` checks it.
   `POSTHOG_CLI_HOST` is your PostHog region's app host (this project: `https://us.posthog.com`);
   `POSTHOG_HOST` is the ingestion host (`https://us.i.posthog.com`).

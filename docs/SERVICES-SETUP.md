@@ -24,7 +24,7 @@ Phase numbers refer to `planning/phases/`. "Needed from" is the first task that 
 
 | #   | Service                                                                 | What it is for                                            | Needed from              | Free tier?                                   | Account owner | Done |
 | --- | ----------------------------------------------------------------------- | --------------------------------------------------------- | ------------------------ | -------------------------------------------- | ------------- | ---- |
-| 1   | GitHub repository                                                       | Source, CI (GitHub Actions), branch protection            | P02 now                  | Yes (public repo or personal plan)           | `<owner>`     | [ ]  |
+| 1   | GitHub repository                                                       | Source, CI (GitHub Actions), branch protection            | P02 now                  | Yes (public repo or personal plan)           | `@ArtMin96`   | [ ]  |
 | 2   | sops + age                                                              | Encrypted shared secrets in the repo                      | P02 now                  | Free, no account                             | `<owner>`     | [x]  |
 | 3   | PostgreSQL (self-managed, pgvector)                                     | Postgres 18 + pgvector for staging, prod (docker locally) | First minimal release    | $0 software; host cost in row 4              | `<owner>`     | [ ]  |
 | 4   | Server + Coolify                                                        | API, jobs, workers, PostgreSQL hosting                    | First minimal release    | Server ~€10–25/month; Coolify $0 self-hosted | `<owner>`     | [ ]  |
@@ -39,6 +39,7 @@ Phase numbers refer to `planning/phases/`. "Needed from" is the first task that 
 | 13  | fal.ai, Open-Meteo, date-holidays (no account), LLM/embedding providers | AI generation, weather, holidays, extraction              | P06 / P08 / P11          | Mixed, see section 13                        | `<owner>`     | [ ]  |
 | 14  | Apple and Google sign-in                                                | Social login for better-auth                              | P03                      | Included in 8 and free Google Cloud project  | `<owner>`     | [ ]  |
 | 15  | Firebase Cloud Messaging + APNs                                         | Push notifications (FCM + APNs direct, server-side)       | P09-T16                  | FCM free; APNs included in 8                 | `<owner>`     | [ ]  |
+| 16  | Renovate (GitHub App)                                                   | Pull requests that update dependencies                    | P02-T12                  | Yes (hosted app); price not checked          | `@ArtMin96`   | [x]  |
 
 Replace `<owner>` with a real name once an account exists; keep this table current.
 
@@ -718,11 +719,46 @@ Server-side FCM + APNs direct, behind a `platform` port (`SPINE.md` §2); client
 - Do not: put a service-account JSON or the `.p8` in the native apps, and do not send sensitive data classes in a push payload (`docs/modules/notifications.md`).
 - Verify: deferred to P09: `just test notifications` covers the port with a fake transport; the device push smoke runs on both platforms.
 
+## 16. Renovate
+
+### Why we use it
+
+Renovate is a hosted bot that opens pull requests for dependency updates, so the pinned versions stay current without manual work. All of its behaviour comes from [`renovate.json`](../renovate.json) at the repo root: the schedule, the groups, and which updates merge by themselves (DEC-56).
+
+### When you need it
+
+P02 (P02-T12, Linear AI-20). The install is one browser step by the repository owner. Done on 2026-10-13 for `ArtMin96/ai-stylist`: the app opened its "Dependency Dashboard" as issue #25 that day.
+
+### Cost
+
+Free for this use: Mend's hosted Renovate app, without Mend's paid products. The price was not checked on Mend's site on 2026-10-13. Each Renovate pull request runs CI, which is free while the repository is public (DEC-82) and uses paid Actions minutes once it is private again.
+
+### Steps
+
+1. Install the GitHub App as [`docs/NEW-REPO-SETUP.md`](NEW-REPO-SETUP.md) section 9 "GitHub Apps" describes, for `ArtMin96/ai-stylist` only. Mend's sign-up screens asked two questions on 2026-10-13: choose "Renovate Only", not "Mend Application Security", and choose "Scan and Alert", not "Scan Only". What "Scan Only" does was not found in Mend's documentation; it is read here as the silent mode, which opens no pull requests.
+2. Nothing else is configured in the app. Change its behaviour through `renovate.json` in a normal pull request.
+3. Minor and patch updates of npm, Python and GitHub Actions dependencies merge by themselves once CI is green. Toolchain pins in `mise.toml`, Android and iOS updates wait for a person: the body of each such pull request names the command to run on its branch (`just android-deps-lock`, `just ios-test-packages`, `just generate`). The `description` of each rule in `renovate.json` says why.
+
+### What to record
+
+- No secret: the app authenticates as a GitHub App and needs no repository secret.
+- The row of this service in the overview table: the owner, and the tick once the "Dependency Dashboard" issue exists.
+
+### Do not
+
+- Do not give the app access to every repository of the account.
+- Do not add Mend's application-security product. It scans the source code, and no provider data-policy check covers it (doc 11 §7.5).
+- Do not merge a major bump of `node`, `pnpm`, `python` or `java` without an ADR; `renovate.json` labels those pull requests `needs-adr`.
+
+### Verify
+
+[`docs/NEW-REPO-SETUP.md`](NEW-REPO-SETUP.md) section 9 has the command: it prints the "Dependency Dashboard" issue once the app has run. `renovate.json` schedules its work "before 6am on monday", so the first pull requests can take until the next Monday.
+
 ## Checklist by phase
 
 | Phase                 | Do now                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
 | --------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| P02 (now)             | 1 GitHub (CODEOWNERS, branch protection, Actions). 2 sops + age (keys, `.sops.yaml`, `secrets/dev.enc.yaml`, `SOPS_AGE_KEY`). 5 pg-boss: nothing to provision (T08). 6 R2 dev bucket + token (T13). 10 PostHog test project (T09). 11 Grafana Cloud test stack + OTel vars (T09). Store enrollment (8 Apple, 9 Play Console) left P02 with T14 (DEC-63) for the first phase that ships builds to testers, P13 at the latest.                                                                                                                                                                                                                                                                                                                       |
+| P02 (now)             | 1 GitHub (CODEOWNERS, branch protection, Actions). 2 sops + age (keys, `.sops.yaml`, `secrets/dev.enc.yaml`, `SOPS_AGE_KEY`). 5 pg-boss: nothing to provision (T08). 6 R2 dev bucket + token (T13). 10 PostHog test project (T09). 11 Grafana Cloud test stack + OTel vars (T09). 16 Renovate GitHub App (T12). Store enrollment (8 Apple, 9 Play Console) left P02 with T14 (DEC-63) for the first phase that ships builds to testers, P13 at the latest.                                                                                                                                                                                                                                                                                         |
 | P03                   | 14 Apple and Google sign-in credentials.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
 | First minimal release | Moved here from P02 and P03 on 2026-10-12 (DEC-79, DEC-80); the date is not set. 3 PostgreSQL on the server: staging and production databases + roles, PgBouncer, pgBackRest to the backup bucket, and the restore proof before the server holds real user data (the rest of T07). 4 Server + Coolify: host, hardening, project + environments, then the first deploy (Dockerfile, `COOLIFY_TOKEN`, sync script). `secrets/staging.enc.yaml` and `secrets/prod.enc.yaml`. 6 R2 staging and production buckets, Cloudflare DNS + WAF for the API domain. 10 PostHog production project on EU Cloud with the real account (the free plan allows one project: section 10 step 2) + personal API key. 11 Grafana Cloud: the real EU account and stack. |
 | P06                   | fal.ai key + spend limit, vision-LLM and embedding provider accounts (privacy review first), GPU eval host for the self-hosted eval arms, R2 public assets custom domain (if not done in P04), R2 multipart upload settings.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |

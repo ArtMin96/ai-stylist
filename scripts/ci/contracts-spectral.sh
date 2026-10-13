@@ -1,24 +1,15 @@
 #!/usr/bin/env bash
-# just ci-contracts-spectral — Spectral lint of the per-module OpenAPI sources (pr-gate.yml).
-# Skips with a notice until packages/contracts/openapi exists and Spectral is installed, so the
-# gate turns on by itself once the contracts toolchain lands (T04).
+# just ci-contracts-spectral — Spectral lint of the OpenAPI contract (pr-gate.yml). Runs the contracts
+# package's lint:spectral, the same lint `just lint` runs through lint:openapi: redocly bundles
+# packages/contracts/openapi, then spectral checks the bundle against .spectral.yaml and fails on
+# warnings. It lints the bundle, not each source file: the module files are fragments that
+# openapi.yaml pulls in by $ref, so alone they lack `servers` and the global tags.
+# spectral is the package's devDependency @stoplight/spectral-cli. It resolves only inside the
+# package, so `pnpm exec spectral` from the repo root never finds it; without `pnpm install` the
+# lint fails rather than skips.
 set -euo pipefail
 # shellcheck source=scripts/lib.sh
 source "$(dirname "${BASH_SOURCE[0]}")/../lib.sh"
 cd "$REPO_ROOT"
 
-if [[ ! -d packages/contracts/openapi ]]; then
-  echo "::notice::packages/contracts/openapi absent - spectral skipped (T04 not landed)"
-  exit 0
-fi
-if ! have spectral && ! pnpm exec spectral --version >/dev/null 2>&1; then
-  echo "::warning::spectral not installed - add it to the contracts toolchain (T04)"
-  exit 0
-fi
-ruleset=packages/contracts/.spectral.yaml
-[[ -f "$ruleset" ]] || ruleset=.spectral.yaml
-if [[ -f "$ruleset" ]]; then
-  pnpm exec spectral lint --ruleset "$ruleset" "packages/contracts/openapi/**/*.yaml"
-else
-  pnpm exec spectral lint "packages/contracts/openapi/**/*.yaml"
-fi
+pnpm --filter @ai-stylist/contracts run lint:spectral

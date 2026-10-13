@@ -117,7 +117,7 @@ dev-workers *args:
 
 # --- quality gates (* = part of ci-parity) -------------------------------------------
 
-# * Run tests: full suite via turbo + the native lanes, or one module's tests/ dir (`just test recommendation`; `just test ios` / `just test android` = that app's unit tests; `just test secrets` = the sops+age shell suite; `just test tooling` = the scripts/test shell suites: bootstrap/doctor, contracts-breaking, generate (a failing generator fails `just generate [--check]`), test-regression, ci-metrics, dev service names, dev (the `just dev` plan, ports, logs, stop, device choice), observability-sync, repo-setup, skills-eval; `just test platform` = the `api` + `platform-docker` vitest projects); SKIP_DOCKER_TESTS=1 leaves out the Testcontainers `migrations` and `platform-docker` projects (runners without Docker only)
+# * Run tests: full suite via turbo + the native lanes, or one module's tests/ dir (`just test recommendation`; `just test ios` / `just test android` = that app's unit tests; `just test secrets` = the sops+age shell suite; `just test tooling` = the scripts/test shell suites: bootstrap/doctor, contracts-breaking, contracts-spectral, generate (a failing generator fails `just generate [--check]`), test-regression, ci-metrics, dev service names, dev (the `just dev` plan, ports, logs, stop, device choice), observability-sync, repo-setup, skills-eval; `just test platform` = the `api` + `platform-docker` vitest projects); SKIP_DOCKER_TESTS=1 leaves out the Testcontainers `migrations` and `platform-docker` projects (runners without Docker only)
 test module='':
     #!/usr/bin/env bash
     set -euo pipefail
@@ -179,6 +179,7 @@ test-secrets:
 test-tooling:
     scripts/test/bootstrap-doctor.test.sh
     scripts/test/contracts-breaking.test.sh
+    scripts/test/contracts-spectral.test.sh
     scripts/test/generate.test.sh
     scripts/test/regression.test.sh
     bash scripts/test/ci-metrics.test.sh
@@ -320,7 +321,7 @@ flags-report *args:
 ci-pgvector:
     psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -c 'CREATE EXTENSION IF NOT EXISTS vector;'
 
-# Spectral lint of packages/contracts/openapi (skips until the sources and spectral exist)
+# Spectral lint of the bundled OpenAPI contract (the contracts package's lint:spectral)
 [private]
 ci-contracts-spectral:
     scripts/ci/contracts-spectral.sh

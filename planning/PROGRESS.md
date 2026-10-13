@@ -57,7 +57,7 @@ Rules:
 
 Next actions, in order:
 
-1. **Finish P02** (`IN_PROGRESS`). Merge PR #19, then the pull request of branch `artmins96/ai-31-p02-t12-gate-repair-allow-list-the-repo-root-env-in-the`, and watch the first CI run since the repository became public (DEC-82). Then close AI-31, AI-21, AI-36, AI-6 and AI-27, settle AI-20 (Renovate), and do the close-out AI-26 (P02-T18). What closes P02 is in its row of the phase table above.
+1. **Finish P02** (`IN_PROGRESS`). PR #19 and PR #20 merged on 2026-10-12. In the first `main` CI run since the repository became public (DEC-82), on `dc1b5b5`, `pr-gate`, `android` and the nightly passed and `ios` failed in the PostHog dSYM upload (2026-10-13 "later" entry). PR #21 fixed that and merged on 2026-10-13 as `e6dd794`: check that its `ios` push run is green. Merge PR #22 (`fix/contracts-spectral-gate`, pr-gate's Spectral step never ran; 2026-10-13 "spectral" entry) and check that the step prints spectral's result. Then close AI-31, AI-21, AI-36, AI-6 and AI-27, settle AI-20 (Renovate), and do the close-out AI-26 (P02-T18). What closes P02 is in its row of the phase table above.
 2. **After P02 closes: P03-T01** ([phase file](phases/P03-identity-consent-onboarding.md)), with AI-42 before P03-T10 and the Mac checks at the first P03 client task. P03's phase file §3 names P02 as a hard dependency that must be `ACCEPTED`. Carry into P03: the owner keeps `packages/db` as is (no ADR-0008), so P03's first module table must compose without breaking `public-api-only-external` ([`.claude/plans/2026-10-04-repo-split-readiness-proposal.md`](../.claude/plans/2026-10-04-repo-split-readiness-proposal.md)); cross-module foreign keys are ruled out by ADR-0009 (DEC-67).
 3. **P00 is `DONE`, not `ACCEPTED`.** It waits for the owner's acceptance. What DEC-79 deferred and the one accepted gap are in its row of the phase table above.
 
@@ -91,7 +91,7 @@ Log hygiene: when this log exceeds ~30 entries, move the oldest entries to `plan
 
 ### 2026-10-13 (spectral) — pr-gate's Spectral step never ran: fixed
 
-*Session on the owner's Mac, branch `fix/contracts-spectral-gate` off `main` @ `dc1b5b5`. Independent of the `fix/ios-dsym-upload-conflict` pull request (#21); whichever merges second rebases its ledger lines.*
+*Session on the owner's Mac, branch `fix/contracts-spectral-gate` off `main` @ `dc1b5b5`. Started independent of PR #21 (`fix/ios-dsym-upload-conflict`); #21 merged first, and this branch merged `main` @ `e6dd794` to resolve the ledger conflict.*
 
 - **Phase / tasks worked:** P02 — follow-up to P02-T04 (spectral in the contracts pipeline).
 - **Status changes:** None.
@@ -105,6 +105,23 @@ Log hygiene: when this log exceeds ~30 entries, move the oldest entries to `plan
 - **New decisions / risks / questions filed:** None.
 - **Surprises / gotchas:** a "skip with a notice until the tool exists" branch outlives its purpose silently. `contracts-breaking.sh` still has such branches for oasdiff, but its step really runs (`events-breaking: OK`, oasdiff `No changes detected`).
 - **Next session starts:** merge this branch's pull request and check that pr-gate's Spectral step prints spectral's result, not a warning.
+
+### 2026-10-13 (later) — Red `ios` run on `main` after the PR #20 merge: PostHog dSYM upload conflict fixed
+
+*Session on the owner's Mac, branch `fix/ios-dsym-upload-conflict` off `main` @ `dc1b5b5`.*
+
+- **Phase / tasks worked:** P02 — the first `main` CI run since the repository became public (DEC-82).
+- **Status changes:** None.
+- **Done this session:**
+  - Diagnosis: on `dc1b5b5` the `pr-gate`, `android` and 2026-10-13 `nightly` runs passed. `ios` (run `38318194168`) failed after "Build Succeeded", in the dSYM upload: `content_hash_mismatch` … `Symbol set 0B3D77B1-… already exists with different content`, then `Oops! Content mismatch: use --skip-on-conflict or --force`. As a result `ios-test` was skipped. Cause: the macOS runner image moved from `20260928.0222.1` to `20261006.0244.1`. The four UUIDs (arm64 and x86_64 slices of `AIStylist` and `AIStylist.debug.dylib`) equal the 2026-10-04 upload, but the dSYM bytes differ. posthog-cli is 0.18.7 in both runs. Pull requests never upload, so PR #20 could not catch it.
+  - Fix: `apps/ios/scripts/xcode.sh` `upload_dsyms` passes `POSTHOG_SKIP_ON_CONFLICT=1` (posthog-ios 3.85.0's `upload-symbols.sh` turns it into `--skip-on-conflict`). posthog-cli `v0.18.7` skips only that server error; auth, network and missing-file errors still fail. The three Info.plist reads use `plutil` instead of `/usr/libexec/PlistBuddy`, as `scripts/lib.sh` does, so the guard test can stub them on Linux.
+  - Regression check 5 in `apps/ios/scripts/test-xcode-guards.sh` (run by `just ios-check-banned --fixtures`): red before the fix (`FAIL: the dSYM upload runs without POSTHOG_SKIP_ON_CONFLICT=1 …`), green after; also green under `/bin/bash` 3.2.
+  - Docs: `apps/ios/README.md` (Symbols) and `docs/observability/posthog.md` (Symbol upload).
+- **Not done / in flight:** the fix is proven only once the next `ios` push run on `main` uploads; pull requests skip the upload.
+- **Repository state:** buildable ✅ on the Mac (Xcode 27.0, 27A266a), uncommitted on the branch. `just ios-check` with the `POSTHOG_CLI_*` keys unset → exit 0: every fixture `ok` including check 5, "Build Succeeded", the upload notice "dSYM upload skipped", simulator "Test Succeeded". `plutil` and `PlistBuddy` read the same three values from the built binary `Info.plist`. `just docs-check` → `ok (0 errors, 0 warning(s))`. `just format --check` → exit 0. `just lint` → exit 1 at `android-lint`, after shellcheck and actionlint passed: Gradle dependency verification has no entry for `aapt2-9.4.1-15978811-osx.jar` (`apps/android/gradle/verification-metadata.xml` pins only the Linux jar). This is the macOS Android checksum still owed under AI-33, not this change.
+- **New decisions / risks / questions filed:** None.
+- **Surprises / gotchas:** posthog-cli counts a skipped conflict as "already present", so a true UUID collision would go unnoticed. The UUID comes from the binary's contents, so a collision needs equal code. CI keeps no dSYMs, so which bytes changed is unknown.
+- **Next session starts:** merge the pull request of `fix/ios-dsym-upload-conflict` and check that the `ios` push run on `main` is green. Then step 1 of "Next session starts here".
 
 ### 2026-10-13 — P00 signed and `DONE`; P02 gate repair, R2 dev bucket and clone detection; owner decisions DEC-79 to DEC-83
 

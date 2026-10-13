@@ -90,7 +90,9 @@ means a new organization and project on EU Cloud (ADR-0007, OQ-07). Decided on 2
 ## Symbol upload
 
 - iOS: `just ios-build [--config dev|preview|prod]` (macOS) uploads the dSYMs when all three
-  `POSTHOG_CLI_*` values are set, and prints a notice otherwise.
+  `POSTHOG_CLI_*` values are set, and prints a notice otherwise. A dSYM whose UUID PostHog already
+  holds with other content is skipped (`--skip-on-conflict`), and the CLI counts it as "already
+  present". The stored symbols still fit, because an equal UUID means equal code.
 - Android: `just android-build preview` or `just android-build release` runs the `com.posthog.android`
   Gradle plugin's `uploadPostHogProguardMappings<Variant>`. The task is `SKIPPED` without all three
   values.

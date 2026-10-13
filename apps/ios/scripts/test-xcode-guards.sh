@@ -7,7 +7,8 @@
 #   2. xcodebuild runs with -onlyUsePackageVersionsFromResolvedFile (pins from apps/ios/Package.resolved);
 #   3. a POSTHOG_API_KEY that is not a project key (phc_...) stops the build before xcodebuild runs,
 #      from the environment or from Local.xcconfig, and the message never shows the value;
-#   4. apps/ios/Package.resolved holds every pin of apps/ios/Packages/*/Package.resolved unchanged.
+#   4. apps/ios/Package.resolved holds every pin of apps/ios/Packages/*/Package.resolved unchanged;
+#   5. the dSYM upload skips a symbol set PostHog already holds with other content, instead of failing.
 set -euo pipefail
 # shellcheck source=lib.sh
 . "$(dirname "${BASH_SOURCE[0]}")/lib.sh"
@@ -24,6 +25,8 @@ printf '%s\n' "\$@" >"$tmp/xcodebuild.args"
 env | cut -d= -f1 >"$tmp/xcodebuild.env"
 EOF
 chmod +x "$tmp/bin/xcodebuild"
+# The stubs in $tmp/bin shadow the real tools for the whole test.
+export PATH="$tmp/bin:$PATH"
 
 failed=0
 pass() { echo "ok: xcode.sh $*"; }
@@ -46,7 +49,6 @@ scenario() {
     for assignment in "$@"; do
       export "${assignment?}"
     done
-    export PATH="$tmp/bin:$PATH"
     # shellcheck source=xcode.sh
     . "$xcode_sh"
     LOCAL_XCCONFIG="$xcconfig"
@@ -123,6 +125,36 @@ if [[ -z "$missing" ]]; then
 else
   fail "apps/ios/Package.resolved lacks or differs from these package pins (copy them over, see apps/ios/README.md):
 $missing"
+fi
+
+# 5: upload_dsyms against a stub upload-symbols.sh that records its environment. The stub plutil
+# answers every Info.plist read, so this runs on Linux too.
+products="$tmp/DerivedData/Build/Products/Dev-iphonesimulator"
+upload_script="$tmp/SourcePackages/checkouts/posthog-ios/build-tools/upload-symbols.sh"
+mkdir -p "$products/AIStylist.app.dSYM" "${upload_script%/*}"
+printf '#!/bin/sh\necho synthetic\n' >"$tmp/bin/plutil"
+chmod +x "$tmp/bin/plutil"
+printf 'env >"%s"\n' "$tmp/upload.env" >"$upload_script"
+if (
+  for name in $(compgen -e); do
+    case "$name" in POSTHOG_*) unset "$name" ;; esac
+  done
+  export POSTHOG_CLI_API_KEY=phx_guardtest POSTHOG_CLI_PROJECT_ID=1 POSTHOG_CLI_HOST=https://us.posthog.com
+  # shellcheck source=xcode.sh
+  . "$xcode_sh"
+  DERIVED_DATA="$tmp/DerivedData"
+  SOURCE_PACKAGES="$tmp/SourcePackages"
+  upload_dsyms Dev >/dev/null
+) 2>"$tmp/stderr"; then
+  if [[ ! -f "$tmp/upload.env" ]]; then
+    fail "upload_dsyms did not run upload-symbols.sh: $(cat "$tmp/stderr")"
+  elif ! grep -qx 'POSTHOG_SKIP_ON_CONFLICT=1' "$tmp/upload.env"; then
+    fail "the dSYM upload runs without POSTHOG_SKIP_ON_CONFLICT=1, so a rebuilt unchanged binary fails the build"
+  else
+    pass "skips symbol sets PostHog already holds for the same UUID"
+  fi
+else
+  fail "upload_dsyms failed: $(cat "$tmp/stderr")"
 fi
 
 exit "$failed"

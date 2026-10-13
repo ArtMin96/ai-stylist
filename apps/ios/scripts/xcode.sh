@@ -151,15 +151,22 @@ upload_dsyms() {
   [[ -f "$script" ]] \
     || ios_die "ios-build: ${script#"$REPO_ROOT"/} not found (is the posthog-ios package resolved?)"
   local bundle_id version build
-  bundle_id="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleIdentifier' "$plist")"
-  version="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' "$plist")"
-  build="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleVersion' "$plist")"
+  bundle_id="$(plutil -extract CFBundleIdentifier raw -o - "$plist")"
+  version="$(plutil -extract CFBundleShortVersionString raw -o - "$plist")"
+  build="$(plutil -extract CFBundleVersion raw -o - "$plist")"
   echo "==> dSYM upload to PostHog: $bundle_id $version ($build), configuration $name"
   # The variables are the Xcode build settings upload-symbols.sh reads, pointed at this build, plus the
   # posthog-cli credentials. CONFIGURATION is removed on purpose: unset means "manual run", so the
   # script uploads.
+  # POSTHOG_SKIP_ON_CONFLICT=1 (posthog-cli --skip-on-conflict) keeps the symbol set PostHog already
+  # holds for a UUID when this build's dSYM differs from it. The linker derives the UUID from the
+  # binary's contents, so an equal UUID means equal code and the stored symbols still decode its
+  # crashes; only debug metadata drifts, e.g. when the CI runner image changes. Auth, network and
+  # missing-file errors still fail the build. Cost: posthog-cli reports a skipped conflict as
+  # "already present", so a true UUID collision would go unnoticed.
   env -u CONFIGURATION -u INFOPLIST_FILE \
     ${POSTHOG_CLI_ENV[@]+"${POSTHOG_CLI_ENV[@]}"} \
+    POSTHOG_SKIP_ON_CONFLICT=1 \
     DWARF_DSYM_FOLDER_PATH="$products" \
     DWARF_DSYM_FILE_NAME=AIStylist.app.dSYM \
     DEBUG_INFORMATION_FORMAT=dwarf-with-dsym \

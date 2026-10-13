@@ -848,6 +848,7 @@ just doctor
 ### A.8 Optional, per machine
 
 - **Linear API key**, only for `templates/linear/create-templates.sh`: the file `~/.config/ai-stylist/linear-api-key` with mode 600, or the variable `LINEAR_API_KEY`.
+- **Linear login for Claude Code**: `.mcp.json` defines the server `linear-ai-stylist`, used only in this repository. Run `claude mcp login linear-ai-stylist` once per machine and pick the Linear account that holds the AI Stylist team. The login stays separate from Linear servers in other projects. To skip the approval prompt in each new worktree, add `"enabledMcpjsonServers": ["linear-ai-stylist"]` to `~/.claude/settings.json`.
 - **An Android emulator**, for `just dev`, `just android-run` and `just android-e2e`: `just dev` (or `just android-run`) installs the emulator and a system image and creates the AVD `aistylist-dev` the first time no device is online. Bootstrap installs no emulator image.
 - **The Xcode-only settings file**, only for builds started from the Xcode window (section 11).
 

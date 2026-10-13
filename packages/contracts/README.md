@@ -41,6 +41,7 @@ examples and pins the generated TS types.
 
 The pr-gate `contracts` job runs `just generate --check`, `just ci-contracts-spectral` and, on pull
 requests, `just ci-contracts-breaking "$BASE_SHA"` (`scripts/ci/contracts-breaking.sh`).
+Both OpenAPI lint commands run this package's `lint:spectral` script on the bundled contract.
 
 **oasdiff threshold: `--fail-on WARN`, in both places.** Doc 06 allows only additive changes
 within `/v1` (§2) and requires an ADR for a breaking diff (§9), but names no oasdiff severity, so

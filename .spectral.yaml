@@ -1,5 +1,6 @@
-# OpenAPI lint (planning/06 §9): naming, problem+json errors, operationIds. Runs via
-# `pnpm --filter @ai-stylist/contracts lint:openapi` and the PR gate. Warnings fail (--fail-severity=warn).
+# OpenAPI lint (planning/06 §9): naming, problem+json errors, operationIds. Runs on the bundled contract via
+# `pnpm --filter @ai-stylist/contracts lint:spectral`: inside lint:openapi (`just lint`) and in the PR gate
+# (`just ci-contracts-spectral`). Warnings fail (--fail-severity=warn).
 extends:
   - spectral:oas
 rules:

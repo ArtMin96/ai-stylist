@@ -57,7 +57,7 @@ Rules:
 
 Next actions, in order:
 
-1. **Finish P02** (`IN_PROGRESS`). PR #19 and PR #20 merged on 2026-10-12. In the first `main` CI run since the repository became public (DEC-82), on `dc1b5b5`, `pr-gate`, `android` and the nightly passed and `ios` failed in the PostHog dSYM upload (2026-10-13 "later" entry). Merge the pull request of branch `fix/ios-dsym-upload-conflict` and check that the `ios` push run on `main` is green. Then close AI-31, AI-21, AI-36, AI-6 and AI-27, settle AI-20 (Renovate), and do the close-out AI-26 (P02-T18). What closes P02 is in its row of the phase table above.
+1. **Finish P02** (`IN_PROGRESS`). PR #19 and PR #20 merged on 2026-10-12. In the first `main` CI run since the repository became public (DEC-82), on `dc1b5b5`, `pr-gate`, `android` and the nightly passed and `ios` failed in the PostHog dSYM upload (2026-10-13 "later" entry). PR #21 fixed that and merged on 2026-10-13 as `e6dd794`, and that commit's `ios` push run is green (run `38360726549`: "4 skipped (4 already present)", "dSYM upload complete"). Merge PR #22 (`fix/contracts-spectral-gate`, pr-gate's Spectral step never ran; 2026-10-13 "spectral" entry) and check that the step prints spectral's result. Then close AI-31, AI-21, AI-36, AI-6 and AI-27, settle AI-20 (Renovate), and do the close-out AI-26 (P02-T18). What closes P02 is in its row of the phase table above.
 2. **After P02 closes: P03-T01** ([phase file](phases/P03-identity-consent-onboarding.md)), with AI-42 before P03-T10 and the Mac checks at the first P03 client task. P03's phase file §3 names P02 as a hard dependency that must be `ACCEPTED`. Carry into P03: the owner keeps `packages/db` as is (no ADR-0008), so P03's first module table must compose without breaking `public-api-only-external` ([`.claude/plans/2026-10-04-repo-split-readiness-proposal.md`](../.claude/plans/2026-10-04-repo-split-readiness-proposal.md)); cross-module foreign keys are ruled out by ADR-0009 (DEC-67).
 3. **P00 is `DONE`, not `ACCEPTED`.** It waits for the owner's acceptance. What DEC-79 deferred and the one accepted gap are in its row of the phase table above.
 
@@ -88,6 +88,23 @@ Log hygiene: when this log exceeds ~30 entries, move the oldest entries to `plan
 ## Session handoff log
 
 *(newest first)*
+
+### 2026-10-13 (spectral) — pr-gate's Spectral step never ran: fixed
+
+*Session on the owner's Mac, branch `fix/contracts-spectral-gate` off `main` @ `dc1b5b5`. Started independent of PR #21 (`fix/ios-dsym-upload-conflict`); #21 merged first, and this branch merged `main` @ `e6dd794` to resolve the ledger conflict.*
+
+- **Phase / tasks worked:** P02 — follow-up to P02-T04 (spectral in the contracts pipeline).
+- **Status changes:** None.
+- **Done this session:**
+  - Diagnosis: `just ci-contracts-spectral` printed `::warning::spectral not installed - add it to the contracts toolchain (T04)` and exited 0 on every run, `main` included (pr-gate runs `38318194224`, `38358208128`). spectral was installed all along: `@stoplight/spectral-cli@6.16.3` is a devDependency of `packages/contracts`. `scripts/ci/contracts-spectral.sh` looked for it with `pnpm exec spectral` from the repo root, where it does not resolve. Spectral itself still ran inside `just lint` (`lint:openapi` on the bundle), so `just ci-parity` covered the rules.
+  - Fix: `packages/contracts/package.json` gains `lint:spectral` (redocly bundle + spectral at `--fail-severity=warn`), which `lint:openapi` now calls. `scripts/ci/contracts-spectral.sh` runs that script and lost both skips, so a missing spectral fails the gate. Linting the source files one by one, as the old script meant to, reports 3 errors: module files are `$ref` fragments without `servers`.
+  - Regression test `scripts/test/contracts-spectral.test.sh` (in `just test tooling`), modeled on `contracts-breaking.test.sh`: red before the fix (`FAIL  contracts-spectral: spectral did not lint the contract; output: ::warning::spectral not installed …`), green after, also under `/bin/bash` 3.2. With one `operationId` removed from `platform.yaml` (restored after), `just ci-contracts-spectral` exits 1 with `operation-operationId` and `ai-stylist-operation-id-required` errors.
+  - Docs: `.spectral.yaml` header, `packages/contracts/README.md`, the `justfile` recipe comments.
+- **Not done / in flight:** human-only text left stale: `planning/15-team-workflow-and-ai-agent-operations.md` §5 (`just test tooling` suite list lacks `contracts-spectral`) and the pr-gate step name "Spectral lint of the OpenAPI sources" (it lints the bundle now). The exact patch for both is in [`.claude/plans/2026-10-13-spectral-gate-human-edits-proposal.md`](../.claude/plans/2026-10-13-spectral-gate-human-edits-proposal.md), for the owner to `git apply`.
+- **Repository state:** buildable ✅ on the Mac. Exit 0 for each of: `just test tooling` (`PASS  contracts-spectral: …` among the suites), `just generate --check`, `pnpm turbo run lint --filter @ai-stylist/contracts` (uncached; "No results with a severity of 'warn' or higher found!"), `just format --check` and `just docs-check`. Not run: `just lint` in full (it stops at `android-lint` on this Mac, AI-33), `just typecheck` and `just arch-check` (no TypeScript or module code changed).
+- **New decisions / risks / questions filed:** None.
+- **Surprises / gotchas:** a "skip with a notice until the tool exists" branch outlives its purpose silently. `contracts-breaking.sh` still has such branches for oasdiff, but its step really runs (`events-breaking: OK`, oasdiff `No changes detected`).
+- **Next session starts:** merge this branch's pull request and check that pr-gate's Spectral step prints spectral's result, not a warning.
 
 ### 2026-10-13 (later) — Red `ios` run on `main` after the PR #20 merge: PostHog dSYM upload conflict fixed
 

@@ -32,7 +32,8 @@
     "gen": "../../tools/codegen/gen-ts.sh",
     "generate": "pnpm run gen",
     "lint": "eslint . && pnpm run lint:openapi",
-    "lint:openapi": "redocly bundle openapi/openapi.yaml --ext json --output node_modules/.cache/openapi.lint.json >/dev/null && spectral lint --fail-severity=warn --ruleset ../../.spectral.yaml node_modules/.cache/openapi.lint.json && if [ -n \"${OASDIFF_BASE:-}\" ]; then oasdiff breaking --fail-on WARN \"$OASDIFF_BASE\" node_modules/.cache/openapi.lint.json; else echo 'oasdiff: OASDIFF_BASE not set, skipping breaking-change check'; fi",
+    "lint:openapi": "pnpm run lint:spectral && if [ -n \"${OASDIFF_BASE:-}\" ]; then oasdiff breaking --fail-on WARN \"$OASDIFF_BASE\" node_modules/.cache/openapi.lint.json; else echo 'oasdiff: OASDIFF_BASE not set, skipping breaking-change check'; fi",
+    "lint:spectral": "redocly bundle openapi/openapi.yaml --ext json --output node_modules/.cache/openapi.lint.json >/dev/null && spectral lint --fail-severity=warn --ruleset ../../.spectral.yaml node_modules/.cache/openapi.lint.json",
     "typecheck": "tsc --noEmit",
     "test": "vitest run"
   },

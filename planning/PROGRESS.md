@@ -89,6 +89,23 @@ Log hygiene: when this log exceeds ~30 entries, move the oldest entries to `plan
 
 *(newest first)*
 
+### 2026-10-13 (spectral) — pr-gate's Spectral step never ran: fixed
+
+*Session on the owner's Mac, branch `fix/contracts-spectral-gate` off `main` @ `dc1b5b5`. Independent of the `fix/ios-dsym-upload-conflict` pull request (#21); whichever merges second rebases its ledger lines.*
+
+- **Phase / tasks worked:** P02 — follow-up to P02-T04 (spectral in the contracts pipeline).
+- **Status changes:** None.
+- **Done this session:**
+  - Diagnosis: `just ci-contracts-spectral` printed `::warning::spectral not installed - add it to the contracts toolchain (T04)` and exited 0 on every run, `main` included (pr-gate runs `38318194224`, `38358208128`). spectral was installed all along: `@stoplight/spectral-cli@6.16.3` is a devDependency of `packages/contracts`. `scripts/ci/contracts-spectral.sh` looked for it with `pnpm exec spectral` from the repo root, where it does not resolve. Spectral itself still ran inside `just lint` (`lint:openapi` on the bundle), so `just ci-parity` covered the rules.
+  - Fix: `packages/contracts/package.json` gains `lint:spectral` (redocly bundle + spectral at `--fail-severity=warn`), which `lint:openapi` now calls. `scripts/ci/contracts-spectral.sh` runs that script and lost both skips, so a missing spectral fails the gate. Linting the source files one by one, as the old script meant to, reports 3 errors: module files are `$ref` fragments without `servers`.
+  - Regression test `scripts/test/contracts-spectral.test.sh` (in `just test tooling`), modeled on `contracts-breaking.test.sh`: red before the fix (`FAIL  contracts-spectral: spectral did not lint the contract; output: ::warning::spectral not installed …`), green after, also under `/bin/bash` 3.2. With one `operationId` removed from `platform.yaml` (restored after), `just ci-contracts-spectral` exits 1 with `operation-operationId` and `ai-stylist-operation-id-required` errors.
+  - Docs: `.spectral.yaml` header, `packages/contracts/README.md`, the `justfile` recipe comments.
+- **Not done / in flight:** human-only text left stale: `planning/15-team-workflow-and-ai-agent-operations.md` §5 (`just test tooling` suite list lacks `contracts-spectral`) and the pr-gate step name "Spectral lint of the OpenAPI sources" (it lints the bundle now).
+- **Repository state:** buildable ✅ on the Mac. Exit 0 for each of: `just test tooling` (`PASS  contracts-spectral: …` among the suites), `just generate --check`, `pnpm turbo run lint --filter @ai-stylist/contracts` (uncached; "No results with a severity of 'warn' or higher found!"), `just format --check` and `just docs-check`. Not run: `just lint` in full (it stops at `android-lint` on this Mac, AI-33), `just typecheck` and `just arch-check` (no TypeScript or module code changed).
+- **New decisions / risks / questions filed:** None.
+- **Surprises / gotchas:** a "skip with a notice until the tool exists" branch outlives its purpose silently. `contracts-breaking.sh` still has such branches for oasdiff, but its step really runs (`events-breaking: OK`, oasdiff `No changes detected`).
+- **Next session starts:** merge this branch's pull request and check that pr-gate's Spectral step prints spectral's result, not a warning.
+
 ### 2026-10-13 — P00 signed and `DONE`; P02 gate repair, R2 dev bucket and clone detection; owner decisions DEC-79 to DEC-83
 
 *Lead session of 2026-10-12 to 2026-10-13 on the owner's Arch Linux machine, branch `artmins96/ai-31-p02-t12-gate-repair-allow-list-the-repo-root-env-in-the` at `aa50e96`, stacked on PR #19 (`docs/eval-measurement-validity`); `main` is `d4affb5`. Nothing was committed when this entry was written. Gate output, the live R2 run, the Linear changes and the GitHub settings are the lead session's report: they cannot be read from the tree.*

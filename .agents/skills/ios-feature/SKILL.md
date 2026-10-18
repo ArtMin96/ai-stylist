@@ -3,7 +3,7 @@ name: ios-feature
 description: Build or change native iOS features in apps/ios/ — SwiftUI screens, @Observable view models in Packages/Features, Core services behind AppServices protocols, APIData calls through the generated Swift client, config/xcconfig/project.yml changes, analytics and consent wiring, and the Swift codegen script tools/codegen/gen-swift.sh — with Swift 6 strict concurrency and Linux-testable models. Use for "iOS screen", "SwiftUI", "view model", "Swift package", "xcconfig", "project.yml", "just ios-check", or any path under apps/ios/, including the iOS lane of a cross-platform brief. Not for Android — use `android-feature`; not for starting a feature on both platforms — use `cross-platform-feature`; not for a missing or changed endpoint shape — use `api-contract-change` first; not for implementing the endpoint itself — use `backend-module`; not for the shared Maestro flows in e2e/ — use `e2e-device-testing`.
 metadata:
   modules:
-  last-reviewed: 2026-09-25
+  last-reviewed: 2026-10-18
   owner-agent: ios-engineer
 ---
 
@@ -49,46 +49,51 @@ metadata:
 2. Search before write (`agent-operating-contract` step 4):
    `rg -n -i '<term>|<synonym>' apps/ios/Packages packages/contracts/gen/swift-client/Sources`.
    Reuse or extend; one copied look-alike view or service is a defect.
-3. Contract missing or wrong → stop BLOCKED for `contracts-engineer` (`api-contract-change`);
+3. UI gate (before coding a new screen or UI element): run `ui-prototype-first` with
+   `ui-designer`, which checks `DESIGN.md` and the canvas, prototypes anything new and records the
+   owner's approval in `.impeccable/surfaces/<screen>.md`. No approved brief → stop BLOCKED. Use
+   `DESIGN.md` tokens only, never a literal style value, and request the `ui-designer` review before
+   merge. In a lane, the lead ran the gate and the brief names the surface brief.
+4. Contract missing or wrong → stop BLOCKED for `contracts-engineer` (`api-contract-change`);
    resume after the regenerated client is committed.
-4. Layering:
+5. Layering:
    - API access only in `apps/ios/Packages/Core/Sources/APIData`, behind a protocol in
      `AppServices`; copy `VersionService.swift` and `VersionServiceTests.swift` for a new endpoint.
    - Screen logic in a `<Name>Model` target (`@Observable`, `@MainActor`, no SwiftUI import) so it
      is unit-testable on Linux; the `<Name>Feature` target only renders model state.
    - Adapters are built only in `apps/ios/App/CompositionRoot.swift`; features receive `AppServices`.
    - No business rules in the client: decisions come from the API.
-5. A new screen: add `<Name>Model`, `<Name>Feature` and a `tests/<Name>ModelTests` target to
+6. A new screen: add `<Name>Model`, `<Name>Feature` and a `tests/<Name>ModelTests` target to
    `apps/ios/Packages/Features/Package.swift`, with `<Name>Feature` inside the `#if !os(Linux)`
    block; add `<Name>Feature` to the `AIStylist` target's Features products and the test target
    to the `AIStylist-Dev` scheme in `apps/ios/project.yml`; then `just ios-project` on a Mac.
    Never edit the generated `.xcodeproj`. The entry point is `apps/ios/App/AIStylistApp.swift`,
    which shows only `HomeScreen`; there is no navigation shell, so a second reachable screen needs
    the nav-shell task first (Stop).
-6. Strictness: Swift 6 mode, complete concurrency, warnings as errors, MainActor default. Never add
+7. Strictness: Swift 6 mode, complete concurrency, warnings as errors, MainActor default. Never add
    `@unchecked Sendable`, `nonisolated(unsafe)`, `@preconcurrency import`, force unwraps, `try!` or
    IUOs, and never relax a setting, lint rule or ban (not even temporarily); a new safety setting
    goes in `apps/ios/Config/Base.xcconfig` and every `Package.swift` `strictSettings`.
-7. Accessibility: labels, traits, Dynamic Type, 44 pt targets, reduced motion. Accessibility
+8. Accessibility: labels, traits, Dynamic Type, 44 pt targets, reduced motion. Accessibility
    identifiers and asserted strings equal Android's `testTag`s and strings byte for byte, taken
    from the brief; never read `apps/android/**` for parity (in a worktree it is the pre-feature
    base). List every new id and string in the report's Parity block.
-8. Analytics: no Swift taxonomy is generated. Add a factory next to `AnalyticsEvent.appOpened` in
+9. Analytics: no Swift taxonomy is generated. Add a factory next to `AnalyticsEvent.appOpened` in
    `apps/ios/Packages/Core/Sources/Analytics/ConsentGatedAnalytics.swift`, with `name` copied byte
    for byte from `packages/contracts/events/analytics/events.json`; a new event needs the contract
    lane first. Consent defaults OFF; no sensitive data in events, logs or fixtures.
    `API_BASE_URL` stays host-only; config holds no secrets.
-9. Registry values (reason codes, entitlements, units): import the generated `AIStylistKernel`
-   through `.product(name: "AIStylistKernel", package: "swift-client")` in the target the brief
-   or task names; never copy a value (DEC-55). No target consumes it yet: if the task does not say
-   which target gets it, stop and ask.
-10. Tests: Swift Testing in `apps/ios/Packages/<Pkg>/tests/<Target>Tests/`, behaviour-level, fakes
+10. Registry values (reason codes, entitlements, units): import the generated `AIStylistKernel`
+    through `.product(name: "AIStylistKernel", package: "swift-client")` in the target the brief
+    or task names; never copy a value (DEC-55). No target consumes it yet: if the task does not say
+    which target gets it, stop and ask.
+11. Tests: Swift Testing in `apps/ios/Packages/<Pkg>/tests/<Target>Tests/`, behaviour-level, fakes
     of the `AppServices` protocols, synthetic data. A bug fix is test-first: `just test-regression`
     cannot run Swift, so write the test, run `just test ios` and keep the failing line, fix, rerun
     and keep the passing line.
-11. `tools/codegen/gen-swift.sh` changed → stop after the edit and report it: `just generate`
+12. `tools/codegen/gen-swift.sh` changed → stop after the edit and report it: `just generate`
     rewrites every generated tree, so the lead or `contracts-engineer` runs it.
-12. Self-review before reporting (the bugs a reviewer will not see): model ownership (`@State` for
+13. Self-review before reporting (the bugs a reviewer will not see): model ownership (`@State` for
     an `@Observable` model the view creates, `@StateObject` for a legacy `ObservableObject`,
     `@ObservedObject` only for a passed-in model); `[weak self]` in stored or escaping closures;
     stored `Task`s cancelled with their owner (or `.task {}`), `CancellationError` not shown as a
@@ -114,7 +119,7 @@ On Linux the SwiftUI views and the app target are never compiled (Xcode steps pr
 
 ## Output
 
-The `agent-operating-contract` report. Self-review lists step 12's items. Parity block: yes for a
+The `agent-operating-contract` report. Self-review lists step 13's items. Parity block: yes for a
 client feature. Simulator screenshots only when a Mac run exists (never real user photos or
 measurements).
 
@@ -141,5 +146,6 @@ Adjacent: `android-feature` (same states, strings and ids on Android; in a lane,
 sources), `cross-platform-feature` (the lead's brief and parity review win), `api-contract-change`
 (shape first; regenerates the Swift client), `backend-module` (the endpoint), `e2e-device-testing`
 (flows in `e2e/`, run by `test-engineer`), `release-readiness` (TestFlight is human-only),
-`performance-profiling` (device traces). This skill owns `apps/ios/**` and
-`tools/codegen/gen-swift.sh`.
+`performance-profiling` (device traces), `ui-prototype-first` (the UI gate in step 3, run by
+`ui-designer`, who owns `DESIGN.md` and the surface briefs and reviews the built UI before merge).
+This skill owns `apps/ios/**` and `tools/codegen/gen-swift.sh`.

@@ -3,3 +3,5 @@
 # exempts every path under that prefix. "#" starts a comment; blank lines are ignored.
 assets/3d/	P04-T01
 apps/api/src/jobs/index.ts	P02-T08
+# No phase task covers the design-system setup; the id is its Linear issue (the parser reads field 1 only).
+.impeccable/surfaces/	AI-183

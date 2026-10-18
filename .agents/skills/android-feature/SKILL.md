@@ -3,7 +3,7 @@ name: android-feature
 description: Build or change native Android features in apps/android/ — Jetpack Compose screens, ViewModels with StateFlow in :feature modules, repositories in :core:data over the generated Kotlin client, AppContainer wiring, build types/config, Gradle convention plugins and the version catalog, analytics and consent wiring, and the Kotlin codegen script tools/codegen/gen-kotlin.sh — with warnings-as-errors, Android Lint, detekt and Robolectric tests. Use for "Android screen", "Compose", "ViewModel", "Gradle module", "Robolectric", "just android-check", or any path under apps/android/, including the Android lane of a cross-platform brief. Not for iOS — use `ios-feature`; not for starting a feature on both platforms — use `cross-platform-feature`; not for a missing or changed endpoint — use `api-contract-change` first; not for the shared Maestro flows in e2e/ — use `e2e-device-testing`.
 metadata:
   modules:
-  last-reviewed: 2026-09-25
+  last-reviewed: 2026-10-18
   owner-agent: android-engineer
 ---
 
@@ -53,48 +53,53 @@ metadata:
 2. Search before write (`agent-operating-contract` step 4):
    `rg -n -i '<term>|<synonym>' apps/android packages/contracts/gen/kotlin-client`. Reuse or
    extend; one copied look-alike composable or repository is a defect.
-3. Contract missing or wrong → stop BLOCKED for `contracts-engineer` (`api-contract-change`);
+3. UI gate (before coding a new screen or UI element): run `ui-prototype-first` with
+   `ui-designer`, which checks `DESIGN.md` and the canvas, prototypes anything new and records the
+   owner's approval in `.impeccable/surfaces/<screen>.md`. No approved brief → stop BLOCKED. Use
+   `DESIGN.md` tokens only, never a literal style value, and request the `ui-designer` review before
+   merge. In a lane, the lead ran the gate and the brief names the surface brief.
+4. Contract missing or wrong → stop BLOCKED for `contracts-engineer` (`api-contract-change`);
    resume after the regenerated client is committed.
-4. Layering (the `checkModuleGraph` allow-list enforces it):
+5. Layering (the `checkModuleGraph` allow-list enforces it):
    - Only `:core:data` depends on `:core:api-client`; it maps generated DTOs to domain types.
      Copy `VersionRepository.kt`, `ApiVersion.kt` and `VersionRepositoryTest.kt` for a new endpoint.
    - A feature module holds its ViewModel (`StateFlow` UI state) and Compose screen; features never
      depend on each other.
    - `AppContainer` is the only place that reads `BuildConfig` or builds adapters.
    - No business rules in the client: decisions come from the API.
-5. A new feature module: register it in `apps/android/settings.gradle.kts`, apply the convention
+6. A new feature module: register it in `apps/android/settings.gradle.kts`, apply the convention
    plugin, and add its edges to `ALLOWED_MODULE_EDGES` in `RootConventionPlugin.kt` (called out as
    its own reviewed change in the report). A new JVM `:core:*` module also needs `:<module>:test`
    in the `android-test`, `android-check` and `android-deps-lock` recipes, or its tests never run;
    that is a `justfile` change for `tooling-engineer`: stop and report it.
-6. Entry point: `MainActivity.kt` calls `setContent { … HomeRoute(…) }` and there is no navigation
+7. Entry point: `MainActivity.kt` calls `setContent { … HomeRoute(…) }` and there is no navigation
    library or `NavHost`. A second reachable screen needs the nav-shell task first, and the
    navigation dependency needs the human's grant (Stop).
-7. Strictness: `allWarningsAsErrors`, Android Lint `warningsAsErrors` with no baseline, detekt,
+8. Strictness: `allWarningsAsErrors`, Android Lint `warningsAsErrors` with no baseline, detekt,
    ktlint via Spotless. Never relax them or add a blanket `@Suppress`.
-8. Dependencies: versions only in the catalog; after a change run `just android-deps-lock`, review
+9. Dependencies: versions only in the catalog; after a change run `just android-deps-lock`, review
    the diff, and list the lockfiles with `verification-metadata.xml` under
    `Must be committed together:` (only when the task grants the change).
-9. Accessibility: content descriptions, semantics roles, 48 dp targets, font scaling. Strings in the
-   module's res/values/strings.xml; each id is a `const val` in a `<Name>TestTags` object (copy
-   `HomeTestTags` in `HomeScreen.kt`). Strings and ids equal iOS byte for byte, taken from the
-   brief; never read `apps/ios/**` for parity (in a worktree it is the pre-feature base).
-10. Analytics through the port with names from the generated `AnalyticsTaxonomy`
+10. Accessibility: content descriptions, semantics roles, 48 dp targets, font scaling. Strings in the
+    module's res/values/strings.xml; each id is a `const val` in a `<Name>TestTags` object (copy
+    `HomeTestTags` in `HomeScreen.kt`). Strings and ids equal iOS byte for byte, taken from the
+    brief; never read `apps/ios/**` for parity (in a worktree it is the pre-feature base).
+11. Analytics through the port with names from the generated `AnalyticsTaxonomy`
     (`packages/contracts/gen/kotlin-client/analytics/src/main/kotlin/app/aistylist/contracts/analytics/AnalyticsTaxonomy.kt`);
     a new event needs the contract lane first. Consent defaults OFF; no sensitive data in events,
     logs or fixtures. `API_BASE_URL` stays host-only; no secrets in build config.
-11. Registry values (reason codes, entitlements, units): add
+12. Registry values (reason codes, entitlements, units): add
     `packages/contracts/gen/kotlin-client/kernel/src/main/kotlin` as a `kotlin.srcDir` in the
     module the brief or task names, copying the block in
     `apps/android/core/analytics/build.gradle.kts`, and import `app.aistylist.contracts.kernel`;
     never copy a value (DEC-55). No module has it yet: if the task does not name one, stop and ask.
-12. Tests in the module's src/test/kotlin (documented test-placement exception): ViewModel tests
+13. Tests in the module's src/test/kotlin (documented test-placement exception): ViewModel tests
     with fakes, Robolectric for Compose screens, synthetic data. A bug fix is test-first:
     `just test-regression` cannot run Kotlin, so write the test, run `just test android` and keep
     the failing line, fix, rerun and keep the passing line.
-13. `tools/codegen/gen-kotlin.sh` changed → stop after the edit and report it: `just generate`
+14. `tools/codegen/gen-kotlin.sh` changed → stop after the edit and report it: `just generate`
     rewrites every generated tree, so the lead or `contracts-engineer` runs it.
-14. Self-review before reporting (the bugs a reviewer will not see): `CancellationException`
+15. Self-review before reporting (the bugs a reviewer will not see): `CancellationException`
     rethrown from every `catch`/`runCatching` around suspend code; `LaunchedEffect` keys cover every
     changing input; `rememberSaveable` (or `SavedStateHandle`) for state that must survive rotation
     and process death; `collectAsStateWithLifecycle` and `viewModelScope`, never `GlobalScope`;
@@ -120,7 +125,7 @@ and `just ci-parity` run in the lead's checkout before the PR.
 
 ## Output
 
-The `agent-operating-contract` report. Self-review lists step 14's items. Parity block: yes for a
+The `agent-operating-contract` report. Self-review lists step 15's items. Parity block: yes for a
 client feature. Emulator screenshots only if a run exists (no real user photos or measurements).
 
 Done checklist: every journey state handled · DTOs only via `:core:data` · module graph and
@@ -147,5 +152,6 @@ sources), `cross-platform-feature` (the lead's brief and parity review win), `ap
 (shapes first; regenerates the Kotlin client), `backend-module` (the endpoint),
 `e2e-device-testing` (Maestro flows, run by `test-engineer`), `tooling-ci` (the `justfile`
 recipes that list Gradle tasks), `release-readiness` (Play track, human-only),
-`performance-profiling` (budgets). This skill owns `apps/android/**` and
-`tools/codegen/gen-kotlin.sh`.
+`performance-profiling` (budgets), `ui-prototype-first` (the UI gate in step 3, run by
+`ui-designer`, who owns `DESIGN.md` and the surface briefs and reviews the built UI before merge).
+This skill owns `apps/android/**` and `tools/codegen/gen-kotlin.sh`.

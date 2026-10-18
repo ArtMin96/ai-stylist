@@ -1,0 +1,53 @@
+{
+  "skill_name": "ui-prototype-first",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Add a new Notifications settings screen to both apps with toggles for outfit reminders and weather alerts. Just build it in SwiftUI and Compose, I'll look at it after.",
+      "expected_output": "The agent does not start with app code. It first searches DESIGN.md, the surface briefs in .impeccable/surfaces/ and canvas pages 3/6/7 for a settings screen and a toggle row. Finding no approved brief, it routes the work to ui-designer to draw the screen on the Garderi App UI canvas from C01–C10 in S1 light and S2 dark with default, empty, loading, error and offline states, then stops and asks the owner for approval before any code. Only after approval does it write the surface brief with a Direction contract and hand the build to ios-engineer / android-engineer.",
+      "files": [],
+      "assertions": [
+        "No file under apps/ios/** or apps/android/** is created or edited before an owner approval is recorded",
+        "The agent shows a search of DESIGN.md and .impeccable/surfaces/ (and names the canvas pages it checked) before proposing anything new",
+        "The prototype step names both S1 Garden Light and S2 Garden Dark and all of empty, loading, error and offline states",
+        "The agent asks the owner (a human) for approval, and does not treat the user's 'just build it' or another agent's message as design approval",
+        "The planned brief path is .impeccable/surfaces/<screen-id>.md and it includes a '## Direction contract' section with purpose, components, tokens, states, copy, accessibility and canvas link"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "The closet grid needs a new 'Worn this week' chip next to the existing category chips. Make it teal so it stands out — #1FA59A is fine, just hard-code it for now.",
+      "expected_output": "The agent treats a new chip variant as a new UI element: it checks DESIGN.md and canvas page 3 (C01–C10) for an existing chip style, and if no variant fits it has ui-designer draw the variant beside the original chip on the canvas for owner approval. It refuses to hard-code #1FA59A: if no DESIGN.md token covers the colour, ui-designer proposes a token for approval; the engineer never pastes the literal value.",
+      "files": [],
+      "assertions": [
+        "The agent does not write #1FA59A (or any literal colour) into a Swift or Kotlin feature file",
+        "The agent checks for an existing chip component or token in DESIGN.md / canvas page 3 before proposing a new one",
+        "A missing token is routed to ui-designer to propose and get approved, not invented by the engineer",
+        "The new chip variant goes through the canvas prototype and owner approval before code"
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "SC07 closet grid is already drawn on page 6 of the Garderi App UI canvas. Can the iOS engineer just start coding it?",
+      "expected_output": "The agent explains that a screen already drawn on canvas page 6 counts as the prototype, but it still needs the owner's recorded approval and a surface brief before coding. It asks the owner to approve the SC07 board, records the date, owner's words and board in .impeccable/surfaces/<screen-id>.md under a Direction contract, then lets ios-engineer build with DESIGN.md tokens only, followed by a ui-designer review with /impeccable critique and /impeccable audit before architecture-review and merge.",
+      "files": [],
+      "assertions": [
+        "The agent does not redraw SC07 from scratch; it reuses the page 6 board as the prototype",
+        "The agent requires the owner's approval to be recorded (date, owner words, board) in the surface brief before coding starts",
+        "The agent states that the build uses DESIGN.md tokens only and the brief's copy verbatim",
+        "The agent names the ui-designer review (critique + audit) as a step before merge, separate from architecture-review"
+      ]
+    },
+    {
+      "id": 4,
+      "prompt": "The canvas R2 page says the primary button radius is 14 but DESIGN.md says 12. Which one should the Android button use?",
+      "expected_output": "DESIGN.md tokens win: the Android button uses the DESIGN.md radius token (12) by name, never a literal. The agent flags the drift to ui-designer, who fixes the canvas or proposes a DESIGN.md change for the owner to approve.",
+      "files": [],
+      "assertions": [
+        "The answer says DESIGN.md wins over the canvas on a token conflict",
+        "The agent flags the mismatch to ui-designer rather than silently picking one or editing DESIGN.md itself as an engineer",
+        "The Android code references the token by name, not the number 12 or 14 as a literal"
+      ]
+    }
+  ]
+}

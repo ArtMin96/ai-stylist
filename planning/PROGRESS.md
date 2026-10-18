@@ -46,7 +46,7 @@ Rules:
 **Tracking (Linear, as the close-out session left it on 2026-10-13):**
 - P02 (its Linear project: [P02 — Repo foundations and CI](https://linear.app/ai-stylist-app/project/p02-repo-foundations-and-ci-f1943b23882e)): AI-31, AI-21, AI-36, AI-6 and AI-27 are `Done`. AI-20 (Renovate) and AI-26 (T18 close-out) close when the pull request of the 2026-10-13 (close-out) entry merges.
 - P00: T01…T10 are AI-34, AI-35, AI-37, AI-38, AI-39, AI-40, AI-43, AI-44, AI-45, AI-46.
-- Deferred work, new project "First minimal release — environments, accounts and legal": AI-16 (the rest of T07), AI-22 and AI-23 (T14, T15), AI-30, AI-32 (branch protection after the organization move), AI-38, AI-39 and AI-40 (the legal part of P00), AI-41 (observability follow-ups).
+- Deferred work, new project "First minimal release — environments, accounts and legal": AI-16 (the rest of T07), AI-22 and AI-23 (T14, T15), AI-30 (overlaps DEC-85; the owner may close it after the merge, its file changes moved to AI-182), AI-32 (branch protection after the organization move), AI-38, AI-39 and AI-40 (the legal part of P00), AI-41 (observability follow-ups).
 - Owed in P03: AI-42 (outbox follow-ups, before P03-T10); AI-28, AI-29 and AI-33 (the Mac and device checks, at the first P03 client task that needs the Mac). AI-47 is agent-operations housekeeping.
 
 **First command, always:** `just bootstrap && just doctor && just ci-parity` — must be green before any other work. Last local green: 2026-10-13 on Linux, on the uncommitted tree of the AI-31 branch (the lead session's report: `just doctor` exit 0 with one warning, `just ci-parity` exit 0 in 606 s). Nobody has run the full gate on a developer machine since the merges; the gate of record is CI on `main` @ `3335afe`. On Linux the gate skips `ios-build` and `ios-test`. On the Mac `just lint` stopped at `android-lint` on 2026-10-13 (the macOS Android checksum, AI-33), so the full gate cannot pass there yet. The working-tree secret scan skips the gitignored repo-root `.env` (AI-31), so real keys there do not fail `just security-scan`.
@@ -63,11 +63,12 @@ Next actions, in order:
 
 **Human-only steps outstanding** (agents stop at config + `.env.example` keys):
 - **Owner, next:** merge the close-out pull request; accept P02 or name what is missing; run `just secrets-sync` on the Mac; apply the wording patch of [`.claude/plans/2026-10-13-spectral-gate-human-edits-proposal.md`](../.claude/plans/2026-10-13-spectral-gate-human-edits-proposal.md); set `AGENT_MAY_EDIT_POLICY=1` for one session when the pending proposals of AI-47 should be applied; decide when the repository goes private again (DEC-82 sets no end date; from then on each Renovate pull request uses paid Actions minutes); say when P00 is `ACCEPTED`.
+- **Brand v1 (Linear P-AI-4):** review identity v1 (AI-180), register the domains (AI-176), order the lawyer's clearance (AI-177), apply `.claude/plans/2026-10-15-garderi-name-proposal.md` (AI-179).
 - **Deferred to the first minimal release (DEC-79, DEC-80), no longer steps of P00 or P02:** counsel engagement and LR-01…LR-12 (AI-38, AI-39, AI-40); the Hetzner server, the staging and production PostgreSQL environments and the staging host `https://staging-api.ai-stylist.app` (AI-16); the staging and production R2 buckets and the Cloudflare WAF; the EU production accounts for PostHog and Grafana and the rest of the vendor side of observability, that is accounts, dashboards, alert rules and the sync (AI-41 holds the deferred review items). They live in the Linear project "First minimal release — environments, accounts and legal" and in the "First minimal release" row of "Checklist by phase" in `docs/SERVICES-SETUP.md`. The date of that release is not set.
 - **Moved to the first P03 client task that needs the Mac (DEC-81):** the Mac and device checks named above (AI-28, AI-29, AI-33).
 - **Closed by decision, not verified (DEC-84):** whether the Grafana Cloud test stack landed on the free plan after its trial ended on 2026-10-11 (`docs/SERVICES-SETUP.md` §11). The owner counted the check as done on 2026-10-13 without reading the portal, so a charge on that stack is possible until someone does. The test accounts stay in use for development (DEC-80).
 - Branch protection on `main` waits for the move to a GitHub organization (DEC-77, DEC-82; AI-32). Recorded in DEC-82 as switched on through the GitHub API on 2026-10-12: secret scanning, push protection, Dependabot alerts, private vulnerability reporting, collaborators-only interaction limits, and approval for the workflow runs of all outside contributors.
-- Stores: Apple Developer, Google Play and the permanent bundle id (OQ-18) stay deferred by the owner (DEC-63; AI-22, AI-23).
+- Stores: Apple Developer and Google Play enrollment and the signing and upload lanes of OQ-18 stay deferred by the owner (DEC-63; AI-22, AI-23); the bundle id is decided, `app.garderi.mobile` (DEC-85), and lands with the rename pass AI-182 before the first signed build.
 - Still open from earlier entries: the owner picks 2–3 candidates from [`.claude/plans/2026-10-09-garment-3d-research.md`](../.claude/plans/2026-10-09-garment-3d-research.md) for the hands-on 3D test (2026-10-09 entry; no provider money is spent before that); decide whether to keep or delete the Expo account and project (2026-09-22). The ledger records no decision on either.
 - Done since the last version of this list: the Renovate GitHub App (AI-20, 2026-10-13: its "Dependency Dashboard" is issue #25); the `CODEOWNERS` handles (AI-6, 2026-10-12); the Cloudflare R2 dev bucket with EU jurisdiction and its token (AI-21).
 
@@ -88,6 +89,46 @@ Log hygiene: when this log exceeds ~30 entries, move the oldest entries to `plan
 ## Session handoff log
 
 *(newest first)*
+
+### 2026-10-18 (design) — App UI designed in Claude Design; UI design-system governance set up
+
+*Session on the owner's Linux machine, branch `design/ui-system-setup` off `main` @ `09b506e`; nothing committed (the owner commits). Design and docs only; no product code changed.*
+
+- **Phase / tasks worked:** none (Brand v1: AI-180 identity v1, AI-183 tokens ADR; ahead of P03 client UI).
+- **Status changes:** None.
+- **Done this session:**
+  - Design, outside the repository (owner-private Claude Design canvases): logo chosen, **P2 Garden Viridian**. "Garderi Colour Schemes" https://claude.ai/artifact/Db28dfjbyvJgksMQFrXhVA (palette, schemes S1–S7, typography Young Serif + Figtree). "Garderi App UI" https://claude.ai/artifact/3PfhQn2y9YKXtBz2fc1GeE, 9 pages: overview + app map, foundations, components C01–C10, wireframes W1–W8, earlier key screens, all screens SC01–SC15 (59 screens, light + dark), clickable prototype P01–P18, avatar/selfie/try-on AV1–TR2 (pending the DEC-76 go/no-go and legal sign-off), design rules R1–R6.
+  - Owner decisions recorded on the canvas: Capture opens the camera directly; saved/scheduled outfits are a list by date; six separate availability states (the design answer to OQ-26); passkey sign-ups require an email for recovery; core loop first.
+  - Repository (uncommitted): `DESIGN.md` (token master) and `PRODUCT.md` at the root; `.impeccable/config.json` (impeccable hooks off); new agent `.claude/agents/ui-designer.md` + its row in `.claude/agents/README.md`; `ios-engineer.md` and `android-engineer.md` preload `ui-prototype-first`; new skill `.agents/skills/ui-prototype-first/` (+ `evals/`, the `.claude/skills/ui-prototype-first` symlink, the row in `.agents/skills/README.md`); `ui-designer` added to the owner agents of `agent-operating-contract` and `code-quality`; UI invariants in `.claude/rules/ios.md` and `android.md`; new `.claude/rules/design-system.md`; UI-gate steps in the `ios-feature`, `android-feature` and `cross-platform-feature` skills; `.gitignore` impeccable block; `tools/docs/planned-paths.txt` entry `.impeccable/surfaces/` (AI-183).
+  - [ADR-0011](../docs/adr/0011-design-system-source-of-truth-and-impeccable.md) (design-system source of truth and the impeccable plugin) + its row in [`docs/adr/README.md`](../docs/adr/README.md): `Accepted` by the owner 2026-10-18; resolves AI-183.
+  - The rejected logo folders `artifacts/brand/round2` and `round3` (gitignored, 1,207 files) were deleted on the owner's request.
+- **Not done / in flight:**
+  - ADR-0011's decision-log entry is DEC-86 in doc 16, added with the owner's authorization on 2026-10-18.
+  - Engineering follow-ups, none started: an iOS design-system target in `apps/ios/Packages/Features`; an Android `:core:designsystem` module; `just generate` emitting the tokens from `DESIGN.md`, with a drift gate; lint bans on literal colours and sizes in feature UI; screenshot tests; a contrast lint.
+  - The first-release feature list is still undecided (DEC-79).
+- **Repository state:** buildable ✅ (no code changed). `just docs-check` (full, after this entry) → `docs-check: ok (0 errors, 0 warning(s))`. Not run: `just ci-parity`, `just ios-check`, `just android-check` and the tests (design and docs changes only).
+- **New decisions / risks / questions filed:** ADR-0011 and DEC-86 (design-token master, impeccable adopted with hooks off).
+- **Surprises / gotchas:** impeccable is a user-scope plugin, and its engine binary was downloaded to `~/.impeccable`: a supply-chain item for a later security review.
+- **Next session starts:** review and merge PR for `design/ui-system-setup` (closes AI-183). Then work the umbrella AI-193 (Linear milestone "Design system" in Brand v1; children titled "Design system · …") in order: AI-187 (owner approves the canvas page-6 screens → surface briefs in `.impeccable/surfaces/`), AI-189 (token generator from `DESIGN.md` via `just generate` + drift gate), AI-186 (iOS DesignSystem target) and AI-188 (Android `:core:designsystem`), AI-192 (contrast check), then AI-191 (lint ban on literal styles) and AI-190 (screenshot tests). No visible P03 screen is coded before its surface brief exists (ui-prototype-first). This session wrote no app code.
+
+### 2026-10-15 (brand) — Product name chosen (Garderi), visual identity in progress
+
+*Session on the owner's Linux machine, on `main` @ `09b506e`; nothing committed. No product code changed.*
+
+- **Phase / tasks worked:** none (OQ-01, product name and brand, ahead of P13).
+- **Status changes:** None.
+- **Done this session:**
+  - Name screen of 127 candidates: registry RDAP for .com/.app/.ai, App Store (US, GB) and Google Play collisions, and a trademark knockout (TMview JSON API, Justia for US, WIPO Global Brand Database). The owner chose **Garderi** on 2026-10-14. On that day garderi.com, .app and .ai were unregistered at standard price, no store app used the name, and no identical mark was found. Near marks: GARDERA (EUTM 019373119, cl. 9/36), GARDER (US 5092806, cl. 9/42). French "garderie" means daycare. A knockout is not a legal clearance.
+  - New `.agents/brand-context.md` (the brand skills' shared context; items marked *proposed* await the owner).
+  - New [`.claude/plans/2026-10-15-garderi-name-proposal.md`](../.claude/plans/2026-10-15-garderi-name-proposal.md), `PROPOSED`: the human-only prose edits for `CLAUDE.md`, SPINE, doc 00 and `planning/README.md` (7 changed lines in 4 files; `git apply --check` clean against this tree).
+  - The 29 untracked brand and marketing skills moved from `.claude/skills/` to `~/.claude/skills/`; `git status .claude/skills` is clean.
+  - Linear: project "Brand v1" (P-AI-4) with AI-175 to AI-185. AI-175 the DEC record and AI-180 identity v1 are In Progress; AI-176 domains, AI-177 lawyer clearance and AI-179 apply the proposal are the owner's; AI-181 land the brand book and masters in the repo; AI-182 rename pass; AI-183 tokens ADR; AI-184 app icon and splash; AI-185 OQ-42.
+  - Identity v1 concept, outside the repository: a painted logo (an ultramarine brushstroke arch with a watercolour sky that changes with weather, time and occasion), the pigment palette, Bodoni Moda + Figtree.
+- **Not done / in flight:** identity v1 (AI-180): the painted mark is still rendering; app icons, banners, alternate concepts and the brand book are not started. Nothing is in the repository yet.
+- **Repository state:** buildable ✅ (no code changed; changed: `.agents/brand-context.md`, doc 16, the proposal file and both PROGRESS files). `just docs-check` (full, after this entry) → `docs-check: ok (0 errors, 0 warning(s))`.
+- **New decisions / risks / questions filed:** [DEC-85](16-risks-open-questions-and-decision-log.md) (product name Garderi; future bundle id / applicationId `app.garderi.mobile`, applied by a rename pass before the first signed build; no code renamed). OQ-01 resolved by it; OQ-18 updated (bundle id settled, the signing and upload lanes stay open); OQ-42 added (hairstyle and makeup scope, before P15 planning).
+- **Surprises / gotchas:** AI-30 (the OQ-18 bundle-id ticket) overlaps DEC-85: its AC-1 and AC-3 are met once DEC-85 merges, and its file changes moved to AI-182. The owner may close it after the merge.
+- **Next session starts:** the owner reviews identity v1 on the private design-system page https://claude.ai/artifact/V8n6st4hg7huo76zBZyEt9 ; the owner does AI-176, AI-177 and AI-179; then AI-181.
 
 ### 2026-10-13 (close-out) — P02 `DONE`: close-out evidence collected, Renovate installed (AI-26, AI-20)
 

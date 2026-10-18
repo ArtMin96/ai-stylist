@@ -54,3 +54,19 @@ gitleaks-report.json
 # Claude Code agent worktrees and personal settings (local only)
 .claude/worktrees/
 .claude/settings.local.json
+
+# impeccable design plugin runtime files (per-developer or regenerated). Tracked:
+# .impeccable/config.json, design.json, surfaces/, critique/ and live/config.json (upstream
+# treats live/config.json as project config).
+# impeccable-ignore-start
+.impeccable/config.local.json
+.impeccable/hook.cache.json
+.impeccable/hook.pending.json
+.impeccable/*.png
+.impeccable/review/
+.impeccable/questions/
+.impeccable/live/*
+!.impeccable/live/config.json
+.impeccable/mocks/
+.impeccable/build/
+# impeccable-ignore-end

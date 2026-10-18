@@ -5,7 +5,7 @@ user-invocable: false
 metadata:
   modules:
   last-reviewed: 2026-09-26
-  owner-agent: android-engineer,api-engineer,architecture-reviewer,contracts-engineer,docs-maintainer,ios-engineer,ml-engineer,platform-engineer,recommendation-engineer,release-manager,security-privacy-reviewer,test-engineer,tooling-engineer
+  owner-agent: android-engineer,api-engineer,architecture-reviewer,contracts-engineer,docs-maintainer,ios-engineer,ml-engineer,platform-engineer,recommendation-engineer,release-manager,security-privacy-reviewer,test-engineer,tooling-engineer,ui-designer
 ---
 
 # Agent Operating Contract
@@ -156,7 +156,8 @@ Blockers: <what — who unblocks> | none
   (or is under `Not run:` only because it is the lead's worktree gate).
 - PARTIAL: some criteria met; the rest is named under `Not run:` or `Blockers:`.
 - BLOCKED: you stopped at a stop condition before finishing; `Blockers:` says who unblocks it.
-- Reviewers (`architecture-reviewer`, `security-privacy-reviewer`, `release-manager`) use the same
+- Reviewers (`architecture-reviewer`, `security-privacy-reviewer`, `release-manager`, and
+  `ui-designer` for its review job) use the same
   header line with their verdict word in place of `DONE | PARTIAL | BLOCKED`
   (`## <task> — APPROVE | CHANGES REQUESTED`, or `## <task> — GO | NO-GO`; `BLOCKED` when the
   review could not finish), then the same `Agent:` line, then the verdict sections of their skill,

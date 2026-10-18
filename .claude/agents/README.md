@@ -16,8 +16,8 @@ workflow, search-before-write procedure, base check, stop rules and the report f
 
 | Agent | Primary area (summary; `<ownership>` is authoritative) | Preloaded skills (besides the contract) | Color | Verify with |
 | --- | --- | --- | --- | --- |
-| [`ios-engineer`](ios-engineer.md) | `apps/ios/**`, `tools/codegen/gen-swift.sh` | `ios-feature` | blue | `just ios-check`, `just test ios`; macOS: `just ios-build`, `just ios-test`, `just ios-e2e` |
-| [`android-engineer`](android-engineer.md) | `apps/android/**`, `tools/codegen/gen-kotlin.sh` | `android-feature` | green | `just android-check`, `just test android`; emulator: `just android-e2e` |
+| [`ios-engineer`](ios-engineer.md) | `apps/ios/**`, `tools/codegen/gen-swift.sh` | `ios-feature`, `ui-prototype-first` | blue | `just ios-check`, `just test ios`; macOS: `just ios-build`, `just ios-test`, `just ios-e2e` |
+| [`android-engineer`](android-engineer.md) | `apps/android/**`, `tools/codegen/gen-kotlin.sh` | `android-feature`, `ui-prototype-first` | green | `just android-check`, `just test android`; emulator: `just android-e2e` |
 | [`api-engineer`](api-engineer.md) | nine API modules (identity, profile, avatar, closet, media, billing, notifications, admin, assistant), the composition root, `apps/api/tests/http.test.ts`, `packages/test-support/**` | `backend-module`, `entitlements-billing`, `notifications-delivery`, `admin-moderation`, `assistant-chat`, `data-lifecycle` | cyan | `just test <module>`, `just test api`, `just test-regression`, `just lint`, `just typecheck`, `just arch-check` |
 | [`platform-engineer`](platform-engineer.md) | `apps/api/src/platform/**`, `apps/api/src/jobs/**`, `packages/db/**`, `apps/api/tests/migrations/**`, `packages/seed-data/**`, `docker-compose.yml`; OTel and performance work | `backend-module`, `db-migration`, `data-lifecycle`, `media-ml-pipeline`, `observability-analytics`, `performance-profiling` | orange | `just test platform`, `just test api`, `just db-reset --yes`, `just db-rollback && just db-migrate`, `just arch-check` |
 | [`contracts-engineer`](contracts-engineer.md) | `packages/contracts/**`, `packages/shared-kernel/**` (sources); every generated tree via `just generate` — single-writer | `api-contract-change` | purple | `just generate && just generate --check`, `just lint`, `just typecheck`, `just test`, `just arch-check` |
@@ -27,6 +27,7 @@ workflow, search-before-write procedure, base check, stop rules and the report f
 | [`test-engineer`](test-engineer.md) | `e2e/**`; `apps/api/tests/**` except `http.test.ts` and `migrations/**`; conditionally a module's `tests/**` | `testing-regression`, `e2e-device-testing` | yellow | `just test-regression`, `just test`, `just ios-e2e`, `just android-e2e` |
 | [`docs-maintainer`](docs-maintainer.md) | `docs/modules/**`, `docs/adr/README.md` (index), root `PROGRESS.md`, the `planning/PROGRESS.md` table + handoff log, phase-file task-state columns | `docs-maintenance` | cyan | `just docs-check` |
 | [`observability-engineer`](observability-engineer.md) | `docs/observability/**` (Grafana and PostHog guides, sync contracts and definition JSON), `docs/runbooks/**`; offline only, never a real or `--dry-run` sync | `observability-analytics` | pink | `just observability-sync all --check`, `just test tooling`, `just flags-report`, `just docs-check`, `just format --check` |
+| [`ui-designer`](ui-designer.md) | `DESIGN.md` (token master), `PRODUCT.md`, `.impeccable/**` (surface briefs); prototypes on the Claude Design canvas; never `apps/**` | `ui-prototype-first` | blue | `just docs-check` |
 | [`architecture-reviewer`](architecture-reviewer.md) | nothing (read-only) — boundaries, duplication, source of truth, parity | `architecture-review` | purple | `just arch-check`, `just lint`, `just typecheck`, `just generate --check`, `just docs-check` |
 | [`security-privacy-reviewer`](security-privacy-reviewer.md) | nothing (read-only) — security and privacy findings | `security-privacy-review` | red | `just security-scan`, `just lint`, `just docs-check` |
 | [`release-manager`](release-manager.md) | nothing (read-only) — GO/NO-GO evidence, never ships | `release-readiness` | orange | `just ci-parity`, `just security-scan`, `just generate --check`, `just flags-report`, `gh run list` |
@@ -35,7 +36,9 @@ Colors repeat only between agents that never run in the same wave: the parallel 
 api) is blue / green / cyan; reviewers, docs-maintainer, observability-engineer and test-engineer
 run after or between engineer waves. All eight colors are in use, so observability-engineer shares
 pink with ml-engineer: it documents a signal only after the change that emits it has landed, and the
-lead never puts those two in one wave.
+lead never puts those two in one wave. ui-designer shares blue with ios-engineer: it works strictly
+before the native lanes (check, prototype, owner approval, surface brief) and after them (review), so
+the lead never runs it in a wave with ios-engineer.
 
 The `cross-platform-feature` skill has no agent: the main (lead) session runs it, because only the
 main session has the Agent tool.
@@ -63,11 +66,23 @@ tooling-engineer and docs-maintainer may create; `.github/workflows/**` and `.gi
    lead) runs. The ios, android and ml engineers own their gen scripts but never run `just generate`
    without `--check`, so their write sets stay disjoint in a parallel wave.
 4. New `.claude/plans/` proposal files: tooling-engineer and docs-maintainer, distinct slugs.
+5. UI of `apps/ios/**` and `apps/android/**`: ios-engineer and android-engineer write the code;
+   ui-designer only reads it (and the screenshots the lead passes) and returns findings. The
+   engineers read `DESIGN.md` and the surface briefs in `.impeccable/**` but never write them. No
+   shared write path; the two run in sequence (brief → build → review), never in one wave.
+6. UI review of a diff: ui-designer judges visual conformance (tokens, components C01–C10, states,
+   touch targets, text scaling, accessibility labels, honesty copy, the approved board);
+   architecture-reviewer judges boundaries, duplication, single source of truth and string/id parity.
+   A literal style value in feature UI can appear in both reports; the fix goes to the owning engineer
+   once. Both are read-only on `apps/**`.
 
 ## Cross-seam sequences (producer before consumer)
 
 - Endpoint or event: `contracts-engineer` → `api-engineer` / `ios-engineer` / `android-engineer` / `ml-engineer`.
 - Client feature on both platforms: the main session runs `cross-platform-feature` (parallel model below).
+- New screen or UI element: `ui-designer` (check, canvas prototype, owner approval, surface brief via
+  `ui-prototype-first`) → `ios-engineer` / `android-engineer` (tokens from `DESIGN.md` only) →
+  `ui-designer` review → `architecture-reviewer`.
 - Table change: the module's engineer edits `apps/api/src/modules/<name>/internal/schema.ts` →
   `platform-engineer` generates the migration, down file and migration test → the module's engineer
   writes the repository code. Today the first domain table and the first module repository are

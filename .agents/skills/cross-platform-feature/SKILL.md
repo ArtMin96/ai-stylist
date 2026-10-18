@@ -4,7 +4,7 @@ description: Build one client feature on both native apps from the main (lead) s
 argument-hint: '[feature description]'
 metadata:
   modules:
-  last-reviewed: 2026-09-26
+  last-reviewed: 2026-10-18
   owner-agent: main-session
 ---
 
@@ -74,6 +74,11 @@ metadata:
      `apps/android/app/src/main/kotlin/app/aistylist/app/MainActivity.kt`), and neither app has a
      navigation shell. A second screen → stop and sequence a nav-shell task on both apps first
      (Android needs a navigation dependency, which only the human grants).
+   - UI gate, before any lane codes UI: a new screen or UI element → run `ui-prototype-first`
+     with `ui-designer` first (canvas prototype in light and dark, owner approval, surface brief in
+     `.impeccable/surfaces/<screen>.md`). The feature brief names that surface brief, both lanes
+     use `DESIGN.md` tokens only, and step 9 adds the `ui-designer` review of both apps' code and
+     screenshots before merge. No approved surface brief → do not launch the lanes.
    - Registry values (reason codes, entitlements, units): the apps import the generated
      `AIStylistKernel` (Swift) and `app.aistylist.contracts.kernel` (Kotlin) from
      `packages/shared-kernel/registry/*.json` (DEC-55, ADR-0005). No app target consumes them yet,
@@ -194,7 +199,7 @@ metadata:
 9. **Review and fix.** Launch `architecture-reviewer` in the lead checkout on
    `git diff <BASE>` plus untracked files, stating "both apps in scope: include the parity lens".
    In the same message launch `security-privacy-reviewer` when the feature touches consent, auth,
-   tokens, analytics payloads or sensitive data. Each fix goes to the owning engineer in the lead
+   tokens, analytics payloads or sensitive data, and `ui-designer` when it adds or changes UI. Each fix goes to the owning engineer in the lead
    checkout with no isolation, one write agent at a time (or both in new worktrees from a newly
    committed `BASE`). A platform limitation that blocks parity → write it under "Intended
    differences" in the brief; the human accepts it.
@@ -269,6 +274,8 @@ win over either lane's reading), `api-contract-change` (the contract lane, alway
 `backend-module` (the API lane), `agent-operating-contract` (base check and report every lane
 follows), `architecture-review` and `security-privacy-review` (their lenses on the integrated diff;
 this skill adds parity), `e2e-device-testing` (the shared flow, run once by `test-engineer`),
-`docs-maintenance` (close-out), `release-readiness` (both artifacts from one commit). This skill
+`docs-maintenance` (close-out), `release-readiness` (both artifacts from one commit),
+`ui-prototype-first` (the UI gate in step 2, run by `ui-designer`, who also reviews both apps'
+UI in step 9). This skill
 owns the brief (`.claude/plans/<yyyy-mm-dd>-<slug>-brief.md`) and the integration; it owns no source
 path.

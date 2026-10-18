@@ -43,3 +43,23 @@ or a green `ios` workflow run; report a macOS step you did not run as "Not run".
 9. Reason codes and entitlement names come from the generated `AIStylistKernel`; analytics event names
    equal `packages/contracts/events/analytics/events.json` byte for byte; no 3D and never RealityKit
    (reviewer-checked).
+10. Feature UI takes every colour, font, size, spacing, radius, elevation and motion value from the
+    design-system tokens whose master is the `DESIGN.md` frontmatter; never a literal colour, font
+    size, padding or corner radius in a `*Feature` target. No token for what you need → stop and ask
+    `ui-designer`; never inline a value "for now" (reviewer-checked: ui-designer; generated theme code
+    with a `just generate --check` drift gate and a `just ios-check-banned` ban on literal styles,
+    planned).
+11. No new screen or UI element without an owner-approved surface brief in
+    `.impeccable/surfaces/<screen>.md` (approval date and canvas board recorded), produced by the
+    `ui-prototype-first` skill before any UI code (reviewer-checked: ui-designer).
+12. UI copy keeps the honesty invariants: never "digital twin", "exact" or a guaranteed fit; every
+    generated image carries the AI-generated preview badge and its confidence, and confidence is
+    shown as text, never by colour alone (reviewer-checked: ui-designer).
+13. Every screen draws its empty, loading, error and offline states from DESIGN.md components
+    (reviewer-checked: ui-designer; per-state screenshot tests, planned).
+14. Accessibility: 44 pt minimum touch targets, layouts that hold at the largest Dynamic Type sizes,
+    an accessibility label on every icon-only control, reduced motion respected
+    (reviewer-checked: ui-designer; contrast lint on the tokens, planned).
+15. `ui-designer` reviews the native code and simulator screenshots (light and dark) against
+    DESIGN.md and the surface brief before merge; its findings go back to `ios-engineer`
+    (reviewer-checked: ui-designer).

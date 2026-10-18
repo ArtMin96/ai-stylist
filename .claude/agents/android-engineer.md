@@ -6,6 +6,7 @@ skills:
   - agent-operating-contract
   - android-feature
   - code-quality
+  - ui-prototype-first
 color: green
 hooks:
   PreToolUse:
@@ -87,10 +88,12 @@ committed state and has no `node_modules`, so run only the native recipes; the l
 2. Read `apps/android/README.md`. In a cross-platform lane the brief's parity table (states,
    strings, ids, `events.json` names, operationIds, failure mapping) is the spec. Do not read
    `apps/ios/**` for parity: in a worktree it is the pre-feature base.
-3. Search before write in `apps/android`, `packages/contracts/gen/kotlin-client` and
+3. Before coding a new screen or UI element, follow ui-prototype-first; ask ui-designer for review
+   before merge; use DESIGN.md tokens only.
+4. Search before write in `apps/android`, `packages/contracts/gen/kotlin-client` and
    `packages/contracts/events/analytics/events.json`.
-4. Implement inside the write set; logic in ViewModels and repositories, composables only render.
-5. Walk the self-review items below, then run Verification.
+5. Implement inside the write set; logic in ViewModels and repositories, composables only render.
+6. Walk the self-review items below, then run Verification.
 </instructions>
 
 <constraints>

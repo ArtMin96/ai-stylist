@@ -1,0 +1,22 @@
+[
+  { "query": "add a new settings screen to the iOS and Android apps where people can pick their units (cm/in) and home city", "should_trigger": true },
+  { "query": "make a new chip style for the closet filters, the current ones look too heavy next to the item photos", "should_trigger": true },
+  { "query": "design the empty state for the outfit history screen — right now it's just a blank list when you haven't logged anything", "should_trigger": true },
+  { "query": "we need an offline banner on the today's outfit screen, what should it look like before I code it in Compose", "should_trigger": true },
+  { "query": "can the iOS engineer start building SC09 from page 6 of the Garderi App UI canvas? it's already drawn", "should_trigger": true },
+  { "query": "I want a bottom sheet for 'add item' with camera / gallery / paste link options, new component I think", "should_trigger": true },
+  { "query": "the try-on result card needs a confidence label and the AI preview badge, how should that look on both apps", "should_trigger": true },
+  { "query": "just hard-code #2E7D6B for the new 'favourite' heart button in the SwiftUI view, we'll tokenise it later", "should_trigger": true },
+  { "query": "change the onboarding welcome screen so the logo is bigger and the CTA sits lower", "should_trigger": true },
+  { "query": "need a new loading skeleton for the wardrobe grid while items sync", "should_trigger": true },
+  { "query": "fix the API timeout on GET /closet/items, the android app gives up after 10 seconds", "should_trigger": false },
+  { "query": "bump Gradle and AGP to the latest stable in apps/android", "should_trigger": false },
+  { "query": "the closet screen crashes when you swipe past the last item in the wardrobe grid on iOS", "should_trigger": false },
+  { "query": "wire the existing approved settings screen's toggle to actually call the consent endpoint, no visual change", "should_trigger": false },
+  { "query": "review this diff for module boundary violations before I merge, it adds a new mapper in :core:data", "should_trigger": false },
+  { "query": "add a Maestro flow in e2e/ that taps through onboarding and checks the welcome text", "should_trigger": false },
+  { "query": "draw three more logo options for Garderi in the brand canvas, viridian palette", "should_trigger": false },
+  { "query": "the OutfitViewModel StateFlow emits twice on rotation, can you fix it", "should_trigger": false },
+  { "query": "add a new reason code WEATHER_TOO_COLD to the shared-kernel registry and regenerate the clients", "should_trigger": false },
+  { "query": "does the selfie upload screen leak the photo URL into the logs anywhere", "should_trigger": false }
+]

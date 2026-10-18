@@ -4,7 +4,7 @@ description: Write and self-review clean, idiomatic code in the language of the 
 metadata:
   modules:
   last-reviewed: 2026-10-04
-  owner-agent: ios-engineer, android-engineer, api-engineer, platform-engineer, recommendation-engineer, contracts-engineer, ml-engineer, tooling-engineer, test-engineer, architecture-reviewer
+  owner-agent: ios-engineer, android-engineer, api-engineer, platform-engineer, recommendation-engineer, contracts-engineer, ml-engineer, tooling-engineer, test-engineer, architecture-reviewer, ui-designer
 ---
 
 # Code Quality

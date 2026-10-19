@@ -19,7 +19,7 @@ hooks:
       hooks:
         - type: command
           command: "${CLAUDE_PROJECT_DIR}/scripts/hooks/guard-agent-bash.sh"
-          args: ["just android-check", "just android-test", "just android-format*", "just android-lint", "just android-detekt", "just android-build*", "just android-deps-lock", "just android-e2e*", "just android-sdk", "just android-sdk check", "just test android", "just generate --check", "just lint-file *", "just arch-check*", "just docs-check*"]
+          args: ["just android-check", "just android-test", "just android-format*", "just android-lint", "just android-detekt", "just android-build*", "just android-deps-lock", "just android-e2e*", "just android-sdk", "just android-sdk check", "just android-check-banned*", "just golden-accept*", "just test android", "just generate --check", "just lint-file *", "just arch-check*", "just docs-check*"]
 ---
 
 <context>

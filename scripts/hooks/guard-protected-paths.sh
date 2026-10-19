@@ -42,7 +42,8 @@ case "$path" in
 esac
 
 case "$path" in
-  */packages/contracts/gen/* | */packages/shared-kernel/src/gen/* | */workers/ml/generated/* | */packages/db/migrations/meta/*)
+  */packages/contracts/gen/* | */packages/shared-kernel/src/gen/* | */workers/ml/generated/* | */packages/db/migrations/meta/* | \
+    */apps/ios/Packages/DesignSystem/Sources/DesignTokens/generated/* | */apps/android/core/designsystem/src/main/kotlin/*/generated/*)
     deny "Generated output — run \`just generate\`, never hand-edit." ;;
   */apps/ios/*.xcodeproj/* | */apps/ios/*.xcodeproj)
     deny "Generated Xcode project (gitignored) — edit apps/ios/project.yml or Config/*.xcconfig, then run \`just ios-project\`." ;;

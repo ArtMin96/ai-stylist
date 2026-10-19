@@ -90,6 +90,26 @@ Log hygiene: when this log exceeds ~30 entries, move the oldest entries to `plan
 
 *(newest first)*
 
+### 2026-10-19 (policy) — Agent policy updated for the design-system lanes (AI-200)
+
+*Session on the owner's Linux machine, branch `artmins96/ai-200-agent-policy-unblock-the-design-system-lanes-human-only`, stacked on `2002e31` (the AI-196 commit); nothing committed (the lead commits and opens a PR stacked on the AI-196 PR #28). Human-authorized agent-policy edits and docs only; no product code changed.*
+
+- **Phase / tasks worked:** none (Brand v1, milestone "Design system": AI-200, umbrella AI-193; ahead of P03 client UI).
+- **Status changes:** None.
+- **Done this session (uncommitted):** agent policy updated for the design-system lanes (allow-lists, generated-tree guard, token-generator owner):
+  - Bash allow-lists: `just golden-accept*` for android-, ios- and test-engineer; `just android-check-banned*` for android-engineer; `just design-parity-report*` for tooling-engineer.
+  - `scripts/hooks/guard-protected-paths.sh` denies hand edits to both generated token trees, `apps/ios/Packages/DesignSystem/Sources/DesignTokens/generated/` and `apps/android/core/designsystem/src/main/kotlin/*/generated/`; `.claude/agents/README.md` lists them with the other `just generate` outputs.
+  - tooling-engineer owns `tools/codegen/tokens/**` (`.claude/agents/tooling-engineer.md`, `.claude/agents/README.md`).
+  - Doc 15 §5 `just golden-accept` row updated; the stale "iOS design-system target" line in `.agents/skills/ui-prototype-first/SKILL.md` now names the `apps/ios/Packages/DesignSystem/` package.
+- **Not done / in flight:** nothing committed: the lead commits and opens a PR stacked on the AI-196 PR (#28).
+- **Repository state:** buildable ✅ (no product code changed). Run by the editing agent on the policy edits: the AC-1 and AC-2 hook dry runs pass, `just docs-check --strict` exit 0, `just lint` exit 0, `just test tooling` 64 passed / 0 failed. Run by docs-maintainer after this entry: `just docs-check --strict` → `docs-check: ok (0 errors, 0 warning(s))`. Not reported as run: `just ci-parity`, `just typecheck`, `just arch-check` (no TypeScript or module code changed).
+- **New decisions / risks / questions filed:** None in doc 16. The owner's ordering and scope decisions of 2026-10-19 are under "Next session starts" below.
+- **Surprises / gotchas:** the allow-lists are ahead of the recipes. `just golden-accept` is still the `NOT IMPLEMENTED (P02 T10)` stub and takes no platform argument, but the doc 15 row now names `<ios|android>`. `just android-check-banned` and `just design-parity-report` are not in `just --summary` yet.
+- **Next session starts:** this order replaces the AI-197-then-AI-189 order of the entry below.
+  - AI-189 token generator (tooling-engineer) starts now against a test fixture, by owner decision 2026-10-19, ahead of AI-197; it switches to the real `DESIGN.md` when AI-197 lands.
+  - In parallel, AI-194 runs tokens only (the Capture tab redesign is deferred by the owner), then AI-197; ui-designer works in its own worktree, with owner approval on the canvas.
+  - Scope note from the owner, 2026-10-19: current work is the plain base-component layer only (tokens + base components), with no screens or app UI.
+
 ### 2026-10-19 (DEC-87) — Design system Option E recorded: DEC-87 and the ADR-0011 amendment (AI-196)
 
 *Session on the owner's Linux machine, branch `artmins96/ai-196-design-system-record-option-e-as-dec-87-adr-0011-amendment` off `main` @ `4bcd966`; nothing committed (the lead commits and opens the PR). Decision record and docs only; no product code changed.*

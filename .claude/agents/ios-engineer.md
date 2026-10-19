@@ -19,7 +19,7 @@ hooks:
       hooks:
         - type: command
           command: "${CLAUDE_PROJECT_DIR}/scripts/hooks/guard-agent-bash.sh"
-          args: ["just ios-*", "just test ios", "just generate --check", "just lint-file *", "just arch-check*", "just docs-check*"]
+          args: ["just ios-*", "just test ios", "just golden-accept*", "just generate --check", "just lint-file *", "just arch-check*", "just docs-check*"]
 ---
 
 <context>

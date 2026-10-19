@@ -1,0 +1,164 @@
+# AppButton: the API contract for canvas board C01 (DESIGN.md "### Buttons (C01)").
+# This file is the master for the button's API; DESIGN.md is the master for its values, so this
+# file only names tokens. Field rules: README.md beside this file.
+# Sources (owner 2026-10-20, "Follow artifact prototypes"): C01, the buttons drawn on C04, C07,
+# C08 and C09, every screen on page 6 (SC01-SC15), the prototype on page 7 (P01-P18), page 8 and
+# rule R4. Where a board and the screens disagree, the screens and prototype win; each such choice
+# is a "Screens win:" comment below.
+# Not in this contract: icon buttons, the Today action row and the Apple and Google sign-in
+# buttons (official artwork); the Capture tab and the modal-header Save, which are native chrome
+# (DEC-87). The passkey button is a secondary large with a key leadingIcon.
+id: button
+board: C01
+name: AppButton
+
+props:
+  - name: label
+    type: string
+    required: true
+  - name: action
+    type: action
+    required: true
+  # Leading icon 20, gap 8. Drawn on primary, secondary (the passkey key), text (Export your data)
+  # and destructive (trash); destructive-filled is drawn without one. While loading, the spinner
+  # takes this slot.
+  - name: leadingIcon
+    type: icon
+    default: null
+  # true: fills the column inside the 20 side margins, or its half of an equal-weight pair;
+  # false: hugs the label.
+  - name: fullWidth
+    type: bool
+    default: false
+  - name: enabled
+    type: bool
+    default: true
+  # true while the request this button started is running. Valid on every variant.
+  - name: loading
+    type: bool
+    default: false
+
+# The One Primary Rule: at most one primary per screen. secondary is the other path at the same
+# level; text is a low-emphasis or inline action; destructive is the outlined form for rows and
+# screens; destructive-filled is only the final confirm of a destructive action (DESIGN.md, R4).
+variants: [primary, secondary, text, destructive, destructive-filled]
+sizes: [large, medium, small]
+# The state shown, first match wins: loading if loading, else disabled if not enabled, else
+# pressed or focused from the platform, else enabled.
+states: [enabled, pressed, focused, disabled, loading]
+
+# LOADING (owner 2026-10-20: "make sure it has a state when we are sending request, so user can't
+# keep pressing the button while it's requesting"). On every variant and size:
+# - the label stays and a 20 spinner shows in the leading-icon slot, in the variant's label
+#   colour; only secondary names its own spinner colour (button-secondary-loading). The caller
+#   may pass a progress label ("Saving…", "Deleting…"), as C01 draws it;
+# - the button cannot be activated again: taps, keyboard and assistive activation are ignored
+#   until loading is false again;
+# - it stays visible with its enabled colours, never greyed out or announced like disabled;
+# - it stays focusable and is announced as busy (accessibility.busy: loading).
+# C01 draws it on primary, secondary, destructive and destructive-filled, SE2 on a large
+# destructive; text is not drawn loading and follows the same rule in primary-text.
+
+# Each variant allows every pairing of its sizes and states; nothing else is valid.
+combinations:
+  primary:
+    sizes: [large, medium, small]
+    states: [enabled, pressed, focused, disabled, loading]
+  secondary:
+    sizes: [large, medium, small]
+    states: [enabled, pressed, focused, disabled, loading]
+  # Screens win: C01 draws the text button only at 44 with a 17/600 label; the screens also draw
+  # row and section-header text actions with a 15/600 label (SC12 Edit, Clear, Undo; SC05 Add
+  # again), so text also comes in small (button-small: subhead label, 44 hit area).
+  text:
+    sizes: [medium, small]
+    states: [enabled, pressed, focused, disabled, loading]
+  # Screens win: C01 draws the outlined destructive only at Medium 44; SC13 (Delete account,
+  # beside Export first) and SE2 (Deleting face data, loading) draw it Large 52.
+  destructive:
+    sizes: [large, medium]
+    states: [enabled, pressed, focused, disabled, loading]
+  # Screens win: Large 52, as C01 draws it. Only C09's compact dialog mockup draws it 44 ("stacked
+  # 44"). No screen or prototype frame draws this button, and they draw every overlay action at
+  # 52 where C09 draws 44 (P08 and SC09 Skip / Send, P11 Save, SC14 Continue with Plus).
+  destructive-filled:
+    sizes: [large]
+    states: [enabled, pressed, focused, disabled, loading]
+
+# A state is listed when it changes a colour or the label style; the others keep the base. A ring
+# colour is borderColor on the entry, drawn inside the pill at button-outline-ring's width. The
+# spinner takes the label colour unless the entry names spinnerColor.
+tokens:
+  primary:
+    base: '{components.button-primary}'
+    states:
+      pressed: '{components.button-primary-pressed}'
+      focused: '{components.focus-ring}'
+      disabled: '{components.button-primary-disabled}'
+    sizes:
+      large: '{components.button-primary}'
+      medium: '{components.button-medium}'
+      small: '{components.button-small}'
+  secondary:
+    base: '{components.button-secondary}'
+    states:
+      pressed: '{components.button-secondary-pressed}'
+      focused: '{components.focus-ring}'
+      disabled: '{components.button-secondary-disabled}'
+      loading: '{components.button-secondary-loading}'
+    sizes:
+      large: '{components.button-secondary}'
+      medium: '{components.button-medium}'
+      small: '{components.button-small}'
+  text:
+    base: '{components.button-text}'
+    states:
+      pressed: '{components.button-text-pressed}'
+      focused: '{components.focus-ring}'
+      disabled: '{components.button-text-disabled}'
+    sizes:
+      medium: '{components.button-text}'
+      small: '{components.button-small}'
+  destructive:
+    base: '{components.button-destructive}'
+    states:
+      pressed: '{components.button-destructive-pressed}'
+      focused: '{components.focus-ring}'
+      disabled: '{components.button-destructive-disabled}'
+    sizes:
+      large: '{components.button-large}'
+      medium: '{components.button-destructive}'
+  destructive-filled:
+    base: '{components.button-destructive-filled}'
+    states:
+      pressed: '{components.button-destructive-filled-pressed}'
+      focused: '{components.focus-ring}'
+      # The label drops to 500 (typography button-disabled), as drawn on C01.
+      disabled: '{components.button-destructive-filled-disabled}'
+    sizes:
+      large: '{components.button-destructive-filled}'
+
+# The label scales with Dynamic Type and Android font scale and wraps, never truncated, so heights
+# are minimums; paired buttons stack full width at large sizes (R5).
+accessibility:
+  role: button
+  label: '{props.label}'
+  busy: loading
+  minTouchTarget: { ios: 44, android: 48 }
+
+gallery:
+  label: Continue
+  include: all
+
+testId: 'ds-{component}-{variant}-{size}-{state}'
+
+approved: 2026-10-20
+
+# Open for the owner (drawn on screens, not yet expressible here; no AppButton until settled):
+# - 44-high buttons with a 15/600 label (C08 Add items; SC15 Unfollow; SC05 Edit, Accept; SC09
+#   Choose option; SC10's disabled pair): C01 has Medium 44 at 17/600 or Small 36 at 15/600.
+# - The 48-high state-template action (C04; SC10 Add your first piece): no C01 size is 48.
+# - Looks that are not C01 variants: the outlined row action in primary colours (C07; SC06, SC07,
+#   P10 Confirm; SC12 Set my own; SC05 Retry), the red text action (C07, SC12 Delete), the
+#   surface-2 filled button (SC08 Got it; SE1 Use my selfie; TR1 and C09 Not now / Allow) and
+#   C09's error-bg Reset, which looks like a disabled destructive-filled.

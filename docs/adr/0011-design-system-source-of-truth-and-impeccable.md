@@ -1,9 +1,9 @@
 # ADR-0011 — Design system source of truth and the impeccable plugin
 
-- **Status:** Accepted
+- **Status:** Accepted. **Amended by DEC-87 (2026-10-19):** see [Amendment 2026-10-19 (DEC-87)](#amendment-2026-10-19-dec-87). The text above that section is unchanged apart from dated notes.
 - **Date:** 2026-10-18
 - **Deciders:** owner (decision 2026-10-18 session, UI system setup); MOB
-- **Decision-log entry:** [DEC-86](../../planning/16-risks-open-questions-and-decision-log.md#decision-log)
+- **Decision-log entry:** [DEC-86](../../planning/16-risks-open-questions-and-decision-log.md#decision-log); amended by [DEC-87](../../planning/16-risks-open-questions-and-decision-log.md#decision-log) (2026-10-19)
 - **Related:** Linear AI-183 ("tokens ADR", Brand v1; resolved by this ADR) · DEC-85 (product name Garderi) · DEC-76 (3D track; the avatar and try-on screens on the canvas wait on it) · [ADR-0004](0004-native-ios-and-android-clients.md) (native clients) · [ADR-0005](0005-shared-kernel-registries-for-native-clients.md) (generated native constants) · doc 13 (accessibility and contrast)
 
 ## Context
@@ -21,7 +21,7 @@ Neither app has a brand theme. Android wraps everything in the stock Material 3 
 
 ## Decision
 
-`DESIGN.md` at the repository root, in its YAML frontmatter, is the single master for design tokens (colours, typography, spacing, radius, elevation, motion), and impeccable is adopted for its commands only. In detail:
+`DESIGN.md` at the repository root, in its YAML frontmatter, is the single master for design tokens (colours, typography, spacing, radius, elevation, motion) (amended 2026-10-19, DEC-87: the frontmatter holds no elevation or motion tokens yet; see the correction in the amendment below), and impeccable is adopted for its commands only. In detail:
 
 1. **Tokens.** `DESIGN.md` follows impeccable's DESIGN.md format. Its token values equal the canvas rule R2 values. When the two disagree, the owner settles it on the canvas, then `DESIGN.md` is updated to match.
 2. **Generated native theme (follow-up).** A `just generate` step will emit the iOS and Android theme code from `DESIGN.md`, and `just generate --check` will fail CI on drift. It is not built by this ADR. Until it lands, feature UI must not hard-code any colour, font size, spacing or radius value; it uses the future design-system module.
@@ -39,11 +39,33 @@ A is the only option with one platform-neutral master that both agents and the d
 - Positive: one file answers "which token?" for every agent. New screens go through a prototype and owner approval before any code is written. Review against `DESIGN.md` and the surface brief replaces taste. The path to generated, drift-gated native themes is fixed before the first themed screen.
 - Negative/accepted debt: until the generator and lint bans land, drift between `DESIGN.md`, the canvas and native code is caught only by `ui-designer` review. The canvas lives on claude.ai, outside the repository, so its history is not in git. The DESIGN.md format belongs to a third party.
 - Engineering follow-ups (recorded, not built):
-  1. An iOS design-system target in `apps/ios/Packages/Features` (SwiftUI is not allowed in the Core or `*Model` targets).
+  1. An iOS design-system target in `apps/ios/Packages/Features` (SwiftUI is not allowed in the Core or `*Model` targets). (amended 2026-10-19, DEC-87: a separate local SwiftPM package `apps/ios/Packages/DesignSystem/`, with a Foundation-only `DesignTokens` target and a SwiftUI `DesignSystem` target, replaces the targets inside `apps/ios/Packages/Features`.)
   2. An Android `:core:designsystem` module (an entry in `settings.gradle.kts` and in `ALLOWED_MODULE_EDGES`).
-  3. A `just generate` step that emits the tokens from `DESIGN.md`, with the `--check` drift gate.
+  3. A `just generate` step that emits the tokens from `DESIGN.md`, with the `--check` drift gate. (amended 2026-10-19, DEC-87: the four-stage pipeline in the amendment below, with no committed intermediate token file and a Swift/Kotlin golden parity test.)
   4. Lint bans on literal colours and sizes in feature UI (a SwiftLint custom rule, a detekt rule, or the banned-pattern check).
-  5. Screenshot tests.
+  5. Screenshot tests. (amended 2026-10-19, DEC-87: plain `swift-snapshot-testing` on iOS, Roborazzi on Android.)
   6. A contrast lint on the tokens (doc 13).
+  7. Component contracts and the generated component API surface (added 2026-10-19, DEC-87): one YAML contract per component at `.impeccable/components/<id>.yaml`, owned by `ui-designer`, and the variant and state enums, test-ID constants and gallery manifest generated from it for both platforms. They land before the two design-system packages.
 - Security: the impeccable plugin is installed at user scope, not in the repository. Its engine binary sits outside the repository's dependency, licence and security-scan policy (`just security-scan` does not see it). With the hooks off, the binary does not run automatically in this repository. Customer data, photos and anything else classed as sensitive must never be passed to its commands.
 - **Revisit when:** the generator cannot express a token type the DESIGN.md format needs; impeccable changes the DESIGN.md format in a breaking way or stops being maintained; its hooks gain native (Swift/Kotlin) support without a downloaded binary; or drift is found in merged code twice before the lint bans land. Reversal requires a new DEC entry.
+
+## Amendment 2026-10-19 (DEC-87)
+
+On 2026-10-19 the owner accepted Option E from the research report `artifacts/ui-sharing-research/2026-10-19-shared-ui-components-report.md` (gitignored, on the owner's machine) and made the decisions below. They extend this ADR. `DESIGN.md` stays the only token master, and ADR-0004 (native clients) is not reversed. The full record, with the facts checked on 2026-10-19, is [DEC-87](../../planning/16-risks-open-questions-and-decision-log.md#decision-log).
+
+- **Option E: one shared definition, written natively twice.** Brand and content are identical on both platforms: colour roles (light, dark, high contrast), type scale, spacing, radii, elevation, motion durations, buttons, chips, tags, badges, banners, content components, copy, information architecture, feature parity and test IDs. System chrome stays platform-native with brand tint only: tab bar and navigation bar (same destinations, labels and order), back behaviour and gestures, sheets, alerts, menus, dialogs, pickers, keyboard, search field, toggles, sliders, share sheet, photo picker, camera and permission prompts, haptics and store payment sheets. Pixel-identical chrome is rejected: Apple ignores `UIDesignRequiresCompatibility` from the iOS 27 SDK, and Android API 36 enforces predictive back and edge-to-edge. The Capture tab is a normal tab in the native tab bar that opens the camera as a full-screen modal.
+- **Parallel lanes, parity from generated inputs.** `ios-engineer` and `android-engineer` build each component in parallel through the `cross-platform-feature` skill and do not read each other's sources. Parity comes from three generated sources: the tokens, a per-component contract (follow-up 7) and a generated component API surface (variant and state enums, test-ID constants, gallery manifest). Contracts are YAML at `.impeccable/components/<id>.yaml`, owned by `ui-designer`, and test IDs follow `ds-<component>-<variant>-<size>-<state>`.
+- **The design system is app-internal.** Tokens and base components live in an internal package inside each app, never in root `packages/`, which may be split into separate repositories later.
+  - iOS: a local SwiftPM package `apps/ios/Packages/DesignSystem/` with target `DesignTokens` (Foundation-only, tested on Linux; generated code in `Sources/DesignTokens/generated/`) and target `DesignSystem` (SwiftUI base components). The package declares no dependency on `Core` or `APIData`. It replaces the two targets inside `apps/ios/Packages/Features` that follow-up 1 planned.
+  - Android: the dependency-free `:core:designsystem` at `apps/android/core/designsystem/`, generated code in `src/main/kotlin/app/aistylist/core/designsystem/generated/`.
+  - The generated component API surface is emitted per platform into those two generated directories (`ComponentAPI.swift`, `ComponentApi.kt`). There is no committed cross-platform gallery manifest.
+- **Token pipeline.** `just generate` runs four stages:
+  1. Validate: the pinned `@google/design.md` 0.4.0 `lint` reports 0 errors, plus our own rules.
+  2. Normalise in memory to the DTCG 2025.10 model plus resolver: the primitive set, a theme modifier with the five contexts `light`, `dark`, `brand`, `hc-light` and `hc-dark`, and the component set with states.
+  3. Emit Swift and Kotlin in three tiers: reference scales, then scheme roles, then component tokens. Component colours are role keys, never resolved hex.
+  4. Gate: `just generate --check` plus a golden test that the Swift and Kotlin emitters produce the same name→value table.
+- **No committed DTCG intermediate (D8).** The normaliser in `tools/codegen/tokens/**` builds the DTCG model in memory, and the emitters and the golden parity test read it there. Only the Swift and Kotlin output is committed. `DESIGN.md` is the only place a token is edited, so a committed JSON would be a third generated copy. If a design tool (Style Dictionary, Figma, Penpot) later needs a file, an export recipe can be added on top of the normaliser.
+- **Emitter ownership (D5).** `tools/codegen/gen-tokens.mjs` and its modules belong to `tooling-engineer`. `ios-engineer` and `android-engineer` specify the emitted shape and review it, but do not write `tools/**`.
+- **Neutral public names (D6).** `AppTheme`, `AppColors`, `AppTypography`, `AppSpacing`, `AppRadius`, `AppButton`, `ButtonVariant`, `ButtonSize`, and in the same style `AppColorRole`, `AppElevation`, `AppMotion`, `ButtonState` and `<Component>Tokens`. No "Garderi" in code until the rename (Linear AI-182). The emitters use these names.
+- **Snapshot tests (D4).** iOS uses plain `swift-snapshot-testing`; Prefire is rejected because it generates XCTest classes and runs a prebuilt binary through a build-tool plugin. Android uses Roborazzi on the pinned Robolectric. Goldens are re-recorded on every Xcode or simulator bump (ADR-0006): decided, accepted churn. Whether iOS snapshot tests run on every PR that touches `apps/ios` or only nightly or on a label (macOS CI minutes) is open, to be decided before Linear AI-190.
+- **Correction: elevation and motion.** The Decision above and DEC-86 say the frontmatter holds elevation and motion tokens. It does not. On `main` at `4bcd966` the frontmatter (lines 1–340) holds only `colors`, `typography`, `rounded`, `spacing` and `components`, besides `name` and `description`. Shadows and motion are prose tables under `## Elevation & Depth`. Linear AI-197 adds top-level `elevation` and `motion` groups to the frontmatter. The accepted cost is one `token-like-ignored` warning from the design.md 0.4.0 `lint`; design.md's own export ignores the groups, and our normaliser reads them.

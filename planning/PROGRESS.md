@@ -90,6 +90,27 @@ Log hygiene: when this log exceeds ~30 entries, move the oldest entries to `plan
 
 *(newest first)*
 
+### 2026-10-19 (DEC-87) — Design system Option E recorded: DEC-87 and the ADR-0011 amendment (AI-196)
+
+*Session on the owner's Linux machine, branch `artmins96/ai-196-design-system-record-option-e-as-dec-87-adr-0011-amendment` off `main` @ `4bcd966`; nothing committed (the lead commits and opens the PR). Decision record and docs only; no product code changed.*
+
+- **Phase / tasks worked:** none (Brand v1, milestone "Design system": AI-196, umbrella AI-193; ahead of P03 client UI).
+- **Status changes:** None.
+- **Done this session (uncommitted):**
+  - [DEC-87](16-risks-open-questions-and-decision-log.md) row in doc 16; the header "Amended" list gains a 2026-10-18 entry (DEC-86) and a 2026-10-19 entry (DEC-87); DEC-86 carries a "Corrected 2026-10-19 by DEC-87" note (the `DESIGN.md` frontmatter holds no elevation or motion tokens).
+  - [ADR-0011](../docs/adr/0011-design-system-source-of-truth-and-impeccable.md): new section "Amendment 2026-10-19 (DEC-87)", follow-up 7 (component contracts and the generated component API surface), dated amendment notes on the Status and Decision-log lines, the Decision and follow-ups 1, 3 and 5.
+  - [`docs/adr/README.md`](../docs/adr/README.md) row 0011: Status `Accepted (owner decision 2026-10-18; resolves AI-183; amended by DEC-87, 2026-10-19)`. The DEC column stays `DEC-86`: the index names an amending DEC in Status and keeps the original entry in the DEC column (rows 0003 and 0007).
+- **Owner decisions of 2026-10-19 (DEC-87):**
+  - Option E: one shared definition, written natively twice. Brand and content are identical on both apps; system chrome stays platform-native with brand tint only.
+  - The design system is app-internal. iOS gets its own local package `apps/ios/Packages/DesignSystem/` (targets `DesignTokens` and `DesignSystem`) instead of targets inside `apps/ios/Packages/Features`; Android stays `apps/android/core/designsystem/`. The 2026-10-18 (design) entry below still names "an iOS design-system target in `apps/ios/Packages/Features`": that is history, and DEC-87 moved iOS to `apps/ios/Packages/DesignSystem/`.
+  - D8: the DTCG token model is built in memory by `tools/codegen/tokens/**` and is not committed; only the Swift and Kotlin output is.
+  - macOS CI minutes for iOS snapshot tests: open, decide before AI-190. Golden re-recording on Xcode or simulator bumps: accepted churn.
+- **Not done / in flight:** nothing committed: the lead commits and opens the PR. No design-system code, token generator or component contract exists yet. The path-guard and agent-policy entries for the two generated directories are not applied (AI-200, human-authorized).
+- **Repository state:** buildable ✅ (no code changed). `just docs-check` (full, after this entry) → `docs-check: ok (0 errors, 0 warning(s))`. Not run: `just ci-parity`, `just ios-check`, `just android-check` and the tests (decision record and docs only).
+- **New decisions / risks / questions filed:** [DEC-87](16-risks-open-questions-and-decision-log.md) (amends ADR-0011, extends DEC-86, corrects DEC-86 on elevation and motion tokens). The macOS-minutes question is recorded inside DEC-87, not as a separate OQ row.
+- **Surprises / gotchas:** DEC-86 and ADR-0011 said the `DESIGN.md` frontmatter holds elevation and motion tokens; it does not (AI-197 adds the groups). The pinned `@google/design.md` 0.4.0 `lint` exits 1 on today's `DESIGN.md` (18 errors, every `letterSpacing: "0"`), so stage 1 of the token pipeline fails until that is fixed; the checked facts are in DEC-87.
+- **Next session starts:** DEC-87 recorded; next: AI-197 (ui-designer) then AI-189. Before AI-197, in this same session: AI-200 (the human-authorized agent-policy edits) on a branch stacked on this one. Per DEC-87 the component contracts and the generated component API surface (ADR-0011 follow-up 7) land before AI-186 (now the `apps/ios/Packages/DesignSystem/` package) and AI-188.
+
 ### 2026-10-18 (design) — App UI designed in Claude Design; UI design-system governance set up
 
 *Session on the owner's Linux machine, branch `design/ui-system-setup` off `main` @ `09b506e`; nothing committed (the owner commits). Design and docs only; no product code changed.*

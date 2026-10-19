@@ -39,17 +39,17 @@ return to their own workflow at step 5.
 3. The "Garderi App UI" canvas, https://claude.ai/artifact/3PfhQn2y9YKXtBz2fc1GeE — read it with
    the Artifact tool (`action: "read"`), never a web fetch. Its pages:
 
-   | Page | Holds                                     | Use it for                                          |
-   | ---- | ----------------------------------------- | --------------------------------------------------- |
-   | 1    | Overview                                  | where everything is                                 |
-   | 2    | Foundations                               | colour, type, spacing, radius, motion as drawn      |
-   | 3    | Components C01–C10                        | the only building blocks a prototype may use        |
-   | 4    | Wireframes                                | early structure; not approved visuals               |
-   | 5    | Earlier key screens                       | history; superseded by page 6                       |
-   | 6    | All screens SC01–SC15                     | existing screens — reuse before drawing             |
-   | 7    | Prototype P01–P18                         | flows between screens                               |
-   | 8    | Avatar / selfie / try-on                  | generated-image screens and their honesty markers   |
-   | 9    | Design rules R1–R6                        | R2 = token values DESIGN.md must equal              |
+   | Page | Holds                    | Use it for                                        |
+   | ---- | ------------------------ | ------------------------------------------------- |
+   | 1    | Overview                 | where everything is                               |
+   | 2    | Foundations              | colour, type, spacing, radius, motion as drawn    |
+   | 3    | Components C01–C10       | the only building blocks a prototype may use      |
+   | 4    | Wireframes               | early structure; not approved visuals             |
+   | 5    | Earlier key screens      | history; superseded by page 6                     |
+   | 6    | All screens SC01–SC15    | existing screens — reuse before drawing           |
+   | 7    | Prototype P01–P18        | flows between screens                             |
+   | 8    | Avatar / selfie / try-on | generated-image screens and their honesty markers |
+   | 9    | Design rules R1–R6       | R2 = token values DESIGN.md must equal            |
 
 4. "Garderi Colour Schemes", https://claude.ai/artifact/Db28dfjbyvJgksMQFrXhVA: logo P2 Garden
    Viridian; themes S1 Garden Light, S2 Garden Dark (default), S7 High Contrast.

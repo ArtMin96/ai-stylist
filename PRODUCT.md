@@ -13,6 +13,7 @@ adaptive
 Primary user (owner-confirmed 2026-10-18): the **daily dresser**, someone tired of deciding what to wear each morning who wants a good outfit for today's weather and plans, with reasons, in seconds. When design decisions conflict, favour this person; the Today tab is the launch tab for that reason.
 
 Other audiences (planning doc 00 §2), served without overriding the daily dresser:
+
 - Wardrobe organisers: a searchable closet, wear history, fewer duplicate purchases.
 - Style developers: inspiration tied to what they already own.
 - Fit-sensitive people: an avatar with their own proportions, never an idealised mannequin.

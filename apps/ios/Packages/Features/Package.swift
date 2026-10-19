@@ -6,7 +6,9 @@
 // APIData or the generated client (enforced by apps/ios/scripts/check-banned.sh).
 import PackageDescription
 
-/// Same safety settings as Packages/Core/Package.swift and Config/Base.xcconfig.
+// jscpd:ignore-start (SwiftPM manifests cannot share code; the copies are kept in sync by hand.)
+/// Same safety settings as Packages/Core/Package.swift, Packages/DesignSystem/Package.swift and
+/// Config/Base.xcconfig.
 let strictSettings: [SwiftSetting] = [
   .swiftLanguageMode(.v6),
   .defaultIsolation(MainActor.self),
@@ -17,6 +19,7 @@ let strictSettings: [SwiftSetting] = [
   .enableUpcomingFeature("InternalImportsByDefault"),
   .treatAllWarnings(as: .error),
 ]
+// jscpd:ignore-end
 
 let core: [Target.Dependency] = [
   .product(name: "AppConfig", package: "Core"),

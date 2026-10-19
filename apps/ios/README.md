@@ -26,6 +26,11 @@ Packages/Features/       one pair of targets per screen
   Sources/HomeModel        @Observable view model (no SwiftUI; tests run on Linux too)
   Sources/HomeFeature      SwiftUI view (Apple platforms only; left out of the manifest on Linux)
   tests/HomeModelTests
+Packages/DesignSystem/   app-internal design system (DEC-87); no dependency on Core or APIData; no consumer yet
+  Sources/DesignTokens     Foundation-only tokens (tests run on Linux too); `just generate` will write them into
+                           generated/ (never hand-edit)
+  Sources/DesignSystem     SwiftUI base components (Apple platforms only; left out of the manifest on Linux)
+  tests/<Target>Tests      DesignTokensTests, DesignSystemTests (smoke tests until tokens and components land)
 scripts/                 recipe bodies (bash 3.2-portable); fixtures/ prove each ban still fires,
                          test-xcode-guards.sh the PostHog and pin guards of xcode.sh
 ```
@@ -140,8 +145,9 @@ pin's `version` and `revision` (the commit of the release tag) together, then re
 - `ExistentialAny`, `MemberImportVisibility` and `InternalImportsByDefault` are enabled, and all warnings are errors.
 - The xcconfigs set these for the app target. For our package targets, `strictSettings` in each `Package.swift` sets
   them. Keep the two in sync. Generated code is exempt.
-- These are banned: `@unchecked Sendable`, `nonisolated(unsafe)`, `@preconcurrency import`, UI imports in `Core` and
-  `*Model` targets, and generated-client imports outside `APIData`. `just ios-check-banned` enforces the bans.
+- These are banned: `@unchecked Sendable`, `nonisolated(unsafe)`, `@preconcurrency import`, UI imports in `Core`,
+  `*Model` and `DesignTokens` targets, and generated-client imports outside `APIData`. `just ios-check-banned`
+  enforces the bans.
 - Don't use force unwraps, `try!`, implicitly unwrapped optionals, `unowned` captures, or non-private `@State`.
   swift-format and SwiftLint enforce these.
 
@@ -157,7 +163,7 @@ The `just` recipes are wired in the root justfile. The recipe bodies are `apps/i
 | `just ios-test`                                |  yes  |  no   | Runs the package unit tests through the `AIStylist-Dev` scheme on an iOS 26+ iPhone simulator                       |
 | `just ios-e2e`                                 |  yes  |  no   | Builds Dev for the simulator and runs the shared Maestro flow `e2e/smoke.yaml` (`APP_ID=app.aistylist.mobile.dev`) |
 | `just ios-run`                                 |  yes  |  no   | Builds Dev, opens Simulator.app and installs and launches the app (`just dev ios` also starts the backend)          |
-| `just ios-test-packages [core\|features]`      |  yes  |  yes  | Runs `swift test` for Core and the Features view models                                                             |
+| `just ios-test-packages [pkg...]`              |  yes  |  yes  | Runs `swift test` for the packages `core`, `features`, `designsystem` (default: all three)                          |
 | `just ios-lint`                                |  yes  |  yes  | Runs the SwiftLint safety rules (on Linux: `swiftlint-static`)                                                      |
 | `just ios-format [--check]`                    |  yes  |  yes  | Runs swift-format, in place or as a check                                                                           |
 | `just ios-check-banned [--fixtures]`           |  yes  |  yes  | Runs the grep bans, or proves every ban and the `scripts/xcode.sh` PostHog and pin guards still fire                |

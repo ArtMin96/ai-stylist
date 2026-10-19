@@ -127,26 +127,29 @@ colors:
   condition-evening-bg-dark: "#23324A"
 typography:
   # R2 type styles (sizes in pt on iOS = sp on Android at 100%).
-  display: { fontFamily: "Young Serif, serif", fontSize: "40px", fontWeight: 400, lineHeight: "46px", letterSpacing: "0em" }
-  title-1: { fontFamily: "Young Serif, serif", fontSize: "32px", fontWeight: 400, lineHeight: "38px", letterSpacing: "0em" }
-  title-2: { fontFamily: "Young Serif, serif", fontSize: "26px", fontWeight: 400, lineHeight: "32px", letterSpacing: "0em" }
-  title-3: { fontFamily: "Young Serif, serif", fontSize: "20px", fontWeight: 400, lineHeight: "26px", letterSpacing: "0em" }
-  headline: { fontFamily: "Figtree, sans-serif", fontSize: "17px", fontWeight: 600, lineHeight: "22px", letterSpacing: "0em" }
-  body: { fontFamily: "Figtree, sans-serif", fontSize: "17px", fontWeight: 400, lineHeight: "24px", letterSpacing: "0em" }
-  callout: { fontFamily: "Figtree, sans-serif", fontSize: "15px", fontWeight: 400, lineHeight: "21px", letterSpacing: "0em" }
-  subhead: { fontFamily: "Figtree, sans-serif", fontSize: "15px", fontWeight: 600, lineHeight: "20px", letterSpacing: "0em" }
-  footnote: { fontFamily: "Figtree, sans-serif", fontSize: "13px", fontWeight: 400, lineHeight: "18px", letterSpacing: "0em" }
-  caption: { fontFamily: "Figtree, sans-serif", fontSize: "12px", fontWeight: 500, lineHeight: "16px", letterSpacing: "0em" }
-  overline: { fontFamily: "Figtree, sans-serif", fontSize: "11px", fontWeight: 600, lineHeight: "14px", letterSpacing: "0.08em" }
-  button: { fontFamily: "Figtree, sans-serif", fontSize: "17px", fontWeight: 600, lineHeight: "22px", letterSpacing: "0em" }
-  # Component label styles (from the C01-C10 boards, not in the R2 table).
-  large-title-bar: { fontFamily: "Young Serif, serif", fontSize: "34px", fontWeight: 400, lineHeight: "40px", letterSpacing: "0em" }
-  label-md: { fontFamily: "Figtree, sans-serif", fontSize: "14px", fontWeight: 600, lineHeight: "18px", letterSpacing: "0em" }
-  label-sm: { fontFamily: "Figtree, sans-serif", fontSize: "13px", fontWeight: 600, lineHeight: "18px", letterSpacing: "0em" }
-  subhead-medium: { fontFamily: "Figtree, sans-serif", fontSize: "15px", fontWeight: 500, lineHeight: "20px", letterSpacing: "0em" }
-  caption-strong: { fontFamily: "Figtree, sans-serif", fontSize: "12px", fontWeight: 600, lineHeight: "16px", letterSpacing: "0em" }
-  badge: { fontFamily: "Figtree, sans-serif", fontSize: "11px", fontWeight: 600, lineHeight: "14px", letterSpacing: "0em" }
-  badge-count: { fontFamily: "Figtree, sans-serif", fontSize: "11px", fontWeight: 700, lineHeight: "18px", letterSpacing: "0em" }
+  # dynamicType = the SwiftUI Font.TextStyle the style grows with (no leading dot); m3Roles = the
+  # Material 3 type roles it fills, each of the 15 roles in exactly one list (see ### Hierarchy).
+  display: { fontFamily: "Young Serif, serif", fontSize: "40px", fontWeight: 400, lineHeight: "46px", letterSpacing: "0em", dynamicType: largeTitle, m3Roles: [displayLarge, displayMedium, displaySmall] }
+  title-1: { fontFamily: "Young Serif, serif", fontSize: "32px", fontWeight: 400, lineHeight: "38px", letterSpacing: "0em", dynamicType: title, m3Roles: [headlineMedium] }
+  title-2: { fontFamily: "Young Serif, serif", fontSize: "26px", fontWeight: 400, lineHeight: "32px", letterSpacing: "0em", dynamicType: title2, m3Roles: [headlineSmall] }
+  title-3: { fontFamily: "Young Serif, serif", fontSize: "20px", fontWeight: 400, lineHeight: "26px", letterSpacing: "0em", dynamicType: title3, m3Roles: [titleLarge] }
+  headline: { fontFamily: "Figtree, sans-serif", fontSize: "17px", fontWeight: 600, lineHeight: "22px", letterSpacing: "0em", dynamicType: headline, m3Roles: [titleMedium] }
+  body: { fontFamily: "Figtree, sans-serif", fontSize: "17px", fontWeight: 400, lineHeight: "24px", letterSpacing: "0em", dynamicType: body, m3Roles: [bodyLarge] }
+  callout: { fontFamily: "Figtree, sans-serif", fontSize: "15px", fontWeight: 400, lineHeight: "21px", letterSpacing: "0em", dynamicType: callout, m3Roles: [bodyMedium] }
+  subhead: { fontFamily: "Figtree, sans-serif", fontSize: "15px", fontWeight: 600, lineHeight: "20px", letterSpacing: "0em", dynamicType: subheadline, m3Roles: [titleSmall] }
+  footnote: { fontFamily: "Figtree, sans-serif", fontSize: "13px", fontWeight: 400, lineHeight: "18px", letterSpacing: "0em", dynamicType: footnote, m3Roles: [bodySmall] }
+  caption: { fontFamily: "Figtree, sans-serif", fontSize: "12px", fontWeight: 500, lineHeight: "16px", letterSpacing: "0em", dynamicType: caption, m3Roles: [labelMedium] }
+  overline: { fontFamily: "Figtree, sans-serif", fontSize: "11px", fontWeight: 600, lineHeight: "14px", letterSpacing: "0.08em", dynamicType: caption2, m3Roles: [labelSmall] }
+  button: { fontFamily: "Figtree, sans-serif", fontSize: "17px", fontWeight: 600, lineHeight: "22px", letterSpacing: "0em", dynamicType: headline, m3Roles: [labelLarge] }
+  # Component label styles (from the C01-C10 boards, not in the R2 table). Each takes the
+  # dynamicType of the R2 style it scales with; only large-title-bar fills an M3 role.
+  large-title-bar: { fontFamily: "Young Serif, serif", fontSize: "34px", fontWeight: 400, lineHeight: "40px", letterSpacing: "0em", dynamicType: largeTitle, m3Roles: [headlineLarge] }
+  label-md: { fontFamily: "Figtree, sans-serif", fontSize: "14px", fontWeight: 600, lineHeight: "18px", letterSpacing: "0em", dynamicType: subheadline, m3Roles: [] }
+  label-sm: { fontFamily: "Figtree, sans-serif", fontSize: "13px", fontWeight: 600, lineHeight: "18px", letterSpacing: "0em", dynamicType: footnote, m3Roles: [] }
+  subhead-medium: { fontFamily: "Figtree, sans-serif", fontSize: "15px", fontWeight: 500, lineHeight: "20px", letterSpacing: "0em", dynamicType: subheadline, m3Roles: [] }
+  caption-strong: { fontFamily: "Figtree, sans-serif", fontSize: "12px", fontWeight: 600, lineHeight: "16px", letterSpacing: "0em", dynamicType: caption, m3Roles: [] }
+  badge: { fontFamily: "Figtree, sans-serif", fontSize: "11px", fontWeight: 600, lineHeight: "14px", letterSpacing: "0em", dynamicType: caption2, m3Roles: [] }
+  badge-count: { fontFamily: "Figtree, sans-serif", fontSize: "11px", fontWeight: 700, lineHeight: "18px", letterSpacing: "0em", dynamicType: caption2, m3Roles: [] }
 rounded:
   # R2 scale: 6, 8, 12, 16, 24, full; plus the component radii drawn on C01-C10.
   "2": "2px"
@@ -478,7 +481,7 @@ Sizes are pt on iOS and sp on Android at 100 %; every style scales with Dynamic 
 
 | Token | Font | Size / line | Weight | Tracking | iOS Dynamic Type | Android M3 | Example |
 |---|---|---|---|---|---|---|---|
-| display | Young Serif | 40 / 46 | 400 | 0 | .largeTitle | displaySmall | Today's outfit |
+| display | Young Serif | 40 / 46 | 400 | 0 | .largeTitle | displayLarge, displayMedium, displaySmall | Today's outfit |
 | title-1 | Young Serif | 32 / 38 | 400 | 0 | .title | headlineMedium | Your closet |
 | title-2 | Young Serif | 26 / 32 | 400 | 0 | .title2 | headlineSmall | Rain-ready for 6° |
 | title-3 | Young Serif | 20 / 26 | 400 | 0 | .title3 | titleLarge | Friday dinner |
@@ -491,12 +494,24 @@ Sizes are pt on iOS and sp on Android at 100 %; every style scales with Dynamic 
 | overline | Figtree | 11 / 14 | 600 | +8 %, caps | .caption2 | labelSmall | TYPICAL DAY |
 | button | Figtree | 17 / 22 | 600 | 0 | .headline | labelLarge | Wear this |
 
-Component label styles (drawn on C01–C10, scale with the nearest style above): `large-title-bar` (Young Serif 34/40, top-level large title; scales as .largeTitle / M3 large top app bar), `label-md` (14/18 600: filter, condition, group/sort chips), `label-sm` (13/18 600: weather and reason chips, confidence label, trial pill, inline provenance), `subhead-medium` (15/20 500: choice chips, snackbar, toast, menu rows), `caption-strong` (12/16 600: active tab label, plan tags), `badge` (11/14 600: tile badge, provenance overlay), `badge-count` (11/18 700).
+Each of the 15 Material 3 type roles is filled by exactly one style, so Android's built-in components (the date picker, for example) set their text in Garderi type, not the M3 default. R2 has no style for `displayLarge`, `displayMedium` or `headlineLarge`: `display` also fills the first two, and `large-title-bar` (below) fills `headlineLarge`, so those components get the serif look. The frontmatter carries the same mapping per style: `dynamicType` is the iOS column without the dot, `m3Roles` the Android column as a list.
+
+Component label styles (drawn on C01–C10, not on R2) each scale with the nearest R2 style above, at or just over their size (the "Scales with" column), and take its Dynamic Type style. Only `large-title-bar` fills an M3 role; the others fill none (`m3Roles: []`) and scale in sp with the font scale. Tracking is 0 for all.
+
+| Token | Font | Size / line | Weight | Scales with | iOS Dynamic Type | Android M3 | Used for |
+|---|---|---|---|---|---|---|---|
+| large-title-bar | Young Serif | 34 / 40 | 400 | display | .largeTitle | headlineLarge | top-level large title (iOS large navigation title, M3 large top app bar) |
+| label-md | Figtree | 14 / 18 | 600 | subhead | .subheadline | — | filter, condition, group/sort chips |
+| label-sm | Figtree | 13 / 18 | 600 | footnote | .footnote | — | weather and reason chips, confidence label, trial pill, inline provenance |
+| subhead-medium | Figtree | 15 / 20 | 500 | subhead | .subheadline | — | choice chips, snackbar, toast, menu rows |
+| caption-strong | Figtree | 12 / 16 | 600 | caption | .caption | — | active tab label, plan tags |
+| badge | Figtree | 11 / 14 | 600 | overline | .caption2 | — | tile badge, provenance overlay |
+| badge-count | Figtree | 11 / 18 | 700 | overline | .caption2 | — | count badge (number) |
 
 ### Named Rules
 **The Serif Threshold Rule.** Young Serif only at 20 pt and up, weight 400. Anything smaller is Figtree.
 
-**The Text Styles Only Rule.** Feature UI names a style token, never a font size. iOS maps each style relative to its Dynamic Type style; Android maps it into the M3 type scale in sp.
+**The Text Styles Only Rule.** Feature UI names a style token, never a font size. iOS maps each style relative to its Dynamic Type style; Android puts each style into the M3 roles it fills (`m3Roles`) and keeps the label styles beside the M3 type scale, all in sp.
 
 ## Layout
 

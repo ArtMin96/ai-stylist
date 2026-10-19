@@ -13,7 +13,7 @@
 import PackageDescription
 
 /// Safety settings for every target we write (never for generated code). Keep in sync with
-/// apps/ios/Config/Base.xcconfig and Packages/Features/Package.swift.
+/// apps/ios/Config/Base.xcconfig, Packages/Features/Package.swift and Packages/DesignSystem/Package.swift.
 let strictSettings: [SwiftSetting] = [
   .swiftLanguageMode(.v6),
   .defaultIsolation(MainActor.self),

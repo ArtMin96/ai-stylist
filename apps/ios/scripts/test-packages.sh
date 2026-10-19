@@ -1,10 +1,11 @@
 #!/usr/bin/env bash
-# `just ios-test-packages [core|features]...`: `swift test` for the local Swift packages.
+# `just ios-test-packages [core|features|designsystem]...`: `swift test` for the local Swift packages.
 # Runs on macOS (Xcode's swift) AND Linux (a working swift on PATH, or Docker swift:6.4 when it is not on
 # PATH). No simulator: this is the fast unit-test lane for everything that is not a SwiftUI view.
-#   core      apps/ios/Packages/Core      (config, analytics, services, API data via the generated client)
-#   features  apps/ios/Packages/Features  (view models; SwiftUI views are compiled on Apple platforms only)
-# No argument = both.
+#   core          apps/ios/Packages/Core          (config, analytics, services, API data via the generated client)
+#   features      apps/ios/Packages/Features      (view models; SwiftUI views are compiled on Apple platforms only)
+#   designsystem  apps/ios/Packages/DesignSystem  (tokens; the SwiftUI components on Apple platforms only)
+# No argument = all three.
 set -euo pipefail
 # shellcheck source=lib.sh
 . "$(dirname "${BASH_SOURCE[0]}")/lib.sh"
@@ -14,12 +15,13 @@ for arg in "$@"; do
   case "$arg" in
     core) packages+=(Core) ;;
     features) packages+=(Features) ;;
-    -h | --help) sed -n '2,7p' "$0"; exit 0 ;;
-    *) ios_die "ios-test-packages: unknown package '$arg' (use core|features)" ;;
+    designsystem) packages+=(DesignSystem) ;;
+    -h | --help) sed -n '2,8p' "$0"; exit 0 ;;
+    *) ios_die "ios-test-packages: unknown package '$arg' (use core|features|designsystem)" ;;
   esac
 done
 if [[ ${#packages[@]} -eq 0 ]]; then
-  packages=(Core Features)
+  packages=(Core Features DesignSystem)
 fi
 
 cd "$REPO_ROOT"

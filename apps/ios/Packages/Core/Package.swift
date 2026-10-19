@@ -12,6 +12,7 @@
 //   APIData      the ONLY target that imports the generated AIStylistAPI client / OpenAPI runtime
 import PackageDescription
 
+// jscpd:ignore-start (SwiftPM manifests cannot share code; the copies are kept in sync by hand.)
 /// Safety settings for every target we write (never for generated code). Keep in sync with
 /// apps/ios/Config/Base.xcconfig, Packages/Features/Package.swift and Packages/DesignSystem/Package.swift.
 let strictSettings: [SwiftSetting] = [
@@ -24,6 +25,7 @@ let strictSettings: [SwiftSetting] = [
   .enableUpcomingFeature("InternalImportsByDefault"),
   .treatAllWarnings(as: .error),
 ]
+// jscpd:ignore-end
 
 let package = Package(
   name: "Core",

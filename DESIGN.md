@@ -38,9 +38,24 @@ colors:
   on-error-dark: "#0F1F1B"
   active-pill-light: "rgba(46,125,99,0.14)"
   active-pill-dark: "rgba(235,203,139,0.16)"
+  # Inverse: snackbar and "AI-generated preview" badge (ink with paper text in light, paper with ink in dark).
+  inverse-surface-light: "#1B1B19"
+  inverse-surface-dark: "#F2EFE8"
+  on-inverse-light: "#F2EFE8"
+  on-inverse-dark: "#1B1B19"
+  # Pressed overlays, laid over a component's own fill (overlayColor): light ink #1B1B19 at 12 % / 18 %,
+  # dark background #0F1F1B at 16 %.
+  pressed-overlay-light: "rgba(27,27,25,0.12)"
+  pressed-overlay-dark: "rgba(15,31,27,0.16)"
+  pressed-overlay-strong-light: "rgba(27,27,25,0.18)"
+  pressed-overlay-strong-dark: "rgba(15,31,27,0.16)"
   scrim: "rgba(27,27,25,0.45)"
+  # Capture camera: a dark ground, the same in both themes (C05).
   camera-ground: "#1B1B19"
   camera-track: "rgba(242,239,232,0.14)"
+  camera-paper: "#F2EFE8"
+  camera-ink: "#1B1B19"
+  camera-yellow: "#EBCB8B"
   # S3 Viridian (brand scheme: Welcome and onboarding only).
   background-brand: "#2E7D63"
   surface-brand: "#1F5A47"
@@ -204,6 +219,10 @@ motion:
   snackbar-undo-min: "5000ms"
   toast: "3000ms"
 components:
+  # Focus ring on every focusable control: a 2 px line, 2 px gap, following the control's own corners
+  # (the inline link, which has none, uses rounded.4).
+  focus-ring-light: { width: "2px", offset: "2px", color: "{colors.focus-light}" }
+  focus-ring-dark: { width: "2px", offset: "2px", color: "{colors.focus-dark}" }
   # C01 Buttons
   button-primary-light: { backgroundColor: "{colors.primary-light}", textColor: "{colors.on-primary-light}", typography: "{typography.button}", rounded: "{rounded.full}", height: "52px", padding: "0 24px" }
   button-primary-pressed-light: { backgroundColor: "{colors.primary-pressed-light}", textColor: "{colors.on-primary-light}" }
@@ -227,8 +246,10 @@ components:
   button-destructive-dark: { textColor: "{colors.error-fg-dark}", typography: "{typography.button}", rounded: "{rounded.full}", height: "44px", padding: "0 20px" }
   button-destructive-pressed-dark: { backgroundColor: "{colors.surface-2-dark}", textColor: "{colors.error-fg-dark}" }
   button-destructive-filled-light: { backgroundColor: "{colors.error-fg-light}", textColor: "{colors.on-error-light}", typography: "{typography.button}", rounded: "{rounded.full}", height: "52px", padding: "0 24px" }
+  button-destructive-filled-pressed-light: { backgroundColor: "{colors.error-fg-light}", textColor: "{colors.on-error-light}", overlayColor: "{colors.pressed-overlay-strong-light}" }
   button-destructive-filled-disabled-light: { backgroundColor: "{colors.error-bg-light}", textColor: "{colors.error-fg-light}" }
   button-destructive-filled-dark: { backgroundColor: "{colors.error-fg-dark}", textColor: "{colors.on-error-dark}", typography: "{typography.button}", rounded: "{rounded.full}", height: "52px", padding: "0 24px" }
+  button-destructive-filled-pressed-dark: { backgroundColor: "{colors.error-fg-dark}", textColor: "{colors.on-error-dark}", overlayColor: "{colors.pressed-overlay-strong-dark}" }
   button-destructive-filled-disabled-dark: { backgroundColor: "{colors.error-bg-dark}", textColor: "{colors.error-fg-dark}" }
   button-icon-light: { backgroundColor: "{colors.surface-2-light}", textColor: "{colors.text-light}", rounded: "{rounded.full}", size: "44px" }
   button-icon-pressed-light: { backgroundColor: "{colors.divider-light}", textColor: "{colors.text-light}" }
@@ -237,10 +258,14 @@ components:
   button-action-selected-light: { backgroundColor: "{colors.active-pill-light}", textColor: "{colors.primary-text-light}", typography: "{typography.caption-strong}", height: "56px", width: "48px" }
   button-action-selected-dark: { backgroundColor: "{colors.active-pill-dark}", textColor: "{colors.primary-text-dark}", typography: "{typography.caption-strong}", height: "56px", width: "48px" }
   button-capture-light: { backgroundColor: "{colors.primary-light}", textColor: "{colors.on-primary-light}", rounded: "{rounded.full}", size: "56px" }
+  button-capture-pressed-light: { backgroundColor: "{colors.primary-pressed-light}", textColor: "{colors.on-primary-light}" }
   button-capture-dark: { backgroundColor: "{colors.primary-dark}", textColor: "{colors.on-primary-dark}", rounded: "{rounded.full}", size: "56px" }
+  button-capture-pressed-dark: { backgroundColor: "{colors.primary-pressed-dark}", textColor: "{colors.on-primary-dark}" }
   # C03 Chips and tags
   chip-weather-light: { backgroundColor: "{colors.accent-light}", textColor: "{colors.on-accent-light}", typography: "{typography.label-sm}", rounded: "{rounded.full}", height: "34px", padding: "0 14px 0 11px" }
+  chip-weather-pressed-light: { backgroundColor: "{colors.accent-light}", textColor: "{colors.on-accent-light}", overlayColor: "{colors.pressed-overlay-light}" }
   chip-weather-dark: { backgroundColor: "{colors.accent-dark}", textColor: "{colors.on-accent-dark}", typography: "{typography.label-sm}", rounded: "{rounded.full}", height: "34px", padding: "0 14px 0 11px" }
+  chip-weather-pressed-dark: { backgroundColor: "{colors.accent-dark}", textColor: "{colors.on-accent-dark}", overlayColor: "{colors.pressed-overlay-dark}" }
   chip-context-light: { backgroundColor: "{colors.surface-2-light}", textColor: "{colors.text-light}", typography: "{typography.label-sm}", rounded: "{rounded.full}" }
   chip-context-dark: { backgroundColor: "{colors.surface-2-dark}", textColor: "{colors.text-dark}", typography: "{typography.label-sm}", rounded: "{rounded.full}" }
   chip-reason-light: { backgroundColor: "{colors.surface-2-light}", textColor: "{colors.text-light}", typography: "{typography.label-sm}", rounded: "{rounded.full}", height: "32px", padding: "0 12px 0 10px" }
@@ -285,8 +310,8 @@ components:
   # C04 Status and feedback
   badge-tile-light: { backgroundColor: "{colors.surface-light}", textColor: "{colors.text-light}", typography: "{typography.badge}", rounded: "{rounded.full}", height: "22px", padding: "0 8px 0 6px" }
   badge-tile-dark: { backgroundColor: "{colors.surface-dark}", textColor: "{colors.text-dark}", typography: "{typography.badge}", rounded: "{rounded.full}", height: "22px", padding: "0 8px 0 6px" }
-  badge-provenance-light: { backgroundColor: "{colors.text-light}", textColor: "{colors.text-dark}", typography: "{typography.badge}", rounded: "{rounded.full}", height: "22px", padding: "0 8px 0 6px" }
-  badge-provenance-dark: { backgroundColor: "{colors.text-dark}", textColor: "{colors.text-light}", typography: "{typography.badge}", rounded: "{rounded.full}", height: "22px", padding: "0 8px 0 6px" }
+  badge-provenance-light: { backgroundColor: "{colors.inverse-surface-light}", textColor: "{colors.on-inverse-light}", typography: "{typography.badge}", rounded: "{rounded.full}", height: "22px", padding: "0 8px 0 6px" }
+  badge-provenance-dark: { backgroundColor: "{colors.inverse-surface-dark}", textColor: "{colors.on-inverse-dark}", typography: "{typography.badge}", rounded: "{rounded.full}", height: "22px", padding: "0 8px 0 6px" }
   label-confidence: { typography: "{typography.label-sm}", rounded: "{rounded.full}", height: "28px" }
   banner-info-light: { backgroundColor: "{colors.info-bg-light}", textColor: "{colors.text-light}", typography: "{typography.subhead}", rounded: "{rounded.16}", padding: "12px 4px 12px 14px" }
   banner-success-light: { backgroundColor: "{colors.success-bg-light}", textColor: "{colors.text-light}", typography: "{typography.subhead}", rounded: "{rounded.16}", padding: "12px 4px 12px 14px" }
@@ -297,8 +322,8 @@ components:
   banner-dark: { backgroundColor: "{colors.surface-dark}", textColor: "{colors.text-dark}", typography: "{typography.subhead}", rounded: "{rounded.16}", padding: "12px 4px 12px 14px" }
   banner-warning-dark: { backgroundColor: "{colors.warning-bg-dark}", textColor: "{colors.text-dark}", typography: "{typography.subhead}", rounded: "{rounded.16}", padding: "12px 4px 12px 14px" }
   banner-offline-dark: { backgroundColor: "{colors.surface-2-dark}", textColor: "{colors.text-dark}", typography: "{typography.subhead}", rounded: "{rounded.16}", padding: "12px 4px 12px 14px" }
-  snackbar-light: { backgroundColor: "{colors.text-light}", textColor: "{colors.text-dark}", typography: "{typography.subhead-medium}", rounded: "{rounded.16}", height: "56px", padding: "0 6px 0 16px" }
-  snackbar-dark: { backgroundColor: "{colors.text-dark}", textColor: "{colors.text-light}", typography: "{typography.subhead-medium}", rounded: "{rounded.16}", height: "56px", padding: "0 6px 0 16px" }
+  snackbar-light: { backgroundColor: "{colors.inverse-surface-light}", textColor: "{colors.on-inverse-light}", typography: "{typography.subhead-medium}", rounded: "{rounded.16}", height: "56px", padding: "0 6px 0 16px" }
+  snackbar-dark: { backgroundColor: "{colors.inverse-surface-dark}", textColor: "{colors.on-inverse-dark}", typography: "{typography.subhead-medium}", rounded: "{rounded.16}", height: "56px", padding: "0 6px 0 16px" }
   toast: { typography: "{typography.subhead-medium}", rounded: "{rounded.full}", height: "44px" }
   progress-track-light: { backgroundColor: "{colors.surface-2-light}", rounded: "{rounded.3}", height: "6px" }
   progress-fill-light: { backgroundColor: "{colors.primary-light}", rounded: "{rounded.3}", height: "6px" }
@@ -325,9 +350,9 @@ components:
   segmented-control-selected-light: { backgroundColor: "{colors.surface-light}", textColor: "{colors.text-light}", typography: "{typography.subhead}", rounded: "{rounded.full}", height: "36px" }
   segmented-control-dark: { backgroundColor: "{colors.surface-dark}", rounded: "{rounded.full}", height: "44px", padding: "4px" }
   segmented-control-selected-dark: { backgroundColor: "{colors.surface-2-dark}", textColor: "{colors.text-dark}", typography: "{typography.subhead}", rounded: "{rounded.full}", height: "36px" }
-  camera-mode-switch: { backgroundColor: "{colors.camera-track}", textColor: "{colors.text-dark}", rounded: "{rounded.full}", height: "36px", padding: "0 18px" }
-  camera-mode-selected-light: { backgroundColor: "{colors.text-dark}", textColor: "{colors.text-light}", typography: "{typography.subhead}" }
-  camera-mode-selected-dark: { backgroundColor: "{colors.primary-dark}", textColor: "{colors.on-primary-dark}", typography: "{typography.subhead}" }
+  camera-mode-switch: { backgroundColor: "{colors.camera-track}", textColor: "{colors.camera-paper}", rounded: "{rounded.full}", height: "36px", padding: "0 18px" }
+  camera-mode-selected-light: { backgroundColor: "{colors.camera-paper}", textColor: "{colors.camera-ink}", typography: "{typography.subhead}" }
+  camera-mode-selected-dark: { backgroundColor: "{colors.camera-yellow}", textColor: "{colors.camera-ink}", typography: "{typography.subhead}" }
   # C06 Inputs and forms
   text-field-light: { backgroundColor: "{colors.surface-light}", textColor: "{colors.text-light}", typography: "{typography.body}", rounded: "{rounded.12}", height: "48px", padding: "0 14px" }
   text-field-dark: { backgroundColor: "{colors.surface-dark}", textColor: "{colors.text-dark}", typography: "{typography.body}", rounded: "{rounded.12}", height: "48px", padding: "0 14px" }
@@ -407,7 +432,7 @@ The 2D outfit collage (real cutouts arranged by slot) is the hero outfit view an
 
 A warm, low-chroma paper palette with a single garden-green accent in light and a single Naples-yellow accent in dark.
 
-**Themes and modes.** The DESIGN.md format has no mode support, so every theme-dependent token carries a suffix: `-light` = **S1 Garden Light**, `-dark` = **S2 Garden Dark**. These are the two default themes; the app follows the phone's appearance setting (S1 in light, S2 in dark). Tokens without a suffix (`scrim`, `camera-ground`, `camera-track`) are the same in both. Two more schemes use their own suffixes: `-brand` = **S3 Viridian** and `-hc-light` / `-hc-dark` = **S7 High Contrast**. The native generator emits one semantic name per pair (for example `surface-2-light` + `surface-2-dark` → `color.surface2`), matching the R2 token names `color.background`, `color.surface`, `color.surface2`, `color.text`, `color.textSecondary`, `color.divider`, `color.outline`, `color.primary`, `color.onPrimary`, `color.primaryText`, `color.accent`, `color.onAccent`, `color.focus` and `color.status.<name>.fg|bg`.
+**Themes and modes.** The DESIGN.md format has no mode support, so every theme-dependent token carries a suffix: `-light` = **S1 Garden Light**, `-dark` = **S2 Garden Dark**. These are the two default themes; the app follows the phone's appearance setting (S1 in light, S2 in dark). Tokens without a suffix (`scrim` and the `camera-*` colours) are the same in both. Two more schemes use their own suffixes: `-brand` = **S3 Viridian** and `-hc-light` / `-hc-dark` = **S7 High Contrast**. The native generator emits one semantic name per pair (for example `surface-2-light` + `surface-2-dark` → `color.surface2`), matching the R2 token names `color.background`, `color.surface`, `color.surface2`, `color.text`, `color.textSecondary`, `color.divider`, `color.outline`, `color.primary`, `color.onPrimary`, `color.primaryText`, `color.accent`, `color.onAccent`, `color.focus` and `color.status.<name>.fg|bg`.
 
 **Brand scheme.** **S3 Viridian** (`*-brand`) is used only on Welcome and onboarding: a viridian ground with paper text and a Naples-yellow primary. `text-secondary-brand` sits on `surface-brand` only, never on the viridian ground; `primary-text-brand` on `background-brand` is for text 24 pt and up only (3.2:1).
 
@@ -420,7 +445,7 @@ A warm, low-chroma paper palette with a single garden-green accent in light and 
 - **Active pill** (`active-pill-light` = primary at 14 %, `active-pill-dark` = #EBCB8B at 16 %): soft pill behind the active tab and behind selected action buttons and priming rows.
 
 ### Secondary
-- **Naples Yellow** (`accent-light`) / **Sage** (`accent-dark`): fill only, never text. Weather chip in the context strip, "Differs" tag, capture-queue badge, trial pill on the profile card. Text on it is `on-accent-*`.
+- **Naples Yellow** (`accent-light`) / **Sage** (`accent-dark`): fill only, never text (one named exception, Undo on inverse surfaces; see The Accent Is Fill Rule). Weather chip in the context strip, "Differs" tag, capture-queue badge, trial pill on the profile card. Text on it is `on-accent-*`.
 
 ### Neutral
 - **Paper Ground** (`background-*`): every screen's ground.
@@ -429,8 +454,10 @@ A warm, low-chroma paper palette with a single garden-green accent in light and 
 - **Ink** (`text-*`) and **Stone** (`text-secondary-*`): body and secondary text.
 - **Hairline** (`divider-*`): 1 px dividers and card rings only, never text.
 - **Field Edge** (`outline-*`): input and secondary-button outlines (3:1 non-text contrast).
-- **Focus** (`focus-*`): 2 px focus ring at 2 px offset on every focusable control.
-- `scrim`: behind sheets and dialogs (#1B1B19 at 45 %). `camera-ground` + `camera-track`: the capture camera.
+- **Focus** (`focus-*`): 2 px focus ring at 2 px offset on every focusable control (`focus-ring-*` in the components), following the control's own corners.
+- **Inverse** (`inverse-surface-*` / `on-inverse-*`): colours that swap between themes, ink with paper text in light and paper with ink text in dark. Snackbar and "AI-generated preview" badge only.
+- **Pressed overlays** (`pressed-overlay-*`, `pressed-overlay-strong-*`): a tint laid over a component's own fill while it is pressed (`overlayColor` on its `-pressed` entry). Light: ink #1B1B19 at 12 % (weather chip) or 18 % (filled destructive button). Dark: background #0F1F1B at 16 % for both. `primary-pressed-dark` is that dark overlay already flattened onto `primary-dark`.
+- `scrim`: behind sheets and dialogs (#1B1B19 at 45 %). **Camera** (`camera-ground`, `camera-track`, `camera-paper`, `camera-ink`, `camera-yellow`): the capture camera, a dark ground that looks the same in both themes except for the selected mode (C05).
 
 ### Status
 Always icon + label, never colour alone. Light: `*-fg-light` text/icon on `*-bg-light`. Dark: dark fg on the dark tint, or on `surface-dark` with a divider ring for banners; the warning banner uses `warning-bg-dark` (#33280F), never a mixed tint; the offline banner uses `surface-2-*`.
@@ -464,7 +491,7 @@ S7 High Contrast (light and dark): every text pair is at least 12:1.
 ### Named Rules
 **The Confidence Is Words Rule.** Confidence is always a text band ("High confidence", "Medium confidence", "Low confidence · check this", "Good match", "Approximate"), never colour alone and never a percentage.
 
-**The Accent Is Fill Rule.** `accent-*` is a fill, never a text colour. Text on it is `on-accent-*`.
+**The Accent Is Fill Rule.** `accent-*` is a fill, never a text colour. Text on it is `on-accent-*`. One named exception, **Undo on inverse surfaces**: the snackbar's Undo action is `accent-light` text on `inverse-surface-light` (11.0:1). It applies in light only; dark Undo is `primary-text-light` on `inverse-surface-dark` (7.0:1), as drawn on C04.
 
 **The No New Colours Rule.** Every colour on screen is a token above. A colour the canvas does not have needs an approved canvas change first.
 
@@ -576,17 +603,17 @@ Soft, rounded, friendly geometry. Interactive things are pills; containers are g
 
 ## Components
 
-Every component is drawn in S1 and S2 on its canvas board, with states in this order: default, pressed, focused (2 px focus ring, 2 px offset), disabled (surface-2 fill + text-secondary label, never opacity alone on text, text ≥ 3:1), loading, error, selected. Frontmatter carries colours, type, radius and size, plus shadows (`elevation`), `motion` and the outline-ring width; outline colours, rings and overlays are described here.
+Every component is drawn in S1 and S2 on its canvas board, with states in this order: default, pressed, focused (`focus-ring-*`: 2 px ring, 2 px gap, following the control's corners), disabled (surface-2 fill + text-secondary label, never opacity alone on text, text ≥ 3:1), loading, error, selected. Frontmatter carries colours, type, radius and size, plus shadows (`elevation`), `motion`, the outline-ring width, the focus ring and the pressed overlays (`overlayColor`); outline colours and the other rings are described here.
 
 ### Buttons (C01)
 - **Shape:** pill (full radius).
-- **Primary:** Large 52 (padding 0 24), Medium 44 (0 20), Small 36 (0 16, 15/600, 44 hit area); leading icon 20, gap 8. Full width inside the 20 margins or hugs content. Pressed light `primary-pressed-light`, dark background overlay 16 %; 150 ms. Loading: spinner 20, label stays, busy state announced.
+- **Primary:** Large 52 (padding 0 24), Medium 44 (0 20), Small 36 (0 16, 15/600, 44 hit area); leading icon 20, gap 8. Full width inside the 20 margins or hugs content. Pressed `primary-pressed-*` (dark: the background 16 % overlay, flattened); 150 ms. Loading: spinner 20, label stays, busy state announced.
 - **Secondary (outlined):** 1.5 `outline-*` ring, text colour; pressed fills surface-2; disabled divider ring + text-secondary.
 - **Text button:** 44 high, padding 0 12, primary-text; pressed surface-2 pill. **Inline link:** Callout 15/600, underline offset 3, focus ring radius 4.
-- **Destructive:** outlined (error text + 1.5 ring, trash 20; pressed error-bg light, surface-2 dark) for rows and screens; filled (error fill, `on-error-*` text) only for the final confirm inside a dialog. Pressed filled: ink overlay 18 % light, background overlay 16 % dark. Cancel stays enabled while deleting.
+- **Destructive:** outlined (error text + 1.5 ring, trash 20; pressed error-bg light, surface-2 dark) for rows and screens; filled (error fill, `on-error-*` text) only for the final confirm inside a dialog. Pressed filled: `pressed-overlay-strong-*` (ink 18 % light, background 16 % dark). Cancel stays enabled while deleting.
 - **Icon buttons:** 44 circle on surface-2 (pressed divider) or ghost; icon 24. Accessible name is verb + object ("Back", "Close", "More options for this outfit").
 - **Action row (Today):** Save · Schedule · Like · Dislike · More; icon 24 over Caption, min 48 × 56, gap 2. Selected: active pill, filled icon, label changes (Like → Liked, Save → Saved) at 600.
-- **Capture centre tab:** raised primary circle, camera icon 26, 4 surface ring, Caption 12/600 label; opens the camera modal.
+- **Capture centre tab:** raised primary circle, camera icon 26, 4 surface ring, Caption 12/600 label; pressed `primary-pressed-*`; opens the camera modal.
 - **Sign-in:** official Apple and Google button artwork, 52 tall, full width; "Continue with passkey" is a secondary Large with a key icon 20, same width.
 - **Equal-weight pairs:** Skip + Continue side by side, 52 each, flex 1 : 1, gap 12 (Skip outlined, Continue primary); stacked pairs full width, 52 each, gap 10.
 
@@ -594,7 +621,7 @@ Every component is drawn in S1 and S2 on its canvas board, with states in this o
 Navigation, actions, weather and context, closet, status, account and settings sets, as listed on the board. Status icons use the status foregrounds. Every icon sits in a 44 pt / 48 dp target.
 
 ### Chips and tags (C03)
-- **Weather chip (context strip):** 34 in a 44 target, padding 0 14 0 11, label-sm, accent / on-accent, icon 18; pressed ink 12 % overlay (dark: background 16 % overlay).
+- **Weather chip (context strip):** 34 in a 44 target, padding 0 14 0 11, label-sm, accent / on-accent, icon 18; pressed `pressed-overlay-*` (ink 12 % light, background 16 % dark).
 - **Occasion / holiday chips:** surface-2 / text, pressed divider. Holiday only when one applies. **Override chip:** surface + 1.5 primary-text ring, house + pencil icon, "your setting" in primary-text. No selected state; tap opens a sheet.
 - **Freshness caption:** chips gap 8; source + time ("Open-Meteo · 07:10") in Caption text-secondary, always visible.
 - **Reason chip:** 32 in a 44 target, padding 0 12 0 10, label-sm, surface-2 / text, icon 16 in primary-text; text comes from reason-code templates. Expanded: primary-text fill + white (dark: primary / ink) + chevron up. **Expanded reason row:** padding 14 16, radius 16, surface + divider ring, sentence in Callout, fact 13/600 with icon disc, freshness in Caption.
@@ -611,10 +638,10 @@ Navigation, actions, weather and context, closet, status, account and settings s
 ### Status and feedback (C04)
 - **Tile badges:** 22, padding 0 8 0 6, icon 12 + badge text, inset 6 bottom-left. Processing = info, Needs attention = warning, Waiting to sync and availability (Laundry, Packed · until 24 Oct, Lent · to Mari, Repair, Archived) on surface. Unavailable tiles mute the image, never the label.
 - **Confidence label:** 28, bars icon 16 + text band, label-sm.
-- **Provenance badge:** "AI-generated preview" pill (ink on light, paper on dark), 22, top-left of every generated view, with the confidence label bottom-left. Inline 13/600. Never on real photos. **Freshness label:** "Cached · based on data from 07:10", 13/18 secondary.
+- **Provenance badge:** "AI-generated preview" pill in inverse colours (`inverse-surface-*` / `on-inverse-*`: ink on light, paper on dark), 22, top-left of every generated view, with the confidence label bottom-left. Inline 13/600. Never on real photos. **Freshness label:** "Cached · based on data from 07:10", 13/18 secondary.
 - **Banners:** full width (screen − 40), padding 12 4 12 14, radius 16, icon 20, title 15/600, body 13/18, action 13/600 in the status fg, dismiss 44 × 44. Kinds: info, success, warning, error, offline (surface-2), stale (surface + divider).
 - **Inline field message:** 13/18, 6 below the field; error = 2 px error ring + icon 16 + fix link, value kept as typed; helper in secondary.
-- **Snackbar:** 56, radius 16, inverse colours, Undo in accent 15/700 (dark: primary-text-light), 16 above the tab bar. **Toast:** 44 pill, icon 18 + 15/500, no action.
+- **Snackbar:** 56, radius 16, inverse colours (`inverse-surface-*` / `on-inverse-*`), Undo 15/700 in `accent-light` (dark: `primary-text-light`; the Undo on inverse surfaces exception to The Accent Is Fill Rule), 16 above the tab bar. **Toast:** 44 pill, icon 18 + 15/500, no action.
 - **Progress:** linear track 6 (radius 3, surface-2, primary fill), ring 40 stroke 4, steps, upload row. Counts in words ("5 of 8"), never invented percentages.
 - **Skeletons:** surface-2 blocks on surface matching the final layout (outfit card, item tile, list row); slow shimmer, none under reduced motion; announced once as "Loading".
 - **State templates (empty, error, offline):** padding 20, radius 24, illustration slot 96 × 64, Title3 title, Callout body naming the cause, one action (button 48). Offline keeps cached content visible.
@@ -623,7 +650,7 @@ Navigation, actions, weather and context, closet, status, account and settings s
 - **Tab bar:** 390 × 78, surface, top divider, padding 8 8 20, items 64 wide. Active: 56 × 30 active pill behind primary-text icon + caption-strong label. Inactive: text-secondary, 500. Capture: 56 primary circle, raised 26. Capture queue badge: min 22, accent / on-accent, 12/22 700, 2 px surface ring, label "Capture, 2 uploads in progress".
 - **Top bars:** large title 72 (overline 11/14 caps + Young Serif 34/40, profile button 44 on surface-2); compact 52; standard 52; modal 56; search 60 (field 44, radius 12, outline, Cancel 17/600 primary-text).
 - **Segmented control:** track 44, padding 4, pill; segment 36; selected surface + segment-thumb shadow (dark: surface-2 + 1 px outline), 15/20 600; others 500 text-secondary; disabled no track fill, 1 px divider.
-- **Camera mode switch:** Single | Batch | Library on camera-ground; track camera-track; segment 36, padding 0 18; selected paper / ink (dark: primary / ink); upload badge 36 with 1.5 ring, 14/600.
+- **Camera mode switch:** Single | Batch | Library on camera-ground; track camera-track; segment 36, padding 0 18; labels `camera-paper`; selected `camera-paper` / `camera-ink` (dark: `camera-yellow` / `camera-ink`, the S2 primary yellow); upload badge 36 with 1.5 ring, 14/600.
 - **Page dots:** row 44; active 24 × 8 primary; inactive 8 × 8 outline; gap 8. **Step progress:** back 44, "Step 5 of 6" Footnote 13/18 600, "Finish later" 15/600 primary-text, bar 4 (track divider, fill primary).
 - **In-screen controls:** group/sort chips 36 in 44 targets (surface, divider ring, 14/18, value 600, opens a list sheet); grid/list toggle (track 44 surface-2, icon segments 44 × 36, labelled "Grid" / "List").
 - **Deep-link fallback banner:** radius 16, info colours (dark: surface-2 + divider), dismiss 44 ("That item was deleted — here's your closet").
@@ -698,7 +725,7 @@ Flat item art for tiles and outfit cards (tops, bottoms, one-pieces, outerwear, 
 - **Don't** show a generated image without the "AI-generated preview" badge + confidence, and never put that badge on a real photo.
 - **Don't** add a second primary button to a screen, or make Skip / Not now smaller or lighter than its partner.
 - **Don't** write explanation text by hand or with an LLM: reason chips and their detail come from reason-code templates, and they never mention body data.
-- **Don't** add colours, font sizes, spacing values or radii that are not in this file; don't use opacity alone for disabled text; don't use `accent-*` or `divider-*` as a text colour.
+- **Don't** add colours, font sizes, spacing values or radii that are not in this file; don't use opacity alone for disabled text; don't use `accent-*` or `divider-*` as a text colour (the one exception: Undo on inverse surfaces).
 - **Don't** put shadows on cards, or blur a paywall or upgrade card.
 - **Don't** show shopping links, budget fields or any commerce.
 - **Don't** use body judgment, BMI or health framing, attractiveness scores, or gendered labels for body presets (use "broad-shouldered", "curvy", "straight", "softer").

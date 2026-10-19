@@ -69,6 +69,10 @@ const BYTE = '(\\d{1,3})';
 export const isKebab = (key) => KEBAB.test(key);
 /** Component property and map-field names are lowerCamelCase, as in the DESIGN.md format. */
 export const isPropertyName = (name) => /^[a-z][A-Za-z0-9]*$/.test(name);
+/** A property or field that holds a colour: `color` or any `…Color` (`backgroundColor`). */
+export const isColourProperty = (name) => name === 'color' || name.endsWith('Color');
+/** S7 High Contrast schemes: their variants may change more than colours (the 3 px focus ring). */
+export const isHighContrast = (scheme) => scheme === 'hc-light' || scheme === 'hc-dark';
 export const isPlainObject = (v) => typeof v === 'object' && v !== null && !Array.isArray(v);
 /** `dynamicType: .title2` and `dynamicType: title2` both name `title2`. */
 export const dynamicTypeName = (v) => (typeof v === 'string' ? v.replace(/^\./, '') : null);
@@ -138,9 +142,13 @@ export function parseDurationMs(value) {
   return m[2] === 's' ? Math.round(Number(m[1]) * 1e6) / 1e3 : Number(m[1]);
 }
 
-/** `cubic-bezier(0.2, 0, 0, 1)` -> `[0.2, 0, 0, 1]` (x1 and x2 within 0–1). */
+/**
+ * `cubic-bezier(0.2, 0, 0, 1)` -> `[0.2, 0, 0, 1]` (x1 and x2 within 0–1). The CSS keyword
+ * `linear` is the curve `[0, 0, 1, 1]`.
+ */
 export function parseCubicBezier(value) {
   if (typeof value !== 'string') return null;
+  if (value.trim() === 'linear') return [0, 0, 1, 1];
   const arg = `\\s*(${NUMBER})\\s*`;
   const m = new RegExp(`^cubic-bezier\\(${arg},${arg},${arg},${arg}\\)$`).exec(value.trim());
   if (!m) return null;

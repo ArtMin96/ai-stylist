@@ -1,16 +1,18 @@
 // In-process tests for the in-memory DTCG 2025.10 model and resolver (normalise.mjs) built from
 // the synthetic fixture: colour roles and the five contexts, the DTCG value formats, type styles,
-// scales, elevation, motion and component tokens with role keys and states. These are the facts
-// the Swift and Kotlin emitters rely on. Run by scripts/test/design-tokens.test.sh.
+// scales, elevation, motion, and component tokens with role keys, states and scheme-dependent
+// values. These are the facts the Swift and Kotlin emitters rely on. Run by
+// scripts/test/design-tokens.test.sh.
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import path from 'node:path';
 import { test } from 'node:test';
 
-import { CONTEXT_SOURCES, normalise, resolveColors } from '../normalise.mjs';
+import { CONTEXT_SOURCES, normalise, resolveColors, resolveComponents } from '../normalise.mjs';
 import { parseDesignMd } from '../parse.mjs';
-import { loadTokens } from '../pipeline.mjs';
+import { formatFinding, loadTokens } from '../pipeline.mjs';
 import { CONTEXTS } from '../syntax.mjs';
+import { validate } from '../validate.mjs';
 
 const VALID = readFileSync(
   path.resolve(import.meta.dirname, '..', 'fixtures', '_valid', 'DESIGN.md'),
@@ -24,6 +26,15 @@ const hexIn = (context) => {
 };
 const px = (value) => ({ value, unit: 'px' });
 const alias = (type, ref) => ({ $type: type, $value: ref });
+
+/** The model of the valid fixture after `edit(frontmatter)`, which must leave it valid. */
+function modelOfEdited(edit) {
+  const parsed = parseDesignMd(VALID);
+  edit(parsed.frontmatter);
+  const findings = validate(parsed);
+  assert.deepEqual(findings, [], findings.map(formatFinding).join('\n'));
+  return normalise(parsed.frontmatter);
+}
 
 test('colour roles keep first-appearance order; unpaired colours are fixed roles', () => {
   assert.deepEqual(model.roles, [
@@ -151,6 +162,26 @@ test('elevation and motion hold single values and one-level groups', () => {
   });
 });
 
+test('`linear`, a motion alias and a literal shadow colour normalise', () => {
+  const edited = modelOfEdited((fm) => {
+    fm.motion.tap = { duration: '150ms', easing: 'linear' };
+    fm.motion.sheet = { duration: '250ms', easing: '{motion.easing-enter}' };
+    fm.elevation.sheet.color = 'rgba(27,27,25,0.14)';
+  });
+  const { motion, elevation } = edited.sets.primitives;
+  assert.deepEqual(motion.tap.easing, { $type: 'cubicBezier', $value: [0, 0, 1, 1] });
+  assert.deepEqual(motion.sheet.easing, alias('cubicBezier', '{motion.easing-enter}'));
+  assert.deepEqual(elevation.sheet.color, {
+    $type: 'color',
+    $value: {
+      colorSpace: 'srgb',
+      components: [27 / 255, 27 / 255, 25 / 255],
+      alpha: 0.14,
+      hex: '#1b1b19',
+    },
+  });
+});
+
 test('a component group: role and scale aliases, padding sides, state subgroups', () => {
   assert.deepEqual(Object.keys(components), ['button-primary', 'chip-outline', 'overlay']);
   assert.deepEqual(components['button-primary'], {
@@ -183,6 +214,54 @@ function colourTokens(group) {
     return node.$type === 'color' ? [node] : [];
   });
 }
+
+test('without scheme-dependent values, every context resolves to the components set', () => {
+  for (const context of CONTEXTS) {
+    assert.deepEqual(model.modifiers.theme.contexts[context].components, {}, context);
+    assert.deepEqual(resolveComponents(model, context), components, context);
+  }
+});
+
+test('a value that differs by scheme moves to each scheme context; the rest stays shared', () => {
+  const edited = modelOfEdited((fm) => {
+    fm.components['button-primary-pressed-dark'].backgroundColor = '{colors.primary-dark}';
+    fm.components['button-primary-hc-light'] = {
+      ...fm.components['button-primary-light'],
+      backgroundColor: '{colors.background-hc-light}',
+      textColor: '{colors.text-hc-light}',
+      height: '56px',
+    };
+  });
+  const shared = edited.sets.components['button-primary'];
+  const sides = ['paddingTop', 'paddingEnd', 'paddingBottom', 'paddingStart'];
+  assert.deepEqual(Object.keys(shared), ['typography', 'rounded', ...sides, 'pressed']);
+  assert.deepEqual(shared.pressed, {});
+  const declared = (context) => edited.modifiers.theme.contexts[context].components;
+  const height = (value) => ({ $type: 'dimension', $value: px(value) });
+  assert.deepEqual(declared('light')['button-primary'], {
+    backgroundColor: alias('color', '{colors.primary}'),
+    textColor: alias('color', '{colors.on-primary}'),
+    height: height(48),
+    pressed: { backgroundColor: alias('color', '{colors.primary-pressed}') },
+  });
+  assert.deepEqual(declared('hc-light')['button-primary'], {
+    backgroundColor: alias('color', '{colors.background}'),
+    textColor: alias('color', '{colors.text}'),
+    height: height(56),
+  });
+  assert.deepEqual(declared('brand'), {});
+  const resolved = (context) => resolveComponents(edited, context)['button-primary'];
+  assert.deepEqual(resolved('brand').pressed, {
+    backgroundColor: alias('color', '{colors.primary}'),
+  });
+  assert.deepEqual(resolved('brand').height, height(48));
+  assert.deepEqual(resolved('hc-light').height, height(56));
+  assert.deepEqual(resolved('hc-light').pressed, {
+    backgroundColor: alias('color', '{colors.primary-pressed}'),
+  });
+  assert.deepEqual(resolved('hc-dark').backgroundColor, alias('color', '{colors.primary}'));
+  assert.deepEqual(resolved('light').typography, shared.typography);
+});
 
 test('no component colour is a resolved value: each is an alias to a known role', () => {
   const roleKeys = new Set(model.roles.map((r) => r.key));

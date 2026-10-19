@@ -109,4 +109,4 @@ Synthetic input for the design-token generator tests. Every value is made up.
 
 ## Colors
 
-Unpaired by design: `scrim`, `ring-light`.
+Unpaired by design: `ring-light`, `chip-outline-light`.

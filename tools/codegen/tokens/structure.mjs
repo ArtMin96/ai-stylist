@@ -1,7 +1,8 @@
 // Derives the token structure from the raw frontmatter, without judging it: colour keys grouped
-// into roles, component keys grouped into components, states and scheme variants, and the
-// `Unpaired by design:` prose line. The validator (validate.mjs) judges; the normaliser
-// (normalise.mjs) builds the DTCG model from the same structure.
+// into roles, keys without their light/dark twin, component keys grouped into components, states
+// and scheme variants, and the `Unpaired by design:` prose line. The validator (validate.mjs,
+// twin-rule.mjs) judges; the normaliser (normalise.mjs) builds the DTCG model from the same
+// structure.
 import { splitScheme, splitState } from './syntax.mjs';
 
 export const UNPAIRED_PREFIX = 'Unpaired by design: ';
@@ -9,7 +10,8 @@ export const UNPAIRED_PREFIX = 'Unpaired by design: ';
 /**
  * Colour roles in first-appearance order. A base with both a `-light` and a `-dark` key is a
  * scheme role (`{ key: base, fixed: false, schemes: Map(scheme -> colour key) }`); every other
- * colour key is unpaired and becomes a fixed role named by its full key, the same in every context.
+ * colour key (suffix-free, or unpaired by design) becomes a fixed role named by its full key, the
+ * same in every context.
  */
 export function colorRoles(colors) {
   const bases = new Map();
@@ -20,7 +22,6 @@ export function colorRoles(colors) {
   }
   const roles = [];
   const roleOfKey = new Map();
-  const unpaired = [];
   for (const [base, keys] of bases) {
     const schemes = new Map(keys.filter((k) => k.scheme).map((k) => [k.scheme, k.key]));
     const paired = schemes.has('light') && schemes.has('dark');
@@ -29,13 +30,31 @@ export function colorRoles(colors) {
         roleOfKey.set(key, base);
         continue;
       }
-      unpaired.push(key);
       roleOfKey.set(key, key);
       roles.push({ key, fixed: true, schemes: new Map([['fixed', key]]) });
     }
     if (paired) roles.push({ key: base, fixed: false, schemes });
   }
-  return { roles, roleOfKey, unpaired };
+  return { roles, roleOfKey };
+}
+
+/**
+ * The keys of one group that break the Twin Rule (DESIGN.md "Named Rules"): a scheme-suffixed key
+ * whose base lacks the `-light` or the `-dark` key. Suffix-free keys are the same in every scheme,
+ * so they are never unpaired.
+ */
+export function unpairedKeys(group) {
+  const schemesOfBase = new Map();
+  const suffixed = [];
+  for (const key of Object.keys(group)) {
+    const { base, scheme } = splitScheme(key);
+    if (!scheme) continue;
+    if (!schemesOfBase.has(base)) schemesOfBase.set(base, new Set());
+    schemesOfBase.get(base).add(scheme);
+    suffixed.push({ key, base });
+  }
+  const paired = (base) => ['light', 'dark'].every((s) => schemesOfBase.get(base).has(s));
+  return suffixed.filter(({ base }) => !paired(base)).map(({ key }) => key);
 }
 
 /**

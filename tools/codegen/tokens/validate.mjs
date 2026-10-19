@@ -2,13 +2,14 @@
 // TK-12 is the pinned `@google/design.md` lint (upstream-lint.mjs). Every rule reports and the run
 // continues, so one pass lists every finding; only TK-01 stops early, when a group is unusable.
 import { tokensTypeName, memberId, propertyIds } from './naming.mjs';
-import { colorRoles, componentGroups, unpairedLines } from './structure.mjs';
+import { colorRoles, componentGroups } from './structure.mjs';
 import {
   DYNAMIC_TYPE_STYLES,
   M3_ROLES,
   META_KEYS,
   TOKEN_GROUPS,
   dynamicTypeName,
+  isColourProperty,
   isKebab,
   isPlainObject,
   isPropertyName,
@@ -21,6 +22,7 @@ import {
   parseReference,
   splitScheme,
 } from './syntax.mjs';
+import { checkPairing, checkVariantsAgree } from './twin-rule.mjs';
 
 const TYPE_KEYS = [
   'fontFamily',
@@ -34,11 +36,11 @@ const TYPE_KEYS = [
 /** Groups whose keys name a type, role or style, so they must start with a letter. */
 const NAMED_GROUPS = ['colors', 'typography', 'components'];
 const SCALE_GROUPS = ['rounded', 'spacing', 'elevation', 'motion'];
-/** Which groups an entry of each group may reference. */
+/** Which groups an entry of each group may reference (motion: a shared curve). */
 const REFERABLE = {
   components: ['colors', 'typography', 'rounded', 'spacing', 'elevation', 'motion'],
   elevation: ['colors', 'rounded', 'spacing'],
-  motion: [],
+  motion: ['motion'],
 };
 
 /** Validates parsed frontmatter + body; returns `{ rule, at, message }` findings in file order. */
@@ -47,7 +49,8 @@ export function validate({ frontmatter, body }) {
   const add = (rule, at, message) => findings.push({ rule, at, message });
   if (!checkTopLevel(frontmatter, add)) return findings;
   const ctx = { fm: frontmatter, colours: colorRoles(frontmatter.colors), add };
-  checkColors(ctx, body);
+  checkColors(ctx);
+  checkPairing(ctx, body);
   checkTypography(frontmatter.typography, add);
   checkScale(ctx, 'rounded');
   checkScale(ctx, 'spacing');
@@ -69,42 +72,14 @@ function checkTopLevel(fm, add) {
   return missing.length === 0;
 }
 
-/** TK-11 colour literals; TK-02 light/dark pairing and the `Unpaired by design:` line. */
-function checkColors({ fm, colours, add }, body) {
+/** TK-11 colour literals. */
+function checkColors({ fm, add }) {
   for (const [key, value] of Object.entries(fm.colors)) {
     if (!parseColor(value)) {
       const text = `${JSON.stringify(value)} is not #RRGGBB, #RRGGBBAA, rgb() or rgba()`;
       add('TK-11', `colors.${key}`, text);
     }
   }
-  const { lines, malformed } = unpairedLines(body);
-  for (const text of malformed) {
-    add('TK-02', 'body', `"${text}" must read exactly \`Unpaired by design: <token>, …\``);
-  }
-  if (lines.length > 1) add('TK-02', 'body', 'more than one `Unpaired by design:` line');
-  const listed = new Set();
-  for (const token of lines.flat()) {
-    if (listed.has(token)) add('TK-02', 'body', `\`${token}\` is listed twice`);
-    listed.add(token);
-    if (!Object.hasOwn(fm.colors, token)) {
-      add('TK-02', 'body', `\`${token}\` on the unpaired line is not a colour token`);
-    } else if (!colours.unpaired.includes(token)) {
-      add('TK-02', `colors.${token}`, 'is listed as unpaired by design but has a light/dark twin');
-    }
-  }
-  for (const key of colours.unpaired) {
-    if (!listed.has(key)) {
-      const gap = pairingGap(key);
-      add('TK-02', `colors.${key}`, `${gap} and is not on the \`Unpaired by design:\` line`);
-    }
-  }
-}
-
-function pairingGap(key) {
-  const { scheme } = splitScheme(key);
-  if (scheme === 'light') return 'has no `-dark` twin';
-  if (scheme === 'dark') return 'has no `-light` twin';
-  return scheme ? 'has no `-light` + `-dark` base' : 'has no scheme suffix';
 }
 
 /** TK-08 typography entries; TK-09 each M3 role exactly once. */
@@ -174,7 +149,7 @@ function checkSingleValues(ctx, group) {
     if (Array.isArray(value)) {
       ctx.add('TK-07', at, 'a list is not a single value');
     } else if (!isPlainObject(value)) {
-      checkSingleValue(ctx, group, at, value, scheme);
+      checkSingleValue(ctx, { group, at, value, scheme, field: null });
     } else if (Object.keys(value).length === 0) {
       ctx.add('TK-07', at, 'an empty mapping holds no value');
     } else {
@@ -182,34 +157,48 @@ function checkSingleValues(ctx, group) {
         if (isPlainObject(v) || Array.isArray(v)) {
           ctx.add('TK-07', `${at}.${field}`, 'nested deeper than one level: use single values');
         } else {
-          checkSingleValue(ctx, group, `${at}.${field}`, v, scheme);
+          checkSingleValue(ctx, { group, at: `${at}.${field}`, value: v, scheme, field });
         }
       }
     }
   }
 }
 
-function checkSingleValue(ctx, group, at, value, scheme) {
+/**
+ * One elevation or motion value. A shadow colour (an `elevation` field named `color` or `…Color`)
+ * may be a literal colour or a `{colors.<token>}` reference: shadows are not themed roles. Every
+ * other colour outside `colors` is a role reference (TK-04).
+ */
+function checkSingleValue(ctx, { group, at, value, scheme, field }) {
   if (typeof value === 'number') return;
   if (isShorthand(value)) {
     ctx.add('TK-07', at, `${JSON.stringify(value)} is CSS shorthand: one value per entry`);
     return;
   }
+  const shadowColour = group === 'elevation' && field !== null && isColourProperty(field);
   const ref = parseReference(value);
-  if (ref) {
+  if (ref && shadowColour && ref.group !== 'colors') {
+    ctx.add('TK-04', at, 'a shadow colour is a literal colour or a `{colors.<token>}` reference');
+  } else if (ref) {
     checkReference(ctx, at, ref, scheme, REFERABLE[group]);
   } else if (parseColor(value)) {
-    ctx.add('TK-04', at, 'a colour outside `colors` must be a `{colors.<token>}` role reference');
+    if (!shadowColour) {
+      ctx.add('TK-04', at, 'a colour outside `colors` must be a `{colors.<token>}` role reference');
+    }
   } else if (group === 'motion') {
     if (parseDurationMs(value) === null && parseCubicBezier(value) === null) {
-      ctx.add('TK-11', at, `${JSON.stringify(value)} is not a duration or cubic-bezier()`);
+      const text = `${JSON.stringify(value)} is not a duration, cubic-bezier() or linear`;
+      ctx.add('TK-11', at, text);
     }
   } else if (parseDimension(value) === null) {
     ctx.add('TK-11', at, `${JSON.stringify(value)} is not a px dimension, number or {reference}`);
   }
 }
 
-/** TK-06 the reference resolves and is allowed here; TK-03 a colour stays in its scheme. */
+/**
+ * TK-06 the reference resolves to a single value (not a group, not another reference, so there
+ * are no alias chains or cycles) and is allowed here; TK-03 a colour stays in its scheme.
+ */
 function checkReference({ fm, add }, at, ref, scheme, allowed) {
   const text = `{${ref.group}.${ref.key}}`;
   if (!allowed.includes(ref.group)) {
@@ -221,14 +210,19 @@ function checkReference({ fm, add }, at, ref, scheme, allowed) {
     add('TK-06', at, `\`${text}\` does not resolve`);
     return;
   }
-  if (ref.group !== 'typography' && isPlainObject(fm[ref.group][ref.key])) {
+  const target = fm[ref.group][ref.key];
+  if (ref.group !== 'typography' && isPlainObject(target)) {
     add('TK-06', at, `\`${text}\` names a group of values, not a single value`);
     return;
   }
-  const target = ref.group === 'colors' ? splitScheme(ref.key).scheme : null;
-  if (target !== null && target !== scheme) {
+  if (parseReference(target)) {
+    add('TK-06', at, `\`${text}\` is itself a reference: point at the value`);
+    return;
+  }
+  const targetScheme = ref.group === 'colors' ? splitScheme(ref.key).scheme : null;
+  if (targetScheme !== null && targetScheme !== scheme) {
     const from = scheme ? `a ${scheme} entry` : 'a scheme-independent entry';
-    add('TK-03', at, `${from} references the ${target} colour \`${ref.key}\``);
+    add('TK-03', at, `${from} references the ${targetScheme} colour \`${ref.key}\``);
   }
 }
 
@@ -252,7 +246,7 @@ function checkComponents(ctx) {
 
 function checkComponentProperty(ctx, at, prop, value, scheme) {
   const ref = parseReference(value);
-  const colourProp = prop.endsWith('Color');
+  const colourProp = isColourProperty(prop);
   if (ref && !(colourProp && ref.group !== 'colors')) {
     checkReference(ctx, at, ref, scheme, REFERABLE.components);
   } else if (colourProp || parseColor(value)) {
@@ -263,30 +257,6 @@ function checkComponentProperty(ctx, at, prop, value, scheme) {
     ctx.add('TK-11', at, `${JSON.stringify(value)} is not a px dimension, number or {reference}`);
   }
 }
-
-function checkVariantsAgree({ colours, add }, variants) {
-  const signature = (props) => {
-    const entries = isPlainObject(props) ? Object.entries(props) : [];
-    return new Map(entries.map(([p, v]) => [p, valueSignature(colours, v)]));
-  };
-  const [first, ...rest] = variants;
-  const expected = signature(first.props);
-  for (const variant of rest) {
-    const actual = signature(variant.props);
-    const props = new Set([...expected.keys(), ...actual.keys()]);
-    const differing = [...props].filter((p) => expected.get(p) !== actual.get(p));
-    if (differing.length === 0) continue;
-    const names = differing.map((p) => `\`${p}\``).join(', ');
-    const message = `differs from \`${first.key}\` on ${names}: scheme variants must agree`;
-    add('TK-05', `components.${variant.key}`, message);
-  }
-}
-
-const valueSignature = (colours, value) => {
-  const ref = parseReference(value);
-  if (ref?.group === 'colors') return `role:${colours.roleOfKey.get(ref.key) ?? ref.key}`;
-  return JSON.stringify(value);
-};
 
 /** TK-10 key spelling and generated-identifier collisions. */
 function checkIdentifiers({ fm, colours, add }) {

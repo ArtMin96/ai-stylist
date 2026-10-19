@@ -127,26 +127,26 @@ colors:
   condition-evening-bg-dark: "#23324A"
 typography:
   # R2 type styles (sizes in pt on iOS = sp on Android at 100%).
-  display: { fontFamily: "Young Serif, serif", fontSize: "40px", fontWeight: 400, lineHeight: "46px", letterSpacing: "0" }
-  title-1: { fontFamily: "Young Serif, serif", fontSize: "32px", fontWeight: 400, lineHeight: "38px", letterSpacing: "0" }
-  title-2: { fontFamily: "Young Serif, serif", fontSize: "26px", fontWeight: 400, lineHeight: "32px", letterSpacing: "0" }
-  title-3: { fontFamily: "Young Serif, serif", fontSize: "20px", fontWeight: 400, lineHeight: "26px", letterSpacing: "0" }
-  headline: { fontFamily: "Figtree, sans-serif", fontSize: "17px", fontWeight: 600, lineHeight: "22px", letterSpacing: "0" }
-  body: { fontFamily: "Figtree, sans-serif", fontSize: "17px", fontWeight: 400, lineHeight: "24px", letterSpacing: "0" }
-  callout: { fontFamily: "Figtree, sans-serif", fontSize: "15px", fontWeight: 400, lineHeight: "21px", letterSpacing: "0" }
-  subhead: { fontFamily: "Figtree, sans-serif", fontSize: "15px", fontWeight: 600, lineHeight: "20px", letterSpacing: "0" }
-  footnote: { fontFamily: "Figtree, sans-serif", fontSize: "13px", fontWeight: 400, lineHeight: "18px", letterSpacing: "0" }
-  caption: { fontFamily: "Figtree, sans-serif", fontSize: "12px", fontWeight: 500, lineHeight: "16px", letterSpacing: "0" }
+  display: { fontFamily: "Young Serif, serif", fontSize: "40px", fontWeight: 400, lineHeight: "46px", letterSpacing: "0em" }
+  title-1: { fontFamily: "Young Serif, serif", fontSize: "32px", fontWeight: 400, lineHeight: "38px", letterSpacing: "0em" }
+  title-2: { fontFamily: "Young Serif, serif", fontSize: "26px", fontWeight: 400, lineHeight: "32px", letterSpacing: "0em" }
+  title-3: { fontFamily: "Young Serif, serif", fontSize: "20px", fontWeight: 400, lineHeight: "26px", letterSpacing: "0em" }
+  headline: { fontFamily: "Figtree, sans-serif", fontSize: "17px", fontWeight: 600, lineHeight: "22px", letterSpacing: "0em" }
+  body: { fontFamily: "Figtree, sans-serif", fontSize: "17px", fontWeight: 400, lineHeight: "24px", letterSpacing: "0em" }
+  callout: { fontFamily: "Figtree, sans-serif", fontSize: "15px", fontWeight: 400, lineHeight: "21px", letterSpacing: "0em" }
+  subhead: { fontFamily: "Figtree, sans-serif", fontSize: "15px", fontWeight: 600, lineHeight: "20px", letterSpacing: "0em" }
+  footnote: { fontFamily: "Figtree, sans-serif", fontSize: "13px", fontWeight: 400, lineHeight: "18px", letterSpacing: "0em" }
+  caption: { fontFamily: "Figtree, sans-serif", fontSize: "12px", fontWeight: 500, lineHeight: "16px", letterSpacing: "0em" }
   overline: { fontFamily: "Figtree, sans-serif", fontSize: "11px", fontWeight: 600, lineHeight: "14px", letterSpacing: "0.08em" }
-  button: { fontFamily: "Figtree, sans-serif", fontSize: "17px", fontWeight: 600, lineHeight: "22px", letterSpacing: "0" }
+  button: { fontFamily: "Figtree, sans-serif", fontSize: "17px", fontWeight: 600, lineHeight: "22px", letterSpacing: "0em" }
   # Component label styles (from the C01-C10 boards, not in the R2 table).
-  large-title-bar: { fontFamily: "Young Serif, serif", fontSize: "34px", fontWeight: 400, lineHeight: "40px", letterSpacing: "0" }
-  label-md: { fontFamily: "Figtree, sans-serif", fontSize: "14px", fontWeight: 600, lineHeight: "18px", letterSpacing: "0" }
-  label-sm: { fontFamily: "Figtree, sans-serif", fontSize: "13px", fontWeight: 600, lineHeight: "18px", letterSpacing: "0" }
-  subhead-medium: { fontFamily: "Figtree, sans-serif", fontSize: "15px", fontWeight: 500, lineHeight: "20px", letterSpacing: "0" }
-  caption-strong: { fontFamily: "Figtree, sans-serif", fontSize: "12px", fontWeight: 600, lineHeight: "16px", letterSpacing: "0" }
-  badge: { fontFamily: "Figtree, sans-serif", fontSize: "11px", fontWeight: 600, lineHeight: "14px", letterSpacing: "0" }
-  badge-count: { fontFamily: "Figtree, sans-serif", fontSize: "11px", fontWeight: 700, lineHeight: "18px", letterSpacing: "0" }
+  large-title-bar: { fontFamily: "Young Serif, serif", fontSize: "34px", fontWeight: 400, lineHeight: "40px", letterSpacing: "0em" }
+  label-md: { fontFamily: "Figtree, sans-serif", fontSize: "14px", fontWeight: 600, lineHeight: "18px", letterSpacing: "0em" }
+  label-sm: { fontFamily: "Figtree, sans-serif", fontSize: "13px", fontWeight: 600, lineHeight: "18px", letterSpacing: "0em" }
+  subhead-medium: { fontFamily: "Figtree, sans-serif", fontSize: "15px", fontWeight: 500, lineHeight: "20px", letterSpacing: "0em" }
+  caption-strong: { fontFamily: "Figtree, sans-serif", fontSize: "12px", fontWeight: 600, lineHeight: "16px", letterSpacing: "0em" }
+  badge: { fontFamily: "Figtree, sans-serif", fontSize: "11px", fontWeight: 600, lineHeight: "14px", letterSpacing: "0em" }
+  badge-count: { fontFamily: "Figtree, sans-serif", fontSize: "11px", fontWeight: 700, lineHeight: "18px", letterSpacing: "0em" }
 rounded:
   # R2 scale: 6, 8, 12, 16, 24, full; plus the component radii drawn on C01-C10.
   "2": "2px"
@@ -173,15 +173,46 @@ spacing:
   "40": "40px"
   "48": "48px"
   "64": "64px"
+elevation:
+  # ### Shadow Vocabulary and R2 Elevation: one drop shadow per entry (px). No entry = no shadow;
+  # segment-thumb has no -dark entry because dark draws surface-2 + a 1 px outline instead.
+  # edge*: 1 px inset line in dark, top edge only on the sheet (inset 0 1px 0), all round on the dialog.
+  # ring*: solid ring outside the shape (Capture button: 0 0 0 4px in the surface colour).
+  segment-thumb-light: { offsetX: "0px", offsetY: "1px", blur: "2px", spread: "0px", color: "rgba(27,27,25,0.12)" }
+  sheet-light: { offsetX: "0px", offsetY: "-8px", blur: "24px", spread: "0px", color: "rgba(27,27,25,0.14)" }
+  sheet-dark: { offsetX: "0px", offsetY: "-8px", blur: "24px", spread: "0px", color: "rgba(27,27,25,0.14)", edgeColor: "{colors.divider-dark}", edgeWidth: "1px" }
+  # Dialog and coach mark.
+  dialog-light: { offsetX: "0px", offsetY: "8px", blur: "24px", spread: "0px", color: "rgba(27,27,25,0.14)" }
+  dialog-dark: { offsetX: "0px", offsetY: "8px", blur: "24px", spread: "0px", color: "rgba(27,27,25,0.14)", edgeColor: "{colors.divider-dark}", edgeWidth: "1px" }
+  snackbar-light: { offsetX: "0px", offsetY: "8px", blur: "24px", spread: "0px", color: "rgba(27,27,25,0.18)" }
+  snackbar-dark: { offsetX: "0px", offsetY: "8px", blur: "24px", spread: "0px", color: "rgba(0,0,0,0.4)" }
+  capture-button-light: { offsetX: "0px", offsetY: "6px", blur: "14px", spread: "0px", color: "rgba(27,27,25,0.18)", ringColor: "{colors.surface-light}", ringWidth: "4px" }
+  capture-button-dark: { offsetX: "0px", offsetY: "6px", blur: "14px", spread: "0px", color: "rgba(0,0,0,0.35)", ringColor: "{colors.surface-dark}", ringWidth: "4px" }
+motion:
+  # ### Motion and R2 Motion. sheet also times snackbars. On sheet and screen, `easing` is the opening
+  # curve (screens in, sheets open); closing (screens out, sheets close) uses easing-exit.
+  press: { duration: "150ms", easing: "linear" }
+  sheet: { duration: "250ms", easing: "{motion.easing-enter}" }
+  screen: { duration: "350ms", easing: "{motion.easing-enter}" }
+  easing-enter: "cubic-bezier(0.2, 0, 0, 1)"
+  easing-exit: "cubic-bezier(0.4, 0, 1, 1)"
+  # Reduced motion: a crossfade replaces all movement; no shimmer, progress static, no auto-rotate.
+  reduced: { duration: "150ms", easing: "linear" }
+  snackbar-undo-min: "5000ms"
+  toast: "3000ms"
 components:
   # C01 Buttons
   button-primary-light: { backgroundColor: "{colors.primary-light}", textColor: "{colors.on-primary-light}", typography: "{typography.button}", rounded: "{rounded.full}", height: "52px", padding: "0 24px" }
   button-primary-pressed-light: { backgroundColor: "{colors.primary-pressed-light}", textColor: "{colors.on-primary-light}" }
   button-primary-disabled-light: { backgroundColor: "{colors.surface-2-light}", textColor: "{colors.text-secondary-light}" }
   button-primary-dark: { backgroundColor: "{colors.primary-dark}", textColor: "{colors.on-primary-dark}", typography: "{typography.button}", rounded: "{rounded.full}", height: "52px", padding: "0 24px" }
+  button-primary-pressed-dark: { backgroundColor: "{colors.primary-pressed-dark}", textColor: "{colors.on-primary-dark}" }
   button-primary-disabled-dark: { backgroundColor: "{colors.surface-2-dark}", textColor: "{colors.text-secondary-dark}" }
   button-medium: { height: "44px", padding: "0 20px" }
   button-small: { typography: "{typography.subhead}", height: "36px", padding: "0 16px" }
+  # Stroke width of the outline ring on the secondary and outlined destructive buttons
+  # (colour: outline-* on secondary, error-fg-* on destructive, divider-* when disabled).
+  button-outline-ring: { width: "1.5px" }
   button-secondary-light: { textColor: "{colors.text-light}", typography: "{typography.button}", rounded: "{rounded.full}", height: "52px", padding: "0 24px" }
   button-secondary-pressed-light: { backgroundColor: "{colors.surface-2-light}", textColor: "{colors.text-light}" }
   button-secondary-dark: { textColor: "{colors.text-dark}", typography: "{typography.button}", rounded: "{rounded.full}", height: "52px", padding: "0 24px" }
@@ -212,15 +243,15 @@ components:
   chip-reason-light: { backgroundColor: "{colors.surface-2-light}", textColor: "{colors.text-light}", typography: "{typography.label-sm}", rounded: "{rounded.full}", height: "32px", padding: "0 12px 0 10px" }
   chip-reason-expanded-light: { backgroundColor: "{colors.primary-text-light}", textColor: "{colors.on-primary-light}" }
   chip-reason-dark: { backgroundColor: "{colors.surface-2-dark}", textColor: "{colors.text-dark}", typography: "{typography.label-sm}", rounded: "{rounded.full}", height: "32px", padding: "0 12px 0 10px" }
-  chip-reason-expanded-dark: { backgroundColor: "{colors.primary-dark}", textColor: "{colors.on-primary-dark}" }
+  chip-reason-expanded-dark: { backgroundColor: "{colors.primary-text-dark}", textColor: "{colors.on-primary-dark}" }
   chip-choice-light: { backgroundColor: "{colors.surface-light}", textColor: "{colors.text-light}", typography: "{typography.subhead-medium}", rounded: "{rounded.full}", height: "40px", padding: "0 14px" }
   chip-choice-selected-light: { backgroundColor: "{colors.primary-text-light}", textColor: "{colors.on-primary-light}", typography: "{typography.subhead}" }
   chip-choice-dark: { backgroundColor: "{colors.surface-dark}", textColor: "{colors.text-dark}", typography: "{typography.subhead-medium}", rounded: "{rounded.full}", height: "40px", padding: "0 14px" }
-  chip-choice-selected-dark: { backgroundColor: "{colors.primary-dark}", textColor: "{colors.on-primary-dark}", typography: "{typography.subhead}" }
+  chip-choice-selected-dark: { backgroundColor: "{colors.primary-text-dark}", textColor: "{colors.on-primary-dark}", typography: "{typography.subhead}" }
   chip-filter-light: { backgroundColor: "{colors.surface-light}", textColor: "{colors.text-light}", typography: "{typography.label-md}", rounded: "{rounded.full}", height: "36px", padding: "0 14px" }
   chip-filter-selected-light: { backgroundColor: "{colors.primary-text-light}", textColor: "{colors.on-primary-light}" }
   chip-filter-dark: { backgroundColor: "{colors.surface-dark}", textColor: "{colors.text-dark}", typography: "{typography.label-md}", rounded: "{rounded.full}", height: "36px", padding: "0 14px" }
-  chip-filter-selected-dark: { backgroundColor: "{colors.primary-dark}", textColor: "{colors.on-primary-dark}" }
+  chip-filter-selected-dark: { backgroundColor: "{colors.primary-text-dark}", textColor: "{colors.on-primary-dark}" }
   chip-never-suggest-light: { backgroundColor: "{colors.error-bg-light}", textColor: "{colors.text-light}", typography: "{typography.subhead}", rounded: "{rounded.6}", height: "40px", padding: "0 14px 0 10px" }
   chip-never-suggest-dark: { backgroundColor: "{colors.surface-2-dark}", textColor: "{colors.text-dark}", typography: "{typography.subhead}", rounded: "{rounded.6}", height: "40px", padding: "0 14px 0 10px" }
   chip-soft-dislike-light: { backgroundColor: "{colors.surface-2-light}", textColor: "{colors.text-secondary-light}", typography: "{typography.subhead-medium}", rounded: "{rounded.full}", height: "40px" }
@@ -530,7 +561,7 @@ Soft, rounded, friendly geometry. Interactive things are pills; containers are g
 
 ## Components
 
-Every component is drawn in S1 and S2 on its canvas board, with states in this order: default, pressed, focused (2 px focus ring, 2 px offset), disabled (surface-2 fill + text-secondary label, never opacity alone on text, text ≥ 3:1), loading, error, selected. Frontmatter carries colours, type, radius and size; outlines, rings, shadows and overlays are described here.
+Every component is drawn in S1 and S2 on its canvas board, with states in this order: default, pressed, focused (2 px focus ring, 2 px offset), disabled (surface-2 fill + text-secondary label, never opacity alone on text, text ≥ 3:1), loading, error, selected. Frontmatter carries colours, type, radius and size, plus shadows (`elevation`), `motion` and the outline-ring width; outline colours, rings and overlays are described here.
 
 ### Buttons (C01)
 - **Shape:** pill (full radius).
@@ -548,7 +579,7 @@ Every component is drawn in S1 and S2 on its canvas board, with states in this o
 Navigation, actions, weather and context, closet, status, account and settings sets, as listed on the board. Status icons use the status foregrounds. Every icon sits in a 44 pt / 48 dp target.
 
 ### Chips and tags (C03)
-- **Weather chip (context strip):** 34 in a 44 target, padding 0 14 0 11, label-sm, accent / on-accent, icon 18; pressed ink 12 % overlay (dark: 16 %).
+- **Weather chip (context strip):** 34 in a 44 target, padding 0 14 0 11, label-sm, accent / on-accent, icon 18; pressed ink 12 % overlay (dark: background 16 % overlay).
 - **Occasion / holiday chips:** surface-2 / text, pressed divider. Holiday only when one applies. **Override chip:** surface + 1.5 primary-text ring, house + pencil icon, "your setting" in primary-text. No selected state; tap opens a sheet.
 - **Freshness caption:** chips gap 8; source + time ("Open-Meteo · 07:10") in Caption text-secondary, always visible.
 - **Reason chip:** 32 in a 44 target, padding 0 12 0 10, label-sm, surface-2 / text, icon 16 in primary-text; text comes from reason-code templates. Expanded: primary-text fill + white (dark: primary / ink) + chevron up. **Expanded reason row:** padding 14 16, radius 16, surface + divider ring, sentence in Callout, fact 13/600 with icon disc, freshness in Caption.

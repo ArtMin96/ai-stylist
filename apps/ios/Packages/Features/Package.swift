@@ -6,7 +6,8 @@
 // APIData or the generated client (enforced by apps/ios/scripts/check-banned.sh).
 import PackageDescription
 
-/// Same safety settings as Packages/Core/Package.swift and Config/Base.xcconfig.
+/// Same safety settings as Packages/Core/Package.swift, Packages/DesignSystem/Package.swift and
+/// Config/Base.xcconfig.
 let strictSettings: [SwiftSetting] = [
   .swiftLanguageMode(.v6),
   .defaultIsolation(MainActor.self),

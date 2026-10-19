@@ -388,6 +388,17 @@ typography:
       dynamicType: caption2,
       m3Roles: [],
     }
+  # The filled destructive button's disabled label: the button style at 500, as drawn on C01.
+  button-disabled:
+    {
+      fontFamily: 'Figtree, sans-serif',
+      fontSize: '17px',
+      fontWeight: 500,
+      lineHeight: '22px',
+      letterSpacing: '0em',
+      dynamicType: headline,
+      m3Roles: [],
+    }
 rounded:
   # R2 scale: 6, 8, 12, 16, 24, full; plus the component radii drawn on C01-C10.
   '2': '2px'
@@ -529,31 +540,62 @@ components:
     { backgroundColor: '{colors.primary-pressed-dark}', textColor: '{colors.on-primary-dark}' }
   button-primary-disabled-dark:
     { backgroundColor: '{colors.surface-2-dark}', textColor: '{colors.text-secondary-dark}' }
+  # Shared size entries (height and padding; Small also sets its 15/600 label). A variant's own
+  # base holds the size it is drawn at; these serve its other sizes.
+  button-large: { height: '52px', padding: '0 24px' }
   button-medium: { height: '44px', padding: '0 20px' }
   button-small: { typography: '{typography.subhead}', height: '36px', padding: '0 16px' }
-  # Stroke width of the outline ring on the secondary and outlined destructive buttons
-  # (colour: outline-* on secondary, error-fg-* on destructive, divider-* when disabled).
+  # Stroke width of the outline ring on the secondary and outlined destructive buttons. Each entry
+  # names the ring colour in borderColor (outline-* on secondary, error-fg-* on destructive,
+  # divider-* when disabled); the ring is drawn inside the pill. spinnerColor = the loading
+  # spinner when it is not the label colour.
   button-outline-ring: { width: '1.5px' }
   button-secondary-light:
     {
       textColor: '{colors.text-light}',
+      borderColor: '{colors.outline-light}',
       typography: '{typography.button}',
       rounded: '{rounded.full}',
       height: '52px',
       padding: '0 24px',
     }
   button-secondary-pressed-light:
-    { backgroundColor: '{colors.surface-2-light}', textColor: '{colors.text-light}' }
+    {
+      backgroundColor: '{colors.surface-2-light}',
+      textColor: '{colors.text-light}',
+      borderColor: '{colors.outline-light}',
+    }
+  button-secondary-disabled-light:
+    { textColor: '{colors.text-secondary-light}', borderColor: '{colors.divider-light}' }
+  button-secondary-loading-light:
+    {
+      textColor: '{colors.text-light}',
+      borderColor: '{colors.outline-light}',
+      spinnerColor: '{colors.primary-text-light}',
+    }
   button-secondary-dark:
     {
       textColor: '{colors.text-dark}',
+      borderColor: '{colors.outline-dark}',
       typography: '{typography.button}',
       rounded: '{rounded.full}',
       height: '52px',
       padding: '0 24px',
     }
   button-secondary-pressed-dark:
-    { backgroundColor: '{colors.surface-2-dark}', textColor: '{colors.text-dark}' }
+    {
+      backgroundColor: '{colors.surface-2-dark}',
+      textColor: '{colors.text-dark}',
+      borderColor: '{colors.outline-dark}',
+    }
+  button-secondary-disabled-dark:
+    { textColor: '{colors.text-secondary-dark}', borderColor: '{colors.divider-dark}' }
+  button-secondary-loading-dark:
+    {
+      textColor: '{colors.text-dark}',
+      borderColor: '{colors.outline-dark}',
+      spinnerColor: '{colors.primary-text-dark}',
+    }
   button-text-light:
     {
       textColor: '{colors.primary-text-light}',
@@ -562,6 +604,9 @@ components:
       height: '44px',
       padding: '0 12px',
     }
+  button-text-pressed-light:
+    { backgroundColor: '{colors.surface-2-light}', textColor: '{colors.primary-text-light}' }
+  button-text-disabled-light: { textColor: '{colors.text-secondary-light}' }
   button-text-dark:
     {
       textColor: '{colors.primary-text-dark}',
@@ -570,26 +615,43 @@ components:
       height: '44px',
       padding: '0 12px',
     }
+  button-text-pressed-dark:
+    { backgroundColor: '{colors.surface-2-dark}', textColor: '{colors.primary-text-dark}' }
+  button-text-disabled-dark: { textColor: '{colors.text-secondary-dark}' }
   button-destructive-light:
     {
       textColor: '{colors.error-fg-light}',
+      borderColor: '{colors.error-fg-light}',
       typography: '{typography.button}',
       rounded: '{rounded.full}',
       height: '44px',
       padding: '0 20px',
     }
   button-destructive-pressed-light:
-    { backgroundColor: '{colors.error-bg-light}', textColor: '{colors.error-fg-light}' }
+    {
+      backgroundColor: '{colors.error-bg-light}',
+      textColor: '{colors.error-fg-light}',
+      borderColor: '{colors.error-fg-light}',
+    }
+  button-destructive-disabled-light:
+    { textColor: '{colors.text-secondary-light}', borderColor: '{colors.divider-light}' }
   button-destructive-dark:
     {
       textColor: '{colors.error-fg-dark}',
+      borderColor: '{colors.error-fg-dark}',
       typography: '{typography.button}',
       rounded: '{rounded.full}',
       height: '44px',
       padding: '0 20px',
     }
   button-destructive-pressed-dark:
-    { backgroundColor: '{colors.surface-2-dark}', textColor: '{colors.error-fg-dark}' }
+    {
+      backgroundColor: '{colors.surface-2-dark}',
+      textColor: '{colors.error-fg-dark}',
+      borderColor: '{colors.error-fg-dark}',
+    }
+  button-destructive-disabled-dark:
+    { textColor: '{colors.text-secondary-dark}', borderColor: '{colors.divider-dark}' }
   button-destructive-filled-light:
     {
       backgroundColor: '{colors.error-fg-light}',
@@ -606,7 +668,11 @@ components:
       overlayColor: '{colors.pressed-overlay-strong-light}',
     }
   button-destructive-filled-disabled-light:
-    { backgroundColor: '{colors.error-bg-light}', textColor: '{colors.error-fg-light}' }
+    {
+      backgroundColor: '{colors.error-bg-light}',
+      textColor: '{colors.error-fg-light}',
+      typography: '{typography.button-disabled}',
+    }
   button-destructive-filled-dark:
     {
       backgroundColor: '{colors.error-fg-dark}',
@@ -623,7 +689,11 @@ components:
       overlayColor: '{colors.pressed-overlay-strong-dark}',
     }
   button-destructive-filled-disabled-dark:
-    { backgroundColor: '{colors.error-bg-dark}', textColor: '{colors.error-fg-dark}' }
+    {
+      backgroundColor: '{colors.error-bg-dark}',
+      textColor: '{colors.error-fg-dark}',
+      typography: '{typography.button-disabled}',
+    }
   button-icon-light:
     {
       backgroundColor: '{colors.surface-2-light}',
@@ -1652,6 +1722,7 @@ Component label styles (drawn on C01–C10, not on R2) each scale with the neare
 | caption-strong  | Figtree     | 12 / 16     | 600    | caption     | .caption         | —             | active tab label, plan tags                                               |
 | badge           | Figtree     | 11 / 14     | 600    | overline    | .caption2        | —             | tile badge, provenance overlay                                            |
 | badge-count     | Figtree     | 11 / 18     | 700    | overline    | .caption2        | —             | count badge (number)                                                      |
+| button-disabled | Figtree     | 17 / 22     | 500    | button      | .headline        | —             | filled destructive button, disabled label (C01)                           |
 
 ### Named Rules
 
@@ -1726,15 +1797,17 @@ Soft, rounded, friendly geometry. Interactive things are pills; containers are g
 
 ## Components
 
-Every component is drawn in S1 and S2 on its canvas board, with states in this order: default, pressed, focused (`focus-ring-*`: 2 px ring, 2 px gap, following the control's corners; 3 px in S7 High Contrast, `focus-ring-hc-*`), disabled (surface-2 fill + text-secondary label, never opacity alone on text, text ≥ 3:1), loading, error, selected. Frontmatter carries colours, type, radius and size, plus shadows (`elevation`), `motion`, the outline-ring width, the focus ring and the pressed overlays (`overlayColor`); outline colours and the other rings are described here.
+Every component is drawn in S1 and S2 on its canvas board, with states in this order: default, pressed, focused (`focus-ring-*`: 2 px ring, 2 px gap, following the control's corners; 3 px in S7 High Contrast, `focus-ring-hc-*`), disabled (surface-2 fill + text-secondary label, never opacity alone on text, text ≥ 3:1), loading, error, selected. Frontmatter carries colours, type, radius and size, plus shadows (`elevation`), `motion`, the button outline ring (width `button-outline-ring`, colour `borderColor`), the button spinner colour (`spinnerColor`, where it is not the label colour), the focus ring and the pressed overlays (`overlayColor`); the other outline colours and rings are described here.
 
 ### Buttons (C01)
 
 - **Shape:** pill (full radius).
-- **Primary:** Large 52 (padding 0 24), Medium 44 (0 20), Small 36 (0 16, 15/600, 44 hit area); leading icon 20, gap 8. Full width inside the 20 margins or hugs content. Pressed `primary-pressed-*` (dark: the background 16 % overlay, flattened); 150 ms. Loading: spinner 20, label stays, busy state announced.
-- **Secondary (outlined):** 1.5 `outline-*` ring, text colour; pressed fills surface-2; disabled divider ring + text-secondary.
-- **Text button:** 44 high, padding 0 12, primary-text; pressed surface-2 pill. **Inline link:** Callout 15/600, underline offset 3, focus ring radius 4.
-- **Destructive:** outlined (error text + 1.5 ring, trash 20; pressed error-bg light, surface-2 dark) for rows and screens; filled (error fill, `on-error-*` text) only for the final confirm inside a dialog. Pressed filled: `pressed-overlay-strong-*` (ink 18 % light, background 16 % dark). Cancel stays enabled while deleting.
+- **API:** `.impeccable/components/button.yaml` (`AppButton`) lists the variants, sizes, states and tokens; where C01 and the screens disagree, the screens win (owner 2026-10-20).
+- **Primary:** Large 52 (padding 0 24), Medium 44 (0 20), Small 36 (0 16, 15/600, 44 hit area); leading icon 20, gap 8. Full width inside the 20 margins or hugs content. Pressed `primary-pressed-*` (dark: the background 16 % overlay, flattened); 150 ms.
+- **Loading (every variant, owner 2026-10-20):** while its request runs, the button shows a spinner 20 in the leading-icon slot, in the label colour (secondary: `primary-text-*`, `button-secondary-loading-*`), and the label stays. It ignores further taps and keyboard activation until the request ends, keeps its enabled look (never the disabled look) and is announced as busy.
+- **Secondary (outlined):** Large, Medium, Small; 1.5 `outline-*` ring, text colour; pressed fills surface-2; disabled divider ring + text-secondary.
+- **Text button:** 44 high, padding 0 12, primary-text; pressed surface-2 pill; disabled text-secondary. Row and section-header text actions use the Small label (15/600), as the screens draw them. **Inline link:** Callout 15/600, underline offset 3, focus ring radius 4.
+- **Destructive:** outlined (error text + 1.5 ring, trash 20; pressed error-bg light, surface-2 dark; disabled divider ring + text-secondary) for rows and screens, Medium 44 or Large 52; filled (error fill, `on-error-*` text, Large 52) only for the final confirm inside a dialog. Pressed filled: `pressed-overlay-strong-*` (ink 18 % light, background 16 % dark). Disabled filled: error-bg fill, error-fg label at 500 (`button-disabled`). Cancel stays enabled while deleting.
 - **Icon buttons:** 44 circle on surface-2 (pressed divider) or ghost; icon 24. Accessible name is verb + object ("Back", "Close", "More options for this outfit").
 - **Action row (Today):** Save · Schedule · Like · Dislike · More; icon 24 over Caption, min 48 × 56, gap 2. Selected: active pill, filled icon, label changes (Like → Liked, Save → Saved) at 600.
 - **Capture centre tab:** raised primary circle, camera icon 26, 4 surface ring, Caption 12/600 label; pressed `primary-pressed-*`; opens the camera modal.
@@ -1820,7 +1893,7 @@ Navigation, actions, weather and context, closet, status, account and settings s
 
 - **Bottom sheet:** handle 36 × 4 radius 2 in outline, Title3 title, Callout body, actions 52 pinned, top radius 24, surface, sheet shadow, scrim behind. Tall sheet: top inset 72, body scrolls, actions pinned above a 1 px divider; dismiss by swipe down or scrim tap.
 - **Action menu sheet:** rows 48 (52 at full scale), icon 22, gap 12, 15/500, pressed surface-2, divider before "Report a problem".
-- **Confirmation dialog:** inset 12, radius 24, padding 20, dialog shadow, kept vs cleared summary; reset is two-step. **Destructive confirmation:** after re-auth, states what is deleted, the timeline ("Within 30 days, usually about 8") and the store note; "Delete account" filled error, "Keep account" outlined, stacked 44.
+- **Confirmation dialog:** inset 12, radius 24, padding 20, dialog shadow, kept vs cleared summary; reset is two-step. **Destructive confirmation:** after re-auth, states what is deleted, the timeline ("Within 30 days, usually about 8") and the store note; "Delete account" filled error and "Keep account" outlined, stacked full width, Large 52 each (the screens draw every overlay action at 52; the compact C09 mockup shows 44).
 - **Permission priming (location, notifications):** shown at first use, before the OS prompt; radio rows 44 with the active pill on the selected row; "Allow" / "Turn on" and "Not now" have equal fill, size and weight; all notification categories start off.
 - **Coach mark:** scrim + undimmed target, surface bubble radius 16, padding 14, arrow 12, dialog shadow (`coach-mark-*` elevation; dark adds a 1 px `outline-dark` ring round the bubble and arrow), "Got it" text button 44, shown once.
 - **Full-screen modal header:** 56, close 44 left, Headline title centred, primary Save right, 1 px divider; Save disabled until a change.

@@ -90,6 +90,32 @@ Log hygiene: when this log exceeds ~30 entries, move the oldest entries to `plan
 
 *(newest first)*
 
+### 2026-10-19 (frontmatter) — DESIGN.md frontmatter made generator-ready (AI-197)
+
+*Session on the owner's Linux machine, worktree `.claude/worktrees/ai-197`, branch `artmins96/ai-197-design-system-make-the-designmd-frontmatter-generator-ready`: 6 commits on `main` @ `595cbbe` (PR #28 and PR #29 merged). This ledger update is uncommitted; the lead commits it. Only `DESIGN.md` changed; no product code changed.*
+
+- **Phase / tasks worked:** none (Brand v1, milestone "Design system": AI-197, umbrella AI-193; ahead of P03 client UI).
+- **Status changes:** None. AI-197 is done.
+- **Suggested line (source: the AI-197 ticket, applied by docs-maintainer):** "DESIGN.md frontmatter generator-ready (lint 0 errors; type mapping, elevation, motion, C01 tokens, pairs); next: AI-189"
+- **Done this session:** `DESIGN.md` only. The owner approved in chat on 2026-10-19: "Do recommended", plus a standing rule (where the design is silent or inconsistent, keep what the drawing shows; ask only when something would look different), and one visible choice (the dark coach-mark ring is #5E7D72, as drawn on board C09).
+  - `1e3f1e9`: shadows and motion copied into frontmatter groups; `letterSpacing` `"0em"`; the button outline ring.
+  - `d411eda`: every text style gets `dynamicType` and `m3Roles`; each Material 3 role is used once.
+  - `19aeb04`: pressed overlays, the focus ring, the inverse pair, camera colours without a suffix.
+  - `aa2ec04`: every light/dark token is paired or named on the `Unpaired by design:` line; the Welcome and high-contrast sets are complete.
+  - `8964b92`: the coach-mark ring, the 3 px high-contrast focus ring, the `label-action` style for the Undo label.
+  - `8833712`: Prettier formatting only (the parsed frontmatter is identical).
+- **Not done / in flight:** the owner said not to update the canvas, so board R2 still shows the old dark coach-mark ring (#2C4740) and lacks the new tokens. Handed on: the high-contrast colour pairs below the 12:1 target go to the contrast-check ticket AI-192 (they are in `aa2ec04` and in the `DESIGN.md` prose).
+- **Repository state:** buildable ✅ (only `DESIGN.md` changed). Reported by the AI-197 session: `npx @google/design.md@0.4.0 lint` → `errors: 0`, 137 warnings (unknown typography props, orphaned tokens, false contrast on alpha fills, `token-like-ignored` for motion and elevation); the Prettier check passes; AC-2: 20 typography entries (19 + `label-action`), 15 M3 roles used once each; the eight `##` headings are unchanged. Run by docs-maintainer in the worktree after writing this entry: `just docs-check --strict` → `docs-check: ok (0 errors, 0 warning(s))`. Not reported as run: `just ci-parity`, `just ios-check`, `just android-check` (no code changed).
+- **New decisions / risks / questions filed:** None in doc 16. The #5E7D72 owner choice is also in the `DESIGN.md` "Elevation & Depth" prose.
+- **Surprises / gotchas:**
+  - GitHub Actions started no job on 2026-10-19 ("recent account payments have failed or your spending limit needs to be increased"). PR #28 and PR #29 merged without CI. The owner made the repository public temporarily on 2026-10-19 so CI can run, and the skipped runs were re-run; their results are not recorded here.
+  - `PRODUCT.md` fails the Prettier check on `main` (pre-existing; not changed on this branch).
+  - Stage 1 of the token pipeline passes now: the 18 `letterSpacing: "0"` lint errors named in the DEC-87 entry are gone (`1e3f1e9`).
+- **Next session starts:**
+  - AI-189 token generator continues. Phase 1: parser, validator and in-memory model, against a fixture; then the Swift and Kotlin emitters in parallel; then the parity test. Its validator must accept the AI-197 shapes: `easing: "linear"`, `{motion.easing-enter}` references, literal `rgba()` colours in `elevation`.
+  - Then AI-198 (component contracts, the button first), then the iOS and Android design-system packages (AI-186, AI-188).
+  - AI-194 has no work left (native bars kept, no tokens retired, the canvas untouched); the owner decides whether to cancel it.
+
 ### 2026-10-19 (policy) — Agent policy updated for the design-system lanes (AI-200)
 
 *Session on the owner's Linux machine, branch `artmins96/ai-200-agent-policy-unblock-the-design-system-lanes-human-only`, stacked on `2002e31` (the AI-196 commit); nothing committed (the lead commits and opens a PR stacked on the AI-196 PR #28). Human-authorized agent-policy edits and docs only; no product code changed.*

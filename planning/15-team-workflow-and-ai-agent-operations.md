@@ -148,7 +148,7 @@ Both scripts live in `scripts/` as readable, commented bash (or TS via `zx` if b
 | `just sbom` | Generate the SPDX + CycloneDX SBOM into `artifacts/sbom/` (same syft invocation `security-scan` runs) |
 | `just flags-report` | Feature-flag expiry report (14 §11): one row per flag in `packages/shared-kernel/registry/feature-flags.json` with owner, `expiresAt` and days left or overdue; exit 1 when a rollout or experiment flag is past expiry (> 30 days overdue = DEFECT), kill-switches exempt; runs nightly; `--fixtures` proves it still fails (in `ci-parity`) |
 | `just ci-parity` | Run the exact PR-gate sequence locally: format-check, lint, typecheck, arch-check, clone-check, docs-check, `observability-sync all --check` (offline: no env, no network), `flags-report --fixtures`, generate --check, test, security-scan, including the native lanes (`NATIVE_LANES`, default `ios android`; a missing native toolchain is a loud SKIP locally and a failure in CI; Xcode-only steps skip on Linux); `--core` = what the pr-gate parity job runs (the native lanes run in `ios.yml` / `android.yml`) |
-| `just golden-accept` | Accept updated golden/visual-regression baselines as a reviewed commit (doc 13 §6) |
+| `just golden-accept` `<ios\|android>` | Re-record the design-system screenshot goldens for one platform through its snapshot tool's record mode, as a reviewed commit that names the visual change (doc 13 §6) |
 | `just rec-replay <id>` | Re-run a stored recommendation from its snapshots and diff against the stored result (doc 09 §9) |
 | `just rec-golden-update` | Regenerate recommendation golden fixtures for review (doc 09 §13.3) |
 | `just secrets-sync` | Decrypt sops dev secrets into the gitignored `.env` (§6) |

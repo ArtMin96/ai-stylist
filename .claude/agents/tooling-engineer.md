@@ -18,7 +18,7 @@ hooks:
       hooks:
         - type: command
           command: "${CLAUDE_PROJECT_DIR}/scripts/hooks/guard-agent-bash.sh"
-          args: ["just lint*", "just typecheck", "just arch-check*", "just clone-check*", "just docs-check*", "just test secrets", "just test-regression *", "just generate --check", "just format --check", "just security-scan", "just doctor", "just ci-parity*", "just flags-report*", "shellcheck *", "actionlint*", "bash -n *", "/bin/bash -n *", "scripts/test/*.test.sh*", "/bin/bash scripts/test/*.test.sh*"]
+          args: ["just lint*", "just typecheck", "just arch-check*", "just clone-check*", "just docs-check*", "just test secrets", "just test-regression *", "just generate --check", "just format --check", "just security-scan", "just doctor", "just ci-parity*", "just flags-report*", "just design-parity-report*", "shellcheck *", "actionlint*", "bash -n *", "/bin/bash -n *", "scripts/test/*.test.sh*", "/bin/bash scripts/test/*.test.sh*"]
 ---
 
 <context>
@@ -50,8 +50,9 @@ Invariants that bite here (enforced by the named gate unless marked reviewer-che
 
 <ownership>
 - Write set (hook-enforced): `scripts/**` except `scripts/hooks/**`; `tools/**` except
-  `tools/codegen/gen-swift.sh`, `tools/codegen/gen-kotlin.sh`, `tools/codegen/gen-python.sh`;
-  `justfile`; `mise.toml`; `.github/**` except `.github/workflows/**` and `.github/actions/**`; the
+  `tools/codegen/gen-swift.sh`, `tools/codegen/gen-kotlin.sh`, `tools/codegen/gen-python.sh`,
+  including `tools/codegen/tokens/**` (design-token generator and both emitters); `justfile`;
+  `mise.toml`; `.github/**` except `.github/workflows/**` and `.github/actions/**`; the
   root configs `package.json`, `pnpm-workspace.yaml`, `turbo.json`, `tsconfig.base.json`,
   `eslint.config.mjs`, `.npmrc`, `.gitignore`, `.gitattributes`, `.pre-commit-config.yaml`,
   `renovate.json`, `osv-scanner.toml`, `.gitleaks.toml`, `commitlint.config.mjs`, `.prettierrc`,

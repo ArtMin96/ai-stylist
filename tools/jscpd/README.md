@@ -65,7 +65,7 @@ which the gate passes. jscpd fails only when the share is greater than it. Three
 
 ### Baseline
 
-Measured on 2026-10-20 with jscpd 4.3.0: 27 clones, 238 duplicated lines in 49,472 lines, a share
+Measured on 2026-10-20 with jscpd 4.3.0: 27 clones, 238 duplicated lines in 49,504 lines, a share
 of **0.48%**. `threshold` is `0.48`. The first baseline (2026-10-13: 28 clones, 249 of 49,235 lines,
 0.51%) went down when the `strictSettings` blocks of the SwiftPM manifests were marked (see
 [Ignore markers](#ignore-markers)).
@@ -73,24 +73,24 @@ of **0.48%**. `threshold` is `0.48`. The first baseline (2026-10-13: 28 clones, 
 | Format     | Files | Lines  | Clones | Duplicated lines | Share |
 | ---------- | ----- | ------ | ------ | ---------------- | ----- |
 | typescript | 192   | 17,617 | 21     | 182              | 1.03% |
-| kotlin     | 41    | 3,117  | 2      | 23               | 0.74% |
+| kotlin     | 44    | 3,149  | 2      | 23               | 0.73% |
 | python     | 20    | 2,408  | 1      | 5                | 0.21% |
 | bash       | 81    | 15,049 | 2      | 22               | 0.15% |
 | javascript | 52    | 9,621  | 1      | 6                | 0.06% |
 | swift      | 25    | 1,660  | 0      | 0                | 0.00% |
-| Total      | 411   | 49,472 | 27     | 238              | 0.48% |
+| Total      | 414   | 49,504 | 27     | 238              | 0.48% |
 
 What the number means:
 
 - jscpd counts one copy of each clone, as its last line minus its first, and rounds the share to
-  two decimals: 238 / 49,472 is 0.4811%, reported as 0.48. So `0.48` is the lowest value this tree
+  two decimals: 238 / 49,504 is 0.4808%, reported as 0.48. So `0.48` is the lowest value this tree
   passes, and `0.47` fails it.
-- At 49,472 lines the gate passes up to 239 duplicated lines and fails at 240. That is one line of
-  room, and the smallest clone jscpd counts is five lines (`minLines`), so one more clone in a tree
-  of this size fails the gate.
+- At 49,504 lines the gate passes up to 240 duplicated lines and fails at 241. That is two lines
+  of room, and the smallest clone jscpd counts is five lines (`minLines`), so one more clone in a
+  tree of this size fails the gate.
 - It limits a share, not a count: the tree may not become more duplicated than it is today, about
   one line in 200. New code without a clone lowers the measured share and so makes room: about
-  1,000 new lines for one five-line clone on average, and about 630 on the day of this baseline,
+  1,000 new lines for one five-line clone on average, and about 600 on the day of this baseline,
   because the share sat in the upper part of its rounding step. The third rule above closes that
   room, and only review enforces it.
 - All 27 clones are in tests and test helpers. No clone is in production source.

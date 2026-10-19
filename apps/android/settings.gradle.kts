@@ -38,4 +38,5 @@ include(
     ":core:data",
     ":core:analytics",
     ":core:api-client",
+    ":core:designsystem",
 )

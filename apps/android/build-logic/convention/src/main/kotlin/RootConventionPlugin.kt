@@ -24,6 +24,8 @@ internal val ALLOWED_MODULE_EDGES: Map<String, Set<String>> =
         ":core:data" to setOf(":core:api-client"),
         ":core:analytics" to emptySet(),
         ":core:api-client" to emptySet(),
+        // App-internal design system (DEC-87): depends on no other project module.
+        ":core:designsystem" to emptySet(),
     )
 
 /** `aistylist.root` — applied once, to the root project. */

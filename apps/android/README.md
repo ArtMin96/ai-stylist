@@ -13,6 +13,7 @@ React Native, no Kotlin Multiplatform and no 3D code.
 | `core/data/` | `:core:data`, pure Kotlin. `parseAppConfig` (API_BASE_URL and PostHog key/host validation), `DataServices`, `VersionRepository` over the generated client |
 | `core/analytics/` | `:core:analytics`, pure Kotlin, SDK-free. The `Analytics` port, the consent gate (`ConsentGatedAnalytics`), the no-op sink, and the generated `AnalyticsTaxonomy` |
 | `core/api-client/` | `:core:api-client`. It compiles the **generated** client. It has no source code of its own |
+| `core/designsystem/` | `:core:designsystem`, the app-internal design system (DEC-87), which depends on no other project module. A pure Kotlin scaffold for now (AI-188): Compose comes with the first real component, and the generated `DESIGN.md` tokens will land in `src/main/kotlin/app/aistylist/core/designsystem/generated/` (never hand-edited). No module depends on it yet |
 | `build-logic/` | Convention plugins. Every compiler, lint, detekt, locking and test setting lives here |
 | `config/` | `detekt.yml`, `lint.xml`, `compose-stability.conf` |
 | `gradle/libs.versions.toml` | The version catalog. Every dependency and plugin version is set here |
@@ -32,9 +33,12 @@ in `build-logic/convention/src/main/kotlin/RootConventionPlugin.kt`.
 :app ──► :feature:home ──► :core:data ──(implementation)──► :core:api-client (generated)
   │            └─────────► :core:analytics (+ generated AnalyticsTaxonomy)
   └──► :core:data, :core:analytics
+
+:core:designsystem (no edges: it depends on no project module, and nothing depends on it yet)
 ```
 
 - Feature modules never depend on each other. `core` never depends on `feature`.
+- `:core:designsystem` never depends on another project module.
 - Only `:core:data` can see generated DTOs. Features get the domain types from `:core:data`.
 - `AppContainer` in `:app` is the only place that reads `BuildConfig` or builds adapters.
 
@@ -171,7 +175,7 @@ checks for JDK 25, finds the SDK and runs the wrapper. CI runs the same recipes 
 |---|---|---|
 | Debug APK | `just android-build` | `:app:assembleDebug` |
 | Preview / release APK | `just android-build preview` / `release` (`all` = all three) | `:app:assemblePreview` / `:app:assembleRelease` (unsigned) |
-| Unit + Robolectric tests | `just android-test` | `testDebugUnitTest :core:data:test :core:analytics:test` |
+| Unit + Robolectric tests | `just android-test` | `testDebugUnitTest :core:data:test :core:analytics:test :core:designsystem:test` |
 | Android Lint (all modules, via `checkDependencies`) + module graph | `just android-lint` | `:app:lintDebug checkModuleGraph` |
 | Format check / fix | `just android-format --check` / `just android-format` | `spotlessCheck` / `spotlessApply` |
 | detekt (type-resolved) | `just android-detekt` | `detektMain detektTest` |

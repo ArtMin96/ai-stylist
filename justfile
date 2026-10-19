@@ -459,7 +459,7 @@ android-build variant='debug':
 
 # * Android JVM unit tests + Robolectric Compose tests (no emulator needed)
 android-test:
-    apps/android/tools/gradle.sh testDebugUnitTest :core:data:test :core:analytics:test
+    apps/android/tools/gradle.sh testDebugUnitTest :core:data:test :core:analytics:test :core:designsystem:test
 
 # * Android Lint over every module (warnings are errors, compose-lint-checks) + the module-graph allow-list
 android-lint:
@@ -481,7 +481,7 @@ android-format *args:
 
 # The Android local gate in one Gradle invocation: Spotless, module graph, detekt, Android Lint, unit + Robolectric tests, all three APKs
 android-check:
-    apps/android/tools/gradle.sh spotlessCheck checkModuleGraph detektMain detektTest :app:lintDebug testDebugUnitTest :core:data:test :core:analytics:test :app:assembleDebug :app:assemblePreview :app:assembleRelease
+    apps/android/tools/gradle.sh spotlessCheck checkModuleGraph detektMain detektTest :app:lintDebug testDebugUnitTest :core:data:test :core:analytics:test :core:designsystem:test :app:assembleDebug :app:assemblePreview :app:assembleRelease
 
 # Check (default) or install the Android SDK packages apps/android needs: `just android-sdk [check|install]` (user-level, no emulator, no sudo); `just android-sdk emulator` also installs the emulator and a system image
 android-sdk mode='check':
@@ -489,7 +489,7 @@ android-sdk mode='check':
 
 # Refresh the Gradle lockfiles + gradle/verification-metadata.xml after a version bump (review the diff; run once on macOS too)
 android-deps-lock:
-    apps/android/tools/gradle.sh spotlessCheck checkModuleGraph detektMain detektTest :app:lintDebug testDebugUnitTest :core:data:test :core:analytics:test :app:assembleDebug :app:assemblePreview :app:assembleRelease --write-locks --write-verification-metadata sha256
+    apps/android/tools/gradle.sh spotlessCheck checkModuleGraph detektMain detektTest :app:lintDebug testDebugUnitTest :core:data:test :core:analytics:test :core:designsystem:test :app:assembleDebug :app:assemblePreview :app:assembleRelease --write-locks --write-verification-metadata sha256
 
 # Install and launch the debug (dev) build on a running emulator, else the connected phone (through `adb reverse`), else the AVD it creates and boots (apps/android/tools/device.sh run): `just android-run [--serial S] [--api-port N]` (`just dev android` also starts the backend)
 android-run *args:

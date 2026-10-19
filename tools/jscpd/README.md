@@ -65,34 +65,35 @@ which the gate passes. jscpd fails only when the share is greater than it. Three
 
 ### Baseline
 
-Measured on 2026-10-13 with jscpd 4.3.0: 28 clones, 249 duplicated lines in 49,235 lines, a share
-of **0.51%**. `threshold` is `0.51`.
+Measured on 2026-10-20 with jscpd 4.3.0: 27 clones, 238 duplicated lines in 49,504 lines, a share
+of **0.48%**. `threshold` is `0.48`. The first baseline (2026-10-13: 28 clones, 249 of 49,235 lines,
+0.51%) went down when the `strictSettings` blocks of the SwiftPM manifests were marked (see
+[Ignore markers](#ignore-markers)).
 
 | Format     | Files | Lines  | Clones | Duplicated lines | Share |
 | ---------- | ----- | ------ | ------ | ---------------- | ----- |
-| typescript | 192   | 17,607 | 21     | 182              | 1.03% |
-| kotlin     | 41    | 3,117  | 2      | 23               | 0.74% |
-| swift      | 20    | 1,562  | 1      | 11               | 0.70% |
+| typescript | 192   | 17,617 | 21     | 182              | 1.03% |
+| kotlin     | 44    | 3,149  | 2      | 23               | 0.73% |
 | python     | 20    | 2,408  | 1      | 5                | 0.21% |
-| bash       | 79    | 14,920 | 2      | 22               | 0.15% |
+| bash       | 81    | 15,049 | 2      | 22               | 0.15% |
 | javascript | 52    | 9,621  | 1      | 6                | 0.06% |
-| Total      | 404   | 49,235 | 28     | 249              | 0.51% |
+| swift      | 25    | 1,660  | 0      | 0                | 0.00% |
+| Total      | 414   | 49,504 | 27     | 238              | 0.48% |
 
 What the number means:
 
 - jscpd counts one copy of each clone, as its last line minus its first, and rounds the share to
-  two decimals: 249 / 49,235 is 0.5057%, reported as 0.51. So `0.51` is the lowest value this tree
-  passes, and `0.50` fails it.
-- At 49,235 lines the gate passes up to 253 duplicated lines and fails at 254. That is four lines
+  two decimals: 238 / 49,504 is 0.4808%, reported as 0.48. So `0.48` is the lowest value this tree
+  passes, and `0.47` fails it.
+- At 49,504 lines the gate passes up to 240 duplicated lines and fails at 241. That is two lines
   of room, and the smallest clone jscpd counts is five lines (`minLines`), so one more clone in a
   tree of this size fails the gate.
 - It limits a share, not a count: the tree may not become more duplicated than it is today, about
   one line in 200. New code without a clone lowers the measured share and so makes room: about
-  1,000 new lines for one five-line clone on average, and fewer than 100 on the day of the
-  baseline, because the share sat near the top of its rounding step. The third rule above closes that room,
-  and only review enforces it.
-- 27 of the 28 clones are in tests and test helpers. The other one is the `strictSettings` block
-  that the two `Package.swift` manifests share. No clone is in production source.
+  1,000 new lines for one five-line clone on average, and about 600 on the day of this baseline,
+  because the share sat in the upper part of its rounding step. The third rule above closes that
+  room, and only review enforces it.
+- All 27 clones are in tests and test helpers. No clone is in production source.
 
 ### Follow-ups: the five largest clones
 
@@ -117,6 +118,25 @@ measured share; lower `threshold` in the same change.
    and `apps/api/src/platform/tests/outbox-relay.docker.test.ts:91-103`. The `relay()` factory of
    the outbox Docker suites; seven more clones link these two files and
    `apps/api/src/jobs/tests/acceptance-dispatch.docker.test.ts`.
+
+## Ignore markers
+
+jscpd skips every line from the one that holds `jscpd:ignore-start` through the one that holds
+`jscpd:ignore-end`, in any scanned format (read from the 4.3.0 tokenizer). The skipped lines still
+count in the total, so a marked block lowers the share as a removed clone would.
+
+The owner allowed them on 2026-10-20 (PR #32, AI-186), for one case only: identical blocks that
+the language cannot share. Today that is the `strictSettings` block of the three SwiftPM manifests,
+`apps/ios/Packages/{Core,Features,DesignSystem}/Package.swift`: a manifest cannot import code, and
+DEC-87 keeps DesignSystem a package of its own. The doc comment of each copy names the others, which
+are kept in sync by hand.
+
+- Every start marker carries its reason on the same line:
+  `// jscpd:ignore-start (<why the language cannot share this block>)`.
+- Mark every copy, so that a reader of any of them sees the exception.
+- Code that can be shared is never marked: extract a function, a test helper, a Gradle convention
+  plugin. A marker on such code is a weakened gate, like a higher `threshold`, and needs a human
+  decision.
 
 ## Reading a run
 

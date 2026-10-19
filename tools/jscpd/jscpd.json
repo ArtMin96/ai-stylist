@@ -1,5 +1,5 @@
 {
-  "threshold": 0.51,
+  "threshold": 0.48,
   "minTokens": 50,
   "minLines": 5,
   "maxLines": 5000,

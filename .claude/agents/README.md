@@ -23,7 +23,7 @@ workflow, search-before-write procedure, base check, stop rules and the report f
 | [`contracts-engineer`](contracts-engineer.md) | `packages/contracts/**`, `packages/shared-kernel/**` (sources); every generated tree via `just generate` — single-writer | `api-contract-change` | purple | `just generate && just generate --check`, `just lint`, `just typecheck`, `just test`, `just arch-check` |
 | [`ml-engineer`](ml-engineer.md) | `workers/**` except `workers/ml/generated/**`; `tools/codegen/gen-python.sh` | `media-ml-pipeline` | pink | `just test workers`, `just lint`, `just typecheck`, `just generate --check`, `just ml-eval` |
 | [`recommendation-engineer`](recommendation-engineer.md) | `apps/api/src/modules/{recommendation,outfit,context,fashion-intel}/**` | `backend-module`, `recommendation-rules`, `fashion-intel-ingestion` | yellow | `just test recommendation`, `just rec-replay`, `just rec-golden-update`, `just arch-check` |
-| [`tooling-engineer`](tooling-engineer.md) | `scripts/**` except `scripts/hooks/**`; `tools/**` except the three per-platform gen scripts; `justfile`, `mise.toml`, root configs, `.env.example`, `docs/security/**`; proposes `.github/workflows/**` diffs | `tooling-ci` | red | `just lint --fixtures`, `just arch-check --fixtures`, `just docs-check --fixtures`, `just flags-report --fixtures`, `just ci-parity --core` |
+| [`tooling-engineer`](tooling-engineer.md) | `scripts/**` except `scripts/hooks/**`; `tools/**` except the three per-platform gen scripts, including `tools/codegen/tokens/**` (design-token generator and both emitters); `justfile`, `mise.toml`, root configs, `.env.example`, `docs/security/**`; proposes `.github/workflows/**` diffs | `tooling-ci` | red | `just lint --fixtures`, `just arch-check --fixtures`, `just docs-check --fixtures`, `just flags-report --fixtures`, `just ci-parity --core` |
 | [`test-engineer`](test-engineer.md) | `e2e/**`; `apps/api/tests/**` except `http.test.ts` and `migrations/**`; conditionally a module's `tests/**` | `testing-regression`, `e2e-device-testing` | yellow | `just test-regression`, `just test`, `just ios-e2e`, `just android-e2e` |
 | [`docs-maintainer`](docs-maintainer.md) | `docs/modules/**`, `docs/adr/README.md` (index), root `PROGRESS.md`, the `planning/PROGRESS.md` table + handoff log, phase-file task-state columns | `docs-maintenance` | cyan | `just docs-check` |
 | [`observability-engineer`](observability-engineer.md) | `docs/observability/**` (Grafana and PostHog guides, sync contracts and definition JSON), `docs/runbooks/**`; offline only, never a real or `--dry-run` sync | `observability-analytics` | pink | `just observability-sync all --check`, `just test tooling`, `just flags-report`, `just docs-check`, `just format --check` |
@@ -62,9 +62,11 @@ tooling-engineer and docs-maintainer may create; `.github/workflows/**` and `.gi
 2. `apps/api/src/modules/<name>/tests/**`: test-engineer and that module's engineer — test-engineer
    writes only when the dispatch prompt says the engineer is not running this wave.
 3. Generated trees (`packages/contracts/gen/**`, `packages/shared-kernel/src/gen/**`,
-   `workers/ml/generated/**`): written only by `just generate`, which contracts-engineer (or the
-   lead) runs. The ios, android and ml engineers own their gen scripts but never run `just generate`
-   without `--check`, so their write sets stay disjoint in a parallel wave.
+   `workers/ml/generated/**`, `apps/ios/Packages/DesignSystem/Sources/DesignTokens/generated/**`,
+   `apps/android/core/designsystem/src/main/kotlin/*/generated/**`): written only by
+   `just generate`, which contracts-engineer (or the lead) runs. The ios, android and ml engineers
+   own their gen scripts but never run `just generate` without `--check`, so their write sets stay
+   disjoint in a parallel wave.
 4. New `.claude/plans/` proposal files: tooling-engineer and docs-maintainer, distinct slugs.
 5. UI of `apps/ios/**` and `apps/android/**`: ios-engineer and android-engineer write the code;
    ui-designer only reads it (and the screenshots the lead passes) and returns findings. The

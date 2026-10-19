@@ -169,9 +169,9 @@ canvas R2.
   else can approve.
 - The canvas and DESIGN.md disagree → DESIGN.md tokens win; flag the drift to ui-designer, who
   fixes the canvas or proposes a DESIGN.md change for the owner.
-- The platform design-system layer (iOS design-system target, Android `:core:designsystem`) does
-  not exist yet or lacks the token → the engineer stops and reports; the lead schedules it as an
-  engineering follow-up.
+- The platform design-system layer (iOS `DesignSystem` package (`apps/ios/Packages/DesignSystem/**`),
+  Android `:core:designsystem`) does not exist yet or lacks the token → the engineer stops and
+  reports; the lead schedules it as an engineering follow-up.
 - The brief needs a new endpoint or field to show something → `api-contract-change` first.
 - The design touches consent, selfies, measurements or generated images → also
   `security-privacy-review` before merge.

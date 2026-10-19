@@ -5,7 +5,8 @@
 # - Build settings live in Config/*.xcconfig (settingPresets: none, so nothing hidden lands here).
 # - The app target is thin: App/ only (entry point, composition root, Info.plist, assets, and the
 #   Apple-only adapters: the PostHog sink and the DEBUG-only forced crash).
-#   Code goes in the local packages: Packages/Core (no UI) and Packages/Features (screens).
+#   Code goes in the local packages: Packages/Core (no UI), Packages/Features (screens) and
+#   Packages/DesignSystem (tokens + base components; no app target links it yet).
 # - Adding a file under App/ or a package needs no change here; re-run `just ios-project`.
 name: AIStylist
 
@@ -32,6 +33,9 @@ packages:
     path: Packages/Core
   Features:
     path: Packages/Features
+  # App-internal design system (DEC-87). No consumer yet: listed so the scheme runs its tests.
+  DesignSystem:
+    path: Packages/DesignSystem
   # Official PostHog iOS SDK (analytics + error tracking with native crash capture; MIT). Linked by the
   # app target only (App/PostHogAnalyticsSink.swift), so Core and Features stay Linux-buildable.
   # Pinned by commit, not by the tag: apps/ios/Package.resolved (committed; osv-scanner reads it) holds
@@ -75,6 +79,8 @@ schemes:
         - package: Core/AnalyticsTests
         - package: Core/APIDataTests
         - package: Features/HomeModelTests
+        - package: DesignSystem/DesignTokensTests
+        - package: DesignSystem/DesignSystemTests
     profile:
       config: Preview
     analyze:

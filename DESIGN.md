@@ -3,7 +3,9 @@ name: Garderi
 description: A calm, honest personal stylist that dresses you from the closet you already own.
 colors:
   # Core scheme tokens. -light = S1 Garden Light, -dark = S2 Garden Dark, -brand = S3 Viridian,
-  # -hc-light / -hc-dark = S7 High Contrast (see ## Colors).
+  # -hc-light / -hc-dark = S7 High Contrast (see ## Colors). Every -light token (colour, elevation,
+  # component) has a -dark twin and the reverse, except those on the "Unpaired by design" line
+  # (## Colors > Named Rules).
   background-light: "#F2EFE8"
   background-dark: "#0F1F1B"
   surface-light: "#FFFDF8"
@@ -39,10 +41,13 @@ colors:
   active-pill-light: "rgba(46,125,99,0.14)"
   active-pill-dark: "rgba(235,203,139,0.16)"
   # Inverse: snackbar and "AI-generated preview" badge (ink with paper text in light, paper with ink in dark).
+  # inverse-primary = the snackbar's Undo action (C04): the accent yellow in light, #1F5A47 in dark.
   inverse-surface-light: "#1B1B19"
   inverse-surface-dark: "#F2EFE8"
   on-inverse-light: "#F2EFE8"
   on-inverse-dark: "#1B1B19"
+  inverse-primary-light: "#EBCB8B"
+  inverse-primary-dark: "#1F5A47"
   # Pressed overlays, laid over a component's own fill (overlayColor): light ink #1B1B19 at 12 % / 18 %,
   # dark background #0F1F1B at 16 %.
   pressed-overlay-light: "rgba(27,27,25,0.12)"
@@ -56,7 +61,8 @@ colors:
   camera-paper: "#F2EFE8"
   camera-ink: "#1B1B19"
   camera-yellow: "#EBCB8B"
-  # S3 Viridian (brand scheme: Welcome and onboarding only).
+  # S3 Viridian (brand scheme: Welcome and onboarding only). The roles S3 does not draw copy the S2
+  # value: primary-pressed, link-pressed, on-accent, on-error, active-pill, inverse-*, pressed overlays.
   background-brand: "#2E7D63"
   surface-brand: "#1F5A47"
   surface-2-brand: "#18463A"
@@ -65,34 +71,69 @@ colors:
   divider-brand: "#3F8E73"
   outline-brand: "#ABD2C0"
   primary-brand: "#EBCB8B"
+  primary-pressed-brand: "#C8B079"
   on-primary-brand: "#10312A"
   primary-text-brand: "#EBCB8B"
+  link-pressed-brand: "#F2EFE8"
   accent-brand: "#F7F5EF"
+  on-accent-brand: "#0F1F1B"
   focus-brand: "#EBCB8B"
-  # S7 High Contrast, light.
+  on-error-brand: "#0F1F1B"
+  active-pill-brand: "rgba(235,203,139,0.16)"
+  inverse-surface-brand: "#F2EFE8"
+  on-inverse-brand: "#1B1B19"
+  inverse-primary-brand: "#1F5A47"
+  pressed-overlay-brand: "rgba(15,31,27,0.16)"
+  pressed-overlay-strong-brand: "rgba(15,31,27,0.16)"
+  # S7 High Contrast, light. The roles S7 does not draw borrow the S1 value, except: divider = the
+  # outline colour (S7 draws hairlines as 2 px outlines), on-accent #000000 (drawn), no active pill
+  # (S7 marks the active tab with colour plus underline), link-pressed one step darker than #10312A.
   background-hc-light: "#FFFFFF"
   surface-hc-light: "#FFFFFF"
   surface-2-hc-light: "#F2EFE8"
   text-hc-light: "#000000"
   text-secondary-hc-light: "#2E2D29"
+  divider-hc-light: "#000000"
   outline-hc-light: "#000000"
   primary-hc-light: "#10312A"
+  primary-pressed-hc-light: "#246A54"
   on-primary-hc-light: "#FFFFFF"
   primary-text-hc-light: "#10312A"
+  link-pressed-hc-light: "#000000"
   accent-hc-light: "#EBCB8B"
+  on-accent-hc-light: "#000000"
   focus-hc-light: "#000000"
-  # S7 High Contrast, dark.
+  on-error-hc-light: "#FFFFFF"
+  active-pill-hc-light: "rgba(0,0,0,0)"
+  inverse-surface-hc-light: "#1B1B19"
+  on-inverse-hc-light: "#F2EFE8"
+  inverse-primary-hc-light: "#EBCB8B"
+  pressed-overlay-hc-light: "rgba(27,27,25,0.12)"
+  pressed-overlay-strong-hc-light: "rgba(27,27,25,0.18)"
+  # S7 High Contrast, dark. The roles S7 does not draw borrow the S2 value, with the same exceptions:
+  # divider = the outline colour, on-accent #000000 (drawn), no active pill.
   background-hc-dark: "#000000"
   surface-hc-dark: "#000000"
   surface-2-hc-dark: "#1B1B19"
   text-hc-dark: "#FFFFFF"
   text-secondary-hc-dark: "#E5E1D6"
+  divider-hc-dark: "#FFFFFF"
   outline-hc-dark: "#FFFFFF"
   primary-hc-dark: "#EBCB8B"
+  primary-pressed-hc-dark: "#C8B079"
   on-primary-hc-dark: "#000000"
   primary-text-hc-dark: "#EBCB8B"
+  link-pressed-hc-dark: "#F2EFE8"
   accent-hc-dark: "#7DB8A0"
+  on-accent-hc-dark: "#000000"
   focus-hc-dark: "#FFFFFF"
+  on-error-hc-dark: "#0F1F1B"
+  active-pill-hc-dark: "rgba(0,0,0,0)"
+  inverse-surface-hc-dark: "#F2EFE8"
+  on-inverse-hc-dark: "#1B1B19"
+  inverse-primary-hc-dark: "#1F5A47"
+  pressed-overlay-hc-dark: "rgba(15,31,27,0.16)"
+  pressed-overlay-strong-hc-dark: "rgba(15,31,27,0.16)"
   # Status: fg / bg per theme.
   success-fg-light: "#4F6B2A"
   success-bg-light: "#E6EDD9"
@@ -110,7 +151,8 @@ colors:
   info-bg-light: "#E1E9F5"
   info-fg-dark: "#8FB0E6"
   info-bg-dark: "#1A2A40"
-  # Condition chips (weather and occasion): fg / bg per theme.
+  # Condition chips (weather and occasion): fg / bg per theme; the snow chip has a ring in light only
+  # (condition-snow-ring-light, unpaired by design).
   condition-sunny-fg-light: "#634724"
   condition-sunny-bg-light: "#F6EBCF"
   condition-sunny-fg-dark: "#EBCB8B"
@@ -193,7 +235,7 @@ spacing:
   "64": "64px"
 elevation:
   # ### Shadow Vocabulary and R2 Elevation: one drop shadow per entry (px). No entry = no shadow;
-  # segment-thumb has no -dark entry because dark draws surface-2 + a 1 px outline instead.
+  # segment-thumb has no -dark entry because dark draws surface-2 + a 1 px outline instead (unpaired by design).
   # edge*: 1 px inset line in dark, top edge only on the sheet (inset 0 1px 0), all round on the dialog.
   # ring*: solid ring outside the shape (Capture button: 0 0 0 4px in the surface colour).
   segment-thumb-light: { offsetX: "0px", offsetY: "1px", blur: "2px", spread: "0px", color: "rgba(27,27,25,0.12)" }
@@ -306,7 +348,7 @@ components:
   pill-trial-dark: { backgroundColor: "{colors.surface-dark}", textColor: "{colors.text-dark}", typography: "{typography.label-sm}", rounded: "{rounded.full}", height: "28px", padding: "0 12px 0 9px" }
   pill-trial-last-day-dark: { backgroundColor: "{colors.warning-bg-dark}", textColor: "{colors.warning-fg-dark}" }
   badge-count-light: { backgroundColor: "{colors.error-fg-light}", textColor: "{colors.on-error-light}", typography: "{typography.badge-count}", rounded: "{rounded.full}", height: "18px" }
-  badge-count-dark: { backgroundColor: "{colors.error-fg-dark}", textColor: "{colors.on-primary-dark}", typography: "{typography.badge-count}", rounded: "{rounded.full}", height: "18px" }
+  badge-count-dark: { backgroundColor: "{colors.error-fg-dark}", textColor: "{colors.on-error-dark}", typography: "{typography.badge-count}", rounded: "{rounded.full}", height: "18px" }
   # C04 Status and feedback
   badge-tile-light: { backgroundColor: "{colors.surface-light}", textColor: "{colors.text-light}", typography: "{typography.badge}", rounded: "{rounded.full}", height: "22px", padding: "0 8px 0 6px" }
   badge-tile-dark: { backgroundColor: "{colors.surface-dark}", textColor: "{colors.text-dark}", typography: "{typography.badge}", rounded: "{rounded.full}", height: "22px", padding: "0 8px 0 6px" }
@@ -319,11 +361,20 @@ components:
   banner-error-light: { backgroundColor: "{colors.error-bg-light}", textColor: "{colors.text-light}", typography: "{typography.subhead}", rounded: "{rounded.16}", padding: "12px 4px 12px 14px" }
   banner-offline-light: { backgroundColor: "{colors.surface-2-light}", textColor: "{colors.text-light}", typography: "{typography.subhead}", rounded: "{rounded.16}", padding: "12px 4px 12px 14px" }
   banner-stale-light: { backgroundColor: "{colors.surface-light}", textColor: "{colors.text-light}", typography: "{typography.subhead}", rounded: "{rounded.16}", padding: "12px 4px 12px 14px" }
+  # Dark info, success, error and stale banners share one fill: surface-dark + divider ring (C04).
+  # banner-dark is that shared fill (unpaired by design); each kind also has its own -dark twin.
   banner-dark: { backgroundColor: "{colors.surface-dark}", textColor: "{colors.text-dark}", typography: "{typography.subhead}", rounded: "{rounded.16}", padding: "12px 4px 12px 14px" }
+  banner-info-dark: { backgroundColor: "{colors.surface-dark}", textColor: "{colors.text-dark}", typography: "{typography.subhead}", rounded: "{rounded.16}", padding: "12px 4px 12px 14px" }
+  banner-success-dark: { backgroundColor: "{colors.surface-dark}", textColor: "{colors.text-dark}", typography: "{typography.subhead}", rounded: "{rounded.16}", padding: "12px 4px 12px 14px" }
+  banner-error-dark: { backgroundColor: "{colors.surface-dark}", textColor: "{colors.text-dark}", typography: "{typography.subhead}", rounded: "{rounded.16}", padding: "12px 4px 12px 14px" }
+  banner-stale-dark: { backgroundColor: "{colors.surface-dark}", textColor: "{colors.text-dark}", typography: "{typography.subhead}", rounded: "{rounded.16}", padding: "12px 4px 12px 14px" }
   banner-warning-dark: { backgroundColor: "{colors.warning-bg-dark}", textColor: "{colors.text-dark}", typography: "{typography.subhead}", rounded: "{rounded.16}", padding: "12px 4px 12px 14px" }
   banner-offline-dark: { backgroundColor: "{colors.surface-2-dark}", textColor: "{colors.text-dark}", typography: "{typography.subhead}", rounded: "{rounded.16}", padding: "12px 4px 12px 14px" }
   snackbar-light: { backgroundColor: "{colors.inverse-surface-light}", textColor: "{colors.on-inverse-light}", typography: "{typography.subhead-medium}", rounded: "{rounded.16}", height: "56px", padding: "0 6px 0 16px" }
   snackbar-dark: { backgroundColor: "{colors.inverse-surface-dark}", textColor: "{colors.on-inverse-dark}", typography: "{typography.subhead-medium}", rounded: "{rounded.16}", height: "56px", padding: "0 6px 0 16px" }
+  # Snackbar Undo action (text button inside the snackbar, C04); its 15/700 label has no type token yet.
+  snackbar-action-light: { textColor: "{colors.inverse-primary-light}", rounded: "{rounded.12}", height: "44px", padding: "0 14px" }
+  snackbar-action-dark: { textColor: "{colors.inverse-primary-dark}", rounded: "{rounded.12}", height: "44px", padding: "0 14px" }
   toast: { typography: "{typography.subhead-medium}", rounded: "{rounded.full}", height: "44px" }
   progress-track-light: { backgroundColor: "{colors.surface-2-light}", rounded: "{rounded.3}", height: "6px" }
   progress-fill-light: { backgroundColor: "{colors.primary-light}", rounded: "{rounded.3}", height: "6px" }
@@ -434,9 +485,9 @@ A warm, low-chroma paper palette with a single garden-green accent in light and 
 
 **Themes and modes.** The DESIGN.md format has no mode support, so every theme-dependent token carries a suffix: `-light` = **S1 Garden Light**, `-dark` = **S2 Garden Dark**. These are the two default themes; the app follows the phone's appearance setting (S1 in light, S2 in dark). Tokens without a suffix (`scrim` and the `camera-*` colours) are the same in both. Two more schemes use their own suffixes: `-brand` = **S3 Viridian** and `-hc-light` / `-hc-dark` = **S7 High Contrast**. The native generator emits one semantic name per pair (for example `surface-2-light` + `surface-2-dark` → `color.surface2`), matching the R2 token names `color.background`, `color.surface`, `color.surface2`, `color.text`, `color.textSecondary`, `color.divider`, `color.outline`, `color.primary`, `color.onPrimary`, `color.primaryText`, `color.accent`, `color.onAccent`, `color.focus` and `color.status.<name>.fg|bg`.
 
-**Brand scheme.** **S3 Viridian** (`*-brand`) is used only on Welcome and onboarding: a viridian ground with paper text and a Naples-yellow primary. `text-secondary-brand` sits on `surface-brand` only, never on the viridian ground; `primary-text-brand` on `background-brand` is for text 24 pt and up only (3.2:1).
+**Brand scheme.** **S3 Viridian** (`*-brand`) is used only on Welcome and onboarding: a viridian ground with paper text and a Naples-yellow primary. `text-secondary-brand` sits on `surface-brand` only, never on the viridian ground; `primary-text-brand` on `background-brand` is for text 24 pt and up only (3.2:1). S3 shares S2's yellow primary, so the roles S3 does not draw (pressed, pressed link, on-accent, on-error, active pill, inverse, pressed overlays) copy the S2 value, and tokens S3 does not define (status, condition chips) use their S2 values.
 
-**High contrast.** **S7 High Contrast** (`*-hc-light` / `*-hc-dark`, from the Colour Schemes canvas) turns on with the phone setting (iOS Increase Contrast, Android high-contrast text) or Settings › Accessibility › High contrast. Same screens and components; only colour tokens change. Surfaces equal the background and carry a 2 px outline (`outline-hc-light` #000000, `outline-hc-dark` #FFFFFF) instead of a tonal step. Tokens S7 does not redefine (status, condition chips, scrim) keep their S1 / S2 values.
+**High contrast.** **S7 High Contrast** (`*-hc-light` / `*-hc-dark`, from the Colour Schemes canvas) turns on with the phone setting (iOS Increase Contrast, Android high-contrast text) or Settings › Accessibility › High contrast. Same screens and components; only colour tokens change. Surfaces equal the background and carry a 2 px outline (`outline-hc-light` #000000, `outline-hc-dark` #FFFFFF) instead of a tonal step. Tokens S7 does not redefine (status, condition chips, scrim) keep their S1 / S2 values. Every core role has an S7 value. Where the S7 board draws a role it is used as drawn: dividers in the outline colour, ink #000000 on the accent, and the active tab marked by colour plus underline with no pill (`active-pill-hc-*` is transparent). The roles S7 does not draw borrow the S1 value in `-hc-light` and the S2 value in `-hc-dark`, except `link-pressed-hc-light`, which goes one step darker than the #10312A link, to #000000.
 
 ### Primary
 - **Garden Viridian** (`primary-light`): primary button fill, Capture button, switch on, selected date cell, progress fill. White text on it (`on-primary-light`). Pressed darkens to `primary-pressed-light`.
@@ -455,7 +506,7 @@ A warm, low-chroma paper palette with a single garden-green accent in light and 
 - **Hairline** (`divider-*`): 1 px dividers and card rings only, never text.
 - **Field Edge** (`outline-*`): input and secondary-button outlines (3:1 non-text contrast).
 - **Focus** (`focus-*`): 2 px focus ring at 2 px offset on every focusable control (`focus-ring-*` in the components), following the control's own corners.
-- **Inverse** (`inverse-surface-*` / `on-inverse-*`): colours that swap between themes, ink with paper text in light and paper with ink text in dark. Snackbar and "AI-generated preview" badge only.
+- **Inverse** (`inverse-surface-*` / `on-inverse-*`): colours that swap between themes, ink with paper text in light and paper with ink text in dark. Snackbar and "AI-generated preview" badge only. `inverse-primary-*` is the snackbar's Undo action (`snackbar-action-*`): the accent yellow in light, #1F5A47 in dark.
 - **Pressed overlays** (`pressed-overlay-*`, `pressed-overlay-strong-*`): a tint laid over a component's own fill while it is pressed (`overlayColor` on its `-pressed` entry). Light: ink #1B1B19 at 12 % (weather chip) or 18 % (filled destructive button). Dark: background #0F1F1B at 16 % for both. `primary-pressed-dark` is that dark overlay already flattened onto `primary-dark`.
 - `scrim`: behind sheets and dialogs (#1B1B19 at 45 %). **Camera** (`camera-ground`, `camera-track`, `camera-paper`, `camera-ink`, `camera-yellow`): the capture camera, a dark ground that looks the same in both themes except for the selected mode (C05).
 
@@ -486,14 +537,18 @@ Weather and occasion chips (`condition-<name>-fg|bg-*`): 36 high, radius full, F
 | focus ring on background | 4.5:1 | 10.9:1 | — |
 | outline (non-text) on background | 3.1:1 | 3.8:1 | — |
 
-S7 High Contrast (light and dark): every text pair is at least 12:1.
+S7 High Contrast (light and dark): every text pair drawn on the S7 board is at least 12:1, except ink on the dark accent (9.2:1). The roles S7 does not draw borrow S1 / S2 values and are not yet checked against 12:1 (pressed states, Undo, on-error); the contrast check settles them.
 
 ### Named Rules
 **The Confidence Is Words Rule.** Confidence is always a text band ("High confidence", "Medium confidence", "Low confidence · check this", "Good match", "Approximate"), never colour alone and never a percentage.
 
-**The Accent Is Fill Rule.** `accent-*` is a fill, never a text colour. Text on it is `on-accent-*`. One named exception, **Undo on inverse surfaces**: the snackbar's Undo action is `accent-light` text on `inverse-surface-light` (11.0:1). It applies in light only; dark Undo is `primary-text-light` on `inverse-surface-dark` (7.0:1), as drawn on C04.
+**The Accent Is Fill Rule.** `accent-*` is a fill, never a text colour. Text on it is `on-accent-*`. One named exception, **Undo on inverse surfaces**: the snackbar's Undo action shows the accent's yellow as text, through its own role `inverse-primary-light` (#EBCB8B on `inverse-surface-light`, 11.0:1), so no component sets `accent-*` as a text colour. Dark Undo is `inverse-primary-dark` (#1F5A47 on `inverse-surface-dark`, 7.0:1), as drawn on C04.
 
 **The No New Colours Rule.** Every colour on screen is a token above. A colour the canvas does not have needs an approved canvas change first.
+
+**The Twin Rule.** Every `-light` colour, elevation or component token has a `-dark` twin of the same name, and the reverse, and no component points at a token with the other theme's suffix. A twin keeps the role, not always the tonal step; these differ on purpose, as drawn: the outlined destructive button pressed (error-bg in light, surface-2 in dark), `chip-never-suggest` (error-bg / surface-2), `chip-soft-dislike` (surface-2 / surface), `segmented-control` (surface-2 / surface) and its selected segment (surface / surface-2), and `camera-mode-selected` (paper pill in light, yellow pill in dark). The tokens without a twin are on the line below: the shared fill of the dark info, success, error and stale banners (each kind also has its own twin), the light-only snow-chip ring, and the light segment-thumb shadow (dark draws surface-2 + a 1 px outline instead).
+
+Unpaired by design: banner-dark, condition-snow-ring-light, segment-thumb-light.
 
 ## Typography
 
@@ -632,16 +687,16 @@ Navigation, actions, weather and context, closet, status, account and settings s
 - **Colour swatch chip:** 40, swatch 16 circle (outline ring on swatches near the ground), name always shown.
 - **Plan tags:** 24, padding 0 10, 12/600: Free surface-2, Essentials info, Plus success, Pro primary. The name carries meaning, not the colour.
 - **Status tags:** Lock (surface-2 + lock 14, read as "Needs Plus"), Later (1 px text-secondary ring + clock), Provisional (warning, dashed 1 px, stays until the user confirms), New (info + 6 px dot).
-- **Count badge:** dot 8 or number 18 high, badge-count, error fill, 2 px ring in the surface below; the count is also in the label.
+- **Count badge:** dot 8 or number 18 high, badge-count, error fill with an `on-error-*` number, 2 px ring in the surface below; the count is also in the label.
 - **Trial pill:** 28, padding 0 12 0 9, label-sm, surface + 1.5 text ring, clock icon + days in words ("Trial · 2 days left"); last day uses warning colours.
 
 ### Status and feedback (C04)
 - **Tile badges:** 22, padding 0 8 0 6, icon 12 + badge text, inset 6 bottom-left. Processing = info, Needs attention = warning, Waiting to sync and availability (Laundry, Packed · until 24 Oct, Lent · to Mari, Repair, Archived) on surface. Unavailable tiles mute the image, never the label.
 - **Confidence label:** 28, bars icon 16 + text band, label-sm.
 - **Provenance badge:** "AI-generated preview" pill in inverse colours (`inverse-surface-*` / `on-inverse-*`: ink on light, paper on dark), 22, top-left of every generated view, with the confidence label bottom-left. Inline 13/600. Never on real photos. **Freshness label:** "Cached · based on data from 07:10", 13/18 secondary.
-- **Banners:** full width (screen − 40), padding 12 4 12 14, radius 16, icon 20, title 15/600, body 13/18, action 13/600 in the status fg, dismiss 44 × 44. Kinds: info, success, warning, error, offline (surface-2), stale (surface + divider).
+- **Banners:** full width (screen − 40), padding 12 4 12 14, radius 16, icon 20, title 15/600, body 13/18, action 13/600 in the status fg, dismiss 44 × 44. Kinds: info, success, warning, error, offline (surface-2), stale (surface + divider). Dark: info, success, error and stale on `surface-dark` + divider ring (`banner-<kind>-dark`; `banner-dark` is the same shared fill), warning on `warning-bg-dark`, offline on `surface-2-dark`.
 - **Inline field message:** 13/18, 6 below the field; error = 2 px error ring + icon 16 + fix link, value kept as typed; helper in secondary.
-- **Snackbar:** 56, radius 16, inverse colours (`inverse-surface-*` / `on-inverse-*`), Undo 15/700 in `accent-light` (dark: `primary-text-light`; the Undo on inverse surfaces exception to The Accent Is Fill Rule), 16 above the tab bar. **Toast:** 44 pill, icon 18 + 15/500, no action.
+- **Snackbar:** 56, radius 16, inverse colours (`inverse-surface-*` / `on-inverse-*`), Undo 15/700 in `inverse-primary-*` (`snackbar-action-*`: 44 high, padding 0 14, radius 12; the accent yellow in light, #1F5A47 in dark; the Undo on inverse surfaces exception to The Accent Is Fill Rule), 16 above the tab bar. **Toast:** 44 pill, icon 18 + 15/500, no action.
 - **Progress:** linear track 6 (radius 3, surface-2, primary fill), ring 40 stroke 4, steps, upload row. Counts in words ("5 of 8"), never invented percentages.
 - **Skeletons:** surface-2 blocks on surface matching the final layout (outfit card, item tile, list row); slow shimmer, none under reduced motion; announced once as "Loading".
 - **State templates (empty, error, offline):** padding 20, radius 24, illustration slot 96 × 64, Title3 title, Callout body naming the cause, one action (button 48). Offline keeps cached content visible.

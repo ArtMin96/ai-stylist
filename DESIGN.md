@@ -204,6 +204,7 @@ typography:
   label-md: { fontFamily: "Figtree, sans-serif", fontSize: "14px", fontWeight: 600, lineHeight: "18px", letterSpacing: "0em", dynamicType: subheadline, m3Roles: [] }
   label-sm: { fontFamily: "Figtree, sans-serif", fontSize: "13px", fontWeight: 600, lineHeight: "18px", letterSpacing: "0em", dynamicType: footnote, m3Roles: [] }
   subhead-medium: { fontFamily: "Figtree, sans-serif", fontSize: "15px", fontWeight: 500, lineHeight: "20px", letterSpacing: "0em", dynamicType: subheadline, m3Roles: [] }
+  label-action: { fontFamily: "Figtree, sans-serif", fontSize: "15px", fontWeight: 700, lineHeight: "20px", letterSpacing: "0em", dynamicType: subheadline, m3Roles: [] }
   caption-strong: { fontFamily: "Figtree, sans-serif", fontSize: "12px", fontWeight: 600, lineHeight: "16px", letterSpacing: "0em", dynamicType: caption, m3Roles: [] }
   badge: { fontFamily: "Figtree, sans-serif", fontSize: "11px", fontWeight: 600, lineHeight: "14px", letterSpacing: "0em", dynamicType: caption2, m3Roles: [] }
   badge-count: { fontFamily: "Figtree, sans-serif", fontSize: "11px", fontWeight: 700, lineHeight: "18px", letterSpacing: "0em", dynamicType: caption2, m3Roles: [] }
@@ -236,14 +237,17 @@ spacing:
 elevation:
   # ### Shadow Vocabulary and R2 Elevation: one drop shadow per entry (px). No entry = no shadow;
   # segment-thumb has no -dark entry because dark draws surface-2 + a 1 px outline instead (unpaired by design).
-  # edge*: 1 px inset line in dark, top edge only on the sheet (inset 0 1px 0), all round on the dialog.
+  # edge*: 1 px inset line in dark, top edge only on the sheet (inset 0 1px 0), all round on the dialog
+  # and the coach mark.
   # ring*: solid ring outside the shape (Capture button: 0 0 0 4px in the surface colour).
   segment-thumb-light: { offsetX: "0px", offsetY: "1px", blur: "2px", spread: "0px", color: "rgba(27,27,25,0.12)" }
   sheet-light: { offsetX: "0px", offsetY: "-8px", blur: "24px", spread: "0px", color: "rgba(27,27,25,0.14)" }
   sheet-dark: { offsetX: "0px", offsetY: "-8px", blur: "24px", spread: "0px", color: "rgba(27,27,25,0.14)", edgeColor: "{colors.divider-dark}", edgeWidth: "1px" }
-  # Dialog and coach mark.
   dialog-light: { offsetX: "0px", offsetY: "8px", blur: "24px", spread: "0px", color: "rgba(27,27,25,0.14)" }
   dialog-dark: { offsetX: "0px", offsetY: "8px", blur: "24px", spread: "0px", color: "rgba(27,27,25,0.14)", edgeColor: "{colors.divider-dark}", edgeWidth: "1px" }
+  # Coach mark: the dialog shadow; its dark edge is outline-dark (#5E7D72), round the bubble and the arrow (C09).
+  coach-mark-light: { offsetX: "0px", offsetY: "8px", blur: "24px", spread: "0px", color: "rgba(27,27,25,0.14)" }
+  coach-mark-dark: { offsetX: "0px", offsetY: "8px", blur: "24px", spread: "0px", color: "rgba(27,27,25,0.14)", edgeColor: "{colors.outline-dark}", edgeWidth: "1px" }
   snackbar-light: { offsetX: "0px", offsetY: "8px", blur: "24px", spread: "0px", color: "rgba(27,27,25,0.18)" }
   snackbar-dark: { offsetX: "0px", offsetY: "8px", blur: "24px", spread: "0px", color: "rgba(0,0,0,0.4)" }
   capture-button-light: { offsetX: "0px", offsetY: "6px", blur: "14px", spread: "0px", color: "rgba(27,27,25,0.18)", ringColor: "{colors.surface-light}", ringWidth: "4px" }
@@ -262,9 +266,11 @@ motion:
   toast: "3000ms"
 components:
   # Focus ring on every focusable control: a 2 px line, 2 px gap, following the control's own corners
-  # (the inline link, which has none, uses rounded.4).
+  # (the inline link, which has none, uses rounded.4). S7 High Contrast draws it 3 px, same 2 px gap.
   focus-ring-light: { width: "2px", offset: "2px", color: "{colors.focus-light}" }
   focus-ring-dark: { width: "2px", offset: "2px", color: "{colors.focus-dark}" }
+  focus-ring-hc-light: { width: "3px", offset: "2px", color: "{colors.focus-hc-light}" }
+  focus-ring-hc-dark: { width: "3px", offset: "2px", color: "{colors.focus-hc-dark}" }
   # C01 Buttons
   button-primary-light: { backgroundColor: "{colors.primary-light}", textColor: "{colors.on-primary-light}", typography: "{typography.button}", rounded: "{rounded.full}", height: "52px", padding: "0 24px" }
   button-primary-pressed-light: { backgroundColor: "{colors.primary-pressed-light}", textColor: "{colors.on-primary-light}" }
@@ -372,9 +378,9 @@ components:
   banner-offline-dark: { backgroundColor: "{colors.surface-2-dark}", textColor: "{colors.text-dark}", typography: "{typography.subhead}", rounded: "{rounded.16}", padding: "12px 4px 12px 14px" }
   snackbar-light: { backgroundColor: "{colors.inverse-surface-light}", textColor: "{colors.on-inverse-light}", typography: "{typography.subhead-medium}", rounded: "{rounded.16}", height: "56px", padding: "0 6px 0 16px" }
   snackbar-dark: { backgroundColor: "{colors.inverse-surface-dark}", textColor: "{colors.on-inverse-dark}", typography: "{typography.subhead-medium}", rounded: "{rounded.16}", height: "56px", padding: "0 6px 0 16px" }
-  # Snackbar Undo action (text button inside the snackbar, C04); its 15/700 label has no type token yet.
-  snackbar-action-light: { textColor: "{colors.inverse-primary-light}", rounded: "{rounded.12}", height: "44px", padding: "0 14px" }
-  snackbar-action-dark: { textColor: "{colors.inverse-primary-dark}", rounded: "{rounded.12}", height: "44px", padding: "0 14px" }
+  # Snackbar Undo action (text button inside the snackbar, C04), label in label-action (15/20 700).
+  snackbar-action-light: { textColor: "{colors.inverse-primary-light}", typography: "{typography.label-action}", rounded: "{rounded.12}", height: "44px", padding: "0 14px" }
+  snackbar-action-dark: { textColor: "{colors.inverse-primary-dark}", typography: "{typography.label-action}", rounded: "{rounded.12}", height: "44px", padding: "0 14px" }
   toast: { typography: "{typography.subhead-medium}", rounded: "{rounded.full}", height: "44px" }
   progress-track-light: { backgroundColor: "{colors.surface-2-light}", rounded: "{rounded.3}", height: "6px" }
   progress-fill-light: { backgroundColor: "{colors.primary-light}", rounded: "{rounded.3}", height: "6px" }
@@ -487,7 +493,7 @@ A warm, low-chroma paper palette with a single garden-green accent in light and 
 
 **Brand scheme.** **S3 Viridian** (`*-brand`) is used only on Welcome and onboarding: a viridian ground with paper text and a Naples-yellow primary. `text-secondary-brand` sits on `surface-brand` only, never on the viridian ground; `primary-text-brand` on `background-brand` is for text 24 pt and up only (3.2:1). S3 shares S2's yellow primary, so the roles S3 does not draw (pressed, pressed link, on-accent, on-error, active pill, inverse, pressed overlays) copy the S2 value, and tokens S3 does not define (status, condition chips) use their S2 values.
 
-**High contrast.** **S7 High Contrast** (`*-hc-light` / `*-hc-dark`, from the Colour Schemes canvas) turns on with the phone setting (iOS Increase Contrast, Android high-contrast text) or Settings › Accessibility › High contrast. Same screens and components; only colour tokens change. Surfaces equal the background and carry a 2 px outline (`outline-hc-light` #000000, `outline-hc-dark` #FFFFFF) instead of a tonal step. Tokens S7 does not redefine (status, condition chips, scrim) keep their S1 / S2 values. Every core role has an S7 value. Where the S7 board draws a role it is used as drawn: dividers in the outline colour, ink #000000 on the accent, and the active tab marked by colour plus underline with no pill (`active-pill-hc-*` is transparent). The roles S7 does not draw borrow the S1 value in `-hc-light` and the S2 value in `-hc-dark`, except `link-pressed-hc-light`, which goes one step darker than the #10312A link, to #000000.
+**High contrast.** **S7 High Contrast** (`*-hc-light` / `*-hc-dark`, from the Colour Schemes canvas) turns on with the phone setting (iOS Increase Contrast, Android high-contrast text) or Settings › Accessibility › High contrast. Same screens and components; only colour tokens change, plus the focus ring, which S7 draws 3 px (`focus-ring-hc-light` / `focus-ring-hc-dark`). Surfaces equal the background and carry a 2 px outline (`outline-hc-light` #000000, `outline-hc-dark` #FFFFFF) instead of a tonal step. Tokens S7 does not redefine (status, condition chips, scrim) keep their S1 / S2 values. Every core role has an S7 value. Where the S7 board draws a role it is used as drawn: dividers in the outline colour, ink #000000 on the accent, and the active tab marked by colour plus underline with no pill (`active-pill-hc-*` is transparent). The roles S7 does not draw borrow the S1 value in `-hc-light` and the S2 value in `-hc-dark`, except `link-pressed-hc-light`, which goes one step darker than the #10312A link, to #000000.
 
 ### Primary
 - **Garden Viridian** (`primary-light`): primary button fill, Capture button, switch on, selected date cell, progress fill. White text on it (`on-primary-light`). Pressed darkens to `primary-pressed-light`.
@@ -505,7 +511,7 @@ A warm, low-chroma paper palette with a single garden-green accent in light and 
 - **Ink** (`text-*`) and **Stone** (`text-secondary-*`): body and secondary text.
 - **Hairline** (`divider-*`): 1 px dividers and card rings only, never text.
 - **Field Edge** (`outline-*`): input and secondary-button outlines (3:1 non-text contrast).
-- **Focus** (`focus-*`): 2 px focus ring at 2 px offset on every focusable control (`focus-ring-*` in the components), following the control's own corners.
+- **Focus** (`focus-*`): 2 px focus ring at 2 px offset on every focusable control (`focus-ring-light` / `focus-ring-dark` in the components), following the control's own corners. S7 High Contrast draws it 3 px at the same 2 px offset (`focus-ring-hc-light` / `focus-ring-hc-dark`).
 - **Inverse** (`inverse-surface-*` / `on-inverse-*`): colours that swap between themes, ink with paper text in light and paper with ink text in dark. Snackbar and "AI-generated preview" badge only. `inverse-primary-*` is the snackbar's Undo action (`snackbar-action-*`): the accent yellow in light, #1F5A47 in dark.
 - **Pressed overlays** (`pressed-overlay-*`, `pressed-overlay-strong-*`): a tint laid over a component's own fill while it is pressed (`overlayColor` on its `-pressed` entry). Light: ink #1B1B19 at 12 % (weather chip) or 18 % (filled destructive button). Dark: background #0F1F1B at 16 % for both. `primary-pressed-dark` is that dark overlay already flattened onto `primary-dark`.
 - `scrim`: behind sheets and dialogs (#1B1B19 at 45 %). **Camera** (`camera-ground`, `camera-track`, `camera-paper`, `camera-ink`, `camera-yellow`): the capture camera, a dark ground that looks the same in both themes except for the selected mode (C05).
@@ -586,6 +592,7 @@ Component label styles (drawn on C01–C10, not on R2) each scale with the neare
 | label-md | Figtree | 14 / 18 | 600 | subhead | .subheadline | — | filter, condition, group/sort chips |
 | label-sm | Figtree | 13 / 18 | 600 | footnote | .footnote | — | weather and reason chips, confidence label, trial pill, inline provenance |
 | subhead-medium | Figtree | 15 / 20 | 500 | subhead | .subheadline | — | choice chips, snackbar, toast, menu rows |
+| label-action | Figtree | 15 / 20 | 700 | subhead | .subheadline | — | snackbar Undo action |
 | caption-strong | Figtree | 12 / 16 | 600 | caption | .caption | — | active tab label, plan tags |
 | badge | Figtree | 11 / 14 | 600 | overline | .caption2 | — | tile badge, provenance overlay |
 | badge-count | Figtree | 11 / 18 | 700 | overline | .caption2 | — | count badge (number) |
@@ -612,12 +619,13 @@ Phone reference 390 × 844. One column; content width = screen − 40.
 
 ## Elevation & Depth
 
-Flat by default, with tonal layering: background → surface (cards, bars) → surface-2 (tiles, chips). Cards carry no shadow, only a 1 px `divider-*` ring. Shadows appear only on elements that float above the page. In dark, floating elements add a 1 px divider edge because shadows read weakly on dark grounds.
+Flat by default, with tonal layering: background → surface (cards, bars) → surface-2 (tiles, chips). Cards carry no shadow, only a 1 px `divider-*` ring. Shadows appear only on elements that float above the page. In dark, floating elements add a 1 px edge (divider; outline on the coach mark) because shadows read weakly on dark grounds.
 
 ### Shadow Vocabulary
 - **Segment thumb** (`0 1px 2px rgba(27,27,25,0.12)`): the selected segment in light. Dark uses surface-2 + 1 px outline instead.
 - **Sheet** (`0 -8px 24px rgba(27,27,25,0.14)`; dark adds `inset 0 1px 0 #2C4740`): bottom sheets.
-- **Dialog, coach mark** (`0 8px 24px rgba(27,27,25,0.14)`; dark adds a 1 px #2C4740 inset ring).
+- **Dialog** (`0 8px 24px rgba(27,27,25,0.14)`; dark adds a 1 px #2C4740 inset ring).
+- **Coach mark** (the dialog shadow; dark adds a 1 px #5E7D72 `outline-dark` inset ring round the bubble and its arrow, as drawn on C09; owner choice 2026-10-19).
 - **Snackbar** (`0 8px 24px rgba(27,27,25,0.18)`; dark `rgba(0,0,0,0.4)`).
 - **Capture button** (4 px surface ring + `0 6px 14px rgba(27,27,25,0.18)`; dark `rgba(0,0,0,0.35)`).
 
@@ -658,7 +666,7 @@ Soft, rounded, friendly geometry. Interactive things are pills; containers are g
 
 ## Components
 
-Every component is drawn in S1 and S2 on its canvas board, with states in this order: default, pressed, focused (`focus-ring-*`: 2 px ring, 2 px gap, following the control's corners), disabled (surface-2 fill + text-secondary label, never opacity alone on text, text ≥ 3:1), loading, error, selected. Frontmatter carries colours, type, radius and size, plus shadows (`elevation`), `motion`, the outline-ring width, the focus ring and the pressed overlays (`overlayColor`); outline colours and the other rings are described here.
+Every component is drawn in S1 and S2 on its canvas board, with states in this order: default, pressed, focused (`focus-ring-*`: 2 px ring, 2 px gap, following the control's corners; 3 px in S7 High Contrast, `focus-ring-hc-*`), disabled (surface-2 fill + text-secondary label, never opacity alone on text, text ≥ 3:1), loading, error, selected. Frontmatter carries colours, type, radius and size, plus shadows (`elevation`), `motion`, the outline-ring width, the focus ring and the pressed overlays (`overlayColor`); outline colours and the other rings are described here.
 
 ### Buttons (C01)
 - **Shape:** pill (full radius).
@@ -696,7 +704,7 @@ Navigation, actions, weather and context, closet, status, account and settings s
 - **Provenance badge:** "AI-generated preview" pill in inverse colours (`inverse-surface-*` / `on-inverse-*`: ink on light, paper on dark), 22, top-left of every generated view, with the confidence label bottom-left. Inline 13/600. Never on real photos. **Freshness label:** "Cached · based on data from 07:10", 13/18 secondary.
 - **Banners:** full width (screen − 40), padding 12 4 12 14, radius 16, icon 20, title 15/600, body 13/18, action 13/600 in the status fg, dismiss 44 × 44. Kinds: info, success, warning, error, offline (surface-2), stale (surface + divider). Dark: info, success, error and stale on `surface-dark` + divider ring (`banner-<kind>-dark`; `banner-dark` is the same shared fill), warning on `warning-bg-dark`, offline on `surface-2-dark`.
 - **Inline field message:** 13/18, 6 below the field; error = 2 px error ring + icon 16 + fix link, value kept as typed; helper in secondary.
-- **Snackbar:** 56, radius 16, inverse colours (`inverse-surface-*` / `on-inverse-*`), Undo 15/700 in `inverse-primary-*` (`snackbar-action-*`: 44 high, padding 0 14, radius 12; the accent yellow in light, #1F5A47 in dark; the Undo on inverse surfaces exception to The Accent Is Fill Rule), 16 above the tab bar. **Toast:** 44 pill, icon 18 + 15/500, no action.
+- **Snackbar:** 56, radius 16, inverse colours (`inverse-surface-*` / `on-inverse-*`), Undo in `label-action` (15/20 700) in `inverse-primary-*` (`snackbar-action-*`: 44 high, padding 0 14, radius 12; the accent yellow in light, #1F5A47 in dark; the Undo on inverse surfaces exception to The Accent Is Fill Rule), 16 above the tab bar. **Toast:** 44 pill, icon 18 + 15/500, no action.
 - **Progress:** linear track 6 (radius 3, surface-2, primary fill), ring 40 stroke 4, steps, upload row. Counts in words ("5 of 8"), never invented percentages.
 - **Skeletons:** surface-2 blocks on surface matching the final layout (outfit card, item tile, list row); slow shimmer, none under reduced motion; announced once as "Loading".
 - **State templates (empty, error, offline):** padding 20, radius 24, illustration slot 96 × 64, Title3 title, Callout body naming the cause, one action (button 48). Offline keeps cached content visible.
@@ -745,7 +753,7 @@ Navigation, actions, weather and context, closet, status, account and settings s
 - **Action menu sheet:** rows 48 (52 at full scale), icon 22, gap 12, 15/500, pressed surface-2, divider before "Report a problem".
 - **Confirmation dialog:** inset 12, radius 24, padding 20, dialog shadow, kept vs cleared summary; reset is two-step. **Destructive confirmation:** after re-auth, states what is deleted, the timeline ("Within 30 days, usually about 8") and the store note; "Delete account" filled error, "Keep account" outlined, stacked 44.
 - **Permission priming (location, notifications):** shown at first use, before the OS prompt; radio rows 44 with the active pill on the selected row; "Allow" / "Turn on" and "Not now" have equal fill, size and weight; all notification categories start off.
-- **Coach mark:** scrim + undimmed target, surface bubble radius 16, padding 14, arrow 12, dialog shadow, "Got it" text button 44, shown once.
+- **Coach mark:** scrim + undimmed target, surface bubble radius 16, padding 14, arrow 12, dialog shadow (`coach-mark-*` elevation; dark adds a 1 px `outline-dark` ring round the bubble and arrow), "Got it" text button 44, shown once.
 - **Full-screen modal header:** 56, close 44 left, Headline title centred, primary Save right, 1 px divider; Save disabled until a change.
 
 ### Garment illustrations (C10)

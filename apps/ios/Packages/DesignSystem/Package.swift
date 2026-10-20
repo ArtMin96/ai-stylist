@@ -2,9 +2,12 @@
 // DesignSystem: the app-internal design system (DEC-87, ADR-0011 amendment). Tests live in
 // tests/<Target>Tests (repo rule: tests in the owning module's tests/ directory).
 //   DesignTokens  Foundation-only token values; builds and tests on Linux too. `just generate` writes
-//                 them into Sources/DesignTokens/generated/ (never hand-edit that directory).
-//   DesignSystem  SwiftUI base components on top of DesignTokens; Apple platforms only (left out of
-//                 this manifest on Linux). System core: no previews, no dev tools.
+//                 them into Sources/DesignTokens/generated/ (never hand-edit that directory). Beside
+//                 generated/ it also holds the hand-written C02 icon geometry (AppIconGeometry), UI-free
+//                 so it tests on Linux.
+//   DesignSystem  SwiftUI base components on top of DesignTokens (AppButton C01, AppIcon C02); Apple
+//                 platforms only (left out of this manifest on Linux). System core: no previews, no dev
+//                 tools.
 //   DesignSystemCatalog  dev-only: the Xcode previews and the debug "Design system gallery" (AI-195).
 //                 Apple platforms only. Only the app target's Dev configuration links it (project.yml,
 //                 Config/Dev.xcconfig); production code never imports it.

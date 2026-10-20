@@ -37,6 +37,7 @@ private struct ButtonSectionPreview: View {
   @Previewable @State var loading = false
   @Previewable @State var fullWidth = false
   @Previewable @State var label = ComponentGallery.buttonLabel
+  @Previewable @State var leadingIcon: AppIconName? = nil
 
   // The allowed pairs are the same in every context, so the light spec answers for all of them.
   let sizes = ButtonSize.allCases.filter { AppButtonRules.isAllowed(variant, $0, in: AppTheme.light.buttons) }
@@ -47,6 +48,7 @@ private struct ButtonSectionPreview: View {
         label,
         variant: variant,
         size: size,
+        leadingIcon: leadingIcon,
         fullWidth: fullWidth,
         enabled: enabled,
         loading: loading
@@ -58,6 +60,10 @@ private struct ButtonSectionPreview: View {
       }
       Picker("Size", selection: $size) {
         ForEach(sizes, id: \.self) { Text($0.rawValue) }
+      }
+      Picker("Leading icon", selection: $leadingIcon) {
+        Text("none").tag(AppIconName?.none)
+        ForEach(AppIconName.allCases, id: \.self) { Text($0.rawValue).tag(AppIconName?.some($0)) }
       }
       Toggle("Enabled", isOn: $enabled)
       Toggle("Loading", isOn: $loading)

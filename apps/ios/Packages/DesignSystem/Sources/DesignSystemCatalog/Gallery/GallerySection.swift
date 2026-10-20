@@ -28,6 +28,7 @@ nonisolated package struct GallerySection: Equatable, Sendable, Identifiable {
     let kind: GallerySectionKind =
       switch component {
       case .button: .buttons(ComponentGallery.button)
+      case .icon: .icons(AppIconName.allCases)
       }
     self.init(slug: component.slug, title: component.title, kind: kind)
   }

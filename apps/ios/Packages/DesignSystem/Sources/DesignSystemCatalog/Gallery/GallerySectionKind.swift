@@ -9,14 +9,16 @@ nonisolated package enum GallerySectionKind: Equatable, Sendable {
   case spacing([AppScaleStep])
   case radius([AppScaleStep])
   case buttons([ButtonGalleryEntry])
+  case icons([AppIconName])
 
-  /// The text shown for each item, in order: role ids, style and step names, button test ids.
+  /// The label of each item, in order: role ids, style and step names, button and icon test ids.
   package var itemLabels: [String] {
     switch self {
     case .colours(let roles): roles.map(\.rawValue)
     case .typography(let styles): styles.map(\.name)
     case .spacing(let steps), .radius(let steps): steps.map(\.name)
     case .buttons(let entries): entries.map(\.testId)
+    case .icons(let names): names.map(\.testId)
     }
   }
 }

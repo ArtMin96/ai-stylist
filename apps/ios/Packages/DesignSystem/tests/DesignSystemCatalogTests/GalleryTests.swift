@@ -12,6 +12,7 @@ private let paritySections: [(id: String, title: String)] = [
   ("ds-gallery-section-spacing", "Spacing"),
   ("ds-gallery-section-radius", "Radius"),
   ("ds-gallery-section-c01-buttons", "C01 Buttons"),
+  ("ds-gallery-section-c02-icons", "C02 Icons"),
 ]
 
 private func section(_ id: String) throws -> GallerySection {
@@ -45,6 +46,14 @@ func tokenItems() throws {
 func buttonCells() throws {
   let ids = try section("ds-gallery-section-c01-buttons").kind.itemLabels
   #expect(ids == ComponentGallery.button.map(\.testId))
+  #expect(Set(ids).count == ids.count)
+  #expect(!ids.isEmpty)
+}
+
+@Test("the C02 section's cells are every generated glyph, in order, with unique test ids")
+func iconCells() throws {
+  let ids = try section("ds-gallery-section-c02-icons").kind.itemLabels
+  #expect(ids == AppIconName.allCases.map(\.testId))
   #expect(Set(ids).count == ids.count)
   #expect(!ids.isEmpty)
 }

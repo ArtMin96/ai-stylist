@@ -13,7 +13,7 @@ public struct AppButton: View {
   private let label: String
   private let variant: ButtonVariant
   private let size: ButtonSize
-  private let leadingIcon: Image?
+  private let leadingIcon: AppIconName?
   private let fullWidth: Bool
   private let enabled: Bool
   private let loading: Bool
@@ -23,7 +23,8 @@ public struct AppButton: View {
 
   /// - Parameters:
   ///   - label: the visible text and the accessible name; it wraps, never truncates.
-  ///   - leadingIcon: a decorative icon before the label, hidden from VoiceOver.
+  ///   - leadingIcon: a decorative C02 glyph before the label, drawn at the look's icon step in the label
+  ///     colour and hidden from VoiceOver.
   ///   - fullWidth: true fills the available width; false hugs the label.
   ///   - enabled: false shows the disabled look and blocks activation.
   ///   - loading: true while the request this button started runs.
@@ -31,7 +32,7 @@ public struct AppButton: View {
     _ label: String,
     variant: ButtonVariant,
     size: ButtonSize,
-    leadingIcon: Image? = nil,
+    leadingIcon: AppIconName? = nil,
     fullWidth: Bool = false,
     enabled: Bool = true,
     loading: Bool = false,

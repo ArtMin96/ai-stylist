@@ -39,14 +39,14 @@ struct GalleryIconSection: View {
     }
   }
 
-  /// A playground control with its visible label.
+  /// A playground control with its visible label, in the headline style on both apps.
   private func control<Control: View>(_ label: String, @ViewBuilder picker: () -> Control) -> some View {
     let content = picker()
     return LabeledContent {
       content.labelsHidden()
     } label: {
       Text(label)
-        .font(theme.font(theme.typography.body))
+        .font(theme.font(theme.typography.headline))
         .foregroundStyle(theme.color(.text))
     }
   }

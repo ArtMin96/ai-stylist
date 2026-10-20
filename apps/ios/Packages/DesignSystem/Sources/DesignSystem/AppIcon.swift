@@ -6,7 +6,8 @@ import CoreGraphics
 public import DesignTokens
 public import SwiftUI
 
-/// One C02 glyph at an icon-scale step, scaled with Dynamic Type like body text.
+/// One C02 glyph at an icon-scale step, scaled with Dynamic Type: xs to lg like body text, xl and hero
+/// more gently (`scalingStyle(for:)`).
 ///
 /// The frame is exactly the rendered size, with no padding and no minimum touch target. The icon is
 /// hidden from VoiceOver.
@@ -15,7 +16,8 @@ public struct AppIcon: View {
   private let size: AppIconSize
   private let tint: AppColorRole?
 
-  /// The token size scaled with Dynamic Type; equal to `size.size` at 100 % text size.
+  /// The token size scaled with Dynamic Type by the step's text style; equal to `size.size` at 100 % text
+  /// size.
   @ScaledMetric private var renderedSize: Double
 
   @Environment(\.appTheme) private var theme
@@ -28,7 +30,20 @@ public struct AppIcon: View {
     self.name = name
     self.size = size
     self.tint = tint
-    _renderedSize = ScaledMetric(wrappedValue: size.size, relativeTo: .body)
+    _renderedSize = ScaledMetric(wrappedValue: size.size, relativeTo: Self.scalingStyle(for: size))
+  }
+
+  /// The text style a step grows with under Dynamic Type. DESIGN.md "Icons (C02)": icons grow with the
+  /// user's text size as the platform's own icons do; the owner decided on 2026-10-21 that on iOS the
+  /// large steps grow more gently, like the system's large symbols. `AppButtonFace` sizes its leading
+  /// slot (icon or spinner) through this function too, so the two never drift apart. No `default`: a
+  /// new step must choose its style.
+  package static func scalingStyle(for size: AppIconSize) -> Font.TextStyle {
+    switch size {
+    case .xs, .sm, .md, .lg: .body
+    case .xl: .title2
+    case .hero: .largeTitle
+    }
   }
 
   public var body: some View {
@@ -49,22 +64,22 @@ public struct AppIcon: View {
       let points = stride(from: 0, to: segment.points.count - 1, by: 2).map { index in
         CGPoint(x: segment.points[index], y: segment.points[index + 1])
       }
-      switch segment.command {
-      case .move:
-        if let end = points.first {
-          path.move(to: end)
-        }
-      case .line:
-        if let end = points.first {
-          path.addLine(to: end)
-        }
-      case .cubic:
+      switch (segment.command, segment.points.count) {
+      case (.move, 2):
+        path.move(to: points[0])
+      case (.line, 2):
+        path.addLine(to: points[0])
+      case (.cubic, 6):
         // Generated order: control 1, control 2, end (tools/codegen/tokens/README.md "Icon sets").
-        if points.count == 3 {
-          path.addCurve(to: points[2], control1: points[0], control2: points[1])
-        }
-      case .close:
+        path.addCurve(to: points[2], control1: points[0], control2: points[1])
+      case (.close, 0):
         path.closeSubpath()
+      default:
+        // Unreachable for a generated glyph: CC-11 (tools/codegen/tokens/README.md) admits only paths
+        // that compile, and the compiler emits one end point per move and line, control 1, control 2
+        // and end per cubic, and none for close. Debug builds stop on a broken table; release builds
+        // skip the segment rather than crash the screen.
+        assertionFailure("AppIcon: malformed \(segment.command) segment with \(segment.points.count) coordinates")
       }
     }
     return path

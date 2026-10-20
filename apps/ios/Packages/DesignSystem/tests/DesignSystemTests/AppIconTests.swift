@@ -1,5 +1,6 @@
-// AppIcon's path replay without rendering (contract .impeccable/components/icon.yaml): the SwiftUI path
-// of a scaled shape has the same elements and points as its segments, in order.
+// AppIcon without rendering (contract .impeccable/components/icon.yaml): the Dynamic Type text style of
+// each step, and the path replay (the SwiftUI path of a scaled shape has the same elements and points as
+// its segments, in order).
 import CoreGraphics
 import DesignSystem
 import DesignTokens
@@ -26,6 +27,15 @@ private func replayed(_ path: Path) -> [Replayed] {
   }
   path.forEach(record)
   return elements
+}
+
+@Test("xs to lg grow with body text, xl with title 2 and hero with large title (owner, 2026-10-21)")
+func eachStepGrowsWithItsTextStyle() {
+  let expected: [AppIconSize: Font.TextStyle] = [
+    .xs: .body, .sm: .body, .md: .body, .lg: .body, .xl: .title2, .hero: .largeTitle,
+  ]
+  let styles = Dictionary(uniqueKeysWithValues: AppIconSize.allCases.map { ($0, AppIcon.scalingStyle(for: $0)) })
+  #expect(styles == expected)
 }
 
 @Test("the replayed path of every shape has the scaled segments' commands and points, in order")

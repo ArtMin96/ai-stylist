@@ -66,8 +66,9 @@ extension EnvironmentValues {
 }
 
 extension View {
-  /// Registers the bundled fonts (once per process) and sets `\.appTheme` from the system
-  /// appearance: light, dark, and Increase Contrast for S7. Apply once, at the app root.
+  /// Registers the bundled fonts (once per process), sets `\.appTheme` from the system appearance
+  /// (light, dark, and Increase Contrast for S7) and the root foreground style to its `text` role.
+  /// Apply once, at the app root.
   public func appTheme() -> some View {
     AppFonts.registerOnce()
     return modifier(AppThemeModifier())
@@ -82,7 +83,14 @@ private struct AppThemeModifier: ViewModifier {
   @Environment(\.colorScheme) private var colorScheme
   @Environment(\.colorSchemeContrast) private var contrast
 
+  /// Sets `\.appTheme` and makes the theme's `text` role the root foreground style, so content that
+  /// inherits it (an untinted `AppIcon`'s Canvas `.foreground` shading) draws in the token, not the
+  /// system `.primary`.
   func body(content: Content) -> some View {
-    content.environment(\.appTheme, .resolved(colorScheme: colorScheme, contrast: contrast))
+    let theme = AppTheme.resolved(colorScheme: colorScheme, contrast: contrast)
+    return
+      content
+      .environment(\.appTheme, theme)
+      .foregroundStyle(theme.color(.text))
   }
 }

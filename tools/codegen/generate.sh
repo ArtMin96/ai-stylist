@@ -1,7 +1,10 @@
 #!/usr/bin/env bash
-# `just generate [--check]` — runs every contract generator (planning/06 §1, brief §3).
+# `just generate [--check]` — runs every code generator (planning/06 §1, brief §3; DEC-87 tokens).
 #   gen-kernel.mjs ts  shared-kernel registries (packages/shared-kernel/registry/*.json, OQ-15)
 #                      -> packages/shared-kernel/src/gen (TS data behind the hand-written registries)
+#   gen-tokens.mjs DESIGN.md frontmatter (the design-token master) -> Swift + Kotlin token code in
+#                  the app design systems ($TOKENS_SWIFT_DIR, $TOKENS_KOTLIN_DIR below); node only,
+#                  so it runs in every lane, NATIVE_LANES=none included
 #   gen-ts.sh      OpenAPI bundle, hey-api TS client, event + worker-contract TS types
 #                                                                     -> packages/contracts/gen
 #   gen-swift.sh   swift-openapi-generator Swift client + AIStylistKernel registry target
@@ -27,13 +30,16 @@ CHECK=0
 for arg in "$@"; do
   case "$arg" in
     --check) CHECK=1 ;;
-    -h|--help) sed -n '2,21p' "$0"; exit 0 ;;
+    -h|--help) sed -n '2,24p' "$0"; exit 0 ;;
     *) echo "generate.sh: unknown argument '$arg'" >&2; exit 2 ;;
   esac
 done
 
-# Generated output roots (relative to repo root). Missing ones are skipped.
-OUTPUT_DIRS=(packages/shared-kernel/src/gen packages/contracts/gen)
+# Design-token output (DEC-87): the app-internal design-system packages, never root packages/.
+TOKENS_SWIFT_DIR=apps/ios/Packages/DesignSystem/Sources/DesignTokens/generated
+TOKENS_KOTLIN_DIR=apps/android/core/designsystem/src/main/kotlin/app/aistylist/core/designsystem/generated
+# Generated output roots (relative to repo root). A missing one is reported as stale by --check.
+OUTPUT_DIRS=(packages/shared-kernel/src/gen "$TOKENS_SWIFT_DIR" "$TOKENS_KOTLIN_DIR" packages/contracts/gen)
 # Tool caches that may appear inside output dirs and are never generated or committed.
 # (.build, .swiftpm, Package.resolved: a local `swift build` inside gen/swift-client leaves them.)
 DIFF_EXCLUDES=(-x __pycache__ -x '*.pyc' -x .pytest_cache -x .ruff_cache -x .mypy_cache -x .build -x .swiftpm -x Package.resolved)
@@ -57,6 +63,8 @@ run_step() {
 # Every step returns on the first failure, in both modes (plain and --check).
 run_generators() {
   run_step gen-kernel.mjs node "$HERE/gen-kernel.mjs" ts "$ROOT/packages/shared-kernel/src/gen" || return
+  run_step gen-tokens.mjs node "$HERE/gen-tokens.mjs" --input "$ROOT/DESIGN.md" \
+    --swift-out "$ROOT/$TOKENS_SWIFT_DIR" --kotlin-out "$ROOT/$TOKENS_KOTLIN_DIR" || return
   # gen-ts.sh writes gen/openapi.bundle.json, which the Swift and Kotlin generators read.
   run_step gen-ts.sh "$HERE/gen-ts.sh" || return
   run_step gen-swift.sh "$ROOT/scripts/native-lane.sh" ios swift "$HERE/gen-swift.sh" || return

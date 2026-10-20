@@ -3,7 +3,17 @@
 // the real CLI never runs here. Run by scripts/test/design-tokens.test.sh (`just test tooling`).
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
-import { chmodSync, mkdtempSync, readFileSync, realpathSync, rmSync, writeFileSync } from 'node:fs';
+import {
+  chmodSync,
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  readdirSync,
+  realpathSync,
+  rmSync,
+  writeFileSync,
+} from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { after, test } from 'node:test';
@@ -88,6 +98,45 @@ test('TK-12: a missing design.md bin is a finding, not a crash', () => {
   const result = run(['--input', fixture('_valid')], { DESIGN_MD_BIN: missing });
   assert.equal(result.status, 1);
   assert.match(result.stderr, /TK-12 design\.md lint: `.*no-such-bin` not found/);
+});
+
+test('output directories: each replaced by the three tier files of its language', () => {
+  const swiftOut = path.join(SCRATCH, 'out', 'swift');
+  const kotlinOut = path.join(SCRATCH, 'out', 'kotlin');
+  mkdirSync(swiftOut, { recursive: true });
+  writeFileSync(path.join(swiftOut, 'Stale.swift'), '// a file the last run wrote\n');
+  const args = ['--input', fixture('_valid'), '--swift-out', swiftOut, '--kotlin-out', kotlinOut];
+  const result = run(args);
+  assert.equal(result.status, 0, result.stderr);
+  const tiers = ['ReferenceTokens', 'SchemeTokens', 'ComponentTokens'];
+  assert.deepEqual(readdirSync(swiftOut).sort(), tiers.map((t) => `${t}.swift`).sort());
+  assert.deepEqual(readdirSync(kotlinOut).sort(), tiers.map((t) => `${t}.kt`).sort());
+  assert.match(result.stdout, /\ngen-tokens: swift \(ReferenceTokens\.swift, SchemeTokens\.swift/);
+  const kotlinScheme = readFileSync(path.join(kotlinOut, 'SchemeTokens.kt'), 'utf8');
+  assert.match(kotlinScheme, /enum class AppColorRole/);
+  const component = path.join(swiftOut, 'ComponentTokens.swift');
+  const first = readFileSync(component, 'utf8');
+  const again = run(args);
+  assert.equal(again.status, 0, again.stderr);
+  assert.equal(readFileSync(component, 'utf8'), first, 'a second run writes the same bytes');
+});
+
+test('an invalid file writes nothing', () => {
+  const out = path.join(SCRATCH, 'out', 'invalid');
+  const result = run(['--input', fixture('TK-05'), '--swift-out', out]);
+  assert.equal(result.status, 1);
+  assert.equal(existsSync(out), false);
+});
+
+test('the repository DESIGN.md generates both languages', () => {
+  const out = path.join(SCRATCH, 'out', 'repo');
+  const input = path.resolve(TOKENS_DIR, '..', '..', '..', 'DESIGN.md');
+  const args = ['--input', input, '--swift-out', `${out}/swift`, '--kotlin-out', `${out}/kotlin`];
+  const result = run(args);
+  assert.equal(result.status, 0, result.stderr);
+  assert.match(result.stdout, /gen-tokens: DESIGN\.md is valid \(\d+ colour roles x 5 contexts/);
+  const swift = readFileSync(path.join(out, 'swift', 'ComponentTokens.swift'), 'utf8');
+  assert.match(swift, /^\/\/ Source: DESIGN\.md$/m);
 });
 
 test('an unreadable input: exit 1 with the reason', () => {

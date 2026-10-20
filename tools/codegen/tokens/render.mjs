@@ -1,22 +1,23 @@
 // Walks the declaration tree (declarations.mjs) for one target language. A dialect object spells
-// each construct (emit-swift.mjs, emit-kotlin.mjs); this file owns order and spacing only, so the
-// two languages cannot drift apart in structure.
+// each construct (emit-swift.mjs, emit-kotlin.mjs); this file owns order, line breaks and blank
+// lines, so the two languages cannot drift apart in structure.
 import { TIERS } from './declarations.mjs';
 
 /** `{ <File>.<ext>: text }` for the three tiers. */
 export function renderTiers(dialect, tiers, source) {
   return Object.fromEntries(
     TIERS.map(({ tier, file, title }) => {
-      const blocks = tiers[tier].map((decl) => renderDeclaration(dialect, decl).join('\n'));
+      const blocks = tiers[tier].map((decl) => renderDeclaration(dialect, decl, 0).join('\n'));
       const text = [...dialect.header(source, title), '', blocks.join('\n\n'), ''].join('\n');
       return [`${file}.${dialect.extension}`, text];
     }),
   );
 }
 
-function renderDeclaration(dialect, decl) {
-  if (decl.kind === 'namespace') return renderNamespace(dialect, decl, 0);
-  return dialect[decl.kind](decl);
+/** One declaration at `depth` levels of indentation. */
+export function renderDeclaration(dialect, decl, depth) {
+  if (decl.kind === 'namespace') return renderNamespace(dialect, decl, depth);
+  return dialect[decl.kind](decl, depth);
 }
 
 /** A blank line separates two members whenever either spans several lines. */
@@ -32,17 +33,13 @@ export function joinMembers(memberLines) {
 
 function renderNamespace(dialect, ns, depth) {
   const pad = dialect.indent.repeat(depth);
-  const members = ns.members.map((m) =>
-    m.kind === 'namespace'
-      ? renderNamespace(dialect, m, depth + 1)
-      : dialect.constant(m, depth + 1),
-  );
-  return [
-    ...(ns.doc ? [dialect.doc(ns.doc, pad)] : []),
-    `${pad}${dialect.namespaceHead(ns.name)} {`,
-    ...joinMembers(members),
-    `${pad}}`,
-  ];
+  const doc = ns.doc ? [dialect.doc(ns.doc, pad)] : [];
+  if (ns.members.length === 0) return [...doc, `${pad}${dialect.emptyNamespace(ns.name)}`];
+  const inner = depth + 1;
+  const member = (m) =>
+    m.kind === 'namespace' ? renderNamespace(dialect, m, inner) : dialect.constant(m, inner);
+  const head = `${pad}${dialect.namespaceHead(ns.name)} {`;
+  return [...doc, head, ...joinMembers(ns.members.map(member)), `${pad}}`];
 }
 
 /** `0xFFFA_FAFA`: eight hex digits in two groups (swift-format GroupNumericLiterals). */
@@ -51,7 +48,7 @@ const argbLiteral = (argb) => {
   return `0x${hex.slice(0, 4)}_${hex.slice(4)}`;
 };
 
-/** One non-list value in the dialect's spelling (`dialect.spell`: string, role, ref, double). */
+/** One non-list, non-struct value in the dialect's spelling (`dialect.spell`). */
 function scalar(dialect, value, type) {
   switch (value.t) {
     case 'number':
@@ -69,21 +66,53 @@ function scalar(dialect, value, type) {
   }
 }
 
+const itemTypeOf = (type) => (type === 'doubleList' ? 'double' : 'string');
+
+/** The parts of a bracketed value: a struct value (a call) or a list. */
+function bracketed(dialect, value, type) {
+  if (value.t === 'init') {
+    return {
+      open: `${value.struct}(`,
+      close: ')',
+      items: value.args.map((arg) => ({ label: dialect.argLabel(arg.name), ...arg })),
+      lastComma: dialect.callTrailingComma,
+    };
+  }
+  const itemType = itemTypeOf(type);
+  return {
+    open: dialect.list.open,
+    close: dialect.list.close,
+    items: value.items.map((item) => ({ label: '', type: itemType, value: item })),
+    lastComma: true,
+  };
+}
+
+const isBracketed = (value) => value.t === 'init' || (value.t === 'list' && value.items.length > 0);
+
+/** A value on one line. */
+function inline(dialect, value, type) {
+  if (value.t === 'list' && value.items.length === 0) return dialect.list.empty;
+  if (!isBracketed(value)) return scalar(dialect, value, type);
+  const { open, close, items } = bracketed(dialect, value, type);
+  const parts = items.map((item) => `${item.label}${inline(dialect, item.value, item.type)}`);
+  return `${open}${parts.join(', ')}${close}`;
+}
+
 /**
- * `prefix` + the value + `suffix`. A list stays on one line when it fits in `dialect.limit`, else
- * it takes one item per line with a trailing comma (both formatters' multi-line collection style).
+ * `prefix` + the value + `suffix` at indentation `pad`. A value stays on one line when it fits in
+ * `dialect.limit`; otherwise a struct value or list takes one item per line. A dialect with
+ * `wrapAfterAssign` (ktlint multiline-expression-wrapping) starts it on the line after the `=`.
  */
 export function valueLines(dialect, prefix, { value, type }, pad, suffix = '') {
-  if (value.t !== 'list') return [`${prefix}${scalar(dialect, value, type)}${suffix}`];
-  const { open, close, empty } = dialect.list;
-  const itemType = type === 'doubleList' ? 'double' : 'string';
-  const items = value.items.map((item) => scalar(dialect, item, itemType));
-  if (items.length === 0) return [`${prefix}${empty}${suffix}`];
-  const single = `${prefix}${open}${items.join(', ')}${close}${suffix}`;
-  if (single.length <= dialect.limit) return [single];
-  return [
-    `${prefix}${open}`,
-    ...items.map((item) => `${pad}${dialect.indent}${item},`),
-    `${pad}${close}${suffix}`,
-  ];
+  const single = `${prefix}${inline(dialect, value, type)}${suffix}`;
+  if (single.length <= dialect.limit || !isBracketed(value)) return [single];
+  const outer = dialect.wrapAfterAssign ? pad + dialect.indent : pad;
+  const inner = outer + dialect.indent;
+  const { open, close, items, lastComma } = bracketed(dialect, value, type);
+  const body = items.flatMap((item, i) => {
+    const comma = i < items.length - 1 || lastComma ? ',' : '';
+    return valueLines(dialect, `${inner}${item.label}`, item, inner, comma);
+  });
+  const head = dialect.wrapAfterAssign ? [prefix.trimEnd(), `${outer}${open}`] : [prefix + open];
+  return [...head, ...body, `${outer}${close}${suffix}`];
 }

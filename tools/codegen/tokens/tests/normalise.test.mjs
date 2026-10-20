@@ -4,20 +4,14 @@
 // values. These are the facts the Swift and Kotlin emitters rely on. Run by
 // scripts/test/design-tokens.test.sh.
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
-import path from 'node:path';
 import { test } from 'node:test';
 
 import { CONTEXT_SOURCES, normalise, resolveColors, resolveComponents } from '../normalise.mjs';
 import { parseDesignMd } from '../parse.mjs';
-import { formatFinding, loadTokens } from '../pipeline.mjs';
+import { loadTokens } from '../pipeline.mjs';
 import { CONTEXTS } from '../syntax.mjs';
-import { validate } from '../validate.mjs';
+import { VALID, modelOfEdited } from './models.mjs';
 
-const VALID = readFileSync(
-  path.resolve(import.meta.dirname, '..', 'fixtures', '_valid', 'DESIGN.md'),
-  'utf8',
-);
 const { model } = loadTokens(VALID);
 const { primitives, components } = model.sets;
 const hexIn = (context) => {
@@ -26,15 +20,6 @@ const hexIn = (context) => {
 };
 const px = (value) => ({ value, unit: 'px' });
 const alias = (type, ref) => ({ $type: type, $value: ref });
-
-/** The model of the valid fixture after `edit(frontmatter)`, which must leave it valid. */
-function modelOfEdited(edit) {
-  const parsed = parseDesignMd(VALID);
-  edit(parsed.frontmatter);
-  const findings = validate(parsed);
-  assert.deepEqual(findings, [], findings.map(formatFinding).join('\n'));
-  return normalise(parsed.frontmatter);
-}
 
 test('colour roles keep first-appearance order; unpaired colours are fixed roles', () => {
   assert.deepEqual(model.roles, [
@@ -183,7 +168,7 @@ test('`linear`, a motion alias and a literal shadow colour normalise', () => {
 });
 
 test('a component group: role and scale aliases, padding sides, state subgroups', () => {
-  assert.deepEqual(Object.keys(components), ['button-primary', 'chip-outline', 'overlay']);
+  assert.deepEqual(Object.keys(components), ['button-primary', 'chip-outline-light', 'overlay']);
   assert.deepEqual(components['button-primary'], {
     backgroundColor: alias('color', '{colors.primary}'),
     textColor: alias('color', '{colors.on-primary}'),
@@ -198,13 +183,46 @@ test('a component group: role and scale aliases, padding sides, state subgroups'
   });
 });
 
-test('a single-scheme component and a scheme-independent one', () => {
-  assert.deepEqual(components['chip-outline'].borderColor, alias('color', '{colors.ring-light}'));
+test('an unpaired component keeps its full key; a scheme-independent one its own', () => {
+  const chip = components['chip-outline-light'];
+  assert.deepEqual(chip.borderColor, alias('color', '{colors.ring-light}'));
   assert.deepEqual(components.overlay, {
     backgroundColor: alias('color', '{colors.scrim}'),
     gap: alias('dimension', '{spacing.8}'),
     duration: alias('duration', '{motion.press}'),
   });
+});
+
+test('an unpaired key beside a scheme-independent one is its own component in every context', () => {
+  const unpaired = modelOfEdited((fm, parsed) => {
+    fm.components['overlay-dark'] = { backgroundColor: '{colors.surface-2-dark}' };
+    const listed = '`chip-outline-light`';
+    parsed.body = parsed.body.replace(`${listed}.`, `${listed}, \`overlay-dark\`.`);
+  });
+  assert.deepEqual(Object.keys(unpaired.sets.components), [
+    'button-primary',
+    'chip-outline-light',
+    'overlay',
+    'overlay-dark',
+  ]);
+  for (const context of CONTEXTS) {
+    const resolved = resolveComponents(unpaired, context)['overlay-dark'];
+    assert.deepEqual(resolved, { backgroundColor: alias('color', '{colors.surface-2}') }, context);
+  }
+});
+
+test('a state suffix without a default-state key is part of the component name', () => {
+  const edited = modelOfEdited((fm) => {
+    fm.components['mode-selected-light'] = { backgroundColor: '{colors.primary-light}' };
+    fm.components['mode-selected-dark'] = { backgroundColor: '{colors.primary-dark}' };
+    fm.components['mode-switch'] = { backgroundColor: '{colors.scrim}' };
+  });
+  const names = Object.keys(edited.sets.components);
+  assert.deepEqual(names.slice(-2), ['mode-selected', 'mode-switch']);
+  assert.ok(!names.includes('mode'));
+  const light = resolveComponents(edited, 'light')['mode-selected'];
+  assert.deepEqual(light, { backgroundColor: alias('color', '{colors.primary}') });
+  assert.deepEqual(Object.keys(edited.sets.components['button-primary']).at(-1), 'pressed');
 });
 
 /** Every colour token in a component group, states included. */

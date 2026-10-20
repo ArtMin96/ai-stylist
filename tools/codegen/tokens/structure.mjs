@@ -60,12 +60,21 @@ export function unpairedKeys(group) {
 /**
  * Components in first-appearance order: `{ component, slots: Map(state | '' -> variants) }`, where
  * each variant is `{ key, scheme, props }` and the slot `''` holds the default state.
+ * Names come from the keys as written, never inferred (owner decision 2026-10-20):
+ * - a key without its light/dark twin (unpaired by design) is a component of its own, named by its
+ *   full key and the same in every scheme (`banner-dark`), as an unpaired colour is a fixed role;
+ * - a state suffix names a state only when that component has a default-state key; otherwise it is
+ *   part of the name (`camera-mode-selected-light` is component `camera-mode-selected`).
  */
 export function componentGroups(components) {
+  const unpaired = new Set(unpairedKeys(components));
+  const paired = Object.keys(components).filter((key) => !unpaired.has(key));
+  const defaults = new Set(paired.map((key) => splitScheme(key).base));
   const groups = new Map();
   for (const [key, props] of Object.entries(components)) {
-    const { base, scheme } = splitScheme(key);
-    const { component, state } = splitState(base);
+    const { component, state, scheme } = unpaired.has(key)
+      ? { component: key, state: null, scheme: null }
+      : componentOf(key, defaults);
     if (!groups.has(component)) groups.set(component, { component, slots: new Map() });
     const { slots } = groups.get(component);
     const slot = state ?? '';
@@ -73,6 +82,14 @@ export function componentGroups(components) {
     slots.get(slot).push({ key, scheme, props });
   }
   return [...groups.values()];
+}
+
+/** `x-pressed-dark` -> component `x`, state `pressed`, scheme `dark` (when `x` has a key). */
+function componentOf(key, defaults) {
+  const { base, scheme } = splitScheme(key);
+  const { component, state } = splitState(base);
+  if (state === null || !defaults.has(component)) return { component: base, state: null, scheme };
+  return { component, state, scheme };
 }
 
 /**

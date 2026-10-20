@@ -900,6 +900,23 @@ components:
     }
   button-capture-pressed-dark:
     { backgroundColor: '{colors.primary-pressed-dark}', textColor: '{colors.on-primary-dark}' }
+  # C02 Icons: one entry per icon size the screens draw (glyphs: .impeccable/components/icon.yaml).
+  # strokeWidth is in viewBox units (the 24 grid), so the drawn width is strokeWidth x size / 24;
+  # each is the stroke the screens draw most at that size. No colour: the host's foreground tints.
+  icon-11: { size: '11px', strokeWidth: 2.8 }
+  icon-12: { size: '12px', strokeWidth: 2.2 }
+  icon-14: { size: '14px', strokeWidth: 2 }
+  icon-16: { size: '16px', strokeWidth: 1.7 }
+  icon-18: { size: '18px', strokeWidth: 1.7 }
+  icon-20: { size: '20px', strokeWidth: 1.7 }
+  icon-22: { size: '22px', strokeWidth: 1.7 }
+  icon-24: { size: '24px', strokeWidth: 1.7 }
+  icon-26: { size: '26px', strokeWidth: 1.7 }
+  icon-28: { size: '28px', strokeWidth: 1.7 }
+  icon-32: { size: '32px', strokeWidth: 1.7 }
+  icon-36: { size: '36px', strokeWidth: 1.7 }
+  icon-40: { size: '40px', strokeWidth: 1.5 }
+  icon-56: { size: '56px', strokeWidth: 1.7 }
   # C03 Chips and tags
   chip-weather-light:
     {
@@ -1945,7 +1962,7 @@ Soft, rounded, friendly geometry. Interactive things are pills; containers are g
 - **8:** tags, planned-outfit thumbnails. **6:** never-suggest chip, checkbox. **3:** progress track. **2:** sheet handle. **4:** inline-link focus ring.
 - Phone frame 48 is a canvas reference only, not a token.
 
-**Icons:** one inline stroke set (C02): 24 × 24 grid, 2 px live-area keyline, stroke 1.7, round caps and joins, no fill, currentColor. Filled only for liked, saved and favourite. Sizes 16, 20, 24 (default), 32. Icons are hidden from screen readers; the button names the action. The AI-generated spark appears only beside the words "AI-generated preview".
+**Icons:** one inline stroke set (C02, `AppIcon`): 24 × 24 grid, 2 px live-area keyline, round caps and joins, no fill, currentColor. Stroke 1.7 in grid units, heavier at the small sizes and lighter at 40 (`components.icon-<n>`). Filled twins only for the favourite heart, the saved bookmark and the liked thumbs-up. Sizes 11, 12, 14, 16, 18, 20, 22, 24 (default), 26, 28, 32, 36, 40, 56. Icons are hidden from screen readers; the button names the action. The AI-generated spark appears only beside the words "AI-generated preview".
 
 **Garments (C10):** flat item art on a 64 viewBox, used only as mockup placeholders; the app always shows the user's real photos.
 
@@ -1975,7 +1992,13 @@ Every component is drawn in S1 and S2 on its canvas board, with states in this o
 
 ### Icons (C02)
 
-Navigation, actions, weather and context, closet, status, account and settings sets, as listed on the board. Status icons use the status foregrounds. Every icon sits in a 44 pt / 48 dp target.
+- **API:** `.impeccable/components/icon.yaml` (`AppIcon`) lists every glyph as path data on the 24 grid; the sizes and strokes are the `components.icon-<n>` tokens. Where C02 and the screens disagree, the screens win, and icons only the screens draw join the set (owner 2026-10-19); each choice is a "Screens win:" comment in the contract.
+- **Sets:** navigation (the five tabs, back, close, chevrons, arrows, more, search, filter, sort, grid, list, group); actions (heart, thumbs, bookmark, schedule, edit, delete, archive, add, check, undo, refresh, upload, export, camera actions, photo, compare, plus / minus / pause circles, clear, hide, report); weather and context (sun, cloud, rain, snow, wind, cold, hot, evening, office, holiday, indoors, layers, leaf, temperature); closet (coat, laundry, packed, lent, repair, tag, collection, star, outfits, scissors); status (info, warning, error, success, offline, sync, processing, lock, AI-generated, confidence bars, pending, cancelled, never-suggest, approximate, step rings); account and settings; selfie, avatar and try-on (page 8: face, face scan, people, glasses off, timer, captions, palette, 3D avatar, rotate, zoom, poses).
+- **Style:** 24 × 24 grid, 2 px live area, round caps and joins, no fill, currentColor. A selected state is its own filled glyph (`heart-filled`, `bookmark-filled`, `thumbs-up-filled`); small dots are filled.
+- **Sizes and strokes** (stroke in grid units; drawn width = stroke × size / 24): 11 → 2.8 (plan feature checks); 12 → 2.2 (tile badges, the 3D tag); 14 → 2 (status tags, the reason-chip chevron); 16 → 1.7 (inline messages, chips, date strip, confidence); 18 → 1.7 (row chevrons, chip icons, Compact button icons); 20 → 1.7 (banners, the button leading icon, list rows); 22 → 1.7 (action-menu rows, history rows); 24 → 1.7, the default (icon buttons, settings rows, the action row); 26 → 1.7 (tab bar); 28, 32, 36 and 56 → 1.7 (state-card and hero art); 40 → 1.5 (the pose picker). Reason and filter chips draw 16 at 1.9 and the tile-badge warning 12 at 2.4; both take their size's stroke. The confidence bars keep their drawn width at every size.
+- **Accessibility:** decorative. Icons are hidden from screen readers; the host control or the words beside the icon name it. Every tappable icon sits in a 44 pt / 48 dp target. An icon never carries meaning alone: icon + words.
+- **Tint:** the host's foreground (text, text-secondary; primary-text on the active tab and text actions). Status icons use the status foregrounds (`*-fg-*`). No icon colour token. Confidence: the level glyph in the band colour over `confidence-high` in a muted colour, always beside its words ("Medium confidence").
+- **Owner decisions (2026-10-20):** outfits use thumbs-up and thumbs-down for like and dislike, and the "a pairing you liked" chip and the Liked history follow; clothing items use the heart for favourite; the star marks only "Style preferences". The AI spark sits only beside "AI-generated preview"; Discover's trend tags use the tag. The five tab icons are C02 glyphs inside the native tab bar (DEC-87); native navigation bars keep the system back and close, and the C02 back and close serve custom headers (camera, onboarding). Every drawn icon is built, page 8 included. One drawing per meaning: where the screens tie, the drawing nearest C02 wins; credits are the coin stack; the "You follow" chip on Discover keeps the heart; the upsell cards keep the four-point sparkle, which is not the AI spark.
 
 ### Chips and tags (C03)
 

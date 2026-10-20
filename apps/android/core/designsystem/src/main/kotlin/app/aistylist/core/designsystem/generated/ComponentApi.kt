@@ -12230,6 +12230,241 @@ data class ButtonGalleryEntry(
     val testId: String,
 )
 
+/** Glyphs of `AppIcon` (icon.yaml, board C02), each with its contract id, in contract order. */
+enum class AppIconName(
+    val id: String,
+    val set: AppIconSet,
+    val testId: String,
+    val glyph: AppIconGlyph,
+) {
+    TODAY("today", AppIconSet.NAVIGATION, "ds-icon-today", AppIconGlyphs.Today.glyph),
+    CLOSET("closet", AppIconSet.NAVIGATION, "ds-icon-closet", AppIconGlyphs.Closet.glyph),
+    CAPTURE("capture", AppIconSet.NAVIGATION, "ds-icon-capture", AppIconGlyphs.Capture.glyph),
+    DISCOVER("discover", AppIconSet.NAVIGATION, "ds-icon-discover", AppIconGlyphs.Discover.glyph),
+    YOU("you", AppIconSet.NAVIGATION, "ds-icon-you", AppIconGlyphs.You.glyph),
+    BACK("back", AppIconSet.NAVIGATION, "ds-icon-back", AppIconGlyphs.Back.glyph),
+    CLOSE("close", AppIconSet.NAVIGATION, "ds-icon-close", AppIconGlyphs.Close.glyph),
+    CHEVRON_RIGHT("chevron-right", AppIconSet.NAVIGATION, "ds-icon-chevron-right", AppIconGlyphs.ChevronRight.glyph),
+    CHEVRON_DOWN("chevron-down", AppIconSet.NAVIGATION, "ds-icon-chevron-down", AppIconGlyphs.ChevronDown.glyph),
+    MORE("more", AppIconSet.NAVIGATION, "ds-icon-more", AppIconGlyphs.More.glyph),
+    SEARCH("search", AppIconSet.NAVIGATION, "ds-icon-search", AppIconGlyphs.Search.glyph),
+    FILTER("filter", AppIconSet.NAVIGATION, "ds-icon-filter", AppIconGlyphs.Filter.glyph),
+    SORT("sort", AppIconSet.NAVIGATION, "ds-icon-sort", AppIconGlyphs.Sort.glyph),
+    GRID("grid", AppIconSet.NAVIGATION, "ds-icon-grid", AppIconGlyphs.Grid.glyph),
+    LIST("list", AppIconSet.NAVIGATION, "ds-icon-list", AppIconGlyphs.List.glyph),
+    CHEVRON_UP("chevron-up", AppIconSet.NAVIGATION, "ds-icon-chevron-up", AppIconGlyphs.ChevronUp.glyph),
+    ARROW_LEFT("arrow-left", AppIconSet.NAVIGATION, "ds-icon-arrow-left", AppIconGlyphs.ArrowLeft.glyph),
+    ARROW_RIGHT("arrow-right", AppIconSet.NAVIGATION, "ds-icon-arrow-right", AppIconGlyphs.ArrowRight.glyph),
+    GROUP("group", AppIconSet.NAVIGATION, "ds-icon-group", AppIconGlyphs.Group.glyph),
+    HEART("heart", AppIconSet.ACTIONS, "ds-icon-heart", AppIconGlyphs.Heart.glyph),
+    HEART_FILLED("heart-filled", AppIconSet.ACTIONS, "ds-icon-heart-filled", AppIconGlyphs.HeartFilled.glyph),
+    THUMBS_DOWN("thumbs-down", AppIconSet.ACTIONS, "ds-icon-thumbs-down", AppIconGlyphs.ThumbsDown.glyph),
+    REPLACE("replace", AppIconSet.ACTIONS, "ds-icon-replace", AppIconGlyphs.Replace.glyph),
+    BOOKMARK("bookmark", AppIconSet.ACTIONS, "ds-icon-bookmark", AppIconGlyphs.Bookmark.glyph),
+    BOOKMARK_FILLED(
+        "bookmark-filled",
+        AppIconSet.ACTIONS,
+        "ds-icon-bookmark-filled",
+        AppIconGlyphs.BookmarkFilled.glyph,
+    ),
+    SCHEDULE("schedule", AppIconSet.ACTIONS, "ds-icon-schedule", AppIconGlyphs.Schedule.glyph),
+    EDIT("edit", AppIconSet.ACTIONS, "ds-icon-edit", AppIconGlyphs.Edit.glyph),
+    DELETE("delete", AppIconSet.ACTIONS, "ds-icon-delete", AppIconGlyphs.Delete.glyph),
+    ARCHIVE("archive", AppIconSet.ACTIONS, "ds-icon-archive", AppIconGlyphs.Archive.glyph),
+    ADD("add", AppIconSet.ACTIONS, "ds-icon-add", AppIconGlyphs.Add.glyph),
+    CHECK("check", AppIconSet.ACTIONS, "ds-icon-check", AppIconGlyphs.Check.glyph),
+    UNDO("undo", AppIconSet.ACTIONS, "ds-icon-undo", AppIconGlyphs.Undo.glyph),
+    REFRESH("refresh", AppIconSet.ACTIONS, "ds-icon-refresh", AppIconGlyphs.Refresh.glyph),
+    UPLOAD("upload", AppIconSet.ACTIONS, "ds-icon-upload", AppIconGlyphs.Upload.glyph),
+    EXPORT("export", AppIconSet.ACTIONS, "ds-icon-export", AppIconGlyphs.Export.glyph),
+    FLASH("flash", AppIconSet.ACTIONS, "ds-icon-flash", AppIconGlyphs.Flash.glyph),
+    FLIP_CAMERA("flip-camera", AppIconSet.ACTIONS, "ds-icon-flip-camera", AppIconGlyphs.FlipCamera.glyph),
+    PHOTO("photo", AppIconSet.ACTIONS, "ds-icon-photo", AppIconGlyphs.Photo.glyph),
+    THUMBS_UP("thumbs-up", AppIconSet.ACTIONS, "ds-icon-thumbs-up", AppIconGlyphs.ThumbsUp.glyph),
+    THUMBS_UP_FILLED(
+        "thumbs-up-filled",
+        AppIconSet.ACTIONS,
+        "ds-icon-thumbs-up-filled",
+        AppIconGlyphs.ThumbsUpFilled.glyph,
+    ),
+    COMPARE("compare", AppIconSet.ACTIONS, "ds-icon-compare", AppIconGlyphs.Compare.glyph),
+    PLUS_CIRCLE("plus-circle", AppIconSet.ACTIONS, "ds-icon-plus-circle", AppIconGlyphs.PlusCircle.glyph),
+    MINUS_CIRCLE("minus-circle", AppIconSet.ACTIONS, "ds-icon-minus-circle", AppIconGlyphs.MinusCircle.glyph),
+    MINUS("minus", AppIconSet.ACTIONS, "ds-icon-minus", AppIconGlyphs.Minus.glyph),
+    PAUSE("pause", AppIconSet.ACTIONS, "ds-icon-pause", AppIconGlyphs.Pause.glyph),
+    CLEAR("clear", AppIconSet.ACTIONS, "ds-icon-clear", AppIconGlyphs.Clear.glyph),
+    HIDE("hide", AppIconSet.ACTIONS, "ds-icon-hide", AppIconGlyphs.Hide.glyph),
+    REPORT("report", AppIconSet.ACTIONS, "ds-icon-report", AppIconGlyphs.Report.glyph),
+    SUN("sun", AppIconSet.WEATHER, "ds-icon-sun", AppIconGlyphs.Sun.glyph),
+    CLOUD("cloud", AppIconSet.WEATHER, "ds-icon-cloud", AppIconGlyphs.Cloud.glyph),
+    RAIN("rain", AppIconSet.WEATHER, "ds-icon-rain", AppIconGlyphs.Rain.glyph),
+    SNOW("snow", AppIconSet.WEATHER, "ds-icon-snow", AppIconGlyphs.Snow.glyph),
+    WIND("wind", AppIconSet.WEATHER, "ds-icon-wind", AppIconGlyphs.Wind.glyph),
+    COLD("cold", AppIconSet.WEATHER, "ds-icon-cold", AppIconGlyphs.Cold.glyph),
+    HOT("hot", AppIconSet.WEATHER, "ds-icon-hot", AppIconGlyphs.Hot.glyph),
+    EVENING("evening", AppIconSet.WEATHER, "ds-icon-evening", AppIconGlyphs.Evening.glyph),
+    OFFICE("office", AppIconSet.WEATHER, "ds-icon-office", AppIconGlyphs.Office.glyph),
+    HOLIDAY("holiday", AppIconSet.WEATHER, "ds-icon-holiday", AppIconGlyphs.Holiday.glyph),
+    INDOORS("indoors", AppIconSet.WEATHER, "ds-icon-indoors", AppIconGlyphs.Indoors.glyph),
+    WEATHER_UNAVAILABLE(
+        "weather-unavailable",
+        AppIconSet.WEATHER,
+        "ds-icon-weather-unavailable",
+        AppIconGlyphs.WeatherUnavailable.glyph,
+    ),
+    LAYERS("layers", AppIconSet.WEATHER, "ds-icon-layers", AppIconGlyphs.Layers.glyph),
+    LEAF("leaf", AppIconSet.WEATHER, "ds-icon-leaf", AppIconGlyphs.Leaf.glyph),
+    TEMPERATURE("temperature", AppIconSet.WEATHER, "ds-icon-temperature", AppIconGlyphs.Temperature.glyph),
+    COAT("coat", AppIconSet.CLOSET, "ds-icon-coat", AppIconGlyphs.Coat.glyph),
+    LAUNDRY("laundry", AppIconSet.CLOSET, "ds-icon-laundry", AppIconGlyphs.Laundry.glyph),
+    PACKED("packed", AppIconSet.CLOSET, "ds-icon-packed", AppIconGlyphs.Packed.glyph),
+    LENT("lent", AppIconSet.CLOSET, "ds-icon-lent", AppIconGlyphs.Lent.glyph),
+    REPAIR("repair", AppIconSet.CLOSET, "ds-icon-repair", AppIconGlyphs.Repair.glyph),
+    TAG("tag", AppIconSet.CLOSET, "ds-icon-tag", AppIconGlyphs.Tag.glyph),
+    COLLECTION("collection", AppIconSet.CLOSET, "ds-icon-collection", AppIconGlyphs.Collection.glyph),
+    STAR("star", AppIconSet.CLOSET, "ds-icon-star", AppIconGlyphs.Star.glyph),
+    OUTFITS("outfits", AppIconSet.CLOSET, "ds-icon-outfits", AppIconGlyphs.Outfits.glyph),
+    SCISSORS("scissors", AppIconSet.CLOSET, "ds-icon-scissors", AppIconGlyphs.Scissors.glyph),
+    INFO("info", AppIconSet.STATUS, "ds-icon-info", AppIconGlyphs.Info.glyph),
+    WARNING("warning", AppIconSet.STATUS, "ds-icon-warning", AppIconGlyphs.Warning.glyph),
+    ERROR("error", AppIconSet.STATUS, "ds-icon-error", AppIconGlyphs.Error.glyph),
+    SUCCESS("success", AppIconSet.STATUS, "ds-icon-success", AppIconGlyphs.Success.glyph),
+    OFFLINE("offline", AppIconSet.STATUS, "ds-icon-offline", AppIconGlyphs.Offline.glyph),
+    SYNC("sync", AppIconSet.STATUS, "ds-icon-sync", AppIconGlyphs.Sync.glyph),
+    PROCESSING("processing", AppIconSet.STATUS, "ds-icon-processing", AppIconGlyphs.Processing.glyph),
+    LOCK("lock", AppIconSet.STATUS, "ds-icon-lock", AppIconGlyphs.Lock.glyph),
+    AI_GENERATED("ai-generated", AppIconSet.STATUS, "ds-icon-ai-generated", AppIconGlyphs.AiGenerated.glyph),
+    CONFIDENCE_HIGH(
+        "confidence-high",
+        AppIconSet.STATUS,
+        "ds-icon-confidence-high",
+        AppIconGlyphs.ConfidenceHigh.glyph,
+    ),
+    CONFIDENCE_MEDIUM(
+        "confidence-medium",
+        AppIconSet.STATUS,
+        "ds-icon-confidence-medium",
+        AppIconGlyphs.ConfidenceMedium.glyph,
+    ),
+    CONFIDENCE_LOW("confidence-low", AppIconSet.STATUS, "ds-icon-confidence-low", AppIconGlyphs.ConfidenceLow.glyph),
+    PENDING("pending", AppIconSet.STATUS, "ds-icon-pending", AppIconGlyphs.Pending.glyph),
+    CANCELLED("cancelled", AppIconSet.STATUS, "ds-icon-cancelled", AppIconGlyphs.Cancelled.glyph),
+    NEVER_SUGGEST("never-suggest", AppIconSet.STATUS, "ds-icon-never-suggest", AppIconGlyphs.NeverSuggest.glyph),
+    APPROXIMATE("approximate", AppIconSet.STATUS, "ds-icon-approximate", AppIconGlyphs.Approximate.glyph),
+    CIRCLE("circle", AppIconSet.STATUS, "ds-icon-circle", AppIconGlyphs.Circle.glyph),
+    CIRCLE_DOT("circle-dot", AppIconSet.STATUS, "ds-icon-circle-dot", AppIconGlyphs.CircleDot.glyph),
+    SETTINGS("settings", AppIconSet.ACCOUNT, "ds-icon-settings", AppIconGlyphs.Settings.glyph),
+    NOTIFICATIONS("notifications", AppIconSet.ACCOUNT, "ds-icon-notifications", AppIconGlyphs.Notifications.glyph),
+    PRIVACY("privacy", AppIconSet.ACCOUNT, "ds-icon-privacy", AppIconGlyphs.Privacy.glyph),
+    PASSKEY("passkey", AppIconSet.ACCOUNT, "ds-icon-passkey", AppIconGlyphs.Passkey.glyph),
+    ACCESSIBILITY("accessibility", AppIconSet.ACCOUNT, "ds-icon-accessibility", AppIconGlyphs.Accessibility.glyph),
+    LANGUAGE("language", AppIconSet.ACCOUNT, "ds-icon-language", AppIconGlyphs.Language.glyph),
+    MEASUREMENTS("measurements", AppIconSet.ACCOUNT, "ds-icon-measurements", AppIconGlyphs.Measurements.glyph),
+    CREDITS("credits", AppIconSet.ACCOUNT, "ds-icon-credits", AppIconGlyphs.Credits.glyph),
+    SUBSCRIPTION("subscription", AppIconSet.ACCOUNT, "ds-icon-subscription", AppIconGlyphs.Subscription.glyph),
+    DEVICES("devices", AppIconSet.ACCOUNT, "ds-icon-devices", AppIconGlyphs.Devices.glyph),
+    SIGN_OUT("sign-out", AppIconSet.ACCOUNT, "ds-icon-sign-out", AppIconGlyphs.SignOut.glyph),
+    CREDIT_CARD("credit-card", AppIconSet.ACCOUNT, "ds-icon-credit-card", AppIconGlyphs.CreditCard.glyph),
+    SHIELD_CHECK("shield-check", AppIconSet.ACCOUNT, "ds-icon-shield-check", AppIconGlyphs.ShieldCheck.glyph),
+    SPARKLE("sparkle", AppIconSet.ACCOUNT, "ds-icon-sparkle", AppIconGlyphs.Sparkle.glyph),
+    ANALYTICS("analytics", AppIconSet.ACCOUNT, "ds-icon-analytics", AppIconGlyphs.Analytics.glyph),
+    DATA("data", AppIconSet.ACCOUNT, "ds-icon-data", AppIconGlyphs.Data.glyph),
+    FACE("face", AppIconSet.CAPTURE, "ds-icon-face", AppIconGlyphs.Face.glyph),
+    FACE_SCAN("face-scan", AppIconSet.CAPTURE, "ds-icon-face-scan", AppIconGlyphs.FaceScan.glyph),
+    PEOPLE("people", AppIconSet.CAPTURE, "ds-icon-people", AppIconGlyphs.People.glyph),
+    GLASSES_OFF("glasses-off", AppIconSet.CAPTURE, "ds-icon-glasses-off", AppIconGlyphs.GlassesOff.glyph),
+    TIMER("timer", AppIconSet.CAPTURE, "ds-icon-timer", AppIconGlyphs.Timer.glyph),
+    CAPTIONS("captions", AppIconSet.CAPTURE, "ds-icon-captions", AppIconGlyphs.Captions.glyph),
+    PALETTE("palette", AppIconSet.CAPTURE, "ds-icon-palette", AppIconGlyphs.Palette.glyph),
+    AVATAR3D("avatar-3d", AppIconSet.CAPTURE, "ds-icon-avatar-3d", AppIconGlyphs.Avatar3d.glyph),
+    AVATAR3D_OFF("avatar-3d-off", AppIconSet.CAPTURE, "ds-icon-avatar-3d-off", AppIconGlyphs.Avatar3dOff.glyph),
+    ROTATE_LEFT("rotate-left", AppIconSet.CAPTURE, "ds-icon-rotate-left", AppIconGlyphs.RotateLeft.glyph),
+    ROTATE_RIGHT("rotate-right", AppIconSet.CAPTURE, "ds-icon-rotate-right", AppIconGlyphs.RotateRight.glyph),
+    ZOOM_IN("zoom-in", AppIconSet.CAPTURE, "ds-icon-zoom-in", AppIconGlyphs.ZoomIn.glyph),
+    ZOOM_OUT("zoom-out", AppIconSet.CAPTURE, "ds-icon-zoom-out", AppIconGlyphs.ZoomOut.glyph),
+    POSE_NEUTRAL("pose-neutral", AppIconSet.CAPTURE, "ds-icon-pose-neutral", AppIconGlyphs.PoseNeutral.glyph),
+    POSE_FIT_CHECK("pose-fit-check", AppIconSet.CAPTURE, "ds-icon-pose-fit-check", AppIconGlyphs.PoseFitCheck.glyph),
+    POSE_WALKING("pose-walking", AppIconSet.CAPTURE, "ds-icon-pose-walking", AppIconGlyphs.PoseWalking.glyph),
+    POSE_SEATED("pose-seated", AppIconSet.CAPTURE, "ds-icon-pose-seated", AppIconGlyphs.PoseSeated.glyph),
+}
+
+/** Glyph sets of `AppIcon` (icon.yaml, board C02), in first-appearance order. */
+enum class AppIconSet(
+    val id: String,
+) {
+    NAVIGATION("navigation"),
+    ACTIONS("actions"),
+    WEATHER("weather"),
+    CLOSET("closet"),
+    STATUS("status"),
+    ACCOUNT("account"),
+    CAPTURE("capture"),
+}
+
+/** Sizes of `AppIcon` (icon.yaml, board C02), each a DESIGN.md `components.<id>` token. */
+enum class AppIconSize(
+    val id: String,
+    val size: Double,
+    val strokeWidth: Double,
+) {
+    ICON11("icon-11", 11.0, 2.8),
+    ICON12("icon-12", 12.0, 2.2),
+    ICON14("icon-14", 14.0, 2.0),
+    ICON16("icon-16", 16.0, 1.7),
+    ICON18("icon-18", 18.0, 1.7),
+    ICON20("icon-20", 20.0, 1.7),
+    ICON22("icon-22", 22.0, 1.7),
+    ICON24("icon-24", 24.0, 1.7),
+    ICON26("icon-26", 26.0, 1.7),
+    ICON28("icon-28", 28.0, 1.7),
+    ICON32("icon-32", 32.0, 1.7),
+    ICON36("icon-36", 36.0, 1.7),
+    ICON40("icon-40", 40.0, 1.5),
+    ICON56("icon-56", 56.0, 1.7),
+}
+
+/** The viewBox every AppIcon glyph is drawn in, and the default size. */
+object AppIconMetrics {
+    val viewBox: Double = 24.0
+    val defaultSize: AppIconSize = AppIconSize.ICON24
+}
+
+/** One AppIcon glyph: its shapes, painted in order. */
+data class AppIconGlyph(
+    val shapes: List<AppIconShape>,
+)
+
+/** One path of a glyph and how it is painted, in viewBox units. */
+data class AppIconShape(
+    val paint: AppIconPaint,
+    val segments: List<AppIconSegment>,
+)
+
+/** How a shape is painted: stroked, filled, or both. */
+enum class AppIconPaint(
+    val id: String,
+) {
+    STROKE("stroke"),
+    FILL("fill"),
+    BOTH("both"),
+}
+
+/** One absolute path command; points are x, y pairs: 1 (move, line), 3 (cubic), 0 (close). */
+data class AppIconSegment(
+    val command: AppIconCommand,
+    val points: List<Double>,
+)
+
+/** The path commands a compiled glyph uses. */
+enum class AppIconCommand(
+    val id: String,
+) {
+    MOVE("move"),
+    LINE("line"),
+    CUBIC("cubic"),
+    CLOSE("close"),
+}
+
 /** The gallery sections of the components, in board order, each with its contract id. */
 enum class GalleryComponent(
     val id: String,
@@ -12237,6 +12472,7 @@ enum class GalleryComponent(
     val slug: String,
 ) {
     BUTTON("button", "C01 Buttons", "c01-buttons"),
+    ICON("icon", "C02 Icons", "c02-icons"),
 }
 
 /** The gallery: per component its synthetic label and its cells (contract `gallery`). */

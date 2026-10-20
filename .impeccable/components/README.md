@@ -6,11 +6,11 @@ The contract is the master for a component's API, as the `DESIGN.md` frontmatter
 
 Each component is written natively twice, by `ios-engineer` and `android-engineer` in parallel, and neither lane reads the other's code. Parity comes from three generated inputs: the tokens (from `DESIGN.md`), this contract, and the component API surface the generator emits from it for each platform (the variant, size and state enums, the test-ID constants and the gallery list). Both lanes build against that generated surface.
 
-Example: `button.yaml` (`AppButton`, canvas board C01).
+Examples: `button.yaml` (`AppButton`, canvas board C01), a control contract; `icon.yaml` (`AppIcon`, canvas board C02), an icon set (see "Icon sets" below).
 
 ## Fields
 
-All fields are required unless marked optional.
+These are the fields of a control contract (no `kind`, as `button.yaml`). An icon set has its own fields, under "Icon sets". All fields are required unless marked optional.
 
 - `id`: kebab-case, equal to the file name without `.yaml` (`button`).
 - `board`: the canvas board on page 3 of "Garderi App UI" (`C01` … `C10`).
@@ -34,6 +34,24 @@ All fields are required unless marked optional.
 - `approved`: `pending`, or the date (`yyyy-mm-dd`) the owner approved the contract in chat. `ui-designer` writes it when the lead relays the owner's words. Silence is not approval, and neither is an agent's own opinion.
 
 Comments may explain a choice (usage rules, a token gap, a board-versus-screen choice, a question still open for the owner); they never add a field.
+
+## Icon sets
+
+`kind: icon-set` marks a contract that defines a set of glyphs instead of a control (`icon.yaml`, canvas board C02). An icon has no props, variants, combinations or interaction states: the generator emits a name enum and a path table, and each app draws every glyph with one view that takes a name and a size. The fields, all required:
+
+- `id`, `board`, `name`, `approved`: as for a control contract (`icon`, `C02`, `AppIcon`).
+- `kind`: `icon-set`. A contract without `kind` is a control contract.
+- `accessibility.role`: `decorative`. The icon is hidden from screen readers; the host control, or the words beside the icon, carry the name.
+- `gallery.title`: as for a control contract (`Icons` → `C02 Icons`, slug `c02-icons`). The gallery shows every glyph, and each glyph's test ID is `ds-icon-<id>`, the same literal on both apps. An icon set has no `label`, `include` or `testId` field.
+- `sizes`: the sizes the set may be drawn at, each the name of a `DESIGN.md` token `components.icon-<n>` (`icon-24`). Each token holds `size` and `strokeWidth`. The stroke is in viewBox units, so the drawn width is `strokeWidth × size / 24`.
+- `defaultSize`: one of `sizes` (`icon-24`).
+- `glyphs`: the list, in the board's set order, with the icons only the screens draw at the end of each set. Each glyph has:
+  - `id`: kebab-case and unique in the set. It becomes the enum case (`chevron-right` → `.chevronRight` / `CHEVRON_RIGHT`).
+  - `set`: `navigation`, `actions`, `weather`, `closet`, `status`, `account` or `capture` (the page-8 selfie, avatar and try-on icons).
+  - `source`: the canvas board the drawing was taken from: `C02` when the board's own drawing wins, otherwise the screen, prototype, page-8 or component board (`SC05`, `P02`, `SE1`, `C07`).
+  - `shapes`: one or more `{ d, paint }`, drawn in order. `d` is SVG path data in the 24 × 24 viewBox. The designer converts every circle, rect, ellipse, line and polyline to one `d` string (starting at 3 o'clock and running clockwise, as SVG draws them) and a dashed stroke to its dash segments, so the generator reads path data only. `paint` is `stroke` (the size's stroke width, round caps and joins), `fill`, or `both`.
+- A selected state is its own filled glyph (`heart` and `heart-filled`), never a state of the glyph.
+- A glyph never holds a size, stroke width or colour. The tint comes from the host's foreground and the existing colour roles; there is no icon colour token. Where a board draws one icon in two tones (the confidence bars, the busy ring), the contract splits it into glyphs the host layers, and a comment says how.
 
 ## Which drawing wins
 

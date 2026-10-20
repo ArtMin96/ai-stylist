@@ -11708,14 +11708,641 @@ nonisolated public struct ButtonGalleryEntry: Sendable, Equatable {
   public let testId: String
 }
 
+/// Glyphs of `AppIcon` (icon.yaml, board C02), each with its contract id, in contract order.
+nonisolated public enum AppIconName: String, CaseIterable, Sendable {
+  case today
+  case closet
+  case capture
+  case discover
+  case you
+  case back
+  case close
+  case chevronRight = "chevron-right"
+  case chevronDown = "chevron-down"
+  case more
+  case search
+  case filter
+  case sort
+  case grid
+  case list
+  case chevronUp = "chevron-up"
+  case arrowLeft = "arrow-left"
+  case arrowRight = "arrow-right"
+  case group
+  case heart
+  case heartFilled = "heart-filled"
+  case thumbsDown = "thumbs-down"
+  case replace
+  case bookmark
+  case bookmarkFilled = "bookmark-filled"
+  case schedule
+  case edit
+  case delete
+  case archive
+  case add
+  case check
+  case undo
+  case refresh
+  case upload
+  case export
+  case flash
+  case flipCamera = "flip-camera"
+  case photo
+  case thumbsUp = "thumbs-up"
+  case thumbsUpFilled = "thumbs-up-filled"
+  case compare
+  case plusCircle = "plus-circle"
+  case minusCircle = "minus-circle"
+  case minus
+  case pause
+  case clear
+  case hide
+  case report
+  case sun
+  case cloud
+  case rain
+  case snow
+  case wind
+  case cold
+  case hot
+  case evening
+  case office
+  case holiday
+  case indoors
+  case weatherUnavailable = "weather-unavailable"
+  case layers
+  case leaf
+  case temperature
+  case coat
+  case laundry
+  case packed
+  case lent
+  case repair
+  case tag
+  case collection
+  case star
+  case outfits
+  case scissors
+  case info
+  case warning
+  case error
+  case success
+  case offline
+  case sync
+  case processing
+  case lock
+  case aiGenerated = "ai-generated"
+  case confidenceHigh = "confidence-high"
+  case confidenceMedium = "confidence-medium"
+  case confidenceLow = "confidence-low"
+  case pending
+  case cancelled
+  case neverSuggest = "never-suggest"
+  case approximate
+  case circle
+  case circleDot = "circle-dot"
+  case settings
+  case notifications
+  case privacy
+  case passkey
+  case accessibility
+  case language
+  case measurements
+  case credits
+  case subscription
+  case devices
+  case signOut = "sign-out"
+  case creditCard = "credit-card"
+  case shieldCheck = "shield-check"
+  case sparkle
+  case analytics
+  case data
+  case face
+  case faceScan = "face-scan"
+  case people
+  case glassesOff = "glasses-off"
+  case timer
+  case captions
+  case palette
+  case avatar3d = "avatar-3d"
+  case avatar3dOff = "avatar-3d-off"
+  case rotateLeft = "rotate-left"
+  case rotateRight = "rotate-right"
+  case zoomIn = "zoom-in"
+  case zoomOut = "zoom-out"
+  case poseNeutral = "pose-neutral"
+  case poseFitCheck = "pose-fit-check"
+  case poseWalking = "pose-walking"
+  case poseSeated = "pose-seated"
+
+  /// The set the glyph belongs to (contract `set`).
+  public var set: AppIconSet {
+    switch self {
+    case .today: .navigation
+    case .closet: .navigation
+    case .capture: .navigation
+    case .discover: .navigation
+    case .you: .navigation
+    case .back: .navigation
+    case .close: .navigation
+    case .chevronRight: .navigation
+    case .chevronDown: .navigation
+    case .more: .navigation
+    case .search: .navigation
+    case .filter: .navigation
+    case .sort: .navigation
+    case .grid: .navigation
+    case .list: .navigation
+    case .chevronUp: .navigation
+    case .arrowLeft: .navigation
+    case .arrowRight: .navigation
+    case .group: .navigation
+    case .heart: .actions
+    case .heartFilled: .actions
+    case .thumbsDown: .actions
+    case .replace: .actions
+    case .bookmark: .actions
+    case .bookmarkFilled: .actions
+    case .schedule: .actions
+    case .edit: .actions
+    case .delete: .actions
+    case .archive: .actions
+    case .add: .actions
+    case .check: .actions
+    case .undo: .actions
+    case .refresh: .actions
+    case .upload: .actions
+    case .export: .actions
+    case .flash: .actions
+    case .flipCamera: .actions
+    case .photo: .actions
+    case .thumbsUp: .actions
+    case .thumbsUpFilled: .actions
+    case .compare: .actions
+    case .plusCircle: .actions
+    case .minusCircle: .actions
+    case .minus: .actions
+    case .pause: .actions
+    case .clear: .actions
+    case .hide: .actions
+    case .report: .actions
+    case .sun: .weather
+    case .cloud: .weather
+    case .rain: .weather
+    case .snow: .weather
+    case .wind: .weather
+    case .cold: .weather
+    case .hot: .weather
+    case .evening: .weather
+    case .office: .weather
+    case .holiday: .weather
+    case .indoors: .weather
+    case .weatherUnavailable: .weather
+    case .layers: .weather
+    case .leaf: .weather
+    case .temperature: .weather
+    case .coat: .closet
+    case .laundry: .closet
+    case .packed: .closet
+    case .lent: .closet
+    case .repair: .closet
+    case .tag: .closet
+    case .collection: .closet
+    case .star: .closet
+    case .outfits: .closet
+    case .scissors: .closet
+    case .info: .status
+    case .warning: .status
+    case .error: .status
+    case .success: .status
+    case .offline: .status
+    case .sync: .status
+    case .processing: .status
+    case .lock: .status
+    case .aiGenerated: .status
+    case .confidenceHigh: .status
+    case .confidenceMedium: .status
+    case .confidenceLow: .status
+    case .pending: .status
+    case .cancelled: .status
+    case .neverSuggest: .status
+    case .approximate: .status
+    case .circle: .status
+    case .circleDot: .status
+    case .settings: .account
+    case .notifications: .account
+    case .privacy: .account
+    case .passkey: .account
+    case .accessibility: .account
+    case .language: .account
+    case .measurements: .account
+    case .credits: .account
+    case .subscription: .account
+    case .devices: .account
+    case .signOut: .account
+    case .creditCard: .account
+    case .shieldCheck: .account
+    case .sparkle: .account
+    case .analytics: .account
+    case .data: .account
+    case .face: .capture
+    case .faceScan: .capture
+    case .people: .capture
+    case .glassesOff: .capture
+    case .timer: .capture
+    case .captions: .capture
+    case .palette: .capture
+    case .avatar3d: .capture
+    case .avatar3dOff: .capture
+    case .rotateLeft: .capture
+    case .rotateRight: .capture
+    case .zoomIn: .capture
+    case .zoomOut: .capture
+    case .poseNeutral: .capture
+    case .poseFitCheck: .capture
+    case .poseWalking: .capture
+    case .poseSeated: .capture
+    }
+  }
+
+  /// The gallery test ID: `ds-icon-<id>` on both platforms.
+  public var testId: String {
+    switch self {
+    case .today: "ds-icon-today"
+    case .closet: "ds-icon-closet"
+    case .capture: "ds-icon-capture"
+    case .discover: "ds-icon-discover"
+    case .you: "ds-icon-you"
+    case .back: "ds-icon-back"
+    case .close: "ds-icon-close"
+    case .chevronRight: "ds-icon-chevron-right"
+    case .chevronDown: "ds-icon-chevron-down"
+    case .more: "ds-icon-more"
+    case .search: "ds-icon-search"
+    case .filter: "ds-icon-filter"
+    case .sort: "ds-icon-sort"
+    case .grid: "ds-icon-grid"
+    case .list: "ds-icon-list"
+    case .chevronUp: "ds-icon-chevron-up"
+    case .arrowLeft: "ds-icon-arrow-left"
+    case .arrowRight: "ds-icon-arrow-right"
+    case .group: "ds-icon-group"
+    case .heart: "ds-icon-heart"
+    case .heartFilled: "ds-icon-heart-filled"
+    case .thumbsDown: "ds-icon-thumbs-down"
+    case .replace: "ds-icon-replace"
+    case .bookmark: "ds-icon-bookmark"
+    case .bookmarkFilled: "ds-icon-bookmark-filled"
+    case .schedule: "ds-icon-schedule"
+    case .edit: "ds-icon-edit"
+    case .delete: "ds-icon-delete"
+    case .archive: "ds-icon-archive"
+    case .add: "ds-icon-add"
+    case .check: "ds-icon-check"
+    case .undo: "ds-icon-undo"
+    case .refresh: "ds-icon-refresh"
+    case .upload: "ds-icon-upload"
+    case .export: "ds-icon-export"
+    case .flash: "ds-icon-flash"
+    case .flipCamera: "ds-icon-flip-camera"
+    case .photo: "ds-icon-photo"
+    case .thumbsUp: "ds-icon-thumbs-up"
+    case .thumbsUpFilled: "ds-icon-thumbs-up-filled"
+    case .compare: "ds-icon-compare"
+    case .plusCircle: "ds-icon-plus-circle"
+    case .minusCircle: "ds-icon-minus-circle"
+    case .minus: "ds-icon-minus"
+    case .pause: "ds-icon-pause"
+    case .clear: "ds-icon-clear"
+    case .hide: "ds-icon-hide"
+    case .report: "ds-icon-report"
+    case .sun: "ds-icon-sun"
+    case .cloud: "ds-icon-cloud"
+    case .rain: "ds-icon-rain"
+    case .snow: "ds-icon-snow"
+    case .wind: "ds-icon-wind"
+    case .cold: "ds-icon-cold"
+    case .hot: "ds-icon-hot"
+    case .evening: "ds-icon-evening"
+    case .office: "ds-icon-office"
+    case .holiday: "ds-icon-holiday"
+    case .indoors: "ds-icon-indoors"
+    case .weatherUnavailable: "ds-icon-weather-unavailable"
+    case .layers: "ds-icon-layers"
+    case .leaf: "ds-icon-leaf"
+    case .temperature: "ds-icon-temperature"
+    case .coat: "ds-icon-coat"
+    case .laundry: "ds-icon-laundry"
+    case .packed: "ds-icon-packed"
+    case .lent: "ds-icon-lent"
+    case .repair: "ds-icon-repair"
+    case .tag: "ds-icon-tag"
+    case .collection: "ds-icon-collection"
+    case .star: "ds-icon-star"
+    case .outfits: "ds-icon-outfits"
+    case .scissors: "ds-icon-scissors"
+    case .info: "ds-icon-info"
+    case .warning: "ds-icon-warning"
+    case .error: "ds-icon-error"
+    case .success: "ds-icon-success"
+    case .offline: "ds-icon-offline"
+    case .sync: "ds-icon-sync"
+    case .processing: "ds-icon-processing"
+    case .lock: "ds-icon-lock"
+    case .aiGenerated: "ds-icon-ai-generated"
+    case .confidenceHigh: "ds-icon-confidence-high"
+    case .confidenceMedium: "ds-icon-confidence-medium"
+    case .confidenceLow: "ds-icon-confidence-low"
+    case .pending: "ds-icon-pending"
+    case .cancelled: "ds-icon-cancelled"
+    case .neverSuggest: "ds-icon-never-suggest"
+    case .approximate: "ds-icon-approximate"
+    case .circle: "ds-icon-circle"
+    case .circleDot: "ds-icon-circle-dot"
+    case .settings: "ds-icon-settings"
+    case .notifications: "ds-icon-notifications"
+    case .privacy: "ds-icon-privacy"
+    case .passkey: "ds-icon-passkey"
+    case .accessibility: "ds-icon-accessibility"
+    case .language: "ds-icon-language"
+    case .measurements: "ds-icon-measurements"
+    case .credits: "ds-icon-credits"
+    case .subscription: "ds-icon-subscription"
+    case .devices: "ds-icon-devices"
+    case .signOut: "ds-icon-sign-out"
+    case .creditCard: "ds-icon-credit-card"
+    case .shieldCheck: "ds-icon-shield-check"
+    case .sparkle: "ds-icon-sparkle"
+    case .analytics: "ds-icon-analytics"
+    case .data: "ds-icon-data"
+    case .face: "ds-icon-face"
+    case .faceScan: "ds-icon-face-scan"
+    case .people: "ds-icon-people"
+    case .glassesOff: "ds-icon-glasses-off"
+    case .timer: "ds-icon-timer"
+    case .captions: "ds-icon-captions"
+    case .palette: "ds-icon-palette"
+    case .avatar3d: "ds-icon-avatar-3d"
+    case .avatar3dOff: "ds-icon-avatar-3d-off"
+    case .rotateLeft: "ds-icon-rotate-left"
+    case .rotateRight: "ds-icon-rotate-right"
+    case .zoomIn: "ds-icon-zoom-in"
+    case .zoomOut: "ds-icon-zoom-out"
+    case .poseNeutral: "ds-icon-pose-neutral"
+    case .poseFitCheck: "ds-icon-pose-fit-check"
+    case .poseWalking: "ds-icon-pose-walking"
+    case .poseSeated: "ds-icon-pose-seated"
+    }
+  }
+
+  /// The compiled glyph (`AppIconGlyphs`).
+  public var glyph: AppIconGlyph {
+    switch self {
+    case .today: AppIconGlyphs.Today.glyph
+    case .closet: AppIconGlyphs.Closet.glyph
+    case .capture: AppIconGlyphs.Capture.glyph
+    case .discover: AppIconGlyphs.Discover.glyph
+    case .you: AppIconGlyphs.You.glyph
+    case .back: AppIconGlyphs.Back.glyph
+    case .close: AppIconGlyphs.Close.glyph
+    case .chevronRight: AppIconGlyphs.ChevronRight.glyph
+    case .chevronDown: AppIconGlyphs.ChevronDown.glyph
+    case .more: AppIconGlyphs.More.glyph
+    case .search: AppIconGlyphs.Search.glyph
+    case .filter: AppIconGlyphs.Filter.glyph
+    case .sort: AppIconGlyphs.Sort.glyph
+    case .grid: AppIconGlyphs.Grid.glyph
+    case .list: AppIconGlyphs.List.glyph
+    case .chevronUp: AppIconGlyphs.ChevronUp.glyph
+    case .arrowLeft: AppIconGlyphs.ArrowLeft.glyph
+    case .arrowRight: AppIconGlyphs.ArrowRight.glyph
+    case .group: AppIconGlyphs.Group.glyph
+    case .heart: AppIconGlyphs.Heart.glyph
+    case .heartFilled: AppIconGlyphs.HeartFilled.glyph
+    case .thumbsDown: AppIconGlyphs.ThumbsDown.glyph
+    case .replace: AppIconGlyphs.Replace.glyph
+    case .bookmark: AppIconGlyphs.Bookmark.glyph
+    case .bookmarkFilled: AppIconGlyphs.BookmarkFilled.glyph
+    case .schedule: AppIconGlyphs.Schedule.glyph
+    case .edit: AppIconGlyphs.Edit.glyph
+    case .delete: AppIconGlyphs.Delete.glyph
+    case .archive: AppIconGlyphs.Archive.glyph
+    case .add: AppIconGlyphs.Add.glyph
+    case .check: AppIconGlyphs.Check.glyph
+    case .undo: AppIconGlyphs.Undo.glyph
+    case .refresh: AppIconGlyphs.Refresh.glyph
+    case .upload: AppIconGlyphs.Upload.glyph
+    case .export: AppIconGlyphs.Export.glyph
+    case .flash: AppIconGlyphs.Flash.glyph
+    case .flipCamera: AppIconGlyphs.FlipCamera.glyph
+    case .photo: AppIconGlyphs.Photo.glyph
+    case .thumbsUp: AppIconGlyphs.ThumbsUp.glyph
+    case .thumbsUpFilled: AppIconGlyphs.ThumbsUpFilled.glyph
+    case .compare: AppIconGlyphs.Compare.glyph
+    case .plusCircle: AppIconGlyphs.PlusCircle.glyph
+    case .minusCircle: AppIconGlyphs.MinusCircle.glyph
+    case .minus: AppIconGlyphs.Minus.glyph
+    case .pause: AppIconGlyphs.Pause.glyph
+    case .clear: AppIconGlyphs.Clear.glyph
+    case .hide: AppIconGlyphs.Hide.glyph
+    case .report: AppIconGlyphs.Report.glyph
+    case .sun: AppIconGlyphs.Sun.glyph
+    case .cloud: AppIconGlyphs.Cloud.glyph
+    case .rain: AppIconGlyphs.Rain.glyph
+    case .snow: AppIconGlyphs.Snow.glyph
+    case .wind: AppIconGlyphs.Wind.glyph
+    case .cold: AppIconGlyphs.Cold.glyph
+    case .hot: AppIconGlyphs.Hot.glyph
+    case .evening: AppIconGlyphs.Evening.glyph
+    case .office: AppIconGlyphs.Office.glyph
+    case .holiday: AppIconGlyphs.Holiday.glyph
+    case .indoors: AppIconGlyphs.Indoors.glyph
+    case .weatherUnavailable: AppIconGlyphs.WeatherUnavailable.glyph
+    case .layers: AppIconGlyphs.Layers.glyph
+    case .leaf: AppIconGlyphs.Leaf.glyph
+    case .temperature: AppIconGlyphs.Temperature.glyph
+    case .coat: AppIconGlyphs.Coat.glyph
+    case .laundry: AppIconGlyphs.Laundry.glyph
+    case .packed: AppIconGlyphs.Packed.glyph
+    case .lent: AppIconGlyphs.Lent.glyph
+    case .repair: AppIconGlyphs.Repair.glyph
+    case .tag: AppIconGlyphs.Tag.glyph
+    case .collection: AppIconGlyphs.Collection.glyph
+    case .star: AppIconGlyphs.Star.glyph
+    case .outfits: AppIconGlyphs.Outfits.glyph
+    case .scissors: AppIconGlyphs.Scissors.glyph
+    case .info: AppIconGlyphs.Info.glyph
+    case .warning: AppIconGlyphs.Warning.glyph
+    case .error: AppIconGlyphs.Error.glyph
+    case .success: AppIconGlyphs.Success.glyph
+    case .offline: AppIconGlyphs.Offline.glyph
+    case .sync: AppIconGlyphs.Sync.glyph
+    case .processing: AppIconGlyphs.Processing.glyph
+    case .lock: AppIconGlyphs.Lock.glyph
+    case .aiGenerated: AppIconGlyphs.AiGenerated.glyph
+    case .confidenceHigh: AppIconGlyphs.ConfidenceHigh.glyph
+    case .confidenceMedium: AppIconGlyphs.ConfidenceMedium.glyph
+    case .confidenceLow: AppIconGlyphs.ConfidenceLow.glyph
+    case .pending: AppIconGlyphs.Pending.glyph
+    case .cancelled: AppIconGlyphs.Cancelled.glyph
+    case .neverSuggest: AppIconGlyphs.NeverSuggest.glyph
+    case .approximate: AppIconGlyphs.Approximate.glyph
+    case .circle: AppIconGlyphs.Circle.glyph
+    case .circleDot: AppIconGlyphs.CircleDot.glyph
+    case .settings: AppIconGlyphs.Settings.glyph
+    case .notifications: AppIconGlyphs.Notifications.glyph
+    case .privacy: AppIconGlyphs.Privacy.glyph
+    case .passkey: AppIconGlyphs.Passkey.glyph
+    case .accessibility: AppIconGlyphs.Accessibility.glyph
+    case .language: AppIconGlyphs.Language.glyph
+    case .measurements: AppIconGlyphs.Measurements.glyph
+    case .credits: AppIconGlyphs.Credits.glyph
+    case .subscription: AppIconGlyphs.Subscription.glyph
+    case .devices: AppIconGlyphs.Devices.glyph
+    case .signOut: AppIconGlyphs.SignOut.glyph
+    case .creditCard: AppIconGlyphs.CreditCard.glyph
+    case .shieldCheck: AppIconGlyphs.ShieldCheck.glyph
+    case .sparkle: AppIconGlyphs.Sparkle.glyph
+    case .analytics: AppIconGlyphs.Analytics.glyph
+    case .data: AppIconGlyphs.Data.glyph
+    case .face: AppIconGlyphs.Face.glyph
+    case .faceScan: AppIconGlyphs.FaceScan.glyph
+    case .people: AppIconGlyphs.People.glyph
+    case .glassesOff: AppIconGlyphs.GlassesOff.glyph
+    case .timer: AppIconGlyphs.Timer.glyph
+    case .captions: AppIconGlyphs.Captions.glyph
+    case .palette: AppIconGlyphs.Palette.glyph
+    case .avatar3d: AppIconGlyphs.Avatar3d.glyph
+    case .avatar3dOff: AppIconGlyphs.Avatar3dOff.glyph
+    case .rotateLeft: AppIconGlyphs.RotateLeft.glyph
+    case .rotateRight: AppIconGlyphs.RotateRight.glyph
+    case .zoomIn: AppIconGlyphs.ZoomIn.glyph
+    case .zoomOut: AppIconGlyphs.ZoomOut.glyph
+    case .poseNeutral: AppIconGlyphs.PoseNeutral.glyph
+    case .poseFitCheck: AppIconGlyphs.PoseFitCheck.glyph
+    case .poseWalking: AppIconGlyphs.PoseWalking.glyph
+    case .poseSeated: AppIconGlyphs.PoseSeated.glyph
+    }
+  }
+}
+
+/// Glyph sets of `AppIcon` (icon.yaml, board C02), in first-appearance order.
+nonisolated public enum AppIconSet: String, CaseIterable, Sendable {
+  case navigation
+  case actions
+  case weather
+  case closet
+  case status
+  case account
+  case capture
+}
+
+/// Sizes of `AppIcon` (icon.yaml, board C02), each a DESIGN.md `components.<id>` token.
+nonisolated public enum AppIconSize: String, CaseIterable, Sendable {
+  case icon11 = "icon-11"
+  case icon12 = "icon-12"
+  case icon14 = "icon-14"
+  case icon16 = "icon-16"
+  case icon18 = "icon-18"
+  case icon20 = "icon-20"
+  case icon22 = "icon-22"
+  case icon24 = "icon-24"
+  case icon26 = "icon-26"
+  case icon28 = "icon-28"
+  case icon32 = "icon-32"
+  case icon36 = "icon-36"
+  case icon40 = "icon-40"
+  case icon56 = "icon-56"
+
+  /// The icon box: pt on iOS, dp on Android.
+  public var size: Double {
+    switch self {
+    case .icon11: 11.0
+    case .icon12: 12.0
+    case .icon14: 14.0
+    case .icon16: 16.0
+    case .icon18: 18.0
+    case .icon20: 20.0
+    case .icon22: 22.0
+    case .icon24: 24.0
+    case .icon26: 26.0
+    case .icon28: 28.0
+    case .icon32: 32.0
+    case .icon36: 36.0
+    case .icon40: 40.0
+    case .icon56: 56.0
+    }
+  }
+
+  /// The stroke width in viewBox units: drawn at strokeWidth x size / viewBox.
+  public var strokeWidth: Double {
+    switch self {
+    case .icon11: 2.8
+    case .icon12: 2.2
+    case .icon14: 2.0
+    case .icon16: 1.7
+    case .icon18: 1.7
+    case .icon20: 1.7
+    case .icon22: 1.7
+    case .icon24: 1.7
+    case .icon26: 1.7
+    case .icon28: 1.7
+    case .icon32: 1.7
+    case .icon36: 1.7
+    case .icon40: 1.5
+    case .icon56: 1.7
+    }
+  }
+}
+
+/// The viewBox every AppIcon glyph is drawn in, and the default size.
+nonisolated public enum AppIconMetrics {
+  public static let viewBox: Double = 24.0
+  public static let defaultSize: AppIconSize = .icon24
+}
+
+/// One AppIcon glyph: its shapes, painted in order.
+nonisolated public struct AppIconGlyph: Sendable, Equatable {
+  public let shapes: [AppIconShape]
+}
+
+/// One path of a glyph and how it is painted, in viewBox units.
+nonisolated public struct AppIconShape: Sendable, Equatable {
+  public let paint: AppIconPaint
+  public let segments: [AppIconSegment]
+}
+
+/// How a shape is painted: stroked, filled, or both.
+nonisolated public enum AppIconPaint: String, CaseIterable, Sendable {
+  case stroke
+  case fill
+  case both
+}
+
+/// One absolute path command; points are x, y pairs: 1 (move, line), 3 (cubic), 0 (close).
+nonisolated public struct AppIconSegment: Sendable, Equatable {
+  public let command: AppIconCommand
+  public let points: [Double]
+}
+
+/// The path commands a compiled glyph uses.
+nonisolated public enum AppIconCommand: String, CaseIterable, Sendable {
+  case move
+  case line
+  case cubic
+  case close
+}
+
 /// The gallery sections of the components, in board order, each with its contract id.
 nonisolated public enum GalleryComponent: String, CaseIterable, Sendable {
   case button
+  case icon
 
   /// The section title: the board and the contract `gallery.title`.
   public var title: String {
     switch self {
     case .button: "C01 Buttons"
+    case .icon: "C02 Icons"
     }
   }
 
@@ -11723,6 +12350,7 @@ nonisolated public enum GalleryComponent: String, CaseIterable, Sendable {
   public var slug: String {
     switch self {
     case .button: "c01-buttons"
+    case .icon: "c02-icons"
     }
   }
 }

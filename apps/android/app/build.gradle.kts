@@ -127,6 +127,7 @@ dependencies {
     implementation(project(":core:data"))
     implementation(project(":core:analytics"))
     implementation(project(":core:designsystem"))
+    debugImplementation(project(":core:designsystem-catalog"))
 
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.activity.compose)

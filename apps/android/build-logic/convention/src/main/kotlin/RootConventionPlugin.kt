@@ -19,13 +19,22 @@ import org.gradle.kotlin.dsl.withType
  */
 internal val ALLOWED_MODULE_EDGES: Map<String, Set<String>> =
     mapOf(
-        ":app" to setOf(":feature:home", ":core:data", ":core:analytics", ":core:designsystem"),
+        ":app" to
+            setOf(
+                ":feature:home",
+                ":core:data",
+                ":core:analytics",
+                ":core:designsystem",
+                ":core:designsystem-catalog",
+            ),
         ":feature:home" to setOf(":core:data", ":core:analytics", ":core:designsystem"),
         ":core:data" to setOf(":core:api-client"),
         ":core:analytics" to emptySet(),
         ":core:api-client" to emptySet(),
         // App-internal design system (DEC-87): depends on no other project module.
         ":core:designsystem" to emptySet(),
+        // Dev-only catalog: previews and the debug gallery; only `:app` debugImplementation.
+        ":core:designsystem-catalog" to setOf(":core:designsystem"),
     )
 
 /** `aistylist.root` — applied once, to the root project. */

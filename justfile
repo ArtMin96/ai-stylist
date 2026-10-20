@@ -406,7 +406,7 @@ ios-build *args:
 ios-test:
     apps/ios/scripts/xcode.sh test
 
-# Dev simulator build, then boot an iPhone simulator (IOS_SIMULATOR_ID, else the first iPhone on the newest iOS 26+ runtime), open Simulator.app, install and launch the app (macOS only; `just dev ios` also starts the backend)
+# Dev simulator build, then boot an iPhone simulator (IOS_SIMULATOR_ID, else the first iPhone on the newest iOS 26+ runtime), install the app, open Device Hub and launch the app (macOS only; `just dev ios` also starts the backend)
 ios-run:
     apps/ios/scripts/xcode.sh run
 

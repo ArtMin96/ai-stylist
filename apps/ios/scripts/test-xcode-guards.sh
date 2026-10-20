@@ -8,7 +8,8 @@
 #   3. a POSTHOG_API_KEY that is not a project key (phc_...) stops the build before xcodebuild runs,
 #      from the environment or from Local.xcconfig, and the message never shows the value;
 #   4. apps/ios/Package.resolved holds every pin of apps/ios/Packages/*/Package.resolved unchanged;
-#   5. the dSYM upload skips a symbol set PostHog already holds with other content, instead of failing.
+#   5. `run` opens Device Hub from the selected Xcode, and stops when that Xcode has none;
+#   6. the dSYM upload skips a symbol set PostHog already holds with other content, instead of failing.
 set -euo pipefail
 # shellcheck source=lib.sh
 . "$(dirname "${BASH_SOURCE[0]}")/lib.sh"
@@ -127,7 +128,41 @@ else
 $missing"
 fi
 
-# 5: upload_dsyms against a stub upload-symbols.sh that records its environment. The stub plutil
+# 5: open_device_window opens Device Hub from the Xcode that xcode-select names (Xcode 27 has no
+# Simulator.app), and stops with the path it checked when that Xcode has none. Stub xcode-select and
+# open; the fake Xcode bundle is a directory tree.
+fake_developer="$tmp/Xcode.app/Contents/Developer"
+printf '#!/bin/sh\necho "%s"\n' "$fake_developer" >"$tmp/bin/xcode-select"
+printf '#!/bin/sh\nprintf "%%s\\n" "$@" >"%s"\n' "$tmp/open.args" >"$tmp/bin/open"
+chmod +x "$tmp/bin/xcode-select" "$tmp/bin/open"
+open_window() {
+  rm -f "$tmp/open.args"
+  (
+    # shellcheck source=xcode.sh
+    . "$xcode_sh"
+    open_device_window
+  ) 2>"$tmp/stderr"
+}
+mkdir -p "$fake_developer" "$tmp/Xcode.app/Contents/Applications/DeviceHub.app"
+if ! open_window; then
+  fail "open_device_window failed with Device Hub present: $(cat "$tmp/stderr")"
+elif ! grep -qx "$tmp/Xcode.app/Contents/Applications/DeviceHub.app" "$tmp/open.args" 2>/dev/null; then
+  fail "open_device_window did not open the selected Xcode's DeviceHub.app: $(cat "$tmp/open.args" 2>/dev/null)"
+else
+  pass "opens Device Hub from the selected Xcode"
+fi
+rm -rf "$tmp/Xcode.app/Contents/Applications/DeviceHub.app"
+if open_window; then
+  fail "open_device_window succeeded although the selected Xcode has no DeviceHub.app"
+elif [[ -f "$tmp/open.args" ]]; then
+  fail "open_device_window ran open without a DeviceHub.app"
+elif ! grep -q "$tmp/Xcode.app/Contents/Applications/DeviceHub.app" "$tmp/stderr"; then
+  fail "the message does not name the DeviceHub.app path it checked: $(cat "$tmp/stderr")"
+else
+  pass "stops with the checked path when the selected Xcode has no Device Hub"
+fi
+
+# 6: upload_dsyms against a stub upload-symbols.sh that records its environment. The stub plutil
 # answers every Info.plist read, so this runs on Linux too.
 products="$tmp/DerivedData/Build/Products/Dev-iphonesimulator"
 upload_script="$tmp/SourcePackages/checkouts/posthog-ios/build-tools/upload-symbols.sh"

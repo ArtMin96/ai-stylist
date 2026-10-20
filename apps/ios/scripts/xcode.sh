@@ -7,7 +7,7 @@
 #   xcode.sh build [--config dev|preview|prod]   unsigned simulator build (default dev), then the dSYM upload
 #   xcode.sh test                         package unit tests through the AIStylist-Dev scheme on a simulator
 #   xcode.sh e2e [flow]                   Dev simulator build + one Maestro flow, default e2e/smoke.yaml (APP_ID=app.aistylist.mobile.dev)
-#   xcode.sh run                          Dev simulator build, then boot the simulator, open Simulator.app, install and launch the app
+#   xcode.sh run                          Dev simulator build, then boot the simulator, install the app, open Device Hub and launch the app
 #
 # Env: IOS_SIMULATOR_ID  simulator UDID to use (default: first available iPhone on the newest iOS runtime)
 #      AISTYLIST_API_BASE_URL  host-only API base URL (scheme://host[:port]) instead of the configuration's
@@ -19,7 +19,7 @@
 #                        PostHog with posthog-cli; any unset: the upload is skipped with a notice. Every
 #                        POSTHOG_CLI_* variable reaches that upload only: never xcodebuild or another tool.
 # Build state goes to apps/ios/.build/ (gitignored): DerivedData, SourcePackages, test.xcresult.
-# scripts/test-xcode-guards.sh sources this file (functions only) to prove the PostHog guards without Xcode.
+# scripts/test-xcode-guards.sh sources this file (functions only) to prove the PostHog and Device Hub guards without Xcode.
 set -euo pipefail
 # shellcheck source=lib.sh
 . "$(dirname "${BASH_SOURCE[0]}")/lib.sh"
@@ -308,6 +308,17 @@ cmd_test() {
     CODE_SIGNING_ALLOWED=NO
 }
 
+# Open Device Hub, which replaced Simulator.app in Xcode 27, from the Xcode that xcode-select (or
+# DEVELOPER_DIR) selects. It takes no device argument, so call it after the boot.
+open_device_window() {
+  local developer app
+  developer="$(xcode-select -p)"
+  app="${developer%/Contents/Developer}/Contents/Applications/DeviceHub.app"
+  [[ -d "$app" ]] \
+    || ios_die "ios-run: Device Hub not found at $app; apps/ios/.xcode-version pins Xcode $PINNED_XCODE, which ships it. Fix: ./scripts/bootstrap.sh --system, or set DEVELOPER_DIR."
+  open -a "$app"
+}
+
 # Boot simulator $1 (a no-op when it already runs), wait for it, and install app bundle $2.
 install_on_simulator() {
   local udid="$1" app="$2"
@@ -323,9 +334,9 @@ cmd_run() {
   cmd_build --config dev
   local udid
   udid="$(pick_simulator)"
-  # Simulator.app shows that device's window; booting from simctl alone stays headless.
-  open -a Simulator --args -CurrentDeviceUDID "$udid"
   install_on_simulator "$udid" "$DERIVED_DATA/Build/Products/Dev-iphonesimulator/AIStylist.app"
+  # Booting from simctl alone stays headless; Device Hub is the window onto the simulator.
+  open_device_window
   # --terminate-running-process: a re-run replaces the running copy with the fresh build.
   xcrun simctl launch --terminate-running-process "$udid" "$DEV_BUNDLE_ID" >/dev/null
   echo "ios-run: launched $DEV_BUNDLE_ID on simulator $udid"

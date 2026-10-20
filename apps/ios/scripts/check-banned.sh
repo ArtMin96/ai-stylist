@@ -10,7 +10,7 @@
 #   api-import-outside-apidata  AIStylistAPI/OpenAPI*/HTTPTypes imported outside Core's APIData (+ its tests)
 #
 # --fixtures  prove every rule still fires: each apps/ios/scripts/fixtures/<rule>.swift must be flagged,
-#             and scripts/test-xcode-guards.sh proves the PostHog and pin guards of scripts/xcode.sh.
+#             and scripts/test-xcode-guards.sh proves the PostHog, pin and Device Hub guards of scripts/xcode.sh.
 # Generated code (packages/contracts/gen/swift-client) is outside apps/ios and never scanned.
 set -euo pipefail
 # shellcheck source=lib.sh
@@ -86,7 +86,7 @@ if [[ "${1:-}" == "--fixtures" ]]; then
     fi
   done
   # scripts/xcode.sh's guards are bans too (no upload credential in xcodebuild's environment, no personal
-  # PostHog key compiled in, pins only from apps/ios/Package.resolved): prove they fire, without Xcode.
+  # PostHog key compiled in, pins only from apps/ios/Package.resolved, Device Hub from the selected Xcode): prove they fire, without Xcode.
   if ! bash "$IOS_DIR/scripts/test-xcode-guards.sh"; then
     failed=1
   fi

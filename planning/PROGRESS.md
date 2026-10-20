@@ -93,6 +93,17 @@ Log hygiene: when this log exceeds ~30 entries, move the oldest entries to `plan
 
 *(newest first)*
 
+### 2026-10-20 (device-hub) — `just dev ios` / `just ios-run` open Device Hub (branch `chore/ios-xcode-27-1`, PR #37)
+
+- **Phase / tasks worked:** none (toolchain upkeep, follows the Xcode 27 upgrade).
+- **Status changes:** None.
+- **Done this session:** root cause of `ios: build, install or launch failed` in `just dev ios`: `xcode.sh run` called `open -a Simulator`, and Xcode 27 ships no Simulator.app (Device Hub, `Contents/Applications/DeviceHub.app`, bundle id `com.apple.dt.Devices`, replaced it), so `open` failed with `Unable to find application named 'Simulator'` before boot. The build and dSYM upload were fine; `dev.sh` saves only stdout to `artifacts/dev/ios.run`, which hid the error. Fix: new `open_device_window` in `apps/ios/scripts/xcode.sh` opens DeviceHub.app from the Xcode that `xcode-select -p` (or `DEVELOPER_DIR`) selects, after the install, and stops with the checked path when it is missing; no Simulator.app fallback (pin is 27.1). Regression check 5 in `apps/ios/scripts/test-xcode-guards.sh` (failed before the fix, passes after; dSYM check renumbered 6). Docs: `justfile` `ios-run` comment, `apps/ios/README.md`, `check-banned.sh` comments. Doc 15 §5 line is path-guarded: proposal in `.claude/plans/2026-10-20-ios-run-device-hub-doc15-proposal.md`.
+- **Not done / in flight:** pushed to PR #37 with the Xcode pin change. The owner confirmed Device Hub shows the running simulator; a `simctl` screenshot confirms the app launched.
+- **Repository state:** `just ios-run` ✅ (`ios-run: launched app.aistylist.mobile.dev on simulator E360A0A6-…`); `just ios-check` ✅ (simulator build + tests, `Test Succeeded`); `just ios-check-banned --fixtures` ✅ (10 ok); `just docs-check` ✅; `just lint-file` ✅ on the three touched scripts. `just lint` ❌ only in `android-lint`, the known `aapt2-9.4.1-15978811-osx.jar` verification failure from the entry below.
+- **New decisions / risks / questions filed:** None.
+- **Surprises / gotchas:** Xcode 27 also removed `Contents/Developer/Applications/` and ignores the `com.apple.iphonesimulator` defaults domain; Device Hub takes no device argument.
+- **Next session starts:** watch the `ios` workflow on PR #37; owner applies the doc 15 proposal; optional follow-up: `dev.sh` saves stderr to `ios.run` too.
+
 ### 2026-10-20 (xcode) — Xcode pin raised from 27.0 to 27.1 (branch `chore/ios-xcode-27-1`, uncommitted)
 
 - **Phase / tasks worked:** none (toolchain upkeep).

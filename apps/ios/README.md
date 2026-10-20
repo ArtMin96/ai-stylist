@@ -32,7 +32,7 @@ Packages/DesignSystem/   app-internal design system (DEC-87); no dependency on C
   Sources/DesignSystem     SwiftUI base components (Apple platforms only; left out of the manifest on Linux)
   tests/<Target>Tests      DesignTokensTests, DesignSystemTests (smoke tests until tokens and components land)
 scripts/                 recipe bodies (bash 3.2-portable); fixtures/ prove each ban still fires,
-                         test-xcode-guards.sh the PostHog and pin guards of xcode.sh
+                         test-xcode-guards.sh the PostHog, pin and Device Hub guards of xcode.sh
 ```
 
 The generated client lives in `packages/contracts/gen/swift-client/`. `tools/codegen/gen-swift.sh`
@@ -162,7 +162,7 @@ The `just` recipes are wired in the root justfile. The recipe bodies are `apps/i
 | `just ios-build [--config dev\|preview\|prod]` |  yes  |  no   | Builds the app unsigned for the simulator, then uploads its dSYMs to PostHog when `POSTHOG_CLI_*` are set           |
 | `just ios-test`                                |  yes  |  no   | Runs the package unit tests through the `AIStylist-Dev` scheme on an iOS 26+ iPhone simulator                       |
 | `just ios-e2e`                                 |  yes  |  no   | Builds Dev for the simulator and runs the shared Maestro flow `e2e/smoke.yaml` (`APP_ID=app.aistylist.mobile.dev`) |
-| `just ios-run`                                 |  yes  |  no   | Builds Dev, opens Simulator.app and installs and launches the app (`just dev ios` also starts the backend)          |
+| `just ios-run`                                 |  yes  |  no   | Builds Dev, installs the app, opens Device Hub and launches the app (`just dev ios` also starts the backend)        |
 | `just ios-test-packages [pkg...]`              |  yes  |  yes  | Runs `swift test` for the packages `core`, `features`, `designsystem` (default: all three)                          |
 | `just ios-lint`                                |  yes  |  yes  | Runs the SwiftLint safety rules (on Linux: `swiftlint-static`)                                                      |
 | `just ios-format [--check]`                    |  yes  |  yes  | Runs swift-format, in place or as a check                                                                           |

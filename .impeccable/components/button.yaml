@@ -125,8 +125,8 @@ combinations:
   # Screens win: the Linen-filled button (surface-2 fill, text label) is drawn at large on SE1
   # (Use my selfie, Use a generic face: 52, 17/600, 0 20), at card on C04's offline template
   # (Try again, 48) and at compact on TR1 and C09 (Not now / Allow / Turn on, Skip / Send: 44,
-  # 15/600). SC08 Got it draws it 52 with a 15/600 label; large keeps 17/600 as SE1 draws it,
-  # pending the owner (the one open conflict, reported by ui-designer 2026-10-20).
+  # 15/600). SC08 Got it draws it 52 with a 15/600 label; the owner chose 17/600 for large
+  # (2026-10-20, "Approve, label 17"), as SE1 draws it; SC08 Got it follows.
   tonal:
     sizes: [large, card, compact]
     states: [enabled, pressed, focused, disabled, loading]
@@ -261,5 +261,5 @@ gallery:
 testId: 'ds-{component}-{variant}-{size}-{state}'
 
 # Re-opened 2026-10-20 (card, compact, primary-outline, tonal, destructive-text,
-# destructive-tonal added; text small replaced by text compact); the owner re-approves.
-approved: pending
+# destructive-tonal added; text small replaced by text compact); re-approved by the owner 2026-10-20.
+approved: 2026-10-20

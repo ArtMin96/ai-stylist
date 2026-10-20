@@ -176,6 +176,62 @@ data class ButtonLargeTokens(
     }
 }
 
+/** Component `button-card` per context: colours are role keys, sizes in pt/dp. */
+data class ButtonCardTokens(
+    val height: Double,
+    val paddingTop: Double,
+    val paddingEnd: Double,
+    val paddingBottom: Double,
+    val paddingStart: Double,
+) {
+    companion object {
+        val light: ButtonCardTokens =
+            ButtonCardTokens(
+                height = 48.0,
+                paddingTop = 0.0,
+                paddingEnd = 24.0,
+                paddingBottom = 0.0,
+                paddingStart = 24.0,
+            )
+
+        val dark: ButtonCardTokens =
+            ButtonCardTokens(
+                height = 48.0,
+                paddingTop = 0.0,
+                paddingEnd = 24.0,
+                paddingBottom = 0.0,
+                paddingStart = 24.0,
+            )
+
+        val brand: ButtonCardTokens =
+            ButtonCardTokens(
+                height = 48.0,
+                paddingTop = 0.0,
+                paddingEnd = 24.0,
+                paddingBottom = 0.0,
+                paddingStart = 24.0,
+            )
+
+        val hcLight: ButtonCardTokens =
+            ButtonCardTokens(
+                height = 48.0,
+                paddingTop = 0.0,
+                paddingEnd = 24.0,
+                paddingBottom = 0.0,
+                paddingStart = 24.0,
+            )
+
+        val hcDark: ButtonCardTokens =
+            ButtonCardTokens(
+                height = 48.0,
+                paddingTop = 0.0,
+                paddingEnd = 24.0,
+                paddingBottom = 0.0,
+                paddingStart = 24.0,
+            )
+    }
+}
+
 /** Component `button-medium` per context: colours are role keys, sizes in pt/dp. */
 data class ButtonMediumTokens(
     val height: Double,
@@ -228,6 +284,192 @@ data class ButtonMediumTokens(
                 paddingEnd = 20.0,
                 paddingBottom = 0.0,
                 paddingStart = 20.0,
+            )
+    }
+}
+
+/** Component `button-compact` per context: colours are role keys, sizes in pt/dp. */
+data class ButtonCompactTokens(
+    val typography: AppTextStyle,
+    val height: Double,
+    val paddingTop: Double,
+    val paddingEnd: Double,
+    val paddingBottom: Double,
+    val paddingStart: Double,
+) {
+    companion object {
+        val light: ButtonCompactTokens =
+            ButtonCompactTokens(
+                typography = AppTypography.subhead,
+                height = 44.0,
+                paddingTop = 0.0,
+                paddingEnd = 16.0,
+                paddingBottom = 0.0,
+                paddingStart = 16.0,
+            )
+
+        val dark: ButtonCompactTokens =
+            ButtonCompactTokens(
+                typography = AppTypography.subhead,
+                height = 44.0,
+                paddingTop = 0.0,
+                paddingEnd = 16.0,
+                paddingBottom = 0.0,
+                paddingStart = 16.0,
+            )
+
+        val brand: ButtonCompactTokens =
+            ButtonCompactTokens(
+                typography = AppTypography.subhead,
+                height = 44.0,
+                paddingTop = 0.0,
+                paddingEnd = 16.0,
+                paddingBottom = 0.0,
+                paddingStart = 16.0,
+            )
+
+        val hcLight: ButtonCompactTokens =
+            ButtonCompactTokens(
+                typography = AppTypography.subhead,
+                height = 44.0,
+                paddingTop = 0.0,
+                paddingEnd = 16.0,
+                paddingBottom = 0.0,
+                paddingStart = 16.0,
+            )
+
+        val hcDark: ButtonCompactTokens =
+            ButtonCompactTokens(
+                typography = AppTypography.subhead,
+                height = 44.0,
+                paddingTop = 0.0,
+                paddingEnd = 16.0,
+                paddingBottom = 0.0,
+                paddingStart = 16.0,
+            )
+    }
+}
+
+/** Component `button-compact-filled` per context: colours are role keys, sizes in pt/dp. */
+data class ButtonCompactFilledTokens(
+    val typography: AppTextStyle,
+    val height: Double,
+    val paddingTop: Double,
+    val paddingEnd: Double,
+    val paddingBottom: Double,
+    val paddingStart: Double,
+) {
+    companion object {
+        val light: ButtonCompactFilledTokens =
+            ButtonCompactFilledTokens(
+                typography = AppTypography.subhead,
+                height = 44.0,
+                paddingTop = 0.0,
+                paddingEnd = 20.0,
+                paddingBottom = 0.0,
+                paddingStart = 20.0,
+            )
+
+        val dark: ButtonCompactFilledTokens =
+            ButtonCompactFilledTokens(
+                typography = AppTypography.subhead,
+                height = 44.0,
+                paddingTop = 0.0,
+                paddingEnd = 20.0,
+                paddingBottom = 0.0,
+                paddingStart = 20.0,
+            )
+
+        val brand: ButtonCompactFilledTokens =
+            ButtonCompactFilledTokens(
+                typography = AppTypography.subhead,
+                height = 44.0,
+                paddingTop = 0.0,
+                paddingEnd = 20.0,
+                paddingBottom = 0.0,
+                paddingStart = 20.0,
+            )
+
+        val hcLight: ButtonCompactFilledTokens =
+            ButtonCompactFilledTokens(
+                typography = AppTypography.subhead,
+                height = 44.0,
+                paddingTop = 0.0,
+                paddingEnd = 20.0,
+                paddingBottom = 0.0,
+                paddingStart = 20.0,
+            )
+
+        val hcDark: ButtonCompactFilledTokens =
+            ButtonCompactFilledTokens(
+                typography = AppTypography.subhead,
+                height = 44.0,
+                paddingTop = 0.0,
+                paddingEnd = 20.0,
+                paddingBottom = 0.0,
+                paddingStart = 20.0,
+            )
+    }
+}
+
+/** Component `button-text-compact` per context: colours are role keys, sizes in pt/dp. */
+data class ButtonTextCompactTokens(
+    val typography: AppTextStyle,
+    val height: Double,
+    val paddingTop: Double,
+    val paddingEnd: Double,
+    val paddingBottom: Double,
+    val paddingStart: Double,
+) {
+    companion object {
+        val light: ButtonTextCompactTokens =
+            ButtonTextCompactTokens(
+                typography = AppTypography.subhead,
+                height = 44.0,
+                paddingTop = 0.0,
+                paddingEnd = 12.0,
+                paddingBottom = 0.0,
+                paddingStart = 12.0,
+            )
+
+        val dark: ButtonTextCompactTokens =
+            ButtonTextCompactTokens(
+                typography = AppTypography.subhead,
+                height = 44.0,
+                paddingTop = 0.0,
+                paddingEnd = 12.0,
+                paddingBottom = 0.0,
+                paddingStart = 12.0,
+            )
+
+        val brand: ButtonTextCompactTokens =
+            ButtonTextCompactTokens(
+                typography = AppTypography.subhead,
+                height = 44.0,
+                paddingTop = 0.0,
+                paddingEnd = 12.0,
+                paddingBottom = 0.0,
+                paddingStart = 12.0,
+            )
+
+        val hcLight: ButtonTextCompactTokens =
+            ButtonTextCompactTokens(
+                typography = AppTypography.subhead,
+                height = 44.0,
+                paddingTop = 0.0,
+                paddingEnd = 12.0,
+                paddingBottom = 0.0,
+                paddingStart = 12.0,
+            )
+
+        val hcDark: ButtonTextCompactTokens =
+            ButtonTextCompactTokens(
+                typography = AppTypography.subhead,
+                height = 44.0,
+                paddingTop = 0.0,
+                paddingEnd = 12.0,
+                paddingBottom = 0.0,
+                paddingStart = 12.0,
             )
     }
 }
@@ -845,6 +1087,459 @@ data class ButtonDestructiveFilledTokens(
                         textColor = AppColorRole.ERROR_FG,
                         typography = AppTypography.buttonDisabled,
                     ),
+            )
+    }
+}
+
+/** Component `button-primary-outline` per context: colours are role keys, sizes in pt/dp. */
+data class ButtonPrimaryOutlineTokens(
+    val textColor: AppColorRole,
+    val borderColor: AppColorRole,
+    val typography: AppTextStyle,
+    val rounded: Double,
+    val height: Double,
+    val paddingTop: Double,
+    val paddingEnd: Double,
+    val paddingBottom: Double,
+    val paddingStart: Double,
+    val pressed: Pressed,
+    val disabled: Disabled,
+) {
+    data class Pressed(
+        val backgroundColor: AppColorRole,
+        val textColor: AppColorRole,
+        val borderColor: AppColorRole,
+    )
+
+    data class Disabled(
+        val textColor: AppColorRole,
+        val borderColor: AppColorRole,
+    )
+
+    companion object {
+        val light: ButtonPrimaryOutlineTokens =
+            ButtonPrimaryOutlineTokens(
+                textColor = AppColorRole.PRIMARY_TEXT,
+                borderColor = AppColorRole.PRIMARY,
+                typography = AppTypography.subhead,
+                rounded = AppRadius.full,
+                height = 44.0,
+                paddingTop = 0.0,
+                paddingEnd = 16.0,
+                paddingBottom = 0.0,
+                paddingStart = 16.0,
+                pressed =
+                    Pressed(
+                        backgroundColor = AppColorRole.SURFACE2,
+                        textColor = AppColorRole.PRIMARY_TEXT,
+                        borderColor = AppColorRole.PRIMARY,
+                    ),
+                disabled = Disabled(textColor = AppColorRole.TEXT_SECONDARY, borderColor = AppColorRole.DIVIDER),
+            )
+
+        val dark: ButtonPrimaryOutlineTokens =
+            ButtonPrimaryOutlineTokens(
+                textColor = AppColorRole.PRIMARY_TEXT,
+                borderColor = AppColorRole.PRIMARY,
+                typography = AppTypography.subhead,
+                rounded = AppRadius.full,
+                height = 44.0,
+                paddingTop = 0.0,
+                paddingEnd = 16.0,
+                paddingBottom = 0.0,
+                paddingStart = 16.0,
+                pressed =
+                    Pressed(
+                        backgroundColor = AppColorRole.SURFACE2,
+                        textColor = AppColorRole.PRIMARY_TEXT,
+                        borderColor = AppColorRole.PRIMARY,
+                    ),
+                disabled = Disabled(textColor = AppColorRole.TEXT_SECONDARY, borderColor = AppColorRole.DIVIDER),
+            )
+
+        val brand: ButtonPrimaryOutlineTokens =
+            ButtonPrimaryOutlineTokens(
+                textColor = AppColorRole.PRIMARY_TEXT,
+                borderColor = AppColorRole.PRIMARY,
+                typography = AppTypography.subhead,
+                rounded = AppRadius.full,
+                height = 44.0,
+                paddingTop = 0.0,
+                paddingEnd = 16.0,
+                paddingBottom = 0.0,
+                paddingStart = 16.0,
+                pressed =
+                    Pressed(
+                        backgroundColor = AppColorRole.SURFACE2,
+                        textColor = AppColorRole.PRIMARY_TEXT,
+                        borderColor = AppColorRole.PRIMARY,
+                    ),
+                disabled = Disabled(textColor = AppColorRole.TEXT_SECONDARY, borderColor = AppColorRole.DIVIDER),
+            )
+
+        val hcLight: ButtonPrimaryOutlineTokens =
+            ButtonPrimaryOutlineTokens(
+                textColor = AppColorRole.PRIMARY_TEXT,
+                borderColor = AppColorRole.PRIMARY,
+                typography = AppTypography.subhead,
+                rounded = AppRadius.full,
+                height = 44.0,
+                paddingTop = 0.0,
+                paddingEnd = 16.0,
+                paddingBottom = 0.0,
+                paddingStart = 16.0,
+                pressed =
+                    Pressed(
+                        backgroundColor = AppColorRole.SURFACE2,
+                        textColor = AppColorRole.PRIMARY_TEXT,
+                        borderColor = AppColorRole.PRIMARY,
+                    ),
+                disabled = Disabled(textColor = AppColorRole.TEXT_SECONDARY, borderColor = AppColorRole.DIVIDER),
+            )
+
+        val hcDark: ButtonPrimaryOutlineTokens =
+            ButtonPrimaryOutlineTokens(
+                textColor = AppColorRole.PRIMARY_TEXT,
+                borderColor = AppColorRole.PRIMARY,
+                typography = AppTypography.subhead,
+                rounded = AppRadius.full,
+                height = 44.0,
+                paddingTop = 0.0,
+                paddingEnd = 16.0,
+                paddingBottom = 0.0,
+                paddingStart = 16.0,
+                pressed =
+                    Pressed(
+                        backgroundColor = AppColorRole.SURFACE2,
+                        textColor = AppColorRole.PRIMARY_TEXT,
+                        borderColor = AppColorRole.PRIMARY,
+                    ),
+                disabled = Disabled(textColor = AppColorRole.TEXT_SECONDARY, borderColor = AppColorRole.DIVIDER),
+            )
+    }
+}
+
+/** Component `button-destructive-text` per context: colours are role keys, sizes in pt/dp. */
+data class ButtonDestructiveTextTokens(
+    val textColor: AppColorRole,
+    val typography: AppTextStyle,
+    val rounded: Double,
+    val height: Double,
+    val paddingTop: Double,
+    val paddingEnd: Double,
+    val paddingBottom: Double,
+    val paddingStart: Double,
+    val pressed: Pressed,
+    val disabled: Disabled,
+) {
+    data class Pressed(
+        val textColor: AppColorRole,
+        val backgroundColor: AppColorRole,
+    )
+
+    data class Disabled(
+        val textColor: AppColorRole,
+    )
+
+    companion object {
+        val light: ButtonDestructiveTextTokens =
+            ButtonDestructiveTextTokens(
+                textColor = AppColorRole.ERROR_FG,
+                typography = AppTypography.subhead,
+                rounded = AppRadius.full,
+                height = 44.0,
+                paddingTop = 0.0,
+                paddingEnd = 10.0,
+                paddingBottom = 0.0,
+                paddingStart = 10.0,
+                pressed = Pressed(textColor = AppColorRole.ERROR_FG, backgroundColor = AppColorRole.ERROR_BG),
+                disabled = Disabled(textColor = AppColorRole.TEXT_SECONDARY),
+            )
+
+        val dark: ButtonDestructiveTextTokens =
+            ButtonDestructiveTextTokens(
+                textColor = AppColorRole.ERROR_FG,
+                typography = AppTypography.subhead,
+                rounded = AppRadius.full,
+                height = 44.0,
+                paddingTop = 0.0,
+                paddingEnd = 10.0,
+                paddingBottom = 0.0,
+                paddingStart = 10.0,
+                pressed = Pressed(textColor = AppColorRole.ERROR_FG, backgroundColor = AppColorRole.SURFACE2),
+                disabled = Disabled(textColor = AppColorRole.TEXT_SECONDARY),
+            )
+
+        val brand: ButtonDestructiveTextTokens =
+            ButtonDestructiveTextTokens(
+                textColor = AppColorRole.ERROR_FG,
+                typography = AppTypography.subhead,
+                rounded = AppRadius.full,
+                height = 44.0,
+                paddingTop = 0.0,
+                paddingEnd = 10.0,
+                paddingBottom = 0.0,
+                paddingStart = 10.0,
+                pressed = Pressed(textColor = AppColorRole.ERROR_FG, backgroundColor = AppColorRole.SURFACE2),
+                disabled = Disabled(textColor = AppColorRole.TEXT_SECONDARY),
+            )
+
+        val hcLight: ButtonDestructiveTextTokens =
+            ButtonDestructiveTextTokens(
+                textColor = AppColorRole.ERROR_FG,
+                typography = AppTypography.subhead,
+                rounded = AppRadius.full,
+                height = 44.0,
+                paddingTop = 0.0,
+                paddingEnd = 10.0,
+                paddingBottom = 0.0,
+                paddingStart = 10.0,
+                pressed = Pressed(textColor = AppColorRole.ERROR_FG, backgroundColor = AppColorRole.ERROR_BG),
+                disabled = Disabled(textColor = AppColorRole.TEXT_SECONDARY),
+            )
+
+        val hcDark: ButtonDestructiveTextTokens =
+            ButtonDestructiveTextTokens(
+                textColor = AppColorRole.ERROR_FG,
+                typography = AppTypography.subhead,
+                rounded = AppRadius.full,
+                height = 44.0,
+                paddingTop = 0.0,
+                paddingEnd = 10.0,
+                paddingBottom = 0.0,
+                paddingStart = 10.0,
+                pressed = Pressed(textColor = AppColorRole.ERROR_FG, backgroundColor = AppColorRole.SURFACE2),
+                disabled = Disabled(textColor = AppColorRole.TEXT_SECONDARY),
+            )
+    }
+}
+
+/** Component `button-tonal` per context: colours are role keys, sizes in pt/dp. */
+data class ButtonTonalTokens(
+    val backgroundColor: AppColorRole,
+    val textColor: AppColorRole,
+    val typography: AppTextStyle,
+    val rounded: Double,
+    val height: Double,
+    val paddingTop: Double,
+    val paddingEnd: Double,
+    val paddingBottom: Double,
+    val paddingStart: Double,
+    val pressed: Pressed,
+    val disabled: Disabled,
+) {
+    data class Pressed(
+        val backgroundColor: AppColorRole,
+        val textColor: AppColorRole,
+    )
+
+    data class Disabled(
+        val backgroundColor: AppColorRole,
+        val textColor: AppColorRole,
+    )
+
+    companion object {
+        val light: ButtonTonalTokens =
+            ButtonTonalTokens(
+                backgroundColor = AppColorRole.SURFACE2,
+                textColor = AppColorRole.TEXT,
+                typography = AppTypography.button,
+                rounded = AppRadius.full,
+                height = 52.0,
+                paddingTop = 0.0,
+                paddingEnd = 20.0,
+                paddingBottom = 0.0,
+                paddingStart = 20.0,
+                pressed = Pressed(backgroundColor = AppColorRole.DIVIDER, textColor = AppColorRole.TEXT),
+                disabled = Disabled(backgroundColor = AppColorRole.SURFACE2, textColor = AppColorRole.TEXT_SECONDARY),
+            )
+
+        val dark: ButtonTonalTokens =
+            ButtonTonalTokens(
+                backgroundColor = AppColorRole.SURFACE2,
+                textColor = AppColorRole.TEXT,
+                typography = AppTypography.button,
+                rounded = AppRadius.full,
+                height = 52.0,
+                paddingTop = 0.0,
+                paddingEnd = 20.0,
+                paddingBottom = 0.0,
+                paddingStart = 20.0,
+                pressed = Pressed(backgroundColor = AppColorRole.DIVIDER, textColor = AppColorRole.TEXT),
+                disabled = Disabled(backgroundColor = AppColorRole.SURFACE2, textColor = AppColorRole.TEXT_SECONDARY),
+            )
+
+        val brand: ButtonTonalTokens =
+            ButtonTonalTokens(
+                backgroundColor = AppColorRole.SURFACE2,
+                textColor = AppColorRole.TEXT,
+                typography = AppTypography.button,
+                rounded = AppRadius.full,
+                height = 52.0,
+                paddingTop = 0.0,
+                paddingEnd = 20.0,
+                paddingBottom = 0.0,
+                paddingStart = 20.0,
+                pressed = Pressed(backgroundColor = AppColorRole.DIVIDER, textColor = AppColorRole.TEXT),
+                disabled = Disabled(backgroundColor = AppColorRole.SURFACE2, textColor = AppColorRole.TEXT_SECONDARY),
+            )
+
+        val hcLight: ButtonTonalTokens =
+            ButtonTonalTokens(
+                backgroundColor = AppColorRole.SURFACE2,
+                textColor = AppColorRole.TEXT,
+                typography = AppTypography.button,
+                rounded = AppRadius.full,
+                height = 52.0,
+                paddingTop = 0.0,
+                paddingEnd = 20.0,
+                paddingBottom = 0.0,
+                paddingStart = 20.0,
+                pressed = Pressed(backgroundColor = AppColorRole.DIVIDER, textColor = AppColorRole.TEXT),
+                disabled = Disabled(backgroundColor = AppColorRole.SURFACE2, textColor = AppColorRole.TEXT_SECONDARY),
+            )
+
+        val hcDark: ButtonTonalTokens =
+            ButtonTonalTokens(
+                backgroundColor = AppColorRole.SURFACE2,
+                textColor = AppColorRole.TEXT,
+                typography = AppTypography.button,
+                rounded = AppRadius.full,
+                height = 52.0,
+                paddingTop = 0.0,
+                paddingEnd = 20.0,
+                paddingBottom = 0.0,
+                paddingStart = 20.0,
+                pressed = Pressed(backgroundColor = AppColorRole.DIVIDER, textColor = AppColorRole.TEXT),
+                disabled = Disabled(backgroundColor = AppColorRole.SURFACE2, textColor = AppColorRole.TEXT_SECONDARY),
+            )
+    }
+}
+
+/** Component `button-destructive-tonal` per context: colours are role keys, sizes in pt/dp. */
+data class ButtonDestructiveTonalTokens(
+    val textColor: AppColorRole,
+    val typography: AppTextStyle,
+    val rounded: Double,
+    val height: Double,
+    val paddingTop: Double,
+    val paddingEnd: Double,
+    val paddingBottom: Double,
+    val paddingStart: Double,
+    val backgroundColor: AppColorRole,
+    val pressed: Pressed,
+    val disabled: Disabled,
+) {
+    data class Pressed(
+        val textColor: AppColorRole,
+        val overlayColor: AppColorRole,
+        val backgroundColor: AppColorRole,
+    )
+
+    data class Disabled(
+        val backgroundColor: AppColorRole,
+        val textColor: AppColorRole,
+    )
+
+    companion object {
+        val light: ButtonDestructiveTonalTokens =
+            ButtonDestructiveTonalTokens(
+                textColor = AppColorRole.ERROR_FG,
+                typography = AppTypography.button,
+                rounded = AppRadius.full,
+                height = 52.0,
+                paddingTop = 0.0,
+                paddingEnd = 24.0,
+                paddingBottom = 0.0,
+                paddingStart = 24.0,
+                backgroundColor = AppColorRole.ERROR_BG,
+                pressed =
+                    Pressed(
+                        textColor = AppColorRole.ERROR_FG,
+                        overlayColor = AppColorRole.PRESSED_OVERLAY_STRONG,
+                        backgroundColor = AppColorRole.ERROR_BG,
+                    ),
+                disabled = Disabled(backgroundColor = AppColorRole.SURFACE2, textColor = AppColorRole.TEXT_SECONDARY),
+            )
+
+        val dark: ButtonDestructiveTonalTokens =
+            ButtonDestructiveTonalTokens(
+                textColor = AppColorRole.ERROR_FG,
+                typography = AppTypography.button,
+                rounded = AppRadius.full,
+                height = 52.0,
+                paddingTop = 0.0,
+                paddingEnd = 24.0,
+                paddingBottom = 0.0,
+                paddingStart = 24.0,
+                backgroundColor = AppColorRole.SURFACE2,
+                pressed =
+                    Pressed(
+                        textColor = AppColorRole.ERROR_FG,
+                        overlayColor = AppColorRole.PRESSED_OVERLAY_STRONG,
+                        backgroundColor = AppColorRole.SURFACE2,
+                    ),
+                disabled = Disabled(backgroundColor = AppColorRole.SURFACE2, textColor = AppColorRole.TEXT_SECONDARY),
+            )
+
+        val brand: ButtonDestructiveTonalTokens =
+            ButtonDestructiveTonalTokens(
+                textColor = AppColorRole.ERROR_FG,
+                typography = AppTypography.button,
+                rounded = AppRadius.full,
+                height = 52.0,
+                paddingTop = 0.0,
+                paddingEnd = 24.0,
+                paddingBottom = 0.0,
+                paddingStart = 24.0,
+                backgroundColor = AppColorRole.SURFACE2,
+                pressed =
+                    Pressed(
+                        textColor = AppColorRole.ERROR_FG,
+                        overlayColor = AppColorRole.PRESSED_OVERLAY_STRONG,
+                        backgroundColor = AppColorRole.SURFACE2,
+                    ),
+                disabled = Disabled(backgroundColor = AppColorRole.SURFACE2, textColor = AppColorRole.TEXT_SECONDARY),
+            )
+
+        val hcLight: ButtonDestructiveTonalTokens =
+            ButtonDestructiveTonalTokens(
+                textColor = AppColorRole.ERROR_FG,
+                typography = AppTypography.button,
+                rounded = AppRadius.full,
+                height = 52.0,
+                paddingTop = 0.0,
+                paddingEnd = 24.0,
+                paddingBottom = 0.0,
+                paddingStart = 24.0,
+                backgroundColor = AppColorRole.ERROR_BG,
+                pressed =
+                    Pressed(
+                        textColor = AppColorRole.ERROR_FG,
+                        overlayColor = AppColorRole.PRESSED_OVERLAY_STRONG,
+                        backgroundColor = AppColorRole.ERROR_BG,
+                    ),
+                disabled = Disabled(backgroundColor = AppColorRole.SURFACE2, textColor = AppColorRole.TEXT_SECONDARY),
+            )
+
+        val hcDark: ButtonDestructiveTonalTokens =
+            ButtonDestructiveTonalTokens(
+                textColor = AppColorRole.ERROR_FG,
+                typography = AppTypography.button,
+                rounded = AppRadius.full,
+                height = 52.0,
+                paddingTop = 0.0,
+                paddingEnd = 24.0,
+                paddingBottom = 0.0,
+                paddingStart = 24.0,
+                backgroundColor = AppColorRole.SURFACE2,
+                pressed =
+                    Pressed(
+                        textColor = AppColorRole.ERROR_FG,
+                        overlayColor = AppColorRole.PRESSED_OVERLAY_STRONG,
+                        backgroundColor = AppColorRole.SURFACE2,
+                    ),
+                disabled = Disabled(backgroundColor = AppColorRole.SURFACE2, textColor = AppColorRole.TEXT_SECONDARY),
             )
     }
 }

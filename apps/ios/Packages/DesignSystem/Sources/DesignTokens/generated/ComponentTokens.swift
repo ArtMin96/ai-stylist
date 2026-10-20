@@ -159,6 +159,55 @@ nonisolated public struct ButtonLargeTokens: Sendable, Equatable {
   )
 }
 
+/// Component `button-card` per context: colours are role keys, sizes in pt/dp.
+nonisolated public struct ButtonCardTokens: Sendable, Equatable {
+  public let height: Double
+  public let paddingTop: Double
+  public let paddingEnd: Double
+  public let paddingBottom: Double
+  public let paddingStart: Double
+
+  public static let light = ButtonCardTokens(
+    height: 48.0,
+    paddingTop: 0.0,
+    paddingEnd: 24.0,
+    paddingBottom: 0.0,
+    paddingStart: 24.0
+  )
+
+  public static let dark = ButtonCardTokens(
+    height: 48.0,
+    paddingTop: 0.0,
+    paddingEnd: 24.0,
+    paddingBottom: 0.0,
+    paddingStart: 24.0
+  )
+
+  public static let brand = ButtonCardTokens(
+    height: 48.0,
+    paddingTop: 0.0,
+    paddingEnd: 24.0,
+    paddingBottom: 0.0,
+    paddingStart: 24.0
+  )
+
+  public static let hcLight = ButtonCardTokens(
+    height: 48.0,
+    paddingTop: 0.0,
+    paddingEnd: 24.0,
+    paddingBottom: 0.0,
+    paddingStart: 24.0
+  )
+
+  public static let hcDark = ButtonCardTokens(
+    height: 48.0,
+    paddingTop: 0.0,
+    paddingEnd: 24.0,
+    paddingBottom: 0.0,
+    paddingStart: 24.0
+  )
+}
+
 /// Component `button-medium` per context: colours are role keys, sizes in pt/dp.
 nonisolated public struct ButtonMediumTokens: Sendable, Equatable {
   public let height: Double
@@ -205,6 +254,171 @@ nonisolated public struct ButtonMediumTokens: Sendable, Equatable {
     paddingEnd: 20.0,
     paddingBottom: 0.0,
     paddingStart: 20.0
+  )
+}
+
+/// Component `button-compact` per context: colours are role keys, sizes in pt/dp.
+nonisolated public struct ButtonCompactTokens: Sendable, Equatable {
+  public let typography: AppTextStyle
+  public let height: Double
+  public let paddingTop: Double
+  public let paddingEnd: Double
+  public let paddingBottom: Double
+  public let paddingStart: Double
+
+  public static let light = ButtonCompactTokens(
+    typography: AppTypography.subhead,
+    height: 44.0,
+    paddingTop: 0.0,
+    paddingEnd: 16.0,
+    paddingBottom: 0.0,
+    paddingStart: 16.0
+  )
+
+  public static let dark = ButtonCompactTokens(
+    typography: AppTypography.subhead,
+    height: 44.0,
+    paddingTop: 0.0,
+    paddingEnd: 16.0,
+    paddingBottom: 0.0,
+    paddingStart: 16.0
+  )
+
+  public static let brand = ButtonCompactTokens(
+    typography: AppTypography.subhead,
+    height: 44.0,
+    paddingTop: 0.0,
+    paddingEnd: 16.0,
+    paddingBottom: 0.0,
+    paddingStart: 16.0
+  )
+
+  public static let hcLight = ButtonCompactTokens(
+    typography: AppTypography.subhead,
+    height: 44.0,
+    paddingTop: 0.0,
+    paddingEnd: 16.0,
+    paddingBottom: 0.0,
+    paddingStart: 16.0
+  )
+
+  public static let hcDark = ButtonCompactTokens(
+    typography: AppTypography.subhead,
+    height: 44.0,
+    paddingTop: 0.0,
+    paddingEnd: 16.0,
+    paddingBottom: 0.0,
+    paddingStart: 16.0
+  )
+}
+
+/// Component `button-compact-filled` per context: colours are role keys, sizes in pt/dp.
+nonisolated public struct ButtonCompactFilledTokens: Sendable, Equatable {
+  public let typography: AppTextStyle
+  public let height: Double
+  public let paddingTop: Double
+  public let paddingEnd: Double
+  public let paddingBottom: Double
+  public let paddingStart: Double
+
+  public static let light = ButtonCompactFilledTokens(
+    typography: AppTypography.subhead,
+    height: 44.0,
+    paddingTop: 0.0,
+    paddingEnd: 20.0,
+    paddingBottom: 0.0,
+    paddingStart: 20.0
+  )
+
+  public static let dark = ButtonCompactFilledTokens(
+    typography: AppTypography.subhead,
+    height: 44.0,
+    paddingTop: 0.0,
+    paddingEnd: 20.0,
+    paddingBottom: 0.0,
+    paddingStart: 20.0
+  )
+
+  public static let brand = ButtonCompactFilledTokens(
+    typography: AppTypography.subhead,
+    height: 44.0,
+    paddingTop: 0.0,
+    paddingEnd: 20.0,
+    paddingBottom: 0.0,
+    paddingStart: 20.0
+  )
+
+  public static let hcLight = ButtonCompactFilledTokens(
+    typography: AppTypography.subhead,
+    height: 44.0,
+    paddingTop: 0.0,
+    paddingEnd: 20.0,
+    paddingBottom: 0.0,
+    paddingStart: 20.0
+  )
+
+  public static let hcDark = ButtonCompactFilledTokens(
+    typography: AppTypography.subhead,
+    height: 44.0,
+    paddingTop: 0.0,
+    paddingEnd: 20.0,
+    paddingBottom: 0.0,
+    paddingStart: 20.0
+  )
+}
+
+/// Component `button-text-compact` per context: colours are role keys, sizes in pt/dp.
+nonisolated public struct ButtonTextCompactTokens: Sendable, Equatable {
+  public let typography: AppTextStyle
+  public let height: Double
+  public let paddingTop: Double
+  public let paddingEnd: Double
+  public let paddingBottom: Double
+  public let paddingStart: Double
+
+  public static let light = ButtonTextCompactTokens(
+    typography: AppTypography.subhead,
+    height: 44.0,
+    paddingTop: 0.0,
+    paddingEnd: 12.0,
+    paddingBottom: 0.0,
+    paddingStart: 12.0
+  )
+
+  public static let dark = ButtonTextCompactTokens(
+    typography: AppTypography.subhead,
+    height: 44.0,
+    paddingTop: 0.0,
+    paddingEnd: 12.0,
+    paddingBottom: 0.0,
+    paddingStart: 12.0
+  )
+
+  public static let brand = ButtonTextCompactTokens(
+    typography: AppTypography.subhead,
+    height: 44.0,
+    paddingTop: 0.0,
+    paddingEnd: 12.0,
+    paddingBottom: 0.0,
+    paddingStart: 12.0
+  )
+
+  public static let hcLight = ButtonTextCompactTokens(
+    typography: AppTypography.subhead,
+    height: 44.0,
+    paddingTop: 0.0,
+    paddingEnd: 12.0,
+    paddingBottom: 0.0,
+    paddingStart: 12.0
+  )
+
+  public static let hcDark = ButtonTextCompactTokens(
+    typography: AppTypography.subhead,
+    height: 44.0,
+    paddingTop: 0.0,
+    paddingEnd: 12.0,
+    paddingBottom: 0.0,
+    paddingStart: 12.0
   )
 }
 
@@ -659,6 +873,381 @@ nonisolated public struct ButtonDestructiveFilledTokens: Sendable, Equatable {
     paddingStart: 24.0,
     pressed: Pressed(backgroundColor: .errorFg, textColor: .onError, overlayColor: .pressedOverlayStrong),
     disabled: Disabled(backgroundColor: .errorBg, textColor: .errorFg, typography: AppTypography.buttonDisabled)
+  )
+}
+
+/// Component `button-primary-outline` per context: colours are role keys, sizes in pt/dp.
+nonisolated public struct ButtonPrimaryOutlineTokens: Sendable, Equatable {
+  public let textColor: AppColorRole
+  public let borderColor: AppColorRole
+  public let typography: AppTextStyle
+  public let rounded: Double
+  public let height: Double
+  public let paddingTop: Double
+  public let paddingEnd: Double
+  public let paddingBottom: Double
+  public let paddingStart: Double
+  public let pressed: Pressed
+  public let disabled: Disabled
+
+  nonisolated public struct Pressed: Sendable, Equatable {
+    public let backgroundColor: AppColorRole
+    public let textColor: AppColorRole
+    public let borderColor: AppColorRole
+  }
+
+  nonisolated public struct Disabled: Sendable, Equatable {
+    public let textColor: AppColorRole
+    public let borderColor: AppColorRole
+  }
+
+  public static let light = ButtonPrimaryOutlineTokens(
+    textColor: .primaryText,
+    borderColor: .primary,
+    typography: AppTypography.subhead,
+    rounded: AppRadius.full,
+    height: 44.0,
+    paddingTop: 0.0,
+    paddingEnd: 16.0,
+    paddingBottom: 0.0,
+    paddingStart: 16.0,
+    pressed: Pressed(backgroundColor: .surface2, textColor: .primaryText, borderColor: .primary),
+    disabled: Disabled(textColor: .textSecondary, borderColor: .divider)
+  )
+
+  public static let dark = ButtonPrimaryOutlineTokens(
+    textColor: .primaryText,
+    borderColor: .primary,
+    typography: AppTypography.subhead,
+    rounded: AppRadius.full,
+    height: 44.0,
+    paddingTop: 0.0,
+    paddingEnd: 16.0,
+    paddingBottom: 0.0,
+    paddingStart: 16.0,
+    pressed: Pressed(backgroundColor: .surface2, textColor: .primaryText, borderColor: .primary),
+    disabled: Disabled(textColor: .textSecondary, borderColor: .divider)
+  )
+
+  public static let brand = ButtonPrimaryOutlineTokens(
+    textColor: .primaryText,
+    borderColor: .primary,
+    typography: AppTypography.subhead,
+    rounded: AppRadius.full,
+    height: 44.0,
+    paddingTop: 0.0,
+    paddingEnd: 16.0,
+    paddingBottom: 0.0,
+    paddingStart: 16.0,
+    pressed: Pressed(backgroundColor: .surface2, textColor: .primaryText, borderColor: .primary),
+    disabled: Disabled(textColor: .textSecondary, borderColor: .divider)
+  )
+
+  public static let hcLight = ButtonPrimaryOutlineTokens(
+    textColor: .primaryText,
+    borderColor: .primary,
+    typography: AppTypography.subhead,
+    rounded: AppRadius.full,
+    height: 44.0,
+    paddingTop: 0.0,
+    paddingEnd: 16.0,
+    paddingBottom: 0.0,
+    paddingStart: 16.0,
+    pressed: Pressed(backgroundColor: .surface2, textColor: .primaryText, borderColor: .primary),
+    disabled: Disabled(textColor: .textSecondary, borderColor: .divider)
+  )
+
+  public static let hcDark = ButtonPrimaryOutlineTokens(
+    textColor: .primaryText,
+    borderColor: .primary,
+    typography: AppTypography.subhead,
+    rounded: AppRadius.full,
+    height: 44.0,
+    paddingTop: 0.0,
+    paddingEnd: 16.0,
+    paddingBottom: 0.0,
+    paddingStart: 16.0,
+    pressed: Pressed(backgroundColor: .surface2, textColor: .primaryText, borderColor: .primary),
+    disabled: Disabled(textColor: .textSecondary, borderColor: .divider)
+  )
+}
+
+/// Component `button-destructive-text` per context: colours are role keys, sizes in pt/dp.
+nonisolated public struct ButtonDestructiveTextTokens: Sendable, Equatable {
+  public let textColor: AppColorRole
+  public let typography: AppTextStyle
+  public let rounded: Double
+  public let height: Double
+  public let paddingTop: Double
+  public let paddingEnd: Double
+  public let paddingBottom: Double
+  public let paddingStart: Double
+  public let pressed: Pressed
+  public let disabled: Disabled
+
+  nonisolated public struct Pressed: Sendable, Equatable {
+    public let textColor: AppColorRole
+    public let backgroundColor: AppColorRole
+  }
+
+  nonisolated public struct Disabled: Sendable, Equatable {
+    public let textColor: AppColorRole
+  }
+
+  public static let light = ButtonDestructiveTextTokens(
+    textColor: .errorFg,
+    typography: AppTypography.subhead,
+    rounded: AppRadius.full,
+    height: 44.0,
+    paddingTop: 0.0,
+    paddingEnd: 10.0,
+    paddingBottom: 0.0,
+    paddingStart: 10.0,
+    pressed: Pressed(textColor: .errorFg, backgroundColor: .errorBg),
+    disabled: Disabled(textColor: .textSecondary)
+  )
+
+  public static let dark = ButtonDestructiveTextTokens(
+    textColor: .errorFg,
+    typography: AppTypography.subhead,
+    rounded: AppRadius.full,
+    height: 44.0,
+    paddingTop: 0.0,
+    paddingEnd: 10.0,
+    paddingBottom: 0.0,
+    paddingStart: 10.0,
+    pressed: Pressed(textColor: .errorFg, backgroundColor: .surface2),
+    disabled: Disabled(textColor: .textSecondary)
+  )
+
+  public static let brand = ButtonDestructiveTextTokens(
+    textColor: .errorFg,
+    typography: AppTypography.subhead,
+    rounded: AppRadius.full,
+    height: 44.0,
+    paddingTop: 0.0,
+    paddingEnd: 10.0,
+    paddingBottom: 0.0,
+    paddingStart: 10.0,
+    pressed: Pressed(textColor: .errorFg, backgroundColor: .surface2),
+    disabled: Disabled(textColor: .textSecondary)
+  )
+
+  public static let hcLight = ButtonDestructiveTextTokens(
+    textColor: .errorFg,
+    typography: AppTypography.subhead,
+    rounded: AppRadius.full,
+    height: 44.0,
+    paddingTop: 0.0,
+    paddingEnd: 10.0,
+    paddingBottom: 0.0,
+    paddingStart: 10.0,
+    pressed: Pressed(textColor: .errorFg, backgroundColor: .errorBg),
+    disabled: Disabled(textColor: .textSecondary)
+  )
+
+  public static let hcDark = ButtonDestructiveTextTokens(
+    textColor: .errorFg,
+    typography: AppTypography.subhead,
+    rounded: AppRadius.full,
+    height: 44.0,
+    paddingTop: 0.0,
+    paddingEnd: 10.0,
+    paddingBottom: 0.0,
+    paddingStart: 10.0,
+    pressed: Pressed(textColor: .errorFg, backgroundColor: .surface2),
+    disabled: Disabled(textColor: .textSecondary)
+  )
+}
+
+/// Component `button-tonal` per context: colours are role keys, sizes in pt/dp.
+nonisolated public struct ButtonTonalTokens: Sendable, Equatable {
+  public let backgroundColor: AppColorRole
+  public let textColor: AppColorRole
+  public let typography: AppTextStyle
+  public let rounded: Double
+  public let height: Double
+  public let paddingTop: Double
+  public let paddingEnd: Double
+  public let paddingBottom: Double
+  public let paddingStart: Double
+  public let pressed: Pressed
+  public let disabled: Disabled
+
+  nonisolated public struct Pressed: Sendable, Equatable {
+    public let backgroundColor: AppColorRole
+    public let textColor: AppColorRole
+  }
+
+  nonisolated public struct Disabled: Sendable, Equatable {
+    public let backgroundColor: AppColorRole
+    public let textColor: AppColorRole
+  }
+
+  public static let light = ButtonTonalTokens(
+    backgroundColor: .surface2,
+    textColor: .text,
+    typography: AppTypography.button,
+    rounded: AppRadius.full,
+    height: 52.0,
+    paddingTop: 0.0,
+    paddingEnd: 20.0,
+    paddingBottom: 0.0,
+    paddingStart: 20.0,
+    pressed: Pressed(backgroundColor: .divider, textColor: .text),
+    disabled: Disabled(backgroundColor: .surface2, textColor: .textSecondary)
+  )
+
+  public static let dark = ButtonTonalTokens(
+    backgroundColor: .surface2,
+    textColor: .text,
+    typography: AppTypography.button,
+    rounded: AppRadius.full,
+    height: 52.0,
+    paddingTop: 0.0,
+    paddingEnd: 20.0,
+    paddingBottom: 0.0,
+    paddingStart: 20.0,
+    pressed: Pressed(backgroundColor: .divider, textColor: .text),
+    disabled: Disabled(backgroundColor: .surface2, textColor: .textSecondary)
+  )
+
+  public static let brand = ButtonTonalTokens(
+    backgroundColor: .surface2,
+    textColor: .text,
+    typography: AppTypography.button,
+    rounded: AppRadius.full,
+    height: 52.0,
+    paddingTop: 0.0,
+    paddingEnd: 20.0,
+    paddingBottom: 0.0,
+    paddingStart: 20.0,
+    pressed: Pressed(backgroundColor: .divider, textColor: .text),
+    disabled: Disabled(backgroundColor: .surface2, textColor: .textSecondary)
+  )
+
+  public static let hcLight = ButtonTonalTokens(
+    backgroundColor: .surface2,
+    textColor: .text,
+    typography: AppTypography.button,
+    rounded: AppRadius.full,
+    height: 52.0,
+    paddingTop: 0.0,
+    paddingEnd: 20.0,
+    paddingBottom: 0.0,
+    paddingStart: 20.0,
+    pressed: Pressed(backgroundColor: .divider, textColor: .text),
+    disabled: Disabled(backgroundColor: .surface2, textColor: .textSecondary)
+  )
+
+  public static let hcDark = ButtonTonalTokens(
+    backgroundColor: .surface2,
+    textColor: .text,
+    typography: AppTypography.button,
+    rounded: AppRadius.full,
+    height: 52.0,
+    paddingTop: 0.0,
+    paddingEnd: 20.0,
+    paddingBottom: 0.0,
+    paddingStart: 20.0,
+    pressed: Pressed(backgroundColor: .divider, textColor: .text),
+    disabled: Disabled(backgroundColor: .surface2, textColor: .textSecondary)
+  )
+}
+
+/// Component `button-destructive-tonal` per context: colours are role keys, sizes in pt/dp.
+nonisolated public struct ButtonDestructiveTonalTokens: Sendable, Equatable {
+  public let textColor: AppColorRole
+  public let typography: AppTextStyle
+  public let rounded: Double
+  public let height: Double
+  public let paddingTop: Double
+  public let paddingEnd: Double
+  public let paddingBottom: Double
+  public let paddingStart: Double
+  public let backgroundColor: AppColorRole
+  public let pressed: Pressed
+  public let disabled: Disabled
+
+  nonisolated public struct Pressed: Sendable, Equatable {
+    public let textColor: AppColorRole
+    public let overlayColor: AppColorRole
+    public let backgroundColor: AppColorRole
+  }
+
+  nonisolated public struct Disabled: Sendable, Equatable {
+    public let backgroundColor: AppColorRole
+    public let textColor: AppColorRole
+  }
+
+  public static let light = ButtonDestructiveTonalTokens(
+    textColor: .errorFg,
+    typography: AppTypography.button,
+    rounded: AppRadius.full,
+    height: 52.0,
+    paddingTop: 0.0,
+    paddingEnd: 24.0,
+    paddingBottom: 0.0,
+    paddingStart: 24.0,
+    backgroundColor: .errorBg,
+    pressed: Pressed(textColor: .errorFg, overlayColor: .pressedOverlayStrong, backgroundColor: .errorBg),
+    disabled: Disabled(backgroundColor: .surface2, textColor: .textSecondary)
+  )
+
+  public static let dark = ButtonDestructiveTonalTokens(
+    textColor: .errorFg,
+    typography: AppTypography.button,
+    rounded: AppRadius.full,
+    height: 52.0,
+    paddingTop: 0.0,
+    paddingEnd: 24.0,
+    paddingBottom: 0.0,
+    paddingStart: 24.0,
+    backgroundColor: .surface2,
+    pressed: Pressed(textColor: .errorFg, overlayColor: .pressedOverlayStrong, backgroundColor: .surface2),
+    disabled: Disabled(backgroundColor: .surface2, textColor: .textSecondary)
+  )
+
+  public static let brand = ButtonDestructiveTonalTokens(
+    textColor: .errorFg,
+    typography: AppTypography.button,
+    rounded: AppRadius.full,
+    height: 52.0,
+    paddingTop: 0.0,
+    paddingEnd: 24.0,
+    paddingBottom: 0.0,
+    paddingStart: 24.0,
+    backgroundColor: .surface2,
+    pressed: Pressed(textColor: .errorFg, overlayColor: .pressedOverlayStrong, backgroundColor: .surface2),
+    disabled: Disabled(backgroundColor: .surface2, textColor: .textSecondary)
+  )
+
+  public static let hcLight = ButtonDestructiveTonalTokens(
+    textColor: .errorFg,
+    typography: AppTypography.button,
+    rounded: AppRadius.full,
+    height: 52.0,
+    paddingTop: 0.0,
+    paddingEnd: 24.0,
+    paddingBottom: 0.0,
+    paddingStart: 24.0,
+    backgroundColor: .errorBg,
+    pressed: Pressed(textColor: .errorFg, overlayColor: .pressedOverlayStrong, backgroundColor: .errorBg),
+    disabled: Disabled(backgroundColor: .surface2, textColor: .textSecondary)
+  )
+
+  public static let hcDark = ButtonDestructiveTonalTokens(
+    textColor: .errorFg,
+    typography: AppTypography.button,
+    rounded: AppRadius.full,
+    height: 52.0,
+    paddingTop: 0.0,
+    paddingEnd: 24.0,
+    paddingBottom: 0.0,
+    paddingStart: 24.0,
+    backgroundColor: .surface2,
+    pressed: Pressed(textColor: .errorFg, overlayColor: .pressedOverlayStrong, backgroundColor: .surface2),
+    disabled: Disabled(backgroundColor: .surface2, textColor: .textSecondary)
   )
 }
 

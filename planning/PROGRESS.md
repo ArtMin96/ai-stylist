@@ -93,6 +93,31 @@ Log hygiene: when this log exceeds ~30 entries, move the oldest entries to `plan
 
 *(newest first)*
 
+### 2026-10-20 (app-button) — AppButton on both apps: contract fitted to the screens, component API, theme, fonts (branch `feat/app-button`)
+
+*Lead session on the owner's Mac. PRs #38 (AI-189 emitters), #39 (button contract) and #40 (AI-198 component API) merged by the owner today.*
+
+- **Phase / tasks worked:** none (Brand v1: AI-189, AI-198, AI-186, AI-188).
+- **Done:**
+  - Contract fitted to the screens: sizes compact and card; variants primary-outline, destructive-text, tonal and destructive-tonal. Re-approved by the owner 2026-10-20 (tonal 52 uses the 17/600 label).
+  - AI-198: contract checker CC-01..CC-08 and `ComponentAPI.swift` / `ComponentApi.kt` (enums, `ButtonTestId`, `ComponentGallery`, `ButtonSpec` merged looks, icon slot `iconSize` / `iconGap`).
+  - Button brief `.claude/plans/2026-10-20-app-button-brief.md`; Figtree (variable) and Young Serif fonts on both apps (OFL 1.1, identical sha256).
+  - iOS (`c270ab6`) and Android (`4b34ab7`) `AppTheme` and `AppButton` with state-grid and playground previews; Home Retry (primary-outline, compact) and Force test crash (destructive, medium) use it. Android `:core:designsystem` is now a Compose library; `AiStylistTheme` is removed.
+  - Agents got Linear ticket access (`7cd337d`). The CLAUDE.md `just generate` line, the rules and DEC-87 (iOS snapshot tests on every PR touching `apps/ios`) are updated.
+- **Checks (Mac, integrated tree):**
+  - `just ios-check` → exit 0 (DesignSystemTests 11).
+  - `env -u POSTHOG_CLI_* just android-check` → exit 0 (77 tests; the PostHog upload tasks were skipped). AI-33 is fixed: the lane's `just android-deps-lock` recorded the osx aapt2 checksum.
+  - `just lint`, `just typecheck`, `just arch-check`, `just clone-check`, `just format --check` → exit 0.
+  - `just generate --check` → up to date. `just docs-check --strict` → ok.
+- **Not done / follow-ups:**
+  - The button PR (owner merges).
+  - `docs/security/licenses.md` needs the OFL-1.1 line for the fonts (tooling-engineer).
+  - ADR-0011 lines 11 and 60 still describe `Theme.kt` and a dependency-free module (human).
+  - Not checked yet: simulator or emulator screenshots, and the Full Keyboard Access focus check.
+  - AI-195 (debug gallery) and AI-190 (snapshot tests) are next.
+- **Incident:** the Android lane's Bash guard blocks `env -u`. Following the lead's fallback, it ran `just android-deps-lock` with the `POSTHOG_CLI_*` keys set and uploaded R8 mappings for `0.1.0+1` (preview and release) to the PostHog test project. No user data was in them. The owner decides whether to delete those symbol sets or bump the version, and whether to remove the keys from `.env`. From now on the lead runs every Android build itself with the keys unset.
+- **Next session starts:** owner merges the button PR; then AI-195 (debug-build gallery), then AI-190 (snapshot tests on the gallery).
+
 ### 2026-10-20 (token-emitters) — AI-189 part 2: Swift/Kotlin emitters, parity test, `just generate` wiring and generated tokens (branch `feat/ai-189-token-emitters`, local commits, not pushed)
 
 *Session on the owner's Mac, main checkout, branch `feat/ai-189-token-emitters` from `main` @ `08632ec`. Lead session; tooling-engineer wrote the code. No phase work.*

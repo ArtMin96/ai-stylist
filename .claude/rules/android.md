@@ -60,7 +60,7 @@ all three APKs; runs on Linux). `just android-e2e` needs a running emulator or d
     generated image carries the AI-generated preview badge and its confidence, and confidence is
     shown as text, never by colour alone (reviewer-checked: ui-designer).
 12. Every screen draws its empty, loading, error and offline states from DESIGN.md components
-    (reviewer-checked: ui-designer; per-state screenshot tests, planned).
+    (reviewer-checked: ui-designer, by hand in the debug gallery; no screenshot tests, owner 2026-10-20).
 13. Accessibility: 48 dp minimum touch targets, layouts that hold at the largest font scale, a
     `contentDescription` on every icon-only control, reduced motion respected
     (reviewer-checked: ui-designer; contrast lint on the tokens, planned).

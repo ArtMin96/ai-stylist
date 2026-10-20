@@ -121,7 +121,8 @@ Log hygiene: when this log exceeds ~30 entries, move the oldest entries to `plan
     - `just skills-eval` was not run for the two edited skills (an owner spending decision).
   - Still human-applied: ADR-0011 lines 11, 42, 59 and 60 (the catalog modules; the old theme).
   - Owner decisions on 2026-10-20: no more components for now, and no screenshots (the owner checks the UI). The owner plans to disable PostHog in dev or add a fake PostHog.
-- **Next session starts:** owner merges PR #42; then AI-190 (snapshot tests on the gallery sections) when the owner picks it up.
+- **Closed by the owner on 2026-10-20:** AI-186, AI-188, AI-195 and AI-190 are Done in Linear. No screenshots, no screenshot tests and no extra UI tests: the owner reviews the UI by hand in the debug gallery. ADR-0011, DEC-87 and the iOS and Android rules record it.
+- **Next session starts:** the owner picks the next task (a new base component through `.claude/rules/design-system.md` invariant 8, or the leftovers: the OFL line in `docs/security/licenses.md` and the AI-33 checksum prune).
 
 ### 2026-10-20 (dependabot) — Dependabot security updates declared in the repo settings (pushed to `main` at the owner's request)
 

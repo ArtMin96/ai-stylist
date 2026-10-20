@@ -59,7 +59,7 @@ or a green `ios` workflow run; report a macOS step you did not run as "Not run".
     generated image carries the AI-generated preview badge and its confidence, and confidence is
     shown as text, never by colour alone (reviewer-checked: ui-designer).
 13. Every screen draws its empty, loading, error and offline states from DESIGN.md components
-    (reviewer-checked: ui-designer; per-state screenshot tests, planned).
+    (reviewer-checked: ui-designer, by hand in the debug gallery; no screenshot tests, owner 2026-10-20).
 14. Accessibility: 44 pt minimum touch targets, layouts that hold at the largest Dynamic Type sizes,
     an accessibility label on every icon-only control, reduced motion respected
     (reviewer-checked: ui-designer; contrast lint on the tokens, planned).

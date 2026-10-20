@@ -13,7 +13,7 @@ React Native, no Kotlin Multiplatform and no 3D code.
 | `core/data/` | `:core:data`, pure Kotlin. `parseAppConfig` (API_BASE_URL and PostHog key/host validation), `DataServices`, `VersionRepository` over the generated client |
 | `core/analytics/` | `:core:analytics`, pure Kotlin, SDK-free. The `Analytics` port, the consent gate (`ConsentGatedAnalytics`), the no-op sink, and the generated `AnalyticsTaxonomy` |
 | `core/api-client/` | `:core:api-client`. It compiles the **generated** client. It has no source code of its own |
-| `core/designsystem/` | `:core:designsystem`, the app-internal design system (DEC-87), which depends on no other project module. A pure Kotlin scaffold for now (AI-188): Compose comes with the first real component, and the generated `DESIGN.md` tokens will land in `src/main/kotlin/app/aistylist/core/designsystem/generated/` (never hand-edited). No module depends on it yet |
+| `core/designsystem/` | `:core:designsystem`, the app-internal design system (DEC-87), which depends on no other project module. It holds the generated `DESIGN.md` tokens in `src/main/kotlin/app/aistylist/core/designsystem/generated/` (written by `just generate`, never hand-edited). Pure Kotlin for now: Compose comes with the first real component. No module depends on it yet |
 | `build-logic/` | Convention plugins. Every compiler, lint, detekt, locking and test setting lives here |
 | `config/` | `detekt.yml`, `lint.xml`, `compose-stability.conf` |
 | `gradle/libs.versions.toml` | The version catalog. Every dependency and plugin version is set here |

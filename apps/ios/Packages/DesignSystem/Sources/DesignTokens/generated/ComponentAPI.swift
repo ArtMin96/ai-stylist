@@ -11708,6 +11708,25 @@ nonisolated public struct ButtonGalleryEntry: Sendable, Equatable {
   public let testId: String
 }
 
+/// The gallery sections of the components, in board order, each with its contract id.
+nonisolated public enum GalleryComponent: String, CaseIterable, Sendable {
+  case button
+
+  /// The section title: the board and the contract `gallery.title`.
+  public var title: String {
+    switch self {
+    case .button: "C01 Buttons"
+    }
+  }
+
+  /// The kebab-case title: the section id is `ds-gallery-section-<slug>`.
+  public var slug: String {
+    switch self {
+    case .button: "c01-buttons"
+    }
+  }
+}
+
 /// The gallery: per component its synthetic label and its cells (contract `gallery`).
 nonisolated public enum ComponentGallery {
   public static let buttonLabel: String = "Continue"

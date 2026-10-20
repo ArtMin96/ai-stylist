@@ -28,6 +28,15 @@ export const apiTypeName = (id, suffix) => `${pascal(id)}${suffix}`;
 /** A test-ID constant: `primary-outline`, `compact`, `enabled` -> `primaryOutlineCompactEnabled`. */
 export const testIdName = ({ variant, size, state }) => memberId(`${variant}-${size}-${state}`);
 
+/**
+ * A gallery section's title and slug: `C01` + `Buttons` -> `C01 Buttons`, `c01-buttons`. The
+ * schema allows only letters, digits and single spaces in `gallery.title`, so the slug is kebab.
+ */
+export function galleryTitle(board, title) {
+  const full = `${board} ${title}`;
+  return { title: full, slug: full.toLowerCase().replace(/ /g, '-') };
+}
+
 /** `pressed` -> `Pressed`: a nested namespace (a component state, an elevation or motion group). */
 export const nestedTypeName = (key) => pascal(key);
 

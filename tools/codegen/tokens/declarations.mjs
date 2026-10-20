@@ -3,10 +3,11 @@
 // so the Swift and Kotlin emitters (emit-swift.mjs, emit-kotlin.mjs) only spell it.
 //
 // Declarations: namespace { name, doc, members } · struct { name, doc, fields, nested, instances,
-// lookup } · roles { name, doc, valuesType, cases }. Members: const { name, type, value } or a
-// nested namespace. Types: double, int, string, color, role, textStyle, stringList, doubleList, or
-// the name of a nested struct. Values: number, color (32-bit ARGB), string, list, role (a role id,
-// never a resolved colour), ref (another constant), init (a struct value { struct, args }).
+// lookup } · roles { name, doc, valuesType, cases: [{ name, id }] }. Members: const { name, type,
+// value } or a nested namespace. Types: double, int, string, color, role, textStyle, stringList,
+// doubleList, list:<Struct>, or the name of a nested struct. Values: number, color (32-bit ARGB),
+// string, list, role (a role id, never a resolved colour), ref (another constant), init (a struct
+// value { struct, args }).
 import { contextId, memberId, nestedTypeName, tokensTypeName } from './naming.mjs';
 import { CONTEXT_SOURCES, resolveColors, resolveComponents } from './normalise.mjs';
 import { CONTEXTS, splitScheme } from './syntax.mjs';
@@ -33,6 +34,7 @@ const TYPE_OF_TOKEN = {
   typography: 'textStyle',
 };
 const TEXT_STYLE_FIELDS = [
+  ['name', 'string'],
   ['fontFamily', 'string'],
   ['fontSize', 'double'],
   ['fontWeight', 'int'],
@@ -51,10 +53,38 @@ export function declarations(model) {
     doc,
     members: membersOf(primitives[group], (key) => memberId(key, group)),
   });
+  /** A scale whose namespace ends with `all`: every step, named by its DESIGN.md key. */
+  const steppedScale = (group, doc) => {
+    const namespace = scale(group, doc);
+    return { ...namespace, members: [...namespace.members, scaleSteps(group, primitives[group])] };
+  };
+  const typography = Object.entries(primitives.typography).map(([key, token]) => ({
+    kind: 'const',
+    name: memberId(key),
+    type: 'textStyle',
+    value: textStyleValue(key, token),
+  }));
+  const allStyles = {
+    kind: 'const',
+    name: 'all',
+    type: 'list:textStyle',
+    value: { t: 'list', items: typography.map(({ name }) => ref('AppTypography', name)) },
+  };
   return {
     reference: [
-      scale('spacing', 'Spacing scale (`spacing`): pt on iOS, dp on Android.'),
-      scale('rounded', 'Corner radii (`rounded`): pt on iOS, dp on Android.'),
+      {
+        kind: 'struct',
+        name: 'AppScaleStep',
+        doc: 'One step of a scale: its DESIGN.md key (`spacing-4`, `rounded-full`) and value (pt/dp).',
+        fields: [
+          { name: 'name', type: 'string' },
+          { name: 'value', type: 'double' },
+        ],
+        nested: [],
+        instances: [],
+      },
+      steppedScale('spacing', 'Spacing scale (`spacing`): pt on iOS, dp on Android.'),
+      steppedScale('rounded', 'Corner radii (`rounded`): pt on iOS, dp on Android.'),
       {
         kind: 'struct',
         name: 'AppTextStyle',
@@ -66,13 +96,8 @@ export function declarations(model) {
       {
         kind: 'namespace',
         name: 'AppTypography',
-        doc: 'Type styles (`typography`), each with its Dynamic Type style and M3 roles.',
-        members: Object.entries(primitives.typography).map(([key, token]) => ({
-          kind: 'const',
-          name: memberId(key),
-          type: 'textStyle',
-          value: textStyleValue(token),
-        })),
+        doc: 'Type styles (`typography`), each with its DESIGN.md key, Dynamic Type style, M3 roles.',
+        members: [...typography, allStyles],
       },
       scale('elevation', 'Elevation (`elevation`): sizes in pt/dp, colours as roles or ARGB.'),
       scale('motion', 'Motion (`motion`): durations in ms, curves as cubic-bezier points.'),
@@ -82,8 +107,8 @@ export function declarations(model) {
         kind: 'roles',
         name: 'AppColorRole',
         valuesType: 'AppColors',
-        doc: 'Colour role keys: resolve one with `AppColors` for the active context.',
-        cases: model.roles.map(({ key }) => memberId(key)),
+        doc: 'Colour roles, each with its DESIGN.md key: resolve one with `AppColors` for a context.',
+        cases: model.roles.map(({ key }) => ({ name: memberId(key), id: key })),
       },
       colorsDeclaration(model),
     ],
@@ -92,6 +117,31 @@ export function declarations(model) {
 }
 
 const isToken = (node) => Object.hasOwn(node, '$value');
+
+const ref = (namespace, member) => ({ t: 'ref', namespace, member });
+
+/**
+ * `all`: one `AppScaleStep` per token of the scale, in model (DESIGN.md) order, its name the
+ * DESIGN.md key (`spacing-4`, `rounded-full`) and its value a reference to the scale's constant.
+ */
+function scaleSteps(group, tokens) {
+  const namespace = NAMESPACE_OF[group];
+  const step = (key) => ({
+    t: 'init',
+    struct: 'AppScaleStep',
+    args: [
+      { name: 'name', type: 'string', value: { t: 'string', s: `${group}-${key}` } },
+      { name: 'value', type: 'double', value: ref(namespace, memberId(key, group)) },
+    ],
+  });
+  const keys = Object.keys(tokens).filter((key) => isToken(tokens[key]));
+  return {
+    kind: 'const',
+    name: 'all',
+    type: 'list:AppScaleStep',
+    value: { t: 'list', items: keys.map(step) },
+  };
+}
 
 /** Tokens become constants first, then each group becomes a nested namespace. */
 function membersOf(group, idOf) {
@@ -139,8 +189,9 @@ function aliasValue(alias) {
   return { t: 'ref', namespace: NAMESPACE_OF[group], member: memberId(key, group) };
 }
 
-function textStyleValue({ $value: v, $extensions: ext }) {
+function textStyleValue(key, { $value: v, $extensions: ext }) {
   const values = {
+    name: { t: 'string', s: key },
     fontFamily: { t: 'string', s: v.fontFamily[0] },
     fontSize: { t: 'number', n: round4(v.fontSize.value) },
     fontWeight: { t: 'number', n: v.fontWeight },

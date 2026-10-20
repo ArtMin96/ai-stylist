@@ -40,18 +40,31 @@ test('reference scales: objects of Double vals; numeric keys get the scale prefi
     '    val space4: Double = 4.0',
     '    val space8: Double = 8.0',
     '    val space16: Double = 16.0',
+    '',
+    '    val all: List<AppScaleStep> =',
+    '        listOf(',
+    '            AppScaleStep(name = "spacing-4", value = AppSpacing.space4),',
+    '            AppScaleStep(name = "spacing-8", value = AppSpacing.space8),',
+    '            AppScaleStep(name = "spacing-16", value = AppSpacing.space16),',
+    '        )',
     '}',
   ];
   assert.equal(block(reference, 'object AppSpacing'), spacing.join('\n'));
   assert.match(reference, /\n {4}val radius4: Double = 4\.0\n/);
+  const full = /\n {12}AppScaleStep\(name = "rounded-full", value = AppRadius\.full\),\n/;
+  assert.match(reference, full);
+  const step = ['data class AppScaleStep(', '    val name: String,', '    val value: Double,', ')'];
+  assert.equal(block(reference, 'data class AppScaleStep('), step.join('\n'));
 });
 
 test('type styles: a multiline AppTextStyle value starts on the line after its `=`', () => {
-  assert.match(reference, /\ndata class AppTextStyle\(\n {4}val fontFamily: String,\n/);
+  const head = /\ndata class AppTextStyle\(\n {4}val name: String,\n {4}val fontFamily: String,\n/;
+  assert.match(reference, head);
   assert.match(reference, /\n {4}val m3Roles: List<String>,\n\)\n/);
   const label = [
     '    val label: AppTextStyle =',
     '        AppTextStyle(',
+    '            name = "label",',
     '            fontFamily = "Fixture Sans",',
     '            fontSize = 12.0,',
     '            fontWeight = 600,',
@@ -63,6 +76,18 @@ test('type styles: a multiline AppTextStyle value starts on the line after its `
   ];
   assert.equal(block(reference, 'val label: AppTextStyle =', 4), label.join('\n'));
   assert.match(reference, /\n {12}m3Roles = emptyList\(\),\n/);
+  const all = [
+    '    val all: List<AppTextStyle> =',
+    '        listOf(',
+    '            AppTypography.heading,',
+    '            AppTypography.body,',
+    '            AppTypography.label,',
+    '            AppTypography.badge,',
+    '        )',
+    '}',
+  ];
+  // Last in the object, so every style is initialised before the list reads it.
+  assert.ok(reference.includes(`\n\n${all.join('\n')}\n`), 'AppTypography.all, last, in key order');
 });
 
 test('elevation and motion: groups are nested objects; curves are lists; aliases are refs', () => {
@@ -85,18 +110,20 @@ test('elevation and motion: groups are nested objects; curves are lists; aliases
   assert.match(text, /\n {8}val easing: List<Double> = AppMotion\.easingEnter\n/);
 });
 
-test('colour roles: an enum entry per role reads its own AppColors property', () => {
-  const entries = [...scheme.matchAll(/^ {4}([A-Z0-9_]+)\(AppColors::(\w+)\),$/gm)];
-  const pairs = entries.map((m) => [m[1], m[2]]);
-  assert.deepEqual(pairs, [
-    ['BACKGROUND', 'background'],
-    ['TEXT', 'text'],
-    ['PRIMARY', 'primary'],
-    ['PRIMARY_PRESSED', 'primaryPressed'],
-    ['ON_PRIMARY', 'onPrimary'],
-    ['SURFACE2', 'surface2'],
-    ['SCRIM', 'scrim'],
-    ['RING_LIGHT', 'ringLight'],
+test('colour roles: an enum entry per role, its DESIGN.md key first, reads its own property', () => {
+  const head = ['enum class AppColorRole(', '    val id: String,', '    internal val read'];
+  assert.ok(scheme.includes(head.join('\n')), '`id` is the first constructor parameter');
+  const entries = [...scheme.matchAll(/^ {4}([A-Z0-9_]+)\("([a-z0-9-]+)", AppColors::(\w+)\),$/gm)];
+  const triples = entries.map((m) => m.slice(1));
+  assert.deepEqual(triples, [
+    ['BACKGROUND', 'background', 'background'],
+    ['TEXT', 'text', 'text'],
+    ['PRIMARY', 'primary', 'primary'],
+    ['PRIMARY_PRESSED', 'primary-pressed', 'primaryPressed'],
+    ['ON_PRIMARY', 'on-primary', 'onPrimary'],
+    ['SURFACE2', 'surface-2', 'surface2'],
+    ['SCRIM', 'scrim', 'scrim'],
+    ['RING_LIGHT', 'ring-light', 'ringLight'],
   ]);
   const lookup = /\n {4}operator fun get\(role: AppColorRole\): Long = role\.read\(this\)\n/;
   assert.match(scheme, lookup);

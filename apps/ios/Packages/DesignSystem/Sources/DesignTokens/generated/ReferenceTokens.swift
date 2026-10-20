@@ -2,6 +2,12 @@
 // Source: DESIGN.md
 // Tier 1 of 3: reference scales (DEC-87).
 
+/// One step of a scale: its DESIGN.md key (`spacing-4`, `rounded-full`) and value (pt/dp).
+nonisolated public struct AppScaleStep: Sendable, Equatable {
+  public let name: String
+  public let value: Double
+}
+
 /// Spacing scale (`spacing`): pt on iOS, dp on Android.
 nonisolated public enum AppSpacing {
   public static let space4: Double = 4.0
@@ -14,6 +20,19 @@ nonisolated public enum AppSpacing {
   public static let space40: Double = 40.0
   public static let space48: Double = 48.0
   public static let space64: Double = 64.0
+
+  public static let all: [AppScaleStep] = [
+    AppScaleStep(name: "spacing-4", value: AppSpacing.space4),
+    AppScaleStep(name: "spacing-8", value: AppSpacing.space8),
+    AppScaleStep(name: "spacing-12", value: AppSpacing.space12),
+    AppScaleStep(name: "spacing-16", value: AppSpacing.space16),
+    AppScaleStep(name: "spacing-20", value: AppSpacing.space20),
+    AppScaleStep(name: "spacing-24", value: AppSpacing.space24),
+    AppScaleStep(name: "spacing-32", value: AppSpacing.space32),
+    AppScaleStep(name: "spacing-40", value: AppSpacing.space40),
+    AppScaleStep(name: "spacing-48", value: AppSpacing.space48),
+    AppScaleStep(name: "spacing-64", value: AppSpacing.space64),
+  ]
 }
 
 /// Corner radii (`rounded`): pt on iOS, dp on Android.
@@ -31,10 +50,27 @@ nonisolated public enum AppRadius {
   public static let radius20: Double = 20.0
   public static let radius24: Double = 24.0
   public static let full: Double = 999.0
+
+  public static let all: [AppScaleStep] = [
+    AppScaleStep(name: "rounded-2", value: AppRadius.radius2),
+    AppScaleStep(name: "rounded-3", value: AppRadius.radius3),
+    AppScaleStep(name: "rounded-4", value: AppRadius.radius4),
+    AppScaleStep(name: "rounded-6", value: AppRadius.radius6),
+    AppScaleStep(name: "rounded-8", value: AppRadius.radius8),
+    AppScaleStep(name: "rounded-10", value: AppRadius.radius10),
+    AppScaleStep(name: "rounded-12", value: AppRadius.radius12),
+    AppScaleStep(name: "rounded-14", value: AppRadius.radius14),
+    AppScaleStep(name: "rounded-16", value: AppRadius.radius16),
+    AppScaleStep(name: "rounded-18", value: AppRadius.radius18),
+    AppScaleStep(name: "rounded-20", value: AppRadius.radius20),
+    AppScaleStep(name: "rounded-24", value: AppRadius.radius24),
+    AppScaleStep(name: "rounded-full", value: AppRadius.full),
+  ]
 }
 
 /// A type style: sizes in pt/sp, letter spacing in pt/sp, line height as a height.
 nonisolated public struct AppTextStyle: Sendable, Equatable {
+  public let name: String
   public let fontFamily: String
   public let fontSize: Double
   public let fontWeight: Int
@@ -44,9 +80,10 @@ nonisolated public struct AppTextStyle: Sendable, Equatable {
   public let m3Roles: [String]
 }
 
-/// Type styles (`typography`), each with its Dynamic Type style and M3 roles.
+/// Type styles (`typography`), each with its DESIGN.md key, Dynamic Type style, M3 roles.
 nonisolated public enum AppTypography {
   public static let display = AppTextStyle(
+    name: "display",
     fontFamily: "Young Serif",
     fontSize: 40.0,
     fontWeight: 400,
@@ -57,6 +94,7 @@ nonisolated public enum AppTypography {
   )
 
   public static let title1 = AppTextStyle(
+    name: "title-1",
     fontFamily: "Young Serif",
     fontSize: 32.0,
     fontWeight: 400,
@@ -67,6 +105,7 @@ nonisolated public enum AppTypography {
   )
 
   public static let title2 = AppTextStyle(
+    name: "title-2",
     fontFamily: "Young Serif",
     fontSize: 26.0,
     fontWeight: 400,
@@ -77,6 +116,7 @@ nonisolated public enum AppTypography {
   )
 
   public static let title3 = AppTextStyle(
+    name: "title-3",
     fontFamily: "Young Serif",
     fontSize: 20.0,
     fontWeight: 400,
@@ -87,6 +127,7 @@ nonisolated public enum AppTypography {
   )
 
   public static let headline = AppTextStyle(
+    name: "headline",
     fontFamily: "Figtree",
     fontSize: 17.0,
     fontWeight: 600,
@@ -97,6 +138,7 @@ nonisolated public enum AppTypography {
   )
 
   public static let body = AppTextStyle(
+    name: "body",
     fontFamily: "Figtree",
     fontSize: 17.0,
     fontWeight: 400,
@@ -107,6 +149,7 @@ nonisolated public enum AppTypography {
   )
 
   public static let callout = AppTextStyle(
+    name: "callout",
     fontFamily: "Figtree",
     fontSize: 15.0,
     fontWeight: 400,
@@ -117,6 +160,7 @@ nonisolated public enum AppTypography {
   )
 
   public static let subhead = AppTextStyle(
+    name: "subhead",
     fontFamily: "Figtree",
     fontSize: 15.0,
     fontWeight: 600,
@@ -127,6 +171,7 @@ nonisolated public enum AppTypography {
   )
 
   public static let footnote = AppTextStyle(
+    name: "footnote",
     fontFamily: "Figtree",
     fontSize: 13.0,
     fontWeight: 400,
@@ -137,6 +182,7 @@ nonisolated public enum AppTypography {
   )
 
   public static let caption = AppTextStyle(
+    name: "caption",
     fontFamily: "Figtree",
     fontSize: 12.0,
     fontWeight: 500,
@@ -147,6 +193,7 @@ nonisolated public enum AppTypography {
   )
 
   public static let overline = AppTextStyle(
+    name: "overline",
     fontFamily: "Figtree",
     fontSize: 11.0,
     fontWeight: 600,
@@ -157,6 +204,7 @@ nonisolated public enum AppTypography {
   )
 
   public static let button = AppTextStyle(
+    name: "button",
     fontFamily: "Figtree",
     fontSize: 17.0,
     fontWeight: 600,
@@ -167,6 +215,7 @@ nonisolated public enum AppTypography {
   )
 
   public static let largeTitleBar = AppTextStyle(
+    name: "large-title-bar",
     fontFamily: "Young Serif",
     fontSize: 34.0,
     fontWeight: 400,
@@ -177,6 +226,7 @@ nonisolated public enum AppTypography {
   )
 
   public static let labelMd = AppTextStyle(
+    name: "label-md",
     fontFamily: "Figtree",
     fontSize: 14.0,
     fontWeight: 600,
@@ -187,6 +237,7 @@ nonisolated public enum AppTypography {
   )
 
   public static let labelSm = AppTextStyle(
+    name: "label-sm",
     fontFamily: "Figtree",
     fontSize: 13.0,
     fontWeight: 600,
@@ -197,6 +248,7 @@ nonisolated public enum AppTypography {
   )
 
   public static let subheadMedium = AppTextStyle(
+    name: "subhead-medium",
     fontFamily: "Figtree",
     fontSize: 15.0,
     fontWeight: 500,
@@ -207,6 +259,7 @@ nonisolated public enum AppTypography {
   )
 
   public static let labelAction = AppTextStyle(
+    name: "label-action",
     fontFamily: "Figtree",
     fontSize: 15.0,
     fontWeight: 700,
@@ -217,6 +270,7 @@ nonisolated public enum AppTypography {
   )
 
   public static let captionStrong = AppTextStyle(
+    name: "caption-strong",
     fontFamily: "Figtree",
     fontSize: 12.0,
     fontWeight: 600,
@@ -227,6 +281,7 @@ nonisolated public enum AppTypography {
   )
 
   public static let badge = AppTextStyle(
+    name: "badge",
     fontFamily: "Figtree",
     fontSize: 11.0,
     fontWeight: 600,
@@ -237,6 +292,7 @@ nonisolated public enum AppTypography {
   )
 
   public static let badgeCount = AppTextStyle(
+    name: "badge-count",
     fontFamily: "Figtree",
     fontSize: 11.0,
     fontWeight: 700,
@@ -247,6 +303,7 @@ nonisolated public enum AppTypography {
   )
 
   public static let buttonDisabled = AppTextStyle(
+    name: "button-disabled",
     fontFamily: "Figtree",
     fontSize: 17.0,
     fontWeight: 500,
@@ -255,6 +312,30 @@ nonisolated public enum AppTypography {
     dynamicType: "headline",
     m3Roles: []
   )
+
+  public static let all: [AppTextStyle] = [
+    AppTypography.display,
+    AppTypography.title1,
+    AppTypography.title2,
+    AppTypography.title3,
+    AppTypography.headline,
+    AppTypography.body,
+    AppTypography.callout,
+    AppTypography.subhead,
+    AppTypography.footnote,
+    AppTypography.caption,
+    AppTypography.overline,
+    AppTypography.button,
+    AppTypography.largeTitleBar,
+    AppTypography.labelMd,
+    AppTypography.labelSm,
+    AppTypography.subheadMedium,
+    AppTypography.labelAction,
+    AppTypography.captionStrong,
+    AppTypography.badge,
+    AppTypography.badgeCount,
+    AppTypography.buttonDisabled,
+  ]
 }
 
 /// Elevation (`elevation`): sizes in pt/dp, colours as roles or ARGB.

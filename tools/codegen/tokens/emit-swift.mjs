@@ -78,23 +78,38 @@ export const swift = {
       `${pad}}`,
     ];
   },
-  /** A closed set of kebab ids: the case is the Swift name, the raw value the id. */
-  enum: (decl) => [
-    `/// ${docText(decl.doc)}`,
-    `nonisolated public enum ${decl.name}: String, CaseIterable, Sendable {`,
-    ...decl.cases.map(({ name, id }) => {
+  /**
+   * A closed set of kebab ids: the case is the Swift name, the raw value the id. Each extra string
+   * field (`decl.fields`) is a computed property switching over the cases.
+   */
+  enum(decl) {
+    const cases = decl.cases.map(({ name, id }) => {
       const raw = name === id ? '' : ` = ${swiftStr(id)}`;
       return `${INDENT}case ${swiftIdent(name)}${raw}`;
-    }),
-    '}',
-  ],
-  roles: (decl) => [
-    `/// ${docText(decl.doc)}`,
-    `nonisolated public enum ${decl.name}: CaseIterable, Sendable {`,
-    ...decl.cases.map((id) => `${INDENT}case ${swiftIdent(id)}`),
-    '}',
-  ],
+    });
+    const properties = (decl.fields ?? []).map((field) => fieldLines(decl, field, INDENT));
+    return [
+      `/// ${docText(decl.doc)}`,
+      `nonisolated public enum ${decl.name}: String, CaseIterable, Sendable {`,
+      ...joinMembers([cases, ...properties]),
+      '}',
+    ];
+  },
+  roles: (decl) => swift.enum(decl),
 };
+
+/** `title`: a string per case, as a computed property switching over the cases. */
+function fieldLines(decl, field, pad) {
+  const step = pad + INDENT;
+  return [
+    `${pad}/// ${docText(field.doc)}`,
+    `${pad}public var ${swiftIdent(field.name)}: String {`,
+    `${step}switch self {`,
+    ...decl.cases.map((c) => `${step}case .${swiftIdent(c.name)}: ${swiftStr(c[field.name])}`),
+    `${step}}`,
+    `${pad}}`,
+  ];
+}
 
 /** `colors[role]`: a switch over every role (one case per field). */
 function lookupLines(decl, pad) {

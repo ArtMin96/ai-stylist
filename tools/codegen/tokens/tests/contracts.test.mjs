@@ -20,19 +20,22 @@ import {
   VALID_CONTRACTS,
   apisOf,
   modelOf,
+  once,
 } from './models.mjs';
 
 const fixtureModel = modelOf(CONTRACT_TOKENS);
 const repoModel = modelOf(REPO_DESIGN_MD);
 const VALID_TEXT = readFileSync(path.join(VALID_CONTRACTS, 'button.yaml'), 'utf8');
-const isRuleCase = (name) => /^CC-\d\d$/.test(name);
+/** `CC-NN/` or `CC-NN-<case>/`: a fixture that fails on rule CC-NN only. */
+const isRuleCase = (name) => /^CC-\d\d(-[a-z0-9-]+)?$/.test(name);
+const ruleOf = (name) => name.slice(0, 'CC-NN'.length);
 const RULE_CASES = readdirSync(CONTRACT_FIXTURES).filter(isRuleCase).sort();
 const SCRATCH = mkdtempSync(path.join(tmpdir(), 'contracts-test-'));
 after(() => rmSync(SCRATCH, { recursive: true, force: true }));
 
 const listed = (findings) => findings.map(formatFinding).join('\n');
 const [fixture] = apisOf(fixtureModel, VALID_CONTRACTS);
-const [button] = apisOf(repoModel, REPO_CONTRACTS);
+const repoButton = once(() => apisOf(repoModel, REPO_CONTRACTS)[0]);
 
 /** The fixture contract after `edit(text)`, checked against `model`. */
 const checkEdited = (edit, model = fixtureModel) =>
@@ -60,18 +63,39 @@ test('the repository contracts pass, and the button contract is approved', () =>
 
 test('the fixtures hold the valid contract and one failing case per rule, CC-01 to CC-08', () => {
   const expected = ['CC-01', 'CC-02', 'CC-03', 'CC-04', 'CC-05', 'CC-06', 'CC-07', 'CC-08'];
-  assert.deepEqual(RULE_CASES, expected);
+  assert.deepEqual([...new Set(RULE_CASES.map(ruleOf))], expected);
+  assert.ok(RULE_CASES.includes('CC-01-gallery-title'), 'the missing gallery title');
   assert.equal(fixture.id, 'button');
 });
 
 for (const name of RULE_CASES) {
-  test(`fixtures/contracts/${name} fails on ${name} and on nothing else`, () => {
+  test(`fixtures/contracts/${name} fails on ${ruleOf(name)} and on nothing else`, () => {
     const result = loadContracts(path.join(CONTRACT_FIXTURES, name), fixtureModel);
     assert.ok(result.findings.length > 0, `${name} raised no finding`);
-    assert.deepEqual(rulesOf(result), [name], listed(result.findings));
+    assert.deepEqual(rulesOf(result), [ruleOf(name)], listed(result.findings));
     assert.deepEqual(result.apis, []);
   });
 }
+
+test('CC-01: the gallery needs a title of words and single spaces, which its slug is made of', () => {
+  const dir = path.join(CONTRACT_FIXTURES, 'CC-01-gallery-title');
+  const missing = loadContracts(dir, fixtureModel).findings.map(formatFinding);
+  assert.deepEqual(missing, [
+    'CC-01 button.yaml gallery: must have required property \'title\' {"missingProperty":"title"}',
+  ]);
+  for (const title of ['', 'Chips & tags', 'Two  spaces', ' Leading']) {
+    const edited = checkEdited((t) => t.replace('title: Fixture buttons', `title: '${title}'`));
+    assert.deepEqual(rulesOf(edited), ['CC-01'], JSON.stringify(title));
+    assert.match(listed(edited.findings), /gallery\.title: must match pattern/);
+  }
+});
+
+test('the gallery: the title is "<board> <gallery.title>", the slug its kebab case', () => {
+  assert.equal(fixture.gallery.title, 'C01 Fixture buttons');
+  assert.equal(fixture.gallery.slug, 'c01-fixture-buttons');
+  const board = checkEdited((t) => t.replace('board: C01', 'board: C10')).api.gallery;
+  assert.deepEqual([board.title, board.slug], ['C10 Fixture buttons', 'c10-fixture-buttons']);
+});
 
 test('CC-01: a duplicate key, an unknown field and a product name fail the schema', () => {
   const duplicate = checkEdited((t) => t.replace('board: C01', 'board: C01\nboard: C02'));
@@ -228,6 +252,7 @@ test('the merge: loading keeps the enabled look unless the variant names its own
 });
 
 test('the repository button: the approved sizes, variants and combinations', () => {
+  const button = repoButton();
   assert.equal(button.combinations.length, 100);
   const ids = new Set(button.combinations.map(({ variant, size }) => `${variant}/${size}`));
   assert.ok(ids.has('text/compact') && !ids.has('text/small'), 'text small became compact');
@@ -237,6 +262,7 @@ test('the repository button: the approved sizes, variants and combinations', () 
 });
 
 test('the repository button: merged looks the owner checked on the screens', () => {
+  const button = repoButton();
   const ref = (values, field) => values[field].value;
   const filledDisabled = look(button, 'light', 'destructive-filled', 'large', 'disabled');
   assert.equal(ref(filledDisabled, 'typography').member, 'buttonDisabled', 'label weight 500');
@@ -263,6 +289,7 @@ test('the icon slot: dimensions on a component entry, like height; anything else
 });
 
 test('the repository button: the icon slot is 18 / 6 at compact, 20 / 8 elsewhere', () => {
+  const button = repoButton();
   for (const context of button.contexts) {
     for (const { variant, size, state, values } of button.looks[context]) {
       const expected = size === 'compact' ? [18, 6] : [20, 8];

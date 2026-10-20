@@ -1,5 +1,6 @@
 # Synthetic contract for the component-contract tests: it passes CC-01 to CC-08 against
-# ../DESIGN.md. Each ../CC-NN/button.yaml is this file with one defect that fails rule CC-NN only.
+# ../DESIGN.md. Each ../CC-NN/button.yaml (or ../CC-NN-<case>/button.yaml) is this file with one
+# defect that fails rule CC-NN only.
 # secondary allows no small size and no disabled state, so the API must not offer them.
 id: button
 board: C01
@@ -54,6 +55,7 @@ accessibility:
   minTouchTarget: { ios: 44, android: 48 }
 
 gallery:
+  title: Fixture buttons
   label: Fixture label
   include: all
 

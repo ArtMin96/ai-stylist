@@ -53,6 +53,7 @@ accessibility:
   minTouchTarget: { ios: 44, android: 48 }
 
 gallery:
+  title: Fixture buttons
   label: Fixture label
   include:
     - { variant: primary, size: large, state: enabled }

@@ -12230,6 +12230,15 @@ data class ButtonGalleryEntry(
     val testId: String,
 )
 
+/** The gallery sections of the components, in board order, each with its contract id. */
+enum class GalleryComponent(
+    val id: String,
+    val title: String,
+    val slug: String,
+) {
+    BUTTON("button", "C01 Buttons", "c01-buttons"),
+}
+
 /** The gallery: per component its synthetic label and its cells (contract `gallery`). */
 object ComponentGallery {
     val buttonLabel: String = "Continue"

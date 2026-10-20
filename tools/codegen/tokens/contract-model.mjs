@@ -5,7 +5,7 @@
 // shares. Only run buildApi on a contract that passed CC-01 to CC-08.
 // tools/codegen/tokens/README.md, "Component contracts".
 import { contextsOf, typedValue } from './declarations.mjs';
-import { contextId, memberId, tokensTypeName } from './naming.mjs';
+import { contextId, galleryTitle, memberId, tokensTypeName } from './naming.mjs';
 import { resolveComponents } from './normalise.mjs';
 import { CONTEXTS, isColourProperty, splitState } from './syntax.mjs';
 
@@ -73,7 +73,8 @@ export function tableContexts(contract, model) {
  * and its gallery. A field some look lacks is optional; so is an overlay. A look with a
  * `borderColor` ring also gets `borderWidth` from `<id>-outline-ring` (.impeccable/components
  * README, "Fields": the ring's width). A missing ring width or a property whose type differs
- * between looks is a CC-06 finding.
+ * between looks is a CC-06 finding. The gallery's `title` is `<board> <gallery.title>` and its
+ * `slug` the kebab of that title (`C01 Buttons`, `c01-buttons`).
  */
 export function buildApi(contract, file, model) {
   const findings = [];
@@ -97,7 +98,7 @@ export function buildApi(contract, file, model) {
     });
   }
   const fields = fieldsOf(Object.values(looks).flat(), file, findings);
-  const { label, include } = contract.gallery;
+  const { title, label, include } = contract.gallery;
   const api = {
     id: contract.id,
     name: contract.name,
@@ -110,7 +111,11 @@ export function buildApi(contract, file, model) {
     contexts,
     fields,
     looks,
-    gallery: { label, items: include === 'all' ? combinations : include },
+    gallery: {
+      ...galleryTitle(contract.board, title),
+      label,
+      items: include === 'all' ? combinations : include,
+    },
   };
   return { findings: uniqueFindings(findings), api };
 }

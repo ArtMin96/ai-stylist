@@ -22,8 +22,8 @@
 # Recipes:  just ios-lint, just ios-format --check, just ios-check-banned [--fixtures],
 #           just ios-test-packages, just ios-doctor, just ios-project, just ios-build --config dev,
 #           just ios-test.
-# Runner:   `xcode-27` (actions/runner-images xcode-27-arm64 image, marked preview: Xcode 27.0 27A266a at
-#           /Applications/Xcode_27.0.app, iOS 27.0 simulators), checked 2026-09-22; declared for
+# Runner:   `xcode-27` (actions/runner-images xcode-27-arm64 image, marked preview: Xcode 27.1 27A9275 at
+#           /Applications/Xcode_27.1.app, iOS 27.0 simulators), checked 2026-10-20; declared for
 #           actionlint in .github/actionlint.yaml. Move to macos-26 / macos-27 once they ship Xcode 27 GA
 #           (and change DEVELOPER_DIR with it). macOS minutes bill at 10x, so the macOS job only starts
 #           after the Linux job is green.
@@ -131,7 +131,7 @@ jobs:
       cancel-in-progress: true
     env:
       # Pin the Xcode the runner image ships (apps/ios/.xcode-version); `just ios-doctor` checks it.
-      DEVELOPER_DIR: /Applications/Xcode_27.0.app/Contents/Developer
+      DEVELOPER_DIR: /Applications/Xcode_27.1.app/Contents/Developer
     steps:
       - name: Setup · Check out
         uses: actions/checkout@v7

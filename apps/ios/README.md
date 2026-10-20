@@ -9,7 +9,7 @@ Swift client **generated** from the OpenAPI contract.
 project.yml              XcodeGen spec: the ONLY project definition (the .xcodeproj is generated, gitignored)
 Package.resolved         the app's SwiftPM lockfile: every remote package (posthog-ios + the Packages/* pins),
                          each pinned to a commit; `just ios-project` seeds Xcode with it (see "Package pins")
-.xcode-version           pinned Xcode (27.0); checked by `just ios-doctor`
+.xcode-version           pinned Xcode (27.1); checked by `just ios-doctor`
 .swift-format            formatter + formatter-level safety rules (no force unwrap / force try / IUO)
 .swiftlint.yml           SwiftLint safety rules only (only_rules)
 Config/                  ALL build settings: Base (Swift 6 safety), Dev / Preview / Prod, Release; optional
@@ -175,9 +175,9 @@ Where Swift comes from on Linux: a working `swift` on PATH, else Docker `swift:6
 ### First run on the Mac
 
 ```sh
-./scripts/bootstrap.sh --system   # once: Xcode 27.0 (xcodes installs it if missing), selected, licence, first launch,
+./scripts/bootstrap.sh --system   # once: Xcode 27.1 (xcodes installs it if missing), selected, licence, first launch,
                                   # iOS simulator (sudo); also mise install: xcodegen, swiftlint, xcbeautify, maestro, just
-just ios-doctor              # Xcode 27.0 selected?
+just ios-doctor              # Xcode 27.1 selected?
 just ios-project             # generate AIStylist.xcodeproj
 open apps/ios/AIStylist.xcodeproj   # scheme AIStylist-Dev, any iPhone simulator
 just ios-build && just ios-test

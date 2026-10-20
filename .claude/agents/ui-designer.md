@@ -48,7 +48,7 @@ you never write the Swift or Kotlin that implements it.
   (`.claude/rules/design-system.md` invariant 5).
 - Today's native UI: one screen per app (`apps/ios/Packages/Features/Sources/HomeFeature/HomeScreen.swift`,
   `apps/android/feature/home/src/main/kotlin/app/aistylist/feature/home/HomeScreen.kt`), both on the
-  design system: `AppTheme` and `AppButton` in `apps/ios/Packages/DesignSystem/` and
+  design system: `AppTheme`, `AppButton` and `AppIcon` in `apps/ios/Packages/DesignSystem/` and
   `apps/android/core/designsystem/`, built on the tokens and component API that `just generate` emits.
 </context>
 

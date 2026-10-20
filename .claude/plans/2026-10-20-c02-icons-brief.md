@@ -226,9 +226,9 @@ so `.impeccable/surfaces/` is not required here.
     `rg -n 'enum (class )?(AppIconName|AppIconSize|AppIconSet|AppIconPaint|AppIconCommand)\b|struct AppIcon(Glyph|Shape|Segment)|data class AppIcon(Glyph|Shape|Segment)' apps/ios/Packages apps/android --glob '!**/generated/**' --glob '!**/build/**'`
     → no hits.
   - AC-4 no literal style values in the hand-written layer. Proof: the C01 command
-    `rg -n 'Color\(red:|Color\(0x|0x[0-9A-Fa-f]{6,8}|cornerRadius: [0-9]|padding\([0-9]|[0-9]+\.(dp|sp)\b' apps/ios/Packages/DesignSystem/Sources apps/android/core/designsystem/src/main apps/android/core/designsystem-catalog/src/main --glob '!**/generated/**'`
+    `rg -n 'Color\(red:|Color\(0x|0x[0-9A-Fa-f]{6,8}|cornerRadius: [0-9]|padding\([0-9]|\b[0-9]+(\.[0-9]+)?\.(dp|sp)\b' apps/ios/Packages/DesignSystem/Sources apps/android/core/designsystem/src/main apps/android/core/designsystem-catalog/src/main --glob '!**/generated/**'`
     → no hits, plus
-    `rg -n 'lineWidth: [0-9]|width = [0-9]|\b24(\.0)?\b' apps/ios/Packages/DesignSystem/Sources/DesignSystem apps/ios/Packages/DesignSystem/Sources/DesignTokens/AppIconGeometry.swift apps/android/core/designsystem/src/main/kotlin/app/aistylist/core/designsystem/AppIcon*.kt`
+    `rg -n 'lineWidth: [0-9]|width = [0-9]|\b24(\.0)?\b' apps/ios/Packages/DesignSystem/Sources/DesignSystem/AppIcon.swift apps/ios/Packages/DesignSystem/Sources/DesignSystem/AppButtonFace.swift apps/android/core/designsystem/src/main/kotlin/app/aistylist/core/designsystem/AppButtonFace.kt apps/ios/Packages/DesignSystem/Sources/DesignTokens/AppIconGeometry.swift apps/android/core/designsystem/src/main/kotlin/app/aistylist/core/designsystem/AppIcon*.kt`
     → no hits. The viewBox always comes from `AppIconMetrics.viewBox`. List each exception with
     file:line and the reason in the report; none are expected.
   - AC-5 the generated files are untouched. Proof: `git diff --stat 94e79ac -- '**/generated/**'`

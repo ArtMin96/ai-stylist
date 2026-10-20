@@ -47,7 +47,7 @@ or a green `ios` workflow run; report a macOS step you did not run as "Not run".
     design-system tokens whose master is the `DESIGN.md` frontmatter; never a literal colour, font
     size, padding or corner radius in a `*Feature` target. No token for what you need → stop and ask
     `ui-designer`; never inline a value "for now" (reviewer-checked: ui-designer; generated theme code
-    with a `just generate --check` drift gate and a `just ios-check-banned` ban on literal styles,
+    with a `just generate --check` drift gate; a `just ios-check-banned` ban on literal styles,
     planned).
 11. No new screen or UI element without an owner-approved surface brief in
     `.impeccable/surfaces/<screen>.md` (approval date and canvas board recorded), produced by the

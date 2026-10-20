@@ -4,7 +4,8 @@
   "repository": {
     "security_and_analysis": {
       "secret_scanning": { "status": "enabled" },
-      "secret_scanning_push_protection": { "status": "enabled" }
+      "secret_scanning_push_protection": { "status": "enabled" },
+      "dependabot_security_updates": { "status": "enabled" }
     }
   },
   "actions_permissions": {

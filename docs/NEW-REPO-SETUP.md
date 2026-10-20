@@ -256,7 +256,7 @@ The command was run against a copy of the tree and against made-up checkouts (`j
 
 Mark: **one command**. **Owner only.** After a rename or a transfer, run only the report.
 
-**What it achieves.** The new repository behaves like the documented one: Actions run with a read-only token, `main` is protected by the five checks of `pr-gate`, secret scanning and push protection are on where GitHub offers them, and the labels that Renovate uses exist. The declared state is one file, `tools/github/repo-settings.json`; `tools/github/README.md` explains each part of it.
+**What it achieves.** The new repository behaves like the documented one: Actions run with a read-only token, `main` is protected by the five checks of `pr-gate`, secret scanning and push protection are on where GitHub offers them, Dependabot opens a pull request for each dependency with a known vulnerability, and the labels that Renovate uses exist. The declared state is one file, `tools/github/repo-settings.json`; `tools/github/README.md` explains each part of it.
 
 **Do.** Needs `gh`, logged in as an account with admin rights on the repository (`gh auth status`).
 
@@ -283,6 +283,7 @@ What it sets:
 - **Actions permissions.** All actions are allowed; the workflow token defaults to read-only and cannot approve pull requests.
 - **Protection of `main`** (a classic branch protection rule). A pull request is required, the branch must be up to date, force pushes and deletion are off, and the rule applies to administrators too. These five checks are required, spelled exactly as the jobs in `.github/workflows/pr-gate.yml` report them: `Gate · just ci-parity`, `Gate · Contracts (generate --check, spectral, oasdiff)`, `Gate · Secret scan (PR diff)`, `Gate · Clone detection` and `Report · PR gate summary`. No approval is required, because one person cannot approve their own pull request, and Code Owner review stays off until section 6 is merged; both are single values in the file. The `ios`, `android` and `nightly` checks are not required on purpose: they do not run on every pull request, and a required check that never runs blocks every other pull request.
 - **Secret scanning and push protection.** Both switched on.
+- **Dependabot security updates.** Switched on. Dependabot opens a pull request only for a dependency with a known vulnerability; Renovate keeps every other version update, so the repository has no `.github/dependabot.yml`. They need Dependabot alerts, which the command does not manage: switch the alerts on first under the repository's **Settings → Code security** (or `gh api --method PUT repos/<owner>/<repo>/vulnerability-alerts`). While the alerts are off GitHub does not switch security updates on, and the report's line for them reads `failed` with GitHub's answer, or `unavailable` with the alerts named as a possible reason.
 - **Labels.** `dependencies`, `needs-adr`, `android`, `ios`, `needs-deps-lock` and `security`, the six that `renovate.json` uses. Existing labels are left alone.
 
 The check names are compared with the job names in `.github/workflows/pr-gate.yml` before anything is sent, so a renamed job cannot leave a required check that never reports. Unlike the GitHub screen, the command does not need the checks to have run once: it can protect `main` before the first pull request.

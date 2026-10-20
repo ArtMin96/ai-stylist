@@ -10,8 +10,9 @@
 //
 // What it manages: Actions permissions and the workflow token's default permission, classic branch
 // protection of the default branch (required checks = the job names of pr-gate.yml), secret
-// scanning and push protection, and the labels renovate.json uses. Nothing is ever deleted: a
-// label, a rule or a setting the file does not mention is left alone.
+// scanning, push protection and Dependabot security updates, and the labels renovate.json uses.
+// Nothing is ever deleted: a label, a rule or a setting the file does not mention is left alone.
+// Dependabot alerts are not managed: security updates need them on, and that is a manual step.
 //
 // A setting GitHub does not offer for this repository (a private repository under a personal
 // account has neither protected branches nor secret scanning on the free plan) is reported as
@@ -139,18 +140,25 @@ function plainItems(slug, plain, repo, where) {
   });
 }
 
-/** Secret scanning and push protection: GitHub lists a feature only where it offers it. */
+/**
+ * Secret scanning, push protection and Dependabot security updates: GitHub lists a feature only
+ * where it offers it. `needs` says what else a feature depends on, for the lines that report it.
+ */
 function securityItems(slug, security, repo, where) {
   const free = 'free on a public repository; a private one needs GitHub Secret Protection';
-  const absent = `GitHub does not offer it for ${where} (${free}, sold to organizations)`;
+  const scanning = `${free}, sold to organizations`;
+  const alerts = 'it needs Dependabot alerts switched on first (Settings → Code security)';
+  const needs = { dependabot_security_updates: `${alerts}, which this tool does not manage` };
   return Object.entries(security).map(([feature, want]) => {
     const what = feature.replaceAll('_', ' ');
+    const need = needs[feature];
+    const absent = `GitHub does not offer it for ${where} (${need ?? scanning})`;
     const live = repo.security_and_analysis?.[feature];
     if (!live) return item('unavailable', what, absent);
     if (live.status === want.status) return item('ok', what, live.status);
     const body = { security_and_analysis: { [feature]: want } };
     const verify = (answer) => answer?.security_and_analysis?.[feature]?.status === want.status;
-    const write = { method: 'PATCH', apiPath: `repos/${slug}`, body, verify };
+    const write = { method: 'PATCH', apiPath: `repos/${slug}`, body, verify, need };
     return item('change', what, `${live.status} -> ${want.status}`, write);
   });
 }
@@ -282,11 +290,12 @@ function buildPlan(slug, settings, repo, where) {
 
 /** Sends one planned call; the entry it returns says what happened. */
 function applyItem(entry, where) {
-  const { method, apiPath, body, verify } = entry.write;
+  const { method, apiPath, body, verify, need } = entry.write;
   try {
     const answer = ghApi(method, apiPath, body);
     if (verify && !verify(answer)) {
-      const detail = `GitHub took the call and changed nothing: not offered for ${where}`;
+      const or = need ? `, or ${need}` : '';
+      const detail = `GitHub took the call and changed nothing: not offered for ${where}${or}`;
       return { ...entry, status: 'unavailable', detail };
     }
     return { ...entry, status: entry.status === 'create' ? 'created' : 'changed' };

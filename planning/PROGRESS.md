@@ -93,6 +93,23 @@ Log hygiene: when this log exceeds ~30 entries, move the oldest entries to `plan
 
 *(newest first)*
 
+### 2026-10-21 (c02-icons) — AI-201: C02 icon set on both apps, icon scale, components point at the scales (branch `feat/c02-icons`)
+
+*Lead session on the owner's Linux machine, through `cross-platform-feature`; design half, then parallel iOS and Android lanes in worktrees.*
+
+- **Phase / tasks worked:** none (Brand v1, AI-201 under the AI-193 umbrella).
+- **Owner decisions (chat, 2026-10-20 and 2026-10-21; recorded in `.impeccable/components/icon.yaml` decisions 1–11 and `DESIGN.md` "Icons (C02)"):** thumbs for outfit like/dislike, heart for item favourite, star only for "Style preferences"; the AI spark only beside "AI-generated preview" (Discover trend tags get a tag icon); the tab bar uses C02 glyphs inside the native tab bar; every drawn icon built, page 8 included; one drawing per meaning (ties: nearest C02); credits = coin stack; the "You follow" heart and the upsell sparkle stay; contract approved 2026-10-20. Then 2026-10-21: a named icon scale replaces the 14 measured sizes (`xs 12 · sm 16 · md 20 · lg 24 · xl 32 · hero 56`), component tokens point at the shared scales, icons grow with the user's text size, and on iOS xl and hero grow more gently (title2, largeTitle).
+- **Done:**
+  - Generator (`tools/codegen/tokens/**`): `kind: icon-set` contracts (CC-09 to CC-12, CC-11 keeps points inside the 24 viewBox), an SVG path compiler (arcs and quadratics to cubics), the emitted `AppIconName` / `AppIconSet` / `AppIconSize` / `AppIconMetrics` API and the `AppIconGlyphs` table, `ButtonAppearance.iconSize` typed `AppIconSize`, `{spacing.*}` references resolved in every component dimension (non-icon values numerically unchanged), the Swift one-item trailing-comma fix. Token suite 186/186.
+  - Contract and tokens: `.impeccable/components/icon.yaml` (124 glyphs in 7 sets, drawings from the screens where they win), `components.icon-xs … icon-hero`, button `iconSize: icon-md`, spacing references; README and DESIGN.md prose.
+  - iOS: `AppIcon` (Canvas, `@ScaledMetric` per step), `AppIconGeometry` in `DesignTokens` (Linux-tested), `AppButton` `leadingIcon: AppIconName?`, root `text` foreground in `AppTheme`, gallery "C02 Icons" with a wrapping flow layout and previews.
+  - Android: `AppIcon` (Canvas, sp through `Density`), `AppIconGeometry` + `PathNode` replay, `leadingIcon: AppIconName?`, `AppTheme` provides the `text` role as `LocalContentColor` (regression test failed first: it read black), gallery "C02 Icons" with heading semantics and previews.
+  - Reviews: architecture (no blockers; tests re-tightened, docs fixed) and design (root content colour fixed on both apps; nits applied).
+  - Docs: ADR-0011 notes, `.claude/rules/design-system.md` invariant 7, `.claude/agents/ui-designer.md`, both briefs (`.claude/plans/2026-10-20-c02-icons-design-brief.md`, `.claude/plans/2026-10-20-c02-icons-brief.md`), both app READMEs.
+- **Checks (Linux, PostHog keys unset), all exit 0 on `599c7f4`:** `just generate --check`, `just ios-check` (simulator steps skipped on Linux), `just android-check`, `just lint`, `just typecheck`, `just arch-check`, `just clone-check`, `just format --check`, `just docs-check --strict`, token suite 186/186.
+- **Not run:** no compiler has built the SwiftUI targets (`AppIcon`, `AppButtonFace`, `AppTheme`, the catalog and `DesignSystemTests`): Linux cannot. Needed on the Mac: `env -u POSTHOG_CLI_API_KEY -u POSTHOG_CLI_HOST -u POSTHOG_CLI_PROJECT_ID just ios-check`. The iOS lane flagged `GalleryFlowLayout` (`nonisolated` `Layout`) as the likeliest compile risk. CI cannot start jobs while Actions billing is blocked.
+- **Next session starts:** the owner runs the Mac command above and merges the PR; then the canvas pass the owner approved (one ui-designer agent: redraw board C02 from the contract, update R2's icon grid), then C03 chips.
+
 ### 2026-10-20 (leftovers) — AI-33 prune of the old AGP entries; OFL-1.1 line for the fonts (branch `chore/ai-33-prune-font-licenses`)
 
 *Lead session on the owner's Linux machine.*

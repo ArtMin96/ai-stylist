@@ -21,7 +21,10 @@ Run this gate **before anyone writes UI code** when the task adds or visibly cha
 
 Not a gate (go straight to `ios-feature` / `android-feature`): logic, data or networking behind an
 already-approved screen with no visible change; a bug fix that restores what the approved brief
-already shows; a refactor with pixel-identical output. Unsure → treat it as a gate; asking costs
+already shows; a refactor with pixel-identical output; the debug-only design-system gallery and the
+component previews in the catalog modules (owner, 2026-10-19). A base component whose contract
+`.impeccable/components/<id>.yaml` is approved needs no surface brief: the contract is its approval
+(`.claude/rules/design-system.md` invariant 8). Unsure → treat it as a gate; asking costs
 one message, a wrong screen costs a rebuild on two platforms.
 
 Who runs which step: `ui-designer` runs steps 1–4, 6 and 7; the engineer (`ios-engineer`,

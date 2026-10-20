@@ -23,6 +23,7 @@ import {
   apisOf,
   emittedApi,
   modelOf,
+  once,
 } from './models.mjs';
 
 const filesOf = (model) => {
@@ -41,7 +42,7 @@ const fixture = filesOf(modelOf(VALID));
 const repoModel = modelOf(REPO_DESIGN_MD);
 const repo = filesOf(repoModel);
 const contractFixture = withApiOf(modelOf(CONTRACT_TOKENS), VALID_CONTRACTS);
-const repoWithApi = withApiOf(repoModel, REPO_CONTRACTS);
+const repoWithApi = once(() => withApiOf(repoModel, REPO_CONTRACTS));
 
 test('the fixture: Swift and Kotlin spell the same name -> value table', () => {
   assert.deepEqual(swiftTable(fixture.swift), kotlinTable(fixture.kotlin));
@@ -67,6 +68,26 @@ test('the table holds values of every tier, in one spelling', () => {
       'SCRIM,RING_LIGHT',
     ].join(','),
     'AppColors[ON_PRIMARY]': 'onPrimary',
+    'AppColorRole[BACKGROUND].id': 'str:"background"',
+    'AppColorRole[SURFACE2].id': 'str:"surface-2"',
+    'AppColorRole[RING_LIGHT].id': 'str:"ring-light"',
+    'AppTextStyle.name:type': 'String',
+    'AppTypography.label.name': 'str:"label"',
+    'AppTypography.all': [
+      'list:[ref:AppTypography.heading,ref:AppTypography.body',
+      'ref:AppTypography.label,ref:AppTypography.badge]',
+    ].join(','),
+    'AppTypography.all:type': 'list<AppTextStyle>',
+    'AppScaleStep.name:type': 'String',
+    'AppScaleStep.value:type': 'Double',
+    'AppSpacing.all': 'list:3',
+    'AppSpacing.all:type': 'list<AppScaleStep>',
+    'AppSpacing.all[0]:init': 'AppScaleStep',
+    'AppSpacing.all[0].name': 'str:"spacing-4"',
+    'AppSpacing.all[0].value': 'ref:AppSpacing.space4',
+    'AppSpacing.all[2].name': 'str:"spacing-16"',
+    'AppRadius.all[1].name': 'str:"rounded-full"',
+    'AppRadius.all[1].value': 'ref:AppRadius.full',
     'AppColors.scrim:type': 'argb',
     'AppColors.brand.background': 'argb:FF225533',
     'ButtonPrimaryTokens.dark.typography': 'ref:AppTypography.label',
@@ -93,6 +114,32 @@ test('the repository table has every role in every context and every component p
     }
   }
   assert.equal(table['BannerDarkTokens.light:init'], undefined);
+  repoModel.roles.forEach(({ key }) => {
+    assert.equal(table[`AppColorRole[${ktEnumEntry(memberId(key))}].id`], `str:"${key}"`, key);
+  });
+});
+
+test('the repository scales and type styles: every step and style named by its DESIGN.md key', () => {
+  const table = swiftTable(repo.swift);
+  const names = (list) => {
+    const out = [];
+    for (let i = 0; table[`${list}[${i}].name`] !== undefined; i += 1) {
+      out.push(JSON.parse(table[`${list}[${i}].name`].slice('str:'.length)));
+    }
+    return out;
+  };
+  const spacing = [4, 8, 12, 16, 20, 24, 32, 40, 48, 64].map((n) => `spacing-${n}`);
+  assert.deepEqual(names('AppSpacing.all'), spacing);
+  const radii = [2, 3, 4, 6, 8, 10, 12, 14, 16, 18, 20, 24].map((n) => `rounded-${n}`);
+  assert.deepEqual(names('AppRadius.all'), [...radii, 'rounded-full']);
+  const styles = Object.keys(repoModel.sets.primitives.typography);
+  assert.deepEqual(styles.slice(0, 2), ['display', 'title-1']);
+  assert.equal(styles.at(-1), 'button-disabled');
+  const all = styles.map((key) => `ref:AppTypography.${memberId(key)}`);
+  assert.equal(table['AppTypography.all'], `list:[${all.join(',')}]`);
+  for (const key of styles) {
+    assert.equal(table[`AppTypography.${memberId(key)}.name`], `str:"${key}"`, key);
+  }
 });
 
 test('the contract fixture: both component API files spell the same table', () => {
@@ -100,11 +147,12 @@ test('the contract fixture: both component API files spell the same table', () =
 });
 
 test('the repository contracts: both component API files spell the same table', () => {
-  assert.deepEqual(swiftTable(repoWithApi.swift), kotlinTable(repoWithApi.kotlin));
+  const { swift, kotlin } = repoWithApi();
+  assert.deepEqual(swiftTable(swift), kotlinTable(kotlin));
 });
 
 test('the API table holds the ids, the test IDs, the lookup and every merged look', () => {
-  const table = kotlinTable(repoWithApi.kotlin);
+  const table = kotlinTable(repoWithApi().kotlin);
   const [button] = apisOf(repoModel, REPO_CONTRACTS);
   const expected = {
     'ButtonVariant[PRIMARY_OUTLINE].id': 'str:"primary-outline"',
@@ -119,6 +167,10 @@ test('the API table holds the ids, the test IDs, the lookup and every merged loo
     'ButtonSpec.light.looks': 'list:100',
     'ComponentGallery.buttonLabel': 'str:"Continue"',
     'ComponentGallery.button': 'list:100',
+    'GalleryComponent.cases': 'BUTTON',
+    'GalleryComponent[BUTTON].id': 'str:"button"',
+    'GalleryComponent[BUTTON].title': 'str:"C01 Buttons"',
+    'GalleryComponent[BUTTON].slug': 'str:"c01-buttons"',
   };
   for (const [name, value] of Object.entries(expected)) assert.equal(table[name], value, name);
   assert.equal(table['ButtonTestId.textSmallEnabled'], undefined, 'text small is gone');
@@ -161,6 +213,12 @@ test('a merged look, an id or a test ID spelled differently in one API file fail
   assert.deepEqual(differs('"ds-button-primary-large-enabled"', '"ds-button-primary-large"'), [
     'ButtonTestId.primaryLargeEnabled',
   ]);
+  assert.deepEqual(differs('"C01 Fixture buttons"', '"C01 Fixture button"'), [
+    'GalleryComponent[BUTTON].title',
+  ]);
+  assert.deepEqual(differs('"c01-fixture-buttons"', '"c01-buttons"'), [
+    'GalleryComponent[BUTTON].slug',
+  ]);
 });
 
 test('a value, a role or a name spelled differently in one language fails the comparison', () => {
@@ -183,4 +241,10 @@ test('a value, a role or a name spelled differently in one language fails the co
     'AppSpacing.spacing8',
     'AppSpacing.spacing8:type',
   ]);
+  const roleId = differs('SURFACE2("surface-2"', 'SURFACE2("surface2"');
+  assert.deepEqual(roleId, ['AppColorRole[SURFACE2].id']);
+  const step = differs('name = "spacing-8"', 'name = "space-8"');
+  assert.deepEqual(step, ['AppSpacing.all[1].name']);
+  const style = differs('name = "label"', 'name = "label-1"');
+  assert.deepEqual(style, ['AppTypography.label.name']);
 });

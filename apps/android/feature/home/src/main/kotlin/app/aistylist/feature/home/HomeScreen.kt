@@ -37,13 +37,18 @@ object HomeTestTags {
     const val RETRY_BUTTON: String = "retry-button"
     const val DEBUG_CONSENT_TOGGLE: String = "debug_consent_toggle"
     const val DEBUG_FORCE_CRASH: String = "debug_force_crash"
+    const val DEBUG_OPEN_DS_GALLERY: String = "debug_open_ds_gallery"
 }
 
-/** Stateful entry point: collects [HomeViewModel] state lifecycle-aware. */
+/**
+ * Stateful entry point: collects [HomeViewModel] state lifecycle-aware. The app root passes
+ * [onOpenDesignSystemGallery] in the `debug` build only; it shows the gallery button.
+ */
 @Composable
 fun HomeRoute(
     viewModel: HomeViewModel,
     modifier: Modifier = Modifier,
+    onOpenDesignSystemGallery: (() -> Unit)? = null,
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     HomeScreen(
@@ -51,6 +56,7 @@ fun HomeRoute(
         onRetry = viewModel::retry,
         onAnalyticsConsentChange = viewModel::onAnalyticsConsentChange,
         onForceTestCrash = viewModel::forceTestCrash,
+        onOpenDesignSystemGallery = onOpenDesignSystemGallery,
         modifier = modifier,
     )
 }
@@ -62,6 +68,7 @@ fun HomeScreen(
     onRetry: () -> Unit,
     onAnalyticsConsentChange: (Boolean) -> Unit,
     onForceTestCrash: () -> Unit,
+    onOpenDesignSystemGallery: (() -> Unit)?,
     modifier: Modifier = Modifier,
 ) {
     Column(
@@ -92,6 +99,7 @@ fun HomeScreen(
                 consent = state.analyticsConsent,
                 onConsentChange = onAnalyticsConsentChange,
                 onForceTestCrash = onForceTestCrash,
+                onOpenDesignSystemGallery = onOpenDesignSystemGallery,
             )
         }
     }
@@ -99,13 +107,15 @@ fun HomeScreen(
 
 /**
  * Debug and preview builds only (never `release`): a consent switch bound to the same consent as
- * the one above, and the forced test crash that proves error tracking in PostHog.
+ * the one above, the forced test crash that proves error tracking in PostHog, and (when the app
+ * root passes the action, `debug` only) the design-system gallery button.
  */
 @Composable
 private fun DebugTools(
     consent: Boolean,
     onConsentChange: (Boolean) -> Unit,
     onForceTestCrash: () -> Unit,
+    onOpenDesignSystemGallery: (() -> Unit)?,
     modifier: Modifier = Modifier,
 ) {
     Column(
@@ -125,6 +135,15 @@ private fun DebugTools(
             action = onForceTestCrash,
             modifier = Modifier.testTag(HomeTestTags.DEBUG_FORCE_CRASH),
         )
+        if (onOpenDesignSystemGallery != null) {
+            AppButton(
+                label = stringResource(R.string.home_debug_open_ds_gallery),
+                variant = ButtonVariant.SECONDARY,
+                size = ButtonSize.MEDIUM,
+                action = onOpenDesignSystemGallery,
+                modifier = Modifier.testTag(HomeTestTags.DEBUG_OPEN_DS_GALLERY),
+            )
+        }
     }
 }
 
@@ -215,6 +234,7 @@ private fun HomeScreenLoadedPreview() {
             onRetry = {},
             onAnalyticsConsentChange = {},
             onForceTestCrash = {},
+            onOpenDesignSystemGallery = {},
         )
     }
 }
@@ -234,6 +254,7 @@ private fun HomeScreenErrorPreview() {
             onRetry = {},
             onAnalyticsConsentChange = {},
             onForceTestCrash = {},
+            onOpenDesignSystemGallery = null,
         )
     }
 }

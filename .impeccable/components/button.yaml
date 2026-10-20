@@ -255,6 +255,7 @@ accessibility:
   minTouchTarget: { ios: 44, android: 48 }
 
 gallery:
+  title: Buttons
   label: Continue
   include: all
 

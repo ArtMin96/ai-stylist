@@ -1,19 +1,35 @@
-// Draws one resolved AppButton look. AppButtonStyle uses it for the live button; the state-grid
-// previews use it to draw forced states (pressed, focused, loading, disabled).
-import DesignTokens
-import SwiftUI
+// Draws one resolved AppButton look. AppButtonStyle uses it for the live button; the dev-only
+// DesignSystemCatalog target (gallery C01 section, previews) uses it to draw forced states (pressed,
+// focused, loading, disabled). `package` access: visible to the catalog in this SwiftPM package, never
+// to HomeFeature or the app, which use AppButton.
+package import DesignTokens
+package import SwiftUI
 
 /// The visible pill of an `AppButton` in a given `ButtonAppearance`; no interaction of its own.
-struct AppButtonFace: View {
+package struct AppButtonFace: View {
   let label: String
   let appearance: ButtonAppearance
-  var leadingIcon: Image?
-  var loading = false
-  var fullWidth = false
+  let leadingIcon: Image?
+  let loading: Bool
+  let fullWidth: Bool
 
   @Environment(\.appTheme) private var theme
 
-  var body: some View {
+  package init(
+    label: String,
+    appearance: ButtonAppearance,
+    leadingIcon: Image? = nil,
+    loading: Bool = false,
+    fullWidth: Bool = false
+  ) {
+    self.label = label
+    self.appearance = appearance
+    self.leadingIcon = leadingIcon
+    self.loading = loading
+    self.fullWidth = fullWidth
+  }
+
+  package var body: some View {
     let shape = RoundedRectangle(cornerRadius: appearance.rounded)
     HStack(spacing: appearance.iconGap) {
       leadingSlot

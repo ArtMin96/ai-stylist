@@ -29,7 +29,7 @@ All fields are required unless marked optional.
   - `label`: the accessible name, as a `{props.<name>}` reference.
   - `busy`: the busy state (`loading`), with this behaviour on every variant (owner 2026-10-20). The label stays and a 20 spinner shows in the leading-icon slot. The component ignores every activation (tap, keyboard, assistive) until the state ends, so a request cannot be sent twice. It keeps its enabled colours, is never greyed out or announced as disabled, stays focusable and is announced as busy.
   - `minTouchTarget: { ios: <pt>, android: <dp> }`: from `DESIGN.md` "Layout" → Touch targets (44 pt, 48 dp).
-- `gallery`: `label`, a synthetic string (never real user data), and `include`: `all` (every allowed combination) or an explicit list of `{ variant, size, state }`.
+- `gallery`: `title`, the section name in the component gallery, words of letters and digits joined by single spaces (`Buttons`); the generator shows it as `<board> <title>` with a kebab-case slug (`C01 Buttons`, `c01-buttons`). `label`, a synthetic string (never real user data), and `include`: `all` (every allowed combination) or an explicit list of `{ variant, size, state }`.
 - `testId`: exactly `ds-{component}-{variant}-{size}-{state}`, for example `ds-button-primary-large-enabled`. It is the iOS `accessibilityIdentifier` and the Android `testTag`, the same literal on both.
 - `approved`: `pending`, or the date (`yyyy-mm-dd`) the owner approved the contract in chat. `ui-designer` writes it when the lead relays the owner's words. Silence is not approval, and neither is an agent's own opinion.
 

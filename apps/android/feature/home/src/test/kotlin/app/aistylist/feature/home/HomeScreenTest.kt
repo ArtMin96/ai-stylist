@@ -34,9 +34,10 @@ class HomeScreenTest {
         repository: QueuedVersionRepository,
         recording: RecordingAnalytics = RecordingAnalytics(),
         testCrash: (() -> Unit)? = null,
+        onOpenDesignSystemGallery: (() -> Unit)? = null,
     ): HomeViewModel {
         val viewModel = HomeViewModel(repository, recording.analytics, TEST_CONFIG, testCrash)
-        compose.setContent { HomeRoute(viewModel) }
+        compose.setContent { HomeRoute(viewModel, onOpenDesignSystemGallery = onOpenDesignSystemGallery) }
         return viewModel
     }
 
@@ -123,5 +124,32 @@ class HomeScreenTest {
         button.assertTextEquals("Force test crash").assertHasClickAction()
 
         assertThrows(SyntheticTestCrash::class.java) { button.performClick() }
+    }
+
+    @Test
+    fun designSystemGalleryButtonRunsTheInjectedAction() {
+        var opens = 0
+        show(
+            QueuedVersionRepository(VERSION_OK),
+            testCrash = SYNTHETIC_TEST_CRASH,
+            onOpenDesignSystemGallery = { opens++ },
+        )
+
+        compose
+            .onNodeWithTag(HomeTestTags.DEBUG_OPEN_DS_GALLERY)
+            .assertTextEquals("Design system gallery")
+            .assertHasClickAction()
+            .performClick()
+
+        assertEquals(1, opens)
+    }
+
+    @Test
+    fun designSystemGalleryButtonIsAbsentWithoutAnAction() {
+        show(QueuedVersionRepository(VERSION_OK), testCrash = SYNTHETIC_TEST_CRASH, onOpenDesignSystemGallery = null)
+
+        compose.onNodeWithTag(HomeTestTags.DEBUG_FORCE_CRASH).assertIsDisplayed()
+        compose.onNodeWithTag(HomeTestTags.DEBUG_OPEN_DS_GALLERY).assertDoesNotExist()
+        compose.onNodeWithText("Design system gallery").assertDoesNotExist()
     }
 }

@@ -4,8 +4,10 @@
 // differently. Only the spelling is normalised: `.onPrimary` and `AppColorRole.ON_PRIMARY` are
 // `role:ON_PRIMARY` (so are `.primaryOutline` and `ButtonVariant.PRIMARY_OUTLINE`), `[a, b]` and
 // `listOf(a, b)` are one list, `UInt32` and `Long` are `argb`, `nil` and `null` are `none`, a
-// Swift raw value and a Kotlin `id` are one `[ENTRY].id`. A list of struct values is read item by
-// item (`looks[3].appearance.textColor`). The grammar is the emitters' own output
+// Swift raw value and a Kotlin `id` are one `[ENTRY].id`, a Swift computed `var` switching over
+// the cases and a Kotlin enum constructor field are one `[ENTRY].<field>`, and a Kotlin
+// `AppColors::x` entry argument is the Swift `colors[role]` case. A list of struct values is read
+// item by item (`looks[3].appearance.textColor`). The grammar is the emitters' own output
 // (emit-swift.mjs, emit-kotlin.mjs), not Swift or Kotlin in general.
 import { ktEnumEntry } from '../naming.mjs';
 
@@ -18,6 +20,8 @@ const SWIFT = {
   enumCase: /^case (\w+)$/,
   rawCase: new RegExp(`^case (\\w+) = ${STRING}$`),
   lookupCase: /^case \.(\w+): (\w+)$/,
+  fieldCase: new RegExp(`^case \\.(\\w+): ${STRING}$`),
+  property: /^public var (\w+): String \{$/,
   anonymous: /^(public subscript\(|switch ).*\{$/,
   method: /^public func (\w+)\((.*)\) -> (.+) \{$/,
 };
@@ -25,9 +29,10 @@ const KOTLIN = {
   open: /^object (\w+) \{$/,
   header: /^(data class|enum class) (\w+)\($/,
   field: /^val (\w+): (.+),$/,
+  enumField: /^(?:internal )?val (\w+): .+,$/,
   value: /^val (\w+): (.+?) =(?: (.*))?$/,
-  enumCase: /^([A-Z0-9_]+)\((\w+)::(\w+)\),$/,
-  idEntry: new RegExp(`^([A-Z0-9_]+)\\(${STRING}\\),$`),
+  entry: /^([A-Z0-9_]+)\((.*)\),$/,
+  entryArg: new RegExp(`${STRING}|(\\w+)::(\\w+)`, 'g'),
   anonymous: /^companion object \{$/,
   method: /^fun (\w+)\((.*)\): (.+) =$/,
   methodOpen: /^fun (\w+)\($/,
@@ -59,6 +64,7 @@ function readTable(files, extension, readLine) {
       method: null,
       cases: {},
       rawEnums: new Set(),
+      enumFields: {},
       body: null,
     };
     for (const raw of text.split('\n')) {
@@ -74,15 +80,20 @@ function readTable(files, extension, readLine) {
   return Object.fromEntries(Object.entries(table).sort(([a], [b]) => (a < b ? -1 : 1)));
 }
 
+/** The dotted type path of the open frames (type names; a property or block frame adds none). */
 const path = (state, name) =>
-  [...state.stack.filter((frame) => frame !== null), name].filter(Boolean).join('.');
+  [...state.stack.filter((frame) => typeof frame === 'string'), name].filter(Boolean).join('.');
+
+/** The field a Swift computed `var` frame names, when one is open. */
+const openProperty = (state) => state.stack.findLast((frame) => frame?.property)?.property;
 
 function readSwiftLine(state, line) {
   let m;
   if ((m = SWIFT.open.exec(line))) {
     state.stack.push(m[1]);
     if (SWIFT.rawEnum.test(line)) state.rawEnums.add(m[1]);
-  } else if (SWIFT.anonymous.test(line)) state.stack.push(null);
+  } else if ((m = SWIFT.property.exec(line))) state.stack.push({ property: m[1] });
+  else if (SWIFT.anonymous.test(line)) state.stack.push(null);
   else if (line === '}') state.stack.pop();
   else if ((m = SWIFT.field.exec(line))) addType(state, m[1], m[2]);
   else if ((m = SWIFT.method.exec(line))) {
@@ -96,6 +107,9 @@ function readSwiftLine(state, line) {
     else if (state.rawEnums.has(type)) addId(state, type, entry, unescape(m[1]));
   } else if ((m = SWIFT.lookupCase.exec(line))) {
     state.table[`${path(state, '')}[${ktEnumEntry(unescape(m[1]))}]`] = unescape(m[2]);
+  } else if ((m = SWIFT.fieldCase.exec(line)) && openProperty(state)) {
+    const entry = ktEnumEntry(unescape(m[1]));
+    addField(state, path(state, ''), entry, openProperty(state), m[2]);
   } else if ((m = SWIFT.value.exec(line))) startValue(state, m[1], m[2], m[3]);
   else if (!/^nonisolated public enum \w+ \{\}$/.test(line)) unread(line);
 }
@@ -109,12 +123,8 @@ function readKotlinLine(state, line) {
   else if ((m = KOTLIN.header.exec(line))) state.header = { kind: m[1], name: m[2] };
   else if (KOTLIN.anonymous.test(line)) state.stack.push(null);
   else if (line === '}') state.stack.pop();
-  else if ((m = KOTLIN.enumCase.exec(line))) {
-    addCase(state, path(state, ''), m[1]);
-    state.table[`${m[2]}[${m[1]}]`] = unescape(m[3]);
-  } else if ((m = KOTLIN.idEntry.exec(line))) {
-    addCase(state, path(state, ''), m[1]);
-    addId(state, path(state, ''), m[1], m[2]);
+  else if ((m = KOTLIN.entry.exec(line)) && state.enumFields[path(state, '')]) {
+    readKotlinEntry(state, m[1], m[2]);
   } else if ((m = KOTLIN.method.exec(line))) {
     addMethod(state, m[1], m[2], m[3]);
     state.body = { lines: 1 };
@@ -140,7 +150,26 @@ function addMethod(state, name, params, result) {
 
 /** The contract id of an enum entry: a Swift raw value or the Kotlin `id`. */
 function addId(state, type, entry, id) {
-  state.table[`${type}[${entry}].id`] = `str:${JSON.stringify(id.replace(/\\(.)/g, '$1'))}`;
+  addField(state, type, entry, 'id', id);
+}
+
+/** A string field of an enum entry: `GalleryComponent[BUTTON].title`. */
+function addField(state, type, entry, field, text) {
+  state.table[`${type}[${entry}].${field}`] = `str:${JSON.stringify(text.replace(/\\(.)/g, '$1'))}`;
+}
+
+/**
+ * A Kotlin enum entry, its arguments matched to the constructor fields by position: a string is
+ * that field (`id` the contract id), `AppColors::x` the `colors[role]` lookup of the entry.
+ */
+function readKotlinEntry(state, entry, args) {
+  const type = path(state, '');
+  const fields = state.enumFields[type];
+  addCase(state, type, entry);
+  [...args.matchAll(KOTLIN.entryArg)].forEach((arg, i) => {
+    if (arg[1] !== undefined) addField(state, type, entry, fields[i], arg[1]);
+    else state.table[`${arg[2]}[${entry}]`] = unescape(arg[3]);
+  });
 }
 
 /** The parameters of a `data class X(` or `enum class X(` header, up to `)` or `) {`. */
@@ -150,6 +179,8 @@ function readKotlinHeader(state, line) {
   if (line === ')' || line === ') {') {
     state.header = null;
     if (line === ') {') state.stack.push(name);
+  } else if (kind === 'enum class' && (m = KOTLIN.enumField.exec(line))) {
+    (state.enumFields[name] ??= []).push(m[1]);
   } else if (kind === 'data class' && (m = KOTLIN.field.exec(line))) {
     state.stack.push(name);
     addType(state, m[1], m[2]);

@@ -17,14 +17,16 @@ import {
   emittedApi,
   firstGroups,
   modelOf,
+  once,
 } from './models.mjs';
 
 const fixtureModel = modelOf(CONTRACT_TOKENS);
 const repoModel = modelOf(REPO_DESIGN_MD);
 const swift = emittedApi(emitApiSwift, fixtureModel, VALID_CONTRACTS)['ComponentAPI.swift'];
 const kotlin = emittedApi(emitApiKotlin, fixtureModel, VALID_CONTRACTS)['ComponentApi.kt'];
-const repoSwift = emittedApi(emitApiSwift, repoModel, REPO_CONTRACTS)['ComponentAPI.swift'];
-const repoKotlin = emittedApi(emitApiKotlin, repoModel, REPO_CONTRACTS)['ComponentApi.kt'];
+const repoApi = (emit, file) => once(() => emittedApi(emit, repoModel, REPO_CONTRACTS)[file]);
+const repoSwift = repoApi(emitApiSwift, 'ComponentAPI.swift');
+const repoKotlin = repoApi(emitApiKotlin, 'ComponentApi.kt');
 const CONTEXT_IDS = ['light', 'dark', 'brand', 'hcLight', 'hcDark'];
 
 test('one API file per language, with the generated header, deterministic', () => {
@@ -46,10 +48,10 @@ test('Swift enums: a case per id, the raw value only where it differs from the c
     '}',
   ];
   assert.equal(block(swift, 'nonisolated public enum ButtonVariant'), variant.join('\n'));
-  const repoVariant = block(repoSwift, 'nonisolated public enum ButtonVariant');
+  const repoVariant = block(repoSwift(), 'nonisolated public enum ButtonVariant');
   assert.match(repoVariant, /\n {2}case primaryOutline = "primary-outline"\n/);
   assert.match(repoVariant, /\n {2}case destructiveFilled = "destructive-filled"\n/);
-  const states = block(repoSwift, 'nonisolated public enum ButtonState');
+  const states = block(repoSwift(), 'nonisolated public enum ButtonState');
   const cases = ['enabled', 'pressed', 'focused', 'disabled', 'loading'];
   assert.deepEqual(firstGroups(states, /case (\w+)/g), cases);
 });
@@ -58,7 +60,7 @@ test('Kotlin enums: an entry per id carrying the contract id', () => {
   const size = ['enum class ButtonSize(', '    val id: String,', ') {'];
   assert.ok(kotlin.includes(size.join('\n')), 'the ButtonSize header');
   assert.match(kotlin, /\n {4}LARGE\("large"\),\n {4}SMALL\("small"\),\n\}\n/);
-  assert.match(repoKotlin, /\n {4}PRIMARY_OUTLINE\("primary-outline"\),\n/);
+  assert.match(repoKotlin(), /\n {4}PRIMARY_OUTLINE\("primary-outline"\),\n/);
 });
 
 test('test IDs: one constant per allowed combination and no other', () => {
@@ -68,11 +70,11 @@ test('test IDs: one constant per allowed combination and no other', () => {
   assert.ok(!ids.includes('ds-button-secondary-small-enabled'), 'secondary has no small');
   assert.match(swift, /\n {2}public static let secondaryLargeFocused: String = /);
   assert.match(kotlin, /\n {4}val secondaryLargeFocused: String = "ds-button-secondary-large-/);
-  const repoIds = firstGroups(repoSwift, /: String = "(ds-button-[a-z-]+)"/g);
+  const repoIds = firstGroups(repoSwift(), /: String = "(ds-button-[a-z-]+)"/g);
   assert.equal(repoIds.length, 100);
   assert.ok(repoIds.includes('ds-button-text-compact-enabled'));
   assert.ok(!repoIds.some((id) => id.startsWith('ds-button-text-small-')), 'text small is gone');
-  for (const text of [repoSwift, repoKotlin]) assert.doesNotMatch(text, /textSmall|TEXT_SMALL/);
+  for (const text of [repoSwift(), repoKotlin()]) assert.doesNotMatch(text, /textSmall|TEXT_SMALL/);
 });
 
 test('the merged look: optional where a look lacks the property, the focus ring as a type', () => {
@@ -94,10 +96,10 @@ test('the icon slot: two non-optional dimensions, 18 / 6 at compact and 20 / 8 e
   const appearance = block(swift, 'nonisolated public struct ButtonAppearance');
   assert.match(appearance, /\n {2}public let iconSize: Double\n {2}public let iconGap: Double\n/);
   assert.match(kotlin, /\n {4}val iconSize: Double,\n {4}val iconGap: Double,\n/);
-  const sizes = firstGroups(repoSwift, /^ {10}iconSize: ([\d.]+),$/gm);
+  const sizes = firstGroups(repoSwift(), /^ {10}iconSize: ([\d.]+),$/gm);
   assert.equal(sizes.length, 500, 'one slot per look');
   assert.deepEqual([...new Set(sizes)].sort(), ['18.0', '20.0']);
-  assert.match(repoKotlin, /\n {36}iconSize = 18\.0,\n {36}iconGap = 6\.0,\n/);
+  assert.match(repoKotlin(), /\n {36}iconSize = 18\.0,\n {36}iconGap = 6\.0,\n/);
 });
 
 test('ButtonSpec: one instance per context, the lookup returns none for a disallowed one', () => {
@@ -155,8 +157,44 @@ test('the gallery: per contract its label and its entries with their test-ID con
   assert.match(kotlin, /\n {4}val button: List<ButtonGalleryEntry> =\n {8}listOf\(\n/);
 });
 
+test('GalleryComponent: a case per contract with its id, the board-prefixed title and slug', () => {
+  const sections = [
+    'nonisolated public enum GalleryComponent: String, CaseIterable, Sendable {',
+    '  case button',
+    '',
+    '  /// The section title: the board and the contract `gallery.title`.',
+    '  public var title: String {',
+    '    switch self {',
+    '    case .button: "C01 Fixture buttons"',
+    '    }',
+    '  }',
+    '',
+    '  /// The kebab-case title: the section id is `ds-gallery-section-<slug>`.',
+    '  public var slug: String {',
+    '    switch self {',
+    '    case .button: "c01-fixture-buttons"',
+    '    }',
+    '  }',
+    '}',
+  ];
+  assert.equal(block(swift, 'nonisolated public enum GalleryComponent'), sections.join('\n'));
+  const ktSections = [
+    'enum class GalleryComponent(',
+    '    val id: String,',
+    '    val title: String,',
+    '    val slug: String,',
+    ') {',
+    '    BUTTON("button", "C01 Fixture buttons", "c01-fixture-buttons"),',
+    '}',
+  ];
+  assert.equal(block(kotlin, 'enum class GalleryComponent('), ktSections.join('\n'));
+  for (const text of [swift, kotlin]) {
+    assert.ok(text.indexOf('GalleryComponent') < text.indexOf('ComponentGallery'), 'before');
+  }
+});
+
 test('Swift: every generated type is nonisolated and public', () => {
-  for (const text of [swift, repoSwift]) {
+  for (const text of [swift, repoSwift()]) {
     for (const line of text.split('\n').filter((l) => /\b(enum|struct) \w/.test(l))) {
       assert.match(line, /^ *nonisolated public (enum|struct) /, line);
     }
@@ -164,7 +202,7 @@ test('Swift: every generated type is nonisolated and public', () => {
 });
 
 test('layout: no line over 120 columns, no tab, no trailing space, even indents', () => {
-  const files = { swift, kotlin, repoSwift, repoKotlin };
+  const files = { swift, kotlin, repoSwift: repoSwift(), repoKotlin: repoKotlin() };
   for (const [name, text] of Object.entries(files)) {
     const unit = name.toLowerCase().includes('kotlin') ? 4 : 2;
     text.split('\n').forEach((line, i) => {

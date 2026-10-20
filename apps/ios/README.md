@@ -32,8 +32,10 @@ Packages/DesignSystem/   app-internal design system (DEC-87); no dependency on C
                            generated/ (never hand-edit)
   Sources/DesignSystem     SwiftUI layer (Apple platforms only; left out of the manifest on Linux): AppTheme
                            (`\.appTheme`, set by `.appTheme()`), AppFonts (bundled fonts, Resources/Fonts),
-                           AppButton (C01) with its face, style, rules and Xcode previews
-  tests/<Target>Tests      DesignTokensTests, DesignSystemTests
+                           AppButton (C01) with its face, style and rules; system core, so no previews
+  Sources/DesignSystemCatalog  dev-only (Apple platforms only): the Xcode previews and the debug "Design
+                           system gallery"; linked by the Dev configuration only (see "Design system")
+  tests/<Target>Tests      DesignTokensTests, DesignSystemTests, DesignSystemCatalogTests
 scripts/                 recipe bodies (bash 3.2-portable); fixtures/ prove each ban still fires,
                          test-xcode-guards.sh the PostHog, pin and Device Hub guards of xcode.sh
 ```
@@ -53,9 +55,28 @@ The generated client lives in `packages/contracts/gen/swift-client/`. `tools/cod
   → `Font` scaled with Dynamic Type); it never redeclares a value.
 - **AppButton.** `AppButton(_:variant:size:leadingIcon:fullWidth:enabled:loading:action:)` follows the C01
   contract `.impeccable/components/button.yaml`. A variant and size pair the contract does not allow renders
-  nothing. The caller attaches the test ID with `.accessibilityIdentifier(_:)`. Xcode previews in
-  `AppButtonPreviews.swift`: "AppButton states, light", "AppButton states, dark" (every
-  `ComponentGallery.button` cell, tagged with its test ID) and "AppButton playground".
+  nothing. The caller attaches the test ID with `.accessibilityIdentifier(_:)`.
+- **Catalog (dev-only).** Previews and dev tools never live in the `DesignSystem` target (owner rule,
+  2026-10-20). They live in the `DesignSystemCatalog` target of the same package, which carries no
+  `#if DEBUG`. `AppButtonPreviews.swift` holds "AppButton states, light" and "AppButton states, dark"
+  (the gallery's C01 section) and "AppButton playground". `AppButtonFace` has `package` access, so the
+  catalog can draw forced states (pressed, focused, loading, disabled); `HomeFeature` and the app cannot.
+- **Design system gallery (AI-195).** In the Dev build, Home's debug section shows "Design system gallery"
+  (`debug_open_ds_gallery`). It opens `DesignSystemGalleryScreen` full screen (root `ds-gallery`, "Close"
+  = `debug_close_ds_gallery`). The screen shows the sections Colours, Typography, Spacing, Radius, then
+  one section per generated `GalleryComponent` (today "C01 Buttons"), each tagged
+  `ds-gallery-section-<slug>`. Every item comes from the generated manifest (`AppColorRole` raw values,
+  `AppTypography.all`, `AppSpacing.all`, `AppRadius.all`, `ComponentGallery`), so a new token or
+  component cell appears without a hand edit, and a new component fails the build until
+  `GallerySection` maps it. The scheme follows the system appearance (S1, S2, S7).
+- **How Prod excludes the catalog.** `project.yml` adds `DesignSystemCatalog` as a build dependency
+  with `link: false`, and only `Config/Dev.xcconfig` links its object
+  (`OTHER_LDFLAGS = $(inherited) $(BUILT_PRODUCTS_DIR)/DesignSystemCatalog.o`). `App/AIStylistApp.swift`
+  imports and uses it under `#if DEBUG` only. In the P0 spike (2026-10-20), a plain link put 37 symbols of a
+  throwaway catalog into the Prod binary, even with the `#if DEBUG` in the app. With this setup Prod
+  had 0 symbols and 0 strings. Check with `strings -a` and `nm -m` on
+  `.build/DerivedData/Build/Products/Prod-iphonesimulator/AIStylist.app/AIStylist` after
+  `just ios-build --config prod`. Preview links no catalog either.
 
 ### Fonts
 

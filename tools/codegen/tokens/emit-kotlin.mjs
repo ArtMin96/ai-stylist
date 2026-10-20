@@ -77,20 +77,30 @@ export const kotlin = {
   roles: (decl) => [
     `/** ${docText(decl.doc)} */`,
     `enum class ${decl.name}(`,
+    `${INDENT}val id: String,`,
     `${INDENT}internal val read: (${decl.valuesType}) -> Long,`,
     ') {',
-    ...decl.cases.map((id) => `${INDENT}${ktEnumEntry(id)}(${decl.valuesType}::${ktIdent(id)}),`),
+    ...decl.cases.map(({ name, id }) => {
+      const read = `${decl.valuesType}::${ktIdent(name)}`;
+      return `${INDENT}${ktEnumEntry(name)}(${ktStr(id)}, ${read}),`;
+    }),
     '}',
   ],
-  /** A closed set of kebab ids: the entry is the Kotlin name, `id` the id. */
-  enum: (decl) => [
-    `/** ${docText(decl.doc)} */`,
-    `enum class ${decl.name}(`,
-    `${INDENT}val id: String,`,
-    ') {',
-    ...decl.cases.map(({ name, id }) => `${INDENT}${ktEnumEntry(name)}(${ktStr(id)}),`),
-    '}',
-  ],
+  /** A closed set of kebab ids: the entry is the Kotlin name, `id` the id, then each extra field. */
+  enum(decl) {
+    const extra = (decl.fields ?? []).map(({ name }) => name);
+    return [
+      `/** ${docText(decl.doc)} */`,
+      `enum class ${decl.name}(`,
+      ...['id', ...extra].map((name) => `${INDENT}val ${ktIdent(name)}: String,`),
+      ') {',
+      ...decl.cases.map((c) => {
+        const args = [c.id, ...extra.map((name) => c[name])].map(ktStr);
+        return `${INDENT}${ktEnumEntry(c.name)}(${args.join(', ')}),`;
+      }),
+      '}',
+    ];
+  },
 };
 
 /** `appearance(variant, size, state)`: the matching list item's result, or null when none does. */

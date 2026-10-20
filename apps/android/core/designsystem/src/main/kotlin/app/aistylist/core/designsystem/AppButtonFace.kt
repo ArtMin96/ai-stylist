@@ -51,10 +51,12 @@ private val PressTransition: AnimationSpec<Color> =
 
 /**
  * Draws one resolved [ButtonAppearance]: no interaction, no semantics of its own. `AppButton`
- * resolves the appearance from its state; the previews force each state through this view.
+ * resolves the appearance from its state; the catalog forces each state through this view.
+ *
+ * For the catalog and snapshot tests only; product UI uses `AppButton` and `AppTheme {}`.
  */
 @Composable
-internal fun AppButtonFace(
+fun AppButtonFace(
     appearance: ButtonAppearance,
     label: String,
     modifier: Modifier = Modifier,

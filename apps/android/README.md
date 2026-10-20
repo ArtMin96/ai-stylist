@@ -13,7 +13,8 @@ React Native, no Kotlin Multiplatform and no 3D code.
 | `core/data/` | `:core:data`, pure Kotlin. `parseAppConfig` (API_BASE_URL and PostHog key/host validation), `DataServices`, `VersionRepository` over the generated client |
 | `core/analytics/` | `:core:analytics`, pure Kotlin, SDK-free. The `Analytics` port, the consent gate (`ConsentGatedAnalytics`), the no-op sink, and the generated `AnalyticsTaxonomy` |
 | `core/api-client/` | `:core:api-client`. It compiles the **generated** client. It has no source code of its own |
-| `core/designsystem/` | `:core:designsystem`, the app-internal design system (DEC-87), an Android library with Compose that depends on no other project module. It holds the generated `DESIGN.md` tokens in `src/main/kotlin/app/aistylist/core/designsystem/generated/` (written by `just generate`, never hand-edited), the bundled fonts (below), `AppTheme` (the token context from the system: light, dark, or high contrast S7 from Android's high-contrast-text setting on API 36+) and `AppButton` (C01, `.impeccable/components/button.yaml`) with its state-grid and playground previews in `AppButtonPreviews.kt` |
+| `core/designsystem/` | `:core:designsystem`, the app-internal design system (DEC-87), an Android library with Compose that depends on no other project module. It holds the generated `DESIGN.md` tokens in `src/main/kotlin/app/aistylist/core/designsystem/generated/` (written by `just generate`, never hand-edited), the bundled fonts (below), `AppTheme` (the token context from the system: light, dark, or high contrast S7 from Android's high-contrast-text setting on API 36+) and `AppButton` (C01, `.impeccable/components/button.yaml`). It holds no previews and no `ui-tooling` dependency: those live in the catalog (next row). `AppButtonFace`, `AppScheme` and `AppTheme(scheme)` are public for the catalog and snapshot tests only; product UI uses `AppButton` and `AppTheme {}` |
+| `core/designsystem-catalog/` | `:core:designsystem-catalog`, the dev-only catalog (owner decision 2026-10-20), depending on `:core:designsystem` only. It holds the `AppButton` previews (`AppButtonPreviews.kt`: state grid and playground) and the design-system gallery (`gallery/`, AI-195): every colour role, type style, spacing step and radius, then every `ComponentGallery` cell in its forced state, all from the generated tokens and gallery manifest. Only `:app` depends on it, as `debugImplementation` |
 | `build-logic/` | Convention plugins. Every compiler, lint, detekt, locking and test setting lives here |
 | `config/` | `detekt.yml`, `lint.xml`, `compose-stability.conf` |
 | `gradle/libs.versions.toml` | The version catalog. Every dependency and plugin version is set here |
@@ -33,11 +34,13 @@ in `build-logic/convention/src/main/kotlin/RootConventionPlugin.kt`.
 :app ──► :feature:home ──► :core:data ──(implementation)──► :core:api-client (generated)
   │            ├─────────► :core:analytics (+ generated AnalyticsTaxonomy)
   │            └─────────► :core:designsystem (generated tokens, AppTheme, AppButton)
-  └──► :core:data, :core:analytics, :core:designsystem
+  ├──► :core:data, :core:analytics, :core:designsystem
+  └──(debugImplementation)──► :core:designsystem-catalog ──► :core:designsystem
 ```
 
 - Feature modules never depend on each other. `core` never depends on `feature`.
 - `:core:designsystem` never depends on another project module.
+- Production code never depends on `:core:designsystem-catalog`; only the `debug` build of `:app` has it.
 - Only `:core:data` can see generated DTOs. Features get the domain types from `:core:data`.
 - `AppContainer` in `:app` is the only place that reads `BuildConfig` or builds adapters.
 
@@ -87,6 +90,12 @@ Upstream projects: Figtree `https://github.com/erikdkennedy/figtree` (google/fon
 - Intended difference: the debug tools also appear in the minified `preview` build (R8
   deobfuscation proof); iOS shows them only in Dev (dSYM suffices). `preview` is debug-signed, so
   it cannot reach Play.
+- The design-system gallery is in `debug` only, not `preview` or `release` (AI-195). `:app` takes
+  `:core:designsystem-catalog` as `debugImplementation`, and `DebugCatalog` exists once per build
+  type (`app/src/{debug,preview,release}/kotlin/app/aistylist/app/DebugCatalog.kt`): `debug` holds
+  the gallery, the others `null`. Home's debug tools then show "Design system gallery"
+  (`debug_open_ds_gallery`). `MainActivity` swaps Home for the gallery in the same window, so its
+  test tags stay resource ids; "Close" (`debug_close_ds_gallery`) or Back returns to Home.
 
 ## Parity with the retired React Native home screen
 

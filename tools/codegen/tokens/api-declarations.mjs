@@ -3,14 +3,43 @@
 // `ComponentApi.kt`). Per contract, with `<Name>` from its id (`button` -> `Button`): the variant,
 // size and state enums, the test-ID constants, the merged look (`<Name>Appearance`), one look per
 // allowed combination (`<Name>Look`), the per-context tables (`<Name>Spec`) and the gallery entry
-// type; then `ComponentGallery`. Every name and value is decided here; emit-api-swift.mjs and
+// type; then `GalleryComponent` (the gallery sections, in board order) and `ComponentGallery`.
+// Every name and value is decided here; emit-api-swift.mjs and
 // emit-api-kotlin.mjs only spell it with the token dialects.
 import { testIdOf } from './contract-model.mjs';
 import { apiTypeName, contextId, memberId, testIdName } from './naming.mjs';
 
 /** The declarations of the API file, in emission order. */
 export function apiDeclarations(apis) {
-  return [...apis.flatMap(componentDeclarations), galleryDeclaration(apis)];
+  return [
+    ...apis.flatMap(componentDeclarations),
+    galleryComponentDeclaration(apis),
+    galleryDeclaration(apis),
+  ];
+}
+
+/**
+ * `GalleryComponent`: one case per contract in board order (`C01` first), its id the contract
+ * id, with the gallery section's `title` and `slug`. The galleries switch over it exhaustively, so
+ * a new contract fails their build until it has a renderer.
+ */
+function galleryComponentDeclaration(apis) {
+  const byBoard = [...apis].sort((a, b) => a.board.localeCompare(b.board));
+  return {
+    kind: 'enum',
+    name: 'GalleryComponent',
+    doc: 'The gallery sections of the components, in board order, each with its contract id.',
+    cases: byBoard.map(({ id, gallery }) => ({
+      name: memberId(id),
+      id,
+      title: gallery.title,
+      slug: gallery.slug,
+    })),
+    fields: [
+      { name: 'title', doc: 'The section title: the board and the contract `gallery.title`.' },
+      { name: 'slug', doc: 'The kebab-case title: the section id is `ds-gallery-section-<slug>`.' },
+    ],
+  };
 }
 
 /** `{ variant, size, state }` as the arguments of a struct value, each an enum case. */

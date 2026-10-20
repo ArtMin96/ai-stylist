@@ -10,22 +10,6 @@ android {
     namespace = "app.aistylist.core.designsystem"
 }
 
-dependencies {
-    implementation(platform(libs.androidx.compose.bom))
-    implementation(libs.androidx.compose.ui)
-    implementation(libs.androidx.compose.material3)
-    implementation(libs.androidx.compose.ui.tooling.preview)
-    debugImplementation(libs.androidx.compose.ui.tooling)
-
-    testImplementation(libs.junit4)
-    testImplementation(libs.robolectric)
-    testImplementation(platform(libs.androidx.compose.bom))
-    testImplementation(libs.androidx.compose.ui.test.junit4)
-    debugImplementation(libs.androidx.compose.ui.test.manifest)
-
-    constraints {
-        // Compose ui-test pulls in Espresso 3.5.0, whose reflective InputManager.getInstance()
-        // fails in the Robolectric SDK 37 sandbox; 3.7.0 uses getSystemService instead.
-        testImplementation(libs.androidx.test.espresso.core)
-    }
-}
+// Compose (BOM, ui, material3) and the JUnit 4 + Robolectric + Compose ui-test setup come from the
+// compose-library convention plugin. No preview tooling here: previews live in
+// :core:designsystem-catalog (owner, 2026-10-20).

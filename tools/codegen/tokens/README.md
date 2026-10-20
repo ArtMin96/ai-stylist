@@ -105,6 +105,8 @@ DEC-87; field rules in `.impeccable/components/README.md`). `contracts.mjs` chec
 - **CC-01** The YAML parses (no duplicate keys) and matches `component-contract.schema.json`
   (Ajv, draft 2020-12 with ajv-formats, loaded from the `packages/contracts` devDependencies as
   `gen-kernel.mjs` does): every field of the contracts README, `approved` included, nothing else.
+  `gallery.title` is required and is words of letters and digits joined by single spaces
+  (`Buttons`), so its slug is well defined (fixture `fixtures/contracts/CC-01-gallery-title/`).
 - **CC-02** `id` is the file name without `.yaml`.
 - **CC-03** The axes agree: `combinations` names exactly the variants, each allows only listed
   sizes and states, every listed size and state is allowed by some variant, and the ids and test-ID
@@ -132,7 +134,8 @@ DEC-87; field rules in `.impeccable/components/README.md`). `contracts.mjs` chec
 reference, like `height`); the normaliser makes them `dimension` tokens.
 
 The rules run in stages (CC-01; CC-02 and CC-03; CC-04 and CC-07; CC-05; CC-06; CC-08) and stop at the
-first stage with a finding, so each `fixtures/contracts/CC-NN/` case fails on its own rule only.
+first stage with a finding, so each `fixtures/contracts/CC-NN/` (or `CC-NN-<case>/`) case fails on
+its own rule only.
 
 **The merge** (owner decision 2026-10-20: one ready look per allowed variant x size x state x
 context). For each context of the table (the contexts every base and size entry has, `contextsOf`):
@@ -300,7 +303,8 @@ guarantees that no two generated identifiers collide. Any other derivation loses
 
 - Public types (DEC-87 D6): `AppColorRole` (one case per `model.roles` entry), `AppColors` (one
   instance per context), `AppTypography`, `AppSpacing`, `AppRadius`, `AppElevation`, `AppMotion`,
-  and `<Component>Tokens`.
+  `AppScaleStep`, and `<Component>Tokens`; with contracts, `GalleryComponent` and the per-contract
+  types (Emitted code).
 - `memberId(key)` names roles and type styles (`on-primary` -> `onPrimary`, `surface-2` ->
   `surface2`, `ring-light` -> `ringLight`). `memberId(key, group)` names keys of the `spacing`,
   `rounded`, `elevation` and `motion` scales. A key that starts with a digit gets the group prefix:
@@ -354,11 +358,19 @@ ARGB (`UInt32`/`Long`, `0xFFFA_FAFA`). The theme code in each app maps them to S
 - Tier 1: `AppSpacing`, `AppRadius`, `AppTypography`, `AppElevation`, `AppMotion` are namespaces
   (Swift `enum`, Kotlin `object`) of constants; a one-level group is a nested namespace
   (`AppElevation.SheetLight.offsetY`, `AppMotion.Sheet.easing`). `AppTextStyle` is a value type
-  (`fontFamily` = the first family of the stack, `lineHeight` as a height, `letterSpacing` in
-  pt/sp, `dynamicType`, `m3Roles`). An alias stays a reference (`AppMotion.easingEnter`); a shadow
-  colour is a role or ARGB.
-- Tier 2: `AppColorRole` (one case per role, role order) and `AppColors` (one field per role, one
-  instance per context: `light`, `dark`, `brand`, `hcLight`, `hcDark`, plus `colors[role]`).
+  (`name` = its `DESIGN.md` key such as `title-1`, `fontFamily` = the first family of the stack,
+  `lineHeight` as a height, `letterSpacing` in pt/sp, `dynamicType`, `m3Roles`). An alias stays a
+  reference (`AppMotion.easingEnter`); a shadow colour is a role or ARGB. For the gallery, each of
+  `AppSpacing`, `AppRadius` and `AppTypography` ends with `all`, every entry in model (`DESIGN.md`)
+  order: `AppSpacing.all` and `AppRadius.all` are `AppScaleStep(name, value)` lists (`name` the
+  key with its group, `spacing-4` … `rounded-full`; `value` a reference to the constant), and
+  `AppTypography.all` lists the styles. `all` comes last, so a Kotlin `object` initialises every
+  constant before the list reads it.
+- Tier 2: `AppColorRole` (one case per role, role order, carrying its `DESIGN.md` role key: Swift
+  `String` raw value, written only where it differs from the case, `case surface2 = "surface-2"`;
+  Kotlin `val id: String` as the first constructor parameter, `SURFACE2("surface-2", …)`) and
+  `AppColors` (one field per role, one instance per context: `light`, `dark`, `brand`, `hcLight`,
+  `hcDark`, plus `colors[role]`).
 - Tier 3: one `<Component>Tokens` value type per component: its properties, then one field per
   state holding a nested type (`ButtonPrimaryTokens.Pressed`), and one instance per context from
   `resolveComponents` (`ButtonPrimaryTokens.dark.pressed.backgroundColor`). Colour properties are
@@ -380,8 +392,13 @@ ARGB (`UInt32`/`Long`, `0xFFFA_FAFA`). The theme code in each app maps them to S
   (variant, size, state, appearance); `<Name>Spec` (`looks`, one instance per context of the table,
   and `appearance(variant:size:state:)` returning that combination's `<Name>Appearance`, or
   `nil` / `null` for a combination the contract does not allow); `<Name>GalleryEntry` (variant, size, state, `testId`). Then
-  `ComponentGallery`: per contract `<id>Label` (the synthetic `gallery.label`) and `<id>` (its
-  entries, each `testId` a reference to the constant). Props stay hand-written in each app (owner
+  `GalleryComponent`: one case per approved contract in board order, its id the contract id,
+  with `title` (`<board> <gallery.title>`: `C01 Buttons`) and `slug` (the title in lower-case
+  kebab: `c01-buttons`); Swift `enum GalleryComponent: String, CaseIterable, Sendable` with
+  computed `title` and `slug`, Kotlin `enum class GalleryComponent(val id, val title, val slug)`.
+  The galleries switch over it exhaustively, so a new contract fails their build until it has a
+  renderer. Then `ComponentGallery`: per contract `<id>Label` (the synthetic `gallery.label`) and
+  `<id>` (its entries, each `testId` a reference to the constant). Props stay hand-written in each app (owner
   decision 2026-10-20); no props descriptor is emitted.
 - Swift: every type is `nonisolated public` (the package defaults to `MainActor` isolation; these
   are immutable `Sendable` values), structs are `Sendable, Equatable` with the memberwise
@@ -410,8 +427,11 @@ contract checker and the merge (`contracts.test.mjs`), the component API emitter
 design.md stub (`cli.test.mjs`). The repository `DESIGN.md` and `fixtures/_valid/` must pass; each
 `fixtures/TK-NN/` is the valid file with one defect and must fail on rule TK-NN and nothing else.
 The repository contracts and `fixtures/contracts/_valid/` pass against their tokens
-(`fixtures/contracts/DESIGN.md`, synthetic); each `fixtures/contracts/CC-NN/button.yaml` is the
-valid contract with one defect and must fail on rule CC-NN and nothing else. A new rule ships with its fixture,
+(`fixtures/contracts/DESIGN.md`, synthetic); each `fixtures/contracts/CC-NN/button.yaml` (and
+`CC-NN-<case>/button.yaml`, a second case of the same rule) is the valid contract with one defect
+and must fail on rule CC-NN and nothing else. The tests read the repository contracts lazily
+(`once` in `tests/models.mjs`), so a defect there fails the repository tests and leaves the
+fixture tests running. A new rule ships with its fixture,
 and a shape a rule accepts ships with a passing test. The fixture values are synthetic, not the
 real tokens; the `DESIGN.md` tests check that the file passes, resolves in every context, emits
 the owner's names and lays out within 120 columns, and that both languages spell the same table.

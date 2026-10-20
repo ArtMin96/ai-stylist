@@ -39,4 +39,5 @@ include(
     ":core:analytics",
     ":core:api-client",
     ":core:designsystem",
+    ":core:designsystem-catalog",
 )

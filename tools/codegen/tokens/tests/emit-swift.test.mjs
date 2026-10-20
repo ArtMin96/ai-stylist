@@ -41,19 +41,35 @@ test('reference scales: numeric keys get the scale prefix, values are Double lit
     '  public static let space4: Double = 4.0',
     '  public static let space8: Double = 8.0',
     '  public static let space16: Double = 16.0',
+    '',
+    '  public static let all: [AppScaleStep] = [',
+    '    AppScaleStep(name: "spacing-4", value: AppSpacing.space4),',
+    '    AppScaleStep(name: "spacing-8", value: AppSpacing.space8),',
+    '    AppScaleStep(name: "spacing-16", value: AppSpacing.space16),',
+    '  ]',
     '}',
   ];
   assert.equal(block(reference, 'nonisolated public enum AppSpacing'), spacing.join('\n'));
   assert.match(reference, /\n {2}public static let radius4: Double = 4\.0\n/);
   assert.match(reference, /\n {2}public static let full: Double = 999\.0\n/);
+  assert.match(reference, /\n {4}AppScaleStep\(name: "rounded-full", value: AppRadius\.full\),\n/);
+  const step = [
+    'nonisolated public struct AppScaleStep: Sendable, Equatable {',
+    '  public let name: String',
+    '  public let value: Double',
+    '}',
+  ];
+  assert.equal(block(reference, 'nonisolated public struct AppScaleStep'), step.join('\n'));
 });
 
 test('type styles: one AppTextStyle each, line height as a height, letter spacing in pt', () => {
   assert.match(reference, /\nnonisolated public struct AppTextStyle: Sendable, Equatable \{\n/);
+  assert.match(reference, /\{\n {2}public let name: String\n {2}public let fontFamily: String\n/);
   assert.match(reference, /\n {2}public let fontWeight: Int\n/);
   assert.match(reference, /\n {2}public let m3Roles: \[String\]\n/);
   const label = [
     '  public static let label = AppTextStyle(',
+    '    name: "label",',
     '    fontFamily: "Fixture Sans",',
     '    fontSize: 12.0,',
     '    fontWeight: 600,',
@@ -66,6 +82,16 @@ test('type styles: one AppTextStyle each, line height as a height, letter spacin
   assert.equal(block(reference, 'public static let label = AppTextStyle('), label.join('\n'));
   assert.match(reference, /\n {4}lineHeight: 13\.75,\n/);
   assert.match(reference, /\n {4}m3Roles: \[\]\n/);
+  const all = [
+    '  public static let all: [AppTextStyle] = [',
+    '    AppTypography.heading,',
+    '    AppTypography.body,',
+    '    AppTypography.label,',
+    '    AppTypography.badge,',
+    '  ]',
+    '}',
+  ];
+  assert.ok(reference.includes(`\n\n${all.join('\n')}\n`), 'AppTypography.all, last, in key order');
 });
 
 test('elevation and motion: one-level groups become nested enums; curves are lists', () => {
@@ -93,11 +119,15 @@ test('a literal shadow colour is ARGB; a motion alias is a reference', () => {
   assert.match(text, /\n {4}public static let easing: \[Double\] = AppMotion\.easingEnter\n/);
 });
 
-test('colour roles: one case per role in role order, fixed roles included', () => {
-  const cases = firstGroups(scheme, /^ {2}case (\w+)$/gm);
+test('colour roles: one case per role in role order, its DESIGN.md key the raw value', () => {
+  const cases = firstGroups(scheme, /^ {2}case (\w+)(?: = "[a-z0-9-]+")?$/gm);
   const roles = ['background', 'text', 'primary', 'primaryPressed', 'onPrimary', 'surface2'];
   assert.deepEqual(cases, [...roles, 'scrim', 'ringLight']);
-  assert.match(scheme, /\nnonisolated public enum AppColorRole: CaseIterable, Sendable \{\n/);
+  const head = '\nnonisolated public enum AppColorRole: String, CaseIterable, Sendable {\n';
+  assert.ok(scheme.includes(head), 'a String raw-value enum');
+  assert.match(scheme, /\n {2}case background\n/);
+  assert.match(scheme, /\n {2}case surface2 = "surface-2"\n/);
+  assert.match(scheme, /\n {2}case ringLight = "ring-light"\n/);
 });
 
 test('AppColors: five contexts, ARGB with alpha, brand and high contrast fall back', () => {

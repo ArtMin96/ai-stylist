@@ -24,6 +24,15 @@ export const CONTRACT_TOKENS = readFileSync(path.join(CONTRACT_FIXTURES, 'DESIGN
 export const VALID_CONTRACTS = path.join(CONTRACT_FIXTURES, '_valid');
 export const REPO_CONTRACTS = path.join(REPO_ROOT, '.impeccable', 'components');
 
+/**
+ * `make()` on the first call, its result after. A test file builds the repository contracts' API
+ * through this, so a defect there fails the tests that read it, not the fixture tests beside them.
+ */
+export function once(make) {
+  let made;
+  return () => (made ??= { value: make() }).value;
+}
+
 /** The API models of the contracts in `dir`, which must pass against `model`. */
 export function apisOf(model, dir) {
   const { findings, apis } = loadContracts(dir, model);

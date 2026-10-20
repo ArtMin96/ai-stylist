@@ -28,8 +28,10 @@ import app.aistylist.core.designsystem.generated.ButtonSpec
 /**
  * One DESIGN.md token context: the generated colours and button looks of one scheme. `brand` (S3)
  * is generated but not selected anywhere yet.
+ *
+ * For the catalog and snapshot tests only; product UI uses `AppButton` and `AppTheme {}`.
  */
-internal enum class AppScheme(
+enum class AppScheme(
     val colors: AppColors,
     val buttons: ButtonSpec,
     val isDark: Boolean,
@@ -70,9 +72,13 @@ fun AppTheme(content: @Composable () -> Unit) {
     )
 }
 
-/** [AppTheme] with a fixed scheme (previews and tests). */
+/**
+ * [AppTheme] with a fixed scheme (catalog previews and tests).
+ *
+ * For the catalog and snapshot tests only; product UI uses `AppButton` and `AppTheme {}`.
+ */
 @Composable
-internal fun AppTheme(
+fun AppTheme(
     scheme: AppScheme,
     content: @Composable () -> Unit,
 ) {

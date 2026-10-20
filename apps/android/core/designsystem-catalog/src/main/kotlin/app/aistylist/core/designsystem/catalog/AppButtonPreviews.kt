@@ -1,4 +1,4 @@
-package app.aistylist.core.designsystem
+package app.aistylist.core.designsystem.catalog
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -19,54 +19,46 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import app.aistylist.core.designsystem.AppButton
+import app.aistylist.core.designsystem.AppScheme
+import app.aistylist.core.designsystem.AppTheme
+import app.aistylist.core.designsystem.catalog.gallery.GalleryButtons
+import app.aistylist.core.designsystem.color
 import app.aistylist.core.designsystem.generated.AppColorRole
 import app.aistylist.core.designsystem.generated.ButtonSize
 import app.aistylist.core.designsystem.generated.ButtonState
 import app.aistylist.core.designsystem.generated.ButtonVariant
 import app.aistylist.core.designsystem.generated.ComponentGallery
 
-@Preview(name = "AppButton states, light", heightDp = 2400)
+// One column of 100 cells (face + test id) needs about this much height.
+@Preview(name = "AppButton states, light", heightDp = 9600)
 @Composable
 private fun AppButtonStatesLightPreview() {
-    AppButtonStateGrid(scheme = AppScheme.LIGHT)
+    AppButtonStates(scheme = AppScheme.LIGHT)
 }
 
-@Preview(name = "AppButton states, dark", heightDp = 2400)
+@Preview(name = "AppButton states, dark", heightDp = 9600)
 @Composable
 private fun AppButtonStatesDarkPreview() {
-    AppButtonStateGrid(scheme = AppScheme.DARK)
+    AppButtonStates(scheme = AppScheme.DARK)
 }
 
-/** One cell per `ComponentGallery.button` entry, in generated order, each state forced. */
+/** The gallery's C01 section: every `ComponentGallery.button` cell, each state forced. */
 @Composable
-private fun AppButtonStateGrid(
+private fun AppButtonStates(
     scheme: AppScheme,
     modifier: Modifier = Modifier,
 ) {
     AppTheme(scheme = scheme) {
-        FlowRow(
+        GalleryButtons(
             modifier =
                 modifier
                     .background(AppTheme.colors.color(AppColorRole.BACKGROUND))
                     .padding(AppTheme.spacing.space16.dp),
-            horizontalArrangement = Arrangement.spacedBy(AppTheme.spacing.space12.dp),
-            verticalArrangement = Arrangement.spacedBy(AppTheme.spacing.space12.dp),
-        ) {
-            ComponentGallery.button.forEach { entry ->
-                AppTheme.buttons.appearance(entry.variant, entry.size, entry.state)?.let { appearance ->
-                    AppButtonFace(
-                        appearance = appearance,
-                        label = ComponentGallery.buttonLabel,
-                        modifier = Modifier.testTag(entry.testId),
-                        showsSpinner = entry.state == ButtonState.LOADING,
-                    )
-                }
-            }
-        }
+        )
     }
 }
 

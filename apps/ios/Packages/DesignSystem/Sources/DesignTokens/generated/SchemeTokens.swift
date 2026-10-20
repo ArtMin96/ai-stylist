@@ -2,59 +2,59 @@
 // Source: DESIGN.md
 // Tier 2 of 3: scheme roles (DEC-87).
 
-/// Colour role keys: resolve one with `AppColors` for the active context.
-nonisolated public enum AppColorRole: CaseIterable, Sendable {
+/// Colour roles, each with its DESIGN.md key: resolve one with `AppColors` for a context.
+nonisolated public enum AppColorRole: String, CaseIterable, Sendable {
   case background
   case surface
-  case surface2
+  case surface2 = "surface-2"
   case text
-  case textSecondary
+  case textSecondary = "text-secondary"
   case divider
   case outline
   case primary
-  case primaryPressed
-  case onPrimary
-  case primaryText
-  case linkPressed
+  case primaryPressed = "primary-pressed"
+  case onPrimary = "on-primary"
+  case primaryText = "primary-text"
+  case linkPressed = "link-pressed"
   case accent
-  case onAccent
+  case onAccent = "on-accent"
   case focus
-  case onError
-  case activePill
-  case inverseSurface
-  case onInverse
-  case inversePrimary
-  case pressedOverlay
-  case pressedOverlayStrong
+  case onError = "on-error"
+  case activePill = "active-pill"
+  case inverseSurface = "inverse-surface"
+  case onInverse = "on-inverse"
+  case inversePrimary = "inverse-primary"
+  case pressedOverlay = "pressed-overlay"
+  case pressedOverlayStrong = "pressed-overlay-strong"
   case scrim
-  case cameraGround
-  case cameraTrack
-  case cameraPaper
-  case cameraInk
-  case cameraYellow
-  case successFg
-  case successBg
-  case warningFg
-  case warningBg
-  case errorFg
-  case errorBg
-  case infoFg
-  case infoBg
-  case conditionSunnyFg
-  case conditionSunnyBg
-  case conditionRainFg
-  case conditionRainBg
-  case conditionColdFg
-  case conditionColdBg
-  case conditionHotFg
-  case conditionHotBg
-  case conditionWindyFg
-  case conditionWindyBg
-  case conditionSnowFg
-  case conditionSnowBg
-  case conditionSnowRingLight
-  case conditionEveningFg
-  case conditionEveningBg
+  case cameraGround = "camera-ground"
+  case cameraTrack = "camera-track"
+  case cameraPaper = "camera-paper"
+  case cameraInk = "camera-ink"
+  case cameraYellow = "camera-yellow"
+  case successFg = "success-fg"
+  case successBg = "success-bg"
+  case warningFg = "warning-fg"
+  case warningBg = "warning-bg"
+  case errorFg = "error-fg"
+  case errorBg = "error-bg"
+  case infoFg = "info-fg"
+  case infoBg = "info-bg"
+  case conditionSunnyFg = "condition-sunny-fg"
+  case conditionSunnyBg = "condition-sunny-bg"
+  case conditionRainFg = "condition-rain-fg"
+  case conditionRainBg = "condition-rain-bg"
+  case conditionColdFg = "condition-cold-fg"
+  case conditionColdBg = "condition-cold-bg"
+  case conditionHotFg = "condition-hot-fg"
+  case conditionHotBg = "condition-hot-bg"
+  case conditionWindyFg = "condition-windy-fg"
+  case conditionWindyBg = "condition-windy-bg"
+  case conditionSnowFg = "condition-snow-fg"
+  case conditionSnowBg = "condition-snow-bg"
+  case conditionSnowRingLight = "condition-snow-ring-light"
+  case conditionEveningFg = "condition-evening-fg"
+  case conditionEveningBg = "condition-evening-bg"
 }
 
 /// Every colour role resolved for one context (DESIGN.md schemes; ARGB).

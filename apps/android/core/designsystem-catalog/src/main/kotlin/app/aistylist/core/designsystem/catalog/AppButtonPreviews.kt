@@ -19,6 +19,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -107,13 +108,16 @@ private fun AppButtonPlaygroundPreview() {
                 }
             }
             // leadingIcon: none, or any C02 glyph.
-            FlowRow(horizontalArrangement = Arrangement.spacedBy(AppTheme.spacing.space8.dp)) {
-                (listOf(null) + AppIconName.entries).forEach { option ->
-                    FilterChip(
-                        selected = option == leadingIcon,
-                        onClick = { leadingIcon = option },
-                        label = { Text(option?.id ?: "none") },
-                    )
+            Column(verticalArrangement = Arrangement.spacedBy(AppTheme.spacing.space4.dp)) {
+                Text(stringResource(R.string.ds_button_playground_leading_icon))
+                FlowRow(horizontalArrangement = Arrangement.spacedBy(AppTheme.spacing.space8.dp)) {
+                    (listOf(null) + AppIconName.entries).forEach { option ->
+                        FilterChip(
+                            selected = option == leadingIcon,
+                            onClick = { leadingIcon = option },
+                            label = { Text(option?.id ?: "none") },
+                        )
+                    }
                 }
             }
             PlaygroundSwitch(label = "enabled", checked = enabled, onCheckedChange = { enabled = it })

@@ -4,6 +4,7 @@ import android.os.Build
 import android.view.accessibility.AccessibilityManager
 import androidx.annotation.RequiresApi
 import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
@@ -63,7 +64,10 @@ enum class AppScheme(
 @Suppress("ComposeCompositionLocalUsage") // the AppTheme holder; see the comment above
 private val LocalAppScheme = staticCompositionLocalOf { AppScheme.LIGHT }
 
-/** The design-system theme: the token context picked from the system settings, plus Material 3. */
+/**
+ * The design-system theme: the token context picked from the system settings, plus Material 3. The
+ * content colour is the scheme's `text` role.
+ */
 @Composable
 fun AppTheme(content: @Composable () -> Unit) {
     AppTheme(
@@ -85,10 +89,13 @@ fun AppTheme(
     CompositionLocalProvider(LocalAppScheme provides scheme) {
         // Stock M3 schemes (never dynamic colour) keep the non-button components unchanged until
         // the full M3 mapping lands.
-        MaterialTheme(
-            colorScheme = if (scheme.isDark) darkColorScheme() else lightColorScheme(),
-            content = content,
-        )
+        MaterialTheme(colorScheme = if (scheme.isDark) darkColorScheme() else lightColorScheme()) {
+            // MaterialTheme sets no content colour, so untinted content outside a Surface would
+            // draw Material's default black, which is invisible on the dark schemes.
+            CompositionLocalProvider(LocalContentColor provides scheme.colors.color(AppColorRole.TEXT)) {
+                content()
+            }
+        }
     }
 }
 

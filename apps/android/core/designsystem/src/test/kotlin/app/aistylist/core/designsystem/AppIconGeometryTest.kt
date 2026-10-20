@@ -13,6 +13,9 @@ import org.junit.Test
 
 private const val EPSILON = 1e-9
 
+// PathNode holds Float; one float ulp near 10 is about 1e-6.
+private const val FLOAT_EPSILON = 1e-5f
+
 /** Plain JUnit tests of the C02 icon maths (brief c02-icons, "Rendering maths"). */
 class AppIconGeometryTest {
     @Test
@@ -75,6 +78,21 @@ class AppIconGeometryTest {
         }
     }
 
+    @Test
+    fun `the Today glyph's first cubic replays with its literal control and end points at xs`() {
+        val scaled = AppIconGeometry.scaled(AppIconGlyphs.Today.glyph, AppIconGeometry.unitScale(AppIconSize.XS.size))
+
+        val curve =
+            scaled.shapes
+                .flatMap { it.toPathNodes() }
+                .filterIsInstance<PathNode.CurveTo>()
+                .first()
+
+        val expected = listOf(9.5785f, 2.5f, 10.25f, 3.1715f, 10.25f, 4.0f)
+        val actual = listOf(curve.x1, curve.y1, curve.x2, curve.y2, curve.x3, curve.y3)
+        expected.zip(actual).forEach { (want, got) -> assertEquals(want, got, FLOAT_EPSILON) }
+    }
+
     private fun assertGlyphFits(
         name: AppIconName,
         rendered: Double,
@@ -106,12 +124,14 @@ class AppIconGeometryTest {
         }
     }
 
+    // A segment's points are SVG order: `x y` for move and line; first control, second control,
+    // then end point for a cubic.
     private fun AppIconSegment.expectedNode(): PathNode {
         val p = points.map(Double::toFloat)
         return when (command) {
-            AppIconCommand.MOVE -> PathNode.MoveTo(p[0], p[1])
-            AppIconCommand.LINE -> PathNode.LineTo(p[0], p[1])
-            AppIconCommand.CUBIC -> PathNode.CurveTo(p[0], p[1], p[2], p[3], p[4], p[5])
+            AppIconCommand.MOVE -> PathNode.MoveTo(x = p[0], y = p[1])
+            AppIconCommand.LINE -> PathNode.LineTo(x = p[0], y = p[1])
+            AppIconCommand.CUBIC -> PathNode.CurveTo(x1 = p[0], y1 = p[1], x2 = p[2], y2 = p[3], x3 = p[4], y3 = p[5])
             AppIconCommand.CLOSE -> PathNode.Close
         }
     }

@@ -2,6 +2,7 @@ package app.aistylist.core.designsystem
 
 import androidx.compose.foundation.layout.Column
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.test.SemanticsMatcher
@@ -14,6 +15,7 @@ import androidx.compose.ui.unit.dp
 import app.aistylist.core.designsystem.generated.AppColorRole
 import app.aistylist.core.designsystem.generated.AppIconName
 import app.aistylist.core.designsystem.generated.AppIconSize
+import org.junit.Assert.assertEquals
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -46,6 +48,24 @@ class AppIconTest {
                 .onNodeWithTag(step.id)
                 .assertWidthIsEqualTo(step.size.dp)
                 .assertHeightIsEqualTo(step.size.dp)
+        }
+    }
+
+    @Test
+    fun anUntintedIconUnderAPlainColumnDrawsInTheSchemesTextRole() {
+        val resolved = mutableMapOf<AppScheme, Color>()
+        compose.setContent {
+            AppScheme.entries.forEach { scheme ->
+                AppTheme(scheme = scheme) {
+                    Column { resolved[scheme] = appIconColor(tint = null) }
+                }
+            }
+        }
+        compose.waitForIdle()
+
+        assertEquals(setOf(AppScheme.LIGHT, AppScheme.DARK, AppScheme.HC_LIGHT, AppScheme.HC_DARK), resolved.keys)
+        AppScheme.entries.forEach { scheme ->
+            assertEquals(scheme.name, scheme.colors.color(AppColorRole.TEXT), resolved[scheme])
         }
     }
 

@@ -16,6 +16,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import app.aistylist.core.designsystem.AppIcon
 import app.aistylist.core.designsystem.AppTheme
@@ -50,14 +52,16 @@ internal fun GalleryIcons(modifier: Modifier = Modifier) {
     var size by remember { mutableStateOf(AppIconMetrics.defaultSize) }
     var tint by remember { mutableStateOf(AppColorRole.TEXT) }
     Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(AppTheme.spacing.space24.dp)) {
-        PlaygroundControl(title = R.string.ds_gallery_icons_size) {
-            AppIconSize.entries.forEach { option ->
-                FilterChip(selected = option == size, onClick = { size = option }, label = { Text(option.id) })
+        Column(verticalArrangement = Arrangement.spacedBy(AppTheme.spacing.space8.dp)) {
+            PlaygroundControl(title = R.string.ds_gallery_icons_size) {
+                AppIconSize.entries.forEach { option ->
+                    FilterChip(selected = option == size, onClick = { size = option }, label = { Text(option.id) })
+                }
             }
-        }
-        PlaygroundControl(title = R.string.ds_gallery_icons_tint) {
-            PlaygroundTints.forEach { option ->
-                FilterChip(selected = option == tint, onClick = { tint = option }, label = { Text(option.id) })
+            PlaygroundControl(title = R.string.ds_gallery_icons_tint) {
+                PlaygroundTints.forEach { option ->
+                    FilterChip(selected = option == tint, onClick = { tint = option }, label = { Text(option.id) })
+                }
             }
         }
         AppIconSet.entries.forEach { set ->
@@ -96,6 +100,7 @@ private fun IconSetGroup(
             text = set.id,
             style = AppTheme.typography.headline.toTextStyle(),
             color = AppTheme.colors.color(AppColorRole.TEXT),
+            modifier = Modifier.semantics { heading() },
         )
         // Non-lazy, so every cell's test tag is in the tree; cells wrap as the icons grow.
         FlowRow(

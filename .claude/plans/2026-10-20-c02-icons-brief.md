@@ -305,7 +305,7 @@ The "larger text" row grows the frame and stroke by the platform's text scale.
 | ------------------- | ------------------------------------------------------------------- | --------------------------------------------------------------------------- |
 | View / composable   | `AppIcon(_ name:size:tint:)`                                        | `AppIcon(name, modifier, size, tint)`                                       |
 | Geometry            | `AppIconGeometry.unitScale(_:)`, `.strokeWidth(_:renderedSize:)`, `.scaled(_:by:)` (`package`, `DesignTokens`) | `AppIconGeometry.unitScale()`, `.strokeWidth()`, `.scaled()`, `AppIconShape.toPathNodes()` (`internal`, `:core:designsystem`) |
-| Text-size scaling   | `@ScaledMetric(relativeTo: .body)` seeded with `size.size`         | `size.size.sp` converted with `LocalDensity` (non-linear font scale)        |
+| Text-size scaling   | `@ScaledMetric(relativeTo: AppIcon.scalingStyle(for: size))` seeded with `size.size` (xs–lg body, xl title2, hero largeTitle) | `size.size.sp` converted with `LocalDensity` (non-linear font scale)        |
 | Button slot         | `leadingIcon: AppIconName?`, drawn at `appearance.iconSize` (`.md`) | `leadingIcon: AppIconName?`, drawn at `appearance.iconSize` (`MD`)          |
 | Gallery section     | `ds-gallery-section-c02-icons`, "C02 Icons", after "C01 Buttons"    | same                                                                        |
 | Gallery cells       | 124, grouped by the 7 `AppIconSet`s in generated order, id `ds-icon-<id>`, caption = glyph id | same                                     |
@@ -419,6 +419,17 @@ Notes for the lanes:
   2026-10-20.
 - Ended: the C01 brief's "Icon parameter type — iOS `Image?`, Android `Painter?`". Both apps are now
   `AppIconName?`.
+
+## Amended after review (2026-10-21)
+
+- Owner, 2026-10-21: on iOS each step scales with its own Dynamic Type text style through
+  `AppIcon.scalingStyle(for:)`: xs–lg `.body`, xl `.title2`, hero `.largeTitle`. This supersedes
+  `relativeTo: .body` in scope items 2 and 3 and in the intended difference on the scaling curve.
+  Android keeps sp through `Density`, whose non-linear font scale already damps the large sizes.
+- Lead, after the design and architecture reviews: both `AppTheme`s set the root content colour to
+  the `text` role, so an untinted `AppIcon` draws in `text`. The playground labels use `headline`,
+  with `space8` between the controls. The button playground's picker label is "Leading icon" on
+  both apps. Gallery set headers are headings on both.
 
 ## Decided before launch
 

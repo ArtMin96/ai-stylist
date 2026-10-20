@@ -548,28 +548,13 @@ components:
   # equal to a spacing step names that step. Heights (52, 48, 44, 36) and off-scale parts (gap 6,
   # padding 10) stay literal.
   button-large:
-    {
-      height: '52px',
-      padding: '0 {spacing.24}',
-      iconSize: icon-md,
-      iconGap: '{spacing.8}',
-    }
+    { height: '52px', padding: '0 {spacing.24}', iconSize: icon-md, iconGap: '{spacing.8}' }
   # Card: the one action inside a state template card, 48 high with the 17/600 label (C04 Try again,
   # SC10 Add your first piece, TR1 Try again). Drawn full width only; padding as Large.
   button-card:
-    {
-      height: '48px',
-      padding: '0 {spacing.24}',
-      iconSize: icon-md,
-      iconGap: '{spacing.8}',
-    }
+    { height: '48px', padding: '0 {spacing.24}', iconSize: icon-md, iconGap: '{spacing.8}' }
   button-medium:
-    {
-      height: '44px',
-      padding: '0 {spacing.20}',
-      iconSize: icon-md,
-      iconGap: '{spacing.8}',
-    }
+    { height: '44px', padding: '0 {spacing.20}', iconSize: icon-md, iconGap: '{spacing.8}' }
   # Compact: 44 high with the 15/600 label, for row, card and dialog actions (C07, C08, SC05,
   # SC09, SC10, SC12, SC15, TR1). Outlined pills 0 16 (Unfollow, Confirm); filled pills 0 20
   # (C08 Add items); text 0 12 (SC12 Edit, Clear). Leading icon md, gap 6 at this size: the

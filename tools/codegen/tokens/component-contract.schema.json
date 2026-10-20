@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "Component contract",
-  "description": "One .impeccable/components/<id>.yaml file (ADR-0011 follow-up 7, DEC-87). Field rules: .impeccable/components/README.md. Checked by tools/codegen/tokens/contracts.mjs (rule CC-01); the cross-field rules CC-02 to CC-07 are in tools/codegen/tokens/README.md.",
+  "description": "One .impeccable/components/<id>.yaml file (ADR-0011 follow-up 7, DEC-87). Field rules: .impeccable/components/README.md. Checked by tools/codegen/tokens/contracts.mjs (rule CC-01); the cross-field rules CC-02 to CC-08 are in tools/codegen/tokens/README.md.",
   "type": "object",
   "additionalProperties": false,
   "required": [

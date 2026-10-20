@@ -155,13 +155,19 @@ test('--components: the component API file joins the tiers in each directory', (
 
 test('--components: a failing contract is a finding and nothing is written', () => {
   const out = path.join(SCRATCH, 'out', 'bad-contract');
-  const components = path.join(TOKENS_DIR, 'fixtures', 'contracts', 'CC-05');
-  const args = ['--input', fixture('contracts'), '--components', components, '--swift-out', out];
-  const result = run(args);
-  assert.equal(result.status, 1);
-  assert.match(result.stderr, /1 finding\(s\) in tools\/codegen\/tokens\/fixtures\/contracts\//);
-  assert.match(result.stderr, /CC-05 button\.yaml tokens\.primary\.states\.pressed: /);
-  assert.equal(existsSync(out), false);
+  const cases = [
+    ['CC-05', /CC-05 button\.yaml tokens\.primary\.states\.pressed: /],
+    ['CC-08', /CC-08 button\.yaml sizes\.medium: \{components\.button-medium\} has no iconSize/],
+  ];
+  for (const [rule, message] of cases) {
+    const components = path.join(TOKENS_DIR, 'fixtures', 'contracts', rule);
+    const args = ['--input', fixture('contracts'), '--components', components, '--swift-out', out];
+    const result = run(args);
+    assert.equal(result.status, 1, rule);
+    assert.match(result.stderr, /1 finding\(s\) in tools\/codegen\/tokens\/fixtures\/contracts\//);
+    assert.match(result.stderr, message);
+    assert.equal(existsSync(out), false);
+  }
 });
 
 const TYPE_LINE = /^(?:nonisolated public (?:enum|struct)|enum class|data class|object) (\w+)/gm;
@@ -181,6 +187,8 @@ test('the repository DESIGN.md and contracts generate the component API', (t) =>
   const constant = 'textCompactEnabled: String = "ds-button-text-compact-enabled"';
   assert.ok(swift.includes(`public static let ${constant}`) && kotlin.includes(`val ${constant}`));
   assert.match(kotlin, /\nenum class ButtonVariant\(\n/);
+  assert.match(swift, /\n {2}public let iconSize: Double\n {2}public let iconGap: Double\n/);
+  assert.match(kotlin, /\n {4}val iconSize: Double,\n {4}val iconGap: Double,\n/);
   for (const [file, text] of [
     ['ComponentAPI.swift', swift],
     ['ComponentApi.kt', kotlin],

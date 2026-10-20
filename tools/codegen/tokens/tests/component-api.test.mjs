@@ -90,6 +90,16 @@ test('the merged look: optional where a look lacks the property, the focus ring 
   assert.match(kotlin, /\n {4}val focusRing: FocusRingTokens\?,\n/);
 });
 
+test('the icon slot: two non-optional dimensions, 18 / 6 at compact and 20 / 8 elsewhere', () => {
+  const appearance = block(swift, 'nonisolated public struct ButtonAppearance');
+  assert.match(appearance, /\n {2}public let iconSize: Double\n {2}public let iconGap: Double\n/);
+  assert.match(kotlin, /\n {4}val iconSize: Double,\n {4}val iconGap: Double,\n/);
+  const sizes = firstGroups(repoSwift, /^ {10}iconSize: ([\d.]+),$/gm);
+  assert.equal(sizes.length, 500, 'one slot per look');
+  assert.deepEqual([...new Set(sizes)].sort(), ['18.0', '20.0']);
+  assert.match(repoKotlin, /\n {36}iconSize = 18\.0,\n {36}iconGap = 6\.0,\n/);
+});
+
 test('ButtonSpec: one instance per context, the lookup returns none for a disallowed one', () => {
   const spec = block(swift, 'nonisolated public struct ButtonSpec');
   assert.match(spec, /\n {2}public let looks: \[ButtonLook\]\n/);

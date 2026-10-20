@@ -540,20 +540,36 @@ components:
     { backgroundColor: '{colors.primary-pressed-dark}', textColor: '{colors.on-primary-dark}' }
   button-primary-disabled-dark:
     { backgroundColor: '{colors.surface-2-dark}', textColor: '{colors.text-secondary-dark}' }
-  # Shared size entries (height and padding; Small also sets its 15/600 label). A variant's own
+  # Shared size entries (height, padding and the leading-icon slot: iconSize, iconGap; Small and
+  # Compact also set their 15/600 label). The icon slot is read from these entries for every variant
+  # (DESIGN.md "Buttons"); otherwise a variant's own
   # base holds the size it is drawn at; these serve its other sizes.
-  button-large: { height: '52px', padding: '0 24px' }
+  button-large: { height: '52px', padding: '0 24px', iconSize: '20px', iconGap: '8px' }
   # Card: the one action inside a state template card, 48 high with the 17/600 label (C04 Try again,
   # SC10 Add your first piece, TR1 Try again). Drawn full width only; padding as Large.
-  button-card: { height: '48px', padding: '0 24px' }
-  button-medium: { height: '44px', padding: '0 20px' }
+  button-card: { height: '48px', padding: '0 24px', iconSize: '20px', iconGap: '8px' }
+  button-medium: { height: '44px', padding: '0 20px', iconSize: '20px', iconGap: '8px' }
   # Compact: 44 high with the 15/600 label, for row, card and dialog actions (C07, C08, SC05,
   # SC09, SC10, SC12, SC15, TR1). Outlined pills 0 16 (Unfollow, Confirm); filled pills 0 20
   # (C08 Add items); text 0 12 (SC12 Edit, Clear). Leading icon 18, gap 6 at this size.
-  button-compact: { typography: '{typography.subhead}', height: '44px', padding: '0 16px' }
+  button-compact:
+    {
+      typography: '{typography.subhead}',
+      height: '44px',
+      padding: '0 16px',
+      iconSize: '18px',
+      iconGap: '6px',
+    }
   button-compact-filled: { typography: '{typography.subhead}', height: '44px', padding: '0 20px' }
   button-text-compact: { typography: '{typography.subhead}', height: '44px', padding: '0 12px' }
-  button-small: { typography: '{typography.subhead}', height: '36px', padding: '0 16px' }
+  button-small:
+    {
+      typography: '{typography.subhead}',
+      height: '36px',
+      padding: '0 16px',
+      iconSize: '20px',
+      iconGap: '8px',
+    }
   # Stroke width of the outline ring on the secondary, primary outline and outlined destructive
   # buttons. Each entry names the ring colour in borderColor (outline-* on secondary, primary-* on
   # primary outline, error-fg-* on destructive, divider-* when disabled); the ring is drawn inside

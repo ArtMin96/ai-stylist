@@ -6,7 +6,7 @@
 // Runs the DEC-87 pipeline: the pinned @google/design.md lint (TK-12) plus our rules
 // (TK-01..TK-11), the in-memory DTCG 2025.10 model and resolver, then the Swift and Kotlin
 // emitters in three tiers (reference scales, scheme roles, component tokens). With --components,
-// every approved component contract in <dir> (.impeccable/components/*.yaml, rules CC-01..CC-07)
+// every approved component contract in <dir> (.impeccable/components/*.yaml, rules CC-01..CC-08)
 // also becomes the component API surface: ComponentAPI.swift and ComponentApi.kt beside the tiers
 // (ADR-0011 follow-up 7). Each output directory holds only generated files and is replaced
 // wholesale; without one, nothing is written.
@@ -112,7 +112,7 @@ function main() {
 }
 
 /**
- * The component contracts in `dir`, checked against `model` (CC-01..CC-07): `{ decls, source }`
+ * The component contracts in `dir`, checked against `model` (CC-01..CC-08): `{ decls, source }`
  * for the API files. Exits 1 on any finding; a contract still `approved: pending` is named and
  * gets no API.
  */

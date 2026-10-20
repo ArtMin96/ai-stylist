@@ -122,8 +122,16 @@ DEC-87; field rules in `.impeccable/components/README.md`). `contracts.mjs` chec
   `<id>-outline-ring` with a `width`. A merged property has one type in every look.
 - **CC-07** `accessibility.busy` is a state, and an explicit `gallery.include` names only allowed
   combinations.
+- **CC-08** Every size an allowed combination uses has its shared size entry `<id>-<size>`
+  (`button-compact`), and that entry holds the leading-icon slot, `iconSize` and `iconGap`, as
+  dimensions in every context of the table. The slot depends on the size only, never the variant
+  (`button.yaml` `leadingIcon`, DESIGN.md "Buttons"), so a missing value is a finding, never a
+  default.
 
-The rules run in stages (CC-01; CC-02 and CC-03; CC-04 and CC-07; CC-05; CC-06) and stop at the
+`iconSize` and `iconGap` are ordinary component properties for TK-11 (px, a number or a
+reference, like `height`); the normaliser makes them `dimension` tokens.
+
+The rules run in stages (CC-01; CC-02 and CC-03; CC-04 and CC-07; CC-05; CC-06; CC-08) and stop at the
 first stage with a finding, so each `fixtures/contracts/CC-NN/` case fails on its own rule only.
 
 **The merge** (owner decision 2026-10-20: one ready look per allowed variant x size x state x
@@ -134,7 +142,10 @@ look. A size entry that is the base itself adds nothing: applying it again would
 (the destructive-filled disabled label weight). An overlay state (`focused: {components.focus-ring}`)
 changes no colour: it adds a field named after its component that holds that component's instance
 for the context (`focusRing = FocusRingTokens.hcDark`). A look with a `borderColor` ring gets
-`borderWidth` from `<id>-outline-ring` (`button-outline-ring`, 1.5). The look's fields are colours,
+`borderWidth` from `<id>-outline-ring` (`button-outline-ring`, 1.5). Last, every look takes
+`iconSize` and `iconGap` from the shared size entry `<id>-<size>`, even where the variant's own
+entry holds that size's height and padding (`button-compact-filled`, `button-text-compact`, a
+variant base): 18 / 6 at compact, 20 / 8 at large, card, medium and small. The look's fields are colours,
 then `borderWidth`, then the other properties, then overlays; a field some look lacks is optional
 (`nil` / `null`: no fill, no ring, the spinner takes the label colour). Only allowed combinations
 get a look, so a disallowed one is never offered.
@@ -316,7 +327,7 @@ guarantees that no two generated identifiers collide. Any other derivation loses
 - `tools/codegen/tokens/emit-kotlin.mjs`: the Kotlin dialect. `just generate` writes its output to
   `apps/android/core/designsystem/src/main/kotlin/app/aistylist/core/designsystem/generated/`.
 - `tools/codegen/tokens/component-contract.schema.json`, `contracts.mjs` (`loadContracts`,
-  `checkContract`: CC-01 to CC-07), `contract-model.mjs` (the reference grammar, the allowed
+  `checkContract`: CC-01 to CC-08), `contract-model.mjs` (the reference grammar, the allowed
   combinations and the merged API model), `api-declarations.mjs` (the API declaration tree) and
   `emit-api-swift.mjs` / `emit-api-kotlin.mjs`: the component API surface, written as
   `ComponentAPI.swift` and `ComponentApi.kt` beside the tier files.
@@ -362,7 +373,10 @@ ARGB (`UInt32`/`Long`, `0xFFFA_FAFA`). The theme code in each app maps them to S
   only where it differs from the case: `case primaryOutline = "primary-outline"`; Kotlin
   `enum class` entries with `val id: String`: `PRIMARY_OUTLINE("primary-outline")`);
   `<Name>TestId` (one string constant per allowed combination: `primaryLargeEnabled` =
-  `"ds-button-primary-large-enabled"`); `<Name>Appearance` (the merged look); `<Name>Look`
+  `"ds-button-primary-large-enabled"`); `<Name>Appearance` (the merged look: optional colours and
+  `borderWidth`, then `typography`, `rounded`, `height`, the four paddings, the non-optional
+  `iconSize: Double` and `iconGap: Double` (pt/dp; Kotlin `val iconSize: Double`), then the optional
+  `focusRing`); `<Name>Look`
   (variant, size, state, appearance); `<Name>Spec` (`looks`, one instance per context of the table,
   and `appearance(variant:size:state:)` returning that combination's `<Name>Appearance`, or
   `nil` / `null` for a combination the contract does not allow); `<Name>GalleryEntry` (variant, size, state, `testId`). Then
@@ -382,7 +396,7 @@ Kotlin files are compiled with warnings as errors and checked by Spotless (ktlin
 (`LongParameterList` allows 8 constructor parameters; its `ignoreDataClasses` default is expected
 to exempt these data classes, unverified) and Android Lint. A data class constructor
 takes at most 255 JVM slots, so `AppColors` (two per `Long`) holds at most 126 roles. The button's
-merged table is 100 combinations x 5 contexts = 500 looks (about 11,000 lines per language). On the
+merged table is 100 combinations x 5 contexts = 500 looks (about 12,000 to 13,000 lines per language). On the
 JVM all five `ButtonSpec` instances initialise in one companion `<clinit>`, estimated at about
 40 KB of the 64 KB method limit; a contract with many more combinations needs that split.
 

@@ -11,7 +11,7 @@ import { after, test } from 'node:test';
 
 import { comboKey, resolveReference } from '../contract-model.mjs';
 import { checkContract, loadContracts } from '../contracts.mjs';
-import { formatFinding } from '../pipeline.mjs';
+import { formatFinding, loadTokens } from '../pipeline.mjs';
 import {
   CONTRACT_FIXTURES,
   CONTRACT_TOKENS,
@@ -58,8 +58,8 @@ test('the repository contracts pass, and the button contract is approved', () =>
   );
 });
 
-test('the fixtures hold the valid contract and one failing case per rule, CC-01 to CC-07', () => {
-  const expected = ['CC-01', 'CC-02', 'CC-03', 'CC-04', 'CC-05', 'CC-06', 'CC-07'];
+test('the fixtures hold the valid contract and one failing case per rule, CC-01 to CC-08', () => {
+  const expected = ['CC-01', 'CC-02', 'CC-03', 'CC-04', 'CC-05', 'CC-06', 'CC-07', 'CC-08'];
   assert.deepEqual(RULE_CASES, expected);
   assert.equal(fixture.id, 'button');
 });
@@ -100,6 +100,17 @@ test('CC-06: a state of another component and a ring without its width fail', ()
   const ring = checkContract(VALID_TEXT, 'button.yaml', noRing);
   assert.deepEqual(rulesOf(ring), ['CC-06']);
   assert.match(listed(ring.findings), /draws a ring, but \{components\.button-outline-ring\}/);
+});
+
+test('CC-08: a used size without its shared size entry, or with half a slot, fails', () => {
+  const noEntry = modelOf(CONTRACT_TOKENS.replace(/ {2}button-large: \{[^\n]*\n/, ''));
+  const missing = checkContract(VALID_TEXT, 'button.yaml', noEntry);
+  assert.deepEqual(rulesOf(missing), ['CC-08']);
+  assert.match(listed(missing.findings), /sizes\.large: no \{components\.button-large\} holds/);
+  const half = modelOf(CONTRACT_TOKENS.replace('    iconGap: 4px\n', ''));
+  const gap = checkContract(VALID_TEXT, 'button.yaml', half);
+  assert.deepEqual(rulesOf(gap), ['CC-08']);
+  assert.match(listed(gap.findings), /sizes\.small: \{components\.button-small\} has no iconGap/);
 });
 
 test('a pending contract is checked but gets no API', () => {
@@ -153,8 +164,22 @@ test('the fixture API: merged fields, colours first, optional where a look lacks
     ['rounded', 'double', false],
     ['height', 'double', false],
     ...padding.map((side) => [side, 'double', false]),
+    ['iconSize', 'double', false],
+    ['iconGap', 'double', false],
     ['focusRing', 'FocusRingTokens', true],
   ]);
+});
+
+test('the icon slot: from the shared size entry in every look, whatever holds the size', () => {
+  const slot = (values) => [values.iconSize.value.n, values.iconGap.value.n];
+  for (const context of fixture.contexts) {
+    for (const { variant, size, values } of fixture.looks[context]) {
+      const expected = size === 'small' ? [14, 4] : [18, 8];
+      assert.deepEqual(slot(values), expected, `${variant}/${size} in ${context}`);
+    }
+  }
+  const large = look(fixture, 'light', 'primary', 'large', 'enabled');
+  assert.equal(large.height.value.n, 48, 'the base holds the large height');
 });
 
 test('the merge: base, then state, then size; the base as its own size adds nothing', () => {
@@ -226,4 +251,31 @@ test('the repository button: merged looks the owner checked on the screens', () 
   assert.deepEqual(['light', 'dark'].map(destructivePressed), ['errorBg', 'surface2']);
   const focused = look(button, 'hc-dark', 'tonal', 'card', 'focused');
   assert.equal(ref(focused, 'focusRing').member, 'hcDark');
+});
+
+test('the icon slot: dimensions on a component entry, like height; anything else is TK-11', () => {
+  const dimension = (n) => ({ $type: 'dimension', $value: { value: n, unit: 'px' } });
+  const compact = repoModel.sets.components['button-compact'];
+  assert.deepEqual([compact.iconSize, compact.iconGap], [dimension(18), dimension(6)]);
+  const { findings } = loadTokens(CONTRACT_TOKENS.replace('iconGap: 4px', 'iconGap: wide'));
+  const expected = 'TK-11 components.button-small.iconGap: "wide" is not a px dimension';
+  assert.deepEqual(findings.map(formatFinding), [`${expected}, number or {reference}`]);
+});
+
+test('the repository button: the icon slot is 18 / 6 at compact, 20 / 8 elsewhere', () => {
+  for (const context of button.contexts) {
+    for (const { variant, size, state, values } of button.looks[context]) {
+      const expected = size === 'compact' ? [18, 6] : [20, 8];
+      const slot = [values.iconSize.value.n, values.iconGap.value.n];
+      assert.deepEqual(slot, expected, `${variant}/${size}/${state} in ${context}`);
+    }
+  }
+  // compact height and padding come from the variant's entry, the slot from button-compact.
+  const filled = look(button, 'dark', 'primary', 'compact', 'loading');
+  assert.equal(filled.paddingEnd.value.n, 20, 'button-compact-filled');
+  const text = look(button, 'light', 'text', 'compact', 'enabled');
+  assert.equal(text.paddingEnd.value.n, 12, 'button-text-compact');
+  const ownBase = look(button, 'light', 'destructive-text', 'compact', 'enabled');
+  assert.equal(ownBase.paddingEnd.value.n, 10, 'the variant base holds its compact size');
+  assert.deepEqual([ownBase.iconSize.value.n, ownBase.iconGap.value.n], [18, 6]);
 });

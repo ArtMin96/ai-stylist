@@ -114,6 +114,8 @@ test('the API table holds the ids, the test IDs, the lookup and every merged loo
     'ButtonSpec.appearance()':
       'fn:(variant: ButtonVariant, size: ButtonSize, state: ButtonState) -> ButtonAppearance?',
     'ButtonAppearance.backgroundColor:type': 'AppColorRole?',
+    'ButtonAppearance.iconSize:type': 'Double',
+    'ButtonAppearance.iconGap:type': 'Double',
     'ButtonSpec.light.looks': 'list:100',
     'ComponentGallery.buttonLabel': 'str:"Continue"',
     'ComponentGallery.button': 'list:100',
@@ -129,6 +131,9 @@ test('the API table holds the ids, the test IDs, the lookup and every merged loo
       for (const { name } of button.fields) {
         const present = Object.hasOwn(values, name);
         assert.equal(table[`${at}.appearance.${name}`] === 'none', !present, `${at}.${name}`);
+      }
+      for (const name of ['iconSize', 'iconGap']) {
+        assert.equal(table[`${at}.appearance.${name}`], `num:${values[name].value.n}`, at);
       }
     });
   }

@@ -2,7 +2,7 @@
 // (ADR-0011 follow-up 7, DEC-87; field rules: .impeccable/components/README.md). CC-01 parses the
 // YAML and checks it against component-contract.schema.json with the generators' shared Ajv
 // (../ajv.mjs: draft 2020-12 + ajv-formats from the packages/contracts devDependencies, as
-// gen-kernel.mjs uses it). CC-02 to CC-07 check the fields against each other and against the
+// gen-kernel.mjs uses it). CC-02 to CC-08 check the fields against each other and against the
 // in-memory token model; contract-model.mjs then merges the looks. Rules:
 // tools/codegen/tokens/README.md, "Component contracts".
 import { readdirSync, readFileSync } from 'node:fs';
@@ -13,15 +13,17 @@ import { parseDocument } from 'yaml';
 import { createAjv } from '../ajv.mjs';
 import {
   BASE_STATE,
+  ICON_SLOT,
   allowedCombinations,
   buildApi,
   comboKey,
   finding,
   isToken,
   resolveReference,
+  slotEntryOf,
   tableContexts,
 } from './contract-model.mjs';
-import { contextsOf } from './declarations.mjs';
+import { contextsOf, typedValue } from './declarations.mjs';
 import { ktEnumEntry, ktIdent, memberId, swiftIdent, testIdName } from './naming.mjs';
 import { resolveComponents } from './normalise.mjs';
 import { CONTEXTS, isColourProperty } from './syntax.mjs';
@@ -71,6 +73,7 @@ export function checkContract(text, file, model) {
     () => [...checkTokenShape(contract, file), ...checkUsage(contract, file)],
     () => checkReferences(contract, file, model),
     () => checkRoles(contract, file, model),
+    () => checkIconSlot(contract, file, model),
   ];
   for (const stage of stages) {
     const findings = stage();
@@ -290,4 +293,33 @@ function isSizeEntry(component, model) {
     const group = resolveComponents(model, context)[component];
     return Object.entries(group).every(([key, node]) => isToken(node) && !isColourProperty(key));
   });
+}
+
+/**
+ * CC-08: every size an allowed combination uses has its shared size entry `<id>-<size>`, and that
+ * entry holds the icon slot (ICON_SLOT: `iconSize`, `iconGap`) as dimensions in every context of
+ * the table. The slot depends on the size only, so a missing value is a finding, never a default.
+ */
+function checkIconSlot(contract, file, model) {
+  const out = [];
+  const resolved = tableContexts(contract, model).map((c) => resolveComponents(model, c));
+  const sizes = new Set(allowedCombinations(contract).map(({ size }) => size));
+  for (const size of contract.sizes.filter((s) => sizes.has(s))) {
+    const entry = slotEntryOf(contract.id, size);
+    const at = `${file} sizes.${size}`;
+    if (!Object.hasOwn(model.sets.components, entry)) {
+      out.push(finding('CC-08', at, `no {components.${entry}} holds the ${size} icon slot`));
+      continue;
+    }
+    const missing = ICON_SLOT.filter((name) =>
+      resolved.some((components) => {
+        const node = components[entry]?.[name];
+        return !node || !isToken(node) || typedValue(node).type !== 'double';
+      }),
+    );
+    if (missing.length === 0) continue;
+    const message = `{components.${entry}} has no ${missing.join(' or ')} dimension`;
+    out.push(finding('CC-08', at, message));
+  }
+  return out;
 }

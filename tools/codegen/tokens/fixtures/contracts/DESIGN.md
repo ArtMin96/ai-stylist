@@ -95,7 +95,17 @@ components:
     backgroundColor: '{colors.surface-2-dark}'
     textColor: '{colors.text-secondary-dark}'
     typography: '{typography.label-muted}'
-  button-small: { typography: '{typography.body}', height: 36px, padding: 0 12px }
+  # Shared size entries: each holds its size's icon slot (iconSize, iconGap) for every variant.
+  # button-large serves only the slot: the variants' own bases hold the large height and padding.
+  # button-medium lacks the slot on purpose: only ../CC-08/button.yaml uses the medium size.
+  button-large: { height: 48px, padding: 0 16px, iconSize: 18px, iconGap: 8px }
+  button-medium: { height: 40px, padding: 0 14px }
+  button-small:
+    typography: '{typography.body}'
+    height: 36px
+    padding: 0 12px
+    iconSize: 14px
+    iconGap: 4px
   button-outline-ring: { width: 1.5px }
   button-secondary-light:
     textColor: '{colors.text-light}'

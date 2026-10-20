@@ -117,13 +117,17 @@ nonisolated public struct ButtonLargeTokens: Sendable, Equatable {
   public let paddingEnd: Double
   public let paddingBottom: Double
   public let paddingStart: Double
+  public let iconSize: Double
+  public let iconGap: Double
 
   public static let light = ButtonLargeTokens(
     height: 52.0,
     paddingTop: 0.0,
     paddingEnd: 24.0,
     paddingBottom: 0.0,
-    paddingStart: 24.0
+    paddingStart: 24.0,
+    iconSize: 20.0,
+    iconGap: 8.0
   )
 
   public static let dark = ButtonLargeTokens(
@@ -131,7 +135,9 @@ nonisolated public struct ButtonLargeTokens: Sendable, Equatable {
     paddingTop: 0.0,
     paddingEnd: 24.0,
     paddingBottom: 0.0,
-    paddingStart: 24.0
+    paddingStart: 24.0,
+    iconSize: 20.0,
+    iconGap: 8.0
   )
 
   public static let brand = ButtonLargeTokens(
@@ -139,7 +145,9 @@ nonisolated public struct ButtonLargeTokens: Sendable, Equatable {
     paddingTop: 0.0,
     paddingEnd: 24.0,
     paddingBottom: 0.0,
-    paddingStart: 24.0
+    paddingStart: 24.0,
+    iconSize: 20.0,
+    iconGap: 8.0
   )
 
   public static let hcLight = ButtonLargeTokens(
@@ -147,7 +155,9 @@ nonisolated public struct ButtonLargeTokens: Sendable, Equatable {
     paddingTop: 0.0,
     paddingEnd: 24.0,
     paddingBottom: 0.0,
-    paddingStart: 24.0
+    paddingStart: 24.0,
+    iconSize: 20.0,
+    iconGap: 8.0
   )
 
   public static let hcDark = ButtonLargeTokens(
@@ -155,7 +165,9 @@ nonisolated public struct ButtonLargeTokens: Sendable, Equatable {
     paddingTop: 0.0,
     paddingEnd: 24.0,
     paddingBottom: 0.0,
-    paddingStart: 24.0
+    paddingStart: 24.0,
+    iconSize: 20.0,
+    iconGap: 8.0
   )
 }
 
@@ -166,13 +178,17 @@ nonisolated public struct ButtonCardTokens: Sendable, Equatable {
   public let paddingEnd: Double
   public let paddingBottom: Double
   public let paddingStart: Double
+  public let iconSize: Double
+  public let iconGap: Double
 
   public static let light = ButtonCardTokens(
     height: 48.0,
     paddingTop: 0.0,
     paddingEnd: 24.0,
     paddingBottom: 0.0,
-    paddingStart: 24.0
+    paddingStart: 24.0,
+    iconSize: 20.0,
+    iconGap: 8.0
   )
 
   public static let dark = ButtonCardTokens(
@@ -180,7 +196,9 @@ nonisolated public struct ButtonCardTokens: Sendable, Equatable {
     paddingTop: 0.0,
     paddingEnd: 24.0,
     paddingBottom: 0.0,
-    paddingStart: 24.0
+    paddingStart: 24.0,
+    iconSize: 20.0,
+    iconGap: 8.0
   )
 
   public static let brand = ButtonCardTokens(
@@ -188,7 +206,9 @@ nonisolated public struct ButtonCardTokens: Sendable, Equatable {
     paddingTop: 0.0,
     paddingEnd: 24.0,
     paddingBottom: 0.0,
-    paddingStart: 24.0
+    paddingStart: 24.0,
+    iconSize: 20.0,
+    iconGap: 8.0
   )
 
   public static let hcLight = ButtonCardTokens(
@@ -196,7 +216,9 @@ nonisolated public struct ButtonCardTokens: Sendable, Equatable {
     paddingTop: 0.0,
     paddingEnd: 24.0,
     paddingBottom: 0.0,
-    paddingStart: 24.0
+    paddingStart: 24.0,
+    iconSize: 20.0,
+    iconGap: 8.0
   )
 
   public static let hcDark = ButtonCardTokens(
@@ -204,7 +226,9 @@ nonisolated public struct ButtonCardTokens: Sendable, Equatable {
     paddingTop: 0.0,
     paddingEnd: 24.0,
     paddingBottom: 0.0,
-    paddingStart: 24.0
+    paddingStart: 24.0,
+    iconSize: 20.0,
+    iconGap: 8.0
   )
 }
 
@@ -215,13 +239,17 @@ nonisolated public struct ButtonMediumTokens: Sendable, Equatable {
   public let paddingEnd: Double
   public let paddingBottom: Double
   public let paddingStart: Double
+  public let iconSize: Double
+  public let iconGap: Double
 
   public static let light = ButtonMediumTokens(
     height: 44.0,
     paddingTop: 0.0,
     paddingEnd: 20.0,
     paddingBottom: 0.0,
-    paddingStart: 20.0
+    paddingStart: 20.0,
+    iconSize: 20.0,
+    iconGap: 8.0
   )
 
   public static let dark = ButtonMediumTokens(
@@ -229,7 +257,9 @@ nonisolated public struct ButtonMediumTokens: Sendable, Equatable {
     paddingTop: 0.0,
     paddingEnd: 20.0,
     paddingBottom: 0.0,
-    paddingStart: 20.0
+    paddingStart: 20.0,
+    iconSize: 20.0,
+    iconGap: 8.0
   )
 
   public static let brand = ButtonMediumTokens(
@@ -237,7 +267,9 @@ nonisolated public struct ButtonMediumTokens: Sendable, Equatable {
     paddingTop: 0.0,
     paddingEnd: 20.0,
     paddingBottom: 0.0,
-    paddingStart: 20.0
+    paddingStart: 20.0,
+    iconSize: 20.0,
+    iconGap: 8.0
   )
 
   public static let hcLight = ButtonMediumTokens(
@@ -245,7 +277,9 @@ nonisolated public struct ButtonMediumTokens: Sendable, Equatable {
     paddingTop: 0.0,
     paddingEnd: 20.0,
     paddingBottom: 0.0,
-    paddingStart: 20.0
+    paddingStart: 20.0,
+    iconSize: 20.0,
+    iconGap: 8.0
   )
 
   public static let hcDark = ButtonMediumTokens(
@@ -253,7 +287,9 @@ nonisolated public struct ButtonMediumTokens: Sendable, Equatable {
     paddingTop: 0.0,
     paddingEnd: 20.0,
     paddingBottom: 0.0,
-    paddingStart: 20.0
+    paddingStart: 20.0,
+    iconSize: 20.0,
+    iconGap: 8.0
   )
 }
 
@@ -265,6 +301,8 @@ nonisolated public struct ButtonCompactTokens: Sendable, Equatable {
   public let paddingEnd: Double
   public let paddingBottom: Double
   public let paddingStart: Double
+  public let iconSize: Double
+  public let iconGap: Double
 
   public static let light = ButtonCompactTokens(
     typography: AppTypography.subhead,
@@ -272,7 +310,9 @@ nonisolated public struct ButtonCompactTokens: Sendable, Equatable {
     paddingTop: 0.0,
     paddingEnd: 16.0,
     paddingBottom: 0.0,
-    paddingStart: 16.0
+    paddingStart: 16.0,
+    iconSize: 18.0,
+    iconGap: 6.0
   )
 
   public static let dark = ButtonCompactTokens(
@@ -281,7 +321,9 @@ nonisolated public struct ButtonCompactTokens: Sendable, Equatable {
     paddingTop: 0.0,
     paddingEnd: 16.0,
     paddingBottom: 0.0,
-    paddingStart: 16.0
+    paddingStart: 16.0,
+    iconSize: 18.0,
+    iconGap: 6.0
   )
 
   public static let brand = ButtonCompactTokens(
@@ -290,7 +332,9 @@ nonisolated public struct ButtonCompactTokens: Sendable, Equatable {
     paddingTop: 0.0,
     paddingEnd: 16.0,
     paddingBottom: 0.0,
-    paddingStart: 16.0
+    paddingStart: 16.0,
+    iconSize: 18.0,
+    iconGap: 6.0
   )
 
   public static let hcLight = ButtonCompactTokens(
@@ -299,7 +343,9 @@ nonisolated public struct ButtonCompactTokens: Sendable, Equatable {
     paddingTop: 0.0,
     paddingEnd: 16.0,
     paddingBottom: 0.0,
-    paddingStart: 16.0
+    paddingStart: 16.0,
+    iconSize: 18.0,
+    iconGap: 6.0
   )
 
   public static let hcDark = ButtonCompactTokens(
@@ -308,7 +354,9 @@ nonisolated public struct ButtonCompactTokens: Sendable, Equatable {
     paddingTop: 0.0,
     paddingEnd: 16.0,
     paddingBottom: 0.0,
-    paddingStart: 16.0
+    paddingStart: 16.0,
+    iconSize: 18.0,
+    iconGap: 6.0
   )
 }
 
@@ -430,6 +478,8 @@ nonisolated public struct ButtonSmallTokens: Sendable, Equatable {
   public let paddingEnd: Double
   public let paddingBottom: Double
   public let paddingStart: Double
+  public let iconSize: Double
+  public let iconGap: Double
 
   public static let light = ButtonSmallTokens(
     typography: AppTypography.subhead,
@@ -437,7 +487,9 @@ nonisolated public struct ButtonSmallTokens: Sendable, Equatable {
     paddingTop: 0.0,
     paddingEnd: 16.0,
     paddingBottom: 0.0,
-    paddingStart: 16.0
+    paddingStart: 16.0,
+    iconSize: 20.0,
+    iconGap: 8.0
   )
 
   public static let dark = ButtonSmallTokens(
@@ -446,7 +498,9 @@ nonisolated public struct ButtonSmallTokens: Sendable, Equatable {
     paddingTop: 0.0,
     paddingEnd: 16.0,
     paddingBottom: 0.0,
-    paddingStart: 16.0
+    paddingStart: 16.0,
+    iconSize: 20.0,
+    iconGap: 8.0
   )
 
   public static let brand = ButtonSmallTokens(
@@ -455,7 +509,9 @@ nonisolated public struct ButtonSmallTokens: Sendable, Equatable {
     paddingTop: 0.0,
     paddingEnd: 16.0,
     paddingBottom: 0.0,
-    paddingStart: 16.0
+    paddingStart: 16.0,
+    iconSize: 20.0,
+    iconGap: 8.0
   )
 
   public static let hcLight = ButtonSmallTokens(
@@ -464,7 +520,9 @@ nonisolated public struct ButtonSmallTokens: Sendable, Equatable {
     paddingTop: 0.0,
     paddingEnd: 16.0,
     paddingBottom: 0.0,
-    paddingStart: 16.0
+    paddingStart: 16.0,
+    iconSize: 20.0,
+    iconGap: 8.0
   )
 
   public static let hcDark = ButtonSmallTokens(
@@ -473,7 +531,9 @@ nonisolated public struct ButtonSmallTokens: Sendable, Equatable {
     paddingTop: 0.0,
     paddingEnd: 16.0,
     paddingBottom: 0.0,
-    paddingStart: 16.0
+    paddingStart: 16.0,
+    iconSize: 20.0,
+    iconGap: 8.0
   )
 }
 

@@ -1,4 +1,4 @@
-# Synthetic contract for the component-contract tests: it passes CC-01 to CC-07 against
+# Synthetic contract for the component-contract tests: it passes CC-01 to CC-08 against
 # ../DESIGN.md. Each ../CC-NN/button.yaml is this file with one defect that fails rule CC-NN only.
 # secondary allows no small size and no disabled state, so the API must not offer them.
 id: button

@@ -1,8 +1,9 @@
 // A checked component contract + the in-memory token model -> the API model the component-API
 // emitters read (ADR-0011 follow-up 7, DEC-87): the axes, the allowed combinations and one ready,
 // merged look per combination and context (owner decision 2026-10-20: base, then state, then
-// size). Also the reference grammar the checker (contracts.mjs) shares. Only run buildApi on a
-// contract that passed CC-01 to CC-06. tools/codegen/tokens/README.md, "Component contracts".
+// size, then the size's icon slot). Also the reference grammar the checker (contracts.mjs)
+// shares. Only run buildApi on a contract that passed CC-01 to CC-08.
+// tools/codegen/tokens/README.md, "Component contracts".
 import { contextsOf, typedValue } from './declarations.mjs';
 import { contextId, memberId, tokensTypeName } from './naming.mjs';
 import { resolveComponents } from './normalise.mjs';
@@ -10,6 +11,17 @@ import { CONTEXTS, isColourProperty, splitState } from './syntax.mjs';
 
 /** The state every variant has before any state applies: its base entry is this look. */
 export const BASE_STATE = 'enabled';
+
+/**
+ * The leading-icon slot (the leading icon, or the loading spinner in its place). It depends on the
+ * size only, never on the variant (.impeccable/components/button.yaml, `leadingIcon`; DESIGN.md
+ * "Buttons"), so every look reads it from the shared size entry `<id>-<size>` (`slotEntryOf`), even
+ * where the variant's own entry holds that size's height and padding.
+ */
+export const ICON_SLOT = ['iconSize', 'iconGap'];
+
+/** The shared size entry holding a size's icon slot: `button`, `compact` -> `button-compact`. */
+export const slotEntryOf = (id, size) => `${id}-${size}`;
 
 export const isToken = (node) => Object.hasOwn(node, '$value');
 export const finding = (rule, at, message) => ({ rule, at, message });
@@ -107,7 +119,8 @@ export function buildApi(contract, file, model) {
  * One look's typed values (`typedValue`): the base entry's properties, then the state's, then the
  * size entry's, later overriding earlier. A size entry that is the base itself adds nothing: the
  * base is already applied, and applying it again would undo the state (the destructive-filled
- * disabled label weight). An overlay state adds a field named after its component that holds that
+ * disabled label weight). Last, the icon slot replaces any slot value with the shared size
+ * entry's (ICON_SLOT). An overlay state adds a field named after its component that holds that
  * component's instance for the context (`focusRing: FocusRingTokens.hcDark`) and changes no colour
  * (owner decision 2026-10-20: focused is the focus ring drawn over the enabled look).
  */
@@ -124,6 +137,9 @@ function lookValues(contract, { variant, size, state }, { resolved, context, mod
   }
   const sizeEntry = resolveReference(tokens.sizes[size], model).component;
   if (sizeEntry !== base) Object.assign(props, propertiesOf(resolved[sizeEntry]));
+  // The icon slot comes from the shared size entry only (ICON_SLOT), after everything else.
+  for (const name of ICON_SLOT) delete props[name];
+  Object.assign(props, slotOf(resolved[slotEntryOf(contract.id, size)]));
   const values = Object.fromEntries(
     Object.entries(props).map(([name, token]) => [name, typedValue(token)]),
   );
@@ -137,6 +153,9 @@ function lookValues(contract, { variant, size, state }, { resolved, context, mod
 
 const propertiesOf = (group) =>
   Object.fromEntries(Object.entries(group).filter(([, node]) => isToken(node)));
+
+/** The ICON_SLOT tokens of a resolved size entry, in ICON_SLOT order (CC-08 guarantees both). */
+const slotOf = (group) => Object.fromEntries(ICON_SLOT.map((name) => [name, group[name]]));
 
 /**
  * The merged look's fields: colours first, then `borderWidth`, then the other properties, then

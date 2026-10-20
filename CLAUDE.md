@@ -127,7 +127,7 @@ Use `just` recipes only — never raw tool invocations that CI does not run. Ful
 - `just android-check` (Spotless, module graph, detekt, Android Lint, unit + Robolectric tests, APKs)
 - `just test <module>` (scoped) · `just test` (full)
 - `just lint` · `just typecheck` · `just format` · `just arch-check` · `just clone-check` · `just docs-check`
-- `just generate` — contracts → clients (`--check` = staleness gate)
+- `just generate` — contracts → clients, `DESIGN.md` → Swift + Kotlin design tokens (`--check` = staleness gate)
 - `just db-migrate` / `just db-rollback` / `just db-reset` (local only)
 - `just assets-validate` · `just ml-eval` · `just security-scan`
 - `just ci-parity` — the exact PR gate, locally

@@ -169,6 +169,23 @@ This supersedes these AI-195 lines: gallery paths `Sources/DesignSystem/Gallery/
      (report: rename the configurations to a `Debug` prefix, or accept unreferenced catalog code in Prod).
   Record the variant and the command output in the lane prompts; the iOS lane writes `project.yml` per
   that variant.
+  - **P0 RESULT (lead, 2026-10-20, Mac, `POSTHOG_CLI_*` unset; no dSYM upload): Variant B.**
+    - Variant A fails. With a plain link and `#if DEBUG` only in the app, the Prod binary still holds
+      the catalog: `strings` finds `ds-gallery-spike` twice, and `nm -m` finds 37
+      DesignSystemCatalog/SpikeView symbols.
+    - Variant B passes:
+      - `project.yml` keeps `- package: DesignSystem` / `products: [DesignSystem]` and adds a second
+        `- package: DesignSystem` / `products: [DesignSystemCatalog]` / `link: false`;
+      - `Config/Dev.xcconfig` gets `OTHER_LDFLAGS = $(inherited) $(BUILT_PRODUCTS_DIR)/DesignSystemCatalog.o`;
+      - the app imports and uses the catalog under `#if DEBUG` only.
+    - Variant B results: the Prod `AIStylist` binary has 0 strings and 0 symbols. In Dev, the code
+      lives in `AIStylist.debug.dylib` (Xcode's debug dylib), with 2 strings and 53 symbols; the
+      stub `AIStylist` itself shows 0.
+    - Preview gets no `OTHER_LDFLAGS` line, so it links no catalog either.
+    - Item 3 (`#if DEBUG` inside the package under Dev) was not checked; no code relies on it.
+    - The iOS lane proves the catalog is absent from Prod with the same check: `strings -a` and
+      `nm -m` on `.build/DerivedData/Build/Products/Prod-iphonesimulator/AIStylist.app/AIStylist`
+      after `just ios-build --config prod`.
 
 ## iOS: how Prod excludes the catalog
 

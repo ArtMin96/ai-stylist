@@ -3,7 +3,8 @@
 //   <Name>Model    @Observable view model; no SwiftUI, so it builds and tests on Linux too.
 //   <Name>Feature  the SwiftUI view; Apple platforms only (left out of this manifest on Linux).
 // Features depend on Core's AppServices/Analytics/AppConfig protocols and values, never on
-// APIData or the generated client (enforced by apps/ios/scripts/check-banned.sh).
+// APIData or the generated client (enforced by apps/ios/scripts/check-banned.sh). *Feature targets
+// draw with the DesignSystem package (AppButton, `\.appTheme`).
 import PackageDescription
 
 // jscpd:ignore-start (SwiftPM manifests cannot share code; the copies are kept in sync by hand.)
@@ -27,6 +28,9 @@ let core: [Target.Dependency] = [
   .product(name: "AppServices", package: "Core"),
 ]
 
+var dependencies: [Package.Dependency] = [
+  .package(path: "../Core")
+]
 var products: [Product] = [
   .library(name: "HomeModel", targets: ["HomeModel"])
 ]
@@ -41,10 +45,20 @@ var targets: [Target] = [
 ]
 
 #if !os(Linux)
-  // SwiftUI exists only on Apple platforms.
+  // SwiftUI exists only on Apple platforms. The design system goes to *Feature targets only, so
+  // *Model targets stay UI-free.
+  dependencies.append(.package(path: "../DesignSystem"))
+  let designSystem: [Target.Dependency] = [
+    .product(name: "DesignSystem", package: "DesignSystem"),
+    .product(name: "DesignTokens", package: "DesignSystem"),
+  ]
   products.append(.library(name: "HomeFeature", targets: ["HomeFeature"]))
   targets.append(
-    .target(name: "HomeFeature", dependencies: ["HomeModel"] + core, swiftSettings: strictSettings)
+    .target(
+      name: "HomeFeature",
+      dependencies: ["HomeModel"] + core + designSystem,
+      swiftSettings: strictSettings
+    )
   )
 #endif
 
@@ -52,8 +66,6 @@ let package = Package(
   name: "Features",
   platforms: [.iOS(.v26), .macOS(.v26)],
   products: products,
-  dependencies: [
-    .package(path: "../Core")
-  ],
+  dependencies: dependencies,
   targets: targets
 )

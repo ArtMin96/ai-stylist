@@ -40,13 +40,19 @@ var targets: [Target] = [
 #if !os(Linux)
   // SwiftUI exists only on Apple platforms.
   products.append(.library(name: "DesignSystem", targets: ["DesignSystem"]))
+  // Resources/Fonts: the bundled Figtree and Young Serif fonts (OFL 1.1), registered by AppFonts.
   targets.append(
-    .target(name: "DesignSystem", dependencies: ["DesignTokens"], swiftSettings: strictSettings)
+    .target(
+      name: "DesignSystem",
+      dependencies: ["DesignTokens"],
+      resources: [.process("Resources")],
+      swiftSettings: strictSettings
+    )
   )
   targets.append(
     .testTarget(
       name: "DesignSystemTests",
-      dependencies: ["DesignSystem"],
+      dependencies: ["DesignSystem", "DesignTokens"],
       path: "tests/DesignSystemTests",
       swiftSettings: strictSettings
     )

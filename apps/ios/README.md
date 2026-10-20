@@ -26,11 +26,14 @@ Packages/Features/       one pair of targets per screen
   Sources/HomeModel        @Observable view model (no SwiftUI; tests run on Linux too)
   Sources/HomeFeature      SwiftUI view (Apple platforms only; left out of the manifest on Linux)
   tests/HomeModelTests
-Packages/DesignSystem/   app-internal design system (DEC-87); no dependency on Core or APIData; no consumer yet
-  Sources/DesignTokens     Foundation-only tokens (tests run on Linux too); `just generate` will write them into
+Packages/DesignSystem/   app-internal design system (DEC-87); no dependency on Core or APIData; used by the app
+                         target (`.appTheme()` at the root) and the *Feature targets
+  Sources/DesignTokens     Foundation-only tokens (tests run on Linux too); `just generate` writes them into
                            generated/ (never hand-edit)
-  Sources/DesignSystem     SwiftUI base components (Apple platforms only; left out of the manifest on Linux)
-  tests/<Target>Tests      DesignTokensTests, DesignSystemTests (smoke tests until tokens and components land)
+  Sources/DesignSystem     SwiftUI layer (Apple platforms only; left out of the manifest on Linux): AppTheme
+                           (`\.appTheme`, set by `.appTheme()`), AppFonts (bundled fonts, Resources/Fonts),
+                           AppButton (C01) with its face, style, rules and Xcode previews
+  tests/<Target>Tests      DesignTokensTests, DesignSystemTests
 scripts/                 recipe bodies (bash 3.2-portable); fixtures/ prove each ban still fires,
                          test-xcode-guards.sh the PostHog, pin and Device Hub guards of xcode.sh
 ```
@@ -40,6 +43,37 @@ The generated client lives in `packages/contracts/gen/swift-client/`. `tools/cod
 `AIStylistKernel` (reason codes, entitlement names and units generated from `packages/shared-kernel/registry/*.json`,
 [ADR-0005](../../docs/adr/0005-shared-kernel-registries-for-native-clients.md)). No app target consumes
 `AIStylistKernel` yet.
+
+## Design system
+
+- **Theme.** `.appTheme()` is applied once, in `App/AIStylistApp.swift`. It registers the bundled fonts and
+  sets the environment value `\.appTheme` from the system appearance: light → S1 (`light`), dark → S2
+  (`dark`), Increase Contrast → S7 (`hcLight` / `hcDark`). The S3 brand scheme is not selected anywhere yet.
+  `AppTheme` only selects a context of the generated tokens and adapts them (ARGB → `Color`, `AppTextStyle`
+  → `Font` scaled with Dynamic Type); it never redeclares a value.
+- **AppButton.** `AppButton(_:variant:size:leadingIcon:fullWidth:enabled:loading:action:)` follows the C01
+  contract `.impeccable/components/button.yaml`. A variant and size pair the contract does not allow renders
+  nothing. The caller attaches the test ID with `.accessibilityIdentifier(_:)`. Xcode previews in
+  `AppButtonPreviews.swift`: "AppButton states, light", "AppButton states, dark" (every
+  `ComponentGallery.button` cell, tagged with its test ID) and "AppButton playground".
+
+### Fonts
+
+Bundled in `Packages/DesignSystem/Sources/DesignSystem/Resources/Fonts/`, registered per process with
+CoreText. Source: google/fonts, files unmodified (renamed only). OFL 1.1, no Reserved Font Name; each font
+ships its own licence file. Figtree is one variable font (axis `wght` 300–900, default instance Light 300), so
+every Figtree style sets its weight from `AppTextStyle.fontWeight`; Young Serif is 400 only. No system font
+fallback.
+
+| File                     | Source (google/fonts ref)                                                     | sha256                                                             |
+| ------------------------ | ----------------------------------------------------------------------------- | ------------------------------------------------------------------ |
+| `Figtree-Variable.ttf`   | `a60a77e14f28abd4ef243a1b5dfc48df0cec5205/ofl/figtree/Figtree[wght].ttf`      | `26ad3db9b31ff7dde67a91ff515d022d2f495cd506590699cf264f0bfe6fb714` |
+| `YoungSerif-Regular.ttf` | `8b0a1d0f5983c89bc2b93f1b5fb55f9e252744b5/ofl/youngserif/YoungSerif-Regular.ttf` | `42bb2602364b28569fdce5eeb6ab3d81cf8090ba81b211f1229ed69f33155523` |
+| `Figtree-OFL.txt`        | `a60a77e14f28abd4ef243a1b5dfc48df0cec5205/ofl/figtree/OFL.txt`                | `140d37233e7f3ce7313798befa9600893bcceaf41a55fa0fa5ad52f7f657a268` |
+| `YoungSerif-OFL.txt`     | `8b0a1d0f5983c89bc2b93f1b5fb55f9e252744b5/ofl/youngserif/OFL.txt`             | `737d8d343b674c6894f373de71a044b6782c130f2aebf180933d63ddf7a3dc19` |
+
+Upstream projects: Figtree `https://github.com/erikdkennedy/figtree` (google/fonts imports commit 032dfa7),
+Young Serif `https://github.com/noirblancrouge/YoungSerif` (commit d307c79). Android ships the same bytes.
 
 ## Environments
 

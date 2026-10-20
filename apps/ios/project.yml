@@ -6,7 +6,7 @@
 # - The app target is thin: App/ only (entry point, composition root, Info.plist, assets, and the
 #   Apple-only adapters: the PostHog sink and the DEBUG-only forced crash).
 #   Code goes in the local packages: Packages/Core (no UI), Packages/Features (screens) and
-#   Packages/DesignSystem (tokens + base components; no app target links it yet).
+#   Packages/DesignSystem (tokens + base components; the app applies its theme at the root).
 # - Adding a file under App/ or a package needs no change here; re-run `just ios-project`.
 name: AIStylist
 
@@ -33,7 +33,8 @@ packages:
     path: Packages/Core
   Features:
     path: Packages/Features
-  # App-internal design system (DEC-87). No consumer yet: listed so the scheme runs its tests.
+  # App-internal design system (DEC-87): AppTheme, the bundled fonts, AppButton. The app target links
+  # DesignSystem for `.appTheme()` at the root; HomeFeature links it through Packages/Features.
   DesignSystem:
     path: Packages/DesignSystem
   # Official PostHog iOS SDK (analytics + error tracking with native crash capture; MIT). Linked by the
@@ -61,6 +62,8 @@ targets:
         products: [AppConfig, Analytics, AppServices, APIData]
       - package: Features
         products: [HomeFeature]
+      - package: DesignSystem
+        products: [DesignSystem]
       - package: PostHog
         products: [PostHog]
 

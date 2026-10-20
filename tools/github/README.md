@@ -5,7 +5,8 @@ account. Three things that used to be manual steps are now data files plus one r
 
 - **name**: the repository's own `<owner>/<repo>` in tracked files (clone commands, runbook links).
 - **secrets**: the GitHub Actions secrets and variables, set from `secrets/dev.enc.yaml`.
-- **settings**: Actions permissions, protection of `main`, secret scanning, labels.
+- **settings**: Actions permissions, protection of `main`, secret scanning, Dependabot security
+  updates, labels.
 
 The step-by-step guide that uses them is [docs/NEW-REPO-SETUP.md](../../docs/NEW-REPO-SETUP.md).
 This file covers what each command does, what it guarantees and how to change the data.
@@ -138,8 +139,10 @@ REST API so that a section can be sent as it is:
 - `branch_protection`: sent with `PUT` to `repos/<owner>/<repo>/branches/<branch>/protection`
   (classic branch protection).
 - `repository`: sent with `PATCH` to `repos/<owner>/<repo>`, one call per setting.
-  `security_and_analysis` holds secret scanning and push protection. Any other repository field
-  can be added here without a code change.
+  `security_and_analysis` holds secret scanning, push protection and Dependabot security updates
+  (`dependabot_security_updates`: Dependabot opens a pull request only for a dependency with a
+  known vulnerability; Renovate, `renovate.json`, keeps every other version update, so there is no
+  `.github/dependabot.yml`). Any other repository field can be added here without a code change.
 - `labels`: created with `POST` when missing. An existing label is never changed or removed.
 
 The report reads the live repository with `GET` calls and prints one line per setting: `ok`,
@@ -166,7 +169,12 @@ disabled for the owner as well until the checks pass). `require_code_owner_revie
 while `CODEOWNERS` holds placeholder handles.
 
 Not managed: rulesets (the report only says when one exists), auto-merge, "delete branch on merge",
-Dependabot alerts, environments, GitHub Apps and `CODEOWNERS`.
+Dependabot alerts, environments, GitHub Apps and `CODEOWNERS`. Dependabot alerts are a separate
+endpoint (`PUT repos/<owner>/<repo>/vulnerability-alerts`), and Dependabot security updates need
+them switched on first: GitHub does not switch security updates on while alerts are off. Switch
+the alerts on by hand under Settings → Code security before `--apply` (on this repository since
+2026-10-12, DEC-82). When they are off, the security-updates line says so: `failed` with GitHub's
+answer, or `unavailable` with the alerts named as a possible reason.
 
 ## Files
 

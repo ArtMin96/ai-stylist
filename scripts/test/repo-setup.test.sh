@@ -682,9 +682,10 @@ test_settings_report_then_apply_on_a_public_repository() {
     has "change      branch protection for main: not protected -> 5 required check(s) and the declared rules" || return 1
     has "change      secret scanning: disabled -> enabled" || return 1
     has "change      secret scanning push protection: disabled -> enabled" || return 1
+    has "change      dependabot security updates: disabled -> enabled" || return 1
     has "create      label dependencies" || return 1
     has "create      label needs-deps-lock" || return 1
-    has "10 to change, 0 not readable, 0 unavailable, 0 only you can do, 1 already as declared" || return 1
+    has "11 to change, 0 not readable, 0 unavailable, 0 only you can do, 1 already as declared" || return 1
     has "to apply: just repo-setup settings --apply" || return 1
     [[ "$(write_count "$fx")" == "0" ]] || because "the report wrote to GitHub" || return 1
     ! grep -Eq '^gh api --method (PUT|PATCH|POST|DELETE)' "$fx/record.txt" || because "the report sent a write" || return 1
@@ -693,9 +694,9 @@ test_settings_report_then_apply_on_a_public_repository() {
     exits 0 || return 1
     has "changed     branch protection for main" || return 1
     has "created     label security" || return 1
-    has "10 changed, 0 failed" || return 1
+    has "11 changed, 0 failed" || return 1
     # What was sent: one call per difference, bodies on standard input, nothing deleted.
-    [[ "$(write_count "$fx")" == "10" ]] || because "expected 10 writes, got $(write_count "$fx")" || return 1
+    [[ "$(write_count "$fx")" == "11" ]] || because "expected 11 writes, got $(write_count "$fx")" || return 1
     writes "$fx" | grep -Fq "PUT repos/$NEW/actions/permissions/workflow {\"default_workflow_permissions\":\"read\",\"can_approve_pull_request_reviews\":false}" || return 1
     ! writes "$fx" | grep -Fq "PUT repos/$NEW/actions/permissions {" || because "a setting that already matched was sent" || return 1
     writes "$fx" | grep -F "PUT repos/$NEW/branches/main/protection " > "$fx/gh/protection.txt" || return 1
@@ -706,6 +707,8 @@ test_settings_report_then_apply_on_a_public_repository() {
     grep -Fq '"enforce_admins":true' "$fx/gh/protection.txt" || return 1
     grep -Fq '"restrictions":null' "$fx/gh/protection.txt" || return 1
     writes "$fx" | grep -Fq "PATCH repos/$NEW {\"security_and_analysis\":{\"secret_scanning\":{\"status\":\"enabled\"}}}" || return 1
+    writes "$fx" | grep -Fq "PATCH repos/$NEW {\"security_and_analysis\":{\"dependabot_security_updates\":{\"status\":\"enabled\"}}}" || return 1
+    [[ "$(state_get "$fx" 's.repo.security_and_analysis.dependabot_security_updates.status')" == "enabled" ]] || return 1
     [[ "$(writes "$fx" | grep -c "^POST repos/$NEW/labels ")" == "6" ]] || return 1
     ! writes "$fx" | grep -q '^DELETE ' || return 1
     grep -Eq '^gh api --method PUT repos/[^ ]+/branches/main/protection -H .* --input -$' "$fx/record.txt" || because "the body was not sent on standard input" || return 1
@@ -715,7 +718,7 @@ test_settings_report_then_apply_on_a_public_repository() {
     before="$(write_count "$fx")"
     setup "$fx" settings --apply
     exits 0 || return 1
-    has "0 changed, 0 failed, 0 unavailable, 0 only you can do, 11 already as declared" || return 1
+    has "0 changed, 0 failed, 0 unavailable, 0 only you can do, 12 already as declared" || return 1
     [[ "$(write_count "$fx")" == "$before" ]] || because "a repeated --apply sent something" || return 1
     setup "$fx" settings
     exits 0 || return 1
@@ -740,23 +743,29 @@ test_settings_say_plainly_what_the_plan_lacks() {
     has 'unavailable branch protection for main: GitHub answered "Upgrade to GitHub Pro or make this repository public to enable this feature." (HTTP 403): protected branches are not offered for a private repository under a personal account' || return 1
     has "unavailable secret scanning: GitHub does not offer it for a private repository under a personal account" || return 1
     has "unavailable secret scanning push protection: GitHub does not offer it" || return 1
-    has "7 to change, 0 not readable, 3 unavailable" || return 1
+    # Each feature names its own reason: Secret Protection for scanning, the alerts for Dependabot.
+    has "unavailable secret scanning: GitHub does not offer it for a private repository under a personal account (free on a public repository; a private one needs GitHub Secret Protection" || return 1
+    has "unavailable dependabot security updates: GitHub does not offer it for a private repository under a personal account (it needs Dependabot alerts switched on first (Settings" || return 1
+    has "7 to change, 0 not readable, 4 unavailable" || return 1
     has "unavailable = GitHub does not offer the setting for a private repository under a personal account: left alone, not a difference" || return 1
     # --apply sets the rest and never tries what is not offered; afterwards nothing is left to do.
     setup "$fx" settings --apply
     exits 0 || return 1
-    has "7 changed, 0 failed, 3 unavailable" || return 1
+    has "7 changed, 0 failed, 4 unavailable" || return 1
     ! writes "$fx" | grep -q '/protection ' || because "branch protection was sent although the plan lacks it" || return 1
     ! writes "$fx" | grep -q '^PATCH ' || return 1
     setup "$fx" settings
     exits 0 || return 1
-    has "0 to change, 0 not readable, 3 unavailable" || return 1
-    # A public repository where GitHub takes the call and changes nothing: said, not hidden.
+    has "0 to change, 0 not readable, 4 unavailable" || return 1
+    # A public repository where GitHub takes the call and changes nothing: said, not hidden, and
+    # Dependabot security updates name the alerts they need.
     gh_state "$fx"
-    state_edit "$fx" 's.sticky = ["secret_scanning_push_protection"]'
+    state_edit "$fx" 's.sticky = ["secret_scanning_push_protection", "dependabot_security_updates"]'
     setup "$fx" settings --apply
     exits 0 || return 1
     has "unavailable secret scanning push protection: GitHub took the call and changed nothing: not offered for a public repository under a personal account" || return 1
+    lacks "push protection: GitHub took the call and changed nothing: not offered for a public repository under a personal account, or" || return 1
+    has "unavailable dependabot security updates: GitHub took the call and changed nothing: not offered for a public repository under a personal account, or it needs Dependabot alerts switched on first (Settings" || return 1
     has "changed     secret scanning: disabled -> enabled"
 }
 

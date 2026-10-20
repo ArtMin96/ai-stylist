@@ -93,6 +93,14 @@ Log hygiene: when this log exceeds ~30 entries, move the oldest entries to `plan
 
 *(newest first)*
 
+### 2026-10-20 (dependabot) — Dependabot security updates declared in the repo settings (pushed to `main` at the owner's request)
+
+- **Phase / tasks worked:** none (repo tooling).
+- **Done:** `tools/github/repo-settings.json` declares `security_and_analysis.dependabot_security_updates: enabled`. Dependabot opens PRs only for vulnerable dependencies; Renovate keeps the regular updates (DEC-56), so there is no `.github/dependabot.yml`. `repo-settings.mjs` gives each security feature its own "unavailable" reason (Dependabot security updates need Dependabot alerts first). `scripts/test/repo-setup.test.sh` expectations raised and new assertions added. `tools/github/README.md` and `docs/NEW-REPO-SETUP.md` updated. Dependabot alerts stay a manual setting (on since DEC-82).
+- **Checks:** `just lint`, `just format --check`, `just docs-check --strict`, `just clone-check` → exit 0. `just test tooling` and `just repo-setup settings` not run by an agent (agent allow-list); see the owner's run in the commit or below.
+- **Not done / follow-ups:** owner runs `just repo-setup settings` then `just repo-setup settings --apply` outside a Claude session (CLAUDECODE guard). Renovate's `vulnerabilityAlerts` can open a second fix PR for the same vulnerable package; switch it off if that gets noisy. Optional: a read-only Dependabot-alerts line in the settings report.
+- **Next session starts:** unchanged (owner merges the button PR; then AI-195).
+
 ### 2026-10-20 (app-button) — AppButton on both apps: contract fitted to the screens, component API, theme, fonts (branch `feat/app-button`)
 
 *Lead session on the owner's Mac. PRs #38 (AI-189 emitters), #39 (button contract) and #40 (AI-198 component API) merged by the owner today.*

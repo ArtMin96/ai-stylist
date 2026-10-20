@@ -11,7 +11,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.testTagsAsResourceId
-import app.aistylist.app.ui.theme.AiStylistTheme
+import app.aistylist.core.designsystem.AppTheme
 import app.aistylist.feature.home.HomeRoute
 import app.aistylist.feature.home.HomeViewModel
 
@@ -30,7 +30,7 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         super.onCreate(savedInstanceState)
         setContent {
-            AiStylistTheme {
+            AppTheme {
                 // testTagsAsResourceId: Maestro and UiAutomator see test tags ("api-version",
                 // "api-error") as resource ids.
                 Surface(modifier = Modifier.fillMaxSize().semantics { testTagsAsResourceId = true }) {

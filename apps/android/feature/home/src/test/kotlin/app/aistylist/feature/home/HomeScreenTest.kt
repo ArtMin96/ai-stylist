@@ -62,7 +62,7 @@ class HomeScreenTest {
             .assertTextEquals("The API is not reachable right now: Could not reach the API")
 
         repository.enqueue(VERSION_OK)
-        compose.onNodeWithText("Retry").performClick()
+        compose.onNodeWithTag(HomeTestTags.RETRY_BUTTON).assertTextEquals("Retry").performClick()
 
         compose.onNodeWithTag(HomeTestTags.API_VERSION).assertTextEquals("API 1.2.3 (abcdef0)")
         assertEquals(2, repository.calls)

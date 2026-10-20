@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Design-system copy. Equal to iOS: the busy state text AppButton announces while loading. -->
+<resources>
+    <string name="app_button_loading">Loading</string>
+</resources>

@@ -9,11 +9,9 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.selection.toggleable
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedCard
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
@@ -27,11 +25,16 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import app.aistylist.core.data.model.FailureReason
+import app.aistylist.core.designsystem.AppButton
+import app.aistylist.core.designsystem.AppTheme
+import app.aistylist.core.designsystem.generated.ButtonSize
+import app.aistylist.core.designsystem.generated.ButtonVariant
 
 /** Test tags; exposed as Android resource ids for Maestro (`testTagsAsResourceId` in :app). */
 object HomeTestTags {
     const val API_VERSION: String = "api-version"
     const val API_ERROR: String = "api-error"
+    const val RETRY_BUTTON: String = "retry-button"
     const val DEBUG_CONSENT_TOGGLE: String = "debug_consent_toggle"
     const val DEBUG_FORCE_CRASH: String = "debug_force_crash"
 }
@@ -115,12 +118,13 @@ private fun DebugTools(
             onCheckedChange = onConsentChange,
             modifier = Modifier.testTag(HomeTestTags.DEBUG_CONSENT_TOGGLE),
         )
-        OutlinedButton(
-            onClick = onForceTestCrash,
+        AppButton(
+            label = stringResource(R.string.home_debug_force_crash),
+            variant = ButtonVariant.DESTRUCTIVE,
+            size = ButtonSize.MEDIUM,
+            action = onForceTestCrash,
             modifier = Modifier.testTag(HomeTestTags.DEBUG_FORCE_CRASH),
-        ) {
-            Text(stringResource(R.string.home_debug_force_crash))
-        }
+        )
     }
 }
 
@@ -152,7 +156,13 @@ private fun VersionCard(
                         text = stringResource(R.string.home_version_error, failureMessage(version.reason)),
                         modifier = Modifier.testTag(HomeTestTags.API_ERROR),
                     )
-                    TextButton(onClick = onRetry) { Text(stringResource(R.string.home_retry)) }
+                    AppButton(
+                        label = stringResource(R.string.home_retry),
+                        variant = ButtonVariant.PRIMARY_OUTLINE,
+                        size = ButtonSize.COMPACT,
+                        action = onRetry,
+                        modifier = Modifier.testTag(HomeTestTags.RETRY_BUTTON),
+                    )
                 }
             }
         }
@@ -193,7 +203,7 @@ private fun failureMessage(reason: FailureReason): String =
 @Preview(showBackground = true)
 @Composable
 private fun HomeScreenLoadedPreview() {
-    MaterialTheme {
+    AppTheme {
         HomeScreen(
             state =
                 HomeUiState(
@@ -212,7 +222,7 @@ private fun HomeScreenLoadedPreview() {
 @Preview(showBackground = true)
 @Composable
 private fun HomeScreenErrorPreview() {
-    MaterialTheme {
+    AppTheme {
         HomeScreen(
             state =
                 HomeUiState(

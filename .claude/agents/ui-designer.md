@@ -47,9 +47,9 @@ you never write the Swift or Kotlin that implements it.
   Its automatic hooks are off in this repo: they scan only web files and download an engine binary
   (`.claude/rules/design-system.md` invariant 5).
 - Today's native UI: one screen per app (`apps/ios/Packages/Features/Sources/HomeFeature/HomeScreen.swift`,
-  `apps/android/feature/home/src/main/kotlin/app/aistylist/feature/home/HomeScreen.kt`) and the stock
-  Material 3 theme in `apps/android/app/src/main/kotlin/app/aistylist/app/ui/theme/Theme.kt`.
-  There is no design-system module on either platform yet (ADR-0011 follow-ups).
+  `apps/android/feature/home/src/main/kotlin/app/aistylist/feature/home/HomeScreen.kt`), both on the
+  design system: `AppTheme` and `AppButton` in `apps/ios/Packages/DesignSystem/` and
+  `apps/android/core/designsystem/`, built on the tokens and component API that `just generate` emits.
 </context>
 
 <ownership>

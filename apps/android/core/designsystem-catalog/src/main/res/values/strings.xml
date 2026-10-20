@@ -7,4 +7,7 @@
     <string name="ds_gallery_section_typography">Typography</string>
     <string name="ds_gallery_section_spacing">Spacing</string>
     <string name="ds_gallery_section_radius">Radius</string>
+    <!-- C02 Icons playground (AI-201). -->
+    <string name="ds_gallery_icons_size">Size</string>
+    <string name="ds_gallery_icons_tint">Tint</string>
 </resources>

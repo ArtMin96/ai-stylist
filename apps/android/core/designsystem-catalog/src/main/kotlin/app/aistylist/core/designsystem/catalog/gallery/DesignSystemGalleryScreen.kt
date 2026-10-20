@@ -121,6 +121,7 @@ private fun GallerySectionView(
             is GallerySectionKind.Component -> {
                 when (kind.component) {
                     GalleryComponent.BUTTON -> GalleryButtons()
+                    GalleryComponent.ICON -> GalleryIcons()
                 }
             }
         }

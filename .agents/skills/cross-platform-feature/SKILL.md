@@ -79,6 +79,12 @@ metadata:
      `.impeccable/surfaces/<screen>.md`). The feature brief names that surface brief, both lanes
      use `DESIGN.md` tokens only, and step 9 adds the `ui-designer` review of both apps' code and
      screenshots before merge. No approved surface brief → do not launch the lanes.
+     A base design-system component (an `AppButton`-style `.impeccable/components/<id>.yaml`
+     contract) is the exception. Its approved contract is the owner approval, and its lanes build
+     only on the API `just generate` emits. Previews and gallery entries go in the catalog
+     modules. Lanes run builds with the PostHog keys unset, and the lead does every lockfile
+     refresh. All of this is `.claude/rules/design-system.md` invariants 7–10; the sibling brief is
+     `.claude/plans/2026-10-20-app-button-brief.md`.
    - Registry values (reason codes, entitlements, units): the apps import the generated
      `AIStylistKernel` (Swift) and `app.aistylist.contracts.kernel` (Kotlin) from
      `packages/shared-kernel/registry/*.json` (DEC-55, ADR-0005). No app target consumes them yet,

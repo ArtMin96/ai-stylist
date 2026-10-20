@@ -48,7 +48,10 @@ or a green `ios` workflow run; report a macOS step you did not run as "Not run".
     size, padding or corner radius in a `*Feature` target. No token for what you need → stop and ask
     `ui-designer`; never inline a value "for now" (reviewer-checked: ui-designer; generated theme code
     with a `just generate --check` drift gate; a `just ios-check-banned` ban on literal styles,
-    planned).
+    planned). Feature UI uses the design system's base components (`AppButton`, …) and `AppTheme`,
+    never a hand-rolled copy. How tokens and components are generated, where previews go
+    (`DesignSystemCatalog`) and how to build without uploading symbols: `design-system.md`
+    invariants 7–10.
 11. No new screen or UI element without an owner-approved surface brief in
     `.impeccable/surfaces/<screen>.md` (approval date and canvas board recorded), produced by the
     `ui-prototype-first` skill before any UI code (reviewer-checked: ui-designer).

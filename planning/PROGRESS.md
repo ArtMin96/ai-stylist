@@ -113,12 +113,15 @@ Log hygiene: when this log exceeds ~30 entries, move the oldest entries to `plan
 - **Also found:** the lead's own `just ios-check` runs earlier today uploaded Dev dSYMs to the PostHog test project. `just ios-build` uploads whenever the keys are set. iOS builds now run with the keys unset too.
 - **Not done / follow-ups:**
   - Owner merges the PR.
-  - Human-applied texts:
-    - `.agents/skills/ui-prototype-first/SKILL.md:22`: the debug-only gallery and catalog previews are exempt from the UI gate.
-    - `cross-platform-feature` SKILL.md:172 and `ui-designer.md:51`: name the catalog modules.
-    - ADR-0011 lines 42 and 59: the third iOS target and the Android catalog module.
-  - Not checked: simulator or emulator screenshots of the gallery.
-- **Next session starts:** AI-190 (snapshot tests that photograph the gallery sections; iOS on every PR that touches `apps/ios`, DEC-87).
+  - Applied at the owner's request ("make sure agents know the rules"):
+    - `.claude/rules/design-system.md` invariants 7–10 describe the token and component pipeline, the new-component steps, core vs catalog, and building without uploading symbols. The rule now also loads on the apps' design-system modules and the generator.
+    - `ios.md` and `android.md` point to those invariants.
+    - `ui-prototype-first` exempts the gallery and catalog previews and treats an approved contract as the approval.
+    - `cross-platform-feature` covers base components.
+    - `just skills-eval` was not run for the two edited skills (an owner spending decision).
+  - Still human-applied: ADR-0011 lines 11, 42, 59 and 60 (the catalog modules; the old theme).
+  - Owner decisions on 2026-10-20: no more components for now, and no screenshots (the owner checks the UI). The owner plans to disable PostHog in dev or add a fake PostHog.
+- **Next session starts:** owner merges PR #42; then AI-190 (snapshot tests on the gallery sections) when the owner picks it up.
 
 ### 2026-10-20 (dependabot) — Dependabot security updates declared in the repo settings (pushed to `main` at the owner's request)
 

@@ -127,6 +127,8 @@ data class ButtonLargeTokens(
     val paddingEnd: Double,
     val paddingBottom: Double,
     val paddingStart: Double,
+    val iconSize: Double,
+    val iconGap: Double,
 ) {
     companion object {
         val light: ButtonLargeTokens =
@@ -136,6 +138,8 @@ data class ButtonLargeTokens(
                 paddingEnd = 24.0,
                 paddingBottom = 0.0,
                 paddingStart = 24.0,
+                iconSize = 20.0,
+                iconGap = 8.0,
             )
 
         val dark: ButtonLargeTokens =
@@ -145,6 +149,8 @@ data class ButtonLargeTokens(
                 paddingEnd = 24.0,
                 paddingBottom = 0.0,
                 paddingStart = 24.0,
+                iconSize = 20.0,
+                iconGap = 8.0,
             )
 
         val brand: ButtonLargeTokens =
@@ -154,6 +160,8 @@ data class ButtonLargeTokens(
                 paddingEnd = 24.0,
                 paddingBottom = 0.0,
                 paddingStart = 24.0,
+                iconSize = 20.0,
+                iconGap = 8.0,
             )
 
         val hcLight: ButtonLargeTokens =
@@ -163,6 +171,8 @@ data class ButtonLargeTokens(
                 paddingEnd = 24.0,
                 paddingBottom = 0.0,
                 paddingStart = 24.0,
+                iconSize = 20.0,
+                iconGap = 8.0,
             )
 
         val hcDark: ButtonLargeTokens =
@@ -172,6 +182,8 @@ data class ButtonLargeTokens(
                 paddingEnd = 24.0,
                 paddingBottom = 0.0,
                 paddingStart = 24.0,
+                iconSize = 20.0,
+                iconGap = 8.0,
             )
     }
 }
@@ -183,6 +195,8 @@ data class ButtonCardTokens(
     val paddingEnd: Double,
     val paddingBottom: Double,
     val paddingStart: Double,
+    val iconSize: Double,
+    val iconGap: Double,
 ) {
     companion object {
         val light: ButtonCardTokens =
@@ -192,6 +206,8 @@ data class ButtonCardTokens(
                 paddingEnd = 24.0,
                 paddingBottom = 0.0,
                 paddingStart = 24.0,
+                iconSize = 20.0,
+                iconGap = 8.0,
             )
 
         val dark: ButtonCardTokens =
@@ -201,6 +217,8 @@ data class ButtonCardTokens(
                 paddingEnd = 24.0,
                 paddingBottom = 0.0,
                 paddingStart = 24.0,
+                iconSize = 20.0,
+                iconGap = 8.0,
             )
 
         val brand: ButtonCardTokens =
@@ -210,6 +228,8 @@ data class ButtonCardTokens(
                 paddingEnd = 24.0,
                 paddingBottom = 0.0,
                 paddingStart = 24.0,
+                iconSize = 20.0,
+                iconGap = 8.0,
             )
 
         val hcLight: ButtonCardTokens =
@@ -219,6 +239,8 @@ data class ButtonCardTokens(
                 paddingEnd = 24.0,
                 paddingBottom = 0.0,
                 paddingStart = 24.0,
+                iconSize = 20.0,
+                iconGap = 8.0,
             )
 
         val hcDark: ButtonCardTokens =
@@ -228,6 +250,8 @@ data class ButtonCardTokens(
                 paddingEnd = 24.0,
                 paddingBottom = 0.0,
                 paddingStart = 24.0,
+                iconSize = 20.0,
+                iconGap = 8.0,
             )
     }
 }
@@ -239,6 +263,8 @@ data class ButtonMediumTokens(
     val paddingEnd: Double,
     val paddingBottom: Double,
     val paddingStart: Double,
+    val iconSize: Double,
+    val iconGap: Double,
 ) {
     companion object {
         val light: ButtonMediumTokens =
@@ -248,6 +274,8 @@ data class ButtonMediumTokens(
                 paddingEnd = 20.0,
                 paddingBottom = 0.0,
                 paddingStart = 20.0,
+                iconSize = 20.0,
+                iconGap = 8.0,
             )
 
         val dark: ButtonMediumTokens =
@@ -257,6 +285,8 @@ data class ButtonMediumTokens(
                 paddingEnd = 20.0,
                 paddingBottom = 0.0,
                 paddingStart = 20.0,
+                iconSize = 20.0,
+                iconGap = 8.0,
             )
 
         val brand: ButtonMediumTokens =
@@ -266,6 +296,8 @@ data class ButtonMediumTokens(
                 paddingEnd = 20.0,
                 paddingBottom = 0.0,
                 paddingStart = 20.0,
+                iconSize = 20.0,
+                iconGap = 8.0,
             )
 
         val hcLight: ButtonMediumTokens =
@@ -275,6 +307,8 @@ data class ButtonMediumTokens(
                 paddingEnd = 20.0,
                 paddingBottom = 0.0,
                 paddingStart = 20.0,
+                iconSize = 20.0,
+                iconGap = 8.0,
             )
 
         val hcDark: ButtonMediumTokens =
@@ -284,6 +318,8 @@ data class ButtonMediumTokens(
                 paddingEnd = 20.0,
                 paddingBottom = 0.0,
                 paddingStart = 20.0,
+                iconSize = 20.0,
+                iconGap = 8.0,
             )
     }
 }
@@ -296,6 +332,8 @@ data class ButtonCompactTokens(
     val paddingEnd: Double,
     val paddingBottom: Double,
     val paddingStart: Double,
+    val iconSize: Double,
+    val iconGap: Double,
 ) {
     companion object {
         val light: ButtonCompactTokens =
@@ -306,6 +344,8 @@ data class ButtonCompactTokens(
                 paddingEnd = 16.0,
                 paddingBottom = 0.0,
                 paddingStart = 16.0,
+                iconSize = 18.0,
+                iconGap = 6.0,
             )
 
         val dark: ButtonCompactTokens =
@@ -316,6 +356,8 @@ data class ButtonCompactTokens(
                 paddingEnd = 16.0,
                 paddingBottom = 0.0,
                 paddingStart = 16.0,
+                iconSize = 18.0,
+                iconGap = 6.0,
             )
 
         val brand: ButtonCompactTokens =
@@ -326,6 +368,8 @@ data class ButtonCompactTokens(
                 paddingEnd = 16.0,
                 paddingBottom = 0.0,
                 paddingStart = 16.0,
+                iconSize = 18.0,
+                iconGap = 6.0,
             )
 
         val hcLight: ButtonCompactTokens =
@@ -336,6 +380,8 @@ data class ButtonCompactTokens(
                 paddingEnd = 16.0,
                 paddingBottom = 0.0,
                 paddingStart = 16.0,
+                iconSize = 18.0,
+                iconGap = 6.0,
             )
 
         val hcDark: ButtonCompactTokens =
@@ -346,6 +392,8 @@ data class ButtonCompactTokens(
                 paddingEnd = 16.0,
                 paddingBottom = 0.0,
                 paddingStart = 16.0,
+                iconSize = 18.0,
+                iconGap = 6.0,
             )
     }
 }
@@ -482,6 +530,8 @@ data class ButtonSmallTokens(
     val paddingEnd: Double,
     val paddingBottom: Double,
     val paddingStart: Double,
+    val iconSize: Double,
+    val iconGap: Double,
 ) {
     companion object {
         val light: ButtonSmallTokens =
@@ -492,6 +542,8 @@ data class ButtonSmallTokens(
                 paddingEnd = 16.0,
                 paddingBottom = 0.0,
                 paddingStart = 16.0,
+                iconSize = 20.0,
+                iconGap = 8.0,
             )
 
         val dark: ButtonSmallTokens =
@@ -502,6 +554,8 @@ data class ButtonSmallTokens(
                 paddingEnd = 16.0,
                 paddingBottom = 0.0,
                 paddingStart = 16.0,
+                iconSize = 20.0,
+                iconGap = 8.0,
             )
 
         val brand: ButtonSmallTokens =
@@ -512,6 +566,8 @@ data class ButtonSmallTokens(
                 paddingEnd = 16.0,
                 paddingBottom = 0.0,
                 paddingStart = 16.0,
+                iconSize = 20.0,
+                iconGap = 8.0,
             )
 
         val hcLight: ButtonSmallTokens =
@@ -522,6 +578,8 @@ data class ButtonSmallTokens(
                 paddingEnd = 16.0,
                 paddingBottom = 0.0,
                 paddingStart = 16.0,
+                iconSize = 20.0,
+                iconGap = 8.0,
             )
 
         val hcDark: ButtonSmallTokens =
@@ -532,6 +590,8 @@ data class ButtonSmallTokens(
                 paddingEnd = 16.0,
                 paddingBottom = 0.0,
                 paddingStart = 16.0,
+                iconSize = 20.0,
+                iconGap = 8.0,
             )
     }
 }

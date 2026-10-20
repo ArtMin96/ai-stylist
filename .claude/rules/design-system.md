@@ -23,7 +23,7 @@ logo come from "Garderi Colour Schemes" (https://claude.ai/artifact/Db28dfjbyvJg
    spacing, radius, elevation, motion), and its values equal the canvas R2 board (page 9, Design
    rules). A token change updates both in the same change; native code never holds a copy
    (reviewer-checked: ui-designer; native theme code emitted by `just generate` with a
-   `just generate --check` drift gate, planned).
+   `just generate --check` drift gate).
 2. Never rename, reorder or drop the eight section headings of `DESIGN.md`: impeccable parses them
    by name. New content goes under an existing heading (reviewer-checked: ui-designer).
 3. `PRODUCT.md` is derived from `planning/SPINE.md` and says so at its top; SPINE wins on any

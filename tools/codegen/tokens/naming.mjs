@@ -22,6 +22,12 @@ export function memberId(key, group) {
 /** `button-primary` -> `ButtonPrimaryTokens`. */
 export const tokensTypeName = (component) => `${pascal(component)}Tokens`;
 
+/** `button` + `Variant` -> `ButtonVariant`: a type of a component contract's generated API. */
+export const apiTypeName = (id, suffix) => `${pascal(id)}${suffix}`;
+
+/** A test-ID constant: `primary-outline`, `compact`, `enabled` -> `primaryOutlineCompactEnabled`. */
+export const testIdName = ({ variant, size, state }) => memberId(`${variant}-${size}-${state}`);
+
 /** `pressed` -> `Pressed`: a nested namespace (a component state, an elevation or motion group). */
 export const nestedTypeName = (key) => pascal(key);
 

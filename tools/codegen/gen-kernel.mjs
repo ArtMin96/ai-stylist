@@ -23,8 +23,9 @@
 import { mkdir, readFile, rm, writeFile } from 'node:fs/promises';
 import { createRequire } from 'node:module';
 import path from 'node:path';
-import { fileURLToPath, pathToFileURL } from 'node:url';
+import { fileURLToPath } from 'node:url';
 
+import { createAjv, requireFromContracts } from './ajv.mjs';
 import { emitKotlin } from './kernel/emit-kotlin.mjs';
 import { emitPython } from './kernel/emit-python.mjs';
 import { emitSwift } from './kernel/emit-swift.mjs';
@@ -57,15 +58,7 @@ if (!lang || !Object.hasOwn(EMITTERS, lang) || !outArg) {
 }
 const outDir = path.resolve(outArg);
 
-const requireFromContracts = createRequire(path.join(ROOT, 'packages/contracts/package.json'));
-const { Ajv2020 } = await import(
-  pathToFileURL(requireFromContracts.resolve('ajv/dist/2020.js')).href
-);
-const { default: addFormats } = await import(
-  pathToFileURL(requireFromContracts.resolve('ajv-formats')).href
-);
-const ajv = new Ajv2020({ strict: true, allErrors: true });
-addFormats(ajv);
+const ajv = await createAjv();
 const [emit, REGISTRIES] = EMITTERS[lang];
 const ENVELOPE = 'packages/contracts/events/envelope.json';
 

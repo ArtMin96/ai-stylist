@@ -117,7 +117,7 @@ dev-workers *args:
 
 # --- quality gates (* = part of ci-parity) -------------------------------------------
 
-# * Run tests: full suite via turbo + the native lanes, or one module's tests/ dir (`just test recommendation`; `just test ios` / `just test android` = that app's unit tests; `just test secrets` = the sops+age shell suite; `just test tooling` = the scripts/test shell suites: bootstrap/doctor, contracts-breaking, contracts-spectral, generate (a failing generator fails `just generate [--check]`), test-regression, ci-metrics, dev service names, dev (the `just dev` plan, ports, logs, stop, device choice), observability-sync, repo-setup, skills-eval, design-tokens (the DESIGN.md parser, validator and in-memory token model, the Swift and Kotlin token emitters and their parity test); `just test platform` = the `api` + `platform-docker` vitest projects); SKIP_DOCKER_TESTS=1 leaves out the Testcontainers `migrations` and `platform-docker` projects (runners without Docker only)
+# * Run tests: full suite via turbo + the native lanes, or one module's tests/ dir (`just test recommendation`; `just test ios` / `just test android` = that app's unit tests; `just test secrets` = the sops+age shell suite; `just test tooling` = the scripts/test shell suites: bootstrap/doctor, contracts-breaking, contracts-spectral, generate (a failing generator fails `just generate [--check]`), test-regression, ci-metrics, dev service names, dev (the `just dev` plan, ports, logs, stop, device choice), observability-sync, repo-setup, skills-eval, design-tokens (the DESIGN.md parser, validator and in-memory token model, the component-contract checker and merged looks, the Swift and Kotlin token and component-API emitters and their parity test); `just test platform` = the `api` + `platform-docker` vitest projects); SKIP_DOCKER_TESTS=1 leaves out the Testcontainers `migrations` and `platform-docker` projects (runners without Docker only)
 test module='':
     #!/usr/bin/env bash
     set -euo pipefail
@@ -272,7 +272,7 @@ clone-check *args:
 docs-check *args:
     scripts/docs/docs-check.sh "$@"
 
-# * Contract codegen: OpenAPI bundle -> hey-api, json-schema-to-typescript, datamodel-code-generator, swift-openapi-generator (Swift client), openapi-generator (Kotlin client); DESIGN.md -> Swift + Kotlin design tokens in the app design systems (tools/codegen/gen-tokens.mjs); `--check` diffs committed output; any failing generator fails both modes and is named
+# * Contract codegen: OpenAPI bundle -> hey-api, json-schema-to-typescript, datamodel-code-generator, swift-openapi-generator (Swift client), openapi-generator (Kotlin client); DESIGN.md -> Swift + Kotlin design tokens, and .impeccable/components/*.yaml -> the component API surface, in the app design systems (tools/codegen/gen-tokens.mjs); `--check` diffs committed output; any failing generator fails both modes and is named
 generate *args:
     tools/codegen/generate.sh "$@"
 

@@ -139,6 +139,65 @@ test('the repository DESIGN.md generates both languages', () => {
   assert.match(swift, /^\/\/ Source: DESIGN\.md$/m);
 });
 
+test('--components: the component API file joins the tiers in each directory', () => {
+  const out = path.join(SCRATCH, 'out', 'contracts');
+  const components = path.join(TOKENS_DIR, 'fixtures', 'contracts', '_valid');
+  const args = ['--input', fixture('contracts'), '--components', components];
+  const result = run([...args, '--swift-out', `${out}/swift`, '--kotlin-out', `${out}/kotlin`]);
+  assert.equal(result.status, 0, result.stderr);
+  assert.match(result.stdout, /contracts\/_valid is valid \(1 approved contract\(s\): button\)/);
+  const tiers = ['ReferenceTokens', 'SchemeTokens', 'ComponentTokens'];
+  const swiftFiles = [...tiers.map((t) => `${t}.swift`), 'ComponentAPI.swift'];
+  assert.deepEqual(readdirSync(path.join(out, 'swift')).sort(), swiftFiles.sort());
+  const kotlinFiles = [...tiers.map((t) => `${t}.kt`), 'ComponentApi.kt'];
+  assert.deepEqual(readdirSync(path.join(out, 'kotlin')).sort(), kotlinFiles.sort());
+});
+
+test('--components: a failing contract is a finding and nothing is written', () => {
+  const out = path.join(SCRATCH, 'out', 'bad-contract');
+  const cases = [
+    ['CC-05', /CC-05 button\.yaml tokens\.primary\.states\.pressed: /],
+    ['CC-08', /CC-08 button\.yaml sizes\.medium: \{components\.button-medium\} has no iconSize/],
+  ];
+  for (const [rule, message] of cases) {
+    const components = path.join(TOKENS_DIR, 'fixtures', 'contracts', rule);
+    const args = ['--input', fixture('contracts'), '--components', components, '--swift-out', out];
+    const result = run(args);
+    assert.equal(result.status, 1, rule);
+    assert.match(result.stderr, /1 finding\(s\) in tools\/codegen\/tokens\/fixtures\/contracts\//);
+    assert.match(result.stderr, message);
+    assert.equal(existsSync(out), false);
+  }
+});
+
+const TYPE_LINE = /^(?:nonisolated public (?:enum|struct)|enum class|data class|object) (\w+)/gm;
+
+test('the repository DESIGN.md and contracts generate the component API', (t) => {
+  const out = path.join(SCRATCH, 'out', 'repo-api');
+  const root = path.resolve(TOKENS_DIR, '..', '..', '..');
+  const args = ['--input', path.join(root, 'DESIGN.md')];
+  args.push('--components', path.join(root, '.impeccable', 'components'));
+  args.push('--swift-out', `${out}/swift`, '--kotlin-out', `${out}/kotlin`);
+  const result = run(args);
+  assert.equal(result.status, 0, result.stderr);
+  const swift = readFileSync(path.join(out, 'swift', 'ComponentAPI.swift'), 'utf8');
+  const kotlin = readFileSync(path.join(out, 'kotlin', 'ComponentApi.kt'), 'utf8');
+  assert.match(swift, /^\/\/ Source: \.impeccable\/components\/\*\.yaml \+ DESIGN\.md$/m);
+  assert.match(swift, /\n {2}case primaryOutline = "primary-outline"\n/);
+  const constant = 'textCompactEnabled: String = "ds-button-text-compact-enabled"';
+  assert.ok(swift.includes(`public static let ${constant}`) && kotlin.includes(`val ${constant}`));
+  assert.match(kotlin, /\nenum class ButtonVariant\(\n/);
+  assert.match(swift, /\n {2}public let iconSize: Double\n {2}public let iconGap: Double\n/);
+  assert.match(kotlin, /\n {4}val iconSize: Double,\n {4}val iconGap: Double,\n/);
+  for (const [file, text] of [
+    ['ComponentAPI.swift', swift],
+    ['ComponentApi.kt', kotlin],
+  ]) {
+    const types = [...text.matchAll(TYPE_LINE)].map((m) => m[1]).join(', ');
+    t.diagnostic(`${file}: ${text.split('\n').length - 1} lines; ${types}`);
+  }
+});
+
 test('an unreadable input: exit 1 with the reason', () => {
   const result = run(['--input', path.join(SCRATCH, 'missing.md')]);
   assert.equal(result.status, 1);

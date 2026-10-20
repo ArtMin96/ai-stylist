@@ -3,6 +3,8 @@
 // "Share anonymous usage data"; `api-version` / `api-error` match the Android testTags, and so do the
 // debug-only `debug_consent_toggle` / `debug_force_crash` (P02-T09).
 public import AppServices
+import DesignSystem
+import DesignTokens
 import HomeModel
 public import SwiftUI
 
@@ -59,10 +61,9 @@ public struct HomeScreen: View {
       case .failed(let text):
         Text(text)
           .accessibilityIdentifier("api-error")
-        Button("Retry") {
+        AppButton("Retry", variant: .primaryOutline, size: .compact) {
           Task { await model.retry() }
         }
-        .frame(minHeight: 44)
         .accessibilityIdentifier("retry-button")
       }
     }
@@ -87,10 +88,9 @@ public struct HomeScreen: View {
         .accessibilityIdentifier("debug_consent_toggle")
       }
       .frame(minHeight: 44)
-      Button("Force test crash", role: .destructive) {
+      AppButton("Force test crash", variant: .destructive, size: .medium) {
         model.forceTestCrash()
       }
-      .frame(minHeight: 44)
       .accessibilityIdentifier("debug_force_crash")
     }
   }

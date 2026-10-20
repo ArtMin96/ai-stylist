@@ -19,8 +19,8 @@ import org.gradle.kotlin.dsl.withType
  */
 internal val ALLOWED_MODULE_EDGES: Map<String, Set<String>> =
     mapOf(
-        ":app" to setOf(":feature:home", ":core:data", ":core:analytics"),
-        ":feature:home" to setOf(":core:data", ":core:analytics"),
+        ":app" to setOf(":feature:home", ":core:data", ":core:analytics", ":core:designsystem"),
+        ":feature:home" to setOf(":core:data", ":core:analytics", ":core:designsystem"),
         ":core:data" to setOf(":core:api-client"),
         ":core:analytics" to emptySet(),
         ":core:api-client" to emptySet(),

@@ -126,6 +126,7 @@ dependencies {
     implementation(project(":feature:home"))
     implementation(project(":core:data"))
     implementation(project(":core:analytics"))
+    implementation(project(":core:designsystem"))
 
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.activity.compose)

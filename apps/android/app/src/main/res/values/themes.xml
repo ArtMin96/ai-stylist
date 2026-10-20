@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- Window theme only; all UI colors come from the Compose AiStylistTheme. -->
+    <!-- Window theme only; all UI colors come from the Compose AppTheme (:core:designsystem). -->
     <style name="Theme.AiStylist" parent="android:Theme.Material.Light.NoActionBar" />
 </resources>

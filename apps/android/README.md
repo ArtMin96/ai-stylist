@@ -8,12 +8,12 @@ React Native, no Kotlin Multiplatform and no 3D code.
 
 | Path | What it is |
 |---|---|
-| `app/` | `:app`, the application. Build types (= environments), `AppContainer` (the composition root), `MainActivity`, theme, manifest, and the PostHog adapter (`app/analytics/`, the only code that sees the PostHog SDK) |
+| `app/` | `:app`, the application. Build types (= environments), `AppContainer` (the composition root), `MainActivity` (wraps everything in `AppTheme`), the window theme, manifest, and the PostHog adapter (`app/analytics/`, the only code that sees the PostHog SDK) |
 | `feature/home/` | `:feature:home`, the home screen: `HomeViewModel` (StateFlow) and `HomeScreen` (Compose), plus the debug tools (shown only when `AppContainer` injects the crash action: `debug`/`preview`) |
 | `core/data/` | `:core:data`, pure Kotlin. `parseAppConfig` (API_BASE_URL and PostHog key/host validation), `DataServices`, `VersionRepository` over the generated client |
 | `core/analytics/` | `:core:analytics`, pure Kotlin, SDK-free. The `Analytics` port, the consent gate (`ConsentGatedAnalytics`), the no-op sink, and the generated `AnalyticsTaxonomy` |
 | `core/api-client/` | `:core:api-client`. It compiles the **generated** client. It has no source code of its own |
-| `core/designsystem/` | `:core:designsystem`, the app-internal design system (DEC-87), which depends on no other project module. It holds the generated `DESIGN.md` tokens in `src/main/kotlin/app/aistylist/core/designsystem/generated/` (written by `just generate`, never hand-edited). Pure Kotlin for now: Compose comes with the first real component. No module depends on it yet |
+| `core/designsystem/` | `:core:designsystem`, the app-internal design system (DEC-87), an Android library with Compose that depends on no other project module. It holds the generated `DESIGN.md` tokens in `src/main/kotlin/app/aistylist/core/designsystem/generated/` (written by `just generate`, never hand-edited), the bundled fonts (below), `AppTheme` (the token context from the system: light, dark, or high contrast S7 from Android's high-contrast-text setting on API 36+) and `AppButton` (C01, `.impeccable/components/button.yaml`) with its state-grid and playground previews in `AppButtonPreviews.kt` |
 | `build-logic/` | Convention plugins. Every compiler, lint, detekt, locking and test setting lives here |
 | `config/` | `detekt.yml`, `lint.xml`, `compose-stability.conf` |
 | `gradle/libs.versions.toml` | The version catalog. Every dependency and plugin version is set here |
@@ -31,16 +31,33 @@ in `build-logic/convention/src/main/kotlin/RootConventionPlugin.kt`.
 
 ```
 :app ──► :feature:home ──► :core:data ──(implementation)──► :core:api-client (generated)
-  │            └─────────► :core:analytics (+ generated AnalyticsTaxonomy)
-  └──► :core:data, :core:analytics
-
-:core:designsystem (no edges: it depends on no project module, and nothing depends on it yet)
+  │            ├─────────► :core:analytics (+ generated AnalyticsTaxonomy)
+  │            └─────────► :core:designsystem (generated tokens, AppTheme, AppButton)
+  └──► :core:data, :core:analytics, :core:designsystem
 ```
 
 - Feature modules never depend on each other. `core` never depends on `feature`.
 - `:core:designsystem` never depends on another project module.
 - Only `:core:data` can see generated DTOs. Features get the domain types from `:core:data`.
 - `AppContainer` in `:app` is the only place that reads `BuildConfig` or builds adapters.
+
+### Bundled fonts
+
+`:core:designsystem` ships the two `DESIGN.md` families, byte-identical to iOS. They come unmodified
+from google/fonts under the SIL Open Font License 1.1 (no Reserved Font Name); each has its own
+licence file. Figtree is one variable font whose default instance is Light 300, so `AppFonts.kt`
+sets the `wght` axis for each weight (400, 500, 600, 700). Young Serif is Regular 400 only. There is
+no system-font fallback.
+
+| File (`core/designsystem/`) | Source (google/fonts) | sha256 |
+|---|---|---|
+| `src/main/res/font/figtree_variable.ttf` | `a60a77e14f28abd4ef243a1b5dfc48df0cec5205/ofl/figtree/Figtree[wght].ttf` | `26ad3db9b31ff7dde67a91ff515d022d2f495cd506590699cf264f0bfe6fb714` |
+| `src/main/res/font/young_serif_regular.ttf` | `8b0a1d0f5983c89bc2b93f1b5fb55f9e252744b5/ofl/youngserif/YoungSerif-Regular.ttf` | `42bb2602364b28569fdce5eeb6ab3d81cf8090ba81b211f1229ed69f33155523` |
+| `licenses/Figtree-OFL.txt` | `a60a77e14f28abd4ef243a1b5dfc48df0cec5205/ofl/figtree/OFL.txt` | `140d37233e7f3ce7313798befa9600893bcceaf41a55fa0fa5ad52f7f657a268` |
+| `licenses/YoungSerif-OFL.txt` | `8b0a1d0f5983c89bc2b93f1b5fb55f9e252744b5/ofl/youngserif/OFL.txt` | `737d8d343b674c6894f373de71a044b6782c130f2aebf180933d63ddf7a3dc19` |
+
+Upstream projects: Figtree `https://github.com/erikdkennedy/figtree` (google/fonts imports commit
+032dfa7), Young Serif `https://github.com/noirblancrouge/YoungSerif` (commit d307c79).
 
 ## Environments (build types)
 
@@ -78,7 +95,7 @@ in `build-logic/convention/src/main/kotlin/RootConventionPlugin.kt`.
 - A card calls `GET /v1/version` through the generated client:
   - Success shows `API <version> (<commit[0..7]>)`, with test tag `api-version`.
   - Failure shows `The API is not reachable right now: <reason>`, with test tag `api-error`, plus a
-    Retry button.
+    Retry button (`AppButton` primary-outline compact, test tag `retry-button`).
 - The toggle "Share anonymous usage data" is off by default.
 - Test tags are exposed as resource ids (`testTagsAsResourceId`) so Maestro can use them. The shared
   smoke flow is `e2e/smoke.yaml` at the repo root.

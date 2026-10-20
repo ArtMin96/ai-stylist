@@ -93,6 +93,20 @@ Log hygiene: when this log exceeds ~30 entries, move the oldest entries to `plan
 
 *(newest first)*
 
+### 2026-10-20 (token-emitters) — AI-189 part 2: Swift/Kotlin emitters, parity test, `just generate` wiring and generated tokens (branch `feat/ai-189-token-emitters`, local commits, not pushed)
+
+*Session on the owner's Mac, main checkout, branch `feat/ai-189-token-emitters` from `main` @ `08632ec`. Lead session; tooling-engineer wrote the code. No phase work.*
+
+- **Phase / tasks worked:** none (Brand v1, AI-189 part 2; first step of "the button" in "Next actions" item 1).
+- **Status changes:** None.
+- **Done this session:** research on component preview tooling for both apps. Result: Xcode `#Preview` / Android Studio `@Preview` with state-grid and "playground" previews per component. No separate catalog app. AI-195 (debug-build gallery) and AI-190 (swift-snapshot-testing + Roborazzi, as DEC-87 D4 already says) stay as planned. Emitters for Swift and Kotlin, the golden parity test and the `just generate` / `--check` wiring are written (18 paths under `tools/codegen/**`, `scripts/test/{design-tokens,generate}.test.sh`, `justfile` comments). `bash scripts/test/design-tokens.test.sh` → tests 92, pass 92, fail 0.
+- **Also done:** unpaired dark-only entries (`BannerDarkTokens`) expose only `.dark`, `.hcDark`, `.brand` (token suite 94/94). Commits `165429e`, `d509e9f`, `3462120`, `0ae70f4`, then the generated files (`just generate`: `ReferenceTokens`, `SchemeTokens`, `ComponentTokens` in Swift and Kotlin, about 11,100 lines). Checks on the Mac: `just generate --check` → up to date; `just ios-check` → exit 0 (lint, format, bans, packages, simulator build and tests); `just android-check` → exit 1 only on the known macOS `aapt2` checksum (AI-33) before any task ran; the same tasks without `:app` → `:core:designsystem:compileKotlin`, `detektMain`, `detektTest`, `test` and `spotlessCheck` all pass.
+- **Not done / in flight:** not pushed, no PR (owner asks first). Follow-ups: delete `DesignTokensModule.swift` + its smoke test (ios-engineer) and `DesignSystemPlaceholder.kt` (android-engineer); `Package.swift` header "will write them" → "writes them". Human-applied texts: `CLAUDE.md` `just generate` line and doc 15 §5 row ("DESIGN.md → Swift + Kotlin design tokens"); drop "planned" in `.claude/rules/design-system.md:25`, `ios.md:50`, `android.md:51`. Record the owner decisions below on AI-189 / AI-190 and in DEC-87. `just android-check` in full on Linux or CI.
+- **Repository state:** buildable ✅ (checks above; full `android-check` blocked on macOS by AI-33 only).
+- **New decisions / risks / questions filed:** None in doc 16 yet. Owner decisions of 2026-10-20 to record: iOS snapshot tests run on every PR that touches `apps/ios` (the DEC-87 open item, decide before AI-190; record on AI-190 and in DEC-87); AI-195 kept; emitted names as written in `DESIGN.md` (`bannerDark`, `cameraModeSwitch`, `cameraModeSelected`, `ButtonActionSelectedTokens`); one `<Component>Tokens` type with five context instances; unpaired dark-only entries expose only `.dark`, `.hcDark` and `.brand`; brand falls back to dark, per `DESIGN.md` line 64.
+- **Surprises / gotchas:** `just lint` stops at `android-lint` on macOS (aapt2 checksum, AI-33). gen-tokens replaces its output dirs wholesale, so AI-198's `ComponentAPI` must be emitted inside gen-tokens or after it.
+- **Next session starts:** push `feat/ai-189-token-emitters` and open its PR (owner's go), then AI-198 (generator half: emit `ComponentAPI` inside gen-tokens or after it), then the button lanes with their state-grid and playground previews, then AI-195 and AI-190.
+
 ### 2026-10-20 (device-hub) — `just dev ios` / `just ios-run` open Device Hub (branch `chore/ios-xcode-27-1`, PR #37)
 
 - **Phase / tasks worked:** none (toolchain upkeep, follows the Xcode 27 upgrade).

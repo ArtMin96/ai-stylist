@@ -107,3 +107,34 @@ the size line near L1948 in the same change.
 The native lanes then write one `AppIcon(name:size:)` view per app that replays the table, scales
 24 → size and strokes at `strokeWidth × size / 24`, tinted by the host's foreground. That is the
 next brief, not this one.
+
+## Amendment 2026-10-21: an icon scale, and components that point at the scales
+
+Owner decisions (2026-10-21, in chat):
+
+5. **A named icon scale replaces the 14 measured sizes.** Six steps, Tailwind-style:
+   `xs 12 · sm 16 · md 20 · lg 24 · xl 32 · hero 56`. Every use on the screens snaps to the nearest
+   step (tab bar 26 → lg, plan checks 11 → xs, chip icons 18 → sm or md by fit). The small
+   visual shifts are accepted.
+6. **Components point at the shared scales** instead of repeating numbers.
+7. **Icons grow with the user's text size** (Dynamic Type on iOS, font scale on Android), like the
+   platform's own icons.
+
+Format (ui-designer and tooling-engineer build to this):
+
+- Tokens: `components.icon-xs|sm|md|lg|xl|hero: { size: <n>px, strokeWidth: <w> }`. The stroke is
+  in viewBox units, measured per step from the screens. The old `icon-11 … icon-56` entries go.
+- `icon.yaml`: `sizes: [icon-xs, icon-sm, icon-md, icon-lg, icon-xl, icon-hero]`,
+  `defaultSize: icon-lg`; record decisions 5–7 in the header with the date. Every usage note
+  that named a measured size names its step.
+- Emitted names: the size enum drops the `icon-` prefix (`AppIconSize.xs … .hero`; Kotlin
+  `XS … HERO`), so code reads `AppIcon(name: .heart, size: .sm)`.
+- Button: `iconSize` is a reference, `'{components.icon-md}'` (large, card, medium, small) and the
+  compact step by fit, and the generator emits `ButtonAppearance.iconSize` typed as
+  `AppIconSize`. A component dimension that equals a shared-scale step is a reference: padding and
+  gap point at `spacing` (a shorthand may mix parts, e.g. `padding: '0 {spacing.24}'`), and the
+  typography and colour references stay as they are. Values that are not on a scale (heights 44
+  and 52, gap 6) stay literal; list them, never snap them without the owner. The emitted numbers
+  of every non-icon button value stay the same.
+- Text-size scaling is a native rendering rule (the lanes brief), and the contract records it under
+  `accessibility` as a comment.

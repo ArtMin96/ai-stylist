@@ -14,7 +14,8 @@ vulnerability scan, the gate is never weakened to get a green run: no threshold 
 | PyPI | `pip-licenses==5.5.5 --from=mixed`, run as an ephemeral overlay on the `workers/` venv (`uv run --with`), filtered to `uv.lock` | `uv export --project workers --no-dev` (packages reachable without the `dev` dependency group) |
 
 Not scanned: Maven (Gradle, `apps/android`) and SwiftPM (`apps/ios`, the generated Swift
-client). See "Open item" below.
+client). See "Open item" below. Vendored assets such as the bundled fonts are not scanned either;
+see "Bundled fonts" below.
 
 First-party packages (`@ai-stylist/*`, `ai-stylist-*`) are skipped. Runtime on a warm checkout is
 about 7 s.
@@ -102,6 +103,31 @@ dependency by hand. Candidate fixes:
 - Reading the licenses from the SBOM, since syft already lists the Gradle and SwiftPM packages.
 
 Owner: Android and iOS leads. Not built yet.
+
+## Bundled fonts
+
+Recorded 2026-10-20. Both native apps bundle two fonts, with the same bytes on iOS and Android
+(ADR-0011). Both are `OFL-1.1` (SIL Open Font License 1.1).
+
+| Font                | Copyright notice                     | iOS file                 | Android file              |
+| ------------------- | ------------------------------------ | ------------------------ | ------------------------- |
+| Figtree (variable)  | 2022 The Figtree Project Authors     | `Figtree-Variable.ttf`   | `figtree_variable.ttf`    |
+| Young Serif Regular | 2023 The Young Serif Project Authors | `YoungSerif-Regular.ttf` | `young_serif_regular.ttf` |
+
+The iOS files are in `apps/ios/Packages/DesignSystem/Sources/DesignSystem/Resources/Fonts/`, with
+`Figtree-OFL.txt` and `YoungSerif-OFL.txt` beside them; the package processes that directory, so
+the license texts ship in the app bundle. The Android files are in
+`apps/android/core/designsystem/src/main/res/font/`, and the same two license texts are in
+`apps/android/core/designsystem/licenses/`. Each font also carries its OFL notice in its own
+metadata.
+
+OFL-1.1 lets us bundle and embed the fonts in the app, as long as the copyright notice and the
+license text travel with them; the `*-OFL.txt` files do that. The other conditions apply only to a
+modified font: it stays under OFL-1.1 and must not use a Reserved Font Name (neither notice
+declares one). We ship the fonts unmodified.
+
+No scanner covers font files or other vendored assets. A reviewer checks the license of every new
+bundled font or asset by hand and adds it to this table.
 
 ## Proving the gate works
 

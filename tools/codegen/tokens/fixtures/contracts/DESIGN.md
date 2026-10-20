@@ -60,6 +60,8 @@ rounded:
   full: 999px
 spacing:
   '8': 8px
+  '12': 12px
+  '16': 16px
 elevation:
   raised: 2px
 motion:
@@ -98,13 +100,19 @@ components:
   # Shared size entries: each holds its size's icon slot (iconSize, iconGap) for every variant.
   # button-large serves only the slot: the variants' own bases hold the large height and padding.
   # button-medium lacks the slot on purpose: only ../CC-08/button.yaml uses the medium size.
-  button-large: { height: 48px, padding: 0 16px, iconSize: 18px, iconGap: 8px }
+  # The slot names an icon size (CC-12), by its key (large: the form the pinned design.md lint
+  # accepts) or as a {components.…} reference (small), and the spacing scale; 4px is on no scale.
+  button-large:
+    height: 48px
+    padding: '0 {spacing.16}'
+    iconSize: icon-md
+    iconGap: '{spacing.8}'
   button-medium: { height: 40px, padding: 0 14px }
   button-small:
     typography: '{typography.body}'
     height: 36px
-    padding: 0 12px
-    iconSize: 14px
+    padding: '0 {spacing.12}'
+    iconSize: '{components.icon-sm}'
     iconGap: 4px
   button-outline-ring: { width: 1.5px }
   button-secondary-light:
@@ -129,11 +137,12 @@ components:
     spinnerColor: '{colors.primary-light}'
   button-secondary-loading-dark:
     spinnerColor: '{colors.primary-dark}'
-  # Icon sizes for ../_valid/icon.yaml: size in px, strokeWidth in viewBox units (24 x 24).
-  # ../CC-10/icon.yaml names icon-20, which is missing on purpose.
-  icon-12: { size: 12px, strokeWidth: 2.2 }
-  icon-16: { size: 16px, strokeWidth: 1.9 }
-  icon-24: { size: 24px, strokeWidth: 1.7 }
+  # The icon scale for ../_valid/icon.yaml: size in px, strokeWidth in viewBox units (24 x 24).
+  # ../CC-10/icon.yaml names icon-xl, which is missing on purpose.
+  icon-xs: { size: 12px, strokeWidth: 2.2 }
+  icon-sm: { size: 16px, strokeWidth: 1.9 }
+  icon-md: { size: 20px, strokeWidth: 1.7 }
+  icon-lg: { size: 24px, strokeWidth: 1.7 }
 ---
 
 # Design System: Contract fixture

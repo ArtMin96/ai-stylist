@@ -1,6 +1,8 @@
 # AppIcon: the glyph contract for canvas board C02 (DESIGN.md "### Icons (C02)").
+# Amended 2026-10-21 by the owner: icon scale (decisions 9–11).
 # This file is the master for the icon set's names and path data; DESIGN.md is the master for the
-# icon sizes and strokes (components.icon-<n>), so no glyph holds a size, stroke width or colour.
+# icon scale, its sizes and strokes (components.icon-<step>), so no glyph holds a size, stroke
+# width or colour.
 # Field rules: README.md beside this file ("Icon sets").
 # Sources: C02 (84 glyphs in 6 sets), every screen on page 6 (SC01-SC15), the prototype on page 7
 # (P01-P18) and page 8 (SE1, SE2, AV1, AV2, TR1, TR2). A concept no screen draws comes from the
@@ -21,6 +23,15 @@
 # 6. Credits are the coin stack (TR1); TR2's two rings change.
 # 7. The "You follow" chip on SC15 keeps the heart.
 # 8. The four-point sparkle on the upsell cards (SC11, TR2) stays; it is not the AI spark.
+# Owner decisions (2026-10-21, in chat, the icon scale):
+# 9. A named icon scale replaces the 14 measured sizes: xs 12, sm 16, md 20, lg 24, xl 32,
+#    hero 56. Every use on the screens snaps to the nearest step (tab bar 26 -> lg, plan checks
+#    11 -> xs, chip icons 18 -> sm or md by fit); the small visual shifts are accepted. DESIGN.md
+#    "Icons (C02)" lists where each use lands.
+# 10. Components point at the shared scales instead of repeating numbers (the button's iconSize
+#    is icon-md).
+# 11. Icons grow with the user's text size (Dynamic Type on iOS, font scale on Android), like the
+#    platform's own icons.
 # Standing rule (owner 2026-10-19, design-system.md invariant 8): where C02 and the screens
 # disagree, the screens and prototype win, and screen-only icons join the set. Where the screens
 # disagree with each other, the drawing on the most boards wins; on a tie, the drawing nearest C02
@@ -45,29 +56,26 @@ approved: 2026-10-20
 accessibility:
   # Hidden from screen readers; the host control names the action ("Back", "Close", "More options
   # for this outfit"). An icon that carries meaning alone sits next to its words (R4).
+  # Icons scale with the user's text size (iOS Dynamic Type, Android font scale), like the
+  # platform's own icons (owner decision 11, 2026-10-21). The step's size and stroke are the 100 %
+  # values; the native lanes implement the scaling.
   role: decorative
 
 gallery:
   title: Icons
 
-# One DESIGN.md token per size the screens draw: components.icon-<n> holds the size and its stroke
-# in viewBox units (rendered width = strokeWidth x size / 24).
+# The icon scale (owner decision 9, 2026-10-21): one DESIGN.md token per step,
+# components.icon-<step> with the size and its stroke in viewBox units (rendered width =
+# strokeWidth x size / 24). The generated size enum drops the icon- prefix (AppIconSize.xs ...
+# .hero; Kotlin XS ... HERO).
 sizes:
-  - icon-11
-  - icon-12
-  - icon-14
-  - icon-16
-  - icon-18
-  - icon-20
-  - icon-22
-  - icon-24
-  - icon-26
-  - icon-28
-  - icon-32
-  - icon-36
-  - icon-40
-  - icon-56
-defaultSize: icon-24
+  - icon-xs
+  - icon-sm
+  - icon-md
+  - icon-lg
+  - icon-xl
+  - icon-hero
+defaultSize: icon-lg
 
 glyphs:
   # ---- Navigation ----
@@ -828,8 +836,8 @@ glyphs:
       - d: 'M18 15v5M15.5 17.5h5'
         paint: stroke
   # Screen-only: the confidence bars (SC05, SC08, SC09, P06, TR2, AV1, AV2, C04). The screens draw
-  # three 2.6-wide round-capped bars; they are written as filled capsules so they keep that width
-  # at every icon size. The level is the number of bars in the glyph; the unlit bars are
+  # three 2.6-wide round-capped bars at 16 (sm); they are written as filled capsules so they keep
+  # that width at every step. The level is the number of bars in the glyph; the unlit bars are
   # confidence-high drawn underneath in a muted colour by the host, and the words always show
   # (honesty rule: confidence as text, never colour alone). SC08, SC10, SC11, P05 and C08 also
   # draw square bars in a 16 viewBox, on fewer boards.
@@ -1016,7 +1024,7 @@ glyphs:
         paint: stroke
       - d: 'M3 10h18M7 14.5h3'
         paint: stroke
-  # Screen-only: the privacy promise (SC01 at 56; SE1 draws a second shield, one board each; on
+  # Screen-only: the privacy promise (SC01 at hero; SE1 draws a second shield, one board each; on
   # that tie the drawing nearest C02's privacy shield wins).
   - id: shield-check
     set: account
@@ -1183,7 +1191,7 @@ glyphs:
         paint: stroke
       - d: 'M15.5 15.5l4.5 4.5M8 10.5h5'
         paint: stroke
-  # The pose picker (AV1, drawn at 40).
+  # The pose picker (AV1, at xl; drawn at 40, decision 9 snaps it to 32).
   - id: pose-neutral
     set: capture
     source: AV1
@@ -1200,7 +1208,7 @@ glyphs:
         paint: stroke
       - d: 'M12 7.5V14.5M12 9L8 11.5L10 14M12 9L16 11.5L14 14M12 14.5L9 21.5M12 14.5L15 21.5'
         paint: stroke
-  # Also the Poses button (AV1, at 24).
+  # Also the Poses button (AV1, at lg).
   - id: pose-walking
     set: capture
     source: AV1

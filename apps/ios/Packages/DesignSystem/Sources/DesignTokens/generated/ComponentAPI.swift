@@ -152,7 +152,7 @@ nonisolated public struct ButtonAppearance: Sendable, Equatable {
   public let paddingEnd: Double
   public let paddingBottom: Double
   public let paddingStart: Double
-  public let iconSize: Double
+  public let iconSize: AppIconSize
   public let iconGap: Double
   public let focusRing: FocusRingTokens?
 }
@@ -189,7 +189,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 24.0,
           paddingBottom: 0.0,
           paddingStart: 24.0,
-          iconSize: 20.0,
+          iconSize: .md,
           iconGap: 8.0,
           focusRing: nil
         )
@@ -212,7 +212,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 24.0,
           paddingBottom: 0.0,
           paddingStart: 24.0,
-          iconSize: 20.0,
+          iconSize: .md,
           iconGap: 8.0,
           focusRing: nil
         )
@@ -235,7 +235,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 24.0,
           paddingBottom: 0.0,
           paddingStart: 24.0,
-          iconSize: 20.0,
+          iconSize: .md,
           iconGap: 8.0,
           focusRing: FocusRingTokens.light
         )
@@ -258,7 +258,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 24.0,
           paddingBottom: 0.0,
           paddingStart: 24.0,
-          iconSize: 20.0,
+          iconSize: .md,
           iconGap: 8.0,
           focusRing: nil
         )
@@ -281,7 +281,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 24.0,
           paddingBottom: 0.0,
           paddingStart: 24.0,
-          iconSize: 20.0,
+          iconSize: .md,
           iconGap: 8.0,
           focusRing: nil
         )
@@ -304,7 +304,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 24.0,
           paddingBottom: 0.0,
           paddingStart: 24.0,
-          iconSize: 20.0,
+          iconSize: .md,
           iconGap: 8.0,
           focusRing: nil
         )
@@ -327,7 +327,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 24.0,
           paddingBottom: 0.0,
           paddingStart: 24.0,
-          iconSize: 20.0,
+          iconSize: .md,
           iconGap: 8.0,
           focusRing: nil
         )
@@ -350,7 +350,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 24.0,
           paddingBottom: 0.0,
           paddingStart: 24.0,
-          iconSize: 20.0,
+          iconSize: .md,
           iconGap: 8.0,
           focusRing: FocusRingTokens.light
         )
@@ -373,7 +373,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 24.0,
           paddingBottom: 0.0,
           paddingStart: 24.0,
-          iconSize: 20.0,
+          iconSize: .md,
           iconGap: 8.0,
           focusRing: nil
         )
@@ -396,7 +396,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 24.0,
           paddingBottom: 0.0,
           paddingStart: 24.0,
-          iconSize: 20.0,
+          iconSize: .md,
           iconGap: 8.0,
           focusRing: nil
         )
@@ -419,7 +419,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 20.0,
           paddingBottom: 0.0,
           paddingStart: 20.0,
-          iconSize: 20.0,
+          iconSize: .md,
           iconGap: 8.0,
           focusRing: nil
         )
@@ -442,7 +442,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 20.0,
           paddingBottom: 0.0,
           paddingStart: 20.0,
-          iconSize: 20.0,
+          iconSize: .md,
           iconGap: 8.0,
           focusRing: nil
         )
@@ -465,7 +465,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 20.0,
           paddingBottom: 0.0,
           paddingStart: 20.0,
-          iconSize: 20.0,
+          iconSize: .md,
           iconGap: 8.0,
           focusRing: FocusRingTokens.light
         )
@@ -488,7 +488,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 20.0,
           paddingBottom: 0.0,
           paddingStart: 20.0,
-          iconSize: 20.0,
+          iconSize: .md,
           iconGap: 8.0,
           focusRing: nil
         )
@@ -511,7 +511,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 20.0,
           paddingBottom: 0.0,
           paddingStart: 20.0,
-          iconSize: 20.0,
+          iconSize: .md,
           iconGap: 8.0,
           focusRing: nil
         )
@@ -534,7 +534,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 20.0,
           paddingBottom: 0.0,
           paddingStart: 20.0,
-          iconSize: 18.0,
+          iconSize: .md,
           iconGap: 6.0,
           focusRing: nil
         )
@@ -557,7 +557,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 20.0,
           paddingBottom: 0.0,
           paddingStart: 20.0,
-          iconSize: 18.0,
+          iconSize: .md,
           iconGap: 6.0,
           focusRing: nil
         )
@@ -580,7 +580,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 20.0,
           paddingBottom: 0.0,
           paddingStart: 20.0,
-          iconSize: 18.0,
+          iconSize: .md,
           iconGap: 6.0,
           focusRing: FocusRingTokens.light
         )
@@ -603,7 +603,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 20.0,
           paddingBottom: 0.0,
           paddingStart: 20.0,
-          iconSize: 18.0,
+          iconSize: .md,
           iconGap: 6.0,
           focusRing: nil
         )
@@ -626,7 +626,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 20.0,
           paddingBottom: 0.0,
           paddingStart: 20.0,
-          iconSize: 18.0,
+          iconSize: .md,
           iconGap: 6.0,
           focusRing: nil
         )
@@ -649,7 +649,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 16.0,
           paddingBottom: 0.0,
           paddingStart: 16.0,
-          iconSize: 20.0,
+          iconSize: .md,
           iconGap: 8.0,
           focusRing: nil
         )
@@ -672,7 +672,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 16.0,
           paddingBottom: 0.0,
           paddingStart: 16.0,
-          iconSize: 20.0,
+          iconSize: .md,
           iconGap: 8.0,
           focusRing: nil
         )
@@ -695,7 +695,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 16.0,
           paddingBottom: 0.0,
           paddingStart: 16.0,
-          iconSize: 20.0,
+          iconSize: .md,
           iconGap: 8.0,
           focusRing: FocusRingTokens.light
         )
@@ -718,7 +718,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 16.0,
           paddingBottom: 0.0,
           paddingStart: 16.0,
-          iconSize: 20.0,
+          iconSize: .md,
           iconGap: 8.0,
           focusRing: nil
         )
@@ -741,7 +741,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 16.0,
           paddingBottom: 0.0,
           paddingStart: 16.0,
-          iconSize: 20.0,
+          iconSize: .md,
           iconGap: 8.0,
           focusRing: nil
         )
@@ -764,7 +764,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 24.0,
           paddingBottom: 0.0,
           paddingStart: 24.0,
-          iconSize: 20.0,
+          iconSize: .md,
           iconGap: 8.0,
           focusRing: nil
         )
@@ -787,7 +787,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 24.0,
           paddingBottom: 0.0,
           paddingStart: 24.0,
-          iconSize: 20.0,
+          iconSize: .md,
           iconGap: 8.0,
           focusRing: nil
         )
@@ -810,7 +810,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 24.0,
           paddingBottom: 0.0,
           paddingStart: 24.0,
-          iconSize: 20.0,
+          iconSize: .md,
           iconGap: 8.0,
           focusRing: FocusRingTokens.light
         )
@@ -833,7 +833,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 24.0,
           paddingBottom: 0.0,
           paddingStart: 24.0,
-          iconSize: 20.0,
+          iconSize: .md,
           iconGap: 8.0,
           focusRing: nil
         )
@@ -856,7 +856,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 24.0,
           paddingBottom: 0.0,
           paddingStart: 24.0,
-          iconSize: 20.0,
+          iconSize: .md,
           iconGap: 8.0,
           focusRing: nil
         )
@@ -879,7 +879,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 20.0,
           paddingBottom: 0.0,
           paddingStart: 20.0,
-          iconSize: 20.0,
+          iconSize: .md,
           iconGap: 8.0,
           focusRing: nil
         )
@@ -902,7 +902,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 20.0,
           paddingBottom: 0.0,
           paddingStart: 20.0,
-          iconSize: 20.0,
+          iconSize: .md,
           iconGap: 8.0,
           focusRing: nil
         )
@@ -925,7 +925,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 20.0,
           paddingBottom: 0.0,
           paddingStart: 20.0,
-          iconSize: 20.0,
+          iconSize: .md,
           iconGap: 8.0,
           focusRing: FocusRingTokens.light
         )
@@ -948,7 +948,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 20.0,
           paddingBottom: 0.0,
           paddingStart: 20.0,
-          iconSize: 20.0,
+          iconSize: .md,
           iconGap: 8.0,
           focusRing: nil
         )
@@ -971,7 +971,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 20.0,
           paddingBottom: 0.0,
           paddingStart: 20.0,
-          iconSize: 20.0,
+          iconSize: .md,
           iconGap: 8.0,
           focusRing: nil
         )
@@ -994,7 +994,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 16.0,
           paddingBottom: 0.0,
           paddingStart: 16.0,
-          iconSize: 18.0,
+          iconSize: .md,
           iconGap: 6.0,
           focusRing: nil
         )
@@ -1017,7 +1017,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 16.0,
           paddingBottom: 0.0,
           paddingStart: 16.0,
-          iconSize: 18.0,
+          iconSize: .md,
           iconGap: 6.0,
           focusRing: nil
         )
@@ -1040,7 +1040,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 16.0,
           paddingBottom: 0.0,
           paddingStart: 16.0,
-          iconSize: 18.0,
+          iconSize: .md,
           iconGap: 6.0,
           focusRing: FocusRingTokens.light
         )
@@ -1063,7 +1063,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 16.0,
           paddingBottom: 0.0,
           paddingStart: 16.0,
-          iconSize: 18.0,
+          iconSize: .md,
           iconGap: 6.0,
           focusRing: nil
         )
@@ -1086,7 +1086,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 16.0,
           paddingBottom: 0.0,
           paddingStart: 16.0,
-          iconSize: 18.0,
+          iconSize: .md,
           iconGap: 6.0,
           focusRing: nil
         )
@@ -1109,7 +1109,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 16.0,
           paddingBottom: 0.0,
           paddingStart: 16.0,
-          iconSize: 20.0,
+          iconSize: .md,
           iconGap: 8.0,
           focusRing: nil
         )
@@ -1132,7 +1132,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 16.0,
           paddingBottom: 0.0,
           paddingStart: 16.0,
-          iconSize: 20.0,
+          iconSize: .md,
           iconGap: 8.0,
           focusRing: nil
         )
@@ -1155,7 +1155,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 16.0,
           paddingBottom: 0.0,
           paddingStart: 16.0,
-          iconSize: 20.0,
+          iconSize: .md,
           iconGap: 8.0,
           focusRing: FocusRingTokens.light
         )
@@ -1178,7 +1178,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 16.0,
           paddingBottom: 0.0,
           paddingStart: 16.0,
-          iconSize: 20.0,
+          iconSize: .md,
           iconGap: 8.0,
           focusRing: nil
         )
@@ -1201,7 +1201,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 16.0,
           paddingBottom: 0.0,
           paddingStart: 16.0,
-          iconSize: 20.0,
+          iconSize: .md,
           iconGap: 8.0,
           focusRing: nil
         )
@@ -1224,7 +1224,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 16.0,
           paddingBottom: 0.0,
           paddingStart: 16.0,
-          iconSize: 18.0,
+          iconSize: .md,
           iconGap: 6.0,
           focusRing: nil
         )
@@ -1247,7 +1247,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 16.0,
           paddingBottom: 0.0,
           paddingStart: 16.0,
-          iconSize: 18.0,
+          iconSize: .md,
           iconGap: 6.0,
           focusRing: nil
         )
@@ -1270,7 +1270,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 16.0,
           paddingBottom: 0.0,
           paddingStart: 16.0,
-          iconSize: 18.0,
+          iconSize: .md,
           iconGap: 6.0,
           focusRing: FocusRingTokens.light
         )
@@ -1293,7 +1293,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 16.0,
           paddingBottom: 0.0,
           paddingStart: 16.0,
-          iconSize: 18.0,
+          iconSize: .md,
           iconGap: 6.0,
           focusRing: nil
         )
@@ -1316,7 +1316,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 16.0,
           paddingBottom: 0.0,
           paddingStart: 16.0,
-          iconSize: 18.0,
+          iconSize: .md,
           iconGap: 6.0,
           focusRing: nil
         )
@@ -1339,7 +1339,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 12.0,
           paddingBottom: 0.0,
           paddingStart: 12.0,
-          iconSize: 20.0,
+          iconSize: .md,
           iconGap: 8.0,
           focusRing: nil
         )
@@ -1362,7 +1362,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 12.0,
           paddingBottom: 0.0,
           paddingStart: 12.0,
-          iconSize: 20.0,
+          iconSize: .md,
           iconGap: 8.0,
           focusRing: nil
         )
@@ -1385,7 +1385,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 12.0,
           paddingBottom: 0.0,
           paddingStart: 12.0,
-          iconSize: 20.0,
+          iconSize: .md,
           iconGap: 8.0,
           focusRing: FocusRingTokens.light
         )
@@ -1408,7 +1408,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 12.0,
           paddingBottom: 0.0,
           paddingStart: 12.0,
-          iconSize: 20.0,
+          iconSize: .md,
           iconGap: 8.0,
           focusRing: nil
         )
@@ -1431,7 +1431,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 12.0,
           paddingBottom: 0.0,
           paddingStart: 12.0,
-          iconSize: 20.0,
+          iconSize: .md,
           iconGap: 8.0,
           focusRing: nil
         )
@@ -1454,7 +1454,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 12.0,
           paddingBottom: 0.0,
           paddingStart: 12.0,
-          iconSize: 18.0,
+          iconSize: .md,
           iconGap: 6.0,
           focusRing: nil
         )
@@ -1477,7 +1477,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 12.0,
           paddingBottom: 0.0,
           paddingStart: 12.0,
-          iconSize: 18.0,
+          iconSize: .md,
           iconGap: 6.0,
           focusRing: nil
         )
@@ -1500,7 +1500,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 12.0,
           paddingBottom: 0.0,
           paddingStart: 12.0,
-          iconSize: 18.0,
+          iconSize: .md,
           iconGap: 6.0,
           focusRing: FocusRingTokens.light
         )
@@ -1523,7 +1523,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 12.0,
           paddingBottom: 0.0,
           paddingStart: 12.0,
-          iconSize: 18.0,
+          iconSize: .md,
           iconGap: 6.0,
           focusRing: nil
         )
@@ -1546,7 +1546,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 12.0,
           paddingBottom: 0.0,
           paddingStart: 12.0,
-          iconSize: 18.0,
+          iconSize: .md,
           iconGap: 6.0,
           focusRing: nil
         )
@@ -1569,7 +1569,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 20.0,
           paddingBottom: 0.0,
           paddingStart: 20.0,
-          iconSize: 20.0,
+          iconSize: .md,
           iconGap: 8.0,
           focusRing: nil
         )
@@ -1592,7 +1592,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 20.0,
           paddingBottom: 0.0,
           paddingStart: 20.0,
-          iconSize: 20.0,
+          iconSize: .md,
           iconGap: 8.0,
           focusRing: nil
         )
@@ -1615,7 +1615,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 20.0,
           paddingBottom: 0.0,
           paddingStart: 20.0,
-          iconSize: 20.0,
+          iconSize: .md,
           iconGap: 8.0,
           focusRing: FocusRingTokens.light
         )
@@ -1638,7 +1638,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 20.0,
           paddingBottom: 0.0,
           paddingStart: 20.0,
-          iconSize: 20.0,
+          iconSize: .md,
           iconGap: 8.0,
           focusRing: nil
         )
@@ -1661,7 +1661,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 20.0,
           paddingBottom: 0.0,
           paddingStart: 20.0,
-          iconSize: 20.0,
+          iconSize: .md,
           iconGap: 8.0,
           focusRing: nil
         )
@@ -1684,7 +1684,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 24.0,
           paddingBottom: 0.0,
           paddingStart: 24.0,
-          iconSize: 20.0,
+          iconSize: .md,
           iconGap: 8.0,
           focusRing: nil
         )
@@ -1707,7 +1707,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 24.0,
           paddingBottom: 0.0,
           paddingStart: 24.0,
-          iconSize: 20.0,
+          iconSize: .md,
           iconGap: 8.0,
           focusRing: nil
         )
@@ -1730,7 +1730,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 24.0,
           paddingBottom: 0.0,
           paddingStart: 24.0,
-          iconSize: 20.0,
+          iconSize: .md,
           iconGap: 8.0,
           focusRing: FocusRingTokens.light
         )
@@ -1753,7 +1753,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 24.0,
           paddingBottom: 0.0,
           paddingStart: 24.0,
-          iconSize: 20.0,
+          iconSize: .md,
           iconGap: 8.0,
           focusRing: nil
         )
@@ -1776,7 +1776,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 24.0,
           paddingBottom: 0.0,
           paddingStart: 24.0,
-          iconSize: 20.0,
+          iconSize: .md,
           iconGap: 8.0,
           focusRing: nil
         )
@@ -1799,7 +1799,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 20.0,
           paddingBottom: 0.0,
           paddingStart: 20.0,
-          iconSize: 18.0,
+          iconSize: .md,
           iconGap: 6.0,
           focusRing: nil
         )
@@ -1822,7 +1822,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 20.0,
           paddingBottom: 0.0,
           paddingStart: 20.0,
-          iconSize: 18.0,
+          iconSize: .md,
           iconGap: 6.0,
           focusRing: nil
         )
@@ -1845,7 +1845,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 20.0,
           paddingBottom: 0.0,
           paddingStart: 20.0,
-          iconSize: 18.0,
+          iconSize: .md,
           iconGap: 6.0,
           focusRing: FocusRingTokens.light
         )
@@ -1868,7 +1868,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 20.0,
           paddingBottom: 0.0,
           paddingStart: 20.0,
-          iconSize: 18.0,
+          iconSize: .md,
           iconGap: 6.0,
           focusRing: nil
         )
@@ -1891,7 +1891,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 20.0,
           paddingBottom: 0.0,
           paddingStart: 20.0,
-          iconSize: 18.0,
+          iconSize: .md,
           iconGap: 6.0,
           focusRing: nil
         )
@@ -1914,7 +1914,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 24.0,
           paddingBottom: 0.0,
           paddingStart: 24.0,
-          iconSize: 20.0,
+          iconSize: .md,
           iconGap: 8.0,
           focusRing: nil
         )
@@ -1937,7 +1937,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 24.0,
           paddingBottom: 0.0,
           paddingStart: 24.0,
-          iconSize: 20.0,
+          iconSize: .md,
           iconGap: 8.0,
           focusRing: nil
         )
@@ -1960,7 +1960,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 24.0,
           paddingBottom: 0.0,
           paddingStart: 24.0,
-          iconSize: 20.0,
+          iconSize: .md,
           iconGap: 8.0,
           focusRing: FocusRingTokens.light
         )
@@ -1983,7 +1983,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 24.0,
           paddingBottom: 0.0,
           paddingStart: 24.0,
-          iconSize: 20.0,
+          iconSize: .md,
           iconGap: 8.0,
           focusRing: nil
         )
@@ -2006,7 +2006,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 24.0,
           paddingBottom: 0.0,
           paddingStart: 24.0,
-          iconSize: 20.0,
+          iconSize: .md,
           iconGap: 8.0,
           focusRing: nil
         )
@@ -2029,7 +2029,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 20.0,
           paddingBottom: 0.0,
           paddingStart: 20.0,
-          iconSize: 20.0,
+          iconSize: .md,
           iconGap: 8.0,
           focusRing: nil
         )
@@ -2052,7 +2052,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 20.0,
           paddingBottom: 0.0,
           paddingStart: 20.0,
-          iconSize: 20.0,
+          iconSize: .md,
           iconGap: 8.0,
           focusRing: nil
         )
@@ -2075,7 +2075,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 20.0,
           paddingBottom: 0.0,
           paddingStart: 20.0,
-          iconSize: 20.0,
+          iconSize: .md,
           iconGap: 8.0,
           focusRing: FocusRingTokens.light
         )
@@ -2098,7 +2098,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 20.0,
           paddingBottom: 0.0,
           paddingStart: 20.0,
-          iconSize: 20.0,
+          iconSize: .md,
           iconGap: 8.0,
           focusRing: nil
         )
@@ -2121,7 +2121,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 20.0,
           paddingBottom: 0.0,
           paddingStart: 20.0,
-          iconSize: 20.0,
+          iconSize: .md,
           iconGap: 8.0,
           focusRing: nil
         )
@@ -2144,7 +2144,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 10.0,
           paddingBottom: 0.0,
           paddingStart: 10.0,
-          iconSize: 18.0,
+          iconSize: .md,
           iconGap: 6.0,
           focusRing: nil
         )
@@ -2167,7 +2167,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 10.0,
           paddingBottom: 0.0,
           paddingStart: 10.0,
-          iconSize: 18.0,
+          iconSize: .md,
           iconGap: 6.0,
           focusRing: nil
         )
@@ -2190,7 +2190,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 10.0,
           paddingBottom: 0.0,
           paddingStart: 10.0,
-          iconSize: 18.0,
+          iconSize: .md,
           iconGap: 6.0,
           focusRing: FocusRingTokens.light
         )
@@ -2213,7 +2213,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 10.0,
           paddingBottom: 0.0,
           paddingStart: 10.0,
-          iconSize: 18.0,
+          iconSize: .md,
           iconGap: 6.0,
           focusRing: nil
         )
@@ -2236,7 +2236,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 10.0,
           paddingBottom: 0.0,
           paddingStart: 10.0,
-          iconSize: 18.0,
+          iconSize: .md,
           iconGap: 6.0,
           focusRing: nil
         )
@@ -2259,7 +2259,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 24.0,
           paddingBottom: 0.0,
           paddingStart: 24.0,
-          iconSize: 20.0,
+          iconSize: .md,
           iconGap: 8.0,
           focusRing: nil
         )
@@ -2282,7 +2282,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 24.0,
           paddingBottom: 0.0,
           paddingStart: 24.0,
-          iconSize: 20.0,
+          iconSize: .md,
           iconGap: 8.0,
           focusRing: nil
         )
@@ -2305,7 +2305,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 24.0,
           paddingBottom: 0.0,
           paddingStart: 24.0,
-          iconSize: 20.0,
+          iconSize: .md,
           iconGap: 8.0,
           focusRing: FocusRingTokens.light
         )
@@ -2328,7 +2328,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 24.0,
           paddingBottom: 0.0,
           paddingStart: 24.0,
-          iconSize: 20.0,
+          iconSize: .md,
           iconGap: 8.0,
           focusRing: nil
         )
@@ -2351,7 +2351,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 24.0,
           paddingBottom: 0.0,
           paddingStart: 24.0,
-          iconSize: 20.0,
+          iconSize: .md,
           iconGap: 8.0,
           focusRing: nil
         )
@@ -2374,7 +2374,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 24.0,
           paddingBottom: 0.0,
           paddingStart: 24.0,
-          iconSize: 20.0,
+          iconSize: .md,
           iconGap: 8.0,
           focusRing: nil
         )
@@ -2397,7 +2397,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 24.0,
           paddingBottom: 0.0,
           paddingStart: 24.0,
-          iconSize: 20.0,
+          iconSize: .md,
           iconGap: 8.0,
           focusRing: nil
         )
@@ -2420,7 +2420,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 24.0,
           paddingBottom: 0.0,
           paddingStart: 24.0,
-          iconSize: 20.0,
+          iconSize: .md,
           iconGap: 8.0,
           focusRing: FocusRingTokens.light
         )
@@ -2443,7 +2443,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 24.0,
           paddingBottom: 0.0,
           paddingStart: 24.0,
-          iconSize: 20.0,
+          iconSize: .md,
           iconGap: 8.0,
           focusRing: nil
         )
@@ -2466,7 +2466,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 24.0,
           paddingBottom: 0.0,
           paddingStart: 24.0,
-          iconSize: 20.0,
+          iconSize: .md,
           iconGap: 8.0,
           focusRing: nil
         )
@@ -2494,7 +2494,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 24.0,
           paddingBottom: 0.0,
           paddingStart: 24.0,
-          iconSize: 20.0,
+          iconSize: .md,
           iconGap: 8.0,
           focusRing: nil
         )
@@ -2517,7 +2517,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 24.0,
           paddingBottom: 0.0,
           paddingStart: 24.0,
-          iconSize: 20.0,
+          iconSize: .md,
           iconGap: 8.0,
           focusRing: nil
         )
@@ -2540,7 +2540,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 24.0,
           paddingBottom: 0.0,
           paddingStart: 24.0,
-          iconSize: 20.0,
+          iconSize: .md,
           iconGap: 8.0,
           focusRing: FocusRingTokens.dark
         )
@@ -2563,7 +2563,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 24.0,
           paddingBottom: 0.0,
           paddingStart: 24.0,
-          iconSize: 20.0,
+          iconSize: .md,
           iconGap: 8.0,
           focusRing: nil
         )
@@ -2586,7 +2586,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 24.0,
           paddingBottom: 0.0,
           paddingStart: 24.0,
-          iconSize: 20.0,
+          iconSize: .md,
           iconGap: 8.0,
           focusRing: nil
         )
@@ -2609,7 +2609,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 24.0,
           paddingBottom: 0.0,
           paddingStart: 24.0,
-          iconSize: 20.0,
+          iconSize: .md,
           iconGap: 8.0,
           focusRing: nil
         )
@@ -2632,7 +2632,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 24.0,
           paddingBottom: 0.0,
           paddingStart: 24.0,
-          iconSize: 20.0,
+          iconSize: .md,
           iconGap: 8.0,
           focusRing: nil
         )
@@ -2655,7 +2655,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 24.0,
           paddingBottom: 0.0,
           paddingStart: 24.0,
-          iconSize: 20.0,
+          iconSize: .md,
           iconGap: 8.0,
           focusRing: FocusRingTokens.dark
         )
@@ -2678,7 +2678,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 24.0,
           paddingBottom: 0.0,
           paddingStart: 24.0,
-          iconSize: 20.0,
+          iconSize: .md,
           iconGap: 8.0,
           focusRing: nil
         )
@@ -2701,7 +2701,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 24.0,
           paddingBottom: 0.0,
           paddingStart: 24.0,
-          iconSize: 20.0,
+          iconSize: .md,
           iconGap: 8.0,
           focusRing: nil
         )
@@ -2724,7 +2724,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 20.0,
           paddingBottom: 0.0,
           paddingStart: 20.0,
-          iconSize: 20.0,
+          iconSize: .md,
           iconGap: 8.0,
           focusRing: nil
         )
@@ -2747,7 +2747,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 20.0,
           paddingBottom: 0.0,
           paddingStart: 20.0,
-          iconSize: 20.0,
+          iconSize: .md,
           iconGap: 8.0,
           focusRing: nil
         )
@@ -2770,7 +2770,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 20.0,
           paddingBottom: 0.0,
           paddingStart: 20.0,
-          iconSize: 20.0,
+          iconSize: .md,
           iconGap: 8.0,
           focusRing: FocusRingTokens.dark
         )
@@ -2793,7 +2793,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 20.0,
           paddingBottom: 0.0,
           paddingStart: 20.0,
-          iconSize: 20.0,
+          iconSize: .md,
           iconGap: 8.0,
           focusRing: nil
         )
@@ -2816,7 +2816,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 20.0,
           paddingBottom: 0.0,
           paddingStart: 20.0,
-          iconSize: 20.0,
+          iconSize: .md,
           iconGap: 8.0,
           focusRing: nil
         )
@@ -2839,7 +2839,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 20.0,
           paddingBottom: 0.0,
           paddingStart: 20.0,
-          iconSize: 18.0,
+          iconSize: .md,
           iconGap: 6.0,
           focusRing: nil
         )
@@ -2862,7 +2862,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 20.0,
           paddingBottom: 0.0,
           paddingStart: 20.0,
-          iconSize: 18.0,
+          iconSize: .md,
           iconGap: 6.0,
           focusRing: nil
         )
@@ -2885,7 +2885,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 20.0,
           paddingBottom: 0.0,
           paddingStart: 20.0,
-          iconSize: 18.0,
+          iconSize: .md,
           iconGap: 6.0,
           focusRing: FocusRingTokens.dark
         )
@@ -2908,7 +2908,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 20.0,
           paddingBottom: 0.0,
           paddingStart: 20.0,
-          iconSize: 18.0,
+          iconSize: .md,
           iconGap: 6.0,
           focusRing: nil
         )
@@ -2931,7 +2931,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 20.0,
           paddingBottom: 0.0,
           paddingStart: 20.0,
-          iconSize: 18.0,
+          iconSize: .md,
           iconGap: 6.0,
           focusRing: nil
         )
@@ -2954,7 +2954,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 16.0,
           paddingBottom: 0.0,
           paddingStart: 16.0,
-          iconSize: 20.0,
+          iconSize: .md,
           iconGap: 8.0,
           focusRing: nil
         )
@@ -2977,7 +2977,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 16.0,
           paddingBottom: 0.0,
           paddingStart: 16.0,
-          iconSize: 20.0,
+          iconSize: .md,
           iconGap: 8.0,
           focusRing: nil
         )
@@ -3000,7 +3000,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 16.0,
           paddingBottom: 0.0,
           paddingStart: 16.0,
-          iconSize: 20.0,
+          iconSize: .md,
           iconGap: 8.0,
           focusRing: FocusRingTokens.dark
         )
@@ -3023,7 +3023,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 16.0,
           paddingBottom: 0.0,
           paddingStart: 16.0,
-          iconSize: 20.0,
+          iconSize: .md,
           iconGap: 8.0,
           focusRing: nil
         )
@@ -3046,7 +3046,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 16.0,
           paddingBottom: 0.0,
           paddingStart: 16.0,
-          iconSize: 20.0,
+          iconSize: .md,
           iconGap: 8.0,
           focusRing: nil
         )
@@ -3069,7 +3069,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 24.0,
           paddingBottom: 0.0,
           paddingStart: 24.0,
-          iconSize: 20.0,
+          iconSize: .md,
           iconGap: 8.0,
           focusRing: nil
         )
@@ -3092,7 +3092,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 24.0,
           paddingBottom: 0.0,
           paddingStart: 24.0,
-          iconSize: 20.0,
+          iconSize: .md,
           iconGap: 8.0,
           focusRing: nil
         )
@@ -3115,7 +3115,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 24.0,
           paddingBottom: 0.0,
           paddingStart: 24.0,
-          iconSize: 20.0,
+          iconSize: .md,
           iconGap: 8.0,
           focusRing: FocusRingTokens.dark
         )
@@ -3138,7 +3138,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 24.0,
           paddingBottom: 0.0,
           paddingStart: 24.0,
-          iconSize: 20.0,
+          iconSize: .md,
           iconGap: 8.0,
           focusRing: nil
         )
@@ -3161,7 +3161,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 24.0,
           paddingBottom: 0.0,
           paddingStart: 24.0,
-          iconSize: 20.0,
+          iconSize: .md,
           iconGap: 8.0,
           focusRing: nil
         )
@@ -3184,7 +3184,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 20.0,
           paddingBottom: 0.0,
           paddingStart: 20.0,
-          iconSize: 20.0,
+          iconSize: .md,
           iconGap: 8.0,
           focusRing: nil
         )
@@ -3207,7 +3207,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 20.0,
           paddingBottom: 0.0,
           paddingStart: 20.0,
-          iconSize: 20.0,
+          iconSize: .md,
           iconGap: 8.0,
           focusRing: nil
         )
@@ -3230,7 +3230,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 20.0,
           paddingBottom: 0.0,
           paddingStart: 20.0,
-          iconSize: 20.0,
+          iconSize: .md,
           iconGap: 8.0,
           focusRing: FocusRingTokens.dark
         )
@@ -3253,7 +3253,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 20.0,
           paddingBottom: 0.0,
           paddingStart: 20.0,
-          iconSize: 20.0,
+          iconSize: .md,
           iconGap: 8.0,
           focusRing: nil
         )
@@ -3276,7 +3276,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 20.0,
           paddingBottom: 0.0,
           paddingStart: 20.0,
-          iconSize: 20.0,
+          iconSize: .md,
           iconGap: 8.0,
           focusRing: nil
         )
@@ -3299,7 +3299,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 16.0,
           paddingBottom: 0.0,
           paddingStart: 16.0,
-          iconSize: 18.0,
+          iconSize: .md,
           iconGap: 6.0,
           focusRing: nil
         )
@@ -3322,7 +3322,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 16.0,
           paddingBottom: 0.0,
           paddingStart: 16.0,
-          iconSize: 18.0,
+          iconSize: .md,
           iconGap: 6.0,
           focusRing: nil
         )
@@ -3345,7 +3345,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 16.0,
           paddingBottom: 0.0,
           paddingStart: 16.0,
-          iconSize: 18.0,
+          iconSize: .md,
           iconGap: 6.0,
           focusRing: FocusRingTokens.dark
         )
@@ -3368,7 +3368,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 16.0,
           paddingBottom: 0.0,
           paddingStart: 16.0,
-          iconSize: 18.0,
+          iconSize: .md,
           iconGap: 6.0,
           focusRing: nil
         )
@@ -3391,7 +3391,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 16.0,
           paddingBottom: 0.0,
           paddingStart: 16.0,
-          iconSize: 18.0,
+          iconSize: .md,
           iconGap: 6.0,
           focusRing: nil
         )
@@ -3414,7 +3414,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 16.0,
           paddingBottom: 0.0,
           paddingStart: 16.0,
-          iconSize: 20.0,
+          iconSize: .md,
           iconGap: 8.0,
           focusRing: nil
         )
@@ -3437,7 +3437,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 16.0,
           paddingBottom: 0.0,
           paddingStart: 16.0,
-          iconSize: 20.0,
+          iconSize: .md,
           iconGap: 8.0,
           focusRing: nil
         )
@@ -3460,7 +3460,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 16.0,
           paddingBottom: 0.0,
           paddingStart: 16.0,
-          iconSize: 20.0,
+          iconSize: .md,
           iconGap: 8.0,
           focusRing: FocusRingTokens.dark
         )
@@ -3483,7 +3483,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 16.0,
           paddingBottom: 0.0,
           paddingStart: 16.0,
-          iconSize: 20.0,
+          iconSize: .md,
           iconGap: 8.0,
           focusRing: nil
         )
@@ -3506,7 +3506,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 16.0,
           paddingBottom: 0.0,
           paddingStart: 16.0,
-          iconSize: 20.0,
+          iconSize: .md,
           iconGap: 8.0,
           focusRing: nil
         )
@@ -3529,7 +3529,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 16.0,
           paddingBottom: 0.0,
           paddingStart: 16.0,
-          iconSize: 18.0,
+          iconSize: .md,
           iconGap: 6.0,
           focusRing: nil
         )
@@ -3552,7 +3552,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 16.0,
           paddingBottom: 0.0,
           paddingStart: 16.0,
-          iconSize: 18.0,
+          iconSize: .md,
           iconGap: 6.0,
           focusRing: nil
         )
@@ -3575,7 +3575,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 16.0,
           paddingBottom: 0.0,
           paddingStart: 16.0,
-          iconSize: 18.0,
+          iconSize: .md,
           iconGap: 6.0,
           focusRing: FocusRingTokens.dark
         )
@@ -3598,7 +3598,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 16.0,
           paddingBottom: 0.0,
           paddingStart: 16.0,
-          iconSize: 18.0,
+          iconSize: .md,
           iconGap: 6.0,
           focusRing: nil
         )
@@ -3621,7 +3621,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 16.0,
           paddingBottom: 0.0,
           paddingStart: 16.0,
-          iconSize: 18.0,
+          iconSize: .md,
           iconGap: 6.0,
           focusRing: nil
         )
@@ -3644,7 +3644,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 12.0,
           paddingBottom: 0.0,
           paddingStart: 12.0,
-          iconSize: 20.0,
+          iconSize: .md,
           iconGap: 8.0,
           focusRing: nil
         )
@@ -3667,7 +3667,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 12.0,
           paddingBottom: 0.0,
           paddingStart: 12.0,
-          iconSize: 20.0,
+          iconSize: .md,
           iconGap: 8.0,
           focusRing: nil
         )
@@ -3690,7 +3690,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 12.0,
           paddingBottom: 0.0,
           paddingStart: 12.0,
-          iconSize: 20.0,
+          iconSize: .md,
           iconGap: 8.0,
           focusRing: FocusRingTokens.dark
         )
@@ -3713,7 +3713,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 12.0,
           paddingBottom: 0.0,
           paddingStart: 12.0,
-          iconSize: 20.0,
+          iconSize: .md,
           iconGap: 8.0,
           focusRing: nil
         )
@@ -3736,7 +3736,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 12.0,
           paddingBottom: 0.0,
           paddingStart: 12.0,
-          iconSize: 20.0,
+          iconSize: .md,
           iconGap: 8.0,
           focusRing: nil
         )
@@ -3759,7 +3759,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 12.0,
           paddingBottom: 0.0,
           paddingStart: 12.0,
-          iconSize: 18.0,
+          iconSize: .md,
           iconGap: 6.0,
           focusRing: nil
         )
@@ -3782,7 +3782,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 12.0,
           paddingBottom: 0.0,
           paddingStart: 12.0,
-          iconSize: 18.0,
+          iconSize: .md,
           iconGap: 6.0,
           focusRing: nil
         )
@@ -3805,7 +3805,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 12.0,
           paddingBottom: 0.0,
           paddingStart: 12.0,
-          iconSize: 18.0,
+          iconSize: .md,
           iconGap: 6.0,
           focusRing: FocusRingTokens.dark
         )
@@ -3828,7 +3828,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 12.0,
           paddingBottom: 0.0,
           paddingStart: 12.0,
-          iconSize: 18.0,
+          iconSize: .md,
           iconGap: 6.0,
           focusRing: nil
         )
@@ -3851,7 +3851,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 12.0,
           paddingBottom: 0.0,
           paddingStart: 12.0,
-          iconSize: 18.0,
+          iconSize: .md,
           iconGap: 6.0,
           focusRing: nil
         )
@@ -3874,7 +3874,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 20.0,
           paddingBottom: 0.0,
           paddingStart: 20.0,
-          iconSize: 20.0,
+          iconSize: .md,
           iconGap: 8.0,
           focusRing: nil
         )
@@ -3897,7 +3897,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 20.0,
           paddingBottom: 0.0,
           paddingStart: 20.0,
-          iconSize: 20.0,
+          iconSize: .md,
           iconGap: 8.0,
           focusRing: nil
         )
@@ -3920,7 +3920,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 20.0,
           paddingBottom: 0.0,
           paddingStart: 20.0,
-          iconSize: 20.0,
+          iconSize: .md,
           iconGap: 8.0,
           focusRing: FocusRingTokens.dark
         )
@@ -3943,7 +3943,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 20.0,
           paddingBottom: 0.0,
           paddingStart: 20.0,
-          iconSize: 20.0,
+          iconSize: .md,
           iconGap: 8.0,
           focusRing: nil
         )
@@ -3966,7 +3966,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 20.0,
           paddingBottom: 0.0,
           paddingStart: 20.0,
-          iconSize: 20.0,
+          iconSize: .md,
           iconGap: 8.0,
           focusRing: nil
         )
@@ -3989,7 +3989,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 24.0,
           paddingBottom: 0.0,
           paddingStart: 24.0,
-          iconSize: 20.0,
+          iconSize: .md,
           iconGap: 8.0,
           focusRing: nil
         )
@@ -4012,7 +4012,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 24.0,
           paddingBottom: 0.0,
           paddingStart: 24.0,
-          iconSize: 20.0,
+          iconSize: .md,
           iconGap: 8.0,
           focusRing: nil
         )
@@ -4035,7 +4035,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 24.0,
           paddingBottom: 0.0,
           paddingStart: 24.0,
-          iconSize: 20.0,
+          iconSize: .md,
           iconGap: 8.0,
           focusRing: FocusRingTokens.dark
         )
@@ -4058,7 +4058,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 24.0,
           paddingBottom: 0.0,
           paddingStart: 24.0,
-          iconSize: 20.0,
+          iconSize: .md,
           iconGap: 8.0,
           focusRing: nil
         )
@@ -4081,7 +4081,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 24.0,
           paddingBottom: 0.0,
           paddingStart: 24.0,
-          iconSize: 20.0,
+          iconSize: .md,
           iconGap: 8.0,
           focusRing: nil
         )
@@ -4104,7 +4104,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 20.0,
           paddingBottom: 0.0,
           paddingStart: 20.0,
-          iconSize: 18.0,
+          iconSize: .md,
           iconGap: 6.0,
           focusRing: nil
         )
@@ -4127,7 +4127,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 20.0,
           paddingBottom: 0.0,
           paddingStart: 20.0,
-          iconSize: 18.0,
+          iconSize: .md,
           iconGap: 6.0,
           focusRing: nil
         )
@@ -4150,7 +4150,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 20.0,
           paddingBottom: 0.0,
           paddingStart: 20.0,
-          iconSize: 18.0,
+          iconSize: .md,
           iconGap: 6.0,
           focusRing: FocusRingTokens.dark
         )
@@ -4173,7 +4173,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 20.0,
           paddingBottom: 0.0,
           paddingStart: 20.0,
-          iconSize: 18.0,
+          iconSize: .md,
           iconGap: 6.0,
           focusRing: nil
         )
@@ -4196,7 +4196,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 20.0,
           paddingBottom: 0.0,
           paddingStart: 20.0,
-          iconSize: 18.0,
+          iconSize: .md,
           iconGap: 6.0,
           focusRing: nil
         )
@@ -4219,7 +4219,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 24.0,
           paddingBottom: 0.0,
           paddingStart: 24.0,
-          iconSize: 20.0,
+          iconSize: .md,
           iconGap: 8.0,
           focusRing: nil
         )
@@ -4242,7 +4242,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 24.0,
           paddingBottom: 0.0,
           paddingStart: 24.0,
-          iconSize: 20.0,
+          iconSize: .md,
           iconGap: 8.0,
           focusRing: nil
         )
@@ -4265,7 +4265,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 24.0,
           paddingBottom: 0.0,
           paddingStart: 24.0,
-          iconSize: 20.0,
+          iconSize: .md,
           iconGap: 8.0,
           focusRing: FocusRingTokens.dark
         )
@@ -4288,7 +4288,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 24.0,
           paddingBottom: 0.0,
           paddingStart: 24.0,
-          iconSize: 20.0,
+          iconSize: .md,
           iconGap: 8.0,
           focusRing: nil
         )
@@ -4311,7 +4311,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 24.0,
           paddingBottom: 0.0,
           paddingStart: 24.0,
-          iconSize: 20.0,
+          iconSize: .md,
           iconGap: 8.0,
           focusRing: nil
         )
@@ -4334,7 +4334,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 20.0,
           paddingBottom: 0.0,
           paddingStart: 20.0,
-          iconSize: 20.0,
+          iconSize: .md,
           iconGap: 8.0,
           focusRing: nil
         )
@@ -4357,7 +4357,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 20.0,
           paddingBottom: 0.0,
           paddingStart: 20.0,
-          iconSize: 20.0,
+          iconSize: .md,
           iconGap: 8.0,
           focusRing: nil
         )
@@ -4380,7 +4380,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 20.0,
           paddingBottom: 0.0,
           paddingStart: 20.0,
-          iconSize: 20.0,
+          iconSize: .md,
           iconGap: 8.0,
           focusRing: FocusRingTokens.dark
         )
@@ -4403,7 +4403,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 20.0,
           paddingBottom: 0.0,
           paddingStart: 20.0,
-          iconSize: 20.0,
+          iconSize: .md,
           iconGap: 8.0,
           focusRing: nil
         )
@@ -4426,7 +4426,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 20.0,
           paddingBottom: 0.0,
           paddingStart: 20.0,
-          iconSize: 20.0,
+          iconSize: .md,
           iconGap: 8.0,
           focusRing: nil
         )
@@ -4449,7 +4449,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 10.0,
           paddingBottom: 0.0,
           paddingStart: 10.0,
-          iconSize: 18.0,
+          iconSize: .md,
           iconGap: 6.0,
           focusRing: nil
         )
@@ -4472,7 +4472,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 10.0,
           paddingBottom: 0.0,
           paddingStart: 10.0,
-          iconSize: 18.0,
+          iconSize: .md,
           iconGap: 6.0,
           focusRing: nil
         )
@@ -4495,7 +4495,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 10.0,
           paddingBottom: 0.0,
           paddingStart: 10.0,
-          iconSize: 18.0,
+          iconSize: .md,
           iconGap: 6.0,
           focusRing: FocusRingTokens.dark
         )
@@ -4518,7 +4518,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 10.0,
           paddingBottom: 0.0,
           paddingStart: 10.0,
-          iconSize: 18.0,
+          iconSize: .md,
           iconGap: 6.0,
           focusRing: nil
         )
@@ -4541,7 +4541,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 10.0,
           paddingBottom: 0.0,
           paddingStart: 10.0,
-          iconSize: 18.0,
+          iconSize: .md,
           iconGap: 6.0,
           focusRing: nil
         )
@@ -4564,7 +4564,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 24.0,
           paddingBottom: 0.0,
           paddingStart: 24.0,
-          iconSize: 20.0,
+          iconSize: .md,
           iconGap: 8.0,
           focusRing: nil
         )
@@ -4587,7 +4587,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 24.0,
           paddingBottom: 0.0,
           paddingStart: 24.0,
-          iconSize: 20.0,
+          iconSize: .md,
           iconGap: 8.0,
           focusRing: nil
         )
@@ -4610,7 +4610,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 24.0,
           paddingBottom: 0.0,
           paddingStart: 24.0,
-          iconSize: 20.0,
+          iconSize: .md,
           iconGap: 8.0,
           focusRing: FocusRingTokens.dark
         )
@@ -4633,7 +4633,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 24.0,
           paddingBottom: 0.0,
           paddingStart: 24.0,
-          iconSize: 20.0,
+          iconSize: .md,
           iconGap: 8.0,
           focusRing: nil
         )
@@ -4656,7 +4656,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 24.0,
           paddingBottom: 0.0,
           paddingStart: 24.0,
-          iconSize: 20.0,
+          iconSize: .md,
           iconGap: 8.0,
           focusRing: nil
         )
@@ -4679,7 +4679,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 24.0,
           paddingBottom: 0.0,
           paddingStart: 24.0,
-          iconSize: 20.0,
+          iconSize: .md,
           iconGap: 8.0,
           focusRing: nil
         )
@@ -4702,7 +4702,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 24.0,
           paddingBottom: 0.0,
           paddingStart: 24.0,
-          iconSize: 20.0,
+          iconSize: .md,
           iconGap: 8.0,
           focusRing: nil
         )
@@ -4725,7 +4725,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 24.0,
           paddingBottom: 0.0,
           paddingStart: 24.0,
-          iconSize: 20.0,
+          iconSize: .md,
           iconGap: 8.0,
           focusRing: FocusRingTokens.dark
         )
@@ -4748,7 +4748,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 24.0,
           paddingBottom: 0.0,
           paddingStart: 24.0,
-          iconSize: 20.0,
+          iconSize: .md,
           iconGap: 8.0,
           focusRing: nil
         )
@@ -4771,7 +4771,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 24.0,
           paddingBottom: 0.0,
           paddingStart: 24.0,
-          iconSize: 20.0,
+          iconSize: .md,
           iconGap: 8.0,
           focusRing: nil
         )
@@ -4799,7 +4799,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 24.0,
           paddingBottom: 0.0,
           paddingStart: 24.0,
-          iconSize: 20.0,
+          iconSize: .md,
           iconGap: 8.0,
           focusRing: nil
         )
@@ -4822,7 +4822,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 24.0,
           paddingBottom: 0.0,
           paddingStart: 24.0,
-          iconSize: 20.0,
+          iconSize: .md,
           iconGap: 8.0,
           focusRing: nil
         )
@@ -4845,7 +4845,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 24.0,
           paddingBottom: 0.0,
           paddingStart: 24.0,
-          iconSize: 20.0,
+          iconSize: .md,
           iconGap: 8.0,
           focusRing: FocusRingTokens.brand
         )
@@ -4868,7 +4868,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 24.0,
           paddingBottom: 0.0,
           paddingStart: 24.0,
-          iconSize: 20.0,
+          iconSize: .md,
           iconGap: 8.0,
           focusRing: nil
         )
@@ -4891,7 +4891,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 24.0,
           paddingBottom: 0.0,
           paddingStart: 24.0,
-          iconSize: 20.0,
+          iconSize: .md,
           iconGap: 8.0,
           focusRing: nil
         )
@@ -4914,7 +4914,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 24.0,
           paddingBottom: 0.0,
           paddingStart: 24.0,
-          iconSize: 20.0,
+          iconSize: .md,
           iconGap: 8.0,
           focusRing: nil
         )
@@ -4937,7 +4937,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 24.0,
           paddingBottom: 0.0,
           paddingStart: 24.0,
-          iconSize: 20.0,
+          iconSize: .md,
           iconGap: 8.0,
           focusRing: nil
         )
@@ -4960,7 +4960,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 24.0,
           paddingBottom: 0.0,
           paddingStart: 24.0,
-          iconSize: 20.0,
+          iconSize: .md,
           iconGap: 8.0,
           focusRing: FocusRingTokens.brand
         )
@@ -4983,7 +4983,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 24.0,
           paddingBottom: 0.0,
           paddingStart: 24.0,
-          iconSize: 20.0,
+          iconSize: .md,
           iconGap: 8.0,
           focusRing: nil
         )
@@ -5006,7 +5006,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 24.0,
           paddingBottom: 0.0,
           paddingStart: 24.0,
-          iconSize: 20.0,
+          iconSize: .md,
           iconGap: 8.0,
           focusRing: nil
         )
@@ -5029,7 +5029,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 20.0,
           paddingBottom: 0.0,
           paddingStart: 20.0,
-          iconSize: 20.0,
+          iconSize: .md,
           iconGap: 8.0,
           focusRing: nil
         )
@@ -5052,7 +5052,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 20.0,
           paddingBottom: 0.0,
           paddingStart: 20.0,
-          iconSize: 20.0,
+          iconSize: .md,
           iconGap: 8.0,
           focusRing: nil
         )
@@ -5075,7 +5075,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 20.0,
           paddingBottom: 0.0,
           paddingStart: 20.0,
-          iconSize: 20.0,
+          iconSize: .md,
           iconGap: 8.0,
           focusRing: FocusRingTokens.brand
         )
@@ -5098,7 +5098,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 20.0,
           paddingBottom: 0.0,
           paddingStart: 20.0,
-          iconSize: 20.0,
+          iconSize: .md,
           iconGap: 8.0,
           focusRing: nil
         )
@@ -5121,7 +5121,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 20.0,
           paddingBottom: 0.0,
           paddingStart: 20.0,
-          iconSize: 20.0,
+          iconSize: .md,
           iconGap: 8.0,
           focusRing: nil
         )
@@ -5144,7 +5144,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 20.0,
           paddingBottom: 0.0,
           paddingStart: 20.0,
-          iconSize: 18.0,
+          iconSize: .md,
           iconGap: 6.0,
           focusRing: nil
         )
@@ -5167,7 +5167,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 20.0,
           paddingBottom: 0.0,
           paddingStart: 20.0,
-          iconSize: 18.0,
+          iconSize: .md,
           iconGap: 6.0,
           focusRing: nil
         )
@@ -5190,7 +5190,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 20.0,
           paddingBottom: 0.0,
           paddingStart: 20.0,
-          iconSize: 18.0,
+          iconSize: .md,
           iconGap: 6.0,
           focusRing: FocusRingTokens.brand
         )
@@ -5213,7 +5213,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 20.0,
           paddingBottom: 0.0,
           paddingStart: 20.0,
-          iconSize: 18.0,
+          iconSize: .md,
           iconGap: 6.0,
           focusRing: nil
         )
@@ -5236,7 +5236,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 20.0,
           paddingBottom: 0.0,
           paddingStart: 20.0,
-          iconSize: 18.0,
+          iconSize: .md,
           iconGap: 6.0,
           focusRing: nil
         )
@@ -5259,7 +5259,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 16.0,
           paddingBottom: 0.0,
           paddingStart: 16.0,
-          iconSize: 20.0,
+          iconSize: .md,
           iconGap: 8.0,
           focusRing: nil
         )
@@ -5282,7 +5282,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 16.0,
           paddingBottom: 0.0,
           paddingStart: 16.0,
-          iconSize: 20.0,
+          iconSize: .md,
           iconGap: 8.0,
           focusRing: nil
         )
@@ -5305,7 +5305,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 16.0,
           paddingBottom: 0.0,
           paddingStart: 16.0,
-          iconSize: 20.0,
+          iconSize: .md,
           iconGap: 8.0,
           focusRing: FocusRingTokens.brand
         )
@@ -5328,7 +5328,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 16.0,
           paddingBottom: 0.0,
           paddingStart: 16.0,
-          iconSize: 20.0,
+          iconSize: .md,
           iconGap: 8.0,
           focusRing: nil
         )
@@ -5351,7 +5351,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 16.0,
           paddingBottom: 0.0,
           paddingStart: 16.0,
-          iconSize: 20.0,
+          iconSize: .md,
           iconGap: 8.0,
           focusRing: nil
         )
@@ -5374,7 +5374,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 24.0,
           paddingBottom: 0.0,
           paddingStart: 24.0,
-          iconSize: 20.0,
+          iconSize: .md,
           iconGap: 8.0,
           focusRing: nil
         )
@@ -5397,7 +5397,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 24.0,
           paddingBottom: 0.0,
           paddingStart: 24.0,
-          iconSize: 20.0,
+          iconSize: .md,
           iconGap: 8.0,
           focusRing: nil
         )
@@ -5420,7 +5420,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 24.0,
           paddingBottom: 0.0,
           paddingStart: 24.0,
-          iconSize: 20.0,
+          iconSize: .md,
           iconGap: 8.0,
           focusRing: FocusRingTokens.brand
         )
@@ -5443,7 +5443,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 24.0,
           paddingBottom: 0.0,
           paddingStart: 24.0,
-          iconSize: 20.0,
+          iconSize: .md,
           iconGap: 8.0,
           focusRing: nil
         )
@@ -5466,7 +5466,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 24.0,
           paddingBottom: 0.0,
           paddingStart: 24.0,
-          iconSize: 20.0,
+          iconSize: .md,
           iconGap: 8.0,
           focusRing: nil
         )
@@ -5489,7 +5489,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 20.0,
           paddingBottom: 0.0,
           paddingStart: 20.0,
-          iconSize: 20.0,
+          iconSize: .md,
           iconGap: 8.0,
           focusRing: nil
         )
@@ -5512,7 +5512,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 20.0,
           paddingBottom: 0.0,
           paddingStart: 20.0,
-          iconSize: 20.0,
+          iconSize: .md,
           iconGap: 8.0,
           focusRing: nil
         )
@@ -5535,7 +5535,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 20.0,
           paddingBottom: 0.0,
           paddingStart: 20.0,
-          iconSize: 20.0,
+          iconSize: .md,
           iconGap: 8.0,
           focusRing: FocusRingTokens.brand
         )
@@ -5558,7 +5558,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 20.0,
           paddingBottom: 0.0,
           paddingStart: 20.0,
-          iconSize: 20.0,
+          iconSize: .md,
           iconGap: 8.0,
           focusRing: nil
         )
@@ -5581,7 +5581,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 20.0,
           paddingBottom: 0.0,
           paddingStart: 20.0,
-          iconSize: 20.0,
+          iconSize: .md,
           iconGap: 8.0,
           focusRing: nil
         )
@@ -5604,7 +5604,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 16.0,
           paddingBottom: 0.0,
           paddingStart: 16.0,
-          iconSize: 18.0,
+          iconSize: .md,
           iconGap: 6.0,
           focusRing: nil
         )
@@ -5627,7 +5627,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 16.0,
           paddingBottom: 0.0,
           paddingStart: 16.0,
-          iconSize: 18.0,
+          iconSize: .md,
           iconGap: 6.0,
           focusRing: nil
         )
@@ -5650,7 +5650,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 16.0,
           paddingBottom: 0.0,
           paddingStart: 16.0,
-          iconSize: 18.0,
+          iconSize: .md,
           iconGap: 6.0,
           focusRing: FocusRingTokens.brand
         )
@@ -5673,7 +5673,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 16.0,
           paddingBottom: 0.0,
           paddingStart: 16.0,
-          iconSize: 18.0,
+          iconSize: .md,
           iconGap: 6.0,
           focusRing: nil
         )
@@ -5696,7 +5696,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 16.0,
           paddingBottom: 0.0,
           paddingStart: 16.0,
-          iconSize: 18.0,
+          iconSize: .md,
           iconGap: 6.0,
           focusRing: nil
         )
@@ -5719,7 +5719,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 16.0,
           paddingBottom: 0.0,
           paddingStart: 16.0,
-          iconSize: 20.0,
+          iconSize: .md,
           iconGap: 8.0,
           focusRing: nil
         )
@@ -5742,7 +5742,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 16.0,
           paddingBottom: 0.0,
           paddingStart: 16.0,
-          iconSize: 20.0,
+          iconSize: .md,
           iconGap: 8.0,
           focusRing: nil
         )
@@ -5765,7 +5765,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 16.0,
           paddingBottom: 0.0,
           paddingStart: 16.0,
-          iconSize: 20.0,
+          iconSize: .md,
           iconGap: 8.0,
           focusRing: FocusRingTokens.brand
         )
@@ -5788,7 +5788,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 16.0,
           paddingBottom: 0.0,
           paddingStart: 16.0,
-          iconSize: 20.0,
+          iconSize: .md,
           iconGap: 8.0,
           focusRing: nil
         )
@@ -5811,7 +5811,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 16.0,
           paddingBottom: 0.0,
           paddingStart: 16.0,
-          iconSize: 20.0,
+          iconSize: .md,
           iconGap: 8.0,
           focusRing: nil
         )
@@ -5834,7 +5834,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 16.0,
           paddingBottom: 0.0,
           paddingStart: 16.0,
-          iconSize: 18.0,
+          iconSize: .md,
           iconGap: 6.0,
           focusRing: nil
         )
@@ -5857,7 +5857,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 16.0,
           paddingBottom: 0.0,
           paddingStart: 16.0,
-          iconSize: 18.0,
+          iconSize: .md,
           iconGap: 6.0,
           focusRing: nil
         )
@@ -5880,7 +5880,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 16.0,
           paddingBottom: 0.0,
           paddingStart: 16.0,
-          iconSize: 18.0,
+          iconSize: .md,
           iconGap: 6.0,
           focusRing: FocusRingTokens.brand
         )
@@ -5903,7 +5903,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 16.0,
           paddingBottom: 0.0,
           paddingStart: 16.0,
-          iconSize: 18.0,
+          iconSize: .md,
           iconGap: 6.0,
           focusRing: nil
         )
@@ -5926,7 +5926,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 16.0,
           paddingBottom: 0.0,
           paddingStart: 16.0,
-          iconSize: 18.0,
+          iconSize: .md,
           iconGap: 6.0,
           focusRing: nil
         )
@@ -5949,7 +5949,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 12.0,
           paddingBottom: 0.0,
           paddingStart: 12.0,
-          iconSize: 20.0,
+          iconSize: .md,
           iconGap: 8.0,
           focusRing: nil
         )
@@ -5972,7 +5972,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 12.0,
           paddingBottom: 0.0,
           paddingStart: 12.0,
-          iconSize: 20.0,
+          iconSize: .md,
           iconGap: 8.0,
           focusRing: nil
         )
@@ -5995,7 +5995,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 12.0,
           paddingBottom: 0.0,
           paddingStart: 12.0,
-          iconSize: 20.0,
+          iconSize: .md,
           iconGap: 8.0,
           focusRing: FocusRingTokens.brand
         )
@@ -6018,7 +6018,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 12.0,
           paddingBottom: 0.0,
           paddingStart: 12.0,
-          iconSize: 20.0,
+          iconSize: .md,
           iconGap: 8.0,
           focusRing: nil
         )
@@ -6041,7 +6041,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 12.0,
           paddingBottom: 0.0,
           paddingStart: 12.0,
-          iconSize: 20.0,
+          iconSize: .md,
           iconGap: 8.0,
           focusRing: nil
         )
@@ -6064,7 +6064,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 12.0,
           paddingBottom: 0.0,
           paddingStart: 12.0,
-          iconSize: 18.0,
+          iconSize: .md,
           iconGap: 6.0,
           focusRing: nil
         )
@@ -6087,7 +6087,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 12.0,
           paddingBottom: 0.0,
           paddingStart: 12.0,
-          iconSize: 18.0,
+          iconSize: .md,
           iconGap: 6.0,
           focusRing: nil
         )
@@ -6110,7 +6110,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 12.0,
           paddingBottom: 0.0,
           paddingStart: 12.0,
-          iconSize: 18.0,
+          iconSize: .md,
           iconGap: 6.0,
           focusRing: FocusRingTokens.brand
         )
@@ -6133,7 +6133,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 12.0,
           paddingBottom: 0.0,
           paddingStart: 12.0,
-          iconSize: 18.0,
+          iconSize: .md,
           iconGap: 6.0,
           focusRing: nil
         )
@@ -6156,7 +6156,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 12.0,
           paddingBottom: 0.0,
           paddingStart: 12.0,
-          iconSize: 18.0,
+          iconSize: .md,
           iconGap: 6.0,
           focusRing: nil
         )
@@ -6179,7 +6179,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 20.0,
           paddingBottom: 0.0,
           paddingStart: 20.0,
-          iconSize: 20.0,
+          iconSize: .md,
           iconGap: 8.0,
           focusRing: nil
         )
@@ -6202,7 +6202,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 20.0,
           paddingBottom: 0.0,
           paddingStart: 20.0,
-          iconSize: 20.0,
+          iconSize: .md,
           iconGap: 8.0,
           focusRing: nil
         )
@@ -6225,7 +6225,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 20.0,
           paddingBottom: 0.0,
           paddingStart: 20.0,
-          iconSize: 20.0,
+          iconSize: .md,
           iconGap: 8.0,
           focusRing: FocusRingTokens.brand
         )
@@ -6248,7 +6248,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 20.0,
           paddingBottom: 0.0,
           paddingStart: 20.0,
-          iconSize: 20.0,
+          iconSize: .md,
           iconGap: 8.0,
           focusRing: nil
         )
@@ -6271,7 +6271,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 20.0,
           paddingBottom: 0.0,
           paddingStart: 20.0,
-          iconSize: 20.0,
+          iconSize: .md,
           iconGap: 8.0,
           focusRing: nil
         )
@@ -6294,7 +6294,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 24.0,
           paddingBottom: 0.0,
           paddingStart: 24.0,
-          iconSize: 20.0,
+          iconSize: .md,
           iconGap: 8.0,
           focusRing: nil
         )
@@ -6317,7 +6317,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 24.0,
           paddingBottom: 0.0,
           paddingStart: 24.0,
-          iconSize: 20.0,
+          iconSize: .md,
           iconGap: 8.0,
           focusRing: nil
         )
@@ -6340,7 +6340,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 24.0,
           paddingBottom: 0.0,
           paddingStart: 24.0,
-          iconSize: 20.0,
+          iconSize: .md,
           iconGap: 8.0,
           focusRing: FocusRingTokens.brand
         )
@@ -6363,7 +6363,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 24.0,
           paddingBottom: 0.0,
           paddingStart: 24.0,
-          iconSize: 20.0,
+          iconSize: .md,
           iconGap: 8.0,
           focusRing: nil
         )
@@ -6386,7 +6386,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 24.0,
           paddingBottom: 0.0,
           paddingStart: 24.0,
-          iconSize: 20.0,
+          iconSize: .md,
           iconGap: 8.0,
           focusRing: nil
         )
@@ -6409,7 +6409,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 20.0,
           paddingBottom: 0.0,
           paddingStart: 20.0,
-          iconSize: 18.0,
+          iconSize: .md,
           iconGap: 6.0,
           focusRing: nil
         )
@@ -6432,7 +6432,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 20.0,
           paddingBottom: 0.0,
           paddingStart: 20.0,
-          iconSize: 18.0,
+          iconSize: .md,
           iconGap: 6.0,
           focusRing: nil
         )
@@ -6455,7 +6455,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 20.0,
           paddingBottom: 0.0,
           paddingStart: 20.0,
-          iconSize: 18.0,
+          iconSize: .md,
           iconGap: 6.0,
           focusRing: FocusRingTokens.brand
         )
@@ -6478,7 +6478,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 20.0,
           paddingBottom: 0.0,
           paddingStart: 20.0,
-          iconSize: 18.0,
+          iconSize: .md,
           iconGap: 6.0,
           focusRing: nil
         )
@@ -6501,7 +6501,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 20.0,
           paddingBottom: 0.0,
           paddingStart: 20.0,
-          iconSize: 18.0,
+          iconSize: .md,
           iconGap: 6.0,
           focusRing: nil
         )
@@ -6524,7 +6524,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 24.0,
           paddingBottom: 0.0,
           paddingStart: 24.0,
-          iconSize: 20.0,
+          iconSize: .md,
           iconGap: 8.0,
           focusRing: nil
         )
@@ -6547,7 +6547,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 24.0,
           paddingBottom: 0.0,
           paddingStart: 24.0,
-          iconSize: 20.0,
+          iconSize: .md,
           iconGap: 8.0,
           focusRing: nil
         )
@@ -6570,7 +6570,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 24.0,
           paddingBottom: 0.0,
           paddingStart: 24.0,
-          iconSize: 20.0,
+          iconSize: .md,
           iconGap: 8.0,
           focusRing: FocusRingTokens.brand
         )
@@ -6593,7 +6593,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 24.0,
           paddingBottom: 0.0,
           paddingStart: 24.0,
-          iconSize: 20.0,
+          iconSize: .md,
           iconGap: 8.0,
           focusRing: nil
         )
@@ -6616,7 +6616,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 24.0,
           paddingBottom: 0.0,
           paddingStart: 24.0,
-          iconSize: 20.0,
+          iconSize: .md,
           iconGap: 8.0,
           focusRing: nil
         )
@@ -6639,7 +6639,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 20.0,
           paddingBottom: 0.0,
           paddingStart: 20.0,
-          iconSize: 20.0,
+          iconSize: .md,
           iconGap: 8.0,
           focusRing: nil
         )
@@ -6662,7 +6662,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 20.0,
           paddingBottom: 0.0,
           paddingStart: 20.0,
-          iconSize: 20.0,
+          iconSize: .md,
           iconGap: 8.0,
           focusRing: nil
         )
@@ -6685,7 +6685,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 20.0,
           paddingBottom: 0.0,
           paddingStart: 20.0,
-          iconSize: 20.0,
+          iconSize: .md,
           iconGap: 8.0,
           focusRing: FocusRingTokens.brand
         )
@@ -6708,7 +6708,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 20.0,
           paddingBottom: 0.0,
           paddingStart: 20.0,
-          iconSize: 20.0,
+          iconSize: .md,
           iconGap: 8.0,
           focusRing: nil
         )
@@ -6731,7 +6731,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 20.0,
           paddingBottom: 0.0,
           paddingStart: 20.0,
-          iconSize: 20.0,
+          iconSize: .md,
           iconGap: 8.0,
           focusRing: nil
         )
@@ -6754,7 +6754,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 10.0,
           paddingBottom: 0.0,
           paddingStart: 10.0,
-          iconSize: 18.0,
+          iconSize: .md,
           iconGap: 6.0,
           focusRing: nil
         )
@@ -6777,7 +6777,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 10.0,
           paddingBottom: 0.0,
           paddingStart: 10.0,
-          iconSize: 18.0,
+          iconSize: .md,
           iconGap: 6.0,
           focusRing: nil
         )
@@ -6800,7 +6800,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 10.0,
           paddingBottom: 0.0,
           paddingStart: 10.0,
-          iconSize: 18.0,
+          iconSize: .md,
           iconGap: 6.0,
           focusRing: FocusRingTokens.brand
         )
@@ -6823,7 +6823,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 10.0,
           paddingBottom: 0.0,
           paddingStart: 10.0,
-          iconSize: 18.0,
+          iconSize: .md,
           iconGap: 6.0,
           focusRing: nil
         )
@@ -6846,7 +6846,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 10.0,
           paddingBottom: 0.0,
           paddingStart: 10.0,
-          iconSize: 18.0,
+          iconSize: .md,
           iconGap: 6.0,
           focusRing: nil
         )
@@ -6869,7 +6869,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 24.0,
           paddingBottom: 0.0,
           paddingStart: 24.0,
-          iconSize: 20.0,
+          iconSize: .md,
           iconGap: 8.0,
           focusRing: nil
         )
@@ -6892,7 +6892,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 24.0,
           paddingBottom: 0.0,
           paddingStart: 24.0,
-          iconSize: 20.0,
+          iconSize: .md,
           iconGap: 8.0,
           focusRing: nil
         )
@@ -6915,7 +6915,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 24.0,
           paddingBottom: 0.0,
           paddingStart: 24.0,
-          iconSize: 20.0,
+          iconSize: .md,
           iconGap: 8.0,
           focusRing: FocusRingTokens.brand
         )
@@ -6938,7 +6938,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 24.0,
           paddingBottom: 0.0,
           paddingStart: 24.0,
-          iconSize: 20.0,
+          iconSize: .md,
           iconGap: 8.0,
           focusRing: nil
         )
@@ -6961,7 +6961,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 24.0,
           paddingBottom: 0.0,
           paddingStart: 24.0,
-          iconSize: 20.0,
+          iconSize: .md,
           iconGap: 8.0,
           focusRing: nil
         )
@@ -6984,7 +6984,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 24.0,
           paddingBottom: 0.0,
           paddingStart: 24.0,
-          iconSize: 20.0,
+          iconSize: .md,
           iconGap: 8.0,
           focusRing: nil
         )
@@ -7007,7 +7007,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 24.0,
           paddingBottom: 0.0,
           paddingStart: 24.0,
-          iconSize: 20.0,
+          iconSize: .md,
           iconGap: 8.0,
           focusRing: nil
         )
@@ -7030,7 +7030,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 24.0,
           paddingBottom: 0.0,
           paddingStart: 24.0,
-          iconSize: 20.0,
+          iconSize: .md,
           iconGap: 8.0,
           focusRing: FocusRingTokens.brand
         )
@@ -7053,7 +7053,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 24.0,
           paddingBottom: 0.0,
           paddingStart: 24.0,
-          iconSize: 20.0,
+          iconSize: .md,
           iconGap: 8.0,
           focusRing: nil
         )
@@ -7076,7 +7076,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 24.0,
           paddingBottom: 0.0,
           paddingStart: 24.0,
-          iconSize: 20.0,
+          iconSize: .md,
           iconGap: 8.0,
           focusRing: nil
         )
@@ -7104,7 +7104,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 24.0,
           paddingBottom: 0.0,
           paddingStart: 24.0,
-          iconSize: 20.0,
+          iconSize: .md,
           iconGap: 8.0,
           focusRing: nil
         )
@@ -7127,7 +7127,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 24.0,
           paddingBottom: 0.0,
           paddingStart: 24.0,
-          iconSize: 20.0,
+          iconSize: .md,
           iconGap: 8.0,
           focusRing: nil
         )
@@ -7150,7 +7150,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 24.0,
           paddingBottom: 0.0,
           paddingStart: 24.0,
-          iconSize: 20.0,
+          iconSize: .md,
           iconGap: 8.0,
           focusRing: FocusRingTokens.hcLight
         )
@@ -7173,7 +7173,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 24.0,
           paddingBottom: 0.0,
           paddingStart: 24.0,
-          iconSize: 20.0,
+          iconSize: .md,
           iconGap: 8.0,
           focusRing: nil
         )
@@ -7196,7 +7196,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 24.0,
           paddingBottom: 0.0,
           paddingStart: 24.0,
-          iconSize: 20.0,
+          iconSize: .md,
           iconGap: 8.0,
           focusRing: nil
         )
@@ -7219,7 +7219,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 24.0,
           paddingBottom: 0.0,
           paddingStart: 24.0,
-          iconSize: 20.0,
+          iconSize: .md,
           iconGap: 8.0,
           focusRing: nil
         )
@@ -7242,7 +7242,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 24.0,
           paddingBottom: 0.0,
           paddingStart: 24.0,
-          iconSize: 20.0,
+          iconSize: .md,
           iconGap: 8.0,
           focusRing: nil
         )
@@ -7265,7 +7265,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 24.0,
           paddingBottom: 0.0,
           paddingStart: 24.0,
-          iconSize: 20.0,
+          iconSize: .md,
           iconGap: 8.0,
           focusRing: FocusRingTokens.hcLight
         )
@@ -7288,7 +7288,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 24.0,
           paddingBottom: 0.0,
           paddingStart: 24.0,
-          iconSize: 20.0,
+          iconSize: .md,
           iconGap: 8.0,
           focusRing: nil
         )
@@ -7311,7 +7311,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 24.0,
           paddingBottom: 0.0,
           paddingStart: 24.0,
-          iconSize: 20.0,
+          iconSize: .md,
           iconGap: 8.0,
           focusRing: nil
         )
@@ -7334,7 +7334,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 20.0,
           paddingBottom: 0.0,
           paddingStart: 20.0,
-          iconSize: 20.0,
+          iconSize: .md,
           iconGap: 8.0,
           focusRing: nil
         )
@@ -7357,7 +7357,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 20.0,
           paddingBottom: 0.0,
           paddingStart: 20.0,
-          iconSize: 20.0,
+          iconSize: .md,
           iconGap: 8.0,
           focusRing: nil
         )
@@ -7380,7 +7380,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 20.0,
           paddingBottom: 0.0,
           paddingStart: 20.0,
-          iconSize: 20.0,
+          iconSize: .md,
           iconGap: 8.0,
           focusRing: FocusRingTokens.hcLight
         )
@@ -7403,7 +7403,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 20.0,
           paddingBottom: 0.0,
           paddingStart: 20.0,
-          iconSize: 20.0,
+          iconSize: .md,
           iconGap: 8.0,
           focusRing: nil
         )
@@ -7426,7 +7426,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 20.0,
           paddingBottom: 0.0,
           paddingStart: 20.0,
-          iconSize: 20.0,
+          iconSize: .md,
           iconGap: 8.0,
           focusRing: nil
         )
@@ -7449,7 +7449,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 20.0,
           paddingBottom: 0.0,
           paddingStart: 20.0,
-          iconSize: 18.0,
+          iconSize: .md,
           iconGap: 6.0,
           focusRing: nil
         )
@@ -7472,7 +7472,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 20.0,
           paddingBottom: 0.0,
           paddingStart: 20.0,
-          iconSize: 18.0,
+          iconSize: .md,
           iconGap: 6.0,
           focusRing: nil
         )
@@ -7495,7 +7495,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 20.0,
           paddingBottom: 0.0,
           paddingStart: 20.0,
-          iconSize: 18.0,
+          iconSize: .md,
           iconGap: 6.0,
           focusRing: FocusRingTokens.hcLight
         )
@@ -7518,7 +7518,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 20.0,
           paddingBottom: 0.0,
           paddingStart: 20.0,
-          iconSize: 18.0,
+          iconSize: .md,
           iconGap: 6.0,
           focusRing: nil
         )
@@ -7541,7 +7541,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 20.0,
           paddingBottom: 0.0,
           paddingStart: 20.0,
-          iconSize: 18.0,
+          iconSize: .md,
           iconGap: 6.0,
           focusRing: nil
         )
@@ -7564,7 +7564,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 16.0,
           paddingBottom: 0.0,
           paddingStart: 16.0,
-          iconSize: 20.0,
+          iconSize: .md,
           iconGap: 8.0,
           focusRing: nil
         )
@@ -7587,7 +7587,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 16.0,
           paddingBottom: 0.0,
           paddingStart: 16.0,
-          iconSize: 20.0,
+          iconSize: .md,
           iconGap: 8.0,
           focusRing: nil
         )
@@ -7610,7 +7610,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 16.0,
           paddingBottom: 0.0,
           paddingStart: 16.0,
-          iconSize: 20.0,
+          iconSize: .md,
           iconGap: 8.0,
           focusRing: FocusRingTokens.hcLight
         )
@@ -7633,7 +7633,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 16.0,
           paddingBottom: 0.0,
           paddingStart: 16.0,
-          iconSize: 20.0,
+          iconSize: .md,
           iconGap: 8.0,
           focusRing: nil
         )
@@ -7656,7 +7656,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 16.0,
           paddingBottom: 0.0,
           paddingStart: 16.0,
-          iconSize: 20.0,
+          iconSize: .md,
           iconGap: 8.0,
           focusRing: nil
         )
@@ -7679,7 +7679,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 24.0,
           paddingBottom: 0.0,
           paddingStart: 24.0,
-          iconSize: 20.0,
+          iconSize: .md,
           iconGap: 8.0,
           focusRing: nil
         )
@@ -7702,7 +7702,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 24.0,
           paddingBottom: 0.0,
           paddingStart: 24.0,
-          iconSize: 20.0,
+          iconSize: .md,
           iconGap: 8.0,
           focusRing: nil
         )
@@ -7725,7 +7725,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 24.0,
           paddingBottom: 0.0,
           paddingStart: 24.0,
-          iconSize: 20.0,
+          iconSize: .md,
           iconGap: 8.0,
           focusRing: FocusRingTokens.hcLight
         )
@@ -7748,7 +7748,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 24.0,
           paddingBottom: 0.0,
           paddingStart: 24.0,
-          iconSize: 20.0,
+          iconSize: .md,
           iconGap: 8.0,
           focusRing: nil
         )
@@ -7771,7 +7771,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 24.0,
           paddingBottom: 0.0,
           paddingStart: 24.0,
-          iconSize: 20.0,
+          iconSize: .md,
           iconGap: 8.0,
           focusRing: nil
         )
@@ -7794,7 +7794,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 20.0,
           paddingBottom: 0.0,
           paddingStart: 20.0,
-          iconSize: 20.0,
+          iconSize: .md,
           iconGap: 8.0,
           focusRing: nil
         )
@@ -7817,7 +7817,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 20.0,
           paddingBottom: 0.0,
           paddingStart: 20.0,
-          iconSize: 20.0,
+          iconSize: .md,
           iconGap: 8.0,
           focusRing: nil
         )
@@ -7840,7 +7840,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 20.0,
           paddingBottom: 0.0,
           paddingStart: 20.0,
-          iconSize: 20.0,
+          iconSize: .md,
           iconGap: 8.0,
           focusRing: FocusRingTokens.hcLight
         )
@@ -7863,7 +7863,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 20.0,
           paddingBottom: 0.0,
           paddingStart: 20.0,
-          iconSize: 20.0,
+          iconSize: .md,
           iconGap: 8.0,
           focusRing: nil
         )
@@ -7886,7 +7886,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 20.0,
           paddingBottom: 0.0,
           paddingStart: 20.0,
-          iconSize: 20.0,
+          iconSize: .md,
           iconGap: 8.0,
           focusRing: nil
         )
@@ -7909,7 +7909,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 16.0,
           paddingBottom: 0.0,
           paddingStart: 16.0,
-          iconSize: 18.0,
+          iconSize: .md,
           iconGap: 6.0,
           focusRing: nil
         )
@@ -7932,7 +7932,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 16.0,
           paddingBottom: 0.0,
           paddingStart: 16.0,
-          iconSize: 18.0,
+          iconSize: .md,
           iconGap: 6.0,
           focusRing: nil
         )
@@ -7955,7 +7955,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 16.0,
           paddingBottom: 0.0,
           paddingStart: 16.0,
-          iconSize: 18.0,
+          iconSize: .md,
           iconGap: 6.0,
           focusRing: FocusRingTokens.hcLight
         )
@@ -7978,7 +7978,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 16.0,
           paddingBottom: 0.0,
           paddingStart: 16.0,
-          iconSize: 18.0,
+          iconSize: .md,
           iconGap: 6.0,
           focusRing: nil
         )
@@ -8001,7 +8001,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 16.0,
           paddingBottom: 0.0,
           paddingStart: 16.0,
-          iconSize: 18.0,
+          iconSize: .md,
           iconGap: 6.0,
           focusRing: nil
         )
@@ -8024,7 +8024,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 16.0,
           paddingBottom: 0.0,
           paddingStart: 16.0,
-          iconSize: 20.0,
+          iconSize: .md,
           iconGap: 8.0,
           focusRing: nil
         )
@@ -8047,7 +8047,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 16.0,
           paddingBottom: 0.0,
           paddingStart: 16.0,
-          iconSize: 20.0,
+          iconSize: .md,
           iconGap: 8.0,
           focusRing: nil
         )
@@ -8070,7 +8070,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 16.0,
           paddingBottom: 0.0,
           paddingStart: 16.0,
-          iconSize: 20.0,
+          iconSize: .md,
           iconGap: 8.0,
           focusRing: FocusRingTokens.hcLight
         )
@@ -8093,7 +8093,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 16.0,
           paddingBottom: 0.0,
           paddingStart: 16.0,
-          iconSize: 20.0,
+          iconSize: .md,
           iconGap: 8.0,
           focusRing: nil
         )
@@ -8116,7 +8116,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 16.0,
           paddingBottom: 0.0,
           paddingStart: 16.0,
-          iconSize: 20.0,
+          iconSize: .md,
           iconGap: 8.0,
           focusRing: nil
         )
@@ -8139,7 +8139,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 16.0,
           paddingBottom: 0.0,
           paddingStart: 16.0,
-          iconSize: 18.0,
+          iconSize: .md,
           iconGap: 6.0,
           focusRing: nil
         )
@@ -8162,7 +8162,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 16.0,
           paddingBottom: 0.0,
           paddingStart: 16.0,
-          iconSize: 18.0,
+          iconSize: .md,
           iconGap: 6.0,
           focusRing: nil
         )
@@ -8185,7 +8185,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 16.0,
           paddingBottom: 0.0,
           paddingStart: 16.0,
-          iconSize: 18.0,
+          iconSize: .md,
           iconGap: 6.0,
           focusRing: FocusRingTokens.hcLight
         )
@@ -8208,7 +8208,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 16.0,
           paddingBottom: 0.0,
           paddingStart: 16.0,
-          iconSize: 18.0,
+          iconSize: .md,
           iconGap: 6.0,
           focusRing: nil
         )
@@ -8231,7 +8231,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 16.0,
           paddingBottom: 0.0,
           paddingStart: 16.0,
-          iconSize: 18.0,
+          iconSize: .md,
           iconGap: 6.0,
           focusRing: nil
         )
@@ -8254,7 +8254,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 12.0,
           paddingBottom: 0.0,
           paddingStart: 12.0,
-          iconSize: 20.0,
+          iconSize: .md,
           iconGap: 8.0,
           focusRing: nil
         )
@@ -8277,7 +8277,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 12.0,
           paddingBottom: 0.0,
           paddingStart: 12.0,
-          iconSize: 20.0,
+          iconSize: .md,
           iconGap: 8.0,
           focusRing: nil
         )
@@ -8300,7 +8300,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 12.0,
           paddingBottom: 0.0,
           paddingStart: 12.0,
-          iconSize: 20.0,
+          iconSize: .md,
           iconGap: 8.0,
           focusRing: FocusRingTokens.hcLight
         )
@@ -8323,7 +8323,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 12.0,
           paddingBottom: 0.0,
           paddingStart: 12.0,
-          iconSize: 20.0,
+          iconSize: .md,
           iconGap: 8.0,
           focusRing: nil
         )
@@ -8346,7 +8346,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 12.0,
           paddingBottom: 0.0,
           paddingStart: 12.0,
-          iconSize: 20.0,
+          iconSize: .md,
           iconGap: 8.0,
           focusRing: nil
         )
@@ -8369,7 +8369,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 12.0,
           paddingBottom: 0.0,
           paddingStart: 12.0,
-          iconSize: 18.0,
+          iconSize: .md,
           iconGap: 6.0,
           focusRing: nil
         )
@@ -8392,7 +8392,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 12.0,
           paddingBottom: 0.0,
           paddingStart: 12.0,
-          iconSize: 18.0,
+          iconSize: .md,
           iconGap: 6.0,
           focusRing: nil
         )
@@ -8415,7 +8415,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 12.0,
           paddingBottom: 0.0,
           paddingStart: 12.0,
-          iconSize: 18.0,
+          iconSize: .md,
           iconGap: 6.0,
           focusRing: FocusRingTokens.hcLight
         )
@@ -8438,7 +8438,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 12.0,
           paddingBottom: 0.0,
           paddingStart: 12.0,
-          iconSize: 18.0,
+          iconSize: .md,
           iconGap: 6.0,
           focusRing: nil
         )
@@ -8461,7 +8461,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 12.0,
           paddingBottom: 0.0,
           paddingStart: 12.0,
-          iconSize: 18.0,
+          iconSize: .md,
           iconGap: 6.0,
           focusRing: nil
         )
@@ -8484,7 +8484,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 20.0,
           paddingBottom: 0.0,
           paddingStart: 20.0,
-          iconSize: 20.0,
+          iconSize: .md,
           iconGap: 8.0,
           focusRing: nil
         )
@@ -8507,7 +8507,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 20.0,
           paddingBottom: 0.0,
           paddingStart: 20.0,
-          iconSize: 20.0,
+          iconSize: .md,
           iconGap: 8.0,
           focusRing: nil
         )
@@ -8530,7 +8530,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 20.0,
           paddingBottom: 0.0,
           paddingStart: 20.0,
-          iconSize: 20.0,
+          iconSize: .md,
           iconGap: 8.0,
           focusRing: FocusRingTokens.hcLight
         )
@@ -8553,7 +8553,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 20.0,
           paddingBottom: 0.0,
           paddingStart: 20.0,
-          iconSize: 20.0,
+          iconSize: .md,
           iconGap: 8.0,
           focusRing: nil
         )
@@ -8576,7 +8576,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 20.0,
           paddingBottom: 0.0,
           paddingStart: 20.0,
-          iconSize: 20.0,
+          iconSize: .md,
           iconGap: 8.0,
           focusRing: nil
         )
@@ -8599,7 +8599,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 24.0,
           paddingBottom: 0.0,
           paddingStart: 24.0,
-          iconSize: 20.0,
+          iconSize: .md,
           iconGap: 8.0,
           focusRing: nil
         )
@@ -8622,7 +8622,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 24.0,
           paddingBottom: 0.0,
           paddingStart: 24.0,
-          iconSize: 20.0,
+          iconSize: .md,
           iconGap: 8.0,
           focusRing: nil
         )
@@ -8645,7 +8645,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 24.0,
           paddingBottom: 0.0,
           paddingStart: 24.0,
-          iconSize: 20.0,
+          iconSize: .md,
           iconGap: 8.0,
           focusRing: FocusRingTokens.hcLight
         )
@@ -8668,7 +8668,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 24.0,
           paddingBottom: 0.0,
           paddingStart: 24.0,
-          iconSize: 20.0,
+          iconSize: .md,
           iconGap: 8.0,
           focusRing: nil
         )
@@ -8691,7 +8691,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 24.0,
           paddingBottom: 0.0,
           paddingStart: 24.0,
-          iconSize: 20.0,
+          iconSize: .md,
           iconGap: 8.0,
           focusRing: nil
         )
@@ -8714,7 +8714,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 20.0,
           paddingBottom: 0.0,
           paddingStart: 20.0,
-          iconSize: 18.0,
+          iconSize: .md,
           iconGap: 6.0,
           focusRing: nil
         )
@@ -8737,7 +8737,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 20.0,
           paddingBottom: 0.0,
           paddingStart: 20.0,
-          iconSize: 18.0,
+          iconSize: .md,
           iconGap: 6.0,
           focusRing: nil
         )
@@ -8760,7 +8760,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 20.0,
           paddingBottom: 0.0,
           paddingStart: 20.0,
-          iconSize: 18.0,
+          iconSize: .md,
           iconGap: 6.0,
           focusRing: FocusRingTokens.hcLight
         )
@@ -8783,7 +8783,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 20.0,
           paddingBottom: 0.0,
           paddingStart: 20.0,
-          iconSize: 18.0,
+          iconSize: .md,
           iconGap: 6.0,
           focusRing: nil
         )
@@ -8806,7 +8806,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 20.0,
           paddingBottom: 0.0,
           paddingStart: 20.0,
-          iconSize: 18.0,
+          iconSize: .md,
           iconGap: 6.0,
           focusRing: nil
         )
@@ -8829,7 +8829,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 24.0,
           paddingBottom: 0.0,
           paddingStart: 24.0,
-          iconSize: 20.0,
+          iconSize: .md,
           iconGap: 8.0,
           focusRing: nil
         )
@@ -8852,7 +8852,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 24.0,
           paddingBottom: 0.0,
           paddingStart: 24.0,
-          iconSize: 20.0,
+          iconSize: .md,
           iconGap: 8.0,
           focusRing: nil
         )
@@ -8875,7 +8875,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 24.0,
           paddingBottom: 0.0,
           paddingStart: 24.0,
-          iconSize: 20.0,
+          iconSize: .md,
           iconGap: 8.0,
           focusRing: FocusRingTokens.hcLight
         )
@@ -8898,7 +8898,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 24.0,
           paddingBottom: 0.0,
           paddingStart: 24.0,
-          iconSize: 20.0,
+          iconSize: .md,
           iconGap: 8.0,
           focusRing: nil
         )
@@ -8921,7 +8921,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 24.0,
           paddingBottom: 0.0,
           paddingStart: 24.0,
-          iconSize: 20.0,
+          iconSize: .md,
           iconGap: 8.0,
           focusRing: nil
         )
@@ -8944,7 +8944,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 20.0,
           paddingBottom: 0.0,
           paddingStart: 20.0,
-          iconSize: 20.0,
+          iconSize: .md,
           iconGap: 8.0,
           focusRing: nil
         )
@@ -8967,7 +8967,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 20.0,
           paddingBottom: 0.0,
           paddingStart: 20.0,
-          iconSize: 20.0,
+          iconSize: .md,
           iconGap: 8.0,
           focusRing: nil
         )
@@ -8990,7 +8990,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 20.0,
           paddingBottom: 0.0,
           paddingStart: 20.0,
-          iconSize: 20.0,
+          iconSize: .md,
           iconGap: 8.0,
           focusRing: FocusRingTokens.hcLight
         )
@@ -9013,7 +9013,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 20.0,
           paddingBottom: 0.0,
           paddingStart: 20.0,
-          iconSize: 20.0,
+          iconSize: .md,
           iconGap: 8.0,
           focusRing: nil
         )
@@ -9036,7 +9036,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 20.0,
           paddingBottom: 0.0,
           paddingStart: 20.0,
-          iconSize: 20.0,
+          iconSize: .md,
           iconGap: 8.0,
           focusRing: nil
         )
@@ -9059,7 +9059,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 10.0,
           paddingBottom: 0.0,
           paddingStart: 10.0,
-          iconSize: 18.0,
+          iconSize: .md,
           iconGap: 6.0,
           focusRing: nil
         )
@@ -9082,7 +9082,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 10.0,
           paddingBottom: 0.0,
           paddingStart: 10.0,
-          iconSize: 18.0,
+          iconSize: .md,
           iconGap: 6.0,
           focusRing: nil
         )
@@ -9105,7 +9105,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 10.0,
           paddingBottom: 0.0,
           paddingStart: 10.0,
-          iconSize: 18.0,
+          iconSize: .md,
           iconGap: 6.0,
           focusRing: FocusRingTokens.hcLight
         )
@@ -9128,7 +9128,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 10.0,
           paddingBottom: 0.0,
           paddingStart: 10.0,
-          iconSize: 18.0,
+          iconSize: .md,
           iconGap: 6.0,
           focusRing: nil
         )
@@ -9151,7 +9151,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 10.0,
           paddingBottom: 0.0,
           paddingStart: 10.0,
-          iconSize: 18.0,
+          iconSize: .md,
           iconGap: 6.0,
           focusRing: nil
         )
@@ -9174,7 +9174,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 24.0,
           paddingBottom: 0.0,
           paddingStart: 24.0,
-          iconSize: 20.0,
+          iconSize: .md,
           iconGap: 8.0,
           focusRing: nil
         )
@@ -9197,7 +9197,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 24.0,
           paddingBottom: 0.0,
           paddingStart: 24.0,
-          iconSize: 20.0,
+          iconSize: .md,
           iconGap: 8.0,
           focusRing: nil
         )
@@ -9220,7 +9220,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 24.0,
           paddingBottom: 0.0,
           paddingStart: 24.0,
-          iconSize: 20.0,
+          iconSize: .md,
           iconGap: 8.0,
           focusRing: FocusRingTokens.hcLight
         )
@@ -9243,7 +9243,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 24.0,
           paddingBottom: 0.0,
           paddingStart: 24.0,
-          iconSize: 20.0,
+          iconSize: .md,
           iconGap: 8.0,
           focusRing: nil
         )
@@ -9266,7 +9266,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 24.0,
           paddingBottom: 0.0,
           paddingStart: 24.0,
-          iconSize: 20.0,
+          iconSize: .md,
           iconGap: 8.0,
           focusRing: nil
         )
@@ -9289,7 +9289,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 24.0,
           paddingBottom: 0.0,
           paddingStart: 24.0,
-          iconSize: 20.0,
+          iconSize: .md,
           iconGap: 8.0,
           focusRing: nil
         )
@@ -9312,7 +9312,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 24.0,
           paddingBottom: 0.0,
           paddingStart: 24.0,
-          iconSize: 20.0,
+          iconSize: .md,
           iconGap: 8.0,
           focusRing: nil
         )
@@ -9335,7 +9335,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 24.0,
           paddingBottom: 0.0,
           paddingStart: 24.0,
-          iconSize: 20.0,
+          iconSize: .md,
           iconGap: 8.0,
           focusRing: FocusRingTokens.hcLight
         )
@@ -9358,7 +9358,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 24.0,
           paddingBottom: 0.0,
           paddingStart: 24.0,
-          iconSize: 20.0,
+          iconSize: .md,
           iconGap: 8.0,
           focusRing: nil
         )
@@ -9381,7 +9381,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 24.0,
           paddingBottom: 0.0,
           paddingStart: 24.0,
-          iconSize: 20.0,
+          iconSize: .md,
           iconGap: 8.0,
           focusRing: nil
         )
@@ -9409,7 +9409,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 24.0,
           paddingBottom: 0.0,
           paddingStart: 24.0,
-          iconSize: 20.0,
+          iconSize: .md,
           iconGap: 8.0,
           focusRing: nil
         )
@@ -9432,7 +9432,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 24.0,
           paddingBottom: 0.0,
           paddingStart: 24.0,
-          iconSize: 20.0,
+          iconSize: .md,
           iconGap: 8.0,
           focusRing: nil
         )
@@ -9455,7 +9455,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 24.0,
           paddingBottom: 0.0,
           paddingStart: 24.0,
-          iconSize: 20.0,
+          iconSize: .md,
           iconGap: 8.0,
           focusRing: FocusRingTokens.hcDark
         )
@@ -9478,7 +9478,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 24.0,
           paddingBottom: 0.0,
           paddingStart: 24.0,
-          iconSize: 20.0,
+          iconSize: .md,
           iconGap: 8.0,
           focusRing: nil
         )
@@ -9501,7 +9501,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 24.0,
           paddingBottom: 0.0,
           paddingStart: 24.0,
-          iconSize: 20.0,
+          iconSize: .md,
           iconGap: 8.0,
           focusRing: nil
         )
@@ -9524,7 +9524,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 24.0,
           paddingBottom: 0.0,
           paddingStart: 24.0,
-          iconSize: 20.0,
+          iconSize: .md,
           iconGap: 8.0,
           focusRing: nil
         )
@@ -9547,7 +9547,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 24.0,
           paddingBottom: 0.0,
           paddingStart: 24.0,
-          iconSize: 20.0,
+          iconSize: .md,
           iconGap: 8.0,
           focusRing: nil
         )
@@ -9570,7 +9570,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 24.0,
           paddingBottom: 0.0,
           paddingStart: 24.0,
-          iconSize: 20.0,
+          iconSize: .md,
           iconGap: 8.0,
           focusRing: FocusRingTokens.hcDark
         )
@@ -9593,7 +9593,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 24.0,
           paddingBottom: 0.0,
           paddingStart: 24.0,
-          iconSize: 20.0,
+          iconSize: .md,
           iconGap: 8.0,
           focusRing: nil
         )
@@ -9616,7 +9616,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 24.0,
           paddingBottom: 0.0,
           paddingStart: 24.0,
-          iconSize: 20.0,
+          iconSize: .md,
           iconGap: 8.0,
           focusRing: nil
         )
@@ -9639,7 +9639,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 20.0,
           paddingBottom: 0.0,
           paddingStart: 20.0,
-          iconSize: 20.0,
+          iconSize: .md,
           iconGap: 8.0,
           focusRing: nil
         )
@@ -9662,7 +9662,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 20.0,
           paddingBottom: 0.0,
           paddingStart: 20.0,
-          iconSize: 20.0,
+          iconSize: .md,
           iconGap: 8.0,
           focusRing: nil
         )
@@ -9685,7 +9685,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 20.0,
           paddingBottom: 0.0,
           paddingStart: 20.0,
-          iconSize: 20.0,
+          iconSize: .md,
           iconGap: 8.0,
           focusRing: FocusRingTokens.hcDark
         )
@@ -9708,7 +9708,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 20.0,
           paddingBottom: 0.0,
           paddingStart: 20.0,
-          iconSize: 20.0,
+          iconSize: .md,
           iconGap: 8.0,
           focusRing: nil
         )
@@ -9731,7 +9731,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 20.0,
           paddingBottom: 0.0,
           paddingStart: 20.0,
-          iconSize: 20.0,
+          iconSize: .md,
           iconGap: 8.0,
           focusRing: nil
         )
@@ -9754,7 +9754,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 20.0,
           paddingBottom: 0.0,
           paddingStart: 20.0,
-          iconSize: 18.0,
+          iconSize: .md,
           iconGap: 6.0,
           focusRing: nil
         )
@@ -9777,7 +9777,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 20.0,
           paddingBottom: 0.0,
           paddingStart: 20.0,
-          iconSize: 18.0,
+          iconSize: .md,
           iconGap: 6.0,
           focusRing: nil
         )
@@ -9800,7 +9800,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 20.0,
           paddingBottom: 0.0,
           paddingStart: 20.0,
-          iconSize: 18.0,
+          iconSize: .md,
           iconGap: 6.0,
           focusRing: FocusRingTokens.hcDark
         )
@@ -9823,7 +9823,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 20.0,
           paddingBottom: 0.0,
           paddingStart: 20.0,
-          iconSize: 18.0,
+          iconSize: .md,
           iconGap: 6.0,
           focusRing: nil
         )
@@ -9846,7 +9846,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 20.0,
           paddingBottom: 0.0,
           paddingStart: 20.0,
-          iconSize: 18.0,
+          iconSize: .md,
           iconGap: 6.0,
           focusRing: nil
         )
@@ -9869,7 +9869,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 16.0,
           paddingBottom: 0.0,
           paddingStart: 16.0,
-          iconSize: 20.0,
+          iconSize: .md,
           iconGap: 8.0,
           focusRing: nil
         )
@@ -9892,7 +9892,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 16.0,
           paddingBottom: 0.0,
           paddingStart: 16.0,
-          iconSize: 20.0,
+          iconSize: .md,
           iconGap: 8.0,
           focusRing: nil
         )
@@ -9915,7 +9915,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 16.0,
           paddingBottom: 0.0,
           paddingStart: 16.0,
-          iconSize: 20.0,
+          iconSize: .md,
           iconGap: 8.0,
           focusRing: FocusRingTokens.hcDark
         )
@@ -9938,7 +9938,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 16.0,
           paddingBottom: 0.0,
           paddingStart: 16.0,
-          iconSize: 20.0,
+          iconSize: .md,
           iconGap: 8.0,
           focusRing: nil
         )
@@ -9961,7 +9961,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 16.0,
           paddingBottom: 0.0,
           paddingStart: 16.0,
-          iconSize: 20.0,
+          iconSize: .md,
           iconGap: 8.0,
           focusRing: nil
         )
@@ -9984,7 +9984,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 24.0,
           paddingBottom: 0.0,
           paddingStart: 24.0,
-          iconSize: 20.0,
+          iconSize: .md,
           iconGap: 8.0,
           focusRing: nil
         )
@@ -10007,7 +10007,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 24.0,
           paddingBottom: 0.0,
           paddingStart: 24.0,
-          iconSize: 20.0,
+          iconSize: .md,
           iconGap: 8.0,
           focusRing: nil
         )
@@ -10030,7 +10030,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 24.0,
           paddingBottom: 0.0,
           paddingStart: 24.0,
-          iconSize: 20.0,
+          iconSize: .md,
           iconGap: 8.0,
           focusRing: FocusRingTokens.hcDark
         )
@@ -10053,7 +10053,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 24.0,
           paddingBottom: 0.0,
           paddingStart: 24.0,
-          iconSize: 20.0,
+          iconSize: .md,
           iconGap: 8.0,
           focusRing: nil
         )
@@ -10076,7 +10076,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 24.0,
           paddingBottom: 0.0,
           paddingStart: 24.0,
-          iconSize: 20.0,
+          iconSize: .md,
           iconGap: 8.0,
           focusRing: nil
         )
@@ -10099,7 +10099,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 20.0,
           paddingBottom: 0.0,
           paddingStart: 20.0,
-          iconSize: 20.0,
+          iconSize: .md,
           iconGap: 8.0,
           focusRing: nil
         )
@@ -10122,7 +10122,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 20.0,
           paddingBottom: 0.0,
           paddingStart: 20.0,
-          iconSize: 20.0,
+          iconSize: .md,
           iconGap: 8.0,
           focusRing: nil
         )
@@ -10145,7 +10145,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 20.0,
           paddingBottom: 0.0,
           paddingStart: 20.0,
-          iconSize: 20.0,
+          iconSize: .md,
           iconGap: 8.0,
           focusRing: FocusRingTokens.hcDark
         )
@@ -10168,7 +10168,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 20.0,
           paddingBottom: 0.0,
           paddingStart: 20.0,
-          iconSize: 20.0,
+          iconSize: .md,
           iconGap: 8.0,
           focusRing: nil
         )
@@ -10191,7 +10191,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 20.0,
           paddingBottom: 0.0,
           paddingStart: 20.0,
-          iconSize: 20.0,
+          iconSize: .md,
           iconGap: 8.0,
           focusRing: nil
         )
@@ -10214,7 +10214,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 16.0,
           paddingBottom: 0.0,
           paddingStart: 16.0,
-          iconSize: 18.0,
+          iconSize: .md,
           iconGap: 6.0,
           focusRing: nil
         )
@@ -10237,7 +10237,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 16.0,
           paddingBottom: 0.0,
           paddingStart: 16.0,
-          iconSize: 18.0,
+          iconSize: .md,
           iconGap: 6.0,
           focusRing: nil
         )
@@ -10260,7 +10260,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 16.0,
           paddingBottom: 0.0,
           paddingStart: 16.0,
-          iconSize: 18.0,
+          iconSize: .md,
           iconGap: 6.0,
           focusRing: FocusRingTokens.hcDark
         )
@@ -10283,7 +10283,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 16.0,
           paddingBottom: 0.0,
           paddingStart: 16.0,
-          iconSize: 18.0,
+          iconSize: .md,
           iconGap: 6.0,
           focusRing: nil
         )
@@ -10306,7 +10306,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 16.0,
           paddingBottom: 0.0,
           paddingStart: 16.0,
-          iconSize: 18.0,
+          iconSize: .md,
           iconGap: 6.0,
           focusRing: nil
         )
@@ -10329,7 +10329,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 16.0,
           paddingBottom: 0.0,
           paddingStart: 16.0,
-          iconSize: 20.0,
+          iconSize: .md,
           iconGap: 8.0,
           focusRing: nil
         )
@@ -10352,7 +10352,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 16.0,
           paddingBottom: 0.0,
           paddingStart: 16.0,
-          iconSize: 20.0,
+          iconSize: .md,
           iconGap: 8.0,
           focusRing: nil
         )
@@ -10375,7 +10375,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 16.0,
           paddingBottom: 0.0,
           paddingStart: 16.0,
-          iconSize: 20.0,
+          iconSize: .md,
           iconGap: 8.0,
           focusRing: FocusRingTokens.hcDark
         )
@@ -10398,7 +10398,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 16.0,
           paddingBottom: 0.0,
           paddingStart: 16.0,
-          iconSize: 20.0,
+          iconSize: .md,
           iconGap: 8.0,
           focusRing: nil
         )
@@ -10421,7 +10421,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 16.0,
           paddingBottom: 0.0,
           paddingStart: 16.0,
-          iconSize: 20.0,
+          iconSize: .md,
           iconGap: 8.0,
           focusRing: nil
         )
@@ -10444,7 +10444,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 16.0,
           paddingBottom: 0.0,
           paddingStart: 16.0,
-          iconSize: 18.0,
+          iconSize: .md,
           iconGap: 6.0,
           focusRing: nil
         )
@@ -10467,7 +10467,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 16.0,
           paddingBottom: 0.0,
           paddingStart: 16.0,
-          iconSize: 18.0,
+          iconSize: .md,
           iconGap: 6.0,
           focusRing: nil
         )
@@ -10490,7 +10490,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 16.0,
           paddingBottom: 0.0,
           paddingStart: 16.0,
-          iconSize: 18.0,
+          iconSize: .md,
           iconGap: 6.0,
           focusRing: FocusRingTokens.hcDark
         )
@@ -10513,7 +10513,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 16.0,
           paddingBottom: 0.0,
           paddingStart: 16.0,
-          iconSize: 18.0,
+          iconSize: .md,
           iconGap: 6.0,
           focusRing: nil
         )
@@ -10536,7 +10536,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 16.0,
           paddingBottom: 0.0,
           paddingStart: 16.0,
-          iconSize: 18.0,
+          iconSize: .md,
           iconGap: 6.0,
           focusRing: nil
         )
@@ -10559,7 +10559,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 12.0,
           paddingBottom: 0.0,
           paddingStart: 12.0,
-          iconSize: 20.0,
+          iconSize: .md,
           iconGap: 8.0,
           focusRing: nil
         )
@@ -10582,7 +10582,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 12.0,
           paddingBottom: 0.0,
           paddingStart: 12.0,
-          iconSize: 20.0,
+          iconSize: .md,
           iconGap: 8.0,
           focusRing: nil
         )
@@ -10605,7 +10605,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 12.0,
           paddingBottom: 0.0,
           paddingStart: 12.0,
-          iconSize: 20.0,
+          iconSize: .md,
           iconGap: 8.0,
           focusRing: FocusRingTokens.hcDark
         )
@@ -10628,7 +10628,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 12.0,
           paddingBottom: 0.0,
           paddingStart: 12.0,
-          iconSize: 20.0,
+          iconSize: .md,
           iconGap: 8.0,
           focusRing: nil
         )
@@ -10651,7 +10651,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 12.0,
           paddingBottom: 0.0,
           paddingStart: 12.0,
-          iconSize: 20.0,
+          iconSize: .md,
           iconGap: 8.0,
           focusRing: nil
         )
@@ -10674,7 +10674,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 12.0,
           paddingBottom: 0.0,
           paddingStart: 12.0,
-          iconSize: 18.0,
+          iconSize: .md,
           iconGap: 6.0,
           focusRing: nil
         )
@@ -10697,7 +10697,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 12.0,
           paddingBottom: 0.0,
           paddingStart: 12.0,
-          iconSize: 18.0,
+          iconSize: .md,
           iconGap: 6.0,
           focusRing: nil
         )
@@ -10720,7 +10720,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 12.0,
           paddingBottom: 0.0,
           paddingStart: 12.0,
-          iconSize: 18.0,
+          iconSize: .md,
           iconGap: 6.0,
           focusRing: FocusRingTokens.hcDark
         )
@@ -10743,7 +10743,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 12.0,
           paddingBottom: 0.0,
           paddingStart: 12.0,
-          iconSize: 18.0,
+          iconSize: .md,
           iconGap: 6.0,
           focusRing: nil
         )
@@ -10766,7 +10766,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 12.0,
           paddingBottom: 0.0,
           paddingStart: 12.0,
-          iconSize: 18.0,
+          iconSize: .md,
           iconGap: 6.0,
           focusRing: nil
         )
@@ -10789,7 +10789,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 20.0,
           paddingBottom: 0.0,
           paddingStart: 20.0,
-          iconSize: 20.0,
+          iconSize: .md,
           iconGap: 8.0,
           focusRing: nil
         )
@@ -10812,7 +10812,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 20.0,
           paddingBottom: 0.0,
           paddingStart: 20.0,
-          iconSize: 20.0,
+          iconSize: .md,
           iconGap: 8.0,
           focusRing: nil
         )
@@ -10835,7 +10835,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 20.0,
           paddingBottom: 0.0,
           paddingStart: 20.0,
-          iconSize: 20.0,
+          iconSize: .md,
           iconGap: 8.0,
           focusRing: FocusRingTokens.hcDark
         )
@@ -10858,7 +10858,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 20.0,
           paddingBottom: 0.0,
           paddingStart: 20.0,
-          iconSize: 20.0,
+          iconSize: .md,
           iconGap: 8.0,
           focusRing: nil
         )
@@ -10881,7 +10881,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 20.0,
           paddingBottom: 0.0,
           paddingStart: 20.0,
-          iconSize: 20.0,
+          iconSize: .md,
           iconGap: 8.0,
           focusRing: nil
         )
@@ -10904,7 +10904,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 24.0,
           paddingBottom: 0.0,
           paddingStart: 24.0,
-          iconSize: 20.0,
+          iconSize: .md,
           iconGap: 8.0,
           focusRing: nil
         )
@@ -10927,7 +10927,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 24.0,
           paddingBottom: 0.0,
           paddingStart: 24.0,
-          iconSize: 20.0,
+          iconSize: .md,
           iconGap: 8.0,
           focusRing: nil
         )
@@ -10950,7 +10950,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 24.0,
           paddingBottom: 0.0,
           paddingStart: 24.0,
-          iconSize: 20.0,
+          iconSize: .md,
           iconGap: 8.0,
           focusRing: FocusRingTokens.hcDark
         )
@@ -10973,7 +10973,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 24.0,
           paddingBottom: 0.0,
           paddingStart: 24.0,
-          iconSize: 20.0,
+          iconSize: .md,
           iconGap: 8.0,
           focusRing: nil
         )
@@ -10996,7 +10996,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 24.0,
           paddingBottom: 0.0,
           paddingStart: 24.0,
-          iconSize: 20.0,
+          iconSize: .md,
           iconGap: 8.0,
           focusRing: nil
         )
@@ -11019,7 +11019,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 20.0,
           paddingBottom: 0.0,
           paddingStart: 20.0,
-          iconSize: 18.0,
+          iconSize: .md,
           iconGap: 6.0,
           focusRing: nil
         )
@@ -11042,7 +11042,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 20.0,
           paddingBottom: 0.0,
           paddingStart: 20.0,
-          iconSize: 18.0,
+          iconSize: .md,
           iconGap: 6.0,
           focusRing: nil
         )
@@ -11065,7 +11065,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 20.0,
           paddingBottom: 0.0,
           paddingStart: 20.0,
-          iconSize: 18.0,
+          iconSize: .md,
           iconGap: 6.0,
           focusRing: FocusRingTokens.hcDark
         )
@@ -11088,7 +11088,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 20.0,
           paddingBottom: 0.0,
           paddingStart: 20.0,
-          iconSize: 18.0,
+          iconSize: .md,
           iconGap: 6.0,
           focusRing: nil
         )
@@ -11111,7 +11111,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 20.0,
           paddingBottom: 0.0,
           paddingStart: 20.0,
-          iconSize: 18.0,
+          iconSize: .md,
           iconGap: 6.0,
           focusRing: nil
         )
@@ -11134,7 +11134,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 24.0,
           paddingBottom: 0.0,
           paddingStart: 24.0,
-          iconSize: 20.0,
+          iconSize: .md,
           iconGap: 8.0,
           focusRing: nil
         )
@@ -11157,7 +11157,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 24.0,
           paddingBottom: 0.0,
           paddingStart: 24.0,
-          iconSize: 20.0,
+          iconSize: .md,
           iconGap: 8.0,
           focusRing: nil
         )
@@ -11180,7 +11180,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 24.0,
           paddingBottom: 0.0,
           paddingStart: 24.0,
-          iconSize: 20.0,
+          iconSize: .md,
           iconGap: 8.0,
           focusRing: FocusRingTokens.hcDark
         )
@@ -11203,7 +11203,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 24.0,
           paddingBottom: 0.0,
           paddingStart: 24.0,
-          iconSize: 20.0,
+          iconSize: .md,
           iconGap: 8.0,
           focusRing: nil
         )
@@ -11226,7 +11226,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 24.0,
           paddingBottom: 0.0,
           paddingStart: 24.0,
-          iconSize: 20.0,
+          iconSize: .md,
           iconGap: 8.0,
           focusRing: nil
         )
@@ -11249,7 +11249,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 20.0,
           paddingBottom: 0.0,
           paddingStart: 20.0,
-          iconSize: 20.0,
+          iconSize: .md,
           iconGap: 8.0,
           focusRing: nil
         )
@@ -11272,7 +11272,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 20.0,
           paddingBottom: 0.0,
           paddingStart: 20.0,
-          iconSize: 20.0,
+          iconSize: .md,
           iconGap: 8.0,
           focusRing: nil
         )
@@ -11295,7 +11295,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 20.0,
           paddingBottom: 0.0,
           paddingStart: 20.0,
-          iconSize: 20.0,
+          iconSize: .md,
           iconGap: 8.0,
           focusRing: FocusRingTokens.hcDark
         )
@@ -11318,7 +11318,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 20.0,
           paddingBottom: 0.0,
           paddingStart: 20.0,
-          iconSize: 20.0,
+          iconSize: .md,
           iconGap: 8.0,
           focusRing: nil
         )
@@ -11341,7 +11341,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 20.0,
           paddingBottom: 0.0,
           paddingStart: 20.0,
-          iconSize: 20.0,
+          iconSize: .md,
           iconGap: 8.0,
           focusRing: nil
         )
@@ -11364,7 +11364,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 10.0,
           paddingBottom: 0.0,
           paddingStart: 10.0,
-          iconSize: 18.0,
+          iconSize: .md,
           iconGap: 6.0,
           focusRing: nil
         )
@@ -11387,7 +11387,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 10.0,
           paddingBottom: 0.0,
           paddingStart: 10.0,
-          iconSize: 18.0,
+          iconSize: .md,
           iconGap: 6.0,
           focusRing: nil
         )
@@ -11410,7 +11410,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 10.0,
           paddingBottom: 0.0,
           paddingStart: 10.0,
-          iconSize: 18.0,
+          iconSize: .md,
           iconGap: 6.0,
           focusRing: FocusRingTokens.hcDark
         )
@@ -11433,7 +11433,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 10.0,
           paddingBottom: 0.0,
           paddingStart: 10.0,
-          iconSize: 18.0,
+          iconSize: .md,
           iconGap: 6.0,
           focusRing: nil
         )
@@ -11456,7 +11456,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 10.0,
           paddingBottom: 0.0,
           paddingStart: 10.0,
-          iconSize: 18.0,
+          iconSize: .md,
           iconGap: 6.0,
           focusRing: nil
         )
@@ -11479,7 +11479,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 24.0,
           paddingBottom: 0.0,
           paddingStart: 24.0,
-          iconSize: 20.0,
+          iconSize: .md,
           iconGap: 8.0,
           focusRing: nil
         )
@@ -11502,7 +11502,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 24.0,
           paddingBottom: 0.0,
           paddingStart: 24.0,
-          iconSize: 20.0,
+          iconSize: .md,
           iconGap: 8.0,
           focusRing: nil
         )
@@ -11525,7 +11525,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 24.0,
           paddingBottom: 0.0,
           paddingStart: 24.0,
-          iconSize: 20.0,
+          iconSize: .md,
           iconGap: 8.0,
           focusRing: FocusRingTokens.hcDark
         )
@@ -11548,7 +11548,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 24.0,
           paddingBottom: 0.0,
           paddingStart: 24.0,
-          iconSize: 20.0,
+          iconSize: .md,
           iconGap: 8.0,
           focusRing: nil
         )
@@ -11571,7 +11571,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 24.0,
           paddingBottom: 0.0,
           paddingStart: 24.0,
-          iconSize: 20.0,
+          iconSize: .md,
           iconGap: 8.0,
           focusRing: nil
         )
@@ -11594,7 +11594,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 24.0,
           paddingBottom: 0.0,
           paddingStart: 24.0,
-          iconSize: 20.0,
+          iconSize: .md,
           iconGap: 8.0,
           focusRing: nil
         )
@@ -11617,7 +11617,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 24.0,
           paddingBottom: 0.0,
           paddingStart: 24.0,
-          iconSize: 20.0,
+          iconSize: .md,
           iconGap: 8.0,
           focusRing: nil
         )
@@ -11640,7 +11640,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 24.0,
           paddingBottom: 0.0,
           paddingStart: 24.0,
-          iconSize: 20.0,
+          iconSize: .md,
           iconGap: 8.0,
           focusRing: FocusRingTokens.hcDark
         )
@@ -11663,7 +11663,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 24.0,
           paddingBottom: 0.0,
           paddingStart: 24.0,
-          iconSize: 20.0,
+          iconSize: .md,
           iconGap: 8.0,
           focusRing: nil
         )
@@ -11686,7 +11686,7 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
           paddingEnd: 24.0,
           paddingBottom: 0.0,
           paddingStart: 24.0,
-          iconSize: 20.0,
+          iconSize: .md,
           iconGap: 8.0,
           focusRing: nil
         )
@@ -12237,60 +12237,36 @@ nonisolated public enum AppIconSet: String, CaseIterable, Sendable {
   case capture
 }
 
-/// Sizes of `AppIcon` (icon.yaml, board C02), each a DESIGN.md `components.<id>` token.
+/// The icon scale of `AppIcon` (icon.yaml, board C02): each step a DESIGN.md `components.icon-<step>` token.
 nonisolated public enum AppIconSize: String, CaseIterable, Sendable {
-  case icon11 = "icon-11"
-  case icon12 = "icon-12"
-  case icon14 = "icon-14"
-  case icon16 = "icon-16"
-  case icon18 = "icon-18"
-  case icon20 = "icon-20"
-  case icon22 = "icon-22"
-  case icon24 = "icon-24"
-  case icon26 = "icon-26"
-  case icon28 = "icon-28"
-  case icon32 = "icon-32"
-  case icon36 = "icon-36"
-  case icon40 = "icon-40"
-  case icon56 = "icon-56"
+  case xs = "icon-xs"
+  case sm = "icon-sm"
+  case md = "icon-md"
+  case lg = "icon-lg"
+  case xl = "icon-xl"
+  case hero = "icon-hero"
 
   /// The icon box: pt on iOS, dp on Android.
   public var size: Double {
     switch self {
-    case .icon11: 11.0
-    case .icon12: 12.0
-    case .icon14: 14.0
-    case .icon16: 16.0
-    case .icon18: 18.0
-    case .icon20: 20.0
-    case .icon22: 22.0
-    case .icon24: 24.0
-    case .icon26: 26.0
-    case .icon28: 28.0
-    case .icon32: 32.0
-    case .icon36: 36.0
-    case .icon40: 40.0
-    case .icon56: 56.0
+    case .xs: 12.0
+    case .sm: 16.0
+    case .md: 20.0
+    case .lg: 24.0
+    case .xl: 32.0
+    case .hero: 56.0
     }
   }
 
   /// The stroke width in viewBox units: drawn at strokeWidth x size / viewBox.
   public var strokeWidth: Double {
     switch self {
-    case .icon11: 2.8
-    case .icon12: 2.2
-    case .icon14: 2.0
-    case .icon16: 1.7
-    case .icon18: 1.7
-    case .icon20: 1.7
-    case .icon22: 1.7
-    case .icon24: 1.7
-    case .icon26: 1.7
-    case .icon28: 1.7
-    case .icon32: 1.7
-    case .icon36: 1.7
-    case .icon40: 1.5
-    case .icon56: 1.7
+    case .xs: 2.2
+    case .sm: 1.7
+    case .md: 1.7
+    case .lg: 1.7
+    case .xl: 1.7
+    case .hero: 1.7
     }
   }
 }
@@ -12298,7 +12274,7 @@ nonisolated public enum AppIconSize: String, CaseIterable, Sendable {
 /// The viewBox every AppIcon glyph is drawn in, and the default size.
 nonisolated public enum AppIconMetrics {
   public static let viewBox: Double = 24.0
-  public static let defaultSize: AppIconSize = .icon24
+  public static let defaultSize: AppIconSize = .lg
 }
 
 /// One AppIcon glyph: its shapes, painted in order.

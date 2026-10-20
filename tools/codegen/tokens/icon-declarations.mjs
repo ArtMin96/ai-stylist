@@ -1,31 +1,40 @@
 // An icon-set API model (icon-set.mjs) -> its language-neutral declarations (C02 icons, Linear
 // AI-201). With `<Name>` the contract `name` (`AppIcon`): `<Name>Name` (one case per glyph, in
-// contract order, with its set, gallery test ID and glyph), `<Name>Set`, `<Name>Size` (each with
-// its token size and stroke width), `<Name>Metrics` (the viewBox and the default size) and the
+// contract order, with its set, gallery test ID and glyph), `<Name>Set`, `<Name>Size` (the icon
+// scale: one case per step, `icon-md` -> `md`, with its token size and stroke width),
+// `<Name>Metrics` (the viewBox and the default size) and the
 // glyph value types; then, for its own file, `<Name>Glyphs`: the glyph table, one nested
 // namespace per glyph so no Kotlin class initialiser holds more than one glyph (the JVM's 64 KB
 // method limit). emit-api-swift.mjs and emit-api-kotlin.mjs only spell it.
 import { NAME_FIELDS, iconTestIdOf } from './icon-set.mjs';
 import { memberId, nestedTypeName } from './naming.mjs';
 import { PATH_COMMANDS } from './svg-path.mjs';
+import { iconStepOf } from './syntax.mjs';
 
 /** The side of the square viewBox every glyph is drawn in (C02: 24 x 24). */
 export const VIEW_BOX = 24;
 
 const caseValue = (type, id) => ({ t: 'case', type, id: memberId(id) });
 
+/** A size's case: its step without the token prefix (`icon-xs` -> `xs`, Kotlin `XS`). */
+const sizeCaseOf = (id) => memberId(iconStepOf(id));
+
 /** `{ api, table }`: the declarations of the API file and the glyph table's own file. */
 export function iconSetDeclarations(api) {
   const type = (suffix) => `${api.name}${suffix}`;
   const owner = `\`${api.name}\` (${api.file}, board ${api.board})`;
   const glyphs = type('Glyphs');
-  const enumOf = (suffix, ids, doc, fields = [], values = () => ({})) => ({
-    kind: 'enum',
-    name: type(suffix),
-    doc,
-    cases: ids.map((id) => ({ name: memberId(id), id, values: values(id) })),
-    fields,
-  });
+  /** An enum of `ids`; `nameOf` names a case (the id by default), `values` fills `fields`. */
+  const enumOf = (suffix, ids, doc, options = {}) => {
+    const { fields = [], values = () => ({}), nameOf = memberId } = options;
+    return {
+      kind: 'enum',
+      name: type(suffix),
+      doc,
+      cases: ids.map((id) => ({ name: nameOf(id), id, values: values(id) })),
+      fields,
+    };
+  };
   const struct = (suffix, doc, fields) => ({
     kind: 'struct',
     name: type(suffix),
@@ -46,33 +55,38 @@ export function iconSetDeclarations(api) {
       'Name',
       api.glyphs.map(({ id }) => id),
       `Glyphs of ${owner}, each with its contract id, in contract order.`,
-      NAME_FIELDS.map((name) => ({ name, ...nameFields[name] })),
-      (id) => {
-        const { set } = api.glyphs.find((glyph) => glyph.id === id);
-        return {
-          set: caseValue(type('Set'), set),
-          testId: { t: 'string', s: iconTestIdOf(id) },
-          glyph: { t: 'ref', namespace: `${glyphs}.${nestedTypeName(id)}`, member: 'glyph' },
-        };
+      {
+        fields: NAME_FIELDS.map((name) => ({ name, ...nameFields[name] })),
+        values: (id) => {
+          const { set } = api.glyphs.find((glyph) => glyph.id === id);
+          return {
+            set: caseValue(type('Set'), set),
+            testId: { t: 'string', s: iconTestIdOf(id) },
+            glyph: { t: 'ref', namespace: `${glyphs}.${nestedTypeName(id)}`, member: 'glyph' },
+          };
+        },
       },
     ),
     enumOf('Set', api.sets, `Glyph sets of ${owner}, in first-appearance order.`),
     enumOf(
       'Size',
       api.sizes.map(({ id }) => id),
-      `Sizes of ${owner}, each a DESIGN.md \`components.<id>\` token.`,
-      [
-        { name: 'size', type: 'double', doc: 'The icon box: pt on iOS, dp on Android.' },
-        {
-          name: 'strokeWidth',
-          type: 'double',
-          doc: 'The stroke width in viewBox units: drawn at strokeWidth x size / viewBox.',
-        },
-      ],
-      (id) => ({
-        size: number(sizesById[id].size),
-        strokeWidth: number(sizesById[id].strokeWidth),
-      }),
+      `The icon scale of ${owner}: each step a DESIGN.md \`components.icon-<step>\` token.`,
+      {
+        fields: [
+          { name: 'size', type: 'double', doc: 'The icon box: pt on iOS, dp on Android.' },
+          {
+            name: 'strokeWidth',
+            type: 'double',
+            doc: 'The stroke width in viewBox units: drawn at strokeWidth x size / viewBox.',
+          },
+        ],
+        values: (id) => ({
+          size: number(sizesById[id].size),
+          strokeWidth: number(sizesById[id].strokeWidth),
+        }),
+        nameOf: sizeCaseOf,
+      },
     ),
     {
       kind: 'namespace',
@@ -84,7 +98,7 @@ export function iconSetDeclarations(api) {
           kind: 'const',
           name: 'defaultSize',
           type: type('Size'),
-          value: caseValue(type('Size'), api.defaultSize),
+          value: { t: 'case', type: type('Size'), id: sizeCaseOf(api.defaultSize) },
         },
       ],
     },

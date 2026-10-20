@@ -1,5 +1,5 @@
-# CC-10 fixture: ../_valid/icon.yaml with one defect. sizes names icon-20, which ../DESIGN.md
-# does not hold, so the size has no token to take its size and stroke width from.
+# CC-10 fixture: ../_valid/icon.yaml with one defect. sizes names icon-xl, which ../DESIGN.md
+# does not hold, so the step has no token to take its size and stroke width from.
 id: icon
 board: C02
 name: AppIcon
@@ -11,8 +11,8 @@ accessibility:
 gallery:
   title: Fixture icons
 
-sizes: [icon-12, icon-16, icon-20, icon-24]
-defaultSize: icon-24
+sizes: [icon-xs, icon-sm, icon-md, icon-lg, icon-xl]
+defaultSize: icon-lg
 
 glyphs:
   - id: back

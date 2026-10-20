@@ -114,7 +114,7 @@ function bracketed(dialect, value, type) {
     open: dialect.list.open,
     close: dialect.list.close,
     items: value.items.map((item) => ({ label: '', type: itemType, value: item })),
-    lastComma: true,
+    lastComma: value.items.length > 1 || dialect.list.singleItemTrailingComma,
   };
 }
 

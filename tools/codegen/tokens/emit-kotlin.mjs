@@ -32,7 +32,8 @@ export const kotlin = {
   limit: 120,
   wrapAfterAssign: true,
   callTrailingComma: true,
-  list: { open: 'listOf(', close: ')', empty: 'emptyList()' },
+  // ktlint_official trailing-comma-on-call-site: every wrapped argument list ends with one.
+  list: { open: 'listOf(', close: ')', empty: 'emptyList()', singleItemTrailingComma: true },
   argLabel: (name) => `${ktIdent(name)} = `,
   spell: {
     double: num,

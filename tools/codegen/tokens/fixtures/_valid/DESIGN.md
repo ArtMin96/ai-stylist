@@ -96,7 +96,7 @@ components:
     backgroundColor: '{colors.surface-2-light}'
     borderColor: '{colors.ring-light}'
     rounded: '{rounded.4}'
-    padding: 4px 8px
+    padding: '{spacing.4} 8px'
   overlay:
     backgroundColor: '{colors.scrim}'
     gap: '{spacing.8}'

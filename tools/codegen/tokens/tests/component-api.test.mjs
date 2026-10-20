@@ -96,14 +96,17 @@ test('the merged look: optional where a look lacks the property, the focus ring 
   assert.match(kotlin, /\n {4}val focusRing: FocusRingTokens\?,\n/);
 });
 
-test('the icon slot: two non-optional dimensions, 18 / 6 at compact and 20 / 8 elsewhere', () => {
+test('the icon slot: an icon-scale step and a gap, md / 6 at compact and md / 8 elsewhere', () => {
   const appearance = block(swift, 'nonisolated public struct ButtonAppearance');
-  assert.match(appearance, /\n {2}public let iconSize: Double\n {2}public let iconGap: Double\n/);
-  assert.match(kotlin, /\n {4}val iconSize: Double,\n {4}val iconGap: Double,\n/);
-  const sizes = firstGroups(repoSwift(), /^ {10}iconSize: ([\d.]+),$/gm);
+  const swiftSlot = /\n {2}public let iconSize: AppIconSize\n {2}public let iconGap: Double\n/;
+  assert.match(appearance, swiftSlot);
+  assert.match(kotlin, /\n {4}val iconSize: AppIconSize,\n {4}val iconGap: Double,\n/);
+  assert.match(swift, /\n {10}iconSize: \.md,\n {10}iconGap: 8\.0,\n/);
+  assert.match(kotlin, /\n {36}iconSize = AppIconSize\.SM,\n {36}iconGap = 4\.0,\n/);
+  const sizes = firstGroups(repoSwift(), /^ {10}iconSize: (\.\w+),$/gm);
   assert.equal(sizes.length, 500, 'one slot per look');
-  assert.deepEqual([...new Set(sizes)].sort(), ['18.0', '20.0']);
-  assert.match(repoKotlin(), /\n {36}iconSize = 18\.0,\n {36}iconGap = 6\.0,\n/);
+  assert.deepEqual([...new Set(sizes)], ['.md']);
+  assert.match(repoKotlin(), /\n {36}iconSize = AppIconSize\.MD,\n {36}iconGap = 6\.0,\n/);
 });
 
 test('ButtonSpec: one instance per context, the lookup returns none for a disallowed one', () => {
@@ -260,28 +263,31 @@ test('AppIconName: a case per glyph in contract order, with its set, test ID and
   assert.deepEqual(sets, ['NAVIGATION', 'STATUS', 'CLOSET', 'WEATHER', 'ACTIONS']);
 });
 
-test('AppIconSize and AppIconMetrics: the token size and stroke width, the default size', () => {
+test('AppIconSize: one case per step without the icon- prefix, the token id as raw value', () => {
   const size = [
     'nonisolated public enum AppIconSize: String, CaseIterable, Sendable {',
-    '  case icon12 = "icon-12"',
-    '  case icon16 = "icon-16"',
-    '  case icon24 = "icon-24"',
+    '  case xs = "icon-xs"',
+    '  case sm = "icon-sm"',
+    '  case md = "icon-md"',
+    '  case lg = "icon-lg"',
     '',
     '  /// The icon box: pt on iOS, dp on Android.',
     '  public var size: Double {',
     '    switch self {',
-    '    case .icon12: 12.0',
-    '    case .icon16: 16.0',
-    '    case .icon24: 24.0',
+    '    case .xs: 12.0',
+    '    case .sm: 16.0',
+    '    case .md: 20.0',
+    '    case .lg: 24.0',
     '    }',
     '  }',
     '',
     '  /// The stroke width in viewBox units: drawn at strokeWidth x size / viewBox.',
     '  public var strokeWidth: Double {',
     '    switch self {',
-    '    case .icon12: 2.2',
-    '    case .icon16: 1.9',
-    '    case .icon24: 1.7',
+    '    case .xs: 2.2',
+    '    case .sm: 1.9',
+    '    case .md: 1.7',
+    '    case .lg: 1.7',
     '    }',
     '  }',
     '}',
@@ -293,16 +299,17 @@ test('AppIconSize and AppIconMetrics: the token size and stroke width, the defau
     '    val size: Double,',
     '    val strokeWidth: Double,',
     ') {',
-    '    ICON12("icon-12", 12.0, 2.2),',
-    '    ICON16("icon-16", 16.0, 1.9),',
-    '    ICON24("icon-24", 24.0, 1.7),',
+    '    XS("icon-xs", 12.0, 2.2),',
+    '    SM("icon-sm", 16.0, 1.9),',
+    '    MD("icon-md", 20.0, 1.7),',
+    '    LG("icon-lg", 24.0, 1.7),',
     '}',
   ];
   assert.equal(block(kotlin, 'enum class AppIconSize('), ktSize.join('\n'));
   const metrics = '  public static let viewBox: Double = 24.0\n  public static let defaultSize';
-  assert.ok(swift.includes(`${metrics}: AppIconSize = .icon24\n`), 'the Swift metrics');
+  assert.ok(swift.includes(`${metrics}: AppIconSize = .lg\n`), 'the Swift metrics');
   const ktMetrics = '    val viewBox: Double = 24.0\n    val defaultSize: AppIconSize';
-  assert.ok(kotlin.includes(`${ktMetrics} = AppIconSize.ICON24\n`), 'the Kotlin metrics');
+  assert.ok(kotlin.includes(`${ktMetrics} = AppIconSize.LG\n`), 'the Kotlin metrics');
 });
 
 test('the glyph value types: shapes of segments, each a command and its points', () => {
@@ -340,11 +347,14 @@ test('the glyph table: a file of its own per language, a nested namespace per gl
     '            AppIconSegment(command: .line, points: [8.0, 12.0]),',
     '            AppIconSegment(command: .line, points: [14.5, 18.5]),',
     '          ]',
-    '        ),',
+    '        )',
     '      ]',
     '    )',
     '  }',
   ];
+  // The one shape ends without a comma in Swift (apps/ios/.swift-format
+  // multiElementCollectionTrailingCommas; swift-format TrailingComma rejected `),` here) and with
+  // one in Kotlin (ktlint_official, ktBack below).
   assert.equal(block(swiftGlyphs, 'nonisolated public enum Back'), back.join('\n'));
   const ktBack = [
     '    object Back {',

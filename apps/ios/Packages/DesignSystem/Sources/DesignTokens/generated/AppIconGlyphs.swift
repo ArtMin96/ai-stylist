@@ -166,7 +166,7 @@ nonisolated public enum AppIconGlyphs {
             AppIconSegment(command: .line, points: [8.0, 12.0]),
             AppIconSegment(command: .line, points: [14.5, 18.5]),
           ]
-        ),
+        )
       ]
     )
   }
@@ -182,7 +182,7 @@ nonisolated public enum AppIconGlyphs {
             AppIconSegment(command: .move, points: [18.0, 6.0]),
             AppIconSegment(command: .line, points: [6.0, 18.0]),
           ]
-        ),
+        )
       ]
     )
   }
@@ -197,7 +197,7 @@ nonisolated public enum AppIconGlyphs {
             AppIconSegment(command: .line, points: [16.0, 12.0]),
             AppIconSegment(command: .line, points: [9.5, 18.5]),
           ]
-        ),
+        )
       ]
     )
   }
@@ -212,7 +212,7 @@ nonisolated public enum AppIconGlyphs {
             AppIconSegment(command: .line, points: [12.0, 15.5]),
             AppIconSegment(command: .line, points: [18.0, 9.5]),
           ]
-        ),
+        )
       ]
     )
   }
@@ -341,7 +341,7 @@ nonisolated public enum AppIconGlyphs {
             AppIconSegment(command: .line, points: [16.0, 20.0]),
             AppIconSegment(command: .line, points: [19.5, 16.5]),
           ]
-        ),
+        )
       ]
     )
   }
@@ -432,7 +432,7 @@ nonisolated public enum AppIconGlyphs {
             AppIconSegment(command: .move, points: [4.5, 17.5]),
             AppIconSegment(command: .line, points: [4.51, 17.5]),
           ]
-        ),
+        )
       ]
     )
   }
@@ -447,7 +447,7 @@ nonisolated public enum AppIconGlyphs {
             AppIconSegment(command: .line, points: [12.0, 9.0]),
             AppIconSegment(command: .line, points: [17.0, 14.0]),
           ]
-        ),
+        )
       ]
     )
   }
@@ -464,7 +464,7 @@ nonisolated public enum AppIconGlyphs {
             AppIconSegment(command: .line, points: [5.0, 12.0]),
             AppIconSegment(command: .line, points: [11.0, 18.0]),
           ]
-        ),
+        )
       ]
     )
   }
@@ -481,7 +481,7 @@ nonisolated public enum AppIconGlyphs {
             AppIconSegment(command: .line, points: [19.0, 12.0]),
             AppIconSegment(command: .line, points: [13.0, 18.0]),
           ]
-        ),
+        )
       ]
     )
   }
@@ -499,7 +499,7 @@ nonisolated public enum AppIconGlyphs {
             AppIconSegment(command: .move, points: [4.0, 17.5]),
             AppIconSegment(command: .line, points: [10.0, 17.5]),
           ]
-        ),
+        )
       ]
     )
   }
@@ -519,7 +519,7 @@ nonisolated public enum AppIconGlyphs {
             AppIconSegment(command: .cubic, points: [19.5, 15.1, 12.0, 19.5, 12.0, 19.5]),
             AppIconSegment(command: .close, points: []),
           ]
-        ),
+        )
       ]
     )
   }
@@ -539,7 +539,7 @@ nonisolated public enum AppIconGlyphs {
             AppIconSegment(command: .cubic, points: [19.5, 15.1, 12.0, 19.5, 12.0, 19.5]),
             AppIconSegment(command: .close, points: []),
           ]
-        ),
+        )
       ]
     )
   }
@@ -594,7 +594,7 @@ nonisolated public enum AppIconGlyphs {
             AppIconSegment(command: .move, points: [20.0, 17.0]),
             AppIconSegment(command: .line, points: [7.0, 17.0]),
           ]
-        ),
+        )
       ]
     )
   }
@@ -612,7 +612,7 @@ nonisolated public enum AppIconGlyphs {
             AppIconSegment(command: .line, points: [6.5, 20.5]),
             AppIconSegment(command: .close, points: []),
           ]
-        ),
+        )
       ]
     )
   }
@@ -630,7 +630,7 @@ nonisolated public enum AppIconGlyphs {
             AppIconSegment(command: .line, points: [6.5, 20.5]),
             AppIconSegment(command: .close, points: []),
           ]
-        ),
+        )
       ]
     )
   }
@@ -769,7 +769,7 @@ nonisolated public enum AppIconGlyphs {
             AppIconSegment(command: .move, points: [6.0, 12.0]),
             AppIconSegment(command: .line, points: [18.0, 12.0]),
           ]
-        ),
+        )
       ]
     )
   }
@@ -784,7 +784,7 @@ nonisolated public enum AppIconGlyphs {
             AppIconSegment(command: .line, points: [9.5, 17.0]),
             AppIconSegment(command: .line, points: [19.0, 7.5]),
           ]
-        ),
+        )
       ]
     )
   }
@@ -854,7 +854,7 @@ nonisolated public enum AppIconGlyphs {
             AppIconSegment(command: .move, points: [5.0, 19.0]),
             AppIconSegment(command: .line, points: [19.0, 19.0]),
           ]
-        ),
+        )
       ]
     )
   }
@@ -901,7 +901,7 @@ nonisolated public enum AppIconGlyphs {
             AppIconSegment(command: .line, points: [12.0, 10.5]),
             AppIconSegment(command: .close, points: []),
           ]
-        ),
+        )
       ]
     )
   }
@@ -1153,7 +1153,7 @@ nonisolated public enum AppIconGlyphs {
             AppIconSegment(command: .move, points: [6.0, 12.0]),
             AppIconSegment(command: .line, points: [18.0, 12.0]),
           ]
-        ),
+        )
       ]
     )
   }
@@ -1261,7 +1261,7 @@ nonisolated public enum AppIconGlyphs {
             AppIconSegment(command: .line, points: [16.0, 12.0]),
             AppIconSegment(command: .line, points: [5.0, 12.0]),
           ]
-        ),
+        )
       ]
     )
   }
@@ -1321,7 +1321,7 @@ nonisolated public enum AppIconGlyphs {
             AppIconSegment(command: .cubic, points: [3.688, 16.593, 5.457, 18.138, 7.5, 18.0]),
             AppIconSegment(command: .close, points: []),
           ]
-        ),
+        )
       ]
     )
   }
@@ -1453,7 +1453,7 @@ nonisolated public enum AppIconGlyphs {
             AppIconSegment(command: .move, points: [3.0, 12.0]),
             AppIconSegment(command: .line, points: [10.0, 12.0]),
           ]
-        ),
+        )
       ]
     )
   }
@@ -1550,7 +1550,7 @@ nonisolated public enum AppIconGlyphs {
             AppIconSegment(command: .cubic, points: [14.883, 19.173, 18.079, 17.475, 19.5, 14.5]),
             AppIconSegment(command: .close, points: []),
           ]
-        ),
+        )
       ]
     )
   }
@@ -1773,7 +1773,7 @@ nonisolated public enum AppIconGlyphs {
             AppIconSegment(command: .cubic, points: [7.668, 16.751, 8.432, 14.905, 10.0, 14.0]),
             AppIconSegment(command: .close, points: []),
           ]
-        ),
+        )
       ]
     )
   }
@@ -1897,7 +1897,7 @@ nonisolated public enum AppIconGlyphs {
             AppIconSegment(command: .move, points: [20.0, 5.0]),
             AppIconSegment(command: .line, points: [20.0, 19.0]),
           ]
-        ),
+        )
       ]
     )
   }
@@ -1922,7 +1922,7 @@ nonisolated public enum AppIconGlyphs {
             AppIconSegment(command: .line, points: [12.1, 7.9]),
             AppIconSegment(command: .close, points: []),
           ]
-        ),
+        )
       ]
     )
   }
@@ -2011,7 +2011,7 @@ nonisolated public enum AppIconGlyphs {
             AppIconSegment(command: .line, points: [9.82, 9.61]),
             AppIconSegment(command: .close, points: []),
           ]
-        ),
+        )
       ]
     )
   }
@@ -2296,7 +2296,7 @@ nonisolated public enum AppIconGlyphs {
             AppIconSegment(command: .cubic, points: [3.5, 16.694, 7.306, 20.5, 12.0, 20.5]),
             AppIconSegment(command: .cubic, points: [16.694, 20.5, 20.5, 16.694, 20.5, 12.0]),
           ]
-        ),
+        )
       ]
     )
   }
@@ -2451,7 +2451,7 @@ nonisolated public enum AppIconGlyphs {
             AppIconSegment(command: .cubic, points: [5.282, 19.3, 4.7, 18.718, 4.7, 18.0]),
             AppIconSegment(command: .close, points: []),
           ]
-        ),
+        )
       ]
     )
   }
@@ -2483,7 +2483,7 @@ nonisolated public enum AppIconGlyphs {
             AppIconSegment(command: .move, points: [19.61, 8.21]),
             AppIconSegment(command: .cubic, points: [19.982, 8.958, 20.241, 9.756, 20.38, 10.58]),
           ]
-        ),
+        )
       ]
     )
   }
@@ -2551,7 +2551,7 @@ nonisolated public enum AppIconGlyphs {
             AppIconSegment(command: .cubic, points: [7.3, 13.3, 9.7, 13.3, 12.0, 15.0]),
             AppIconSegment(command: .cubic, points: [14.3, 16.7, 16.7, 16.7, 19.0, 15.0]),
           ]
-        ),
+        )
       ]
     )
   }
@@ -2569,7 +2569,7 @@ nonisolated public enum AppIconGlyphs {
             AppIconSegment(command: .cubic, points: [16.694, 3.5, 20.5, 7.306, 20.5, 12.0]),
             AppIconSegment(command: .close, points: []),
           ]
-        ),
+        )
       ]
     )
   }
@@ -2696,7 +2696,7 @@ nonisolated public enum AppIconGlyphs {
             AppIconSegment(command: .line, points: [5.0, 6.3]),
             AppIconSegment(command: .close, points: []),
           ]
-        ),
+        )
       ]
     )
   }
@@ -3042,7 +3042,7 @@ nonisolated public enum AppIconGlyphs {
             AppIconSegment(command: .line, points: [10.2, 8.2]),
             AppIconSegment(command: .close, points: []),
           ]
-        ),
+        )
       ]
     )
   }
@@ -3062,7 +3062,7 @@ nonisolated public enum AppIconGlyphs {
             AppIconSegment(command: .move, points: [21.0, 20.0]),
             AppIconSegment(command: .line, points: [3.0, 20.0]),
           ]
-        ),
+        )
       ]
     )
   }

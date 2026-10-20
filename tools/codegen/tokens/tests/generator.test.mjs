@@ -13,11 +13,14 @@ import { parseDesignMd } from '../parse.mjs';
 import { formatFinding, loadTokens } from '../pipeline.mjs';
 import { CONTEXTS } from '../syntax.mjs';
 import { validate } from '../validate.mjs';
+import { REPO_DESIGN_MD } from './models.mjs';
 
 const FIXTURES = path.resolve(import.meta.dirname, '..', 'fixtures');
 const fixtureText = (name) => readFileSync(path.join(FIXTURES, name, 'DESIGN.md'), 'utf8');
 const VALID = fixtureText('_valid');
-const isRuleCase = (name) => /^TK-\d\d$/.test(name);
+/** `TK-NN/` or `TK-NN-<case>/` (a second case of the same rule): fails on rule TK-NN only. */
+const isRuleCase = (name) => /^TK-\d\d(-[a-z0-9-]+)?$/.test(name);
+const ruleOf = (name) => name.slice(0, 'TK-NN'.length);
 const RULE_CASES = readdirSync(FIXTURES).filter(isRuleCase).sort();
 
 const rulesOf = (findings) => [...new Set(findings.map((f) => f.rule))].sort();
@@ -47,8 +50,7 @@ test('the valid fixture passes the parser, every rule and the normaliser', () =>
 });
 
 test('the repository DESIGN.md, the token master, passes every rule and normalises', () => {
-  const master = path.resolve(import.meta.dirname, '..', '..', '..', '..', 'DESIGN.md');
-  const { findings, model } = loadTokens(readFileSync(master, 'utf8'));
+  const { findings, model } = loadTokens(REPO_DESIGN_MD);
   assert.deepEqual(findings, [], describeFindings(findings));
   const components = Object.keys(model.sets.components);
   for (const context of CONTEXTS) {
@@ -59,14 +61,15 @@ test('the repository DESIGN.md, the token master, passes every rule and normalis
 
 test('the fixtures hold one failing case per rule, TK-01 to TK-11', () => {
   const expected = Array.from({ length: 11 }, (_, i) => `TK-${String(i + 1).padStart(2, '0')}`);
-  assert.deepEqual(RULE_CASES, expected);
+  assert.deepEqual([...new Set(RULE_CASES.map(ruleOf))], expected);
+  assert.ok(RULE_CASES.includes('TK-06-padding'), 'an unresolved padding reference');
 });
 
 for (const name of RULE_CASES) {
-  test(`fixtures/${name} fails on ${name} and on nothing else`, () => {
+  test(`fixtures/${name} fails on ${ruleOf(name)} and on nothing else`, () => {
     const { findings, model } = loadTokens(fixtureText(name));
     assert.equal(model, undefined);
-    assert.deepEqual(rulesOf(findings), [name], describeFindings(findings));
+    assert.deepEqual(rulesOf(findings), [ruleOf(name)], describeFindings(findings));
   });
 }
 
@@ -260,6 +263,49 @@ test('TK-10: identifier collisions, a non-camelCase property, a key starting wit
     fm.colors['2tone-dark'] = '#222222';
   });
   assertOnly(digit, 'TK-10', /must start with a letter/);
+});
+
+test('TK-06: a padding part references only spacing, and only a step that exists', () => {
+  const mixed = validateEdited((fm) => (fm.components.overlay.padding = '0 {spacing.16} 4px'));
+  assert.deepEqual(mixed, [], describeFindings(mixed));
+  const missing = loadTokens(fixtureText('TK-06-padding')).findings.map(formatFinding);
+  assert.deepEqual(missing, [
+    'TK-06 components.chip-outline-light.padding: `{spacing.24}` does not resolve',
+  ]);
+  const rounded = validateEdited((fm) => (fm.components.overlay.padding = '{rounded.4} 8px'));
+  assertOnly(rounded, 'TK-06', /`\{rounded\.4\}` cannot be referenced here \(allowed: spacing\)/);
+  const malformed = validateEdited((fm) => (fm.components.overlay.padding = '{spacing} 8px'));
+  assertOnly(malformed, 'TK-11', /padding takes 1–4 parts, each 0, Npx or a \{spacing/);
+});
+
+test('TK-06: only iconSize names a component, and only an icon size (icon-<step>)', () => {
+  const withSize = (fm) => (fm.components['icon-md'] = { size: '20px', strokeWidth: 1.7 });
+  for (const value of ['icon-md', '{components.icon-md}']) {
+    const named = validateEdited((fm) => {
+      withSize(fm);
+      fm.components.overlay.iconSize = value;
+    });
+    assert.deepEqual(named, [], `${value}: ${describeFindings(named)}`);
+  }
+  const cases = [
+    ['height', '{components.icon-md}', /only iconSize names a component/],
+    ['iconSize', '{components.icon-xl}', /`\{components\.icon-xl\}` does not resolve/],
+    ['iconSize', 'icon-xl', /`\{components\.icon-xl\}` does not resolve/],
+    ['iconSize', '{components.overlay}', /`\{components\.overlay\}` is not an icon size/],
+    ['iconSize', 'icon', /"icon" is not a px dimension, number or \{reference\}/],
+  ];
+  for (const [prop, value, pattern] of cases) {
+    const findings = validateEdited((fm) => {
+      withSize(fm);
+      fm.components.overlay[prop] = value;
+    });
+    assertOnly(findings, value === 'icon' ? 'TK-11' : 'TK-06', pattern);
+  }
+  const extra = validateEdited((fm) => {
+    fm.components['icon-md'] = { size: '20px', strokeWidth: 1.7, color: '{colors.scrim}' };
+    fm.components.overlay.iconSize = '{components.icon-md}';
+  });
+  assertOnly(extra, 'TK-06', /`\{components\.icon-md\}` is not an icon size/);
 });
 
 test('TK-11: bad padding, a rem dimension, a component that is not a mapping', () => {

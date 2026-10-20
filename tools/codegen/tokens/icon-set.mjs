@@ -1,17 +1,26 @@
-// Icon-set contracts (`kind: icon-set`; C02 icons, Linear AI-201): the rules CC-09 to CC-11 and
-// the API model the icon declarations (icon-declarations.mjs) read. contracts.mjs runs CC-01 and
-// CC-02 first, as for every contract. Glyph path data compiles to absolute move / line / cubic /
-// close segments (svg-path.mjs); sizes come from the `components.icon-<n>` tokens.
+// Icon-set contracts (`kind: icon-set`; C02 icons, Linear AI-201): the rules CC-09 to CC-11, the
+// rule CC-12 a control's icon slot meets beside an icon set, and the API model the icon
+// declarations (icon-declarations.mjs) read. contracts.mjs runs CC-01 and CC-02 first, as for
+// every contract. Glyph path data compiles to absolute move / line / cubic / close segments
+// (svg-path.mjs); sizes come from the `components.icon-<step>` tokens (the scale xs … hero).
 // tools/codegen/tokens/README.md, "Icon sets".
 import { readFileSync } from 'node:fs';
 import path from 'node:path';
 
-import { finding, identifierFindings, isToken } from './contract-model.mjs';
+import {
+  allowedCombinations,
+  finding,
+  iconSizeKeyOf,
+  identifierFindings,
+  isToken,
+  slotEntryOf,
+  tableContexts,
+} from './contract-model.mjs';
 import { typedValue } from './declarations.mjs';
 import { galleryTitle, memberId, nestedTypeName, swiftIdent } from './naming.mjs';
 import { resolveComponents } from './normalise.mjs';
 import { compilePath } from './svg-path.mjs';
-import { CONTEXTS } from './syntax.mjs';
+import { CONTEXTS, iconStepOf } from './syntax.mjs';
 
 /** The `kind` of an icon-set contract; a contract without `kind` is a control (button). */
 export const ICON_SET = 'icon-set';
@@ -24,7 +33,7 @@ const SCHEMA = JSON.parse(
 /** The `paint` values, in schema order: every one becomes a `<Name>Paint` case. */
 export const ICON_PAINTS = SCHEMA.$defs.iconPaint.enum;
 
-/** The two properties of a `components.icon-<n>` token, in emission order. */
+/** The two properties of a `components.icon-<step>` token, in emission order. */
 export const SIZE_FIELDS = ['size', 'strokeWidth'];
 
 /**
@@ -73,9 +82,10 @@ function checkGlyphIds(contract, file) {
 }
 
 /**
- * CC-10: `defaultSize` is listed in `sizes`; each size names a `components.icon-<n>` token that
- * holds exactly `size` (n px) and `strokeWidth` (viewBox units) as literal numbers, has no state
- * and is the same in every context.
+ * CC-10: `defaultSize` is listed in `sizes`; each size names a `components.icon-<step>` token that
+ * holds exactly `size` (px) and `strokeWidth` (viewBox units) as literal numbers, has no state and
+ * is the same in every context; the steps become distinct cases that are no keyword, and the
+ * scale grows: each size is larger than the one before it.
  */
 function checkSizes(contract, file, model) {
   const out = [];
@@ -83,7 +93,10 @@ function checkSizes(contract, file, model) {
     const message = `"${contract.defaultSize}" is not in \`sizes\``;
     out.push(finding('CC-10', `${file} defaultSize`, message));
   }
+  const steps = contract.sizes.map(iconStepOf);
+  out.push(...identifierFindings(steps, `${file} sizes`, 'size step', 'CC-10'));
   const resolved = CONTEXTS.map((context) => resolveComponents(model, context));
+  let previous = null;
   contract.sizes.forEach((size, i) => {
     const at = `${file} sizes.${i}`;
     if (!Object.hasOwn(model.sets.components, size)) {
@@ -91,6 +104,12 @@ function checkSizes(contract, file, model) {
       return;
     }
     out.push(...sizeTokenFindings(size, resolved, at));
+    const px = numberOf(resolved[0][size].size);
+    if (px !== null && previous !== null && px <= previous.px) {
+      const message = `${size} (${px}) is not larger than ${previous.size} (${previous.px})`;
+      out.push(finding('CC-10', at, message));
+    }
+    if (px !== null) previous = { size, px };
   });
   return out;
 }
@@ -111,10 +130,37 @@ function sizeTokenFindings(size, resolved, at) {
       out.push(finding('CC-10', at, `${token} ${field} differs between contexts`));
     }
   }
-  const n = Number(size.slice('icon-'.length));
-  const px = numberOf(resolved[0][size].size);
-  if (px !== null && px !== n) {
-    out.push(finding('CC-10', at, `${token} size is ${px}, not the ${n} its name says`));
+  return out;
+}
+
+/**
+ * CC-12: with an icon set beside it (`iconSets`: each passing icon-set contract's `{ file,
+ * sizes }`), a control's icon slot names that set's sizes. For every size an allowed combination
+ * uses, the shared size entry's `iconSize` (CC-08) is a `{components.icon-<step>}` reference to one
+ * of the set's `sizes` in every context of the table, never a number. Two icon sets would leave the
+ * slot two scales to name, so that is a finding too.
+ */
+export function checkIconSlotSizes(contract, file, model, iconSets) {
+  if (iconSets.length === 0) return [];
+  if (iconSets.length > 1) {
+    const files = iconSets.map((set) => set.file).join(' and ');
+    return [finding('CC-12', file, `${files} are both icon sets; the icon slot names one scale`)];
+  }
+  const [iconSet] = iconSets;
+  const out = [];
+  const resolved = tableContexts(contract, model).map((c) => resolveComponents(model, c));
+  const used = new Set(allowedCombinations(contract).map(({ size }) => size));
+  for (const size of contract.sizes.filter((s) => used.has(s))) {
+    const entry = slotEntryOf(contract.id, size);
+    const at = `${file} sizes.${size}`;
+    const named = new Set(resolved.map((components) => iconSizeKeyOf(components[entry].iconSize)));
+    for (const key of named) {
+      const message =
+        key === null
+          ? `{components.${entry}} iconSize is a number, not a size of ${iconSet.file}`
+          : `{components.${entry}} iconSize names ${key}, which ${iconSet.file} does not list`;
+      if (key === null || !iconSet.sizes.includes(key)) out.push(finding('CC-12', at, message));
+    }
   }
   return out;
 }

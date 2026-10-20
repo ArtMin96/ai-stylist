@@ -129,7 +129,8 @@ Format (ui-designer and tooling-engineer build to this):
   that named a measured size names its step.
 - Emitted names: the size enum drops the `icon-` prefix (`AppIconSize.xs … .hero`; Kotlin
   `XS … HERO`), so code reads `AppIcon(name: .heart, size: .sm)`.
-- Button: `iconSize` is a reference, `'{components.icon-md}'` (large, card, medium, small) and the
+- Button: `iconSize` names a scale step by its bare key, `icon-md` (the pinned design.md lint, TK-12,
+  rejects `{components.…}` references), for large, card, medium, small and
   compact step by fit, and the generator emits `ButtonAppearance.iconSize` typed as
   `AppIconSize`. A component dimension that equals a shared-scale step is a reference: padding and
   gap point at `spacing` (a shorthand may mix parts, e.g. `padding: '0 {spacing.24}'`), and the

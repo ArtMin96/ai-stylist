@@ -14,8 +14,8 @@ import {
   swiftIdent,
   tokensTypeName,
 } from './naming.mjs';
-import { resolveComponents } from './normalise.mjs';
-import { CONTEXTS, isColourProperty, splitState } from './syntax.mjs';
+import { ICON_SIZE_EXTENSION, resolveComponents } from './normalise.mjs';
+import { CONTEXTS, iconStepOf, isColourProperty, splitState } from './syntax.mjs';
 
 /** The state every variant has before any state applies: its base entry is this look. */
 export const BASE_STATE = 'enabled';
@@ -32,6 +32,9 @@ export const ICON_SLOT = ['iconSize', 'iconGap'];
 export const slotEntryOf = (id, size) => `${id}-${size}`;
 
 export const isToken = (node) => Object.hasOwn(node, '$value');
+
+/** The icon size an `iconSize` token names (`icon-md`, normalise.mjs), or null for a number. */
+export const iconSizeKeyOf = (token) => token?.$extensions?.[ICON_SIZE_EXTENSION] ?? null;
 export const finding = (rule, at, message) => ({ rule, at, message });
 
 /**
@@ -105,9 +108,11 @@ export function tableContexts(contract, model) {
  * `borderColor` ring also gets `borderWidth` from `<id>-outline-ring` (.impeccable/components
  * README, "Fields": the ring's width). A missing ring width or a property whose type differs
  * between looks is a CC-06 finding. The gallery's `title` is `<board> <gallery.title>` and its
- * `slug` the kebab of that title (`C01 Buttons`, `c01-buttons`).
+ * `slug` the kebab of that title (`C01 Buttons`, `c01-buttons`). With `iconSizeType` (the size
+ * enum of the approved icon set beside it: `AppIconSize`), an `iconSize` that names an icon size
+ * is that enum's case (`.md`) instead of its number (CC-12 makes every slot name one).
  */
-export function buildApi(contract, file, model) {
+export function buildApi(contract, file, model, iconSizeType = null) {
   const findings = [];
   const combinations = allowedCombinations(contract);
   const contexts = tableContexts(contract, model);
@@ -116,7 +121,7 @@ export function buildApi(contract, file, model) {
   for (const context of contexts) {
     const resolved = resolveComponents(model, context);
     looks[context] = combinations.map((combo) => {
-      const values = lookValues(contract, combo, { resolved, context, model });
+      const values = lookValues(contract, combo, { resolved, context, model, iconSizeType });
       if (values.borderColor) {
         const width = resolved[ring]?.width;
         if (width && isToken(width)) values.borderWidth = typedValue(width);
@@ -160,7 +165,8 @@ export function buildApi(contract, file, model) {
  * component's instance for the context (`focusRing: FocusRingTokens.hcDark`) and changes no colour
  * (owner decision 2026-10-20: focused is the focus ring drawn over the enabled look).
  */
-function lookValues(contract, { variant, size, state }, { resolved, context, model }) {
+function lookValues(contract, { variant, size, state }, table) {
+  const { resolved, context, model, iconSizeType } = table;
   const tokens = contract.tokens[variant];
   const base = resolveReference(tokens.base, model).component;
   const props = propertiesOf(resolved[base]);
@@ -179,6 +185,11 @@ function lookValues(contract, { variant, size, state }, { resolved, context, mod
   const values = Object.fromEntries(
     Object.entries(props).map(([name, token]) => [name, typedValue(token)]),
   );
+  const iconSize = iconSizeKeyOf(props.iconSize);
+  if (iconSizeType && iconSize) {
+    const value = { t: 'case', type: iconSizeType, id: memberId(iconStepOf(iconSize)) };
+    values.iconSize = { type: iconSizeType, value };
+  }
   for (const [name, component] of Object.entries(overlays)) {
     const type = tokensTypeName(component);
     const value = { t: 'ref', namespace: type, member: contextId(context) };

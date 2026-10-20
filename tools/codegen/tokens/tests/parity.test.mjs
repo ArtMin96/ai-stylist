@@ -172,18 +172,19 @@ test('the API table holds the ids, the test IDs, the lookup and every merged loo
     'ButtonSpec.appearance()':
       'fn:(variant: ButtonVariant, size: ButtonSize, state: ButtonState) -> ButtonAppearance?',
     'ButtonAppearance.backgroundColor:type': 'AppColorRole?',
-    'ButtonAppearance.iconSize:type': 'Double',
+    'ButtonAppearance.iconSize:type': 'AppIconSize',
     'ButtonAppearance.iconGap:type': 'Double',
     'ButtonSpec.light.looks': 'list:100',
     'ComponentGallery.buttonLabel': 'str:"Continue"',
     'ComponentGallery.button': 'list:100',
+    'GalleryComponent.cases': 'BUTTON,ICON',
     'GalleryComponent[BUTTON].id': 'str:"button"',
     'GalleryComponent[BUTTON].title': 'str:"C01 Buttons"',
     'GalleryComponent[BUTTON].slug': 'str:"c01-buttons"',
+    'GalleryComponent[ICON].title': 'str:"C02 Icons"',
+    'GalleryComponent[ICON].slug': 'str:"c02-icons"',
   };
   for (const [name, value] of Object.entries(expected)) assert.equal(table[name], value, name);
-  // C01 comes first; the C02 icon set joins once its contract is approved.
-  assert.equal(table['GalleryComponent.cases'].split(',')[0], 'BUTTON');
   assert.equal(table['ButtonTestId.textSmallEnabled'], undefined, 'text small is gone');
   for (const context of button.contexts) {
     button.looks[context].forEach(({ variant, size, state, values }, i) => {
@@ -195,9 +196,9 @@ test('the API table holds the ids, the test IDs, the lookup and every merged loo
         const present = Object.hasOwn(values, name);
         assert.equal(table[`${at}.appearance.${name}`] === 'none', !present, `${at}.${name}`);
       }
-      for (const name of ['iconSize', 'iconGap']) {
-        assert.equal(table[`${at}.appearance.${name}`], `num:${values[name].value.n}`, at);
-      }
+      const iconSize = `role:${ktEnumEntry(values.iconSize.value.id)}`;
+      assert.equal(table[`${at}.appearance.iconSize`], iconSize, at);
+      assert.equal(table[`${at}.appearance.iconGap`], `num:${values.iconGap.value.n}`, at);
     });
   }
   button.gallery.items.forEach((combo, i) => {
@@ -292,12 +293,15 @@ test('the glyph table: every segment of every fixture glyph, the same in both la
     'AppIconName.testId:type': 'String',
     'AppIconName.glyph:type': 'AppIconGlyph',
     'AppIconSet.cases': 'NAVIGATION,STATUS,CLOSET,WEATHER,ACTIONS',
-    'AppIconSize[ICON16].id': 'str:"icon-16"',
-    'AppIconSize[ICON16].size': 'num:16',
-    'AppIconSize[ICON16].strokeWidth': 'num:1.9',
+    'AppIconSize.cases': 'XS,SM,MD,LG',
+    'AppIconSize[SM].id': 'str:"icon-sm"',
+    'AppIconSize[SM].size': 'num:16',
+    'AppIconSize[SM].strokeWidth': 'num:1.9',
+    'ButtonAppearance.iconSize:type': 'AppIconSize',
+    'ButtonSpec.light.looks[0].appearance.iconSize': 'role:MD',
     'AppIconSize.strokeWidth:type': 'Double',
     'AppIconMetrics.viewBox': 'num:24',
-    'AppIconMetrics.defaultSize': 'role:ICON24',
+    'AppIconMetrics.defaultSize': 'role:LG',
     'AppIconSegment.points:type': 'list<Double>',
     'AppIconShape.segments:type': 'list<AppIconSegment>',
     'AppIconPaint.cases': 'STROKE,FILL,BOTH',
@@ -327,8 +331,8 @@ test('a glyph point, a paint, a stroke width or an icon test ID spelled differen
     'AppIconGlyphs.Info.glyph.shapes[2].paint',
   ]);
   const api = 'ComponentApi.kt';
-  assert.deepEqual(differs(api, '"icon-16", 16.0, 1.9', '"icon-16", 16.0, 1.7'), [
-    'AppIconSize[ICON16].strokeWidth',
+  assert.deepEqual(differs(api, '"icon-sm", 16.0, 1.9', '"icon-sm", 16.0, 1.7'), [
+    'AppIconSize[SM].strokeWidth',
   ]);
   assert.deepEqual(differs(api, '"ds-icon-back"', '"ds-icon-back-1"'), [
     'AppIconName[BACK].testId',

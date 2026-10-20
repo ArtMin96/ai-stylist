@@ -521,7 +521,7 @@ components:
       typography: '{typography.button}',
       rounded: '{rounded.full}',
       height: '52px',
-      padding: '0 24px',
+      padding: '0 {spacing.24}',
     }
   button-primary-pressed-light:
     { backgroundColor: '{colors.primary-pressed-light}', textColor: '{colors.on-primary-light}' }
@@ -534,7 +534,7 @@ components:
       typography: '{typography.button}',
       rounded: '{rounded.full}',
       height: '52px',
-      padding: '0 24px',
+      padding: '0 {spacing.24}',
     }
   button-primary-pressed-dark:
     { backgroundColor: '{colors.primary-pressed-dark}', textColor: '{colors.on-primary-dark}' }
@@ -544,31 +544,56 @@ components:
   # Compact also set their 15/600 label). The icon slot is read from these entries for every variant
   # (DESIGN.md "Buttons"); otherwise a variant's own
   # base holds the size it is drawn at; these serve its other sizes.
-  button-large: { height: '52px', padding: '0 24px', iconSize: '20px', iconGap: '8px' }
+  # Scale references (owner 2026-10-21): iconSize names an icon step, and a padding or gap part
+  # equal to a spacing step names that step. Heights (52, 48, 44, 36) and off-scale parts (gap 6,
+  # padding 10) stay literal.
+  button-large:
+    {
+      height: '52px',
+      padding: '0 {spacing.24}',
+      iconSize: icon-md,
+      iconGap: '{spacing.8}',
+    }
   # Card: the one action inside a state template card, 48 high with the 17/600 label (C04 Try again,
   # SC10 Add your first piece, TR1 Try again). Drawn full width only; padding as Large.
-  button-card: { height: '48px', padding: '0 24px', iconSize: '20px', iconGap: '8px' }
-  button-medium: { height: '44px', padding: '0 20px', iconSize: '20px', iconGap: '8px' }
+  button-card:
+    {
+      height: '48px',
+      padding: '0 {spacing.24}',
+      iconSize: icon-md,
+      iconGap: '{spacing.8}',
+    }
+  button-medium:
+    {
+      height: '44px',
+      padding: '0 {spacing.20}',
+      iconSize: icon-md,
+      iconGap: '{spacing.8}',
+    }
   # Compact: 44 high with the 15/600 label, for row, card and dialog actions (C07, C08, SC05,
   # SC09, SC10, SC12, SC15, TR1). Outlined pills 0 16 (Unfollow, Confirm); filled pills 0 20
-  # (C08 Add items); text 0 12 (SC12 Edit, Clear). Leading icon 18, gap 6 at this size.
+  # (C08 Add items); text 0 12 (SC12 Edit, Clear). Leading icon md, gap 6 at this size: the
+  # screens draw 18, which snaps to md, as Small (the same 15/20 label) already draws it, and 20
+  # equals the label's line height.
   button-compact:
     {
       typography: '{typography.subhead}',
       height: '44px',
-      padding: '0 16px',
-      iconSize: '18px',
+      padding: '0 {spacing.16}',
+      iconSize: icon-md,
       iconGap: '6px',
     }
-  button-compact-filled: { typography: '{typography.subhead}', height: '44px', padding: '0 20px' }
-  button-text-compact: { typography: '{typography.subhead}', height: '44px', padding: '0 12px' }
+  button-compact-filled:
+    { typography: '{typography.subhead}', height: '44px', padding: '0 {spacing.20}' }
+  button-text-compact:
+    { typography: '{typography.subhead}', height: '44px', padding: '0 {spacing.12}' }
   button-small:
     {
       typography: '{typography.subhead}',
       height: '36px',
-      padding: '0 16px',
-      iconSize: '20px',
-      iconGap: '8px',
+      padding: '0 {spacing.16}',
+      iconSize: icon-md,
+      iconGap: '{spacing.8}',
     }
   # Stroke width of the outline ring on the secondary, primary outline and outlined destructive
   # buttons. Each entry names the ring colour in borderColor (outline-* on secondary, primary-* on
@@ -583,7 +608,7 @@ components:
       typography: '{typography.button}',
       rounded: '{rounded.full}',
       height: '52px',
-      padding: '0 24px',
+      padding: '0 {spacing.24}',
     }
   button-secondary-pressed-light:
     {
@@ -606,7 +631,7 @@ components:
       typography: '{typography.button}',
       rounded: '{rounded.full}',
       height: '52px',
-      padding: '0 24px',
+      padding: '0 {spacing.24}',
     }
   button-secondary-pressed-dark:
     {
@@ -628,7 +653,7 @@ components:
       typography: '{typography.button}',
       rounded: '{rounded.full}',
       height: '44px',
-      padding: '0 12px',
+      padding: '0 {spacing.12}',
     }
   button-text-pressed-light:
     { backgroundColor: '{colors.surface-2-light}', textColor: '{colors.primary-text-light}' }
@@ -639,7 +664,7 @@ components:
       typography: '{typography.button}',
       rounded: '{rounded.full}',
       height: '44px',
-      padding: '0 12px',
+      padding: '0 {spacing.12}',
     }
   button-text-pressed-dark:
     { backgroundColor: '{colors.surface-2-dark}', textColor: '{colors.primary-text-dark}' }
@@ -651,7 +676,7 @@ components:
       typography: '{typography.button}',
       rounded: '{rounded.full}',
       height: '44px',
-      padding: '0 20px',
+      padding: '0 {spacing.20}',
     }
   button-destructive-pressed-light:
     {
@@ -668,7 +693,7 @@ components:
       typography: '{typography.button}',
       rounded: '{rounded.full}',
       height: '44px',
-      padding: '0 20px',
+      padding: '0 {spacing.20}',
     }
   button-destructive-pressed-dark:
     {
@@ -685,7 +710,7 @@ components:
       typography: '{typography.button}',
       rounded: '{rounded.full}',
       height: '52px',
-      padding: '0 24px',
+      padding: '0 {spacing.24}',
     }
   button-destructive-filled-pressed-light:
     {
@@ -706,7 +731,7 @@ components:
       typography: '{typography.button}',
       rounded: '{rounded.full}',
       height: '52px',
-      padding: '0 24px',
+      padding: '0 {spacing.24}',
     }
   button-destructive-filled-pressed-dark:
     {
@@ -729,7 +754,7 @@ components:
       typography: '{typography.subhead}',
       rounded: '{rounded.full}',
       height: '44px',
-      padding: '0 16px',
+      padding: '0 {spacing.16}',
     }
   button-primary-outline-pressed-light:
     {
@@ -746,7 +771,7 @@ components:
       typography: '{typography.subhead}',
       rounded: '{rounded.full}',
       height: '44px',
-      padding: '0 16px',
+      padding: '0 {spacing.16}',
     }
   button-primary-outline-pressed-dark:
     {
@@ -756,7 +781,7 @@ components:
     }
   button-primary-outline-disabled-dark:
     { textColor: '{colors.text-secondary-dark}', borderColor: '{colors.divider-dark}' }
-  # Destructive text: error label, no fill or ring, trash icon 18, Compact only (SC12 and C07
+  # Destructive text: error label, no fill or ring, trash icon md, Compact only (SC12 and C07
   # Delete). Pressed is derived from the outlined destructive, disabled from text (not drawn).
   button-destructive-text-light:
     {
@@ -791,7 +816,7 @@ components:
       typography: '{typography.button}',
       rounded: '{rounded.full}',
       height: '52px',
-      padding: '0 20px',
+      padding: '0 {spacing.20}',
     }
   button-tonal-pressed-light:
     { backgroundColor: '{colors.divider-light}', textColor: '{colors.text-light}' }
@@ -804,7 +829,7 @@ components:
       typography: '{typography.button}',
       rounded: '{rounded.full}',
       height: '52px',
-      padding: '0 20px',
+      padding: '0 {spacing.20}',
     }
   button-tonal-pressed-dark:
     { backgroundColor: '{colors.divider-dark}', textColor: '{colors.text-dark}' }
@@ -821,7 +846,7 @@ components:
       typography: '{typography.button}',
       rounded: '{rounded.full}',
       height: '52px',
-      padding: '0 24px',
+      padding: '0 {spacing.24}',
     }
   button-destructive-tonal-pressed-light:
     {
@@ -838,7 +863,7 @@ components:
       typography: '{typography.button}',
       rounded: '{rounded.full}',
       height: '52px',
-      padding: '0 24px',
+      padding: '0 {spacing.24}',
     }
   button-destructive-tonal-pressed-dark:
     {
@@ -900,23 +925,18 @@ components:
     }
   button-capture-pressed-dark:
     { backgroundColor: '{colors.primary-pressed-dark}', textColor: '{colors.on-primary-dark}' }
-  # C02 Icons: one entry per icon size the screens draw (glyphs: .impeccable/components/icon.yaml).
-  # strokeWidth is in viewBox units (the 24 grid), so the drawn width is strokeWidth x size / 24;
-  # each is the stroke the screens draw most at that size. No colour: the host's foreground tints.
-  icon-11: { size: '11px', strokeWidth: 2.8 }
-  icon-12: { size: '12px', strokeWidth: 2.2 }
-  icon-14: { size: '14px', strokeWidth: 2 }
-  icon-16: { size: '16px', strokeWidth: 1.7 }
-  icon-18: { size: '18px', strokeWidth: 1.7 }
-  icon-20: { size: '20px', strokeWidth: 1.7 }
-  icon-22: { size: '22px', strokeWidth: 1.7 }
-  icon-24: { size: '24px', strokeWidth: 1.7 }
-  icon-26: { size: '26px', strokeWidth: 1.7 }
-  icon-28: { size: '28px', strokeWidth: 1.7 }
-  icon-32: { size: '32px', strokeWidth: 1.7 }
-  icon-36: { size: '36px', strokeWidth: 1.7 }
-  icon-40: { size: '40px', strokeWidth: 1.5 }
-  icon-56: { size: '56px', strokeWidth: 1.7 }
+  # C02 Icons: the icon scale, six named steps (owner 2026-10-21; glyphs:
+  # .impeccable/components/icon.yaml). Every icon the screens draw snaps to the nearest step
+  # (DESIGN.md "Icons (C02)" lists where each use lands). strokeWidth is in viewBox units (the 24
+  # grid), so the drawn width is strokeWidth x size / 24; each is measured from the screens at that
+  # step. The size is at the default text size: icons grow with the user's text size. No colour:
+  # the host's foreground tints.
+  icon-xs: { size: '12px', strokeWidth: 2.2 }
+  icon-sm: { size: '16px', strokeWidth: 1.7 }
+  icon-md: { size: '20px', strokeWidth: 1.7 }
+  icon-lg: { size: '24px', strokeWidth: 1.7 }
+  icon-xl: { size: '32px', strokeWidth: 1.7 }
+  icon-hero: { size: '56px', strokeWidth: 1.7 }
   # C03 Chips and tags
   chip-weather-light:
     {
@@ -969,7 +989,7 @@ components:
       typography: '{typography.label-sm}',
       rounded: '{rounded.full}',
       height: '32px',
-      padding: '0 12px 0 10px',
+      padding: '0 {spacing.12} 0 10px',
     }
   chip-reason-expanded-light:
     { backgroundColor: '{colors.primary-text-light}', textColor: '{colors.on-primary-light}' }
@@ -980,7 +1000,7 @@ components:
       typography: '{typography.label-sm}',
       rounded: '{rounded.full}',
       height: '32px',
-      padding: '0 12px 0 10px',
+      padding: '0 {spacing.12} 0 10px',
     }
   chip-reason-expanded-dark:
     { backgroundColor: '{colors.primary-text-dark}', textColor: '{colors.on-primary-dark}' }
@@ -1210,7 +1230,7 @@ components:
       typography: '{typography.label-sm}',
       rounded: '{rounded.full}',
       height: '28px',
-      padding: '0 12px 0 9px',
+      padding: '0 {spacing.12} 0 9px',
     }
   pill-trial-last-day-light:
     { backgroundColor: '{colors.warning-bg-light}', textColor: '{colors.warning-fg-light}' }
@@ -1221,7 +1241,7 @@ components:
       typography: '{typography.label-sm}',
       rounded: '{rounded.full}',
       height: '28px',
-      padding: '0 12px 0 9px',
+      padding: '0 {spacing.12} 0 9px',
     }
   pill-trial-last-day-dark:
     { backgroundColor: '{colors.warning-bg-dark}', textColor: '{colors.warning-fg-dark}' }
@@ -1249,7 +1269,7 @@ components:
       typography: '{typography.badge}',
       rounded: '{rounded.full}',
       height: '22px',
-      padding: '0 8px 0 6px',
+      padding: '0 {spacing.8} 0 6px',
     }
   badge-tile-dark:
     {
@@ -1258,7 +1278,7 @@ components:
       typography: '{typography.badge}',
       rounded: '{rounded.full}',
       height: '22px',
-      padding: '0 8px 0 6px',
+      padding: '0 {spacing.8} 0 6px',
     }
   badge-provenance-light:
     {
@@ -1267,7 +1287,7 @@ components:
       typography: '{typography.badge}',
       rounded: '{rounded.full}',
       height: '22px',
-      padding: '0 8px 0 6px',
+      padding: '0 {spacing.8} 0 6px',
     }
   badge-provenance-dark:
     {
@@ -1276,7 +1296,7 @@ components:
       typography: '{typography.badge}',
       rounded: '{rounded.full}',
       height: '22px',
-      padding: '0 8px 0 6px',
+      padding: '0 {spacing.8} 0 6px',
     }
   label-confidence:
     { typography: '{typography.label-sm}', rounded: '{rounded.full}', height: '28px' }
@@ -1286,7 +1306,7 @@ components:
       textColor: '{colors.text-light}',
       typography: '{typography.subhead}',
       rounded: '{rounded.16}',
-      padding: '12px 4px 12px 14px',
+      padding: '{spacing.12} {spacing.4} {spacing.12} 14px',
     }
   banner-success-light:
     {
@@ -1294,7 +1314,7 @@ components:
       textColor: '{colors.text-light}',
       typography: '{typography.subhead}',
       rounded: '{rounded.16}',
-      padding: '12px 4px 12px 14px',
+      padding: '{spacing.12} {spacing.4} {spacing.12} 14px',
     }
   banner-warning-light:
     {
@@ -1302,7 +1322,7 @@ components:
       textColor: '{colors.text-light}',
       typography: '{typography.subhead}',
       rounded: '{rounded.16}',
-      padding: '12px 4px 12px 14px',
+      padding: '{spacing.12} {spacing.4} {spacing.12} 14px',
     }
   banner-error-light:
     {
@@ -1310,7 +1330,7 @@ components:
       textColor: '{colors.text-light}',
       typography: '{typography.subhead}',
       rounded: '{rounded.16}',
-      padding: '12px 4px 12px 14px',
+      padding: '{spacing.12} {spacing.4} {spacing.12} 14px',
     }
   banner-offline-light:
     {
@@ -1318,7 +1338,7 @@ components:
       textColor: '{colors.text-light}',
       typography: '{typography.subhead}',
       rounded: '{rounded.16}',
-      padding: '12px 4px 12px 14px',
+      padding: '{spacing.12} {spacing.4} {spacing.12} 14px',
     }
   banner-stale-light:
     {
@@ -1326,7 +1346,7 @@ components:
       textColor: '{colors.text-light}',
       typography: '{typography.subhead}',
       rounded: '{rounded.16}',
-      padding: '12px 4px 12px 14px',
+      padding: '{spacing.12} {spacing.4} {spacing.12} 14px',
     }
   # Dark info, success, error and stale banners share one fill: surface-dark + divider ring (C04).
   # banner-dark is that shared fill (unpaired by design); each kind also has its own -dark twin.
@@ -1336,7 +1356,7 @@ components:
       textColor: '{colors.text-dark}',
       typography: '{typography.subhead}',
       rounded: '{rounded.16}',
-      padding: '12px 4px 12px 14px',
+      padding: '{spacing.12} {spacing.4} {spacing.12} 14px',
     }
   banner-info-dark:
     {
@@ -1344,7 +1364,7 @@ components:
       textColor: '{colors.text-dark}',
       typography: '{typography.subhead}',
       rounded: '{rounded.16}',
-      padding: '12px 4px 12px 14px',
+      padding: '{spacing.12} {spacing.4} {spacing.12} 14px',
     }
   banner-success-dark:
     {
@@ -1352,7 +1372,7 @@ components:
       textColor: '{colors.text-dark}',
       typography: '{typography.subhead}',
       rounded: '{rounded.16}',
-      padding: '12px 4px 12px 14px',
+      padding: '{spacing.12} {spacing.4} {spacing.12} 14px',
     }
   banner-error-dark:
     {
@@ -1360,7 +1380,7 @@ components:
       textColor: '{colors.text-dark}',
       typography: '{typography.subhead}',
       rounded: '{rounded.16}',
-      padding: '12px 4px 12px 14px',
+      padding: '{spacing.12} {spacing.4} {spacing.12} 14px',
     }
   banner-stale-dark:
     {
@@ -1368,7 +1388,7 @@ components:
       textColor: '{colors.text-dark}',
       typography: '{typography.subhead}',
       rounded: '{rounded.16}',
-      padding: '12px 4px 12px 14px',
+      padding: '{spacing.12} {spacing.4} {spacing.12} 14px',
     }
   banner-warning-dark:
     {
@@ -1376,7 +1396,7 @@ components:
       textColor: '{colors.text-dark}',
       typography: '{typography.subhead}',
       rounded: '{rounded.16}',
-      padding: '12px 4px 12px 14px',
+      padding: '{spacing.12} {spacing.4} {spacing.12} 14px',
     }
   banner-offline-dark:
     {
@@ -1384,7 +1404,7 @@ components:
       textColor: '{colors.text-dark}',
       typography: '{typography.subhead}',
       rounded: '{rounded.16}',
-      padding: '12px 4px 12px 14px',
+      padding: '{spacing.12} {spacing.4} {spacing.12} 14px',
     }
   snackbar-light:
     {
@@ -1393,7 +1413,7 @@ components:
       typography: '{typography.subhead-medium}',
       rounded: '{rounded.16}',
       height: '56px',
-      padding: '0 6px 0 16px',
+      padding: '0 6px 0 {spacing.16}',
     }
   snackbar-dark:
     {
@@ -1402,7 +1422,7 @@ components:
       typography: '{typography.subhead-medium}',
       rounded: '{rounded.16}',
       height: '56px',
-      padding: '0 6px 0 16px',
+      padding: '0 6px 0 {spacing.16}',
     }
   # Snackbar Undo action (text button inside the snackbar, C04), label in label-action (15/20 700).
   snackbar-action-light:
@@ -1432,12 +1452,21 @@ components:
     { backgroundColor: '{colors.primary-dark}', rounded: '{rounded.3}', height: '6px' }
   skeleton-block-light: { backgroundColor: '{colors.surface-2-light}' }
   skeleton-block-dark: { backgroundColor: '{colors.surface-2-dark}' }
-  state-card: { typography: '{typography.callout}', rounded: '{rounded.24}', padding: '20px' }
+  state-card:
+    { typography: '{typography.callout}', rounded: '{rounded.24}', padding: '{spacing.20}' }
   # C05 Navigation
   tab-bar-light:
-    { backgroundColor: '{colors.surface-light}', height: '78px', padding: '8px 8px 20px' }
+    {
+      backgroundColor: '{colors.surface-light}',
+      height: '78px',
+      padding: '{spacing.8} {spacing.8} {spacing.20}',
+    }
   tab-bar-dark:
-    { backgroundColor: '{colors.surface-dark}', height: '78px', padding: '8px 8px 20px' }
+    {
+      backgroundColor: '{colors.surface-dark}',
+      height: '78px',
+      padding: '{spacing.8} {spacing.8} {spacing.20}',
+    }
   tab-item-active-light:
     {
       backgroundColor: '{colors.active-pill-light}',
@@ -1479,7 +1508,7 @@ components:
       height: '22px',
     }
   top-bar-large:
-    { typography: '{typography.large-title-bar}', height: '72px', padding: '8px 0 6px' }
+    { typography: '{typography.large-title-bar}', height: '72px', padding: '{spacing.8} 0 6px' }
   top-bar-compact-light:
     {
       backgroundColor: '{colors.surface-light}',
@@ -1501,7 +1530,7 @@ components:
       backgroundColor: '{colors.surface-2-light}',
       rounded: '{rounded.full}',
       height: '44px',
-      padding: '4px',
+      padding: '{spacing.4}',
     }
   segmented-control-selected-light:
     {
@@ -1516,7 +1545,7 @@ components:
       backgroundColor: '{colors.surface-dark}',
       rounded: '{rounded.full}',
       height: '44px',
-      padding: '4px',
+      padding: '{spacing.4}',
     }
   segmented-control-selected-dark:
     {
@@ -1585,7 +1614,7 @@ components:
     {
       typography: '{typography.body}',
       rounded: '{rounded.12}',
-      padding: '12px 14px',
+      padding: '{spacing.12} 14px',
       height: '84px',
     }
   switch-on-light:
@@ -1633,7 +1662,7 @@ components:
       textColor: '{colors.text-light}',
       typography: '{typography.headline}',
       rounded: '{rounded.16}',
-      padding: '14px 16px',
+      padding: '14px {spacing.16}',
     }
   consent-row-dark:
     {
@@ -1641,7 +1670,7 @@ components:
       textColor: '{colors.text-dark}',
       typography: '{typography.headline}',
       rounded: '{rounded.16}',
-      padding: '14px 16px',
+      padding: '14px {spacing.16}',
     }
   # C08 Cards
   tile-item-light:
@@ -1664,10 +1693,10 @@ components:
       padding: '14px',
       width: '350px',
     }
-  card-compare: { rounded: '{rounded.20}', padding: '16px', width: '500px' }
+  card-compare: { rounded: '{rounded.20}', padding: '{spacing.16}', width: '500px' }
   card-discover: { rounded: '{rounded.20}', width: '360px' }
   card-upgrade: { rounded: '{rounded.20}', padding: '18px' }
-  card-tier: { rounded: '{rounded.18}', padding: '16px', height: '84px' }
+  card-tier: { rounded: '{rounded.18}', padding: '{spacing.16}', height: '84px' }
   card-account: { rounded: '{rounded.20}', padding: '18px' }
   # C09 Sheets, dialogs and overlays
   sheet-light:
@@ -1675,14 +1704,14 @@ components:
       backgroundColor: '{colors.surface-light}',
       textColor: '{colors.text-light}',
       rounded: '{rounded.24}',
-      padding: '10px 20px 34px',
+      padding: '10px {spacing.20} 34px',
     }
   sheet-dark:
     {
       backgroundColor: '{colors.surface-dark}',
       textColor: '{colors.text-dark}',
       rounded: '{rounded.24}',
-      padding: '10px 20px 34px',
+      padding: '10px {spacing.20} 34px',
     }
   sheet-handle-light:
     {
@@ -1703,14 +1732,14 @@ components:
       backgroundColor: '{colors.surface-light}',
       textColor: '{colors.text-light}',
       rounded: '{rounded.24}',
-      padding: '20px',
+      padding: '{spacing.20}',
     }
   dialog-dark:
     {
       backgroundColor: '{colors.surface-dark}',
       textColor: '{colors.text-dark}',
       rounded: '{rounded.24}',
-      padding: '20px',
+      padding: '{spacing.20}',
     }
   coach-mark-light:
     {
@@ -1906,7 +1935,7 @@ Component label styles (drawn on C01–C10, not on R2) each scale with the neare
 Phone reference 390 × 844. One column; content width = screen − 40.
 
 - **Side margin** 20 at every width (320 to 430). Rows, cards and the outfit card stretch to width − 40.
-- **Spacing scale** (`spacing`, pt / dp): 4, 8, 12, 16, 20, 24, 32, 40, 48, 64. Roles on R2: 16 card padding, 20 screen side margin, 24 section gap. On Today, R3 measures section gap 8 (12 on pushed screens).
+- **Spacing scale** (`spacing`, pt / dp): 4, 8, 12, 16, 20, 24, 32, 40, 48, 64. Roles on R2: 16 card padding, 20 screen side margin, 24 section gap. On Today, R3 measures section gap 8 (12 on pushed screens). A component padding or gap part that equals a step names it in the frontmatter (`padding: '0 {spacing.24}'`); heights and off-scale parts stay literal (owner 2026-10-21).
 - **Screen anatomy (R3):** content starts 8 below the OS safe area; large title 72 (padding 8 0 6, overline + `large-title-bar`, profile 44); context strip 44 with chips inside 44 targets; source line in Caption; outfit card radius 24, padding 14, gap 10; primary button 52, one per screen; action row 72 (radius 20, padding 8 6, buttons 56 tall, 48 min wide); section header 44 (Subhead + text action); alternatives rail 60, cards 164 wide, gap 10, scrolls past the right margin; tab bar 78 with the home-indicator zone inside its bottom 20.
 - **Top bars:** top-level tabs use the large title 72, collapsing to the compact 52 bar (surface, bottom divider) on scroll and expanding at the top. Pushed screens use the standard 52 bar (back 44, centred title, at most one text action). Modals use the 56 bar (close 44 left, title + position, Save right). The tab bar never hides on scroll. iOS: large navigation title collapsing to inline · Android: M3 large top app bar collapsing to small.
 - **Navigation:** five tabs, Today (launch) · Closet · Capture (centre, opens the camera modal) · Discover · You, each with its own stack. The tab bar shows on every screen inside a tab, top level and pushed; it hides only in modal flows (onboarding, the Capture flow, Edit and correct, Paywall, Trial ended recap, Deletion pending). A sheet sits over its parent with the tab bar under the scrim. iOS: tab view, one navigation stack per tab, full-screen cover for modals, sheets with detents · Android: M3 navigation bar, one back stack per tab, full-screen dialog destination, modal bottom sheet.
@@ -1962,7 +1991,7 @@ Soft, rounded, friendly geometry. Interactive things are pills; containers are g
 - **8:** tags, planned-outfit thumbnails. **6:** never-suggest chip, checkbox. **3:** progress track. **2:** sheet handle. **4:** inline-link focus ring.
 - Phone frame 48 is a canvas reference only, not a token.
 
-**Icons:** one inline stroke set (C02, `AppIcon`): 24 × 24 grid, 2 px live-area keyline, round caps and joins, no fill, currentColor. Stroke 1.7 in grid units, heavier at the small sizes and lighter at 40 (`components.icon-<n>`). Filled twins only for the favourite heart, the saved bookmark and the liked thumbs-up. Sizes 11, 12, 14, 16, 18, 20, 22, 24 (default), 26, 28, 32, 36, 40, 56. Icons are hidden from screen readers; the button names the action. The AI-generated spark appears only beside the words "AI-generated preview".
+**Icons:** one inline stroke set (C02, `AppIcon`): 24 × 24 grid, 2 px live-area keyline, round caps and joins, no fill, currentColor. Six named sizes, the icon scale (`components.icon-<step>`, owner 2026-10-21): xs 12 · sm 16 · md 20 · lg 24 (default) · xl 32 · hero 56. Stroke 1.7 in grid units, 2.2 at xs. Icons grow with the user's text size. Filled twins only for the favourite heart, the saved bookmark and the liked thumbs-up. Icons are hidden from screen readers; the button names the action. The AI-generated spark appears only beside the words "AI-generated preview".
 
 **Garments (C10):** flat item art on a 64 viewBox, used only as mockup placeholders; the app always shows the user's real photos.
 
@@ -1974,56 +2003,90 @@ Every component is drawn in S1 and S2 on its canvas board, with states in this o
 
 - **Shape:** pill (full radius).
 - **API:** `.impeccable/components/button.yaml` (`AppButton`) lists the variants, sizes, states and tokens; where C01 and the screens disagree, the screens win (owner 2026-10-20).
-- **Sizes (as the screens draw them):** Large 52 (padding 0 24, 17/600); Card 48 (17/600, `button-card`: the one action of a state template card, full width); Medium 44 (0 20, 17/600); Compact 44 (15/600 Subhead label: outlined 0 16 `button-compact`, filled 0 20 `button-compact-filled`, text 0 12 `button-text-compact`; row, card and dialog actions); Small 36 (0 16, 15/600, 44 hit area). Leading icon 20, gap 8 at the 17/600 sizes; 18, gap 6 at Compact (SC05 Edit and Retry, SC12 Undo and Delete). Heights are minimums: labels scale and wrap.
+- **Sizes (as the screens draw them):** Large 52 (padding 0 24, 17/600); Card 48 (17/600, `button-card`: the one action of a state template card, full width); Medium 44 (0 20, 17/600); Compact 44 (15/600 Subhead label: outlined 0 16 `button-compact`, filled 0 20 `button-compact-filled`, text 0 12 `button-text-compact`; row, card and dialog actions); Small 36 (0 16, 15/600, 44 hit area). Leading icon md at every size (`iconSize: icon-md`); gap 8, and 6 at Compact (SC05 Edit and Retry, SC12 Undo and Delete draw 18 there, which snaps to md as Small's same 15/20 label draws it). Heights are minimums: labels scale and wrap.
 - **Primary:** Large, Card, Medium, Compact (C08 Add items, TR1 See plans), Small. Full width inside the 20 margins or hugs content. Pressed `primary-pressed-*` (dark: the background 16 % overlay, flattened); 150 ms.
-- **Loading (every variant, owner 2026-10-20):** while its request runs, the button shows a spinner 20 in the leading-icon slot, in the label colour (secondary: `primary-text-*`, `button-secondary-loading-*`), and the label stays. It ignores further taps and keyboard activation until the request ends, keeps its enabled look (never the disabled look) and is announced as busy.
+- **Loading (every variant, owner 2026-10-20):** while its request runs, the button shows a spinner in the leading-icon slot (md), in the label colour (secondary: `primary-text-*`, `button-secondary-loading-*`), and the label stays. It ignores further taps and keyboard activation until the request ends, keeps its enabled look (never the disabled look) and is announced as busy.
 - **Secondary (outlined):** Large, Medium, Compact (SC15 Unfollow, C07 Sign out, SC05 Edit, C08 and SC09 Choose option, SC10's disabled pair), Small; 1.5 `outline-*` ring, text colour; pressed fills surface-2; disabled divider ring + text-secondary.
 - **Primary outline:** Compact only; 1.5 `primary-*` ring, `primary-text-*` label (P10, SC06, SC07 and C07 Confirm; SC12 Set my own; SC05 Retry). Pressed fills surface-2, disabled divider ring + text-secondary (derived from secondary, not drawn).
 - **Text button:** Medium 44 (padding 0 12, 17/600) or Compact 44 (0 12, 15/600: row and section-header actions, SC12 Edit and Clear, SC09 Show me something different, the coach mark Got it), primary-text; pressed surface-2 pill; disabled text-secondary. **Inline link:** Callout 15/600, underline offset 3, focus ring radius 4.
 - **Tonal (Linen):** surface-2 fill, text label; Large (SE1 Use my selfie / Use a generic face), Card (C04 offline Try again), Compact (TR1 and C09 Not now / Allow / Turn on). Pressed divider fill (as the icon button); disabled surface-2 + text-secondary (derived, not drawn).
-- **Destructive:** outlined (error text + 1.5 ring, trash 20; pressed error-bg light, surface-2 dark; disabled divider ring + text-secondary) for rows and screens, Medium 44 or Large 52; filled (error fill, `on-error-*` text, Large 52) only for the final confirm inside a dialog. Pressed filled: `pressed-overlay-strong-*` (ink 18 % light, background 16 % dark). Disabled filled: error-bg fill, error-fg label at 500 (`button-disabled`). Cancel stays enabled while deleting.
-- **Destructive text:** error label, no ring, trash 18, Compact (0 10) for row actions (SC12 and C07 Delete, beside the Undo text button). Pressed error-bg light, surface-2 dark (as outlined destructive); disabled text-secondary (as text); derived, not drawn.
+- **Destructive:** outlined (error text + 1.5 ring, trash md; pressed error-bg light, surface-2 dark; disabled divider ring + text-secondary) for rows and screens, Medium 44 or Large 52; filled (error fill, `on-error-*` text, Large 52) only for the final confirm inside a dialog. Pressed filled: `pressed-overlay-strong-*` (ink 18 % light, background 16 % dark). Disabled filled: error-bg fill, error-fg label at 500 (`button-disabled`). Cancel stays enabled while deleting.
+- **Destructive text:** error label, no ring, trash md, Compact (0 10) for row actions (SC12 and C07 Delete, beside the Undo text button). Pressed error-bg light, surface-2 dark (as outlined destructive); disabled text-secondary (as text); derived, not drawn.
 - **Destructive tonal:** error-bg fill + error label in light, surface-2 + error label in dark, Large 52: step 1 of a two-step reset (C09 Reset; C09's 44 is lifted to 52 like every overlay action). Pressed `pressed-overlay-strong-*`; disabled surface-2 + text-secondary (derived, not drawn). Its enabled light colours equal the filled destructive's disabled colours; the label weight (600 against 500) and the dialog context tell them apart.
-- **Icon buttons:** 44 circle on surface-2 (pressed divider) or ghost; icon 24. Accessible name is verb + object ("Back", "Close", "More options for this outfit").
-- **Action row (Today):** Save · Schedule · Like · Dislike · More; icon 24 over Caption, min 48 × 56, gap 2. Selected: active pill, filled icon, label changes (Like → Liked, Save → Saved) at 600.
-- **Capture centre tab:** raised primary circle, camera icon 26, 4 surface ring, Caption 12/600 label; pressed `primary-pressed-*`; opens the camera modal.
-- **Sign-in:** official Apple and Google button artwork, 52 tall, full width; "Continue with passkey" is a secondary Large with a key icon 20, same width.
+- **Icon buttons:** 44 circle on surface-2 (pressed divider) or ghost; icon lg. Accessible name is verb + object ("Back", "Close", "More options for this outfit").
+- **Action row (Today):** Save · Schedule · Like · Dislike · More; icon lg over Caption, min 48 × 56, gap 2. Selected: active pill, filled icon, label changes (Like → Liked, Save → Saved) at 600.
+- **Capture centre tab:** raised primary circle, camera icon lg, 4 surface ring, Caption 12/600 label; pressed `primary-pressed-*`; opens the camera modal.
+- **Sign-in:** official Apple and Google button artwork, 52 tall, full width; "Continue with passkey" is a secondary Large with a key icon md, same width.
 - **Equal-weight pairs:** Skip + Continue side by side, 52 each, flex 1 : 1, gap 12 (Skip secondary outlined, Continue primary, as SC02, SC03, SC09, P03 and P08 draw them); consent pairs (Not now + Allow, Not now + Turn on) are both tonal, Compact, flex 1 : 1 (TR1, C09); stacked pairs full width, 52 each, gap 10.
 
 ### Icons (C02)
 
-- **API:** `.impeccable/components/icon.yaml` (`AppIcon`) lists every glyph as path data on the 24 grid; the sizes and strokes are the `components.icon-<n>` tokens. Where C02 and the screens disagree, the screens win, and icons only the screens draw join the set (owner 2026-10-19); each choice is a "Screens win:" comment in the contract.
+- **API:** `.impeccable/components/icon.yaml` (`AppIcon`) lists every glyph as path data on the 24 grid; the sizes and strokes are the icon scale, the `components.icon-xs` … `components.icon-hero` tokens. Code names a step, never a number (`AppIcon(name: .heart, size: .sm)`), and a component that holds an icon names a step by its bare key (`iconSize: icon-md` on the buttons). Where C02 and the screens disagree, the screens win, and icons only the screens draw join the set (owner 2026-10-19); each choice is a "Screens win:" comment in the contract.
 - **Sets:** navigation (the five tabs, back, close, chevrons, arrows, more, search, filter, sort, grid, list, group); actions (heart, thumbs, bookmark, schedule, edit, delete, archive, add, check, undo, refresh, upload, export, camera actions, photo, compare, plus / minus / pause circles, clear, hide, report); weather and context (sun, cloud, rain, snow, wind, cold, hot, evening, office, holiday, indoors, layers, leaf, temperature); closet (coat, laundry, packed, lent, repair, tag, collection, star, outfits, scissors); status (info, warning, error, success, offline, sync, processing, lock, AI-generated, confidence bars, pending, cancelled, never-suggest, approximate, step rings); account and settings; selfie, avatar and try-on (page 8: face, face scan, people, glasses off, timer, captions, palette, 3D avatar, rotate, zoom, poses).
 - **Style:** 24 × 24 grid, 2 px live area, round caps and joins, no fill, currentColor. A selected state is its own filled glyph (`heart-filled`, `bookmark-filled`, `thumbs-up-filled`); small dots are filled.
-- **Sizes and strokes** (stroke in grid units; drawn width = stroke × size / 24): 11 → 2.8 (plan feature checks); 12 → 2.2 (tile badges, the 3D tag); 14 → 2 (status tags, the reason-chip chevron); 16 → 1.7 (inline messages, chips, date strip, confidence); 18 → 1.7 (row chevrons, chip icons, Compact button icons); 20 → 1.7 (banners, the button leading icon, list rows); 22 → 1.7 (action-menu rows, history rows); 24 → 1.7, the default (icon buttons, settings rows, the action row); 26 → 1.7 (tab bar); 28, 32, 36 and 56 → 1.7 (state-card and hero art); 40 → 1.5 (the pose picker). Reason and filter chips draw 16 at 1.9 and the tile-badge warning 12 at 2.4; both take their size's stroke. The confidence bars keep their drawn width at every size.
-- **Accessibility:** decorative. Icons are hidden from screen readers; the host control or the words beside the icon name it. Every tappable icon sits in a 44 pt / 48 dp target. An icon never carries meaning alone: icon + words.
+- **Scale (owner 2026-10-21):** six named steps replace the 14 measured sizes: xs 12 · sm 16 · md 20 · lg 24 (the default) · xl 32 · hero 56 (`components.icon-<step>`). The stroke is in grid units, so the drawn width is stroke × size / 24; sizes and drawn widths are at the default text size. Each stroke is measured from the screens at its step: the stroke that most of the icons drawn at that size use. At xl the 28, 32 and 36 draw 1.7, and 1.7 also keeps the pose picker's line (2.5 px at 40) nearer than 1.5 would (2.27 against 2.0 px). Reason and filter chips (16 at 1.9) and the tile-badge warning (12 at 2.4) take their step's stroke, and the confidence bars, written as filled capsules, keep their drawn width at every step.
+
+| Step | Size | Stroke | Drawn   | Stroke measured from                       |
+| ---- | ---- | ------ | ------- | ------------------------------------------ |
+| xs   | 12   | 2.2    | 1.1 px  | the 12s: 19 of 26 draw 2.2                 |
+| sm   | 16   | 1.7    | 1.13 px | the 16s: 129 of 240 draw 1.7               |
+| md   | 20   | 1.7    | 1.42 px | the 20s: 198 of 215 draw 1.7               |
+| lg   | 24   | 1.7    | 1.7 px  | the 24s and 26s: all 828 draw 1.7          |
+| xl   | 32   | 1.7    | 2.27 px | 28, 32 and 36 draw 1.7; 40 at 1.5 (2.5 px) |
+| hero | 56   | 1.7    | 3.97 px | the 56s (SC01) draw 1.7                    |
+
+- **Where each screen use lands:** every icon the screens draw snaps to the nearest step. A tie (14, 18, 22, 28) goes to the step a sibling in the same role already draws, named in the last column: the tags take the tile badges' 12, chips with a 13/18 or 14/18 label take the reason and filter chips' 16, chips and buttons with a 15/20 label take Small's 20, row chevrons take the picker row's 20, and the 22s take the icon buttons' 24. The shifts are accepted (owner 2026-10-21); the largest are the pose picker (40 to 32) and the SC11 and SC13 state-card art (36 to 32).
+
+| Screen use                                                         | Drawn     | Step | Visible shift                    |
+| ------------------------------------------------------------------ | --------- | ---- | -------------------------------- |
+| Plan feature checks (SC14, P18, TR1)                               | 11 at 2.8 | xs   | slight: +1, a lighter tick       |
+| Tile badges, 3D tag                                                | 12        | xs   | none                             |
+| Status tags (Later, Lock, Available, Provisional)                  | 14        | xs   | small: -2, as tile badges        |
+| Reason-chip chevron                                                | 14        | xs   | small: -2                        |
+| Inline messages, reason and filter chips, date strip, confidence   | 16        | sm   | none                             |
+| Weather chip, group and sort chips (13/18, 14/18 labels)           | 18        | sm   | small: -2, as reason chips       |
+| Choice, never-suggest, soft-dislike chips (15/20 labels)           | 18        | md   | small: +2                        |
+| Compact button icons, toast                                        | 18        | md   | small: +2, as the Small button   |
+| Row chevrons                                                       | 18        | md   | small: +2, as the picker chevron |
+| Banners, button leading icon, list rows, search, picker chevron    | 20        | md   | none                             |
+| Action-menu rows, compact action row, profile button, history rows | 22        | lg   | small: +2, as icon buttons       |
+| Icon buttons, settings rows, Today action row                      | 24        | lg   | none                             |
+| Tab bar, Capture centre camera                                     | 26        | lg   | small: -2, every tab             |
+| Generating spark in the 64 disc (TR1)                              | 28        | xl   | yes: +4                          |
+| State-card art (TR1)                                               | 32        | xl   | none                             |
+| State-card art (SC11, SC13)                                        | 36        | xl   | yes: -4, same slot as TR1        |
+| Pose picker (AV1)                                                  | 40 at 1.5 | xl   | yes: -8, the most visible        |
+| Privacy promise (SC01)                                             | 56        | hero | none                             |
+
+- **Accessibility:** decorative. Icons are hidden from screen readers; the host control or the words beside the icon name it. Every tappable icon sits in a 44 pt / 48 dp target. An icon never carries meaning alone: icon + words. Icons grow with the user's text size (iOS Dynamic Type, Android font scale), as the platform's own icons do (owner 2026-10-21); the native lanes implement it.
 - **Tint:** the host's foreground (text, text-secondary; primary-text on the active tab and text actions). Status icons use the status foregrounds (`*-fg-*`). No icon colour token. Confidence: the level glyph in the band colour over `confidence-high` in a muted colour, always beside its words ("Medium confidence").
 - **Owner decisions (2026-10-20):** outfits use thumbs-up and thumbs-down for like and dislike, and the "a pairing you liked" chip and the Liked history follow; clothing items use the heart for favourite; the star marks only "Style preferences". The AI spark sits only beside "AI-generated preview"; Discover's trend tags use the tag. The five tab icons are C02 glyphs inside the native tab bar (DEC-87); native navigation bars keep the system back and close, and the C02 back and close serve custom headers (camera, onboarding). Every drawn icon is built, page 8 included. One drawing per meaning: where the screens tie, the drawing nearest C02 wins; credits are the coin stack; the "You follow" chip on Discover keeps the heart; the upsell cards keep the four-point sparkle, which is not the AI spark.
+- **Owner decisions (2026-10-21):** a named icon scale (xs, sm, md, lg, xl, hero) replaces the measured sizes, every screen use snaps to the nearest step, and the small visual shifts are accepted. Components point at the shared scales instead of repeating numbers: an icon slot names an icon step (`iconSize: icon-md`), and a padding or gap part that equals a spacing step names it (`padding: '0 {spacing.24}'`); heights and off-scale values (44, 52, gap 6) stay literal. Icons grow with the user's text size.
 
 ### Chips and tags (C03)
 
-- **Weather chip (context strip):** 34 in a 44 target, padding 0 14 0 11, label-sm, accent / on-accent, icon 18; pressed `pressed-overlay-*` (ink 12 % light, background 16 % dark).
+- **Weather chip (context strip):** 34 in a 44 target, padding 0 14 0 11, label-sm, accent / on-accent, icon sm; pressed `pressed-overlay-*` (ink 12 % light, background 16 % dark).
 - **Occasion / holiday chips:** surface-2 / text, pressed divider. Holiday only when one applies. **Override chip:** surface + 1.5 primary-text ring, house + pencil icon, "your setting" in primary-text. No selected state; tap opens a sheet.
 - **Freshness caption:** chips gap 8; source + time ("Open-Meteo · 07:10") in Caption text-secondary, always visible.
-- **Reason chip:** 32 in a 44 target, padding 0 12 0 10, label-sm, surface-2 / text, icon 16 in primary-text; text comes from reason-code templates. Expanded: primary-text fill + white (dark: primary-text / ink) + chevron up. **Expanded reason row:** padding 14 16, radius 16, surface + divider ring, sentence in Callout, fact 13/600 with icon disc, freshness in Caption.
-- **Choice chip (multi-select):** 40 in a 44 target, padding 0 14 (0 14 0 10 with check), 15/500 (selected 600), surface + 1 px outline; selected primary-text fill (dark: primary-text / ink) + check 18.
-- **Filter chip:** 36 in a 44 target, label-md, surface + 1 px outline; selected as choice chip + check 16; count in 500 text-secondary; dropdown chevron 16.
-- **Never-suggest chip (hard exclusion):** 40, padding 0 14 0 10, radius 6 (never a pill), 15/600, error-bg + 1 px error ring (dark: surface-2 + 1 px dark error), slash icon 18 in error; pressed 2 px ring.
-- **Soft-dislike chip:** pill, 15/500, surface-2 / text-secondary + divider ring, minus icon 18. **Add chip:** transparent, 1 px outline, primary-text, plus icon.
+- **Reason chip:** 32 in a 44 target, padding 0 12 0 10, label-sm, surface-2 / text, icon sm in primary-text; text comes from reason-code templates. Expanded: primary-text fill + white (dark: primary-text / ink) + chevron up. **Expanded reason row:** padding 14 16, radius 16, surface + divider ring, sentence in Callout, fact 13/600 with icon disc, freshness in Caption.
+- **Choice chip (multi-select):** 40 in a 44 target, padding 0 14 (0 14 0 10 with check), 15/500 (selected 600), surface + 1 px outline; selected primary-text fill (dark: primary-text / ink) + check md.
+- **Filter chip:** 36 in a 44 target, label-md, surface + 1 px outline; selected as choice chip + check sm; count in 500 text-secondary; dropdown chevron sm.
+- **Never-suggest chip (hard exclusion):** 40, padding 0 14 0 10, radius 6 (never a pill), 15/600, error-bg + 1 px error ring (dark: surface-2 + 1 px dark error), slash icon md in error; pressed 2 px ring.
+- **Soft-dislike chip:** pill, 15/500, surface-2 / text-secondary + divider ring, minus icon md. **Add chip:** transparent, 1 px outline, primary-text, plus icon.
 - **Colour swatch chip:** 40, swatch 16 circle (outline ring on swatches near the ground), name always shown.
 - **Plan tags:** 24, padding 0 10, 12/600: Free surface-2, Essentials info, Plus success, Pro primary. The name carries meaning, not the colour.
-- **Status tags:** Lock (surface-2 + lock 14, read as "Needs Plus"), Later (1 px text-secondary ring + clock), Provisional (warning, dashed 1 px, stays until the user confirms), New (info + 6 px dot).
+- **Status tags:** Lock (surface-2 + lock xs, read as "Needs Plus"), Later (1 px text-secondary ring + clock), Provisional (warning, dashed 1 px, stays until the user confirms), New (info + 6 px dot).
 - **Count badge:** dot 8 or number 18 high, badge-count, error fill with an `on-error-*` number, 2 px ring in the surface below; the count is also in the label.
 - **Trial pill:** 28, padding 0 12 0 9, label-sm, surface + 1.5 text ring, clock icon + days in words ("Trial · 2 days left"); last day uses warning colours.
 
 ### Status and feedback (C04)
 
-- **Tile badges:** 22, padding 0 8 0 6, icon 12 + badge text, inset 6 bottom-left. Processing = info, Needs attention = warning, Waiting to sync and availability (Laundry, Packed · until 24 Oct, Lent · to Mari, Repair, Archived) on surface. Unavailable tiles mute the image, never the label.
-- **Confidence label:** 28, bars icon 16 + text band, label-sm.
+- **Tile badges:** 22, padding 0 8 0 6, icon xs + badge text, inset 6 bottom-left. Processing = info, Needs attention = warning, Waiting to sync and availability (Laundry, Packed · until 24 Oct, Lent · to Mari, Repair, Archived) on surface. Unavailable tiles mute the image, never the label.
+- **Confidence label:** 28, bars icon sm + text band, label-sm.
 - **Provenance badge:** "AI-generated preview" pill in inverse colours (`inverse-surface-*` / `on-inverse-*`: ink on light, paper on dark), 22, top-left of every generated view, with the confidence label bottom-left. Inline 13/600. Never on real photos. **Freshness label:** "Cached · based on data from 07:10", 13/18 secondary.
-- **Banners:** full width (screen − 40), padding 12 4 12 14, radius 16, icon 20, title 15/600, body 13/18, action 13/600 in the status fg, dismiss 44 × 44. Kinds: info, success, warning, error, offline (surface-2), stale (surface + divider). Dark: info, success, error and stale on `surface-dark` + divider ring (`banner-<kind>-dark`; `banner-dark` is the same shared fill), warning on `warning-bg-dark`, offline on `surface-2-dark`.
-- **Inline field message:** 13/18, 6 below the field; error = 2 px error ring + icon 16 + fix link, value kept as typed; helper in secondary.
-- **Snackbar:** 56, radius 16, inverse colours (`inverse-surface-*` / `on-inverse-*`), Undo in `label-action` (15/20 700) in `inverse-primary-*` (`snackbar-action-*`: 44 high, padding 0 14, radius 12; the accent yellow in light, #1F5A47 in dark; the Undo on inverse surfaces exception to The Accent Is Fill Rule), 16 above the tab bar. **Toast:** 44 pill, icon 18 + 15/500, no action.
+- **Banners:** full width (screen − 40), padding 12 4 12 14, radius 16, icon md, title 15/600, body 13/18, action 13/600 in the status fg, dismiss 44 × 44. Kinds: info, success, warning, error, offline (surface-2), stale (surface + divider). Dark: info, success, error and stale on `surface-dark` + divider ring (`banner-<kind>-dark`; `banner-dark` is the same shared fill), warning on `warning-bg-dark`, offline on `surface-2-dark`.
+- **Inline field message:** 13/18, 6 below the field; error = 2 px error ring + icon sm + fix link, value kept as typed; helper in secondary.
+- **Snackbar:** 56, radius 16, inverse colours (`inverse-surface-*` / `on-inverse-*`), Undo in `label-action` (15/20 700) in `inverse-primary-*` (`snackbar-action-*`: 44 high, padding 0 14, radius 12; the accent yellow in light, #1F5A47 in dark; the Undo on inverse surfaces exception to The Accent Is Fill Rule), 16 above the tab bar. **Toast:** 44 pill, icon md + 15/500, no action.
 - **Progress:** linear track 6 (radius 3, surface-2, primary fill), ring 40 stroke 4, steps, upload row. Counts in words ("5 of 8"), never invented percentages.
 - **Skeletons:** surface-2 blocks on surface matching the final layout (outfit card, item tile, list row); slow shimmer, none under reduced motion; announced once as "Loading".
 - **State templates (empty, error, offline):** padding 20, radius 24, illustration slot 96 × 64, Title3 title, Callout body naming the cause, one action (button Card 48: primary; tonal on the offline template). Offline keeps cached content visible.
@@ -2042,22 +2105,22 @@ Every component is drawn in S1 and S2 on its canvas board, with states in this o
 
 - **Text field:** label 15/600 above (always visible), field 48, radius 12, padding 0 14, Figtree 17, surface + 1 px outline; focus ring 2 at 2 offset; error 1.5 ring + icon message 13; disabled names why ("Set by your sign-in"); "Why we ask" helper line.
 - **Number field with unit:** unit suffix 17 secondary, unit toggle track 44 surface-2. Out-of-range values are kept, never clamped; a warning-bg suggestion card offers "Use 176 cm" / "Keep 1760 cm".
-- **Search field:** 48 pill, surface-2, leading search 20, clear 44 × 44; no-results card offers a relax step ("Remove Winter").
+- **Search field:** 48 pill, surface-2, leading search md, clear 44 × 44; no-results card offers a relax step ("Remove Winter").
 - **Text area:** min 84, radius 12, padding 12 14, 17/24, Caption counter, grows with content.
 - **Consent toggle row:** padding 14 16, radius 16, surface, purpose 17/600, effect 15, status + date always shown ("Granted 14 Oct 2026"), switch 51 × 31.
-- **Pickers:** picker row 52 (padding 0 8 0 16, radius 16, value 17 secondary + chevron 20, time in a surface-2 pill); birth-year wheel 5 rows × 34, selection band surface-2 radius 10, selected 20/600, with a why-we-ask line.
+- **Pickers:** picker row 52 (padding 0 8 0 16, radius 16, value 17 secondary + chevron md, time in a surface-2 pill); birth-year wheel 5 rows × 34, selection band surface-2 radius 10, selected 20/600, with a why-we-ask line.
 - **Selection controls:** switch 51 × 31 (knob 25, on primary, off outline, state word beside it, disabled names the reason, row min 48); checkbox 24 radius 6 (on, off, mixed; row 44); radio 24 (dot 11, ring 2, row 44 + one-line effect).
 - **Segmented choice:** 44, surface-2 track padding 3, selected surface + 1.5 primary ring + check, Callout. **Stepper:** buttons 44 pill, surface + outline, value Headline tabular, limit as text.
 - **Sliders:** calibration (later): track 6, thumb 28, fill primary, estimate = dashed ring + label, your value = solid thumb + number. Range: two thumbs 28, both values as text.
-- **Date strip:** cell 44 × 76, radius 12, gap 2, weather icon 16; selected primary / on-primary; past the 16-day horizon surface-2, dashed outline, disabled.
+- **Date strip:** cell 44 × 76, radius 12, gap 2, weather icon sm; selected primary / on-primary; past the 16-day horizon surface-2, dashed outline, disabled.
 
 ### Lists and rows (C07)
 
-- **Grouped list:** Overline section header, inset card radius 16 on surface, settings rows 52, divider inset 52, icon 24 primary-text, value 15 secondary. **Plain list:** rows 52, full-width divider; pressed surface-2 radius 12.
+- **Grouped list:** Overline section header, inset card radius 16 on surface, settings rows 52, divider inset 52, icon lg primary-text, value 15 secondary. **Plain list:** rows 52, full-width divider; pressed surface-2 radius 12.
 - **Toggle row** 64 (label 17 + helper 13, switch); **destructive row** 64 (error fg + icon + plain words; pressed error-bg).
 - **Detail row with confidence:** label 12/500 + value 15/600, confidence as text; low band on warning-bg with icon. **Provisional row:** estimated value with dashed underline + Provisional tag until confirmed; Confirm is a primary outline button, Compact.
 - **Device row** 64 (Sign out outlined 44; none on this device). **Item row** 72 (photo 56 radius 12, name 15/600, category · colour 13, availability chip 24; unavailable mutes the photo, text stays readable). **Planned outfit row** (date 15/600, 3 thumbs 28 radius 8; flagged strip warning-bg + icon + "Rain now expected — review your plan"). **Collection row** 64 (3 overlapping thumbs).
-- **Feedback history row** (Undo text button + Delete destructive text button, both Compact with icon 18). **Upload queue rows** (photo 44 radius 10, status icon + text, progress 4; failed shows "Upload failed · photo is safe" + Retry). **Consent processor row** 60 (purpose · processor · region).
+- **Feedback history row** (Undo text button + Delete destructive text button, both Compact with icon md). **Upload queue rows** (photo 44 radius 10, status icon + text, progress 4; failed shows "Upload failed · photo is safe" + Retry). **Consent processor row** 60 (purpose · processor · region).
 
 ### Cards (C08)
 
@@ -2074,7 +2137,7 @@ Every component is drawn in S1 and S2 on its canvas board, with states in this o
 ### Sheets, dialogs and overlays (C09)
 
 - **Bottom sheet:** handle 36 × 4 radius 2 in outline, Title3 title, Callout body, actions 52 pinned, top radius 24, surface, sheet shadow, scrim behind. Tall sheet: top inset 72, body scrolls, actions pinned above a 1 px divider; dismiss by swipe down or scrim tap.
-- **Action menu sheet:** rows 48 (52 at full scale), icon 22, gap 12, 15/500, pressed surface-2, divider before "Report a problem".
+- **Action menu sheet:** rows 48 (52 at full scale), icon lg, gap 12, 15/500, pressed surface-2, divider before "Report a problem".
 - **Confirmation dialog:** inset 12, radius 24, padding 20, dialog shadow, kept vs cleared summary; reset is two-step (step 1: Cancel secondary + Reset destructive tonal, Large 52 each). **Destructive confirmation:** after re-auth, states what is deleted, the timeline ("Within 30 days, usually about 8") and the store note; "Delete account" filled error and "Keep account" outlined, stacked full width, Large 52 each (the screens draw every overlay action at 52; the compact C09 mockup shows 44).
 - **Permission priming (location, notifications):** shown at first use, before the OS prompt; radio rows 44 with the active pill on the selected row; "Allow" / "Turn on" and "Not now" have equal fill, size and weight (both tonal, Compact); all notification categories start off.
 - **Coach mark:** scrim + undimmed target, surface bubble radius 16, padding 14, arrow 12, dialog shadow (`coach-mark-*` elevation; dark adds a 1 px `outline-dark` ring round the bubble and arrow), "Got it" text button Compact, shown once.
@@ -2103,7 +2166,7 @@ Flat item art for tiles and outfit cards (tops, bottoms, one-pieces, outerwear, 
 - **Do** draw and build every state: empty, loading (skeleton, never blank), partial, failure (cause + effect + one action), retry, offline ("Based on data from 07:10").
 - **Do** pair every state with an icon + words; show source + freshness next to weather and generated content.
 - **Do** show confidence as words ("High confidence", "Approximate") and mark estimated values differently from entered ones (dashed underline + Provisional tag).
-- **Do** keep touch targets at 44 × 44 pt (iOS) and 48 × 48 dp (Android), and support Dynamic Type and Android font scale to 200 %: titles, names, reasons, body and button labels wrap; chips drop under the text; paired buttons stack full width; only grid-tile names truncate (after 2 lines, full name read aloud); photos, collage and icons keep their size.
+- **Do** keep touch targets at 44 × 44 pt (iOS) and 48 × 48 dp (Android), and support Dynamic Type and Android font scale to 200 %: titles, names, reasons, body and button labels wrap; chips drop under the text; paired buttons stack full width; only grid-tile names truncate (after 2 lines, full name read aloud); photos and the collage keep their size, and icons grow with the text (owner 2026-10-21).
 - **Do** label for screen readers: item tile = name, category, colour, availability ("Green wool jacket, outerwear, green, available"); icon buttons = verb + object; generated views = "AI-generated preview, medium confidence"; tab = "Today, tab, 1 of 5, selected".
 - **Do** honour reduced motion with a 150 ms crossfade and no shimmer or auto-rotate; give every 3D view a non-3D equivalent (the collage).
 - **Do** name the trigger on a paywall ("Planning ahead is part of Plus"), keep Restore visible, and show prices as "[PRICE]".

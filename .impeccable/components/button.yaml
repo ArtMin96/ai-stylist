@@ -22,8 +22,9 @@ props:
   - name: action
     type: action
     required: true
-  # Leading icon 20, gap 8 at large, card, medium and small; 18, gap 6 at compact (SC05 Edit and
-  # Retry, SC12 and C07 Undo and Delete, SC09 Show me something different). Drawn on primary,
+  # Leading icon md (iconSize: icon-md) at every size; gap 8 at large, card, medium and small,
+  # 6 at compact. Compact draws 18 (SC05 Edit and Retry, SC12 and C07 Undo and Delete, SC09 Show me
+  # something different), which snaps to md (owner 2026-10-21: icon scale). Drawn on primary,
   # secondary (the passkey key), text (Export your data, Undo), primary-outline (Retry),
   # destructive (trash 20) and destructive-text (trash 18); destructive-filled, tonal and
   # destructive-tonal are drawn without one. While loading, the spinner takes this slot.
@@ -74,7 +75,7 @@ states: [enabled, pressed, focused, disabled, loading]
 
 # LOADING (owner 2026-10-20: "make sure it has a state when we are sending request, so user can't
 # keep pressing the button while it's requesting"). On every variant and size:
-# - the label stays and a spinner shows in the leading-icon slot (20; 18 at compact), in the
+# - the label stays and a spinner shows in the leading-icon slot (md at every size), in the
 #   variant's label colour; only secondary names its own spinner colour (button-secondary-loading).
 #   The caller may pass a progress label ("Saving…", "Deleting…"), as C01 draws it;
 # - the button cannot be activated again: taps, keyboard and assistive activation are ignored
@@ -137,7 +138,7 @@ combinations:
     states: [enabled, pressed, focused, disabled, loading]
   # Screens win (owner decided a new variant): SC12 and C07 Delete draw an error label with a
   # trash icon 18, gap 6, no ring, 44, 15/600, 0 10, beside the Undo text button; only compact.
-  # The icon is 18 because the compact icon rule fixes it (leadingIcon), not the 20 default.
+  # The icon is md, as at every size: the drawn 18 snaps to md (owner 2026-10-21: icon scale).
   destructive-text:
     sizes: [compact]
     states: [enabled, pressed, focused, disabled, loading]

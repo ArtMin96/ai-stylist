@@ -24,6 +24,7 @@ These are the fields of a control contract (no `kind`, as `button.yaml`). An ico
   - `states` lists only the states that change a colour or the label style. A state that changes one but has no token yet is written as a comment and proposed to the owner; a contract never points at a token that does not exist.
   - `sizes` names the entry that holds each size's height and padding: the base for the variant's own size, otherwise the shared size entry (buttons: `button-large`, `button-card`, `button-medium`, `button-compact`, `button-compact-filled`, `button-text-compact`, `button-small`).
   - Two entry properties go beyond fill, text and type: `borderColor` is a ring drawn inside the shape (the buttons' width is `button-outline-ring`), and `spinnerColor` is the loading spinner when it is not the label colour.
+  - An entry's dimensions may point at a shared scale (see "Scale references" below): `iconSize` names an icon step by its bare key (`icon-md`), and padding and gap parts name spacing steps.
 - `accessibility`:
   - `role`: the semantic role (`button`).
   - `label`: the accessible name, as a `{props.<name>}` reference.
@@ -35,6 +36,18 @@ These are the fields of a control contract (no `kind`, as `button.yaml`). An ico
 
 Comments may explain a choice (usage rules, a token gap, a board-versus-screen choice, a question still open for the owner); they never add a field.
 
+## Scale references
+
+A `DESIGN.md` component entry (`components.<name>`) points at a shared scale instead of repeating its number (owner 2026-10-21):
+
+- An icon slot (`iconSize`) names an icon-scale step with the bare key `icon-<step>` (`iconSize: icon-md`), never a `{components.…}` reference (the pinned design.md lint, TK-12, rejects those) and never a number. The generated look types it as the icon size enum (`AppIconSize`).
+- CC-12: once an icon set (`kind: icon-set`) exists, every icon slot in use must name one of that set's `sizes`; a number, or a key outside `sizes`, is a finding.
+- A `padding` or `iconGap` part that equals a `spacing` step names it: `iconGap: '{spacing.8}'`, `padding: '0 {spacing.24}'`. A shorthand may mix references, `0` and px literals: `padding: '{spacing.12} {spacing.4} {spacing.12} 14px'`.
+- A value that is not on a scale stays a literal: heights (52, 44, 36), widths and sizes, and off-scale parts (`iconGap: '6px'`, `padding: '0 10px'`). It is never snapped to a step without the owner.
+- Typography (`'{typography.<style>}'`), colour (`'{colors.<role>}'`) and radius (`'{rounded.<step>}'`) references stay as they are.
+
+The generated numbers are the referenced step's value, so moving a literal to its reference never changes what the apps draw.
+
 ## Icon sets
 
 `kind: icon-set` marks a contract that defines a set of glyphs instead of a control (`icon.yaml`, canvas board C02). An icon has no props, variants, combinations or interaction states: the generator emits a name enum and a path table, and each app draws every glyph with one view that takes a name and a size. The fields, all required:
@@ -43,8 +56,8 @@ Comments may explain a choice (usage rules, a token gap, a board-versus-screen c
 - `kind`: `icon-set`. A contract without `kind` is a control contract.
 - `accessibility.role`: `decorative`. The icon is hidden from screen readers; the host control, or the words beside the icon, carry the name.
 - `gallery.title`: as for a control contract (`Icons` → `C02 Icons`, slug `c02-icons`). The gallery shows every glyph, and each glyph's test ID is `ds-icon-<id>`, the same literal on both apps. An icon set has no `label`, `include` or `testId` field.
-- `sizes`: the sizes the set may be drawn at, each the name of a `DESIGN.md` token `components.icon-<n>` (`icon-24`). Each token holds `size` and `strokeWidth`. The stroke is in viewBox units, so the drawn width is `strokeWidth × size / 24`.
-- `defaultSize`: one of `sizes` (`icon-24`).
+- `sizes`: the icon scale, the steps the set may be drawn at, each the name of a `DESIGN.md` token `components.icon-<step>`: `icon-xs`, `icon-sm`, `icon-md`, `icon-lg`, `icon-xl`, `icon-hero` (owner 2026-10-21). Each token holds `size` and `strokeWidth`. The stroke is in viewBox units, so the drawn width is `strokeWidth × size / 24`. The size is the one at the default text size: icons grow with the user's text size, and the native lanes implement it. The generated size enum drops the `icon-` prefix (`AppIconSize.sm`, Kotlin `SM`). Every icon a screen draws snaps to the nearest step; `DESIGN.md` "Icons (C02)" lists where each use lands.
+- `defaultSize`: one of `sizes` (`icon-lg`).
 - `glyphs`: the list, in the board's set order, with the icons only the screens draw at the end of each set. Each glyph has:
   - `id`: kebab-case and unique in the set. It becomes the enum case (`chevron-right` → `.chevronRight` / `CHEVRON_RIGHT`).
   - `set`: `navigation`, `actions`, `weather`, `closet`, `status`, `account` or `capture` (the page-8 selfie, avatar and try-on icons).

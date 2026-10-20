@@ -32,7 +32,8 @@ export const swift = {
   limit: 120,
   wrapAfterAssign: false,
   callTrailingComma: false,
-  list: { open: '[', close: ']', empty: '[]' },
+  // apps/ios/.swift-format multiElementCollectionTrailingCommas: a one-item list takes none.
+  list: { open: '[', close: ']', empty: '[]', singleItemTrailingComma: false },
   argLabel: (name) => `${swiftIdent(name)}: `,
   spell: {
     double: num,

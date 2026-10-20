@@ -9,7 +9,7 @@ Swift client **generated** from the OpenAPI contract.
 project.yml              XcodeGen spec: the ONLY project definition (the .xcodeproj is generated, gitignored)
 Package.resolved         the app's SwiftPM lockfile: every remote package (posthog-ios + the Packages/* pins),
                          each pinned to a commit; `just ios-project` seeds Xcode with it (see "Package pins")
-.xcode-version           pinned Xcode (27.0); checked by `just ios-doctor`
+.xcode-version           pinned Xcode (27.1); checked by `just ios-doctor`
 .swift-format            formatter + formatter-level safety rules (no force unwrap / force try / IUO)
 .swiftlint.yml           SwiftLint safety rules only (only_rules)
 Config/                  ALL build settings: Base (Swift 6 safety), Dev / Preview / Prod, Release; optional
@@ -32,7 +32,7 @@ Packages/DesignSystem/   app-internal design system (DEC-87); no dependency on C
   Sources/DesignSystem     SwiftUI base components (Apple platforms only; left out of the manifest on Linux)
   tests/<Target>Tests      DesignTokensTests, DesignSystemTests (smoke tests until tokens and components land)
 scripts/                 recipe bodies (bash 3.2-portable); fixtures/ prove each ban still fires,
-                         test-xcode-guards.sh the PostHog and pin guards of xcode.sh
+                         test-xcode-guards.sh the PostHog, pin and Device Hub guards of xcode.sh
 ```
 
 The generated client lives in `packages/contracts/gen/swift-client/`. `tools/codegen/gen-swift.sh`
@@ -162,7 +162,7 @@ The `just` recipes are wired in the root justfile. The recipe bodies are `apps/i
 | `just ios-build [--config dev\|preview\|prod]` |  yes  |  no   | Builds the app unsigned for the simulator, then uploads its dSYMs to PostHog when `POSTHOG_CLI_*` are set           |
 | `just ios-test`                                |  yes  |  no   | Runs the package unit tests through the `AIStylist-Dev` scheme on an iOS 26+ iPhone simulator                       |
 | `just ios-e2e`                                 |  yes  |  no   | Builds Dev for the simulator and runs the shared Maestro flow `e2e/smoke.yaml` (`APP_ID=app.aistylist.mobile.dev`) |
-| `just ios-run`                                 |  yes  |  no   | Builds Dev, opens Simulator.app and installs and launches the app (`just dev ios` also starts the backend)          |
+| `just ios-run`                                 |  yes  |  no   | Builds Dev, installs the app, opens Device Hub and launches the app (`just dev ios` also starts the backend)        |
 | `just ios-test-packages [pkg...]`              |  yes  |  yes  | Runs `swift test` for the packages `core`, `features`, `designsystem` (default: all three)                          |
 | `just ios-lint`                                |  yes  |  yes  | Runs the SwiftLint safety rules (on Linux: `swiftlint-static`)                                                      |
 | `just ios-format [--check]`                    |  yes  |  yes  | Runs swift-format, in place or as a check                                                                           |
@@ -175,9 +175,9 @@ Where Swift comes from on Linux: a working `swift` on PATH, else Docker `swift:6
 ### First run on the Mac
 
 ```sh
-./scripts/bootstrap.sh --system   # once: Xcode 27.0 (xcodes installs it if missing), selected, licence, first launch,
+./scripts/bootstrap.sh --system   # once: Xcode 27.1 (xcodes installs it if missing), selected, licence, first launch,
                                   # iOS simulator (sudo); also mise install: xcodegen, swiftlint, xcbeautify, maestro, just
-just ios-doctor              # Xcode 27.0 selected?
+just ios-doctor              # Xcode 27.1 selected?
 just ios-project             # generate AIStylist.xcodeproj
 open apps/ios/AIStylist.xcodeproj   # scheme AIStylist-Dev, any iPhone simulator
 just ios-build && just ios-test

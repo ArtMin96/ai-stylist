@@ -347,7 +347,7 @@ All decisions ratified **2026-08-24**; **prices re-verified 2026-09-09** ([r6](r
 |---|---|---|
 | Expo SDK | 55+ (New Architecture mandatory; default since SDK 52). *Superseded 2026-09-22 (DEC-49): no Expo in the repo* | r2 |
 | react-native-filament | v1.11.0 (May 27, 2026). *Superseded 2026-09-22 (DEC-50): dormant, not used* | r2 |
-| Xcode / Swift (iOS) | Xcode 27.0 (27A266a) / Swift 6.4; iOS deployment target 26.0; iOS 27 SDK required for App Store uploads from April 2027 | 2026-09-22, Apple release notes (ADR-0004, DEC-54) |
+| Xcode / Swift (iOS) | Xcode 27.1 (27A9275) / Swift 6.4; iOS deployment target 26.0; iOS 27 SDK required for App Store uploads from April 2027 | 2026-09-22, Apple release notes (ADR-0004, DEC-54); Xcode raised to 27.1 on 2026-10-20 (DEC-54) |
 | Android toolchain | AGP 9.4.1 · Gradle 9.8.0 (AGP 9.4.1 emits setVisible deprecation problems; not errors; build-logic uses kotlin-jvm 2.4.20 instead of kotlin-dsl, which clears GHSA-r937-wjx7-w2jp) · Kotlin 2.4.20 · Compose BOM 2026.09.00 · compileSdk 37 / targetSdk 37 / minSdk 29 · JDK Temurin 25 LTS | 2026-09-22, official release notes (ADR-0004, DEC-54); bumped 2026-09-26 (ADR-0006, DEC-56) |
 | Server / tooling runtimes | Node.js 24 (Active LTS) · pnpm 12 · Python 3.14 · PostgreSQL 18 + pgvector · NestJS 12 on Fastify 5 · TypeScript 6.0 (7 held: typescript-eslint peer range) | 2026-09-26, official release notes (ADR-0006, DEC-56); exact pins in `mise.toml` and the package manifests |
 | API client generators | swift-openapi-generator 1.13.1 (runtime 1.12.1, urlsession 1.3.1) · openapi-generator 7.25.0 | 2026-09-22 (DEC-53) |

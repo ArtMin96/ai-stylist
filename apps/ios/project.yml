@@ -14,7 +14,7 @@ options:
   settingPresets: none
   deploymentTarget:
     iOS: '26.0'
-  xcodeVersion: '27.0'
+  xcodeVersion: '27.1'
   createIntermediateGroups: true
   groupSortPosition: top
 

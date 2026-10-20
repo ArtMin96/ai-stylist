@@ -93,6 +93,28 @@ Log hygiene: when this log exceeds ~30 entries, move the oldest entries to `plan
 
 *(newest first)*
 
+### 2026-10-20 (device-hub) — `just dev ios` / `just ios-run` open Device Hub (branch `chore/ios-xcode-27-1`, PR #37)
+
+- **Phase / tasks worked:** none (toolchain upkeep, follows the Xcode 27 upgrade).
+- **Status changes:** None.
+- **Done this session:** root cause of `ios: build, install or launch failed` in `just dev ios`: `xcode.sh run` called `open -a Simulator`, and Xcode 27 ships no Simulator.app (Device Hub, `Contents/Applications/DeviceHub.app`, bundle id `com.apple.dt.Devices`, replaced it), so `open` failed with `Unable to find application named 'Simulator'` before boot. The build and dSYM upload were fine; `dev.sh` saves only stdout to `artifacts/dev/ios.run`, which hid the error. Fix: new `open_device_window` in `apps/ios/scripts/xcode.sh` opens DeviceHub.app from the Xcode that `xcode-select -p` (or `DEVELOPER_DIR`) selects, after the install, and stops with the checked path when it is missing; no Simulator.app fallback (pin is 27.1). Regression check 5 in `apps/ios/scripts/test-xcode-guards.sh` (failed before the fix, passes after; dSYM check renumbered 6). Docs: `justfile` `ios-run` comment, `apps/ios/README.md`, `check-banned.sh` comments. Doc 15 §5 line is path-guarded: proposal in `.claude/plans/2026-10-20-ios-run-device-hub-doc15-proposal.md`.
+- **Not done / in flight:** pushed to PR #37 with the Xcode pin change. The owner confirmed Device Hub shows the running simulator; a `simctl` screenshot confirms the app launched.
+- **Repository state:** `just ios-run` ✅ (`ios-run: launched app.aistylist.mobile.dev on simulator E360A0A6-…`); `just ios-check` ✅ (simulator build + tests, `Test Succeeded`); `just ios-check-banned --fixtures` ✅ (10 ok); `just docs-check` ✅; `just lint-file` ✅ on the three touched scripts. `just lint` ❌ only in `android-lint`, the known `aapt2-9.4.1-15978811-osx.jar` verification failure from the entry below.
+- **New decisions / risks / questions filed:** None.
+- **Surprises / gotchas:** Xcode 27 also removed `Contents/Developer/Applications/` and ignores the `com.apple.iphonesimulator` defaults domain; Device Hub takes no device argument.
+- **Next session starts:** watch the `ios` workflow on PR #37; owner applies the doc 15 proposal; optional follow-up: `dev.sh` saves stderr to `ios.run` too.
+
+### 2026-10-20 (xcode) — Xcode pin raised from 27.0 to 27.1 (branch `chore/ios-xcode-27-1`, uncommitted)
+
+- **Phase / tasks worked:** none (toolchain upkeep).
+- **Status changes:** None.
+- **Done this session:** the local Xcode auto-updated to 27.1 (27A9275), so `just dev` tried to install the 27.0 pin with xcodes (Apple ID). Pin raised to 27.1 in `apps/ios/.xcode-version`, `apps/ios/project.yml` (`xcodeVersion`), `apps/ios/README.md`; CI `DEVELOPER_DIR` moved to `/Applications/Xcode_27.1.app` in `.github/workflows/ios.yml` (the `xcode-27` runner toolset lists 27.1 27A9275, checked 2026-10-20), comment updated in `.github/actionlint.yaml`. Current-state docs updated: `planning/05` toolchain row; DEC-54 and ADR-0004 status line carry a 2026-10-20 amendment (history left as written). The doc 15 line is path-guarded: proposal in `.claude/plans/2026-10-20-xcode-27-1-doc15-proposal.md`. Left on purpose: older handoff entries, ADR-0006 (dated upgrade record), sample versions in `scripts/test/bootstrap-doctor.test.sh`.
+- **Not done / in flight:** changes uncommitted; no PR. `just ios-check` not green yet (see below).
+- **Repository state:** `just ios-doctor` ✅ (`Xcode: 27.1 (pinned 27.1) ok`); `actionlint .github/workflows/ios.yml` ✅. `just ios-check` ❌ exit 70 in `ios-test`: no iOS simulator destination, because Xcode 27.1's first-launch setup has not run (`xcodebuild -checkFirstLaunchStatus` → 69). `just lint` ❌ in `android-lint`, unrelated: `Dependency verification failed ... aapt2-9.4.1-15978811-osx.jar` (macOS artifact missing from `apps/android/gradle/verification-metadata.xml`).
+- **New decisions / risks / questions filed:** None.
+- **Surprises / gotchas:** every Xcode update needs `sudo xcodebuild -runFirstLaunch` (Mac password, not Apple ID); until then `xcrun simctl` hangs. The runner's 27.1 has `install_runtimes: none`, so CI tests run on the iOS 27.0 simulator runtime.
+- **Next session starts:** owner runs `sudo xcodebuild -runFirstLaunch`; then `just ios-check`, commit, push, open the PR and watch the `ios` workflow's macOS job.
+
 ### 2026-10-20 (design-system) — Design-system foundation: generator part 1, contracts and scaffolds; button deferred
 
 *Session on the owner's Linux machine, main checkout, branch `artmins96/ai-189-design-system-design-tokens-generate-native-theme-code-from` @ `4361bfd` (merges `origin/main` @ `fe07af5`). Written by docs-maintainer from the lead's hand-over brief; this ledger update is uncommitted, the lead commits it with the AI-189 PR. No phase work.*

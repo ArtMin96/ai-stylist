@@ -3,19 +3,31 @@
 // `ComponentApi.kt`). Per contract, with `<Name>` from its id (`button` -> `Button`): the variant,
 // size and state enums, the test-ID constants, the merged look (`<Name>Appearance`), one look per
 // allowed combination (`<Name>Look`), the per-context tables (`<Name>Spec`) and the gallery entry
-// type; then `GalleryComponent` (the gallery sections, in board order) and `ComponentGallery`.
-// Every name and value is decided here; emit-api-swift.mjs and
-// emit-api-kotlin.mjs only spell it with the token dialects.
+// type. An icon set (`kind: icon-set`) gets its enums and glyph types here and its glyph table in
+// a file of its own (icon-declarations.mjs). Then `GalleryComponent` (the gallery sections of
+// every contract, in board order) and `ComponentGallery` (the control cells). Every name and value
+// is decided here; emit-api-swift.mjs and emit-api-kotlin.mjs only spell it with the token
+// dialects.
 import { testIdOf } from './contract-model.mjs';
+import { iconSetDeclarations } from './icon-declarations.mjs';
+import { isIconSet } from './icon-set.mjs';
 import { apiTypeName, contextId, memberId, testIdName } from './naming.mjs';
 
-/** The declarations of the API file, in emission order. */
+/**
+ * `{ api, tables }`: the declarations of the API file in emission order (each contract's in file
+ * order, then the gallery), and one `{ name, decls }` per icon set for its glyph-table file.
+ */
 export function apiDeclarations(apis) {
-  return [
-    ...apis.flatMap(componentDeclarations),
-    galleryComponentDeclaration(apis),
-    galleryDeclaration(apis),
-  ];
+  const iconSets = new Map(apis.filter(isIconSet).map((api) => [api, iconSetDeclarations(api)]));
+  const controls = apis.filter((api) => !isIconSet(api));
+  return {
+    api: [
+      ...apis.flatMap((api) => iconSets.get(api)?.api ?? componentDeclarations(api)),
+      galleryComponentDeclaration(apis),
+      galleryDeclaration(controls),
+    ],
+    tables: [...iconSets.values()].map(({ table }) => table),
+  };
 }
 
 /**
@@ -32,12 +44,22 @@ function galleryComponentDeclaration(apis) {
     cases: byBoard.map(({ id, gallery }) => ({
       name: memberId(id),
       id,
-      title: gallery.title,
-      slug: gallery.slug,
+      values: {
+        title: { t: 'string', s: gallery.title },
+        slug: { t: 'string', s: gallery.slug },
+      },
     })),
     fields: [
-      { name: 'title', doc: 'The section title: the board and the contract `gallery.title`.' },
-      { name: 'slug', doc: 'The kebab-case title: the section id is `ds-gallery-section-<slug>`.' },
+      {
+        name: 'title',
+        type: 'string',
+        doc: 'The section title: the board and the contract `gallery.title`.',
+      },
+      {
+        name: 'slug',
+        type: 'string',
+        doc: 'The kebab-case title: the section id is `ds-gallery-section-<slug>`.',
+      },
     ],
   };
 }
@@ -160,7 +182,10 @@ function specValue(api, context, type, appearanceFields) {
   };
 }
 
-/** `ComponentGallery`: per contract its gallery label and its entries, in contract order. */
+/**
+ * `ComponentGallery`: per control contract its gallery label and its entries, in contract order.
+ * An icon set's gallery reads its `<Name>Name` cases instead.
+ */
 function galleryDeclaration(apis) {
   return {
     kind: 'namespace',

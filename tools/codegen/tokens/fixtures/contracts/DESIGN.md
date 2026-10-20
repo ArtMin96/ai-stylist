@@ -129,6 +129,11 @@ components:
     spinnerColor: '{colors.primary-light}'
   button-secondary-loading-dark:
     spinnerColor: '{colors.primary-dark}'
+  # Icon sizes for ../_valid/icon.yaml: size in px, strokeWidth in viewBox units (24 x 24).
+  # ../CC-10/icon.yaml names icon-20, which is missing on purpose.
+  icon-12: { size: 12px, strokeWidth: 2.2 }
+  icon-16: { size: 16px, strokeWidth: 1.9 }
+  icon-24: { size: 24px, strokeWidth: 1.7 }
 ---
 
 # Design System: Contract fixture

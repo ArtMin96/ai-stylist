@@ -33,14 +33,19 @@ const RULE_CASES = readdirSync(CONTRACT_FIXTURES).filter(isRuleCase).sort();
 const SCRATCH = mkdtempSync(path.join(tmpdir(), 'contracts-test-'));
 after(() => rmSync(SCRATCH, { recursive: true, force: true }));
 
+const VALID_ICON_TEXT = readFileSync(path.join(VALID_CONTRACTS, 'icon.yaml'), 'utf8');
 const listed = (findings) => findings.map(formatFinding).join('\n');
-const [fixture] = apisOf(fixtureModel, VALID_CONTRACTS);
+const [fixture, iconFixture] = apisOf(fixtureModel, VALID_CONTRACTS);
 const repoButton = once(() => apisOf(repoModel, REPO_CONTRACTS)[0]);
 
 /** The fixture contract after `edit(text)`, checked against `model`. */
 const checkEdited = (edit, model = fixtureModel) =>
   checkContract(edit(VALID_TEXT), 'button.yaml', model);
+/** The fixture icon set after `edit(text)`, checked against `model`. */
+const checkIconEdited = (edit, model = fixtureModel) =>
+  checkContract(edit(VALID_ICON_TEXT), 'icon.yaml', model);
 const rulesOf = ({ findings }) => [...new Set(findings.map(({ rule }) => rule))];
+const messagesOf = ({ findings }) => findings.map(formatFinding);
 
 /** One merged look's values: `{ field: { type, value } }`. */
 function look(api, context, variant, size, state) {
@@ -52,20 +57,21 @@ function look(api, context, variant, size, state) {
 }
 
 test('the repository contracts pass, and the button contract is approved', () => {
+  // Other contracts (the C02 icon set) may be pending or approved; the button is approved.
   const { findings, apis, pending } = loadContracts(REPO_CONTRACTS, repoModel);
   assert.deepEqual(findings, [], listed(findings));
-  assert.deepEqual(pending, []);
-  assert.deepEqual(
-    apis.map(({ id }) => id),
-    ['button'],
-  );
+  assert.ok(!pending.includes('button.yaml'));
+  assert.equal(apis[0].id, 'button');
 });
 
-test('the fixtures hold the valid contract and one failing case per rule, CC-01 to CC-08', () => {
-  const expected = ['CC-01', 'CC-02', 'CC-03', 'CC-04', 'CC-05', 'CC-06', 'CC-07', 'CC-08'];
+test('the fixtures hold the valid contracts and one failing case per rule, CC-01 to CC-11', () => {
+  const expected = Array.from({ length: 11 }, (_, i) => `CC-${String(i + 1).padStart(2, '0')}`);
   assert.deepEqual([...new Set(RULE_CASES.map(ruleOf))], expected);
-  assert.ok(RULE_CASES.includes('CC-01-gallery-title'), 'the missing gallery title');
+  for (const name of ['CC-01-gallery-title', 'CC-01-icon-kind', 'CC-01-icon-paint']) {
+    assert.ok(RULE_CASES.includes(name), name);
+  }
   assert.equal(fixture.id, 'button');
+  assert.equal(iconFixture.id, 'icon');
 });
 
 for (const name of RULE_CASES) {
@@ -305,4 +311,132 @@ test('the repository button: the icon slot is 18 / 6 at compact, 20 / 8 elsewher
   const ownBase = look(button, 'light', 'destructive-text', 'compact', 'enabled');
   assert.equal(ownBase.paddingEnd.value.n, 10, 'the variant base holds its compact size');
   assert.deepEqual([ownBase.iconSize.value.n, ownBase.iconGap.value.n], [18, 6]);
+});
+
+// Icon sets (`kind: icon-set`, C02, Linear AI-201).
+
+test('kind: none is a control contract, icon-set is the only kind, each closed', () => {
+  const kinds = loadContracts(path.join(CONTRACT_FIXTURES, 'CC-01-icon-kind'), fixtureModel);
+  assert.deepEqual(messagesOf(kinds), [
+    'CC-01 icon.yaml kind: must be equal to constant {"allowedValue":"icon-set"}',
+  ]);
+  const withKind = (t) => t.replace('name: AppButton', 'name: AppButton\nkind: icon-set');
+  assert.deepEqual(rulesOf(checkEdited(withKind)), ['CC-01'], 'a button is no icon set');
+  const testId = checkIconEdited((t) => `${t}testId: ds-icon\n`);
+  assert.deepEqual(messagesOf(testId), [
+    'CC-01 icon.yaml: must NOT have additional properties {"additionalProperty":"testId"}',
+  ]);
+  const paint = loadContracts(path.join(CONTRACT_FIXTURES, 'CC-01-icon-paint'), fixtureModel);
+  assert.match(listed(paint.findings), /^CC-01 icon\.yaml glyphs\.1\.shapes\.2\.paint: must be /);
+  const plusShapes = "shapes:\n      - d: 'm12 5 0 14M5 12h14'\n        paint: stroke\n";
+  const noShapes = checkIconEdited((t) => t.replace(plusShapes, 'shapes: []\n'));
+  assert.match(listed(noShapes.findings), /glyphs\.5\.shapes: must NOT have fewer than 1 items/);
+});
+
+test('CC-09: a glyph id repeated, a keyword, two ids one identifier, or a member, fails', () => {
+  const repeated = loadContracts(path.join(CONTRACT_FIXTURES, 'CC-09'), fixtureModel);
+  assert.deepEqual(messagesOf(repeated), ['CC-09 icon.yaml glyphs.3.id: "heart" is not unique']);
+  const renamed = (from, to) =>
+    checkIconEdited((t) => t.replace(`- id: ${from}\n`, `- id: ${to}\n`));
+  const cases = [
+    ['repeat', 'glyph id "repeat" is a Swift or Kotlin keyword'],
+    ['type', 'glyph id "type" becomes the Swift type Type'],
+    ['glyph', 'glyph id "glyph" becomes glyph, which the enum has'],
+    ['test-id', 'glyph id "test-id" becomes testId, which the enum has'],
+  ];
+  for (const [to, message] of cases) {
+    assert.deepEqual(messagesOf(renamed('plus', to)), [`CC-09 icon.yaml glyphs: ${message}`], to);
+  }
+  const lines = (t) => t.replace('- id: wave\n', '- id: line-2\n').replace('plus\n', 'line2\n');
+  assert.deepEqual(messagesOf(checkIconEdited(lines)), [
+    'CC-09 icon.yaml glyphs: glyph ids "line-2" and "line2" both become line2',
+    'CC-09 icon.yaml glyphs: glyph ids "line-2" and "line2" both become LINE2',
+  ]);
+});
+
+test('CC-10: every size names an icon-<n> token with its own size and one stroke width', () => {
+  const missing = loadContracts(path.join(CONTRACT_FIXTURES, 'CC-10'), fixtureModel);
+  assert.deepEqual(messagesOf(missing), [
+    'CC-10 icon.yaml sizes.2: {components.icon-20} is not a DESIGN.md component',
+  ]);
+  const defaultSize = (t) => t.replace('defaultSize: icon-24', 'defaultSize: icon-32');
+  const unlisted = checkIconEdited(defaultSize);
+  assert.deepEqual(messagesOf(unlisted), [
+    'CC-10 icon.yaml defaultSize: "icon-32" is not in `sizes`',
+  ]);
+  const icon16 = '  icon-16: { size: 16px, strokeWidth: 1.9 }\n';
+  const tokens = (replacement) => modelOf(CONTRACT_TOKENS.replace(icon16, replacement));
+  const cases = [
+    ['  icon-16: { size: 18px, strokeWidth: 1.9 }\n', 'size is 18, not the 16 its name says'],
+    ['  icon-16: { size: 16px }\n', 'has no strokeWidth number'],
+    ['  icon-16: { size: 16px, strokeWidth: 1.9, height: 16px }\n', 'has height, not only size'],
+    [
+      [
+        '  icon-16-light: { size: 16px, strokeWidth: 1.9 }',
+        '  icon-16-dark: { size: 16px, strokeWidth: 1.9 }',
+        '  icon-16-hc-light: { size: 16px, strokeWidth: 2.4 }',
+        '',
+      ].join('\n'),
+      'strokeWidth differs between contexts',
+    ],
+  ];
+  for (const [replacement, message] of cases) {
+    const result = checkContract(VALID_ICON_TEXT, 'icon.yaml', tokens(replacement));
+    assert.deepEqual(rulesOf(result), ['CC-10'], message);
+    const expected = new RegExp(`sizes\\.1: \\{components\\.icon-16\\} ${message}`);
+    assert.match(listed(result.findings), expected);
+  }
+});
+
+test('CC-11: path data that does not compile, or draws nothing, fails', () => {
+  const broken = loadContracts(path.join(CONTRACT_FIXTURES, 'CC-11'), fixtureModel);
+  assert.deepEqual(messagesOf(broken), [
+    'CC-11 icon.yaml glyphs.1.shapes.0.d: info: cannot compile the path: expected an arc flag (0 or 1) at 12',
+  ]);
+  const empty = checkIconEdited((t) => t.replace("d: 'M12 11v5'", "d: 'M12 11'"));
+  assert.deepEqual(messagesOf(empty), [
+    'CC-11 icon.yaml glyphs.1.shapes.1.d: info: the path data draws nothing',
+  ]);
+});
+
+test('a pending icon set is checked but gets no API', () => {
+  const pending = checkIconEdited((t) => t.replace('approved: 2026-10-20', 'approved: pending'));
+  assert.deepEqual(pending.findings, []);
+  assert.equal(pending.pending, true);
+});
+
+test('the icon fixture API: token sizes, the default, sets by first use, compiled glyphs', () => {
+  assert.deepEqual(iconFixture.sizes, [
+    { id: 'icon-12', size: 12, strokeWidth: 2.2 },
+    { id: 'icon-16', size: 16, strokeWidth: 1.9 },
+    { id: 'icon-24', size: 24, strokeWidth: 1.7 },
+  ]);
+  assert.equal(iconFixture.defaultSize, 'icon-24');
+  assert.deepEqual(iconFixture.sets, ['navigation', 'status', 'closet', 'weather', 'actions']);
+  assert.deepEqual(iconFixture.paints, ['stroke', 'fill', 'both']);
+  assert.deepEqual(iconFixture.gallery, { title: 'C02 Fixture icons', slug: 'c02-fixture-icons' });
+  const ids = ['back', 'info', 'heart', 'heart-filled', 'wave', 'plus'];
+  assert.deepEqual(
+    iconFixture.glyphs.map(({ id }) => id),
+    ids,
+  );
+  const [back] = iconFixture.glyphs;
+  assert.deepEqual(back.shapes, [
+    {
+      paint: 'stroke',
+      segments: [
+        { command: 'move', points: [14.5, 5.5] },
+        { command: 'line', points: [8, 12] },
+        { command: 'line', points: [14.5, 18.5] },
+      ],
+    },
+  ]);
+  const info = iconFixture.glyphs[1];
+  assert.deepEqual(
+    info.shapes.map(({ paint }) => paint),
+    ['stroke', 'stroke', 'fill'],
+  );
+  const heart = (id) => iconFixture.glyphs.find((glyph) => glyph.id === id).shapes[0];
+  assert.deepEqual(heart('heart-filled').segments, heart('heart').segments, 'the twin');
+  assert.equal(heart('heart-filled').paint, 'both');
 });

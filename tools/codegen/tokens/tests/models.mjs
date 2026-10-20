@@ -7,7 +7,7 @@ import { readFileSync } from 'node:fs';
 import path from 'node:path';
 
 import { apiDeclarations } from '../api-declarations.mjs';
-import { loadContracts } from '../contracts.mjs';
+import { checkContract, loadContracts } from '../contracts.mjs';
 import { declarations } from '../declarations.mjs';
 import { normalise } from '../normalise.mjs';
 import { parseDesignMd } from '../parse.mjs';
@@ -43,6 +43,17 @@ export function apisOf(model, dir) {
 /** `{ <File>.<ext>: text }` from one API emitter for the contracts in `dir`. */
 export const emittedApi = (emitApi, model, dir) =>
   emitApi(apiDeclarations(apisOf(model, dir)), 'components/*.yaml + DESIGN.md');
+
+/**
+ * `{ <File>.<ext>: text }` from one API emitter for the fixture icon set alone, after
+ * `edit(text)`, which must leave it valid against `model`.
+ */
+export function emittedIconSet(emitApi, model, edit) {
+  const text = edit(readFileSync(path.join(VALID_CONTRACTS, 'icon.yaml'), 'utf8'));
+  const { findings, api } = checkContract(text, 'icon.yaml', model);
+  assert.deepEqual(findings, [], findings.map(formatFinding).join('\n'));
+  return emitApi(apiDeclarations([api]), 'icon.yaml + DESIGN.md');
+}
 
 /** The model of valid DESIGN.md text. */
 export function modelOf(text) {

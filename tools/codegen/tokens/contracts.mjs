@@ -2,9 +2,11 @@
 // (ADR-0011 follow-up 7, DEC-87; field rules: .impeccable/components/README.md). CC-01 parses the
 // YAML and checks it against component-contract.schema.json with the generators' shared Ajv
 // (../ajv.mjs: draft 2020-12 + ajv-formats from the packages/contracts devDependencies, as
-// gen-kernel.mjs uses it). CC-02 to CC-08 check the fields against each other and against the
-// in-memory token model; contract-model.mjs then merges the looks. Rules:
-// tools/codegen/tokens/README.md, "Component contracts".
+// gen-kernel.mjs uses it). A contract without `kind` is a control (the button): CC-02 to CC-08
+// check its fields against each other and against the in-memory token model, and
+// contract-model.mjs then merges the looks. `kind: icon-set` (C02) runs CC-02 and CC-09 to CC-11
+// (icon-set.mjs) instead. Rules: tools/codegen/tokens/README.md, "Component contracts" and
+// "Icon sets".
 import { readdirSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 
@@ -18,13 +20,15 @@ import {
   buildApi,
   comboKey,
   finding,
+  identifierFindings,
   isToken,
   resolveReference,
   slotEntryOf,
   tableContexts,
 } from './contract-model.mjs';
 import { contextsOf, typedValue } from './declarations.mjs';
-import { ktEnumEntry, ktIdent, memberId, swiftIdent, testIdName } from './naming.mjs';
+import { ICON_SET_STAGES, buildIconSet, isIconSet } from './icon-set.mjs';
+import { testIdName } from './naming.mjs';
 import { resolveComponents } from './normalise.mjs';
 import { CONTEXTS, isColourProperty } from './syntax.mjs';
 
@@ -68,23 +72,40 @@ export function checkContract(text, file, model) {
   const parsed = parseContract(text, file);
   if (parsed.findings.length > 0) return { findings: parsed.findings };
   const { contract } = parsed;
-  const stages = [
-    () => [...checkId(contract, file), ...checkAxes(contract, file)],
-    () => [...checkTokenShape(contract, file), ...checkUsage(contract, file)],
-    () => checkReferences(contract, file, model),
-    () => checkRoles(contract, file, model),
-    () => checkIconSlot(contract, file, model),
-  ];
+  const iconSet = isIconSet(contract);
+  const stages = (iconSet ? iconSetStages : controlStages)(contract, file, model);
   for (const stage of stages) {
     const findings = stage();
     if (findings.length > 0) return { findings };
   }
-  const { findings, api } = buildApi(contract, file, model);
+  const { findings, api } = (iconSet ? buildIconSet : buildApi)(contract, file, model);
   if (findings.length > 0) return { findings };
   return { findings: [], api, pending: contract.approved === 'pending' };
 }
 
-/** CC-01: the YAML parses (no duplicate keys) and matches component-contract.schema.json. */
+/** A control contract (no `kind`: the button): CC-02 to CC-08, in their stages. */
+const controlStages = (contract, file, model) => [
+  () => [...checkId(contract, file), ...checkAxes(contract, file)],
+  () => [...checkTokenShape(contract, file), ...checkUsage(contract, file)],
+  () => checkReferences(contract, file, model),
+  () => checkRoles(contract, file, model),
+  () => checkIconSlot(contract, file, model),
+];
+
+/** An icon set (`kind: icon-set`): CC-02 with CC-09, then CC-10, then CC-11 (icon-set.mjs). */
+function iconSetStages(contract, file, model) {
+  const [glyphIds, ...rest] = ICON_SET_STAGES;
+  return [
+    () => [...checkId(contract, file), ...glyphIds(contract, file, model)],
+    ...rest.map((stage) => () => stage(contract, file, model)),
+  ];
+}
+
+/**
+ * CC-01: the YAML parses (no duplicate keys) and matches component-contract.schema.json. The
+ * schema picks the control or the icon-set branch with `if`; that keyword's own "must match" error
+ * is left out, since the branch's errors say what is wrong.
+ */
 function parseContract(text, file) {
   const doc = parseDocument(text, { uniqueKeys: true, prettyErrors: false });
   if (doc.errors.length > 0) {
@@ -96,9 +117,11 @@ function parseContract(text, file) {
   if (validateSchema(contract)) return { findings: [], contract };
   const where = (pointer) => (pointer ? `${file} ${pointer.slice(1).replace(/\//g, '.')}` : file);
   return {
-    findings: (validateSchema.errors ?? []).map((e) =>
-      finding('CC-01', where(e.instancePath), `${e.message} ${JSON.stringify(e.params)}`),
-    ),
+    findings: (validateSchema.errors ?? [])
+      .filter((e) => e.keyword !== 'if')
+      .map((e) =>
+        finding('CC-01', where(e.instancePath), `${e.message} ${JSON.stringify(e.params)}`),
+      ),
   };
 }
 
@@ -136,30 +159,10 @@ function checkAxes(contract, file) {
     }
   }
   for (const list of ['variants', 'sizes', 'states']) {
-    out.push(...identifierFindings(contract[list], at(list), 'id'));
+    out.push(...identifierFindings(contract[list], at(list), 'id', 'CC-03'));
   }
   const constants = allowedCombinations(contract).map(testIdName);
-  out.push(...identifierFindings(constants, at('combinations'), 'test-ID constant'));
-  return out;
-}
-
-/** Ids that would collide or be keywords once spelled as Swift cases and Kotlin entries. */
-function identifierFindings(ids, at, noun) {
-  const out = [];
-  const seen = new Map();
-  for (const id of ids) {
-    const name = memberId(id);
-    if (swiftIdent(name) !== name || ktIdent(name) !== name) {
-      out.push(finding('CC-03', at, `${noun} "${id}" is a Swift or Kotlin keyword`));
-    }
-    for (const spelled of new Set([name, ktEnumEntry(name)])) {
-      const other = seen.get(spelled);
-      if (other !== undefined && other !== id) {
-        out.push(finding('CC-03', at, `${noun}s "${other}" and "${id}" both become ${spelled}`));
-      }
-      seen.set(spelled, id);
-    }
-  }
+  out.push(...identifierFindings(constants, at('combinations'), 'test-ID constant', 'CC-03'));
   return out;
 }
 

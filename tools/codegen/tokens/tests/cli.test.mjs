@@ -139,17 +139,21 @@ test('the repository DESIGN.md generates both languages', () => {
   assert.match(swift, /^\/\/ Source: DESIGN\.md$/m);
 });
 
-test('--components: the component API file joins the tiers in each directory', () => {
+test('--components: the API and glyph-table files join the tiers in each directory', () => {
   const out = path.join(SCRATCH, 'out', 'contracts');
   const components = path.join(TOKENS_DIR, 'fixtures', 'contracts', '_valid');
   const args = ['--input', fixture('contracts'), '--components', components];
   const result = run([...args, '--swift-out', `${out}/swift`, '--kotlin-out', `${out}/kotlin`]);
   assert.equal(result.status, 0, result.stderr);
-  assert.match(result.stdout, /contracts\/_valid is valid \(1 approved contract\(s\): button\)/);
+  assert.match(result.stdout, /_valid is valid \(2 approved contract\(s\): button, icon\)/);
   const tiers = ['ReferenceTokens', 'SchemeTokens', 'ComponentTokens'];
-  const swiftFiles = [...tiers.map((t) => `${t}.swift`), 'ComponentAPI.swift'];
+  const swiftFiles = [
+    ...tiers.map((t) => `${t}.swift`),
+    'ComponentAPI.swift',
+    'AppIconGlyphs.swift',
+  ];
   assert.deepEqual(readdirSync(path.join(out, 'swift')).sort(), swiftFiles.sort());
-  const kotlinFiles = [...tiers.map((t) => `${t}.kt`), 'ComponentApi.kt'];
+  const kotlinFiles = [...tiers.map((t) => `${t}.kt`), 'ComponentApi.kt', 'AppIconGlyphs.kt'];
   assert.deepEqual(readdirSync(path.join(out, 'kotlin')).sort(), kotlinFiles.sort());
 });
 
@@ -158,6 +162,7 @@ test('--components: a failing contract is a finding and nothing is written', () 
   const cases = [
     ['CC-05', /CC-05 button\.yaml tokens\.primary\.states\.pressed: /],
     ['CC-08', /CC-08 button\.yaml sizes\.medium: \{components\.button-medium\} has no iconSize/],
+    ['CC-11', /CC-11 icon\.yaml glyphs\.1\.shapes\.0\.d: info: cannot compile the path: /],
   ];
   for (const [rule, message] of cases) {
     const components = path.join(TOKENS_DIR, 'fixtures', 'contracts', rule);

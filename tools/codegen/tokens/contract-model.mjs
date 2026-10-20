@@ -5,7 +5,15 @@
 // shares. Only run buildApi on a contract that passed CC-01 to CC-08.
 // tools/codegen/tokens/README.md, "Component contracts".
 import { contextsOf, typedValue } from './declarations.mjs';
-import { contextId, galleryTitle, memberId, tokensTypeName } from './naming.mjs';
+import {
+  contextId,
+  galleryTitle,
+  ktEnumEntry,
+  ktIdent,
+  memberId,
+  swiftIdent,
+  tokensTypeName,
+} from './naming.mjs';
 import { resolveComponents } from './normalise.mjs';
 import { CONTEXTS, isColourProperty, splitState } from './syntax.mjs';
 
@@ -25,6 +33,29 @@ export const slotEntryOf = (id, size) => `${id}-${size}`;
 
 export const isToken = (node) => Object.hasOwn(node, '$value');
 export const finding = (rule, at, message) => ({ rule, at, message });
+
+/**
+ * A `rule` finding at `at` for every id of `ids` that would be a keyword, or collide with another,
+ * once spelled as a Swift case (`memberId`) and a Kotlin entry (`ktEnumEntry`).
+ */
+export function identifierFindings(ids, at, noun, rule) {
+  const out = [];
+  const seen = new Map();
+  for (const id of ids) {
+    const name = memberId(id);
+    if (swiftIdent(name) !== name || ktIdent(name) !== name) {
+      out.push(finding(rule, at, `${noun} "${id}" is a Swift or Kotlin keyword`));
+    }
+    for (const spelled of new Set([name, ktEnumEntry(name)])) {
+      const other = seen.get(spelled);
+      if (other !== undefined && other !== id) {
+        out.push(finding(rule, at, `${noun}s "${other}" and "${id}" both become ${spelled}`));
+      }
+      seen.set(spelled, id);
+    }
+  }
+  return out;
+}
 
 /** `{ variant, size, state }` joined by slashes into one lookup string (variant first). */
 export const comboKey = ({ variant, size, state }) => `${variant}/${size}/${state}`;

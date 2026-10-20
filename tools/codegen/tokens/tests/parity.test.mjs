@@ -1,7 +1,8 @@
 // The DEC-87 stage-4 golden test: the Swift and Kotlin emitters produce the same name -> value
 // table. Both tables are read back from the emitted text (parity-table.mjs), for the synthetic
-// fixture and the repository DESIGN.md, so a dialect that drops, renames, reorders or respells a
-// token fails here. Run by scripts/test/design-tokens.test.sh.
+// fixtures and the repository DESIGN.md and contracts, so a dialect that drops, renames, reorders
+// or respells a token, a merged look or an icon glyph's segment fails here. Run by
+// scripts/test/design-tokens.test.sh.
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
@@ -11,7 +12,14 @@ import { emitApiKotlin } from '../emit-api-kotlin.mjs';
 import { emitApiSwift } from '../emit-api-swift.mjs';
 import { emitKotlin } from '../emit-kotlin.mjs';
 import { emitSwift } from '../emit-swift.mjs';
-import { contextId, ktEnumEntry, memberId, testIdName, tokensTypeName } from '../naming.mjs';
+import {
+  contextId,
+  ktEnumEntry,
+  memberId,
+  nestedTypeName,
+  testIdName,
+  tokensTypeName,
+} from '../naming.mjs';
 import { CONTEXTS } from '../syntax.mjs';
 import { kotlinTable, swiftTable } from './parity-table.mjs';
 import {
@@ -22,6 +30,7 @@ import {
   VALID_CONTRACTS,
   apisOf,
   emittedApi,
+  emittedIconSet,
   modelOf,
   once,
 } from './models.mjs';
@@ -41,7 +50,8 @@ const withApiOf = (model, dir) => {
 const fixture = filesOf(modelOf(VALID));
 const repoModel = modelOf(REPO_DESIGN_MD);
 const repo = filesOf(repoModel);
-const contractFixture = withApiOf(modelOf(CONTRACT_TOKENS), VALID_CONTRACTS);
+const contractModel = modelOf(CONTRACT_TOKENS);
+const contractFixture = withApiOf(contractModel, VALID_CONTRACTS);
 const repoWithApi = once(() => withApiOf(repoModel, REPO_CONTRACTS));
 
 test('the fixture: Swift and Kotlin spell the same name -> value table', () => {
@@ -167,12 +177,13 @@ test('the API table holds the ids, the test IDs, the lookup and every merged loo
     'ButtonSpec.light.looks': 'list:100',
     'ComponentGallery.buttonLabel': 'str:"Continue"',
     'ComponentGallery.button': 'list:100',
-    'GalleryComponent.cases': 'BUTTON',
     'GalleryComponent[BUTTON].id': 'str:"button"',
     'GalleryComponent[BUTTON].title': 'str:"C01 Buttons"',
     'GalleryComponent[BUTTON].slug': 'str:"c01-buttons"',
   };
   for (const [name, value] of Object.entries(expected)) assert.equal(table[name], value, name);
+  // C01 comes first; the C02 icon set joins once its contract is approved.
+  assert.equal(table['GalleryComponent.cases'].split(',')[0], 'BUTTON');
   assert.equal(table['ButtonTestId.textSmallEnabled'], undefined, 'text small is gone');
   for (const context of button.contexts) {
     button.looks[context].forEach(({ variant, size, state, values }, i) => {
@@ -247,4 +258,88 @@ test('a value, a role or a name spelled differently in one language fails the co
   assert.deepEqual(step, ['AppSpacing.all[1].name']);
   const style = differs('name = "label"', 'name = "label-1"');
   assert.deepEqual(style, ['AppTypography.label.name']);
+});
+
+// Icon sets (`kind: icon-set`, C02, Linear AI-201): the enums, the sizes and the glyph table.
+
+test('the glyph table: every segment of every fixture glyph, the same in both languages', () => {
+  const table = kotlinTable(contractFixture.kotlin);
+  const iconSet = apisOf(contractModel, VALID_CONTRACTS).find(({ id }) => id === 'icon');
+  const numbers = (points) => `list:[${points.map((n) => `num:${n}`).join(',')}]`;
+  for (const { id, set, shapes } of iconSet.glyphs) {
+    const entry = `AppIconName[${ktEnumEntry(memberId(id))}]`;
+    const glyph = `AppIconGlyphs.${nestedTypeName(id)}.glyph`;
+    assert.equal(table[`${entry}.id`], `str:"${id}"`);
+    assert.equal(table[`${entry}.set`], `role:${ktEnumEntry(memberId(set))}`);
+    assert.equal(table[`${entry}.testId`], `str:"ds-icon-${id}"`);
+    assert.equal(table[`${entry}.glyph`], `ref:${glyph}`);
+    assert.equal(table[`${glyph}:init`], 'AppIconGlyph');
+    assert.equal(table[`${glyph}.shapes`], `list:${shapes.length}`);
+    shapes.forEach(({ paint, segments }, s) => {
+      const shape = `${glyph}.shapes[${s}]`;
+      assert.equal(table[`${shape}.paint`], `role:${paint.toUpperCase()}`, shape);
+      assert.equal(table[`${shape}.segments`], `list:${segments.length}`, shape);
+      segments.forEach(({ command, points }, i) => {
+        const at = `${shape}.segments[${i}]`;
+        assert.equal(table[`${at}.command`], `role:${command.toUpperCase()}`, at);
+        assert.equal(table[`${at}.points`], numbers(points), at);
+      });
+    });
+  }
+  const expected = {
+    'AppIconName.cases': 'BACK,INFO,HEART,HEART_FILLED,WAVE,PLUS',
+    'AppIconName.set:type': 'AppIconSet',
+    'AppIconName.testId:type': 'String',
+    'AppIconName.glyph:type': 'AppIconGlyph',
+    'AppIconSet.cases': 'NAVIGATION,STATUS,CLOSET,WEATHER,ACTIONS',
+    'AppIconSize[ICON16].id': 'str:"icon-16"',
+    'AppIconSize[ICON16].size': 'num:16',
+    'AppIconSize[ICON16].strokeWidth': 'num:1.9',
+    'AppIconSize.strokeWidth:type': 'Double',
+    'AppIconMetrics.viewBox': 'num:24',
+    'AppIconMetrics.defaultSize': 'role:ICON24',
+    'AppIconSegment.points:type': 'list<Double>',
+    'AppIconShape.segments:type': 'list<AppIconSegment>',
+    'AppIconPaint.cases': 'STROKE,FILL,BOTH',
+    'AppIconCommand.cases': 'MOVE,LINE,CUBIC,CLOSE',
+    'AppIconGlyphs.Info.glyph.shapes[0].segments[5].points': 'list:[]',
+    'GalleryComponent.cases': 'BUTTON,ICON',
+    'GalleryComponent[ICON].title': 'str:"C02 Fixture icons"',
+    'GalleryComponent[ICON].slug': 'str:"c02-fixture-icons"',
+  };
+  for (const [name, value] of Object.entries(expected)) assert.equal(table[name], value, name);
+});
+
+test('a glyph point, a paint, a stroke width or an icon test ID spelled differently fails', () => {
+  const differs = (file, from, to) => {
+    const text = contractFixture.kotlin[file].replace(from, to);
+    const [swift, kt] = [
+      swiftTable(contractFixture.swift),
+      kotlinTable({ ...contractFixture.kotlin, [file]: text }),
+    ];
+    return Object.keys({ ...swift, ...kt }).filter((name) => swift[name] !== kt[name]);
+  };
+  const glyphs = 'AppIconGlyphs.kt';
+  assert.deepEqual(differs(glyphs, 'listOf(14.5, 5.5)', 'listOf(14.5, 5.6)'), [
+    'AppIconGlyphs.Back.glyph.shapes[0].segments[0].points',
+  ]);
+  assert.deepEqual(differs(glyphs, 'paint = AppIconPaint.FILL', 'paint = AppIconPaint.BOTH'), [
+    'AppIconGlyphs.Info.glyph.shapes[2].paint',
+  ]);
+  const api = 'ComponentApi.kt';
+  assert.deepEqual(differs(api, '"icon-16", 16.0, 1.9', '"icon-16", 16.0, 1.7'), [
+    'AppIconSize[ICON16].strokeWidth',
+  ]);
+  assert.deepEqual(differs(api, '"ds-icon-back"', '"ds-icon-back-1"'), [
+    'AppIconName[BACK].testId',
+  ]);
+});
+
+test('a Kotlin enum entry wrapped one argument per line reads as its Swift case', () => {
+  const rename = (text) => text.replace('- id: plus\n', '- id: thumbs-up-filled-with-long-name\n');
+  const kotlin = emittedIconSet(emitApiKotlin, contractModel, rename);
+  assert.ok(kotlin['ComponentApi.kt'].includes('\n    THUMBS_UP_FILLED_WITH_LONG_NAME(\n'));
+  const table = kotlinTable(kotlin);
+  assert.deepEqual(swiftTable(emittedIconSet(emitApiSwift, contractModel, rename)), table);
+  assert.equal(table['AppIconName[THUMBS_UP_FILLED_WITH_LONG_NAME].set'], 'role:ACTIONS');
 });

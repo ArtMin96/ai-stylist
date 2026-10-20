@@ -1,8 +1,9 @@
 // In-process tests for the component API emitters (emit-api-swift.mjs, emit-api-kotlin.mjs) over
 // api-declarations.mjs: the enums with their contract ids, the test-ID constants, the merged-look
-// tables per context with their lookup, and the gallery, for the synthetic contract fixture and
-// the repository button contract. Parity between the two files: parity.test.mjs. Run by
-// scripts/test/design-tokens.test.sh.
+// tables per context with their lookup, and the gallery, for the synthetic contract fixtures and
+// the repository button contract; for the fixture icon set (icon-declarations.mjs) its enums,
+// sizes, glyph types and glyph-table file. Parity between the two languages: parity.test.mjs.
+// Run by scripts/test/design-tokens.test.sh.
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
@@ -15,6 +16,7 @@ import {
   VALID_CONTRACTS,
   block,
   emittedApi,
+  emittedIconSet,
   firstGroups,
   modelOf,
   once,
@@ -28,6 +30,8 @@ const repoApi = (emit, file) => once(() => emittedApi(emit, repoModel, REPO_CONT
 const repoSwift = repoApi(emitApiSwift, 'ComponentAPI.swift');
 const repoKotlin = repoApi(emitApiKotlin, 'ComponentApi.kt');
 const CONTEXT_IDS = ['light', 'dark', 'brand', 'hcLight', 'hcDark'];
+const swiftGlyphs = emittedApi(emitApiSwift, fixtureModel, VALID_CONTRACTS)['AppIconGlyphs.swift'];
+const kotlinGlyphs = emittedApi(emitApiKotlin, fixtureModel, VALID_CONTRACTS)['AppIconGlyphs.kt'];
 
 test('one API file per language, with the generated header, deterministic', () => {
   for (const text of [swift, kotlin]) {
@@ -161,11 +165,13 @@ test('GalleryComponent: a case per contract with its id, the board-prefixed titl
   const sections = [
     'nonisolated public enum GalleryComponent: String, CaseIterable, Sendable {',
     '  case button',
+    '  case icon',
     '',
     '  /// The section title: the board and the contract `gallery.title`.',
     '  public var title: String {',
     '    switch self {',
     '    case .button: "C01 Fixture buttons"',
+    '    case .icon: "C02 Fixture icons"',
     '    }',
     '  }',
     '',
@@ -173,6 +179,7 @@ test('GalleryComponent: a case per contract with its id, the board-prefixed titl
     '  public var slug: String {',
     '    switch self {',
     '    case .button: "c01-fixture-buttons"',
+    '    case .icon: "c02-fixture-icons"',
     '    }',
     '  }',
     '}',
@@ -185,6 +192,7 @@ test('GalleryComponent: a case per contract with its id, the board-prefixed titl
     '    val slug: String,',
     ') {',
     '    BUTTON("button", "C01 Fixture buttons", "c01-fixture-buttons"),',
+    '    ICON("icon", "C02 Fixture icons", "c02-fixture-icons"),',
     '}',
   ];
   assert.equal(block(kotlin, 'enum class GalleryComponent('), ktSections.join('\n'));
@@ -202,7 +210,14 @@ test('Swift: every generated type is nonisolated and public', () => {
 });
 
 test('layout: no line over 120 columns, no tab, no trailing space, even indents', () => {
-  const files = { swift, kotlin, repoSwift: repoSwift(), repoKotlin: repoKotlin() };
+  const files = {
+    swift,
+    kotlin,
+    swiftGlyphs,
+    kotlinGlyphs,
+    repoSwift: repoSwift(),
+    repoKotlin: repoKotlin(),
+  };
   for (const [name, text] of Object.entries(files)) {
     const unit = name.toLowerCase().includes('kotlin') ? 4 : 2;
     text.split('\n').forEach((line, i) => {
@@ -212,4 +227,173 @@ test('layout: no line over 120 columns, no tab, no trailing space, even indents'
       assert.equal(/^ */.exec(line)[0].length % unit, 0, `${at} indent`);
     });
   }
+});
+
+// Icon sets (`kind: icon-set`, C02, Linear AI-201).
+
+test('AppIconName: a case per glyph in contract order, with its set, test ID and glyph', () => {
+  const name = block(swift, 'nonisolated public enum AppIconName');
+  const cases = ['back', 'info', 'heart', 'heartFilled', 'wave', 'plus'];
+  assert.deepEqual(firstGroups(name, /^ {2}case (\w+)/gm), cases);
+  assert.match(name, /\n {2}case heartFilled = "heart-filled"\n/);
+  const glyph = [
+    '  /// The compiled glyph (`AppIconGlyphs`).',
+    '  public var glyph: AppIconGlyph {',
+    '    switch self {',
+    '    case .back: AppIconGlyphs.Back.glyph',
+  ];
+  assert.ok(name.includes(glyph.join('\n')), 'the Swift glyph property');
+  assert.match(name, /\n {2}public var set: AppIconSet \{\n/);
+  assert.match(name, /\n {4}case \.wave: \.weather\n/);
+  assert.match(name, /\n {4}case \.heartFilled: "ds-icon-heart-filled"\n/);
+  const ktName = [
+    'enum class AppIconName(',
+    '    val id: String,',
+    '    val set: AppIconSet,',
+    '    val testId: String,',
+    '    val glyph: AppIconGlyph,',
+    ') {',
+    '    BACK("back", AppIconSet.NAVIGATION, "ds-icon-back", AppIconGlyphs.Back.glyph),',
+  ];
+  assert.ok(kotlin.includes(ktName.join('\n')), 'the Kotlin enum');
+  const sets = firstGroups(block(kotlin, 'enum class AppIconSet('), /^ {4}([A-Z]+)\(/gm);
+  assert.deepEqual(sets, ['NAVIGATION', 'STATUS', 'CLOSET', 'WEATHER', 'ACTIONS']);
+});
+
+test('AppIconSize and AppIconMetrics: the token size and stroke width, the default size', () => {
+  const size = [
+    'nonisolated public enum AppIconSize: String, CaseIterable, Sendable {',
+    '  case icon12 = "icon-12"',
+    '  case icon16 = "icon-16"',
+    '  case icon24 = "icon-24"',
+    '',
+    '  /// The icon box: pt on iOS, dp on Android.',
+    '  public var size: Double {',
+    '    switch self {',
+    '    case .icon12: 12.0',
+    '    case .icon16: 16.0',
+    '    case .icon24: 24.0',
+    '    }',
+    '  }',
+    '',
+    '  /// The stroke width in viewBox units: drawn at strokeWidth x size / viewBox.',
+    '  public var strokeWidth: Double {',
+    '    switch self {',
+    '    case .icon12: 2.2',
+    '    case .icon16: 1.9',
+    '    case .icon24: 1.7',
+    '    }',
+    '  }',
+    '}',
+  ];
+  assert.equal(block(swift, 'nonisolated public enum AppIconSize'), size.join('\n'));
+  const ktSize = [
+    'enum class AppIconSize(',
+    '    val id: String,',
+    '    val size: Double,',
+    '    val strokeWidth: Double,',
+    ') {',
+    '    ICON12("icon-12", 12.0, 2.2),',
+    '    ICON16("icon-16", 16.0, 1.9),',
+    '    ICON24("icon-24", 24.0, 1.7),',
+    '}',
+  ];
+  assert.equal(block(kotlin, 'enum class AppIconSize('), ktSize.join('\n'));
+  const metrics = '  public static let viewBox: Double = 24.0\n  public static let defaultSize';
+  assert.ok(swift.includes(`${metrics}: AppIconSize = .icon24\n`), 'the Swift metrics');
+  const ktMetrics = '    val viewBox: Double = 24.0\n    val defaultSize: AppIconSize';
+  assert.ok(kotlin.includes(`${ktMetrics} = AppIconSize.ICON24\n`), 'the Kotlin metrics');
+});
+
+test('the glyph value types: shapes of segments, each a command and its points', () => {
+  const field = (line) => `\n  public let ${line}\n`;
+  for (const line of ['shapes: [AppIconShape]', 'paint: AppIconPaint', 'points: [Double]']) {
+    assert.ok(swift.includes(field(line)), line);
+  }
+  assert.ok(swift.includes(field('segments: [AppIconSegment]')));
+  assert.ok(swift.includes(field('command: AppIconCommand')));
+  const segment = ['data class AppIconSegment(', '    val command: AppIconCommand,'];
+  assert.ok(kotlin.includes(`${segment.join('\n')}\n    val points: List<Double>,\n)\n`));
+  const casesOf = (type) =>
+    firstGroups(block(swift, `nonisolated public enum ${type}`), /case (\w+)/g);
+  assert.deepEqual(casesOf('AppIconCommand'), ['move', 'line', 'cubic', 'close']);
+  assert.deepEqual(casesOf('AppIconPaint'), ['stroke', 'fill', 'both']);
+});
+
+test('the glyph table: a file of its own per language, a nested namespace per glyph', () => {
+  const names = (emit) => Object.keys(emittedApi(emit, fixtureModel, VALID_CONTRACTS)).sort();
+  assert.deepEqual(names(emitApiSwift), ['AppIconGlyphs.swift', 'ComponentAPI.swift']);
+  assert.deepEqual(names(emitApiKotlin), ['AppIconGlyphs.kt', 'ComponentApi.kt']);
+  const title = 'Icon glyph table: compiled path segments per glyph, in viewBox units (DEC-87).';
+  for (const text of [swiftGlyphs, kotlinGlyphs]) assert.ok(text.includes(`\n// ${title}\n`));
+  const pascal = ['Back', 'Info', 'Heart', 'HeartFilled', 'Wave', 'Plus'];
+  assert.deepEqual(firstGroups(swiftGlyphs, /^ {2}nonisolated public enum (\w+) \{$/gm), pascal);
+  assert.deepEqual(firstGroups(kotlinGlyphs, /^ {4}object (\w+) \{$/gm), pascal);
+  const back = [
+    '  nonisolated public enum Back {',
+    '    public static let glyph = AppIconGlyph(',
+    '      shapes: [',
+    '        AppIconShape(',
+    '          paint: .stroke,',
+    '          segments: [',
+    '            AppIconSegment(command: .move, points: [14.5, 5.5]),',
+    '            AppIconSegment(command: .line, points: [8.0, 12.0]),',
+    '            AppIconSegment(command: .line, points: [14.5, 18.5]),',
+    '          ]',
+    '        ),',
+    '      ]',
+    '    )',
+    '  }',
+  ];
+  assert.equal(block(swiftGlyphs, 'nonisolated public enum Back'), back.join('\n'));
+  const ktBack = [
+    '    object Back {',
+    '        val glyph: AppIconGlyph =',
+    '            AppIconGlyph(',
+    '                shapes =',
+    '                    listOf(',
+    '                        AppIconShape(',
+    '                            paint = AppIconPaint.STROKE,',
+    '                            segments =',
+    '                                listOf(',
+    '                                    AppIconSegment(command = AppIconCommand.MOVE, points = listOf(14.5, 5.5)),',
+    '                                    AppIconSegment(command = AppIconCommand.LINE, points = listOf(8.0, 12.0)),',
+    '                                    AppIconSegment(command = AppIconCommand.LINE, points = listOf(14.5, 18.5)),',
+    '                                ),',
+    '                        ),',
+    '                    ),',
+    '            )',
+    '    }',
+  ];
+  assert.equal(block(kotlinGlyphs, 'object Back {'), ktBack.join('\n'));
+  // The first quarter of the info circle: an arc compiled to a cubic.
+  const arc = 'AppIconSegment(command: .cubic, points: [3.0, 16.971, 7.029, 21.0, 12.0, 21.0]),';
+  assert.ok(swiftGlyphs.includes(`\n            ${arc}\n`), 'the Swift arc');
+  const ktArc = [
+    'command = AppIconCommand.CUBIC,',
+    'points = listOf(3.0, 16.971, 7.029, 21.0, 12.0, 21.0),',
+  ];
+  assert.ok(kotlinGlyphs.includes(ktArc.map((line) => `${' '.repeat(40)}${line}`).join('\n')));
+  assert.match(swiftGlyphs, /\n {12}AppIconSegment\(command: \.close, points: \[\]\),\n/);
+  assert.match(kotlinGlyphs, /\(command = AppIconCommand\.CLOSE, points = emptyList\(\)\),\n/);
+});
+
+test('a Kotlin enum entry longer than 120 columns takes one argument per line', () => {
+  const id = 'thumbs-up-filled-with-long-name';
+  const type = 'ThumbsUpFilledWithLongName';
+  const rename = (text) => text.replace('- id: plus\n', `- id: ${id}\n`);
+  const kt = emittedIconSet(emitApiKotlin, fixtureModel, rename)['ComponentApi.kt'];
+  const entry = [
+    '    THUMBS_UP_FILLED_WITH_LONG_NAME(',
+    `        "${id}",`,
+    '        AppIconSet.ACTIONS,',
+    `        "ds-icon-${id}",`,
+    `        AppIconGlyphs.${type}.glyph,`,
+    '    ),',
+    '}',
+  ];
+  assert.ok(kt.includes(entry.join('\n')), 'the wrapped entry');
+  assert.ok(kt.includes('\n    BACK("back", AppIconSet.NAVIGATION, '), 'a short one stays');
+  const sw = emittedIconSet(emitApiSwift, fixtureModel, rename)['ComponentAPI.swift'];
+  assert.ok(sw.includes(`\n    case .thumbsUpFilledWithLongName: AppIconGlyphs.${type}.glyph\n`));
 });

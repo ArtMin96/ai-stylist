@@ -1,10 +1,11 @@
 // Declaration tree -> Kotlin for `:core:designsystem` (DEC-87:
 // apps/android/core/designsystem/src/main/kotlin/app/aistylist/core/designsystem/generated/).
-// Plain values only (Double, Int, String, Long ARGB), so the module needs no dependency; the
-// Compose theme maps them to Color, Dp and TextStyle. Layout follows ktlint_official
-// (apps/android/.editorconfig): trailing commas, multiline expressions wrapped after `=`.
+// Plain values only (Double, Int, String, Long ARGB), so the pure-JVM module needs no dependency;
+// the Compose theme maps them to Color, Dp and TextStyle. Layout follows ktlint_official
+// (apps/android/.editorconfig): 4-space indent, 120 columns, trailing commas, a multiline value
+// wrapped after its `=` (multiline-expression-wrapping), no empty class body.
 import { docText, ktEnumEntry, ktIdent, ktStr, num } from './naming.mjs';
-import { joinMembers, renderTiers, valueLines } from './render.mjs';
+import { joinMembers, renderDeclaration, renderTiers, valueLines } from './render.mjs';
 
 const INDENT = '    ';
 const PACKAGE = 'app.aistylist.core.designsystem.generated';
@@ -18,25 +19,16 @@ const TYPE = {
   stringList: 'List<String>',
   doubleList: 'List<Double>',
 };
-
-/** `val x: T =`, then the constructor call on its own line (ktlint multiline-expression-wrapping). */
-function initLines(head, { struct, args }, pad) {
-  const call = pad + INDENT;
-  const inner = call + INDENT;
-  const argLines = args.flatMap((arg) =>
-    valueLines(kotlin, `${inner}${ktIdent(arg.name)} = `, arg, inner, ','),
-  );
-  return [head, `${call}${struct}(`, ...argLines, `${call})`];
-}
-
-const parameters = (fields) =>
-  fields.map(({ name, type }) => `${INDENT}val ${ktIdent(name)}: ${type},`);
+const typeName = (type) => TYPE[type] ?? type;
 
 export const kotlin = {
   extension: 'kt',
   indent: INDENT,
   limit: 120,
+  wrapAfterAssign: true,
+  callTrailingComma: true,
   list: { open: 'listOf(', close: ')', empty: 'emptyList()' },
+  argLabel: (name) => `${ktIdent(name)} = `,
   spell: {
     double: num,
     string: ktStr,
@@ -51,18 +43,29 @@ export const kotlin = {
   ],
   doc: (text, pad) => `${pad}/** ${docText(text)} */`,
   namespaceHead: (name) => `object ${name}`,
+  emptyNamespace: (name) => `object ${name}`,
   constant(member, depth) {
     const pad = INDENT.repeat(depth);
-    const head = `${pad}val ${ktIdent(member.name)}: ${TYPE[member.type]} =`;
-    if (member.value.t === 'init') return initLines(head, member.value, pad);
-    return valueLines(kotlin, `${head} `, member, pad);
+    const head = `${pad}val ${ktIdent(member.name)}: ${typeName(member.type)} = `;
+    return valueLines(kotlin, head, member, pad);
   },
-  struct: (decl) => [
-    `/** ${docText(decl.doc)} */`,
-    `data class ${decl.name}(`,
-    ...parameters(decl.fields.map((f) => ({ name: f.name, type: TYPE[f.type] }))),
-    ')',
-  ],
+  struct(decl, depth) {
+    const pad = INDENT.repeat(depth);
+    const inner = pad + INDENT;
+    const parameters = decl.fields.map(
+      (f) => `${inner}val ${ktIdent(f.name)}: ${typeName(f.type)},`,
+    );
+    const lookup = decl.lookup ? [lookupLines(decl, inner)] : [];
+    const nested = decl.nested.map((n) => renderDeclaration(kotlin, n, depth + 1));
+    const companion = decl.instances.length > 0 ? [companionLines(decl, inner)] : [];
+    const body = [...lookup, ...nested, ...companion];
+    return [
+      ...(decl.doc ? [kotlin.doc(decl.doc, pad)] : []),
+      `${pad}data class ${decl.name}(`,
+      ...parameters,
+      ...(body.length > 0 ? [`${pad}) {`, ...joinMembers(body), `${pad}}`] : [`${pad})`]),
+    ];
+  },
   roles: (decl) => [
     `/** ${docText(decl.doc)} */`,
     `enum class ${decl.name}(`,
@@ -71,27 +74,25 @@ export const kotlin = {
     ...decl.cases.map((id) => `${INDENT}${ktEnumEntry(id)}(${decl.valuesType}::${ktIdent(id)}),`),
     '}',
   ],
-  colors(decl) {
-    const companion = INDENT.repeat(2);
-    const instances = decl.instances.map(({ name, args }) => {
-      const head = `${companion}val ${ktIdent(name)}: ${decl.name} =`;
-      return initLines(head, { struct: decl.name, args }, companion);
-    });
-    return [
-      `/** ${docText(decl.doc)} */`,
-      `data class ${decl.name}(`,
-      ...parameters(decl.fields.map((name) => ({ name, type: 'Long' }))),
-      ') {',
-      `${INDENT}/** The value of [role] in this context. */`,
-      `${INDENT}operator fun get(role: ${decl.roleType}): Long = role.read(this)`,
-      '',
-      `${INDENT}companion object {`,
-      ...joinMembers(instances),
-      `${INDENT}}`,
-      '}',
-    ];
-  },
 };
+
+/** `colors[role]`: each role entry reads its own property, so no `when` over every role. */
+const lookupLines = (decl, pad) => {
+  const { roleType, valueType } = decl.lookup;
+  return [
+    `${pad}/** The value of [role] in this context. */`,
+    `${pad}operator fun get(role: ${roleType}): ${typeName(valueType)} = role.read(this)`,
+  ];
+};
+
+/** One instance per context, in the companion object (`AppColors.light`, `ChipTokens.dark`). */
+function companionLines(decl, pad) {
+  const inner = pad + INDENT;
+  const instances = decl.instances.map(({ name, value }) =>
+    valueLines(kotlin, `${inner}val ${ktIdent(name)}: ${decl.name} = `, { value }, inner),
+  );
+  return [`${pad}companion object {`, ...joinMembers(instances), `${pad}}`];
+}
 
 /** `{ ReferenceTokens.kt, SchemeTokens.kt, ComponentTokens.kt }`. */
 export const emitKotlin = (tiers, source) => renderTiers(kotlin, tiers, source);

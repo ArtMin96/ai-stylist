@@ -2,14 +2,14 @@
 // reference scales -> scheme roles -> component tokens. Every name and value is decided here once,
 // so the Swift and Kotlin emitters (emit-swift.mjs, emit-kotlin.mjs) only spell it.
 //
-// Declarations: namespace { name, doc, members } · struct { name, doc, fields } ·
-// roles { name, doc, valuesType, cases } · colors { name, doc, roleType, fields, instances }.
-// Members: const { name, type, value } or a nested namespace. Types: double, int, string, color,
-// role, textStyle, stringList, doubleList. Values: number, color (32-bit ARGB), string, list,
-// role (a role id, never a resolved colour), ref (another constant), init (a struct value).
+// Declarations: namespace { name, doc, members } · struct { name, doc, fields, nested, instances,
+// lookup } · roles { name, doc, valuesType, cases }. Members: const { name, type, value } or a
+// nested namespace. Types: double, int, string, color, role, textStyle, stringList, doubleList, or
+// the name of a nested struct. Values: number, color (32-bit ARGB), string, list, role (a role id,
+// never a resolved colour), ref (another constant), init (a struct value { struct, args }).
 import { contextId, memberId, nestedTypeName, tokensTypeName } from './naming.mjs';
-import { resolveColors } from './normalise.mjs';
-import { CONTEXTS } from './syntax.mjs';
+import { CONTEXT_SOURCES, resolveColors, resolveComponents } from './normalise.mjs';
+import { CONTEXTS, splitScheme } from './syntax.mjs';
 
 export const TIERS = [
   { tier: 'reference', file: 'ReferenceTokens', title: 'Tier 1 of 3: reference scales' },
@@ -44,7 +44,7 @@ const TEXT_STYLE_FIELDS = [
 
 /** `{ reference, scheme, component }`: the declarations of each tier, in emission order. */
 export function declarations(model) {
-  const { primitives, components } = model.sets;
+  const { primitives } = model.sets;
   const scale = (group, doc) => ({
     kind: 'namespace',
     name: NAMESPACE_OF[group],
@@ -60,6 +60,8 @@ export function declarations(model) {
         name: 'AppTextStyle',
         doc: 'A type style: sizes in pt/sp, letter spacing in pt/sp, line height as a height.',
         fields: TEXT_STYLE_FIELDS.map(([name, type]) => ({ name, type })),
+        nested: [],
+        instances: [],
       },
       {
         kind: 'namespace',
@@ -72,7 +74,7 @@ export function declarations(model) {
           value: textStyleValue(token),
         })),
       },
-      scale('elevation', 'Elevation (`elevation`): dimensions in pt/dp, colours as role keys.'),
+      scale('elevation', 'Elevation (`elevation`): sizes in pt/dp, colours as roles or ARGB.'),
       scale('motion', 'Motion (`motion`): durations in ms, curves as cubic-bezier points.'),
     ],
     scheme: [
@@ -85,12 +87,7 @@ export function declarations(model) {
       },
       colorsDeclaration(model),
     ],
-    component: Object.entries(components).map(([component, group]) => ({
-      kind: 'namespace',
-      name: tokensTypeName(component),
-      doc: `Component \`${component}\`: colours are role keys, sizes in pt/dp.`,
-      members: membersOf(group, (prop) => prop),
-    })),
+    component: componentDeclarations(model),
   };
 }
 
@@ -115,15 +112,24 @@ function membersOf(group, idOf) {
 
 const round4 = (n) => Math.round(n * 1e4) / 1e4;
 
+/** 32-bit ARGB from a DTCG colour (alpha rounded to the nearest of 255 steps). */
+const argb = ({ hex, alpha }) => Math.round(alpha * 255) * 2 ** 24 + parseInt(hex.slice(1), 16);
+
+/** `{ type, value }` of one token: aliases stay references, literals become numbers or ARGB. */
 function typedValue(token) {
-  const type = TYPE_OF_TOKEN[token.$type];
   const v = token.$value;
-  if (typeof v === 'string') return { type, value: aliasValue(v) };
-  if (token.$type === 'cubicBezier') {
-    return { type, value: { t: 'list', items: v.map((n) => ({ t: 'number', n })) } };
+  if (typeof v === 'string') return { type: TYPE_OF_TOKEN[token.$type], value: aliasValue(v) };
+  const number = (n) => ({ t: 'number', n });
+  switch (token.$type) {
+    case 'color':
+      return { type: 'color', value: { t: 'color', argb: argb(v) } };
+    case 'cubicBezier':
+      return { type: 'doubleList', value: { t: 'list', items: v.map(number) } };
+    case 'number':
+      return { type: 'double', value: { t: 'number', n: round4(v) } };
+    default:
+      return { type: 'double', value: { t: 'number', n: round4(v.value) } };
   }
-  if (token.$type === 'number') return { type, value: { t: 'number', n: round4(v) } };
-  return { type, value: { t: 'number', n: round4(v.value) } };
 }
 
 /** `{colors.surface-2}` -> role `surface2`; `{rounded.full}` -> ref `AppRadius.full`. */
@@ -150,27 +156,98 @@ function textStyleValue({ $value: v, $extensions: ext }) {
   };
 }
 
-/** 32-bit ARGB from a DTCG colour (alpha rounded to the nearest of 255 steps). */
-const argb = ({ hex, alpha }) => Math.round(alpha * 255) * 2 ** 24 + parseInt(hex.slice(1), 16);
-
 function colorsDeclaration(model) {
-  const fields = model.roles.map(({ key }) => memberId(key));
+  const fields = model.roles.map(({ key }) => ({ name: memberId(key), type: 'color' }));
   return {
-    kind: 'colors',
+    kind: 'struct',
     name: 'AppColors',
-    roleType: 'AppColorRole',
     doc: 'Every colour role resolved for one context (DESIGN.md schemes; ARGB).',
     fields,
+    nested: [],
     instances: CONTEXTS.map((context) => {
       const resolved = Object.values(resolveColors(model, context));
-      return {
-        name: contextId(context),
-        args: fields.map((name, i) => ({
-          name,
-          type: 'color',
-          value: { t: 'color', argb: argb(resolved[i]) },
-        })),
-      };
+      const args = fields.map(({ name, type }, i) => ({
+        name,
+        type,
+        value: { t: 'color', argb: argb(resolved[i]) },
+      }));
+      return { name: contextId(context), value: { t: 'init', struct: 'AppColors', args } };
     }),
+    lookup: { roleType: 'AppColorRole', valueType: 'color' },
   };
+}
+
+/**
+ * One `<Component>Tokens` struct per component: its properties, then one nested struct per state,
+ * and one instance per context from `resolveComponents` (colours stay role keys).
+ */
+function componentDeclarations(model) {
+  const resolved = CONTEXTS.map((context) => [context, resolveComponents(model, context)]);
+  return Object.keys(model.sets.components).map((component) => {
+    const name = tokensTypeName(component);
+    const contexts = contextsOf(component);
+    const groups = resolved
+      .filter(([context]) => contexts.includes(context))
+      .map(([context, all]) => [context, all[component]]);
+    const [, first] = groups[0];
+    const fields = fieldsOf(first);
+    const states = Object.keys(first).filter((key) => !isToken(first[key]));
+    const nested = states.map((state) => ({
+      kind: 'struct',
+      name: nestedTypeName(state),
+      fields: fieldsOf(first[state]),
+      nested: [],
+      instances: [],
+    }));
+    return {
+      kind: 'struct',
+      name,
+      doc: `Component \`${component}\` per context: colours are role keys, sizes in pt/dp.`,
+      fields: [...fields, ...states.map((state, i) => ({ name: state, type: nested[i].name }))],
+      nested,
+      instances: groups.map(([context, group]) => {
+        const where = `${component} (${context})`;
+        const stateArgs = states.map((state, i) => ({
+          name: state,
+          type: nested[i].name,
+          value: {
+            t: 'init',
+            struct: nested[i].name,
+            args: argsOf(nested[i].fields, group[state], `${where}.${state}`),
+          },
+        }));
+        const args = [...argsOf(fields, group, where), ...stateArgs];
+        return { name: contextId(context), value: { t: 'init', struct: name, args } };
+      }),
+    };
+  });
+}
+
+/**
+ * The contexts a component has instances for. A component named by a scheme-suffixed key is
+ * unpaired by design (structure.mjs), so only the contexts that draw from that scheme get one:
+ * `banner-dark` -> dark, brand, hc-dark (CONTEXT_SOURCES), and asking for `.light` does not compile.
+ */
+export function contextsOf(component) {
+  const { scheme } = splitScheme(component);
+  if (scheme === null) return CONTEXTS;
+  return CONTEXTS.filter((context) => CONTEXT_SOURCES[context].includes(scheme));
+}
+
+/** The typed fields of a resolved group's properties (its states excluded), in model order. */
+const fieldsOf = (group) =>
+  Object.keys(group)
+    .filter((key) => isToken(group[key]))
+    .map((key) => ({ name: key, type: typedValue(group[key]).type }));
+
+/** The arguments of one context's instance, in field order; every context declares every field. */
+function argsOf(fields, group, where) {
+  return fields.map(({ name, type }) => {
+    const node = group?.[name];
+    const typed = node && isToken(node) ? typedValue(node) : null;
+    if (!typed || typed.type !== type) {
+      throw new Error(`gen-tokens: ${where} has no ${type} \`${name}\` like the other contexts`);
+    }
+    return { name, ...typed };
+  });
 }

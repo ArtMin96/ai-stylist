@@ -15,26 +15,33 @@ TEST_ROOT="$(mktemp -d "${TMPDIR:-/tmp}/ai-stylist-generate-tests.XXXXXX")"
 trap 'rm -rf "$TEST_ROOT"' EXIT
 
 FAKE="$TEST_ROOT/repo"
+TOKENS_SWIFT="$FAKE/apps/ios/Packages/DesignSystem/Sources/DesignTokens/generated"
+TOKENS_KOTLIN="$FAKE/apps/android/core/designsystem/src/main/kotlin/app/aistylist/core/designsystem/generated"
 mkdir -p "$FAKE/tools/codegen" "$FAKE/scripts" "$TEST_ROOT/bin" \
-  "$FAKE/packages/shared-kernel/src/gen" "$FAKE/packages/contracts/gen" "$FAKE/workers/ml/generated"
+  "$FAKE/packages/shared-kernel/src/gen" "$FAKE/packages/contracts/gen" "$FAKE/workers/ml/generated" \
+  "$TOKENS_SWIFT" "$TOKENS_KOTLIN"
 cp "$ROOT/tools/codegen/generate.sh" "$FAKE/tools/codegen/generate.sh"
 cp "$ROOT/scripts/native-lane.sh" "$FAKE/scripts/native-lane.sh"
 echo committed >"$FAKE/packages/contracts/gen/client.txt"
 echo committed >"$FAKE/packages/shared-kernel/src/gen/kernel.txt"
 echo committed >"$FAKE/workers/ml/generated/models.txt"
+echo committed >"$TOKENS_SWIFT/Tokens.swift"
+echo committed >"$TOKENS_KOTLIN/Tokens.kt"
 CALLS="$TEST_ROOT/calls"
 
-# write_stub <path> <name>: records <name>; exits 1 when $GEN_STUB_FAIL is <name>, first
-# scribbling on a committed output when GEN_STUB_SCRIBBLE=1 (a failed --check must restore it).
+# write_stub <path> <name>: records <name> (a shell word the stub evaluates when it runs); exits 1
+# when $GEN_STUB_FAIL is that name, first scribbling on a committed output when GEN_STUB_SCRIBBLE=1
+# (a failed --check must restore it).
 write_stub() {
   cat >"$1" <<STUB
 #!/usr/bin/env bash
-echo "$2" >>"$CALLS"
-if [[ "\${GEN_STUB_FAIL:-}" == "$2" ]]; then
+name="$2"
+echo "\$name" >>"$CALLS"
+if [[ "\${GEN_STUB_FAIL:-}" == "\$name" ]]; then
   if [[ "\${GEN_STUB_SCRIBBLE:-}" == 1 ]]; then
     echo partial >"$FAKE/packages/contracts/gen/client.txt"
   fi
-  echo "$2: stub failure" >&2
+  echo "\$name: stub failure" >&2
   exit 1
 fi
 STUB
@@ -44,7 +51,10 @@ for gen in gen-ts.sh gen-swift.sh gen-kotlin.sh gen-python.sh; do
   write_stub "$FAKE/tools/codegen/$gen" "$gen"
 done
 : >"$FAKE/tools/codegen/gen-kernel.mjs"
-write_stub "$TEST_ROOT/bin/node" gen-kernel.mjs
+: >"$FAKE/tools/codegen/gen-tokens.mjs"
+# The node stub records the script it runs (gen-kernel.mjs or gen-tokens.mjs).
+# shellcheck disable=SC2016  # expanded by the stub when it runs, not here
+write_stub "$TEST_ROOT/bin/node" '$(basename "$1")'
 printf '#!/usr/bin/env bash\nexit 0\n' >"$TEST_ROOT/bin/swift"
 chmod +x "$TEST_ROOT/bin/swift"
 
@@ -95,7 +105,7 @@ expect_committed() {
   echo committed >"$FAKE/packages/contracts/gen/client.txt"
 }
 
-ALL="gen-kernel.mjs gen-ts.sh gen-swift.sh gen-kotlin.sh gen-python.sh"
+ALL="gen-kernel.mjs gen-tokens.mjs gen-ts.sh gen-swift.sh gen-kotlin.sh gen-python.sh"
 
 if run "--check, all generators pass" 0 -- --check; then
   expect_in_out "--check, all pass" "generated output is up to date"
@@ -104,9 +114,23 @@ fi
 
 if run "--check, gen-swift.sh fails (middle)" nonzero GEN_STUB_FAIL=gen-swift.sh -- --check; then
   expect_in_out "--check, gen-swift.sh fails" "generate --check: generator gen-swift.sh failed"
-  expect_calls "--check, gen-swift.sh fails" "gen-kernel.mjs gen-ts.sh gen-swift.sh"
+  expect_calls "--check, gen-swift.sh fails" "gen-kernel.mjs gen-tokens.mjs gen-ts.sh gen-swift.sh"
 fi
 expect_committed "--check, gen-swift.sh fails"
+
+if run "--check, gen-tokens.mjs fails" nonzero GEN_STUB_FAIL=gen-tokens.mjs GEN_STUB_SCRIBBLE=1 -- --check; then
+  expect_in_out "--check, gen-tokens.mjs fails" "generate --check: generator gen-tokens.mjs failed"
+  expect_calls "--check, gen-tokens.mjs fails" "gen-kernel.mjs gen-tokens.mjs"
+fi
+expect_committed "--check, gen-tokens.mjs fails"
+
+# A token directory missing from the commit is stale, and --check removes what it generated there.
+mv "$TOKENS_KOTLIN" "$TEST_ROOT/tokens-kotlin"
+if run "--check, the Kotlin token directory is not committed" nonzero -- --check; then
+  expect_in_out "--check, tokens missing" "core/designsystem/generated/ (missing: not generated yet)"
+fi
+[[ ! -e "$TOKENS_KOTLIN" ]] || fail "--check, tokens missing: --check left a directory behind"
+mv "$TEST_ROOT/tokens-kotlin" "$TOKENS_KOTLIN"
 
 if run "--check, gen-kernel.mjs fails (first)" nonzero GEN_STUB_FAIL=gen-kernel.mjs GEN_STUB_SCRIBBLE=1 -- --check; then
   expect_in_out "--check, gen-kernel.mjs fails" "generate --check: generator gen-kernel.mjs failed"
@@ -121,18 +145,23 @@ expect_committed "--check, gen-python.sh fails"
 
 if run "plain, gen-swift.sh fails" nonzero GEN_STUB_FAIL=gen-swift.sh --; then
   expect_in_out "plain, gen-swift.sh fails" "generate: generator gen-swift.sh failed"
-  expect_calls "plain, gen-swift.sh fails" "gen-kernel.mjs gen-ts.sh gen-swift.sh"
+  expect_calls "plain, gen-swift.sh fails" "gen-kernel.mjs gen-tokens.mjs gen-ts.sh gen-swift.sh"
 fi
 echo committed >"$FAKE/packages/contracts/gen/client.txt"
 
 # A deselected lane is not a failure: NATIVE_LANES=android never runs the failing Swift generator.
 if run "--check, NATIVE_LANES=android, gen-swift.sh would fail" 0 NATIVE_LANES=android GEN_STUB_FAIL=gen-swift.sh -- --check; then
   expect_in_out "NATIVE_LANES=android" "native-lane: ios lane not selected"
-  expect_calls "NATIVE_LANES=android" "gen-kernel.mjs gen-ts.sh gen-kotlin.sh gen-python.sh"
+  expect_calls "NATIVE_LANES=android" "gen-kernel.mjs gen-tokens.mjs gen-ts.sh gen-kotlin.sh gen-python.sh"
+fi
+
+# The token generator is node-only: NATIVE_LANES=none still runs it.
+if run "--check, NATIVE_LANES=none" 0 NATIVE_LANES=none -- --check; then
+  expect_calls "NATIVE_LANES=none" "gen-kernel.mjs gen-tokens.mjs gen-ts.sh gen-python.sh"
 fi
 
 if [[ $fails -ne 0 ]]; then
   echo "FAIL  generate: $fails assertion(s) failed" >&2
   exit 1
 fi
-echo "PASS  generate: a failing generator (first, middle or last) fails generate and generate --check, names itself, stops the rest and leaves the committed outputs; a deselected native lane still passes"
+echo "PASS  generate: a failing generator (first, middle or last) fails generate and generate --check, names itself, stops the rest and leaves the committed outputs; a deselected native lane still passes; the node-only token generator runs in every lane and an uncommitted token directory is stale"

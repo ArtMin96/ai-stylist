@@ -1,9 +1,12 @@
 // Declaration tree -> Swift for the Foundation-free `DesignTokens` target (DEC-87:
 // apps/ios/Packages/DesignSystem/Sources/DesignTokens/generated/). Plain value types only (Double,
 // Int, String, UInt32 ARGB), so the target compiles under Swift 6 strict concurrency on Linux; the
-// SwiftUI `DesignSystem` target maps them to Color and Font. Layout follows apps/ios/.swift-format.
+// SwiftUI `DesignSystem` target maps them to Color and Font. Every type is `nonisolated` because
+// the package sets `defaultIsolation(MainActor.self)` and these are immutable Sendable values,
+// usable from any isolation domain (the Core convention, e.g. AppConfig). Layout follows
+// apps/ios/.swift-format: 2-space indent, 120 columns, grouped hex literals.
 import { docText, num, swiftIdent, swiftStr } from './naming.mjs';
-import { joinMembers, renderTiers, valueLines } from './render.mjs';
+import { joinMembers, renderDeclaration, renderTiers, valueLines } from './render.mjs';
 
 const INDENT = '  ';
 const TYPE = {
@@ -16,21 +19,16 @@ const TYPE = {
   stringList: '[String]',
   doubleList: '[Double]',
 };
-
-function initLines(head, { struct, args }, pad) {
-  const inner = pad + INDENT;
-  const argLines = args.flatMap((arg, i) => {
-    const suffix = i < args.length - 1 ? ',' : '';
-    return valueLines(swift, `${inner}${swiftIdent(arg.name)}: `, arg, inner, suffix);
-  });
-  return [`${head}${struct}(`, ...argLines, `${pad})`];
-}
+const typeName = (type) => TYPE[type] ?? type;
 
 export const swift = {
   extension: 'swift',
   indent: INDENT,
   limit: 120,
+  wrapAfterAssign: false,
+  callTrailingComma: false,
   list: { open: '[', close: ']', empty: '[]' },
+  argLabel: (name) => `${swiftIdent(name)}: `,
   spell: {
     double: num,
     string: swiftStr,
@@ -43,48 +41,56 @@ export const swift = {
     `// ${title} (DEC-87).`,
   ],
   doc: (text, pad) => `${pad}/// ${docText(text)}`,
-  namespaceHead: (name) => `public enum ${name}`,
+  namespaceHead: (name) => `nonisolated public enum ${name}`,
+  emptyNamespace: (name) => `nonisolated public enum ${name} {}`,
   constant(member, depth) {
     const pad = INDENT.repeat(depth);
-    const head = `${pad}public static let ${swiftIdent(member.name)}`;
-    if (member.value.t === 'init') return initLines(`${head} = `, member.value, pad);
-    return valueLines(swift, `${head}: ${TYPE[member.type]} = `, member, pad);
+    const id = swiftIdent(member.name);
+    const head =
+      member.value.t === 'init'
+        ? `${pad}public static let ${id} = `
+        : `${pad}public static let ${id}: ${typeName(member.type)} = `;
+    return valueLines(swift, head, member, pad);
   },
-  struct: (decl) => [
-    `/// ${docText(decl.doc)}`,
-    `public struct ${decl.name}: Sendable, Equatable {`,
-    ...decl.fields.map((f) => `${INDENT}public let ${swiftIdent(f.name)}: ${TYPE[f.type]}`),
-    '}',
-  ],
+  struct(decl, depth) {
+    const pad = INDENT.repeat(depth);
+    const inner = pad + INDENT;
+    const fields = decl.fields.map(
+      (f) => `${inner}public let ${swiftIdent(f.name)}: ${typeName(f.type)}`,
+    );
+    const nested = decl.nested.map((n) => renderDeclaration(swift, n, depth + 1));
+    const instances = decl.instances.map(({ name, value }) =>
+      valueLines(swift, `${inner}public static let ${swiftIdent(name)} = `, { value }, inner),
+    );
+    const lookup = decl.lookup ? [lookupLines(decl, inner)] : [];
+    return [
+      ...(decl.doc ? [swift.doc(decl.doc, pad)] : []),
+      `${pad}nonisolated public struct ${decl.name}: Sendable, Equatable {`,
+      ...joinMembers([fields, ...nested, ...instances, ...lookup]),
+      `${pad}}`,
+    ];
+  },
   roles: (decl) => [
     `/// ${docText(decl.doc)}`,
-    `public enum ${decl.name}: CaseIterable, Sendable {`,
+    `nonisolated public enum ${decl.name}: CaseIterable, Sendable {`,
     ...decl.cases.map((id) => `${INDENT}case ${swiftIdent(id)}`),
     '}',
   ],
-  colors(decl) {
-    const fields = decl.fields.map((id) => `${INDENT}public let ${swiftIdent(id)}: UInt32`);
-    const instances = decl.instances.map(({ name, args }) => {
-      const head = `${INDENT}public static let ${swiftIdent(name)} = `;
-      return initLines(head, { struct: decl.name, args }, INDENT);
-    });
-    const step = INDENT.repeat(2);
-    const lookup = [
-      `${INDENT}/// The value of \`role\` in this context.`,
-      `${INDENT}public subscript(role: ${decl.roleType}) -> UInt32 {`,
-      `${step}switch role {`,
-      ...decl.fields.map((id) => `${step}case .${swiftIdent(id)}: ${swiftIdent(id)}`),
-      `${step}}`,
-      `${INDENT}}`,
-    ];
-    return [
-      `/// ${docText(decl.doc)}`,
-      `public struct ${decl.name}: Sendable, Equatable {`,
-      ...joinMembers([fields, ...instances, lookup]),
-      '}',
-    ];
-  },
 };
+
+/** `colors[role]`: a switch over every role (one case per field). */
+function lookupLines(decl, pad) {
+  const step = pad + INDENT;
+  const { roleType, valueType } = decl.lookup;
+  return [
+    `${pad}/// The value of \`role\` in this context.`,
+    `${pad}public subscript(role: ${roleType}) -> ${typeName(valueType)} {`,
+    `${step}switch role {`,
+    ...decl.fields.map(({ name }) => `${step}case .${swiftIdent(name)}: ${swiftIdent(name)}`),
+    `${step}}`,
+    `${pad}}`,
+  ];
+}
 
 /** `{ ReferenceTokens.swift, SchemeTokens.swift, ComponentTokens.swift }`. */
 export const emitSwift = (tiers, source) => renderTiers(swift, tiers, source);

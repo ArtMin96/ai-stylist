@@ -8,31 +8,37 @@ directory turns it into native theme code in the DEC-87 pipeline:
 2. **Normalise** in memory to the DTCG 2025.10 model plus resolver (`normalise.mjs`). The model is
    never written to the repository (DEC-87 D8).
 3. **Emit** Swift and Kotlin in three tiers: reference scales, scheme roles, component tokens
-   (`emit-swift.mjs`, `emit-kotlin.mjs`; not built yet, see Status).
-4. **Gate**: the generated files are checked for drift, and a golden test proves the Swift and
-   Kotlin emitters produce the same name-to-value table (not built yet).
+   (`declarations.mjs` decides every name and value once; `render.mjs` lays it out;
+   `emit-swift.mjs` and `emit-kotlin.mjs` spell it). See Emitted code.
+4. **Gate**: `just generate --check` fails when the committed output differs from a fresh run,
+   and `tests/parity.test.mjs` reads both languages' output back into one name-to-value table and
+   requires the two tables to be equal.
 
 ## Status (Linear AI-189)
 
-Built: stages 1 and 2, with their tests. The repository `DESIGN.md` passes TK-01 to TK-11, and a
-test keeps it that way; the rule and model tests run against the synthetic fixture
+Built: all four stages, with their tests, and the wiring: `tools/codegen/generate.sh` runs
+`gen-tokens.mjs` right after the shared-kernel registries, in every lane (it needs only Node), and
+`--check` covers both output directories. The repository `DESIGN.md` passes TK-01 to TK-11 and
+emits in both languages; the rule, model and emitter tests also run against the synthetic fixture
 `fixtures/_valid/DESIGN.md`.
 
-Not built yet: the emitters, their output directories and `--check`, the parity test, and the
-wiring into `just generate` / `just generate --check`. `declarations.mjs`, `render.mjs`,
-`emit-swift.mjs` and `emit-kotlin.mjs` are an unreviewed, untested first draft from this pass,
-left for the emitter pass to adopt or replace. Nothing imports them yet.
+Not done: the generated files are not committed yet (`just generate` writes them), and the
+emitted Swift and Kotlin have not been compiled or run through swift-format, SwiftLint, ktlint or
+detekt inside the two app packages (see Emitted code, Gates on the output).
 
 ## Usage
 
 ```bash
-node tools/codegen/gen-tokens.mjs --input DESIGN.md
+node tools/codegen/gen-tokens.mjs --input DESIGN.md                       # validate only
+node tools/codegen/gen-tokens.mjs --input DESIGN.md --swift-out <dir> --kotlin-out <dir>
 ```
 
 It prints every finding as `TK-NN <where>: <message>` and exits 1, or prints a one-line summary
-of the model and exits 0. Exit 2 is a usage error. `DESIGN_MD_BIN` overrides the design.md bin
-(the tests point it at a stub); by default it is `node_modules/.bin/design.md` from the root
-devDependency, never `npx`.
+of the model and exits 0. With `--swift-out` / `--kotlin-out` it then replaces each directory with
+that language's three tier files and prints one line per directory; nothing is written when the
+input has a finding. Exit 2 is a usage error. `DESIGN_MD_BIN` overrides the design.md bin (the
+tests point it at a stub); by default it is `node_modules/.bin/design.md` from the root
+devDependency, never `npx`. `just generate` passes the two directories under Files.
 
 ## Rules
 
@@ -110,8 +116,7 @@ data (no `Map`, no class instances), the same for the same input, and never writ
   - `M3_ROLES`: the 15 Compose `Typography` properties, `displayLarge` … `labelSmall`.
   - `DYNAMIC_TYPE_STYLES`: the SwiftUI `Font.TextStyle` cases, `largeTitle` … `caption2`.
 - `tools/codegen/tokens/naming.mjs`: every identifier helper (see Naming rules).
-- `tools/codegen/gen-tokens.mjs`: the CLI. The emitter pass adds the output directories and
-  `--check` here.
+- `tools/codegen/gen-tokens.mjs`: the CLI (Usage).
 
 ### Values (DTCG 2025.10)
 
@@ -195,7 +200,16 @@ order, wherever they appear in the file.
 - `sets.components` has one group per component, in first-appearance order. The component name is
   the key with its scheme suffix and then its state suffix removed: `button-primary-pressed-dark`
   -> component `button-primary`, state `pressed`. Every component and every declared state appears
-  there, possibly as an empty group.
+  there, possibly as an empty group. Names come from the keys as written and are never inferred
+  (owner decision 2026-10-20):
+  - A key without its light/dark twin (on the `Unpaired by design:` line) is a component of its
+    own, named by its full key and the same in every context, as an unpaired colour is a fixed
+    role: `banner-dark` -> component `banner-dark` (`BannerDarkTokens`), never `banner`. The
+    emitters give it instances only for the contexts of its scheme (Emitted code).
+  - A state suffix names a state only when that component has a default-state key. Otherwise it is
+    part of the name: `camera-mode-selected-light` + `-dark` -> component `camera-mode-selected`
+    (there is no `camera-mode` key), next to the scheme-independent `camera-mode-switch`. The same
+    rule makes `button-action-selected` a component of its own.
 - At the top level of a group are the default-state properties, as tokens. Each state from `STATES`
   that the component declares is a nested group (`components['button-primary'].pressed`). That
   group holds only the properties the state overrides, as tokens of the same shapes. A node with an
@@ -243,34 +257,71 @@ guarantees that no two generated identifiers collide. Any other derivation loses
   `swiftStr`, `ktStr` and `num` (always a floating-point literal: `2` -> `2.0`). Doc comments go
   through `docText`.
 
-### Reserved file names
+### Files
 
-- `tools/codegen/tokens/emit-swift.mjs`: the Swift emitter. Its planned output directory is
+- `tools/codegen/tokens/declarations.mjs`: the model -> one language-neutral declaration tree
+  (every name, type and value). `render.mjs` owns order, line breaks and blank lines.
+- `tools/codegen/tokens/emit-swift.mjs`: the Swift dialect. `just generate` writes its output to
   `apps/ios/Packages/DesignSystem/Sources/DesignTokens/generated/`.
-- `tools/codegen/tokens/emit-kotlin.mjs`: the Kotlin emitter. Its planned output directory is
+- `tools/codegen/tokens/emit-kotlin.mjs`: the Kotlin dialect. `just generate` writes its output to
   `apps/android/core/designsystem/src/main/kotlin/app/aistylist/core/designsystem/generated/`.
 - `tools/codegen/tokens/tests/parity.test.mjs`: the golden test that the Swift and Kotlin
-  name-to-value tables are equal. Today it is a comment-only placeholder; `node --test` counts it
-  as one passing file.
-- `tools/codegen/tokens/tests/parity-table.mjs`: that test's table reader. It is a placeholder too,
-  and the suite does not run it (it is not a `*.test.mjs` file).
+  name-to-value tables are equal; `tests/parity-table.mjs` reads the emitted text back into that
+  table.
 - New tests go in `tools/codegen/tokens/tests/*.test.mjs`. `scripts/test/design-tokens.test.sh`
-  runs that glob.
+  runs that glob; `tests/models.mjs` holds the models the tests share.
 
-The two emitter files above exist today, together with `declarations.mjs` and `render.mjs`, as an
-unreviewed, untested draft (see Status). The emitter pass adopts or replaces them; it does not add
-new names alongside them.
+The `brand` context falls back to `dark` for every role S3 Viridian does not declare, as the
+`DESIGN.md` frontmatter comment above the `-brand` colours states ("The roles S3 does not draw
+copy the S2 value"; owner confirmed 2026-10-20).
 
-Open question: the `brand` context falls back to `dark` for every role S3 Viridian does not
-declare. `DESIGN.md` does not state that fallback yet (it does for high contrast); confirm it with
-the owner before the emitters ship.
+## Emitted code
+
+Each language gets three files: `ReferenceTokens`, `SchemeTokens`, `ComponentTokens` (`.swift`,
+`.kt`), each with a `GENERATED … DO NOT EDIT` header. Values are plain types only, so the iOS
+`DesignTokens` target stays Foundation-free and Linux-testable and the Android `:core:designsystem`
+module stays pure JVM: `Double` (pt on iOS, dp/sp on Android), `Int` (font weight), `String`,
+`[String]`/`List<String>`, `[Double]`/`List<Double>` (cubic-bezier points), and colours as 32-bit
+ARGB (`UInt32`/`Long`, `0xFFFA_FAFA`). The theme code in each app maps them to SwiftUI or Compose.
+
+- Tier 1: `AppSpacing`, `AppRadius`, `AppTypography`, `AppElevation`, `AppMotion` are namespaces
+  (Swift `enum`, Kotlin `object`) of constants; a one-level group is a nested namespace
+  (`AppElevation.SheetLight.offsetY`, `AppMotion.Sheet.easing`). `AppTextStyle` is a value type
+  (`fontFamily` = the first family of the stack, `lineHeight` as a height, `letterSpacing` in
+  pt/sp, `dynamicType`, `m3Roles`). An alias stays a reference (`AppMotion.easingEnter`); a shadow
+  colour is a role or ARGB.
+- Tier 2: `AppColorRole` (one case per role, role order) and `AppColors` (one field per role, one
+  instance per context: `light`, `dark`, `brand`, `hcLight`, `hcDark`, plus `colors[role]`).
+- Tier 3: one `<Component>Tokens` value type per component: its properties, then one field per
+  state holding a nested type (`ButtonPrimaryTokens.Pressed`), and one instance per context from
+  `resolveComponents` (`ButtonPrimaryTokens.dark.pressed.backgroundColor`). Colour properties are
+  `AppColorRole` values; resolve them with the same context's `AppColors`. A component that is the
+  same in every context still has five equal instances, so every component is used the same way.
+  An unpaired component (named by its scheme-suffixed key) has instances only for the contexts
+  that draw from that scheme (`CONTEXT_SOURCES`, owner decision 2026-10-20): `BannerDarkTokens`
+  has `dark`, `brand` and `hcDark`, and no `light` or `hcLight`, so a light use does not compile.
+- Swift: every type is `nonisolated public` (the package defaults to `MainActor` isolation; these
+  are immutable `Sendable` values), structs are `Sendable, Equatable` with the memberwise
+  initialiser, 2-space indent, 120 columns. Kotlin: package
+  `app.aistylist.core.designsystem.generated`, `data class` values with companion instances,
+  ktlint_official layout (trailing commas, a multiline value wrapped after its `=`), 120 columns.
+
+Gates on the output, not run by this pass: the Swift files sit under `apps/ios/Packages`, so
+swift-format and SwiftLint lint them, and `swift build` compiles them with warnings as errors; the
+Kotlin files are compiled with warnings as errors and checked by Spotless (ktlint), detekt
+(`LongParameterList` allows 8 constructor parameters; its `ignoreDataClasses` default is expected
+to exempt these data classes, unverified) and Android Lint. A data class constructor
+takes at most 255 JVM slots, so `AppColors` (two per `Long`) holds at most 126 roles.
 
 ## Tests and fixtures
 
 `scripts/test/design-tokens.test.sh` (part of `just test tooling`) runs `node --test` over
 `tests/`: the parser and every rule (`generator.test.mjs`), the model and resolver
-(`normalise.test.mjs`) and the CLI against a design.md stub (`cli.test.mjs`). The repository
-`DESIGN.md` and `fixtures/_valid/` must pass; each `fixtures/TK-NN/` is the valid file with one
-defect and must fail on rule TK-NN and nothing else. A new rule ships with its fixture, and a shape
-a rule accepts ships with a passing test. The fixture values are synthetic, not the real tokens;
-the `DESIGN.md` test checks only that the file passes and resolves in every context.
+(`normalise.test.mjs`), each emitter (`emit-swift.test.mjs`, `emit-kotlin.test.mjs`), the golden
+parity test (`parity.test.mjs`) and the CLI against a design.md stub (`cli.test.mjs`). The
+repository `DESIGN.md` and `fixtures/_valid/` must pass; each `fixtures/TK-NN/` is the valid file
+with one defect and must fail on rule TK-NN and nothing else. A new rule ships with its fixture,
+and a shape a rule accepts ships with a passing test. The fixture values are synthetic, not the
+real tokens; the `DESIGN.md` tests check that the file passes, resolves in every context, emits
+the owner's names and lays out within 120 columns, and that both languages spell the same table.
+`scripts/test/generate.test.sh` proves a failing `gen-tokens.mjs` fails `just generate [--check]`.

@@ -14,31 +14,37 @@ directory turns it into native theme code in the DEC-87 pipeline:
    and `tests/parity.test.mjs` reads both languages' output back into one name-to-value table and
    requires the two tables to be equal.
 
-## Status (Linear AI-189)
+## Status (Linear AI-189, AI-198)
 
 Built: all four stages, with their tests, and the wiring: `tools/codegen/generate.sh` runs
 `gen-tokens.mjs` right after the shared-kernel registries, in every lane (it needs only Node), and
 `--check` covers both output directories. The repository `DESIGN.md` passes TK-01 to TK-11 and
 emits in both languages; the rule, model and emitter tests also run against the synthetic fixture
-`fixtures/_valid/DESIGN.md`.
+`fixtures/_valid/DESIGN.md`. The three tier files are committed in both app packages, each
+package with a test that reads them (`DesignTokensTests`, `GeneratedTokensTest`).
 
-Not done: the generated files are not committed yet (`just generate` writes them), and the
-emitted Swift and Kotlin have not been compiled or run through swift-format, SwiftLint, ktlint or
-detekt inside the two app packages (see Emitted code, Gates on the output).
+AI-198 adds the component API surface (Component contracts below): the contract checker, the
+merged looks and `ComponentAPI.swift` / `ComponentApi.kt`, emitted by the same run into the same
+two directories. Not done: those two files are not committed or compiled inside the app packages
+yet (`just generate` writes them; see Emitted code, Gates on the output).
 
 ## Usage
 
 ```bash
 node tools/codegen/gen-tokens.mjs --input DESIGN.md                       # validate only
-node tools/codegen/gen-tokens.mjs --input DESIGN.md --swift-out <dir> --kotlin-out <dir>
+node tools/codegen/gen-tokens.mjs --input DESIGN.md --components .impeccable/components \
+  --swift-out <dir> --kotlin-out <dir>
 ```
 
-It prints every finding as `TK-NN <where>: <message>` and exits 1, or prints a one-line summary
-of the model and exits 0. With `--swift-out` / `--kotlin-out` it then replaces each directory with
-that language's three tier files and prints one line per directory; nothing is written when the
-input has a finding. Exit 2 is a usage error. `DESIGN_MD_BIN` overrides the design.md bin (the
-tests point it at a stub); by default it is `node_modules/.bin/design.md` from the root
-devDependency, never `npx`. `just generate` passes the two directories under Files.
+It prints every finding as `TK-NN <where>: <message>` (or `CC-NN <file> <field>: <message>` for a
+contract) and exits 1, or prints a one-line summary of the model (and one of the contracts) and
+exits 0. With `--swift-out` / `--kotlin-out` it then replaces each directory with that language's
+three tier files, plus the component API file when `--components` is given, and prints one line
+per directory; nothing is written when any input has a finding. A contract still
+`approved: pending` is checked, named on stdout and gets no API. Exit 2 is a usage error.
+`DESIGN_MD_BIN` overrides the design.md bin (the tests point it at a stub); by default it is
+`node_modules/.bin/design.md` from the root devDependency, never `npx`. `just generate` passes
+`.impeccable/components` and the two directories under Files.
 
 ## Rules
 
@@ -88,6 +94,50 @@ Key grammar: a colour or component key may end in a scheme suffix (`-light`, `-d
 `-hc-light`, `-hc-dark`); a component key may end in a state before that (`-pressed`, `-focused`,
 `-disabled`, `-loading`, `-error`, `-selected`, `-expanded`). Every token is treated the same way;
 no component is special-cased.
+
+## Component contracts (Linear AI-198)
+
+`.impeccable/components/<id>.yaml` is the master for a component's API (ADR-0011 follow-up 7,
+DEC-87; field rules in `.impeccable/components/README.md`). `contracts.mjs` checks each contract;
+`contract-model.mjs` merges its looks; `api-declarations.mjs` decides the API's names and values;
+`emit-api-swift.mjs` and `emit-api-kotlin.mjs` spell them with the token dialects.
+
+- **CC-01** The YAML parses (no duplicate keys) and matches `component-contract.schema.json`
+  (Ajv, draft 2020-12 with ajv-formats, loaded from the `packages/contracts` devDependencies as
+  `gen-kernel.mjs` does): every field of the contracts README, `approved` included, nothing else.
+- **CC-02** `id` is the file name without `.yaml`.
+- **CC-03** The axes agree: `combinations` names exactly the variants, each allows only listed
+  sizes and states, every listed size and state is allowed by some variant, and the ids and test-ID
+  constants become distinct identifiers that are no Swift or Kotlin keyword.
+- **CC-04** `tokens` has one entry per variant; its `sizes` name exactly the variant's allowed
+  sizes, its `states` only allowed states other than `enabled` (the base entry is that look).
+- **CC-05** Every `{components.…}` reference resolves in the token model, and the
+  `accessibility.label` `{props.…}` names a prop. A whole component wins; otherwise
+  `<component>-<state>` names that component's state (owner decision 2026-10-20:
+  `{components.button-primary-pressed}` is `button-primary` -> `pressed`).
+- **CC-06** Each reference plays its part. A base is a whole component. A state names the same
+  state of the variant's base, or a whole component drawn over the enabled look (an overlay:
+  `focus-ring`) with an instance in every context of the table. A size is the base itself or a size
+  entry (a whole component with no colour and no state). A look with a `borderColor` needs
+  `<id>-outline-ring` with a `width`. A merged property has one type in every look.
+- **CC-07** `accessibility.busy` is a state, and an explicit `gallery.include` names only allowed
+  combinations.
+
+The rules run in stages (CC-01; CC-02 and CC-03; CC-04 and CC-07; CC-05; CC-06) and stop at the
+first stage with a finding, so each `fixtures/contracts/CC-NN/` case fails on its own rule only.
+
+**The merge** (owner decision 2026-10-20: one ready look per allowed variant x size x state x
+context). For each context of the table (the contexts every base and size entry has, `contextsOf`):
+the base entry's properties, then the state entry's, then the size entry's, later overriding
+earlier. `enabled`, and a state the variant names no token for (`loading` on primary), is the base
+look. A size entry that is the base itself adds nothing: applying it again would undo the state
+(the destructive-filled disabled label weight). An overlay state (`focused: {components.focus-ring}`)
+changes no colour: it adds a field named after its component that holds that component's instance
+for the context (`focusRing = FocusRingTokens.hcDark`). A look with a `borderColor` ring gets
+`borderWidth` from `<id>-outline-ring` (`button-outline-ring`, 1.5). The look's fields are colours,
+then `borderWidth`, then the other properties, then overlays; a field some look lacks is optional
+(`nil` / `null`: no fill, no ring, the spinner takes the label colour). Only allowed combinations
+get a look, so a disallowed one is never offered.
 
 ## Model interface
 
@@ -265,9 +315,14 @@ guarantees that no two generated identifiers collide. Any other derivation loses
   `apps/ios/Packages/DesignSystem/Sources/DesignTokens/generated/`.
 - `tools/codegen/tokens/emit-kotlin.mjs`: the Kotlin dialect. `just generate` writes its output to
   `apps/android/core/designsystem/src/main/kotlin/app/aistylist/core/designsystem/generated/`.
+- `tools/codegen/tokens/component-contract.schema.json`, `contracts.mjs` (`loadContracts`,
+  `checkContract`: CC-01 to CC-07), `contract-model.mjs` (the reference grammar, the allowed
+  combinations and the merged API model), `api-declarations.mjs` (the API declaration tree) and
+  `emit-api-swift.mjs` / `emit-api-kotlin.mjs`: the component API surface, written as
+  `ComponentAPI.swift` and `ComponentApi.kt` beside the tier files.
 - `tools/codegen/tokens/tests/parity.test.mjs`: the golden test that the Swift and Kotlin
-  name-to-value tables are equal; `tests/parity-table.mjs` reads the emitted text back into that
-  table.
+  name-to-value tables are equal, the component API files and their merged looks included;
+  `tests/parity-table.mjs` reads the emitted text back into that table.
 - New tests go in `tools/codegen/tokens/tests/*.test.mjs`. `scripts/test/design-tokens.test.sh`
   runs that glob; `tests/models.mjs` holds the models the tests share.
 
@@ -278,7 +333,8 @@ copy the S2 value"; owner confirmed 2026-10-20).
 ## Emitted code
 
 Each language gets three files: `ReferenceTokens`, `SchemeTokens`, `ComponentTokens` (`.swift`,
-`.kt`), each with a `GENERATED … DO NOT EDIT` header. Values are plain types only, so the iOS
+`.kt`), plus the component API file with `--components`, each with a `GENERATED … DO NOT EDIT`
+header. Values are plain types only, so the iOS
 `DesignTokens` target stays Foundation-free and Linux-testable and the Android `:core:designsystem`
 module stays pure JVM: `Double` (pt on iOS, dp/sp on Android), `Int` (font weight), `String`,
 `[String]`/`List<String>`, `[Double]`/`List<Double>` (cubic-bezier points), and colours as 32-bit
@@ -300,27 +356,48 @@ ARGB (`UInt32`/`Long`, `0xFFFA_FAFA`). The theme code in each app maps them to S
   An unpaired component (named by its scheme-suffixed key) has instances only for the contexts
   that draw from that scheme (`CONTEXT_SOURCES`, owner decision 2026-10-20): `BannerDarkTokens`
   has `dark`, `brand` and `hcDark`, and no `light` or `hcLight`, so a light use does not compile.
+- Component API (`ComponentAPI.swift`, `ComponentApi.kt`), per approved contract, `<Name>` from
+  its id (`button` -> `Button`; names per D6, no product name): `<Name>Variant`, `<Name>Size`,
+  `<Name>State` (Swift `String` raw-value enums, `CaseIterable, Sendable`, the raw value written
+  only where it differs from the case: `case primaryOutline = "primary-outline"`; Kotlin
+  `enum class` entries with `val id: String`: `PRIMARY_OUTLINE("primary-outline")`);
+  `<Name>TestId` (one string constant per allowed combination: `primaryLargeEnabled` =
+  `"ds-button-primary-large-enabled"`); `<Name>Appearance` (the merged look); `<Name>Look`
+  (variant, size, state, appearance); `<Name>Spec` (`looks`, one instance per context of the table,
+  and `appearance(variant:size:state:)` returning that combination's `<Name>Appearance`, or
+  `nil` / `null` for a combination the contract does not allow); `<Name>GalleryEntry` (variant, size, state, `testId`). Then
+  `ComponentGallery`: per contract `<id>Label` (the synthetic `gallery.label`) and `<id>` (its
+  entries, each `testId` a reference to the constant). Props stay hand-written in each app (owner
+  decision 2026-10-20); no props descriptor is emitted.
 - Swift: every type is `nonisolated public` (the package defaults to `MainActor` isolation; these
   are immutable `Sendable` values), structs are `Sendable, Equatable` with the memberwise
   initialiser, 2-space indent, 120 columns. Kotlin: package
   `app.aistylist.core.designsystem.generated`, `data class` values with companion instances,
-  ktlint_official layout (trailing commas, a multiline value wrapped after its `=`), 120 columns.
+  ktlint_official layout (trailing commas, a multiline value wrapped after its `=`, a list item
+  where it stands), 120 columns.
 
 Gates on the output, not run by this pass: the Swift files sit under `apps/ios/Packages`, so
 swift-format and SwiftLint lint them, and `swift build` compiles them with warnings as errors; the
 Kotlin files are compiled with warnings as errors and checked by Spotless (ktlint), detekt
 (`LongParameterList` allows 8 constructor parameters; its `ignoreDataClasses` default is expected
 to exempt these data classes, unverified) and Android Lint. A data class constructor
-takes at most 255 JVM slots, so `AppColors` (two per `Long`) holds at most 126 roles.
+takes at most 255 JVM slots, so `AppColors` (two per `Long`) holds at most 126 roles. The button's
+merged table is 100 combinations x 5 contexts = 500 looks (about 11,000 lines per language). On the
+JVM all five `ButtonSpec` instances initialise in one companion `<clinit>`, estimated at about
+40 KB of the 64 KB method limit; a contract with many more combinations needs that split.
 
 ## Tests and fixtures
 
 `scripts/test/design-tokens.test.sh` (part of `just test tooling`) runs `node --test` over
 `tests/`: the parser and every rule (`generator.test.mjs`), the model and resolver
-(`normalise.test.mjs`), each emitter (`emit-swift.test.mjs`, `emit-kotlin.test.mjs`), the golden
-parity test (`parity.test.mjs`) and the CLI against a design.md stub (`cli.test.mjs`). The
-repository `DESIGN.md` and `fixtures/_valid/` must pass; each `fixtures/TK-NN/` is the valid file
-with one defect and must fail on rule TK-NN and nothing else. A new rule ships with its fixture,
+(`normalise.test.mjs`), each emitter (`emit-swift.test.mjs`, `emit-kotlin.test.mjs`), the
+contract checker and the merge (`contracts.test.mjs`), the component API emitters
+(`component-api.test.mjs`), the golden parity test (`parity.test.mjs`) and the CLI against a
+design.md stub (`cli.test.mjs`). The repository `DESIGN.md` and `fixtures/_valid/` must pass; each
+`fixtures/TK-NN/` is the valid file with one defect and must fail on rule TK-NN and nothing else.
+The repository contracts and `fixtures/contracts/_valid/` pass against their tokens
+(`fixtures/contracts/DESIGN.md`, synthetic); each `fixtures/contracts/CC-NN/button.yaml` is the
+valid contract with one defect and must fail on rule CC-NN and nothing else. A new rule ships with its fixture,
 and a shape a rule accepts ships with a passing test. The fixture values are synthetic, not the
 real tokens; the `DESIGN.md` tests check that the file passes, resolves in every context, emits
 the owner's names and lays out within 120 columns, and that both languages spell the same table.

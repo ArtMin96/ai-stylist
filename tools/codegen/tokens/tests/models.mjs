@@ -1,10 +1,13 @@
-// Token models shared by the normaliser, emitter and parity tests: the synthetic fixture, the
-// repository DESIGN.md, and the fixture after an edit. Not a test file (no `.test.mjs`), so
-// scripts/test/design-tokens.test.sh only runs it through its importers.
+// Token models and component-API models shared by the normaliser, emitter, contract and parity
+// tests: the synthetic fixtures, the repository DESIGN.md and contracts, and the fixture after an
+// edit. Not a test file (no `.test.mjs`), so scripts/test/design-tokens.test.sh only runs it
+// through its importers.
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import path from 'node:path';
 
+import { apiDeclarations } from '../api-declarations.mjs';
+import { loadContracts } from '../contracts.mjs';
 import { declarations } from '../declarations.mjs';
 import { normalise } from '../normalise.mjs';
 import { parseDesignMd } from '../parse.mjs';
@@ -12,11 +15,25 @@ import { formatFinding, loadTokens } from '../pipeline.mjs';
 import { validate } from '../validate.mjs';
 
 const TOKENS_DIR = path.resolve(import.meta.dirname, '..');
+const REPO_ROOT = path.resolve(TOKENS_DIR, '..', '..', '..');
 export const VALID = readFileSync(path.join(TOKENS_DIR, 'fixtures', '_valid', 'DESIGN.md'), 'utf8');
-export const REPO_DESIGN_MD = readFileSync(
-  path.resolve(TOKENS_DIR, '..', '..', '..', 'DESIGN.md'),
-  'utf8',
-);
+export const REPO_DESIGN_MD = readFileSync(path.join(REPO_ROOT, 'DESIGN.md'), 'utf8');
+/** Contract fixtures: `DESIGN.md` (their tokens), `_valid/` and one `CC-NN/` per rule. */
+export const CONTRACT_FIXTURES = path.join(TOKENS_DIR, 'fixtures', 'contracts');
+export const CONTRACT_TOKENS = readFileSync(path.join(CONTRACT_FIXTURES, 'DESIGN.md'), 'utf8');
+export const VALID_CONTRACTS = path.join(CONTRACT_FIXTURES, '_valid');
+export const REPO_CONTRACTS = path.join(REPO_ROOT, '.impeccable', 'components');
+
+/** The API models of the contracts in `dir`, which must pass against `model`. */
+export function apisOf(model, dir) {
+  const { findings, apis } = loadContracts(dir, model);
+  assert.deepEqual(findings, [], findings.map(formatFinding).join('\n'));
+  return apis;
+}
+
+/** `{ <File>.<ext>: text }` from one API emitter for the contracts in `dir`. */
+export const emittedApi = (emitApi, model, dir) =>
+  emitApi(apiDeclarations(apisOf(model, dir)), 'components/*.yaml + DESIGN.md');
 
 /** The model of valid DESIGN.md text. */
 export function modelOf(text) {

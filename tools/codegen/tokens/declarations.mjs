@@ -116,7 +116,7 @@ const round4 = (n) => Math.round(n * 1e4) / 1e4;
 const argb = ({ hex, alpha }) => Math.round(alpha * 255) * 2 ** 24 + parseInt(hex.slice(1), 16);
 
 /** `{ type, value }` of one token: aliases stay references, literals become numbers or ARGB. */
-function typedValue(token) {
+export function typedValue(token) {
   const v = token.$value;
   if (typeof v === 'string') return { type: TYPE_OF_TOKEN[token.$type], value: aliasValue(v) };
   const number = (n) => ({ t: 'number', n });

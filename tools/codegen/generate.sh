@@ -3,8 +3,10 @@
 #   gen-kernel.mjs ts  shared-kernel registries (packages/shared-kernel/registry/*.json, OQ-15)
 #                      -> packages/shared-kernel/src/gen (TS data behind the hand-written registries)
 #   gen-tokens.mjs DESIGN.md frontmatter (the design-token master) -> Swift + Kotlin token code in
-#                  the app design systems ($TOKENS_SWIFT_DIR, $TOKENS_KOTLIN_DIR below); node only,
-#                  so it runs in every lane, NATIVE_LANES=none included
+#                  the app design systems ($TOKENS_SWIFT_DIR, $TOKENS_KOTLIN_DIR below), plus the
+#                  component API surface from the approved .impeccable/components/*.yaml contracts
+#                  (ComponentAPI.swift, ComponentApi.kt in the same dirs); node only, so it runs in
+#                  every lane, NATIVE_LANES=none included
 #   gen-ts.sh      OpenAPI bundle, hey-api TS client, event + worker-contract TS types
 #                                                                     -> packages/contracts/gen
 #   gen-swift.sh   swift-openapi-generator Swift client + AIStylistKernel registry target
@@ -30,7 +32,7 @@ CHECK=0
 for arg in "$@"; do
   case "$arg" in
     --check) CHECK=1 ;;
-    -h|--help) sed -n '2,24p' "$0"; exit 0 ;;
+    -h|--help) sed -n '2,26p' "$0"; exit 0 ;;
     *) echo "generate.sh: unknown argument '$arg'" >&2; exit 2 ;;
   esac
 done
@@ -64,6 +66,7 @@ run_step() {
 run_generators() {
   run_step gen-kernel.mjs node "$HERE/gen-kernel.mjs" ts "$ROOT/packages/shared-kernel/src/gen" || return
   run_step gen-tokens.mjs node "$HERE/gen-tokens.mjs" --input "$ROOT/DESIGN.md" \
+    --components "$ROOT/.impeccable/components" \
     --swift-out "$ROOT/$TOKENS_SWIFT_DIR" --kotlin-out "$ROOT/$TOKENS_KOTLIN_DIR" || return
   # gen-ts.sh writes gen/openapi.bundle.json, which the Swift and Kotlin generators read.
   run_step gen-ts.sh "$HERE/gen-ts.sh" || return

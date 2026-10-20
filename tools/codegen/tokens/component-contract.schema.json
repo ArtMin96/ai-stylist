@@ -1,0 +1,164 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Component contract",
+  "description": "One .impeccable/components/<id>.yaml file (ADR-0011 follow-up 7, DEC-87). Field rules: .impeccable/components/README.md. Checked by tools/codegen/tokens/contracts.mjs (rule CC-01); the cross-field rules CC-02 to CC-07 are in tools/codegen/tokens/README.md.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "id",
+    "board",
+    "name",
+    "props",
+    "variants",
+    "sizes",
+    "states",
+    "combinations",
+    "tokens",
+    "accessibility",
+    "gallery",
+    "testId",
+    "approved"
+  ],
+  "properties": {
+    "id": { "$ref": "#/$defs/kebab" },
+    "board": { "type": "string", "pattern": "^C(0[1-9]|10)$" },
+    "name": {
+      "type": "string",
+      "pattern": "^App[A-Z][A-Za-z]+$",
+      "not": { "type": "string", "pattern": "[Gg][Aa][Rr][Dd][Ee][Rr][Ii]" }
+    },
+    "props": { "type": "array", "items": { "$ref": "#/$defs/prop" } },
+    "variants": { "$ref": "#/$defs/idList" },
+    "sizes": { "$ref": "#/$defs/idList" },
+    "states": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": { "$ref": "#/$defs/kebab" },
+      "contains": { "type": "string", "const": "enabled" }
+    },
+    "combinations": {
+      "type": "object",
+      "propertyNames": { "$ref": "#/$defs/kebab" },
+      "additionalProperties": { "$ref": "#/$defs/combination" }
+    },
+    "tokens": {
+      "type": "object",
+      "propertyNames": { "$ref": "#/$defs/kebab" },
+      "additionalProperties": { "$ref": "#/$defs/variantTokens" }
+    },
+    "accessibility": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["role", "label", "busy", "minTouchTarget"],
+      "properties": {
+        "role": { "type": "string", "pattern": "^[a-z]+$" },
+        "label": { "type": "string", "pattern": "^\\{props\\.[a-z][A-Za-z0-9]*\\}$" },
+        "busy": { "$ref": "#/$defs/kebab" },
+        "minTouchTarget": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["ios", "android"],
+          "properties": {
+            "ios": { "type": "number", "exclusiveMinimum": 0 },
+            "android": { "type": "number", "exclusiveMinimum": 0 }
+          }
+        }
+      }
+    },
+    "gallery": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["label", "include"],
+      "properties": {
+        "label": { "type": "string", "minLength": 1 },
+        "include": {
+          "oneOf": [
+            { "type": "string", "const": "all" },
+            { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/galleryItem" } }
+          ]
+        }
+      }
+    },
+    "testId": { "type": "string", "const": "ds-{component}-{variant}-{size}-{state}" },
+    "approved": {
+      "oneOf": [
+        { "type": "string", "const": "pending" },
+        { "type": "string", "format": "date" }
+      ]
+    }
+  },
+  "$defs": {
+    "kebab": { "type": "string", "pattern": "^[a-z][a-z0-9]*(-[a-z0-9]+)*$" },
+    "idList": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": { "$ref": "#/$defs/kebab" }
+    },
+    "propName": { "type": "string", "pattern": "^[a-z][A-Za-z0-9]*$" },
+    "propType": { "type": "string", "enum": ["string", "bool", "icon", "action"] },
+    "prop": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["name", "type", "required"],
+          "properties": {
+            "name": { "$ref": "#/$defs/propName" },
+            "type": { "$ref": "#/$defs/propType" },
+            "required": { "type": "boolean", "const": true }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["name", "type", "default"],
+          "properties": {
+            "name": { "$ref": "#/$defs/propName" },
+            "type": { "$ref": "#/$defs/propType" },
+            "default": {}
+          }
+        }
+      ]
+    },
+    "combination": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["sizes", "states"],
+      "properties": {
+        "sizes": { "$ref": "#/$defs/idList" },
+        "states": { "$ref": "#/$defs/idList" }
+      }
+    },
+    "reference": {
+      "type": "string",
+      "pattern": "^\\{components\\.[a-z][a-z0-9]*(-[a-z0-9]+)*\\}$"
+    },
+    "referenceMap": {
+      "type": "object",
+      "propertyNames": { "$ref": "#/$defs/kebab" },
+      "additionalProperties": { "$ref": "#/$defs/reference" }
+    },
+    "variantTokens": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["base", "states", "sizes"],
+      "properties": {
+        "base": { "$ref": "#/$defs/reference" },
+        "states": { "$ref": "#/$defs/referenceMap" },
+        "sizes": { "$ref": "#/$defs/referenceMap" }
+      }
+    },
+    "galleryItem": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["variant", "size", "state"],
+      "properties": {
+        "variant": { "$ref": "#/$defs/kebab" },
+        "size": { "$ref": "#/$defs/kebab" },
+        "state": { "$ref": "#/$defs/kebab" }
+      }
+    }
+  }
+}

@@ -6,12 +6,17 @@ import { TIERS } from './declarations.mjs';
 /** `{ <File>.<ext>: text }` for the three tiers. */
 export function renderTiers(dialect, tiers, source) {
   return Object.fromEntries(
-    TIERS.map(({ tier, file, title }) => {
-      const blocks = tiers[tier].map((decl) => renderDeclaration(dialect, decl, 0).join('\n'));
-      const text = [...dialect.header(source, title), '', blocks.join('\n\n'), ''].join('\n');
-      return [`${file}.${dialect.extension}`, text];
-    }),
+    TIERS.map(({ tier, file, title }) => [
+      `${file}.${dialect.extension}`,
+      renderFile(dialect, tiers[tier], source, title),
+    ]),
   );
+}
+
+/** One generated file: the dialect's header, then the declarations separated by a blank line. */
+export function renderFile(dialect, decls, source, title) {
+  const blocks = decls.map((decl) => renderDeclaration(dialect, decl, 0).join('\n'));
+  return [...dialect.header(source, title), '', blocks.join('\n\n'), ''].join('\n');
 }
 
 /** One declaration at `depth` levels of indentation. */
@@ -61,12 +66,20 @@ function scalar(dialect, value, type) {
       return dialect.spell.role(value.id);
     case 'ref':
       return dialect.spell.ref(value.namespace, value.member);
+    case 'case':
+      return dialect.spell.enumCase(value.type, value.id);
+    case 'none':
+      return dialect.spell.none;
     default:
       throw new Error(`gen-tokens: no ${dialect.extension} spelling for a ${value.t} value`);
   }
 }
 
-const itemTypeOf = (type) => (type === 'doubleList' ? 'double' : 'string');
+/** The item type of a list type: `doubleList`, `stringList` or `list:<Struct>`. */
+const itemTypeOf = (type) => {
+  if (type.startsWith('list:')) return type.slice('list:'.length);
+  return type === 'doubleList' ? 'double' : 'string';
+};
 
 /** The parts of a bracketed value: a struct value (a call) or a list. */
 function bracketed(dialect, value, type) {
@@ -101,18 +114,20 @@ function inline(dialect, value, type) {
 /**
  * `prefix` + the value + `suffix` at indentation `pad`. A value stays on one line when it fits in
  * `dialect.limit`; otherwise a struct value or list takes one item per line. A dialect with
- * `wrapAfterAssign` (ktlint multiline-expression-wrapping) starts it on the line after the `=`.
+ * `wrapAfterAssign` (ktlint multiline-expression-wrapping) starts it on the line after the `=`;
+ * a list item has no `=` and starts where it stands.
  */
 export function valueLines(dialect, prefix, { value, type }, pad, suffix = '') {
   const single = `${prefix}${inline(dialect, value, type)}${suffix}`;
   if (single.length <= dialect.limit || !isBracketed(value)) return [single];
-  const outer = dialect.wrapAfterAssign ? pad + dialect.indent : pad;
+  const afterAssign = dialect.wrapAfterAssign && prefix.trimEnd().endsWith('=');
+  const outer = afterAssign ? pad + dialect.indent : pad;
   const inner = outer + dialect.indent;
   const { open, close, items, lastComma } = bracketed(dialect, value, type);
   const body = items.flatMap((item, i) => {
     const comma = i < items.length - 1 || lastComma ? ',' : '';
     return valueLines(dialect, `${inner}${item.label}`, item, inner, comma);
   });
-  const head = dialect.wrapAfterAssign ? [prefix.trimEnd(), `${outer}${open}`] : [prefix + open];
+  const head = afterAssign ? [prefix.trimEnd(), `${outer}${open}`] : [prefix + open];
   return [...head, ...body, `${outer}${close}${suffix}`];
 }

@@ -93,6 +93,33 @@ Log hygiene: when this log exceeds ~30 entries, move the oldest entries to `plan
 
 *(newest first)*
 
+### 2026-10-20 (component-gallery) — AI-195: dev-only design-system catalog and gallery on both apps (branch `feat/ai-195-component-gallery`)
+
+*Lead session on the owner's Mac. PR #41 (AppButton) merged by the owner, with all 12 checks green.*
+
+- **Phase / tasks worked:** none (Brand v1, AI-195).
+- **Done:**
+  - Owner rule (2026-10-20): previews and dev tools never live in the core design-system module. They now live in dev-only catalog modules: iOS `DesignSystemCatalog`, Android `:core:designsystem-catalog`.
+  - Gallery opened from Home's debug tools, in Dev/debug builds only. Sections: colours, typography, spacing, radius and C01 Buttons; ids `ds-gallery`, `ds-gallery-section-*`, `debug_open_ds_gallery` and `debug_close_ds_gallery` are the same on both apps.
+  - P1: the generator emits the gallery manifest (role ids, style and scale-step names, `GalleryComponent` from `gallery.title`).
+  - P0: iOS Variant B linking. Prod and Preview binaries contain no catalog code (`strings` / `nm` = 0); Dev holds it in `AIStylist.debug.dylib`.
+  - The shared Compose + Robolectric test setup moved into the compose-library convention plugin.
+  - Brief: `.claude/plans/2026-10-20-component-gallery-brief.md`.
+- **Checks (Mac, integrated tree, all with `POSTHOG_CLI_*` unset; every upload skipped):**
+  - `just ios-check` → 0; `just ios-build --config prod|preview` → 0.
+  - `just android-deps-lock` and `just android-check` → 0 (14 module edges).
+  - `just lint`, `typecheck`, `arch-check`, `clone-check`, `format --check` → 0.
+  - `just generate --check` → up to date; `just docs-check --strict` → ok.
+- **Also found:** the lead's own `just ios-check` runs earlier today uploaded Dev dSYMs to the PostHog test project. `just ios-build` uploads whenever the keys are set. iOS builds now run with the keys unset too.
+- **Not done / follow-ups:**
+  - Owner merges the PR.
+  - Human-applied texts:
+    - `.agents/skills/ui-prototype-first/SKILL.md:22`: the debug-only gallery and catalog previews are exempt from the UI gate.
+    - `cross-platform-feature` SKILL.md:172 and `ui-designer.md:51`: name the catalog modules.
+    - ADR-0011 lines 42 and 59: the third iOS target and the Android catalog module.
+  - Not checked: simulator or emulator screenshots of the gallery.
+- **Next session starts:** AI-190 (snapshot tests that photograph the gallery sections; iOS on every PR that touches `apps/ios`, DEC-87).
+
 ### 2026-10-20 (app-button) — AppButton on both apps: contract fitted to the screens, component API, theme, fonts (branch `feat/app-button`)
 
 *Lead session on the owner's Mac. PRs #38 (AI-189 emitters), #39 (button contract) and #40 (AI-198 component API) merged by the owner today.*

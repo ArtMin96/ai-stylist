@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Design-system gallery copy (debug builds only, AI-195). Same text as iOS, British "Colours". -->
+<resources>
+    <string name="ds_gallery_title">Design system gallery</string>
+    <string name="ds_gallery_close">Close</string>
+    <string name="ds_gallery_section_colours">Colours</string>
+    <string name="ds_gallery_section_typography">Typography</string>
+    <string name="ds_gallery_section_spacing">Spacing</string>
+    <string name="ds_gallery_section_radius">Radius</string>
+</resources>

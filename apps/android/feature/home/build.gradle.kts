@@ -12,26 +12,14 @@ dependencies {
     implementation(project(":core:analytics"))
     implementation(project(":core:designsystem"))
 
-    implementation(platform(libs.androidx.compose.bom))
-    implementation(libs.androidx.compose.ui)
-    implementation(libs.androidx.compose.material3)
+    // Compose (BOM, ui, material3), JUnit 4, Robolectric and Compose ui-test come from the
+    // compose-library convention plugin.
     implementation(libs.androidx.compose.ui.tooling.preview)
     implementation(libs.androidx.lifecycle.viewmodel.compose)
     implementation(libs.androidx.lifecycle.runtime.compose)
     implementation(libs.kotlinx.coroutines.android)
     debugImplementation(libs.androidx.compose.ui.tooling)
 
-    testImplementation(libs.junit4)
     testImplementation(libs.kotlinx.coroutines.test)
     testImplementation(libs.turbine)
-    testImplementation(libs.robolectric)
-    testImplementation(platform(libs.androidx.compose.bom))
-    testImplementation(libs.androidx.compose.ui.test.junit4)
-    debugImplementation(libs.androidx.compose.ui.test.manifest)
-
-    constraints {
-        // Compose ui-test pulls in Espresso 3.5.0, whose reflective InputManager.getInstance()
-        // fails in the Robolectric SDK 37 sandbox; 3.7.0 uses getSystemService instead.
-        testImplementation(libs.androidx.test.espresso.core)
-    }
 }

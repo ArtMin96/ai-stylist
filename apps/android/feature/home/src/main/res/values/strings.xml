@@ -16,4 +16,6 @@
     <!-- Debug tools (debug and preview builds only, never release). Same text as iOS. -->
     <string name="home_debug_consent_label">Analytics consent (debug)</string>
     <string name="home_debug_force_crash">Force test crash</string>
+    <!-- Debug build only (not preview): opens the design-system gallery (AI-195). Same text as iOS. -->
+    <string name="home_debug_open_ds_gallery">Design system gallery</string>
 </resources>

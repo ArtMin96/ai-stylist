@@ -4,10 +4,13 @@
 # Sources (owner 2026-10-20, "Follow artifact prototypes"): C01, the buttons drawn on C04, C07,
 # C08 and C09, every screen on page 6 (SC01-SC15), the prototype on page 7 (P01-P18), page 8 and
 # rule R4. Where a board and the screens disagree, the screens and prototype win; each such choice
-# is a "Screens win:" comment below.
+# is a "Screens win:" comment below. Sizes, paddings, label sizes and colours are measured from the
+# board sources (owner 2026-10-20: "check screens and understand what size to choose").
 # Not in this contract: icon buttons, the Today action row and the Apple and Google sign-in
 # buttons (official artwork); the Capture tab and the modal-header Save, which are native chrome
 # (DEC-87). The passkey button is a secondary large with a key leadingIcon.
+# High contrast: no button token has an -hc-* variant; the S7 colours come from the colour roles
+# and the focus ring from focus-ring-hc-*. None was added.
 id: button
 board: C01
 name: AppButton
@@ -19,9 +22,11 @@ props:
   - name: action
     type: action
     required: true
-  # Leading icon 20, gap 8. Drawn on primary, secondary (the passkey key), text (Export your data)
-  # and destructive (trash); destructive-filled is drawn without one. While loading, the spinner
-  # takes this slot.
+  # Leading icon 20, gap 8 at large, card, medium and small; 18, gap 6 at compact (SC05 Edit and
+  # Retry, SC12 and C07 Undo and Delete, SC09 Show me something different). Drawn on primary,
+  # secondary (the passkey key), text (Export your data, Undo), primary-outline (Retry),
+  # destructive (trash 20) and destructive-text (trash 18); destructive-filled, tonal and
+  # destructive-tonal are drawn without one. While loading, the spinner takes this slot.
   - name: leadingIcon
     type: icon
     default: null
@@ -39,44 +44,109 @@ props:
     default: false
 
 # The One Primary Rule: at most one primary per screen. secondary is the other path at the same
-# level; text is a low-emphasis or inline action; destructive is the outlined form for rows and
-# screens; destructive-filled is only the final confirm of a destructive action (DESIGN.md, R4).
-variants: [primary, secondary, text, destructive, destructive-filled]
-sizes: [large, medium, small]
+# level; primary-outline is a row or card confirm in primary colours (Confirm, Set my own, Retry);
+# text is a low-emphasis or inline action; tonal is the Linen-filled button for consent pairs and
+# quiet actions (Not now / Allow, Use my selfie); destructive is the outlined form for rows and
+# screens; destructive-text is the row Delete beside Undo; destructive-tonal is step 1 of a
+# two-step reset; destructive-filled is only the final confirm of a destructive action
+# (DESIGN.md, R4).
+variants:
+  [
+    primary,
+    secondary,
+    primary-outline,
+    text,
+    tonal,
+    destructive,
+    destructive-text,
+    destructive-tonal,
+    destructive-filled,
+  ]
+# large 52 and card 48 carry the 17/600 label; medium 44 carries 17/600 and compact 44 carries
+# 15/600 (Subhead); small 36 carries 15/600. Screens win: C01 draws only large, medium and small;
+# the screens add card (C04 Try again, SC10 Add your first piece, TR1 Try again) and compact
+# (C08 Add items; SC15 Unfollow; SC05 Edit, Retry; SC09 Choose option; SC10's disabled pair;
+# SC12 Edit, Clear, Set my own, Undo, Delete; TR1 Not now / Allow, See plans).
+sizes: [large, card, medium, compact, small]
 # The state shown, first match wins: loading if loading, else disabled if not enabled, else
 # pressed or focused from the platform, else enabled.
 states: [enabled, pressed, focused, disabled, loading]
 
 # LOADING (owner 2026-10-20: "make sure it has a state when we are sending request, so user can't
 # keep pressing the button while it's requesting"). On every variant and size:
-# - the label stays and a 20 spinner shows in the leading-icon slot, in the variant's label
-#   colour; only secondary names its own spinner colour (button-secondary-loading). The caller
-#   may pass a progress label ("Saving…", "Deleting…"), as C01 draws it;
+# - the label stays and a spinner shows in the leading-icon slot (20; 18 at compact), in the
+#   variant's label colour; only secondary names its own spinner colour (button-secondary-loading).
+#   The caller may pass a progress label ("Saving…", "Deleting…"), as C01 draws it;
 # - the button cannot be activated again: taps, keyboard and assistive activation are ignored
 #   until loading is false again;
 # - it stays visible with its enabled colours, never greyed out or announced like disabled;
 # - it stays focusable and is announced as busy (accessibility.busy: loading).
 # C01 draws it on primary, secondary, destructive and destructive-filled, SE2 on a large
-# destructive; text is not drawn loading and follows the same rule in primary-text.
+# destructive; text, primary-outline, tonal, destructive-text and destructive-tonal are not drawn
+# loading and follow the same rule in their label colour.
 
 # Each variant allows every pairing of its sizes and states; nothing else is valid.
+# DERIVED STATES (not drawn on any board or screen; owner 2026-10-20: derive by the rule the
+# existing variants use, from existing colour roles):
+# - primary-outline: pressed fills surface-2, disabled divider ring + text-secondary (secondary).
+# - destructive-text: pressed error-bg light / surface-2 dark (outlined destructive); disabled
+#   text-secondary (text).
+# - tonal: pressed divider fill (icon button); disabled surface-2 + text-secondary (disabled rule).
+# - destructive-tonal: pressed strong overlay (destructive-filled); disabled surface-2 +
+#   text-secondary (disabled rule).
+# - every new variant: focused is focus-ring, loading as above.
 combinations:
+  # Screens win: C08 Add items and TR1 See plans draw primary at compact (44, 15/600, 0 20);
+  # C04, SC10 and TR1 draw it at card (48, 17/600).
   primary:
-    sizes: [large, medium, small]
+    sizes: [large, card, medium, compact, small]
     states: [enabled, pressed, focused, disabled, loading]
+  # Screens win: SC15 Unfollow, C07 Sign out, SC05 Edit, C08 and SC09 Choose option, TR1 Cancel
+  # and SC10's disabled pair (Something different) draw secondary at compact (44, 15/600, 0 16).
   secondary:
-    sizes: [large, medium, small]
+    sizes: [large, medium, compact, small]
     states: [enabled, pressed, focused, disabled, loading]
-  # Screens win: C01 draws the text button only at 44 with a 17/600 label; the screens also draw
-  # row and section-header text actions with a 15/600 label (SC12 Edit, Clear, Undo; SC05 Add
-  # again), so text also comes in small (button-small: subhead label, 44 hit area).
+  # Screens win (owner decided a new variant): P10, SC06, SC07 and C07 Confirm, SC12 Set my own
+  # and SC05 Retry draw a 1.5 primary ring with a primary-text label, 44, 15/600, 0 16, only at
+  # compact. Retry with its icon draws 0 14; the contract keeps one padding per variant and size,
+  # as it does where Wear this (SC08) draws 0 24 0 20 at large.
+  primary-outline:
+    sizes: [compact]
+    states: [enabled, pressed, focused, disabled, loading]
+  # Screens win: C01 draws the text button only at medium (44, 17/600); the screens draw row and
+  # section-header text actions 44 high with a 15/600 label and 0 12 padding (SC12 Edit, Clear;
+  # SC09 Show me something different; C08 See plans; C09 coach mark Got it), so text comes in
+  # compact. No screen draws a 36 text button, so text small is removed: the ids
+  # ds-button-text-small-* are gone and ds-button-text-compact-* replace them. Undo with its
+  # icon draws 0 10; the padding stays 0 12 (see primary-outline).
   text:
-    sizes: [medium, small]
+    sizes: [medium, compact]
+    states: [enabled, pressed, focused, disabled, loading]
+  # Screens win: the Linen-filled button (surface-2 fill, text label) is drawn at large on SE1
+  # (Use my selfie, Use a generic face: 52, 17/600, 0 20), at card on C04's offline template
+  # (Try again, 48) and at compact on TR1 and C09 (Not now / Allow / Turn on, Skip / Send: 44,
+  # 15/600). SC08 Got it draws it 52 with a 15/600 label; the owner chose 17/600 for large
+  # (2026-10-20, "Approve, label 17"), as SE1 draws it; SC08 Got it follows.
+  tonal:
+    sizes: [large, card, compact]
     states: [enabled, pressed, focused, disabled, loading]
   # Screens win: C01 draws the outlined destructive only at Medium 44; SC13 (Delete account,
   # beside Export first) and SE2 (Deleting face data, loading) draw it Large 52.
   destructive:
     sizes: [large, medium]
+    states: [enabled, pressed, focused, disabled, loading]
+  # Screens win (owner decided a new variant): SC12 and C07 Delete draw an error label with a
+  # trash icon 18, gap 6, no ring, 44, 15/600, 0 10, beside the Undo text button; only compact.
+  # The icon is 18 because the compact icon rule fixes it (leadingIcon), not the 20 default.
+  destructive-text:
+    sizes: [compact]
+    states: [enabled, pressed, focused, disabled, loading]
+  # Screens win: only C09 draws it (Reset, step 1 of 2, error-bg fill + error label in light,
+  # surface-2 + error label in dark, 44, 15/600); no screen draws the reset dialog. The overlay
+  # rule below lifts C09's 44 dialog actions to Large 52, so it pairs with a secondary large
+  # Cancel and the destructive-filled step 2.
+  destructive-tonal:
+    sizes: [large]
     states: [enabled, pressed, focused, disabled, loading]
   # Screens win: Large 52, as C01 draws it. Only C09's compact dialog mockup draws it 44 ("stacked
   # 44"). No screen or prototype frame draws this button, and they draw every overlay action at
@@ -97,7 +167,9 @@ tokens:
       disabled: '{components.button-primary-disabled}'
     sizes:
       large: '{components.button-primary}'
+      card: '{components.button-card}'
       medium: '{components.button-medium}'
+      compact: '{components.button-compact-filled}'
       small: '{components.button-small}'
   secondary:
     base: '{components.button-secondary}'
@@ -109,7 +181,16 @@ tokens:
     sizes:
       large: '{components.button-secondary}'
       medium: '{components.button-medium}'
+      compact: '{components.button-compact}'
       small: '{components.button-small}'
+  primary-outline:
+    base: '{components.button-primary-outline}'
+    states:
+      pressed: '{components.button-primary-outline-pressed}'
+      focused: '{components.focus-ring}'
+      disabled: '{components.button-primary-outline-disabled}'
+    sizes:
+      compact: '{components.button-primary-outline}'
   text:
     base: '{components.button-text}'
     states:
@@ -118,7 +199,17 @@ tokens:
       disabled: '{components.button-text-disabled}'
     sizes:
       medium: '{components.button-text}'
-      small: '{components.button-small}'
+      compact: '{components.button-text-compact}'
+  tonal:
+    base: '{components.button-tonal}'
+    states:
+      pressed: '{components.button-tonal-pressed}'
+      focused: '{components.focus-ring}'
+      disabled: '{components.button-tonal-disabled}'
+    sizes:
+      large: '{components.button-tonal}'
+      card: '{components.button-card}'
+      compact: '{components.button-compact-filled}'
   destructive:
     base: '{components.button-destructive}'
     states:
@@ -128,6 +219,22 @@ tokens:
     sizes:
       large: '{components.button-large}'
       medium: '{components.button-destructive}'
+  destructive-text:
+    base: '{components.button-destructive-text}'
+    states:
+      pressed: '{components.button-destructive-text-pressed}'
+      focused: '{components.focus-ring}'
+      disabled: '{components.button-destructive-text-disabled}'
+    sizes:
+      compact: '{components.button-destructive-text}'
+  destructive-tonal:
+    base: '{components.button-destructive-tonal}'
+    states:
+      pressed: '{components.button-destructive-tonal-pressed}'
+      focused: '{components.focus-ring}'
+      disabled: '{components.button-destructive-tonal-disabled}'
+    sizes:
+      large: '{components.button-destructive-tonal}'
   destructive-filled:
     base: '{components.button-destructive-filled}'
     states:
@@ -139,7 +246,8 @@ tokens:
       large: '{components.button-destructive-filled}'
 
 # The label scales with Dynamic Type and Android font scale and wraps, never truncated, so heights
-# are minimums; paired buttons stack full width at large sizes (R5).
+# are minimums; paired buttons stack full width at large sizes (R5). Every size is at least 44 pt
+# high on iOS and pads its hit area to 48 dp on Android.
 accessibility:
   role: button
   label: '{props.label}'
@@ -152,13 +260,6 @@ gallery:
 
 testId: 'ds-{component}-{variant}-{size}-{state}'
 
+# Re-opened 2026-10-20 (card, compact, primary-outline, tonal, destructive-text,
+# destructive-tonal added; text small replaced by text compact); re-approved by the owner 2026-10-20.
 approved: 2026-10-20
-
-# Open for the owner (drawn on screens, not yet expressible here; no AppButton until settled):
-# - 44-high buttons with a 15/600 label (C08 Add items; SC15 Unfollow; SC05 Edit, Accept; SC09
-#   Choose option; SC10's disabled pair): C01 has Medium 44 at 17/600 or Small 36 at 15/600.
-# - The 48-high state-template action (C04; SC10 Add your first piece): no C01 size is 48.
-# - Looks that are not C01 variants: the outlined row action in primary colours (C07; SC06, SC07,
-#   P10 Confirm; SC12 Set my own; SC05 Retry), the red text action (C07, SC12 Delete), the
-#   surface-2 filled button (SC08 Got it; SE1 Use my selfie; TR1 and C09 Not now / Allow) and
-#   C09's error-bg Reset, which looks like a disabled destructive-filled.

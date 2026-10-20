@@ -22,7 +22,7 @@ All fields are required unless marked optional.
   - The base name is the component key without its theme suffix: `button-primary-light` and `button-primary-dark` → `{components.button-primary}`.
   - Every reference must exist in the `DESIGN.md` frontmatter `components`, either as a `-light` / `-dark` twin pair or as one key without a suffix that serves both themes (`button-medium`).
   - `states` lists only the states that change a colour or the label style. A state that changes one but has no token yet is written as a comment and proposed to the owner; a contract never points at a token that does not exist.
-  - `sizes` names the entry that holds each size's height and padding: the base for the variant's own size, otherwise the shared size entry (buttons: `button-large`, `button-medium`, `button-small`).
+  - `sizes` names the entry that holds each size's height and padding: the base for the variant's own size, otherwise the shared size entry (buttons: `button-large`, `button-card`, `button-medium`, `button-compact`, `button-compact-filled`, `button-text-compact`, `button-small`).
   - Two entry properties go beyond fill, text and type: `borderColor` is a ring drawn inside the shape (the buttons' width is `button-outline-ring`), and `spinnerColor` is the loading spinner when it is not the label colour.
 - `accessibility`:
   - `role`: the semantic role (`button`).

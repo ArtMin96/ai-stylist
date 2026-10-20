@@ -543,11 +543,21 @@ components:
   # Shared size entries (height and padding; Small also sets its 15/600 label). A variant's own
   # base holds the size it is drawn at; these serve its other sizes.
   button-large: { height: '52px', padding: '0 24px' }
+  # Card: the one action inside a state template card, 48 high with the 17/600 label (C04 Try again,
+  # SC10 Add your first piece, TR1 Try again). Drawn full width only; padding as Large.
+  button-card: { height: '48px', padding: '0 24px' }
   button-medium: { height: '44px', padding: '0 20px' }
+  # Compact: 44 high with the 15/600 label, for row, card and dialog actions (C07, C08, SC05,
+  # SC09, SC10, SC12, SC15, TR1). Outlined pills 0 16 (Unfollow, Confirm); filled pills 0 20
+  # (C08 Add items); text 0 12 (SC12 Edit, Clear). Leading icon 18, gap 6 at this size.
+  button-compact: { typography: '{typography.subhead}', height: '44px', padding: '0 16px' }
+  button-compact-filled: { typography: '{typography.subhead}', height: '44px', padding: '0 20px' }
+  button-text-compact: { typography: '{typography.subhead}', height: '44px', padding: '0 12px' }
   button-small: { typography: '{typography.subhead}', height: '36px', padding: '0 16px' }
-  # Stroke width of the outline ring on the secondary and outlined destructive buttons. Each entry
-  # names the ring colour in borderColor (outline-* on secondary, error-fg-* on destructive,
-  # divider-* when disabled); the ring is drawn inside the pill. spinnerColor = the loading
+  # Stroke width of the outline ring on the secondary, primary outline and outlined destructive
+  # buttons. Each entry names the ring colour in borderColor (outline-* on secondary, primary-* on
+  # primary outline, error-fg-* on destructive, divider-* when disabled); the ring is drawn inside
+  # the pill. spinnerColor = the loading
   # spinner when it is not the label colour.
   button-outline-ring: { width: '1.5px' }
   button-secondary-light:
@@ -694,6 +704,134 @@ components:
       textColor: '{colors.error-fg-dark}',
       typography: '{typography.button-disabled}',
     }
+  # Primary outline: primary ring + primary-text label, Compact only (P10, SC06, SC07, C07 Confirm;
+  # SC12 Set my own; SC05 Retry). Pressed and disabled are derived from secondary (not drawn).
+  button-primary-outline-light:
+    {
+      textColor: '{colors.primary-text-light}',
+      borderColor: '{colors.primary-light}',
+      typography: '{typography.subhead}',
+      rounded: '{rounded.full}',
+      height: '44px',
+      padding: '0 16px',
+    }
+  button-primary-outline-pressed-light:
+    {
+      backgroundColor: '{colors.surface-2-light}',
+      textColor: '{colors.primary-text-light}',
+      borderColor: '{colors.primary-light}',
+    }
+  button-primary-outline-disabled-light:
+    { textColor: '{colors.text-secondary-light}', borderColor: '{colors.divider-light}' }
+  button-primary-outline-dark:
+    {
+      textColor: '{colors.primary-text-dark}',
+      borderColor: '{colors.primary-dark}',
+      typography: '{typography.subhead}',
+      rounded: '{rounded.full}',
+      height: '44px',
+      padding: '0 16px',
+    }
+  button-primary-outline-pressed-dark:
+    {
+      backgroundColor: '{colors.surface-2-dark}',
+      textColor: '{colors.primary-text-dark}',
+      borderColor: '{colors.primary-dark}',
+    }
+  button-primary-outline-disabled-dark:
+    { textColor: '{colors.text-secondary-dark}', borderColor: '{colors.divider-dark}' }
+  # Destructive text: error label, no fill or ring, trash icon 18, Compact only (SC12 and C07
+  # Delete). Pressed is derived from the outlined destructive, disabled from text (not drawn).
+  button-destructive-text-light:
+    {
+      textColor: '{colors.error-fg-light}',
+      typography: '{typography.subhead}',
+      rounded: '{rounded.full}',
+      height: '44px',
+      padding: '0 10px',
+    }
+  button-destructive-text-pressed-light:
+    { backgroundColor: '{colors.error-bg-light}', textColor: '{colors.error-fg-light}' }
+  button-destructive-text-disabled-light: { textColor: '{colors.text-secondary-light}' }
+  button-destructive-text-dark:
+    {
+      textColor: '{colors.error-fg-dark}',
+      typography: '{typography.subhead}',
+      rounded: '{rounded.full}',
+      height: '44px',
+      padding: '0 10px',
+    }
+  button-destructive-text-pressed-dark:
+    { backgroundColor: '{colors.surface-2-dark}', textColor: '{colors.error-fg-dark}' }
+  button-destructive-text-disabled-dark: { textColor: '{colors.text-secondary-dark}' }
+  # Tonal: Linen (surface-2) fill + text label, for equal-weight consent pairs and quiet actions
+  # (SE1 Use my selfie / Use a generic face at 52; C04 offline Try again at 48; TR1 and C09
+  # Not now / Allow at Compact). Pressed is derived from the icon button (divider), disabled
+  # from the disabled rule (surface-2 + text-secondary); neither is drawn.
+  button-tonal-light:
+    {
+      backgroundColor: '{colors.surface-2-light}',
+      textColor: '{colors.text-light}',
+      typography: '{typography.button}',
+      rounded: '{rounded.full}',
+      height: '52px',
+      padding: '0 20px',
+    }
+  button-tonal-pressed-light:
+    { backgroundColor: '{colors.divider-light}', textColor: '{colors.text-light}' }
+  button-tonal-disabled-light:
+    { backgroundColor: '{colors.surface-2-light}', textColor: '{colors.text-secondary-light}' }
+  button-tonal-dark:
+    {
+      backgroundColor: '{colors.surface-2-dark}',
+      textColor: '{colors.text-dark}',
+      typography: '{typography.button}',
+      rounded: '{rounded.full}',
+      height: '52px',
+      padding: '0 20px',
+    }
+  button-tonal-pressed-dark:
+    { backgroundColor: '{colors.divider-dark}', textColor: '{colors.text-dark}' }
+  button-tonal-disabled-dark:
+    { backgroundColor: '{colors.surface-2-dark}', textColor: '{colors.text-secondary-dark}' }
+  # Destructive tonal: error-bg fill + error label in light, surface-2 + error label in dark (C09
+  # Reset, step 1 of 2 of a reset). Large, as the overlay rule lifts C09's 44 dialog actions to 52.
+  # Pressed is derived from the filled destructive (strong overlay), disabled from the disabled
+  # rule (surface-2 + text-secondary); neither is drawn.
+  button-destructive-tonal-light:
+    {
+      backgroundColor: '{colors.error-bg-light}',
+      textColor: '{colors.error-fg-light}',
+      typography: '{typography.button}',
+      rounded: '{rounded.full}',
+      height: '52px',
+      padding: '0 24px',
+    }
+  button-destructive-tonal-pressed-light:
+    {
+      backgroundColor: '{colors.error-bg-light}',
+      textColor: '{colors.error-fg-light}',
+      overlayColor: '{colors.pressed-overlay-strong-light}',
+    }
+  button-destructive-tonal-disabled-light:
+    { backgroundColor: '{colors.surface-2-light}', textColor: '{colors.text-secondary-light}' }
+  button-destructive-tonal-dark:
+    {
+      backgroundColor: '{colors.surface-2-dark}',
+      textColor: '{colors.error-fg-dark}',
+      typography: '{typography.button}',
+      rounded: '{rounded.full}',
+      height: '52px',
+      padding: '0 24px',
+    }
+  button-destructive-tonal-pressed-dark:
+    {
+      backgroundColor: '{colors.surface-2-dark}',
+      textColor: '{colors.error-fg-dark}',
+      overlayColor: '{colors.pressed-overlay-strong-dark}',
+    }
+  button-destructive-tonal-disabled-dark:
+    { backgroundColor: '{colors.surface-2-dark}', textColor: '{colors.text-secondary-dark}' }
   button-icon-light:
     {
       backgroundColor: '{colors.surface-2-light}',
@@ -1803,16 +1941,21 @@ Every component is drawn in S1 and S2 on its canvas board, with states in this o
 
 - **Shape:** pill (full radius).
 - **API:** `.impeccable/components/button.yaml` (`AppButton`) lists the variants, sizes, states and tokens; where C01 and the screens disagree, the screens win (owner 2026-10-20).
-- **Primary:** Large 52 (padding 0 24), Medium 44 (0 20), Small 36 (0 16, 15/600, 44 hit area); leading icon 20, gap 8. Full width inside the 20 margins or hugs content. Pressed `primary-pressed-*` (dark: the background 16 % overlay, flattened); 150 ms.
+- **Sizes (as the screens draw them):** Large 52 (padding 0 24, 17/600); Card 48 (17/600, `button-card`: the one action of a state template card, full width); Medium 44 (0 20, 17/600); Compact 44 (15/600 Subhead label: outlined 0 16 `button-compact`, filled 0 20 `button-compact-filled`, text 0 12 `button-text-compact`; row, card and dialog actions); Small 36 (0 16, 15/600, 44 hit area). Leading icon 20, gap 8 at the 17/600 sizes; 18, gap 6 at Compact (SC05 Edit and Retry, SC12 Undo and Delete). Heights are minimums: labels scale and wrap.
+- **Primary:** Large, Card, Medium, Compact (C08 Add items, TR1 See plans), Small. Full width inside the 20 margins or hugs content. Pressed `primary-pressed-*` (dark: the background 16 % overlay, flattened); 150 ms.
 - **Loading (every variant, owner 2026-10-20):** while its request runs, the button shows a spinner 20 in the leading-icon slot, in the label colour (secondary: `primary-text-*`, `button-secondary-loading-*`), and the label stays. It ignores further taps and keyboard activation until the request ends, keeps its enabled look (never the disabled look) and is announced as busy.
-- **Secondary (outlined):** Large, Medium, Small; 1.5 `outline-*` ring, text colour; pressed fills surface-2; disabled divider ring + text-secondary.
-- **Text button:** 44 high, padding 0 12, primary-text; pressed surface-2 pill; disabled text-secondary. Row and section-header text actions use the Small label (15/600), as the screens draw them. **Inline link:** Callout 15/600, underline offset 3, focus ring radius 4.
+- **Secondary (outlined):** Large, Medium, Compact (SC15 Unfollow, C07 Sign out, SC05 Edit, C08 and SC09 Choose option, SC10's disabled pair), Small; 1.5 `outline-*` ring, text colour; pressed fills surface-2; disabled divider ring + text-secondary.
+- **Primary outline:** Compact only; 1.5 `primary-*` ring, `primary-text-*` label (P10, SC06, SC07 and C07 Confirm; SC12 Set my own; SC05 Retry). Pressed fills surface-2, disabled divider ring + text-secondary (derived from secondary, not drawn).
+- **Text button:** Medium 44 (padding 0 12, 17/600) or Compact 44 (0 12, 15/600: row and section-header actions, SC12 Edit and Clear, SC09 Show me something different, the coach mark Got it), primary-text; pressed surface-2 pill; disabled text-secondary. **Inline link:** Callout 15/600, underline offset 3, focus ring radius 4.
+- **Tonal (Linen):** surface-2 fill, text label; Large (SE1 Use my selfie / Use a generic face), Card (C04 offline Try again), Compact (TR1 and C09 Not now / Allow / Turn on). Pressed divider fill (as the icon button); disabled surface-2 + text-secondary (derived, not drawn).
 - **Destructive:** outlined (error text + 1.5 ring, trash 20; pressed error-bg light, surface-2 dark; disabled divider ring + text-secondary) for rows and screens, Medium 44 or Large 52; filled (error fill, `on-error-*` text, Large 52) only for the final confirm inside a dialog. Pressed filled: `pressed-overlay-strong-*` (ink 18 % light, background 16 % dark). Disabled filled: error-bg fill, error-fg label at 500 (`button-disabled`). Cancel stays enabled while deleting.
+- **Destructive text:** error label, no ring, trash 18, Compact (0 10) for row actions (SC12 and C07 Delete, beside the Undo text button). Pressed error-bg light, surface-2 dark (as outlined destructive); disabled text-secondary (as text); derived, not drawn.
+- **Destructive tonal:** error-bg fill + error label in light, surface-2 + error label in dark, Large 52: step 1 of a two-step reset (C09 Reset; C09's 44 is lifted to 52 like every overlay action). Pressed `pressed-overlay-strong-*`; disabled surface-2 + text-secondary (derived, not drawn). Its enabled light colours equal the filled destructive's disabled colours; the label weight (600 against 500) and the dialog context tell them apart.
 - **Icon buttons:** 44 circle on surface-2 (pressed divider) or ghost; icon 24. Accessible name is verb + object ("Back", "Close", "More options for this outfit").
 - **Action row (Today):** Save · Schedule · Like · Dislike · More; icon 24 over Caption, min 48 × 56, gap 2. Selected: active pill, filled icon, label changes (Like → Liked, Save → Saved) at 600.
 - **Capture centre tab:** raised primary circle, camera icon 26, 4 surface ring, Caption 12/600 label; pressed `primary-pressed-*`; opens the camera modal.
 - **Sign-in:** official Apple and Google button artwork, 52 tall, full width; "Continue with passkey" is a secondary Large with a key icon 20, same width.
-- **Equal-weight pairs:** Skip + Continue side by side, 52 each, flex 1 : 1, gap 12 (Skip outlined, Continue primary); stacked pairs full width, 52 each, gap 10.
+- **Equal-weight pairs:** Skip + Continue side by side, 52 each, flex 1 : 1, gap 12 (Skip secondary outlined, Continue primary, as SC02, SC03, SC09, P03 and P08 draw them); consent pairs (Not now + Allow, Not now + Turn on) are both tonal, Compact, flex 1 : 1 (TR1, C09); stacked pairs full width, 52 each, gap 10.
 
 ### Icons (C02)
 
@@ -1844,7 +1987,7 @@ Navigation, actions, weather and context, closet, status, account and settings s
 - **Snackbar:** 56, radius 16, inverse colours (`inverse-surface-*` / `on-inverse-*`), Undo in `label-action` (15/20 700) in `inverse-primary-*` (`snackbar-action-*`: 44 high, padding 0 14, radius 12; the accent yellow in light, #1F5A47 in dark; the Undo on inverse surfaces exception to The Accent Is Fill Rule), 16 above the tab bar. **Toast:** 44 pill, icon 18 + 15/500, no action.
 - **Progress:** linear track 6 (radius 3, surface-2, primary fill), ring 40 stroke 4, steps, upload row. Counts in words ("5 of 8"), never invented percentages.
 - **Skeletons:** surface-2 blocks on surface matching the final layout (outfit card, item tile, list row); slow shimmer, none under reduced motion; announced once as "Loading".
-- **State templates (empty, error, offline):** padding 20, radius 24, illustration slot 96 × 64, Title3 title, Callout body naming the cause, one action (button 48). Offline keeps cached content visible.
+- **State templates (empty, error, offline):** padding 20, radius 24, illustration slot 96 × 64, Title3 title, Callout body naming the cause, one action (button Card 48: primary; tonal on the offline template). Offline keeps cached content visible.
 
 ### Navigation (C05)
 
@@ -1873,9 +2016,9 @@ Navigation, actions, weather and context, closet, status, account and settings s
 
 - **Grouped list:** Overline section header, inset card radius 16 on surface, settings rows 52, divider inset 52, icon 24 primary-text, value 15 secondary. **Plain list:** rows 52, full-width divider; pressed surface-2 radius 12.
 - **Toggle row** 64 (label 17 + helper 13, switch); **destructive row** 64 (error fg + icon + plain words; pressed error-bg).
-- **Detail row with confidence:** label 12/500 + value 15/600, confidence as text; low band on warning-bg with icon. **Provisional row:** estimated value with dashed underline + Provisional tag until confirmed; Confirm 44 outlined.
+- **Detail row with confidence:** label 12/500 + value 15/600, confidence as text; low band on warning-bg with icon. **Provisional row:** estimated value with dashed underline + Provisional tag until confirmed; Confirm is a primary outline button, Compact.
 - **Device row** 64 (Sign out outlined 44; none on this device). **Item row** 72 (photo 56 radius 12, name 15/600, category · colour 13, availability chip 24; unavailable mutes the photo, text stays readable). **Planned outfit row** (date 15/600, 3 thumbs 28 radius 8; flagged strip warning-bg + icon + "Rain now expected — review your plan"). **Collection row** 64 (3 overlapping thumbs).
-- **Feedback history row** (Undo primary-text + Delete error text buttons 44). **Upload queue rows** (photo 44 radius 10, status icon + text, progress 4; failed shows "Upload failed · photo is safe" + Retry). **Consent processor row** 60 (purpose · processor · region).
+- **Feedback history row** (Undo text button + Delete destructive text button, both Compact with icon 18). **Upload queue rows** (photo 44 radius 10, status icon + text, progress 4; failed shows "Upload failed · photo is safe" + Retry). **Consent processor row** 60 (purpose · processor · region).
 
 ### Cards (C08)
 
@@ -1893,9 +2036,9 @@ Navigation, actions, weather and context, closet, status, account and settings s
 
 - **Bottom sheet:** handle 36 × 4 radius 2 in outline, Title3 title, Callout body, actions 52 pinned, top radius 24, surface, sheet shadow, scrim behind. Tall sheet: top inset 72, body scrolls, actions pinned above a 1 px divider; dismiss by swipe down or scrim tap.
 - **Action menu sheet:** rows 48 (52 at full scale), icon 22, gap 12, 15/500, pressed surface-2, divider before "Report a problem".
-- **Confirmation dialog:** inset 12, radius 24, padding 20, dialog shadow, kept vs cleared summary; reset is two-step. **Destructive confirmation:** after re-auth, states what is deleted, the timeline ("Within 30 days, usually about 8") and the store note; "Delete account" filled error and "Keep account" outlined, stacked full width, Large 52 each (the screens draw every overlay action at 52; the compact C09 mockup shows 44).
-- **Permission priming (location, notifications):** shown at first use, before the OS prompt; radio rows 44 with the active pill on the selected row; "Allow" / "Turn on" and "Not now" have equal fill, size and weight; all notification categories start off.
-- **Coach mark:** scrim + undimmed target, surface bubble radius 16, padding 14, arrow 12, dialog shadow (`coach-mark-*` elevation; dark adds a 1 px `outline-dark` ring round the bubble and arrow), "Got it" text button 44, shown once.
+- **Confirmation dialog:** inset 12, radius 24, padding 20, dialog shadow, kept vs cleared summary; reset is two-step (step 1: Cancel secondary + Reset destructive tonal, Large 52 each). **Destructive confirmation:** after re-auth, states what is deleted, the timeline ("Within 30 days, usually about 8") and the store note; "Delete account" filled error and "Keep account" outlined, stacked full width, Large 52 each (the screens draw every overlay action at 52; the compact C09 mockup shows 44).
+- **Permission priming (location, notifications):** shown at first use, before the OS prompt; radio rows 44 with the active pill on the selected row; "Allow" / "Turn on" and "Not now" have equal fill, size and weight (both tonal, Compact); all notification categories start off.
+- **Coach mark:** scrim + undimmed target, surface bubble radius 16, padding 14, arrow 12, dialog shadow (`coach-mark-*` elevation; dark adds a 1 px `outline-dark` ring round the bubble and arrow), "Got it" text button Compact, shown once.
 - **Full-screen modal header:** 56, close 44 left, Headline title centred, primary Save right, 1 px divider; Save disabled until a change.
 
 ### Garment illustrations (C10)
@@ -1906,7 +2049,7 @@ Flat item art for tiles and outfit cards (tops, bottoms, one-pieces, outerwear, 
 
 **The One Primary Rule.** One primary button per screen. Everything else is secondary, text or an icon button.
 
-**The Equal Weight Rule.** Skip and Continue, Allow and Not now, opt-in and opt-out are the same size, fill and weight.
+**The Equal Weight Rule.** Skip and Continue are the same size and label weight, side by side 1 : 1; Skip is the outlined secondary, Continue the primary, as every screen draws them. Allow and Not now, opt-in and opt-out are the same size, fill and weight (both tonal).
 
 **The Tokens Only Rule.** Feature UI uses tokens only: no literal colours, font sizes, spacing, radii or durations in Swift or Kotlin feature code. A missing value is a missing token, so change this file first.
 

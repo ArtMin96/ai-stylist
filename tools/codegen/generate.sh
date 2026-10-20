@@ -5,8 +5,8 @@
 #   gen-tokens.mjs DESIGN.md frontmatter (the design-token master) -> Swift + Kotlin token code in
 #                  the app design systems ($TOKENS_SWIFT_DIR, $TOKENS_KOTLIN_DIR below), plus the
 #                  component API surface from the approved .impeccable/components/*.yaml contracts
-#                  (ComponentAPI.swift, ComponentApi.kt in the same dirs); node only, so it runs in
-#                  every lane, NATIVE_LANES=none included
+#                  (ComponentAPI.swift, ComponentApi.kt, and AppIconGlyphs.swift/.kt per icon set,
+#                  in the same dirs); node only, so it runs in every lane, NATIVE_LANES=none included
 #   gen-ts.sh      OpenAPI bundle, hey-api TS client, event + worker-contract TS types
 #                                                                     -> packages/contracts/gen
 #   gen-swift.sh   swift-openapi-generator Swift client + AIStylistKernel registry target

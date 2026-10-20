@@ -76,7 +76,8 @@ test('the repository contracts pass, and the button and icon contracts are appro
 test('the fixtures hold the valid contracts and one failing case per rule, CC-01 to CC-12', () => {
   const expected = Array.from({ length: 12 }, (_, i) => `CC-${String(i + 1).padStart(2, '0')}`);
   assert.deepEqual([...new Set(RULE_CASES.map(ruleOf))], expected);
-  for (const name of ['CC-01-gallery-title', 'CC-01-icon-kind', 'CC-01-icon-paint']) {
+  const cases = ['CC-01-gallery-title', 'CC-01-icon-kind', 'CC-01-icon-paint', 'CC-11-viewbox'];
+  for (const name of cases) {
     assert.ok(RULE_CASES.includes(name), name);
   }
   assert.equal(fixture.id, 'button');
@@ -304,22 +305,22 @@ test('the icon slot: dimensions on a component entry, like height; anything else
   const dimension = (n) => ({ $type: 'dimension', $value: { value: n, unit: 'px' } });
   const compact = repoModel.sets.components['button-compact'];
   assert.deepEqual(compact.iconGap, dimension(6), 'gap 6 is on no scale and stays literal');
-  assert.equal(compact.iconSize.$type, 'dimension');
-  assert.match(compact.iconSize.$extensions['app.iconSize'], /^icon-[a-z]+$/);
+  assert.deepEqual(compact.iconSize, {
+    ...dimension(20),
+    $extensions: { 'app.iconSize': 'icon-md' },
+  });
   const { findings } = loadTokens(CONTRACT_TOKENS.replace('iconGap: 4px', 'iconGap: wide'));
   const expected = 'TK-11 components.button-small.iconGap: "wide" is not a px dimension';
   assert.deepEqual(findings.map(formatFinding), [`${expected}, number or {reference}`]);
 });
 
-test('the repository button: the icon slot is icon-md (compact by fit), gap 6 compact, 8 else', () => {
+test('the repository button: the icon slot is icon-md everywhere, gap 6 at compact, 8 else', () => {
   const button = repoButton();
   for (const context of button.contexts) {
     for (const { variant, size, state, values } of button.looks[context]) {
       const at = `${variant}/${size}/${state} in ${context}`;
       assert.equal(values.iconSize.type, 'AppIconSize', at);
-      const step = values.iconSize.value.id;
-      if (size === 'compact') assert.ok(['sm', 'md'].includes(step), `${at}: ${step}`);
-      else assert.equal(step, 'md', at);
+      assert.equal(values.iconSize.value.id, 'md', at);
       assert.equal(values.iconGap.value.n, size === 'compact' ? 6 : 8, at);
     }
   }
@@ -419,6 +420,19 @@ test('CC-10: the scale grows step by step, and each step is a case of its own', 
   ]);
   const numbered = checkIconEdited(steps('[icon-xs, icon-16]'));
   assert.match(listed(numbered.findings), /^CC-01 icon\.yaml sizes\.1: must match pattern/);
+});
+
+test('CC-11: a compiled point outside the 24 x 24 viewBox fails; the edges are inside', () => {
+  const outside = loadContracts(path.join(CONTRACT_FIXTURES, 'CC-11-viewbox'), fixtureModel);
+  assert.deepEqual(messagesOf(outside), [
+    'CC-11 icon.yaml glyphs.0.shapes.0.d: back: the point (14.5, 24.5) lies outside the 24 x 24 viewBox',
+  ]);
+  const toControl = (t) => t.replace("d: 'M12 11v5'", "d: 'M12 11C-1 11 12 16 12 16'");
+  assert.deepEqual(messagesOf(checkIconEdited(toControl)), [
+    'CC-11 icon.yaml glyphs.1.shapes.1.d: info: the point (-1, 11) lies outside the 24 x 24 viewBox',
+  ]);
+  const edges = checkIconEdited((t) => t.replace("d: 'M12 11v5'", "d: 'M0 0L24 24'"));
+  assert.deepEqual(edges.findings, []);
 });
 
 test('CC-11: path data that does not compile, or draws nothing, fails', () => {

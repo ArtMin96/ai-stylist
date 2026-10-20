@@ -5,6 +5,7 @@
 // parameterisation). Points are rounded to ROUND_DIGITS decimals in viewBox units, so both
 // languages spell the same numbers (`num` in naming.mjs). Pure: no I/O.
 // tools/codegen/tokens/README.md, "Icon sets".
+import { roundTo } from './naming.mjs';
 
 /** The emitted commands, in the order the generated `<Name>Command` enum lists them. */
 export const PATH_COMMANDS = ['move', 'line', 'cubic', 'close'];
@@ -21,11 +22,7 @@ const QUARTER_TURN = Math.PI / 2;
 /** Turns a hair over a multiple of a quarter (float noise) do not add a near-empty cubic. */
 const TURN_EPSILON = 1e-9;
 
-const FACTOR = 10 ** ROUND_DIGITS;
-const round = (n) => {
-  const r = Math.round(n * FACTOR) / FACTOR;
-  return Object.is(r, -0) ? 0 : r;
-};
+const round = (n) => roundTo(n, ROUND_DIGITS);
 
 /**
  * Path data -> `{ segments }`, each `{ command, points }` with `points` the flat x, y pairs of the

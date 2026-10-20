@@ -205,7 +205,9 @@ compiles the paths; `icon-declarations.mjs` decides the API's names and values.
   it. The steps become distinct enum cases that are no keyword (`icon-in` fails).
 - **CC-11** Every `d` compiles (below) and draws a line or a curve; the finding names the glyph and
   the first character the grammar rejects
-  (`info: cannot compile the path: expected an arc flag (0 or 1) at 12`).
+  (`info: cannot compile the path: expected an arc flag (0 or 1) at 12`). Every compiled point,
+  end points and cubic controls alike, lies inside the 24 x 24 viewBox, 0 to 24 on both axes
+  (fixture `fixtures/contracts/CC-11-viewbox/`).
 
 **The path compiler** (`compilePath`). It reads the SVG path grammar: every command, absolute and
 relative (`M L H V C S Q T A Z`), numbers that a sign or a second dot separates (`-1.5-2.5.5`),
@@ -245,9 +247,11 @@ The glyph table is `AppIconGlyphs`, in its own file (`AppIconGlyphs.swift`, `App
 one nested namespace per glyph holding its one `glyph` value (`AppIconGlyphs.HeartFilled.glyph`),
 which `AppIconName.glyph` returns. One namespace per glyph keeps each Kotlin class initialiser to
 one glyph, far below the JVM's 64 KB method limit, which one shared initialiser for the whole set
-would likely pass (an estimate, not measured: roughly 80 bytes of bytecode per segment and some
-3,000 segments for the drawn set). The native `AppIcon(name:size:)` replays the segments, scales `viewBox` to `size` and
-strokes at `strokeWidth x size / viewBox`, tinted by its host.
+would likely pass (an estimate, not measured: roughly 80 bytes of bytecode per segment; the drawn set has 1,595 segments). The native `AppIcon` replays the segments, scales `viewBox` to the rendered size (the step's `size` grown with the user's text size) and strokes at `strokeWidth x rendered / viewBox`, tinted by its host.
+
+The viewBox is fixed at 24 (`VIEW_BOX` in `icon-set.mjs`, emitted as `AppIconMetrics.viewBox`), and
+CC-11 keeps every compiled point inside it. A set drawn on another grid would need a contract field
+that both read.
 
 ## Model interface
 
@@ -542,7 +546,7 @@ and must fail on rule TK-NN and nothing else. The repository contracts and
 commands, a filled dot and a filled twin) pass against their tokens (`fixtures/contracts/DESIGN.md`,
 synthetic, with the scale `icon-xs` … `icon-lg`, slots naming it in both spellings and spacing
 references in padding and gap); each `fixtures/contracts/CC-NN/button.yaml` or `icon.yaml` (and
-`CC-NN-<case>/`, a second case of the same rule: `CC-01-icon-kind`, `CC-01-icon-paint`) is a valid
+`CC-NN-<case>/`, a second case of the same rule: `CC-01-icon-kind`, `CC-01-icon-paint`, `CC-11-viewbox`) is a valid
 contract with one defect and must fail on rule CC-NN and nothing else (`CC-12/` holds the valid
 button beside a defective pairing). `TOKENS_REPO_ROOT=<checkout>` points the repository tests at
 another checkout's `DESIGN.md` and `.impeccable/components/` (a worktree whose inputs are not

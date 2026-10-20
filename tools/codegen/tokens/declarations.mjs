@@ -8,7 +8,7 @@
 // doubleList, list:<Struct>, or the name of a nested struct. Values: number, color (32-bit ARGB),
 // string, list, role (a role id, never a resolved colour), ref (another constant), init (a struct
 // value { struct, args }).
-import { contextId, memberId, nestedTypeName, tokensTypeName } from './naming.mjs';
+import { contextId, memberId, nestedTypeName, roundTo, tokensTypeName } from './naming.mjs';
 import { CONTEXT_SOURCES, resolveColors, resolveComponents } from './normalise.mjs';
 import { CONTEXTS, splitScheme } from './syntax.mjs';
 
@@ -160,7 +160,7 @@ function membersOf(group, idOf) {
   ];
 }
 
-const round4 = (n) => Math.round(n * 1e4) / 1e4;
+const round4 = (n) => roundTo(n, 4);
 
 /** 32-bit ARGB from a DTCG colour (alpha rounded to the nearest of 255 steps). */
 const argb = ({ hex, alpha }) => Math.round(alpha * 255) * 2 ** 24 + parseInt(hex.slice(1), 16);

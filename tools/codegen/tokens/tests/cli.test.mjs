@@ -22,6 +22,20 @@ import { REPO_ROOT } from './models.mjs';
 
 const TOKENS_DIR = path.resolve(import.meta.dirname, '..');
 const GEN = path.resolve(TOKENS_DIR, '..', 'gen-tokens.mjs');
+const GEN_ROOT = path.resolve(TOKENS_DIR, '..', '..', '..');
+
+/**
+ * A path as gen-tokens.mjs `label()` names it in its output: repo-relative with `/` when inside
+ * this checkout (a TOKENS_REPO_ROOT worktree under .claude/worktrees too), else its base name.
+ */
+function labelOf(file) {
+  const relative = path.relative(GEN_ROOT, file);
+  if (relative.startsWith('..') || path.isAbsolute(relative)) return path.basename(file);
+  return relative.split(path.sep).join('/');
+}
+
+/** `text` as a literal inside a regular expression. */
+const escaped = (text) => text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 const fixture = (name) => path.join(TOKENS_DIR, 'fixtures', name, 'DESIGN.md');
 // realpath: on macOS the temporary directory is reached through a symlink.
 const SCRATCH = realpathSync(mkdtempSync(path.join(tmpdir(), 'gen-tokens-test-')));
@@ -136,10 +150,10 @@ test('the repository DESIGN.md generates both languages', () => {
   const args = ['--input', input, '--swift-out', `${out}/swift`, '--kotlin-out', `${out}/kotlin`];
   const result = run(args);
   assert.equal(result.status, 0, result.stderr);
-  // The path prefix appears only when TOKENS_REPO_ROOT names a worktree inside this checkout.
-  assert.match(result.stdout, /gen-tokens: (\S+\/)?DESIGN\.md is valid \(\d+ colour roles x 5/);
+  const name = escaped(labelOf(input));
+  assert.match(result.stdout, new RegExp(`^gen-tokens: ${name} is valid \\(\\d+ colour roles x 5`));
   const swift = readFileSync(path.join(out, 'swift', 'ComponentTokens.swift'), 'utf8');
-  assert.match(swift, /^\/\/ Source: (\S+\/)?DESIGN\.md$/m);
+  assert.ok(swift.includes(`\n// Source: ${labelOf(input)}\n`), labelOf(input));
 });
 
 test('--components: the API and glyph-table files join the tiers in each directory', () => {
@@ -148,7 +162,9 @@ test('--components: the API and glyph-table files join the tiers in each directo
   const args = ['--input', fixture('contracts'), '--components', components];
   const result = run([...args, '--swift-out', `${out}/swift`, '--kotlin-out', `${out}/kotlin`]);
   assert.equal(result.status, 0, result.stderr);
-  assert.match(result.stdout, /_valid is valid \(2 approved contract\(s\): button, icon\)/);
+  const valid = `${labelOf(components)} is valid (2 approved contract(s): button, icon)`;
+  assert.equal(labelOf(components), 'tools/codegen/tokens/fixtures/contracts/_valid');
+  assert.ok(result.stdout.includes(`\ngen-tokens: ${valid}\n`), result.stdout);
   const tiers = ['ReferenceTokens', 'SchemeTokens', 'ComponentTokens'];
   const swiftFiles = [
     ...tiers.map((t) => `${t}.swift`),
@@ -182,16 +198,18 @@ const TYPE_LINE = /^(?:nonisolated public (?:enum|struct)|enum class|data class|
 
 test('the repository DESIGN.md and contracts generate the component API', (t) => {
   const out = path.join(SCRATCH, 'out', 'repo-api');
-  const args = ['--input', path.join(REPO_ROOT, 'DESIGN.md')];
-  args.push('--components', path.join(REPO_ROOT, '.impeccable', 'components'));
+  const input = path.join(REPO_ROOT, 'DESIGN.md');
+  const components = path.join(REPO_ROOT, '.impeccable', 'components');
+  const args = ['--input', input, '--components', components];
   args.push('--swift-out', `${out}/swift`, '--kotlin-out', `${out}/kotlin`);
   const result = run(args);
   assert.equal(result.status, 0, result.stderr);
-  assert.match(result.stdout, /is valid \(2 approved contract\(s\): button, icon\)/);
+  const valid = `${labelOf(components)} is valid (2 approved contract(s): button, icon)`;
+  assert.ok(result.stdout.includes(`\ngen-tokens: ${valid}\n`), result.stdout);
   const swift = readFileSync(path.join(out, 'swift', 'ComponentAPI.swift'), 'utf8');
   const kotlin = readFileSync(path.join(out, 'kotlin', 'ComponentApi.kt'), 'utf8');
-  const source = /^\/\/ Source: (\S+\/)?\.impeccable\/components\/\*\.yaml \+ (\S+\/)?DESIGN\.md$/m;
-  assert.match(swift, source);
+  const source = `\n// Source: ${labelOf(components)}/*.yaml + ${labelOf(input)}\n`;
+  assert.ok(swift.includes(source), source);
   assert.match(swift, /\n {2}case primaryOutline = "primary-outline"\n/);
   const constant = 'textCompactEnabled: String = "ds-button-text-compact-enabled"';
   assert.ok(swift.includes(`public static let ${constant}`) && kotlin.includes(`val ${constant}`));

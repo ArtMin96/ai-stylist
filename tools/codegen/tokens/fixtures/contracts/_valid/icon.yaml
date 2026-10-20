@@ -1,5 +1,5 @@
 # Synthetic icon set for the icon-set tests: it passes CC-01, CC-02 and CC-09 to CC-11 against
-# ../DESIGN.md (its icon-12, icon-16 and icon-24 tokens). Each ../CC-NN/icon.yaml (or
+# ../DESIGN.md (its icon-xs to icon-lg tokens). Each ../CC-NN/icon.yaml (or
 # ../CC-NN-<case>/icon.yaml) is this file with one defect that fails rule CC-NN only.
 # The glyphs use every path command, absolute and relative: arcs (info draws its circle as two
 # half arcs), H and V, S after C and with no C before it, T after Q, an implicit lineto after a

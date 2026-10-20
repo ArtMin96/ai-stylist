@@ -6,13 +6,10 @@
 // glyph value types; then, for its own file, `<Name>Glyphs`: the glyph table, one nested
 // namespace per glyph so no Kotlin class initialiser holds more than one glyph (the JVM's 64 KB
 // method limit). emit-api-swift.mjs and emit-api-kotlin.mjs only spell it.
-import { NAME_FIELDS, iconTestIdOf } from './icon-set.mjs';
+import { NAME_FIELDS, VIEW_BOX, iconTestIdOf } from './icon-set.mjs';
 import { memberId, nestedTypeName } from './naming.mjs';
 import { PATH_COMMANDS } from './svg-path.mjs';
 import { iconStepOf } from './syntax.mjs';
-
-/** The side of the square viewBox every glyph is drawn in (C02: 24 x 24). */
-export const VIEW_BOX = 24;
 
 const caseValue = (type, id) => ({ t: 'case', type, id: memberId(id) });
 

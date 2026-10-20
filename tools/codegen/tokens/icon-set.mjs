@@ -22,6 +22,12 @@ import { resolveComponents } from './normalise.mjs';
 import { compilePath } from './svg-path.mjs';
 import { CONTEXTS, iconStepOf } from './syntax.mjs';
 
+/**
+ * The side of the square viewBox every glyph is drawn in (C02: 24 x 24). Fixed here: a set drawn
+ * on another grid would need a contract field and this check and `<Name>Metrics.viewBox` to read it.
+ */
+export const VIEW_BOX = 24;
+
 /** The `kind` of an icon-set contract; a contract without `kind` is a control (button). */
 export const ICON_SET = 'icon-set';
 
@@ -172,7 +178,10 @@ function numberOf(node) {
   return type === 'double' && value.t === 'number' ? value.n : null;
 }
 
-/** CC-11: every shape's path data compiles (svg-path.mjs) and draws a line or a curve. */
+/**
+ * CC-11: every shape's path data compiles (svg-path.mjs), draws a line or a curve, and keeps every
+ * compiled point (end points and cubic controls) inside the VIEW_BOX square, 0 to 24 on both axes.
+ */
 function checkPaths(contract, file) {
   const out = [];
   contract.glyphs.forEach((glyph, g) => {
@@ -182,10 +191,27 @@ function checkPaths(contract, file) {
       if (error) out.push(finding('CC-11', at, `${glyph.id}: cannot compile the path: ${error}`));
       else if (!segments.some(({ command }) => command === 'line' || command === 'cubic')) {
         out.push(finding('CC-11', at, `${glyph.id}: the path data draws nothing`));
+      } else {
+        const outside = firstPointOutside(segments);
+        if (outside) out.push(finding('CC-11', at, `${glyph.id}: ${outside}`));
       }
     });
   });
   return out;
+}
+
+/** The first compiled point outside the viewBox, as a message; null when every point is in. */
+function firstPointOutside(segments) {
+  const inside = (n) => n >= 0 && n <= VIEW_BOX;
+  for (const { points } of segments) {
+    for (let i = 0; i < points.length; i += 2) {
+      const [x, y] = [points[i], points[i + 1]];
+      if (!inside(x) || !inside(y)) {
+        return `the point (${x}, ${y}) lies outside the ${VIEW_BOX} x ${VIEW_BOX} viewBox`;
+      }
+    }
+  }
+  return null;
 }
 
 /**

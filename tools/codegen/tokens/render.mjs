@@ -13,6 +13,24 @@ export function renderTiers(dialect, tiers, source) {
   );
 }
 
+const API_TITLE = 'Component API surface: enums, test IDs, merged looks, gallery';
+const TABLE_TITLE = 'Icon glyph table: compiled path segments per glyph, in viewBox units';
+
+/**
+ * The component API files of one dialect (api-declarations.mjs): `apiFile`, plus one
+ * `<Name>Glyphs.<ext>` per icon set holding its glyph table.
+ */
+export function renderApiFiles(dialect, { api, tables }, source, apiFile) {
+  const table = ({ name, decls }) => [
+    `${name}.${dialect.extension}`,
+    renderFile(dialect, decls, source, TABLE_TITLE),
+  ];
+  return {
+    [apiFile]: renderFile(dialect, api, source, API_TITLE),
+    ...Object.fromEntries(tables.map(table)),
+  };
+}
+
 /** One generated file: the dialect's header, then the declarations separated by a blank line. */
 export function renderFile(dialect, decls, source, title) {
   const blocks = decls.map((decl) => renderDeclaration(dialect, decl, 0).join('\n'));
@@ -96,14 +114,14 @@ function bracketed(dialect, value, type) {
     open: dialect.list.open,
     close: dialect.list.close,
     items: value.items.map((item) => ({ label: '', type: itemType, value: item })),
-    lastComma: true,
+    lastComma: value.items.length > 1 || dialect.list.singleItemTrailingComma,
   };
 }
 
 const isBracketed = (value) => value.t === 'init' || (value.t === 'list' && value.items.length > 0);
 
-/** A value on one line. */
-function inline(dialect, value, type) {
+/** A value on one line, in the dialect's spelling (an enum field's value). */
+export function inline(dialect, value, type) {
   if (value.t === 'list' && value.items.length === 0) return dialect.list.empty;
   if (!isBracketed(value)) return scalar(dialect, value, type);
   const { open, close, items } = bracketed(dialect, value, type);

@@ -9,16 +9,21 @@ package import SwiftUI
 package struct AppButtonFace: View {
   let label: String
   let appearance: ButtonAppearance
-  let leadingIcon: Image?
+  let leadingIcon: AppIconName?
   let loading: Bool
   let fullWidth: Bool
+
+  /// The leading slot's side: the icon step scaled with Dynamic Type exactly as `AppIcon` scales it
+  /// (`AppIcon.scalingStyle(for:)`), so the spinner takes the icon's room and the button keeps its size while
+  /// loading.
+  @ScaledMetric private var slotSize: Double
 
   @Environment(\.appTheme) private var theme
 
   package init(
     label: String,
     appearance: ButtonAppearance,
-    leadingIcon: Image? = nil,
+    leadingIcon: AppIconName? = nil,
     loading: Bool = false,
     fullWidth: Bool = false
   ) {
@@ -27,6 +32,10 @@ package struct AppButtonFace: View {
     self.leadingIcon = leadingIcon
     self.loading = loading
     self.fullWidth = fullWidth
+    _slotSize = ScaledMetric(
+      wrappedValue: appearance.iconSize.size,
+      relativeTo: AppIcon.scalingStyle(for: appearance.iconSize)
+    )
   }
 
   package var body: some View {
@@ -68,20 +77,19 @@ package struct AppButtonFace: View {
     }
   }
 
-  /// The spinner while loading, else the leading icon; both decorative and sized by the slot tokens.
+  /// The spinner while loading, else the leading icon at the look's icon step, in the label colour
+  /// inherited from the row; both decorative. The system spinner keeps one size under Dynamic Type, so it
+  /// is scaled by the slot's Dynamic Type factor to grow like the icon it replaces.
   @ViewBuilder private var leadingSlot: some View {
     if loading {
       ProgressView()
         .progressViewStyle(.circular)
         .tint(theme.color(appearance.spinnerColor ?? appearance.textColor))
-        .frame(width: appearance.iconSize, height: appearance.iconSize)
+        .scaleEffect(slotSize / appearance.iconSize.size)
+        .frame(width: slotSize, height: slotSize)
         .accessibilityHidden(true)
     } else if let leadingIcon {
-      leadingIcon
-        .resizable()
-        .scaledToFit()
-        .frame(width: appearance.iconSize, height: appearance.iconSize)
-        .accessibilityHidden(true)
+      AppIcon(leadingIcon, size: appearance.iconSize)
     }
   }
 

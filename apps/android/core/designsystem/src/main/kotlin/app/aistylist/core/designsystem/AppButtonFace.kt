@@ -16,9 +16,10 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.Icon
+import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -28,12 +29,12 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.Stroke
-import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import app.aistylist.core.designsystem.generated.AppColorRole
 import app.aistylist.core.designsystem.generated.AppColors
+import app.aistylist.core.designsystem.generated.AppIconName
 import app.aistylist.core.designsystem.generated.AppMotion
 import app.aistylist.core.designsystem.generated.ButtonAppearance
 import app.aistylist.core.designsystem.generated.FocusRingTokens
@@ -60,7 +61,7 @@ fun AppButtonFace(
     appearance: ButtonAppearance,
     label: String,
     modifier: Modifier = Modifier,
-    leadingIcon: Painter? = null,
+    leadingIcon: AppIconName? = null,
     showsSpinner: Boolean = false,
     fullWidth: Boolean = false,
 ) {
@@ -69,7 +70,8 @@ fun AppButtonFace(
     val background by animateColorAsState(colors.colorOrClear(appearance.backgroundColor), PressTransition, "fill")
     val overlay by animateColorAsState(colors.colorOrClear(appearance.overlayColor), PressTransition, "overlay")
     val content by animateColorAsState(colors.color(appearance.textColor), PressTransition, "label")
-    val iconModifier = Modifier.size(appearance.iconSize.dp)
+    // The spinner shares the icon slot, so it grows with the font scale exactly as the icon does.
+    val slotSize = appearance.iconSize.renderedDp()
     Row(
         modifier =
             modifier
@@ -87,13 +89,15 @@ fun AppButtonFace(
             // The button announces "Loading" itself, so the spinner adds nothing for assistive tech.
             showsSpinner -> {
                 CircularProgressIndicator(
-                    modifier = iconModifier.clearAndSetSemantics {},
+                    modifier = Modifier.size(slotSize).clearAndSetSemantics {},
                     color = colors.color(appearance.spinnerColor ?: appearance.textColor),
                 )
             }
 
             leadingIcon != null -> {
-                Icon(painter = leadingIcon, contentDescription = null, modifier = iconModifier, tint = content)
+                CompositionLocalProvider(LocalContentColor provides content) {
+                    AppIcon(leadingIcon, size = appearance.iconSize)
+                }
             }
         }
         Text(

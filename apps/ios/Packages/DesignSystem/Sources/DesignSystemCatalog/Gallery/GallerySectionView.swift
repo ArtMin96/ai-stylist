@@ -34,6 +34,8 @@ struct GallerySectionView: View {
       ForEach(steps, id: \.name) { GalleryRadiusItem(step: $0) }
     case .buttons(let entries):
       ForEach(entries, id: \.testId) { GalleryButtonCell(entry: $0) }
+    case .icons(let names):
+      GalleryIconSection(names: names)
     }
   }
 }

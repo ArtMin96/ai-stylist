@@ -9,11 +9,11 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
+import app.aistylist.core.designsystem.generated.AppIconName
 import app.aistylist.core.designsystem.generated.ButtonSize
 import app.aistylist.core.designsystem.generated.ButtonState
 import app.aistylist.core.designsystem.generated.ButtonVariant
@@ -22,9 +22,11 @@ import app.aistylist.core.designsystem.generated.ButtonVariant
  * The C01 button (`.impeccable/components/button.yaml`). Its look comes only from
  * `AppTheme.buttons`; a [variant] × [size] the contract does not allow renders nothing.
  *
- * While [loading] the label stays, a spinner takes the leading-icon slot, the enabled colours stay,
- * the button stays focusable and is announced "Loading", and every activation is ignored. A
- * disabled button cannot be activated. The hit area is at least 48 × 48 dp at every size.
+ * [leadingIcon] is a C02 glyph drawn at the look's icon step in the label colour, hidden from
+ * assistive tech. While [loading] the label stays, a spinner takes the leading-icon slot, the
+ * enabled colours stay, the button stays focusable and is announced "Loading", and every
+ * activation is ignored. A disabled button cannot be activated. The hit area is at least
+ * 48 × 48 dp at every size.
  */
 @Composable
 fun AppButton(
@@ -33,7 +35,7 @@ fun AppButton(
     size: ButtonSize,
     action: () -> Unit,
     modifier: Modifier = Modifier,
-    leadingIcon: Painter? = null,
+    leadingIcon: AppIconName? = null,
     fullWidth: Boolean = false,
     enabled: Boolean = true,
     loading: Boolean = false,

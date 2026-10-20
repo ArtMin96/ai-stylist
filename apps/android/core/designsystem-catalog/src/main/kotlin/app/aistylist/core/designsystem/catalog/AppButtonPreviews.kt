@@ -19,6 +19,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -28,6 +29,7 @@ import app.aistylist.core.designsystem.AppTheme
 import app.aistylist.core.designsystem.catalog.gallery.GalleryButtons
 import app.aistylist.core.designsystem.color
 import app.aistylist.core.designsystem.generated.AppColorRole
+import app.aistylist.core.designsystem.generated.AppIconName
 import app.aistylist.core.designsystem.generated.ButtonSize
 import app.aistylist.core.designsystem.generated.ButtonState
 import app.aistylist.core.designsystem.generated.ButtonVariant
@@ -72,6 +74,7 @@ private fun AppButtonPlaygroundPreview() {
     var loading by remember { mutableStateOf(false) }
     var fullWidth by remember { mutableStateOf(false) }
     var label by remember { mutableStateOf(ComponentGallery.buttonLabel) }
+    var leadingIcon by remember { mutableStateOf<AppIconName?>(null) }
     AppTheme {
         // Only the sizes the contract allows for the variant.
         val sizes = ButtonSize.entries.filter { AppTheme.buttons.appearance(variant, it, ButtonState.ENABLED) != null }
@@ -85,6 +88,7 @@ private fun AppButtonPlaygroundPreview() {
                 variant = variant,
                 size = shownSize,
                 action = {},
+                leadingIcon = leadingIcon,
                 fullWidth = fullWidth,
                 enabled = enabled,
                 loading = loading,
@@ -101,6 +105,19 @@ private fun AppButtonPlaygroundPreview() {
             FlowRow(horizontalArrangement = Arrangement.spacedBy(AppTheme.spacing.space8.dp)) {
                 sizes.forEach { option ->
                     FilterChip(selected = option == shownSize, onClick = { size = option }, label = { Text(option.id) })
+                }
+            }
+            // leadingIcon: none, or any C02 glyph.
+            Column(verticalArrangement = Arrangement.spacedBy(AppTheme.spacing.space4.dp)) {
+                Text(stringResource(R.string.ds_button_playground_leading_icon))
+                FlowRow(horizontalArrangement = Arrangement.spacedBy(AppTheme.spacing.space8.dp)) {
+                    (listOf(null) + AppIconName.entries).forEach { option ->
+                        FilterChip(
+                            selected = option == leadingIcon,
+                            onClick = { leadingIcon = option },
+                            label = { Text(option?.id ?: "none") },
+                        )
+                    }
                 }
             }
             PlaygroundSwitch(label = "enabled", checked = enabled, onCheckedChange = { enabled = it })

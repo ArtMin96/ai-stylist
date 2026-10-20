@@ -188,8 +188,31 @@ test('an unpaired component keeps its full key; a scheme-independent one its own
   assert.deepEqual(chip.borderColor, alias('color', '{colors.ring-light}'));
   assert.deepEqual(components.overlay, {
     backgroundColor: alias('color', '{colors.scrim}'),
-    gap: alias('dimension', '{spacing.8}'),
+    gap: { $type: 'dimension', $value: px(8) },
     duration: alias('duration', '{motion.press}'),
+  });
+});
+
+test('a spacing reference resolves to its px value, whole or as one part of a padding', () => {
+  // The fixture chip writes `padding: '{spacing.4} 8px'`, the overlay `gap: '{spacing.8}'`.
+  const chip = components['chip-outline-light'];
+  const sides = ['paddingTop', 'paddingEnd', 'paddingBottom', 'paddingStart'];
+  assert.deepEqual(
+    sides.map((side) => chip[side]),
+    [4, 8, 4, 8].map((n) => ({ $type: 'dimension', $value: px(n) })),
+  );
+  assert.deepEqual(components.overlay.gap, { $type: 'dimension', $value: px(8) });
+});
+
+test('an iconSize naming an icon size is its px value, and keeps the size it names', () => {
+  const model = modelOfEdited((fm) => {
+    fm.components['icon-md'] = { size: '20px', strokeWidth: 1.7 };
+    fm.components.overlay.iconSize = '{components.icon-md}';
+  });
+  assert.deepEqual(model.sets.components.overlay.iconSize, {
+    $type: 'dimension',
+    $value: px(20),
+    $extensions: { 'app.iconSize': 'icon-md' },
   });
 });
 

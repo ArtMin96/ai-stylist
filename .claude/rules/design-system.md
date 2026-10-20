@@ -52,12 +52,15 @@ logo come from "Garderi Colour Schemes" (https://claude.ai/artifact/Db28dfjbyvJg
 7. **The pipeline.** Two inputs, one command, two outputs:
    - Inputs: the `DESIGN.md` frontmatter (tokens), and one contract per base component at
      `.impeccable/components/<id>.yaml`, with its fields defined in `.impeccable/components/README.md`.
-   - Command: `just generate`. It writes `ReferenceTokens`, `SchemeTokens`, `ComponentTokens` and
-     the component API (`ComponentAPI.swift` / `ComponentApi.kt`) into
+   - Command: `just generate`. It writes `ReferenceTokens`, `SchemeTokens`, `ComponentTokens`, the
+     component API (`ComponentAPI.swift` / `ComponentApi.kt`) and, per approved icon set, its glyph
+     table (`AppIconGlyphs.swift` / `AppIconGlyphs.kt`) into
      `apps/ios/Packages/DesignSystem/Sources/DesignTokens/generated/` and
      `apps/android/core/designsystem/src/main/kotlin/app/aistylist/core/designsystem/generated/`.
    - The component API holds the variant, size and state enums, the test IDs, the gallery list and one
-     merged look per allowed combination and scheme (`<Name>Spec` → `<Name>Appearance`).
+     merged look per allowed combination and scheme (`<Name>Spec` → `<Name>Appearance`). For an icon
+     set (`kind: icon-set`) it holds the glyph-name, set and size enums (`AppIconName`, `AppIconSet`,
+     `AppIconSize`), `AppIconMetrics` and the glyph value types; gallery cells use `ds-icon-<id>`.
    - Generated files are never hand-edited. Only `contracts-engineer` or the main session runs
      `just generate`; every other agent runs `just generate --check`.
    - When a value or field is missing, add it to `DESIGN.md` or the contract and to the generator.

@@ -29,10 +29,12 @@ Packages/Features/       one pair of targets per screen
 Packages/DesignSystem/   app-internal design system (DEC-87); no dependency on Core or APIData; used by the app
                          target (`.appTheme()` at the root) and the *Feature targets
   Sources/DesignTokens     Foundation-only tokens (tests run on Linux too); `just generate` writes them into
-                           generated/ (never hand-edit)
+                           generated/ (never hand-edit); beside it, the hand-written C02 icon geometry
+                           (AppIconGeometry, `package` access)
   Sources/DesignSystem     SwiftUI layer (Apple platforms only; left out of the manifest on Linux): AppTheme
                            (`\.appTheme`, set by `.appTheme()`), AppFonts (bundled fonts, Resources/Fonts),
-                           AppButton (C01) with its face, style and rules; system core, so no previews
+                           AppButton (C01) with its face, style and rules, AppIcon (C02); system core, so
+                           no previews
   Sources/DesignSystemCatalog  dev-only (Apple platforms only): the Xcode previews and the debug "Design
                            system gallery"; linked by the Dev configuration only (see "Design system")
   tests/<Target>Tests      DesignTokensTests, DesignSystemTests, DesignSystemCatalogTests
@@ -51,23 +53,38 @@ The generated client lives in `packages/contracts/gen/swift-client/`. `tools/cod
 - **Theme.** `.appTheme()` is applied once, in `App/AIStylistApp.swift`. It registers the bundled fonts and
   sets the environment value `\.appTheme` from the system appearance: light → S1 (`light`), dark → S2
   (`dark`), Increase Contrast → S7 (`hcLight` / `hcDark`). The S3 brand scheme is not selected anywhere yet.
-  `AppTheme` only selects a context of the generated tokens and adapts them (ARGB → `Color`, `AppTextStyle`
+  It also sets the root foreground style to the theme's `text` role, so inherited foregrounds (an untinted
+  `AppIcon`) draw in the token, not the system `.primary`. `AppTheme` only selects a context of the generated tokens and adapts them (ARGB → `Color`, `AppTextStyle`
   → `Font` scaled with Dynamic Type); it never redeclares a value.
 - **AppButton.** `AppButton(_:variant:size:leadingIcon:fullWidth:enabled:loading:action:)` follows the C01
   contract `.impeccable/components/button.yaml`. A variant and size pair the contract does not allow renders
-  nothing. The caller attaches the test ID with `.accessibilityIdentifier(_:)`.
+  nothing. The caller attaches the test ID with `.accessibilityIdentifier(_:)`. `leadingIcon: AppIconName?`
+  draws an `AppIcon` at the look's `iconSize` step in the label colour; while loading, the spinner takes the
+  same Dynamic Type-scaled slot.
+- **AppIcon.** `AppIcon(_:size:tint:)` follows the C02 contract `.impeccable/components/icon.yaml`: any of
+  the generated `AppIconName` glyphs at an `AppIconSize` step (default `AppIconMetrics.defaultSize`,
+  `icon-lg`). The rendered size is the token size scaled with Dynamic Type, no cap, by the step's text
+  style (`AppIcon.scalingStyle(for:)`: xs to lg `.body`, xl `.title2`, hero `.largeTitle`, so the large
+  steps grow more gently, owner 2026-10-21; `AppButton`'s leading slot uses the same function). The stroke
+  scales with it (`AppIconGeometry` in `DesignTokens`, tested on Linux). `tint: nil` draws in the inherited foreground style; a role draws in
+  `theme.color(role)`. The frame is exactly the rendered size; the host control owns the 44 pt target and
+  the accessible name, because the icon is hidden from VoiceOver.
 - **Catalog (dev-only).** Previews and dev tools never live in the `DesignSystem` target (owner rule,
   2026-10-20). They live in the `DesignSystemCatalog` target of the same package, which carries no
   `#if DEBUG`. `AppButtonPreviews.swift` holds "AppButton states, light" and "AppButton states, dark"
-  (the gallery's C01 section) and "AppButton playground". `AppButtonFace` has `package` access, so the
+  (the gallery's C01 section) and "AppButton playground" (with a leading-icon picker).
+  `AppIconPreviews.swift` holds "AppIcon set, light", "AppIcon set, dark" and "AppIcon set, largest text"
+  (the gallery's C02 section; the largest-text one first draws one glyph at every step). `AppButtonFace` has `package` access, so the
   catalog can draw forced states (pressed, focused, loading, disabled); `HomeFeature` and the app cannot.
 - **Design system gallery (AI-195).** In the Dev build, Home's debug section shows "Design system gallery"
   (`debug_open_ds_gallery`). It opens `DesignSystemGalleryScreen` full screen (root `ds-gallery`, "Close"
   = `debug_close_ds_gallery`). The screen shows the sections Colours, Typography, Spacing, Radius, then
-  one section per generated `GalleryComponent` (today "C01 Buttons"), each tagged
-  `ds-gallery-section-<slug>`. Every item comes from the generated manifest (`AppColorRole` raw values,
-  `AppTypography.all`, `AppSpacing.all`, `AppRadius.all`, `ComponentGallery`), so a new token or
-  component cell appears without a hand edit, and a new component fails the build until
+  one section per generated `GalleryComponent` (today "C01 Buttons", "C02 Icons"), each tagged
+  `ds-gallery-section-<slug>`. "C02 Icons" has a "Size" and "Tint" playground, then every glyph grouped by
+  `AppIconSet`, each cell tagged `ds-icon-<id>` and captioned with the glyph id; the cells wrap, and a
+  caption wider than the screen wraps inside its cell. Every item comes from the generated manifest
+  (`AppColorRole` raw values, `AppTypography.all`, `AppSpacing.all`, `AppRadius.all`, `ComponentGallery`,
+  `AppIconName`, `AppIconSet`), so a new token, component cell or glyph appears without a hand edit, and a new component fails the build until
   `GallerySection` maps it. The scheme follows the system appearance (S1, S2, S7).
 - **How Prod excludes the catalog.** `project.yml` adds `DesignSystemCatalog` as a build dependency
   with `link: false`, and only `Config/Dev.xcconfig` links its object

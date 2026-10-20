@@ -5,7 +5,7 @@
 // (apps/android/.editorconfig): 4-space indent, 120 columns, trailing commas, a multiline value
 // wrapped after its `=` (multiline-expression-wrapping), no empty class body.
 import { docText, ktEnumEntry, ktIdent, ktStr, num } from './naming.mjs';
-import { joinMembers, renderDeclaration, renderTiers, valueLines } from './render.mjs';
+import { inline, joinMembers, renderDeclaration, renderTiers, valueLines } from './render.mjs';
 
 const INDENT = '    ';
 const PACKAGE = 'app.aistylist.core.designsystem.generated';
@@ -32,7 +32,8 @@ export const kotlin = {
   limit: 120,
   wrapAfterAssign: true,
   callTrailingComma: true,
-  list: { open: 'listOf(', close: ')', empty: 'emptyList()' },
+  // ktlint_official trailing-comma-on-call-site: every wrapped argument list ends with one.
+  list: { open: 'listOf(', close: ')', empty: 'emptyList()', singleItemTrailingComma: true },
   argLabel: (name) => `${ktIdent(name)} = `,
   spell: {
     double: num,
@@ -86,17 +87,25 @@ export const kotlin = {
     }),
     '}',
   ],
-  /** A closed set of kebab ids: the entry is the Kotlin name, `id` the id, then each extra field. */
+  /**
+   * A closed set of kebab ids: the entry is the Kotlin name, `id` the id, then each extra field
+   * (`decl.fields`, typed; each case's `values`). An entry longer than the limit takes one argument
+   * per line (ktlint argument-list-wrapping, with its trailing comma).
+   */
   enum(decl) {
-    const extra = (decl.fields ?? []).map(({ name }) => name);
+    const fields = [{ name: 'id', type: 'string' }, ...(decl.fields ?? [])];
     return [
       `/** ${docText(decl.doc)} */`,
       `enum class ${decl.name}(`,
-      ...['id', ...extra].map((name) => `${INDENT}val ${ktIdent(name)}: String,`),
+      ...fields.map(({ name, type }) => `${INDENT}val ${ktIdent(name)}: ${typeName(type)},`),
       ') {',
-      ...decl.cases.map((c) => {
-        const args = [c.id, ...extra.map((name) => c[name])].map(ktStr);
-        return `${INDENT}${ktEnumEntry(c.name)}(${args.join(', ')}),`;
+      ...decl.cases.flatMap((c) => {
+        const values = { ...c.values, id: { t: 'string', s: c.id } };
+        const args = fields.map(({ name, type }) => inline(kotlin, values[name], type));
+        const entry = `${INDENT}${ktEnumEntry(c.name)}(`;
+        const single = `${entry}${args.join(', ')}),`;
+        if (single.length <= kotlin.limit) return [single];
+        return [entry, ...args.map((arg) => `${INDENT}${INDENT}${arg},`), `${INDENT}),`];
       }),
       '}',
     ];

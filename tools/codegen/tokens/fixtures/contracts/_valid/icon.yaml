@@ -1,0 +1,63 @@
+# Synthetic icon set for the icon-set tests: it passes CC-01, CC-02 and CC-09 to CC-11 against
+# ../DESIGN.md (its icon-xs to icon-lg tokens). Each ../CC-NN/icon.yaml (or
+# ../CC-NN-<case>/icon.yaml) is this file with one defect that fails rule CC-NN only.
+# The glyphs use every path command, absolute and relative: arcs (info draws its circle as two
+# half arcs), H and V, S after C and with no C before it, T after Q, an implicit lineto after a
+# relative moveto, a filled dot (info) and a filled twin (heart-filled).
+id: icon
+board: C02
+name: AppIcon
+kind: icon-set
+
+accessibility:
+  role: decorative
+
+gallery:
+  title: Fixture icons
+
+sizes: [icon-xs, icon-sm, icon-md, icon-lg]
+defaultSize: icon-lg
+
+glyphs:
+  - id: back
+    set: navigation
+    source: SC05
+    shapes:
+      - d: 'M14.5 5.5L8 12l6.5 6.5'
+        paint: stroke
+  - id: info
+    set: status
+    source: C02
+    shapes:
+      - d: 'M3 12a9 9 0 1 0 18 0a9 9 0 1 0-18 0z'
+        paint: stroke
+      - d: 'M12 11v5'
+        paint: stroke
+      - d: 'M11 8a1 1 0 1 1 2 0a1 1 0 1 1-2 0z'
+        paint: fill
+  - id: heart
+    set: closet
+    source: SC07
+    shapes:
+      - d: 'M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z'
+        paint: stroke
+  - id: heart-filled
+    set: closet
+    source: SC07
+    shapes:
+      - d: 'M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z'
+        paint: both
+  - id: wave
+    set: weather
+    source: SC01
+    shapes:
+      - d: 'M2 12Q5 8 8 12T14 12t6 0M3 18H21M4 5C6 3 8 3 10 5S14 7 16 5'
+        paint: stroke
+  - id: plus
+    set: actions
+    source: C02
+    shapes:
+      - d: 'm12 5 0 14M5 12h14'
+        paint: stroke
+
+approved: 2026-10-20

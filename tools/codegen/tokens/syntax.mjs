@@ -99,6 +99,28 @@ export function splitState(base) {
   return { component: base, state: null };
 }
 
+/**
+ * An icon-size component key on the C02 scale: `icon-<step>`, the step a lowercase name that
+ * starts with a letter (`icon-md`, `icon-hero`), so it can name an enum case on its own. The
+ * contract schema's `iconSize` pattern is the same.
+ */
+export const ICON_SIZE_KEY = /^icon-[a-z][a-z0-9]*$/;
+
+/** `icon-md` -> `md`: the step of an icon-size key, the size enum's case. */
+export const iconStepOf = (key) => key.slice('icon-'.length);
+
+/**
+ * The component an `iconSize` value names, or null: the bare step key (`icon-md`, which the
+ * pinned design.md lint accepts) or a reference (`{components.icon-md}`, which that lint cannot
+ * resolve, so TK-12 fails on it). Any other property, or a number, names none.
+ */
+export function iconSizeNamed(prop, value) {
+  if (prop !== 'iconSize' || typeof value !== 'string') return null;
+  const ref = parseReference(value);
+  if (ref) return ref.group === 'components' ? ref.key : null;
+  return ICON_SIZE_KEY.test(value.trim()) ? value.trim() : null;
+}
+
 /** `{colors.primary-light}` -> `{ group: 'colors', key: 'primary-light' }`. */
 export function parseReference(value) {
   if (typeof value !== 'string') return null;
@@ -171,13 +193,22 @@ export function isShorthand(value) {
   return parts > 1;
 }
 
-/** CSS `padding` with 1–4 parts (`0` or `Npx`) -> `{ top, end, bottom, start }` in px. */
+/**
+ * CSS `padding` with 1–4 parts -> `{ top, end, bottom, start }`, each side `{ px }` (a part `0` or
+ * `Npx`) or `{ ref }` (a part `{group.key}`, parseReference; the validator allows only `spacing`):
+ * `0 {spacing.24}` mixes both.
+ */
 export function parsePadding(value) {
   if (typeof value !== 'string') return null;
   const parts = value.trim().split(/\s+/);
   if (parts.length < 1 || parts.length > 4) return null;
-  const px = parts.map((p) => (p === '0' ? 0 : parseDimension(p)?.value));
-  if (px.some((v) => v === undefined)) return null;
-  const [top, end = top, bottom = top, start = end] = px;
+  const sides = parts.map((p) => {
+    const ref = parseReference(p);
+    if (ref) return { ref };
+    const px = p === '0' ? 0 : parseDimension(p)?.value;
+    return px === undefined ? null : { px };
+  });
+  if (sides.includes(null)) return null;
+  const [top, end = top, bottom = top, start = end] = sides;
   return { top, end, bottom, start };
 }

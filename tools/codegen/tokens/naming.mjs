@@ -19,6 +19,16 @@ export function memberId(key, group) {
   return /^\d/.test(id) ? `${SCALE_PREFIX[group] ?? 'value'}${id}` : id;
 }
 
+/**
+ * `n` rounded half up to `digits` decimals, never `-0`, so a value spells the same in both
+ * languages (`num`): token values keep 4 (declarations.mjs), glyph points 3 (svg-path.mjs).
+ */
+export function roundTo(n, digits) {
+  const factor = 10 ** digits;
+  const rounded = Math.round(n * factor) / factor;
+  return Object.is(rounded, -0) ? 0 : rounded;
+}
+
 /** `button-primary` -> `ButtonPrimaryTokens`. */
 export const tokensTypeName = (component) => `${pascal(component)}Tokens`;
 

@@ -344,7 +344,7 @@ data class ButtonCompactTokens(
                 paddingEnd = 16.0,
                 paddingBottom = 0.0,
                 paddingStart = 16.0,
-                iconSize = 18.0,
+                iconSize = 20.0,
                 iconGap = 6.0,
             )
 
@@ -356,7 +356,7 @@ data class ButtonCompactTokens(
                 paddingEnd = 16.0,
                 paddingBottom = 0.0,
                 paddingStart = 16.0,
-                iconSize = 18.0,
+                iconSize = 20.0,
                 iconGap = 6.0,
             )
 
@@ -368,7 +368,7 @@ data class ButtonCompactTokens(
                 paddingEnd = 16.0,
                 paddingBottom = 0.0,
                 paddingStart = 16.0,
-                iconSize = 18.0,
+                iconSize = 20.0,
                 iconGap = 6.0,
             )
 
@@ -380,7 +380,7 @@ data class ButtonCompactTokens(
                 paddingEnd = 16.0,
                 paddingBottom = 0.0,
                 paddingStart = 16.0,
-                iconSize = 18.0,
+                iconSize = 20.0,
                 iconGap = 6.0,
             )
 
@@ -392,7 +392,7 @@ data class ButtonCompactTokens(
                 paddingEnd = 16.0,
                 paddingBottom = 0.0,
                 paddingStart = 16.0,
-                iconSize = 18.0,
+                iconSize = 20.0,
                 iconGap = 6.0,
             )
     }
@@ -1779,6 +1779,90 @@ data class ButtonCaptureTokens(
                 size = 56.0,
                 pressed = Pressed(backgroundColor = AppColorRole.PRIMARY_PRESSED, textColor = AppColorRole.ON_PRIMARY),
             )
+    }
+}
+
+/** Component `icon-xs` per context: colours are role keys, sizes in pt/dp. */
+data class IconXsTokens(
+    val size: Double,
+    val strokeWidth: Double,
+) {
+    companion object {
+        val light: IconXsTokens = IconXsTokens(size = 12.0, strokeWidth = 2.2)
+        val dark: IconXsTokens = IconXsTokens(size = 12.0, strokeWidth = 2.2)
+        val brand: IconXsTokens = IconXsTokens(size = 12.0, strokeWidth = 2.2)
+        val hcLight: IconXsTokens = IconXsTokens(size = 12.0, strokeWidth = 2.2)
+        val hcDark: IconXsTokens = IconXsTokens(size = 12.0, strokeWidth = 2.2)
+    }
+}
+
+/** Component `icon-sm` per context: colours are role keys, sizes in pt/dp. */
+data class IconSmTokens(
+    val size: Double,
+    val strokeWidth: Double,
+) {
+    companion object {
+        val light: IconSmTokens = IconSmTokens(size = 16.0, strokeWidth = 1.7)
+        val dark: IconSmTokens = IconSmTokens(size = 16.0, strokeWidth = 1.7)
+        val brand: IconSmTokens = IconSmTokens(size = 16.0, strokeWidth = 1.7)
+        val hcLight: IconSmTokens = IconSmTokens(size = 16.0, strokeWidth = 1.7)
+        val hcDark: IconSmTokens = IconSmTokens(size = 16.0, strokeWidth = 1.7)
+    }
+}
+
+/** Component `icon-md` per context: colours are role keys, sizes in pt/dp. */
+data class IconMdTokens(
+    val size: Double,
+    val strokeWidth: Double,
+) {
+    companion object {
+        val light: IconMdTokens = IconMdTokens(size = 20.0, strokeWidth = 1.7)
+        val dark: IconMdTokens = IconMdTokens(size = 20.0, strokeWidth = 1.7)
+        val brand: IconMdTokens = IconMdTokens(size = 20.0, strokeWidth = 1.7)
+        val hcLight: IconMdTokens = IconMdTokens(size = 20.0, strokeWidth = 1.7)
+        val hcDark: IconMdTokens = IconMdTokens(size = 20.0, strokeWidth = 1.7)
+    }
+}
+
+/** Component `icon-lg` per context: colours are role keys, sizes in pt/dp. */
+data class IconLgTokens(
+    val size: Double,
+    val strokeWidth: Double,
+) {
+    companion object {
+        val light: IconLgTokens = IconLgTokens(size = 24.0, strokeWidth = 1.7)
+        val dark: IconLgTokens = IconLgTokens(size = 24.0, strokeWidth = 1.7)
+        val brand: IconLgTokens = IconLgTokens(size = 24.0, strokeWidth = 1.7)
+        val hcLight: IconLgTokens = IconLgTokens(size = 24.0, strokeWidth = 1.7)
+        val hcDark: IconLgTokens = IconLgTokens(size = 24.0, strokeWidth = 1.7)
+    }
+}
+
+/** Component `icon-xl` per context: colours are role keys, sizes in pt/dp. */
+data class IconXlTokens(
+    val size: Double,
+    val strokeWidth: Double,
+) {
+    companion object {
+        val light: IconXlTokens = IconXlTokens(size = 32.0, strokeWidth = 1.7)
+        val dark: IconXlTokens = IconXlTokens(size = 32.0, strokeWidth = 1.7)
+        val brand: IconXlTokens = IconXlTokens(size = 32.0, strokeWidth = 1.7)
+        val hcLight: IconXlTokens = IconXlTokens(size = 32.0, strokeWidth = 1.7)
+        val hcDark: IconXlTokens = IconXlTokens(size = 32.0, strokeWidth = 1.7)
+    }
+}
+
+/** Component `icon-hero` per context: colours are role keys, sizes in pt/dp. */
+data class IconHeroTokens(
+    val size: Double,
+    val strokeWidth: Double,
+) {
+    companion object {
+        val light: IconHeroTokens = IconHeroTokens(size = 56.0, strokeWidth = 1.7)
+        val dark: IconHeroTokens = IconHeroTokens(size = 56.0, strokeWidth = 1.7)
+        val brand: IconHeroTokens = IconHeroTokens(size = 56.0, strokeWidth = 1.7)
+        val hcLight: IconHeroTokens = IconHeroTokens(size = 56.0, strokeWidth = 1.7)
+        val hcDark: IconHeroTokens = IconHeroTokens(size = 56.0, strokeWidth = 1.7)
     }
 }
 

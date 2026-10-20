@@ -1,0 +1,31 @@
+# CC-12 fixture, the icon set beside ./button.yaml: ../_valid/icon.yaml without the step icon-md.
+# It passes on its own; the button's large icon slot names icon-md, which is not listed here.
+id: icon
+board: C02
+name: AppIcon
+kind: icon-set
+
+accessibility:
+  role: decorative
+
+gallery:
+  title: Fixture icons
+
+sizes: [icon-xs, icon-sm, icon-lg]
+defaultSize: icon-lg
+
+glyphs:
+  - id: back
+    set: navigation
+    source: SC05
+    shapes:
+      - d: 'M14.5 5.5L8 12l6.5 6.5'
+        paint: stroke
+  - id: plus
+    set: actions
+    source: C02
+    shapes:
+      - d: 'm12 5 0 14M5 12h14'
+        paint: stroke
+
+approved: 2026-10-20

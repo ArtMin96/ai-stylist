@@ -173,7 +173,7 @@ test('an unpaired component keeps its full key; a short instance stays on one li
   assert.match(component, /\nnonisolated public struct ChipOutlineLightTokens: Sendable/);
   const overlay = [
     '  public static let hcDark = OverlayTokens(',
-    'backgroundColor: .scrim, gap: AppSpacing.space8, duration: AppMotion.press)',
+    'backgroundColor: .scrim, gap: 8.0, duration: AppMotion.press)',
   ];
   assert.ok(component.includes(`\n${overlay.join('')}\n`), 'one line');
 });

@@ -2,12 +2,16 @@ package app.aistylist.core.designsystem.catalog.gallery
 
 import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertTextEquals
+import androidx.compose.ui.test.hasParent
+import androidx.compose.ui.test.hasTestTag
+import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import app.aistylist.core.designsystem.AppTheme
+import app.aistylist.core.designsystem.generated.AppIconName
 import app.aistylist.core.designsystem.generated.ComponentGallery
 import org.junit.Assert.assertEquals
 import org.junit.Rule
@@ -61,6 +65,18 @@ class GalleryTest {
     }
 
     @Test
+    fun rendersEveryIconCellExactlyOnceCaptionedWithItsGlyphId() {
+        show()
+
+        AppIconName.entries.forEach { name ->
+            compose.onAllNodesWithTag(name.testId, useUnmergedTree = true).assertCountEquals(1)
+            compose
+                .onNode(hasText(name.id) and hasParent(hasTestTag(name.testId)), useUnmergedTree = true)
+                .assertExists()
+        }
+    }
+
+    @Test
     fun closeCallsOnClose() {
         show()
 
@@ -77,6 +93,7 @@ class GalleryTest {
                 "ds-gallery-section-spacing" to "Spacing",
                 "ds-gallery-section-radius" to "Radius",
                 "ds-gallery-section-c01-buttons" to "C01 Buttons",
+                "ds-gallery-section-c02-icons" to "C02 Icons",
             )
     }
 }

@@ -311,7 +311,7 @@ nonisolated public struct ButtonCompactTokens: Sendable, Equatable {
     paddingEnd: 16.0,
     paddingBottom: 0.0,
     paddingStart: 16.0,
-    iconSize: 18.0,
+    iconSize: 20.0,
     iconGap: 6.0
   )
 
@@ -322,7 +322,7 @@ nonisolated public struct ButtonCompactTokens: Sendable, Equatable {
     paddingEnd: 16.0,
     paddingBottom: 0.0,
     paddingStart: 16.0,
-    iconSize: 18.0,
+    iconSize: 20.0,
     iconGap: 6.0
   )
 
@@ -333,7 +333,7 @@ nonisolated public struct ButtonCompactTokens: Sendable, Equatable {
     paddingEnd: 16.0,
     paddingBottom: 0.0,
     paddingStart: 16.0,
-    iconSize: 18.0,
+    iconSize: 20.0,
     iconGap: 6.0
   )
 
@@ -344,7 +344,7 @@ nonisolated public struct ButtonCompactTokens: Sendable, Equatable {
     paddingEnd: 16.0,
     paddingBottom: 0.0,
     paddingStart: 16.0,
-    iconSize: 18.0,
+    iconSize: 20.0,
     iconGap: 6.0
   )
 
@@ -355,7 +355,7 @@ nonisolated public struct ButtonCompactTokens: Sendable, Equatable {
     paddingEnd: 16.0,
     paddingBottom: 0.0,
     paddingStart: 16.0,
-    iconSize: 18.0,
+    iconSize: 20.0,
     iconGap: 6.0
   )
 }
@@ -1466,6 +1466,78 @@ nonisolated public struct ButtonCaptureTokens: Sendable, Equatable {
     size: 56.0,
     pressed: Pressed(backgroundColor: .primaryPressed, textColor: .onPrimary)
   )
+}
+
+/// Component `icon-xs` per context: colours are role keys, sizes in pt/dp.
+nonisolated public struct IconXsTokens: Sendable, Equatable {
+  public let size: Double
+  public let strokeWidth: Double
+
+  public static let light = IconXsTokens(size: 12.0, strokeWidth: 2.2)
+  public static let dark = IconXsTokens(size: 12.0, strokeWidth: 2.2)
+  public static let brand = IconXsTokens(size: 12.0, strokeWidth: 2.2)
+  public static let hcLight = IconXsTokens(size: 12.0, strokeWidth: 2.2)
+  public static let hcDark = IconXsTokens(size: 12.0, strokeWidth: 2.2)
+}
+
+/// Component `icon-sm` per context: colours are role keys, sizes in pt/dp.
+nonisolated public struct IconSmTokens: Sendable, Equatable {
+  public let size: Double
+  public let strokeWidth: Double
+
+  public static let light = IconSmTokens(size: 16.0, strokeWidth: 1.7)
+  public static let dark = IconSmTokens(size: 16.0, strokeWidth: 1.7)
+  public static let brand = IconSmTokens(size: 16.0, strokeWidth: 1.7)
+  public static let hcLight = IconSmTokens(size: 16.0, strokeWidth: 1.7)
+  public static let hcDark = IconSmTokens(size: 16.0, strokeWidth: 1.7)
+}
+
+/// Component `icon-md` per context: colours are role keys, sizes in pt/dp.
+nonisolated public struct IconMdTokens: Sendable, Equatable {
+  public let size: Double
+  public let strokeWidth: Double
+
+  public static let light = IconMdTokens(size: 20.0, strokeWidth: 1.7)
+  public static let dark = IconMdTokens(size: 20.0, strokeWidth: 1.7)
+  public static let brand = IconMdTokens(size: 20.0, strokeWidth: 1.7)
+  public static let hcLight = IconMdTokens(size: 20.0, strokeWidth: 1.7)
+  public static let hcDark = IconMdTokens(size: 20.0, strokeWidth: 1.7)
+}
+
+/// Component `icon-lg` per context: colours are role keys, sizes in pt/dp.
+nonisolated public struct IconLgTokens: Sendable, Equatable {
+  public let size: Double
+  public let strokeWidth: Double
+
+  public static let light = IconLgTokens(size: 24.0, strokeWidth: 1.7)
+  public static let dark = IconLgTokens(size: 24.0, strokeWidth: 1.7)
+  public static let brand = IconLgTokens(size: 24.0, strokeWidth: 1.7)
+  public static let hcLight = IconLgTokens(size: 24.0, strokeWidth: 1.7)
+  public static let hcDark = IconLgTokens(size: 24.0, strokeWidth: 1.7)
+}
+
+/// Component `icon-xl` per context: colours are role keys, sizes in pt/dp.
+nonisolated public struct IconXlTokens: Sendable, Equatable {
+  public let size: Double
+  public let strokeWidth: Double
+
+  public static let light = IconXlTokens(size: 32.0, strokeWidth: 1.7)
+  public static let dark = IconXlTokens(size: 32.0, strokeWidth: 1.7)
+  public static let brand = IconXlTokens(size: 32.0, strokeWidth: 1.7)
+  public static let hcLight = IconXlTokens(size: 32.0, strokeWidth: 1.7)
+  public static let hcDark = IconXlTokens(size: 32.0, strokeWidth: 1.7)
+}
+
+/// Component `icon-hero` per context: colours are role keys, sizes in pt/dp.
+nonisolated public struct IconHeroTokens: Sendable, Equatable {
+  public let size: Double
+  public let strokeWidth: Double
+
+  public static let light = IconHeroTokens(size: 56.0, strokeWidth: 1.7)
+  public static let dark = IconHeroTokens(size: 56.0, strokeWidth: 1.7)
+  public static let brand = IconHeroTokens(size: 56.0, strokeWidth: 1.7)
+  public static let hcLight = IconHeroTokens(size: 56.0, strokeWidth: 1.7)
+  public static let hcDark = IconHeroTokens(size: 56.0, strokeWidth: 1.7)
 }
 
 /// Component `chip-weather` per context: colours are role keys, sizes in pt/dp.

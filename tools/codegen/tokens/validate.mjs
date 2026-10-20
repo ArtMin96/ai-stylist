@@ -5,7 +5,9 @@ import { tokensTypeName, memberId, propertyIds } from './naming.mjs';
 import { colorRoles, componentGroups } from './structure.mjs';
 import {
   DYNAMIC_TYPE_STYLES,
+  ICON_SIZE_KEY,
   M3_ROLES,
+  iconSizeNamed,
   META_KEYS,
   TOKEN_GROUPS,
   dynamicTypeName,
@@ -42,6 +44,8 @@ const REFERABLE = {
   elevation: ['colors', 'rounded', 'spacing'],
   motion: ['motion'],
 };
+/** A padding part may reference only the spacing scale. */
+const PADDING_REFERABLE = ['spacing'];
 
 /** Validates parsed frontmatter + body; returns `{ rule, at, message }` findings in file order. */
 export function validate({ frontmatter, body }) {
@@ -247,14 +251,61 @@ function checkComponents(ctx) {
 function checkComponentProperty(ctx, at, prop, value, scheme) {
   const ref = parseReference(value);
   const colourProp = isColourProperty(prop);
-  if (ref && !(colourProp && ref.group !== 'colors')) {
+  const iconSize = iconSizeNamed(prop, value);
+  if (prop === 'padding' && !colourProp) {
+    checkPadding(ctx, at, value, scheme);
+  } else if (iconSize) {
+    checkIconSizeReference(ctx, at, prop, { group: 'components', key: iconSize });
+  } else if (ref?.group === 'components' && !colourProp) {
+    checkIconSizeReference(ctx, at, prop, ref);
+  } else if (ref && !(colourProp && ref.group !== 'colors')) {
     checkReference(ctx, at, ref, scheme, REFERABLE.components);
   } else if (colourProp || parseColor(value)) {
     ctx.add('TK-04', at, 'a component colour must be a `{colors.<token>}` role reference');
-  } else if (prop === 'padding') {
-    if (!parsePadding(value)) ctx.add('TK-11', at, 'padding takes 1–4 parts, each 0 or Npx');
   } else if (typeof value !== 'number' && parseDimension(value) === null) {
     ctx.add('TK-11', at, `${JSON.stringify(value)} is not a px dimension, number or {reference}`);
+  }
+}
+
+/** TK-11 a 1–4 part padding; TK-06 each reference part resolves in `spacing` (`0 {spacing.24}`). */
+function checkPadding(ctx, at, value, scheme) {
+  const sides = parsePadding(value);
+  if (!sides) {
+    ctx.add('TK-11', at, 'padding takes 1–4 parts, each 0, Npx or a {spacing.<key>} reference');
+    return;
+  }
+  const refs = new Map(
+    Object.values(sides)
+      .filter((side) => side.ref)
+      .map(({ ref }) => [`${ref.group}.${ref.key}`, ref]),
+  );
+  for (const ref of refs.values()) checkReference(ctx, at, ref, scheme, PADDING_REFERABLE);
+}
+
+/**
+ * TK-06 a component an `iconSize` names (`icon-md` or `{components.icon-md}`, iconSizeNamed), or
+ * any other `{components.<key>}` reference: only `iconSize` may name a component, and that
+ * component is an icon size (`icon-<step>: { size: <n>px, strokeWidth: <w> }`, the C02 scale).
+ */
+function checkIconSizeReference({ fm, add }, at, prop, ref) {
+  const text = `{components.${ref.key}}`;
+  if (prop !== 'iconSize') {
+    add('TK-06', at, `\`${text}\` cannot be referenced here: only iconSize names a component`);
+    return;
+  }
+  if (!Object.hasOwn(fm.components, ref.key)) {
+    add('TK-06', at, `\`${text}\` does not resolve`);
+    return;
+  }
+  const target = fm.components[ref.key];
+  const fields = isPlainObject(target) ? Object.keys(target).sort().join(',') : '';
+  const isIconSize =
+    ICON_SIZE_KEY.test(ref.key) &&
+    fields === 'size,strokeWidth' &&
+    parseDimension(target.size) !== null &&
+    typeof target.strokeWidth === 'number';
+  if (!isIconSize) {
+    add('TK-06', at, `\`${text}\` is not an icon size: icon-<step> with size and strokeWidth`);
   }
 }
 

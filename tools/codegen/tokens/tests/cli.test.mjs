@@ -18,8 +18,24 @@ import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { after, test } from 'node:test';
 
+import { REPO_ROOT } from './models.mjs';
+
 const TOKENS_DIR = path.resolve(import.meta.dirname, '..');
 const GEN = path.resolve(TOKENS_DIR, '..', 'gen-tokens.mjs');
+const GEN_ROOT = path.resolve(TOKENS_DIR, '..', '..', '..');
+
+/**
+ * A path as gen-tokens.mjs `label()` names it in its output: repo-relative with `/` when inside
+ * this checkout (a TOKENS_REPO_ROOT worktree under .claude/worktrees too), else its base name.
+ */
+function labelOf(file) {
+  const relative = path.relative(GEN_ROOT, file);
+  if (relative.startsWith('..') || path.isAbsolute(relative)) return path.basename(file);
+  return relative.split(path.sep).join('/');
+}
+
+/** `text` as a literal inside a regular expression. */
+const escaped = (text) => text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 const fixture = (name) => path.join(TOKENS_DIR, 'fixtures', name, 'DESIGN.md');
 // realpath: on macOS the temporary directory is reached through a symlink.
 const SCRATCH = realpathSync(mkdtempSync(path.join(tmpdir(), 'gen-tokens-test-')));
@@ -130,26 +146,33 @@ test('an invalid file writes nothing', () => {
 
 test('the repository DESIGN.md generates both languages', () => {
   const out = path.join(SCRATCH, 'out', 'repo');
-  const input = path.resolve(TOKENS_DIR, '..', '..', '..', 'DESIGN.md');
+  const input = path.join(REPO_ROOT, 'DESIGN.md');
   const args = ['--input', input, '--swift-out', `${out}/swift`, '--kotlin-out', `${out}/kotlin`];
   const result = run(args);
   assert.equal(result.status, 0, result.stderr);
-  assert.match(result.stdout, /gen-tokens: DESIGN\.md is valid \(\d+ colour roles x 5 contexts/);
+  const name = escaped(labelOf(input));
+  assert.match(result.stdout, new RegExp(`^gen-tokens: ${name} is valid \\(\\d+ colour roles x 5`));
   const swift = readFileSync(path.join(out, 'swift', 'ComponentTokens.swift'), 'utf8');
-  assert.match(swift, /^\/\/ Source: DESIGN\.md$/m);
+  assert.ok(swift.includes(`\n// Source: ${labelOf(input)}\n`), labelOf(input));
 });
 
-test('--components: the component API file joins the tiers in each directory', () => {
+test('--components: the API and glyph-table files join the tiers in each directory', () => {
   const out = path.join(SCRATCH, 'out', 'contracts');
   const components = path.join(TOKENS_DIR, 'fixtures', 'contracts', '_valid');
   const args = ['--input', fixture('contracts'), '--components', components];
   const result = run([...args, '--swift-out', `${out}/swift`, '--kotlin-out', `${out}/kotlin`]);
   assert.equal(result.status, 0, result.stderr);
-  assert.match(result.stdout, /contracts\/_valid is valid \(1 approved contract\(s\): button\)/);
+  const valid = `${labelOf(components)} is valid (2 approved contract(s): button, icon)`;
+  assert.equal(labelOf(components), 'tools/codegen/tokens/fixtures/contracts/_valid');
+  assert.ok(result.stdout.includes(`\ngen-tokens: ${valid}\n`), result.stdout);
   const tiers = ['ReferenceTokens', 'SchemeTokens', 'ComponentTokens'];
-  const swiftFiles = [...tiers.map((t) => `${t}.swift`), 'ComponentAPI.swift'];
+  const swiftFiles = [
+    ...tiers.map((t) => `${t}.swift`),
+    'ComponentAPI.swift',
+    'AppIconGlyphs.swift',
+  ];
   assert.deepEqual(readdirSync(path.join(out, 'swift')).sort(), swiftFiles.sort());
-  const kotlinFiles = [...tiers.map((t) => `${t}.kt`), 'ComponentApi.kt'];
+  const kotlinFiles = [...tiers.map((t) => `${t}.kt`), 'ComponentApi.kt', 'AppIconGlyphs.kt'];
   assert.deepEqual(readdirSync(path.join(out, 'kotlin')).sort(), kotlinFiles.sort());
 });
 
@@ -158,6 +181,7 @@ test('--components: a failing contract is a finding and nothing is written', () 
   const cases = [
     ['CC-05', /CC-05 button\.yaml tokens\.primary\.states\.pressed: /],
     ['CC-08', /CC-08 button\.yaml sizes\.medium: \{components\.button-medium\} has no iconSize/],
+    ['CC-11', /CC-11 icon\.yaml glyphs\.1\.shapes\.0\.d: info: cannot compile the path: /],
   ];
   for (const [rule, message] of cases) {
     const components = path.join(TOKENS_DIR, 'fixtures', 'contracts', rule);
@@ -174,21 +198,26 @@ const TYPE_LINE = /^(?:nonisolated public (?:enum|struct)|enum class|data class|
 
 test('the repository DESIGN.md and contracts generate the component API', (t) => {
   const out = path.join(SCRATCH, 'out', 'repo-api');
-  const root = path.resolve(TOKENS_DIR, '..', '..', '..');
-  const args = ['--input', path.join(root, 'DESIGN.md')];
-  args.push('--components', path.join(root, '.impeccable', 'components'));
+  const input = path.join(REPO_ROOT, 'DESIGN.md');
+  const components = path.join(REPO_ROOT, '.impeccable', 'components');
+  const args = ['--input', input, '--components', components];
   args.push('--swift-out', `${out}/swift`, '--kotlin-out', `${out}/kotlin`);
   const result = run(args);
   assert.equal(result.status, 0, result.stderr);
+  const valid = `${labelOf(components)} is valid (2 approved contract(s): button, icon)`;
+  assert.ok(result.stdout.includes(`\ngen-tokens: ${valid}\n`), result.stdout);
   const swift = readFileSync(path.join(out, 'swift', 'ComponentAPI.swift'), 'utf8');
   const kotlin = readFileSync(path.join(out, 'kotlin', 'ComponentApi.kt'), 'utf8');
-  assert.match(swift, /^\/\/ Source: \.impeccable\/components\/\*\.yaml \+ DESIGN\.md$/m);
+  const source = `\n// Source: ${labelOf(components)}/*.yaml + ${labelOf(input)}\n`;
+  assert.ok(swift.includes(source), source);
   assert.match(swift, /\n {2}case primaryOutline = "primary-outline"\n/);
   const constant = 'textCompactEnabled: String = "ds-button-text-compact-enabled"';
   assert.ok(swift.includes(`public static let ${constant}`) && kotlin.includes(`val ${constant}`));
   assert.match(kotlin, /\nenum class ButtonVariant\(\n/);
-  assert.match(swift, /\n {2}public let iconSize: Double\n {2}public let iconGap: Double\n/);
-  assert.match(kotlin, /\n {4}val iconSize: Double,\n {4}val iconGap: Double,\n/);
+  assert.match(swift, /\n {2}public let iconSize: AppIconSize\n {2}public let iconGap: Double\n/);
+  assert.match(kotlin, /\n {4}val iconSize: AppIconSize,\n {4}val iconGap: Double,\n/);
+  const glyphs = readFileSync(path.join(out, 'kotlin', 'AppIconGlyphs.kt'), 'utf8');
+  assert.match(glyphs, /\nobject AppIconGlyphs \{\n/);
   for (const [file, text] of [
     ['ComponentAPI.swift', swift],
     ['ComponentApi.kt', kotlin],

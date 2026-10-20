@@ -6,11 +6,11 @@ The contract is the master for a component's API, as the `DESIGN.md` frontmatter
 
 Each component is written natively twice, by `ios-engineer` and `android-engineer` in parallel, and neither lane reads the other's code. Parity comes from three generated inputs: the tokens (from `DESIGN.md`), this contract, and the component API surface the generator emits from it for each platform (the variant, size and state enums, the test-ID constants and the gallery list). Both lanes build against that generated surface.
 
-Example: `button.yaml` (`AppButton`, canvas board C01).
+Examples: `button.yaml` (`AppButton`, canvas board C01), a control contract; `icon.yaml` (`AppIcon`, canvas board C02), an icon set (see "Icon sets" below).
 
 ## Fields
 
-All fields are required unless marked optional.
+These are the fields of a control contract (no `kind`, as `button.yaml`). An icon set has its own fields, under "Icon sets". All fields are required unless marked optional.
 
 - `id`: kebab-case, equal to the file name without `.yaml` (`button`).
 - `board`: the canvas board on page 3 of "Garderi App UI" (`C01` … `C10`).
@@ -24,6 +24,7 @@ All fields are required unless marked optional.
   - `states` lists only the states that change a colour or the label style. A state that changes one but has no token yet is written as a comment and proposed to the owner; a contract never points at a token that does not exist.
   - `sizes` names the entry that holds each size's height and padding: the base for the variant's own size, otherwise the shared size entry (buttons: `button-large`, `button-card`, `button-medium`, `button-compact`, `button-compact-filled`, `button-text-compact`, `button-small`).
   - Two entry properties go beyond fill, text and type: `borderColor` is a ring drawn inside the shape (the buttons' width is `button-outline-ring`), and `spinnerColor` is the loading spinner when it is not the label colour.
+  - An entry's dimensions may point at a shared scale (see "Scale references" below): `iconSize` names an icon step by its bare key (`icon-md`), and padding and gap parts name spacing steps.
 - `accessibility`:
   - `role`: the semantic role (`button`).
   - `label`: the accessible name, as a `{props.<name>}` reference.
@@ -34,6 +35,36 @@ All fields are required unless marked optional.
 - `approved`: `pending`, or the date (`yyyy-mm-dd`) the owner approved the contract in chat. `ui-designer` writes it when the lead relays the owner's words. Silence is not approval, and neither is an agent's own opinion.
 
 Comments may explain a choice (usage rules, a token gap, a board-versus-screen choice, a question still open for the owner); they never add a field.
+
+## Scale references
+
+A `DESIGN.md` component entry (`components.<name>`) points at a shared scale instead of repeating its number (owner 2026-10-21):
+
+- An icon slot (`iconSize`) names an icon-scale step with the bare key `icon-<step>` (`iconSize: icon-md`), never a `{components.…}` reference (the pinned design.md lint, TK-12, rejects those) and never a number. The generated look types it as the icon size enum (`AppIconSize`).
+- CC-12: once an icon set (`kind: icon-set`) exists, every icon slot in use must name one of that set's `sizes`; a number, or a key outside `sizes`, is a finding.
+- A `padding` or `iconGap` part that equals a `spacing` step names it: `iconGap: '{spacing.8}'`, `padding: '0 {spacing.24}'`. A shorthand may mix references, `0` and px literals: `padding: '{spacing.12} {spacing.4} {spacing.12} 14px'`.
+- A value that is not on a scale stays a literal: heights (52, 44, 36), widths and sizes, and off-scale parts (`iconGap: '6px'`, `padding: '0 10px'`). It is never snapped to a step without the owner.
+- Typography (`'{typography.<style>}'`), colour (`'{colors.<role>}'`) and radius (`'{rounded.<step>}'`) references stay as they are.
+
+The generated numbers are the referenced step's value, so moving a literal to its reference never changes what the apps draw.
+
+## Icon sets
+
+`kind: icon-set` marks a contract that defines a set of glyphs instead of a control (`icon.yaml`, canvas board C02). An icon has no props, variants, combinations or interaction states: the generator emits a name enum and a path table, and each app draws every glyph with one view that takes a name and a size. The fields, all required:
+
+- `id`, `board`, `name`, `approved`: as for a control contract (`icon`, `C02`, `AppIcon`).
+- `kind`: `icon-set`. A contract without `kind` is a control contract.
+- `accessibility.role`: `decorative`. The icon is hidden from screen readers; the host control, or the words beside the icon, carry the name.
+- `gallery.title`: as for a control contract (`Icons` → `C02 Icons`, slug `c02-icons`). The gallery shows every glyph, and each glyph's test ID is `ds-icon-<id>`, the same literal on both apps. An icon set has no `label`, `include` or `testId` field.
+- `sizes`: the icon scale, the steps the set may be drawn at, each the name of a `DESIGN.md` token `components.icon-<step>`: `icon-xs`, `icon-sm`, `icon-md`, `icon-lg`, `icon-xl`, `icon-hero` (owner 2026-10-21). Each token holds `size` and `strokeWidth`. The stroke is in viewBox units, so the drawn width is `strokeWidth × size / 24`. The size is the one at the default text size: icons grow with the user's text size, and the native lanes implement it. The generated size enum drops the `icon-` prefix (`AppIconSize.sm`, Kotlin `SM`). Every icon a screen draws snaps to the nearest step; `DESIGN.md` "Icons (C02)" lists where each use lands.
+- `defaultSize`: one of `sizes` (`icon-lg`).
+- `glyphs`: the list, in the board's set order, with the icons only the screens draw at the end of each set. Each glyph has:
+  - `id`: kebab-case and unique in the set. It becomes the enum case (`chevron-right` → `.chevronRight` / `CHEVRON_RIGHT`).
+  - `set`: `navigation`, `actions`, `weather`, `closet`, `status`, `account` or `capture` (the page-8 selfie, avatar and try-on icons).
+  - `source`: the canvas board the drawing was taken from: `C02` when the board's own drawing wins, otherwise the screen, prototype, page-8 or component board (`SC05`, `P02`, `SE1`, `C07`).
+  - `shapes`: one or more `{ d, paint }`, drawn in order. `d` is SVG path data in the 24 × 24 viewBox. The designer converts every circle, rect, ellipse, line and polyline to one `d` string (starting at 3 o'clock and running clockwise, as SVG draws them) and a dashed stroke to its dash segments, so the generator reads path data only. `paint` is `stroke` (the size's stroke width, round caps and joins), `fill`, or `both`.
+- A selected state is its own filled glyph (`heart` and `heart-filled`), never a state of the glyph.
+- A glyph never holds a size, stroke width or colour. The tint comes from the host's foreground and the existing colour roles; there is no icon colour token. Where a board draws one icon in two tones (the confidence bars, the busy ring), the contract splits it into glyphs the host layers, and a comment says how.
 
 ## Which drawing wins
 

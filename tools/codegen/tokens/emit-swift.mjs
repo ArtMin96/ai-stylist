@@ -6,7 +6,7 @@
 // usable from any isolation domain (the Core convention, e.g. AppConfig). Layout follows
 // apps/ios/.swift-format: 2-space indent, 120 columns, grouped hex literals.
 import { docText, num, swiftIdent, swiftStr } from './naming.mjs';
-import { joinMembers, renderDeclaration, renderTiers, valueLines } from './render.mjs';
+import { inline, joinMembers, renderDeclaration, renderTiers, valueLines } from './render.mjs';
 
 const INDENT = '  ';
 const TYPE = {
@@ -32,7 +32,8 @@ export const swift = {
   limit: 120,
   wrapAfterAssign: false,
   callTrailingComma: false,
-  list: { open: '[', close: ']', empty: '[]' },
+  // apps/ios/.swift-format multiElementCollectionTrailingCommas: a one-item list takes none.
+  list: { open: '[', close: ']', empty: '[]', singleItemTrailingComma: false },
   argLabel: (name) => `${swiftIdent(name)}: `,
   spell: {
     double: num,
@@ -79,8 +80,8 @@ export const swift = {
     ];
   },
   /**
-   * A closed set of kebab ids: the case is the Swift name, the raw value the id. Each extra string
-   * field (`decl.fields`) is a computed property switching over the cases.
+   * A closed set of kebab ids: the case is the Swift name, the raw value the id. Each extra field
+   * (`decl.fields`, typed; each case's `values`) is a computed property switching over the cases.
    */
   enum(decl) {
     const cases = decl.cases.map(({ name, id }) => {
@@ -98,14 +99,15 @@ export const swift = {
   roles: (decl) => swift.enum(decl),
 };
 
-/** `title`: a string per case, as a computed property switching over the cases. */
+/** `title`: a value per case, as a computed property switching over the cases. */
 function fieldLines(decl, field, pad) {
   const step = pad + INDENT;
+  const value = (c) => inline(swift, c.values[field.name], field.type);
   return [
     `${pad}/// ${docText(field.doc)}`,
-    `${pad}public var ${swiftIdent(field.name)}: String {`,
+    `${pad}public var ${swiftIdent(field.name)}: ${typeName(field.type)} {`,
     `${step}switch self {`,
-    ...decl.cases.map((c) => `${step}case .${swiftIdent(c.name)}: ${swiftStr(c[field.name])}`),
+    ...decl.cases.map((c) => `${step}case .${swiftIdent(c.name)}: ${value(c)}`),
     `${step}}`,
     `${pad}}`,
   ];

@@ -7,7 +7,7 @@ import { readFileSync } from 'node:fs';
 import path from 'node:path';
 
 import { apiDeclarations } from '../api-declarations.mjs';
-import { loadContracts } from '../contracts.mjs';
+import { checkContract, loadContracts } from '../contracts.mjs';
 import { declarations } from '../declarations.mjs';
 import { normalise } from '../normalise.mjs';
 import { parseDesignMd } from '../parse.mjs';
@@ -15,7 +15,13 @@ import { formatFinding, loadTokens } from '../pipeline.mjs';
 import { validate } from '../validate.mjs';
 
 const TOKENS_DIR = path.resolve(import.meta.dirname, '..');
-const REPO_ROOT = path.resolve(TOKENS_DIR, '..', '..', '..');
+/**
+ * The checkout whose `DESIGN.md` and `.impeccable/components/` the repository tests read: this
+ * one, or `TOKENS_REPO_ROOT` (another worktree, to try its inputs before they are integrated).
+ */
+export const REPO_ROOT = process.env.TOKENS_REPO_ROOT
+  ? path.resolve(process.env.TOKENS_REPO_ROOT)
+  : path.resolve(TOKENS_DIR, '..', '..', '..');
 export const VALID = readFileSync(path.join(TOKENS_DIR, 'fixtures', '_valid', 'DESIGN.md'), 'utf8');
 export const REPO_DESIGN_MD = readFileSync(path.join(REPO_ROOT, 'DESIGN.md'), 'utf8');
 /** Contract fixtures: `DESIGN.md` (their tokens), `_valid/` and one `CC-NN/` per rule. */
@@ -43,6 +49,17 @@ export function apisOf(model, dir) {
 /** `{ <File>.<ext>: text }` from one API emitter for the contracts in `dir`. */
 export const emittedApi = (emitApi, model, dir) =>
   emitApi(apiDeclarations(apisOf(model, dir)), 'components/*.yaml + DESIGN.md');
+
+/**
+ * `{ <File>.<ext>: text }` from one API emitter for the fixture icon set alone, after
+ * `edit(text)`, which must leave it valid against `model`.
+ */
+export function emittedIconSet(emitApi, model, edit) {
+  const text = edit(readFileSync(path.join(VALID_CONTRACTS, 'icon.yaml'), 'utf8'));
+  const { findings, api } = checkContract(text, 'icon.yaml', model);
+  assert.deepEqual(findings, [], findings.map(formatFinding).join('\n'));
+  return emitApi(apiDeclarations([api]), 'icon.yaml + DESIGN.md');
+}
 
 /** The model of valid DESIGN.md text. */
 export function modelOf(text) {

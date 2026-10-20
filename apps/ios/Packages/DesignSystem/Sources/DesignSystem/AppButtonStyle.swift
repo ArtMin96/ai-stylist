@@ -8,7 +8,7 @@ struct AppButtonStyle: ButtonStyle {
   let label: String
   let variant: ButtonVariant
   let size: ButtonSize
-  let leadingIcon: Image?
+  let leadingIcon: AppIconName?
   let fullWidth: Bool
   let loading: Bool
 

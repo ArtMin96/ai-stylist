@@ -11,6 +11,7 @@ import { colorRoles, componentGroups } from './structure.mjs';
 import {
   CONTEXTS,
   dynamicTypeName,
+  iconSizeNamed,
   isPlainObject,
   parseColor,
   parseCubicBezier,
@@ -33,6 +34,9 @@ export const CONTEXT_SOURCES = {
   'hc-light': ['light', 'hc-light'],
   'hc-dark': ['dark', 'hc-dark'],
 };
+
+/** The `$extensions` key of a dimension that names an icon size: `{ 'app.iconSize': 'icon-md' }`. */
+export const ICON_SIZE_EXTENSION = 'app.iconSize';
 
 /** Builds the in-memory model from validated frontmatter. */
 export function normalise(frontmatter) {
@@ -183,17 +187,32 @@ function singleValueToken(value, lookup) {
   return dimensionToken(value);
 }
 
+/**
+ * A component's properties as tokens. A `{spacing.<key>}` reference, whole or as a padding part,
+ * resolves to that step's px value, so a look holds the same number whichever way DESIGN.md writes
+ * it. An `iconSize` that names an icon size (`icon-md`, iconSizeNamed) is that size's px value and
+ * keeps the key in `$extensions['app.iconSize']`, which the component API reads (contract-model.mjs).
+ * Every other reference stays an alias.
+ */
 function componentTokens(props, lookup) {
   const tokens = {};
+  const spacing = (key) => dimensionToken(lookup.frontmatter.spacing[key]);
   for (const [prop, value] of Object.entries(props)) {
-    if (prop !== 'padding') {
+    const ref = parseReference(value);
+    if (prop === 'padding') {
+      const { top, end, bottom, start } = parsePadding(value);
+      [top, end, bottom, start].forEach((side, i) => {
+        tokens[PADDING_IDS[i]] = side.ref ? spacing(side.ref.key) : dimensionToken(side.px);
+      });
+    } else if (ref?.group === 'spacing') {
+      tokens[prop] = spacing(ref.key);
+    } else if (iconSizeNamed(prop, value)) {
+      const key = iconSizeNamed(prop, value);
+      const size = dimensionToken(lookup.frontmatter.components[key].size);
+      tokens[prop] = { ...size, $extensions: { [ICON_SIZE_EXTENSION]: key } };
+    } else {
       tokens[prop] = singleValueToken(value, lookup);
-      continue;
     }
-    const { top, end, bottom, start } = parsePadding(value);
-    [top, end, bottom, start].forEach((px, i) => {
-      tokens[PADDING_IDS[i]] = dimensionToken(px);
-    });
   }
   return tokens;
 }

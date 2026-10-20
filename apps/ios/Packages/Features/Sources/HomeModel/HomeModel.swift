@@ -23,15 +23,23 @@ public final class HomeModel {
   /// True only when the composition root provides debug tools (DEBUG builds of the app target), so
   /// Preview and Prod never show the debug consent toggle or the crash button.
   public let showsDebugTools: Bool
+  /// True only when the app root passes a gallery action (the Dev build), so Preview and Prod never
+  /// show the "Design system gallery" button.
+  public let showsDesignSystemGallery: Bool
 
   @ObservationIgnored private let services: AppServices
+  @ObservationIgnored private let openGallery: (() -> Void)?
   @ObservationIgnored private var didTrackOpen = false
 
-  public init(services: AppServices) {
+  /// - Parameter openDesignSystemGallery: presents the debug design-system gallery; nil hides its
+  ///   button. Presentation, not a service, so it is not part of `AppServices`.
+  public init(services: AppServices, openDesignSystemGallery: (() -> Void)? = nil) {
     self.services = services
     hasConsent = services.analytics.hasConsent
     apiBaseURLText = services.config.apiBaseURL.absoluteString
     showsDebugTools = services.debug != nil
+    openGallery = openDesignSystemGallery
+    showsDesignSystemGallery = openDesignSystemGallery != nil
   }
 
   /// Called when the screen appears: records `app_opened` once (dropped by the gate unless the
@@ -58,6 +66,11 @@ public final class HomeModel {
   /// Does nothing when the composition root provides no debug tools.
   public func forceTestCrash() {
     services.debug?.forceTestCrash()
+  }
+
+  /// Dev build only: opens the design-system gallery. Does nothing when the app root passed no action.
+  public func openDesignSystemGallery() {
+    openGallery?()
   }
 
   private func loadVersion() async {

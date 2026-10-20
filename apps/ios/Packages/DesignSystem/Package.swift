@@ -4,7 +4,10 @@
 //   DesignTokens  Foundation-only token values; builds and tests on Linux too. `just generate` writes
 //                 them into Sources/DesignTokens/generated/ (never hand-edit that directory).
 //   DesignSystem  SwiftUI base components on top of DesignTokens; Apple platforms only (left out of
-//                 this manifest on Linux).
+//                 this manifest on Linux). System core: no previews, no dev tools.
+//   DesignSystemCatalog  dev-only: the Xcode previews and the debug "Design system gallery" (AI-195).
+//                 Apple platforms only. Only the app target's Dev configuration links it (project.yml,
+//                 Config/Dev.xcconfig); production code never imports it.
 // No dependency on Core or APIData: tokens and base components know nothing of services or the
 // generated client.
 import PackageDescription
@@ -54,6 +57,22 @@ var targets: [Target] = [
       name: "DesignSystemTests",
       dependencies: ["DesignSystem", "DesignTokens"],
       path: "tests/DesignSystemTests",
+      swiftSettings: strictSettings
+    )
+  )
+  products.append(.library(name: "DesignSystemCatalog", targets: ["DesignSystemCatalog"]))
+  targets.append(
+    .target(
+      name: "DesignSystemCatalog",
+      dependencies: ["DesignSystem", "DesignTokens"],
+      swiftSettings: strictSettings
+    )
+  )
+  targets.append(
+    .testTarget(
+      name: "DesignSystemCatalogTests",
+      dependencies: ["DesignSystemCatalog", "DesignSystem", "DesignTokens"],
+      path: "tests/DesignSystemCatalogTests",
       swiftSettings: strictSettings
     )
   )

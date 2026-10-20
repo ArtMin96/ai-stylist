@@ -1,7 +1,8 @@
 // Placeholder home screen. Strings and accessibility identifiers are part of the cross-platform
 // contract: the shared Maestro flow (e2e/smoke.yaml) asserts "AI Stylist" and
 // "Share anonymous usage data"; `api-version` / `api-error` match the Android testTags, and so do the
-// debug-only `debug_consent_toggle` / `debug_force_crash` (P02-T09).
+// debug-only `debug_consent_toggle` / `debug_force_crash` (P02-T09) and `debug_open_ds_gallery`
+// (AI-195).
 public import AppServices
 import DesignSystem
 import DesignTokens
@@ -11,8 +12,12 @@ public import SwiftUI
 public struct HomeScreen: View {
   @State private var model: HomeModel
 
-  public init(services: AppServices) {
-    _model = State(initialValue: HomeModel(services: services))
+  /// - Parameter onOpenDesignSystemGallery: the Dev build's gallery presenter; nil (Preview, Prod)
+  ///   hides the "Design system gallery" debug button.
+  public init(services: AppServices, onOpenDesignSystemGallery: (() -> Void)? = nil) {
+    _model = State(
+      initialValue: HomeModel(services: services, openDesignSystemGallery: onOpenDesignSystemGallery)
+    )
   }
 
   public var body: some View {
@@ -92,6 +97,12 @@ public struct HomeScreen: View {
         model.forceTestCrash()
       }
       .accessibilityIdentifier("debug_force_crash")
+      if model.showsDesignSystemGallery {
+        AppButton("Design system gallery", variant: .secondary, size: .medium) {
+          model.openDesignSystemGallery()
+        }
+        .accessibilityIdentifier("debug_open_ds_gallery")
+      }
     }
   }
 }

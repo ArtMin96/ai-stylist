@@ -35,6 +35,8 @@ packages:
     path: Packages/Features
   # App-internal design system (DEC-87): AppTheme, the bundled fonts, AppButton. The app target links
   # DesignSystem for `.appTheme()` at the root; HomeFeature links it through Packages/Features.
+  # Its dev-only DesignSystemCatalog product (previews + the debug gallery, AI-195) is a build
+  # dependency with `link: false`; only Config/Dev.xcconfig links its object (see the target below).
   DesignSystem:
     path: Packages/DesignSystem
   # Official PostHog iOS SDK (analytics + error tracking with native crash capture; MIT). Linked by the
@@ -64,6 +66,12 @@ targets:
         products: [HomeFeature]
       - package: DesignSystem
         products: [DesignSystem]
+      # Built for every configuration, linked by none here: XcodeGen cannot link a package product per
+      # configuration, and a plain link put the catalog into the Prod binary (P0 spike, 2026-10-20).
+      # Config/Dev.xcconfig adds its object to OTHER_LDFLAGS; App/AIStylistApp.swift uses it under DEBUG.
+      - package: DesignSystem
+        products: [DesignSystemCatalog]
+        link: false
       - package: PostHog
         products: [PostHog]
 
@@ -84,6 +92,7 @@ schemes:
         - package: Features/HomeModelTests
         - package: DesignSystem/DesignTokensTests
         - package: DesignSystem/DesignSystemTests
+        - package: DesignSystem/DesignSystemCatalogTests
     profile:
       config: Preview
     analyze:

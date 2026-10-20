@@ -37,8 +37,9 @@ private final class RecordingSink: AnalyticsSink {
   }
 }
 
-/// Stands in for the app target's crashing `forceTestCrash()`: counts calls instead of crashing.
-private final class CrashRecorder {
+/// Stands in for an app-target action (the crashing `forceTestCrash()`, the gallery presenter):
+/// counts calls instead of running it.
+private final class CallRecorder {
   private(set) var calls = 0
 
   func record() {
@@ -54,13 +55,14 @@ private let version = APIVersion(
 
 private func makeModel(
   _ fetcher: StubVersionFetcher,
-  debug: DebugTools? = nil
+  debug: DebugTools? = nil,
+  openDesignSystemGallery: (() -> Void)? = nil
 ) throws -> (HomeModel, ConsentGatedAnalytics, RecordingSink) {
   let sink = RecordingSink()
   let analytics = ConsentGatedAnalytics(sink: sink)
   let config = try AppConfig.parse(RawConfig(apiBaseURL: "http://api.test", appVersion: "0.1.0-test"))
   let services = AppServices(config: config, version: fetcher, analytics: analytics, debug: debug)
-  return (HomeModel(services: services), analytics, sink)
+  return (HomeModel(services: services, openDesignSystemGallery: openDesignSystemGallery), analytics, sink)
 }
 
 @Suite("HomeModel")
@@ -132,7 +134,7 @@ struct HomeModelTests {
 
   @Test("shows the debug tools and forwards Force test crash to the app's crash action")
   func debugToolsForwardCrash() throws {
-    let recorder = CrashRecorder()
+    let recorder = CallRecorder()
     let (model, _, _) = try makeModel(
       StubVersionFetcher(.ok(version)),
       debug: DebugTools(forceTestCrash: { recorder.record() })
@@ -140,6 +142,26 @@ struct HomeModelTests {
     #expect(model.showsDebugTools)
     #expect(recorder.calls == 0)
     model.forceTestCrash()
+    #expect(recorder.calls == 1)
+  }
+
+  @Test("hides the design-system gallery button when the app root passes no action (Preview, Prod)")
+  func noDesignSystemGallery() throws {
+    let (model, _, _) = try makeModel(StubVersionFetcher(.ok(version)))
+    #expect(model.showsDesignSystemGallery == false)
+    model.openDesignSystemGallery()
+  }
+
+  @Test("shows the design-system gallery button and opens the gallery once per tap")
+  func designSystemGalleryOpens() throws {
+    let recorder = CallRecorder()
+    let (model, _, _) = try makeModel(
+      StubVersionFetcher(.ok(version)),
+      openDesignSystemGallery: { recorder.record() }
+    )
+    #expect(model.showsDesignSystemGallery)
+    #expect(recorder.calls == 0)
+    model.openDesignSystemGallery()
     #expect(recorder.calls == 1)
   }
 }

@@ -7,6 +7,7 @@ import {
   type AccountDeletionRequest,
   type CompleteSignUpResponse,
   type ConsentPage,
+  type ConsentRecord,
   type DataExport,
   type DataExportInProgress,
   type EntitlementState,
@@ -21,10 +22,12 @@ import {
   type PreferencesVersionConflict,
   type ProblemDetails,
   type RecordConsentError,
+  type RecordConsentResponse,
   type RefreshSessionResponse,
   type RequestAccountDeletionResponse,
   type RequestDataExportError,
   type RequestDataExportResponse,
+  type ResolvedConsent,
   type ResolvedEntitlement,
   type SessionGrant,
   type SignInResult,
@@ -218,7 +221,15 @@ describe('generated ts-client: identity', () => {
     expectTypeOf<SignInResult['outcome']>().toEqualTypeOf<
       'session' | 'deletion_pending' | 'sign_up_required'
     >();
+  });
+
+  it('types the consent list as one resolved entry per purpose and a decision as its record', () => {
     expectTypeOf<ListConsentsResponse>().toEqualTypeOf<ConsentPage>();
+    expectTypeOf<ConsentPage['items'][number]>().toEqualTypeOf<ResolvedConsent>();
+    expectTypeOf<ResolvedConsent['granted']>().toEqualTypeOf<boolean>();
+    expectTypeOf<ResolvedConsent['withdrawable']>().toEqualTypeOf<boolean>();
+    expectTypeOf<ResolvedConsent['record']>().toEqualTypeOf<ConsentRecord | undefined>();
+    expectTypeOf<RecordConsentResponse>().toEqualTypeOf<ConsentRecord>();
     expectTypeOf<RecordConsentError>().toEqualTypeOf<ProblemDetails>();
   });
 

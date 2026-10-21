@@ -1,7 +1,8 @@
 # `platform` module contract (docs/modules/platform.md): operational endpoints plus the shared
-# components every module references: the RFC 9457 problem schema and responses, the security
-# schemes, the `Idempotency-Key` / `If-Match` headers, the cursor-pagination parameters
-# (doc 06 §2) and the BCP 47 `Locale` tag. Module files `$ref` these; they never copy them.
+# components every module references: the RFC 9457 problem schema and responses, the
+# `bearerAuth` security scheme, the `Idempotency-Key` / `If-Match` headers, the
+# cursor-pagination parameters (doc 06 §2) and the BCP 47 `Locale` tag. Module files `$ref`
+# these; they never copy them. A scheme only one module uses lives in that module's file.
 # Included from ../openapi.yaml.
 openapi: 3.1.0
 info:
@@ -139,18 +140,6 @@ components:
         never sent in this header. A missing, malformed, expired or revoked access token is
         answered with the `Unauthenticated` (401) problem. The client then renews once with
         `refreshSession`; a refused renewal ends the session on the device.
-    deletionCancelToken:
-      type: apiKey
-      in: header
-      name: Deletion-Cancel-Token
-      description: |
-        Cancel credential of the `deletion_pending` sign-in outcome
-        (`DeletionPending.cancelToken`), sent in the `Deletion-Cancel-Token` header. Its only
-        use is `DELETE /v1/me/deletion`, the cancel of an account deletion inside its 7-day
-        grace window (DEC-65); every other operation refuses it. Single purpose, and valid for
-        at most 15 minutes from issue, no longer than an access token (doc 11 §4.2); the exact
-        expiry is `DeletionPending.cancelTokenExpiresAt`. It opens no session. A header of its
-        own, not `Authorization`, so it can never be taken for a session token.
   parameters:
     IdempotencyKey:
       name: Idempotency-Key

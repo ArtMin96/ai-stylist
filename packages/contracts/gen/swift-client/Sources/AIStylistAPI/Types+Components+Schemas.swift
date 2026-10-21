@@ -1523,10 +1523,6 @@ extension Components {
                 ])
             }
         }
-        /// Consent record id, a prefixed ULID (`cns_`, shared-kernel `ID_PREFIXES.consentRecord`).
-        ///
-        /// - Remark: Generated from `#/components/schemas/ConsentRecordId`.
-        public typealias ConsentRecordId = Swift.String
         /// Consent purpose keys of doc 11 §7.2, in that order. Mirrors shared-kernel
         /// `CONSENT_PURPOSES` value for value (pinned by packages/contracts/tests/kernel-enums.test.ts).
         ///
@@ -1541,6 +1537,10 @@ extension Components {
             case notifications = "notifications"
             case trainingData = "training_data"
         }
+        /// Consent record id, a prefixed ULID (`cns_`, shared-kernel `ID_PREFIXES.consentRecord`).
+        ///
+        /// - Remark: Generated from `#/components/schemas/ConsentRecordId`.
+        public typealias ConsentRecordId = Swift.String
         /// - Remark: Generated from `#/components/schemas/ConsentStatus`.
         @frozen public enum ConsentStatus: String, Codable, Hashable, Sendable, CaseIterable {
             case granted = "granted"
@@ -1625,10 +1625,63 @@ extension Components {
                 case locale
             }
         }
+        /// The consent the server applies to one purpose now (doc 11 §7.2). `record` is the
+        /// caller's latest consent record for the purpose; `granted` is then true exactly when
+        /// `record.status` is `granted`. Without a record, `record` is absent and `granted` is
+        /// the purpose's default, which the server decides (some defaults depend on the
+        /// jurisdiction).
+        ///
+        ///
+        /// - Remark: Generated from `#/components/schemas/ResolvedConsent`.
+        public struct ResolvedConsent: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/ResolvedConsent/purpose`.
+            public var purpose: Components.Schemas.ConsentPurpose
+            /// Whether the server processes the caller's data for this purpose now.
+            ///
+            /// - Remark: Generated from `#/components/schemas/ResolvedConsent/granted`.
+            public var granted: Swift.Bool
+            /// `false` for a purpose the person cannot withdraw while the account exists:
+            /// `recordConsent` refuses its withdrawal with 403 `CONSENT_REQUIRED`, and the app
+            /// offers no switch to turn it off.
+            ///
+            ///
+            /// - Remark: Generated from `#/components/schemas/ResolvedConsent/withdrawable`.
+            public var withdrawable: Swift.Bool
+            /// - Remark: Generated from `#/components/schemas/ResolvedConsent/record`.
+            public var record: Components.Schemas.ConsentRecord?
+            /// Creates a new `ResolvedConsent`.
+            ///
+            /// - Parameters:
+            ///   - purpose:
+            ///   - granted: Whether the server processes the caller's data for this purpose now.
+            ///   - withdrawable: `false` for a purpose the person cannot withdraw while the account exists:
+            ///   - record:
+            public init(
+                purpose: Components.Schemas.ConsentPurpose,
+                granted: Swift.Bool,
+                withdrawable: Swift.Bool,
+                record: Components.Schemas.ConsentRecord? = nil
+            ) {
+                self.purpose = purpose
+                self.granted = granted
+                self.withdrawable = withdrawable
+                self.record = record
+            }
+            public enum CodingKeys: String, CodingKey {
+                case purpose
+                case granted
+                case withdrawable
+                case record
+            }
+        }
+        /// One page of `listConsents`: one entry per purpose, in `ConsentPurpose` order, across
+        /// the pages.
+        ///
+        ///
         /// - Remark: Generated from `#/components/schemas/ConsentPage`.
         public struct ConsentPage: Codable, Hashable, Sendable {
             /// - Remark: Generated from `#/components/schemas/ConsentPage/items`.
-            public var items: [Components.Schemas.ConsentRecord]
+            public var items: [Components.Schemas.ResolvedConsent]
             /// Cursor of the next page; null on the last page.
             ///
             /// - Remark: Generated from `#/components/schemas/ConsentPage/nextCursor`.
@@ -1639,7 +1692,7 @@ extension Components {
             ///   - items:
             ///   - nextCursor: Cursor of the next page; null on the last page.
             public init(
-                items: [Components.Schemas.ConsentRecord],
+                items: [Components.Schemas.ResolvedConsent],
                 nextCursor: Swift.String? = nil
             ) {
                 self.items = items
@@ -2223,6 +2276,10 @@ extension Components {
                 try self.value2.encode(to: encoder)
             }
         }
+        /// Confidence in the value, from 0 to 1.
+        ///
+        /// - Remark: Generated from `#/components/schemas/MeasurementConfidence`.
+        public typealias MeasurementConfidence = Swift.Double
         /// Stored length unit. Mirrors shared-kernel `LENGTH_UNITS`.
         ///
         /// - Remark: Generated from `#/components/schemas/LengthUnit`.
@@ -2239,12 +2296,8 @@ extension Components {
             case estimated = "estimated"
             case derived = "derived"
         }
-        /// Confidence in the value, from 0 to 1.
-        ///
-        /// - Remark: Generated from `#/components/schemas/MeasurementConfidence`.
-        public typealias MeasurementConfidence = Swift.Double
-        /// A body length in centimetres with its provenance (doc 06 §3.1). `confidence` is always
-        /// present when `source` is `estimated` or `derived`, and optional for `user`.
+        /// A body length in centimetres with its provenance (doc 06 §3.1). The schema requires
+        /// `confidence` when `source` is `estimated` or `derived`; it is optional for `user`.
         ///
         ///
         /// - Remark: Generated from `#/components/schemas/LengthMeasurement`.
@@ -2298,8 +2351,8 @@ extension Components {
         @frozen public enum MassUnit: String, Codable, Hashable, Sendable, CaseIterable {
             case kg = "kg"
         }
-        /// A body mass in kilograms with its provenance (doc 06 §3.1). `confidence` is always
-        /// present when `source` is `estimated` or `derived`, and optional for `user`.
+        /// A body mass in kilograms with its provenance (doc 06 §3.1). The schema requires
+        /// `confidence` when `source` is `estimated` or `derived`; it is optional for `user`.
         ///
         ///
         /// - Remark: Generated from `#/components/schemas/MassMeasurement`.
@@ -3285,8 +3338,10 @@ extension Components {
             case cancelledActive = "cancelled_active"
         }
         /// Entitlement names (doc 12 §3.1), in registry order. Mirrors the keys of shared-kernel
-        /// `ENTITLEMENTS` value for value; the apps read each name's kind and levels from the
-        /// generated kernel.
+        /// `ENTITLEMENTS` value for value. Each name's kind and, for a `level` entitlement, its
+        /// level order live in the shared-kernel entitlement registry (`registry/entitlements.json`).
+        /// TypeScript reads both generated. Swift and Kotlin read the kind from the generated
+        /// kernel, and the level order once the kernel emitter covers it.
         ///
         ///
         /// - Remark: Generated from `#/components/schemas/EntitlementName`.

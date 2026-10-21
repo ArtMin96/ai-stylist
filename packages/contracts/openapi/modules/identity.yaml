@@ -501,10 +501,14 @@ paths:
     get:
       operationId: listConsents
       tags: [identity]
-      summary: The caller's current consent per purpose
+      summary: The consent the server applies to the caller, per purpose
       description: |
-        The latest consent record of each purpose the caller has decided on, cursor-paginated.
-        A purpose with no record is absent and its default applies (doc 11 §7.2). The full
+        One `ResolvedConsent` for every purpose of `ConsentPurpose`, in that order (doc 11
+        §7.2), cursor-paginated; with the default `limit` one page holds every purpose. Each
+        entry gives the state the server applies now: the caller's latest record for the
+        purpose, or, when the caller has none, the purpose's default. The server decides each
+        default (some depend on the jurisdiction), and `withdrawable` marks the purposes the
+        person cannot withdraw, so the apps read both here and never hard-code them. The full
         append-only history is part of the data export.
       security:
         - bearerAuth: []
@@ -513,7 +517,7 @@ paths:
         - $ref: './platform.yaml#/components/parameters/Limit'
       responses:
         '200':
-          description: One page of current consent records
+          description: One page of the consent the server applies, one entry per purpose
           content:
             application/json:
               schema:
@@ -562,9 +566,10 @@ paths:
           $ref: './platform.yaml#/components/responses/Unauthenticated'
         '403':
           description: |
-            `CONSENT_REQUIRED`: a withdrawal of `core_service` is refused. This consent is
-            required to use the app (doc 11 §7.2). Deleting the account is what ends this
-            processing (`POST /v1/me/deletion`).
+            `CONSENT_REQUIRED`: a withdrawal of a purpose that `listConsents` marks
+            `withdrawable: false` (`core_service` today) is refused. That consent is required
+            to use the app (doc 11 §7.2). Deleting the account is what ends this processing
+            (`POST /v1/me/deletion`).
           content:
             application/problem+json:
               schema:
@@ -753,6 +758,19 @@ paths:
         default:
           $ref: './platform.yaml#/components/responses/Problem'
 components:
+  securitySchemes:
+    deletionCancelToken:
+      type: apiKey
+      in: header
+      name: Deletion-Cancel-Token
+      description: |
+        Cancel credential of the `deletion_pending` sign-in outcome
+        (`DeletionPending.cancelToken`), sent in the `Deletion-Cancel-Token` header. Its only
+        use is `DELETE /v1/me/deletion`, the cancel of an account deletion inside its 7-day
+        grace window (DEC-65); every other operation refuses it. Single purpose, and valid for
+        at most 15 minutes from issue, no longer than an access token (doc 11 §4.2); the exact
+        expiry is `DeletionPending.cancelTokenExpiresAt`. It opens no session. A header of its
+        own, not `Authorization`, so it can never be taken for a session token.
   responses:
     DataExportLimited:
       description: |
@@ -1328,17 +1346,73 @@ components:
           $ref: '#/components/schemas/ConsentSurface'
         locale:
           $ref: './platform.yaml#/components/schemas/Locale'
+    ResolvedConsent:
+      type: object
+      description: |
+        The consent the server applies to one purpose now (doc 11 §7.2). `record` is the
+        caller's latest consent record for the purpose; `granted` is then true exactly when
+        `record.status` is `granted`. Without a record, `record` is absent and `granted` is
+        the purpose's default, which the server decides (some defaults depend on the
+        jurisdiction).
+      required: [purpose, granted, withdrawable]
+      properties:
+        purpose:
+          $ref: '#/components/schemas/ConsentPurpose'
+        granted:
+          type: boolean
+          description: Whether the server processes the caller's data for this purpose now.
+        withdrawable:
+          type: boolean
+          description: |
+            `false` for a purpose the person cannot withdraw while the account exists:
+            `recordConsent` refuses its withdrawal with 403 `CONSENT_REQUIRED`, and the app
+            offers no switch to turn it off.
+        record:
+          $ref: '#/components/schemas/ConsentRecord'
     ConsentPage:
       type: object
+      description: |
+        One page of `listConsents`: one entry per purpose, in `ConsentPurpose` order, across
+        the pages.
       required: [items, nextCursor]
       properties:
         items:
           type: array
           items:
-            $ref: '#/components/schemas/ConsentRecord'
+            $ref: '#/components/schemas/ResolvedConsent'
         nextCursor:
           type: [string, 'null']
           description: Cursor of the next page; null on the last page.
+      examples:
+        - items:
+            - purpose: core_service
+              granted: true
+              withdrawable: false
+              record:
+                id: cns_00000000000000000000000001
+                purpose: core_service
+                status: granted
+                policyVersion: 0.1.0-draft
+                grantedAt: '2026-10-21T10:00:00Z'
+                surface: onboarding_consent
+                locale: en-GB
+            - { purpose: face_processing, granted: false, withdrawable: true }
+            - { purpose: location_precise, granted: false, withdrawable: true }
+            - purpose: analytics
+              granted: false
+              withdrawable: true
+              record:
+                id: cns_00000000000000000000000002
+                purpose: analytics
+                status: withdrawn
+                policyVersion: 0.1.0-draft
+                withdrawnAt: '2026-10-21T10:01:00Z'
+                surface: settings_privacy
+                locale: en-GB
+            - { purpose: ai_generative, granted: false, withdrawable: true }
+            - { purpose: notifications, granted: false, withdrawable: true }
+            - { purpose: training_data, granted: false, withdrawable: true }
+          nextCursor: null
     PolicyVersion:
       type: string
       description: Version of the policy text the person saw, e.g. `0.1.0-draft`.

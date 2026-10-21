@@ -3,7 +3,10 @@
 // link that is minted per read and never cached (AC-5), the grace-window end and the 410 refusals
 // of the deletion operations (AC-6, AC-7), the recent sign-in that export and deletion share, and
 // Idempotency-Key on every mutating operation (AC-8), never replayed where the answer carries a
-// credential (security review of P03-T02, B1–B3).
+// credential (security review of P03-T02, B1–B3), and a consent list that gives every purpose
+// its server-applied state and withdrawability, so the apps hard-code neither (architecture
+// review of P03-T02).
+import { CONSENT_PURPOSES } from '@ai-stylist/shared-kernel';
 import { Ajv2020 } from 'ajv/dist/2020.js';
 import addFormats from 'ajv-formats';
 import { describe, expect, it } from 'vitest';
@@ -126,6 +129,50 @@ describe('resolved entitlements', () => {
     expect(state({ state: 'free', entitlements: [] }), JSON.stringify(state.errors)).toBe(true);
     expect(state({ state: 'expired', entitlements: [] })).toBe(false);
     expect(schemas.EntitlementState.required).toEqual(['state', 'entitlements']);
+  });
+});
+
+describe('consents (architecture review)', () => {
+  const validatePage = validatorFor('ConsentPage');
+  const validateEntry = validatorFor('ResolvedConsent');
+  const consents = bundle.paths['/v1/me/consents'];
+  const [example] = schemas.ConsentPage.examples;
+
+  it('the example answers one valid entry per purpose, in ConsentPurpose order', () => {
+    expect(validatePage(example), JSON.stringify(validatePage.errors)).toBe(true);
+    expect(example?.items.map((entry) => entry.purpose)).toEqual([...CONSENT_PURPOSES]);
+  });
+
+  it('an entry with a record follows it; one without a record is the default', () => {
+    const withRecord = example?.items.filter((entry) => entry.record !== undefined) ?? [];
+    expect(withRecord.length).toBeGreaterThan(0);
+    for (const entry of withRecord) {
+      expect(entry.record?.purpose).toBe(entry.purpose);
+      expect(entry.granted).toBe(entry.record?.status === 'granted');
+    }
+    const defaulted = { purpose: 'notifications', granted: false, withdrawable: true };
+    expect(validateEntry(defaulted), JSON.stringify(validateEntry.errors)).toBe(true);
+  });
+
+  it('every entry says whether the person can withdraw it', () => {
+    expect(schemas.ResolvedConsent.required).toEqual(['purpose', 'granted', 'withdrawable']);
+    expect(validateEntry({ purpose: 'core_service', granted: true })).toBe(false);
+    expect(validateEntry({ purpose: 'core_service', granted: true, withdrawable: 'no' })).toBe(
+      false,
+    );
+  });
+
+  it('the list answers stay open; the decision and its append-only record keep their shape', () => {
+    expect(schemas.ResolvedConsent).not.toHaveProperty('additionalProperties');
+    expect(schemas.ConsentPage).not.toHaveProperty('additionalProperties');
+    expect(consents.get.responses['200'].content['application/json'].schema.$ref).toBe(
+      `${SCHEMA_REF}ConsentPage`,
+    );
+    expect(schemas.ConsentChange.additionalProperties).toBe(false);
+    const recorded = consents.post.responses;
+    for (const answer of [recorded['200'], recorded['201']]) {
+      expect(answer.content['application/json'].schema.$ref).toBe(`${SCHEMA_REF}ConsentRecord`);
+    }
   });
 });
 

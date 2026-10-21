@@ -30,7 +30,7 @@ import kotlinx.serialization.Serializable
 
 
 /**
- * Entitlement names (doc 12 §3.1), in registry order. Mirrors the keys of shared-kernel `ENTITLEMENTS` value for value; the apps read each name's kind and levels from the generated kernel. 
+ * Entitlement names (doc 12 §3.1), in registry order. Mirrors the keys of shared-kernel `ENTITLEMENTS` value for value. Each name's kind and, for a `level` entitlement, its level order live in the shared-kernel entitlement registry (`registry/entitlements.json`). TypeScript reads both generated. Swift and Kotlin read the kind from the generated kernel, and the level order once the kernel emitter covers it. 
  *
  * Values: CLOSET_PERIOD_MAX_ITEMS,RECS_PERIOD_DAILY_LIMIT,RECS_PERIOD_CONTEXT_PERIOD_FULL,RECS_PERIOD_FUTURE_PLANNING,AVATAR_PERIOD_LEVEL,TRYON_PERIOD_GENERATIVE,VIEWS_PERIOD_MISSING_VIEW,CREDITS_PERIOD_MONTHLY,CREDITS_PERIOD_TOPUP,CREDITS_PERIOD_WEIGHTS,TRENDS_PERIOD_LEVEL,ANALYTICS_PERIOD_WARDROBE,PROCESSING_PERIOD_PRIORITY,EXPORT_PERIOD_MULTI_ANGLE,FEATURES_PERIOD_EARLY_ACCESS,CHAT_PERIOD_STYLIST,DATA_PERIOD_EXPORT
  */

@@ -763,8 +763,8 @@
       "get": {
         "operationId": "listConsents",
         "tags": ["identity"],
-        "summary": "The caller's current consent per purpose",
-        "description": "The latest consent record of each purpose the caller has decided on, cursor-paginated.\nA purpose with no record is absent and its default applies (doc 11 §7.2). The full\nappend-only history is part of the data export.\n",
+        "summary": "The consent the server applies to the caller, per purpose",
+        "description": "One `ResolvedConsent` for every purpose of `ConsentPurpose`, in that order (doc 11\n§7.2), cursor-paginated; with the default `limit` one page holds every purpose. Each\nentry gives the state the server applies now: the caller's latest record for the\npurpose, or, when the caller has none, the purpose's default. The server decides each\ndefault (some depend on the jurisdiction), and `withdrawable` marks the purposes the\nperson cannot withdraw, so the apps read both here and never hard-code them. The full\nappend-only history is part of the data export.\n",
         "security": [
           {
             "bearerAuth": []
@@ -780,7 +780,7 @@
         ],
         "responses": {
           "200": {
-            "description": "One page of current consent records",
+            "description": "One page of the consent the server applies, one entry per purpose",
             "content": {
               "application/json": {
                 "schema": {
@@ -853,7 +853,7 @@
             "$ref": "#/components/responses/Unauthenticated"
           },
           "403": {
-            "description": "`CONSENT_REQUIRED`: a withdrawal of `core_service` is refused. This consent is\nrequired to use the app (doc 11 §7.2). Deleting the account is what ends this\nprocessing (`POST /v1/me/deletion`).\n",
+            "description": "`CONSENT_REQUIRED`: a withdrawal of a purpose that `listConsents` marks\n`withdrawable: false` (`core_service` today) is refused. That consent is required\nto use the app (doc 11 §7.2). Deleting the account is what ends this processing\n(`POST /v1/me/deletion`).\n",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -1301,7 +1301,7 @@
             }
           },
           "400": {
-            "description": "`MEASUREMENT_IMPLAUSIBLE`: a value lies outside its hard bounds (shared-kernel\n`registry/measurement-definitions.json`, doc 07 §3.3). Nothing of the request is\nstored. `errors[]` points at each refused value (e.g. `/measurements/height/value`)\nand never repeats it (doc 11 §8). `VALIDATION_FAILED`: the body breaks this schema,\ne.g. an estimated or derived value without `confidence`.\n",
+            "description": "`MEASUREMENT_IMPLAUSIBLE`: a value lies outside its hard bounds (shared-kernel\n`registry/measurement-definitions.json`, doc 07 §3.3). Nothing of the request is\nstored. `errors[]` points at each refused value (e.g. `/measurements/height/value`)\nand never repeats it (doc 11 §8). `VALIDATION_FAILED`: the body breaks this schema,\ne.g. an `estimated` or `derived` value without `confidence`.\n",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -2283,12 +2283,6 @@
           }
         }
       },
-      "ConsentRecordId": {
-        "type": "string",
-        "description": "Consent record id, a prefixed ULID (`cns_`, shared-kernel `ID_PREFIXES.consentRecord`).",
-        "pattern": "^cns_[0-7][0-9A-HJKMNP-TV-Z]{25}$",
-        "examples": ["cns_01J9Z3K8X2Q7N5V4B6C8D0E1F3"]
-      },
       "ConsentPurpose": {
         "type": "string",
         "description": "Consent purpose keys of doc 11 §7.2, in that order. Mirrors shared-kernel\n`CONSENT_PURPOSES` value for value (pinned by packages/contracts/tests/kernel-enums.test.ts).\n",
@@ -2301,6 +2295,12 @@
           "notifications",
           "training_data"
         ]
+      },
+      "ConsentRecordId": {
+        "type": "string",
+        "description": "Consent record id, a prefixed ULID (`cns_`, shared-kernel `ID_PREFIXES.consentRecord`).",
+        "pattern": "^cns_[0-7][0-9A-HJKMNP-TV-Z]{25}$",
+        "examples": ["cns_01J9Z3K8X2Q7N5V4B6C8D0E1F3"]
       },
       "ConsentStatus": {
         "type": "string",
@@ -2359,21 +2359,103 @@
           }
         }
       },
+      "ResolvedConsent": {
+        "type": "object",
+        "description": "The consent the server applies to one purpose now (doc 11 §7.2). `record` is the\ncaller's latest consent record for the purpose; `granted` is then true exactly when\n`record.status` is `granted`. Without a record, `record` is absent and `granted` is\nthe purpose's default, which the server decides (some defaults depend on the\njurisdiction).\n",
+        "required": ["purpose", "granted", "withdrawable"],
+        "properties": {
+          "purpose": {
+            "$ref": "#/components/schemas/ConsentPurpose"
+          },
+          "granted": {
+            "type": "boolean",
+            "description": "Whether the server processes the caller's data for this purpose now."
+          },
+          "withdrawable": {
+            "type": "boolean",
+            "description": "`false` for a purpose the person cannot withdraw while the account exists:\n`recordConsent` refuses its withdrawal with 403 `CONSENT_REQUIRED`, and the app\noffers no switch to turn it off.\n"
+          },
+          "record": {
+            "$ref": "#/components/schemas/ConsentRecord"
+          }
+        }
+      },
       "ConsentPage": {
         "type": "object",
+        "description": "One page of `listConsents`: one entry per purpose, in `ConsentPurpose` order, across\nthe pages.\n",
         "required": ["items", "nextCursor"],
         "properties": {
           "items": {
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/ConsentRecord"
+              "$ref": "#/components/schemas/ResolvedConsent"
             }
           },
           "nextCursor": {
             "type": ["string", "null"],
             "description": "Cursor of the next page; null on the last page."
           }
-        }
+        },
+        "examples": [
+          {
+            "items": [
+              {
+                "purpose": "core_service",
+                "granted": true,
+                "withdrawable": false,
+                "record": {
+                  "id": "cns_00000000000000000000000001",
+                  "purpose": "core_service",
+                  "status": "granted",
+                  "policyVersion": "0.1.0-draft",
+                  "grantedAt": "2026-10-21T10:00:00Z",
+                  "surface": "onboarding_consent",
+                  "locale": "en-GB"
+                }
+              },
+              {
+                "purpose": "face_processing",
+                "granted": false,
+                "withdrawable": true
+              },
+              {
+                "purpose": "location_precise",
+                "granted": false,
+                "withdrawable": true
+              },
+              {
+                "purpose": "analytics",
+                "granted": false,
+                "withdrawable": true,
+                "record": {
+                  "id": "cns_00000000000000000000000002",
+                  "purpose": "analytics",
+                  "status": "withdrawn",
+                  "policyVersion": "0.1.0-draft",
+                  "withdrawnAt": "2026-10-21T10:01:00Z",
+                  "surface": "settings_privacy",
+                  "locale": "en-GB"
+                }
+              },
+              {
+                "purpose": "ai_generative",
+                "granted": false,
+                "withdrawable": true
+              },
+              {
+                "purpose": "notifications",
+                "granted": false,
+                "withdrawable": true
+              },
+              {
+                "purpose": "training_data",
+                "granted": false,
+                "withdrawable": true
+              }
+            ],
+            "nextCursor": null
+          }
+        ]
       },
       "ConsentChange": {
         "type": "object",
@@ -2637,6 +2719,12 @@
           }
         ]
       },
+      "MeasurementConfidence": {
+        "type": "number",
+        "description": "Confidence in the value, from 0 to 1.",
+        "minimum": 0,
+        "maximum": 1
+      },
       "LengthUnit": {
         "type": "string",
         "description": "Stored length unit. Mirrors shared-kernel `LENGTH_UNITS`.",
@@ -2647,15 +2735,9 @@
         "description": "Who produced the value (doc 06 §3.1): the person (`user`), an estimate, or a value\nderived from other values. Mirrors shared-kernel `MEASUREMENT_SOURCES`.\n",
         "enum": ["user", "estimated", "derived"]
       },
-      "MeasurementConfidence": {
-        "type": "number",
-        "description": "Confidence in the value, from 0 to 1.",
-        "minimum": 0,
-        "maximum": 1
-      },
       "LengthMeasurement": {
         "type": "object",
-        "description": "A body length in centimetres with its provenance (doc 06 §3.1). `confidence` is always\npresent when `source` is `estimated` or `derived`, and optional for `user`.\n",
+        "description": "A body length in centimetres with its provenance (doc 06 §3.1). The schema requires\n`confidence` when `source` is `estimated` or `derived`; it is optional for `user`.\n",
         "required": ["value", "unit", "source"],
         "properties": {
           "value": {
@@ -2675,6 +2757,24 @@
             "type": "string",
             "format": "date-time",
             "description": "When the value was taken or entered."
+          }
+        },
+        "if": {
+          "type": "object",
+          "required": ["source"],
+          "properties": {
+            "source": {
+              "enum": ["estimated", "derived"]
+            }
+          }
+        },
+        "then": {
+          "type": "object",
+          "required": ["confidence"],
+          "properties": {
+            "confidence": {
+              "$ref": "#/components/schemas/MeasurementConfidence"
+            }
           }
         },
         "examples": [
@@ -2704,7 +2804,7 @@
       },
       "MassMeasurement": {
         "type": "object",
-        "description": "A body mass in kilograms with its provenance (doc 06 §3.1). `confidence` is always\npresent when `source` is `estimated` or `derived`, and optional for `user`.\n",
+        "description": "A body mass in kilograms with its provenance (doc 06 §3.1). The schema requires\n`confidence` when `source` is `estimated` or `derived`; it is optional for `user`.\n",
         "required": ["value", "unit", "source"],
         "properties": {
           "value": {
@@ -2724,6 +2824,24 @@
             "type": "string",
             "format": "date-time",
             "description": "When the value was taken or entered."
+          }
+        },
+        "if": {
+          "type": "object",
+          "required": ["source"],
+          "properties": {
+            "source": {
+              "enum": ["estimated", "derived"]
+            }
+          }
+        },
+        "then": {
+          "type": "object",
+          "required": ["confidence"],
+          "properties": {
+            "confidence": {
+              "$ref": "#/components/schemas/MeasurementConfidence"
+            }
           }
         }
       },
@@ -3202,7 +3320,7 @@
       },
       "EntitlementName": {
         "type": "string",
-        "description": "Entitlement names (doc 12 §3.1), in registry order. Mirrors the keys of shared-kernel\n`ENTITLEMENTS` value for value; the apps read each name's kind and levels from the\ngenerated kernel.\n",
+        "description": "Entitlement names (doc 12 §3.1), in registry order. Mirrors the keys of shared-kernel\n`ENTITLEMENTS` value for value. Each name's kind and, for a `level` entitlement, its\nlevel order live in the shared-kernel entitlement registry (`registry/entitlements.json`).\nTypeScript reads both generated. Swift and Kotlin read the kind from the generated\nkernel, and the level order once the kernel emitter covers it.\n",
         "enum": [
           "closet.max_items",
           "recs.daily_limit",

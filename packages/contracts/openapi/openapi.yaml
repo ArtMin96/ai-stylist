@@ -90,4 +90,4 @@ components:
     bearerAuth:
       $ref: './modules/platform.yaml#/components/securitySchemes/bearerAuth'
     deletionCancelToken:
-      $ref: './modules/platform.yaml#/components/securitySchemes/deletionCancelToken'
+      $ref: './modules/identity.yaml#/components/securitySchemes/deletionCancelToken'

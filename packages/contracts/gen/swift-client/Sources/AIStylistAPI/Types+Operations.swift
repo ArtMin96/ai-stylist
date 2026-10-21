@@ -3970,10 +3970,14 @@ public enum Operations {
             }
         }
     }
-    /// The caller's current consent per purpose
+    /// The consent the server applies to the caller, per purpose
     ///
-    /// The latest consent record of each purpose the caller has decided on, cursor-paginated.
-    /// A purpose with no record is absent and its default applies (doc 11 §7.2). The full
+    /// One `ResolvedConsent` for every purpose of `ConsentPurpose`, in that order (doc 11
+    /// §7.2), cursor-paginated; with the default `limit` one page holds every purpose. Each
+    /// entry gives the state the server applies now: the caller's latest record for the
+    /// purpose, or, when the caller has none, the purpose's default. The server decides each
+    /// default (some depend on the jurisdiction), and `withdrawable` marks the purposes the
+    /// person cannot withdraw, so the apps read both here and never hard-code them. The full
     /// append-only history is part of the data export.
     ///
     ///
@@ -4060,7 +4064,7 @@ public enum Operations {
                     self.body = body
                 }
             }
-            /// One page of current consent records
+            /// One page of the consent the server applies, one entry per purpose
             ///
             /// - Remark: Generated from `#/paths//v1/me/consents/get(listConsents)/responses/200`.
             ///
@@ -4438,9 +4442,10 @@ public enum Operations {
                     self.body = body
                 }
             }
-            /// `CONSENT_REQUIRED`: a withdrawal of `core_service` is refused. This consent is
-            /// required to use the app (doc 11 §7.2). Deleting the account is what ends this
-            /// processing (`POST /v1/me/deletion`).
+            /// `CONSENT_REQUIRED`: a withdrawal of a purpose that `listConsents` marks
+            /// `withdrawable: false` (`core_service` today) is refused. That consent is required
+            /// to use the app (doc 11 §7.2). Deleting the account is what ends this processing
+            /// (`POST /v1/me/deletion`).
             ///
             ///
             /// - Remark: Generated from `#/paths//v1/me/consents/post(recordConsent)/responses/403`.
@@ -6917,7 +6922,7 @@ public enum Operations {
             /// `registry/measurement-definitions.json`, doc 07 §3.3). Nothing of the request is
             /// stored. `errors[]` points at each refused value (e.g. `/measurements/height/value`)
             /// and never repeats it (doc 11 §8). `VALIDATION_FAILED`: the body breaks this schema,
-            /// e.g. an estimated or derived value without `confidence`.
+            /// e.g. an `estimated` or `derived` value without `confidence`.
             ///
             ///
             /// - Remark: Generated from `#/paths//v1/me/measurements/put(replaceMeasurements)/responses/400`.

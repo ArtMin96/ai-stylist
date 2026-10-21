@@ -152,7 +152,7 @@ paths:
             `registry/measurement-definitions.json`, doc 07 §3.3). Nothing of the request is
             stored. `errors[]` points at each refused value (e.g. `/measurements/height/value`)
             and never repeats it (doc 11 §8). `VALIDATION_FAILED`: the body breaks this schema,
-            e.g. an estimated or derived value without `confidence`.
+            e.g. an `estimated` or `derived` value without `confidence`.
           content:
             application/problem+json:
               schema:
@@ -519,8 +519,8 @@ components:
     LengthMeasurement:
       type: object
       description: |
-        A body length in centimetres with its provenance (doc 06 §3.1). `confidence` is always
-        present when `source` is `estimated` or `derived`, and optional for `user`.
+        A body length in centimetres with its provenance (doc 06 §3.1). The schema requires
+        `confidence` when `source` is `estimated` or `derived`; it is optional for `user`.
       required: [value, unit, source]
       properties:
         value:
@@ -536,6 +536,18 @@ components:
           type: string
           format: date-time
           description: When the value was taken or entered.
+      if:
+        type: object
+        required: [source]
+        properties:
+          source:
+            enum: [estimated, derived]
+      then:
+        type: object
+        required: [confidence]
+        properties:
+          confidence:
+            $ref: '#/components/schemas/MeasurementConfidence'
       examples:
         - { value: 176, unit: cm, source: user }
         - { value: 176, unit: cm, source: estimated, confidence: 0.6 }
@@ -543,8 +555,8 @@ components:
     MassMeasurement:
       type: object
       description: |
-        A body mass in kilograms with its provenance (doc 06 §3.1). `confidence` is always
-        present when `source` is `estimated` or `derived`, and optional for `user`.
+        A body mass in kilograms with its provenance (doc 06 §3.1). The schema requires
+        `confidence` when `source` is `estimated` or `derived`; it is optional for `user`.
       required: [value, unit, source]
       properties:
         value:
@@ -560,6 +572,18 @@ components:
           type: string
           format: date-time
           description: When the value was taken or entered.
+      if:
+        type: object
+        required: [source]
+        properties:
+          source:
+            enum: [estimated, derived]
+      then:
+        type: object
+        required: [confidence]
+        properties:
+          confidence:
+            $ref: '#/components/schemas/MeasurementConfidence'
     LengthUnit:
       type: string
       description: Stored length unit. Mirrors shared-kernel `LENGTH_UNITS`.

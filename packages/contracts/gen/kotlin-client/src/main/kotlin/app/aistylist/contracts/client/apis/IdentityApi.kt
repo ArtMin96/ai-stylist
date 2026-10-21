@@ -176,10 +176,10 @@ interface IdentityApi {
 
     /**
      * GET v1/me/consents
-     * The caller&#39;s current consent per purpose
-     * The latest consent record of each purpose the caller has decided on, cursor-paginated. A purpose with no record is absent and its default applies (doc 11 §7.2). The full append-only history is part of the data export. 
+     * The consent the server applies to the caller, per purpose
+     * One &#x60;ResolvedConsent&#x60; for every purpose of &#x60;ConsentPurpose&#x60;, in that order (doc 11 §7.2), cursor-paginated; with the default &#x60;limit&#x60; one page holds every purpose. Each entry gives the state the server applies now: the caller&#39;s latest record for the purpose, or, when the caller has none, the purpose&#39;s default. The server decides each default (some depend on the jurisdiction), and &#x60;withdrawable&#x60; marks the purposes the person cannot withdraw, so the apps read both here and never hard-code them. The full append-only history is part of the data export. 
      * Responses:
-     *  - 200: One page of current consent records
+     *  - 200: One page of the consent the server applies, one entry per purpose
      *  - 401: `UNAUTHENTICATED`: the access token is missing, malformed, expired or revoked. The client renews the session once with its refresh token (`refreshSession`); if the renewal is refused too, it signs in again. 
      *  - 410: `ACCOUNT_DELETED`: the account is deleted or its deletion is in progress. The client erases everything it stores for the account and returns to its signed-out start; it tells this reply from 401 by the status alone. A 410 is cacheable by default (RFC 9110 §15.5.11), so the reply carries `Cache-Control: no-store` and must not be cached. 
      *  - 429: `RATE_LIMITED`: a rate limit was hit (doc 11 §14); retry after `Retry-After` seconds.
@@ -218,7 +218,7 @@ interface IdentityApi {
      *  - 200: Unchanged; the current record
      *  - 201: The appended record
      *  - 401: `UNAUTHENTICATED`: the access token is missing, malformed, expired or revoked. The client renews the session once with its refresh token (`refreshSession`); if the renewal is refused too, it signs in again. 
-     *  - 403: `CONSENT_REQUIRED`: a withdrawal of `core_service` is refused. This consent is required to use the app (doc 11 §7.2). Deleting the account is what ends this processing (`POST /v1/me/deletion`). 
+     *  - 403: `CONSENT_REQUIRED`: a withdrawal of a purpose that `listConsents` marks `withdrawable: false` (`core_service` today) is refused. That consent is required to use the app (doc 11 §7.2). Deleting the account is what ends this processing (`POST /v1/me/deletion`). 
      *  - 409: `IDEMPOTENCY_KEY_REUSED` when the `Idempotency-Key` was already used with a different request; `VERSION_MISMATCH` when `If-Match` no longer matches the stored version; `CONFLICT` otherwise. Exception: on an operation whose answer carries a credential (marked `x-idempotency-replay: never`), any repeated `Idempotency-Key` is refused with `CONFLICT`, never answered from the store, and the client starts that step again. 
      *  - 410: `ACCOUNT_DELETED`: the account is deleted or its deletion is in progress. The client erases everything it stores for the account and returns to its signed-out start; it tells this reply from 401 by the status alone. A 410 is cacheable by default (RFC 9110 §15.5.11), so the reply carries `Cache-Control: no-store` and must not be cached. 
      *  - 429: `RATE_LIMITED`: a rate limit was hit (doc 11 §14); retry after `Retry-After` seconds.

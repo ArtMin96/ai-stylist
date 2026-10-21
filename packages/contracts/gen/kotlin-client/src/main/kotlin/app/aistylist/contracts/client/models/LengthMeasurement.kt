@@ -32,7 +32,7 @@ import kotlinx.serialization.SerialName
 import kotlinx.serialization.Contextual
 
 /**
- * A body length in centimetres with its provenance (doc 06 §3.1). `confidence` is always present when `source` is `estimated` or `derived`, and optional for `user`. 
+ * A body length in centimetres with its provenance (doc 06 §3.1). The schema requires `confidence` when `source` is `estimated` or `derived`; it is optional for `user`. 
  *
  * @param `value` The length, in `unit`.
  * @param unit 

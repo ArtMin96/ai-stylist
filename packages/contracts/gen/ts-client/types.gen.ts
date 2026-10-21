@@ -413,11 +413,6 @@ export type RecoveryCompletionRequest = {
 };
 
 /**
- * Consent record id, a prefixed ULID (`cns_`, shared-kernel `ID_PREFIXES.consentRecord`).
- */
-export type ConsentRecordId = string;
-
-/**
  * Consent purpose keys of doc 11 §7.2, in that order. Mirrors shared-kernel
  * `CONSENT_PURPOSES` value for value (pinned by packages/contracts/tests/kernel-enums.test.ts).
  *
@@ -430,6 +425,11 @@ export type ConsentPurpose =
   | 'ai_generative'
   | 'notifications'
   | 'training_data';
+
+/**
+ * Consent record id, a prefixed ULID (`cns_`, shared-kernel `ID_PREFIXES.consentRecord`).
+ */
+export type ConsentRecordId = string;
 
 export type ConsentStatus = 'granted' | 'withdrawn';
 
@@ -470,8 +470,37 @@ export type ConsentRecord = {
   locale: Locale;
 };
 
+/**
+ * The consent the server applies to one purpose now (doc 11 §7.2). `record` is the
+ * caller's latest consent record for the purpose; `granted` is then true exactly when
+ * `record.status` is `granted`. Without a record, `record` is absent and `granted` is
+ * the purpose's default, which the server decides (some defaults depend on the
+ * jurisdiction).
+ *
+ */
+export type ResolvedConsent = {
+  purpose: ConsentPurpose;
+  /**
+   * Whether the server processes the caller's data for this purpose now.
+   */
+  granted: boolean;
+  /**
+   * `false` for a purpose the person cannot withdraw while the account exists:
+   * `recordConsent` refuses its withdrawal with 403 `CONSENT_REQUIRED`, and the app
+   * offers no switch to turn it off.
+   *
+   */
+  withdrawable: boolean;
+  record?: ConsentRecord;
+};
+
+/**
+ * One page of `listConsents`: one entry per purpose, in `ConsentPurpose` order, across
+ * the pages.
+ *
+ */
 export type ConsentPage = {
-  items: Array<ConsentRecord>;
+  items: Array<ResolvedConsent>;
   /**
    * Cursor of the next page; null on the last page.
    */
@@ -678,6 +707,11 @@ export type ProfileVersionConflict = ProblemDetails & {
 };
 
 /**
+ * Confidence in the value, from 0 to 1.
+ */
+export type MeasurementConfidence = number;
+
+/**
  * Stored length unit. Mirrors shared-kernel `LENGTH_UNITS`.
  */
 export type LengthUnit = 'cm';
@@ -690,13 +724,8 @@ export type LengthUnit = 'cm';
 export type MeasurementSource = 'user' | 'estimated' | 'derived';
 
 /**
- * Confidence in the value, from 0 to 1.
- */
-export type MeasurementConfidence = number;
-
-/**
- * A body length in centimetres with its provenance (doc 06 §3.1). `confidence` is always
- * present when `source` is `estimated` or `derived`, and optional for `user`.
+ * A body length in centimetres with its provenance (doc 06 §3.1). The schema requires
+ * `confidence` when `source` is `estimated` or `derived`; it is optional for `user`.
  *
  */
 export type LengthMeasurement = {
@@ -719,8 +748,8 @@ export type LengthMeasurement = {
 export type MassUnit = 'kg';
 
 /**
- * A body mass in kilograms with its provenance (doc 06 §3.1). `confidence` is always
- * present when `source` is `estimated` or `derived`, and optional for `user`.
+ * A body mass in kilograms with its provenance (doc 06 §3.1). The schema requires
+ * `confidence` when `source` is `estimated` or `derived`; it is optional for `user`.
  *
  */
 export type MassMeasurement = {
@@ -1034,8 +1063,10 @@ export type EntitlementLifecycleState =
 
 /**
  * Entitlement names (doc 12 §3.1), in registry order. Mirrors the keys of shared-kernel
- * `ENTITLEMENTS` value for value; the apps read each name's kind and levels from the
- * generated kernel.
+ * `ENTITLEMENTS` value for value. Each name's kind and, for a `level` entitlement, its
+ * level order live in the shared-kernel entitlement registry (`registry/entitlements.json`).
+ * TypeScript reads both generated. Swift and Kotlin read the kind from the generated
+ * kernel, and the level order once the kernel emitter covers it.
  *
  */
 export type EntitlementName =
@@ -2130,7 +2161,7 @@ export type ListConsentsError = ListConsentsErrors[keyof ListConsentsErrors];
 
 export type ListConsentsResponses = {
   /**
-   * One page of current consent records
+   * One page of the consent the server applies, one entry per purpose
    */
   200: ConsentPage;
 };
@@ -2171,9 +2202,10 @@ export type RecordConsentErrors = {
    */
   401: ProblemDetails;
   /**
-   * `CONSENT_REQUIRED`: a withdrawal of `core_service` is refused. This consent is
-   * required to use the app (doc 11 §7.2). Deleting the account is what ends this
-   * processing (`POST /v1/me/deletion`).
+   * `CONSENT_REQUIRED`: a withdrawal of a purpose that `listConsents` marks
+   * `withdrawable: false` (`core_service` today) is refused. That consent is required
+   * to use the app (doc 11 §7.2). Deleting the account is what ends this processing
+   * (`POST /v1/me/deletion`).
    *
    */
   403: ProblemDetails;
@@ -2730,7 +2762,7 @@ export type ReplaceMeasurementsErrors = {
    * `registry/measurement-definitions.json`, doc 07 §3.3). Nothing of the request is
    * stored. `errors[]` points at each refused value (e.g. `/measurements/height/value`)
    * and never repeats it (doc 11 §8). `VALIDATION_FAILED`: the body breaks this schema,
-   * e.g. an estimated or derived value without `confidence`.
+   * e.g. an `estimated` or `derived` value without `confidence`.
    *
    */
   400: ProblemDetails;

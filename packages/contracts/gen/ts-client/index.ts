@@ -246,6 +246,7 @@ export type {
   RequestDataExportErrors,
   RequestDataExportResponse,
   RequestDataExportResponses,
+  ResolvedConsent,
   ResolvedEntitlement,
   ResourceVersion,
   RevokeSessionsResult,

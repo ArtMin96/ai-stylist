@@ -24,14 +24,14 @@
 
 package app.aistylist.contracts.client.models
 
-import app.aistylist.contracts.client.models.ConsentRecord
+import app.aistylist.contracts.client.models.ResolvedConsent
 
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Contextual
 
 /**
- * 
+ * One page of `listConsents`: one entry per purpose, in `ConsentPurpose` order, across the pages. 
  *
  * @param items 
  * @param nextCursor Cursor of the next page; null on the last page.
@@ -41,7 +41,7 @@ import kotlinx.serialization.Contextual
 data class ConsentPage (
 
     @SerialName(value = "items")
-    val items: kotlin.collections.List<ConsentRecord>,
+    val items: kotlin.collections.List<ResolvedConsent>,
 
     /* Cursor of the next page; null on the last page. */
     @SerialName(value = "nextCursor")

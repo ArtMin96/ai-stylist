@@ -2793,10 +2793,14 @@ public struct Client: APIProtocol {
             }
         )
     }
-    /// The caller's current consent per purpose
+    /// The consent the server applies to the caller, per purpose
     ///
-    /// The latest consent record of each purpose the caller has decided on, cursor-paginated.
-    /// A purpose with no record is absent and its default applies (doc 11 §7.2). The full
+    /// One `ResolvedConsent` for every purpose of `ConsentPurpose`, in that order (doc 11
+    /// §7.2), cursor-paginated; with the default `limit` one page holds every purpose. Each
+    /// entry gives the state the server applies now: the caller's latest record for the
+    /// purpose, or, when the caller has none, the purpose's default. The server decides each
+    /// default (some depend on the jurisdiction), and `withdrawable` marks the purposes the
+    /// person cannot withdraw, so the apps read both here and never hard-code them. The full
     /// append-only history is part of the data export.
     ///
     ///

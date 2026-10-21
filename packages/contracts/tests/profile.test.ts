@@ -64,6 +64,27 @@ describe('measurement schemas (AC-3)', () => {
     }
   });
 
+  it.each(MEASUREMENT_SOURCES.filter((source) => source !== 'user'))(
+    'refuses a %s value without confidence, in a measurement and in a replacement',
+    (source) => {
+      const length = { value: syntheticValue('height'), unit: 'cm', source };
+      const mass = { value: syntheticValue('weight'), unit: 'kg', source };
+      const replace = validatorFor('MeasurementsReplacement');
+      expect(validateLength(length)).toBe(false);
+      expect(validateMass(mass)).toBe(false);
+      expect(replace({ measurements: { height: length } })).toBe(false);
+      expect(validateLength({ ...length, confidence: 0.5 })).toBe(true);
+      expect(validateMass({ ...mass, confidence: 0.5 })).toBe(true);
+    },
+  );
+
+  it('accepts a user value without confidence', () => {
+    const height = { value: syntheticValue('height'), unit: 'cm', source: 'user' };
+    const weight = { value: syntheticValue('weight'), unit: 'kg', source: 'user' };
+    expect(validateLength(height), JSON.stringify(validateLength.errors)).toBe(true);
+    expect(validateMass(weight), JSON.stringify(validateMass.errors)).toBe(true);
+  });
+
   it('keeps confidence within 0..1', () => {
     const estimated = { value: syntheticValue('chest'), unit: 'cm', source: 'estimated' };
     expect(validateLength({ ...estimated, confidence: 1 })).toBe(true);

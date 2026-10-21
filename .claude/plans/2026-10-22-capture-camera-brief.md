@@ -506,3 +506,4 @@ Answered by the owner through the question tool on 2026-10-22. These override ea
   reason `body-parts-missing` and `cap-hint-body-*` hints (§4, §6, §9), ML Kit Pose 18.0.0-beta5
   dependency (§1), synthetic worn frames + keypoint-file fallback (§11), C3/C31 (§12), Q-A–Q-F
   marked decided (§14); proposal updated and applied to docs 02, 10 and P06.
+- 2026-10-22: owner narrowed scope to the camera tool only; analytics events and other non-blocking work are deferred to the owner.

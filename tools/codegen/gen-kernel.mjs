@@ -1,11 +1,14 @@
 #!/usr/bin/env node
 // shared-kernel JSON registries -> TypeScript / Swift / Kotlin / Python constants (OQ-15, DEC-55).
 //
-//   packages/shared-kernel/registry/{reason-codes,entitlements,units}.json  (+ *.schema.json)
-//     ts      -> <out>/{reason-codes,entitlements,units}.ts   (packages/shared-kernel/src/gen)
-//     swift   -> <out>/{ReasonCodes,Entitlements,Units}.swift (swift-client Sources/AIStylistKernel)
-//     kotlin  -> <out>/{ReasonCodes,Entitlements,Units}.kt    (kotlin-client kernel/..., package
-//                app.aistylist.contracts.kernel)
+//   packages/shared-kernel/registry/{reason-codes,entitlements,units,capture-rules}.json
+//   (+ *.schema.json)
+//     ts      -> <out>/{reason-codes,entitlements,units}.ts   (packages/shared-kernel/src/gen;
+//                capture-rules is validated but has no TS output: only the native apps read it)
+//     swift   -> <out>/{ReasonCodes,Entitlements,Units,CaptureRules}.swift (swift-client
+//                Sources/AIStylistKernel)
+//     kotlin  -> <out>/{ReasonCodes,Entitlements,Units,CaptureRules}.kt (kotlin-client kernel/...,
+//                package app.aistylist.contracts.kernel)
 //   packages/shared-kernel/registry/{forbidden-log-keys,forbidden-log-keys.examples,log-redaction,
 //   correlation}.json  (+ the `correlationId` rule of packages/contracts/events/envelope.json)
 //     python  -> <out>/{__init__,forbidden_log_keys,log_redaction,correlation}.py
@@ -30,6 +33,7 @@ import { emitKotlin } from './kernel/emit-kotlin.mjs';
 import { emitPython } from './kernel/emit-python.mjs';
 import { emitSwift } from './kernel/emit-swift.mjs';
 import { emitTs } from './kernel/emit-ts.mjs';
+import { isIntKey, isNumberBlock } from './kernel/naming.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 // Registry files resolve through the package export `@ai-stylist/shared-kernel/registry/*` (a root
@@ -37,7 +41,7 @@ const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..')
 const requireRegistry = createRequire(import.meta.url);
 const registryFile = (file) =>
   requireRegistry.resolve(`@ai-stylist/shared-kernel/registry/${file}`);
-const NATIVE_REGISTRIES = ['reason-codes', 'entitlements', 'units'];
+const NATIVE_REGISTRIES = ['reason-codes', 'entitlements', 'units', 'capture-rules'];
 const WORKER_REGISTRIES = [
   'forbidden-log-keys',
   'forbidden-log-keys.examples',
@@ -159,6 +163,8 @@ function checkReferences(reg, errors) {
       }
     }
   }
+  const cr = reg['capture-rules'];
+  if (cr) checkCaptureRules(cr, errors);
   const lr = reg['log-redaction'];
   if (lr) {
     // Emitted verbatim for Python's `re.ASCII`; the shared-kernel tests run every vector in TS.
@@ -166,6 +172,54 @@ function checkReferences(reg, errors) {
       if (/[^\x20-\x7e]/.test(lr[key])) {
         errors.push(`log-redaction.json: ${key}: must be printable ASCII`);
       }
+    }
+  }
+}
+
+/** capture-rules: declared modes, body parts, hints and lock reasons, and Int-typed keys. */
+function checkCaptureRules(cr, errors) {
+  const where = 'capture-rules.json';
+  for (const [key, hint] of Object.entries(cr.hints)) {
+    if (hint.lockReason === undefined) continue;
+    if (!cr.lockReasons.includes(hint.lockReason)) {
+      errors.push(`${where}: hints.${key}: lockReason '${hint.lockReason}' is not declared`);
+    }
+    if (hint.kind !== 'blocking') {
+      errors.push(`${where}: hints.${key}: only a blocking hint has a lockReason`);
+    }
+  }
+  for (const reason of cr.lockReasons) {
+    if (!Object.values(cr.hints).some((h) => h.lockReason === reason)) {
+      errors.push(`${where}: lockReasons: '${reason}' has no hint`);
+    }
+  }
+  for (const [id, fam] of Object.entries(cr.families)) {
+    const at = `${where}: families.${id}`;
+    for (const m of fam.modes) {
+      if (!cr.captureModes.includes(m)) errors.push(`${at}: mode '${m}' is not declared`);
+    }
+    for (const p of fam.wornRequiredParts) {
+      if (!cr.bodyParts.includes(p)) errors.push(`${at}: body part '${p}' is not declared`);
+    }
+    const needsBodyCheck = fam.wornRequiredParts.length > 0;
+    if (needsBodyCheck && !fam.modes.includes('worn')) {
+      errors.push(`${at}: wornRequiredParts without the worn mode`);
+    }
+    if ((fam.wornHint !== undefined) !== needsBodyCheck) {
+      errors.push(`${at}: wornHint is required exactly when wornRequiredParts is not empty`);
+    }
+    if (fam.wornHint !== undefined && cr.hints[fam.wornHint]?.lockReason !== 'body-parts-missing') {
+      errors.push(`${at}: wornHint '${fam.wornHint}' is not a body-parts-missing hint`);
+    }
+  }
+  // The emitters type these keys Int; a fraction would emit code that does not compile.
+  const numbers = Object.entries(cr).filter(([, v]) => typeof v === 'number');
+  for (const [block, values] of Object.entries(cr).filter(([, v]) => isNumberBlock(v))) {
+    numbers.push(...Object.entries(values).map(([k, v]) => [`${block}.${k}`, v]));
+  }
+  for (const [key, value] of numbers) {
+    if (isIntKey(key) && !Number.isInteger(value)) {
+      errors.push(`${where}: ${key}: keys ending in Ms, Px or Evaluations must be integers`);
     }
   }
 }

@@ -293,6 +293,7 @@ typography:
       fontWeight: 600,
       lineHeight: '14px',
       letterSpacing: '0.08em',
+      textTransform: uppercase,
       dynamicType: caption2,
       m3Roles: [labelSmall],
     }
@@ -2681,7 +2682,7 @@ Sizes are pt on iOS and sp on Android at 100 %; every style scales with Dynamic 
 | overline | Figtree     | 11 / 14     | 600    | +8 %, caps | .caption2        | labelSmall                                | TYPICAL DAY                              |
 | button   | Figtree     | 17 / 22     | 600    | 0          | .headline        | labelLarge                                | Wear this                                |
 
-Each of the 15 Material 3 type roles is filled by exactly one style, so Android's built-in components (the date picker, for example) set their text in Garderi type, not the M3 default. R2 has no style for `displayLarge`, `displayMedium` or `headlineLarge`: `display` also fills the first two, and `large-title-bar` (below) fills `headlineLarge`, so those components get the serif look. The frontmatter carries the same mapping per style: `dynamicType` is the iOS column without the dot, `m3Roles` the Android column as a list.
+Each of the 15 Material 3 type roles is filled by exactly one style, so Android's built-in components (the date picker, for example) set their text in Garderi type, not the M3 default. R2 has no style for `displayLarge`, `displayMedium` or `headlineLarge`: `display` also fills the first two, and `large-title-bar` (below) fills `headlineLarge`, so those components get the serif look. The frontmatter carries the same mapping per style: `dynamicType` is the iOS column without the dot, `m3Roles` the Android column as a list, and `textTransform: uppercase` the Tracking column's "caps" (the overline only; a style without it is drawn as written). The apps draw the caps and keep the words as written for screen readers.
 
 Component label styles (drawn on C01–C10, not on R2) each scale with the nearest R2 style above, at or just over their size (the "Scales with" column), and take its Dynamic Type style. Only `large-title-bar` fills an M3 role; the others fill none (`m3Roles: []`) and scale in sp with the font scale. Tracking is 0 for all.
 
@@ -2712,7 +2713,7 @@ Phone reference 390 × 844. One column; content width = screen − 40.
 
 - **Side margin** 20 at every width (320 to 430). Rows, cards and the outfit card stretch to width − 40.
 - **Spacing scale** (`spacing`, pt / dp): 4, 8, 12, 16, 20, 24, 32, 40, 48, 64. Roles on R2: 16 card padding, 20 screen side margin, 24 section gap. On Today, R3 measures section gap 8 (12 on pushed screens). A component padding or gap part that equals a step names it in the frontmatter (`padding: '0 {spacing.24}'`); heights and off-scale parts stay literal (owner 2026-10-21).
-- **Screen anatomy (R3):** content starts 8 below the OS safe area; large title 72 (padding 8 0 6, overline + `large-title-bar`, profile 44); context strip 44 with chips inside 44 targets; source line in Caption; outfit card radius 24, padding 14, gap 10; primary button 52, one per screen; action row 72 (radius 20, padding 8 6, buttons 56 tall, 48 min wide); section header 44 (Subhead + text action); alternatives rail 60, cards 164 wide, gap 10, scrolls past the right margin; tab bar 78 with the home-indicator zone inside its bottom 20.
+- **Screen anatomy (R3):** content starts 8 below the OS safe area; large title 72 (padding 8 0 6, overline caps + `large-title-bar`, profile 44); context strip 44 with chips inside 44 targets; source line in Caption; outfit card radius 24, padding 14, gap 10; primary button 52, one per screen; action row 72 (radius 20, padding 8 6, buttons 56 tall, 48 min wide); section header 44 (Subhead + text action); alternatives rail 60, cards 164 wide, gap 10, scrolls past the right margin; tab bar 78 with the home-indicator zone inside its bottom 20.
 - **Top bars:** top-level tabs use the large title 72, collapsing to the compact 52 bar (surface, bottom divider) on scroll and expanding at the top. Pushed screens use the standard 52 bar (back 44, centred title, at most one text action). Modals use the 56 bar (close 44 left, title + position, Save right). The tab bar never hides on scroll. iOS: large navigation title collapsing to inline · Android: M3 large top app bar collapsing to small.
 - **Navigation:** five tabs, Today (launch) · Closet · Capture (centre, opens the camera modal) · Discover · You, each with its own stack. The tab bar shows on every screen inside a tab, top level and pushed; it hides only in modal flows (onboarding, the Capture flow, Edit and correct, Paywall, Trial ended recap, Deletion pending). A sheet sits over its parent with the tab bar under the scrim. iOS: tab view, one navigation stack per tab, full-screen cover for modals, sheets with detents · Android: M3 navigation bar, one back stack per tab, full-screen dialog destination, modal bottom sheet.
 - **Bottom sheet:** max height 772 (top inset 72 of 844); short sheets fit content.
@@ -2896,7 +2897,7 @@ Every component is drawn in S1 and S2 on its canvas board, with states in this o
 
 ### Lists and rows (C07)
 
-- **Grouped list:** Overline section header, inset card radius 16 on surface, settings rows 52, divider inset 52, icon lg primary-text, value 15 secondary. **Plain list:** rows 52, full-width divider; pressed surface-2 radius 12.
+- **Grouped list:** section header in Overline caps, inset card radius 16 on surface, settings rows 52, divider inset 52, icon lg primary-text, value 15 secondary. **Plain list:** rows 52, full-width divider; pressed surface-2 radius 12.
 - **Toggle row** 64 (label 17 + helper 13, switch); **destructive row** 64 (error fg + icon + plain words; pressed error-bg).
 - **Detail row with confidence:** label 12/500 + value 15/600, confidence as text; low band on warning-bg with icon. **Provisional row:** estimated value with dashed underline + Provisional tag until confirmed; Confirm is a primary outline button, Compact.
 - **Device row** 64 (Sign out outlined 44; none on this device). **Item row** 72 (photo 56 radius 12, name 15/600, category · colour 13, availability tag 24, `AppTag`; unavailable mutes the photo, text stays readable). **Planned outfit row** (date 15/600, 3 thumbs 28 radius 8; flagged strip warning-bg + icon + "Rain now expected — review your plan"). **Collection row** 64 (3 overlapping thumbs).

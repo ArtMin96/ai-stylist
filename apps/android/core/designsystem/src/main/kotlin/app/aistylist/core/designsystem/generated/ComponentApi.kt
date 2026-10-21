@@ -33620,14 +33620,14 @@ object ComponentGallery {
                 size = BadgeSize.LARGE,
                 state = BadgeState.ENABLED,
                 testId = BadgeTestId.trialLargeEnabled,
-                label = "2",
+                label = "Trial · 2 days left",
             ),
             BadgeGalleryEntry(
                 variant = BadgeVariant.TRIAL_LAST_DAY,
                 size = BadgeSize.LARGE,
                 state = BadgeState.ENABLED,
                 testId = BadgeTestId.trialLastDayLargeEnabled,
-                label = "2",
+                label = "Trial · ends today",
             ),
         )
 

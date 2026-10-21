@@ -101,7 +101,8 @@ combinations:
     sizes: [regular]
     states: [enabled]
   # C08 draws it 18 high, 0 7, 11/18 600; the `badge` style (11/14 600) draws it inside the 18.
-  # DESIGN.md wins on the dark label: on-accent-dark (#0F1F1B), where C08 draws #1B1B19.
+  # C08 draws the dark label in on-accent-dark (#0F1F1B), as DESIGN.md does (canvas redrawn
+  # 2026-10-21; it drew #1B1B19 before).
   differs:
     sizes: [small]
     states: [enabled]

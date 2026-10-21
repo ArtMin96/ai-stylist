@@ -8,10 +8,11 @@
 # Not here: the tile badges (Processing, Waiting to sync, Needs attention, availability on tiles)
 # and the provenance badge, which C04 draws: C04's next component. The Capture-tab queue badge is
 # C05's.
-# Drift: C03 draws the dark count number in #1B1B19; DESIGN.md wins with on-error-dark (#0F1F1B).
+# C03 draws the dark count number in on-error-dark (#0F1F1B), as DESIGN.md does (canvas redrawn
+# 2026-10-21; it drew #1B1B19 before).
 # C03 fields used here: G1 no busy, G4 icons, G7 accessibility roles, G8 the colorRole prop
 # and per-variant props, G9 no touch target, G10 gallery.props, G11 sizes without an icon slot,
-# G12 the outer ring part. The generator implements every one.
+# G12 the outer ring part, G14 gallery.labels (the trial words). The generator implements every one.
 id: badge
 board: C03
 name: AppBadge
@@ -100,6 +101,9 @@ accessibility:
 gallery:
   title: Badges
   label: '2'
+  labels:
+    trial: 'Trial · 2 days left'
+    trial-last-day: 'Trial · ends today'
   props:
     hostSurface: '{colors.surface-2}'
   include: all

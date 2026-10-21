@@ -33094,14 +33094,14 @@ nonisolated public enum ComponentGallery {
       size: .large,
       state: .enabled,
       testId: BadgeTestId.trialLargeEnabled,
-      label: "2"
+      label: "Trial · 2 days left"
     ),
     BadgeGalleryEntry(
       variant: .trialLastDay,
       size: .large,
       state: .enabled,
       testId: BadgeTestId.trialLastDayLargeEnabled,
-      label: "2"
+      label: "Trial · ends today"
     ),
   ]
 

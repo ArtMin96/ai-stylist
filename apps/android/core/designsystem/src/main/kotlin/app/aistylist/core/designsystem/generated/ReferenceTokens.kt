@@ -232,7 +232,7 @@ object AppTypography {
             fontWeight = 600,
             lineHeight = 14.0,
             letterSpacing = 0.88,
-            textTransform = AppTextTransform.NONE,
+            textTransform = AppTextTransform.UPPERCASE,
             dynamicType = "caption2",
             m3Roles = listOf("labelSmall"),
         )

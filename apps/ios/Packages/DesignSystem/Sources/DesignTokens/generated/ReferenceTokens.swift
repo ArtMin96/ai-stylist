@@ -216,7 +216,7 @@ nonisolated public enum AppTypography {
     fontWeight: 600,
     lineHeight: 14.0,
     letterSpacing: 0.88,
-    textTransform: .none,
+    textTransform: .uppercase,
     dynamicType: "caption2",
     m3Roles: ["labelSmall"]
   )

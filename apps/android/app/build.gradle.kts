@@ -124,6 +124,8 @@ tasks.withType<PostHogCliExecTask>().configureEach {
 
 dependencies {
     implementation(project(":feature:home"))
+    // Not wired to a screen yet (phase B); the dependency puts :feature:capture under `lintDebug`.
+    implementation(project(":feature:capture"))
     implementation(project(":core:data"))
     implementation(project(":core:analytics"))
     implementation(project(":core:designsystem"))

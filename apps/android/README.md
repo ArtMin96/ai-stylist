@@ -10,6 +10,8 @@ React Native, no Kotlin Multiplatform and no 3D code.
 |---|---|
 | `app/` | `:app`, the application. Build types (= environments), `AppContainer` (the composition root), `MainActivity` (wraps everything in `AppTheme`), the window theme, manifest, and the PostHog adapter (`app/analytics/`, the only code that sees the PostHog SDK) |
 | `feature/home/` | `:feature:home`, the home screen: `HomeViewModel` (StateFlow) and `HomeScreen` (Compose), plus the debug tools (shown only when `AppContainer` injects the crash action: `debug`/`preview`) |
+| `feature/capture/` | `:feature:capture`, the guided capture camera (`.claude/plans/2026-10-22-capture-camera-brief.md`). Phase A is logic only, no screen yet. `domain/` is pure Kotlin with no Android imports, unit-tested on the JVM. It holds the live checks (`LiveChecks.kt`: Android cut-off = any box edge in the edge band, size per family, steadiness, light and tilt hints, the worn body check on ML Kit in-frame likelihood, and the import checks), the shutter lock state machine (`LockMachine.kt`), the "Take photo anyway" timer (`AnywayTimer.kt`), the hint presenter and speech gate (`HintPresenter.kt`), one camera step (`CaptureCameraSession.kt`, timed by an injected `CaptureClock`), the flow (`CaptureFlow.kt`: picker, underwear opt-in, back or pair step, batch, import) and the ports phase B implements (`CapturePorts.kt`: `CaptureObservationSource` for CameraX + ML Kit or test frames, `WornOptInStore` for the on-device opt-in). Every threshold and timing comes from the generated `CaptureRules`. `CaptureViewModel` wires it to a `StateFlow`. `:app` depends on it so `lintDebug` covers it; no screen opens it yet |
+| `core/kernel/` | `:core:kernel`, the **generated** shared-kernel registries (`app.aistylist.contracts.kernel`: reason codes, entitlement names, units, capture rules; ADR-0005), compiled from `packages/contracts/gen/kotlin-client/kernel` like `:core:api-client`. No sources of its own |
 | `core/data/` | `:core:data`, pure Kotlin. `parseAppConfig` (API_BASE_URL and PostHog key/host validation), `DataServices`, `VersionRepository` over the generated client |
 | `core/analytics/` | `:core:analytics`, pure Kotlin, SDK-free. The `Analytics` port, the consent gate (`ConsentGatedAnalytics`), the no-op sink, and the generated `AnalyticsTaxonomy` |
 | `core/api-client/` | `:core:api-client`. It compiles the **generated** client. It has no source code of its own |
@@ -23,7 +25,7 @@ React Native, no Kotlin Multiplatform and no 3D code.
 
 The generated client also has `app.aistylist.contracts.kernel` (reason codes, entitlement names and units, from
 `packages/shared-kernel/registry/*.json`; [ADR-0005](../../docs/adr/0005-shared-kernel-registries-for-native-clients.md))
-in `packages/contracts/gen/kotlin-client/kernel`. No module compiles it yet.
+in `packages/contracts/gen/kotlin-client/kernel`. `:core:kernel` compiles it; `:feature:capture` is its first consumer.
 
 ### Module graph
 
@@ -34,6 +36,7 @@ in `build-logic/convention/src/main/kotlin/RootConventionPlugin.kt`.
 :app ──► :feature:home ──► :core:data ──(implementation)──► :core:api-client (generated)
   │            ├─────────► :core:analytics (+ generated AnalyticsTaxonomy)
   │            └─────────► :core:designsystem (generated tokens, AppTheme, AppButton, AppIcon, AppChip, AppTag, AppBadge, AppReasonRow)
+  ├──► :feature:capture ──► :core:kernel (generated shared-kernel registries)
   ├──► :core:data, :core:analytics, :core:designsystem
   └──(debugImplementation)──► :core:designsystem-catalog ──► :core:designsystem
 ```

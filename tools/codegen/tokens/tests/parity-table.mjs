@@ -47,9 +47,9 @@ const KOTLIN = {
   entry: /^([A-Z0-9_]+)\((.*)\),$/,
   entryOpen: /^([A-Z0-9_]+)\($/,
   anonymous: /^companion object \{$/,
-  method: /^fun (\w+)\((.*)\): (.+) =$/,
+  method: /^fun (\w+)\((.*)\): (.+?) =( .+)?$/,
   methodOpen: /^fun (\w+)\($/,
-  methodClose: /^\): (.+) =$/,
+  methodClose: /^\): (.+?) =( .+)?$/,
 };
 
 const unescape = (id) => id.replace(/`/g, '');
@@ -167,7 +167,7 @@ function readKotlinLine(state, line) {
     state.entry = { name: m[1], args: [] };
   } else if ((m = KOTLIN.method.exec(line))) {
     addMethod(state, m[1], m[2], m[3]);
-    state.body = { lines: 1 };
+    state.body = m[4] ? null : { lines: 1 };
   } else if ((m = KOTLIN.value.exec(line))) startValue(state, m[1], m[2], m[3] ?? '');
   else if (!/^(object \w+|operator fun get\(.*)$/.test(line)) unread(line);
 }
@@ -268,7 +268,7 @@ function readKotlinMethod(state, line) {
   }
   addMethod(state, state.method.name, state.method.params.join(', '), close[1]);
   state.method = null;
-  state.body = { lines: 1 };
+  state.body = close[2] ? null : { lines: 1 };
 }
 
 function unread(line) {

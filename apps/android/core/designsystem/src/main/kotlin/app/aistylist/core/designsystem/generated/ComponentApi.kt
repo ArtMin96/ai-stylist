@@ -13194,8 +13194,7 @@ data class ChipSpec(
         variant: ChipVariant,
         size: ChipSize,
         state: ChipState,
-    ): ChipAppearance? =
-        looks.firstOrNull { it.variant == variant && it.size == size && it.state == state }?.appearance
+    ): ChipAppearance? = looks.firstOrNull { it.variant == variant && it.size == size && it.state == state }?.appearance
 
     private object Light {
         val spec: ChipSpec =
@@ -32002,8 +32001,7 @@ data class TagSpec(
         variant: TagVariant,
         size: TagSize,
         state: TagState,
-    ): TagAppearance? =
-        looks.firstOrNull { it.variant == variant && it.size == size && it.state == state }?.appearance
+    ): TagAppearance? = looks.firstOrNull { it.variant == variant && it.size == size && it.state == state }?.appearance
 
     private object Light {
         val spec: TagSpec =

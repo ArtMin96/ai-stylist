@@ -148,11 +148,14 @@ function findLines(find, pad) {
   const fits = single.length <= kotlin.limit && params.length < 2;
   const signature = fits ? [single] : [head, ...wrapped, `${pad}${tail}`];
   const match = find.keys.map(({ name }) => `it.${name} == ${ktIdent(name)}`).join(' && ');
-  return [
-    `${pad}/** ${docText(find.doc)} */`,
-    ...signature,
-    `${pad}${INDENT}${find.list}.firstOrNull { ${match} }?.${find.result}`,
-  ];
+  const body = `${find.list}.firstOrNull { ${match} }?.${find.result}`;
+  // ktlint_official keeps an expression body on the signature's last line when the joined line fits.
+  const joined = `${signature.at(-1)} ${body}`;
+  const lines =
+    joined.length <= kotlin.limit
+      ? [...signature.slice(0, -1), joined]
+      : [...signature, `${pad}${INDENT}${body}`];
+  return [`${pad}/** ${docText(find.doc)} */`, ...lines];
 }
 
 /** `colors[role]`: each role entry reads its own property, so no `when` over every role. */

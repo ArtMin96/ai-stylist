@@ -178,6 +178,15 @@ test('ButtonSpec: one instance per context, the lookup returns none for a disall
   assert.equal(firstGroups(spec, /ButtonLook\(/g).length, 14 * CONTEXT_IDS.length);
 });
 
+test('a Kotlin lookup body joins its signature line when the joined line fits, as ktlint_official does', () => {
+  // ChipAppearance is two characters shorter than ButtonAppearance, so its joined line is 119 wide.
+  const joined =
+    '    ): ChipAppearance? = looks.firstOrNull { it.variant == variant && it.size == size && it.state == state }?.appearance';
+  assert.ok(joined.length <= 120);
+  assert.ok(kotlin.includes(`\n${joined}\n`), 'the Chip lookup on one line');
+  assert.ok(!kotlin.includes('    ): ChipAppearance? =\n'), 'no wrap after = when it fits');
+});
+
 test('a look spells its combination as cases and its absent values as nil / null', () => {
   const light = block(swift, 'nonisolated private enum Light');
   const first = [

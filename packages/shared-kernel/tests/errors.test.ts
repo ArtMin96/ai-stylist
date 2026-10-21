@@ -47,4 +47,14 @@ describe('problem()', () => {
     expect(ERROR_CODES).toHaveProperty('ENTITLEMENT_REQUIRED');
     expect(ERROR_CODES).toHaveProperty('CONTEXT_STALE');
   });
+
+  it('includes the P03 codes: a terminal age refusal, a missing consent, a refused measurement', () => {
+    expect(ERROR_CODES).toMatchObject({
+      AGE_GATE_FAILED: { status: 403, title: 'Minimum age not met' },
+      CONSENT_REQUIRED: { status: 403, title: 'Consent required' },
+      MEASUREMENT_IMPLAUSIBLE: { status: 400, title: 'Measurement outside the accepted range' },
+    });
+    expect(ERROR_CODES.CONSENT_REQUIRED.status).toBe(ERROR_CODES.ENTITLEMENT_REQUIRED.status);
+    expect(ERROR_CODES.MEASUREMENT_IMPLAUSIBLE.status).toBe(ERROR_CODES.VALIDATION_FAILED.status);
+  });
 });

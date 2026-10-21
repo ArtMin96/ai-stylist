@@ -15,6 +15,19 @@ export const ERROR_CODES = {
   CLOSET_LIMIT_REACHED: { status: 409, title: 'Closet item limit reached' },
   /** Feature gated by an entitlement the caller lacks (doc 06 §2, doc 12). */
   ENTITLEMENT_REQUIRED: { status: 403, title: 'Entitlement required' },
+  /**
+   * Signup refused below the minimum age (DEC-60). 403, not 400: the refusal is terminal, so a
+   * client must not offer to re-enter the birth year (P03 phase §5).
+   */
+  AGE_GATE_FAILED: { status: 403, title: 'Minimum age not met' },
+  /** Needs a consent purpose the caller has not granted (doc 11 §7.2); 403 like ENTITLEMENT_REQUIRED. */
+  CONSENT_REQUIRED: { status: 403, title: 'Consent required' },
+  /**
+   * A measurement outside its hard bounds (registry/measurement-definitions.json; doc 07 §3.3
+   * severity 1): refused, not stored. 400 like VALIDATION_FAILED, with `errors[]` naming the field;
+   * never echo the value (doc 11 §8).
+   */
+  MEASUREMENT_IMPLAUSIBLE: { status: 400, title: 'Measurement outside the accepted range' },
   /** Context facts too old to decide on (doc 06 §2). */
   CONTEXT_STALE: { status: 409, title: 'Context is stale' },
   /** Account is deleted or deletion is in progress (doc 06 §8). */

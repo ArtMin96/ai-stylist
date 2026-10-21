@@ -1,0 +1,54 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://contracts.ai-stylist.app/shared-kernel/registry/measurement-definitions.schema.json",
+  "title": "MeasurementDefinitionRegistry",
+  "description": "Body measurement definitions (planning/07 §3.3; owner decision 2026-10-13): each measurement id names its unit dimension, its stored (canonical) unit and its hard bounds. Both bounds are inclusive: a value equal to a bound is accepted. A value outside them is refused and never stored, never clamped (doc 07 §3.3 severity 1). No conditional range is registered. Ids are stable: never rename or reuse one. packages/shared-kernel/tests also check what a schema cannot express: min < max and unit equals the dimension's canonical unit in units.json.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["measurements"],
+  "properties": {
+    "$schema": { "type": "string" },
+    "measurements": {
+      "type": "object",
+      "description": "Measurement id (snake_case, the wire key) to its definition",
+      "minProperties": 1,
+      "propertyNames": { "pattern": "^[a-z][a-z0-9]*(_[a-z0-9]+)*$" },
+      "additionalProperties": { "$ref": "#/$defs/MeasurementDefinition" }
+    }
+  },
+  "$defs": {
+    "MeasurementDefinition": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["dimension", "unit", "min", "max"],
+      "properties": {
+        "dimension": {
+          "type": "string",
+          "description": "Unit dimension from units.json",
+          "enum": ["length", "mass"]
+        },
+        "unit": {
+          "type": "string",
+          "description": "Stored unit: the dimension's canonical unit (cm for length, kg for mass)",
+          "enum": ["cm", "kg"]
+        },
+        "min": {
+          "type": "number",
+          "exclusiveMinimum": 0,
+          "description": "Smallest accepted value, inclusive, in unit"
+        },
+        "max": {
+          "type": "number",
+          "exclusiveMinimum": 0,
+          "description": "Largest accepted value, inclusive, in unit"
+        }
+      },
+      "if": {
+        "properties": { "dimension": { "const": "length" } },
+        "required": ["dimension"]
+      },
+      "then": { "properties": { "unit": { "const": "cm" } } },
+      "else": { "properties": { "unit": { "const": "kg" } } }
+    }
+  }
+}

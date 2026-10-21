@@ -1,0 +1,15 @@
+{
+  "$schema": "./measurement-definitions.schema.json",
+  "measurements": {
+    "height": { "dimension": "length", "unit": "cm", "min": 120, "max": 230 },
+    "weight": { "dimension": "mass", "unit": "kg", "min": 30, "max": 300 },
+    "chest": { "dimension": "length", "unit": "cm", "min": 60, "max": 200 },
+    "waist": { "dimension": "length", "unit": "cm", "min": 45, "max": 200 },
+    "hips": { "dimension": "length", "unit": "cm", "min": 55, "max": 200 },
+    "inseam": { "dimension": "length", "unit": "cm", "min": 40, "max": 120 },
+    "shoulder": { "dimension": "length", "unit": "cm", "min": 25, "max": 70 },
+    "sleeve": { "dimension": "length", "unit": "cm", "min": 40, "max": 100 },
+    "thigh": { "dimension": "length", "unit": "cm", "min": 30, "max": 120 },
+    "neck": { "dimension": "length", "unit": "cm", "min": 25, "max": 70 }
+  }
+}

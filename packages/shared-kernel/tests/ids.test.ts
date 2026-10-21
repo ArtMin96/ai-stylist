@@ -23,6 +23,15 @@ describe('ID_PREFIXES', () => {
       event: 'evt',
     });
   });
+
+  it('covers the P03 records: consent, audit entry, export and deletion requests', () => {
+    expect(ID_PREFIXES).toMatchObject({
+      consentRecord: 'cns',
+      auditEntry: 'aud',
+      exportRequest: 'xpt',
+      deletionRequest: 'del',
+    });
+  });
 });
 
 describe('newId / parseId', () => {

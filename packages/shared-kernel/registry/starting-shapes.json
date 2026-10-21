@@ -1,0 +1,16 @@
+{
+  "$schema": "./starting-shapes.schema.json",
+  "baseMesh": "anny-adult-v1",
+  "default": "from_measurements",
+  "shapes": {
+    "from_measurements": {
+      "description": "Start from the person's own measurements (doc 07 §3.1 \"start from my measurements\")"
+    },
+    "broad_shouldered": {
+      "description": "Preset labelled by silhouette: broad-shouldered (doc 07 §3.1)"
+    },
+    "curvy": { "description": "Preset labelled by silhouette: curvy (doc 07 §3.1)" },
+    "straight": { "description": "Preset labelled by silhouette: straight (doc 07 §3.1)" },
+    "softer": { "description": "Preset labelled by silhouette: softer (doc 07 §3.1)" }
+  }
+}

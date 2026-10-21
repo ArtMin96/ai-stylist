@@ -1,6 +1,7 @@
 // JSON Schema validation for the shared-kernel registries that TS reads straight from JSON (no
-// generated TS): forbidden-log-keys (+ its word-split examples), log-redaction, correlation, owners
-// and feature-flags. They live in packages/shared-kernel/registry; Ajv lives here (as it does for
+// generated TS): forbidden-log-keys (+ its word-split examples), log-redaction, correlation, owners,
+// feature-flags, measurement-definitions and starting-shapes. They live in
+// packages/shared-kernel/registry; Ajv lives here (as it does for
 // gen-kernel.mjs, which also validates the first four before emitting them for Python; their
 // Python output is pinned by kernel-python.test.ts). The cross-references a schema cannot express
 // are checked in packages/shared-kernel/tests.
@@ -170,6 +171,71 @@ describe('feature-flags.json', async () => {
     const { offBehavior: _off, ...noOffBehavior } = rollout;
     expect(one(noOffBehavior)).toBe(false);
     expect(one(rollout, 'demoOutboxFlow')).toBe(false);
+  });
+});
+
+describe('measurement-definitions.json', async () => {
+  const { data, check, errors } = await validatorFor('measurement-definitions');
+  const length = { dimension: 'length', unit: 'cm', min: 10, max: 20 };
+  const mass = { dimension: 'mass', unit: 'kg', min: 10, max: 20 };
+  const one = (definition: unknown, id = 'fixture_length') =>
+    check({ measurements: { [id]: definition } });
+
+  it('validates against its schema', () => {
+    expect(check(data), errors()).toBe(true);
+    expect(one(length), errors()).toBe(true);
+    expect(one(mass, 'fixture_mass'), errors()).toBe(true);
+  });
+
+  it('requires the canonical unit of the dimension', () => {
+    expect(one({ ...length, unit: 'kg' })).toBe(false);
+    expect(one({ ...mass, unit: 'cm' })).toBe(false);
+    expect(one({ ...length, unit: 'inches' })).toBe(false);
+  });
+
+  it('rejects an unknown dimension, a zero, negative or non-number bound and a missing bound', () => {
+    expect(one({ ...length, dimension: 'temperature', unit: 'celsius' })).toBe(false);
+    for (const min of [0, -1, '10']) {
+      expect(one({ ...length, min }), JSON.stringify(min)).toBe(false);
+    }
+    const { max: _dropped, ...noMax } = length;
+    expect(one(noMax)).toBe(false);
+  });
+
+  it('rejects a non-snake id, an empty registry and unknown fields', () => {
+    expect(one(length, 'Height')).toBe(false);
+    expect(one(length, 'body-height')).toBe(false);
+    expect(check({ measurements: {} })).toBe(false);
+    expect(one({ ...length, conditionalRange: [12, 18] })).toBe(false);
+    expect(check({ measurements: { fixture_length: length }, notes: 'x' })).toBe(false);
+  });
+});
+
+describe('starting-shapes.json', async () => {
+  const { data, check, errors } = await validatorFor('starting-shapes');
+  const shape = { description: 'fixture' };
+  const minimal = { baseMesh: 'fixture-mesh-v1', default: 'shape_a', shapes: { shape_a: shape } };
+
+  it('validates against its schema', () => {
+    expect(check(data), errors()).toBe(true);
+    expect(check(minimal), errors()).toBe(true);
+  });
+
+  it('rejects an empty shape map, non-snake shape ids and a shape without a description', () => {
+    expect(check({ ...minimal, shapes: {} })).toBe(false);
+    for (const id of ['broad-shouldered', 'Curvy']) {
+      expect(check({ ...minimal, shapes: { [id]: shape } }), id).toBe(false);
+    }
+    expect(check({ ...minimal, shapes: { shape_a: {} } })).toBe(false);
+    expect(check({ ...minimal, shapes: { shape_a: { description: '' } } })).toBe(false);
+  });
+
+  it('rejects a non-kebab base mesh, a missing field and unknown fields', () => {
+    expect(check({ ...minimal, baseMesh: 'base/anny-adult-v1' })).toBe(false);
+    const { default: _dropped, ...noDefault } = minimal;
+    expect(check(noDefault)).toBe(false);
+    expect(check({ ...minimal, labels: {} })).toBe(false);
+    expect(check({ ...minimal, shapes: { shape_a: { ...shape, morphs: {} } } })).toBe(false);
   });
 });
 

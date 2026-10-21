@@ -112,3 +112,168 @@ export interface EventEnvelope {
    */
   payload: {};
 }
+
+// ---- events/identity.account.created.v1.event.json ----
+
+/**
+ * An account was created: `completeSignUp` accepted the birth year at the age gate (phase P03 §7, doc 06 §4). Producer `identity`; aggregate `user` with the account's `usr_` id; `subjectUserId` is that id. Ids and timestamps only, never an email, name or birth year (doc 06 §6, doc 11 §6). The full event is the envelope (envelope.json) narrowed by this schema; the payload is open content, so consumers ignore properties they do not know (doc 06 §4).
+ */
+export interface IdentityAccountCreatedV1 {
+  type: 'identity.account.created.v1';
+  payload: IdentityAccountCreatedV1Payload;
+}
+export interface IdentityAccountCreatedV1Payload {
+  /**
+   * The new account, a prefixed ULID (`usr_`, shared-kernel `ID_PREFIXES.user`); the API's `UserId`
+   */
+  userId: string;
+  /**
+   * When the account was created
+   */
+  createdAt: string;
+}
+
+// ---- events/identity.account.deletion_requested.v1.event.json ----
+
+/**
+ * An account deletion was requested, by the person or an admin (`actor`): sessions are revoked and the 7-day grace window starts (DEC-65). It starts the deletion cascade, which purges after `graceEndsAt` unless the request was cancelled (doc 06 §8, doc 11 §13.2, NFR-PRV-040). Producer `identity`; aggregate `user` with the account's `usr_` id; `subjectUserId` is that id. Ids and timestamps only (doc 06 §6). The full event is the envelope (envelope.json) narrowed by this schema; the payload is open content, so consumers ignore properties they do not know (doc 06 §4).
+ */
+export interface IdentityAccountDeletionRequestedV1 {
+  type: 'identity.account.deletion_requested.v1';
+  payload: IdentityAccountDeletionRequestedV1Payload;
+}
+export interface IdentityAccountDeletionRequestedV1Payload {
+  /**
+   * The account to delete, a prefixed ULID (`usr_`, shared-kernel `ID_PREFIXES.user`); the API's `UserId`
+   */
+  userId: string;
+  /**
+   * The deletion request, a prefixed ULID (`del_`, shared-kernel `ID_PREFIXES.deletionRequest`); the API's `AccountDeletionRequest.id`. A cancel ends this request; a later request gets a new id
+   */
+  deletionRequestId: string;
+  /**
+   * When the request was accepted; the API's `AccountDeletionRequest.requestedAt`
+   */
+  requestedAt: string;
+  /**
+   * End of the grace window; the purge starts after it. The API's `AccountDeletionRequest.graceEndsAt`
+   */
+  graceEndsAt: string;
+}
+
+// ---- events/identity.account.export_requested.v1.event.json ----
+
+/**
+ * A data export was requested (`requestDataExport`, doc 11 §13.1); it starts the export job chain (doc 04 §9.1 step 1). Producer `identity`; aggregate `user` with the account's `usr_` id; `subjectUserId` is that id. The payload holds the export id, the user id and the request time, nothing else (doc 06 §6). The full event is the envelope (envelope.json) narrowed by this schema; the payload is open content, so consumers ignore properties they do not know (doc 06 §4).
+ */
+export interface IdentityAccountExportRequestedV1 {
+  type: 'identity.account.export_requested.v1';
+  payload: IdentityAccountExportRequestedV1Payload;
+}
+export interface IdentityAccountExportRequestedV1Payload {
+  /**
+   * The requested export, a prefixed ULID (`xpt_`, shared-kernel `ID_PREFIXES.exportRequest`); the API's `DataExport.id`
+   */
+  exportId: string;
+  /**
+   * The account whose data is exported, a prefixed ULID (`usr_`, shared-kernel `ID_PREFIXES.user`); the API's `UserId`
+   */
+  userId: string;
+  /**
+   * When the export was requested; the API's `DataExport.requestedAt`
+   */
+  requestedAt: string;
+}
+
+// ---- events/identity.consent.changed.v1.event.json ----
+
+/**
+ * A consent record was appended: a person granted or withdrew consent for one purpose, so processing that depends on it starts or halts (doc 11 §7.1, NFR-PRV-020). Producer `identity`; aggregate `user` with the person's `usr_` id, so `sequence` orders one person's consent changes; `subjectUserId` is that id. The purpose travels as `purpose` (doc 11 §7.1); the envelope's `consentScope` is a different field. Ids, enums and timestamps only (doc 06 §6). The full event is the envelope (envelope.json) narrowed by this schema; the payload is open content, so consumers ignore properties they do not know (doc 06 §4).
+ */
+export interface IdentityConsentChangedV1 {
+  type: 'identity.consent.changed.v1';
+  payload: IdentityConsentChangedV1Payload;
+}
+export interface IdentityConsentChangedV1Payload {
+  /**
+   * The person whose consent changed, a prefixed ULID (`usr_`, shared-kernel `ID_PREFIXES.user`); the API's `UserId`
+   */
+  userId: string;
+  /**
+   * The appended consent record, a prefixed ULID (`cns_`, shared-kernel `ID_PREFIXES.consentRecord`); the API's `ConsentRecord.id`
+   */
+  consentRecordId: string;
+  /**
+   * The consent purpose (doc 11 §7.2); mirrors shared-kernel `CONSENT_PURPOSES` and the API's `ConsentPurpose`
+   */
+  purpose:
+    | 'core_service'
+    | 'face_processing'
+    | 'location_precise'
+    | 'analytics'
+    | 'ai_generative'
+    | 'notifications'
+    | 'training_data';
+  /**
+   * The purpose's state from this record on; the API's `ConsentStatus`
+   */
+  status: 'granted' | 'withdrawn';
+  /**
+   * Version of the policy text the person saw, e.g. `0.1.0-draft`; the API's `PolicyVersion`. The consent audit entry records it (doc 14 §10)
+   */
+  policyVersion: string;
+  /**
+   * When the record was appended: its `grantedAt` when `status` is `granted`, its `withdrawnAt` when `status` is `withdrawn`
+   */
+  changedAt: string;
+}
+
+// ---- events/profile.measurements.updated.v1.event.json ----
+
+/**
+ * A person's measurement set changed (`replaceMeasurements`): measurements were set, replaced or removed. Producer `profile`; aggregate `profile` with the profile's `prf_` id; `subjectUserId` is the person's `usr_` id. Names the changed measurements and their units, never a value: measurements are S3 (doc 11 §6) and an outbox payload holds ids and references only (doc 06 §6), so a consumer reads the current set through profile's public API. The full event is the envelope (envelope.json) narrowed by this schema; the payload is open content, so consumers ignore properties they do not know (doc 06 §4).
+ */
+export interface ProfileMeasurementsUpdatedV1 {
+  type: 'profile.measurements.updated.v1';
+  payload: ProfileMeasurementsUpdatedV1Payload;
+}
+export interface ProfileMeasurementsUpdatedV1Payload {
+  /**
+   * The person whose measurements changed, a prefixed ULID (`usr_`, shared-kernel `ID_PREFIXES.user`); the API's `UserId`
+   */
+  userId: string;
+  changed: ProfileMeasurementsUpdatedV1Changes;
+}
+/**
+ * The measurements this write set, replaced or removed, keyed by measurement id (shared-kernel `registry/measurement-definitions.json`, as in the API's `BodyMeasurements`). Each entry names the stored unit and nothing else
+ */
+export interface ProfileMeasurementsUpdatedV1Changes {
+  height?: ProfileMeasurementsUpdatedV1LengthChange;
+  weight?: ProfileMeasurementsUpdatedV1MassChange;
+  chest?: ProfileMeasurementsUpdatedV1LengthChange;
+  waist?: ProfileMeasurementsUpdatedV1LengthChange;
+  hips?: ProfileMeasurementsUpdatedV1LengthChange;
+  inseam?: ProfileMeasurementsUpdatedV1LengthChange;
+  shoulder?: ProfileMeasurementsUpdatedV1LengthChange;
+  sleeve?: ProfileMeasurementsUpdatedV1LengthChange;
+  thigh?: ProfileMeasurementsUpdatedV1LengthChange;
+  neck?: ProfileMeasurementsUpdatedV1LengthChange;
+}
+/**
+ * A changed length measurement: its stored unit, never its value
+ */
+export interface ProfileMeasurementsUpdatedV1LengthChange {
+  /**
+   * Stored length unit; mirrors shared-kernel `LENGTH_UNITS`
+   */
+  unit: 'cm';
+}
+/**
+ * A changed mass measurement: its stored unit, never its value
+ */
+export interface ProfileMeasurementsUpdatedV1MassChange {
+  /**
+   * Stored mass unit; mirrors shared-kernel `MASS_UNITS`
+   */
+  unit: 'kg';
+}

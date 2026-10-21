@@ -1,0 +1,59 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://contracts.ai-stylist.app/events/identity.account.deletion_requested.v1.json",
+  "title": "IdentityAccountDeletionRequestedV1",
+  "description": "An account deletion was requested, by the person or an admin (`actor`): sessions are revoked and the 7-day grace window starts (DEC-65). It starts the deletion cascade, which purges after `graceEndsAt` unless the request was cancelled (doc 06 §8, doc 11 §13.2, NFR-PRV-040). Producer `identity`; aggregate `user` with the account's `usr_` id; `subjectUserId` is that id. Ids and timestamps only (doc 06 §6). The full event is the envelope (envelope.json) narrowed by this schema; the payload is open content, so consumers ignore properties they do not know (doc 06 §4).",
+  "type": "object",
+  "required": ["type", "payload"],
+  "properties": {
+    "type": { "const": "identity.account.deletion_requested.v1" },
+    "payload": { "$ref": "#/$defs/IdentityAccountDeletionRequestedV1Payload" }
+  },
+  "$defs": {
+    "IdentityAccountDeletionRequestedV1Payload": {
+      "type": "object",
+      "required": ["userId", "deletionRequestId", "requestedAt", "graceEndsAt"],
+      "properties": {
+        "userId": {
+          "type": "string",
+          "description": "The account to delete, a prefixed ULID (`usr_`, shared-kernel `ID_PREFIXES.user`); the API's `UserId`",
+          "pattern": "^usr_[0-7][0-9A-HJKMNP-TV-Z]{25}$"
+        },
+        "deletionRequestId": {
+          "type": "string",
+          "description": "The deletion request, a prefixed ULID (`del_`, shared-kernel `ID_PREFIXES.deletionRequest`); the API's `AccountDeletionRequest.id`. A cancel ends this request; a later request gets a new id",
+          "pattern": "^del_[0-7][0-9A-HJKMNP-TV-Z]{25}$"
+        },
+        "requestedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "When the request was accepted; the API's `AccountDeletionRequest.requestedAt`"
+        },
+        "graceEndsAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "End of the grace window; the purge starts after it. The API's `AccountDeletionRequest.graceEndsAt`"
+        }
+      }
+    }
+  },
+  "examples": [
+    {
+      "id": "evt_00000000000000000000000013",
+      "type": "identity.account.deletion_requested.v1",
+      "occurredAt": "2026-10-21T09:03:00Z",
+      "producer": "identity",
+      "aggregate": { "kind": "user", "id": "usr_00000000000000000000000001" },
+      "sequence": 4,
+      "actor": { "kind": "user", "id": "usr_00000000000000000000000001" },
+      "subjectUserId": "usr_00000000000000000000000001",
+      "correlationId": "corr-deletion-requested-1",
+      "payload": {
+        "userId": "usr_00000000000000000000000001",
+        "deletionRequestId": "del_00000000000000000000000001",
+        "requestedAt": "2026-10-21T09:03:00Z",
+        "graceEndsAt": "2026-10-28T09:03:00Z"
+      }
+    }
+  ]
+}

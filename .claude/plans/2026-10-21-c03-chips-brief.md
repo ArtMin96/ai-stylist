@@ -322,3 +322,81 @@ Notes for the lanes:
   disabled look. The doc comment says a chip is disabled through `enabled`.
 - Shared drawing is extracted once, and every existing sibling uses it. No component keeps a
   private copy, and `just clone-check` passes.
+
+## Fix round 1 (2026-10-21, after the architecture and UI reviews)
+
+New generated inputs (f12816b, plus the lead's regeneration after the ui-designer's `DESIGN.md` and
+`badge.yaml` edits):
+
+- `ButtonAccessibility.minTouchTarget` and `ChipAccessibility.minTouchTarget`, a `Double`: 44 in
+  Swift, 48 in Kotlin.
+- `AppTextStyle.textTransform` (`AppTextTransform.none` / `.uppercase`). `typography.overline` is
+  `uppercase`.
+- `<C>GalleryEntry.label`, each cell's sample label (the trial badges get their own words).
+
+Both lanes:
+
+- **F1 Duplicates.** `just clone-check` must pass on the integrated tree. It fails today at 0.82 %
+  against 0.48 %. No clone pair may involve a file this branch added or changed in your scope.
+  - Extract shared code once: the preview scaffolding (state grid, light and dark frames,
+    playground rows), the gallery cell layout, face content and test helpers.
+  - Every existing sibling then uses it: AppButton previews, the gallery button and icon cells,
+    and the button tests.
+  - Never raise the threshold, and never add a jscpd ignore.
+- **F2 Settled rules:** the "Rules settled after the architecture review" section above.
+- **F3** Trial-pill text is centred when it wraps.
+- **F4 Text transform.** Every place that draws an `AppTextStyle` applies its `textTransform`. Only
+  the drawn text changes; the spoken name stays the caller's string.
+- **F5** Gallery cells read `entry.label`, not the component-wide `ComponentGallery.<c>Label`.
+- **F6 Touch target from the generated constant.**
+  - iOS deletes the literal 44: `AppButtonStyle` reads `ButtonAccessibility.minTouchTarget` and
+    `AppChipStyle` reads `ChipAccessibility.minTouchTarget`.
+  - Android keeps `minimumInteractiveComponentSize()`, fed from the generated value through
+    `LocalMinimumInteractiveComponentSize` in `AppButton` and `AppChip`. Confirm the API on
+    developer.android.com.
+
+iOS only:
+
+- **I1 (architecture, blocking)** `AppButtonFace` draws through `appShape`:
+  - remove its own fill, overlay and ring;
+  - drop the unused `shape`;
+  - name `AppButtonFace` in the `AppShapeStyle` header.
+- **I2** `AppButtonFace`'s label uses `AppComponentText`, with an alignment parameter.
+- **I3** One outside-ring helper, used by `AppFocusRing`, `AppBadge` and `AppChipFace`.
+- **I4** `GalleryButtonCell` and `GalleryIconCell` use `GalleryCaptionedCell`, and
+  `ButtonSectionPreview` becomes `GallerySectionPreview(component: .button)`.
+- **I5 Comments:**
+  - `AppChipFace.swift:10` and `apps/ios/README.md:79-80` say "(prefix, swatch)";
+  - the `AppIconTests.swift` comment names the SDK that `xcrun --sdk iphonesimulator --show-sdk-version` prints.
+- **I6** The Swift clones from `just clone-check`:
+  - `C03GalleryTests` (three internal clones);
+  - `AppChipFace` vs `AppTag`;
+  - `AppButtonStyle` vs `AppChipStyle`;
+  - `AppButtonPreviews` vs `AppChipPreviews`;
+  - `AppBadgePreviews` vs `AppTagPreviews`.
+
+Android only:
+
+- **A1 (UI B1, blocking)** At 200 % font scale the chip must keep its detail and trailing icon:
+  - the prefix, label and detail runs take `Modifier.weight(1f, fill = false)`;
+  - `ChipText` takes a modifier, and `ChipPartRun` becomes a `RowScope` extension;
+  - icons, swatch and `Gap` stay unweighted.
+
+  Test it with `fontScale = 2f` in a narrow box: the trailing icon has a width above 0, and the
+  detail is displayed.
+- **A2 (UI B2, blocking)** The `AppReasonRow` column fills the width (`fillMaxWidth()` after
+  `modifier`), as iOS does.
+- **A3** `AppButtonFace.kt:44-45` uses `animatedRoleColor`.
+- **A4** `GalleryButtons` and `GalleryIcons` use `GalleryCell`.
+- **A5** The chip playground turns an empty `prefix` or `detail` into null, as iOS does.
+- **A6** `AppChipTest.kt` (490 lines) is split into two files: roles and semantics, and the state
+  rule.
+- **A7** The Kotlin clones from `just clone-check`:
+  - previews: AppTag, AppBadge, AppChip, AppReasonRow and AppButton previews;
+  - gallery: `GalleryChips` vs `GalleryTags`, and `GalleryCell` / `AppReasonRow` vs
+    `GalleryTokenSections`;
+  - components: `AppFaceDrawing` / `AppChipFace` / `AppBadge` vs `AppTag`, and `AppButton` vs
+    `AppChip`;
+  - tests: `AppReasonRowTest` / `AppBadgeTest` vs `AppTagTest`, and `AppButtonTest` vs
+    `AppChipTest` / `GalleryTest`;
+  - `DesignSystemGalleryScreen` vs `HomeScreen`, only if the branch introduced it.

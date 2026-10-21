@@ -21,4 +21,5 @@ COPY_PHASE_STRIP = NO
 // MARK: Dev-only design-system catalog (AI-195)
 // project.yml builds the DesignSystemCatalog product with `link: false`; Dev alone links its object,
 // so Preview and Prod hold no catalog code (P0 spike, 2026-10-20: 0 symbols, 0 strings in Prod).
-OTHER_LDFLAGS = $(inherited) $(BUILT_PRODUCTS_DIR)/DesignSystemCatalog.o
+// The capture test harness (capture brief §11) is linked the same way: Dev only, never Preview or Prod.
+OTHER_LDFLAGS = $(inherited) $(BUILT_PRODUCTS_DIR)/DesignSystemCatalog.o $(BUILT_PRODUCTS_DIR)/CaptureDebug.o

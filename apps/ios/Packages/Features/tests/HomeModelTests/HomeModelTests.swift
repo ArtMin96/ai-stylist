@@ -56,13 +56,19 @@ private let version = APIVersion(
 private func makeModel(
   _ fetcher: StubVersionFetcher,
   debug: DebugTools? = nil,
-  openDesignSystemGallery: (() -> Void)? = nil
+  openDesignSystemGallery: (() -> Void)? = nil,
+  openCapture: (() -> Void)? = nil
 ) throws -> (HomeModel, ConsentGatedAnalytics, RecordingSink) {
   let sink = RecordingSink()
   let analytics = ConsentGatedAnalytics(sink: sink)
   let config = try AppConfig.parse(RawConfig(apiBaseURL: "http://api.test", appVersion: "0.1.0-test"))
   let services = AppServices(config: config, version: fetcher, analytics: analytics, debug: debug)
-  return (HomeModel(services: services, openDesignSystemGallery: openDesignSystemGallery), analytics, sink)
+  let model = HomeModel(
+    services: services,
+    openDesignSystemGallery: openDesignSystemGallery,
+    openCapture: openCapture
+  )
+  return (model, analytics, sink)
 }
 
 @Suite("HomeModel")
@@ -162,6 +168,22 @@ struct HomeModelTests {
     #expect(model.showsDesignSystemGallery)
     #expect(recorder.calls == 0)
     model.openDesignSystemGallery()
+    #expect(recorder.calls == 1)
+  }
+
+  @Test("hides 'Add item' when the app root passes no capture action (Preview, Prod)")
+  func noCaptureEntry() throws {
+    let (model, _, _) = try makeModel(StubVersionFetcher(.ok(version)))
+    #expect(model.showsCaptureEntry == false)
+    model.openCapture()
+  }
+
+  @Test("shows 'Add item' and opens the capture camera once per tap")
+  func captureEntryOpens() throws {
+    let recorder = CallRecorder()
+    let (model, _, _) = try makeModel(StubVersionFetcher(.ok(version)), openCapture: { recorder.record() })
+    #expect(model.showsCaptureEntry)
+    model.openCapture()
     #expect(recorder.calls == 1)
   }
 }

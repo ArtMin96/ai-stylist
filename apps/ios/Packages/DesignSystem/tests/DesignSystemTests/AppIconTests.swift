@@ -45,6 +45,8 @@ func replayMatchesScaledSegments() {
   for shape in glyph.shapes {
     let elements = replayed(AppIcon.path(for: shape))
     #expect(elements.map { $0.command } == shape.segments.map(\.command))
-    #expect(elements.map { $0.points } == shape.segments.map(\.points))
+    // Path keeps its points as Float on the iOS 26 SDK (Xcode 27.1), so both sides compare at that
+    // precision: each replayed point must be exactly the Float rounding of its segment point.
+    #expect(elements.map { $0.points.map(Float.init) } == shape.segments.map { $0.points.map(Float.init) })
   }
 }

@@ -31,15 +31,15 @@
   - Proposed on C11: guide outline, shutter lock states, hint catalogue.
 - Tokens:
   - Colours: camera-ground, camera-track, camera-paper, camera-ink, camera-yellow, scrim,
-    background-*, surface-*, surface-2-*, text-*, text-secondary-*, divider-*, outline-*, primary-*,
-    on-primary-*, primary-text-*, warning-fg-*, warning-bg-*.
+    background-_, surface-_, surface-2-_, text-_, text-secondary-_, divider-_, outline-_, primary-_,
+    on-primary-_, primary-text-_, warning-fg-_, warning-bg-_.
   - Type: headline, body, callout, subhead, subhead-medium, footnote, caption, caption-strong, label-sm,
     title-3, button.
   - Spacing: 4, 8, 12, 16, 20, 24.
   - Radius: rounded.2, rounded.16, rounded.24, rounded.full.
   - Elevation: snackbar-* (hint card), sheet-*.
   - Motion: press, sheet, reduced.
-  - Components: camera-mode-switch, camera-mode-selected-*, focus-ring-*, icon-md, icon-lg, icon-xl.
+  - Components: camera-mode-switch, camera-mode-selected-_, focus-ring-_, icon-md, icon-lg, icon-xl.
   - Missing tokens are under "Proposed values".
 - States:
   - Camera (cap-screen-camera):
@@ -100,21 +100,21 @@
 
 ## Measured values (canvas SC04 / C04 / C05 / C09; px = pt = dp at 390 wide)
 
-| Part | Value |
-|---|---|
-| Phone chrome | camera-ground, padding 18 20 30, column gap 14; top bar 44 (buttons 44, icon lg, stroke 1.7) |
-| Preview | 350 × 506, radius 24; S2 adds an inset 1 px divider-dark ring |
-| Guide box | inside the preview: top 68, sides 32, bottom 104 |
-| Guide stroke (proposed) | camera-paper 2 over camera-ink 4; locked dashed 6 on / 6 off, butt caps; unlocked solid, round caps and joins; no fill |
-| Step pill | 32 high, padding 0 14, radius full, label-sm 13/18 600, camera-ground / camera-paper, top 18 centred |
-| Hint card | left and right 16, bottom 18; padding 10 14; radius 16; gap 10; icon md 20; subhead-medium 15/20 500; up to 3 lines; camera-ground / camera-paper; elevation snackbar-* (S2 + 1 px divider-dark ring) |
-| Anyway slot | 70 high, reserved; reason footnote 13/18 camera-paper centred; gap 8; button Compact 44, padding 0 20, radius full, camera-track fill, camera-paper 15/20 600 |
-| Mode switch | C05: track camera-track, padding 4, gap 2; segment 36, padding 0 18; selected camera-paper (S2 camera-yellow) / camera-ink 600, others 500; hidden when only one mode |
-| Bottom row | 76, columns 1fr 76 1fr, padding 0 8; import 52 circle on camera-track, icon lg photo; right slot text button 44, padding 0 12, 15/600 |
-| Shutter (proposed states) | 76; ring stroke 4 (centre line r 36), track camera-track, fill camera-paper from 12 o'clock clockwise; disc 60 (capturing 52); locked disc camera-track + lock lg camera-paper |
-| Count chip | C05 upload badge: 36, padding 0 14, 1.5 ring, 14/18 600, check icon md, camera-paper (S2 camera-yellow) |
-| Sheets | handle 36 × 4 radius 2 outline; padding 10 20 34; top radius 24; title-3; callout; actions 52, gap 10 |
-| Picker | modal header 56; tiles 110 square in 3 columns, gap 12 10, radius 16, art 64; label caption-strong; subtitle caption text-secondary |
+| Part                      | Value                                                                                                                                                                                                 |
+| ------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Phone chrome              | camera-ground, padding 18 20 30, column gap 14; top bar 44 (buttons 44, icon lg, stroke 1.7)                                                                                                          |
+| Preview                   | 350 × 506, radius 24; S2 adds an inset 1 px divider-dark ring                                                                                                                                         |
+| Guide box                 | inside the preview: top 68, sides 32, bottom 104                                                                                                                                                      |
+| Guide stroke (proposed)   | camera-paper 2 over camera-ink 4; locked dashed 6 on / 6 off, butt caps; unlocked solid, round caps and joins; no fill                                                                                |
+| Step pill                 | 32 high, padding 0 14, radius full, label-sm 13/18 600, camera-ground / camera-paper, top 18 centred                                                                                                  |
+| Hint card                 | left and right 16, bottom 18; padding 10 14; radius 16; gap 10; icon md 20; subhead-medium 15/20 500; up to 3 lines; camera-ground / camera-paper; elevation snackbar-* (S2 + 1 px divider-dark ring) |
+| Anyway slot               | 70 high, reserved; reason footnote 13/18 camera-paper centred; gap 8; button Compact 44, padding 0 20, radius full, camera-track fill, camera-paper 15/20 600                                         |
+| Mode switch               | C05: track camera-track, padding 4, gap 2; segment 36, padding 0 18; selected camera-paper (S2 camera-yellow) / camera-ink 600, others 500; hidden when only one mode                                 |
+| Bottom row                | 76, columns 1fr 76 1fr, padding 0 8; import 52 circle on camera-track, icon lg photo; right slot text button 44, padding 0 12, 15/600                                                                 |
+| Shutter (proposed states) | 76; ring stroke 4 (centre line r 36), track camera-track, fill camera-paper from 12 o'clock clockwise; disc 60 (capturing 52); locked disc camera-track + lock lg camera-paper                        |
+| Count chip                | C05 upload badge: 36, padding 0 14, 1.5 ring, 14/18 600, check icon md, camera-paper (S2 camera-yellow)                                                                                               |
+| Sheets                    | handle 36 × 4 radius 2 outline; padding 10 20 34; top radius 24; title-3; callout; actions 52, gap 10                                                                                                 |
+| Picker                    | modal header 56; tiles 110 square in 3 columns, gap 12 10, radius 16, art 64; label caption-strong; subtitle caption text-secondary                                                                   |
 
 ## Proposed values (not yet in DESIGN.md; owner approval, then DESIGN.md + canvas R2)
 

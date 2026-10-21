@@ -1008,6 +1008,7 @@ components:
       enum: [granted, withdrawn]
     ConsentChange:
       type: object
+      description: One consent decision; `locale` is the language of the text the person saw.
       additionalProperties: false
       required: [purpose, status, policyVersion, surface, locale]
       properties:
@@ -1020,10 +1021,12 @@ components:
         surface:
           $ref: '#/components/schemas/ConsentSurface'
         locale:
-          $ref: '#/components/schemas/Locale'
+          $ref: './platform.yaml#/components/schemas/Locale'
     ConsentRecord:
       type: object
-      description: One append-only consent record (doc 11 §7.1).
+      description: |
+        One append-only consent record (doc 11 §7.1); `locale` is the language of the text the
+        person saw.
       required: [id, purpose, status, policyVersion, surface, locale]
       properties:
         id:
@@ -1045,7 +1048,7 @@ components:
         surface:
           $ref: '#/components/schemas/ConsentSurface'
         locale:
-          $ref: '#/components/schemas/Locale'
+          $ref: './platform.yaml#/components/schemas/Locale'
     ConsentPage:
       type: object
       required: [items, nextCursor]
@@ -1067,8 +1070,3 @@ components:
       type: string
       description: Identifier of the app screen where the decision was made, e.g. `onboarding_consent`.
       pattern: '^[a-z][a-z0-9_]{0,63}$'
-    Locale:
-      type: string
-      description: BCP 47 language tag of the text the person saw, e.g. `en-GB`.
-      pattern: '^[A-Za-z]{2,3}(-[A-Za-z0-9]{2,8})*$'
-      maxLength: 35

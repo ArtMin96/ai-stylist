@@ -4400,4 +4400,2233 @@ public enum Operations {
             }
         }
     }
+    /// Read the caller's profile settings
+    ///
+    /// Presentation, starting shape and the six settings of REQ-ONB-100. A profile nothing has
+    /// been written to answers with its defaults and `version` 0.
+    ///
+    ///
+    /// - Remark: HTTP `GET /v1/me/profile`.
+    /// - Remark: Generated from `#/paths//v1/me/profile/get(getProfile)`.
+    public enum GetProfile {
+        public static let id: Swift.String = "getProfile"
+        public struct Input: Sendable, Hashable {
+            /// - Remark: Generated from `#/paths/v1/me/profile/GET/header`.
+            public struct Headers: Sendable, Hashable {
+                public var accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.GetProfile.AcceptableContentType>]
+                /// Creates a new `Headers`.
+                ///
+                /// - Parameters:
+                ///   - accept:
+                public init(accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.GetProfile.AcceptableContentType>] = .defaultValues()) {
+                    self.accept = accept
+                }
+            }
+            public var headers: Operations.GetProfile.Input.Headers
+            /// Creates a new `Input`.
+            ///
+            /// - Parameters:
+            ///   - headers:
+            public init(headers: Operations.GetProfile.Input.Headers = .init()) {
+                self.headers = headers
+            }
+        }
+        @frozen public enum Output: Sendable, Hashable {
+            public struct Ok: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/v1/me/profile/GET/responses/200/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/v1/me/profile/GET/responses/200/content/application\/json`.
+                    case json(Components.Schemas.Profile)
+                    /// The associated value of the enum case if `self` is `.json`.
+                    ///
+                    /// - Throws: An error if `self` is not `.json`.
+                    /// - SeeAlso: `.json`.
+                    public var json: Components.Schemas.Profile {
+                        get throws {
+                            switch self {
+                            case let .json(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.GetProfile.Output.Ok.Body
+                /// Creates a new `Ok`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                public init(body: Operations.GetProfile.Output.Ok.Body) {
+                    self.body = body
+                }
+            }
+            /// The caller's profile
+            ///
+            /// - Remark: Generated from `#/paths//v1/me/profile/get(getProfile)/responses/200`.
+            ///
+            /// HTTP response code: `200 ok`.
+            case ok(Operations.GetProfile.Output.Ok)
+            /// The associated value of the enum case if `self` is `.ok`.
+            ///
+            /// - Throws: An error if `self` is not `.ok`.
+            /// - SeeAlso: `.ok`.
+            public var ok: Operations.GetProfile.Output.Ok {
+                get throws {
+                    switch self {
+                    case let .ok(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "ok",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// `UNAUTHENTICATED`: the credential is missing, malformed, expired or revoked. The client
+            /// renews the session once (`refreshSession`); if the renewal is refused too, it signs in
+            /// again.
+            ///
+            ///
+            /// - Remark: Generated from `#/paths//v1/me/profile/get(getProfile)/responses/401`.
+            ///
+            /// HTTP response code: `401 unauthorized`.
+            case unauthorized(Components.Responses.Unauthenticated)
+            /// The associated value of the enum case if `self` is `.unauthorized`.
+            ///
+            /// - Throws: An error if `self` is not `.unauthorized`.
+            /// - SeeAlso: `.unauthorized`.
+            public var unauthorized: Components.Responses.Unauthenticated {
+                get throws {
+                    switch self {
+                    case let .unauthorized(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "unauthorized",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// `ACCOUNT_DELETED`: the account is deleted or its deletion is in progress. The client
+            /// erases everything it stores for the account and returns to its signed-out start; it
+            /// tells this reply from 401 by the status alone. A 410 is cacheable by default
+            /// (RFC 9110 §15.5.11), so the reply carries `Cache-Control: no-store` and must not be
+            /// cached.
+            ///
+            ///
+            /// - Remark: Generated from `#/paths//v1/me/profile/get(getProfile)/responses/410`.
+            ///
+            /// HTTP response code: `410 gone`.
+            case gone(Components.Responses.AccountDeleted)
+            /// The associated value of the enum case if `self` is `.gone`.
+            ///
+            /// - Throws: An error if `self` is not `.gone`.
+            /// - SeeAlso: `.gone`.
+            public var gone: Components.Responses.AccountDeleted {
+                get throws {
+                    switch self {
+                    case let .gone(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "gone",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// `RATE_LIMITED`: a rate limit was hit (doc 11 §14); retry after `Retry-After` seconds.
+            ///
+            /// - Remark: Generated from `#/paths//v1/me/profile/get(getProfile)/responses/429`.
+            ///
+            /// HTTP response code: `429 tooManyRequests`.
+            case tooManyRequests(Components.Responses.RateLimited)
+            /// The associated value of the enum case if `self` is `.tooManyRequests`.
+            ///
+            /// - Throws: An error if `self` is not `.tooManyRequests`.
+            /// - SeeAlso: `.tooManyRequests`.
+            public var tooManyRequests: Components.Responses.RateLimited {
+                get throws {
+                    switch self {
+                    case let .tooManyRequests(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "tooManyRequests",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Error (RFC 9457)
+            ///
+            /// - Remark: Generated from `#/paths//v1/me/profile/get(getProfile)/responses/default`.
+            ///
+            /// HTTP response code: `default`.
+            case `default`(statusCode: Swift.Int, Components.Responses.Problem)
+            /// The associated value of the enum case if `self` is `.`default``.
+            ///
+            /// - Throws: An error if `self` is not `.`default``.
+            /// - SeeAlso: `.`default``.
+            public var `default`: Components.Responses.Problem {
+                get throws {
+                    switch self {
+                    case let .`default`(_, response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "default",
+                            response: self
+                        )
+                    }
+                }
+            }
+        }
+        @frozen public enum AcceptableContentType: AcceptableProtocol {
+            case json
+            case applicationProblemJson
+            case other(Swift.String)
+            public init?(rawValue: Swift.String) {
+                switch rawValue.lowercased() {
+                case "application/json":
+                    self = .json
+                case "application/problem+json":
+                    self = .applicationProblemJson
+                default:
+                    self = .other(rawValue)
+                }
+            }
+            public var rawValue: Swift.String {
+                switch self {
+                case let .other(string):
+                    return string
+                case .json:
+                    return "application/json"
+                case .applicationProblemJson:
+                    return "application/problem+json"
+                }
+            }
+            public static var allCases: [Self] {
+                [
+                    .json,
+                    .applicationProblemJson
+                ]
+            }
+        }
+    }
+    /// Change some of the caller's profile settings
+    ///
+    /// Partial update (see the file header): each member present replaces its stored value.
+    /// Answers with the whole profile at its new `version`.
+    ///
+    ///
+    /// - Remark: HTTP `PATCH /v1/me/profile`.
+    /// - Remark: Generated from `#/paths//v1/me/profile/patch(updateProfile)`.
+    public enum UpdateProfile {
+        public static let id: Swift.String = "updateProfile"
+        public struct Input: Sendable, Hashable {
+            /// - Remark: Generated from `#/paths/v1/me/profile/PATCH/header`.
+            public struct Headers: Sendable, Hashable {
+                /// Client-generated ULID that makes a mutating request safe to retry (doc 06 §2; the
+                /// mobile mutation-log `opId`). The server keeps key, request hash and response for 48 h:
+                /// a replay with the same body returns the stored response, the same key with a different
+                /// body is refused with 409 `IDEMPOTENCY_KEY_REUSED`. Optional for the caller.
+                ///
+                ///
+                /// - Remark: Generated from `#/paths/v1/me/profile/PATCH/header/Idempotency-Key`.
+                public var idempotencyKey: Components.Parameters.IdempotencyKey?
+                /// The `version` of the resource the client last read, as a quoted integer, e.g. `"3"`
+                /// (doc 06 §2). Every write to a versioned resource sends it; a stale version is refused
+                /// with 409 `VERSION_MISMATCH`.
+                ///
+                ///
+                /// - Remark: Generated from `#/paths/v1/me/profile/PATCH/header/If-Match`.
+                public var ifMatch: Components.Parameters.IfMatch
+                public var accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.UpdateProfile.AcceptableContentType>]
+                /// Creates a new `Headers`.
+                ///
+                /// - Parameters:
+                ///   - idempotencyKey: Client-generated ULID that makes a mutating request safe to retry (doc 06 §2; the
+                ///   - ifMatch: The `version` of the resource the client last read, as a quoted integer, e.g. `"3"`
+                ///   - accept:
+                public init(
+                    idempotencyKey: Components.Parameters.IdempotencyKey? = nil,
+                    ifMatch: Components.Parameters.IfMatch,
+                    accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.UpdateProfile.AcceptableContentType>] = .defaultValues()
+                ) {
+                    self.idempotencyKey = idempotencyKey
+                    self.ifMatch = ifMatch
+                    self.accept = accept
+                }
+            }
+            public var headers: Operations.UpdateProfile.Input.Headers
+            /// - Remark: Generated from `#/paths/v1/me/profile/PATCH/requestBody`.
+            @frozen public enum Body: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/v1/me/profile/PATCH/requestBody/content/application\/json`.
+                case json(Components.Schemas.ProfileUpdate)
+            }
+            public var body: Operations.UpdateProfile.Input.Body
+            /// Creates a new `Input`.
+            ///
+            /// - Parameters:
+            ///   - headers:
+            ///   - body:
+            public init(
+                headers: Operations.UpdateProfile.Input.Headers,
+                body: Operations.UpdateProfile.Input.Body
+            ) {
+                self.headers = headers
+                self.body = body
+            }
+        }
+        @frozen public enum Output: Sendable, Hashable {
+            public struct Ok: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/v1/me/profile/PATCH/responses/200/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/v1/me/profile/PATCH/responses/200/content/application\/json`.
+                    case json(Components.Schemas.Profile)
+                    /// The associated value of the enum case if `self` is `.json`.
+                    ///
+                    /// - Throws: An error if `self` is not `.json`.
+                    /// - SeeAlso: `.json`.
+                    public var json: Components.Schemas.Profile {
+                        get throws {
+                            switch self {
+                            case let .json(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.UpdateProfile.Output.Ok.Body
+                /// Creates a new `Ok`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                public init(body: Operations.UpdateProfile.Output.Ok.Body) {
+                    self.body = body
+                }
+            }
+            /// The updated profile
+            ///
+            /// - Remark: Generated from `#/paths//v1/me/profile/patch(updateProfile)/responses/200`.
+            ///
+            /// HTTP response code: `200 ok`.
+            case ok(Operations.UpdateProfile.Output.Ok)
+            /// The associated value of the enum case if `self` is `.ok`.
+            ///
+            /// - Throws: An error if `self` is not `.ok`.
+            /// - SeeAlso: `.ok`.
+            public var ok: Operations.UpdateProfile.Output.Ok {
+                get throws {
+                    switch self {
+                    case let .ok(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "ok",
+                            response: self
+                        )
+                    }
+                }
+            }
+            public struct BadRequest: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/v1/me/profile/PATCH/responses/400/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/v1/me/profile/PATCH/responses/400/content/application\/problem+json`.
+                    case applicationProblemJson(Components.Schemas.ProblemDetails)
+                    /// The associated value of the enum case if `self` is `.applicationProblemJson`.
+                    ///
+                    /// - Throws: An error if `self` is not `.applicationProblemJson`.
+                    /// - SeeAlso: `.applicationProblemJson`.
+                    public var applicationProblemJson: Components.Schemas.ProblemDetails {
+                        get throws {
+                            switch self {
+                            case let .applicationProblemJson(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.UpdateProfile.Output.BadRequest.Body
+                /// Creates a new `BadRequest`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                public init(body: Operations.UpdateProfile.Output.BadRequest.Body) {
+                    self.body = body
+                }
+            }
+            /// `VALIDATION_FAILED`: the body breaks this schema, or `startingShape` is not a shape
+            /// of the shared-kernel registry. `errors[]` names each field.
+            ///
+            ///
+            /// - Remark: Generated from `#/paths//v1/me/profile/patch(updateProfile)/responses/400`.
+            ///
+            /// HTTP response code: `400 badRequest`.
+            case badRequest(Operations.UpdateProfile.Output.BadRequest)
+            /// The associated value of the enum case if `self` is `.badRequest`.
+            ///
+            /// - Throws: An error if `self` is not `.badRequest`.
+            /// - SeeAlso: `.badRequest`.
+            public var badRequest: Operations.UpdateProfile.Output.BadRequest {
+                get throws {
+                    switch self {
+                    case let .badRequest(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "badRequest",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// `UNAUTHENTICATED`: the credential is missing, malformed, expired or revoked. The client
+            /// renews the session once (`refreshSession`); if the renewal is refused too, it signs in
+            /// again.
+            ///
+            ///
+            /// - Remark: Generated from `#/paths//v1/me/profile/patch(updateProfile)/responses/401`.
+            ///
+            /// HTTP response code: `401 unauthorized`.
+            case unauthorized(Components.Responses.Unauthenticated)
+            /// The associated value of the enum case if `self` is `.unauthorized`.
+            ///
+            /// - Throws: An error if `self` is not `.unauthorized`.
+            /// - SeeAlso: `.unauthorized`.
+            public var unauthorized: Components.Responses.Unauthenticated {
+                get throws {
+                    switch self {
+                    case let .unauthorized(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "unauthorized",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// `VERSION_MISMATCH`: `If-Match` names an older version than the stored one. `current` is
+            /// the stored profile, so the app can keep the losing edit and offer to re-apply it on top
+            /// (doc 04 §8). `IDEMPOTENCY_KEY_REUSED` or `CONFLICT` otherwise, without `current`.
+            ///
+            ///
+            /// - Remark: Generated from `#/paths//v1/me/profile/patch(updateProfile)/responses/409`.
+            ///
+            /// HTTP response code: `409 conflict`.
+            case conflict(Components.Responses.ProfileConflict)
+            /// The associated value of the enum case if `self` is `.conflict`.
+            ///
+            /// - Throws: An error if `self` is not `.conflict`.
+            /// - SeeAlso: `.conflict`.
+            public var conflict: Components.Responses.ProfileConflict {
+                get throws {
+                    switch self {
+                    case let .conflict(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "conflict",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// `ACCOUNT_DELETED`: the account is deleted or its deletion is in progress. The client
+            /// erases everything it stores for the account and returns to its signed-out start; it
+            /// tells this reply from 401 by the status alone. A 410 is cacheable by default
+            /// (RFC 9110 §15.5.11), so the reply carries `Cache-Control: no-store` and must not be
+            /// cached.
+            ///
+            ///
+            /// - Remark: Generated from `#/paths//v1/me/profile/patch(updateProfile)/responses/410`.
+            ///
+            /// HTTP response code: `410 gone`.
+            case gone(Components.Responses.AccountDeleted)
+            /// The associated value of the enum case if `self` is `.gone`.
+            ///
+            /// - Throws: An error if `self` is not `.gone`.
+            /// - SeeAlso: `.gone`.
+            public var gone: Components.Responses.AccountDeleted {
+                get throws {
+                    switch self {
+                    case let .gone(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "gone",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// `RATE_LIMITED`: a rate limit was hit (doc 11 §14); retry after `Retry-After` seconds.
+            ///
+            /// - Remark: Generated from `#/paths//v1/me/profile/patch(updateProfile)/responses/429`.
+            ///
+            /// HTTP response code: `429 tooManyRequests`.
+            case tooManyRequests(Components.Responses.RateLimited)
+            /// The associated value of the enum case if `self` is `.tooManyRequests`.
+            ///
+            /// - Throws: An error if `self` is not `.tooManyRequests`.
+            /// - SeeAlso: `.tooManyRequests`.
+            public var tooManyRequests: Components.Responses.RateLimited {
+                get throws {
+                    switch self {
+                    case let .tooManyRequests(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "tooManyRequests",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Error (RFC 9457)
+            ///
+            /// - Remark: Generated from `#/paths//v1/me/profile/patch(updateProfile)/responses/default`.
+            ///
+            /// HTTP response code: `default`.
+            case `default`(statusCode: Swift.Int, Components.Responses.Problem)
+            /// The associated value of the enum case if `self` is `.`default``.
+            ///
+            /// - Throws: An error if `self` is not `.`default``.
+            /// - SeeAlso: `.`default``.
+            public var `default`: Components.Responses.Problem {
+                get throws {
+                    switch self {
+                    case let .`default`(_, response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "default",
+                            response: self
+                        )
+                    }
+                }
+            }
+        }
+        @frozen public enum AcceptableContentType: AcceptableProtocol {
+            case json
+            case applicationProblemJson
+            case other(Swift.String)
+            public init?(rawValue: Swift.String) {
+                switch rawValue.lowercased() {
+                case "application/json":
+                    self = .json
+                case "application/problem+json":
+                    self = .applicationProblemJson
+                default:
+                    self = .other(rawValue)
+                }
+            }
+            public var rawValue: Swift.String {
+                switch self {
+                case let .other(string):
+                    return string
+                case .json:
+                    return "application/json"
+                case .applicationProblemJson:
+                    return "application/problem+json"
+                }
+            }
+            public static var allCases: [Self] {
+                [
+                    .json,
+                    .applicationProblemJson
+                ]
+            }
+        }
+    }
+    /// Read the caller's body measurements
+    ///
+    /// The caller's current measurement set, in SI units. A set nothing has been written to
+    /// answers with no measurement and `version` 0. Never cached.
+    ///
+    ///
+    /// - Remark: HTTP `GET /v1/me/measurements`.
+    /// - Remark: Generated from `#/paths//v1/me/measurements/get(getMeasurements)`.
+    public enum GetMeasurements {
+        public static let id: Swift.String = "getMeasurements"
+        public struct Input: Sendable, Hashable {
+            /// - Remark: Generated from `#/paths/v1/me/measurements/GET/header`.
+            public struct Headers: Sendable, Hashable {
+                public var accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.GetMeasurements.AcceptableContentType>]
+                /// Creates a new `Headers`.
+                ///
+                /// - Parameters:
+                ///   - accept:
+                public init(accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.GetMeasurements.AcceptableContentType>] = .defaultValues()) {
+                    self.accept = accept
+                }
+            }
+            public var headers: Operations.GetMeasurements.Input.Headers
+            /// Creates a new `Input`.
+            ///
+            /// - Parameters:
+            ///   - headers:
+            public init(headers: Operations.GetMeasurements.Input.Headers = .init()) {
+                self.headers = headers
+            }
+        }
+        @frozen public enum Output: Sendable, Hashable {
+            public struct Ok: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/v1/me/measurements/GET/responses/200/headers`.
+                public struct Headers: Sendable, Hashable {
+                    /// - Remark: Generated from `#/components/headers/CacheControlNoStore`.
+                    @frozen public enum CacheControlNoStore: String, Codable, Hashable, Sendable, CaseIterable {
+                        case noStore = "no-store"
+                    }
+                    /// Always `no-store`; the response must not be stored by any cache.
+                    ///
+                    /// - Remark: Generated from `#/paths/v1/me/measurements/GET/responses/200/headers/Cache-Control`.
+                    public var cacheControl: Components.Headers.CacheControlNoStore?
+                    /// Creates a new `Headers`.
+                    ///
+                    /// - Parameters:
+                    ///   - cacheControl: Always `no-store`; the response must not be stored by any cache.
+                    public init(cacheControl: Components.Headers.CacheControlNoStore? = nil) {
+                        self.cacheControl = cacheControl
+                    }
+                }
+                /// Received HTTP response headers
+                public var headers: Operations.GetMeasurements.Output.Ok.Headers
+                /// - Remark: Generated from `#/paths/v1/me/measurements/GET/responses/200/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/v1/me/measurements/GET/responses/200/content/application\/json`.
+                    case json(Components.Schemas.MeasurementSet)
+                    /// The associated value of the enum case if `self` is `.json`.
+                    ///
+                    /// - Throws: An error if `self` is not `.json`.
+                    /// - SeeAlso: `.json`.
+                    public var json: Components.Schemas.MeasurementSet {
+                        get throws {
+                            switch self {
+                            case let .json(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.GetMeasurements.Output.Ok.Body
+                /// Creates a new `Ok`.
+                ///
+                /// - Parameters:
+                ///   - headers: Received HTTP response headers
+                ///   - body: Received HTTP response body
+                public init(
+                    headers: Operations.GetMeasurements.Output.Ok.Headers = .init(),
+                    body: Operations.GetMeasurements.Output.Ok.Body
+                ) {
+                    self.headers = headers
+                    self.body = body
+                }
+            }
+            /// The caller's measurement set
+            ///
+            /// - Remark: Generated from `#/paths//v1/me/measurements/get(getMeasurements)/responses/200`.
+            ///
+            /// HTTP response code: `200 ok`.
+            case ok(Operations.GetMeasurements.Output.Ok)
+            /// The associated value of the enum case if `self` is `.ok`.
+            ///
+            /// - Throws: An error if `self` is not `.ok`.
+            /// - SeeAlso: `.ok`.
+            public var ok: Operations.GetMeasurements.Output.Ok {
+                get throws {
+                    switch self {
+                    case let .ok(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "ok",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// `UNAUTHENTICATED`: the credential is missing, malformed, expired or revoked. The client
+            /// renews the session once (`refreshSession`); if the renewal is refused too, it signs in
+            /// again.
+            ///
+            ///
+            /// - Remark: Generated from `#/paths//v1/me/measurements/get(getMeasurements)/responses/401`.
+            ///
+            /// HTTP response code: `401 unauthorized`.
+            case unauthorized(Components.Responses.Unauthenticated)
+            /// The associated value of the enum case if `self` is `.unauthorized`.
+            ///
+            /// - Throws: An error if `self` is not `.unauthorized`.
+            /// - SeeAlso: `.unauthorized`.
+            public var unauthorized: Components.Responses.Unauthenticated {
+                get throws {
+                    switch self {
+                    case let .unauthorized(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "unauthorized",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// `ACCOUNT_DELETED`: the account is deleted or its deletion is in progress. The client
+            /// erases everything it stores for the account and returns to its signed-out start; it
+            /// tells this reply from 401 by the status alone. A 410 is cacheable by default
+            /// (RFC 9110 §15.5.11), so the reply carries `Cache-Control: no-store` and must not be
+            /// cached.
+            ///
+            ///
+            /// - Remark: Generated from `#/paths//v1/me/measurements/get(getMeasurements)/responses/410`.
+            ///
+            /// HTTP response code: `410 gone`.
+            case gone(Components.Responses.AccountDeleted)
+            /// The associated value of the enum case if `self` is `.gone`.
+            ///
+            /// - Throws: An error if `self` is not `.gone`.
+            /// - SeeAlso: `.gone`.
+            public var gone: Components.Responses.AccountDeleted {
+                get throws {
+                    switch self {
+                    case let .gone(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "gone",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// `RATE_LIMITED`: a rate limit was hit (doc 11 §14); retry after `Retry-After` seconds.
+            ///
+            /// - Remark: Generated from `#/paths//v1/me/measurements/get(getMeasurements)/responses/429`.
+            ///
+            /// HTTP response code: `429 tooManyRequests`.
+            case tooManyRequests(Components.Responses.RateLimited)
+            /// The associated value of the enum case if `self` is `.tooManyRequests`.
+            ///
+            /// - Throws: An error if `self` is not `.tooManyRequests`.
+            /// - SeeAlso: `.tooManyRequests`.
+            public var tooManyRequests: Components.Responses.RateLimited {
+                get throws {
+                    switch self {
+                    case let .tooManyRequests(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "tooManyRequests",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Error (RFC 9457)
+            ///
+            /// - Remark: Generated from `#/paths//v1/me/measurements/get(getMeasurements)/responses/default`.
+            ///
+            /// HTTP response code: `default`.
+            case `default`(statusCode: Swift.Int, Components.Responses.Problem)
+            /// The associated value of the enum case if `self` is `.`default``.
+            ///
+            /// - Throws: An error if `self` is not `.`default``.
+            /// - SeeAlso: `.`default``.
+            public var `default`: Components.Responses.Problem {
+                get throws {
+                    switch self {
+                    case let .`default`(_, response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "default",
+                            response: self
+                        )
+                    }
+                }
+            }
+        }
+        @frozen public enum AcceptableContentType: AcceptableProtocol {
+            case json
+            case applicationProblemJson
+            case other(Swift.String)
+            public init?(rawValue: Swift.String) {
+                switch rawValue.lowercased() {
+                case "application/json":
+                    self = .json
+                case "application/problem+json":
+                    self = .applicationProblemJson
+                default:
+                    self = .other(rawValue)
+                }
+            }
+            public var rawValue: Swift.String {
+                switch self {
+                case let .other(string):
+                    return string
+                case .json:
+                    return "application/json"
+                case .applicationProblemJson:
+                    return "application/problem+json"
+                }
+            }
+            public static var allCases: [Self] {
+                [
+                    .json,
+                    .applicationProblemJson
+                ]
+            }
+        }
+    }
+    /// Replace the caller's body measurements
+    ///
+    /// Replaces the whole set. A measurement absent from `measurements` is removed, which is how
+    /// a single field is cleared; `{}` removes every measurement. Values are SI (`cm`, `kg`);
+    /// the app converts for display only. Answers with the stored set at its new `version`.
+    ///
+    ///
+    /// - Remark: HTTP `PUT /v1/me/measurements`.
+    /// - Remark: Generated from `#/paths//v1/me/measurements/put(replaceMeasurements)`.
+    public enum ReplaceMeasurements {
+        public static let id: Swift.String = "replaceMeasurements"
+        public struct Input: Sendable, Hashable {
+            /// - Remark: Generated from `#/paths/v1/me/measurements/PUT/header`.
+            public struct Headers: Sendable, Hashable {
+                /// Client-generated ULID that makes a mutating request safe to retry (doc 06 §2; the
+                /// mobile mutation-log `opId`). The server keeps key, request hash and response for 48 h:
+                /// a replay with the same body returns the stored response, the same key with a different
+                /// body is refused with 409 `IDEMPOTENCY_KEY_REUSED`. Optional for the caller.
+                ///
+                ///
+                /// - Remark: Generated from `#/paths/v1/me/measurements/PUT/header/Idempotency-Key`.
+                public var idempotencyKey: Components.Parameters.IdempotencyKey?
+                /// The `version` of the resource the client last read, as a quoted integer, e.g. `"3"`
+                /// (doc 06 §2). Every write to a versioned resource sends it; a stale version is refused
+                /// with 409 `VERSION_MISMATCH`.
+                ///
+                ///
+                /// - Remark: Generated from `#/paths/v1/me/measurements/PUT/header/If-Match`.
+                public var ifMatch: Components.Parameters.IfMatch
+                public var accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.ReplaceMeasurements.AcceptableContentType>]
+                /// Creates a new `Headers`.
+                ///
+                /// - Parameters:
+                ///   - idempotencyKey: Client-generated ULID that makes a mutating request safe to retry (doc 06 §2; the
+                ///   - ifMatch: The `version` of the resource the client last read, as a quoted integer, e.g. `"3"`
+                ///   - accept:
+                public init(
+                    idempotencyKey: Components.Parameters.IdempotencyKey? = nil,
+                    ifMatch: Components.Parameters.IfMatch,
+                    accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.ReplaceMeasurements.AcceptableContentType>] = .defaultValues()
+                ) {
+                    self.idempotencyKey = idempotencyKey
+                    self.ifMatch = ifMatch
+                    self.accept = accept
+                }
+            }
+            public var headers: Operations.ReplaceMeasurements.Input.Headers
+            /// - Remark: Generated from `#/paths/v1/me/measurements/PUT/requestBody`.
+            @frozen public enum Body: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/v1/me/measurements/PUT/requestBody/content/application\/json`.
+                case json(Components.Schemas.MeasurementsReplacement)
+            }
+            public var body: Operations.ReplaceMeasurements.Input.Body
+            /// Creates a new `Input`.
+            ///
+            /// - Parameters:
+            ///   - headers:
+            ///   - body:
+            public init(
+                headers: Operations.ReplaceMeasurements.Input.Headers,
+                body: Operations.ReplaceMeasurements.Input.Body
+            ) {
+                self.headers = headers
+                self.body = body
+            }
+        }
+        @frozen public enum Output: Sendable, Hashable {
+            public struct Ok: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/v1/me/measurements/PUT/responses/200/headers`.
+                public struct Headers: Sendable, Hashable {
+                    /// - Remark: Generated from `#/components/headers/CacheControlNoStore`.
+                    @frozen public enum CacheControlNoStore: String, Codable, Hashable, Sendable, CaseIterable {
+                        case noStore = "no-store"
+                    }
+                    /// Always `no-store`; the response must not be stored by any cache.
+                    ///
+                    /// - Remark: Generated from `#/paths/v1/me/measurements/PUT/responses/200/headers/Cache-Control`.
+                    public var cacheControl: Components.Headers.CacheControlNoStore?
+                    /// Creates a new `Headers`.
+                    ///
+                    /// - Parameters:
+                    ///   - cacheControl: Always `no-store`; the response must not be stored by any cache.
+                    public init(cacheControl: Components.Headers.CacheControlNoStore? = nil) {
+                        self.cacheControl = cacheControl
+                    }
+                }
+                /// Received HTTP response headers
+                public var headers: Operations.ReplaceMeasurements.Output.Ok.Headers
+                /// - Remark: Generated from `#/paths/v1/me/measurements/PUT/responses/200/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/v1/me/measurements/PUT/responses/200/content/application\/json`.
+                    case json(Components.Schemas.MeasurementSet)
+                    /// The associated value of the enum case if `self` is `.json`.
+                    ///
+                    /// - Throws: An error if `self` is not `.json`.
+                    /// - SeeAlso: `.json`.
+                    public var json: Components.Schemas.MeasurementSet {
+                        get throws {
+                            switch self {
+                            case let .json(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.ReplaceMeasurements.Output.Ok.Body
+                /// Creates a new `Ok`.
+                ///
+                /// - Parameters:
+                ///   - headers: Received HTTP response headers
+                ///   - body: Received HTTP response body
+                public init(
+                    headers: Operations.ReplaceMeasurements.Output.Ok.Headers = .init(),
+                    body: Operations.ReplaceMeasurements.Output.Ok.Body
+                ) {
+                    self.headers = headers
+                    self.body = body
+                }
+            }
+            /// The stored measurement set
+            ///
+            /// - Remark: Generated from `#/paths//v1/me/measurements/put(replaceMeasurements)/responses/200`.
+            ///
+            /// HTTP response code: `200 ok`.
+            case ok(Operations.ReplaceMeasurements.Output.Ok)
+            /// The associated value of the enum case if `self` is `.ok`.
+            ///
+            /// - Throws: An error if `self` is not `.ok`.
+            /// - SeeAlso: `.ok`.
+            public var ok: Operations.ReplaceMeasurements.Output.Ok {
+                get throws {
+                    switch self {
+                    case let .ok(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "ok",
+                            response: self
+                        )
+                    }
+                }
+            }
+            public struct BadRequest: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/v1/me/measurements/PUT/responses/400/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/v1/me/measurements/PUT/responses/400/content/application\/problem+json`.
+                    case applicationProblemJson(Components.Schemas.ProblemDetails)
+                    /// The associated value of the enum case if `self` is `.applicationProblemJson`.
+                    ///
+                    /// - Throws: An error if `self` is not `.applicationProblemJson`.
+                    /// - SeeAlso: `.applicationProblemJson`.
+                    public var applicationProblemJson: Components.Schemas.ProblemDetails {
+                        get throws {
+                            switch self {
+                            case let .applicationProblemJson(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.ReplaceMeasurements.Output.BadRequest.Body
+                /// Creates a new `BadRequest`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                public init(body: Operations.ReplaceMeasurements.Output.BadRequest.Body) {
+                    self.body = body
+                }
+            }
+            /// `MEASUREMENT_IMPLAUSIBLE`: a value lies outside its hard bounds (shared-kernel
+            /// `registry/measurement-definitions.json`, doc 07 §3.3). Nothing of the request is
+            /// stored. `errors[]` points at each refused value (e.g. `/measurements/height/value`)
+            /// and never repeats it (doc 11 §8). `VALIDATION_FAILED`: the body breaks this schema,
+            /// e.g. an estimated or derived value without `confidence`.
+            ///
+            ///
+            /// - Remark: Generated from `#/paths//v1/me/measurements/put(replaceMeasurements)/responses/400`.
+            ///
+            /// HTTP response code: `400 badRequest`.
+            case badRequest(Operations.ReplaceMeasurements.Output.BadRequest)
+            /// The associated value of the enum case if `self` is `.badRequest`.
+            ///
+            /// - Throws: An error if `self` is not `.badRequest`.
+            /// - SeeAlso: `.badRequest`.
+            public var badRequest: Operations.ReplaceMeasurements.Output.BadRequest {
+                get throws {
+                    switch self {
+                    case let .badRequest(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "badRequest",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// `UNAUTHENTICATED`: the credential is missing, malformed, expired or revoked. The client
+            /// renews the session once (`refreshSession`); if the renewal is refused too, it signs in
+            /// again.
+            ///
+            ///
+            /// - Remark: Generated from `#/paths//v1/me/measurements/put(replaceMeasurements)/responses/401`.
+            ///
+            /// HTTP response code: `401 unauthorized`.
+            case unauthorized(Components.Responses.Unauthenticated)
+            /// The associated value of the enum case if `self` is `.unauthorized`.
+            ///
+            /// - Throws: An error if `self` is not `.unauthorized`.
+            /// - SeeAlso: `.unauthorized`.
+            public var unauthorized: Components.Responses.Unauthenticated {
+                get throws {
+                    switch self {
+                    case let .unauthorized(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "unauthorized",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// `VERSION_MISMATCH`: `If-Match` names an older version than the stored one. `current` is
+            /// the stored measurement set, so the app can keep the losing edit and offer to re-apply it
+            /// on top (doc 04 §8). `IDEMPOTENCY_KEY_REUSED` or `CONFLICT` otherwise, without `current`.
+            ///
+            ///
+            /// - Remark: Generated from `#/paths//v1/me/measurements/put(replaceMeasurements)/responses/409`.
+            ///
+            /// HTTP response code: `409 conflict`.
+            case conflict(Components.Responses.MeasurementSetConflict)
+            /// The associated value of the enum case if `self` is `.conflict`.
+            ///
+            /// - Throws: An error if `self` is not `.conflict`.
+            /// - SeeAlso: `.conflict`.
+            public var conflict: Components.Responses.MeasurementSetConflict {
+                get throws {
+                    switch self {
+                    case let .conflict(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "conflict",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// `ACCOUNT_DELETED`: the account is deleted or its deletion is in progress. The client
+            /// erases everything it stores for the account and returns to its signed-out start; it
+            /// tells this reply from 401 by the status alone. A 410 is cacheable by default
+            /// (RFC 9110 §15.5.11), so the reply carries `Cache-Control: no-store` and must not be
+            /// cached.
+            ///
+            ///
+            /// - Remark: Generated from `#/paths//v1/me/measurements/put(replaceMeasurements)/responses/410`.
+            ///
+            /// HTTP response code: `410 gone`.
+            case gone(Components.Responses.AccountDeleted)
+            /// The associated value of the enum case if `self` is `.gone`.
+            ///
+            /// - Throws: An error if `self` is not `.gone`.
+            /// - SeeAlso: `.gone`.
+            public var gone: Components.Responses.AccountDeleted {
+                get throws {
+                    switch self {
+                    case let .gone(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "gone",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// `RATE_LIMITED`: a rate limit was hit (doc 11 §14); retry after `Retry-After` seconds.
+            ///
+            /// - Remark: Generated from `#/paths//v1/me/measurements/put(replaceMeasurements)/responses/429`.
+            ///
+            /// HTTP response code: `429 tooManyRequests`.
+            case tooManyRequests(Components.Responses.RateLimited)
+            /// The associated value of the enum case if `self` is `.tooManyRequests`.
+            ///
+            /// - Throws: An error if `self` is not `.tooManyRequests`.
+            /// - SeeAlso: `.tooManyRequests`.
+            public var tooManyRequests: Components.Responses.RateLimited {
+                get throws {
+                    switch self {
+                    case let .tooManyRequests(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "tooManyRequests",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Error (RFC 9457)
+            ///
+            /// - Remark: Generated from `#/paths//v1/me/measurements/put(replaceMeasurements)/responses/default`.
+            ///
+            /// HTTP response code: `default`.
+            case `default`(statusCode: Swift.Int, Components.Responses.Problem)
+            /// The associated value of the enum case if `self` is `.`default``.
+            ///
+            /// - Throws: An error if `self` is not `.`default``.
+            /// - SeeAlso: `.`default``.
+            public var `default`: Components.Responses.Problem {
+                get throws {
+                    switch self {
+                    case let .`default`(_, response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "default",
+                            response: self
+                        )
+                    }
+                }
+            }
+        }
+        @frozen public enum AcceptableContentType: AcceptableProtocol {
+            case json
+            case applicationProblemJson
+            case other(Swift.String)
+            public init?(rawValue: Swift.String) {
+                switch rawValue.lowercased() {
+                case "application/json":
+                    self = .json
+                case "application/problem+json":
+                    self = .applicationProblemJson
+                default:
+                    self = .other(rawValue)
+                }
+            }
+            public var rawValue: Swift.String {
+                switch self {
+                case let .other(string):
+                    return string
+                case .json:
+                    return "application/json"
+                case .applicationProblemJson:
+                    return "application/problem+json"
+                }
+            }
+            public static var allCases: [Self] {
+                [
+                    .json,
+                    .applicationProblemJson
+                ]
+            }
+        }
+    }
+    /// Read the caller's style preferences
+    ///
+    /// Fit and style preferences, soft dislikes and hard exclusions, climate tolerance,
+    /// occasions and the typical day, and usual sizes. Preferences nothing has been written to
+    /// answer with empty lists and `version` 0.
+    ///
+    ///
+    /// - Remark: HTTP `GET /v1/me/preferences`.
+    /// - Remark: Generated from `#/paths//v1/me/preferences/get(getPreferences)`.
+    public enum GetPreferences {
+        public static let id: Swift.String = "getPreferences"
+        public struct Input: Sendable, Hashable {
+            /// - Remark: Generated from `#/paths/v1/me/preferences/GET/header`.
+            public struct Headers: Sendable, Hashable {
+                public var accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.GetPreferences.AcceptableContentType>]
+                /// Creates a new `Headers`.
+                ///
+                /// - Parameters:
+                ///   - accept:
+                public init(accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.GetPreferences.AcceptableContentType>] = .defaultValues()) {
+                    self.accept = accept
+                }
+            }
+            public var headers: Operations.GetPreferences.Input.Headers
+            /// Creates a new `Input`.
+            ///
+            /// - Parameters:
+            ///   - headers:
+            public init(headers: Operations.GetPreferences.Input.Headers = .init()) {
+                self.headers = headers
+            }
+        }
+        @frozen public enum Output: Sendable, Hashable {
+            public struct Ok: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/v1/me/preferences/GET/responses/200/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/v1/me/preferences/GET/responses/200/content/application\/json`.
+                    case json(Components.Schemas.Preferences)
+                    /// The associated value of the enum case if `self` is `.json`.
+                    ///
+                    /// - Throws: An error if `self` is not `.json`.
+                    /// - SeeAlso: `.json`.
+                    public var json: Components.Schemas.Preferences {
+                        get throws {
+                            switch self {
+                            case let .json(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.GetPreferences.Output.Ok.Body
+                /// Creates a new `Ok`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                public init(body: Operations.GetPreferences.Output.Ok.Body) {
+                    self.body = body
+                }
+            }
+            /// The caller's preferences
+            ///
+            /// - Remark: Generated from `#/paths//v1/me/preferences/get(getPreferences)/responses/200`.
+            ///
+            /// HTTP response code: `200 ok`.
+            case ok(Operations.GetPreferences.Output.Ok)
+            /// The associated value of the enum case if `self` is `.ok`.
+            ///
+            /// - Throws: An error if `self` is not `.ok`.
+            /// - SeeAlso: `.ok`.
+            public var ok: Operations.GetPreferences.Output.Ok {
+                get throws {
+                    switch self {
+                    case let .ok(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "ok",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// `UNAUTHENTICATED`: the credential is missing, malformed, expired or revoked. The client
+            /// renews the session once (`refreshSession`); if the renewal is refused too, it signs in
+            /// again.
+            ///
+            ///
+            /// - Remark: Generated from `#/paths//v1/me/preferences/get(getPreferences)/responses/401`.
+            ///
+            /// HTTP response code: `401 unauthorized`.
+            case unauthorized(Components.Responses.Unauthenticated)
+            /// The associated value of the enum case if `self` is `.unauthorized`.
+            ///
+            /// - Throws: An error if `self` is not `.unauthorized`.
+            /// - SeeAlso: `.unauthorized`.
+            public var unauthorized: Components.Responses.Unauthenticated {
+                get throws {
+                    switch self {
+                    case let .unauthorized(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "unauthorized",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// `ACCOUNT_DELETED`: the account is deleted or its deletion is in progress. The client
+            /// erases everything it stores for the account and returns to its signed-out start; it
+            /// tells this reply from 401 by the status alone. A 410 is cacheable by default
+            /// (RFC 9110 §15.5.11), so the reply carries `Cache-Control: no-store` and must not be
+            /// cached.
+            ///
+            ///
+            /// - Remark: Generated from `#/paths//v1/me/preferences/get(getPreferences)/responses/410`.
+            ///
+            /// HTTP response code: `410 gone`.
+            case gone(Components.Responses.AccountDeleted)
+            /// The associated value of the enum case if `self` is `.gone`.
+            ///
+            /// - Throws: An error if `self` is not `.gone`.
+            /// - SeeAlso: `.gone`.
+            public var gone: Components.Responses.AccountDeleted {
+                get throws {
+                    switch self {
+                    case let .gone(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "gone",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// `RATE_LIMITED`: a rate limit was hit (doc 11 §14); retry after `Retry-After` seconds.
+            ///
+            /// - Remark: Generated from `#/paths//v1/me/preferences/get(getPreferences)/responses/429`.
+            ///
+            /// HTTP response code: `429 tooManyRequests`.
+            case tooManyRequests(Components.Responses.RateLimited)
+            /// The associated value of the enum case if `self` is `.tooManyRequests`.
+            ///
+            /// - Throws: An error if `self` is not `.tooManyRequests`.
+            /// - SeeAlso: `.tooManyRequests`.
+            public var tooManyRequests: Components.Responses.RateLimited {
+                get throws {
+                    switch self {
+                    case let .tooManyRequests(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "tooManyRequests",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Error (RFC 9457)
+            ///
+            /// - Remark: Generated from `#/paths//v1/me/preferences/get(getPreferences)/responses/default`.
+            ///
+            /// HTTP response code: `default`.
+            case `default`(statusCode: Swift.Int, Components.Responses.Problem)
+            /// The associated value of the enum case if `self` is `.`default``.
+            ///
+            /// - Throws: An error if `self` is not `.`default``.
+            /// - SeeAlso: `.`default``.
+            public var `default`: Components.Responses.Problem {
+                get throws {
+                    switch self {
+                    case let .`default`(_, response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "default",
+                            response: self
+                        )
+                    }
+                }
+            }
+        }
+        @frozen public enum AcceptableContentType: AcceptableProtocol {
+            case json
+            case applicationProblemJson
+            case other(Swift.String)
+            public init?(rawValue: Swift.String) {
+                switch rawValue.lowercased() {
+                case "application/json":
+                    self = .json
+                case "application/problem+json":
+                    self = .applicationProblemJson
+                default:
+                    self = .other(rawValue)
+                }
+            }
+            public var rawValue: Swift.String {
+                switch self {
+                case let .other(string):
+                    return string
+                case .json:
+                    return "application/json"
+                case .applicationProblemJson:
+                    return "application/problem+json"
+                }
+            }
+            public static var allCases: [Self] {
+                [
+                    .json,
+                    .applicationProblemJson
+                ]
+            }
+        }
+    }
+    /// Change some of the caller's style preferences
+    ///
+    /// Partial update (see the file header): each member present replaces its stored value
+    /// whole, an empty list or object empties it, and `clear` removes `climateTolerance` or
+    /// `typicalDay`. Answers with all preferences at their new `version`.
+    ///
+    ///
+    /// - Remark: HTTP `PATCH /v1/me/preferences`.
+    /// - Remark: Generated from `#/paths//v1/me/preferences/patch(updatePreferences)`.
+    public enum UpdatePreferences {
+        public static let id: Swift.String = "updatePreferences"
+        public struct Input: Sendable, Hashable {
+            /// - Remark: Generated from `#/paths/v1/me/preferences/PATCH/header`.
+            public struct Headers: Sendable, Hashable {
+                /// Client-generated ULID that makes a mutating request safe to retry (doc 06 §2; the
+                /// mobile mutation-log `opId`). The server keeps key, request hash and response for 48 h:
+                /// a replay with the same body returns the stored response, the same key with a different
+                /// body is refused with 409 `IDEMPOTENCY_KEY_REUSED`. Optional for the caller.
+                ///
+                ///
+                /// - Remark: Generated from `#/paths/v1/me/preferences/PATCH/header/Idempotency-Key`.
+                public var idempotencyKey: Components.Parameters.IdempotencyKey?
+                /// The `version` of the resource the client last read, as a quoted integer, e.g. `"3"`
+                /// (doc 06 §2). Every write to a versioned resource sends it; a stale version is refused
+                /// with 409 `VERSION_MISMATCH`.
+                ///
+                ///
+                /// - Remark: Generated from `#/paths/v1/me/preferences/PATCH/header/If-Match`.
+                public var ifMatch: Components.Parameters.IfMatch
+                public var accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.UpdatePreferences.AcceptableContentType>]
+                /// Creates a new `Headers`.
+                ///
+                /// - Parameters:
+                ///   - idempotencyKey: Client-generated ULID that makes a mutating request safe to retry (doc 06 §2; the
+                ///   - ifMatch: The `version` of the resource the client last read, as a quoted integer, e.g. `"3"`
+                ///   - accept:
+                public init(
+                    idempotencyKey: Components.Parameters.IdempotencyKey? = nil,
+                    ifMatch: Components.Parameters.IfMatch,
+                    accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.UpdatePreferences.AcceptableContentType>] = .defaultValues()
+                ) {
+                    self.idempotencyKey = idempotencyKey
+                    self.ifMatch = ifMatch
+                    self.accept = accept
+                }
+            }
+            public var headers: Operations.UpdatePreferences.Input.Headers
+            /// - Remark: Generated from `#/paths/v1/me/preferences/PATCH/requestBody`.
+            @frozen public enum Body: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/v1/me/preferences/PATCH/requestBody/content/application\/json`.
+                case json(Components.Schemas.PreferencesUpdate)
+            }
+            public var body: Operations.UpdatePreferences.Input.Body
+            /// Creates a new `Input`.
+            ///
+            /// - Parameters:
+            ///   - headers:
+            ///   - body:
+            public init(
+                headers: Operations.UpdatePreferences.Input.Headers,
+                body: Operations.UpdatePreferences.Input.Body
+            ) {
+                self.headers = headers
+                self.body = body
+            }
+        }
+        @frozen public enum Output: Sendable, Hashable {
+            public struct Ok: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/v1/me/preferences/PATCH/responses/200/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/v1/me/preferences/PATCH/responses/200/content/application\/json`.
+                    case json(Components.Schemas.Preferences)
+                    /// The associated value of the enum case if `self` is `.json`.
+                    ///
+                    /// - Throws: An error if `self` is not `.json`.
+                    /// - SeeAlso: `.json`.
+                    public var json: Components.Schemas.Preferences {
+                        get throws {
+                            switch self {
+                            case let .json(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.UpdatePreferences.Output.Ok.Body
+                /// Creates a new `Ok`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                public init(body: Operations.UpdatePreferences.Output.Ok.Body) {
+                    self.body = body
+                }
+            }
+            /// The updated preferences
+            ///
+            /// - Remark: Generated from `#/paths//v1/me/preferences/patch(updatePreferences)/responses/200`.
+            ///
+            /// HTTP response code: `200 ok`.
+            case ok(Operations.UpdatePreferences.Output.Ok)
+            /// The associated value of the enum case if `self` is `.ok`.
+            ///
+            /// - Throws: An error if `self` is not `.ok`.
+            /// - SeeAlso: `.ok`.
+            public var ok: Operations.UpdatePreferences.Output.Ok {
+                get throws {
+                    switch self {
+                    case let .ok(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "ok",
+                            response: self
+                        )
+                    }
+                }
+            }
+            public struct BadRequest: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/v1/me/preferences/PATCH/responses/400/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/v1/me/preferences/PATCH/responses/400/content/application\/problem+json`.
+                    case applicationProblemJson(Components.Schemas.ProblemDetails)
+                    /// The associated value of the enum case if `self` is `.applicationProblemJson`.
+                    ///
+                    /// - Throws: An error if `self` is not `.applicationProblemJson`.
+                    /// - SeeAlso: `.applicationProblemJson`.
+                    public var applicationProblemJson: Components.Schemas.ProblemDetails {
+                        get throws {
+                            switch self {
+                            case let .applicationProblemJson(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.UpdatePreferences.Output.BadRequest.Body
+                /// Creates a new `BadRequest`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                public init(body: Operations.UpdatePreferences.Output.BadRequest.Body) {
+                    self.body = body
+                }
+            }
+            /// `VALIDATION_FAILED`: the body breaks this schema, a member is both set and named in
+            /// `clear`, or `sizingByRegion` holds two entries for one size system and garment group.
+            /// `errors[]` names each field.
+            ///
+            ///
+            /// - Remark: Generated from `#/paths//v1/me/preferences/patch(updatePreferences)/responses/400`.
+            ///
+            /// HTTP response code: `400 badRequest`.
+            case badRequest(Operations.UpdatePreferences.Output.BadRequest)
+            /// The associated value of the enum case if `self` is `.badRequest`.
+            ///
+            /// - Throws: An error if `self` is not `.badRequest`.
+            /// - SeeAlso: `.badRequest`.
+            public var badRequest: Operations.UpdatePreferences.Output.BadRequest {
+                get throws {
+                    switch self {
+                    case let .badRequest(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "badRequest",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// `UNAUTHENTICATED`: the credential is missing, malformed, expired or revoked. The client
+            /// renews the session once (`refreshSession`); if the renewal is refused too, it signs in
+            /// again.
+            ///
+            ///
+            /// - Remark: Generated from `#/paths//v1/me/preferences/patch(updatePreferences)/responses/401`.
+            ///
+            /// HTTP response code: `401 unauthorized`.
+            case unauthorized(Components.Responses.Unauthenticated)
+            /// The associated value of the enum case if `self` is `.unauthorized`.
+            ///
+            /// - Throws: An error if `self` is not `.unauthorized`.
+            /// - SeeAlso: `.unauthorized`.
+            public var unauthorized: Components.Responses.Unauthenticated {
+                get throws {
+                    switch self {
+                    case let .unauthorized(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "unauthorized",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// `VERSION_MISMATCH`: `If-Match` names an older version than the stored one. `current` is
+            /// the stored preferences, so the app can keep the losing edit and offer to re-apply it on
+            /// top (doc 04 §8). `IDEMPOTENCY_KEY_REUSED` or `CONFLICT` otherwise, without `current`.
+            ///
+            ///
+            /// - Remark: Generated from `#/paths//v1/me/preferences/patch(updatePreferences)/responses/409`.
+            ///
+            /// HTTP response code: `409 conflict`.
+            case conflict(Components.Responses.PreferencesConflict)
+            /// The associated value of the enum case if `self` is `.conflict`.
+            ///
+            /// - Throws: An error if `self` is not `.conflict`.
+            /// - SeeAlso: `.conflict`.
+            public var conflict: Components.Responses.PreferencesConflict {
+                get throws {
+                    switch self {
+                    case let .conflict(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "conflict",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// `ACCOUNT_DELETED`: the account is deleted or its deletion is in progress. The client
+            /// erases everything it stores for the account and returns to its signed-out start; it
+            /// tells this reply from 401 by the status alone. A 410 is cacheable by default
+            /// (RFC 9110 §15.5.11), so the reply carries `Cache-Control: no-store` and must not be
+            /// cached.
+            ///
+            ///
+            /// - Remark: Generated from `#/paths//v1/me/preferences/patch(updatePreferences)/responses/410`.
+            ///
+            /// HTTP response code: `410 gone`.
+            case gone(Components.Responses.AccountDeleted)
+            /// The associated value of the enum case if `self` is `.gone`.
+            ///
+            /// - Throws: An error if `self` is not `.gone`.
+            /// - SeeAlso: `.gone`.
+            public var gone: Components.Responses.AccountDeleted {
+                get throws {
+                    switch self {
+                    case let .gone(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "gone",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// `RATE_LIMITED`: a rate limit was hit (doc 11 §14); retry after `Retry-After` seconds.
+            ///
+            /// - Remark: Generated from `#/paths//v1/me/preferences/patch(updatePreferences)/responses/429`.
+            ///
+            /// HTTP response code: `429 tooManyRequests`.
+            case tooManyRequests(Components.Responses.RateLimited)
+            /// The associated value of the enum case if `self` is `.tooManyRequests`.
+            ///
+            /// - Throws: An error if `self` is not `.tooManyRequests`.
+            /// - SeeAlso: `.tooManyRequests`.
+            public var tooManyRequests: Components.Responses.RateLimited {
+                get throws {
+                    switch self {
+                    case let .tooManyRequests(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "tooManyRequests",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Error (RFC 9457)
+            ///
+            /// - Remark: Generated from `#/paths//v1/me/preferences/patch(updatePreferences)/responses/default`.
+            ///
+            /// HTTP response code: `default`.
+            case `default`(statusCode: Swift.Int, Components.Responses.Problem)
+            /// The associated value of the enum case if `self` is `.`default``.
+            ///
+            /// - Throws: An error if `self` is not `.`default``.
+            /// - SeeAlso: `.`default``.
+            public var `default`: Components.Responses.Problem {
+                get throws {
+                    switch self {
+                    case let .`default`(_, response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "default",
+                            response: self
+                        )
+                    }
+                }
+            }
+        }
+        @frozen public enum AcceptableContentType: AcceptableProtocol {
+            case json
+            case applicationProblemJson
+            case other(Swift.String)
+            public init?(rawValue: Swift.String) {
+                switch rawValue.lowercased() {
+                case "application/json":
+                    self = .json
+                case "application/problem+json":
+                    self = .applicationProblemJson
+                default:
+                    self = .other(rawValue)
+                }
+            }
+            public var rawValue: Swift.String {
+                switch self {
+                case let .other(string):
+                    return string
+                case .json:
+                    return "application/json"
+                case .applicationProblemJson:
+                    return "application/problem+json"
+                }
+            }
+            public static var allCases: [Self] {
+                [
+                    .json,
+                    .applicationProblemJson
+                ]
+            }
+        }
+    }
+    /// Read the caller's onboarding progress
+    ///
+    /// Per-step progress of the onboarding flow (doc 02 §3.2) and the step the app resumes at
+    /// after a quit or a crash.
+    ///
+    ///
+    /// - Remark: HTTP `GET /v1/me/onboarding-progress`.
+    /// - Remark: Generated from `#/paths//v1/me/onboarding-progress/get(getOnboardingProgress)`.
+    public enum GetOnboardingProgress {
+        public static let id: Swift.String = "getOnboardingProgress"
+        public struct Input: Sendable, Hashable {
+            /// - Remark: Generated from `#/paths/v1/me/onboarding-progress/GET/header`.
+            public struct Headers: Sendable, Hashable {
+                public var accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.GetOnboardingProgress.AcceptableContentType>]
+                /// Creates a new `Headers`.
+                ///
+                /// - Parameters:
+                ///   - accept:
+                public init(accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.GetOnboardingProgress.AcceptableContentType>] = .defaultValues()) {
+                    self.accept = accept
+                }
+            }
+            public var headers: Operations.GetOnboardingProgress.Input.Headers
+            /// Creates a new `Input`.
+            ///
+            /// - Parameters:
+            ///   - headers:
+            public init(headers: Operations.GetOnboardingProgress.Input.Headers = .init()) {
+                self.headers = headers
+            }
+        }
+        @frozen public enum Output: Sendable, Hashable {
+            public struct Ok: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/v1/me/onboarding-progress/GET/responses/200/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/v1/me/onboarding-progress/GET/responses/200/content/application\/json`.
+                    case json(Components.Schemas.OnboardingProgress)
+                    /// The associated value of the enum case if `self` is `.json`.
+                    ///
+                    /// - Throws: An error if `self` is not `.json`.
+                    /// - SeeAlso: `.json`.
+                    public var json: Components.Schemas.OnboardingProgress {
+                        get throws {
+                            switch self {
+                            case let .json(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.GetOnboardingProgress.Output.Ok.Body
+                /// Creates a new `Ok`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                public init(body: Operations.GetOnboardingProgress.Output.Ok.Body) {
+                    self.body = body
+                }
+            }
+            /// The caller's onboarding progress
+            ///
+            /// - Remark: Generated from `#/paths//v1/me/onboarding-progress/get(getOnboardingProgress)/responses/200`.
+            ///
+            /// HTTP response code: `200 ok`.
+            case ok(Operations.GetOnboardingProgress.Output.Ok)
+            /// The associated value of the enum case if `self` is `.ok`.
+            ///
+            /// - Throws: An error if `self` is not `.ok`.
+            /// - SeeAlso: `.ok`.
+            public var ok: Operations.GetOnboardingProgress.Output.Ok {
+                get throws {
+                    switch self {
+                    case let .ok(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "ok",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// `UNAUTHENTICATED`: the credential is missing, malformed, expired or revoked. The client
+            /// renews the session once (`refreshSession`); if the renewal is refused too, it signs in
+            /// again.
+            ///
+            ///
+            /// - Remark: Generated from `#/paths//v1/me/onboarding-progress/get(getOnboardingProgress)/responses/401`.
+            ///
+            /// HTTP response code: `401 unauthorized`.
+            case unauthorized(Components.Responses.Unauthenticated)
+            /// The associated value of the enum case if `self` is `.unauthorized`.
+            ///
+            /// - Throws: An error if `self` is not `.unauthorized`.
+            /// - SeeAlso: `.unauthorized`.
+            public var unauthorized: Components.Responses.Unauthenticated {
+                get throws {
+                    switch self {
+                    case let .unauthorized(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "unauthorized",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// `ACCOUNT_DELETED`: the account is deleted or its deletion is in progress. The client
+            /// erases everything it stores for the account and returns to its signed-out start; it
+            /// tells this reply from 401 by the status alone. A 410 is cacheable by default
+            /// (RFC 9110 §15.5.11), so the reply carries `Cache-Control: no-store` and must not be
+            /// cached.
+            ///
+            ///
+            /// - Remark: Generated from `#/paths//v1/me/onboarding-progress/get(getOnboardingProgress)/responses/410`.
+            ///
+            /// HTTP response code: `410 gone`.
+            case gone(Components.Responses.AccountDeleted)
+            /// The associated value of the enum case if `self` is `.gone`.
+            ///
+            /// - Throws: An error if `self` is not `.gone`.
+            /// - SeeAlso: `.gone`.
+            public var gone: Components.Responses.AccountDeleted {
+                get throws {
+                    switch self {
+                    case let .gone(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "gone",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// `RATE_LIMITED`: a rate limit was hit (doc 11 §14); retry after `Retry-After` seconds.
+            ///
+            /// - Remark: Generated from `#/paths//v1/me/onboarding-progress/get(getOnboardingProgress)/responses/429`.
+            ///
+            /// HTTP response code: `429 tooManyRequests`.
+            case tooManyRequests(Components.Responses.RateLimited)
+            /// The associated value of the enum case if `self` is `.tooManyRequests`.
+            ///
+            /// - Throws: An error if `self` is not `.tooManyRequests`.
+            /// - SeeAlso: `.tooManyRequests`.
+            public var tooManyRequests: Components.Responses.RateLimited {
+                get throws {
+                    switch self {
+                    case let .tooManyRequests(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "tooManyRequests",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Error (RFC 9457)
+            ///
+            /// - Remark: Generated from `#/paths//v1/me/onboarding-progress/get(getOnboardingProgress)/responses/default`.
+            ///
+            /// HTTP response code: `default`.
+            case `default`(statusCode: Swift.Int, Components.Responses.Problem)
+            /// The associated value of the enum case if `self` is `.`default``.
+            ///
+            /// - Throws: An error if `self` is not `.`default``.
+            /// - SeeAlso: `.`default``.
+            public var `default`: Components.Responses.Problem {
+                get throws {
+                    switch self {
+                    case let .`default`(_, response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "default",
+                            response: self
+                        )
+                    }
+                }
+            }
+        }
+        @frozen public enum AcceptableContentType: AcceptableProtocol {
+            case json
+            case applicationProblemJson
+            case other(Swift.String)
+            public init?(rawValue: Swift.String) {
+                switch rawValue.lowercased() {
+                case "application/json":
+                    self = .json
+                case "application/problem+json":
+                    self = .applicationProblemJson
+                default:
+                    self = .other(rawValue)
+                }
+            }
+            public var rawValue: Swift.String {
+                switch self {
+                case let .other(string):
+                    return string
+                case .json:
+                    return "application/json"
+                case .applicationProblemJson:
+                    return "application/problem+json"
+                }
+            }
+            public static var allCases: [Self] {
+                [
+                    .json,
+                    .applicationProblemJson
+                ]
+            }
+        }
+    }
+    /// Record the outcome of onboarding steps
+    ///
+    /// Records `completed` or `skipped` for each step present. A status only moves forward
+    /// (`pending` → `skipped` → `completed`): a write that would move a step back leaves it
+    /// unchanged and is still answered with 200, so a replayed or late write from a device's
+    /// local buffer is harmless. Answers with the whole progress.
+    ///
+    ///
+    /// - Remark: HTTP `PATCH /v1/me/onboarding-progress`.
+    /// - Remark: Generated from `#/paths//v1/me/onboarding-progress/patch(updateOnboardingProgress)`.
+    public enum UpdateOnboardingProgress {
+        public static let id: Swift.String = "updateOnboardingProgress"
+        public struct Input: Sendable, Hashable {
+            /// - Remark: Generated from `#/paths/v1/me/onboarding-progress/PATCH/header`.
+            public struct Headers: Sendable, Hashable {
+                /// Client-generated ULID that makes a mutating request safe to retry (doc 06 §2; the
+                /// mobile mutation-log `opId`). The server keeps key, request hash and response for 48 h:
+                /// a replay with the same body returns the stored response, the same key with a different
+                /// body is refused with 409 `IDEMPOTENCY_KEY_REUSED`. Optional for the caller.
+                ///
+                ///
+                /// - Remark: Generated from `#/paths/v1/me/onboarding-progress/PATCH/header/Idempotency-Key`.
+                public var idempotencyKey: Components.Parameters.IdempotencyKey?
+                public var accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.UpdateOnboardingProgress.AcceptableContentType>]
+                /// Creates a new `Headers`.
+                ///
+                /// - Parameters:
+                ///   - idempotencyKey: Client-generated ULID that makes a mutating request safe to retry (doc 06 §2; the
+                ///   - accept:
+                public init(
+                    idempotencyKey: Components.Parameters.IdempotencyKey? = nil,
+                    accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.UpdateOnboardingProgress.AcceptableContentType>] = .defaultValues()
+                ) {
+                    self.idempotencyKey = idempotencyKey
+                    self.accept = accept
+                }
+            }
+            public var headers: Operations.UpdateOnboardingProgress.Input.Headers
+            /// - Remark: Generated from `#/paths/v1/me/onboarding-progress/PATCH/requestBody`.
+            @frozen public enum Body: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/v1/me/onboarding-progress/PATCH/requestBody/content/application\/json`.
+                case json(Components.Schemas.OnboardingProgressUpdate)
+            }
+            public var body: Operations.UpdateOnboardingProgress.Input.Body
+            /// Creates a new `Input`.
+            ///
+            /// - Parameters:
+            ///   - headers:
+            ///   - body:
+            public init(
+                headers: Operations.UpdateOnboardingProgress.Input.Headers = .init(),
+                body: Operations.UpdateOnboardingProgress.Input.Body
+            ) {
+                self.headers = headers
+                self.body = body
+            }
+        }
+        @frozen public enum Output: Sendable, Hashable {
+            public struct Ok: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/v1/me/onboarding-progress/PATCH/responses/200/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/v1/me/onboarding-progress/PATCH/responses/200/content/application\/json`.
+                    case json(Components.Schemas.OnboardingProgress)
+                    /// The associated value of the enum case if `self` is `.json`.
+                    ///
+                    /// - Throws: An error if `self` is not `.json`.
+                    /// - SeeAlso: `.json`.
+                    public var json: Components.Schemas.OnboardingProgress {
+                        get throws {
+                            switch self {
+                            case let .json(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.UpdateOnboardingProgress.Output.Ok.Body
+                /// Creates a new `Ok`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                public init(body: Operations.UpdateOnboardingProgress.Output.Ok.Body) {
+                    self.body = body
+                }
+            }
+            /// The updated onboarding progress
+            ///
+            /// - Remark: Generated from `#/paths//v1/me/onboarding-progress/patch(updateOnboardingProgress)/responses/200`.
+            ///
+            /// HTTP response code: `200 ok`.
+            case ok(Operations.UpdateOnboardingProgress.Output.Ok)
+            /// The associated value of the enum case if `self` is `.ok`.
+            ///
+            /// - Throws: An error if `self` is not `.ok`.
+            /// - SeeAlso: `.ok`.
+            public var ok: Operations.UpdateOnboardingProgress.Output.Ok {
+                get throws {
+                    switch self {
+                    case let .ok(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "ok",
+                            response: self
+                        )
+                    }
+                }
+            }
+            public struct BadRequest: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/v1/me/onboarding-progress/PATCH/responses/400/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/v1/me/onboarding-progress/PATCH/responses/400/content/application\/problem+json`.
+                    case applicationProblemJson(Components.Schemas.ProblemDetails)
+                    /// The associated value of the enum case if `self` is `.applicationProblemJson`.
+                    ///
+                    /// - Throws: An error if `self` is not `.applicationProblemJson`.
+                    /// - SeeAlso: `.applicationProblemJson`.
+                    public var applicationProblemJson: Components.Schemas.ProblemDetails {
+                        get throws {
+                            switch self {
+                            case let .applicationProblemJson(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.UpdateOnboardingProgress.Output.BadRequest.Body
+                /// Creates a new `BadRequest`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                public init(body: Operations.UpdateOnboardingProgress.Output.BadRequest.Body) {
+                    self.body = body
+                }
+            }
+            /// `VALIDATION_FAILED`: the body breaks this schema, or it marks a required step
+            /// `skipped`. `errors[]` names each step.
+            ///
+            ///
+            /// - Remark: Generated from `#/paths//v1/me/onboarding-progress/patch(updateOnboardingProgress)/responses/400`.
+            ///
+            /// HTTP response code: `400 badRequest`.
+            case badRequest(Operations.UpdateOnboardingProgress.Output.BadRequest)
+            /// The associated value of the enum case if `self` is `.badRequest`.
+            ///
+            /// - Throws: An error if `self` is not `.badRequest`.
+            /// - SeeAlso: `.badRequest`.
+            public var badRequest: Operations.UpdateOnboardingProgress.Output.BadRequest {
+                get throws {
+                    switch self {
+                    case let .badRequest(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "badRequest",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// `UNAUTHENTICATED`: the credential is missing, malformed, expired or revoked. The client
+            /// renews the session once (`refreshSession`); if the renewal is refused too, it signs in
+            /// again.
+            ///
+            ///
+            /// - Remark: Generated from `#/paths//v1/me/onboarding-progress/patch(updateOnboardingProgress)/responses/401`.
+            ///
+            /// HTTP response code: `401 unauthorized`.
+            case unauthorized(Components.Responses.Unauthenticated)
+            /// The associated value of the enum case if `self` is `.unauthorized`.
+            ///
+            /// - Throws: An error if `self` is not `.unauthorized`.
+            /// - SeeAlso: `.unauthorized`.
+            public var unauthorized: Components.Responses.Unauthenticated {
+                get throws {
+                    switch self {
+                    case let .unauthorized(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "unauthorized",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// `IDEMPOTENCY_KEY_REUSED` when the `Idempotency-Key` was already used with a different
+            /// request; `VERSION_MISMATCH` when `If-Match` no longer matches the stored version;
+            /// `CONFLICT` otherwise.
+            ///
+            ///
+            /// - Remark: Generated from `#/paths//v1/me/onboarding-progress/patch(updateOnboardingProgress)/responses/409`.
+            ///
+            /// HTTP response code: `409 conflict`.
+            case conflict(Components.Responses.Conflict)
+            /// The associated value of the enum case if `self` is `.conflict`.
+            ///
+            /// - Throws: An error if `self` is not `.conflict`.
+            /// - SeeAlso: `.conflict`.
+            public var conflict: Components.Responses.Conflict {
+                get throws {
+                    switch self {
+                    case let .conflict(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "conflict",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// `ACCOUNT_DELETED`: the account is deleted or its deletion is in progress. The client
+            /// erases everything it stores for the account and returns to its signed-out start; it
+            /// tells this reply from 401 by the status alone. A 410 is cacheable by default
+            /// (RFC 9110 §15.5.11), so the reply carries `Cache-Control: no-store` and must not be
+            /// cached.
+            ///
+            ///
+            /// - Remark: Generated from `#/paths//v1/me/onboarding-progress/patch(updateOnboardingProgress)/responses/410`.
+            ///
+            /// HTTP response code: `410 gone`.
+            case gone(Components.Responses.AccountDeleted)
+            /// The associated value of the enum case if `self` is `.gone`.
+            ///
+            /// - Throws: An error if `self` is not `.gone`.
+            /// - SeeAlso: `.gone`.
+            public var gone: Components.Responses.AccountDeleted {
+                get throws {
+                    switch self {
+                    case let .gone(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "gone",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// `RATE_LIMITED`: a rate limit was hit (doc 11 §14); retry after `Retry-After` seconds.
+            ///
+            /// - Remark: Generated from `#/paths//v1/me/onboarding-progress/patch(updateOnboardingProgress)/responses/429`.
+            ///
+            /// HTTP response code: `429 tooManyRequests`.
+            case tooManyRequests(Components.Responses.RateLimited)
+            /// The associated value of the enum case if `self` is `.tooManyRequests`.
+            ///
+            /// - Throws: An error if `self` is not `.tooManyRequests`.
+            /// - SeeAlso: `.tooManyRequests`.
+            public var tooManyRequests: Components.Responses.RateLimited {
+                get throws {
+                    switch self {
+                    case let .tooManyRequests(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "tooManyRequests",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Error (RFC 9457)
+            ///
+            /// - Remark: Generated from `#/paths//v1/me/onboarding-progress/patch(updateOnboardingProgress)/responses/default`.
+            ///
+            /// HTTP response code: `default`.
+            case `default`(statusCode: Swift.Int, Components.Responses.Problem)
+            /// The associated value of the enum case if `self` is `.`default``.
+            ///
+            /// - Throws: An error if `self` is not `.`default``.
+            /// - SeeAlso: `.`default``.
+            public var `default`: Components.Responses.Problem {
+                get throws {
+                    switch self {
+                    case let .`default`(_, response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "default",
+                            response: self
+                        )
+                    }
+                }
+            }
+        }
+        @frozen public enum AcceptableContentType: AcceptableProtocol {
+            case json
+            case applicationProblemJson
+            case other(Swift.String)
+            public init?(rawValue: Swift.String) {
+                switch rawValue.lowercased() {
+                case "application/json":
+                    self = .json
+                case "application/problem+json":
+                    self = .applicationProblemJson
+                default:
+                    self = .other(rawValue)
+                }
+            }
+            public var rawValue: Swift.String {
+                switch self {
+                case let .other(string):
+                    return string
+                case .json:
+                    return "application/json"
+                case .applicationProblemJson:
+                    return "application/problem+json"
+                }
+            }
+            public static var allCases: [Self] {
+                [
+                    .json,
+                    .applicationProblemJson
+                ]
+            }
+        }
+    }
 }

@@ -1,0 +1,886 @@
+# `profile` module contract (docs/modules/profile.md): the caller's profile settings, body
+# measurements, style preferences and onboarding progress. Included from ../openapi.yaml.
+#
+# Every resource is the caller's own (`/v1/me/*`). Measurements appear in no list endpoint, no
+# event payload and no analytics event (doc 11). Enums restate shared-kernel lists value for
+# value; packages/contracts/tests/kernel-enums.test.ts pins each one.
+#
+# Writes:
+# - PATCH is a partial update in plain JSON. A member that is present replaces the stored value of
+#   that member whole; an absent member is left unchanged; `null` is never a value. A list or
+#   object member is emptied by sending it empty; an optional single value is removed by naming
+#   it in `clear`. (Neither generated native client can send an explicit `null`, so JSON Merge
+#   Patch could not clear a field from the apps.)
+# - PUT replaces the whole resource.
+# - Profile, measurements and preferences carry `version`. Every write sends `If-Match` with the
+#   version last read; a stale one is answered with 409 `VERSION_MISMATCH` and the current state
+#   (doc 06 §2). Onboarding progress only moves forward, so its writes never conflict and carry
+#   no version.
+openapi: 3.1.0
+info:
+  title: AI Stylist API — profile
+  version: 1.0.0
+paths:
+  /v1/me/profile:
+    get:
+      operationId: getProfile
+      tags: [profile]
+      summary: Read the caller's profile settings
+      description: |
+        Presentation, starting shape and the six settings of REQ-ONB-100. A profile nothing has
+        been written to answers with its defaults and `version` 0.
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: The caller's profile
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Profile'
+        '401':
+          $ref: './platform.yaml#/components/responses/Unauthenticated'
+        '410':
+          $ref: './platform.yaml#/components/responses/AccountDeleted'
+        '429':
+          $ref: './platform.yaml#/components/responses/RateLimited'
+        default:
+          $ref: './platform.yaml#/components/responses/Problem'
+    patch:
+      operationId: updateProfile
+      tags: [profile]
+      summary: Change some of the caller's profile settings
+      description: |
+        Partial update (see the file header): each member present replaces its stored value.
+        Answers with the whole profile at its new `version`.
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: './platform.yaml#/components/parameters/IdempotencyKey'
+        - $ref: './platform.yaml#/components/parameters/IfMatch'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProfileUpdate'
+      responses:
+        '200':
+          description: The updated profile
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Profile'
+        '400':
+          description: |
+            `VALIDATION_FAILED`: the body breaks this schema, or `startingShape` is not a shape
+            of the shared-kernel registry. `errors[]` names each field.
+          content:
+            application/problem+json:
+              schema:
+                $ref: './platform.yaml#/components/schemas/ProblemDetails'
+        '401':
+          $ref: './platform.yaml#/components/responses/Unauthenticated'
+        '409':
+          $ref: '#/components/responses/ProfileConflict'
+        '410':
+          $ref: './platform.yaml#/components/responses/AccountDeleted'
+        '429':
+          $ref: './platform.yaml#/components/responses/RateLimited'
+        default:
+          $ref: './platform.yaml#/components/responses/Problem'
+  /v1/me/measurements:
+    get:
+      operationId: getMeasurements
+      tags: [profile]
+      summary: Read the caller's body measurements
+      description: |
+        The caller's current measurement set, in SI units. A set nothing has been written to
+        answers with no measurement and `version` 0. Never cached.
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: The caller's measurement set
+          headers:
+            Cache-Control:
+              $ref: './platform.yaml#/components/headers/CacheControlNoStore'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MeasurementSet'
+        '401':
+          $ref: './platform.yaml#/components/responses/Unauthenticated'
+        '410':
+          $ref: './platform.yaml#/components/responses/AccountDeleted'
+        '429':
+          $ref: './platform.yaml#/components/responses/RateLimited'
+        default:
+          $ref: './platform.yaml#/components/responses/Problem'
+    put:
+      operationId: replaceMeasurements
+      tags: [profile]
+      summary: Replace the caller's body measurements
+      description: |
+        Replaces the whole set. A measurement absent from `measurements` is removed, which is how
+        a single field is cleared; `{}` removes every measurement. Values are SI (`cm`, `kg`);
+        the app converts for display only. Answers with the stored set at its new `version`.
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: './platform.yaml#/components/parameters/IdempotencyKey'
+        - $ref: './platform.yaml#/components/parameters/IfMatch'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MeasurementsReplacement'
+      responses:
+        '200':
+          description: The stored measurement set
+          headers:
+            Cache-Control:
+              $ref: './platform.yaml#/components/headers/CacheControlNoStore'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MeasurementSet'
+        '400':
+          description: |
+            `MEASUREMENT_IMPLAUSIBLE`: a value lies outside its hard bounds (shared-kernel
+            `registry/measurement-definitions.json`, doc 07 §3.3). Nothing of the request is
+            stored. `errors[]` points at each refused value (e.g. `/measurements/height/value`)
+            and never repeats it (doc 11 §8). `VALIDATION_FAILED`: the body breaks this schema,
+            e.g. an estimated or derived value without `confidence`.
+          content:
+            application/problem+json:
+              schema:
+                $ref: './platform.yaml#/components/schemas/ProblemDetails'
+        '401':
+          $ref: './platform.yaml#/components/responses/Unauthenticated'
+        '409':
+          $ref: '#/components/responses/MeasurementSetConflict'
+        '410':
+          $ref: './platform.yaml#/components/responses/AccountDeleted'
+        '429':
+          $ref: './platform.yaml#/components/responses/RateLimited'
+        default:
+          $ref: './platform.yaml#/components/responses/Problem'
+  /v1/me/preferences:
+    get:
+      operationId: getPreferences
+      tags: [profile]
+      summary: Read the caller's style preferences
+      description: |
+        Fit and style preferences, soft dislikes and hard exclusions, climate tolerance,
+        occasions and the typical day, and usual sizes. Preferences nothing has been written to
+        answer with empty lists and `version` 0.
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: The caller's preferences
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Preferences'
+        '401':
+          $ref: './platform.yaml#/components/responses/Unauthenticated'
+        '410':
+          $ref: './platform.yaml#/components/responses/AccountDeleted'
+        '429':
+          $ref: './platform.yaml#/components/responses/RateLimited'
+        default:
+          $ref: './platform.yaml#/components/responses/Problem'
+    patch:
+      operationId: updatePreferences
+      tags: [profile]
+      summary: Change some of the caller's style preferences
+      description: |
+        Partial update (see the file header): each member present replaces its stored value
+        whole, an empty list or object empties it, and `clear` removes `climateTolerance` or
+        `typicalDay`. Answers with all preferences at their new `version`.
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: './platform.yaml#/components/parameters/IdempotencyKey'
+        - $ref: './platform.yaml#/components/parameters/IfMatch'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PreferencesUpdate'
+      responses:
+        '200':
+          description: The updated preferences
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Preferences'
+        '400':
+          description: |
+            `VALIDATION_FAILED`: the body breaks this schema, a member is both set and named in
+            `clear`, or `sizingByRegion` holds two entries for one size system and garment group.
+            `errors[]` names each field.
+          content:
+            application/problem+json:
+              schema:
+                $ref: './platform.yaml#/components/schemas/ProblemDetails'
+        '401':
+          $ref: './platform.yaml#/components/responses/Unauthenticated'
+        '409':
+          $ref: '#/components/responses/PreferencesConflict'
+        '410':
+          $ref: './platform.yaml#/components/responses/AccountDeleted'
+        '429':
+          $ref: './platform.yaml#/components/responses/RateLimited'
+        default:
+          $ref: './platform.yaml#/components/responses/Problem'
+  /v1/me/onboarding-progress:
+    get:
+      operationId: getOnboardingProgress
+      tags: [profile]
+      summary: Read the caller's onboarding progress
+      description: |
+        Per-step progress of the onboarding flow (doc 02 §3.2) and the step the app resumes at
+        after a quit or a crash.
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: The caller's onboarding progress
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OnboardingProgress'
+        '401':
+          $ref: './platform.yaml#/components/responses/Unauthenticated'
+        '410':
+          $ref: './platform.yaml#/components/responses/AccountDeleted'
+        '429':
+          $ref: './platform.yaml#/components/responses/RateLimited'
+        default:
+          $ref: './platform.yaml#/components/responses/Problem'
+    patch:
+      operationId: updateOnboardingProgress
+      tags: [profile]
+      summary: Record the outcome of onboarding steps
+      description: |
+        Records `completed` or `skipped` for each step present. A status only moves forward
+        (`pending` → `skipped` → `completed`): a write that would move a step back leaves it
+        unchanged and is still answered with 200, so a replayed or late write from a device's
+        local buffer is harmless. Answers with the whole progress.
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: './platform.yaml#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OnboardingProgressUpdate'
+      responses:
+        '200':
+          description: The updated onboarding progress
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OnboardingProgress'
+        '400':
+          description: |
+            `VALIDATION_FAILED`: the body breaks this schema, or it marks a required step
+            `skipped`. `errors[]` names each step.
+          content:
+            application/problem+json:
+              schema:
+                $ref: './platform.yaml#/components/schemas/ProblemDetails'
+        '401':
+          $ref: './platform.yaml#/components/responses/Unauthenticated'
+        '409':
+          $ref: './platform.yaml#/components/responses/Conflict'
+        '410':
+          $ref: './platform.yaml#/components/responses/AccountDeleted'
+        '429':
+          $ref: './platform.yaml#/components/responses/RateLimited'
+        default:
+          $ref: './platform.yaml#/components/responses/Problem'
+components:
+  responses:
+    ProfileConflict:
+      description: |
+        `VERSION_MISMATCH`: `If-Match` names an older version than the stored one. `current` is
+        the stored profile, so the app can keep the losing edit and offer to re-apply it on top
+        (doc 04 §8). `IDEMPOTENCY_KEY_REUSED` or `CONFLICT` otherwise, without `current`.
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/ProfileVersionConflict'
+    MeasurementSetConflict:
+      description: |
+        `VERSION_MISMATCH`: `If-Match` names an older version than the stored one. `current` is
+        the stored measurement set, so the app can keep the losing edit and offer to re-apply it
+        on top (doc 04 §8). `IDEMPOTENCY_KEY_REUSED` or `CONFLICT` otherwise, without `current`.
+      headers:
+        Cache-Control:
+          $ref: './platform.yaml#/components/headers/CacheControlNoStore'
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/MeasurementSetVersionConflict'
+    PreferencesConflict:
+      description: |
+        `VERSION_MISMATCH`: `If-Match` names an older version than the stored one. `current` is
+        the stored preferences, so the app can keep the losing edit and offer to re-apply it on
+        top (doc 04 §8). `IDEMPOTENCY_KEY_REUSED` or `CONFLICT` otherwise, without `current`.
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/PreferencesVersionConflict'
+  schemas:
+    ProfileId:
+      type: string
+      description: Profile id, a prefixed ULID (`prf_`, shared-kernel `ID_PREFIXES.profile`).
+      pattern: '^prf_[0-7][0-9A-HJKMNP-TV-Z]{25}$'
+      examples: ['prf_01J9Z3K8X2Q7N5V4B6C8D0E1F4']
+    ResourceVersion:
+      type: integer
+      minimum: 0
+      description: |
+        Version of the resource (doc 06 §2). It grows by one with every accepted write; 0 means
+        nothing has been written yet. Send it back as `If-Match: "<version>"`.
+    Profile:
+      type: object
+      description: |
+        The caller's profile settings. `presentation` and `startingShape` are independent: any
+        presentation goes with any starting shape (REQ-ONB-050). The six settings of REQ-ONB-100
+        are `locale` (formats dates and numbers, e.g. `en-GB`), `language` (the language of the
+        app's text, e.g. `en`), `unitSystem`, `timezone`, `region` and `accessibility`. The first
+        five are absent until the person confirms them in onboarding (step "units and locale";
+        the app pre-fills them from the device), and are edited, not removed, after that.
+      required: [id, version, presentation, startingShape, accessibility]
+      properties:
+        id:
+          $ref: '#/components/schemas/ProfileId'
+        version:
+          $ref: '#/components/schemas/ResourceVersion'
+        presentation:
+          $ref: '#/components/schemas/Presentation'
+        startingShape:
+          $ref: '#/components/schemas/StartingShapeId'
+        locale:
+          $ref: './platform.yaml#/components/schemas/Locale'
+        language:
+          $ref: './platform.yaml#/components/schemas/Locale'
+        unitSystem:
+          $ref: '#/components/schemas/UnitSystem'
+        timezone:
+          $ref: '#/components/schemas/TimeZone'
+        region:
+          $ref: '#/components/schemas/RegionCode'
+        accessibility:
+          $ref: '#/components/schemas/AccessibilitySettings'
+    ProfileUpdate:
+      type: object
+      description: |
+        Partial update of `Profile`: each member present replaces its stored value. `presentation`
+        returns to its default by sending `unspecified`, `startingShape` by sending
+        `from_measurements`.
+      additionalProperties: false
+      minProperties: 1
+      properties:
+        presentation:
+          $ref: '#/components/schemas/Presentation'
+        startingShape:
+          $ref: '#/components/schemas/StartingShapeId'
+        locale:
+          $ref: './platform.yaml#/components/schemas/Locale'
+        language:
+          $ref: './platform.yaml#/components/schemas/Locale'
+        unitSystem:
+          $ref: '#/components/schemas/UnitSystem'
+        timezone:
+          $ref: '#/components/schemas/TimeZone'
+        region:
+          $ref: '#/components/schemas/RegionCode'
+        accessibility:
+          $ref: '#/components/schemas/AccessibilitySettings'
+    ProfileVersionConflict:
+      description: A problem (RFC 9457) that carries the stored profile when `code` is `VERSION_MISMATCH`.
+      allOf:
+        - $ref: './platform.yaml#/components/schemas/ProblemDetails'
+        - type: object
+          properties:
+            current:
+              $ref: '#/components/schemas/Profile'
+    Presentation:
+      type: string
+      description: |
+        Presentation the person chooses (doc 03 §1.2, doc 07 §3.1); never inferred, and it never
+        limits which starting shape or measurements are valid. Default `unspecified`. Mirrors
+        shared-kernel `PRESENTATIONS`.
+      enum: [feminine, masculine, androgynous, unspecified]
+    StartingShapeId:
+      type: string
+      description: |
+        Id of the starting shape the avatar begins from (doc 07 §3.1), the base-model selection
+        of onboarding. One of the shapes of the shared-kernel registry
+        `registry/starting-shapes.json`; the server refuses any other id with 400
+        `VALIDATION_FAILED`. Default `from_measurements`. An id string, not an enum, so that a
+        shape can be added or retired (P04) without a breaking contract change. The base mesh
+        all shapes share is a kernel constant and is not stored per person.
+      pattern: '^[a-z][a-z0-9_]{0,63}$'
+      examples: ['from_measurements']
+    UnitSystem:
+      type: string
+      description: |
+        How the apps show measurements; it never changes what the API stores or returns (SI).
+        Mirrors shared-kernel `UNIT_SYSTEMS`.
+      enum: [metric, imperial]
+    TimeZone:
+      type: string
+      description: IANA time zone name, e.g. `Europe/Berlin`.
+      pattern: '^[A-Za-z][A-Za-z0-9_+-]*(/[A-Za-z0-9_+-]+)*$'
+      maxLength: 64
+      examples: ['Europe/Berlin']
+    RegionCode:
+      type: string
+      description: ISO 3166-1 alpha-2 region code, e.g. `DE`. A setting the person chooses, not a location.
+      pattern: '^[A-Z]{2}$'
+      examples: ['DE']
+    AccessibilitySettings:
+      type: object
+      description: Accessibility settings the apps apply (phase P03 §4). Both are `false` by default.
+      required: [reducedMotion, prefersNon3d]
+      properties:
+        reducedMotion:
+          type: boolean
+          description: Show no motion that is not needed to understand the screen.
+        prefersNon3d:
+          type: boolean
+          description: Prefer flat images to 3D views wherever the app offers both.
+    MeasurementSet:
+      type: object
+      description: |
+        The caller's current measurement set (doc 03 §1.2). Each value is SI with its unit and
+        source; `unitSystem` changes only how an app shows it.
+      required: [version, measurements]
+      properties:
+        version:
+          $ref: '#/components/schemas/ResourceVersion'
+        measurements:
+          $ref: '#/components/schemas/BodyMeasurements'
+    MeasurementsReplacement:
+      type: object
+      description: The whole new measurement set; a measurement left out is removed.
+      additionalProperties: false
+      required: [measurements]
+      properties:
+        measurements:
+          $ref: '#/components/schemas/BodyMeasurements'
+    MeasurementSetVersionConflict:
+      description: A problem (RFC 9457) that carries the stored measurement set when `code` is `VERSION_MISMATCH`.
+      allOf:
+        - $ref: './platform.yaml#/components/schemas/ProblemDetails'
+        - type: object
+          properties:
+            current:
+              $ref: '#/components/schemas/MeasurementSet'
+    BodyMeasurements:
+      type: object
+      description: |
+        The ten body measurements of doc 07 §3.3, each optional: an absent one has not been
+        given. Their ids, units and hard bounds are shared-kernel registry data
+        (`registry/measurement-definitions.json`); a value outside its bounds is refused with
+        400 `MEASUREMENT_IMPLAUSIBLE` and never stored.
+      properties:
+        height:
+          $ref: '#/components/schemas/LengthMeasurement'
+        weight:
+          $ref: '#/components/schemas/MassMeasurement'
+        chest:
+          $ref: '#/components/schemas/LengthMeasurement'
+        waist:
+          $ref: '#/components/schemas/LengthMeasurement'
+        hips:
+          $ref: '#/components/schemas/LengthMeasurement'
+        inseam:
+          $ref: '#/components/schemas/LengthMeasurement'
+        shoulder:
+          $ref: '#/components/schemas/LengthMeasurement'
+        sleeve:
+          $ref: '#/components/schemas/LengthMeasurement'
+        thigh:
+          $ref: '#/components/schemas/LengthMeasurement'
+        neck:
+          $ref: '#/components/schemas/LengthMeasurement'
+    LengthMeasurement:
+      type: object
+      description: |
+        A body length in centimetres with its provenance (doc 06 §3.1). `confidence` is always
+        present when `source` is `estimated` or `derived`, and optional for `user`.
+      required: [value, unit, source]
+      properties:
+        value:
+          type: number
+          description: The length, in `unit`.
+        unit:
+          $ref: '#/components/schemas/LengthUnit'
+        source:
+          $ref: '#/components/schemas/MeasurementSource'
+        confidence:
+          $ref: '#/components/schemas/MeasurementConfidence'
+        measuredAt:
+          type: string
+          format: date-time
+          description: When the value was taken or entered.
+      examples:
+        - { value: 176, unit: cm, source: user }
+        - { value: 176, unit: cm, source: estimated, confidence: 0.6 }
+        - { value: 176, unit: cm, source: derived, confidence: 0.8 }
+    MassMeasurement:
+      type: object
+      description: |
+        A body mass in kilograms with its provenance (doc 06 §3.1). `confidence` is always
+        present when `source` is `estimated` or `derived`, and optional for `user`.
+      required: [value, unit, source]
+      properties:
+        value:
+          type: number
+          description: The mass, in `unit`.
+        unit:
+          $ref: '#/components/schemas/MassUnit'
+        source:
+          $ref: '#/components/schemas/MeasurementSource'
+        confidence:
+          $ref: '#/components/schemas/MeasurementConfidence'
+        measuredAt:
+          type: string
+          format: date-time
+          description: When the value was taken or entered.
+    LengthUnit:
+      type: string
+      description: Stored length unit. Mirrors shared-kernel `LENGTH_UNITS`.
+      enum: [cm]
+    MassUnit:
+      type: string
+      description: Stored mass unit. Mirrors shared-kernel `MASS_UNITS`.
+      enum: [kg]
+    MeasurementSource:
+      type: string
+      description: |
+        Who produced the value (doc 06 §3.1): the person (`user`), an estimate, or a value
+        derived from other values. Mirrors shared-kernel `MEASUREMENT_SOURCES`.
+      enum: [user, estimated, derived]
+    MeasurementConfidence:
+      type: number
+      description: Confidence in the value, from 0 to 1.
+      minimum: 0
+      maximum: 1
+    Preferences:
+      type: object
+      description: |
+        The caller's style preferences. Hard exclusions are never broken by a suggestion; soft
+        dislikes only lower a score (REQ-ONB-060, doc 03 §1.2). An unset `climateTolerance`
+        counts as `neutral`.
+      required:
+        - version
+        - fitPreferences
+        - styleTypes
+        - softDislikes
+        - hardExclusions
+        - occasionPresets
+        - sizingByRegion
+      properties:
+        version:
+          $ref: '#/components/schemas/ResourceVersion'
+        fitPreferences:
+          $ref: '#/components/schemas/FitPreferences'
+        styleTypes:
+          $ref: '#/components/schemas/StyleTypeList'
+        softDislikes:
+          $ref: '#/components/schemas/PreferenceItemList'
+        hardExclusions:
+          $ref: '#/components/schemas/PreferenceItemList'
+        climateTolerance:
+          $ref: '#/components/schemas/ClimateTolerance'
+        occasionPresets:
+          $ref: '#/components/schemas/OccasionPresetList'
+        typicalDay:
+          $ref: '#/components/schemas/OccasionPreset'
+        sizingByRegion:
+          $ref: '#/components/schemas/UsualSizeList'
+    PreferencesUpdate:
+      type: object
+      description: |
+        Partial update of `Preferences`: each member present replaces its stored value whole. A
+        member may not be both set and named in `clear`.
+      additionalProperties: false
+      minProperties: 1
+      properties:
+        fitPreferences:
+          $ref: '#/components/schemas/FitPreferences'
+        styleTypes:
+          $ref: '#/components/schemas/StyleTypeList'
+        softDislikes:
+          $ref: '#/components/schemas/PreferenceItemList'
+        hardExclusions:
+          $ref: '#/components/schemas/PreferenceItemList'
+        climateTolerance:
+          $ref: '#/components/schemas/ClimateTolerance'
+        occasionPresets:
+          $ref: '#/components/schemas/OccasionPresetList'
+        typicalDay:
+          $ref: '#/components/schemas/OccasionPreset'
+        sizingByRegion:
+          $ref: '#/components/schemas/UsualSizeList'
+        clear:
+          type: array
+          description: Optional single values to remove.
+          minItems: 1
+          uniqueItems: true
+          items:
+            $ref: '#/components/schemas/ClearablePreference'
+    PreferencesVersionConflict:
+      description: A problem (RFC 9457) that carries the stored preferences when `code` is `VERSION_MISMATCH`.
+      allOf:
+        - $ref: './platform.yaml#/components/schemas/ProblemDetails'
+        - type: object
+          properties:
+            current:
+              $ref: '#/components/schemas/Preferences'
+    ClearablePreference:
+      type: string
+      description: A `Preferences` member that holds one optional value and can be removed.
+      enum: [climateTolerance, typicalDay]
+    FitPreferences:
+      type: object
+      description: |
+        Preferred fit per garment group (doc 08 §4.2 `attr.cut`); a group with no choice is
+        absent. The keys are the shared-kernel `GARMENT_GROUPS` except `shoes`.
+      properties:
+        tops:
+          $ref: '#/components/schemas/FitChoice'
+        bottoms:
+          $ref: '#/components/schemas/FitChoice'
+        dresses:
+          $ref: '#/components/schemas/FitChoice'
+        outerwear:
+          $ref: '#/components/schemas/FitChoice'
+    FitChoice:
+      type: string
+      description: Mirrors shared-kernel `FIT_CHOICES`.
+      enum: [fitted, regular, relaxed, oversized]
+    StyleTypeList:
+      type: array
+      description: The style types the person selected (style identity, doc 03 §1.2).
+      uniqueItems: true
+      items:
+        $ref: '#/components/schemas/StyleType'
+    StyleType:
+      type: string
+      description: Mirrors shared-kernel `STYLE_TYPES`.
+      enum: [minimal, classic, smart_casual]
+    PreferenceItemList:
+      type: array
+      uniqueItems: true
+      items:
+        $ref: '#/components/schemas/PreferenceItem'
+    PreferenceItem:
+      type: object
+      description: |
+        One soft dislike or hard exclusion. `kind` names the list `value` comes from; the only
+        kind is `material`.
+      required: [kind, value]
+      properties:
+        kind:
+          $ref: '#/components/schemas/PreferenceKind'
+        value:
+          $ref: '#/components/schemas/Material'
+    PreferenceKind:
+      type: string
+      description: Mirrors shared-kernel `PREFERENCE_KINDS`.
+      enum: [material]
+    Material:
+      type: string
+      description: Material values of doc 08 §4.1 `attr.material`. Mirrors shared-kernel `MATERIALS`.
+      enum:
+        - cotton
+        - linen
+        - wool
+        - cashmere
+        - silk
+        - denim
+        - leather
+        - suede
+        - synthetic
+        - blend
+        - knit
+        - down
+        - canvas
+        - metal
+        - other
+    ClimateTolerance:
+      type: string
+      description: How warm or cold the person usually feels (REQ-ONB-070). Mirrors shared-kernel `CLIMATE_TOLERANCES`.
+      enum: [runs_cold, neutral, runs_hot]
+    OccasionPresetList:
+      type: array
+      description: The occasions the person selected in onboarding.
+      uniqueItems: true
+      items:
+        $ref: '#/components/schemas/OccasionPreset'
+    OccasionPreset:
+      type: string
+      description: |
+        Occasion presets (doc 03 §1.7). As `typicalDay`, the occasion suggestions use whenever
+        the person selects none (DEC-71). Mirrors shared-kernel `OCCASION_PRESETS`.
+      enum: [work_day, dinner, travel, sport]
+    UsualSizeList:
+      type: array
+      description: |
+        The person's usual label sizes, at most one per size system and garment group (one entry
+        for each pair of `SizeSystem` and `GarmentGroup`). No size per brand.
+      maxItems: 20
+      uniqueItems: true
+      items:
+        $ref: '#/components/schemas/UsualSize'
+    UsualSize:
+      type: object
+      description: A usual label size in one size system for one garment group (doc 08 §5).
+      required: [system, group, size]
+      properties:
+        system:
+          $ref: '#/components/schemas/SizeSystem'
+        group:
+          $ref: '#/components/schemas/GarmentGroup'
+        size:
+          type: string
+          description: The label size as written, e.g. `39`, `M` or `10.5`.
+          minLength: 1
+          maxLength: 8
+          pattern: '^[A-Za-z0-9./ -]+$'
+          examples: ['39', 'M', '10.5']
+    SizeSystem:
+      type: string
+      description: Label size systems (doc 08 §5). Mirrors shared-kernel `SIZE_SYSTEMS`.
+      enum: [EU, US, UK, ALPHA]
+    GarmentGroup:
+      type: string
+      description: Top-level garment groups (doc 08 §3 `cat.*`). Mirrors shared-kernel `GARMENT_GROUPS`.
+      enum: [tops, bottoms, dresses, outerwear, shoes]
+    OnboardingProgress:
+      type: object
+      description: |
+        Per-step onboarding progress (doc 02 §3.2), kept on the server so the app resumes after
+        a quit or a crash. `nextRequiredStep` is the first required step not yet completed; the
+        app resumes there, and opens Today when it is absent.
+      required: [steps]
+      properties:
+        steps:
+          $ref: '#/components/schemas/OnboardingSteps'
+        nextRequiredStep:
+          $ref: '#/components/schemas/OnboardingStep'
+    OnboardingSteps:
+      type: object
+      description: |
+        One entry per onboarding step, keyed by step; the keys are the `OnboardingStep` values in
+        camelCase. `signIn` is completed by the server when the account is created.
+      required:
+        - welcome
+        - signIn
+        - coreConsents
+        - unitsLocale
+        - presentationBaseModel
+        - heightWeight
+        - additionalMeasurements
+        - fitStylePreferences
+        - lifestyleOccasions
+        - firstCaptureNudge
+      properties:
+        welcome:
+          $ref: '#/components/schemas/OnboardingStepState'
+        signIn:
+          $ref: '#/components/schemas/OnboardingStepState'
+        coreConsents:
+          $ref: '#/components/schemas/OnboardingStepState'
+        unitsLocale:
+          $ref: '#/components/schemas/OnboardingStepState'
+        presentationBaseModel:
+          $ref: '#/components/schemas/OnboardingStepState'
+        heightWeight:
+          $ref: '#/components/schemas/OnboardingStepState'
+        additionalMeasurements:
+          $ref: '#/components/schemas/OnboardingStepState'
+        fitStylePreferences:
+          $ref: '#/components/schemas/OnboardingStepState'
+        lifestyleOccasions:
+          $ref: '#/components/schemas/OnboardingStepState'
+        firstCaptureNudge:
+          $ref: '#/components/schemas/OnboardingStepState'
+    OnboardingStepState:
+      type: object
+      required: [required, status]
+      properties:
+        required:
+          type: boolean
+          description: True when onboarding cannot finish without this step; only optional steps offer Skip.
+        status:
+          $ref: '#/components/schemas/OnboardingStepStatus'
+    OnboardingStepStatus:
+      type: string
+      description: '`pending` until the person completes or skips the step; it never returns to `pending`.'
+      enum: [pending, completed, skipped]
+    OnboardingStep:
+      type: string
+      description: Onboarding steps of doc 02 §3.2, in flow order.
+      enum:
+        - welcome
+        - sign_in
+        - core_consents
+        - units_locale
+        - presentation_base_model
+        - height_weight
+        - additional_measurements
+        - fit_style_preferences
+        - lifestyle_occasions
+        - first_capture_nudge
+    OnboardingProgressUpdate:
+      type: object
+      additionalProperties: false
+      required: [steps]
+      properties:
+        steps:
+          $ref: '#/components/schemas/OnboardingStepsUpdate'
+    OnboardingStepsUpdate:
+      type: object
+      description: The outcome of each step present; an absent step is left unchanged.
+      additionalProperties: false
+      minProperties: 1
+      properties:
+        welcome:
+          $ref: '#/components/schemas/OnboardingStepOutcome'
+        signIn:
+          $ref: '#/components/schemas/OnboardingStepOutcome'
+        coreConsents:
+          $ref: '#/components/schemas/OnboardingStepOutcome'
+        unitsLocale:
+          $ref: '#/components/schemas/OnboardingStepOutcome'
+        presentationBaseModel:
+          $ref: '#/components/schemas/OnboardingStepOutcome'
+        heightWeight:
+          $ref: '#/components/schemas/OnboardingStepOutcome'
+        additionalMeasurements:
+          $ref: '#/components/schemas/OnboardingStepOutcome'
+        fitStylePreferences:
+          $ref: '#/components/schemas/OnboardingStepOutcome'
+        lifestyleOccasions:
+          $ref: '#/components/schemas/OnboardingStepOutcome'
+        firstCaptureNudge:
+          $ref: '#/components/schemas/OnboardingStepOutcome'
+    OnboardingStepOutcome:
+      type: string
+      description: '`skipped` is refused for a required step.'
+      enum: [completed, skipped]

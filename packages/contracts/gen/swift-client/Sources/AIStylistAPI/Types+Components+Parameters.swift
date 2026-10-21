@@ -29,5 +29,12 @@ extension Components {
         ///
         /// - Remark: Generated from `#/components/parameters/Limit`.
         public typealias Limit = Swift.Int
+        /// The `version` of the resource the client last read, as a quoted integer, e.g. `"3"`
+        /// (doc 06 §2). Every write to a versioned resource sends it; a stale version is refused
+        /// with 409 `VERSION_MISMATCH`.
+        ///
+        ///
+        /// - Remark: Generated from `#/components/parameters/IfMatch`.
+        public typealias IfMatch = Swift.String
     }
 }

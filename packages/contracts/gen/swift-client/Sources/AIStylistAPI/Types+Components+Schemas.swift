@@ -1470,11 +1470,13 @@ extension Components {
         ///
         /// - Remark: Generated from `#/components/schemas/ConsentSurface`.
         public typealias ConsentSurface = Swift.String
-        /// BCP 47 language tag of the text the person saw, e.g. `en-GB`.
+        /// BCP 47 language tag, e.g. `en-GB`.
         ///
         /// - Remark: Generated from `#/components/schemas/Locale`.
         public typealias Locale = Swift.String
-        /// One append-only consent record (doc 11 §7.1).
+        /// One append-only consent record (doc 11 §7.1); `locale` is the language of the text the
+        /// person saw.
+        ///
         ///
         /// - Remark: Generated from `#/components/schemas/ConsentRecord`.
         public struct ConsentRecord: Codable, Hashable, Sendable {
@@ -1564,6 +1566,8 @@ extension Components {
                 case nextCursor
             }
         }
+        /// One consent decision; `locale` is the language of the text the person saw.
+        ///
         /// - Remark: Generated from `#/components/schemas/ConsentChange`.
         public struct ConsentChange: Codable, Hashable, Sendable {
             /// - Remark: Generated from `#/components/schemas/ConsentChange/purpose`.
@@ -1632,6 +1636,1364 @@ extension Components {
                     "policyVersion",
                     "surface",
                     "locale"
+                ])
+            }
+        }
+        /// Profile id, a prefixed ULID (`prf_`, shared-kernel `ID_PREFIXES.profile`).
+        ///
+        /// - Remark: Generated from `#/components/schemas/ProfileId`.
+        public typealias ProfileId = Swift.String
+        /// Version of the resource (doc 06 §2). It grows by one with every accepted write; 0 means
+        /// nothing has been written yet. Send it back as `If-Match: "<version>"`.
+        ///
+        ///
+        /// - Remark: Generated from `#/components/schemas/ResourceVersion`.
+        public typealias ResourceVersion = Swift.Int
+        /// Presentation the person chooses (doc 03 §1.2, doc 07 §3.1); never inferred, and it never
+        /// limits which starting shape or measurements are valid. Default `unspecified`. Mirrors
+        /// shared-kernel `PRESENTATIONS`.
+        ///
+        ///
+        /// - Remark: Generated from `#/components/schemas/Presentation`.
+        @frozen public enum Presentation: String, Codable, Hashable, Sendable, CaseIterable {
+            case feminine = "feminine"
+            case masculine = "masculine"
+            case androgynous = "androgynous"
+            case unspecified = "unspecified"
+        }
+        /// Id of the starting shape the avatar begins from (doc 07 §3.1), the base-model selection
+        /// of onboarding. One of the shapes of the shared-kernel registry
+        /// `registry/starting-shapes.json`; the server refuses any other id with 400
+        /// `VALIDATION_FAILED`. Default `from_measurements`. An id string, not an enum, so that a
+        /// shape can be added or retired (P04) without a breaking contract change. The base mesh
+        /// all shapes share is a kernel constant and is not stored per person.
+        ///
+        ///
+        /// - Remark: Generated from `#/components/schemas/StartingShapeId`.
+        public typealias StartingShapeId = Swift.String
+        /// How the apps show measurements; it never changes what the API stores or returns (SI).
+        /// Mirrors shared-kernel `UNIT_SYSTEMS`.
+        ///
+        ///
+        /// - Remark: Generated from `#/components/schemas/UnitSystem`.
+        @frozen public enum UnitSystem: String, Codable, Hashable, Sendable, CaseIterable {
+            case metric = "metric"
+            case imperial = "imperial"
+        }
+        /// IANA time zone name, e.g. `Europe/Berlin`.
+        ///
+        /// - Remark: Generated from `#/components/schemas/TimeZone`.
+        public typealias TimeZone = Swift.String
+        /// ISO 3166-1 alpha-2 region code, e.g. `DE`. A setting the person chooses, not a location.
+        ///
+        /// - Remark: Generated from `#/components/schemas/RegionCode`.
+        public typealias RegionCode = Swift.String
+        /// Accessibility settings the apps apply (phase P03 §4). Both are `false` by default.
+        ///
+        /// - Remark: Generated from `#/components/schemas/AccessibilitySettings`.
+        public struct AccessibilitySettings: Codable, Hashable, Sendable {
+            /// Show no motion that is not needed to understand the screen.
+            ///
+            /// - Remark: Generated from `#/components/schemas/AccessibilitySettings/reducedMotion`.
+            public var reducedMotion: Swift.Bool
+            /// Prefer flat images to 3D views wherever the app offers both.
+            ///
+            /// - Remark: Generated from `#/components/schemas/AccessibilitySettings/prefersNon3d`.
+            public var prefersNon3d: Swift.Bool
+            /// Creates a new `AccessibilitySettings`.
+            ///
+            /// - Parameters:
+            ///   - reducedMotion: Show no motion that is not needed to understand the screen.
+            ///   - prefersNon3d: Prefer flat images to 3D views wherever the app offers both.
+            public init(
+                reducedMotion: Swift.Bool,
+                prefersNon3d: Swift.Bool
+            ) {
+                self.reducedMotion = reducedMotion
+                self.prefersNon3d = prefersNon3d
+            }
+            public enum CodingKeys: String, CodingKey {
+                case reducedMotion
+                case prefersNon3d
+            }
+        }
+        /// The caller's profile settings. `presentation` and `startingShape` are independent: any
+        /// presentation goes with any starting shape (REQ-ONB-050). The six settings of REQ-ONB-100
+        /// are `locale` (formats dates and numbers, e.g. `en-GB`), `language` (the language of the
+        /// app's text, e.g. `en`), `unitSystem`, `timezone`, `region` and `accessibility`. The first
+        /// five are absent until the person confirms them in onboarding (step "units and locale";
+        /// the app pre-fills them from the device), and are edited, not removed, after that.
+        ///
+        ///
+        /// - Remark: Generated from `#/components/schemas/Profile`.
+        public struct Profile: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/Profile/id`.
+            public var id: Components.Schemas.ProfileId
+            /// - Remark: Generated from `#/components/schemas/Profile/version`.
+            public var version: Components.Schemas.ResourceVersion
+            /// - Remark: Generated from `#/components/schemas/Profile/presentation`.
+            public var presentation: Components.Schemas.Presentation
+            /// - Remark: Generated from `#/components/schemas/Profile/startingShape`.
+            public var startingShape: Components.Schemas.StartingShapeId
+            /// - Remark: Generated from `#/components/schemas/Profile/locale`.
+            public var locale: Components.Schemas.Locale?
+            /// - Remark: Generated from `#/components/schemas/Profile/language`.
+            public var language: Components.Schemas.Locale?
+            /// - Remark: Generated from `#/components/schemas/Profile/unitSystem`.
+            public var unitSystem: Components.Schemas.UnitSystem?
+            /// - Remark: Generated from `#/components/schemas/Profile/timezone`.
+            public var timezone: Components.Schemas.TimeZone?
+            /// - Remark: Generated from `#/components/schemas/Profile/region`.
+            public var region: Components.Schemas.RegionCode?
+            /// - Remark: Generated from `#/components/schemas/Profile/accessibility`.
+            public var accessibility: Components.Schemas.AccessibilitySettings
+            /// Creates a new `Profile`.
+            ///
+            /// - Parameters:
+            ///   - id:
+            ///   - version:
+            ///   - presentation:
+            ///   - startingShape:
+            ///   - locale:
+            ///   - language:
+            ///   - unitSystem:
+            ///   - timezone:
+            ///   - region:
+            ///   - accessibility:
+            public init(
+                id: Components.Schemas.ProfileId,
+                version: Components.Schemas.ResourceVersion,
+                presentation: Components.Schemas.Presentation,
+                startingShape: Components.Schemas.StartingShapeId,
+                locale: Components.Schemas.Locale? = nil,
+                language: Components.Schemas.Locale? = nil,
+                unitSystem: Components.Schemas.UnitSystem? = nil,
+                timezone: Components.Schemas.TimeZone? = nil,
+                region: Components.Schemas.RegionCode? = nil,
+                accessibility: Components.Schemas.AccessibilitySettings
+            ) {
+                self.id = id
+                self.version = version
+                self.presentation = presentation
+                self.startingShape = startingShape
+                self.locale = locale
+                self.language = language
+                self.unitSystem = unitSystem
+                self.timezone = timezone
+                self.region = region
+                self.accessibility = accessibility
+            }
+            public enum CodingKeys: String, CodingKey {
+                case id
+                case version
+                case presentation
+                case startingShape
+                case locale
+                case language
+                case unitSystem
+                case timezone
+                case region
+                case accessibility
+            }
+        }
+        /// Partial update of `Profile`: each member present replaces its stored value. `presentation`
+        /// returns to its default by sending `unspecified`, `startingShape` by sending
+        /// `from_measurements`.
+        ///
+        ///
+        /// - Remark: Generated from `#/components/schemas/ProfileUpdate`.
+        public struct ProfileUpdate: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/ProfileUpdate/presentation`.
+            public var presentation: Components.Schemas.Presentation?
+            /// - Remark: Generated from `#/components/schemas/ProfileUpdate/startingShape`.
+            public var startingShape: Components.Schemas.StartingShapeId?
+            /// - Remark: Generated from `#/components/schemas/ProfileUpdate/locale`.
+            public var locale: Components.Schemas.Locale?
+            /// - Remark: Generated from `#/components/schemas/ProfileUpdate/language`.
+            public var language: Components.Schemas.Locale?
+            /// - Remark: Generated from `#/components/schemas/ProfileUpdate/unitSystem`.
+            public var unitSystem: Components.Schemas.UnitSystem?
+            /// - Remark: Generated from `#/components/schemas/ProfileUpdate/timezone`.
+            public var timezone: Components.Schemas.TimeZone?
+            /// - Remark: Generated from `#/components/schemas/ProfileUpdate/region`.
+            public var region: Components.Schemas.RegionCode?
+            /// - Remark: Generated from `#/components/schemas/ProfileUpdate/accessibility`.
+            public var accessibility: Components.Schemas.AccessibilitySettings?
+            /// Creates a new `ProfileUpdate`.
+            ///
+            /// - Parameters:
+            ///   - presentation:
+            ///   - startingShape:
+            ///   - locale:
+            ///   - language:
+            ///   - unitSystem:
+            ///   - timezone:
+            ///   - region:
+            ///   - accessibility:
+            public init(
+                presentation: Components.Schemas.Presentation? = nil,
+                startingShape: Components.Schemas.StartingShapeId? = nil,
+                locale: Components.Schemas.Locale? = nil,
+                language: Components.Schemas.Locale? = nil,
+                unitSystem: Components.Schemas.UnitSystem? = nil,
+                timezone: Components.Schemas.TimeZone? = nil,
+                region: Components.Schemas.RegionCode? = nil,
+                accessibility: Components.Schemas.AccessibilitySettings? = nil
+            ) {
+                self.presentation = presentation
+                self.startingShape = startingShape
+                self.locale = locale
+                self.language = language
+                self.unitSystem = unitSystem
+                self.timezone = timezone
+                self.region = region
+                self.accessibility = accessibility
+            }
+            public enum CodingKeys: String, CodingKey {
+                case presentation
+                case startingShape
+                case locale
+                case language
+                case unitSystem
+                case timezone
+                case region
+                case accessibility
+            }
+            public init(from decoder: any Swift.Decoder) throws {
+                let container = try decoder.container(keyedBy: CodingKeys.self)
+                self.presentation = try container.decodeIfPresent(
+                    Components.Schemas.Presentation.self,
+                    forKey: .presentation
+                )
+                self.startingShape = try container.decodeIfPresent(
+                    Components.Schemas.StartingShapeId.self,
+                    forKey: .startingShape
+                )
+                self.locale = try container.decodeIfPresent(
+                    Components.Schemas.Locale.self,
+                    forKey: .locale
+                )
+                self.language = try container.decodeIfPresent(
+                    Components.Schemas.Locale.self,
+                    forKey: .language
+                )
+                self.unitSystem = try container.decodeIfPresent(
+                    Components.Schemas.UnitSystem.self,
+                    forKey: .unitSystem
+                )
+                self.timezone = try container.decodeIfPresent(
+                    Components.Schemas.TimeZone.self,
+                    forKey: .timezone
+                )
+                self.region = try container.decodeIfPresent(
+                    Components.Schemas.RegionCode.self,
+                    forKey: .region
+                )
+                self.accessibility = try container.decodeIfPresent(
+                    Components.Schemas.AccessibilitySettings.self,
+                    forKey: .accessibility
+                )
+                try decoder.ensureNoAdditionalProperties(knownKeys: [
+                    "presentation",
+                    "startingShape",
+                    "locale",
+                    "language",
+                    "unitSystem",
+                    "timezone",
+                    "region",
+                    "accessibility"
+                ])
+            }
+        }
+        /// A problem (RFC 9457) that carries the stored profile when `code` is `VERSION_MISMATCH`.
+        ///
+        /// - Remark: Generated from `#/components/schemas/ProfileVersionConflict`.
+        public struct ProfileVersionConflict: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/ProfileVersionConflict/value1`.
+            public var value1: Components.Schemas.ProblemDetails
+            /// - Remark: Generated from `#/components/schemas/ProfileVersionConflict/value2`.
+            public struct Value2Payload: Codable, Hashable, Sendable {
+                /// - Remark: Generated from `#/components/schemas/ProfileVersionConflict/value2/current`.
+                public var current: Components.Schemas.Profile?
+                /// Creates a new `Value2Payload`.
+                ///
+                /// - Parameters:
+                ///   - current:
+                public init(current: Components.Schemas.Profile? = nil) {
+                    self.current = current
+                }
+                public enum CodingKeys: String, CodingKey {
+                    case current
+                }
+            }
+            /// - Remark: Generated from `#/components/schemas/ProfileVersionConflict/value2`.
+            public var value2: Components.Schemas.ProfileVersionConflict.Value2Payload
+            /// Creates a new `ProfileVersionConflict`.
+            ///
+            /// - Parameters:
+            ///   - value1:
+            ///   - value2:
+            public init(
+                value1: Components.Schemas.ProblemDetails,
+                value2: Components.Schemas.ProfileVersionConflict.Value2Payload
+            ) {
+                self.value1 = value1
+                self.value2 = value2
+            }
+            public init(from decoder: any Swift.Decoder) throws {
+                self.value1 = try .init(from: decoder)
+                self.value2 = try .init(from: decoder)
+            }
+            public func encode(to encoder: any Swift.Encoder) throws {
+                try self.value1.encode(to: encoder)
+                try self.value2.encode(to: encoder)
+            }
+        }
+        /// Stored length unit. Mirrors shared-kernel `LENGTH_UNITS`.
+        ///
+        /// - Remark: Generated from `#/components/schemas/LengthUnit`.
+        @frozen public enum LengthUnit: String, Codable, Hashable, Sendable, CaseIterable {
+            case cm = "cm"
+        }
+        /// Who produced the value (doc 06 §3.1): the person (`user`), an estimate, or a value
+        /// derived from other values. Mirrors shared-kernel `MEASUREMENT_SOURCES`.
+        ///
+        ///
+        /// - Remark: Generated from `#/components/schemas/MeasurementSource`.
+        @frozen public enum MeasurementSource: String, Codable, Hashable, Sendable, CaseIterable {
+            case user = "user"
+            case estimated = "estimated"
+            case derived = "derived"
+        }
+        /// Confidence in the value, from 0 to 1.
+        ///
+        /// - Remark: Generated from `#/components/schemas/MeasurementConfidence`.
+        public typealias MeasurementConfidence = Swift.Double
+        /// A body length in centimetres with its provenance (doc 06 §3.1). `confidence` is always
+        /// present when `source` is `estimated` or `derived`, and optional for `user`.
+        ///
+        ///
+        /// - Remark: Generated from `#/components/schemas/LengthMeasurement`.
+        public struct LengthMeasurement: Codable, Hashable, Sendable {
+            /// The length, in `unit`.
+            ///
+            /// - Remark: Generated from `#/components/schemas/LengthMeasurement/value`.
+            public var value: Swift.Double
+            /// - Remark: Generated from `#/components/schemas/LengthMeasurement/unit`.
+            public var unit: Components.Schemas.LengthUnit
+            /// - Remark: Generated from `#/components/schemas/LengthMeasurement/source`.
+            public var source: Components.Schemas.MeasurementSource
+            /// - Remark: Generated from `#/components/schemas/LengthMeasurement/confidence`.
+            public var confidence: Components.Schemas.MeasurementConfidence?
+            /// When the value was taken or entered.
+            ///
+            /// - Remark: Generated from `#/components/schemas/LengthMeasurement/measuredAt`.
+            public var measuredAt: Foundation.Date?
+            /// Creates a new `LengthMeasurement`.
+            ///
+            /// - Parameters:
+            ///   - value: The length, in `unit`.
+            ///   - unit:
+            ///   - source:
+            ///   - confidence:
+            ///   - measuredAt: When the value was taken or entered.
+            public init(
+                value: Swift.Double,
+                unit: Components.Schemas.LengthUnit,
+                source: Components.Schemas.MeasurementSource,
+                confidence: Components.Schemas.MeasurementConfidence? = nil,
+                measuredAt: Foundation.Date? = nil
+            ) {
+                self.value = value
+                self.unit = unit
+                self.source = source
+                self.confidence = confidence
+                self.measuredAt = measuredAt
+            }
+            public enum CodingKeys: String, CodingKey {
+                case value
+                case unit
+                case source
+                case confidence
+                case measuredAt
+            }
+        }
+        /// Stored mass unit. Mirrors shared-kernel `MASS_UNITS`.
+        ///
+        /// - Remark: Generated from `#/components/schemas/MassUnit`.
+        @frozen public enum MassUnit: String, Codable, Hashable, Sendable, CaseIterable {
+            case kg = "kg"
+        }
+        /// A body mass in kilograms with its provenance (doc 06 §3.1). `confidence` is always
+        /// present when `source` is `estimated` or `derived`, and optional for `user`.
+        ///
+        ///
+        /// - Remark: Generated from `#/components/schemas/MassMeasurement`.
+        public struct MassMeasurement: Codable, Hashable, Sendable {
+            /// The mass, in `unit`.
+            ///
+            /// - Remark: Generated from `#/components/schemas/MassMeasurement/value`.
+            public var value: Swift.Double
+            /// - Remark: Generated from `#/components/schemas/MassMeasurement/unit`.
+            public var unit: Components.Schemas.MassUnit
+            /// - Remark: Generated from `#/components/schemas/MassMeasurement/source`.
+            public var source: Components.Schemas.MeasurementSource
+            /// - Remark: Generated from `#/components/schemas/MassMeasurement/confidence`.
+            public var confidence: Components.Schemas.MeasurementConfidence?
+            /// When the value was taken or entered.
+            ///
+            /// - Remark: Generated from `#/components/schemas/MassMeasurement/measuredAt`.
+            public var measuredAt: Foundation.Date?
+            /// Creates a new `MassMeasurement`.
+            ///
+            /// - Parameters:
+            ///   - value: The mass, in `unit`.
+            ///   - unit:
+            ///   - source:
+            ///   - confidence:
+            ///   - measuredAt: When the value was taken or entered.
+            public init(
+                value: Swift.Double,
+                unit: Components.Schemas.MassUnit,
+                source: Components.Schemas.MeasurementSource,
+                confidence: Components.Schemas.MeasurementConfidence? = nil,
+                measuredAt: Foundation.Date? = nil
+            ) {
+                self.value = value
+                self.unit = unit
+                self.source = source
+                self.confidence = confidence
+                self.measuredAt = measuredAt
+            }
+            public enum CodingKeys: String, CodingKey {
+                case value
+                case unit
+                case source
+                case confidence
+                case measuredAt
+            }
+        }
+        /// The ten body measurements of doc 07 §3.3, each optional: an absent one has not been
+        /// given. Their ids, units and hard bounds are shared-kernel registry data
+        /// (`registry/measurement-definitions.json`); a value outside its bounds is refused with
+        /// 400 `MEASUREMENT_IMPLAUSIBLE` and never stored.
+        ///
+        ///
+        /// - Remark: Generated from `#/components/schemas/BodyMeasurements`.
+        public struct BodyMeasurements: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/BodyMeasurements/height`.
+            public var height: Components.Schemas.LengthMeasurement?
+            /// - Remark: Generated from `#/components/schemas/BodyMeasurements/weight`.
+            public var weight: Components.Schemas.MassMeasurement?
+            /// - Remark: Generated from `#/components/schemas/BodyMeasurements/chest`.
+            public var chest: Components.Schemas.LengthMeasurement?
+            /// - Remark: Generated from `#/components/schemas/BodyMeasurements/waist`.
+            public var waist: Components.Schemas.LengthMeasurement?
+            /// - Remark: Generated from `#/components/schemas/BodyMeasurements/hips`.
+            public var hips: Components.Schemas.LengthMeasurement?
+            /// - Remark: Generated from `#/components/schemas/BodyMeasurements/inseam`.
+            public var inseam: Components.Schemas.LengthMeasurement?
+            /// - Remark: Generated from `#/components/schemas/BodyMeasurements/shoulder`.
+            public var shoulder: Components.Schemas.LengthMeasurement?
+            /// - Remark: Generated from `#/components/schemas/BodyMeasurements/sleeve`.
+            public var sleeve: Components.Schemas.LengthMeasurement?
+            /// - Remark: Generated from `#/components/schemas/BodyMeasurements/thigh`.
+            public var thigh: Components.Schemas.LengthMeasurement?
+            /// - Remark: Generated from `#/components/schemas/BodyMeasurements/neck`.
+            public var neck: Components.Schemas.LengthMeasurement?
+            /// Creates a new `BodyMeasurements`.
+            ///
+            /// - Parameters:
+            ///   - height:
+            ///   - weight:
+            ///   - chest:
+            ///   - waist:
+            ///   - hips:
+            ///   - inseam:
+            ///   - shoulder:
+            ///   - sleeve:
+            ///   - thigh:
+            ///   - neck:
+            public init(
+                height: Components.Schemas.LengthMeasurement? = nil,
+                weight: Components.Schemas.MassMeasurement? = nil,
+                chest: Components.Schemas.LengthMeasurement? = nil,
+                waist: Components.Schemas.LengthMeasurement? = nil,
+                hips: Components.Schemas.LengthMeasurement? = nil,
+                inseam: Components.Schemas.LengthMeasurement? = nil,
+                shoulder: Components.Schemas.LengthMeasurement? = nil,
+                sleeve: Components.Schemas.LengthMeasurement? = nil,
+                thigh: Components.Schemas.LengthMeasurement? = nil,
+                neck: Components.Schemas.LengthMeasurement? = nil
+            ) {
+                self.height = height
+                self.weight = weight
+                self.chest = chest
+                self.waist = waist
+                self.hips = hips
+                self.inseam = inseam
+                self.shoulder = shoulder
+                self.sleeve = sleeve
+                self.thigh = thigh
+                self.neck = neck
+            }
+            public enum CodingKeys: String, CodingKey {
+                case height
+                case weight
+                case chest
+                case waist
+                case hips
+                case inseam
+                case shoulder
+                case sleeve
+                case thigh
+                case neck
+            }
+        }
+        /// The caller's current measurement set (doc 03 §1.2). Each value is SI with its unit and
+        /// source; `unitSystem` changes only how an app shows it.
+        ///
+        ///
+        /// - Remark: Generated from `#/components/schemas/MeasurementSet`.
+        public struct MeasurementSet: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/MeasurementSet/version`.
+            public var version: Components.Schemas.ResourceVersion
+            /// - Remark: Generated from `#/components/schemas/MeasurementSet/measurements`.
+            public var measurements: Components.Schemas.BodyMeasurements
+            /// Creates a new `MeasurementSet`.
+            ///
+            /// - Parameters:
+            ///   - version:
+            ///   - measurements:
+            public init(
+                version: Components.Schemas.ResourceVersion,
+                measurements: Components.Schemas.BodyMeasurements
+            ) {
+                self.version = version
+                self.measurements = measurements
+            }
+            public enum CodingKeys: String, CodingKey {
+                case version
+                case measurements
+            }
+        }
+        /// The whole new measurement set; a measurement left out is removed.
+        ///
+        /// - Remark: Generated from `#/components/schemas/MeasurementsReplacement`.
+        public struct MeasurementsReplacement: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/MeasurementsReplacement/measurements`.
+            public var measurements: Components.Schemas.BodyMeasurements
+            /// Creates a new `MeasurementsReplacement`.
+            ///
+            /// - Parameters:
+            ///   - measurements:
+            public init(measurements: Components.Schemas.BodyMeasurements) {
+                self.measurements = measurements
+            }
+            public enum CodingKeys: String, CodingKey {
+                case measurements
+            }
+            public init(from decoder: any Swift.Decoder) throws {
+                let container = try decoder.container(keyedBy: CodingKeys.self)
+                self.measurements = try container.decode(
+                    Components.Schemas.BodyMeasurements.self,
+                    forKey: .measurements
+                )
+                try decoder.ensureNoAdditionalProperties(knownKeys: [
+                    "measurements"
+                ])
+            }
+        }
+        /// A problem (RFC 9457) that carries the stored measurement set when `code` is `VERSION_MISMATCH`.
+        ///
+        /// - Remark: Generated from `#/components/schemas/MeasurementSetVersionConflict`.
+        public struct MeasurementSetVersionConflict: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/MeasurementSetVersionConflict/value1`.
+            public var value1: Components.Schemas.ProblemDetails
+            /// - Remark: Generated from `#/components/schemas/MeasurementSetVersionConflict/value2`.
+            public struct Value2Payload: Codable, Hashable, Sendable {
+                /// - Remark: Generated from `#/components/schemas/MeasurementSetVersionConflict/value2/current`.
+                public var current: Components.Schemas.MeasurementSet?
+                /// Creates a new `Value2Payload`.
+                ///
+                /// - Parameters:
+                ///   - current:
+                public init(current: Components.Schemas.MeasurementSet? = nil) {
+                    self.current = current
+                }
+                public enum CodingKeys: String, CodingKey {
+                    case current
+                }
+            }
+            /// - Remark: Generated from `#/components/schemas/MeasurementSetVersionConflict/value2`.
+            public var value2: Components.Schemas.MeasurementSetVersionConflict.Value2Payload
+            /// Creates a new `MeasurementSetVersionConflict`.
+            ///
+            /// - Parameters:
+            ///   - value1:
+            ///   - value2:
+            public init(
+                value1: Components.Schemas.ProblemDetails,
+                value2: Components.Schemas.MeasurementSetVersionConflict.Value2Payload
+            ) {
+                self.value1 = value1
+                self.value2 = value2
+            }
+            public init(from decoder: any Swift.Decoder) throws {
+                self.value1 = try .init(from: decoder)
+                self.value2 = try .init(from: decoder)
+            }
+            public func encode(to encoder: any Swift.Encoder) throws {
+                try self.value1.encode(to: encoder)
+                try self.value2.encode(to: encoder)
+            }
+        }
+        /// Mirrors shared-kernel `FIT_CHOICES`.
+        ///
+        /// - Remark: Generated from `#/components/schemas/FitChoice`.
+        @frozen public enum FitChoice: String, Codable, Hashable, Sendable, CaseIterable {
+            case fitted = "fitted"
+            case regular = "regular"
+            case relaxed = "relaxed"
+            case oversized = "oversized"
+        }
+        /// Preferred fit per garment group (doc 08 §4.2 `attr.cut`); a group with no choice is
+        /// absent. The keys are the shared-kernel `GARMENT_GROUPS` except `shoes`.
+        ///
+        ///
+        /// - Remark: Generated from `#/components/schemas/FitPreferences`.
+        public struct FitPreferences: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/FitPreferences/tops`.
+            public var tops: Components.Schemas.FitChoice?
+            /// - Remark: Generated from `#/components/schemas/FitPreferences/bottoms`.
+            public var bottoms: Components.Schemas.FitChoice?
+            /// - Remark: Generated from `#/components/schemas/FitPreferences/dresses`.
+            public var dresses: Components.Schemas.FitChoice?
+            /// - Remark: Generated from `#/components/schemas/FitPreferences/outerwear`.
+            public var outerwear: Components.Schemas.FitChoice?
+            /// Creates a new `FitPreferences`.
+            ///
+            /// - Parameters:
+            ///   - tops:
+            ///   - bottoms:
+            ///   - dresses:
+            ///   - outerwear:
+            public init(
+                tops: Components.Schemas.FitChoice? = nil,
+                bottoms: Components.Schemas.FitChoice? = nil,
+                dresses: Components.Schemas.FitChoice? = nil,
+                outerwear: Components.Schemas.FitChoice? = nil
+            ) {
+                self.tops = tops
+                self.bottoms = bottoms
+                self.dresses = dresses
+                self.outerwear = outerwear
+            }
+            public enum CodingKeys: String, CodingKey {
+                case tops
+                case bottoms
+                case dresses
+                case outerwear
+            }
+        }
+        /// Mirrors shared-kernel `STYLE_TYPES`.
+        ///
+        /// - Remark: Generated from `#/components/schemas/StyleType`.
+        @frozen public enum StyleType: String, Codable, Hashable, Sendable, CaseIterable {
+            case minimal = "minimal"
+            case classic = "classic"
+            case smartCasual = "smart_casual"
+        }
+        /// The style types the person selected (style identity, doc 03 §1.2).
+        ///
+        /// - Remark: Generated from `#/components/schemas/StyleTypeList`.
+        public typealias StyleTypeList = [Components.Schemas.StyleType]
+        /// Mirrors shared-kernel `PREFERENCE_KINDS`.
+        ///
+        /// - Remark: Generated from `#/components/schemas/PreferenceKind`.
+        @frozen public enum PreferenceKind: String, Codable, Hashable, Sendable, CaseIterable {
+            case material = "material"
+        }
+        /// Material values of doc 08 §4.1 `attr.material`. Mirrors shared-kernel `MATERIALS`.
+        ///
+        /// - Remark: Generated from `#/components/schemas/Material`.
+        @frozen public enum Material: String, Codable, Hashable, Sendable, CaseIterable {
+            case cotton = "cotton"
+            case linen = "linen"
+            case wool = "wool"
+            case cashmere = "cashmere"
+            case silk = "silk"
+            case denim = "denim"
+            case leather = "leather"
+            case suede = "suede"
+            case synthetic = "synthetic"
+            case blend = "blend"
+            case knit = "knit"
+            case down = "down"
+            case canvas = "canvas"
+            case metal = "metal"
+            case other = "other"
+        }
+        /// One soft dislike or hard exclusion. `kind` names the list `value` comes from; the only
+        /// kind is `material`.
+        ///
+        ///
+        /// - Remark: Generated from `#/components/schemas/PreferenceItem`.
+        public struct PreferenceItem: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/PreferenceItem/kind`.
+            public var kind: Components.Schemas.PreferenceKind
+            /// - Remark: Generated from `#/components/schemas/PreferenceItem/value`.
+            public var value: Components.Schemas.Material
+            /// Creates a new `PreferenceItem`.
+            ///
+            /// - Parameters:
+            ///   - kind:
+            ///   - value:
+            public init(
+                kind: Components.Schemas.PreferenceKind,
+                value: Components.Schemas.Material
+            ) {
+                self.kind = kind
+                self.value = value
+            }
+            public enum CodingKeys: String, CodingKey {
+                case kind
+                case value
+            }
+        }
+        /// - Remark: Generated from `#/components/schemas/PreferenceItemList`.
+        public typealias PreferenceItemList = [Components.Schemas.PreferenceItem]
+        /// How warm or cold the person usually feels (REQ-ONB-070). Mirrors shared-kernel `CLIMATE_TOLERANCES`.
+        ///
+        /// - Remark: Generated from `#/components/schemas/ClimateTolerance`.
+        @frozen public enum ClimateTolerance: String, Codable, Hashable, Sendable, CaseIterable {
+            case runsCold = "runs_cold"
+            case neutral = "neutral"
+            case runsHot = "runs_hot"
+        }
+        /// Occasion presets (doc 03 §1.7). As `typicalDay`, the occasion suggestions use whenever
+        /// the person selects none (DEC-71). Mirrors shared-kernel `OCCASION_PRESETS`.
+        ///
+        ///
+        /// - Remark: Generated from `#/components/schemas/OccasionPreset`.
+        @frozen public enum OccasionPreset: String, Codable, Hashable, Sendable, CaseIterable {
+            case workDay = "work_day"
+            case dinner = "dinner"
+            case travel = "travel"
+            case sport = "sport"
+        }
+        /// The occasions the person selected in onboarding.
+        ///
+        /// - Remark: Generated from `#/components/schemas/OccasionPresetList`.
+        public typealias OccasionPresetList = [Components.Schemas.OccasionPreset]
+        /// Label size systems (doc 08 §5). Mirrors shared-kernel `SIZE_SYSTEMS`.
+        ///
+        /// - Remark: Generated from `#/components/schemas/SizeSystem`.
+        @frozen public enum SizeSystem: String, Codable, Hashable, Sendable, CaseIterable {
+            case eu = "EU"
+            case us = "US"
+            case uk = "UK"
+            case alpha = "ALPHA"
+        }
+        /// Top-level garment groups (doc 08 §3 `cat.*`). Mirrors shared-kernel `GARMENT_GROUPS`.
+        ///
+        /// - Remark: Generated from `#/components/schemas/GarmentGroup`.
+        @frozen public enum GarmentGroup: String, Codable, Hashable, Sendable, CaseIterable {
+            case tops = "tops"
+            case bottoms = "bottoms"
+            case dresses = "dresses"
+            case outerwear = "outerwear"
+            case shoes = "shoes"
+        }
+        /// A usual label size in one size system for one garment group (doc 08 §5).
+        ///
+        /// - Remark: Generated from `#/components/schemas/UsualSize`.
+        public struct UsualSize: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/UsualSize/system`.
+            public var system: Components.Schemas.SizeSystem
+            /// - Remark: Generated from `#/components/schemas/UsualSize/group`.
+            public var group: Components.Schemas.GarmentGroup
+            /// The label size as written, e.g. `39`, `M` or `10.5`.
+            ///
+            /// - Remark: Generated from `#/components/schemas/UsualSize/size`.
+            public var size: Swift.String
+            /// Creates a new `UsualSize`.
+            ///
+            /// - Parameters:
+            ///   - system:
+            ///   - group:
+            ///   - size: The label size as written, e.g. `39`, `M` or `10.5`.
+            public init(
+                system: Components.Schemas.SizeSystem,
+                group: Components.Schemas.GarmentGroup,
+                size: Swift.String
+            ) {
+                self.system = system
+                self.group = group
+                self.size = size
+            }
+            public enum CodingKeys: String, CodingKey {
+                case system
+                case group
+                case size
+            }
+        }
+        /// The person's usual label sizes, at most one per size system and garment group (one entry
+        /// for each pair of `SizeSystem` and `GarmentGroup`). No size per brand.
+        ///
+        ///
+        /// - Remark: Generated from `#/components/schemas/UsualSizeList`.
+        public typealias UsualSizeList = [Components.Schemas.UsualSize]
+        /// The caller's style preferences. Hard exclusions are never broken by a suggestion; soft
+        /// dislikes only lower a score (REQ-ONB-060, doc 03 §1.2). An unset `climateTolerance`
+        /// counts as `neutral`.
+        ///
+        ///
+        /// - Remark: Generated from `#/components/schemas/Preferences`.
+        public struct Preferences: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/Preferences/version`.
+            public var version: Components.Schemas.ResourceVersion
+            /// - Remark: Generated from `#/components/schemas/Preferences/fitPreferences`.
+            public var fitPreferences: Components.Schemas.FitPreferences
+            /// - Remark: Generated from `#/components/schemas/Preferences/styleTypes`.
+            public var styleTypes: Components.Schemas.StyleTypeList
+            /// - Remark: Generated from `#/components/schemas/Preferences/softDislikes`.
+            public var softDislikes: Components.Schemas.PreferenceItemList
+            /// - Remark: Generated from `#/components/schemas/Preferences/hardExclusions`.
+            public var hardExclusions: Components.Schemas.PreferenceItemList
+            /// - Remark: Generated from `#/components/schemas/Preferences/climateTolerance`.
+            public var climateTolerance: Components.Schemas.ClimateTolerance?
+            /// - Remark: Generated from `#/components/schemas/Preferences/occasionPresets`.
+            public var occasionPresets: Components.Schemas.OccasionPresetList
+            /// - Remark: Generated from `#/components/schemas/Preferences/typicalDay`.
+            public var typicalDay: Components.Schemas.OccasionPreset?
+            /// - Remark: Generated from `#/components/schemas/Preferences/sizingByRegion`.
+            public var sizingByRegion: Components.Schemas.UsualSizeList
+            /// Creates a new `Preferences`.
+            ///
+            /// - Parameters:
+            ///   - version:
+            ///   - fitPreferences:
+            ///   - styleTypes:
+            ///   - softDislikes:
+            ///   - hardExclusions:
+            ///   - climateTolerance:
+            ///   - occasionPresets:
+            ///   - typicalDay:
+            ///   - sizingByRegion:
+            public init(
+                version: Components.Schemas.ResourceVersion,
+                fitPreferences: Components.Schemas.FitPreferences,
+                styleTypes: Components.Schemas.StyleTypeList,
+                softDislikes: Components.Schemas.PreferenceItemList,
+                hardExclusions: Components.Schemas.PreferenceItemList,
+                climateTolerance: Components.Schemas.ClimateTolerance? = nil,
+                occasionPresets: Components.Schemas.OccasionPresetList,
+                typicalDay: Components.Schemas.OccasionPreset? = nil,
+                sizingByRegion: Components.Schemas.UsualSizeList
+            ) {
+                self.version = version
+                self.fitPreferences = fitPreferences
+                self.styleTypes = styleTypes
+                self.softDislikes = softDislikes
+                self.hardExclusions = hardExclusions
+                self.climateTolerance = climateTolerance
+                self.occasionPresets = occasionPresets
+                self.typicalDay = typicalDay
+                self.sizingByRegion = sizingByRegion
+            }
+            public enum CodingKeys: String, CodingKey {
+                case version
+                case fitPreferences
+                case styleTypes
+                case softDislikes
+                case hardExclusions
+                case climateTolerance
+                case occasionPresets
+                case typicalDay
+                case sizingByRegion
+            }
+        }
+        /// A `Preferences` member that holds one optional value and can be removed.
+        ///
+        /// - Remark: Generated from `#/components/schemas/ClearablePreference`.
+        @frozen public enum ClearablePreference: String, Codable, Hashable, Sendable, CaseIterable {
+            case climateTolerance = "climateTolerance"
+            case typicalDay = "typicalDay"
+        }
+        /// Partial update of `Preferences`: each member present replaces its stored value whole. A
+        /// member may not be both set and named in `clear`.
+        ///
+        ///
+        /// - Remark: Generated from `#/components/schemas/PreferencesUpdate`.
+        public struct PreferencesUpdate: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/PreferencesUpdate/fitPreferences`.
+            public var fitPreferences: Components.Schemas.FitPreferences?
+            /// - Remark: Generated from `#/components/schemas/PreferencesUpdate/styleTypes`.
+            public var styleTypes: Components.Schemas.StyleTypeList?
+            /// - Remark: Generated from `#/components/schemas/PreferencesUpdate/softDislikes`.
+            public var softDislikes: Components.Schemas.PreferenceItemList?
+            /// - Remark: Generated from `#/components/schemas/PreferencesUpdate/hardExclusions`.
+            public var hardExclusions: Components.Schemas.PreferenceItemList?
+            /// - Remark: Generated from `#/components/schemas/PreferencesUpdate/climateTolerance`.
+            public var climateTolerance: Components.Schemas.ClimateTolerance?
+            /// - Remark: Generated from `#/components/schemas/PreferencesUpdate/occasionPresets`.
+            public var occasionPresets: Components.Schemas.OccasionPresetList?
+            /// - Remark: Generated from `#/components/schemas/PreferencesUpdate/typicalDay`.
+            public var typicalDay: Components.Schemas.OccasionPreset?
+            /// - Remark: Generated from `#/components/schemas/PreferencesUpdate/sizingByRegion`.
+            public var sizingByRegion: Components.Schemas.UsualSizeList?
+            /// Optional single values to remove.
+            ///
+            /// - Remark: Generated from `#/components/schemas/PreferencesUpdate/clear`.
+            public var clear: [Components.Schemas.ClearablePreference]?
+            /// Creates a new `PreferencesUpdate`.
+            ///
+            /// - Parameters:
+            ///   - fitPreferences:
+            ///   - styleTypes:
+            ///   - softDislikes:
+            ///   - hardExclusions:
+            ///   - climateTolerance:
+            ///   - occasionPresets:
+            ///   - typicalDay:
+            ///   - sizingByRegion:
+            ///   - clear: Optional single values to remove.
+            public init(
+                fitPreferences: Components.Schemas.FitPreferences? = nil,
+                styleTypes: Components.Schemas.StyleTypeList? = nil,
+                softDislikes: Components.Schemas.PreferenceItemList? = nil,
+                hardExclusions: Components.Schemas.PreferenceItemList? = nil,
+                climateTolerance: Components.Schemas.ClimateTolerance? = nil,
+                occasionPresets: Components.Schemas.OccasionPresetList? = nil,
+                typicalDay: Components.Schemas.OccasionPreset? = nil,
+                sizingByRegion: Components.Schemas.UsualSizeList? = nil,
+                clear: [Components.Schemas.ClearablePreference]? = nil
+            ) {
+                self.fitPreferences = fitPreferences
+                self.styleTypes = styleTypes
+                self.softDislikes = softDislikes
+                self.hardExclusions = hardExclusions
+                self.climateTolerance = climateTolerance
+                self.occasionPresets = occasionPresets
+                self.typicalDay = typicalDay
+                self.sizingByRegion = sizingByRegion
+                self.clear = clear
+            }
+            public enum CodingKeys: String, CodingKey {
+                case fitPreferences
+                case styleTypes
+                case softDislikes
+                case hardExclusions
+                case climateTolerance
+                case occasionPresets
+                case typicalDay
+                case sizingByRegion
+                case clear
+            }
+            public init(from decoder: any Swift.Decoder) throws {
+                let container = try decoder.container(keyedBy: CodingKeys.self)
+                self.fitPreferences = try container.decodeIfPresent(
+                    Components.Schemas.FitPreferences.self,
+                    forKey: .fitPreferences
+                )
+                self.styleTypes = try container.decodeIfPresent(
+                    Components.Schemas.StyleTypeList.self,
+                    forKey: .styleTypes
+                )
+                self.softDislikes = try container.decodeIfPresent(
+                    Components.Schemas.PreferenceItemList.self,
+                    forKey: .softDislikes
+                )
+                self.hardExclusions = try container.decodeIfPresent(
+                    Components.Schemas.PreferenceItemList.self,
+                    forKey: .hardExclusions
+                )
+                self.climateTolerance = try container.decodeIfPresent(
+                    Components.Schemas.ClimateTolerance.self,
+                    forKey: .climateTolerance
+                )
+                self.occasionPresets = try container.decodeIfPresent(
+                    Components.Schemas.OccasionPresetList.self,
+                    forKey: .occasionPresets
+                )
+                self.typicalDay = try container.decodeIfPresent(
+                    Components.Schemas.OccasionPreset.self,
+                    forKey: .typicalDay
+                )
+                self.sizingByRegion = try container.decodeIfPresent(
+                    Components.Schemas.UsualSizeList.self,
+                    forKey: .sizingByRegion
+                )
+                self.clear = try container.decodeIfPresent(
+                    [Components.Schemas.ClearablePreference].self,
+                    forKey: .clear
+                )
+                try decoder.ensureNoAdditionalProperties(knownKeys: [
+                    "fitPreferences",
+                    "styleTypes",
+                    "softDislikes",
+                    "hardExclusions",
+                    "climateTolerance",
+                    "occasionPresets",
+                    "typicalDay",
+                    "sizingByRegion",
+                    "clear"
+                ])
+            }
+        }
+        /// A problem (RFC 9457) that carries the stored preferences when `code` is `VERSION_MISMATCH`.
+        ///
+        /// - Remark: Generated from `#/components/schemas/PreferencesVersionConflict`.
+        public struct PreferencesVersionConflict: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/PreferencesVersionConflict/value1`.
+            public var value1: Components.Schemas.ProblemDetails
+            /// - Remark: Generated from `#/components/schemas/PreferencesVersionConflict/value2`.
+            public struct Value2Payload: Codable, Hashable, Sendable {
+                /// - Remark: Generated from `#/components/schemas/PreferencesVersionConflict/value2/current`.
+                public var current: Components.Schemas.Preferences?
+                /// Creates a new `Value2Payload`.
+                ///
+                /// - Parameters:
+                ///   - current:
+                public init(current: Components.Schemas.Preferences? = nil) {
+                    self.current = current
+                }
+                public enum CodingKeys: String, CodingKey {
+                    case current
+                }
+            }
+            /// - Remark: Generated from `#/components/schemas/PreferencesVersionConflict/value2`.
+            public var value2: Components.Schemas.PreferencesVersionConflict.Value2Payload
+            /// Creates a new `PreferencesVersionConflict`.
+            ///
+            /// - Parameters:
+            ///   - value1:
+            ///   - value2:
+            public init(
+                value1: Components.Schemas.ProblemDetails,
+                value2: Components.Schemas.PreferencesVersionConflict.Value2Payload
+            ) {
+                self.value1 = value1
+                self.value2 = value2
+            }
+            public init(from decoder: any Swift.Decoder) throws {
+                self.value1 = try .init(from: decoder)
+                self.value2 = try .init(from: decoder)
+            }
+            public func encode(to encoder: any Swift.Encoder) throws {
+                try self.value1.encode(to: encoder)
+                try self.value2.encode(to: encoder)
+            }
+        }
+        /// `pending` until the person completes or skips the step; it never returns to `pending`.
+        ///
+        /// - Remark: Generated from `#/components/schemas/OnboardingStepStatus`.
+        @frozen public enum OnboardingStepStatus: String, Codable, Hashable, Sendable, CaseIterable {
+            case pending = "pending"
+            case completed = "completed"
+            case skipped = "skipped"
+        }
+        /// - Remark: Generated from `#/components/schemas/OnboardingStepState`.
+        public struct OnboardingStepState: Codable, Hashable, Sendable {
+            /// True when onboarding cannot finish without this step; only optional steps offer Skip.
+            ///
+            /// - Remark: Generated from `#/components/schemas/OnboardingStepState/required`.
+            public var required: Swift.Bool
+            /// - Remark: Generated from `#/components/schemas/OnboardingStepState/status`.
+            public var status: Components.Schemas.OnboardingStepStatus
+            /// Creates a new `OnboardingStepState`.
+            ///
+            /// - Parameters:
+            ///   - required: True when onboarding cannot finish without this step; only optional steps offer Skip.
+            ///   - status:
+            public init(
+                required: Swift.Bool,
+                status: Components.Schemas.OnboardingStepStatus
+            ) {
+                self.required = required
+                self.status = status
+            }
+            public enum CodingKeys: String, CodingKey {
+                case required
+                case status
+            }
+        }
+        /// One entry per onboarding step, keyed by step; the keys are the `OnboardingStep` values in
+        /// camelCase. `signIn` is completed by the server when the account is created.
+        ///
+        ///
+        /// - Remark: Generated from `#/components/schemas/OnboardingSteps`.
+        public struct OnboardingSteps: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/OnboardingSteps/welcome`.
+            public var welcome: Components.Schemas.OnboardingStepState
+            /// - Remark: Generated from `#/components/schemas/OnboardingSteps/signIn`.
+            public var signIn: Components.Schemas.OnboardingStepState
+            /// - Remark: Generated from `#/components/schemas/OnboardingSteps/coreConsents`.
+            public var coreConsents: Components.Schemas.OnboardingStepState
+            /// - Remark: Generated from `#/components/schemas/OnboardingSteps/unitsLocale`.
+            public var unitsLocale: Components.Schemas.OnboardingStepState
+            /// - Remark: Generated from `#/components/schemas/OnboardingSteps/presentationBaseModel`.
+            public var presentationBaseModel: Components.Schemas.OnboardingStepState
+            /// - Remark: Generated from `#/components/schemas/OnboardingSteps/heightWeight`.
+            public var heightWeight: Components.Schemas.OnboardingStepState
+            /// - Remark: Generated from `#/components/schemas/OnboardingSteps/additionalMeasurements`.
+            public var additionalMeasurements: Components.Schemas.OnboardingStepState
+            /// - Remark: Generated from `#/components/schemas/OnboardingSteps/fitStylePreferences`.
+            public var fitStylePreferences: Components.Schemas.OnboardingStepState
+            /// - Remark: Generated from `#/components/schemas/OnboardingSteps/lifestyleOccasions`.
+            public var lifestyleOccasions: Components.Schemas.OnboardingStepState
+            /// - Remark: Generated from `#/components/schemas/OnboardingSteps/firstCaptureNudge`.
+            public var firstCaptureNudge: Components.Schemas.OnboardingStepState
+            /// Creates a new `OnboardingSteps`.
+            ///
+            /// - Parameters:
+            ///   - welcome:
+            ///   - signIn:
+            ///   - coreConsents:
+            ///   - unitsLocale:
+            ///   - presentationBaseModel:
+            ///   - heightWeight:
+            ///   - additionalMeasurements:
+            ///   - fitStylePreferences:
+            ///   - lifestyleOccasions:
+            ///   - firstCaptureNudge:
+            public init(
+                welcome: Components.Schemas.OnboardingStepState,
+                signIn: Components.Schemas.OnboardingStepState,
+                coreConsents: Components.Schemas.OnboardingStepState,
+                unitsLocale: Components.Schemas.OnboardingStepState,
+                presentationBaseModel: Components.Schemas.OnboardingStepState,
+                heightWeight: Components.Schemas.OnboardingStepState,
+                additionalMeasurements: Components.Schemas.OnboardingStepState,
+                fitStylePreferences: Components.Schemas.OnboardingStepState,
+                lifestyleOccasions: Components.Schemas.OnboardingStepState,
+                firstCaptureNudge: Components.Schemas.OnboardingStepState
+            ) {
+                self.welcome = welcome
+                self.signIn = signIn
+                self.coreConsents = coreConsents
+                self.unitsLocale = unitsLocale
+                self.presentationBaseModel = presentationBaseModel
+                self.heightWeight = heightWeight
+                self.additionalMeasurements = additionalMeasurements
+                self.fitStylePreferences = fitStylePreferences
+                self.lifestyleOccasions = lifestyleOccasions
+                self.firstCaptureNudge = firstCaptureNudge
+            }
+            public enum CodingKeys: String, CodingKey {
+                case welcome
+                case signIn
+                case coreConsents
+                case unitsLocale
+                case presentationBaseModel
+                case heightWeight
+                case additionalMeasurements
+                case fitStylePreferences
+                case lifestyleOccasions
+                case firstCaptureNudge
+            }
+        }
+        /// Onboarding steps of doc 02 §3.2, in flow order.
+        ///
+        /// - Remark: Generated from `#/components/schemas/OnboardingStep`.
+        @frozen public enum OnboardingStep: String, Codable, Hashable, Sendable, CaseIterable {
+            case welcome = "welcome"
+            case signIn = "sign_in"
+            case coreConsents = "core_consents"
+            case unitsLocale = "units_locale"
+            case presentationBaseModel = "presentation_base_model"
+            case heightWeight = "height_weight"
+            case additionalMeasurements = "additional_measurements"
+            case fitStylePreferences = "fit_style_preferences"
+            case lifestyleOccasions = "lifestyle_occasions"
+            case firstCaptureNudge = "first_capture_nudge"
+        }
+        /// Per-step onboarding progress (doc 02 §3.2), kept on the server so the app resumes after
+        /// a quit or a crash. `nextRequiredStep` is the first required step not yet completed; the
+        /// app resumes there, and opens Today when it is absent.
+        ///
+        ///
+        /// - Remark: Generated from `#/components/schemas/OnboardingProgress`.
+        public struct OnboardingProgress: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/OnboardingProgress/steps`.
+            public var steps: Components.Schemas.OnboardingSteps
+            /// - Remark: Generated from `#/components/schemas/OnboardingProgress/nextRequiredStep`.
+            public var nextRequiredStep: Components.Schemas.OnboardingStep?
+            /// Creates a new `OnboardingProgress`.
+            ///
+            /// - Parameters:
+            ///   - steps:
+            ///   - nextRequiredStep:
+            public init(
+                steps: Components.Schemas.OnboardingSteps,
+                nextRequiredStep: Components.Schemas.OnboardingStep? = nil
+            ) {
+                self.steps = steps
+                self.nextRequiredStep = nextRequiredStep
+            }
+            public enum CodingKeys: String, CodingKey {
+                case steps
+                case nextRequiredStep
+            }
+        }
+        /// `skipped` is refused for a required step.
+        ///
+        /// - Remark: Generated from `#/components/schemas/OnboardingStepOutcome`.
+        @frozen public enum OnboardingStepOutcome: String, Codable, Hashable, Sendable, CaseIterable {
+            case completed = "completed"
+            case skipped = "skipped"
+        }
+        /// The outcome of each step present; an absent step is left unchanged.
+        ///
+        /// - Remark: Generated from `#/components/schemas/OnboardingStepsUpdate`.
+        public struct OnboardingStepsUpdate: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/OnboardingStepsUpdate/welcome`.
+            public var welcome: Components.Schemas.OnboardingStepOutcome?
+            /// - Remark: Generated from `#/components/schemas/OnboardingStepsUpdate/signIn`.
+            public var signIn: Components.Schemas.OnboardingStepOutcome?
+            /// - Remark: Generated from `#/components/schemas/OnboardingStepsUpdate/coreConsents`.
+            public var coreConsents: Components.Schemas.OnboardingStepOutcome?
+            /// - Remark: Generated from `#/components/schemas/OnboardingStepsUpdate/unitsLocale`.
+            public var unitsLocale: Components.Schemas.OnboardingStepOutcome?
+            /// - Remark: Generated from `#/components/schemas/OnboardingStepsUpdate/presentationBaseModel`.
+            public var presentationBaseModel: Components.Schemas.OnboardingStepOutcome?
+            /// - Remark: Generated from `#/components/schemas/OnboardingStepsUpdate/heightWeight`.
+            public var heightWeight: Components.Schemas.OnboardingStepOutcome?
+            /// - Remark: Generated from `#/components/schemas/OnboardingStepsUpdate/additionalMeasurements`.
+            public var additionalMeasurements: Components.Schemas.OnboardingStepOutcome?
+            /// - Remark: Generated from `#/components/schemas/OnboardingStepsUpdate/fitStylePreferences`.
+            public var fitStylePreferences: Components.Schemas.OnboardingStepOutcome?
+            /// - Remark: Generated from `#/components/schemas/OnboardingStepsUpdate/lifestyleOccasions`.
+            public var lifestyleOccasions: Components.Schemas.OnboardingStepOutcome?
+            /// - Remark: Generated from `#/components/schemas/OnboardingStepsUpdate/firstCaptureNudge`.
+            public var firstCaptureNudge: Components.Schemas.OnboardingStepOutcome?
+            /// Creates a new `OnboardingStepsUpdate`.
+            ///
+            /// - Parameters:
+            ///   - welcome:
+            ///   - signIn:
+            ///   - coreConsents:
+            ///   - unitsLocale:
+            ///   - presentationBaseModel:
+            ///   - heightWeight:
+            ///   - additionalMeasurements:
+            ///   - fitStylePreferences:
+            ///   - lifestyleOccasions:
+            ///   - firstCaptureNudge:
+            public init(
+                welcome: Components.Schemas.OnboardingStepOutcome? = nil,
+                signIn: Components.Schemas.OnboardingStepOutcome? = nil,
+                coreConsents: Components.Schemas.OnboardingStepOutcome? = nil,
+                unitsLocale: Components.Schemas.OnboardingStepOutcome? = nil,
+                presentationBaseModel: Components.Schemas.OnboardingStepOutcome? = nil,
+                heightWeight: Components.Schemas.OnboardingStepOutcome? = nil,
+                additionalMeasurements: Components.Schemas.OnboardingStepOutcome? = nil,
+                fitStylePreferences: Components.Schemas.OnboardingStepOutcome? = nil,
+                lifestyleOccasions: Components.Schemas.OnboardingStepOutcome? = nil,
+                firstCaptureNudge: Components.Schemas.OnboardingStepOutcome? = nil
+            ) {
+                self.welcome = welcome
+                self.signIn = signIn
+                self.coreConsents = coreConsents
+                self.unitsLocale = unitsLocale
+                self.presentationBaseModel = presentationBaseModel
+                self.heightWeight = heightWeight
+                self.additionalMeasurements = additionalMeasurements
+                self.fitStylePreferences = fitStylePreferences
+                self.lifestyleOccasions = lifestyleOccasions
+                self.firstCaptureNudge = firstCaptureNudge
+            }
+            public enum CodingKeys: String, CodingKey {
+                case welcome
+                case signIn
+                case coreConsents
+                case unitsLocale
+                case presentationBaseModel
+                case heightWeight
+                case additionalMeasurements
+                case fitStylePreferences
+                case lifestyleOccasions
+                case firstCaptureNudge
+            }
+            public init(from decoder: any Swift.Decoder) throws {
+                let container = try decoder.container(keyedBy: CodingKeys.self)
+                self.welcome = try container.decodeIfPresent(
+                    Components.Schemas.OnboardingStepOutcome.self,
+                    forKey: .welcome
+                )
+                self.signIn = try container.decodeIfPresent(
+                    Components.Schemas.OnboardingStepOutcome.self,
+                    forKey: .signIn
+                )
+                self.coreConsents = try container.decodeIfPresent(
+                    Components.Schemas.OnboardingStepOutcome.self,
+                    forKey: .coreConsents
+                )
+                self.unitsLocale = try container.decodeIfPresent(
+                    Components.Schemas.OnboardingStepOutcome.self,
+                    forKey: .unitsLocale
+                )
+                self.presentationBaseModel = try container.decodeIfPresent(
+                    Components.Schemas.OnboardingStepOutcome.self,
+                    forKey: .presentationBaseModel
+                )
+                self.heightWeight = try container.decodeIfPresent(
+                    Components.Schemas.OnboardingStepOutcome.self,
+                    forKey: .heightWeight
+                )
+                self.additionalMeasurements = try container.decodeIfPresent(
+                    Components.Schemas.OnboardingStepOutcome.self,
+                    forKey: .additionalMeasurements
+                )
+                self.fitStylePreferences = try container.decodeIfPresent(
+                    Components.Schemas.OnboardingStepOutcome.self,
+                    forKey: .fitStylePreferences
+                )
+                self.lifestyleOccasions = try container.decodeIfPresent(
+                    Components.Schemas.OnboardingStepOutcome.self,
+                    forKey: .lifestyleOccasions
+                )
+                self.firstCaptureNudge = try container.decodeIfPresent(
+                    Components.Schemas.OnboardingStepOutcome.self,
+                    forKey: .firstCaptureNudge
+                )
+                try decoder.ensureNoAdditionalProperties(knownKeys: [
+                    "welcome",
+                    "signIn",
+                    "coreConsents",
+                    "unitsLocale",
+                    "presentationBaseModel",
+                    "heightWeight",
+                    "additionalMeasurements",
+                    "fitStylePreferences",
+                    "lifestyleOccasions",
+                    "firstCaptureNudge"
+                ])
+            }
+        }
+        /// - Remark: Generated from `#/components/schemas/OnboardingProgressUpdate`.
+        public struct OnboardingProgressUpdate: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/OnboardingProgressUpdate/steps`.
+            public var steps: Components.Schemas.OnboardingStepsUpdate
+            /// Creates a new `OnboardingProgressUpdate`.
+            ///
+            /// - Parameters:
+            ///   - steps:
+            public init(steps: Components.Schemas.OnboardingStepsUpdate) {
+                self.steps = steps
+            }
+            public enum CodingKeys: String, CodingKey {
+                case steps
+            }
+            public init(from decoder: any Swift.Decoder) throws {
+                let container = try decoder.container(keyedBy: CodingKeys.self)
+                self.steps = try container.decode(
+                    Components.Schemas.OnboardingStepsUpdate.self,
+                    forKey: .steps
+                )
+                try decoder.ensureNoAdditionalProperties(knownKeys: [
+                    "steps"
                 ])
             }
         }

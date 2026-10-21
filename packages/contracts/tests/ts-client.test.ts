@@ -11,22 +11,41 @@ import {
   type GetVersionResponse,
   type HealthReport,
   type ListConsentsResponse,
+  type Preferences,
+  type PreferencesVersionConflict,
   type ProblemDetails,
   type RecordConsentError,
   type SignInResult,
   type SignInWithIdTokenResponse,
   type SignInWithPasskeyResponse,
+  type UpdatePreferencesError,
+  type UpdatePreferencesResponse,
   type VersionInfo,
   getHealth,
   getVersion,
   listConsents,
   signInWithIdToken,
+  updatePreferences,
 } from '../gen/ts-client/index.js';
 import { createClient } from '../gen/ts-client/client/index.js';
 import bundle from '../gen/openapi.bundle.json' with { type: 'json' };
 
 function jsonResponse(body: unknown, status = 200, contentType = 'application/json'): Response {
   return new Response(JSON.stringify(body), { status, headers: { 'content-type': contentType } });
+}
+
+type BundledOperation = { operationId: string; tags: string[] };
+
+/** `METHOD /path operationId` for every bundled operation tagged `tag`, sorted. */
+function operationsTagged(tag: string): string[] {
+  const paths: Record<string, Record<string, BundledOperation>> = bundle.paths;
+  return Object.entries(paths)
+    .flatMap(([path, item]) =>
+      Object.entries(item)
+        .filter(([, op]) => op.tags.includes(tag))
+        .map(([method, op]) => `${method.toUpperCase()} ${path} ${op.operationId}`),
+    )
+    .sort();
 }
 
 describe('generated ts-client', () => {
@@ -85,16 +104,7 @@ describe('generated ts-client: identity', () => {
   const synthetic = { token: 'synthetic-session-token', userId: 'usr_01J9Z3K8X2Q7N5V4B6C8D0E1F2' };
 
   it('bundle exposes every identity operation with its operationId', () => {
-    const paths: Record<string, Record<string, { operationId: string }>> = bundle.paths;
-    const operationIds = Object.entries(paths)
-      .filter(([path]) => path.startsWith('/v1/auth/') || path.startsWith('/v1/me/'))
-      .flatMap(([path, item]) =>
-        Object.entries(item).map(
-          ([method, op]) => `${method.toUpperCase()} ${path} ${op.operationId}`,
-        ),
-      )
-      .sort();
-    expect(operationIds).toEqual([
+    expect(operationsTagged('identity')).toEqual([
       'DELETE /v1/me/recovery cancelAccountRecovery',
       'GET /v1/auth/get-session getSession',
       'GET /v1/auth/list-sessions listDeviceSessions',
@@ -177,5 +187,94 @@ describe('generated ts-client: identity', () => {
     expect(error?.code).toBe('ACCOUNT_DELETED');
     expect(error?.status).toBe(410);
     expect(seen).toEqual([`Bearer ${synthetic.token}`]);
+  });
+});
+
+describe('generated ts-client: profile', () => {
+  const token = 'synthetic-session-token';
+  const stored: Preferences = {
+    version: 4,
+    fitPreferences: { tops: 'regular' },
+    styleTypes: ['minimal'],
+    softDislikes: [],
+    hardExclusions: [{ kind: 'material', value: 'wool' }],
+    occasionPresets: ['work_day'],
+    sizingByRegion: [],
+  };
+
+  it('bundle exposes every profile operation with its operationId', () => {
+    expect(operationsTagged('profile')).toEqual([
+      'GET /v1/me/measurements getMeasurements',
+      'GET /v1/me/onboarding-progress getOnboardingProgress',
+      'GET /v1/me/preferences getPreferences',
+      'GET /v1/me/profile getProfile',
+      'PATCH /v1/me/onboarding-progress updateOnboardingProgress',
+      'PATCH /v1/me/preferences updatePreferences',
+      'PATCH /v1/me/profile updateProfile',
+      'PUT /v1/me/measurements replaceMeasurements',
+    ]);
+  });
+
+  it('types a versioned write: the resource, or a problem that may carry the current state', () => {
+    expectTypeOf<UpdatePreferencesResponse>().toEqualTypeOf<Preferences>();
+    expectTypeOf<PreferencesVersionConflict>().toExtend<ProblemDetails>();
+    expectTypeOf<UpdatePreferencesError>().toEqualTypeOf<
+      ProblemDetails | PreferencesVersionConflict
+    >();
+  });
+
+  it('sends If-Match, Idempotency-Key and a partial body; answers the new version', async () => {
+    const seen: { ifMatch: string | null; idempotencyKey: string | null; body: unknown }[] = [];
+    const client = createClient({
+      baseUrl: 'http://localhost:3000',
+      auth: token,
+      fetch: async (input: string | URL | Request) => {
+        const request = new Request(input);
+        seen.push({
+          ifMatch: request.headers.get('if-match'),
+          idempotencyKey: request.headers.get('idempotency-key'),
+          body: await request.json(),
+        });
+        return jsonResponse({ ...stored, version: 5, climateTolerance: 'runs_cold' });
+      },
+    });
+    const idempotencyKey = '00000000000000000000000001';
+    const { data, error } = await updatePreferences({
+      client,
+      headers: { 'If-Match': '"4"', 'Idempotency-Key': idempotencyKey },
+      body: { climateTolerance: 'runs_cold', clear: ['typicalDay'] },
+    });
+    expect(error).toBeUndefined();
+    expect(data?.version).toBe(5);
+    expect(seen).toEqual([
+      {
+        ifMatch: '"4"',
+        idempotencyKey,
+        body: { climateTolerance: 'runs_cold', clear: ['typicalDay'] },
+      },
+    ]);
+  });
+
+  it('surfaces 409 VERSION_MISMATCH with the stored preferences', async () => {
+    const client = createClient({
+      baseUrl: 'http://localhost:3000',
+      auth: token,
+      fetch: () =>
+        Promise.resolve(
+          jsonResponse(
+            { ...problem('VERSION_MISMATCH'), current: stored },
+            409,
+            'application/problem+json',
+          ),
+        ),
+    });
+    const { data, error } = await updatePreferences({
+      client,
+      headers: { 'If-Match': '"3"' },
+      body: { styleTypes: ['classic'] },
+    });
+    expect(data).toBeUndefined();
+    expect(error?.code).toBe('VERSION_MISMATCH');
+    expect(error && 'current' in error ? error.current?.version : undefined).toBe(4);
   });
 });

@@ -32,14 +32,14 @@ import kotlinx.serialization.SerialName
 import kotlinx.serialization.Contextual
 
 /**
- * One append-only consent record (doc 11 §7.1).
+ * One append-only consent record (doc 11 §7.1); `locale` is the language of the text the person saw. 
  *
  * @param id Consent record id, a prefixed ULID (`cns_`, shared-kernel `ID_PREFIXES.consentRecord`).
  * @param purpose 
  * @param status 
  * @param policyVersion Version of the policy text the person saw, e.g. `0.1.0-draft`.
  * @param surface Identifier of the app screen where the decision was made, e.g. `onboarding_consent`.
- * @param locale BCP 47 language tag of the text the person saw, e.g. `en-GB`.
+ * @param locale BCP 47 language tag, e.g. `en-GB`.
  * @param grantedAt When the consent was granted; present when `status` is `granted`.
  * @param withdrawnAt When the consent was withdrawn; present when `status` is `withdrawn`.
  */
@@ -65,7 +65,7 @@ data class ConsentRecord (
     @SerialName(value = "surface")
     val surface: kotlin.String,
 
-    /* BCP 47 language tag of the text the person saw, e.g. `en-GB`. */
+    /* BCP 47 language tag, e.g. `en-GB`. */
     @SerialName(value = "locale")
     val locale: kotlin.String,
 

@@ -22,12 +22,24 @@ import type {
   GetHealthData,
   GetHealthErrors,
   GetHealthResponses,
+  GetMeasurementsData,
+  GetMeasurementsErrors,
+  GetMeasurementsResponses,
+  GetOnboardingProgressData,
+  GetOnboardingProgressErrors,
+  GetOnboardingProgressResponses,
   GetPasskeyRegistrationOptionsData,
   GetPasskeyRegistrationOptionsErrors,
   GetPasskeyRegistrationOptionsResponses,
   GetPasskeySignInOptionsData,
   GetPasskeySignInOptionsErrors,
   GetPasskeySignInOptionsResponses,
+  GetPreferencesData,
+  GetPreferencesErrors,
+  GetPreferencesResponses,
+  GetProfileData,
+  GetProfileErrors,
+  GetProfileResponses,
   GetSessionData,
   GetSessionErrors,
   GetSessionResponses,
@@ -49,6 +61,9 @@ import type {
   RegisterPasskeyData,
   RegisterPasskeyErrors,
   RegisterPasskeyResponses,
+  ReplaceMeasurementsData,
+  ReplaceMeasurementsErrors,
+  ReplaceMeasurementsResponses,
   RequestAccountRecoveryData,
   RequestAccountRecoveryErrors,
   RequestAccountRecoveryResponses,
@@ -64,6 +79,15 @@ import type {
   SignOutData,
   SignOutErrors,
   SignOutResponses,
+  UpdateOnboardingProgressData,
+  UpdateOnboardingProgressErrors,
+  UpdateOnboardingProgressResponses,
+  UpdatePreferencesData,
+  UpdatePreferencesErrors,
+  UpdatePreferencesResponses,
+  UpdateProfileData,
+  UpdateProfileErrors,
+  UpdateProfileResponses,
 } from './types.gen.js';
 
 export type Options<
@@ -434,6 +458,171 @@ export const recordConsent = <ThrowOnError extends boolean = false>(
   (options.client ?? client).post<RecordConsentResponses, RecordConsentErrors, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],
     url: '/v1/me/consents',
+    ...options,
+    headers: {
+      'Content-Type': 'application/json',
+      ...options.headers,
+    },
+  });
+
+/**
+ * Read the caller's profile settings
+ *
+ * Presentation, starting shape and the six settings of REQ-ONB-100. A profile nothing has
+ * been written to answers with its defaults and `version` 0.
+ *
+ */
+export const getProfile = <ThrowOnError extends boolean = false>(
+  options?: Options<GetProfileData, ThrowOnError>,
+): RequestResult<GetProfileResponses, GetProfileErrors, ThrowOnError> =>
+  (options?.client ?? client).get<GetProfileResponses, GetProfileErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/v1/me/profile',
+    ...options,
+  });
+
+/**
+ * Change some of the caller's profile settings
+ *
+ * Partial update (see the file header): each member present replaces its stored value.
+ * Answers with the whole profile at its new `version`.
+ *
+ */
+export const updateProfile = <ThrowOnError extends boolean = false>(
+  options: Options<UpdateProfileData, ThrowOnError>,
+): RequestResult<UpdateProfileResponses, UpdateProfileErrors, ThrowOnError> =>
+  (options.client ?? client).patch<UpdateProfileResponses, UpdateProfileErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/v1/me/profile',
+    ...options,
+    headers: {
+      'Content-Type': 'application/json',
+      ...options.headers,
+    },
+  });
+
+/**
+ * Read the caller's body measurements
+ *
+ * The caller's current measurement set, in SI units. A set nothing has been written to
+ * answers with no measurement and `version` 0. Never cached.
+ *
+ */
+export const getMeasurements = <ThrowOnError extends boolean = false>(
+  options?: Options<GetMeasurementsData, ThrowOnError>,
+): RequestResult<GetMeasurementsResponses, GetMeasurementsErrors, ThrowOnError> =>
+  (options?.client ?? client).get<GetMeasurementsResponses, GetMeasurementsErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/v1/me/measurements',
+    ...options,
+  });
+
+/**
+ * Replace the caller's body measurements
+ *
+ * Replaces the whole set. A measurement absent from `measurements` is removed, which is how
+ * a single field is cleared; `{}` removes every measurement. Values are SI (`cm`, `kg`);
+ * the app converts for display only. Answers with the stored set at its new `version`.
+ *
+ */
+export const replaceMeasurements = <ThrowOnError extends boolean = false>(
+  options: Options<ReplaceMeasurementsData, ThrowOnError>,
+): RequestResult<ReplaceMeasurementsResponses, ReplaceMeasurementsErrors, ThrowOnError> =>
+  (options.client ?? client).put<
+    ReplaceMeasurementsResponses,
+    ReplaceMeasurementsErrors,
+    ThrowOnError
+  >({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/v1/me/measurements',
+    ...options,
+    headers: {
+      'Content-Type': 'application/json',
+      ...options.headers,
+    },
+  });
+
+/**
+ * Read the caller's style preferences
+ *
+ * Fit and style preferences, soft dislikes and hard exclusions, climate tolerance,
+ * occasions and the typical day, and usual sizes. Preferences nothing has been written to
+ * answer with empty lists and `version` 0.
+ *
+ */
+export const getPreferences = <ThrowOnError extends boolean = false>(
+  options?: Options<GetPreferencesData, ThrowOnError>,
+): RequestResult<GetPreferencesResponses, GetPreferencesErrors, ThrowOnError> =>
+  (options?.client ?? client).get<GetPreferencesResponses, GetPreferencesErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/v1/me/preferences',
+    ...options,
+  });
+
+/**
+ * Change some of the caller's style preferences
+ *
+ * Partial update (see the file header): each member present replaces its stored value
+ * whole, an empty list or object empties it, and `clear` removes `climateTolerance` or
+ * `typicalDay`. Answers with all preferences at their new `version`.
+ *
+ */
+export const updatePreferences = <ThrowOnError extends boolean = false>(
+  options: Options<UpdatePreferencesData, ThrowOnError>,
+): RequestResult<UpdatePreferencesResponses, UpdatePreferencesErrors, ThrowOnError> =>
+  (options.client ?? client).patch<
+    UpdatePreferencesResponses,
+    UpdatePreferencesErrors,
+    ThrowOnError
+  >({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/v1/me/preferences',
+    ...options,
+    headers: {
+      'Content-Type': 'application/json',
+      ...options.headers,
+    },
+  });
+
+/**
+ * Read the caller's onboarding progress
+ *
+ * Per-step progress of the onboarding flow (doc 02 §3.2) and the step the app resumes at
+ * after a quit or a crash.
+ *
+ */
+export const getOnboardingProgress = <ThrowOnError extends boolean = false>(
+  options?: Options<GetOnboardingProgressData, ThrowOnError>,
+): RequestResult<GetOnboardingProgressResponses, GetOnboardingProgressErrors, ThrowOnError> =>
+  (options?.client ?? client).get<
+    GetOnboardingProgressResponses,
+    GetOnboardingProgressErrors,
+    ThrowOnError
+  >({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/v1/me/onboarding-progress',
+    ...options,
+  });
+
+/**
+ * Record the outcome of onboarding steps
+ *
+ * Records `completed` or `skipped` for each step present. A status only moves forward
+ * (`pending` → `skipped` → `completed`): a write that would move a step back leaves it
+ * unchanged and is still answered with 200, so a replayed or late write from a device's
+ * local buffer is harmless. Answers with the whole progress.
+ *
+ */
+export const updateOnboardingProgress = <ThrowOnError extends boolean = false>(
+  options: Options<UpdateOnboardingProgressData, ThrowOnError>,
+): RequestResult<UpdateOnboardingProgressResponses, UpdateOnboardingProgressErrors, ThrowOnError> =>
+  (options.client ?? client).patch<
+    UpdateOnboardingProgressResponses,
+    UpdateOnboardingProgressErrors,
+    ThrowOnError
+  >({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/v1/me/onboarding-progress',
     ...options,
     headers: {
       'Content-Type': 'application/json',

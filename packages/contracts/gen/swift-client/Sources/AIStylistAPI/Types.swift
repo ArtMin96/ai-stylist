@@ -193,6 +193,83 @@ public protocol APIProtocol: Sendable {
     /// - Remark: HTTP `POST /v1/me/consents`.
     /// - Remark: Generated from `#/paths//v1/me/consents/post(recordConsent)`.
     func recordConsent(_ input: Operations.RecordConsent.Input) async throws -> Operations.RecordConsent.Output
+    /// Read the caller's profile settings
+    ///
+    /// Presentation, starting shape and the six settings of REQ-ONB-100. A profile nothing has
+    /// been written to answers with its defaults and `version` 0.
+    ///
+    ///
+    /// - Remark: HTTP `GET /v1/me/profile`.
+    /// - Remark: Generated from `#/paths//v1/me/profile/get(getProfile)`.
+    func getProfile(_ input: Operations.GetProfile.Input) async throws -> Operations.GetProfile.Output
+    /// Change some of the caller's profile settings
+    ///
+    /// Partial update (see the file header): each member present replaces its stored value.
+    /// Answers with the whole profile at its new `version`.
+    ///
+    ///
+    /// - Remark: HTTP `PATCH /v1/me/profile`.
+    /// - Remark: Generated from `#/paths//v1/me/profile/patch(updateProfile)`.
+    func updateProfile(_ input: Operations.UpdateProfile.Input) async throws -> Operations.UpdateProfile.Output
+    /// Read the caller's body measurements
+    ///
+    /// The caller's current measurement set, in SI units. A set nothing has been written to
+    /// answers with no measurement and `version` 0. Never cached.
+    ///
+    ///
+    /// - Remark: HTTP `GET /v1/me/measurements`.
+    /// - Remark: Generated from `#/paths//v1/me/measurements/get(getMeasurements)`.
+    func getMeasurements(_ input: Operations.GetMeasurements.Input) async throws -> Operations.GetMeasurements.Output
+    /// Replace the caller's body measurements
+    ///
+    /// Replaces the whole set. A measurement absent from `measurements` is removed, which is how
+    /// a single field is cleared; `{}` removes every measurement. Values are SI (`cm`, `kg`);
+    /// the app converts for display only. Answers with the stored set at its new `version`.
+    ///
+    ///
+    /// - Remark: HTTP `PUT /v1/me/measurements`.
+    /// - Remark: Generated from `#/paths//v1/me/measurements/put(replaceMeasurements)`.
+    func replaceMeasurements(_ input: Operations.ReplaceMeasurements.Input) async throws -> Operations.ReplaceMeasurements.Output
+    /// Read the caller's style preferences
+    ///
+    /// Fit and style preferences, soft dislikes and hard exclusions, climate tolerance,
+    /// occasions and the typical day, and usual sizes. Preferences nothing has been written to
+    /// answer with empty lists and `version` 0.
+    ///
+    ///
+    /// - Remark: HTTP `GET /v1/me/preferences`.
+    /// - Remark: Generated from `#/paths//v1/me/preferences/get(getPreferences)`.
+    func getPreferences(_ input: Operations.GetPreferences.Input) async throws -> Operations.GetPreferences.Output
+    /// Change some of the caller's style preferences
+    ///
+    /// Partial update (see the file header): each member present replaces its stored value
+    /// whole, an empty list or object empties it, and `clear` removes `climateTolerance` or
+    /// `typicalDay`. Answers with all preferences at their new `version`.
+    ///
+    ///
+    /// - Remark: HTTP `PATCH /v1/me/preferences`.
+    /// - Remark: Generated from `#/paths//v1/me/preferences/patch(updatePreferences)`.
+    func updatePreferences(_ input: Operations.UpdatePreferences.Input) async throws -> Operations.UpdatePreferences.Output
+    /// Read the caller's onboarding progress
+    ///
+    /// Per-step progress of the onboarding flow (doc 02 §3.2) and the step the app resumes at
+    /// after a quit or a crash.
+    ///
+    ///
+    /// - Remark: HTTP `GET /v1/me/onboarding-progress`.
+    /// - Remark: Generated from `#/paths//v1/me/onboarding-progress/get(getOnboardingProgress)`.
+    func getOnboardingProgress(_ input: Operations.GetOnboardingProgress.Input) async throws -> Operations.GetOnboardingProgress.Output
+    /// Record the outcome of onboarding steps
+    ///
+    /// Records `completed` or `skipped` for each step present. A status only moves forward
+    /// (`pending` → `skipped` → `completed`): a write that would move a step back leaves it
+    /// unchanged and is still answered with 200, so a replayed or late write from a device's
+    /// local buffer is harmless. Answers with the whole progress.
+    ///
+    ///
+    /// - Remark: HTTP `PATCH /v1/me/onboarding-progress`.
+    /// - Remark: Generated from `#/paths//v1/me/onboarding-progress/patch(updateOnboardingProgress)`.
+    func updateOnboardingProgress(_ input: Operations.UpdateOnboardingProgress.Input) async throws -> Operations.UpdateOnboardingProgress.Output
 }
 
 /// Convenience overloads for operation inputs.
@@ -464,6 +541,123 @@ extension APIProtocol {
         body: Operations.RecordConsent.Input.Body
     ) async throws -> Operations.RecordConsent.Output {
         try await recordConsent(Operations.RecordConsent.Input(
+            headers: headers,
+            body: body
+        ))
+    }
+    /// Read the caller's profile settings
+    ///
+    /// Presentation, starting shape and the six settings of REQ-ONB-100. A profile nothing has
+    /// been written to answers with its defaults and `version` 0.
+    ///
+    ///
+    /// - Remark: HTTP `GET /v1/me/profile`.
+    /// - Remark: Generated from `#/paths//v1/me/profile/get(getProfile)`.
+    public func getProfile(headers: Operations.GetProfile.Input.Headers = .init()) async throws -> Operations.GetProfile.Output {
+        try await getProfile(Operations.GetProfile.Input(headers: headers))
+    }
+    /// Change some of the caller's profile settings
+    ///
+    /// Partial update (see the file header): each member present replaces its stored value.
+    /// Answers with the whole profile at its new `version`.
+    ///
+    ///
+    /// - Remark: HTTP `PATCH /v1/me/profile`.
+    /// - Remark: Generated from `#/paths//v1/me/profile/patch(updateProfile)`.
+    public func updateProfile(
+        headers: Operations.UpdateProfile.Input.Headers,
+        body: Operations.UpdateProfile.Input.Body
+    ) async throws -> Operations.UpdateProfile.Output {
+        try await updateProfile(Operations.UpdateProfile.Input(
+            headers: headers,
+            body: body
+        ))
+    }
+    /// Read the caller's body measurements
+    ///
+    /// The caller's current measurement set, in SI units. A set nothing has been written to
+    /// answers with no measurement and `version` 0. Never cached.
+    ///
+    ///
+    /// - Remark: HTTP `GET /v1/me/measurements`.
+    /// - Remark: Generated from `#/paths//v1/me/measurements/get(getMeasurements)`.
+    public func getMeasurements(headers: Operations.GetMeasurements.Input.Headers = .init()) async throws -> Operations.GetMeasurements.Output {
+        try await getMeasurements(Operations.GetMeasurements.Input(headers: headers))
+    }
+    /// Replace the caller's body measurements
+    ///
+    /// Replaces the whole set. A measurement absent from `measurements` is removed, which is how
+    /// a single field is cleared; `{}` removes every measurement. Values are SI (`cm`, `kg`);
+    /// the app converts for display only. Answers with the stored set at its new `version`.
+    ///
+    ///
+    /// - Remark: HTTP `PUT /v1/me/measurements`.
+    /// - Remark: Generated from `#/paths//v1/me/measurements/put(replaceMeasurements)`.
+    public func replaceMeasurements(
+        headers: Operations.ReplaceMeasurements.Input.Headers,
+        body: Operations.ReplaceMeasurements.Input.Body
+    ) async throws -> Operations.ReplaceMeasurements.Output {
+        try await replaceMeasurements(Operations.ReplaceMeasurements.Input(
+            headers: headers,
+            body: body
+        ))
+    }
+    /// Read the caller's style preferences
+    ///
+    /// Fit and style preferences, soft dislikes and hard exclusions, climate tolerance,
+    /// occasions and the typical day, and usual sizes. Preferences nothing has been written to
+    /// answer with empty lists and `version` 0.
+    ///
+    ///
+    /// - Remark: HTTP `GET /v1/me/preferences`.
+    /// - Remark: Generated from `#/paths//v1/me/preferences/get(getPreferences)`.
+    public func getPreferences(headers: Operations.GetPreferences.Input.Headers = .init()) async throws -> Operations.GetPreferences.Output {
+        try await getPreferences(Operations.GetPreferences.Input(headers: headers))
+    }
+    /// Change some of the caller's style preferences
+    ///
+    /// Partial update (see the file header): each member present replaces its stored value
+    /// whole, an empty list or object empties it, and `clear` removes `climateTolerance` or
+    /// `typicalDay`. Answers with all preferences at their new `version`.
+    ///
+    ///
+    /// - Remark: HTTP `PATCH /v1/me/preferences`.
+    /// - Remark: Generated from `#/paths//v1/me/preferences/patch(updatePreferences)`.
+    public func updatePreferences(
+        headers: Operations.UpdatePreferences.Input.Headers,
+        body: Operations.UpdatePreferences.Input.Body
+    ) async throws -> Operations.UpdatePreferences.Output {
+        try await updatePreferences(Operations.UpdatePreferences.Input(
+            headers: headers,
+            body: body
+        ))
+    }
+    /// Read the caller's onboarding progress
+    ///
+    /// Per-step progress of the onboarding flow (doc 02 §3.2) and the step the app resumes at
+    /// after a quit or a crash.
+    ///
+    ///
+    /// - Remark: HTTP `GET /v1/me/onboarding-progress`.
+    /// - Remark: Generated from `#/paths//v1/me/onboarding-progress/get(getOnboardingProgress)`.
+    public func getOnboardingProgress(headers: Operations.GetOnboardingProgress.Input.Headers = .init()) async throws -> Operations.GetOnboardingProgress.Output {
+        try await getOnboardingProgress(Operations.GetOnboardingProgress.Input(headers: headers))
+    }
+    /// Record the outcome of onboarding steps
+    ///
+    /// Records `completed` or `skipped` for each step present. A status only moves forward
+    /// (`pending` → `skipped` → `completed`): a write that would move a step back leaves it
+    /// unchanged and is still answered with 200, so a replayed or late write from a device's
+    /// local buffer is harmless. Answers with the whole progress.
+    ///
+    ///
+    /// - Remark: HTTP `PATCH /v1/me/onboarding-progress`.
+    /// - Remark: Generated from `#/paths//v1/me/onboarding-progress/patch(updateOnboardingProgress)`.
+    public func updateOnboardingProgress(
+        headers: Operations.UpdateOnboardingProgress.Input.Headers = .init(),
+        body: Operations.UpdateOnboardingProgress.Input.Body
+    ) async throws -> Operations.UpdateOnboardingProgress.Output {
+        try await updateOnboardingProgress(Operations.UpdateOnboardingProgress.Input(
             headers: headers,
             body: body
         ))

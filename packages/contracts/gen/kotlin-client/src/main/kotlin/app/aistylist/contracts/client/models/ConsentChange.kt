@@ -32,13 +32,13 @@ import kotlinx.serialization.SerialName
 import kotlinx.serialization.Contextual
 
 /**
- * 
+ * One consent decision; `locale` is the language of the text the person saw.
  *
  * @param purpose 
  * @param status 
  * @param policyVersion Version of the policy text the person saw, e.g. `0.1.0-draft`.
  * @param surface Identifier of the app screen where the decision was made, e.g. `onboarding_consent`.
- * @param locale BCP 47 language tag of the text the person saw, e.g. `en-GB`.
+ * @param locale BCP 47 language tag, e.g. `en-GB`.
  */
 @Serializable
 
@@ -58,7 +58,7 @@ data class ConsentChange (
     @SerialName(value = "surface")
     val surface: kotlin.String,
 
-    /* BCP 47 language tag of the text the person saw, e.g. `en-GB`. */
+    /* BCP 47 language tag, e.g. `en-GB`. */
     @SerialName(value = "locale")
     val locale: kotlin.String
 

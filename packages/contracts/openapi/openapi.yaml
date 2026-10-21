@@ -23,6 +23,8 @@ tags:
     description: Health, version and other non-domain endpoints
   - name: identity
     description: Sign-in, sessions, account recovery and consent
+  - name: profile
+    description: Profile settings, body measurements, style preferences and onboarding progress
 paths:
   /v1/health:
     $ref: './modules/platform.yaml#/paths/~1v1~1health'
@@ -56,6 +58,14 @@ paths:
     $ref: './modules/identity.yaml#/paths/~1v1~1me~1recovery'
   /v1/me/consents:
     $ref: './modules/identity.yaml#/paths/~1v1~1me~1consents'
+  /v1/me/profile:
+    $ref: './modules/profile.yaml#/paths/~1v1~1me~1profile'
+  /v1/me/measurements:
+    $ref: './modules/profile.yaml#/paths/~1v1~1me~1measurements'
+  /v1/me/preferences:
+    $ref: './modules/profile.yaml#/paths/~1v1~1me~1preferences'
+  /v1/me/onboarding-progress:
+    $ref: './modules/profile.yaml#/paths/~1v1~1me~1onboarding-progress'
 components:
   schemas:
     ProblemDetails:

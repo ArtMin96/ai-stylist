@@ -308,5 +308,114 @@ extension Components {
                 self.body = body
             }
         }
+        public struct ProfileConflict: Sendable, Hashable {
+            /// - Remark: Generated from `#/components/responses/ProfileConflict/content`.
+            @frozen public enum Body: Sendable, Hashable {
+                /// - Remark: Generated from `#/components/responses/ProfileConflict/content/application\/problem+json`.
+                case applicationProblemJson(Components.Schemas.ProfileVersionConflict)
+                /// The associated value of the enum case if `self` is `.applicationProblemJson`.
+                ///
+                /// - Throws: An error if `self` is not `.applicationProblemJson`.
+                /// - SeeAlso: `.applicationProblemJson`.
+                public var applicationProblemJson: Components.Schemas.ProfileVersionConflict {
+                    get throws {
+                        switch self {
+                        case let .applicationProblemJson(body):
+                            return body
+                        }
+                    }
+                }
+            }
+            /// Received HTTP response body
+            public var body: Components.Responses.ProfileConflict.Body
+            /// Creates a new `ProfileConflict`.
+            ///
+            /// - Parameters:
+            ///   - body: Received HTTP response body
+            public init(body: Components.Responses.ProfileConflict.Body) {
+                self.body = body
+            }
+        }
+        public struct MeasurementSetConflict: Sendable, Hashable {
+            /// - Remark: Generated from `#/components/responses/MeasurementSetConflict/headers`.
+            public struct Headers: Sendable, Hashable {
+                /// - Remark: Generated from `#/components/headers/CacheControlNoStore`.
+                @frozen public enum CacheControlNoStore: String, Codable, Hashable, Sendable, CaseIterable {
+                    case noStore = "no-store"
+                }
+                /// Always `no-store`; the response must not be stored by any cache.
+                ///
+                /// - Remark: Generated from `#/components/responses/MeasurementSetConflict/headers/Cache-Control`.
+                public var cacheControl: Components.Headers.CacheControlNoStore?
+                /// Creates a new `Headers`.
+                ///
+                /// - Parameters:
+                ///   - cacheControl: Always `no-store`; the response must not be stored by any cache.
+                public init(cacheControl: Components.Headers.CacheControlNoStore? = nil) {
+                    self.cacheControl = cacheControl
+                }
+            }
+            /// Received HTTP response headers
+            public var headers: Components.Responses.MeasurementSetConflict.Headers
+            /// - Remark: Generated from `#/components/responses/MeasurementSetConflict/content`.
+            @frozen public enum Body: Sendable, Hashable {
+                /// - Remark: Generated from `#/components/responses/MeasurementSetConflict/content/application\/problem+json`.
+                case applicationProblemJson(Components.Schemas.MeasurementSetVersionConflict)
+                /// The associated value of the enum case if `self` is `.applicationProblemJson`.
+                ///
+                /// - Throws: An error if `self` is not `.applicationProblemJson`.
+                /// - SeeAlso: `.applicationProblemJson`.
+                public var applicationProblemJson: Components.Schemas.MeasurementSetVersionConflict {
+                    get throws {
+                        switch self {
+                        case let .applicationProblemJson(body):
+                            return body
+                        }
+                    }
+                }
+            }
+            /// Received HTTP response body
+            public var body: Components.Responses.MeasurementSetConflict.Body
+            /// Creates a new `MeasurementSetConflict`.
+            ///
+            /// - Parameters:
+            ///   - headers: Received HTTP response headers
+            ///   - body: Received HTTP response body
+            public init(
+                headers: Components.Responses.MeasurementSetConflict.Headers = .init(),
+                body: Components.Responses.MeasurementSetConflict.Body
+            ) {
+                self.headers = headers
+                self.body = body
+            }
+        }
+        public struct PreferencesConflict: Sendable, Hashable {
+            /// - Remark: Generated from `#/components/responses/PreferencesConflict/content`.
+            @frozen public enum Body: Sendable, Hashable {
+                /// - Remark: Generated from `#/components/responses/PreferencesConflict/content/application\/problem+json`.
+                case applicationProblemJson(Components.Schemas.PreferencesVersionConflict)
+                /// The associated value of the enum case if `self` is `.applicationProblemJson`.
+                ///
+                /// - Throws: An error if `self` is not `.applicationProblemJson`.
+                /// - SeeAlso: `.applicationProblemJson`.
+                public var applicationProblemJson: Components.Schemas.PreferencesVersionConflict {
+                    get throws {
+                        switch self {
+                        case let .applicationProblemJson(body):
+                            return body
+                        }
+                    }
+                }
+            }
+            /// Received HTTP response body
+            public var body: Components.Responses.PreferencesConflict.Body
+            /// Creates a new `PreferencesConflict`.
+            ///
+            /// - Parameters:
+            ///   - body: Received HTTP response body
+            public init(body: Components.Responses.PreferencesConflict.Body) {
+                self.body = body
+            }
+        }
     }
 }

@@ -132,11 +132,13 @@ components:
       type: http
       scheme: bearer
       description: |
-        Session token issued by a sign-in (`SessionGrant.token`), sent as
-        `Authorization: Bearer <token>` (doc 06 §2). Opaque to clients: never parse it. A
-        missing, malformed, expired or revoked token is answered with the `Unauthenticated`
-        (401) problem. The client then renews once with `refreshSession`; a refused renewal
-        ends the session on the device.
+        Short-lived access token of a session (`SessionGrant.token`, about 15 minutes, doc 11
+        §4.2), sent as `Authorization: Bearer <token>` (doc 06 §2). Opaque to clients: never
+        parse it. It never renews a session; only the separate refresh token
+        (`SessionGrant.refreshToken`) does, through `refreshSession`, and the refresh token is
+        never sent in this header. A missing, malformed, expired or revoked access token is
+        answered with the `Unauthenticated` (401) problem. The client then renews once with
+        `refreshSession`; a refused renewal ends the session on the device.
     deletionCancelToken:
       type: apiKey
       in: header
@@ -155,9 +157,17 @@ components:
       in: header
       description: |
         Client-generated ULID that makes a mutating request safe to retry (doc 06 §2; the
-        mobile mutation-log `opId`). The server keeps key, request hash and response for 48 h:
-        a replay with the same body returns the stored response, the same key with a different
-        body is refused with 409 `IDEMPOTENCY_KEY_REUSED`. Optional for the caller.
+        mobile mutation-log `opId`). A key is scoped to the caller and the operation: the
+        authenticated principal, or for an operation with `security: []` the credential in its
+        body (for `requestAccountRecovery`, which carries none, the request hash alone). The
+        server keeps key, request hash and response for 48 h: a replay with the same body
+        returns the stored response; the same key with a different body is refused with 409
+        `IDEMPOTENCY_KEY_REUSED`. Exception: an operation whose answer carries a credential
+        (`SessionGrant.token`, `SessionGrant.refreshToken`, `DeletionPending.cancelToken`,
+        `SignUpPending.token`) is never answered from the store, and its credential is never
+        stored. Such an operation is marked `x-idempotency-replay: never`. A repeated key on it
+        is refused with 409 `CONFLICT`, and the client starts that step again. Optional for the
+        caller.
       schema:
         type: string
         pattern: '^[0-7][0-9A-HJKMNP-TV-Z]{25}$'
@@ -209,9 +219,9 @@ components:
             $ref: '#/components/schemas/ProblemDetails'
     Unauthenticated:
       description: |
-        `UNAUTHENTICATED`: the credential is missing, malformed, expired or revoked. The client
-        renews the session once (`refreshSession`); if the renewal is refused too, it signs in
-        again.
+        `UNAUTHENTICATED`: the access token is missing, malformed, expired or revoked. The
+        client renews the session once with its refresh token (`refreshSession`); if the renewal
+        is refused too, it signs in again.
       content:
         application/problem+json:
           schema:
@@ -228,7 +238,9 @@ components:
       description: |
         `IDEMPOTENCY_KEY_REUSED` when the `Idempotency-Key` was already used with a different
         request; `VERSION_MISMATCH` when `If-Match` no longer matches the stored version;
-        `CONFLICT` otherwise.
+        `CONFLICT` otherwise. Exception: on an operation whose answer carries a credential
+        (marked `x-idempotency-replay: never`), any repeated `Idempotency-Key` is refused with
+        `CONFLICT`, never answered from the store, and the client starts that step again.
       content:
         application/problem+json:
           schema:

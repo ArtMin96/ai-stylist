@@ -403,9 +403,20 @@ describe('profile.measurements.updated.v1 agrees with the measurement-definition
   it.each(definitions)('%s names its stored unit and never a value', (id, definition) => {
     const change = deref(doc, changes.properties?.[id]);
     expect(Object.keys(change.properties ?? {})).toEqual(['unit']);
+    expect(change.additionalProperties).toBe(false);
     const units = definition.dimension === 'length' ? LENGTH_UNITS : MASS_UNITS;
     expect(change.properties?.unit?.enum).toEqual([...units]);
     expect(change.properties?.unit?.enum).toEqual([definition.unit]);
+  });
+
+  it('refuses a change that carries a value: the change objects are closed (doc 11 §6)', () => {
+    const validate = validatorOf('profile.measurements.updated.v1');
+    const example = exampleOf(doc);
+    const withValue = {
+      ...example,
+      payload: { ...example.payload, changed: { height: { unit: 'cm', value: 176 } } },
+    };
+    expect(validate(withValue)).toBe(false);
   });
 });
 

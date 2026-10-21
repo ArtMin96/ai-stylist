@@ -227,10 +227,10 @@ extension Components {
                 self.body = body
             }
         }
-        public struct Forbidden: Sendable, Hashable {
-            /// - Remark: Generated from `#/components/responses/Forbidden/content`.
+        public struct RecentSignInRequired: Sendable, Hashable {
+            /// - Remark: Generated from `#/components/responses/RecentSignInRequired/content`.
             @frozen public enum Body: Sendable, Hashable {
-                /// - Remark: Generated from `#/components/responses/Forbidden/content/application\/problem+json`.
+                /// - Remark: Generated from `#/components/responses/RecentSignInRequired/content/application\/problem+json`.
                 case applicationProblemJson(Components.Schemas.ProblemDetails)
                 /// The associated value of the enum case if `self` is `.applicationProblemJson`.
                 ///
@@ -246,12 +246,12 @@ extension Components {
                 }
             }
             /// Received HTTP response body
-            public var body: Components.Responses.Forbidden.Body
-            /// Creates a new `Forbidden`.
+            public var body: Components.Responses.RecentSignInRequired.Body
+            /// Creates a new `RecentSignInRequired`.
             ///
             /// - Parameters:
             ///   - body: Received HTTP response body
-            public init(body: Components.Responses.Forbidden.Body) {
+            public init(body: Components.Responses.RecentSignInRequired.Body) {
                 self.body = body
             }
         }
@@ -305,6 +305,34 @@ extension Components {
                 body: Components.Responses.AccountDeleted.Body
             ) {
                 self.headers = headers
+                self.body = body
+            }
+        }
+        public struct Forbidden: Sendable, Hashable {
+            /// - Remark: Generated from `#/components/responses/Forbidden/content`.
+            @frozen public enum Body: Sendable, Hashable {
+                /// - Remark: Generated from `#/components/responses/Forbidden/content/application\/problem+json`.
+                case applicationProblemJson(Components.Schemas.ProblemDetails)
+                /// The associated value of the enum case if `self` is `.applicationProblemJson`.
+                ///
+                /// - Throws: An error if `self` is not `.applicationProblemJson`.
+                /// - SeeAlso: `.applicationProblemJson`.
+                public var applicationProblemJson: Components.Schemas.ProblemDetails {
+                    get throws {
+                        switch self {
+                        case let .applicationProblemJson(body):
+                            return body
+                        }
+                    }
+                }
+            }
+            /// Received HTTP response body
+            public var body: Components.Responses.Forbidden.Body
+            /// Creates a new `Forbidden`.
+            ///
+            /// - Parameters:
+            ///   - body: Received HTTP response body
+            public init(body: Components.Responses.Forbidden.Body) {
                 self.body = body
             }
         }

@@ -246,8 +246,8 @@ export const signInWithPasskey = <ThrowOnError extends boolean = false>(
  *
  * Returns a fresh challenge and the WebAuthn creation options (W3C WebAuthn
  * `PublicKeyCredentialCreationOptionsJSON`). The account's existing passkeys are listed as
- * excluded credentials. Needs a recently created session (better-auth `freshAge`);
- * otherwise 403 `FORBIDDEN`, and the client signs in again first.
+ * excluded credentials. Needs a recent sign-in (`RecentSignInRequired`); otherwise 403
+ * `FORBIDDEN`, and the client signs in again first.
  *
  */
 export const getPasskeyRegistrationOptions = <ThrowOnError extends boolean = false>(
@@ -291,9 +291,10 @@ export const registerPasskey = <ThrowOnError extends boolean = false>(
 /**
  * Read the current session
  *
- * The account and expiry of the session the bearer token belongs to. Read-only: it does
- * not extend the session (better-auth `deferSessionRefresh`). A token with no live session
- * is answered with 401, never with an empty body.
+ * The account of the session the access token belongs to, and when that access token
+ * expires. Read-only: it extends nothing and returns no token (better-auth
+ * `deferSessionRefresh`). A token with no live session is answered with 401, never with
+ * an empty body.
  *
  */
 export const getSession = <ThrowOnError extends boolean = false>(
@@ -306,21 +307,30 @@ export const getSession = <ThrowOnError extends boolean = false>(
   });
 
 /**
- * Renew the current session
+ * Renew a session with its refresh token
  *
- * Extends the session the bearer token belongs to and answers with its token and new
- * expiry. The answer may carry a different token than the one presented: the client
- * stores the returned token and discards the old one. A 401 here is a refused renewal:
- * the client ends the session on the device and sends no further call for it.
+ * Exchanges the session's refresh token for a new pair: a new access token and a new
+ * refresh token (doc 11 §4.2). The refresh token travels in the body, never in
+ * `Authorization`, and the access token never renews a session. The refresh token rotates
+ * on every use: the presented one is spent, and the client stores the returned pair and
+ * discards the old one. Presenting a refresh token that was already rotated revokes every
+ * token of its session (the session family) and is answered 401. Every 401 here is a
+ * refused renewal: the client erases the session's tokens on the device and signs in
+ * again. If the answer is lost, the client may retry once with the same refresh token and
+ * a new `Idempotency-Key`; a refused retry ends the session the same way. Identity's own
+ * operation: better-auth 1.7.12 has no refresh token.
  *
  */
 export const refreshSession = <ThrowOnError extends boolean = false>(
-  options?: Options<RefreshSessionData, ThrowOnError>,
+  options: Options<RefreshSessionData, ThrowOnError>,
 ): RequestResult<RefreshSessionResponses, RefreshSessionErrors, ThrowOnError> =>
-  (options?.client ?? client).post<RefreshSessionResponses, RefreshSessionErrors, ThrowOnError>({
-    security: [{ scheme: 'bearer', type: 'http' }],
-    url: '/v1/auth/get-session',
+  (options.client ?? client).post<RefreshSessionResponses, RefreshSessionErrors, ThrowOnError>({
+    url: '/v1/auth/session/refresh',
     ...options,
+    headers: {
+      'Content-Type': 'application/json',
+      ...options.headers,
+    },
   });
 
 /**
@@ -383,7 +393,10 @@ export const signOutAllDevices = <ThrowOnError extends boolean = false>(
  * status and body whether or not an account exists for the address, so it discloses
  * nothing. When one exists, a single-use link is emailed; it works from 24 to 48 hours
  * after the request, and any signed-in session of the account can cancel it before then
- * (`cancelAccountRecovery`). Never creates an account.
+ * (`cancelAccountRecovery`). The link opens the app (a universal link on iOS, an app link
+ * on Android), never an API URL, and carries its token in the URL fragment, which no
+ * server, proxy or link scanner receives; the app then calls `completeAccountRecovery`.
+ * Never creates an account.
  *
  */
 export const requestAccountRecovery = <ThrowOnError extends boolean = false>(
@@ -405,20 +418,31 @@ export const requestAccountRecovery = <ThrowOnError extends boolean = false>(
 /**
  * Use an account-recovery link
  *
- * Exchanges the token of a recovery link for a sign-in. Refused before 24 hours and from
- * 48 hours after the request, after a cancel, and on a second use. The person then adds
- * a new passkey with `registerPasskey`. The server never logs the query string of this
- * path.
+ * The app sends the token of the recovery link it was opened with and gets a sign-in
+ * (`SignInResult`). The token travels only in this request body: no GET spends it, and no
+ * URL carries it to the API. Before the 24-hour delay has passed the use is refused and
+ * the token is not spent, so the same link works once the delay is over. From 48 hours
+ * after the request, after a cancel, and on a second use it is refused. The person then
+ * adds a new passkey with `registerPasskey`. Identity's own operation: the better-auth
+ * 1.7.12 magic-link plugin verifies only by a GET that spends the token, and that path is
+ * not served.
  *
  */
 export const completeAccountRecovery = <ThrowOnError extends boolean = false>(
   options: Options<CompleteAccountRecoveryData, ThrowOnError>,
 ): RequestResult<CompleteAccountRecoveryResponses, CompleteAccountRecoveryErrors, ThrowOnError> =>
-  (options.client ?? client).get<
+  (options.client ?? client).post<
     CompleteAccountRecoveryResponses,
     CompleteAccountRecoveryErrors,
     ThrowOnError
-  >({ url: '/v1/auth/magic-link/verify', ...options });
+  >({
+    url: '/v1/auth/recovery/complete',
+    ...options,
+    headers: {
+      'Content-Type': 'application/json',
+      ...options.headers,
+    },
+  });
 
 /**
  * Cancel a pending account recovery
@@ -487,7 +511,9 @@ export const recordConsent = <ThrowOnError extends boolean = false>(
  * (`data.export`). Answers at once with the new export `in_progress`; the client reads it
  * with `getDataExport` until it is `ready` (a notification follows as well). One export
  * runs at a time per account: while one is in progress, a new request is refused with 429
- * and the running export.
+ * and the running export. Re-authentication, the same rule as `requestAccountDeletion`:
+ * needs a recent sign-in (`RecentSignInRequired`); otherwise 403 `FORBIDDEN`, and the
+ * client signs in again first.
  *
  */
 export const requestDataExport = <ThrowOnError extends boolean = false>(
@@ -551,10 +577,10 @@ export const cancelAccountDeletion = <ThrowOnError extends boolean = false>(
  * kept for a 7-day grace window (DEC-65). A sign-in during the window answers
  * `deletion_pending`, whose cancel credential can stop the deletion
  * (`cancelAccountDeletion`). After the window the purge runs and cannot be stopped.
- * Re-authentication (doc 02 §11.3): needs a recently created session (better-auth
- * `freshAge`); otherwise 403 `FORBIDDEN`, and the client signs in again first. After the
- * answer the token of this request no longer works and the client returns to its
- * signed-out start. Deleting the account does not cancel a store subscription.
+ * Re-authentication (doc 02 §11.3): needs a recent sign-in (`RecentSignInRequired`);
+ * otherwise 403 `FORBIDDEN`, and the client signs in again first. After the answer the
+ * tokens of this session no longer work and the client returns to its signed-out start.
+ * Deleting the account does not cancel a store subscription.
  *
  */
 export const requestAccountDeletion = <ThrowOnError extends boolean = false>(

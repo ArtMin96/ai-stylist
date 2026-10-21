@@ -23,8 +23,10 @@ import app.aistylist.contracts.client.models.PasskeyRequestOptions
 import app.aistylist.contracts.client.models.PasskeySignInRequest
 import app.aistylist.contracts.client.models.PasskeySummary
 import app.aistylist.contracts.client.models.ProblemDetails
+import app.aistylist.contracts.client.models.RecoveryCompletionRequest
 import app.aistylist.contracts.client.models.RecoveryRequest
 import app.aistylist.contracts.client.models.RecoveryRequestAccepted
+import app.aistylist.contracts.client.models.RefreshSessionRequest
 import app.aistylist.contracts.client.models.RevokeSessionsResult
 import app.aistylist.contracts.client.models.SessionGrant
 import app.aistylist.contracts.client.models.SessionInfo
@@ -40,12 +42,12 @@ interface IdentityApi {
      *  - 204: The deletion is cancelled and the account is active; sign in to open a session.
      *  - 401: `UNAUTHENTICATED`: the cancel credential is missing, malformed or expired. The client signs in again; during the window that sign-in answers `deletion_pending` with a new credential. 
      *  - 404: `NOT_FOUND`: the account has no pending deletion, e.g. it was already cancelled.
-     *  - 409: `IDEMPOTENCY_KEY_REUSED` when the `Idempotency-Key` was already used with a different request; `VERSION_MISMATCH` when `If-Match` no longer matches the stored version; `CONFLICT` otherwise. 
+     *  - 409: `IDEMPOTENCY_KEY_REUSED` when the `Idempotency-Key` was already used with a different request; `VERSION_MISMATCH` when `If-Match` no longer matches the stored version; `CONFLICT` otherwise. Exception: on an operation whose answer carries a credential (marked `x-idempotency-replay: never`), any repeated `Idempotency-Key` is refused with `CONFLICT`, never answered from the store, and the client starts that step again. 
      *  - 410: `ACCOUNT_DELETED`: the grace window has ended, so the deletion can no longer be cancelled; the account is deleted or being purged. The client erases everything it stores for the account and returns to its signed-out start. Not cached. 
      *  - 429: `RATE_LIMITED`: a rate limit was hit (doc 11 §14); retry after `Retry-After` seconds.
      *  - 0: Error (RFC 9457)
      *
-     * @param idempotencyKey Client-generated ULID that makes a mutating request safe to retry (doc 06 §2; the mobile mutation-log &#x60;opId&#x60;). The server keeps key, request hash and response for 48 h: a replay with the same body returns the stored response, the same key with a different body is refused with 409 &#x60;IDEMPOTENCY_KEY_REUSED&#x60;. Optional for the caller.  (optional)
+     * @param idempotencyKey Client-generated ULID that makes a mutating request safe to retry (doc 06 §2; the mobile mutation-log &#x60;opId&#x60;). A key is scoped to the caller and the operation: the authenticated principal, or for an operation with &#x60;security: []&#x60; the credential in its body (for &#x60;requestAccountRecovery&#x60;, which carries none, the request hash alone). The server keeps key, request hash and response for 48 h: a replay with the same body returns the stored response; the same key with a different body is refused with 409 &#x60;IDEMPOTENCY_KEY_REUSED&#x60;. Exception: an operation whose answer carries a credential (&#x60;SessionGrant.token&#x60;, &#x60;SessionGrant.refreshToken&#x60;, &#x60;DeletionPending.cancelToken&#x60;, &#x60;SignUpPending.token&#x60;) is never answered from the store, and its credential is never stored. Such an operation is marked &#x60;x-idempotency-replay: never&#x60;. A repeated key on it is refused with 409 &#x60;CONFLICT&#x60;, and the client starts that step again. Optional for the caller.  (optional)
      * @return [Unit]
      */
     @DELETE("v1/me/deletion")
@@ -57,34 +59,36 @@ interface IdentityApi {
      * Cancels the pending recovery link of the caller&#39;s account during its 24-hour delay. Only a signed-in session of that account can cancel; holding the mailbox is not enough. Identity&#39;s own operation: better-auth 1.7.12 has no path for it. 
      * Responses:
      *  - 204: The pending recovery is cancelled; its link no longer works.
-     *  - 401: `UNAUTHENTICATED`: the credential is missing, malformed, expired or revoked. The client renews the session once (`refreshSession`); if the renewal is refused too, it signs in again. 
+     *  - 401: `UNAUTHENTICATED`: the access token is missing, malformed, expired or revoked. The client renews the session once with its refresh token (`refreshSession`); if the renewal is refused too, it signs in again. 
      *  - 404: `NOT_FOUND`: the account has no pending recovery.
-     *  - 409: `IDEMPOTENCY_KEY_REUSED` when the `Idempotency-Key` was already used with a different request; `VERSION_MISMATCH` when `If-Match` no longer matches the stored version; `CONFLICT` otherwise. 
+     *  - 409: `IDEMPOTENCY_KEY_REUSED` when the `Idempotency-Key` was already used with a different request; `VERSION_MISMATCH` when `If-Match` no longer matches the stored version; `CONFLICT` otherwise. Exception: on an operation whose answer carries a credential (marked `x-idempotency-replay: never`), any repeated `Idempotency-Key` is refused with `CONFLICT`, never answered from the store, and the client starts that step again. 
      *  - 410: `ACCOUNT_DELETED`: the account is deleted or its deletion is in progress. The client erases everything it stores for the account and returns to its signed-out start; it tells this reply from 401 by the status alone. A 410 is cacheable by default (RFC 9110 §15.5.11), so the reply carries `Cache-Control: no-store` and must not be cached. 
      *  - 429: `RATE_LIMITED`: a rate limit was hit (doc 11 §14); retry after `Retry-After` seconds.
      *  - 0: Error (RFC 9457)
      *
-     * @param idempotencyKey Client-generated ULID that makes a mutating request safe to retry (doc 06 §2; the mobile mutation-log &#x60;opId&#x60;). The server keeps key, request hash and response for 48 h: a replay with the same body returns the stored response, the same key with a different body is refused with 409 &#x60;IDEMPOTENCY_KEY_REUSED&#x60;. Optional for the caller.  (optional)
+     * @param idempotencyKey Client-generated ULID that makes a mutating request safe to retry (doc 06 §2; the mobile mutation-log &#x60;opId&#x60;). A key is scoped to the caller and the operation: the authenticated principal, or for an operation with &#x60;security: []&#x60; the credential in its body (for &#x60;requestAccountRecovery&#x60;, which carries none, the request hash alone). The server keeps key, request hash and response for 48 h: a replay with the same body returns the stored response; the same key with a different body is refused with 409 &#x60;IDEMPOTENCY_KEY_REUSED&#x60;. Exception: an operation whose answer carries a credential (&#x60;SessionGrant.token&#x60;, &#x60;SessionGrant.refreshToken&#x60;, &#x60;DeletionPending.cancelToken&#x60;, &#x60;SignUpPending.token&#x60;) is never answered from the store, and its credential is never stored. Such an operation is marked &#x60;x-idempotency-replay: never&#x60;. A repeated key on it is refused with 409 &#x60;CONFLICT&#x60;, and the client starts that step again. Optional for the caller.  (optional)
      * @return [Unit]
      */
     @DELETE("v1/me/recovery")
     suspend fun cancelAccountRecovery(@Header("Idempotency-Key") idempotencyKey: kotlin.String? = null): Response<Unit>
 
     /**
-     * GET v1/auth/magic-link/verify
+     * POST v1/auth/recovery/complete
      * Use an account-recovery link
-     * Exchanges the token of a recovery link for a sign-in. Refused before 24 hours and from 48 hours after the request, after a cancel, and on a second use. The person then adds a new passkey with &#x60;registerPasskey&#x60;. The server never logs the query string of this path. 
+     * The app sends the token of the recovery link it was opened with and gets a sign-in (&#x60;SignInResult&#x60;). The token travels only in this request body: no GET spends it, and no URL carries it to the API. Before the 24-hour delay has passed the use is refused and the token is not spent, so the same link works once the delay is over. From 48 hours after the request, after a cancel, and on a second use it is refused. The person then adds a new passkey with &#x60;registerPasskey&#x60;. Identity&#39;s own operation: the better-auth 1.7.12 magic-link plugin verifies only by a GET that spends the token, and that path is not served. 
      * Responses:
      *  - 200: The outcome of a sign-in (see `SignInResult`)
-     *  - 401: `UNAUTHENTICATED`: the link is unknown, used, cancelled, not yet valid or expired.
+     *  - 401: `UNAUTHENTICATED`: the link is unknown, used, cancelled, expired or not yet valid. A link used before its 24-hour delay is refused without being spent. 
+     *  - 409: `IDEMPOTENCY_KEY_REUSED` when the `Idempotency-Key` was already used with a different request; `VERSION_MISMATCH` when `If-Match` no longer matches the stored version; `CONFLICT` otherwise. Exception: on an operation whose answer carries a credential (marked `x-idempotency-replay: never`), any repeated `Idempotency-Key` is refused with `CONFLICT`, never answered from the store, and the client starts that step again. 
      *  - 429: `RATE_LIMITED`: a rate limit was hit (doc 11 §14); retry after `Retry-After` seconds.
      *  - 0: Error (RFC 9457)
      *
-     * @param token Single-use token from the emailed link.
+     * @param recoveryCompletionRequest 
+     * @param idempotencyKey Client-generated ULID that makes a mutating request safe to retry (doc 06 §2; the mobile mutation-log &#x60;opId&#x60;). A key is scoped to the caller and the operation: the authenticated principal, or for an operation with &#x60;security: []&#x60; the credential in its body (for &#x60;requestAccountRecovery&#x60;, which carries none, the request hash alone). The server keeps key, request hash and response for 48 h: a replay with the same body returns the stored response; the same key with a different body is refused with 409 &#x60;IDEMPOTENCY_KEY_REUSED&#x60;. Exception: an operation whose answer carries a credential (&#x60;SessionGrant.token&#x60;, &#x60;SessionGrant.refreshToken&#x60;, &#x60;DeletionPending.cancelToken&#x60;, &#x60;SignUpPending.token&#x60;) is never answered from the store, and its credential is never stored. Such an operation is marked &#x60;x-idempotency-replay: never&#x60;. A repeated key on it is refused with 409 &#x60;CONFLICT&#x60;, and the client starts that step again. Optional for the caller.  (optional)
      * @return [SignInResult]
      */
-    @GET("v1/auth/magic-link/verify")
-    suspend fun completeAccountRecovery(@Query("token") token: kotlin.String): Response<SignInResult>
+    @POST("v1/auth/recovery/complete")
+    suspend fun completeAccountRecovery(@Body recoveryCompletionRequest: RecoveryCompletionRequest, @Header("Idempotency-Key") idempotencyKey: kotlin.String? = null): Response<SignInResult>
 
     /**
      * POST v1/auth/sign-up/complete
@@ -94,12 +98,12 @@ interface IdentityApi {
      *  - 200: The outcome of a sign-in (see `SignInResult`)
      *  - 401: `UNAUTHENTICATED`: the sign-up token is missing, expired, already spent or unknown. Start again with a sign-in.
      *  - 403: `AGE_GATE_FAILED`: the birth year lies fewer than 16 years back (DEC-60). Terminal for this attempt: nothing is stored and the sign-up token is spent. The client shows its refusal screen and offers no way to change the year. 
-     *  - 409: `IDEMPOTENCY_KEY_REUSED` when the `Idempotency-Key` was already used with a different request; `VERSION_MISMATCH` when `If-Match` no longer matches the stored version; `CONFLICT` otherwise. 
+     *  - 409: `IDEMPOTENCY_KEY_REUSED` when the `Idempotency-Key` was already used with a different request; `VERSION_MISMATCH` when `If-Match` no longer matches the stored version; `CONFLICT` otherwise. Exception: on an operation whose answer carries a credential (marked `x-idempotency-replay: never`), any repeated `Idempotency-Key` is refused with `CONFLICT`, never answered from the store, and the client starts that step again. 
      *  - 429: `RATE_LIMITED`: a rate limit was hit (doc 11 §14); retry after `Retry-After` seconds.
      *  - 0: Error (RFC 9457)
      *
      * @param completeSignUpRequest 
-     * @param idempotencyKey Client-generated ULID that makes a mutating request safe to retry (doc 06 §2; the mobile mutation-log &#x60;opId&#x60;). The server keeps key, request hash and response for 48 h: a replay with the same body returns the stored response, the same key with a different body is refused with 409 &#x60;IDEMPOTENCY_KEY_REUSED&#x60;. Optional for the caller.  (optional)
+     * @param idempotencyKey Client-generated ULID that makes a mutating request safe to retry (doc 06 §2; the mobile mutation-log &#x60;opId&#x60;). A key is scoped to the caller and the operation: the authenticated principal, or for an operation with &#x60;security: []&#x60; the credential in its body (for &#x60;requestAccountRecovery&#x60;, which carries none, the request hash alone). The server keeps key, request hash and response for 48 h: a replay with the same body returns the stored response; the same key with a different body is refused with 409 &#x60;IDEMPOTENCY_KEY_REUSED&#x60;. Exception: an operation whose answer carries a credential (&#x60;SessionGrant.token&#x60;, &#x60;SessionGrant.refreshToken&#x60;, &#x60;DeletionPending.cancelToken&#x60;, &#x60;SignUpPending.token&#x60;) is never answered from the store, and its credential is never stored. Such an operation is marked &#x60;x-idempotency-replay: never&#x60;. A repeated key on it is refused with 409 &#x60;CONFLICT&#x60;, and the client starts that step again. Optional for the caller.  (optional)
      * @return [SignInResult]
      */
     @POST("v1/auth/sign-up/complete")
@@ -111,7 +115,7 @@ interface IdentityApi {
      * The state of an export. While it is &#x60;ready&#x60;, every read mints a new download link after the same authorization check; the link lives at most 10 minutes (DEC-44, doc 11 §5.4). The archive itself is kept until &#x60;availableUntil&#x60;. Never cached. 
      * Responses:
      *  - 200: The export
-     *  - 401: `UNAUTHENTICATED`: the credential is missing, malformed, expired or revoked. The client renews the session once (`refreshSession`); if the renewal is refused too, it signs in again. 
+     *  - 401: `UNAUTHENTICATED`: the access token is missing, malformed, expired or revoked. The client renews the session once with its refresh token (`refreshSession`); if the renewal is refused too, it signs in again. 
      *  - 404: `NOT_FOUND`: the caller has no export with this id.
      *  - 410: `ACCOUNT_DELETED`: the account is deleted or its deletion is in progress. The client erases everything it stores for the account and returns to its signed-out start; it tells this reply from 401 by the status alone. A 410 is cacheable by default (RFC 9110 §15.5.11), so the reply carries `Cache-Control: no-store` and must not be cached. 
      *  - 429: `RATE_LIMITED`: a rate limit was hit (doc 11 §14); retry after `Retry-After` seconds.
@@ -126,11 +130,11 @@ interface IdentityApi {
     /**
      * GET v1/auth/passkey/generate-register-options
      * WebAuthn options to add a passkey to the signed-in account
-     * Returns a fresh challenge and the WebAuthn creation options (W3C WebAuthn &#x60;PublicKeyCredentialCreationOptionsJSON&#x60;). The account&#39;s existing passkeys are listed as excluded credentials. Needs a recently created session (better-auth &#x60;freshAge&#x60;); otherwise 403 &#x60;FORBIDDEN&#x60;, and the client signs in again first. 
+     * Returns a fresh challenge and the WebAuthn creation options (W3C WebAuthn &#x60;PublicKeyCredentialCreationOptionsJSON&#x60;). The account&#39;s existing passkeys are listed as excluded credentials. Needs a recent sign-in (&#x60;RecentSignInRequired&#x60;); otherwise 403 &#x60;FORBIDDEN&#x60;, and the client signs in again first. 
      * Responses:
      *  - 200: WebAuthn creation options
-     *  - 401: `UNAUTHENTICATED`: the credential is missing, malformed, expired or revoked. The client renews the session once (`refreshSession`); if the renewal is refused too, it signs in again. 
-     *  - 403: The caller is authenticated but may not perform this operation. `code` is `FORBIDDEN` unless the operation names a more specific code for this status. 
+     *  - 401: `UNAUTHENTICATED`: the access token is missing, malformed, expired or revoked. The client renews the session once with its refresh token (`refreshSession`); if the renewal is refused too, it signs in again. 
+     *  - 403: `FORBIDDEN`: re-authentication is needed. The operation needs a recent sign-in: the session must have been opened by a sign-in a short time ago (better-auth `freshAge`; the server sets the window). Recency counts from the sign-in that opened the session; a renewal with `refreshSession` never resets it. The client signs in again with the same account and repeats the request. 
      *  - 410: `ACCOUNT_DELETED`: the account is deleted or its deletion is in progress. The client erases everything it stores for the account and returns to its signed-out start; it tells this reply from 401 by the status alone. A 410 is cacheable by default (RFC 9110 §15.5.11), so the reply carries `Cache-Control: no-store` and must not be cached. 
      *  - 429: `RATE_LIMITED`: a rate limit was hit (doc 11 §14); retry after `Retry-After` seconds.
      *  - 0: Error (RFC 9457)
@@ -157,10 +161,10 @@ interface IdentityApi {
     /**
      * GET v1/auth/get-session
      * Read the current session
-     * The account and expiry of the session the bearer token belongs to. Read-only: it does not extend the session (better-auth &#x60;deferSessionRefresh&#x60;). A token with no live session is answered with 401, never with an empty body. 
+     * The account of the session the access token belongs to, and when that access token expires. Read-only: it extends nothing and returns no token (better-auth &#x60;deferSessionRefresh&#x60;). A token with no live session is answered with 401, never with an empty body. 
      * Responses:
      *  - 200: The current session
-     *  - 401: `UNAUTHENTICATED`: the credential is missing, malformed, expired or revoked. The client renews the session once (`refreshSession`); if the renewal is refused too, it signs in again. 
+     *  - 401: `UNAUTHENTICATED`: the access token is missing, malformed, expired or revoked. The client renews the session once with its refresh token (`refreshSession`); if the renewal is refused too, it signs in again. 
      *  - 410: `ACCOUNT_DELETED`: the account is deleted or its deletion is in progress. The client erases everything it stores for the account and returns to its signed-out start; it tells this reply from 401 by the status alone. A 410 is cacheable by default (RFC 9110 §15.5.11), so the reply carries `Cache-Control: no-store` and must not be cached. 
      *  - 429: `RATE_LIMITED`: a rate limit was hit (doc 11 §14); retry after `Retry-After` seconds.
      *  - 0: Error (RFC 9457)
@@ -176,7 +180,7 @@ interface IdentityApi {
      * The latest consent record of each purpose the caller has decided on, cursor-paginated. A purpose with no record is absent and its default applies (doc 11 §7.2). The full append-only history is part of the data export. 
      * Responses:
      *  - 200: One page of current consent records
-     *  - 401: `UNAUTHENTICATED`: the credential is missing, malformed, expired or revoked. The client renews the session once (`refreshSession`); if the renewal is refused too, it signs in again. 
+     *  - 401: `UNAUTHENTICATED`: the access token is missing, malformed, expired or revoked. The client renews the session once with its refresh token (`refreshSession`); if the renewal is refused too, it signs in again. 
      *  - 410: `ACCOUNT_DELETED`: the account is deleted or its deletion is in progress. The client erases everything it stores for the account and returns to its signed-out start; it tells this reply from 401 by the status alone. A 410 is cacheable by default (RFC 9110 §15.5.11), so the reply carries `Cache-Control: no-store` and must not be cached. 
      *  - 429: `RATE_LIMITED`: a rate limit was hit (doc 11 §14); retry after `Retry-After` seconds.
      *  - 0: Error (RFC 9457)
@@ -194,7 +198,7 @@ interface IdentityApi {
      * One entry per active session of the caller&#39;s account (the device list, doc 11 §4.2), newest first, cursor-paginated (doc 06 §2). Never another user&#39;s sessions and never a session token. 
      * Responses:
      *  - 200: One page of the caller's sessions
-     *  - 401: `UNAUTHENTICATED`: the credential is missing, malformed, expired or revoked. The client renews the session once (`refreshSession`); if the renewal is refused too, it signs in again. 
+     *  - 401: `UNAUTHENTICATED`: the access token is missing, malformed, expired or revoked. The client renews the session once with its refresh token (`refreshSession`); if the renewal is refused too, it signs in again. 
      *  - 410: `ACCOUNT_DELETED`: the account is deleted or its deletion is in progress. The client erases everything it stores for the account and returns to its signed-out start; it tells this reply from 401 by the status alone. A 410 is cacheable by default (RFC 9110 §15.5.11), so the reply carries `Cache-Control: no-store` and must not be cached. 
      *  - 429: `RATE_LIMITED`: a rate limit was hit (doc 11 §14); retry after `Retry-After` seconds.
      *  - 0: Error (RFC 9457)
@@ -213,37 +217,38 @@ interface IdentityApi {
      * Responses:
      *  - 200: Unchanged; the current record
      *  - 201: The appended record
-     *  - 401: `UNAUTHENTICATED`: the credential is missing, malformed, expired or revoked. The client renews the session once (`refreshSession`); if the renewal is refused too, it signs in again. 
+     *  - 401: `UNAUTHENTICATED`: the access token is missing, malformed, expired or revoked. The client renews the session once with its refresh token (`refreshSession`); if the renewal is refused too, it signs in again. 
      *  - 403: `CONSENT_REQUIRED`: a withdrawal of `core_service` is refused. This consent is required to use the app (doc 11 §7.2). Deleting the account is what ends this processing (`POST /v1/me/deletion`). 
-     *  - 409: `IDEMPOTENCY_KEY_REUSED` when the `Idempotency-Key` was already used with a different request; `VERSION_MISMATCH` when `If-Match` no longer matches the stored version; `CONFLICT` otherwise. 
+     *  - 409: `IDEMPOTENCY_KEY_REUSED` when the `Idempotency-Key` was already used with a different request; `VERSION_MISMATCH` when `If-Match` no longer matches the stored version; `CONFLICT` otherwise. Exception: on an operation whose answer carries a credential (marked `x-idempotency-replay: never`), any repeated `Idempotency-Key` is refused with `CONFLICT`, never answered from the store, and the client starts that step again. 
      *  - 410: `ACCOUNT_DELETED`: the account is deleted or its deletion is in progress. The client erases everything it stores for the account and returns to its signed-out start; it tells this reply from 401 by the status alone. A 410 is cacheable by default (RFC 9110 §15.5.11), so the reply carries `Cache-Control: no-store` and must not be cached. 
      *  - 429: `RATE_LIMITED`: a rate limit was hit (doc 11 §14); retry after `Retry-After` seconds.
      *  - 0: Error (RFC 9457)
      *
      * @param consentChange 
-     * @param idempotencyKey Client-generated ULID that makes a mutating request safe to retry (doc 06 §2; the mobile mutation-log &#x60;opId&#x60;). The server keeps key, request hash and response for 48 h: a replay with the same body returns the stored response, the same key with a different body is refused with 409 &#x60;IDEMPOTENCY_KEY_REUSED&#x60;. Optional for the caller.  (optional)
+     * @param idempotencyKey Client-generated ULID that makes a mutating request safe to retry (doc 06 §2; the mobile mutation-log &#x60;opId&#x60;). A key is scoped to the caller and the operation: the authenticated principal, or for an operation with &#x60;security: []&#x60; the credential in its body (for &#x60;requestAccountRecovery&#x60;, which carries none, the request hash alone). The server keeps key, request hash and response for 48 h: a replay with the same body returns the stored response; the same key with a different body is refused with 409 &#x60;IDEMPOTENCY_KEY_REUSED&#x60;. Exception: an operation whose answer carries a credential (&#x60;SessionGrant.token&#x60;, &#x60;SessionGrant.refreshToken&#x60;, &#x60;DeletionPending.cancelToken&#x60;, &#x60;SignUpPending.token&#x60;) is never answered from the store, and its credential is never stored. Such an operation is marked &#x60;x-idempotency-replay: never&#x60;. A repeated key on it is refused with 409 &#x60;CONFLICT&#x60;, and the client starts that step again. Optional for the caller.  (optional)
      * @return [ConsentRecord]
      */
     @POST("v1/me/consents")
     suspend fun recordConsent(@Body consentChange: ConsentChange, @Header("Idempotency-Key") idempotencyKey: kotlin.String? = null): Response<ConsentRecord>
 
     /**
-     * POST v1/auth/get-session
-     * Renew the current session
-     * Extends the session the bearer token belongs to and answers with its token and new expiry. The answer may carry a different token than the one presented: the client stores the returned token and discards the old one. A 401 here is a refused renewal: the client ends the session on the device and sends no further call for it. 
+     * POST v1/auth/session/refresh
+     * Renew a session with its refresh token
+     * Exchanges the session&#39;s refresh token for a new pair: a new access token and a new refresh token (doc 11 §4.2). The refresh token travels in the body, never in &#x60;Authorization&#x60;, and the access token never renews a session. The refresh token rotates on every use: the presented one is spent, and the client stores the returned pair and discards the old one. Presenting a refresh token that was already rotated revokes every token of its session (the session family) and is answered 401. Every 401 here is a refused renewal: the client erases the session&#39;s tokens on the device and signs in again. If the answer is lost, the client may retry once with the same refresh token and a new &#x60;Idempotency-Key&#x60;; a refused retry ends the session the same way. Identity&#39;s own operation: better-auth 1.7.12 has no refresh token. 
      * Responses:
-     *  - 200: The renewed session
-     *  - 401: `UNAUTHENTICATED`: the credential is missing, malformed, expired or revoked. The client renews the session once (`refreshSession`); if the renewal is refused too, it signs in again. 
-     *  - 409: `IDEMPOTENCY_KEY_REUSED` when the `Idempotency-Key` was already used with a different request; `VERSION_MISMATCH` when `If-Match` no longer matches the stored version; `CONFLICT` otherwise. 
+     *  - 200: The new access token and refresh token of the session
+     *  - 401: `UNAUTHENTICATED`: the refresh token is missing, unknown, expired, revoked or already rotated. A rotated refresh token presented again also revokes its whole session family (doc 11 §4.2). The client erases the session's tokens and signs in again. 
+     *  - 409: `IDEMPOTENCY_KEY_REUSED` when the `Idempotency-Key` was already used with a different request; `VERSION_MISMATCH` when `If-Match` no longer matches the stored version; `CONFLICT` otherwise. Exception: on an operation whose answer carries a credential (marked `x-idempotency-replay: never`), any repeated `Idempotency-Key` is refused with `CONFLICT`, never answered from the store, and the client starts that step again. 
      *  - 410: `ACCOUNT_DELETED`: the account is deleted or its deletion is in progress. The client erases everything it stores for the account and returns to its signed-out start; it tells this reply from 401 by the status alone. A 410 is cacheable by default (RFC 9110 §15.5.11), so the reply carries `Cache-Control: no-store` and must not be cached. 
      *  - 429: `RATE_LIMITED`: a rate limit was hit (doc 11 §14); retry after `Retry-After` seconds.
      *  - 0: Error (RFC 9457)
      *
-     * @param idempotencyKey Client-generated ULID that makes a mutating request safe to retry (doc 06 §2; the mobile mutation-log &#x60;opId&#x60;). The server keeps key, request hash and response for 48 h: a replay with the same body returns the stored response, the same key with a different body is refused with 409 &#x60;IDEMPOTENCY_KEY_REUSED&#x60;. Optional for the caller.  (optional)
+     * @param refreshSessionRequest 
+     * @param idempotencyKey Client-generated ULID that makes a mutating request safe to retry (doc 06 §2; the mobile mutation-log &#x60;opId&#x60;). A key is scoped to the caller and the operation: the authenticated principal, or for an operation with &#x60;security: []&#x60; the credential in its body (for &#x60;requestAccountRecovery&#x60;, which carries none, the request hash alone). The server keeps key, request hash and response for 48 h: a replay with the same body returns the stored response; the same key with a different body is refused with 409 &#x60;IDEMPOTENCY_KEY_REUSED&#x60;. Exception: an operation whose answer carries a credential (&#x60;SessionGrant.token&#x60;, &#x60;SessionGrant.refreshToken&#x60;, &#x60;DeletionPending.cancelToken&#x60;, &#x60;SignUpPending.token&#x60;) is never answered from the store, and its credential is never stored. Such an operation is marked &#x60;x-idempotency-replay: never&#x60;. A repeated key on it is refused with 409 &#x60;CONFLICT&#x60;, and the client starts that step again. Optional for the caller.  (optional)
      * @return [SessionGrant]
      */
-    @POST("v1/auth/get-session")
-    suspend fun refreshSession(@Header("Idempotency-Key") idempotencyKey: kotlin.String? = null): Response<SessionGrant>
+    @POST("v1/auth/session/refresh")
+    suspend fun refreshSession(@Body refreshSessionRequest: RefreshSessionRequest, @Header("Idempotency-Key") idempotencyKey: kotlin.String? = null): Response<SessionGrant>
 
     /**
      * POST v1/auth/passkey/verify-registration
@@ -251,15 +256,15 @@ interface IdentityApi {
      * Verifies the attestation the platform passkey API returned for the challenge of &#x60;getPasskeyRegistrationOptions&#x60; and stores the passkey on the caller&#39;s account. An account may hold several passkeys. Opens no new session. 
      * Responses:
      *  - 200: The stored passkey
-     *  - 401: `UNAUTHENTICATED`: the credential is missing, malformed, expired or revoked. The client renews the session once (`refreshSession`); if the renewal is refused too, it signs in again. 
+     *  - 401: `UNAUTHENTICATED`: the access token is missing, malformed, expired or revoked. The client renews the session once with its refresh token (`refreshSession`); if the renewal is refused too, it signs in again. 
      *  - 403: The caller is authenticated but may not perform this operation. `code` is `FORBIDDEN` unless the operation names a more specific code for this status. 
-     *  - 409: `IDEMPOTENCY_KEY_REUSED` when the `Idempotency-Key` was already used with a different request; `VERSION_MISMATCH` when `If-Match` no longer matches the stored version; `CONFLICT` otherwise. 
+     *  - 409: `IDEMPOTENCY_KEY_REUSED` when the `Idempotency-Key` was already used with a different request; `VERSION_MISMATCH` when `If-Match` no longer matches the stored version; `CONFLICT` otherwise. Exception: on an operation whose answer carries a credential (marked `x-idempotency-replay: never`), any repeated `Idempotency-Key` is refused with `CONFLICT`, never answered from the store, and the client starts that step again. 
      *  - 410: `ACCOUNT_DELETED`: the account is deleted or its deletion is in progress. The client erases everything it stores for the account and returns to its signed-out start; it tells this reply from 401 by the status alone. A 410 is cacheable by default (RFC 9110 §15.5.11), so the reply carries `Cache-Control: no-store` and must not be cached. 
      *  - 429: `RATE_LIMITED`: a rate limit was hit (doc 11 §14); retry after `Retry-After` seconds.
      *  - 0: Error (RFC 9457)
      *
      * @param passkeyRegistrationRequest 
-     * @param idempotencyKey Client-generated ULID that makes a mutating request safe to retry (doc 06 §2; the mobile mutation-log &#x60;opId&#x60;). The server keeps key, request hash and response for 48 h: a replay with the same body returns the stored response, the same key with a different body is refused with 409 &#x60;IDEMPOTENCY_KEY_REUSED&#x60;. Optional for the caller.  (optional)
+     * @param idempotencyKey Client-generated ULID that makes a mutating request safe to retry (doc 06 §2; the mobile mutation-log &#x60;opId&#x60;). A key is scoped to the caller and the operation: the authenticated principal, or for an operation with &#x60;security: []&#x60; the credential in its body (for &#x60;requestAccountRecovery&#x60;, which carries none, the request hash alone). The server keeps key, request hash and response for 48 h: a replay with the same body returns the stored response; the same key with a different body is refused with 409 &#x60;IDEMPOTENCY_KEY_REUSED&#x60;. Exception: an operation whose answer carries a credential (&#x60;SessionGrant.token&#x60;, &#x60;SessionGrant.refreshToken&#x60;, &#x60;DeletionPending.cancelToken&#x60;, &#x60;SignUpPending.token&#x60;) is never answered from the store, and its credential is never stored. Such an operation is marked &#x60;x-idempotency-replay: never&#x60;. A repeated key on it is refused with 409 &#x60;CONFLICT&#x60;, and the client starts that step again. Optional for the caller.  (optional)
      * @return [PasskeySummary]
      */
     @POST("v1/auth/passkey/verify-registration")
@@ -268,17 +273,17 @@ interface IdentityApi {
     /**
      * POST v1/me/deletion
      * Request deletion of the caller&#39;s account
-     * Starts the deletion of the caller&#39;s account (doc 11 §13.2). At once every session of the account is revoked, this one included, and a sign-in opens no session; the account is kept for a 7-day grace window (DEC-65). A sign-in during the window answers &#x60;deletion_pending&#x60;, whose cancel credential can stop the deletion (&#x60;cancelAccountDeletion&#x60;). After the window the purge runs and cannot be stopped. Re-authentication (doc 02 §11.3): needs a recently created session (better-auth &#x60;freshAge&#x60;); otherwise 403 &#x60;FORBIDDEN&#x60;, and the client signs in again first. After the answer the token of this request no longer works and the client returns to its signed-out start. Deleting the account does not cancel a store subscription. 
+     * Starts the deletion of the caller&#39;s account (doc 11 §13.2). At once every session of the account is revoked, this one included, and a sign-in opens no session; the account is kept for a 7-day grace window (DEC-65). A sign-in during the window answers &#x60;deletion_pending&#x60;, whose cancel credential can stop the deletion (&#x60;cancelAccountDeletion&#x60;). After the window the purge runs and cannot be stopped. Re-authentication (doc 02 §11.3): needs a recent sign-in (&#x60;RecentSignInRequired&#x60;); otherwise 403 &#x60;FORBIDDEN&#x60;, and the client signs in again first. After the answer the tokens of this session no longer work and the client returns to its signed-out start. Deleting the account does not cancel a store subscription. 
      * Responses:
      *  - 202: The deletion is requested; its grace window has started
-     *  - 401: `UNAUTHENTICATED`: the credential is missing, malformed, expired or revoked. The client renews the session once (`refreshSession`); if the renewal is refused too, it signs in again. 
-     *  - 403: `FORBIDDEN`: the session was not created recently enough to confirm it is the person. The client signs in again with the same account and repeats the request. 
-     *  - 409: `IDEMPOTENCY_KEY_REUSED` when the `Idempotency-Key` was already used with a different request; `VERSION_MISMATCH` when `If-Match` no longer matches the stored version; `CONFLICT` otherwise. 
+     *  - 401: `UNAUTHENTICATED`: the access token is missing, malformed, expired or revoked. The client renews the session once with its refresh token (`refreshSession`); if the renewal is refused too, it signs in again. 
+     *  - 403: `FORBIDDEN`: re-authentication is needed. The operation needs a recent sign-in: the session must have been opened by a sign-in a short time ago (better-auth `freshAge`; the server sets the window). Recency counts from the sign-in that opened the session; a renewal with `refreshSession` never resets it. The client signs in again with the same account and repeats the request. 
+     *  - 409: `IDEMPOTENCY_KEY_REUSED` when the `Idempotency-Key` was already used with a different request; `VERSION_MISMATCH` when `If-Match` no longer matches the stored version; `CONFLICT` otherwise. Exception: on an operation whose answer carries a credential (marked `x-idempotency-replay: never`), any repeated `Idempotency-Key` is refused with `CONFLICT`, never answered from the store, and the client starts that step again. 
      *  - 410: `ACCOUNT_DELETED`: the account is deleted or its deletion is in progress. The client erases everything it stores for the account and returns to its signed-out start; it tells this reply from 401 by the status alone. A 410 is cacheable by default (RFC 9110 §15.5.11), so the reply carries `Cache-Control: no-store` and must not be cached. 
-     *  - 429: `RATE_LIMITED`: the account requested a deletion within the last 30 days (doc 11 §14), or another rate limit was hit; retry after `Retry-After` seconds. 
+     *  - 429: `RATE_LIMITED`: the account requested a deletion within the last 30 days that was not cancelled (doc 11 §14); a request stopped with `cancelAccountDeletion` does not count. Or another rate limit was hit. Retry after `Retry-After` seconds. 
      *  - 0: Error (RFC 9457)
      *
-     * @param idempotencyKey Client-generated ULID that makes a mutating request safe to retry (doc 06 §2; the mobile mutation-log &#x60;opId&#x60;). The server keeps key, request hash and response for 48 h: a replay with the same body returns the stored response, the same key with a different body is refused with 409 &#x60;IDEMPOTENCY_KEY_REUSED&#x60;. Optional for the caller.  (optional)
+     * @param idempotencyKey Client-generated ULID that makes a mutating request safe to retry (doc 06 §2; the mobile mutation-log &#x60;opId&#x60;). A key is scoped to the caller and the operation: the authenticated principal, or for an operation with &#x60;security: []&#x60; the credential in its body (for &#x60;requestAccountRecovery&#x60;, which carries none, the request hash alone). The server keeps key, request hash and response for 48 h: a replay with the same body returns the stored response; the same key with a different body is refused with 409 &#x60;IDEMPOTENCY_KEY_REUSED&#x60;. Exception: an operation whose answer carries a credential (&#x60;SessionGrant.token&#x60;, &#x60;SessionGrant.refreshToken&#x60;, &#x60;DeletionPending.cancelToken&#x60;, &#x60;SignUpPending.token&#x60;) is never answered from the store, and its credential is never stored. Such an operation is marked &#x60;x-idempotency-replay: never&#x60;. A repeated key on it is refused with 409 &#x60;CONFLICT&#x60;, and the client starts that step again. Optional for the caller.  (optional)
      * @return [AccountDeletionRequest]
      */
     @POST("v1/me/deletion")
@@ -287,15 +292,15 @@ interface IdentityApi {
     /**
      * POST v1/auth/sign-in/magic-link
      * Ask for an account-recovery link by email
-     * Fallback for a person who lost their passkeys (doc 11 §15). The answer is the same status and body whether or not an account exists for the address, so it discloses nothing. When one exists, a single-use link is emailed; it works from 24 to 48 hours after the request, and any signed-in session of the account can cancel it before then (&#x60;cancelAccountRecovery&#x60;). Never creates an account. 
+     * Fallback for a person who lost their passkeys (doc 11 §15). The answer is the same status and body whether or not an account exists for the address, so it discloses nothing. When one exists, a single-use link is emailed; it works from 24 to 48 hours after the request, and any signed-in session of the account can cancel it before then (&#x60;cancelAccountRecovery&#x60;). The link opens the app (a universal link on iOS, an app link on Android), never an API URL, and carries its token in the URL fragment, which no server, proxy or link scanner receives; the app then calls &#x60;completeAccountRecovery&#x60;. Never creates an account. 
      * Responses:
      *  - 200: Accepted (uniform for every address)
-     *  - 409: `IDEMPOTENCY_KEY_REUSED` when the `Idempotency-Key` was already used with a different request; `VERSION_MISMATCH` when `If-Match` no longer matches the stored version; `CONFLICT` otherwise. 
+     *  - 409: `IDEMPOTENCY_KEY_REUSED` when the `Idempotency-Key` was already used with a different request; `VERSION_MISMATCH` when `If-Match` no longer matches the stored version; `CONFLICT` otherwise. Exception: on an operation whose answer carries a credential (marked `x-idempotency-replay: never`), any repeated `Idempotency-Key` is refused with `CONFLICT`, never answered from the store, and the client starts that step again. 
      *  - 429: `RATE_LIMITED`: a rate limit was hit (doc 11 §14); retry after `Retry-After` seconds.
      *  - 0: Error (RFC 9457)
      *
      * @param recoveryRequest 
-     * @param idempotencyKey Client-generated ULID that makes a mutating request safe to retry (doc 06 §2; the mobile mutation-log &#x60;opId&#x60;). The server keeps key, request hash and response for 48 h: a replay with the same body returns the stored response, the same key with a different body is refused with 409 &#x60;IDEMPOTENCY_KEY_REUSED&#x60;. Optional for the caller.  (optional)
+     * @param idempotencyKey Client-generated ULID that makes a mutating request safe to retry (doc 06 §2; the mobile mutation-log &#x60;opId&#x60;). A key is scoped to the caller and the operation: the authenticated principal, or for an operation with &#x60;security: []&#x60; the credential in its body (for &#x60;requestAccountRecovery&#x60;, which carries none, the request hash alone). The server keeps key, request hash and response for 48 h: a replay with the same body returns the stored response; the same key with a different body is refused with 409 &#x60;IDEMPOTENCY_KEY_REUSED&#x60;. Exception: an operation whose answer carries a credential (&#x60;SessionGrant.token&#x60;, &#x60;SessionGrant.refreshToken&#x60;, &#x60;DeletionPending.cancelToken&#x60;, &#x60;SignUpPending.token&#x60;) is never answered from the store, and its credential is never stored. Such an operation is marked &#x60;x-idempotency-replay: never&#x60;. A repeated key on it is refused with 409 &#x60;CONFLICT&#x60;, and the client starts that step again. Optional for the caller.  (optional)
      * @return [RecoveryRequestAccepted]
      */
     @POST("v1/auth/sign-in/magic-link")
@@ -304,16 +309,17 @@ interface IdentityApi {
     /**
      * POST v1/me/exports
      * Request an export of the caller&#39;s data
-     * Starts an asynchronous export of the caller&#39;s data (doc 11 §13.1), open on every plan (&#x60;data.export&#x60;). Answers at once with the new export &#x60;in_progress&#x60;; the client reads it with &#x60;getDataExport&#x60; until it is &#x60;ready&#x60; (a notification follows as well). One export runs at a time per account: while one is in progress, a new request is refused with 429 and the running export. 
+     * Starts an asynchronous export of the caller&#39;s data (doc 11 §13.1), open on every plan (&#x60;data.export&#x60;). Answers at once with the new export &#x60;in_progress&#x60;; the client reads it with &#x60;getDataExport&#x60; until it is &#x60;ready&#x60; (a notification follows as well). One export runs at a time per account: while one is in progress, a new request is refused with 429 and the running export. Re-authentication, the same rule as &#x60;requestAccountDeletion&#x60;: needs a recent sign-in (&#x60;RecentSignInRequired&#x60;); otherwise 403 &#x60;FORBIDDEN&#x60;, and the client signs in again first. 
      * Responses:
      *  - 202: The export is accepted and in progress
-     *  - 401: `UNAUTHENTICATED`: the credential is missing, malformed, expired or revoked. The client renews the session once (`refreshSession`); if the renewal is refused too, it signs in again. 
-     *  - 409: `IDEMPOTENCY_KEY_REUSED` when the `Idempotency-Key` was already used with a different request; `VERSION_MISMATCH` when `If-Match` no longer matches the stored version; `CONFLICT` otherwise. 
+     *  - 401: `UNAUTHENTICATED`: the access token is missing, malformed, expired or revoked. The client renews the session once with its refresh token (`refreshSession`); if the renewal is refused too, it signs in again. 
+     *  - 403: `FORBIDDEN`: re-authentication is needed. The operation needs a recent sign-in: the session must have been opened by a sign-in a short time ago (better-auth `freshAge`; the server sets the window). Recency counts from the sign-in that opened the session; a renewal with `refreshSession` never resets it. The client signs in again with the same account and repeats the request. 
+     *  - 409: `IDEMPOTENCY_KEY_REUSED` when the `Idempotency-Key` was already used with a different request; `VERSION_MISMATCH` when `If-Match` no longer matches the stored version; `CONFLICT` otherwise. Exception: on an operation whose answer carries a credential (marked `x-idempotency-replay: never`), any repeated `Idempotency-Key` is refused with `CONFLICT`, never answered from the store, and the client starts that step again. 
      *  - 410: `ACCOUNT_DELETED`: the account is deleted or its deletion is in progress. The client erases everything it stores for the account and returns to its signed-out start; it tells this reply from 401 by the status alone. A 410 is cacheable by default (RFC 9110 §15.5.11), so the reply carries `Cache-Control: no-store` and must not be cached. 
-     *  - 429: `RATE_LIMITED`: an export of this account is already in progress, and `current` is that export (read it with `getDataExport`); or another rate limit was hit, without `current`. Retry after `Retry-After` seconds (doc 11 §14). 
+     *  - 429: `RATE_LIMITED`: an export of this account is already in progress, and `current` is that export (read it with `getDataExport`); or another rate limit was hit, without `current`. `current` is always `in_progress`, so it never carries `download`: a link is minted only by `getDataExport`. Retry after `Retry-After` seconds (doc 11 §14). 
      *  - 0: Error (RFC 9457)
      *
-     * @param idempotencyKey Client-generated ULID that makes a mutating request safe to retry (doc 06 §2; the mobile mutation-log &#x60;opId&#x60;). The server keeps key, request hash and response for 48 h: a replay with the same body returns the stored response, the same key with a different body is refused with 409 &#x60;IDEMPOTENCY_KEY_REUSED&#x60;. Optional for the caller.  (optional)
+     * @param idempotencyKey Client-generated ULID that makes a mutating request safe to retry (doc 06 §2; the mobile mutation-log &#x60;opId&#x60;). A key is scoped to the caller and the operation: the authenticated principal, or for an operation with &#x60;security: []&#x60; the credential in its body (for &#x60;requestAccountRecovery&#x60;, which carries none, the request hash alone). The server keeps key, request hash and response for 48 h: a replay with the same body returns the stored response; the same key with a different body is refused with 409 &#x60;IDEMPOTENCY_KEY_REUSED&#x60;. Exception: an operation whose answer carries a credential (&#x60;SessionGrant.token&#x60;, &#x60;SessionGrant.refreshToken&#x60;, &#x60;DeletionPending.cancelToken&#x60;, &#x60;SignUpPending.token&#x60;) is never answered from the store, and its credential is never stored. Such an operation is marked &#x60;x-idempotency-replay: never&#x60;. A repeated key on it is refused with 409 &#x60;CONFLICT&#x60;, and the client starts that step again. Optional for the caller.  (optional)
      * @return [DataExport]
      */
     @POST("v1/me/exports")
@@ -326,12 +332,12 @@ interface IdentityApi {
      * Responses:
      *  - 200: The outcome of a sign-in (see `SignInResult`)
      *  - 401: `UNAUTHENTICATED`: the identity token or passkey assertion was not accepted.
-     *  - 409: `IDEMPOTENCY_KEY_REUSED` when the `Idempotency-Key` was already used with a different request; `VERSION_MISMATCH` when `If-Match` no longer matches the stored version; `CONFLICT` otherwise. 
+     *  - 409: `IDEMPOTENCY_KEY_REUSED` when the `Idempotency-Key` was already used with a different request; `VERSION_MISMATCH` when `If-Match` no longer matches the stored version; `CONFLICT` otherwise. Exception: on an operation whose answer carries a credential (marked `x-idempotency-replay: never`), any repeated `Idempotency-Key` is refused with `CONFLICT`, never answered from the store, and the client starts that step again. 
      *  - 429: `RATE_LIMITED`: a rate limit was hit (doc 11 §14); retry after `Retry-After` seconds.
      *  - 0: Error (RFC 9457)
      *
      * @param idTokenSignInRequest 
-     * @param idempotencyKey Client-generated ULID that makes a mutating request safe to retry (doc 06 §2; the mobile mutation-log &#x60;opId&#x60;). The server keeps key, request hash and response for 48 h: a replay with the same body returns the stored response, the same key with a different body is refused with 409 &#x60;IDEMPOTENCY_KEY_REUSED&#x60;. Optional for the caller.  (optional)
+     * @param idempotencyKey Client-generated ULID that makes a mutating request safe to retry (doc 06 §2; the mobile mutation-log &#x60;opId&#x60;). A key is scoped to the caller and the operation: the authenticated principal, or for an operation with &#x60;security: []&#x60; the credential in its body (for &#x60;requestAccountRecovery&#x60;, which carries none, the request hash alone). The server keeps key, request hash and response for 48 h: a replay with the same body returns the stored response; the same key with a different body is refused with 409 &#x60;IDEMPOTENCY_KEY_REUSED&#x60;. Exception: an operation whose answer carries a credential (&#x60;SessionGrant.token&#x60;, &#x60;SessionGrant.refreshToken&#x60;, &#x60;DeletionPending.cancelToken&#x60;, &#x60;SignUpPending.token&#x60;) is never answered from the store, and its credential is never stored. Such an operation is marked &#x60;x-idempotency-replay: never&#x60;. A repeated key on it is refused with 409 &#x60;CONFLICT&#x60;, and the client starts that step again. Optional for the caller.  (optional)
      * @return [SignInResult]
      */
     @POST("v1/auth/sign-in/social")
@@ -344,12 +350,12 @@ interface IdentityApi {
      * Responses:
      *  - 200: The outcome of a sign-in (see `SignInResult`)
      *  - 401: `UNAUTHENTICATED`: the identity token or passkey assertion was not accepted.
-     *  - 409: `IDEMPOTENCY_KEY_REUSED` when the `Idempotency-Key` was already used with a different request; `VERSION_MISMATCH` when `If-Match` no longer matches the stored version; `CONFLICT` otherwise. 
+     *  - 409: `IDEMPOTENCY_KEY_REUSED` when the `Idempotency-Key` was already used with a different request; `VERSION_MISMATCH` when `If-Match` no longer matches the stored version; `CONFLICT` otherwise. Exception: on an operation whose answer carries a credential (marked `x-idempotency-replay: never`), any repeated `Idempotency-Key` is refused with `CONFLICT`, never answered from the store, and the client starts that step again. 
      *  - 429: `RATE_LIMITED`: a rate limit was hit (doc 11 §14); retry after `Retry-After` seconds.
      *  - 0: Error (RFC 9457)
      *
      * @param passkeySignInRequest 
-     * @param idempotencyKey Client-generated ULID that makes a mutating request safe to retry (doc 06 §2; the mobile mutation-log &#x60;opId&#x60;). The server keeps key, request hash and response for 48 h: a replay with the same body returns the stored response, the same key with a different body is refused with 409 &#x60;IDEMPOTENCY_KEY_REUSED&#x60;. Optional for the caller.  (optional)
+     * @param idempotencyKey Client-generated ULID that makes a mutating request safe to retry (doc 06 §2; the mobile mutation-log &#x60;opId&#x60;). A key is scoped to the caller and the operation: the authenticated principal, or for an operation with &#x60;security: []&#x60; the credential in its body (for &#x60;requestAccountRecovery&#x60;, which carries none, the request hash alone). The server keeps key, request hash and response for 48 h: a replay with the same body returns the stored response; the same key with a different body is refused with 409 &#x60;IDEMPOTENCY_KEY_REUSED&#x60;. Exception: an operation whose answer carries a credential (&#x60;SessionGrant.token&#x60;, &#x60;SessionGrant.refreshToken&#x60;, &#x60;DeletionPending.cancelToken&#x60;, &#x60;SignUpPending.token&#x60;) is never answered from the store, and its credential is never stored. Such an operation is marked &#x60;x-idempotency-replay: never&#x60;. A repeated key on it is refused with 409 &#x60;CONFLICT&#x60;, and the client starts that step again. Optional for the caller.  (optional)
      * @return [SignInResult]
      */
     @POST("v1/auth/passkey/verify-authentication")
@@ -361,13 +367,13 @@ interface IdentityApi {
      * Revokes the session the bearer token belongs to on the server.
      * Responses:
      *  - 200: The session is revoked
-     *  - 401: `UNAUTHENTICATED`: the credential is missing, malformed, expired or revoked. The client renews the session once (`refreshSession`); if the renewal is refused too, it signs in again. 
-     *  - 409: `IDEMPOTENCY_KEY_REUSED` when the `Idempotency-Key` was already used with a different request; `VERSION_MISMATCH` when `If-Match` no longer matches the stored version; `CONFLICT` otherwise. 
+     *  - 401: `UNAUTHENTICATED`: the access token is missing, malformed, expired or revoked. The client renews the session once with its refresh token (`refreshSession`); if the renewal is refused too, it signs in again. 
+     *  - 409: `IDEMPOTENCY_KEY_REUSED` when the `Idempotency-Key` was already used with a different request; `VERSION_MISMATCH` when `If-Match` no longer matches the stored version; `CONFLICT` otherwise. Exception: on an operation whose answer carries a credential (marked `x-idempotency-replay: never`), any repeated `Idempotency-Key` is refused with `CONFLICT`, never answered from the store, and the client starts that step again. 
      *  - 410: `ACCOUNT_DELETED`: the account is deleted or its deletion is in progress. The client erases everything it stores for the account and returns to its signed-out start; it tells this reply from 401 by the status alone. A 410 is cacheable by default (RFC 9110 §15.5.11), so the reply carries `Cache-Control: no-store` and must not be cached. 
      *  - 429: `RATE_LIMITED`: a rate limit was hit (doc 11 §14); retry after `Retry-After` seconds.
      *  - 0: Error (RFC 9457)
      *
-     * @param idempotencyKey Client-generated ULID that makes a mutating request safe to retry (doc 06 §2; the mobile mutation-log &#x60;opId&#x60;). The server keeps key, request hash and response for 48 h: a replay with the same body returns the stored response, the same key with a different body is refused with 409 &#x60;IDEMPOTENCY_KEY_REUSED&#x60;. Optional for the caller.  (optional)
+     * @param idempotencyKey Client-generated ULID that makes a mutating request safe to retry (doc 06 §2; the mobile mutation-log &#x60;opId&#x60;). A key is scoped to the caller and the operation: the authenticated principal, or for an operation with &#x60;security: []&#x60; the credential in its body (for &#x60;requestAccountRecovery&#x60;, which carries none, the request hash alone). The server keeps key, request hash and response for 48 h: a replay with the same body returns the stored response; the same key with a different body is refused with 409 &#x60;IDEMPOTENCY_KEY_REUSED&#x60;. Exception: an operation whose answer carries a credential (&#x60;SessionGrant.token&#x60;, &#x60;SessionGrant.refreshToken&#x60;, &#x60;DeletionPending.cancelToken&#x60;, &#x60;SignUpPending.token&#x60;) is never answered from the store, and its credential is never stored. Such an operation is marked &#x60;x-idempotency-replay: never&#x60;. A repeated key on it is refused with 409 &#x60;CONFLICT&#x60;, and the client starts that step again. Optional for the caller.  (optional)
      * @return [SignOutResult]
      */
     @POST("v1/auth/sign-out")
@@ -379,13 +385,13 @@ interface IdentityApi {
      * Revokes every session of the caller&#39;s account, the current one included.
      * Responses:
      *  - 200: Every session of the account is revoked
-     *  - 401: `UNAUTHENTICATED`: the credential is missing, malformed, expired or revoked. The client renews the session once (`refreshSession`); if the renewal is refused too, it signs in again. 
-     *  - 409: `IDEMPOTENCY_KEY_REUSED` when the `Idempotency-Key` was already used with a different request; `VERSION_MISMATCH` when `If-Match` no longer matches the stored version; `CONFLICT` otherwise. 
+     *  - 401: `UNAUTHENTICATED`: the access token is missing, malformed, expired or revoked. The client renews the session once with its refresh token (`refreshSession`); if the renewal is refused too, it signs in again. 
+     *  - 409: `IDEMPOTENCY_KEY_REUSED` when the `Idempotency-Key` was already used with a different request; `VERSION_MISMATCH` when `If-Match` no longer matches the stored version; `CONFLICT` otherwise. Exception: on an operation whose answer carries a credential (marked `x-idempotency-replay: never`), any repeated `Idempotency-Key` is refused with `CONFLICT`, never answered from the store, and the client starts that step again. 
      *  - 410: `ACCOUNT_DELETED`: the account is deleted or its deletion is in progress. The client erases everything it stores for the account and returns to its signed-out start; it tells this reply from 401 by the status alone. A 410 is cacheable by default (RFC 9110 §15.5.11), so the reply carries `Cache-Control: no-store` and must not be cached. 
      *  - 429: `RATE_LIMITED`: a rate limit was hit (doc 11 §14); retry after `Retry-After` seconds.
      *  - 0: Error (RFC 9457)
      *
-     * @param idempotencyKey Client-generated ULID that makes a mutating request safe to retry (doc 06 §2; the mobile mutation-log &#x60;opId&#x60;). The server keeps key, request hash and response for 48 h: a replay with the same body returns the stored response, the same key with a different body is refused with 409 &#x60;IDEMPOTENCY_KEY_REUSED&#x60;. Optional for the caller.  (optional)
+     * @param idempotencyKey Client-generated ULID that makes a mutating request safe to retry (doc 06 §2; the mobile mutation-log &#x60;opId&#x60;). A key is scoped to the caller and the operation: the authenticated principal, or for an operation with &#x60;security: []&#x60; the credential in its body (for &#x60;requestAccountRecovery&#x60;, which carries none, the request hash alone). The server keeps key, request hash and response for 48 h: a replay with the same body returns the stored response; the same key with a different body is refused with 409 &#x60;IDEMPOTENCY_KEY_REUSED&#x60;. Exception: an operation whose answer carries a credential (&#x60;SessionGrant.token&#x60;, &#x60;SessionGrant.refreshToken&#x60;, &#x60;DeletionPending.cancelToken&#x60;, &#x60;SignUpPending.token&#x60;) is never answered from the store, and its credential is never stored. Such an operation is marked &#x60;x-idempotency-replay: never&#x60;. A repeated key on it is refused with 409 &#x60;CONFLICT&#x60;, and the client starts that step again. Optional for the caller.  (optional)
      * @return [RevokeSessionsResult]
      */
     @POST("v1/auth/revoke-sessions")

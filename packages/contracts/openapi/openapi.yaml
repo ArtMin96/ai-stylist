@@ -46,6 +46,8 @@ paths:
     $ref: './modules/identity.yaml#/paths/~1v1~1auth~1passkey~1verify-registration'
   /v1/auth/get-session:
     $ref: './modules/identity.yaml#/paths/~1v1~1auth~1get-session'
+  /v1/auth/session/refresh:
+    $ref: './modules/identity.yaml#/paths/~1v1~1auth~1session~1refresh'
   /v1/auth/sign-out:
     $ref: './modules/identity.yaml#/paths/~1v1~1auth~1sign-out'
   /v1/auth/list-sessions:
@@ -54,8 +56,8 @@ paths:
     $ref: './modules/identity.yaml#/paths/~1v1~1auth~1revoke-sessions'
   /v1/auth/sign-in/magic-link:
     $ref: './modules/identity.yaml#/paths/~1v1~1auth~1sign-in~1magic-link'
-  /v1/auth/magic-link/verify:
-    $ref: './modules/identity.yaml#/paths/~1v1~1auth~1magic-link~1verify'
+  /v1/auth/recovery/complete:
+    $ref: './modules/identity.yaml#/paths/~1v1~1auth~1recovery~1complete'
   /v1/me/recovery:
     $ref: './modules/identity.yaml#/paths/~1v1~1me~1recovery'
   /v1/me/consents:

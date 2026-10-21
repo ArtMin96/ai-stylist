@@ -355,9 +355,17 @@ public enum Operations {
             /// - Remark: Generated from `#/paths/v1/auth/sign-in/social/POST/header`.
             public struct Headers: Sendable, Hashable {
                 /// Client-generated ULID that makes a mutating request safe to retry (doc 06 §2; the
-                /// mobile mutation-log `opId`). The server keeps key, request hash and response for 48 h:
-                /// a replay with the same body returns the stored response, the same key with a different
-                /// body is refused with 409 `IDEMPOTENCY_KEY_REUSED`. Optional for the caller.
+                /// mobile mutation-log `opId`). A key is scoped to the caller and the operation: the
+                /// authenticated principal, or for an operation with `security: []` the credential in its
+                /// body (for `requestAccountRecovery`, which carries none, the request hash alone). The
+                /// server keeps key, request hash and response for 48 h: a replay with the same body
+                /// returns the stored response; the same key with a different body is refused with 409
+                /// `IDEMPOTENCY_KEY_REUSED`. Exception: an operation whose answer carries a credential
+                /// (`SessionGrant.token`, `SessionGrant.refreshToken`, `DeletionPending.cancelToken`,
+                /// `SignUpPending.token`) is never answered from the store, and its credential is never
+                /// stored. Such an operation is marked `x-idempotency-replay: never`. A repeated key on it
+                /// is refused with 409 `CONFLICT`, and the client starts that step again. Optional for the
+                /// caller.
                 ///
                 ///
                 /// - Remark: Generated from `#/paths/v1/auth/sign-in/social/POST/header/Idempotency-Key`.
@@ -445,7 +453,9 @@ public enum Operations {
             }
             /// `IDEMPOTENCY_KEY_REUSED` when the `Idempotency-Key` was already used with a different
             /// request; `VERSION_MISMATCH` when `If-Match` no longer matches the stored version;
-            /// `CONFLICT` otherwise.
+            /// `CONFLICT` otherwise. Exception: on an operation whose answer carries a credential
+            /// (marked `x-idempotency-replay: never`), any repeated `Idempotency-Key` is refused with
+            /// `CONFLICT`, never answered from the store, and the client starts that step again.
             ///
             ///
             /// - Remark: Generated from `#/paths//v1/auth/sign-in/social/post(signInWithIdToken)/responses/409`.
@@ -566,9 +576,17 @@ public enum Operations {
             /// - Remark: Generated from `#/paths/v1/auth/sign-up/complete/POST/header`.
             public struct Headers: Sendable, Hashable {
                 /// Client-generated ULID that makes a mutating request safe to retry (doc 06 §2; the
-                /// mobile mutation-log `opId`). The server keeps key, request hash and response for 48 h:
-                /// a replay with the same body returns the stored response, the same key with a different
-                /// body is refused with 409 `IDEMPOTENCY_KEY_REUSED`. Optional for the caller.
+                /// mobile mutation-log `opId`). A key is scoped to the caller and the operation: the
+                /// authenticated principal, or for an operation with `security: []` the credential in its
+                /// body (for `requestAccountRecovery`, which carries none, the request hash alone). The
+                /// server keeps key, request hash and response for 48 h: a replay with the same body
+                /// returns the stored response; the same key with a different body is refused with 409
+                /// `IDEMPOTENCY_KEY_REUSED`. Exception: an operation whose answer carries a credential
+                /// (`SessionGrant.token`, `SessionGrant.refreshToken`, `DeletionPending.cancelToken`,
+                /// `SignUpPending.token`) is never answered from the store, and its credential is never
+                /// stored. Such an operation is marked `x-idempotency-replay: never`. A repeated key on it
+                /// is refused with 409 `CONFLICT`, and the client starts that step again. Optional for the
+                /// caller.
                 ///
                 ///
                 /// - Remark: Generated from `#/paths/v1/auth/sign-up/complete/POST/header/Idempotency-Key`.
@@ -738,7 +756,9 @@ public enum Operations {
             }
             /// `IDEMPOTENCY_KEY_REUSED` when the `Idempotency-Key` was already used with a different
             /// request; `VERSION_MISMATCH` when `If-Match` no longer matches the stored version;
-            /// `CONFLICT` otherwise.
+            /// `CONFLICT` otherwise. Exception: on an operation whose answer carries a credential
+            /// (marked `x-idempotency-replay: never`), any repeated `Idempotency-Key` is refused with
+            /// `CONFLICT`, never answered from the store, and the client starts that step again.
             ///
             ///
             /// - Remark: Generated from `#/paths//v1/auth/sign-up/complete/post(completeSignUp)/responses/409`.
@@ -1045,9 +1065,17 @@ public enum Operations {
             /// - Remark: Generated from `#/paths/v1/auth/passkey/verify-authentication/POST/header`.
             public struct Headers: Sendable, Hashable {
                 /// Client-generated ULID that makes a mutating request safe to retry (doc 06 §2; the
-                /// mobile mutation-log `opId`). The server keeps key, request hash and response for 48 h:
-                /// a replay with the same body returns the stored response, the same key with a different
-                /// body is refused with 409 `IDEMPOTENCY_KEY_REUSED`. Optional for the caller.
+                /// mobile mutation-log `opId`). A key is scoped to the caller and the operation: the
+                /// authenticated principal, or for an operation with `security: []` the credential in its
+                /// body (for `requestAccountRecovery`, which carries none, the request hash alone). The
+                /// server keeps key, request hash and response for 48 h: a replay with the same body
+                /// returns the stored response; the same key with a different body is refused with 409
+                /// `IDEMPOTENCY_KEY_REUSED`. Exception: an operation whose answer carries a credential
+                /// (`SessionGrant.token`, `SessionGrant.refreshToken`, `DeletionPending.cancelToken`,
+                /// `SignUpPending.token`) is never answered from the store, and its credential is never
+                /// stored. Such an operation is marked `x-idempotency-replay: never`. A repeated key on it
+                /// is refused with 409 `CONFLICT`, and the client starts that step again. Optional for the
+                /// caller.
                 ///
                 ///
                 /// - Remark: Generated from `#/paths/v1/auth/passkey/verify-authentication/POST/header/Idempotency-Key`.
@@ -1135,7 +1163,9 @@ public enum Operations {
             }
             /// `IDEMPOTENCY_KEY_REUSED` when the `Idempotency-Key` was already used with a different
             /// request; `VERSION_MISMATCH` when `If-Match` no longer matches the stored version;
-            /// `CONFLICT` otherwise.
+            /// `CONFLICT` otherwise. Exception: on an operation whose answer carries a credential
+            /// (marked `x-idempotency-replay: never`), any repeated `Idempotency-Key` is refused with
+            /// `CONFLICT`, never answered from the store, and the client starts that step again.
             ///
             ///
             /// - Remark: Generated from `#/paths//v1/auth/passkey/verify-authentication/post(signInWithPasskey)/responses/409`.
@@ -1242,8 +1272,8 @@ public enum Operations {
     ///
     /// Returns a fresh challenge and the WebAuthn creation options (W3C WebAuthn
     /// `PublicKeyCredentialCreationOptionsJSON`). The account's existing passkeys are listed as
-    /// excluded credentials. Needs a recently created session (better-auth `freshAge`);
-    /// otherwise 403 `FORBIDDEN`, and the client signs in again first.
+    /// excluded credentials. Needs a recent sign-in (`RecentSignInRequired`); otherwise 403
+    /// `FORBIDDEN`, and the client signs in again first.
     ///
     ///
     /// - Remark: HTTP `GET /v1/auth/passkey/generate-register-options`.
@@ -1348,9 +1378,9 @@ public enum Operations {
                     }
                 }
             }
-            /// `UNAUTHENTICATED`: the credential is missing, malformed, expired or revoked. The client
-            /// renews the session once (`refreshSession`); if the renewal is refused too, it signs in
-            /// again.
+            /// `UNAUTHENTICATED`: the access token is missing, malformed, expired or revoked. The
+            /// client renews the session once with its refresh token (`refreshSession`); if the renewal
+            /// is refused too, it signs in again.
             ///
             ///
             /// - Remark: Generated from `#/paths//v1/auth/passkey/generate-register-options/get(getPasskeyRegistrationOptions)/responses/401`.
@@ -1374,19 +1404,22 @@ public enum Operations {
                     }
                 }
             }
-            /// The caller is authenticated but may not perform this operation. `code` is `FORBIDDEN`
-            /// unless the operation names a more specific code for this status.
+            /// `FORBIDDEN`: re-authentication is needed. The operation needs a recent sign-in: the
+            /// session must have been opened by a sign-in a short time ago (better-auth `freshAge`; the
+            /// server sets the window). Recency counts from the sign-in that opened the session; a
+            /// renewal with `refreshSession` never resets it. The client signs in again with the same
+            /// account and repeats the request.
             ///
             ///
             /// - Remark: Generated from `#/paths//v1/auth/passkey/generate-register-options/get(getPasskeyRegistrationOptions)/responses/403`.
             ///
             /// HTTP response code: `403 forbidden`.
-            case forbidden(Components.Responses.Forbidden)
+            case forbidden(Components.Responses.RecentSignInRequired)
             /// The associated value of the enum case if `self` is `.forbidden`.
             ///
             /// - Throws: An error if `self` is not `.forbidden`.
             /// - SeeAlso: `.forbidden`.
-            public var forbidden: Components.Responses.Forbidden {
+            public var forbidden: Components.Responses.RecentSignInRequired {
                 get throws {
                     switch self {
                     case let .forbidden(response):
@@ -1521,9 +1554,17 @@ public enum Operations {
             /// - Remark: Generated from `#/paths/v1/auth/passkey/verify-registration/POST/header`.
             public struct Headers: Sendable, Hashable {
                 /// Client-generated ULID that makes a mutating request safe to retry (doc 06 §2; the
-                /// mobile mutation-log `opId`). The server keeps key, request hash and response for 48 h:
-                /// a replay with the same body returns the stored response, the same key with a different
-                /// body is refused with 409 `IDEMPOTENCY_KEY_REUSED`. Optional for the caller.
+                /// mobile mutation-log `opId`). A key is scoped to the caller and the operation: the
+                /// authenticated principal, or for an operation with `security: []` the credential in its
+                /// body (for `requestAccountRecovery`, which carries none, the request hash alone). The
+                /// server keeps key, request hash and response for 48 h: a replay with the same body
+                /// returns the stored response; the same key with a different body is refused with 409
+                /// `IDEMPOTENCY_KEY_REUSED`. Exception: an operation whose answer carries a credential
+                /// (`SessionGrant.token`, `SessionGrant.refreshToken`, `DeletionPending.cancelToken`,
+                /// `SignUpPending.token`) is never answered from the store, and its credential is never
+                /// stored. Such an operation is marked `x-idempotency-replay: never`. A repeated key on it
+                /// is refused with 409 `CONFLICT`, and the client starts that step again. Optional for the
+                /// caller.
                 ///
                 ///
                 /// - Remark: Generated from `#/paths/v1/auth/passkey/verify-registration/POST/header/Idempotency-Key`.
@@ -1614,9 +1655,9 @@ public enum Operations {
                     }
                 }
             }
-            /// `UNAUTHENTICATED`: the credential is missing, malformed, expired or revoked. The client
-            /// renews the session once (`refreshSession`); if the renewal is refused too, it signs in
-            /// again.
+            /// `UNAUTHENTICATED`: the access token is missing, malformed, expired or revoked. The
+            /// client renews the session once with its refresh token (`refreshSession`); if the renewal
+            /// is refused too, it signs in again.
             ///
             ///
             /// - Remark: Generated from `#/paths//v1/auth/passkey/verify-registration/post(registerPasskey)/responses/401`.
@@ -1667,7 +1708,9 @@ public enum Operations {
             }
             /// `IDEMPOTENCY_KEY_REUSED` when the `Idempotency-Key` was already used with a different
             /// request; `VERSION_MISMATCH` when `If-Match` no longer matches the stored version;
-            /// `CONFLICT` otherwise.
+            /// `CONFLICT` otherwise. Exception: on an operation whose answer carries a credential
+            /// (marked `x-idempotency-replay: never`), any repeated `Idempotency-Key` is refused with
+            /// `CONFLICT`, never answered from the store, and the client starts that step again.
             ///
             ///
             /// - Remark: Generated from `#/paths//v1/auth/passkey/verify-registration/post(registerPasskey)/responses/409`.
@@ -1800,9 +1843,10 @@ public enum Operations {
     }
     /// Read the current session
     ///
-    /// The account and expiry of the session the bearer token belongs to. Read-only: it does
-    /// not extend the session (better-auth `deferSessionRefresh`). A token with no live session
-    /// is answered with 401, never with an empty body.
+    /// The account of the session the access token belongs to, and when that access token
+    /// expires. Read-only: it extends nothing and returns no token (better-auth
+    /// `deferSessionRefresh`). A token with no live session is answered with 401, never with
+    /// an empty body.
     ///
     ///
     /// - Remark: HTTP `GET /v1/auth/get-session`.
@@ -1907,9 +1951,9 @@ public enum Operations {
                     }
                 }
             }
-            /// `UNAUTHENTICATED`: the credential is missing, malformed, expired or revoked. The client
-            /// renews the session once (`refreshSession`); if the renewal is refused too, it signs in
-            /// again.
+            /// `UNAUTHENTICATED`: the access token is missing, malformed, expired or revoked. The
+            /// client renews the session once with its refresh token (`refreshSession`); if the renewal
+            /// is refused too, it signs in again.
             ///
             ///
             /// - Remark: Generated from `#/paths//v1/auth/get-session/get(getSession)/responses/401`.
@@ -2040,28 +2084,42 @@ public enum Operations {
             }
         }
     }
-    /// Renew the current session
+    /// Renew a session with its refresh token
     ///
-    /// Extends the session the bearer token belongs to and answers with its token and new
-    /// expiry. The answer may carry a different token than the one presented: the client
-    /// stores the returned token and discards the old one. A 401 here is a refused renewal:
-    /// the client ends the session on the device and sends no further call for it.
+    /// Exchanges the session's refresh token for a new pair: a new access token and a new
+    /// refresh token (doc 11 §4.2). The refresh token travels in the body, never in
+    /// `Authorization`, and the access token never renews a session. The refresh token rotates
+    /// on every use: the presented one is spent, and the client stores the returned pair and
+    /// discards the old one. Presenting a refresh token that was already rotated revokes every
+    /// token of its session (the session family) and is answered 401. Every 401 here is a
+    /// refused renewal: the client erases the session's tokens on the device and signs in
+    /// again. If the answer is lost, the client may retry once with the same refresh token and
+    /// a new `Idempotency-Key`; a refused retry ends the session the same way. Identity's own
+    /// operation: better-auth 1.7.12 has no refresh token.
     ///
     ///
-    /// - Remark: HTTP `POST /v1/auth/get-session`.
-    /// - Remark: Generated from `#/paths//v1/auth/get-session/post(refreshSession)`.
+    /// - Remark: HTTP `POST /v1/auth/session/refresh`.
+    /// - Remark: Generated from `#/paths//v1/auth/session/refresh/post(refreshSession)`.
     public enum RefreshSession {
         public static let id: Swift.String = "refreshSession"
         public struct Input: Sendable, Hashable {
-            /// - Remark: Generated from `#/paths/v1/auth/get-session/POST/header`.
+            /// - Remark: Generated from `#/paths/v1/auth/session/refresh/POST/header`.
             public struct Headers: Sendable, Hashable {
                 /// Client-generated ULID that makes a mutating request safe to retry (doc 06 §2; the
-                /// mobile mutation-log `opId`). The server keeps key, request hash and response for 48 h:
-                /// a replay with the same body returns the stored response, the same key with a different
-                /// body is refused with 409 `IDEMPOTENCY_KEY_REUSED`. Optional for the caller.
+                /// mobile mutation-log `opId`). A key is scoped to the caller and the operation: the
+                /// authenticated principal, or for an operation with `security: []` the credential in its
+                /// body (for `requestAccountRecovery`, which carries none, the request hash alone). The
+                /// server keeps key, request hash and response for 48 h: a replay with the same body
+                /// returns the stored response; the same key with a different body is refused with 409
+                /// `IDEMPOTENCY_KEY_REUSED`. Exception: an operation whose answer carries a credential
+                /// (`SessionGrant.token`, `SessionGrant.refreshToken`, `DeletionPending.cancelToken`,
+                /// `SignUpPending.token`) is never answered from the store, and its credential is never
+                /// stored. Such an operation is marked `x-idempotency-replay: never`. A repeated key on it
+                /// is refused with 409 `CONFLICT`, and the client starts that step again. Optional for the
+                /// caller.
                 ///
                 ///
-                /// - Remark: Generated from `#/paths/v1/auth/get-session/POST/header/Idempotency-Key`.
+                /// - Remark: Generated from `#/paths/v1/auth/session/refresh/POST/header/Idempotency-Key`.
                 public var idempotencyKey: Components.Parameters.IdempotencyKey?
                 public var accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.RefreshSession.AcceptableContentType>]
                 /// Creates a new `Headers`.
@@ -2078,17 +2136,28 @@ public enum Operations {
                 }
             }
             public var headers: Operations.RefreshSession.Input.Headers
+            /// - Remark: Generated from `#/paths/v1/auth/session/refresh/POST/requestBody`.
+            @frozen public enum Body: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/v1/auth/session/refresh/POST/requestBody/content/application\/json`.
+                case json(Components.Schemas.RefreshSessionRequest)
+            }
+            public var body: Operations.RefreshSession.Input.Body
             /// Creates a new `Input`.
             ///
             /// - Parameters:
             ///   - headers:
-            public init(headers: Operations.RefreshSession.Input.Headers = .init()) {
+            ///   - body:
+            public init(
+                headers: Operations.RefreshSession.Input.Headers = .init(),
+                body: Operations.RefreshSession.Input.Body
+            ) {
                 self.headers = headers
+                self.body = body
             }
         }
         @frozen public enum Output: Sendable, Hashable {
             public struct Ok: Sendable, Hashable {
-                /// - Remark: Generated from `#/paths/v1/auth/get-session/POST/responses/200/headers`.
+                /// - Remark: Generated from `#/paths/v1/auth/session/refresh/POST/responses/200/headers`.
                 public struct Headers: Sendable, Hashable {
                     /// - Remark: Generated from `#/components/headers/CacheControlNoStore`.
                     @frozen public enum CacheControlNoStore: String, Codable, Hashable, Sendable, CaseIterable {
@@ -2096,7 +2165,7 @@ public enum Operations {
                     }
                     /// Always `no-store`; the response must not be stored by any cache.
                     ///
-                    /// - Remark: Generated from `#/paths/v1/auth/get-session/POST/responses/200/headers/Cache-Control`.
+                    /// - Remark: Generated from `#/paths/v1/auth/session/refresh/POST/responses/200/headers/Cache-Control`.
                     public var cacheControl: Components.Headers.CacheControlNoStore?
                     /// Creates a new `Headers`.
                     ///
@@ -2108,9 +2177,9 @@ public enum Operations {
                 }
                 /// Received HTTP response headers
                 public var headers: Operations.RefreshSession.Output.Ok.Headers
-                /// - Remark: Generated from `#/paths/v1/auth/get-session/POST/responses/200/content`.
+                /// - Remark: Generated from `#/paths/v1/auth/session/refresh/POST/responses/200/content`.
                 @frozen public enum Body: Sendable, Hashable {
-                    /// - Remark: Generated from `#/paths/v1/auth/get-session/POST/responses/200/content/application\/json`.
+                    /// - Remark: Generated from `#/paths/v1/auth/session/refresh/POST/responses/200/content/application\/json`.
                     case json(Components.Schemas.SessionGrant)
                     /// The associated value of the enum case if `self` is `.json`.
                     ///
@@ -2140,9 +2209,9 @@ public enum Operations {
                     self.body = body
                 }
             }
-            /// The renewed session
+            /// The new access token and refresh token of the session
             ///
-            /// - Remark: Generated from `#/paths//v1/auth/get-session/post(refreshSession)/responses/200`.
+            /// - Remark: Generated from `#/paths//v1/auth/session/refresh/post(refreshSession)/responses/200`.
             ///
             /// HTTP response code: `200 ok`.
             case ok(Operations.RefreshSession.Output.Ok)
@@ -2163,20 +2232,49 @@ public enum Operations {
                     }
                 }
             }
-            /// `UNAUTHENTICATED`: the credential is missing, malformed, expired or revoked. The client
-            /// renews the session once (`refreshSession`); if the renewal is refused too, it signs in
+            public struct Unauthorized: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/v1/auth/session/refresh/POST/responses/401/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/v1/auth/session/refresh/POST/responses/401/content/application\/problem+json`.
+                    case applicationProblemJson(Components.Schemas.ProblemDetails)
+                    /// The associated value of the enum case if `self` is `.applicationProblemJson`.
+                    ///
+                    /// - Throws: An error if `self` is not `.applicationProblemJson`.
+                    /// - SeeAlso: `.applicationProblemJson`.
+                    public var applicationProblemJson: Components.Schemas.ProblemDetails {
+                        get throws {
+                            switch self {
+                            case let .applicationProblemJson(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.RefreshSession.Output.Unauthorized.Body
+                /// Creates a new `Unauthorized`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                public init(body: Operations.RefreshSession.Output.Unauthorized.Body) {
+                    self.body = body
+                }
+            }
+            /// `UNAUTHENTICATED`: the refresh token is missing, unknown, expired, revoked or
+            /// already rotated. A rotated refresh token presented again also revokes its whole
+            /// session family (doc 11 §4.2). The client erases the session's tokens and signs in
             /// again.
             ///
             ///
-            /// - Remark: Generated from `#/paths//v1/auth/get-session/post(refreshSession)/responses/401`.
+            /// - Remark: Generated from `#/paths//v1/auth/session/refresh/post(refreshSession)/responses/401`.
             ///
             /// HTTP response code: `401 unauthorized`.
-            case unauthorized(Components.Responses.Unauthenticated)
+            case unauthorized(Operations.RefreshSession.Output.Unauthorized)
             /// The associated value of the enum case if `self` is `.unauthorized`.
             ///
             /// - Throws: An error if `self` is not `.unauthorized`.
             /// - SeeAlso: `.unauthorized`.
-            public var unauthorized: Components.Responses.Unauthenticated {
+            public var unauthorized: Operations.RefreshSession.Output.Unauthorized {
                 get throws {
                     switch self {
                     case let .unauthorized(response):
@@ -2191,10 +2289,12 @@ public enum Operations {
             }
             /// `IDEMPOTENCY_KEY_REUSED` when the `Idempotency-Key` was already used with a different
             /// request; `VERSION_MISMATCH` when `If-Match` no longer matches the stored version;
-            /// `CONFLICT` otherwise.
+            /// `CONFLICT` otherwise. Exception: on an operation whose answer carries a credential
+            /// (marked `x-idempotency-replay: never`), any repeated `Idempotency-Key` is refused with
+            /// `CONFLICT`, never answered from the store, and the client starts that step again.
             ///
             ///
-            /// - Remark: Generated from `#/paths//v1/auth/get-session/post(refreshSession)/responses/409`.
+            /// - Remark: Generated from `#/paths//v1/auth/session/refresh/post(refreshSession)/responses/409`.
             ///
             /// HTTP response code: `409 conflict`.
             case conflict(Components.Responses.Conflict)
@@ -2222,7 +2322,7 @@ public enum Operations {
             /// cached.
             ///
             ///
-            /// - Remark: Generated from `#/paths//v1/auth/get-session/post(refreshSession)/responses/410`.
+            /// - Remark: Generated from `#/paths//v1/auth/session/refresh/post(refreshSession)/responses/410`.
             ///
             /// HTTP response code: `410 gone`.
             case gone(Components.Responses.AccountDeleted)
@@ -2245,7 +2345,7 @@ public enum Operations {
             }
             /// `RATE_LIMITED`: a rate limit was hit (doc 11 §14); retry after `Retry-After` seconds.
             ///
-            /// - Remark: Generated from `#/paths//v1/auth/get-session/post(refreshSession)/responses/429`.
+            /// - Remark: Generated from `#/paths//v1/auth/session/refresh/post(refreshSession)/responses/429`.
             ///
             /// HTTP response code: `429 tooManyRequests`.
             case tooManyRequests(Components.Responses.RateLimited)
@@ -2268,7 +2368,7 @@ public enum Operations {
             }
             /// Error (RFC 9457)
             ///
-            /// - Remark: Generated from `#/paths//v1/auth/get-session/post(refreshSession)/responses/default`.
+            /// - Remark: Generated from `#/paths//v1/auth/session/refresh/post(refreshSession)/responses/default`.
             ///
             /// HTTP response code: `default`.
             case `default`(statusCode: Swift.Int, Components.Responses.Problem)
@@ -2334,9 +2434,17 @@ public enum Operations {
             /// - Remark: Generated from `#/paths/v1/auth/sign-out/POST/header`.
             public struct Headers: Sendable, Hashable {
                 /// Client-generated ULID that makes a mutating request safe to retry (doc 06 §2; the
-                /// mobile mutation-log `opId`). The server keeps key, request hash and response for 48 h:
-                /// a replay with the same body returns the stored response, the same key with a different
-                /// body is refused with 409 `IDEMPOTENCY_KEY_REUSED`. Optional for the caller.
+                /// mobile mutation-log `opId`). A key is scoped to the caller and the operation: the
+                /// authenticated principal, or for an operation with `security: []` the credential in its
+                /// body (for `requestAccountRecovery`, which carries none, the request hash alone). The
+                /// server keeps key, request hash and response for 48 h: a replay with the same body
+                /// returns the stored response; the same key with a different body is refused with 409
+                /// `IDEMPOTENCY_KEY_REUSED`. Exception: an operation whose answer carries a credential
+                /// (`SessionGrant.token`, `SessionGrant.refreshToken`, `DeletionPending.cancelToken`,
+                /// `SignUpPending.token`) is never answered from the store, and its credential is never
+                /// stored. Such an operation is marked `x-idempotency-replay: never`. A repeated key on it
+                /// is refused with 409 `CONFLICT`, and the client starts that step again. Optional for the
+                /// caller.
                 ///
                 ///
                 /// - Remark: Generated from `#/paths/v1/auth/sign-out/POST/header/Idempotency-Key`.
@@ -2416,9 +2524,9 @@ public enum Operations {
                     }
                 }
             }
-            /// `UNAUTHENTICATED`: the credential is missing, malformed, expired or revoked. The client
-            /// renews the session once (`refreshSession`); if the renewal is refused too, it signs in
-            /// again.
+            /// `UNAUTHENTICATED`: the access token is missing, malformed, expired or revoked. The
+            /// client renews the session once with its refresh token (`refreshSession`); if the renewal
+            /// is refused too, it signs in again.
             ///
             ///
             /// - Remark: Generated from `#/paths//v1/auth/sign-out/post(signOut)/responses/401`.
@@ -2444,7 +2552,9 @@ public enum Operations {
             }
             /// `IDEMPOTENCY_KEY_REUSED` when the `Idempotency-Key` was already used with a different
             /// request; `VERSION_MISMATCH` when `If-Match` no longer matches the stored version;
-            /// `CONFLICT` otherwise.
+            /// `CONFLICT` otherwise. Exception: on an operation whose answer carries a credential
+            /// (marked `x-idempotency-replay: never`), any repeated `Idempotency-Key` is refused with
+            /// `CONFLICT`, never answered from the store, and the client starts that step again.
             ///
             ///
             /// - Remark: Generated from `#/paths//v1/auth/sign-out/post(signOut)/responses/409`.
@@ -2688,9 +2798,9 @@ public enum Operations {
                     }
                 }
             }
-            /// `UNAUTHENTICATED`: the credential is missing, malformed, expired or revoked. The client
-            /// renews the session once (`refreshSession`); if the renewal is refused too, it signs in
-            /// again.
+            /// `UNAUTHENTICATED`: the access token is missing, malformed, expired or revoked. The
+            /// client renews the session once with its refresh token (`refreshSession`); if the renewal
+            /// is refused too, it signs in again.
             ///
             ///
             /// - Remark: Generated from `#/paths//v1/auth/list-sessions/get(listDeviceSessions)/responses/401`.
@@ -2833,9 +2943,17 @@ public enum Operations {
             /// - Remark: Generated from `#/paths/v1/auth/revoke-sessions/POST/header`.
             public struct Headers: Sendable, Hashable {
                 /// Client-generated ULID that makes a mutating request safe to retry (doc 06 §2; the
-                /// mobile mutation-log `opId`). The server keeps key, request hash and response for 48 h:
-                /// a replay with the same body returns the stored response, the same key with a different
-                /// body is refused with 409 `IDEMPOTENCY_KEY_REUSED`. Optional for the caller.
+                /// mobile mutation-log `opId`). A key is scoped to the caller and the operation: the
+                /// authenticated principal, or for an operation with `security: []` the credential in its
+                /// body (for `requestAccountRecovery`, which carries none, the request hash alone). The
+                /// server keeps key, request hash and response for 48 h: a replay with the same body
+                /// returns the stored response; the same key with a different body is refused with 409
+                /// `IDEMPOTENCY_KEY_REUSED`. Exception: an operation whose answer carries a credential
+                /// (`SessionGrant.token`, `SessionGrant.refreshToken`, `DeletionPending.cancelToken`,
+                /// `SignUpPending.token`) is never answered from the store, and its credential is never
+                /// stored. Such an operation is marked `x-idempotency-replay: never`. A repeated key on it
+                /// is refused with 409 `CONFLICT`, and the client starts that step again. Optional for the
+                /// caller.
                 ///
                 ///
                 /// - Remark: Generated from `#/paths/v1/auth/revoke-sessions/POST/header/Idempotency-Key`.
@@ -2915,9 +3033,9 @@ public enum Operations {
                     }
                 }
             }
-            /// `UNAUTHENTICATED`: the credential is missing, malformed, expired or revoked. The client
-            /// renews the session once (`refreshSession`); if the renewal is refused too, it signs in
-            /// again.
+            /// `UNAUTHENTICATED`: the access token is missing, malformed, expired or revoked. The
+            /// client renews the session once with its refresh token (`refreshSession`); if the renewal
+            /// is refused too, it signs in again.
             ///
             ///
             /// - Remark: Generated from `#/paths//v1/auth/revoke-sessions/post(signOutAllDevices)/responses/401`.
@@ -2943,7 +3061,9 @@ public enum Operations {
             }
             /// `IDEMPOTENCY_KEY_REUSED` when the `Idempotency-Key` was already used with a different
             /// request; `VERSION_MISMATCH` when `If-Match` no longer matches the stored version;
-            /// `CONFLICT` otherwise.
+            /// `CONFLICT` otherwise. Exception: on an operation whose answer carries a credential
+            /// (marked `x-idempotency-replay: never`), any repeated `Idempotency-Key` is refused with
+            /// `CONFLICT`, never answered from the store, and the client starts that step again.
             ///
             ///
             /// - Remark: Generated from `#/paths//v1/auth/revoke-sessions/post(signOutAllDevices)/responses/409`.
@@ -3080,7 +3200,10 @@ public enum Operations {
     /// status and body whether or not an account exists for the address, so it discloses
     /// nothing. When one exists, a single-use link is emailed; it works from 24 to 48 hours
     /// after the request, and any signed-in session of the account can cancel it before then
-    /// (`cancelAccountRecovery`). Never creates an account.
+    /// (`cancelAccountRecovery`). The link opens the app (a universal link on iOS, an app link
+    /// on Android), never an API URL, and carries its token in the URL fragment, which no
+    /// server, proxy or link scanner receives; the app then calls `completeAccountRecovery`.
+    /// Never creates an account.
     ///
     ///
     /// - Remark: HTTP `POST /v1/auth/sign-in/magic-link`.
@@ -3091,9 +3214,17 @@ public enum Operations {
             /// - Remark: Generated from `#/paths/v1/auth/sign-in/magic-link/POST/header`.
             public struct Headers: Sendable, Hashable {
                 /// Client-generated ULID that makes a mutating request safe to retry (doc 06 §2; the
-                /// mobile mutation-log `opId`). The server keeps key, request hash and response for 48 h:
-                /// a replay with the same body returns the stored response, the same key with a different
-                /// body is refused with 409 `IDEMPOTENCY_KEY_REUSED`. Optional for the caller.
+                /// mobile mutation-log `opId`). A key is scoped to the caller and the operation: the
+                /// authenticated principal, or for an operation with `security: []` the credential in its
+                /// body (for `requestAccountRecovery`, which carries none, the request hash alone). The
+                /// server keeps key, request hash and response for 48 h: a replay with the same body
+                /// returns the stored response; the same key with a different body is refused with 409
+                /// `IDEMPOTENCY_KEY_REUSED`. Exception: an operation whose answer carries a credential
+                /// (`SessionGrant.token`, `SessionGrant.refreshToken`, `DeletionPending.cancelToken`,
+                /// `SignUpPending.token`) is never answered from the store, and its credential is never
+                /// stored. Such an operation is marked `x-idempotency-replay: never`. A repeated key on it
+                /// is refused with 409 `CONFLICT`, and the client starts that step again. Optional for the
+                /// caller.
                 ///
                 ///
                 /// - Remark: Generated from `#/paths/v1/auth/sign-in/magic-link/POST/header/Idempotency-Key`.
@@ -3186,7 +3317,9 @@ public enum Operations {
             }
             /// `IDEMPOTENCY_KEY_REUSED` when the `Idempotency-Key` was already used with a different
             /// request; `VERSION_MISMATCH` when `If-Match` no longer matches the stored version;
-            /// `CONFLICT` otherwise.
+            /// `CONFLICT` otherwise. Exception: on an operation whose answer carries a credential
+            /// (marked `x-idempotency-replay: never`), any repeated `Idempotency-Key` is refused with
+            /// `CONFLICT`, never answered from the store, and the client starts that step again.
             ///
             ///
             /// - Remark: Generated from `#/paths//v1/auth/sign-in/magic-link/post(requestAccountRecovery)/responses/409`.
@@ -3291,61 +3424,77 @@ public enum Operations {
     }
     /// Use an account-recovery link
     ///
-    /// Exchanges the token of a recovery link for a sign-in. Refused before 24 hours and from
-    /// 48 hours after the request, after a cancel, and on a second use. The person then adds
-    /// a new passkey with `registerPasskey`. The server never logs the query string of this
-    /// path.
+    /// The app sends the token of the recovery link it was opened with and gets a sign-in
+    /// (`SignInResult`). The token travels only in this request body: no GET spends it, and no
+    /// URL carries it to the API. Before the 24-hour delay has passed the use is refused and
+    /// the token is not spent, so the same link works once the delay is over. From 48 hours
+    /// after the request, after a cancel, and on a second use it is refused. The person then
+    /// adds a new passkey with `registerPasskey`. Identity's own operation: the better-auth
+    /// 1.7.12 magic-link plugin verifies only by a GET that spends the token, and that path is
+    /// not served.
     ///
     ///
-    /// - Remark: HTTP `GET /v1/auth/magic-link/verify`.
-    /// - Remark: Generated from `#/paths//v1/auth/magic-link/verify/get(completeAccountRecovery)`.
+    /// - Remark: HTTP `POST /v1/auth/recovery/complete`.
+    /// - Remark: Generated from `#/paths//v1/auth/recovery/complete/post(completeAccountRecovery)`.
     public enum CompleteAccountRecovery {
         public static let id: Swift.String = "completeAccountRecovery"
         public struct Input: Sendable, Hashable {
-            /// - Remark: Generated from `#/paths/v1/auth/magic-link/verify/GET/query`.
-            public struct Query: Sendable, Hashable {
-                /// Single-use token from the emailed link.
-                ///
-                /// - Remark: Generated from `#/paths/v1/auth/magic-link/verify/GET/query/token`.
-                public var token: Swift.String
-                /// Creates a new `Query`.
-                ///
-                /// - Parameters:
-                ///   - token: Single-use token from the emailed link.
-                public init(token: Swift.String) {
-                    self.token = token
-                }
-            }
-            public var query: Operations.CompleteAccountRecovery.Input.Query
-            /// - Remark: Generated from `#/paths/v1/auth/magic-link/verify/GET/header`.
+            /// - Remark: Generated from `#/paths/v1/auth/recovery/complete/POST/header`.
             public struct Headers: Sendable, Hashable {
+                /// Client-generated ULID that makes a mutating request safe to retry (doc 06 §2; the
+                /// mobile mutation-log `opId`). A key is scoped to the caller and the operation: the
+                /// authenticated principal, or for an operation with `security: []` the credential in its
+                /// body (for `requestAccountRecovery`, which carries none, the request hash alone). The
+                /// server keeps key, request hash and response for 48 h: a replay with the same body
+                /// returns the stored response; the same key with a different body is refused with 409
+                /// `IDEMPOTENCY_KEY_REUSED`. Exception: an operation whose answer carries a credential
+                /// (`SessionGrant.token`, `SessionGrant.refreshToken`, `DeletionPending.cancelToken`,
+                /// `SignUpPending.token`) is never answered from the store, and its credential is never
+                /// stored. Such an operation is marked `x-idempotency-replay: never`. A repeated key on it
+                /// is refused with 409 `CONFLICT`, and the client starts that step again. Optional for the
+                /// caller.
+                ///
+                ///
+                /// - Remark: Generated from `#/paths/v1/auth/recovery/complete/POST/header/Idempotency-Key`.
+                public var idempotencyKey: Components.Parameters.IdempotencyKey?
                 public var accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.CompleteAccountRecovery.AcceptableContentType>]
                 /// Creates a new `Headers`.
                 ///
                 /// - Parameters:
+                ///   - idempotencyKey: Client-generated ULID that makes a mutating request safe to retry (doc 06 §2; the
                 ///   - accept:
-                public init(accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.CompleteAccountRecovery.AcceptableContentType>] = .defaultValues()) {
+                public init(
+                    idempotencyKey: Components.Parameters.IdempotencyKey? = nil,
+                    accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.CompleteAccountRecovery.AcceptableContentType>] = .defaultValues()
+                ) {
+                    self.idempotencyKey = idempotencyKey
                     self.accept = accept
                 }
             }
             public var headers: Operations.CompleteAccountRecovery.Input.Headers
+            /// - Remark: Generated from `#/paths/v1/auth/recovery/complete/POST/requestBody`.
+            @frozen public enum Body: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/v1/auth/recovery/complete/POST/requestBody/content/application\/json`.
+                case json(Components.Schemas.RecoveryCompletionRequest)
+            }
+            public var body: Operations.CompleteAccountRecovery.Input.Body
             /// Creates a new `Input`.
             ///
             /// - Parameters:
-            ///   - query:
             ///   - headers:
+            ///   - body:
             public init(
-                query: Operations.CompleteAccountRecovery.Input.Query,
-                headers: Operations.CompleteAccountRecovery.Input.Headers = .init()
+                headers: Operations.CompleteAccountRecovery.Input.Headers = .init(),
+                body: Operations.CompleteAccountRecovery.Input.Body
             ) {
-                self.query = query
                 self.headers = headers
+                self.body = body
             }
         }
         @frozen public enum Output: Sendable, Hashable {
             /// The outcome of a sign-in (see `SignInResult`)
             ///
-            /// - Remark: Generated from `#/paths//v1/auth/magic-link/verify/get(completeAccountRecovery)/responses/200`.
+            /// - Remark: Generated from `#/paths//v1/auth/recovery/complete/post(completeAccountRecovery)/responses/200`.
             ///
             /// HTTP response code: `200 ok`.
             case ok(Components.Responses.SignInAnswer)
@@ -3367,9 +3516,9 @@ public enum Operations {
                 }
             }
             public struct Unauthorized: Sendable, Hashable {
-                /// - Remark: Generated from `#/paths/v1/auth/magic-link/verify/GET/responses/401/content`.
+                /// - Remark: Generated from `#/paths/v1/auth/recovery/complete/POST/responses/401/content`.
                 @frozen public enum Body: Sendable, Hashable {
-                    /// - Remark: Generated from `#/paths/v1/auth/magic-link/verify/GET/responses/401/content/application\/problem+json`.
+                    /// - Remark: Generated from `#/paths/v1/auth/recovery/complete/POST/responses/401/content/application\/problem+json`.
                     case applicationProblemJson(Components.Schemas.ProblemDetails)
                     /// The associated value of the enum case if `self` is `.applicationProblemJson`.
                     ///
@@ -3394,9 +3543,11 @@ public enum Operations {
                     self.body = body
                 }
             }
-            /// `UNAUTHENTICATED`: the link is unknown, used, cancelled, not yet valid or expired.
+            /// `UNAUTHENTICATED`: the link is unknown, used, cancelled, expired or not yet valid. A
+            /// link used before its 24-hour delay is refused without being spent.
             ///
-            /// - Remark: Generated from `#/paths//v1/auth/magic-link/verify/get(completeAccountRecovery)/responses/401`.
+            ///
+            /// - Remark: Generated from `#/paths//v1/auth/recovery/complete/post(completeAccountRecovery)/responses/401`.
             ///
             /// HTTP response code: `401 unauthorized`.
             case unauthorized(Operations.CompleteAccountRecovery.Output.Unauthorized)
@@ -3417,9 +3568,37 @@ public enum Operations {
                     }
                 }
             }
+            /// `IDEMPOTENCY_KEY_REUSED` when the `Idempotency-Key` was already used with a different
+            /// request; `VERSION_MISMATCH` when `If-Match` no longer matches the stored version;
+            /// `CONFLICT` otherwise. Exception: on an operation whose answer carries a credential
+            /// (marked `x-idempotency-replay: never`), any repeated `Idempotency-Key` is refused with
+            /// `CONFLICT`, never answered from the store, and the client starts that step again.
+            ///
+            ///
+            /// - Remark: Generated from `#/paths//v1/auth/recovery/complete/post(completeAccountRecovery)/responses/409`.
+            ///
+            /// HTTP response code: `409 conflict`.
+            case conflict(Components.Responses.Conflict)
+            /// The associated value of the enum case if `self` is `.conflict`.
+            ///
+            /// - Throws: An error if `self` is not `.conflict`.
+            /// - SeeAlso: `.conflict`.
+            public var conflict: Components.Responses.Conflict {
+                get throws {
+                    switch self {
+                    case let .conflict(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "conflict",
+                            response: self
+                        )
+                    }
+                }
+            }
             /// `RATE_LIMITED`: a rate limit was hit (doc 11 §14); retry after `Retry-After` seconds.
             ///
-            /// - Remark: Generated from `#/paths//v1/auth/magic-link/verify/get(completeAccountRecovery)/responses/429`.
+            /// - Remark: Generated from `#/paths//v1/auth/recovery/complete/post(completeAccountRecovery)/responses/429`.
             ///
             /// HTTP response code: `429 tooManyRequests`.
             case tooManyRequests(Components.Responses.RateLimited)
@@ -3442,7 +3621,7 @@ public enum Operations {
             }
             /// Error (RFC 9457)
             ///
-            /// - Remark: Generated from `#/paths//v1/auth/magic-link/verify/get(completeAccountRecovery)/responses/default`.
+            /// - Remark: Generated from `#/paths//v1/auth/recovery/complete/post(completeAccountRecovery)/responses/default`.
             ///
             /// HTTP response code: `default`.
             case `default`(statusCode: Swift.Int, Components.Responses.Problem)
@@ -3511,9 +3690,17 @@ public enum Operations {
             /// - Remark: Generated from `#/paths/v1/me/recovery/DELETE/header`.
             public struct Headers: Sendable, Hashable {
                 /// Client-generated ULID that makes a mutating request safe to retry (doc 06 §2; the
-                /// mobile mutation-log `opId`). The server keeps key, request hash and response for 48 h:
-                /// a replay with the same body returns the stored response, the same key with a different
-                /// body is refused with 409 `IDEMPOTENCY_KEY_REUSED`. Optional for the caller.
+                /// mobile mutation-log `opId`). A key is scoped to the caller and the operation: the
+                /// authenticated principal, or for an operation with `security: []` the credential in its
+                /// body (for `requestAccountRecovery`, which carries none, the request hash alone). The
+                /// server keeps key, request hash and response for 48 h: a replay with the same body
+                /// returns the stored response; the same key with a different body is refused with 409
+                /// `IDEMPOTENCY_KEY_REUSED`. Exception: an operation whose answer carries a credential
+                /// (`SessionGrant.token`, `SessionGrant.refreshToken`, `DeletionPending.cancelToken`,
+                /// `SignUpPending.token`) is never answered from the store, and its credential is never
+                /// stored. Such an operation is marked `x-idempotency-replay: never`. A repeated key on it
+                /// is refused with 409 `CONFLICT`, and the client starts that step again. Optional for the
+                /// caller.
                 ///
                 ///
                 /// - Remark: Generated from `#/paths/v1/me/recovery/DELETE/header/Idempotency-Key`.
@@ -3577,9 +3764,9 @@ public enum Operations {
                     }
                 }
             }
-            /// `UNAUTHENTICATED`: the credential is missing, malformed, expired or revoked. The client
-            /// renews the session once (`refreshSession`); if the renewal is refused too, it signs in
-            /// again.
+            /// `UNAUTHENTICATED`: the access token is missing, malformed, expired or revoked. The
+            /// client renews the session once with its refresh token (`refreshSession`); if the renewal
+            /// is refused too, it signs in again.
             ///
             ///
             /// - Remark: Generated from `#/paths//v1/me/recovery/delete(cancelAccountRecovery)/responses/401`.
@@ -3656,7 +3843,9 @@ public enum Operations {
             }
             /// `IDEMPOTENCY_KEY_REUSED` when the `Idempotency-Key` was already used with a different
             /// request; `VERSION_MISMATCH` when `If-Match` no longer matches the stored version;
-            /// `CONFLICT` otherwise.
+            /// `CONFLICT` otherwise. Exception: on an operation whose answer carries a credential
+            /// (marked `x-idempotency-replay: never`), any repeated `Idempotency-Key` is refused with
+            /// `CONFLICT`, never answered from the store, and the client starts that step again.
             ///
             ///
             /// - Remark: Generated from `#/paths//v1/me/recovery/delete(cancelAccountRecovery)/responses/409`.
@@ -3894,9 +4083,9 @@ public enum Operations {
                     }
                 }
             }
-            /// `UNAUTHENTICATED`: the credential is missing, malformed, expired or revoked. The client
-            /// renews the session once (`refreshSession`); if the renewal is refused too, it signs in
-            /// again.
+            /// `UNAUTHENTICATED`: the access token is missing, malformed, expired or revoked. The
+            /// client renews the session once with its refresh token (`refreshSession`); if the renewal
+            /// is refused too, it signs in again.
             ///
             ///
             /// - Remark: Generated from `#/paths//v1/me/consents/get(listConsents)/responses/401`.
@@ -4043,9 +4232,17 @@ public enum Operations {
             /// - Remark: Generated from `#/paths/v1/me/consents/POST/header`.
             public struct Headers: Sendable, Hashable {
                 /// Client-generated ULID that makes a mutating request safe to retry (doc 06 §2; the
-                /// mobile mutation-log `opId`). The server keeps key, request hash and response for 48 h:
-                /// a replay with the same body returns the stored response, the same key with a different
-                /// body is refused with 409 `IDEMPOTENCY_KEY_REUSED`. Optional for the caller.
+                /// mobile mutation-log `opId`). A key is scoped to the caller and the operation: the
+                /// authenticated principal, or for an operation with `security: []` the credential in its
+                /// body (for `requestAccountRecovery`, which carries none, the request hash alone). The
+                /// server keeps key, request hash and response for 48 h: a replay with the same body
+                /// returns the stored response; the same key with a different body is refused with 409
+                /// `IDEMPOTENCY_KEY_REUSED`. Exception: an operation whose answer carries a credential
+                /// (`SessionGrant.token`, `SessionGrant.refreshToken`, `DeletionPending.cancelToken`,
+                /// `SignUpPending.token`) is never answered from the store, and its credential is never
+                /// stored. Such an operation is marked `x-idempotency-replay: never`. A repeated key on it
+                /// is refused with 409 `CONFLICT`, and the client starts that step again. Optional for the
+                /// caller.
                 ///
                 ///
                 /// - Remark: Generated from `#/paths/v1/me/consents/POST/header/Idempotency-Key`.
@@ -4187,9 +4384,9 @@ public enum Operations {
                     }
                 }
             }
-            /// `UNAUTHENTICATED`: the credential is missing, malformed, expired or revoked. The client
-            /// renews the session once (`refreshSession`); if the renewal is refused too, it signs in
-            /// again.
+            /// `UNAUTHENTICATED`: the access token is missing, malformed, expired or revoked. The
+            /// client renews the session once with its refresh token (`refreshSession`); if the renewal
+            /// is refused too, it signs in again.
             ///
             ///
             /// - Remark: Generated from `#/paths//v1/me/consents/post(recordConsent)/responses/401`.
@@ -4269,7 +4466,9 @@ public enum Operations {
             }
             /// `IDEMPOTENCY_KEY_REUSED` when the `Idempotency-Key` was already used with a different
             /// request; `VERSION_MISMATCH` when `If-Match` no longer matches the stored version;
-            /// `CONFLICT` otherwise.
+            /// `CONFLICT` otherwise. Exception: on an operation whose answer carries a credential
+            /// (marked `x-idempotency-replay: never`), any repeated `Idempotency-Key` is refused with
+            /// `CONFLICT`, never answered from the store, and the client starts that step again.
             ///
             ///
             /// - Remark: Generated from `#/paths//v1/me/consents/post(recordConsent)/responses/409`.
@@ -4406,7 +4605,9 @@ public enum Operations {
     /// (`data.export`). Answers at once with the new export `in_progress`; the client reads it
     /// with `getDataExport` until it is `ready` (a notification follows as well). One export
     /// runs at a time per account: while one is in progress, a new request is refused with 429
-    /// and the running export.
+    /// and the running export. Re-authentication, the same rule as `requestAccountDeletion`:
+    /// needs a recent sign-in (`RecentSignInRequired`); otherwise 403 `FORBIDDEN`, and the
+    /// client signs in again first.
     ///
     ///
     /// - Remark: HTTP `POST /v1/me/exports`.
@@ -4417,9 +4618,17 @@ public enum Operations {
             /// - Remark: Generated from `#/paths/v1/me/exports/POST/header`.
             public struct Headers: Sendable, Hashable {
                 /// Client-generated ULID that makes a mutating request safe to retry (doc 06 §2; the
-                /// mobile mutation-log `opId`). The server keeps key, request hash and response for 48 h:
-                /// a replay with the same body returns the stored response, the same key with a different
-                /// body is refused with 409 `IDEMPOTENCY_KEY_REUSED`. Optional for the caller.
+                /// mobile mutation-log `opId`). A key is scoped to the caller and the operation: the
+                /// authenticated principal, or for an operation with `security: []` the credential in its
+                /// body (for `requestAccountRecovery`, which carries none, the request hash alone). The
+                /// server keeps key, request hash and response for 48 h: a replay with the same body
+                /// returns the stored response; the same key with a different body is refused with 409
+                /// `IDEMPOTENCY_KEY_REUSED`. Exception: an operation whose answer carries a credential
+                /// (`SessionGrant.token`, `SessionGrant.refreshToken`, `DeletionPending.cancelToken`,
+                /// `SignUpPending.token`) is never answered from the store, and its credential is never
+                /// stored. Such an operation is marked `x-idempotency-replay: never`. A repeated key on it
+                /// is refused with 409 `CONFLICT`, and the client starts that step again. Optional for the
+                /// caller.
                 ///
                 ///
                 /// - Remark: Generated from `#/paths/v1/me/exports/POST/header/Idempotency-Key`.
@@ -4499,9 +4708,9 @@ public enum Operations {
                     }
                 }
             }
-            /// `UNAUTHENTICATED`: the credential is missing, malformed, expired or revoked. The client
-            /// renews the session once (`refreshSession`); if the renewal is refused too, it signs in
-            /// again.
+            /// `UNAUTHENTICATED`: the access token is missing, malformed, expired or revoked. The
+            /// client renews the session once with its refresh token (`refreshSession`); if the renewal
+            /// is refused too, it signs in again.
             ///
             ///
             /// - Remark: Generated from `#/paths//v1/me/exports/post(requestDataExport)/responses/401`.
@@ -4525,9 +4734,39 @@ public enum Operations {
                     }
                 }
             }
+            /// `FORBIDDEN`: re-authentication is needed. The operation needs a recent sign-in: the
+            /// session must have been opened by a sign-in a short time ago (better-auth `freshAge`; the
+            /// server sets the window). Recency counts from the sign-in that opened the session; a
+            /// renewal with `refreshSession` never resets it. The client signs in again with the same
+            /// account and repeats the request.
+            ///
+            ///
+            /// - Remark: Generated from `#/paths//v1/me/exports/post(requestDataExport)/responses/403`.
+            ///
+            /// HTTP response code: `403 forbidden`.
+            case forbidden(Components.Responses.RecentSignInRequired)
+            /// The associated value of the enum case if `self` is `.forbidden`.
+            ///
+            /// - Throws: An error if `self` is not `.forbidden`.
+            /// - SeeAlso: `.forbidden`.
+            public var forbidden: Components.Responses.RecentSignInRequired {
+                get throws {
+                    switch self {
+                    case let .forbidden(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "forbidden",
+                            response: self
+                        )
+                    }
+                }
+            }
             /// `IDEMPOTENCY_KEY_REUSED` when the `Idempotency-Key` was already used with a different
             /// request; `VERSION_MISMATCH` when `If-Match` no longer matches the stored version;
-            /// `CONFLICT` otherwise.
+            /// `CONFLICT` otherwise. Exception: on an operation whose answer carries a credential
+            /// (marked `x-idempotency-replay: never`), any repeated `Idempotency-Key` is refused with
+            /// `CONFLICT`, never answered from the store, and the client starts that step again.
             ///
             ///
             /// - Remark: Generated from `#/paths//v1/me/exports/post(requestDataExport)/responses/409`.
@@ -4581,7 +4820,8 @@ public enum Operations {
             }
             /// `RATE_LIMITED`: an export of this account is already in progress, and `current` is that
             /// export (read it with `getDataExport`); or another rate limit was hit, without `current`.
-            /// Retry after `Retry-After` seconds (doc 11 §14).
+            /// `current` is always `in_progress`, so it never carries `download`: a link is minted
+            /// only by `getDataExport`. Retry after `Retry-After` seconds (doc 11 §14).
             ///
             ///
             /// - Remark: Generated from `#/paths//v1/me/exports/post(requestDataExport)/responses/429`.
@@ -4788,9 +5028,9 @@ public enum Operations {
                     }
                 }
             }
-            /// `UNAUTHENTICATED`: the credential is missing, malformed, expired or revoked. The client
-            /// renews the session once (`refreshSession`); if the renewal is refused too, it signs in
-            /// again.
+            /// `UNAUTHENTICATED`: the access token is missing, malformed, expired or revoked. The
+            /// client renews the session once with its refresh token (`refreshSession`); if the renewal
+            /// is refused too, it signs in again.
             ///
             ///
             /// - Remark: Generated from `#/paths//v1/me/exports/{id}/get(getDataExport)/responses/401`.
@@ -4979,10 +5219,10 @@ public enum Operations {
     /// kept for a 7-day grace window (DEC-65). A sign-in during the window answers
     /// `deletion_pending`, whose cancel credential can stop the deletion
     /// (`cancelAccountDeletion`). After the window the purge runs and cannot be stopped.
-    /// Re-authentication (doc 02 §11.3): needs a recently created session (better-auth
-    /// `freshAge`); otherwise 403 `FORBIDDEN`, and the client signs in again first. After the
-    /// answer the token of this request no longer works and the client returns to its
-    /// signed-out start. Deleting the account does not cancel a store subscription.
+    /// Re-authentication (doc 02 §11.3): needs a recent sign-in (`RecentSignInRequired`);
+    /// otherwise 403 `FORBIDDEN`, and the client signs in again first. After the answer the
+    /// tokens of this session no longer work and the client returns to its signed-out start.
+    /// Deleting the account does not cancel a store subscription.
     ///
     ///
     /// - Remark: HTTP `POST /v1/me/deletion`.
@@ -4993,9 +5233,17 @@ public enum Operations {
             /// - Remark: Generated from `#/paths/v1/me/deletion/POST/header`.
             public struct Headers: Sendable, Hashable {
                 /// Client-generated ULID that makes a mutating request safe to retry (doc 06 §2; the
-                /// mobile mutation-log `opId`). The server keeps key, request hash and response for 48 h:
-                /// a replay with the same body returns the stored response, the same key with a different
-                /// body is refused with 409 `IDEMPOTENCY_KEY_REUSED`. Optional for the caller.
+                /// mobile mutation-log `opId`). A key is scoped to the caller and the operation: the
+                /// authenticated principal, or for an operation with `security: []` the credential in its
+                /// body (for `requestAccountRecovery`, which carries none, the request hash alone). The
+                /// server keeps key, request hash and response for 48 h: a replay with the same body
+                /// returns the stored response; the same key with a different body is refused with 409
+                /// `IDEMPOTENCY_KEY_REUSED`. Exception: an operation whose answer carries a credential
+                /// (`SessionGrant.token`, `SessionGrant.refreshToken`, `DeletionPending.cancelToken`,
+                /// `SignUpPending.token`) is never answered from the store, and its credential is never
+                /// stored. Such an operation is marked `x-idempotency-replay: never`. A repeated key on it
+                /// is refused with 409 `CONFLICT`, and the client starts that step again. Optional for the
+                /// caller.
                 ///
                 ///
                 /// - Remark: Generated from `#/paths/v1/me/deletion/POST/header/Idempotency-Key`.
@@ -5075,9 +5323,9 @@ public enum Operations {
                     }
                 }
             }
-            /// `UNAUTHENTICATED`: the credential is missing, malformed, expired or revoked. The client
-            /// renews the session once (`refreshSession`); if the renewal is refused too, it signs in
-            /// again.
+            /// `UNAUTHENTICATED`: the access token is missing, malformed, expired or revoked. The
+            /// client renews the session once with its refresh token (`refreshSession`); if the renewal
+            /// is refused too, it signs in again.
             ///
             ///
             /// - Remark: Generated from `#/paths//v1/me/deletion/post(requestAccountDeletion)/responses/401`.
@@ -5101,47 +5349,22 @@ public enum Operations {
                     }
                 }
             }
-            public struct Forbidden: Sendable, Hashable {
-                /// - Remark: Generated from `#/paths/v1/me/deletion/POST/responses/403/content`.
-                @frozen public enum Body: Sendable, Hashable {
-                    /// - Remark: Generated from `#/paths/v1/me/deletion/POST/responses/403/content/application\/problem+json`.
-                    case applicationProblemJson(Components.Schemas.ProblemDetails)
-                    /// The associated value of the enum case if `self` is `.applicationProblemJson`.
-                    ///
-                    /// - Throws: An error if `self` is not `.applicationProblemJson`.
-                    /// - SeeAlso: `.applicationProblemJson`.
-                    public var applicationProblemJson: Components.Schemas.ProblemDetails {
-                        get throws {
-                            switch self {
-                            case let .applicationProblemJson(body):
-                                return body
-                            }
-                        }
-                    }
-                }
-                /// Received HTTP response body
-                public var body: Operations.RequestAccountDeletion.Output.Forbidden.Body
-                /// Creates a new `Forbidden`.
-                ///
-                /// - Parameters:
-                ///   - body: Received HTTP response body
-                public init(body: Operations.RequestAccountDeletion.Output.Forbidden.Body) {
-                    self.body = body
-                }
-            }
-            /// `FORBIDDEN`: the session was not created recently enough to confirm it is the person.
-            /// The client signs in again with the same account and repeats the request.
+            /// `FORBIDDEN`: re-authentication is needed. The operation needs a recent sign-in: the
+            /// session must have been opened by a sign-in a short time ago (better-auth `freshAge`; the
+            /// server sets the window). Recency counts from the sign-in that opened the session; a
+            /// renewal with `refreshSession` never resets it. The client signs in again with the same
+            /// account and repeats the request.
             ///
             ///
             /// - Remark: Generated from `#/paths//v1/me/deletion/post(requestAccountDeletion)/responses/403`.
             ///
             /// HTTP response code: `403 forbidden`.
-            case forbidden(Operations.RequestAccountDeletion.Output.Forbidden)
+            case forbidden(Components.Responses.RecentSignInRequired)
             /// The associated value of the enum case if `self` is `.forbidden`.
             ///
             /// - Throws: An error if `self` is not `.forbidden`.
             /// - SeeAlso: `.forbidden`.
-            public var forbidden: Operations.RequestAccountDeletion.Output.Forbidden {
+            public var forbidden: Components.Responses.RecentSignInRequired {
                 get throws {
                     switch self {
                     case let .forbidden(response):
@@ -5156,7 +5379,9 @@ public enum Operations {
             }
             /// `IDEMPOTENCY_KEY_REUSED` when the `Idempotency-Key` was already used with a different
             /// request; `VERSION_MISMATCH` when `If-Match` no longer matches the stored version;
-            /// `CONFLICT` otherwise.
+            /// `CONFLICT` otherwise. Exception: on an operation whose answer carries a credential
+            /// (marked `x-idempotency-replay: never`), any repeated `Idempotency-Key` is refused with
+            /// `CONFLICT`, never answered from the store, and the client starts that step again.
             ///
             ///
             /// - Remark: Generated from `#/paths//v1/me/deletion/post(requestAccountDeletion)/responses/409`.
@@ -5257,8 +5482,9 @@ public enum Operations {
                     self.body = body
                 }
             }
-            /// `RATE_LIMITED`: the account requested a deletion within the last 30 days (doc 11
-            /// §14), or another rate limit was hit; retry after `Retry-After` seconds.
+            /// `RATE_LIMITED`: the account requested a deletion within the last 30 days that was
+            /// not cancelled (doc 11 §14); a request stopped with `cancelAccountDeletion` does not
+            /// count. Or another rate limit was hit. Retry after `Retry-After` seconds.
             ///
             ///
             /// - Remark: Generated from `#/paths//v1/me/deletion/post(requestAccountDeletion)/responses/429`.
@@ -5355,9 +5581,17 @@ public enum Operations {
             /// - Remark: Generated from `#/paths/v1/me/deletion/DELETE/header`.
             public struct Headers: Sendable, Hashable {
                 /// Client-generated ULID that makes a mutating request safe to retry (doc 06 §2; the
-                /// mobile mutation-log `opId`). The server keeps key, request hash and response for 48 h:
-                /// a replay with the same body returns the stored response, the same key with a different
-                /// body is refused with 409 `IDEMPOTENCY_KEY_REUSED`. Optional for the caller.
+                /// mobile mutation-log `opId`). A key is scoped to the caller and the operation: the
+                /// authenticated principal, or for an operation with `security: []` the credential in its
+                /// body (for `requestAccountRecovery`, which carries none, the request hash alone). The
+                /// server keeps key, request hash and response for 48 h: a replay with the same body
+                /// returns the stored response; the same key with a different body is refused with 409
+                /// `IDEMPOTENCY_KEY_REUSED`. Exception: an operation whose answer carries a credential
+                /// (`SessionGrant.token`, `SessionGrant.refreshToken`, `DeletionPending.cancelToken`,
+                /// `SignUpPending.token`) is never answered from the store, and its credential is never
+                /// stored. Such an operation is marked `x-idempotency-replay: never`. A repeated key on it
+                /// is refused with 409 `CONFLICT`, and the client starts that step again. Optional for the
+                /// caller.
                 ///
                 ///
                 /// - Remark: Generated from `#/paths/v1/me/deletion/DELETE/header/Idempotency-Key`.
@@ -5528,7 +5762,9 @@ public enum Operations {
             }
             /// `IDEMPOTENCY_KEY_REUSED` when the `Idempotency-Key` was already used with a different
             /// request; `VERSION_MISMATCH` when `If-Match` no longer matches the stored version;
-            /// `CONFLICT` otherwise.
+            /// `CONFLICT` otherwise. Exception: on an operation whose answer carries a credential
+            /// (marked `x-idempotency-replay: never`), any repeated `Idempotency-Key` is refused with
+            /// `CONFLICT`, never answered from the store, and the client starts that step again.
             ///
             ///
             /// - Remark: Generated from `#/paths//v1/me/deletion/delete(cancelAccountDeletion)/responses/409`.
@@ -5787,9 +6023,9 @@ public enum Operations {
                     }
                 }
             }
-            /// `UNAUTHENTICATED`: the credential is missing, malformed, expired or revoked. The client
-            /// renews the session once (`refreshSession`); if the renewal is refused too, it signs in
-            /// again.
+            /// `UNAUTHENTICATED`: the access token is missing, malformed, expired or revoked. The
+            /// client renews the session once with its refresh token (`refreshSession`); if the renewal
+            /// is refused too, it signs in again.
             ///
             ///
             /// - Remark: Generated from `#/paths//v1/me/profile/get(getProfile)/responses/401`.
@@ -5934,9 +6170,17 @@ public enum Operations {
             /// - Remark: Generated from `#/paths/v1/me/profile/PATCH/header`.
             public struct Headers: Sendable, Hashable {
                 /// Client-generated ULID that makes a mutating request safe to retry (doc 06 §2; the
-                /// mobile mutation-log `opId`). The server keeps key, request hash and response for 48 h:
-                /// a replay with the same body returns the stored response, the same key with a different
-                /// body is refused with 409 `IDEMPOTENCY_KEY_REUSED`. Optional for the caller.
+                /// mobile mutation-log `opId`). A key is scoped to the caller and the operation: the
+                /// authenticated principal, or for an operation with `security: []` the credential in its
+                /// body (for `requestAccountRecovery`, which carries none, the request hash alone). The
+                /// server keeps key, request hash and response for 48 h: a replay with the same body
+                /// returns the stored response; the same key with a different body is refused with 409
+                /// `IDEMPOTENCY_KEY_REUSED`. Exception: an operation whose answer carries a credential
+                /// (`SessionGrant.token`, `SessionGrant.refreshToken`, `DeletionPending.cancelToken`,
+                /// `SignUpPending.token`) is never answered from the store, and its credential is never
+                /// stored. Such an operation is marked `x-idempotency-replay: never`. A repeated key on it
+                /// is refused with 409 `CONFLICT`, and the client starts that step again. Optional for the
+                /// caller.
                 ///
                 ///
                 /// - Remark: Generated from `#/paths/v1/me/profile/PATCH/header/Idempotency-Key`.
@@ -6090,9 +6334,9 @@ public enum Operations {
                     }
                 }
             }
-            /// `UNAUTHENTICATED`: the credential is missing, malformed, expired or revoked. The client
-            /// renews the session once (`refreshSession`); if the renewal is refused too, it signs in
-            /// again.
+            /// `UNAUTHENTICATED`: the access token is missing, malformed, expired or revoked. The
+            /// client renews the session once with its refresh token (`refreshSession`); if the renewal
+            /// is refused too, it signs in again.
             ///
             ///
             /// - Remark: Generated from `#/paths//v1/me/profile/patch(updateProfile)/responses/401`.
@@ -6357,9 +6601,9 @@ public enum Operations {
                     }
                 }
             }
-            /// `UNAUTHENTICATED`: the credential is missing, malformed, expired or revoked. The client
-            /// renews the session once (`refreshSession`); if the renewal is refused too, it signs in
-            /// again.
+            /// `UNAUTHENTICATED`: the access token is missing, malformed, expired or revoked. The
+            /// client renews the session once with its refresh token (`refreshSession`); if the renewal
+            /// is refused too, it signs in again.
             ///
             ///
             /// - Remark: Generated from `#/paths//v1/me/measurements/get(getMeasurements)/responses/401`.
@@ -6505,9 +6749,17 @@ public enum Operations {
             /// - Remark: Generated from `#/paths/v1/me/measurements/PUT/header`.
             public struct Headers: Sendable, Hashable {
                 /// Client-generated ULID that makes a mutating request safe to retry (doc 06 §2; the
-                /// mobile mutation-log `opId`). The server keeps key, request hash and response for 48 h:
-                /// a replay with the same body returns the stored response, the same key with a different
-                /// body is refused with 409 `IDEMPOTENCY_KEY_REUSED`. Optional for the caller.
+                /// mobile mutation-log `opId`). A key is scoped to the caller and the operation: the
+                /// authenticated principal, or for an operation with `security: []` the credential in its
+                /// body (for `requestAccountRecovery`, which carries none, the request hash alone). The
+                /// server keeps key, request hash and response for 48 h: a replay with the same body
+                /// returns the stored response; the same key with a different body is refused with 409
+                /// `IDEMPOTENCY_KEY_REUSED`. Exception: an operation whose answer carries a credential
+                /// (`SessionGrant.token`, `SessionGrant.refreshToken`, `DeletionPending.cancelToken`,
+                /// `SignUpPending.token`) is never answered from the store, and its credential is never
+                /// stored. Such an operation is marked `x-idempotency-replay: never`. A repeated key on it
+                /// is refused with 409 `CONFLICT`, and the client starts that step again. Optional for the
+                /// caller.
                 ///
                 ///
                 /// - Remark: Generated from `#/paths/v1/me/measurements/PUT/header/Idempotency-Key`.
@@ -6689,9 +6941,9 @@ public enum Operations {
                     }
                 }
             }
-            /// `UNAUTHENTICATED`: the credential is missing, malformed, expired or revoked. The client
-            /// renews the session once (`refreshSession`); if the renewal is refused too, it signs in
-            /// again.
+            /// `UNAUTHENTICATED`: the access token is missing, malformed, expired or revoked. The
+            /// client renews the session once with its refresh token (`refreshSession`); if the renewal
+            /// is refused too, it signs in again.
             ///
             ///
             /// - Remark: Generated from `#/paths//v1/me/measurements/put(replaceMeasurements)/responses/401`.
@@ -6932,9 +7184,9 @@ public enum Operations {
                     }
                 }
             }
-            /// `UNAUTHENTICATED`: the credential is missing, malformed, expired or revoked. The client
-            /// renews the session once (`refreshSession`); if the renewal is refused too, it signs in
-            /// again.
+            /// `UNAUTHENTICATED`: the access token is missing, malformed, expired or revoked. The
+            /// client renews the session once with its refresh token (`refreshSession`); if the renewal
+            /// is refused too, it signs in again.
             ///
             ///
             /// - Remark: Generated from `#/paths//v1/me/preferences/get(getPreferences)/responses/401`.
@@ -7080,9 +7332,17 @@ public enum Operations {
             /// - Remark: Generated from `#/paths/v1/me/preferences/PATCH/header`.
             public struct Headers: Sendable, Hashable {
                 /// Client-generated ULID that makes a mutating request safe to retry (doc 06 §2; the
-                /// mobile mutation-log `opId`). The server keeps key, request hash and response for 48 h:
-                /// a replay with the same body returns the stored response, the same key with a different
-                /// body is refused with 409 `IDEMPOTENCY_KEY_REUSED`. Optional for the caller.
+                /// mobile mutation-log `opId`). A key is scoped to the caller and the operation: the
+                /// authenticated principal, or for an operation with `security: []` the credential in its
+                /// body (for `requestAccountRecovery`, which carries none, the request hash alone). The
+                /// server keeps key, request hash and response for 48 h: a replay with the same body
+                /// returns the stored response; the same key with a different body is refused with 409
+                /// `IDEMPOTENCY_KEY_REUSED`. Exception: an operation whose answer carries a credential
+                /// (`SessionGrant.token`, `SessionGrant.refreshToken`, `DeletionPending.cancelToken`,
+                /// `SignUpPending.token`) is never answered from the store, and its credential is never
+                /// stored. Such an operation is marked `x-idempotency-replay: never`. A repeated key on it
+                /// is refused with 409 `CONFLICT`, and the client starts that step again. Optional for the
+                /// caller.
                 ///
                 ///
                 /// - Remark: Generated from `#/paths/v1/me/preferences/PATCH/header/Idempotency-Key`.
@@ -7237,9 +7497,9 @@ public enum Operations {
                     }
                 }
             }
-            /// `UNAUTHENTICATED`: the credential is missing, malformed, expired or revoked. The client
-            /// renews the session once (`refreshSession`); if the renewal is refused too, it signs in
-            /// again.
+            /// `UNAUTHENTICATED`: the access token is missing, malformed, expired or revoked. The
+            /// client renews the session once with its refresh token (`refreshSession`); if the renewal
+            /// is refused too, it signs in again.
             ///
             ///
             /// - Remark: Generated from `#/paths//v1/me/preferences/patch(updatePreferences)/responses/401`.
@@ -7479,9 +7739,9 @@ public enum Operations {
                     }
                 }
             }
-            /// `UNAUTHENTICATED`: the credential is missing, malformed, expired or revoked. The client
-            /// renews the session once (`refreshSession`); if the renewal is refused too, it signs in
-            /// again.
+            /// `UNAUTHENTICATED`: the access token is missing, malformed, expired or revoked. The
+            /// client renews the session once with its refresh token (`refreshSession`); if the renewal
+            /// is refused too, it signs in again.
             ///
             ///
             /// - Remark: Generated from `#/paths//v1/me/onboarding-progress/get(getOnboardingProgress)/responses/401`.
@@ -7628,9 +7888,17 @@ public enum Operations {
             /// - Remark: Generated from `#/paths/v1/me/onboarding-progress/PATCH/header`.
             public struct Headers: Sendable, Hashable {
                 /// Client-generated ULID that makes a mutating request safe to retry (doc 06 §2; the
-                /// mobile mutation-log `opId`). The server keeps key, request hash and response for 48 h:
-                /// a replay with the same body returns the stored response, the same key with a different
-                /// body is refused with 409 `IDEMPOTENCY_KEY_REUSED`. Optional for the caller.
+                /// mobile mutation-log `opId`). A key is scoped to the caller and the operation: the
+                /// authenticated principal, or for an operation with `security: []` the credential in its
+                /// body (for `requestAccountRecovery`, which carries none, the request hash alone). The
+                /// server keeps key, request hash and response for 48 h: a replay with the same body
+                /// returns the stored response; the same key with a different body is refused with 409
+                /// `IDEMPOTENCY_KEY_REUSED`. Exception: an operation whose answer carries a credential
+                /// (`SessionGrant.token`, `SessionGrant.refreshToken`, `DeletionPending.cancelToken`,
+                /// `SignUpPending.token`) is never answered from the store, and its credential is never
+                /// stored. Such an operation is marked `x-idempotency-replay: never`. A repeated key on it
+                /// is refused with 409 `CONFLICT`, and the client starts that step again. Optional for the
+                /// caller.
                 ///
                 ///
                 /// - Remark: Generated from `#/paths/v1/me/onboarding-progress/PATCH/header/Idempotency-Key`.
@@ -7774,9 +8042,9 @@ public enum Operations {
                     }
                 }
             }
-            /// `UNAUTHENTICATED`: the credential is missing, malformed, expired or revoked. The client
-            /// renews the session once (`refreshSession`); if the renewal is refused too, it signs in
-            /// again.
+            /// `UNAUTHENTICATED`: the access token is missing, malformed, expired or revoked. The
+            /// client renews the session once with its refresh token (`refreshSession`); if the renewal
+            /// is refused too, it signs in again.
             ///
             ///
             /// - Remark: Generated from `#/paths//v1/me/onboarding-progress/patch(updateOnboardingProgress)/responses/401`.
@@ -7802,7 +8070,9 @@ public enum Operations {
             }
             /// `IDEMPOTENCY_KEY_REUSED` when the `Idempotency-Key` was already used with a different
             /// request; `VERSION_MISMATCH` when `If-Match` no longer matches the stored version;
-            /// `CONFLICT` otherwise.
+            /// `CONFLICT` otherwise. Exception: on an operation whose answer carries a credential
+            /// (marked `x-idempotency-replay: never`), any repeated `Idempotency-Key` is refused with
+            /// `CONFLICT`, never answered from the store, and the client starts that step again.
             ///
             ///
             /// - Remark: Generated from `#/paths//v1/me/onboarding-progress/patch(updateOnboardingProgress)/responses/409`.
@@ -8019,9 +8289,9 @@ public enum Operations {
                     }
                 }
             }
-            /// `UNAUTHENTICATED`: the credential is missing, malformed, expired or revoked. The client
-            /// renews the session once (`refreshSession`); if the renewal is refused too, it signs in
-            /// again.
+            /// `UNAUTHENTICATED`: the access token is missing, malformed, expired or revoked. The
+            /// client renews the session once with its refresh token (`refreshSession`); if the renewal
+            /// is refused too, it signs in again.
             ///
             ///
             /// - Remark: Generated from `#/paths//v1/me/entitlements/get(getEntitlements)/responses/401`.

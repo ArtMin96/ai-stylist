@@ -97,21 +97,39 @@ export type IdTokenSignInRequest = {
 export type UserId = string;
 
 /**
- * A session the server opened or renewed.
+ * A session the server opened or renewed: a short-lived access token and a separate,
+ * rotating refresh token (doc 11 §4.2). Both are kept in the Keychain or Keystore-backed
+ * storage only, and both are replaced by every renewal.
+ *
  */
 export type SessionGrant = {
   userId: UserId;
   /**
-   * The session token for `bearerAuth`. Kept in the Keychain or Keystore-backed storage only (doc 11 §4.2).
+   * Access token for `bearerAuth`, valid for about 15 minutes. Sent on API calls; it
+   * never renews the session.
+   *
    */
   token: string;
   /**
-   * When the session ends unless renewed with `refreshSession`. The server may refuse
-   * the token earlier (revocation, or a shorter access window, doc 11 §4.2); the client
-   * then renews once.
+   * When the access token `token` stops working, about 15 minutes after issue. The
+   * server may refuse it earlier (revocation); the client then renews once with
+   * `refreshSession`.
    *
    */
   expiresAt: string;
+  /**
+   * Refresh token, sent only in the body of `refreshSession` and never in
+   * `Authorization`. Single use: each renewal spends it and returns a new one. Presenting
+   * a spent refresh token again revokes the whole session family.
+   *
+   */
+  refreshToken: string;
+  /**
+   * When the refresh token stops working and the session ends unless it was renewed
+   * before; after it the client signs in again.
+   *
+   */
+  refreshTokenExpiresAt: string;
 };
 
 /**
@@ -313,15 +331,25 @@ export type PasskeySummary = {
 };
 
 /**
- * The current session, without its token.
+ * The current session, without any token.
  */
 export type SessionInfo = {
   userId: UserId;
+  /**
+   * When the access token of this request stops working (`SessionGrant.expiresAt`).
+   */
   expiresAt: string;
   /**
    * True when the server asks the client to renew now with `refreshSession`.
    */
   needsRefresh?: boolean;
+};
+
+export type RefreshSessionRequest = {
+  /**
+   * `SessionGrant.refreshToken` of the latest grant of this session.
+   */
+  refreshToken: string;
 };
 
 export type SignOutResult = {
@@ -344,6 +372,9 @@ export type DeviceSession = {
    * Last renewal of the session.
    */
   lastActiveAt: string;
+  /**
+   * When the session ends unless renewed, the expiry of its current refresh token.
+   */
   expiresAt: string;
   /**
    * The `User-Agent` the device sent at sign-in, to tell devices apart.
@@ -372,6 +403,13 @@ export type RecoveryRequestAccepted = {
    * Always true, whether or not an account exists for the address.
    */
   status: boolean;
+};
+
+export type RecoveryCompletionRequest = {
+  /**
+   * Single-use token from the fragment of the emailed recovery link.
+   */
+  token: string;
 };
 
 /**
@@ -1086,9 +1124,17 @@ export type EntitlementState = {
 
 /**
  * Client-generated ULID that makes a mutating request safe to retry (doc 06 §2; the
- * mobile mutation-log `opId`). The server keeps key, request hash and response for 48 h:
- * a replay with the same body returns the stored response, the same key with a different
- * body is refused with 409 `IDEMPOTENCY_KEY_REUSED`. Optional for the caller.
+ * mobile mutation-log `opId`). A key is scoped to the caller and the operation: the
+ * authenticated principal, or for an operation with `security: []` the credential in its
+ * body (for `requestAccountRecovery`, which carries none, the request hash alone). The
+ * server keeps key, request hash and response for 48 h: a replay with the same body
+ * returns the stored response; the same key with a different body is refused with 409
+ * `IDEMPOTENCY_KEY_REUSED`. Exception: an operation whose answer carries a credential
+ * (`SessionGrant.token`, `SessionGrant.refreshToken`, `DeletionPending.cancelToken`,
+ * `SignUpPending.token`) is never answered from the store, and its credential is never
+ * stored. Such an operation is marked `x-idempotency-replay: never`. A repeated key on it
+ * is refused with 409 `CONFLICT`, and the client starts that step again. Optional for the
+ * caller.
  *
  */
 export type IdempotencyKey = string;
@@ -1170,9 +1216,17 @@ export type SignInWithIdTokenData = {
   headers?: {
     /**
      * Client-generated ULID that makes a mutating request safe to retry (doc 06 §2; the
-     * mobile mutation-log `opId`). The server keeps key, request hash and response for 48 h:
-     * a replay with the same body returns the stored response, the same key with a different
-     * body is refused with 409 `IDEMPOTENCY_KEY_REUSED`. Optional for the caller.
+     * mobile mutation-log `opId`). A key is scoped to the caller and the operation: the
+     * authenticated principal, or for an operation with `security: []` the credential in its
+     * body (for `requestAccountRecovery`, which carries none, the request hash alone). The
+     * server keeps key, request hash and response for 48 h: a replay with the same body
+     * returns the stored response; the same key with a different body is refused with 409
+     * `IDEMPOTENCY_KEY_REUSED`. Exception: an operation whose answer carries a credential
+     * (`SessionGrant.token`, `SessionGrant.refreshToken`, `DeletionPending.cancelToken`,
+     * `SignUpPending.token`) is never answered from the store, and its credential is never
+     * stored. Such an operation is marked `x-idempotency-replay: never`. A repeated key on it
+     * is refused with 409 `CONFLICT`, and the client starts that step again. Optional for the
+     * caller.
      *
      */
     'Idempotency-Key'?: string;
@@ -1190,7 +1244,9 @@ export type SignInWithIdTokenErrors = {
   /**
    * `IDEMPOTENCY_KEY_REUSED` when the `Idempotency-Key` was already used with a different
    * request; `VERSION_MISMATCH` when `If-Match` no longer matches the stored version;
-   * `CONFLICT` otherwise.
+   * `CONFLICT` otherwise. Exception: on an operation whose answer carries a credential
+   * (marked `x-idempotency-replay: never`), any repeated `Idempotency-Key` is refused with
+   * `CONFLICT`, never answered from the store, and the client starts that step again.
    *
    */
   409: ProblemDetails;
@@ -1221,9 +1277,17 @@ export type CompleteSignUpData = {
   headers?: {
     /**
      * Client-generated ULID that makes a mutating request safe to retry (doc 06 §2; the
-     * mobile mutation-log `opId`). The server keeps key, request hash and response for 48 h:
-     * a replay with the same body returns the stored response, the same key with a different
-     * body is refused with 409 `IDEMPOTENCY_KEY_REUSED`. Optional for the caller.
+     * mobile mutation-log `opId`). A key is scoped to the caller and the operation: the
+     * authenticated principal, or for an operation with `security: []` the credential in its
+     * body (for `requestAccountRecovery`, which carries none, the request hash alone). The
+     * server keeps key, request hash and response for 48 h: a replay with the same body
+     * returns the stored response; the same key with a different body is refused with 409
+     * `IDEMPOTENCY_KEY_REUSED`. Exception: an operation whose answer carries a credential
+     * (`SessionGrant.token`, `SessionGrant.refreshToken`, `DeletionPending.cancelToken`,
+     * `SignUpPending.token`) is never answered from the store, and its credential is never
+     * stored. Such an operation is marked `x-idempotency-replay: never`. A repeated key on it
+     * is refused with 409 `CONFLICT`, and the client starts that step again. Optional for the
+     * caller.
      *
      */
     'Idempotency-Key'?: string;
@@ -1248,7 +1312,9 @@ export type CompleteSignUpErrors = {
   /**
    * `IDEMPOTENCY_KEY_REUSED` when the `Idempotency-Key` was already used with a different
    * request; `VERSION_MISMATCH` when `If-Match` no longer matches the stored version;
-   * `CONFLICT` otherwise.
+   * `CONFLICT` otherwise. Exception: on an operation whose answer carries a credential
+   * (marked `x-idempotency-replay: never`), any repeated `Idempotency-Key` is refused with
+   * `CONFLICT`, never answered from the store, and the client starts that step again.
    *
    */
   409: ProblemDetails;
@@ -1309,9 +1375,17 @@ export type SignInWithPasskeyData = {
   headers?: {
     /**
      * Client-generated ULID that makes a mutating request safe to retry (doc 06 §2; the
-     * mobile mutation-log `opId`). The server keeps key, request hash and response for 48 h:
-     * a replay with the same body returns the stored response, the same key with a different
-     * body is refused with 409 `IDEMPOTENCY_KEY_REUSED`. Optional for the caller.
+     * mobile mutation-log `opId`). A key is scoped to the caller and the operation: the
+     * authenticated principal, or for an operation with `security: []` the credential in its
+     * body (for `requestAccountRecovery`, which carries none, the request hash alone). The
+     * server keeps key, request hash and response for 48 h: a replay with the same body
+     * returns the stored response; the same key with a different body is refused with 409
+     * `IDEMPOTENCY_KEY_REUSED`. Exception: an operation whose answer carries a credential
+     * (`SessionGrant.token`, `SessionGrant.refreshToken`, `DeletionPending.cancelToken`,
+     * `SignUpPending.token`) is never answered from the store, and its credential is never
+     * stored. Such an operation is marked `x-idempotency-replay: never`. A repeated key on it
+     * is refused with 409 `CONFLICT`, and the client starts that step again. Optional for the
+     * caller.
      *
      */
     'Idempotency-Key'?: string;
@@ -1329,7 +1403,9 @@ export type SignInWithPasskeyErrors = {
   /**
    * `IDEMPOTENCY_KEY_REUSED` when the `Idempotency-Key` was already used with a different
    * request; `VERSION_MISMATCH` when `If-Match` no longer matches the stored version;
-   * `CONFLICT` otherwise.
+   * `CONFLICT` otherwise. Exception: on an operation whose answer carries a credential
+   * (marked `x-idempotency-replay: never`), any repeated `Idempotency-Key` is refused with
+   * `CONFLICT`, never answered from the store, and the client starts that step again.
    *
    */
   409: ProblemDetails;
@@ -1364,15 +1440,18 @@ export type GetPasskeyRegistrationOptionsData = {
 
 export type GetPasskeyRegistrationOptionsErrors = {
   /**
-   * `UNAUTHENTICATED`: the credential is missing, malformed, expired or revoked. The client
-   * renews the session once (`refreshSession`); if the renewal is refused too, it signs in
-   * again.
+   * `UNAUTHENTICATED`: the access token is missing, malformed, expired or revoked. The
+   * client renews the session once with its refresh token (`refreshSession`); if the renewal
+   * is refused too, it signs in again.
    *
    */
   401: ProblemDetails;
   /**
-   * The caller is authenticated but may not perform this operation. `code` is `FORBIDDEN`
-   * unless the operation names a more specific code for this status.
+   * `FORBIDDEN`: re-authentication is needed. The operation needs a recent sign-in: the
+   * session must have been opened by a sign-in a short time ago (better-auth `freshAge`; the
+   * server sets the window). Recency counts from the sign-in that opened the session; a
+   * renewal with `refreshSession` never resets it. The client signs in again with the same
+   * account and repeats the request.
    *
    */
   403: ProblemDetails;
@@ -1413,9 +1492,17 @@ export type RegisterPasskeyData = {
   headers?: {
     /**
      * Client-generated ULID that makes a mutating request safe to retry (doc 06 §2; the
-     * mobile mutation-log `opId`). The server keeps key, request hash and response for 48 h:
-     * a replay with the same body returns the stored response, the same key with a different
-     * body is refused with 409 `IDEMPOTENCY_KEY_REUSED`. Optional for the caller.
+     * mobile mutation-log `opId`). A key is scoped to the caller and the operation: the
+     * authenticated principal, or for an operation with `security: []` the credential in its
+     * body (for `requestAccountRecovery`, which carries none, the request hash alone). The
+     * server keeps key, request hash and response for 48 h: a replay with the same body
+     * returns the stored response; the same key with a different body is refused with 409
+     * `IDEMPOTENCY_KEY_REUSED`. Exception: an operation whose answer carries a credential
+     * (`SessionGrant.token`, `SessionGrant.refreshToken`, `DeletionPending.cancelToken`,
+     * `SignUpPending.token`) is never answered from the store, and its credential is never
+     * stored. Such an operation is marked `x-idempotency-replay: never`. A repeated key on it
+     * is refused with 409 `CONFLICT`, and the client starts that step again. Optional for the
+     * caller.
      *
      */
     'Idempotency-Key'?: string;
@@ -1427,9 +1514,9 @@ export type RegisterPasskeyData = {
 
 export type RegisterPasskeyErrors = {
   /**
-   * `UNAUTHENTICATED`: the credential is missing, malformed, expired or revoked. The client
-   * renews the session once (`refreshSession`); if the renewal is refused too, it signs in
-   * again.
+   * `UNAUTHENTICATED`: the access token is missing, malformed, expired or revoked. The
+   * client renews the session once with its refresh token (`refreshSession`); if the renewal
+   * is refused too, it signs in again.
    *
    */
   401: ProblemDetails;
@@ -1442,7 +1529,9 @@ export type RegisterPasskeyErrors = {
   /**
    * `IDEMPOTENCY_KEY_REUSED` when the `Idempotency-Key` was already used with a different
    * request; `VERSION_MISMATCH` when `If-Match` no longer matches the stored version;
-   * `CONFLICT` otherwise.
+   * `CONFLICT` otherwise. Exception: on an operation whose answer carries a credential
+   * (marked `x-idempotency-replay: never`), any repeated `Idempotency-Key` is refused with
+   * `CONFLICT`, never answered from the store, and the client starts that step again.
    *
    */
   409: ProblemDetails;
@@ -1485,9 +1574,9 @@ export type GetSessionData = {
 
 export type GetSessionErrors = {
   /**
-   * `UNAUTHENTICATED`: the credential is missing, malformed, expired or revoked. The client
-   * renews the session once (`refreshSession`); if the renewal is refused too, it signs in
-   * again.
+   * `UNAUTHENTICATED`: the access token is missing, malformed, expired or revoked. The
+   * client renews the session once with its refresh token (`refreshSession`); if the renewal
+   * is refused too, it signs in again.
    *
    */
   401: ProblemDetails;
@@ -1522,26 +1611,35 @@ export type GetSessionResponses = {
 export type GetSessionResponse = GetSessionResponses[keyof GetSessionResponses];
 
 export type RefreshSessionData = {
-  body?: never;
+  body: RefreshSessionRequest;
   headers?: {
     /**
      * Client-generated ULID that makes a mutating request safe to retry (doc 06 §2; the
-     * mobile mutation-log `opId`). The server keeps key, request hash and response for 48 h:
-     * a replay with the same body returns the stored response, the same key with a different
-     * body is refused with 409 `IDEMPOTENCY_KEY_REUSED`. Optional for the caller.
+     * mobile mutation-log `opId`). A key is scoped to the caller and the operation: the
+     * authenticated principal, or for an operation with `security: []` the credential in its
+     * body (for `requestAccountRecovery`, which carries none, the request hash alone). The
+     * server keeps key, request hash and response for 48 h: a replay with the same body
+     * returns the stored response; the same key with a different body is refused with 409
+     * `IDEMPOTENCY_KEY_REUSED`. Exception: an operation whose answer carries a credential
+     * (`SessionGrant.token`, `SessionGrant.refreshToken`, `DeletionPending.cancelToken`,
+     * `SignUpPending.token`) is never answered from the store, and its credential is never
+     * stored. Such an operation is marked `x-idempotency-replay: never`. A repeated key on it
+     * is refused with 409 `CONFLICT`, and the client starts that step again. Optional for the
+     * caller.
      *
      */
     'Idempotency-Key'?: string;
   };
   path?: never;
   query?: never;
-  url: '/v1/auth/get-session';
+  url: '/v1/auth/session/refresh';
 };
 
 export type RefreshSessionErrors = {
   /**
-   * `UNAUTHENTICATED`: the credential is missing, malformed, expired or revoked. The client
-   * renews the session once (`refreshSession`); if the renewal is refused too, it signs in
+   * `UNAUTHENTICATED`: the refresh token is missing, unknown, expired, revoked or
+   * already rotated. A rotated refresh token presented again also revokes its whole
+   * session family (doc 11 §4.2). The client erases the session's tokens and signs in
    * again.
    *
    */
@@ -1549,7 +1647,9 @@ export type RefreshSessionErrors = {
   /**
    * `IDEMPOTENCY_KEY_REUSED` when the `Idempotency-Key` was already used with a different
    * request; `VERSION_MISMATCH` when `If-Match` no longer matches the stored version;
-   * `CONFLICT` otherwise.
+   * `CONFLICT` otherwise. Exception: on an operation whose answer carries a credential
+   * (marked `x-idempotency-replay: never`), any repeated `Idempotency-Key` is refused with
+   * `CONFLICT`, never answered from the store, and the client starts that step again.
    *
    */
   409: ProblemDetails;
@@ -1576,7 +1676,7 @@ export type RefreshSessionError = RefreshSessionErrors[keyof RefreshSessionError
 
 export type RefreshSessionResponses = {
   /**
-   * The renewed session
+   * The new access token and refresh token of the session
    */
   200: SessionGrant;
 };
@@ -1588,9 +1688,17 @@ export type SignOutData = {
   headers?: {
     /**
      * Client-generated ULID that makes a mutating request safe to retry (doc 06 §2; the
-     * mobile mutation-log `opId`). The server keeps key, request hash and response for 48 h:
-     * a replay with the same body returns the stored response, the same key with a different
-     * body is refused with 409 `IDEMPOTENCY_KEY_REUSED`. Optional for the caller.
+     * mobile mutation-log `opId`). A key is scoped to the caller and the operation: the
+     * authenticated principal, or for an operation with `security: []` the credential in its
+     * body (for `requestAccountRecovery`, which carries none, the request hash alone). The
+     * server keeps key, request hash and response for 48 h: a replay with the same body
+     * returns the stored response; the same key with a different body is refused with 409
+     * `IDEMPOTENCY_KEY_REUSED`. Exception: an operation whose answer carries a credential
+     * (`SessionGrant.token`, `SessionGrant.refreshToken`, `DeletionPending.cancelToken`,
+     * `SignUpPending.token`) is never answered from the store, and its credential is never
+     * stored. Such an operation is marked `x-idempotency-replay: never`. A repeated key on it
+     * is refused with 409 `CONFLICT`, and the client starts that step again. Optional for the
+     * caller.
      *
      */
     'Idempotency-Key'?: string;
@@ -1602,16 +1710,18 @@ export type SignOutData = {
 
 export type SignOutErrors = {
   /**
-   * `UNAUTHENTICATED`: the credential is missing, malformed, expired or revoked. The client
-   * renews the session once (`refreshSession`); if the renewal is refused too, it signs in
-   * again.
+   * `UNAUTHENTICATED`: the access token is missing, malformed, expired or revoked. The
+   * client renews the session once with its refresh token (`refreshSession`); if the renewal
+   * is refused too, it signs in again.
    *
    */
   401: ProblemDetails;
   /**
    * `IDEMPOTENCY_KEY_REUSED` when the `Idempotency-Key` was already used with a different
    * request; `VERSION_MISMATCH` when `If-Match` no longer matches the stored version;
-   * `CONFLICT` otherwise.
+   * `CONFLICT` otherwise. Exception: on an operation whose answer carries a credential
+   * (marked `x-idempotency-replay: never`), any repeated `Idempotency-Key` is refused with
+   * `CONFLICT`, never answered from the store, and the client starts that step again.
    *
    */
   409: ProblemDetails;
@@ -1663,9 +1773,9 @@ export type ListDeviceSessionsData = {
 
 export type ListDeviceSessionsErrors = {
   /**
-   * `UNAUTHENTICATED`: the credential is missing, malformed, expired or revoked. The client
-   * renews the session once (`refreshSession`); if the renewal is refused too, it signs in
-   * again.
+   * `UNAUTHENTICATED`: the access token is missing, malformed, expired or revoked. The
+   * client renews the session once with its refresh token (`refreshSession`); if the renewal
+   * is refused too, it signs in again.
    *
    */
   401: ProblemDetails;
@@ -1705,9 +1815,17 @@ export type SignOutAllDevicesData = {
   headers?: {
     /**
      * Client-generated ULID that makes a mutating request safe to retry (doc 06 §2; the
-     * mobile mutation-log `opId`). The server keeps key, request hash and response for 48 h:
-     * a replay with the same body returns the stored response, the same key with a different
-     * body is refused with 409 `IDEMPOTENCY_KEY_REUSED`. Optional for the caller.
+     * mobile mutation-log `opId`). A key is scoped to the caller and the operation: the
+     * authenticated principal, or for an operation with `security: []` the credential in its
+     * body (for `requestAccountRecovery`, which carries none, the request hash alone). The
+     * server keeps key, request hash and response for 48 h: a replay with the same body
+     * returns the stored response; the same key with a different body is refused with 409
+     * `IDEMPOTENCY_KEY_REUSED`. Exception: an operation whose answer carries a credential
+     * (`SessionGrant.token`, `SessionGrant.refreshToken`, `DeletionPending.cancelToken`,
+     * `SignUpPending.token`) is never answered from the store, and its credential is never
+     * stored. Such an operation is marked `x-idempotency-replay: never`. A repeated key on it
+     * is refused with 409 `CONFLICT`, and the client starts that step again. Optional for the
+     * caller.
      *
      */
     'Idempotency-Key'?: string;
@@ -1719,16 +1837,18 @@ export type SignOutAllDevicesData = {
 
 export type SignOutAllDevicesErrors = {
   /**
-   * `UNAUTHENTICATED`: the credential is missing, malformed, expired or revoked. The client
-   * renews the session once (`refreshSession`); if the renewal is refused too, it signs in
-   * again.
+   * `UNAUTHENTICATED`: the access token is missing, malformed, expired or revoked. The
+   * client renews the session once with its refresh token (`refreshSession`); if the renewal
+   * is refused too, it signs in again.
    *
    */
   401: ProblemDetails;
   /**
    * `IDEMPOTENCY_KEY_REUSED` when the `Idempotency-Key` was already used with a different
    * request; `VERSION_MISMATCH` when `If-Match` no longer matches the stored version;
-   * `CONFLICT` otherwise.
+   * `CONFLICT` otherwise. Exception: on an operation whose answer carries a credential
+   * (marked `x-idempotency-replay: never`), any repeated `Idempotency-Key` is refused with
+   * `CONFLICT`, never answered from the store, and the client starts that step again.
    *
    */
   409: ProblemDetails;
@@ -1768,9 +1888,17 @@ export type RequestAccountRecoveryData = {
   headers?: {
     /**
      * Client-generated ULID that makes a mutating request safe to retry (doc 06 §2; the
-     * mobile mutation-log `opId`). The server keeps key, request hash and response for 48 h:
-     * a replay with the same body returns the stored response, the same key with a different
-     * body is refused with 409 `IDEMPOTENCY_KEY_REUSED`. Optional for the caller.
+     * mobile mutation-log `opId`). A key is scoped to the caller and the operation: the
+     * authenticated principal, or for an operation with `security: []` the credential in its
+     * body (for `requestAccountRecovery`, which carries none, the request hash alone). The
+     * server keeps key, request hash and response for 48 h: a replay with the same body
+     * returns the stored response; the same key with a different body is refused with 409
+     * `IDEMPOTENCY_KEY_REUSED`. Exception: an operation whose answer carries a credential
+     * (`SessionGrant.token`, `SessionGrant.refreshToken`, `DeletionPending.cancelToken`,
+     * `SignUpPending.token`) is never answered from the store, and its credential is never
+     * stored. Such an operation is marked `x-idempotency-replay: never`. A repeated key on it
+     * is refused with 409 `CONFLICT`, and the client starts that step again. Optional for the
+     * caller.
      *
      */
     'Idempotency-Key'?: string;
@@ -1784,7 +1912,9 @@ export type RequestAccountRecoveryErrors = {
   /**
    * `IDEMPOTENCY_KEY_REUSED` when the `Idempotency-Key` was already used with a different
    * request; `VERSION_MISMATCH` when `If-Match` no longer matches the stored version;
-   * `CONFLICT` otherwise.
+   * `CONFLICT` otherwise. Exception: on an operation whose answer carries a credential
+   * (marked `x-idempotency-replay: never`), any repeated `Idempotency-Key` is refused with
+   * `CONFLICT`, never answered from the store, and the client starts that step again.
    *
    */
   409: ProblemDetails;
@@ -1812,22 +1942,46 @@ export type RequestAccountRecoveryResponse =
   RequestAccountRecoveryResponses[keyof RequestAccountRecoveryResponses];
 
 export type CompleteAccountRecoveryData = {
-  body?: never;
-  path?: never;
-  query: {
+  body: RecoveryCompletionRequest;
+  headers?: {
     /**
-     * Single-use token from the emailed link.
+     * Client-generated ULID that makes a mutating request safe to retry (doc 06 §2; the
+     * mobile mutation-log `opId`). A key is scoped to the caller and the operation: the
+     * authenticated principal, or for an operation with `security: []` the credential in its
+     * body (for `requestAccountRecovery`, which carries none, the request hash alone). The
+     * server keeps key, request hash and response for 48 h: a replay with the same body
+     * returns the stored response; the same key with a different body is refused with 409
+     * `IDEMPOTENCY_KEY_REUSED`. Exception: an operation whose answer carries a credential
+     * (`SessionGrant.token`, `SessionGrant.refreshToken`, `DeletionPending.cancelToken`,
+     * `SignUpPending.token`) is never answered from the store, and its credential is never
+     * stored. Such an operation is marked `x-idempotency-replay: never`. A repeated key on it
+     * is refused with 409 `CONFLICT`, and the client starts that step again. Optional for the
+     * caller.
+     *
      */
-    token: string;
+    'Idempotency-Key'?: string;
   };
-  url: '/v1/auth/magic-link/verify';
+  path?: never;
+  query?: never;
+  url: '/v1/auth/recovery/complete';
 };
 
 export type CompleteAccountRecoveryErrors = {
   /**
-   * `UNAUTHENTICATED`: the link is unknown, used, cancelled, not yet valid or expired.
+   * `UNAUTHENTICATED`: the link is unknown, used, cancelled, expired or not yet valid. A
+   * link used before its 24-hour delay is refused without being spent.
+   *
    */
   401: ProblemDetails;
+  /**
+   * `IDEMPOTENCY_KEY_REUSED` when the `Idempotency-Key` was already used with a different
+   * request; `VERSION_MISMATCH` when `If-Match` no longer matches the stored version;
+   * `CONFLICT` otherwise. Exception: on an operation whose answer carries a credential
+   * (marked `x-idempotency-replay: never`), any repeated `Idempotency-Key` is refused with
+   * `CONFLICT`, never answered from the store, and the client starts that step again.
+   *
+   */
+  409: ProblemDetails;
   /**
    * `RATE_LIMITED`: a rate limit was hit (doc 11 §14); retry after `Retry-After` seconds.
    */
@@ -1856,9 +2010,17 @@ export type CancelAccountRecoveryData = {
   headers?: {
     /**
      * Client-generated ULID that makes a mutating request safe to retry (doc 06 §2; the
-     * mobile mutation-log `opId`). The server keeps key, request hash and response for 48 h:
-     * a replay with the same body returns the stored response, the same key with a different
-     * body is refused with 409 `IDEMPOTENCY_KEY_REUSED`. Optional for the caller.
+     * mobile mutation-log `opId`). A key is scoped to the caller and the operation: the
+     * authenticated principal, or for an operation with `security: []` the credential in its
+     * body (for `requestAccountRecovery`, which carries none, the request hash alone). The
+     * server keeps key, request hash and response for 48 h: a replay with the same body
+     * returns the stored response; the same key with a different body is refused with 409
+     * `IDEMPOTENCY_KEY_REUSED`. Exception: an operation whose answer carries a credential
+     * (`SessionGrant.token`, `SessionGrant.refreshToken`, `DeletionPending.cancelToken`,
+     * `SignUpPending.token`) is never answered from the store, and its credential is never
+     * stored. Such an operation is marked `x-idempotency-replay: never`. A repeated key on it
+     * is refused with 409 `CONFLICT`, and the client starts that step again. Optional for the
+     * caller.
      *
      */
     'Idempotency-Key'?: string;
@@ -1870,9 +2032,9 @@ export type CancelAccountRecoveryData = {
 
 export type CancelAccountRecoveryErrors = {
   /**
-   * `UNAUTHENTICATED`: the credential is missing, malformed, expired or revoked. The client
-   * renews the session once (`refreshSession`); if the renewal is refused too, it signs in
-   * again.
+   * `UNAUTHENTICATED`: the access token is missing, malformed, expired or revoked. The
+   * client renews the session once with its refresh token (`refreshSession`); if the renewal
+   * is refused too, it signs in again.
    *
    */
   401: ProblemDetails;
@@ -1883,7 +2045,9 @@ export type CancelAccountRecoveryErrors = {
   /**
    * `IDEMPOTENCY_KEY_REUSED` when the `Idempotency-Key` was already used with a different
    * request; `VERSION_MISMATCH` when `If-Match` no longer matches the stored version;
-   * `CONFLICT` otherwise.
+   * `CONFLICT` otherwise. Exception: on an operation whose answer carries a credential
+   * (marked `x-idempotency-replay: never`), any repeated `Idempotency-Key` is refused with
+   * `CONFLICT`, never answered from the store, and the client starts that step again.
    *
    */
   409: ProblemDetails;
@@ -1937,9 +2101,9 @@ export type ListConsentsData = {
 
 export type ListConsentsErrors = {
   /**
-   * `UNAUTHENTICATED`: the credential is missing, malformed, expired or revoked. The client
-   * renews the session once (`refreshSession`); if the renewal is refused too, it signs in
-   * again.
+   * `UNAUTHENTICATED`: the access token is missing, malformed, expired or revoked. The
+   * client renews the session once with its refresh token (`refreshSession`); if the renewal
+   * is refused too, it signs in again.
    *
    */
   401: ProblemDetails;
@@ -1978,9 +2142,17 @@ export type RecordConsentData = {
   headers?: {
     /**
      * Client-generated ULID that makes a mutating request safe to retry (doc 06 §2; the
-     * mobile mutation-log `opId`). The server keeps key, request hash and response for 48 h:
-     * a replay with the same body returns the stored response, the same key with a different
-     * body is refused with 409 `IDEMPOTENCY_KEY_REUSED`. Optional for the caller.
+     * mobile mutation-log `opId`). A key is scoped to the caller and the operation: the
+     * authenticated principal, or for an operation with `security: []` the credential in its
+     * body (for `requestAccountRecovery`, which carries none, the request hash alone). The
+     * server keeps key, request hash and response for 48 h: a replay with the same body
+     * returns the stored response; the same key with a different body is refused with 409
+     * `IDEMPOTENCY_KEY_REUSED`. Exception: an operation whose answer carries a credential
+     * (`SessionGrant.token`, `SessionGrant.refreshToken`, `DeletionPending.cancelToken`,
+     * `SignUpPending.token`) is never answered from the store, and its credential is never
+     * stored. Such an operation is marked `x-idempotency-replay: never`. A repeated key on it
+     * is refused with 409 `CONFLICT`, and the client starts that step again. Optional for the
+     * caller.
      *
      */
     'Idempotency-Key'?: string;
@@ -1992,9 +2164,9 @@ export type RecordConsentData = {
 
 export type RecordConsentErrors = {
   /**
-   * `UNAUTHENTICATED`: the credential is missing, malformed, expired or revoked. The client
-   * renews the session once (`refreshSession`); if the renewal is refused too, it signs in
-   * again.
+   * `UNAUTHENTICATED`: the access token is missing, malformed, expired or revoked. The
+   * client renews the session once with its refresh token (`refreshSession`); if the renewal
+   * is refused too, it signs in again.
    *
    */
   401: ProblemDetails;
@@ -2008,7 +2180,9 @@ export type RecordConsentErrors = {
   /**
    * `IDEMPOTENCY_KEY_REUSED` when the `Idempotency-Key` was already used with a different
    * request; `VERSION_MISMATCH` when `If-Match` no longer matches the stored version;
-   * `CONFLICT` otherwise.
+   * `CONFLICT` otherwise. Exception: on an operation whose answer carries a credential
+   * (marked `x-idempotency-replay: never`), any repeated `Idempotency-Key` is refused with
+   * `CONFLICT`, never answered from the store, and the client starts that step again.
    *
    */
   409: ProblemDetails;
@@ -2051,9 +2225,17 @@ export type RequestDataExportData = {
   headers?: {
     /**
      * Client-generated ULID that makes a mutating request safe to retry (doc 06 §2; the
-     * mobile mutation-log `opId`). The server keeps key, request hash and response for 48 h:
-     * a replay with the same body returns the stored response, the same key with a different
-     * body is refused with 409 `IDEMPOTENCY_KEY_REUSED`. Optional for the caller.
+     * mobile mutation-log `opId`). A key is scoped to the caller and the operation: the
+     * authenticated principal, or for an operation with `security: []` the credential in its
+     * body (for `requestAccountRecovery`, which carries none, the request hash alone). The
+     * server keeps key, request hash and response for 48 h: a replay with the same body
+     * returns the stored response; the same key with a different body is refused with 409
+     * `IDEMPOTENCY_KEY_REUSED`. Exception: an operation whose answer carries a credential
+     * (`SessionGrant.token`, `SessionGrant.refreshToken`, `DeletionPending.cancelToken`,
+     * `SignUpPending.token`) is never answered from the store, and its credential is never
+     * stored. Such an operation is marked `x-idempotency-replay: never`. A repeated key on it
+     * is refused with 409 `CONFLICT`, and the client starts that step again. Optional for the
+     * caller.
      *
      */
     'Idempotency-Key'?: string;
@@ -2065,16 +2247,27 @@ export type RequestDataExportData = {
 
 export type RequestDataExportErrors = {
   /**
-   * `UNAUTHENTICATED`: the credential is missing, malformed, expired or revoked. The client
-   * renews the session once (`refreshSession`); if the renewal is refused too, it signs in
-   * again.
+   * `UNAUTHENTICATED`: the access token is missing, malformed, expired or revoked. The
+   * client renews the session once with its refresh token (`refreshSession`); if the renewal
+   * is refused too, it signs in again.
    *
    */
   401: ProblemDetails;
   /**
+   * `FORBIDDEN`: re-authentication is needed. The operation needs a recent sign-in: the
+   * session must have been opened by a sign-in a short time ago (better-auth `freshAge`; the
+   * server sets the window). Recency counts from the sign-in that opened the session; a
+   * renewal with `refreshSession` never resets it. The client signs in again with the same
+   * account and repeats the request.
+   *
+   */
+  403: ProblemDetails;
+  /**
    * `IDEMPOTENCY_KEY_REUSED` when the `Idempotency-Key` was already used with a different
    * request; `VERSION_MISMATCH` when `If-Match` no longer matches the stored version;
-   * `CONFLICT` otherwise.
+   * `CONFLICT` otherwise. Exception: on an operation whose answer carries a credential
+   * (marked `x-idempotency-replay: never`), any repeated `Idempotency-Key` is refused with
+   * `CONFLICT`, never answered from the store, and the client starts that step again.
    *
    */
   409: ProblemDetails;
@@ -2090,7 +2283,8 @@ export type RequestDataExportErrors = {
   /**
    * `RATE_LIMITED`: an export of this account is already in progress, and `current` is that
    * export (read it with `getDataExport`); or another rate limit was hit, without `current`.
-   * Retry after `Retry-After` seconds (doc 11 §14).
+   * `current` is always `in_progress`, so it never carries `download`: a link is minted
+   * only by `getDataExport`. Retry after `Retry-After` seconds (doc 11 §14).
    *
    */
   429: DataExportInProgress;
@@ -2123,9 +2317,9 @@ export type GetDataExportData = {
 
 export type GetDataExportErrors = {
   /**
-   * `UNAUTHENTICATED`: the credential is missing, malformed, expired or revoked. The client
-   * renews the session once (`refreshSession`); if the renewal is refused too, it signs in
-   * again.
+   * `UNAUTHENTICATED`: the access token is missing, malformed, expired or revoked. The
+   * client renews the session once with its refresh token (`refreshSession`); if the renewal
+   * is refused too, it signs in again.
    *
    */
   401: ProblemDetails;
@@ -2168,9 +2362,17 @@ export type CancelAccountDeletionData = {
   headers?: {
     /**
      * Client-generated ULID that makes a mutating request safe to retry (doc 06 §2; the
-     * mobile mutation-log `opId`). The server keeps key, request hash and response for 48 h:
-     * a replay with the same body returns the stored response, the same key with a different
-     * body is refused with 409 `IDEMPOTENCY_KEY_REUSED`. Optional for the caller.
+     * mobile mutation-log `opId`). A key is scoped to the caller and the operation: the
+     * authenticated principal, or for an operation with `security: []` the credential in its
+     * body (for `requestAccountRecovery`, which carries none, the request hash alone). The
+     * server keeps key, request hash and response for 48 h: a replay with the same body
+     * returns the stored response; the same key with a different body is refused with 409
+     * `IDEMPOTENCY_KEY_REUSED`. Exception: an operation whose answer carries a credential
+     * (`SessionGrant.token`, `SessionGrant.refreshToken`, `DeletionPending.cancelToken`,
+     * `SignUpPending.token`) is never answered from the store, and its credential is never
+     * stored. Such an operation is marked `x-idempotency-replay: never`. A repeated key on it
+     * is refused with 409 `CONFLICT`, and the client starts that step again. Optional for the
+     * caller.
      *
      */
     'Idempotency-Key'?: string;
@@ -2195,7 +2397,9 @@ export type CancelAccountDeletionErrors = {
   /**
    * `IDEMPOTENCY_KEY_REUSED` when the `Idempotency-Key` was already used with a different
    * request; `VERSION_MISMATCH` when `If-Match` no longer matches the stored version;
-   * `CONFLICT` otherwise.
+   * `CONFLICT` otherwise. Exception: on an operation whose answer carries a credential
+   * (marked `x-idempotency-replay: never`), any repeated `Idempotency-Key` is refused with
+   * `CONFLICT`, never answered from the store, and the client starts that step again.
    *
    */
   409: ProblemDetails;
@@ -2234,9 +2438,17 @@ export type RequestAccountDeletionData = {
   headers?: {
     /**
      * Client-generated ULID that makes a mutating request safe to retry (doc 06 §2; the
-     * mobile mutation-log `opId`). The server keeps key, request hash and response for 48 h:
-     * a replay with the same body returns the stored response, the same key with a different
-     * body is refused with 409 `IDEMPOTENCY_KEY_REUSED`. Optional for the caller.
+     * mobile mutation-log `opId`). A key is scoped to the caller and the operation: the
+     * authenticated principal, or for an operation with `security: []` the credential in its
+     * body (for `requestAccountRecovery`, which carries none, the request hash alone). The
+     * server keeps key, request hash and response for 48 h: a replay with the same body
+     * returns the stored response; the same key with a different body is refused with 409
+     * `IDEMPOTENCY_KEY_REUSED`. Exception: an operation whose answer carries a credential
+     * (`SessionGrant.token`, `SessionGrant.refreshToken`, `DeletionPending.cancelToken`,
+     * `SignUpPending.token`) is never answered from the store, and its credential is never
+     * stored. Such an operation is marked `x-idempotency-replay: never`. A repeated key on it
+     * is refused with 409 `CONFLICT`, and the client starts that step again. Optional for the
+     * caller.
      *
      */
     'Idempotency-Key'?: string;
@@ -2248,22 +2460,27 @@ export type RequestAccountDeletionData = {
 
 export type RequestAccountDeletionErrors = {
   /**
-   * `UNAUTHENTICATED`: the credential is missing, malformed, expired or revoked. The client
-   * renews the session once (`refreshSession`); if the renewal is refused too, it signs in
-   * again.
+   * `UNAUTHENTICATED`: the access token is missing, malformed, expired or revoked. The
+   * client renews the session once with its refresh token (`refreshSession`); if the renewal
+   * is refused too, it signs in again.
    *
    */
   401: ProblemDetails;
   /**
-   * `FORBIDDEN`: the session was not created recently enough to confirm it is the person.
-   * The client signs in again with the same account and repeats the request.
+   * `FORBIDDEN`: re-authentication is needed. The operation needs a recent sign-in: the
+   * session must have been opened by a sign-in a short time ago (better-auth `freshAge`; the
+   * server sets the window). Recency counts from the sign-in that opened the session; a
+   * renewal with `refreshSession` never resets it. The client signs in again with the same
+   * account and repeats the request.
    *
    */
   403: ProblemDetails;
   /**
    * `IDEMPOTENCY_KEY_REUSED` when the `Idempotency-Key` was already used with a different
    * request; `VERSION_MISMATCH` when `If-Match` no longer matches the stored version;
-   * `CONFLICT` otherwise.
+   * `CONFLICT` otherwise. Exception: on an operation whose answer carries a credential
+   * (marked `x-idempotency-replay: never`), any repeated `Idempotency-Key` is refused with
+   * `CONFLICT`, never answered from the store, and the client starts that step again.
    *
    */
   409: ProblemDetails;
@@ -2277,8 +2494,9 @@ export type RequestAccountDeletionErrors = {
    */
   410: ProblemDetails;
   /**
-   * `RATE_LIMITED`: the account requested a deletion within the last 30 days (doc 11
-   * §14), or another rate limit was hit; retry after `Retry-After` seconds.
+   * `RATE_LIMITED`: the account requested a deletion within the last 30 days that was
+   * not cancelled (doc 11 §14); a request stopped with `cancelAccountDeletion` does not
+   * count. Or another rate limit was hit. Retry after `Retry-After` seconds.
    *
    */
   429: ProblemDetails;
@@ -2310,9 +2528,9 @@ export type GetProfileData = {
 
 export type GetProfileErrors = {
   /**
-   * `UNAUTHENTICATED`: the credential is missing, malformed, expired or revoked. The client
-   * renews the session once (`refreshSession`); if the renewal is refused too, it signs in
-   * again.
+   * `UNAUTHENTICATED`: the access token is missing, malformed, expired or revoked. The
+   * client renews the session once with its refresh token (`refreshSession`); if the renewal
+   * is refused too, it signs in again.
    *
    */
   401: ProblemDetails;
@@ -2351,9 +2569,17 @@ export type UpdateProfileData = {
   headers: {
     /**
      * Client-generated ULID that makes a mutating request safe to retry (doc 06 §2; the
-     * mobile mutation-log `opId`). The server keeps key, request hash and response for 48 h:
-     * a replay with the same body returns the stored response, the same key with a different
-     * body is refused with 409 `IDEMPOTENCY_KEY_REUSED`. Optional for the caller.
+     * mobile mutation-log `opId`). A key is scoped to the caller and the operation: the
+     * authenticated principal, or for an operation with `security: []` the credential in its
+     * body (for `requestAccountRecovery`, which carries none, the request hash alone). The
+     * server keeps key, request hash and response for 48 h: a replay with the same body
+     * returns the stored response; the same key with a different body is refused with 409
+     * `IDEMPOTENCY_KEY_REUSED`. Exception: an operation whose answer carries a credential
+     * (`SessionGrant.token`, `SessionGrant.refreshToken`, `DeletionPending.cancelToken`,
+     * `SignUpPending.token`) is never answered from the store, and its credential is never
+     * stored. Such an operation is marked `x-idempotency-replay: never`. A repeated key on it
+     * is refused with 409 `CONFLICT`, and the client starts that step again. Optional for the
+     * caller.
      *
      */
     'Idempotency-Key'?: string;
@@ -2378,9 +2604,9 @@ export type UpdateProfileErrors = {
    */
   400: ProblemDetails;
   /**
-   * `UNAUTHENTICATED`: the credential is missing, malformed, expired or revoked. The client
-   * renews the session once (`refreshSession`); if the renewal is refused too, it signs in
-   * again.
+   * `UNAUTHENTICATED`: the access token is missing, malformed, expired or revoked. The
+   * client renews the session once with its refresh token (`refreshSession`); if the renewal
+   * is refused too, it signs in again.
    *
    */
   401: ProblemDetails;
@@ -2430,9 +2656,9 @@ export type GetMeasurementsData = {
 
 export type GetMeasurementsErrors = {
   /**
-   * `UNAUTHENTICATED`: the credential is missing, malformed, expired or revoked. The client
-   * renews the session once (`refreshSession`); if the renewal is refused too, it signs in
-   * again.
+   * `UNAUTHENTICATED`: the access token is missing, malformed, expired or revoked. The
+   * client renews the session once with its refresh token (`refreshSession`); if the renewal
+   * is refused too, it signs in again.
    *
    */
   401: ProblemDetails;
@@ -2471,9 +2697,17 @@ export type ReplaceMeasurementsData = {
   headers: {
     /**
      * Client-generated ULID that makes a mutating request safe to retry (doc 06 §2; the
-     * mobile mutation-log `opId`). The server keeps key, request hash and response for 48 h:
-     * a replay with the same body returns the stored response, the same key with a different
-     * body is refused with 409 `IDEMPOTENCY_KEY_REUSED`. Optional for the caller.
+     * mobile mutation-log `opId`). A key is scoped to the caller and the operation: the
+     * authenticated principal, or for an operation with `security: []` the credential in its
+     * body (for `requestAccountRecovery`, which carries none, the request hash alone). The
+     * server keeps key, request hash and response for 48 h: a replay with the same body
+     * returns the stored response; the same key with a different body is refused with 409
+     * `IDEMPOTENCY_KEY_REUSED`. Exception: an operation whose answer carries a credential
+     * (`SessionGrant.token`, `SessionGrant.refreshToken`, `DeletionPending.cancelToken`,
+     * `SignUpPending.token`) is never answered from the store, and its credential is never
+     * stored. Such an operation is marked `x-idempotency-replay: never`. A repeated key on it
+     * is refused with 409 `CONFLICT`, and the client starts that step again. Optional for the
+     * caller.
      *
      */
     'Idempotency-Key'?: string;
@@ -2501,9 +2735,9 @@ export type ReplaceMeasurementsErrors = {
    */
   400: ProblemDetails;
   /**
-   * `UNAUTHENTICATED`: the credential is missing, malformed, expired or revoked. The client
-   * renews the session once (`refreshSession`); if the renewal is refused too, it signs in
-   * again.
+   * `UNAUTHENTICATED`: the access token is missing, malformed, expired or revoked. The
+   * client renews the session once with its refresh token (`refreshSession`); if the renewal
+   * is refused too, it signs in again.
    *
    */
   401: ProblemDetails;
@@ -2554,9 +2788,9 @@ export type GetPreferencesData = {
 
 export type GetPreferencesErrors = {
   /**
-   * `UNAUTHENTICATED`: the credential is missing, malformed, expired or revoked. The client
-   * renews the session once (`refreshSession`); if the renewal is refused too, it signs in
-   * again.
+   * `UNAUTHENTICATED`: the access token is missing, malformed, expired or revoked. The
+   * client renews the session once with its refresh token (`refreshSession`); if the renewal
+   * is refused too, it signs in again.
    *
    */
   401: ProblemDetails;
@@ -2595,9 +2829,17 @@ export type UpdatePreferencesData = {
   headers: {
     /**
      * Client-generated ULID that makes a mutating request safe to retry (doc 06 §2; the
-     * mobile mutation-log `opId`). The server keeps key, request hash and response for 48 h:
-     * a replay with the same body returns the stored response, the same key with a different
-     * body is refused with 409 `IDEMPOTENCY_KEY_REUSED`. Optional for the caller.
+     * mobile mutation-log `opId`). A key is scoped to the caller and the operation: the
+     * authenticated principal, or for an operation with `security: []` the credential in its
+     * body (for `requestAccountRecovery`, which carries none, the request hash alone). The
+     * server keeps key, request hash and response for 48 h: a replay with the same body
+     * returns the stored response; the same key with a different body is refused with 409
+     * `IDEMPOTENCY_KEY_REUSED`. Exception: an operation whose answer carries a credential
+     * (`SessionGrant.token`, `SessionGrant.refreshToken`, `DeletionPending.cancelToken`,
+     * `SignUpPending.token`) is never answered from the store, and its credential is never
+     * stored. Such an operation is marked `x-idempotency-replay: never`. A repeated key on it
+     * is refused with 409 `CONFLICT`, and the client starts that step again. Optional for the
+     * caller.
      *
      */
     'Idempotency-Key'?: string;
@@ -2623,9 +2865,9 @@ export type UpdatePreferencesErrors = {
    */
   400: ProblemDetails;
   /**
-   * `UNAUTHENTICATED`: the credential is missing, malformed, expired or revoked. The client
-   * renews the session once (`refreshSession`); if the renewal is refused too, it signs in
-   * again.
+   * `UNAUTHENTICATED`: the access token is missing, malformed, expired or revoked. The
+   * client renews the session once with its refresh token (`refreshSession`); if the renewal
+   * is refused too, it signs in again.
    *
    */
   401: ProblemDetails;
@@ -2676,9 +2918,9 @@ export type GetOnboardingProgressData = {
 
 export type GetOnboardingProgressErrors = {
   /**
-   * `UNAUTHENTICATED`: the credential is missing, malformed, expired or revoked. The client
-   * renews the session once (`refreshSession`); if the renewal is refused too, it signs in
-   * again.
+   * `UNAUTHENTICATED`: the access token is missing, malformed, expired or revoked. The
+   * client renews the session once with its refresh token (`refreshSession`); if the renewal
+   * is refused too, it signs in again.
    *
    */
   401: ProblemDetails;
@@ -2719,9 +2961,17 @@ export type UpdateOnboardingProgressData = {
   headers?: {
     /**
      * Client-generated ULID that makes a mutating request safe to retry (doc 06 §2; the
-     * mobile mutation-log `opId`). The server keeps key, request hash and response for 48 h:
-     * a replay with the same body returns the stored response, the same key with a different
-     * body is refused with 409 `IDEMPOTENCY_KEY_REUSED`. Optional for the caller.
+     * mobile mutation-log `opId`). A key is scoped to the caller and the operation: the
+     * authenticated principal, or for an operation with `security: []` the credential in its
+     * body (for `requestAccountRecovery`, which carries none, the request hash alone). The
+     * server keeps key, request hash and response for 48 h: a replay with the same body
+     * returns the stored response; the same key with a different body is refused with 409
+     * `IDEMPOTENCY_KEY_REUSED`. Exception: an operation whose answer carries a credential
+     * (`SessionGrant.token`, `SessionGrant.refreshToken`, `DeletionPending.cancelToken`,
+     * `SignUpPending.token`) is never answered from the store, and its credential is never
+     * stored. Such an operation is marked `x-idempotency-replay: never`. A repeated key on it
+     * is refused with 409 `CONFLICT`, and the client starts that step again. Optional for the
+     * caller.
      *
      */
     'Idempotency-Key'?: string;
@@ -2739,16 +2989,18 @@ export type UpdateOnboardingProgressErrors = {
    */
   400: ProblemDetails;
   /**
-   * `UNAUTHENTICATED`: the credential is missing, malformed, expired or revoked. The client
-   * renews the session once (`refreshSession`); if the renewal is refused too, it signs in
-   * again.
+   * `UNAUTHENTICATED`: the access token is missing, malformed, expired or revoked. The
+   * client renews the session once with its refresh token (`refreshSession`); if the renewal
+   * is refused too, it signs in again.
    *
    */
   401: ProblemDetails;
   /**
    * `IDEMPOTENCY_KEY_REUSED` when the `Idempotency-Key` was already used with a different
    * request; `VERSION_MISMATCH` when `If-Match` no longer matches the stored version;
-   * `CONFLICT` otherwise.
+   * `CONFLICT` otherwise. Exception: on an operation whose answer carries a credential
+   * (marked `x-idempotency-replay: never`), any repeated `Idempotency-Key` is refused with
+   * `CONFLICT`, never answered from the store, and the client starts that step again.
    *
    */
   409: ProblemDetails;
@@ -2793,9 +3045,9 @@ export type GetEntitlementsData = {
 
 export type GetEntitlementsErrors = {
   /**
-   * `UNAUTHENTICATED`: the credential is missing, malformed, expired or revoked. The client
-   * renews the session once (`refreshSession`); if the renewal is refused too, it signs in
-   * again.
+   * `UNAUTHENTICATED`: the access token is missing, malformed, expired or revoked. The
+   * client renews the session once with its refresh token (`refreshSession`); if the renewal
+   * is refused too, it signs in again.
    *
    */
   401: ProblemDetails;

@@ -77,8 +77,8 @@ public protocol APIProtocol: Sendable {
     ///
     /// Returns a fresh challenge and the WebAuthn creation options (W3C WebAuthn
     /// `PublicKeyCredentialCreationOptionsJSON`). The account's existing passkeys are listed as
-    /// excluded credentials. Needs a recently created session (better-auth `freshAge`);
-    /// otherwise 403 `FORBIDDEN`, and the client signs in again first.
+    /// excluded credentials. Needs a recent sign-in (`RecentSignInRequired`); otherwise 403
+    /// `FORBIDDEN`, and the client signs in again first.
     ///
     ///
     /// - Remark: HTTP `GET /v1/auth/passkey/generate-register-options`.
@@ -96,24 +96,31 @@ public protocol APIProtocol: Sendable {
     func registerPasskey(_ input: Operations.RegisterPasskey.Input) async throws -> Operations.RegisterPasskey.Output
     /// Read the current session
     ///
-    /// The account and expiry of the session the bearer token belongs to. Read-only: it does
-    /// not extend the session (better-auth `deferSessionRefresh`). A token with no live session
-    /// is answered with 401, never with an empty body.
+    /// The account of the session the access token belongs to, and when that access token
+    /// expires. Read-only: it extends nothing and returns no token (better-auth
+    /// `deferSessionRefresh`). A token with no live session is answered with 401, never with
+    /// an empty body.
     ///
     ///
     /// - Remark: HTTP `GET /v1/auth/get-session`.
     /// - Remark: Generated from `#/paths//v1/auth/get-session/get(getSession)`.
     func getSession(_ input: Operations.GetSession.Input) async throws -> Operations.GetSession.Output
-    /// Renew the current session
+    /// Renew a session with its refresh token
     ///
-    /// Extends the session the bearer token belongs to and answers with its token and new
-    /// expiry. The answer may carry a different token than the one presented: the client
-    /// stores the returned token and discards the old one. A 401 here is a refused renewal:
-    /// the client ends the session on the device and sends no further call for it.
+    /// Exchanges the session's refresh token for a new pair: a new access token and a new
+    /// refresh token (doc 11 §4.2). The refresh token travels in the body, never in
+    /// `Authorization`, and the access token never renews a session. The refresh token rotates
+    /// on every use: the presented one is spent, and the client stores the returned pair and
+    /// discards the old one. Presenting a refresh token that was already rotated revokes every
+    /// token of its session (the session family) and is answered 401. Every 401 here is a
+    /// refused renewal: the client erases the session's tokens on the device and signs in
+    /// again. If the answer is lost, the client may retry once with the same refresh token and
+    /// a new `Idempotency-Key`; a refused retry ends the session the same way. Identity's own
+    /// operation: better-auth 1.7.12 has no refresh token.
     ///
     ///
-    /// - Remark: HTTP `POST /v1/auth/get-session`.
-    /// - Remark: Generated from `#/paths//v1/auth/get-session/post(refreshSession)`.
+    /// - Remark: HTTP `POST /v1/auth/session/refresh`.
+    /// - Remark: Generated from `#/paths//v1/auth/session/refresh/post(refreshSession)`.
     func refreshSession(_ input: Operations.RefreshSession.Input) async throws -> Operations.RefreshSession.Output
     /// Sign out this device
     ///
@@ -145,7 +152,10 @@ public protocol APIProtocol: Sendable {
     /// status and body whether or not an account exists for the address, so it discloses
     /// nothing. When one exists, a single-use link is emailed; it works from 24 to 48 hours
     /// after the request, and any signed-in session of the account can cancel it before then
-    /// (`cancelAccountRecovery`). Never creates an account.
+    /// (`cancelAccountRecovery`). The link opens the app (a universal link on iOS, an app link
+    /// on Android), never an API URL, and carries its token in the URL fragment, which no
+    /// server, proxy or link scanner receives; the app then calls `completeAccountRecovery`.
+    /// Never creates an account.
     ///
     ///
     /// - Remark: HTTP `POST /v1/auth/sign-in/magic-link`.
@@ -153,14 +163,18 @@ public protocol APIProtocol: Sendable {
     func requestAccountRecovery(_ input: Operations.RequestAccountRecovery.Input) async throws -> Operations.RequestAccountRecovery.Output
     /// Use an account-recovery link
     ///
-    /// Exchanges the token of a recovery link for a sign-in. Refused before 24 hours and from
-    /// 48 hours after the request, after a cancel, and on a second use. The person then adds
-    /// a new passkey with `registerPasskey`. The server never logs the query string of this
-    /// path.
+    /// The app sends the token of the recovery link it was opened with and gets a sign-in
+    /// (`SignInResult`). The token travels only in this request body: no GET spends it, and no
+    /// URL carries it to the API. Before the 24-hour delay has passed the use is refused and
+    /// the token is not spent, so the same link works once the delay is over. From 48 hours
+    /// after the request, after a cancel, and on a second use it is refused. The person then
+    /// adds a new passkey with `registerPasskey`. Identity's own operation: the better-auth
+    /// 1.7.12 magic-link plugin verifies only by a GET that spends the token, and that path is
+    /// not served.
     ///
     ///
-    /// - Remark: HTTP `GET /v1/auth/magic-link/verify`.
-    /// - Remark: Generated from `#/paths//v1/auth/magic-link/verify/get(completeAccountRecovery)`.
+    /// - Remark: HTTP `POST /v1/auth/recovery/complete`.
+    /// - Remark: Generated from `#/paths//v1/auth/recovery/complete/post(completeAccountRecovery)`.
     func completeAccountRecovery(_ input: Operations.CompleteAccountRecovery.Input) async throws -> Operations.CompleteAccountRecovery.Output
     /// Cancel a pending account recovery
     ///
@@ -199,7 +213,9 @@ public protocol APIProtocol: Sendable {
     /// (`data.export`). Answers at once with the new export `in_progress`; the client reads it
     /// with `getDataExport` until it is `ready` (a notification follows as well). One export
     /// runs at a time per account: while one is in progress, a new request is refused with 429
-    /// and the running export.
+    /// and the running export. Re-authentication, the same rule as `requestAccountDeletion`:
+    /// needs a recent sign-in (`RecentSignInRequired`); otherwise 403 `FORBIDDEN`, and the
+    /// client signs in again first.
     ///
     ///
     /// - Remark: HTTP `POST /v1/me/exports`.
@@ -222,10 +238,10 @@ public protocol APIProtocol: Sendable {
     /// kept for a 7-day grace window (DEC-65). A sign-in during the window answers
     /// `deletion_pending`, whose cancel credential can stop the deletion
     /// (`cancelAccountDeletion`). After the window the purge runs and cannot be stopped.
-    /// Re-authentication (doc 02 §11.3): needs a recently created session (better-auth
-    /// `freshAge`); otherwise 403 `FORBIDDEN`, and the client signs in again first. After the
-    /// answer the token of this request no longer works and the client returns to its
-    /// signed-out start. Deleting the account does not cancel a store subscription.
+    /// Re-authentication (doc 02 §11.3): needs a recent sign-in (`RecentSignInRequired`);
+    /// otherwise 403 `FORBIDDEN`, and the client signs in again first. After the answer the
+    /// tokens of this session no longer work and the client returns to its signed-out start.
+    /// Deleting the account does not cancel a store subscription.
     ///
     ///
     /// - Remark: HTTP `POST /v1/me/deletion`.
@@ -431,8 +447,8 @@ extension APIProtocol {
     ///
     /// Returns a fresh challenge and the WebAuthn creation options (W3C WebAuthn
     /// `PublicKeyCredentialCreationOptionsJSON`). The account's existing passkeys are listed as
-    /// excluded credentials. Needs a recently created session (better-auth `freshAge`);
-    /// otherwise 403 `FORBIDDEN`, and the client signs in again first.
+    /// excluded credentials. Needs a recent sign-in (`RecentSignInRequired`); otherwise 403
+    /// `FORBIDDEN`, and the client signs in again first.
     ///
     ///
     /// - Remark: HTTP `GET /v1/auth/passkey/generate-register-options`.
@@ -460,9 +476,10 @@ extension APIProtocol {
     }
     /// Read the current session
     ///
-    /// The account and expiry of the session the bearer token belongs to. Read-only: it does
-    /// not extend the session (better-auth `deferSessionRefresh`). A token with no live session
-    /// is answered with 401, never with an empty body.
+    /// The account of the session the access token belongs to, and when that access token
+    /// expires. Read-only: it extends nothing and returns no token (better-auth
+    /// `deferSessionRefresh`). A token with no live session is answered with 401, never with
+    /// an empty body.
     ///
     ///
     /// - Remark: HTTP `GET /v1/auth/get-session`.
@@ -470,18 +487,30 @@ extension APIProtocol {
     public func getSession(headers: Operations.GetSession.Input.Headers = .init()) async throws -> Operations.GetSession.Output {
         try await getSession(Operations.GetSession.Input(headers: headers))
     }
-    /// Renew the current session
+    /// Renew a session with its refresh token
     ///
-    /// Extends the session the bearer token belongs to and answers with its token and new
-    /// expiry. The answer may carry a different token than the one presented: the client
-    /// stores the returned token and discards the old one. A 401 here is a refused renewal:
-    /// the client ends the session on the device and sends no further call for it.
+    /// Exchanges the session's refresh token for a new pair: a new access token and a new
+    /// refresh token (doc 11 §4.2). The refresh token travels in the body, never in
+    /// `Authorization`, and the access token never renews a session. The refresh token rotates
+    /// on every use: the presented one is spent, and the client stores the returned pair and
+    /// discards the old one. Presenting a refresh token that was already rotated revokes every
+    /// token of its session (the session family) and is answered 401. Every 401 here is a
+    /// refused renewal: the client erases the session's tokens on the device and signs in
+    /// again. If the answer is lost, the client may retry once with the same refresh token and
+    /// a new `Idempotency-Key`; a refused retry ends the session the same way. Identity's own
+    /// operation: better-auth 1.7.12 has no refresh token.
     ///
     ///
-    /// - Remark: HTTP `POST /v1/auth/get-session`.
-    /// - Remark: Generated from `#/paths//v1/auth/get-session/post(refreshSession)`.
-    public func refreshSession(headers: Operations.RefreshSession.Input.Headers = .init()) async throws -> Operations.RefreshSession.Output {
-        try await refreshSession(Operations.RefreshSession.Input(headers: headers))
+    /// - Remark: HTTP `POST /v1/auth/session/refresh`.
+    /// - Remark: Generated from `#/paths//v1/auth/session/refresh/post(refreshSession)`.
+    public func refreshSession(
+        headers: Operations.RefreshSession.Input.Headers = .init(),
+        body: Operations.RefreshSession.Input.Body
+    ) async throws -> Operations.RefreshSession.Output {
+        try await refreshSession(Operations.RefreshSession.Input(
+            headers: headers,
+            body: body
+        ))
     }
     /// Sign out this device
     ///
@@ -525,7 +554,10 @@ extension APIProtocol {
     /// status and body whether or not an account exists for the address, so it discloses
     /// nothing. When one exists, a single-use link is emailed; it works from 24 to 48 hours
     /// after the request, and any signed-in session of the account can cancel it before then
-    /// (`cancelAccountRecovery`). Never creates an account.
+    /// (`cancelAccountRecovery`). The link opens the app (a universal link on iOS, an app link
+    /// on Android), never an API URL, and carries its token in the URL fragment, which no
+    /// server, proxy or link scanner receives; the app then calls `completeAccountRecovery`.
+    /// Never creates an account.
     ///
     ///
     /// - Remark: HTTP `POST /v1/auth/sign-in/magic-link`.
@@ -541,21 +573,25 @@ extension APIProtocol {
     }
     /// Use an account-recovery link
     ///
-    /// Exchanges the token of a recovery link for a sign-in. Refused before 24 hours and from
-    /// 48 hours after the request, after a cancel, and on a second use. The person then adds
-    /// a new passkey with `registerPasskey`. The server never logs the query string of this
-    /// path.
+    /// The app sends the token of the recovery link it was opened with and gets a sign-in
+    /// (`SignInResult`). The token travels only in this request body: no GET spends it, and no
+    /// URL carries it to the API. Before the 24-hour delay has passed the use is refused and
+    /// the token is not spent, so the same link works once the delay is over. From 48 hours
+    /// after the request, after a cancel, and on a second use it is refused. The person then
+    /// adds a new passkey with `registerPasskey`. Identity's own operation: the better-auth
+    /// 1.7.12 magic-link plugin verifies only by a GET that spends the token, and that path is
+    /// not served.
     ///
     ///
-    /// - Remark: HTTP `GET /v1/auth/magic-link/verify`.
-    /// - Remark: Generated from `#/paths//v1/auth/magic-link/verify/get(completeAccountRecovery)`.
+    /// - Remark: HTTP `POST /v1/auth/recovery/complete`.
+    /// - Remark: Generated from `#/paths//v1/auth/recovery/complete/post(completeAccountRecovery)`.
     public func completeAccountRecovery(
-        query: Operations.CompleteAccountRecovery.Input.Query,
-        headers: Operations.CompleteAccountRecovery.Input.Headers = .init()
+        headers: Operations.CompleteAccountRecovery.Input.Headers = .init(),
+        body: Operations.CompleteAccountRecovery.Input.Body
     ) async throws -> Operations.CompleteAccountRecovery.Output {
         try await completeAccountRecovery(Operations.CompleteAccountRecovery.Input(
-            query: query,
-            headers: headers
+            headers: headers,
+            body: body
         ))
     }
     /// Cancel a pending account recovery
@@ -613,7 +649,9 @@ extension APIProtocol {
     /// (`data.export`). Answers at once with the new export `in_progress`; the client reads it
     /// with `getDataExport` until it is `ready` (a notification follows as well). One export
     /// runs at a time per account: while one is in progress, a new request is refused with 429
-    /// and the running export.
+    /// and the running export. Re-authentication, the same rule as `requestAccountDeletion`:
+    /// needs a recent sign-in (`RecentSignInRequired`); otherwise 403 `FORBIDDEN`, and the
+    /// client signs in again first.
     ///
     ///
     /// - Remark: HTTP `POST /v1/me/exports`.
@@ -646,10 +684,10 @@ extension APIProtocol {
     /// kept for a 7-day grace window (DEC-65). A sign-in during the window answers
     /// `deletion_pending`, whose cancel credential can stop the deletion
     /// (`cancelAccountDeletion`). After the window the purge runs and cannot be stopped.
-    /// Re-authentication (doc 02 §11.3): needs a recently created session (better-auth
-    /// `freshAge`); otherwise 403 `FORBIDDEN`, and the client signs in again first. After the
-    /// answer the token of this request no longer works and the client returns to its
-    /// signed-out start. Deleting the account does not cancel a store subscription.
+    /// Re-authentication (doc 02 §11.3): needs a recent sign-in (`RecentSignInRequired`);
+    /// otherwise 403 `FORBIDDEN`, and the client signs in again first. After the answer the
+    /// tokens of this session no longer work and the client returns to its signed-out start.
+    /// Deleting the account does not cancel a store subscription.
     ///
     ///
     /// - Remark: HTTP `POST /v1/me/deletion`.

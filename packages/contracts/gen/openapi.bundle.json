@@ -105,6 +105,7 @@
         "summary": "Sign in with an Apple or Google identity token",
         "description": "The app runs the provider's native sign-in and sends the identity token it received.\nThe server verifies the token with the provider's keys, then answers with one\n`SignInResult`: a session for an existing account, `sign_up_required` for an identity\nwith no account (nothing is stored until `completeSignUp` accepts the birth year), or\n`deletion_pending` for an account inside its deletion grace window (no session). No\nprovider token is ever returned.\n",
         "security": [],
+        "x-idempotency-replay": "never",
         "parameters": [
           {
             "$ref": "#/components/parameters/IdempotencyKey"
@@ -146,6 +147,7 @@
         "summary": "Complete a pending sign-up with the self-declared birth year (age gate)",
         "description": "Second part of a sign-up. The first part is a sign-in whose answer was\n`sign_up_required`; the `signUpToken` of that answer authorizes this call. The server\napplies the age gate (16+, DEC-60) to the birth year. Accepted: the account is created\nand the answer is the `session` outcome. Refused: `AGE_GATE_FAILED`, nothing about the\nattempt is stored, and the sign-up token is spent; a new attempt starts again with a\nsign-in. Identity's own operation: better-auth 1.7.12 has no path for it.\n",
         "security": [],
+        "x-idempotency-replay": "never",
         "parameters": [
           {
             "$ref": "#/components/parameters/IdempotencyKey"
@@ -236,6 +238,7 @@
         "summary": "Sign in with a passkey assertion",
         "description": "Verifies the assertion the platform passkey API returned for the challenge of\n`getPasskeySignInOptions`. Answers `session`, or `deletion_pending` for an account inside\nits deletion grace window. A passkey always belongs to an existing account, so this\noperation never answers `sign_up_required`.\n",
         "security": [],
+        "x-idempotency-replay": "never",
         "parameters": [
           {
             "$ref": "#/components/parameters/IdempotencyKey"
@@ -275,7 +278,7 @@
         "operationId": "getPasskeyRegistrationOptions",
         "tags": ["identity"],
         "summary": "WebAuthn options to add a passkey to the signed-in account",
-        "description": "Returns a fresh challenge and the WebAuthn creation options (W3C WebAuthn\n`PublicKeyCredentialCreationOptionsJSON`). The account's existing passkeys are listed as\nexcluded credentials. Needs a recently created session (better-auth `freshAge`);\notherwise 403 `FORBIDDEN`, and the client signs in again first.\n",
+        "description": "Returns a fresh challenge and the WebAuthn creation options (W3C WebAuthn\n`PublicKeyCredentialCreationOptionsJSON`). The account's existing passkeys are listed as\nexcluded credentials. Needs a recent sign-in (`RecentSignInRequired`); otherwise 403\n`FORBIDDEN`, and the client signs in again first.\n",
         "security": [
           {
             "bearerAuth": []
@@ -301,7 +304,7 @@
             "$ref": "#/components/responses/Unauthenticated"
           },
           "403": {
-            "$ref": "#/components/responses/Forbidden"
+            "$ref": "#/components/responses/RecentSignInRequired"
           },
           "410": {
             "$ref": "#/components/responses/AccountDeleted"
@@ -378,7 +381,7 @@
         "operationId": "getSession",
         "tags": ["identity"],
         "summary": "Read the current session",
-        "description": "The account and expiry of the session the bearer token belongs to. Read-only: it does\nnot extend the session (better-auth `deferSessionRefresh`). A token with no live session\nis answered with 401, never with an empty body.\n",
+        "description": "The account of the session the access token belongs to, and when that access token\nexpires. Read-only: it extends nothing and returns no token (better-auth\n`deferSessionRefresh`). A token with no live session is answered with 401, never with\nan empty body.\n",
         "security": [
           {
             "bearerAuth": []
@@ -413,25 +416,34 @@
             "$ref": "#/components/responses/Problem"
           }
         }
-      },
+      }
+    },
+    "/v1/auth/session/refresh": {
       "post": {
         "operationId": "refreshSession",
         "tags": ["identity"],
-        "summary": "Renew the current session",
-        "description": "Extends the session the bearer token belongs to and answers with its token and new\nexpiry. The answer may carry a different token than the one presented: the client\nstores the returned token and discards the old one. A 401 here is a refused renewal:\nthe client ends the session on the device and sends no further call for it.\n",
-        "security": [
-          {
-            "bearerAuth": []
-          }
-        ],
+        "summary": "Renew a session with its refresh token",
+        "description": "Exchanges the session's refresh token for a new pair: a new access token and a new\nrefresh token (doc 11 §4.2). The refresh token travels in the body, never in\n`Authorization`, and the access token never renews a session. The refresh token rotates\non every use: the presented one is spent, and the client stores the returned pair and\ndiscards the old one. Presenting a refresh token that was already rotated revokes every\ntoken of its session (the session family) and is answered 401. Every 401 here is a\nrefused renewal: the client erases the session's tokens on the device and signs in\nagain. If the answer is lost, the client may retry once with the same refresh token and\na new `Idempotency-Key`; a refused retry ends the session the same way. Identity's own\noperation: better-auth 1.7.12 has no refresh token.\n",
+        "security": [],
+        "x-idempotency-replay": "never",
         "parameters": [
           {
             "$ref": "#/components/parameters/IdempotencyKey"
           }
         ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RefreshSessionRequest"
+              }
+            }
+          }
+        },
         "responses": {
           "200": {
-            "description": "The renewed session",
+            "description": "The new access token and refresh token of the session",
             "headers": {
               "Cache-Control": {
                 "$ref": "#/components/headers/CacheControlNoStore"
@@ -446,7 +458,14 @@
             }
           },
           "401": {
-            "$ref": "#/components/responses/Unauthenticated"
+            "description": "`UNAUTHENTICATED`: the refresh token is missing, unknown, expired, revoked or\nalready rotated. A rotated refresh token presented again also revokes its whole\nsession family (doc 11 §4.2). The client erases the session's tokens and signs in\nagain.\n",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
           },
           "409": {
             "$ref": "#/components/responses/Conflict"
@@ -603,7 +622,7 @@
         "operationId": "requestAccountRecovery",
         "tags": ["identity"],
         "summary": "Ask for an account-recovery link by email",
-        "description": "Fallback for a person who lost their passkeys (doc 11 §15). The answer is the same\nstatus and body whether or not an account exists for the address, so it discloses\nnothing. When one exists, a single-use link is emailed; it works from 24 to 48 hours\nafter the request, and any signed-in session of the account can cancel it before then\n(`cancelAccountRecovery`). Never creates an account.\n",
+        "description": "Fallback for a person who lost their passkeys (doc 11 §15). The answer is the same\nstatus and body whether or not an account exists for the address, so it discloses\nnothing. When one exists, a single-use link is emailed; it works from 24 to 48 hours\nafter the request, and any signed-in session of the account can cancel it before then\n(`cancelAccountRecovery`). The link opens the app (a universal link on iOS, an app link\non Android), never an API URL, and carries its token in the URL fragment, which no\nserver, proxy or link scanner receives; the app then calls `completeAccountRecovery`.\nNever creates an account.\n",
         "security": [],
         "parameters": [
           {
@@ -643,32 +662,35 @@
         }
       }
     },
-    "/v1/auth/magic-link/verify": {
-      "get": {
+    "/v1/auth/recovery/complete": {
+      "post": {
         "operationId": "completeAccountRecovery",
         "tags": ["identity"],
         "summary": "Use an account-recovery link",
-        "description": "Exchanges the token of a recovery link for a sign-in. Refused before 24 hours and from\n48 hours after the request, after a cancel, and on a second use. The person then adds\na new passkey with `registerPasskey`. The server never logs the query string of this\npath.\n",
+        "description": "The app sends the token of the recovery link it was opened with and gets a sign-in\n(`SignInResult`). The token travels only in this request body: no GET spends it, and no\nURL carries it to the API. Before the 24-hour delay has passed the use is refused and\nthe token is not spent, so the same link works once the delay is over. From 48 hours\nafter the request, after a cancel, and on a second use it is refused. The person then\nadds a new passkey with `registerPasskey`. Identity's own operation: the better-auth\n1.7.12 magic-link plugin verifies only by a GET that spends the token, and that path is\nnot served.\n",
         "security": [],
+        "x-idempotency-replay": "never",
         "parameters": [
           {
-            "name": "token",
-            "in": "query",
-            "required": true,
-            "description": "Single-use token from the emailed link.",
-            "schema": {
-              "type": "string",
-              "minLength": 1,
-              "maxLength": 512
-            }
+            "$ref": "#/components/parameters/IdempotencyKey"
           }
         ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RecoveryCompletionRequest"
+              }
+            }
+          }
+        },
         "responses": {
           "200": {
             "$ref": "#/components/responses/SignInAnswer"
           },
           "401": {
-            "description": "`UNAUTHENTICATED`: the link is unknown, used, cancelled, not yet valid or expired.",
+            "description": "`UNAUTHENTICATED`: the link is unknown, used, cancelled, expired or not yet valid. A\nlink used before its 24-hour delay is refused without being spent.\n",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -676,6 +698,9 @@
                 }
               }
             }
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
           },
           "429": {
             "$ref": "#/components/responses/RateLimited"
@@ -857,7 +882,7 @@
         "operationId": "requestDataExport",
         "tags": ["identity"],
         "summary": "Request an export of the caller's data",
-        "description": "Starts an asynchronous export of the caller's data (doc 11 §13.1), open on every plan\n(`data.export`). Answers at once with the new export `in_progress`; the client reads it\nwith `getDataExport` until it is `ready` (a notification follows as well). One export\nruns at a time per account: while one is in progress, a new request is refused with 429\nand the running export.\n",
+        "description": "Starts an asynchronous export of the caller's data (doc 11 §13.1), open on every plan\n(`data.export`). Answers at once with the new export `in_progress`; the client reads it\nwith `getDataExport` until it is `ready` (a notification follows as well). One export\nruns at a time per account: while one is in progress, a new request is refused with 429\nand the running export. Re-authentication, the same rule as `requestAccountDeletion`:\nneeds a recent sign-in (`RecentSignInRequired`); otherwise 403 `FORBIDDEN`, and the\nclient signs in again first.\n",
         "security": [
           {
             "bearerAuth": []
@@ -881,6 +906,9 @@
           },
           "401": {
             "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/RecentSignInRequired"
           },
           "409": {
             "$ref": "#/components/responses/Conflict"
@@ -964,7 +992,7 @@
         "operationId": "requestAccountDeletion",
         "tags": ["identity"],
         "summary": "Request deletion of the caller's account",
-        "description": "Starts the deletion of the caller's account (doc 11 §13.2). At once every session of the\naccount is revoked, this one included, and a sign-in opens no session; the account is\nkept for a 7-day grace window (DEC-65). A sign-in during the window answers\n`deletion_pending`, whose cancel credential can stop the deletion\n(`cancelAccountDeletion`). After the window the purge runs and cannot be stopped.\nRe-authentication (doc 02 §11.3): needs a recently created session (better-auth\n`freshAge`); otherwise 403 `FORBIDDEN`, and the client signs in again first. After the\nanswer the token of this request no longer works and the client returns to its\nsigned-out start. Deleting the account does not cancel a store subscription.\n",
+        "description": "Starts the deletion of the caller's account (doc 11 §13.2). At once every session of the\naccount is revoked, this one included, and a sign-in opens no session; the account is\nkept for a 7-day grace window (DEC-65). A sign-in during the window answers\n`deletion_pending`, whose cancel credential can stop the deletion\n(`cancelAccountDeletion`). After the window the purge runs and cannot be stopped.\nRe-authentication (doc 02 §11.3): needs a recent sign-in (`RecentSignInRequired`);\notherwise 403 `FORBIDDEN`, and the client signs in again first. After the answer the\ntokens of this session no longer work and the client returns to its signed-out start.\nDeleting the account does not cancel a store subscription.\n",
         "security": [
           {
             "bearerAuth": []
@@ -990,14 +1018,7 @@
             "$ref": "#/components/responses/Unauthenticated"
           },
           "403": {
-            "description": "`FORBIDDEN`: the session was not created recently enough to confirm it is the person.\nThe client signs in again with the same account and repeats the request.\n",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
+            "$ref": "#/components/responses/RecentSignInRequired"
           },
           "409": {
             "$ref": "#/components/responses/Conflict"
@@ -1006,7 +1027,7 @@
             "$ref": "#/components/responses/AccountDeleted"
           },
           "429": {
-            "description": "`RATE_LIMITED`: the account requested a deletion within the last 30 days (doc 11\n§14), or another rate limit was hit; retry after `Retry-After` seconds.\n",
+            "description": "`RATE_LIMITED`: the account requested a deletion within the last 30 days that was\nnot cancelled (doc 11 §14); a request stopped with `cancelAccountDeletion` does not\ncount. Or another rate limit was hit. Retry after `Retry-After` seconds.\n",
             "headers": {
               "Retry-After": {
                 "$ref": "#/components/headers/RetryAfter"
@@ -1712,8 +1733,8 @@
       },
       "SessionGrant": {
         "type": "object",
-        "description": "A session the server opened or renewed.",
-        "required": ["userId", "token", "expiresAt"],
+        "description": "A session the server opened or renewed: a short-lived access token and a separate,\nrotating refresh token (doc 11 §4.2). Both are kept in the Keychain or Keystore-backed\nstorage only, and both are replaced by every renewal.\n",
+        "required": ["userId", "token", "expiresAt", "refreshToken", "refreshTokenExpiresAt"],
         "properties": {
           "userId": {
             "$ref": "#/components/schemas/UserId"
@@ -1721,12 +1742,22 @@
           "token": {
             "type": "string",
             "minLength": 1,
-            "description": "The session token for `bearerAuth`. Kept in the Keychain or Keystore-backed storage only (doc 11 §4.2)."
+            "description": "Access token for `bearerAuth`, valid for about 15 minutes. Sent on API calls; it\nnever renews the session.\n"
           },
           "expiresAt": {
             "type": "string",
             "format": "date-time",
-            "description": "When the session ends unless renewed with `refreshSession`. The server may refuse\nthe token earlier (revocation, or a shorter access window, doc 11 §4.2); the client\nthen renews once.\n"
+            "description": "When the access token `token` stops working, about 15 minutes after issue. The\nserver may refuse it earlier (revocation); the client then renews once with\n`refreshSession`.\n"
+          },
+          "refreshToken": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Refresh token, sent only in the body of `refreshSession` and never in\n`Authorization`. Single use: each renewal spends it and returns a new one. Presenting\na spent refresh token again revokes the whole session family.\n"
+          },
+          "refreshTokenExpiresAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "When the refresh token stops working and the session ends unless it was renewed\nbefore; after it the client signs in again.\n"
           }
         }
       },
@@ -2122,7 +2153,7 @@
       },
       "SessionInfo": {
         "type": "object",
-        "description": "The current session, without its token.",
+        "description": "The current session, without any token.",
         "required": ["userId", "expiresAt"],
         "properties": {
           "userId": {
@@ -2130,11 +2161,25 @@
           },
           "expiresAt": {
             "type": "string",
-            "format": "date-time"
+            "format": "date-time",
+            "description": "When the access token of this request stops working (`SessionGrant.expiresAt`)."
           },
           "needsRefresh": {
             "type": "boolean",
             "description": "True when the server asks the client to renew now with `refreshSession`."
+          }
+        }
+      },
+      "RefreshSessionRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["refreshToken"],
+        "properties": {
+          "refreshToken": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 512,
+            "description": "`SessionGrant.refreshToken` of the latest grant of this session."
           }
         }
       },
@@ -2168,7 +2213,8 @@
           },
           "expiresAt": {
             "type": "string",
-            "format": "date-time"
+            "format": "date-time",
+            "description": "When the session ends unless renewed, the expiry of its current refresh token."
           },
           "userAgent": {
             "type": "string",
@@ -2221,6 +2267,19 @@
           "status": {
             "type": "boolean",
             "description": "Always true, whether or not an account exists for the address."
+          }
+        }
+      },
+      "RecoveryCompletionRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["token"],
+        "properties": {
+          "token": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 512,
+            "description": "Single-use token from the fragment of the emailed recovery link."
           }
         }
       },
@@ -3261,7 +3320,7 @@
         }
       },
       "Conflict": {
-        "description": "`IDEMPOTENCY_KEY_REUSED` when the `Idempotency-Key` was already used with a different\nrequest; `VERSION_MISMATCH` when `If-Match` no longer matches the stored version;\n`CONFLICT` otherwise.\n",
+        "description": "`IDEMPOTENCY_KEY_REUSED` when the `Idempotency-Key` was already used with a different\nrequest; `VERSION_MISMATCH` when `If-Match` no longer matches the stored version;\n`CONFLICT` otherwise. Exception: on an operation whose answer carries a credential\n(marked `x-idempotency-replay: never`), any repeated `Idempotency-Key` is refused with\n`CONFLICT`, never answered from the store, and the client starts that step again.\n",
         "content": {
           "application/problem+json": {
             "schema": {
@@ -3286,7 +3345,7 @@
         }
       },
       "Unauthenticated": {
-        "description": "`UNAUTHENTICATED`: the credential is missing, malformed, expired or revoked. The client\nrenews the session once (`refreshSession`); if the renewal is refused too, it signs in\nagain.\n",
+        "description": "`UNAUTHENTICATED`: the access token is missing, malformed, expired or revoked. The\nclient renews the session once with its refresh token (`refreshSession`); if the renewal\nis refused too, it signs in again.\n",
         "content": {
           "application/problem+json": {
             "schema": {
@@ -3295,8 +3354,8 @@
           }
         }
       },
-      "Forbidden": {
-        "description": "The caller is authenticated but may not perform this operation. `code` is `FORBIDDEN`\nunless the operation names a more specific code for this status.\n",
+      "RecentSignInRequired": {
+        "description": "`FORBIDDEN`: re-authentication is needed. The operation needs a recent sign-in: the\nsession must have been opened by a sign-in a short time ago (better-auth `freshAge`; the\nserver sets the window). Recency counts from the sign-in that opened the session; a\nrenewal with `refreshSession` never resets it. The client signs in again with the same\naccount and repeats the request.\n",
         "content": {
           "application/problem+json": {
             "schema": {
@@ -3320,8 +3379,18 @@
           }
         }
       },
+      "Forbidden": {
+        "description": "The caller is authenticated but may not perform this operation. `code` is `FORBIDDEN`\nunless the operation names a more specific code for this status.\n",
+        "content": {
+          "application/problem+json": {
+            "schema": {
+              "$ref": "#/components/schemas/ProblemDetails"
+            }
+          }
+        }
+      },
       "DataExportLimited": {
-        "description": "`RATE_LIMITED`: an export of this account is already in progress, and `current` is that\nexport (read it with `getDataExport`); or another rate limit was hit, without `current`.\nRetry after `Retry-After` seconds (doc 11 §14).\n",
+        "description": "`RATE_LIMITED`: an export of this account is already in progress, and `current` is that\nexport (read it with `getDataExport`); or another rate limit was hit, without `current`.\n`current` is always `in_progress`, so it never carries `download`: a link is minted\nonly by `getDataExport`. Retry after `Retry-After` seconds (doc 11 §14).\n",
         "headers": {
           "Retry-After": {
             "$ref": "#/components/headers/RetryAfter"
@@ -3375,7 +3444,7 @@
       "bearerAuth": {
         "type": "http",
         "scheme": "bearer",
-        "description": "Session token issued by a sign-in (`SessionGrant.token`), sent as\n`Authorization: Bearer <token>` (doc 06 §2). Opaque to clients: never parse it. A\nmissing, malformed, expired or revoked token is answered with the `Unauthenticated`\n(401) problem. The client then renews once with `refreshSession`; a refused renewal\nends the session on the device.\n"
+        "description": "Short-lived access token of a session (`SessionGrant.token`, about 15 minutes, doc 11\n§4.2), sent as `Authorization: Bearer <token>` (doc 06 §2). Opaque to clients: never\nparse it. It never renews a session; only the separate refresh token\n(`SessionGrant.refreshToken`) does, through `refreshSession`, and the refresh token is\nnever sent in this header. A missing, malformed, expired or revoked access token is\nanswered with the `Unauthenticated` (401) problem. The client then renews once with\n`refreshSession`; a refused renewal ends the session on the device.\n"
       },
       "deletionCancelToken": {
         "type": "apiKey",
@@ -3388,7 +3457,7 @@
       "IdempotencyKey": {
         "name": "Idempotency-Key",
         "in": "header",
-        "description": "Client-generated ULID that makes a mutating request safe to retry (doc 06 §2; the\nmobile mutation-log `opId`). The server keeps key, request hash and response for 48 h:\na replay with the same body returns the stored response, the same key with a different\nbody is refused with 409 `IDEMPOTENCY_KEY_REUSED`. Optional for the caller.\n",
+        "description": "Client-generated ULID that makes a mutating request safe to retry (doc 06 §2; the\nmobile mutation-log `opId`). A key is scoped to the caller and the operation: the\nauthenticated principal, or for an operation with `security: []` the credential in its\nbody (for `requestAccountRecovery`, which carries none, the request hash alone). The\nserver keeps key, request hash and response for 48 h: a replay with the same body\nreturns the stored response; the same key with a different body is refused with 409\n`IDEMPOTENCY_KEY_REUSED`. Exception: an operation whose answer carries a credential\n(`SessionGrant.token`, `SessionGrant.refreshToken`, `DeletionPending.cancelToken`,\n`SignUpPending.token`) is never answered from the store, and its credential is never\nstored. Such an operation is marked `x-idempotency-replay: never`. A repeated key on it\nis refused with 409 `CONFLICT`, and the client starts that step again. Optional for the\ncaller.\n",
         "schema": {
           "type": "string",
           "pattern": "^[0-7][0-9A-HJKMNP-TV-Z]{25}$"

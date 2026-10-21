@@ -21,10 +21,12 @@ import {
   type PreferencesVersionConflict,
   type ProblemDetails,
   type RecordConsentError,
+  type RefreshSessionResponse,
   type RequestAccountDeletionResponse,
   type RequestDataExportError,
   type RequestDataExportResponse,
   type ResolvedEntitlement,
+  type SessionGrant,
   type SignInResult,
   type SignInWithIdTokenResponse,
   type SignInWithPasskeyResponse,
@@ -32,10 +34,12 @@ import {
   type UpdatePreferencesResponse,
   type VersionInfo,
   cancelAccountDeletion,
+  completeAccountRecovery,
   getEntitlements,
   getHealth,
   getVersion,
   listConsents,
+  refreshSession,
   signInWithIdToken,
   updatePreferences,
 } from '../gen/ts-client/index.js';
@@ -114,6 +118,43 @@ describe('generated ts-client', () => {
 
 describe('generated ts-client: identity', () => {
   const synthetic = { token: 'synthetic-session-token', userId: 'usr_01J9Z3K8X2Q7N5V4B6C8D0E1F2' };
+  const grant: SessionGrant = {
+    ...synthetic,
+    expiresAt: '2026-10-21T10:00:00Z',
+    refreshToken: 'synthetic-refresh-token',
+    refreshTokenExpiresAt: '2027-01-19T09:45:00Z',
+  };
+
+  type RecordedCall = {
+    line: string;
+    query: string;
+    authorization: string | null;
+    body: unknown;
+  };
+
+  /** A client that holds the access token for `bearerAuth`, records each call and answers `answer`. */
+  function recordingClient(answer: unknown): {
+    client: ReturnType<typeof createClient>;
+    calls: RecordedCall[];
+  } {
+    const calls: RecordedCall[] = [];
+    const client = createClient({
+      baseUrl: 'http://localhost:3000',
+      auth: synthetic.token,
+      fetch: async (input: string | URL | Request) => {
+        const request = new Request(input);
+        const url = new URL(request.url);
+        calls.push({
+          line: `${request.method} ${url.pathname}`,
+          query: url.search,
+          authorization: request.headers.get('authorization'),
+          body: await request.json(),
+        });
+        return jsonResponse(answer);
+      },
+    });
+    return { client, calls };
+  }
 
   it('bundle exposes every identity operation with its operationId', () => {
     expect(operationsTagged('identity')).toEqual([
@@ -121,15 +162,15 @@ describe('generated ts-client: identity', () => {
       'DELETE /v1/me/recovery cancelAccountRecovery',
       'GET /v1/auth/get-session getSession',
       'GET /v1/auth/list-sessions listDeviceSessions',
-      'GET /v1/auth/magic-link/verify completeAccountRecovery',
       'GET /v1/auth/passkey/generate-authenticate-options getPasskeySignInOptions',
       'GET /v1/auth/passkey/generate-register-options getPasskeyRegistrationOptions',
       'GET /v1/me/consents listConsents',
       'GET /v1/me/exports/{id} getDataExport',
-      'POST /v1/auth/get-session refreshSession',
       'POST /v1/auth/passkey/verify-authentication signInWithPasskey',
       'POST /v1/auth/passkey/verify-registration registerPasskey',
+      'POST /v1/auth/recovery/complete completeAccountRecovery',
       'POST /v1/auth/revoke-sessions signOutAllDevices',
+      'POST /v1/auth/session/refresh refreshSession',
       'POST /v1/auth/sign-in/magic-link requestAccountRecovery',
       'POST /v1/auth/sign-in/social signInWithIdToken',
       'POST /v1/auth/sign-out signOut',
@@ -182,24 +223,7 @@ describe('generated ts-client: identity', () => {
   });
 
   it('posts an identity token without credentials and returns the session outcome', async () => {
-    const calls: { line: string; authorization: string | null; body: unknown }[] = [];
-    const answer: SignInResult = {
-      outcome: 'session',
-      session: { ...synthetic, expiresAt: '2026-10-21T10:00:00Z' },
-    };
-    const client = createClient({
-      baseUrl: 'http://localhost:3000',
-      auth: synthetic.token,
-      fetch: async (input: string | URL | Request) => {
-        const request = new Request(input);
-        calls.push({
-          line: `${request.method} ${new URL(request.url).pathname}`,
-          authorization: request.headers.get('authorization'),
-          body: await request.json(),
-        });
-        return jsonResponse(answer);
-      },
-    });
+    const { client, calls } = recordingClient({ outcome: 'session', session: grant });
     const { data, error } = await signInWithIdToken({
       client,
       body: { provider: 'google', idToken: { token: 'synthetic-id-token' } },
@@ -207,11 +231,55 @@ describe('generated ts-client: identity', () => {
     expect(error).toBeUndefined();
     expect(data?.outcome).toBe('session');
     expect(data?.session?.userId).toBe(synthetic.userId);
+    expect(data?.session?.refreshToken).toBe(grant.refreshToken);
     expect(calls).toEqual([
       {
         line: 'POST /v1/auth/sign-in/social',
+        query: '',
         authorization: null,
         body: { provider: 'google', idToken: { token: 'synthetic-id-token' } },
+      },
+    ]);
+  });
+
+  it('renews with the refresh token in the body, never the access token, and gets a new pair', async () => {
+    expectTypeOf<RefreshSessionResponse>().toEqualTypeOf<SessionGrant>();
+    const rotated: SessionGrant = {
+      ...grant,
+      token: 'synthetic-session-token-2',
+      refreshToken: 'synthetic-refresh-token-2',
+    };
+    const { client, calls } = recordingClient(rotated);
+    const { data, error } = await refreshSession({
+      client,
+      body: { refreshToken: grant.refreshToken },
+    });
+    expect(error).toBeUndefined();
+    expect(data).toEqual(rotated);
+    expect(calls).toEqual([
+      {
+        line: 'POST /v1/auth/session/refresh',
+        query: '',
+        authorization: null,
+        body: { refreshToken: grant.refreshToken },
+      },
+    ]);
+  });
+
+  it('completes a recovery with the link token in a POST body, never in a URL', async () => {
+    const { client, calls } = recordingClient({ outcome: 'session', session: grant });
+    const { data, error } = await completeAccountRecovery({
+      client,
+      body: { token: 'synthetic-recovery-token' },
+    });
+    expect(error).toBeUndefined();
+    expect(data?.outcome).toBe('session');
+    expect(calls).toEqual([
+      {
+        line: 'POST /v1/auth/recovery/complete',
+        query: '',
+        authorization: null,
+        body: { token: 'synthetic-recovery-token' },
       },
     ]);
   });

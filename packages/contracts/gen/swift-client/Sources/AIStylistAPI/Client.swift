@@ -909,8 +909,8 @@ public struct Client: APIProtocol {
     ///
     /// Returns a fresh challenge and the WebAuthn creation options (W3C WebAuthn
     /// `PublicKeyCredentialCreationOptionsJSON`). The account's existing passkeys are listed as
-    /// excluded credentials. Needs a recently created session (better-auth `freshAge`);
-    /// otherwise 403 `FORBIDDEN`, and the client signs in again first.
+    /// excluded credentials. Needs a recent sign-in (`RecentSignInRequired`); otherwise 403
+    /// `FORBIDDEN`, and the client signs in again first.
     ///
     ///
     /// - Remark: HTTP `GET /v1/auth/passkey/generate-register-options`.
@@ -991,7 +991,7 @@ public struct Client: APIProtocol {
                     return .unauthorized(.init(body: body))
                 case 403:
                     let contentType = converter.extractContentTypeIfPresent(in: response.headerFields)
-                    let body: Components.Responses.Forbidden.Body
+                    let body: Components.Responses.RecentSignInRequired.Body
                     let chosenContentType = try converter.bestContentType(
                         received: contentType,
                         options: [
@@ -1324,9 +1324,10 @@ public struct Client: APIProtocol {
     }
     /// Read the current session
     ///
-    /// The account and expiry of the session the bearer token belongs to. Read-only: it does
-    /// not extend the session (better-auth `deferSessionRefresh`). A token with no live session
-    /// is answered with 401, never with an empty body.
+    /// The account of the session the access token belongs to, and when that access token
+    /// expires. Read-only: it extends nothing and returns no token (better-auth
+    /// `deferSessionRefresh`). A token with no live session is answered with 401, never with
+    /// an empty body.
     ///
     ///
     /// - Remark: HTTP `GET /v1/auth/get-session`.
@@ -1494,23 +1495,29 @@ public struct Client: APIProtocol {
             }
         )
     }
-    /// Renew the current session
+    /// Renew a session with its refresh token
     ///
-    /// Extends the session the bearer token belongs to and answers with its token and new
-    /// expiry. The answer may carry a different token than the one presented: the client
-    /// stores the returned token and discards the old one. A 401 here is a refused renewal:
-    /// the client ends the session on the device and sends no further call for it.
+    /// Exchanges the session's refresh token for a new pair: a new access token and a new
+    /// refresh token (doc 11 §4.2). The refresh token travels in the body, never in
+    /// `Authorization`, and the access token never renews a session. The refresh token rotates
+    /// on every use: the presented one is spent, and the client stores the returned pair and
+    /// discards the old one. Presenting a refresh token that was already rotated revokes every
+    /// token of its session (the session family) and is answered 401. Every 401 here is a
+    /// refused renewal: the client erases the session's tokens on the device and signs in
+    /// again. If the answer is lost, the client may retry once with the same refresh token and
+    /// a new `Idempotency-Key`; a refused retry ends the session the same way. Identity's own
+    /// operation: better-auth 1.7.12 has no refresh token.
     ///
     ///
-    /// - Remark: HTTP `POST /v1/auth/get-session`.
-    /// - Remark: Generated from `#/paths//v1/auth/get-session/post(refreshSession)`.
+    /// - Remark: HTTP `POST /v1/auth/session/refresh`.
+    /// - Remark: Generated from `#/paths//v1/auth/session/refresh/post(refreshSession)`.
     public func refreshSession(_ input: Operations.RefreshSession.Input) async throws -> Operations.RefreshSession.Output {
         try await client.send(
             input: input,
             forOperation: Operations.RefreshSession.id,
             serializer: { input in
                 let path = try converter.renderedPath(
-                    template: "/v1/auth/get-session",
+                    template: "/v1/auth/session/refresh",
                     parameters: []
                 )
                 var request: HTTPTypes.HTTPRequest = .init(
@@ -1527,7 +1534,16 @@ public struct Client: APIProtocol {
                     in: &request.headerFields,
                     contentTypes: input.headers.accept
                 )
-                return (request, nil)
+                let body: OpenAPIRuntime.HTTPBody?
+                switch input.body {
+                case let .json(value):
+                    body = try converter.setRequiredRequestBodyAsJSON(
+                        value,
+                        headerFields: &request.headerFields,
+                        contentType: "application/json; charset=utf-8"
+                    )
+                }
+                return (request, body)
             },
             deserializer: { response, responseBody in
                 switch response.status.code {
@@ -1563,7 +1579,7 @@ public struct Client: APIProtocol {
                     ))
                 case 401:
                     let contentType = converter.extractContentTypeIfPresent(in: response.headerFields)
-                    let body: Components.Responses.Unauthenticated.Body
+                    let body: Operations.RefreshSession.Output.Unauthorized.Body
                     let chosenContentType = try converter.bestContentType(
                         received: contentType,
                         options: [
@@ -2254,7 +2270,10 @@ public struct Client: APIProtocol {
     /// status and body whether or not an account exists for the address, so it discloses
     /// nothing. When one exists, a single-use link is emailed; it works from 24 to 48 hours
     /// after the request, and any signed-in session of the account can cancel it before then
-    /// (`cancelAccountRecovery`). Never creates an account.
+    /// (`cancelAccountRecovery`). The link opens the app (a universal link on iOS, an app link
+    /// on Android), never an API URL, and carries its token in the URL fragment, which no
+    /// server, proxy or link scanner receives; the app then calls `completeAccountRecovery`.
+    /// Never creates an account.
     ///
     ///
     /// - Remark: HTTP `POST /v1/auth/sign-in/magic-link`.
@@ -2400,40 +2419,51 @@ public struct Client: APIProtocol {
     }
     /// Use an account-recovery link
     ///
-    /// Exchanges the token of a recovery link for a sign-in. Refused before 24 hours and from
-    /// 48 hours after the request, after a cancel, and on a second use. The person then adds
-    /// a new passkey with `registerPasskey`. The server never logs the query string of this
-    /// path.
+    /// The app sends the token of the recovery link it was opened with and gets a sign-in
+    /// (`SignInResult`). The token travels only in this request body: no GET spends it, and no
+    /// URL carries it to the API. Before the 24-hour delay has passed the use is refused and
+    /// the token is not spent, so the same link works once the delay is over. From 48 hours
+    /// after the request, after a cancel, and on a second use it is refused. The person then
+    /// adds a new passkey with `registerPasskey`. Identity's own operation: the better-auth
+    /// 1.7.12 magic-link plugin verifies only by a GET that spends the token, and that path is
+    /// not served.
     ///
     ///
-    /// - Remark: HTTP `GET /v1/auth/magic-link/verify`.
-    /// - Remark: Generated from `#/paths//v1/auth/magic-link/verify/get(completeAccountRecovery)`.
+    /// - Remark: HTTP `POST /v1/auth/recovery/complete`.
+    /// - Remark: Generated from `#/paths//v1/auth/recovery/complete/post(completeAccountRecovery)`.
     public func completeAccountRecovery(_ input: Operations.CompleteAccountRecovery.Input) async throws -> Operations.CompleteAccountRecovery.Output {
         try await client.send(
             input: input,
             forOperation: Operations.CompleteAccountRecovery.id,
             serializer: { input in
                 let path = try converter.renderedPath(
-                    template: "/v1/auth/magic-link/verify",
+                    template: "/v1/auth/recovery/complete",
                     parameters: []
                 )
                 var request: HTTPTypes.HTTPRequest = .init(
                     soar_path: path,
-                    method: .get
+                    method: .post
                 )
                 suppressMutabilityWarning(&request)
-                try converter.setQueryItemAsURI(
-                    in: &request,
-                    style: .form,
-                    explode: true,
-                    name: "token",
-                    value: input.query.token
+                try converter.setHeaderFieldAsURI(
+                    in: &request.headerFields,
+                    name: "Idempotency-Key",
+                    value: input.headers.idempotencyKey
                 )
                 converter.setAcceptHeader(
                     in: &request.headerFields,
                     contentTypes: input.headers.accept
                 )
-                return (request, nil)
+                let body: OpenAPIRuntime.HTTPBody?
+                switch input.body {
+                case let .json(value):
+                    body = try converter.setRequiredRequestBodyAsJSON(
+                        value,
+                        headerFields: &request.headerFields,
+                        contentType: "application/json; charset=utf-8"
+                    )
+                }
+                return (request, body)
             },
             deserializer: { response, responseBody in
                 switch response.status.code {
@@ -2489,6 +2519,28 @@ public struct Client: APIProtocol {
                         preconditionFailure("bestContentType chose an invalid content type.")
                     }
                     return .unauthorized(.init(body: body))
+                case 409:
+                    let contentType = converter.extractContentTypeIfPresent(in: response.headerFields)
+                    let body: Components.Responses.Conflict.Body
+                    let chosenContentType = try converter.bestContentType(
+                        received: contentType,
+                        options: [
+                            "application/problem+json"
+                        ]
+                    )
+                    switch chosenContentType {
+                    case "application/problem+json":
+                        body = try await converter.getResponseBodyAsJSON(
+                            Components.Schemas.ProblemDetails.self,
+                            from: responseBody,
+                            transforming: { value in
+                                .applicationProblemJson(value)
+                            }
+                        )
+                    default:
+                        preconditionFailure("bestContentType chose an invalid content type.")
+                    }
+                    return .conflict(.init(body: body))
                 case 429:
                     let headers: Components.Responses.RateLimited.Headers = .init(retryAfter: try converter.getOptionalHeaderFieldAsURI(
                         in: response.headerFields,
@@ -3170,7 +3222,9 @@ public struct Client: APIProtocol {
     /// (`data.export`). Answers at once with the new export `in_progress`; the client reads it
     /// with `getDataExport` until it is `ready` (a notification follows as well). One export
     /// runs at a time per account: while one is in progress, a new request is refused with 429
-    /// and the running export.
+    /// and the running export. Re-authentication, the same rule as `requestAccountDeletion`:
+    /// needs a recent sign-in (`RecentSignInRequired`); otherwise 403 `FORBIDDEN`, and the
+    /// client signs in again first.
     ///
     ///
     /// - Remark: HTTP `POST /v1/me/exports`.
@@ -3246,6 +3300,28 @@ public struct Client: APIProtocol {
                         preconditionFailure("bestContentType chose an invalid content type.")
                     }
                     return .unauthorized(.init(body: body))
+                case 403:
+                    let contentType = converter.extractContentTypeIfPresent(in: response.headerFields)
+                    let body: Components.Responses.RecentSignInRequired.Body
+                    let chosenContentType = try converter.bestContentType(
+                        received: contentType,
+                        options: [
+                            "application/problem+json"
+                        ]
+                    )
+                    switch chosenContentType {
+                    case "application/problem+json":
+                        body = try await converter.getResponseBodyAsJSON(
+                            Components.Schemas.ProblemDetails.self,
+                            from: responseBody,
+                            transforming: { value in
+                                .applicationProblemJson(value)
+                            }
+                        )
+                    default:
+                        preconditionFailure("bestContentType chose an invalid content type.")
+                    }
+                    return .forbidden(.init(body: body))
                 case 409:
                     let contentType = converter.extractContentTypeIfPresent(in: response.headerFields)
                     let body: Components.Responses.Conflict.Body
@@ -3560,10 +3636,10 @@ public struct Client: APIProtocol {
     /// kept for a 7-day grace window (DEC-65). A sign-in during the window answers
     /// `deletion_pending`, whose cancel credential can stop the deletion
     /// (`cancelAccountDeletion`). After the window the purge runs and cannot be stopped.
-    /// Re-authentication (doc 02 §11.3): needs a recently created session (better-auth
-    /// `freshAge`); otherwise 403 `FORBIDDEN`, and the client signs in again first. After the
-    /// answer the token of this request no longer works and the client returns to its
-    /// signed-out start. Deleting the account does not cancel a store subscription.
+    /// Re-authentication (doc 02 §11.3): needs a recent sign-in (`RecentSignInRequired`);
+    /// otherwise 403 `FORBIDDEN`, and the client signs in again first. After the answer the
+    /// tokens of this session no longer work and the client returns to its signed-out start.
+    /// Deleting the account does not cancel a store subscription.
     ///
     ///
     /// - Remark: HTTP `POST /v1/me/deletion`.
@@ -3641,7 +3717,7 @@ public struct Client: APIProtocol {
                     return .unauthorized(.init(body: body))
                 case 403:
                     let contentType = converter.extractContentTypeIfPresent(in: response.headerFields)
-                    let body: Operations.RequestAccountDeletion.Output.Forbidden.Body
+                    let body: Components.Responses.RecentSignInRequired.Body
                     let chosenContentType = try converter.bestContentType(
                         received: contentType,
                         options: [

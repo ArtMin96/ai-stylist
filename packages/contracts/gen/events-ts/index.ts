@@ -231,7 +231,7 @@ export interface IdentityConsentChangedV1Payload {
 // ---- events/profile.measurements.updated.v1.event.json ----
 
 /**
- * A person's measurement set changed (`replaceMeasurements`): measurements were set, replaced or removed. Producer `profile`; aggregate `profile` with the profile's `prf_` id; `subjectUserId` is the person's `usr_` id. Names the changed measurements and their units, never a value: measurements are S3 (doc 11 §6) and an outbox payload holds ids and references only (doc 06 §6), so a consumer reads the current set through profile's public API. The full event is the envelope (envelope.json) narrowed by this schema; the payload is open content, so consumers ignore properties they do not know (doc 06 §4).
+ * A person's measurement set changed (`replaceMeasurements`): measurements were set, replaced or removed. Producer `profile`; aggregate `profile` with the profile's `prf_` id; `subjectUserId` is the person's `usr_` id. Names the changed measurements and their units, never a value: measurements are S3 (doc 11 §6) and an outbox payload holds ids and references only (doc 06 §6), so a consumer reads the current set through profile's public API. The full event is the envelope (envelope.json) narrowed by this schema; the payload is open content, so consumers ignore properties they do not know (doc 06 §4), but each change object is closed and holds the unit only.
  */
 export interface ProfileMeasurementsUpdatedV1 {
   type: 'profile.measurements.updated.v1';
@@ -260,7 +260,7 @@ export interface ProfileMeasurementsUpdatedV1Changes {
   neck?: ProfileMeasurementsUpdatedV1LengthChange;
 }
 /**
- * A changed length measurement: its stored unit, never its value
+ * A changed length measurement: its stored unit, never its value. Closed, so no later v1 producer can add a value or any other field (doc 11 §6)
  */
 export interface ProfileMeasurementsUpdatedV1LengthChange {
   /**
@@ -269,7 +269,7 @@ export interface ProfileMeasurementsUpdatedV1LengthChange {
   unit: 'cm';
 }
 /**
- * A changed mass measurement: its stored unit, never its value
+ * A changed mass measurement: its stored unit, never its value. Closed, so no later v1 producer can add a value or any other field (doc 11 §6)
  */
 export interface ProfileMeasurementsUpdatedV1MassChange {
   /**

@@ -14,9 +14,17 @@ extension Components {
     /// Types generated from the `#/components/parameters` section of the OpenAPI document.
     public enum Parameters {
         /// Client-generated ULID that makes a mutating request safe to retry (doc 06 §2; the
-        /// mobile mutation-log `opId`). The server keeps key, request hash and response for 48 h:
-        /// a replay with the same body returns the stored response, the same key with a different
-        /// body is refused with 409 `IDEMPOTENCY_KEY_REUSED`. Optional for the caller.
+        /// mobile mutation-log `opId`). A key is scoped to the caller and the operation: the
+        /// authenticated principal, or for an operation with `security: []` the credential in its
+        /// body (for `requestAccountRecovery`, which carries none, the request hash alone). The
+        /// server keeps key, request hash and response for 48 h: a replay with the same body
+        /// returns the stored response; the same key with a different body is refused with 409
+        /// `IDEMPOTENCY_KEY_REUSED`. Exception: an operation whose answer carries a credential
+        /// (`SessionGrant.token`, `SessionGrant.refreshToken`, `DeletionPending.cancelToken`,
+        /// `SignUpPending.token`) is never answered from the store, and its credential is never
+        /// stored. Such an operation is marked `x-idempotency-replay: never`. A repeated key on it
+        /// is refused with 409 `CONFLICT`, and the client starts that step again. Optional for the
+        /// caller.
         ///
         ///
         /// - Remark: Generated from `#/components/parameters/IdempotencyKey`.

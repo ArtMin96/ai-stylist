@@ -404,42 +404,68 @@ extension Components {
         ///
         /// - Remark: Generated from `#/components/schemas/UserId`.
         public typealias UserId = Swift.String
-        /// A session the server opened or renewed.
+        /// A session the server opened or renewed: a short-lived access token and a separate,
+        /// rotating refresh token (doc 11 §4.2). Both are kept in the Keychain or Keystore-backed
+        /// storage only, and both are replaced by every renewal.
+        ///
         ///
         /// - Remark: Generated from `#/components/schemas/SessionGrant`.
         public struct SessionGrant: Codable, Hashable, Sendable {
             /// - Remark: Generated from `#/components/schemas/SessionGrant/userId`.
             public var userId: Components.Schemas.UserId
-            /// The session token for `bearerAuth`. Kept in the Keychain or Keystore-backed storage only (doc 11 §4.2).
+            /// Access token for `bearerAuth`, valid for about 15 minutes. Sent on API calls; it
+            /// never renews the session.
+            ///
             ///
             /// - Remark: Generated from `#/components/schemas/SessionGrant/token`.
             public var token: Swift.String
-            /// When the session ends unless renewed with `refreshSession`. The server may refuse
-            /// the token earlier (revocation, or a shorter access window, doc 11 §4.2); the client
-            /// then renews once.
+            /// When the access token `token` stops working, about 15 minutes after issue. The
+            /// server may refuse it earlier (revocation); the client then renews once with
+            /// `refreshSession`.
             ///
             ///
             /// - Remark: Generated from `#/components/schemas/SessionGrant/expiresAt`.
             public var expiresAt: Foundation.Date
+            /// Refresh token, sent only in the body of `refreshSession` and never in
+            /// `Authorization`. Single use: each renewal spends it and returns a new one. Presenting
+            /// a spent refresh token again revokes the whole session family.
+            ///
+            ///
+            /// - Remark: Generated from `#/components/schemas/SessionGrant/refreshToken`.
+            public var refreshToken: Swift.String
+            /// When the refresh token stops working and the session ends unless it was renewed
+            /// before; after it the client signs in again.
+            ///
+            ///
+            /// - Remark: Generated from `#/components/schemas/SessionGrant/refreshTokenExpiresAt`.
+            public var refreshTokenExpiresAt: Foundation.Date
             /// Creates a new `SessionGrant`.
             ///
             /// - Parameters:
             ///   - userId:
-            ///   - token: The session token for `bearerAuth`. Kept in the Keychain or Keystore-backed storage only (doc 11 §4.2).
-            ///   - expiresAt: When the session ends unless renewed with `refreshSession`. The server may refuse
+            ///   - token: Access token for `bearerAuth`, valid for about 15 minutes. Sent on API calls; it
+            ///   - expiresAt: When the access token `token` stops working, about 15 minutes after issue. The
+            ///   - refreshToken: Refresh token, sent only in the body of `refreshSession` and never in
+            ///   - refreshTokenExpiresAt: When the refresh token stops working and the session ends unless it was renewed
             public init(
                 userId: Components.Schemas.UserId,
                 token: Swift.String,
-                expiresAt: Foundation.Date
+                expiresAt: Foundation.Date,
+                refreshToken: Swift.String,
+                refreshTokenExpiresAt: Foundation.Date
             ) {
                 self.userId = userId
                 self.token = token
                 self.expiresAt = expiresAt
+                self.refreshToken = refreshToken
+                self.refreshTokenExpiresAt = refreshTokenExpiresAt
             }
             public enum CodingKeys: String, CodingKey {
                 case userId
                 case token
                 case expiresAt
+                case refreshToken
+                case refreshTokenExpiresAt
             }
         }
         /// The account is inside its 7-day deletion grace window (DEC-65): no session was opened.
@@ -1258,12 +1284,14 @@ extension Components {
                 case createdAt
             }
         }
-        /// The current session, without its token.
+        /// The current session, without any token.
         ///
         /// - Remark: Generated from `#/components/schemas/SessionInfo`.
         public struct SessionInfo: Codable, Hashable, Sendable {
             /// - Remark: Generated from `#/components/schemas/SessionInfo/userId`.
             public var userId: Components.Schemas.UserId
+            /// When the access token of this request stops working (`SessionGrant.expiresAt`).
+            ///
             /// - Remark: Generated from `#/components/schemas/SessionInfo/expiresAt`.
             public var expiresAt: Foundation.Date
             /// True when the server asks the client to renew now with `refreshSession`.
@@ -1274,7 +1302,7 @@ extension Components {
             ///
             /// - Parameters:
             ///   - userId:
-            ///   - expiresAt:
+            ///   - expiresAt: When the access token of this request stops working (`SessionGrant.expiresAt`).
             ///   - needsRefresh: True when the server asks the client to renew now with `refreshSession`.
             public init(
                 userId: Components.Schemas.UserId,
@@ -1289,6 +1317,33 @@ extension Components {
                 case userId
                 case expiresAt
                 case needsRefresh
+            }
+        }
+        /// - Remark: Generated from `#/components/schemas/RefreshSessionRequest`.
+        public struct RefreshSessionRequest: Codable, Hashable, Sendable {
+            /// `SessionGrant.refreshToken` of the latest grant of this session.
+            ///
+            /// - Remark: Generated from `#/components/schemas/RefreshSessionRequest/refreshToken`.
+            public var refreshToken: Swift.String
+            /// Creates a new `RefreshSessionRequest`.
+            ///
+            /// - Parameters:
+            ///   - refreshToken: `SessionGrant.refreshToken` of the latest grant of this session.
+            public init(refreshToken: Swift.String) {
+                self.refreshToken = refreshToken
+            }
+            public enum CodingKeys: String, CodingKey {
+                case refreshToken
+            }
+            public init(from decoder: any Swift.Decoder) throws {
+                let container = try decoder.container(keyedBy: CodingKeys.self)
+                self.refreshToken = try container.decode(
+                    Swift.String.self,
+                    forKey: .refreshToken
+                )
+                try decoder.ensureNoAdditionalProperties(knownKeys: [
+                    "refreshToken"
+                ])
             }
         }
         /// - Remark: Generated from `#/components/schemas/SignOutResult`.
@@ -1322,6 +1377,8 @@ extension Components {
             ///
             /// - Remark: Generated from `#/components/schemas/DeviceSession/lastActiveAt`.
             public var lastActiveAt: Foundation.Date
+            /// When the session ends unless renewed, the expiry of its current refresh token.
+            ///
             /// - Remark: Generated from `#/components/schemas/DeviceSession/expiresAt`.
             public var expiresAt: Foundation.Date
             /// The `User-Agent` the device sent at sign-in, to tell devices apart.
@@ -1334,7 +1391,7 @@ extension Components {
             ///   - current: True for the session that made this request.
             ///   - createdAt: When the device signed in.
             ///   - lastActiveAt: Last renewal of the session.
-            ///   - expiresAt:
+            ///   - expiresAt: When the session ends unless renewed, the expiry of its current refresh token.
             ///   - userAgent: The `User-Agent` the device sent at sign-in, to tell devices apart.
             public init(
                 current: Swift.Bool,
@@ -1437,6 +1494,33 @@ extension Components {
             }
             public enum CodingKeys: String, CodingKey {
                 case status
+            }
+        }
+        /// - Remark: Generated from `#/components/schemas/RecoveryCompletionRequest`.
+        public struct RecoveryCompletionRequest: Codable, Hashable, Sendable {
+            /// Single-use token from the fragment of the emailed recovery link.
+            ///
+            /// - Remark: Generated from `#/components/schemas/RecoveryCompletionRequest/token`.
+            public var token: Swift.String
+            /// Creates a new `RecoveryCompletionRequest`.
+            ///
+            /// - Parameters:
+            ///   - token: Single-use token from the fragment of the emailed recovery link.
+            public init(token: Swift.String) {
+                self.token = token
+            }
+            public enum CodingKeys: String, CodingKey {
+                case token
+            }
+            public init(from decoder: any Swift.Decoder) throws {
+                let container = try decoder.container(keyedBy: CodingKeys.self)
+                self.token = try container.decode(
+                    Swift.String.self,
+                    forKey: .token
+                )
+                try decoder.ensureNoAdditionalProperties(knownKeys: [
+                    "token"
+                ])
             }
         }
         /// Consent record id, a prefixed ULID (`cns_`, shared-kernel `ID_PREFIXES.consentRecord`).

@@ -30,11 +30,13 @@ import kotlinx.serialization.SerialName
 import kotlinx.serialization.Contextual
 
 /**
- * A session the server opened or renewed.
+ * A session the server opened or renewed: a short-lived access token and a separate, rotating refresh token (doc 11 §4.2). Both are kept in the Keychain or Keystore-backed storage only, and both are replaced by every renewal. 
  *
  * @param userId Account id, a prefixed ULID (`usr_`, shared-kernel `ID_PREFIXES.user`).
- * @param token The session token for `bearerAuth`. Kept in the Keychain or Keystore-backed storage only (doc 11 §4.2).
- * @param expiresAt When the session ends unless renewed with `refreshSession`. The server may refuse the token earlier (revocation, or a shorter access window, doc 11 §4.2); the client then renews once. 
+ * @param token Access token for `bearerAuth`, valid for about 15 minutes. Sent on API calls; it never renews the session. 
+ * @param expiresAt When the access token `token` stops working, about 15 minutes after issue. The server may refuse it earlier (revocation); the client then renews once with `refreshSession`. 
+ * @param refreshToken Refresh token, sent only in the body of `refreshSession` and never in `Authorization`. Single use: each renewal spends it and returns a new one. Presenting a spent refresh token again revokes the whole session family. 
+ * @param refreshTokenExpiresAt When the refresh token stops working and the session ends unless it was renewed before; after it the client signs in again. 
  */
 @Serializable
 
@@ -44,13 +46,21 @@ data class SessionGrant (
     @SerialName(value = "userId")
     val userId: kotlin.String,
 
-    /* The session token for `bearerAuth`. Kept in the Keychain or Keystore-backed storage only (doc 11 §4.2). */
+    /* Access token for `bearerAuth`, valid for about 15 minutes. Sent on API calls; it never renews the session.  */
     @SerialName(value = "token")
     val token: kotlin.String,
 
-    /* When the session ends unless renewed with `refreshSession`. The server may refuse the token earlier (revocation, or a shorter access window, doc 11 §4.2); the client then renews once.  */
+    /* When the access token `token` stops working, about 15 minutes after issue. The server may refuse it earlier (revocation); the client then renews once with `refreshSession`.  */
     @Contextual @SerialName(value = "expiresAt")
-    val expiresAt: java.time.OffsetDateTime
+    val expiresAt: java.time.OffsetDateTime,
+
+    /* Refresh token, sent only in the body of `refreshSession` and never in `Authorization`. Single use: each renewal spends it and returns a new one. Presenting a spent refresh token again revokes the whole session family.  */
+    @SerialName(value = "refreshToken")
+    val refreshToken: kotlin.String,
+
+    /* When the refresh token stops working and the session ends unless it was renewed before; after it the client signs in again.  */
+    @Contextual @SerialName(value = "refreshTokenExpiresAt")
+    val refreshTokenExpiresAt: java.time.OffsetDateTime
 
 ) {
 

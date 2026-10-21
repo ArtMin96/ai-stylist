@@ -6,7 +6,7 @@
 from enum import StrEnum
 from typing import Annotated, Literal
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class Unit(StrEnum):
@@ -19,9 +19,12 @@ class Unit(StrEnum):
 
 class ProfileMeasurementsUpdatedV1LengthChange(BaseModel):
     """
-    A changed length measurement: its stored unit, never its value
+    A changed length measurement: its stored unit, never its value. Closed, so no later v1 producer can add a value or any other field (doc 11 §6)
     """
 
+    model_config = ConfigDict(
+        extra="forbid",
+    )
     unit: Annotated[
         Unit,
         Field(description="Stored length unit; mirrors shared-kernel `LENGTH_UNITS`"),
@@ -38,9 +41,12 @@ class Unit1(StrEnum):
 
 class ProfileMeasurementsUpdatedV1MassChange(BaseModel):
     """
-    A changed mass measurement: its stored unit, never its value
+    A changed mass measurement: its stored unit, never its value. Closed, so no later v1 producer can add a value or any other field (doc 11 §6)
     """
 
+    model_config = ConfigDict(
+        extra="forbid",
+    )
     unit: Annotated[
         Unit1, Field(description="Stored mass unit; mirrors shared-kernel `MASS_UNITS`")
     ]
@@ -76,7 +82,7 @@ class ProfileMeasurementsUpdatedV1Payload(BaseModel):
 
 class ProfileMeasurementsUpdatedV1(BaseModel):
     """
-    A person's measurement set changed (`replaceMeasurements`): measurements were set, replaced or removed. Producer `profile`; aggregate `profile` with the profile's `prf_` id; `subjectUserId` is the person's `usr_` id. Names the changed measurements and their units, never a value: measurements are S3 (doc 11 §6) and an outbox payload holds ids and references only (doc 06 §6), so a consumer reads the current set through profile's public API. The full event is the envelope (envelope.json) narrowed by this schema; the payload is open content, so consumers ignore properties they do not know (doc 06 §4).
+    A person's measurement set changed (`replaceMeasurements`): measurements were set, replaced or removed. Producer `profile`; aggregate `profile` with the profile's `prf_` id; `subjectUserId` is the person's `usr_` id. Names the changed measurements and their units, never a value: measurements are S3 (doc 11 §6) and an outbox payload holds ids and references only (doc 06 §6), so a consumer reads the current set through profile's public API. The full event is the envelope (envelope.json) narrowed by this schema; the payload is open content, so consumers ignore properties they do not know (doc 06 §4), but each change object is closed and holds the unit only.
     """
 
     type: Literal["profile.measurements.updated.v1"]

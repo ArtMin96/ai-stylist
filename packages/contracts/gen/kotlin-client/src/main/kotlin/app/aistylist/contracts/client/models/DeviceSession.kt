@@ -35,7 +35,7 @@ import kotlinx.serialization.Contextual
  * @param current True for the session that made this request.
  * @param createdAt When the device signed in.
  * @param lastActiveAt Last renewal of the session.
- * @param expiresAt 
+ * @param expiresAt When the session ends unless renewed, the expiry of its current refresh token.
  * @param userAgent The `User-Agent` the device sent at sign-in, to tell devices apart.
  */
 @Serializable
@@ -54,6 +54,7 @@ data class DeviceSession (
     @Contextual @SerialName(value = "lastActiveAt")
     val lastActiveAt: java.time.OffsetDateTime,
 
+    /* When the session ends unless renewed, the expiry of its current refresh token. */
     @Contextual @SerialName(value = "expiresAt")
     val expiresAt: java.time.OffsetDateTime,
 

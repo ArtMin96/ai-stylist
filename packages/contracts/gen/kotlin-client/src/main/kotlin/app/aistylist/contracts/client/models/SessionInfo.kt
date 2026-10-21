@@ -30,10 +30,10 @@ import kotlinx.serialization.SerialName
 import kotlinx.serialization.Contextual
 
 /**
- * The current session, without its token.
+ * The current session, without any token.
  *
  * @param userId Account id, a prefixed ULID (`usr_`, shared-kernel `ID_PREFIXES.user`).
- * @param expiresAt 
+ * @param expiresAt When the access token of this request stops working (`SessionGrant.expiresAt`).
  * @param needsRefresh True when the server asks the client to renew now with `refreshSession`.
  */
 @Serializable
@@ -44,6 +44,7 @@ data class SessionInfo (
     @SerialName(value = "userId")
     val userId: kotlin.String,
 
+    /* When the access token of this request stops working (`SessionGrant.expiresAt`). */
     @Contextual @SerialName(value = "expiresAt")
     val expiresAt: java.time.OffsetDateTime,
 

@@ -27,6 +27,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import app.aistylist.core.data.model.FailureReason
 import app.aistylist.core.designsystem.AppButton
 import app.aistylist.core.designsystem.AppTheme
+import app.aistylist.core.designsystem.generated.AppIconName
 import app.aistylist.core.designsystem.generated.ButtonSize
 import app.aistylist.core.designsystem.generated.ButtonVariant
 
@@ -38,17 +39,21 @@ object HomeTestTags {
     const val DEBUG_CONSENT_TOGGLE: String = "debug_consent_toggle"
     const val DEBUG_FORCE_CRASH: String = "debug_force_crash"
     const val DEBUG_OPEN_DS_GALLERY: String = "debug_open_ds_gallery"
+
+    /** The capture camera's entry, `debug` builds only until a Closet tab exists (capture brief Q-F). */
+    const val OPEN_CAPTURE: String = "home-open-capture"
 }
 
 /**
  * Stateful entry point: collects [HomeViewModel] state lifecycle-aware. The app root passes
- * [onOpenDesignSystemGallery] in the `debug` build only; it shows the gallery button.
+ * [onOpenDesignSystemGallery] and [onOpenCapture] in the `debug` build only; each shows its button.
  */
 @Composable
 fun HomeRoute(
     viewModel: HomeViewModel,
     modifier: Modifier = Modifier,
     onOpenDesignSystemGallery: (() -> Unit)? = null,
+    onOpenCapture: (() -> Unit)? = null,
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     HomeScreen(
@@ -57,11 +62,15 @@ fun HomeRoute(
         onAnalyticsConsentChange = viewModel::onAnalyticsConsentChange,
         onForceTestCrash = viewModel::forceTestCrash,
         onOpenDesignSystemGallery = onOpenDesignSystemGallery,
+        onOpenCapture = onOpenCapture,
         modifier = modifier,
     )
 }
 
-/** Stateless home screen: title, API version card, analytics-consent toggle, debug tools. */
+/**
+ * Stateless home screen: title, API version card, the capture entry (when [onOpenCapture] is
+ * given), analytics-consent toggle, debug tools.
+ */
 @Composable
 fun HomeScreen(
     state: HomeUiState,
@@ -70,6 +79,7 @@ fun HomeScreen(
     onForceTestCrash: () -> Unit,
     onOpenDesignSystemGallery: (() -> Unit)?,
     modifier: Modifier = Modifier,
+    onOpenCapture: (() -> Unit)? = null,
 ) {
     Column(
         modifier = modifier.fillMaxSize().padding(24.dp),
@@ -85,6 +95,16 @@ fun HomeScreen(
             style = MaterialTheme.typography.bodySmall,
         )
         VersionCard(version = state.version, onRetry = onRetry)
+        if (onOpenCapture != null) {
+            AppButton(
+                label = stringResource(R.string.home_open_capture),
+                variant = ButtonVariant.PRIMARY,
+                size = ButtonSize.MEDIUM,
+                action = onOpenCapture,
+                leadingIcon = AppIconName.CAPTURE,
+                modifier = Modifier.testTag(HomeTestTags.OPEN_CAPTURE),
+            )
+        }
         ConsentRow(
             label = stringResource(R.string.home_consent_label),
             checked = state.analyticsConsent,

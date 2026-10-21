@@ -308,6 +308,55 @@ extension Components {
                 self.body = body
             }
         }
+        public struct DataExportLimited: Sendable, Hashable {
+            /// - Remark: Generated from `#/components/responses/DataExportLimited/headers`.
+            public struct Headers: Sendable, Hashable {
+                /// Seconds to wait before retrying (RFC 9110 §10.2.3, delay-seconds form).
+                ///
+                /// - Remark: Generated from `#/components/responses/DataExportLimited/headers/Retry-After`.
+                public var retryAfter: Components.Headers.RetryAfter?
+                /// Creates a new `Headers`.
+                ///
+                /// - Parameters:
+                ///   - retryAfter: Seconds to wait before retrying (RFC 9110 §10.2.3, delay-seconds form).
+                public init(retryAfter: Components.Headers.RetryAfter? = nil) {
+                    self.retryAfter = retryAfter
+                }
+            }
+            /// Received HTTP response headers
+            public var headers: Components.Responses.DataExportLimited.Headers
+            /// - Remark: Generated from `#/components/responses/DataExportLimited/content`.
+            @frozen public enum Body: Sendable, Hashable {
+                /// - Remark: Generated from `#/components/responses/DataExportLimited/content/application\/problem+json`.
+                case applicationProblemJson(Components.Schemas.DataExportInProgress)
+                /// The associated value of the enum case if `self` is `.applicationProblemJson`.
+                ///
+                /// - Throws: An error if `self` is not `.applicationProblemJson`.
+                /// - SeeAlso: `.applicationProblemJson`.
+                public var applicationProblemJson: Components.Schemas.DataExportInProgress {
+                    get throws {
+                        switch self {
+                        case let .applicationProblemJson(body):
+                            return body
+                        }
+                    }
+                }
+            }
+            /// Received HTTP response body
+            public var body: Components.Responses.DataExportLimited.Body
+            /// Creates a new `DataExportLimited`.
+            ///
+            /// - Parameters:
+            ///   - headers: Received HTTP response headers
+            ///   - body: Received HTTP response body
+            public init(
+                headers: Components.Responses.DataExportLimited.Headers = .init(),
+                body: Components.Responses.DataExportLimited.Body
+            ) {
+                self.headers = headers
+                self.body = body
+            }
+        }
         public struct ProfileConflict: Sendable, Hashable {
             /// - Remark: Generated from `#/components/responses/ProfileConflict/content`.
             @frozen public enum Body: Sendable, Hashable {

@@ -22,9 +22,11 @@ tags:
   - name: platform
     description: Health, version and other non-domain endpoints
   - name: identity
-    description: Sign-in, sessions, account recovery and consent
+    description: Sign-in, sessions, account recovery, consent, data export and account deletion
   - name: profile
     description: Profile settings, body measurements, style preferences and onboarding progress
+  - name: billing
+    description: Resolved entitlements
 paths:
   /v1/health:
     $ref: './modules/platform.yaml#/paths/~1v1~1health'
@@ -58,6 +60,12 @@ paths:
     $ref: './modules/identity.yaml#/paths/~1v1~1me~1recovery'
   /v1/me/consents:
     $ref: './modules/identity.yaml#/paths/~1v1~1me~1consents'
+  /v1/me/exports:
+    $ref: './modules/identity.yaml#/paths/~1v1~1me~1exports'
+  /v1/me/exports/{id}:
+    $ref: './modules/identity.yaml#/paths/~1v1~1me~1exports~1{id}'
+  /v1/me/deletion:
+    $ref: './modules/identity.yaml#/paths/~1v1~1me~1deletion'
   /v1/me/profile:
     $ref: './modules/profile.yaml#/paths/~1v1~1me~1profile'
   /v1/me/measurements:
@@ -66,6 +74,8 @@ paths:
     $ref: './modules/profile.yaml#/paths/~1v1~1me~1preferences'
   /v1/me/onboarding-progress:
     $ref: './modules/profile.yaml#/paths/~1v1~1me~1onboarding-progress'
+  /v1/me/entitlements:
+    $ref: './modules/billing.yaml#/paths/~1v1~1me~1entitlements'
 components:
   schemas:
     ProblemDetails:

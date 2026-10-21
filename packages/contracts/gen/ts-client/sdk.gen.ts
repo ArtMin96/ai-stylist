@@ -10,6 +10,9 @@ import type {
   TDataShape,
 } from './client/index.js';
 import type {
+  CancelAccountDeletionData,
+  CancelAccountDeletionErrors,
+  CancelAccountDeletionResponses,
   CancelAccountRecoveryData,
   CancelAccountRecoveryErrors,
   CancelAccountRecoveryResponses,
@@ -19,6 +22,12 @@ import type {
   CompleteSignUpData,
   CompleteSignUpErrors,
   CompleteSignUpResponses,
+  GetDataExportData,
+  GetDataExportErrors,
+  GetDataExportResponses,
+  GetEntitlementsData,
+  GetEntitlementsErrors,
+  GetEntitlementsResponses,
   GetHealthData,
   GetHealthErrors,
   GetHealthResponses,
@@ -64,9 +73,15 @@ import type {
   ReplaceMeasurementsData,
   ReplaceMeasurementsErrors,
   ReplaceMeasurementsResponses,
+  RequestAccountDeletionData,
+  RequestAccountDeletionErrors,
+  RequestAccountDeletionResponses,
   RequestAccountRecoveryData,
   RequestAccountRecoveryErrors,
   RequestAccountRecoveryResponses,
+  RequestDataExportData,
+  RequestDataExportErrors,
+  RequestDataExportResponses,
   SignInWithIdTokenData,
   SignInWithIdTokenErrors,
   SignInWithIdTokenResponses,
@@ -466,6 +481,96 @@ export const recordConsent = <ThrowOnError extends boolean = false>(
   });
 
 /**
+ * Request an export of the caller's data
+ *
+ * Starts an asynchronous export of the caller's data (doc 11 §13.1), open on every plan
+ * (`data.export`). Answers at once with the new export `in_progress`; the client reads it
+ * with `getDataExport` until it is `ready` (a notification follows as well). One export
+ * runs at a time per account: while one is in progress, a new request is refused with 429
+ * and the running export.
+ *
+ */
+export const requestDataExport = <ThrowOnError extends boolean = false>(
+  options?: Options<RequestDataExportData, ThrowOnError>,
+): RequestResult<RequestDataExportResponses, RequestDataExportErrors, ThrowOnError> =>
+  (options?.client ?? client).post<
+    RequestDataExportResponses,
+    RequestDataExportErrors,
+    ThrowOnError
+  >({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/v1/me/exports',
+    ...options,
+  });
+
+/**
+ * Read one of the caller's data exports
+ *
+ * The state of an export. While it is `ready`, every read mints a new download link after
+ * the same authorization check; the link lives at most 10 minutes (DEC-44, doc 11 §5.4).
+ * The archive itself is kept until `availableUntil`. Never cached.
+ *
+ */
+export const getDataExport = <ThrowOnError extends boolean = false>(
+  options: Options<GetDataExportData, ThrowOnError>,
+): RequestResult<GetDataExportResponses, GetDataExportErrors, ThrowOnError> =>
+  (options.client ?? client).get<GetDataExportResponses, GetDataExportErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/v1/me/exports/{id}',
+    ...options,
+  });
+
+/**
+ * Cancel the account deletion inside its grace window
+ *
+ * Stops a pending account deletion during its 7-day grace window (DEC-65). The only
+ * credential accepted is the cancel credential of the `deletion_pending` sign-in outcome
+ * (`deletionCancelToken`); the caller holds no session, because the deletion revoked them
+ * all. The account is active again, but no session is opened or restored: the client signs
+ * in again. Once the window has ended the cancel is refused with 410 `ACCOUNT_DELETED`.
+ *
+ */
+export const cancelAccountDeletion = <ThrowOnError extends boolean = false>(
+  options?: Options<CancelAccountDeletionData, ThrowOnError>,
+): RequestResult<CancelAccountDeletionResponses, CancelAccountDeletionErrors, ThrowOnError> =>
+  (options?.client ?? client).delete<
+    CancelAccountDeletionResponses,
+    CancelAccountDeletionErrors,
+    ThrowOnError
+  >({
+    security: [{ name: 'Deletion-Cancel-Token', type: 'apiKey' }],
+    url: '/v1/me/deletion',
+    ...options,
+  });
+
+/**
+ * Request deletion of the caller's account
+ *
+ * Starts the deletion of the caller's account (doc 11 §13.2). At once every session of the
+ * account is revoked, this one included, and a sign-in opens no session; the account is
+ * kept for a 7-day grace window (DEC-65). A sign-in during the window answers
+ * `deletion_pending`, whose cancel credential can stop the deletion
+ * (`cancelAccountDeletion`). After the window the purge runs and cannot be stopped.
+ * Re-authentication (doc 02 §11.3): needs a recently created session (better-auth
+ * `freshAge`); otherwise 403 `FORBIDDEN`, and the client signs in again first. After the
+ * answer the token of this request no longer works and the client returns to its
+ * signed-out start. Deleting the account does not cancel a store subscription.
+ *
+ */
+export const requestAccountDeletion = <ThrowOnError extends boolean = false>(
+  options?: Options<RequestAccountDeletionData, ThrowOnError>,
+): RequestResult<RequestAccountDeletionResponses, RequestAccountDeletionErrors, ThrowOnError> =>
+  (options?.client ?? client).post<
+    RequestAccountDeletionResponses,
+    RequestAccountDeletionErrors,
+    ThrowOnError
+  >({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/v1/me/deletion',
+    ...options,
+  });
+
+/**
  * Read the caller's profile settings
  *
  * Presentation, starting shape and the six settings of REQ-ONB-100. A profile nothing has
@@ -628,4 +733,23 @@ export const updateOnboardingProgress = <ThrowOnError extends boolean = false>(
       'Content-Type': 'application/json',
       ...options.headers,
     },
+  });
+
+/**
+ * Read the caller's resolved entitlements
+ *
+ * The entitlements the server resolves for the caller now (doc 12 §3.2): over the caller's
+ * active grants the most generous value wins, per entitlement; an entitlement no active
+ * grant supplies takes its Free-plan value (doc 12 §1.2). Every registered entitlement
+ * appears once. The apps may cache the answer briefly to render (doc 12 §3.3); a gated
+ * request is decided by the server alone.
+ *
+ */
+export const getEntitlements = <ThrowOnError extends boolean = false>(
+  options?: Options<GetEntitlementsData, ThrowOnError>,
+): RequestResult<GetEntitlementsResponses, GetEntitlementsErrors, ThrowOnError> =>
+  (options?.client ?? client).get<GetEntitlementsResponses, GetEntitlementsErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/v1/me/entitlements',
+    ...options,
   });

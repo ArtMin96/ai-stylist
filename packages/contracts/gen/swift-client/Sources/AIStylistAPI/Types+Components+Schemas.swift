@@ -1639,6 +1639,196 @@ extension Components {
                 ])
             }
         }
+        /// Data-export id, a prefixed ULID (`xpt_`, shared-kernel `ID_PREFIXES.exportRequest`).
+        ///
+        /// - Remark: Generated from `#/components/schemas/DataExportId`.
+        public typealias DataExportId = Swift.String
+        /// `in_progress` until the archive is built; then `ready` until `availableUntil`, when the
+        /// archive is deleted and the export becomes `expired`. `failed` when it could not be
+        /// built: nothing is kept, and the person may request a new export.
+        ///
+        ///
+        /// - Remark: Generated from `#/components/schemas/DataExportStatus`.
+        @frozen public enum DataExportStatus: String, Codable, Hashable, Sendable, CaseIterable {
+            case inProgress = "in_progress"
+            case ready = "ready"
+            case failed = "failed"
+            case expired = "expired"
+        }
+        /// Present only while the export is `ready`. Minted for this response; never stored by the server.
+        ///
+        /// - Remark: Generated from `#/components/schemas/DataExportDownload`.
+        public struct DataExportDownload: Codable, Hashable, Sendable {
+            /// Presigned GET of the archive, minted after the same authorization check as the
+            /// export (doc 11 §13.1). It carries a live signature: never log, share or store it
+            /// (doc 11 §8). Read the export again for a fresh link.
+            ///
+            ///
+            /// - Remark: Generated from `#/components/schemas/DataExportDownload/url`.
+            public var url: Swift.String
+            /// When the link stops working, at most 10 minutes after it was minted (DEC-44, doc 11 §5.4).
+            ///
+            /// - Remark: Generated from `#/components/schemas/DataExportDownload/expiresAt`.
+            public var expiresAt: Foundation.Date
+            /// Creates a new `DataExportDownload`.
+            ///
+            /// - Parameters:
+            ///   - url: Presigned GET of the archive, minted after the same authorization check as the
+            ///   - expiresAt: When the link stops working, at most 10 minutes after it was minted (DEC-44, doc 11 §5.4).
+            public init(
+                url: Swift.String,
+                expiresAt: Foundation.Date
+            ) {
+                self.url = url
+                self.expiresAt = expiresAt
+            }
+            public enum CodingKeys: String, CodingKey {
+                case url
+                case expiresAt
+            }
+        }
+        /// One data export of the caller (doc 11 §13.1): a ZIP archive of the caller's data in
+        /// machine-readable JSON plus the media they uploaded. This object never carries archive
+        /// content.
+        ///
+        ///
+        /// - Remark: Generated from `#/components/schemas/DataExport`.
+        public struct DataExport: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/DataExport/id`.
+            public var id: Components.Schemas.DataExportId
+            /// - Remark: Generated from `#/components/schemas/DataExport/status`.
+            public var status: Components.Schemas.DataExportStatus
+            /// - Remark: Generated from `#/components/schemas/DataExport/requestedAt`.
+            public var requestedAt: Foundation.Date
+            /// When the archive was built; present for `ready` and `expired`.
+            ///
+            /// - Remark: Generated from `#/components/schemas/DataExport/readyAt`.
+            public var readyAt: Foundation.Date?
+            /// When the archive is deleted, 24 hours after `readyAt` (doc 11 §13.1); present for
+            /// `ready` and `expired`. This is how long the archive is kept, not how long a link
+            /// works: every read of a `ready` export mints a new link.
+            ///
+            ///
+            /// - Remark: Generated from `#/components/schemas/DataExport/availableUntil`.
+            public var availableUntil: Foundation.Date?
+            /// - Remark: Generated from `#/components/schemas/DataExport/download`.
+            public var download: Components.Schemas.DataExportDownload?
+            /// Creates a new `DataExport`.
+            ///
+            /// - Parameters:
+            ///   - id:
+            ///   - status:
+            ///   - requestedAt:
+            ///   - readyAt: When the archive was built; present for `ready` and `expired`.
+            ///   - availableUntil: When the archive is deleted, 24 hours after `readyAt` (doc 11 §13.1); present for
+            ///   - download:
+            public init(
+                id: Components.Schemas.DataExportId,
+                status: Components.Schemas.DataExportStatus,
+                requestedAt: Foundation.Date,
+                readyAt: Foundation.Date? = nil,
+                availableUntil: Foundation.Date? = nil,
+                download: Components.Schemas.DataExportDownload? = nil
+            ) {
+                self.id = id
+                self.status = status
+                self.requestedAt = requestedAt
+                self.readyAt = readyAt
+                self.availableUntil = availableUntil
+                self.download = download
+            }
+            public enum CodingKeys: String, CodingKey {
+                case id
+                case status
+                case requestedAt
+                case readyAt
+                case availableUntil
+                case download
+            }
+        }
+        /// A problem (RFC 9457) that carries the running export when an export is already in progress.
+        ///
+        /// - Remark: Generated from `#/components/schemas/DataExportInProgress`.
+        public struct DataExportInProgress: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/DataExportInProgress/value1`.
+            public var value1: Components.Schemas.ProblemDetails
+            /// - Remark: Generated from `#/components/schemas/DataExportInProgress/value2`.
+            public struct Value2Payload: Codable, Hashable, Sendable {
+                /// - Remark: Generated from `#/components/schemas/DataExportInProgress/value2/current`.
+                public var current: Components.Schemas.DataExport?
+                /// Creates a new `Value2Payload`.
+                ///
+                /// - Parameters:
+                ///   - current:
+                public init(current: Components.Schemas.DataExport? = nil) {
+                    self.current = current
+                }
+                public enum CodingKeys: String, CodingKey {
+                    case current
+                }
+            }
+            /// - Remark: Generated from `#/components/schemas/DataExportInProgress/value2`.
+            public var value2: Components.Schemas.DataExportInProgress.Value2Payload
+            /// Creates a new `DataExportInProgress`.
+            ///
+            /// - Parameters:
+            ///   - value1:
+            ///   - value2:
+            public init(
+                value1: Components.Schemas.ProblemDetails,
+                value2: Components.Schemas.DataExportInProgress.Value2Payload
+            ) {
+                self.value1 = value1
+                self.value2 = value2
+            }
+            public init(from decoder: any Swift.Decoder) throws {
+                self.value1 = try .init(from: decoder)
+                self.value2 = try .init(from: decoder)
+            }
+            public func encode(to encoder: any Swift.Encoder) throws {
+                try self.value1.encode(to: encoder)
+                try self.value2.encode(to: encoder)
+            }
+        }
+        /// Account-deletion request id, a prefixed ULID (`del_`, shared-kernel `ID_PREFIXES.deletionRequest`).
+        ///
+        /// - Remark: Generated from `#/components/schemas/AccountDeletionRequestId`.
+        public typealias AccountDeletionRequestId = Swift.String
+        /// An accepted account-deletion request (doc 11 §13.2).
+        ///
+        /// - Remark: Generated from `#/components/schemas/AccountDeletionRequest`.
+        public struct AccountDeletionRequest: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/AccountDeletionRequest/id`.
+            public var id: Components.Schemas.AccountDeletionRequestId
+            /// - Remark: Generated from `#/components/schemas/AccountDeletionRequest/requestedAt`.
+            public var requestedAt: Foundation.Date
+            /// End of the 7-day grace window (DEC-65). Until then a sign-in offers to cancel the
+            /// deletion; after it the purge runs, and a cancel is refused with 410 `ACCOUNT_DELETED`.
+            ///
+            ///
+            /// - Remark: Generated from `#/components/schemas/AccountDeletionRequest/graceEndsAt`.
+            public var graceEndsAt: Foundation.Date
+            /// Creates a new `AccountDeletionRequest`.
+            ///
+            /// - Parameters:
+            ///   - id:
+            ///   - requestedAt:
+            ///   - graceEndsAt: End of the 7-day grace window (DEC-65). Until then a sign-in offers to cancel the
+            public init(
+                id: Components.Schemas.AccountDeletionRequestId,
+                requestedAt: Foundation.Date,
+                graceEndsAt: Foundation.Date
+            ) {
+                self.id = id
+                self.requestedAt = requestedAt
+                self.graceEndsAt = graceEndsAt
+            }
+            public enum CodingKeys: String, CodingKey {
+                case id
+                case requestedAt
+                case graceEndsAt
+            }
+        }
         /// Profile id, a prefixed ULID (`prf_`, shared-kernel `ID_PREFIXES.profile`).
         ///
         /// - Remark: Generated from `#/components/schemas/ProfileId`.
@@ -2995,6 +3185,161 @@ extension Components {
                 try decoder.ensureNoAdditionalProperties(knownKeys: [
                     "steps"
                 ])
+            }
+        }
+        /// Lifecycle state of the caller's entitlements (doc 03 §4.3): the server-granted trial,
+        /// Free, a paid subscription, its billing-retry grace period, or a cancelled subscription
+        /// still paid until its period ends. Mirrors shared-kernel `ENTITLEMENT_LIFECYCLE_STATES`.
+        ///
+        ///
+        /// - Remark: Generated from `#/components/schemas/EntitlementLifecycleState`.
+        @frozen public enum EntitlementLifecycleState: String, Codable, Hashable, Sendable, CaseIterable {
+            case trial = "trial"
+            case free = "free"
+            case activePaid = "active_paid"
+            case grace = "grace"
+            case cancelledActive = "cancelled_active"
+        }
+        /// Entitlement names (doc 12 §3.1), in registry order. Mirrors the keys of shared-kernel
+        /// `ENTITLEMENTS` value for value; the apps read each name's kind and levels from the
+        /// generated kernel.
+        ///
+        ///
+        /// - Remark: Generated from `#/components/schemas/EntitlementName`.
+        @frozen public enum EntitlementName: String, Codable, Hashable, Sendable, CaseIterable {
+            case closet_maxItems = "closet.max_items"
+            case recs_dailyLimit = "recs.daily_limit"
+            case recs_context_full = "recs.context.full"
+            case recs_futurePlanning = "recs.future_planning"
+            case avatar_level = "avatar.level"
+            case tryon_generative = "tryon.generative"
+            case views_missingView = "views.missing_view"
+            case credits_monthly = "credits.monthly"
+            case credits_topup = "credits.topup"
+            case credits_weights = "credits.weights"
+            case trends_level = "trends.level"
+            case analytics_wardrobe = "analytics.wardrobe"
+            case processing_priority = "processing.priority"
+            case export_multiAngle = "export.multi_angle"
+            case features_earlyAccess = "features.early_access"
+            case chat_stylist = "chat.stylist"
+            case data_export = "data.export"
+        }
+        /// The kind of grant that supplied the value (doc 12 §3.2): the subscription's plan, the
+        /// 3-day trial (doc 12 §2), a promotion, or a capability kept from an older plan version
+        /// (doc 12 §5.5). Absent from a `ResolvedEntitlement` when no active grant supplies the
+        /// entitlement and its Free-plan value applies. Mirrors shared-kernel
+        /// `ENTITLEMENT_GRANT_KINDS`.
+        ///
+        ///
+        /// - Remark: Generated from `#/components/schemas/EntitlementGrantKind`.
+        @frozen public enum EntitlementGrantKind: String, Codable, Hashable, Sendable, CaseIterable {
+            case planGrant = "plan_grant"
+            case trialGrant = "trial_grant"
+            case promoGrant = "promo_grant"
+            case grandfatherGrant = "grandfather_grant"
+        }
+        /// One of the levels the shared-kernel registry lists for the entitlement
+        /// (`registry/entitlements.json`, `levels`, lowest first), e.g. `G2` for
+        /// `tryon.generative`. A string, not an enum, because each level entitlement has levels of
+        /// its own.
+        ///
+        ///
+        /// - Remark: Generated from `#/components/schemas/EntitlementLevel`.
+        public typealias EntitlementLevel = Swift.String
+        /// The resolved value of one entitlement. The value member present follows the kind of
+        /// `name` in the shared-kernel registry (`registry/entitlements.json`): `boolean` →
+        /// `granted`, always present; `limit` → `limit`, always present; `level` → `level`, absent
+        /// when no level is granted; `map` (`credits.weights`) → none yet, the weights join with the
+        /// credit ledger (P13).
+        ///
+        ///
+        /// - Remark: Generated from `#/components/schemas/ResolvedEntitlement`.
+        public struct ResolvedEntitlement: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/ResolvedEntitlement/name`.
+            public var name: Components.Schemas.EntitlementName
+            /// - Remark: Generated from `#/components/schemas/ResolvedEntitlement/source`.
+            public var source: Components.Schemas.EntitlementGrantKind?
+            /// `boolean` kind: whether the capability is available.
+            ///
+            /// - Remark: Generated from `#/components/schemas/ResolvedEntitlement/granted`.
+            public var granted: Swift.Bool?
+            /// `limit` kind: the cap, e.g. closet items or recommendations per local day. `null`
+            /// means unlimited (doc 06 §3.6).
+            ///
+            ///
+            /// - Remark: Generated from `#/components/schemas/ResolvedEntitlement/limit`.
+            public var limit: Swift.Int?
+            /// - Remark: Generated from `#/components/schemas/ResolvedEntitlement/level`.
+            public var level: Components.Schemas.EntitlementLevel?
+            /// Creates a new `ResolvedEntitlement`.
+            ///
+            /// - Parameters:
+            ///   - name:
+            ///   - source:
+            ///   - granted: `boolean` kind: whether the capability is available.
+            ///   - limit: `limit` kind: the cap, e.g. closet items or recommendations per local day. `null`
+            ///   - level:
+            public init(
+                name: Components.Schemas.EntitlementName,
+                source: Components.Schemas.EntitlementGrantKind? = nil,
+                granted: Swift.Bool? = nil,
+                limit: Swift.Int? = nil,
+                level: Components.Schemas.EntitlementLevel? = nil
+            ) {
+                self.name = name
+                self.source = source
+                self.granted = granted
+                self.limit = limit
+                self.level = level
+            }
+            public enum CodingKeys: String, CodingKey {
+                case name
+                case source
+                case granted
+                case limit
+                case level
+            }
+        }
+        /// The caller's entitlement state (doc 06 §3.6; semantics doc 12 §2–§3). `state` is the
+        /// lifecycle state of doc 03 §4.3. Generative credits (doc 12 §4) join this object with the
+        /// credit ledger (P13).
+        ///
+        ///
+        /// - Remark: Generated from `#/components/schemas/EntitlementState`.
+        public struct EntitlementState: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/EntitlementState/state`.
+            public var state: Components.Schemas.EntitlementLifecycleState
+            /// When `state` ends unless something changes: the end of the trial for `trial`, the end
+            /// of paid access for `grace` and `cancelled_active`. Absent for `free` and `active_paid`,
+            /// which do not end on their own.
+            ///
+            ///
+            /// - Remark: Generated from `#/components/schemas/EntitlementState/stateEndsAt`.
+            public var stateEndsAt: Foundation.Date?
+            /// One entry per registered entitlement, in shared-kernel registry order.
+            ///
+            /// - Remark: Generated from `#/components/schemas/EntitlementState/entitlements`.
+            public var entitlements: [Components.Schemas.ResolvedEntitlement]
+            /// Creates a new `EntitlementState`.
+            ///
+            /// - Parameters:
+            ///   - state:
+            ///   - stateEndsAt: When `state` ends unless something changes: the end of the trial for `trial`, the end
+            ///   - entitlements: One entry per registered entitlement, in shared-kernel registry order.
+            public init(
+                state: Components.Schemas.EntitlementLifecycleState,
+                stateEndsAt: Foundation.Date? = nil,
+                entitlements: [Components.Schemas.ResolvedEntitlement]
+            ) {
+                self.state = state
+                self.stateEndsAt = stateEndsAt
+                self.entitlements = entitlements
+            }
+            public enum CodingKeys: String, CodingKey {
+                case state
+                case stateEndsAt
+                case entitlements
             }
         }
     }

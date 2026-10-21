@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://contracts.ai-stylist.app/shared-kernel/registry/entitlements.schema.json",
   "title": "EntitlementRegistry",
-  "description": "Entitlement name registry (planning/12 §3.1) and the weighted generative tasks metered against credits.monthly (doc 12 §3.3). tools/codegen/gen-kernel.mjs validates this file and also checks that every entitlement's kind is declared in `kinds`.",
+  "description": "Entitlement name registry (planning/12 §3.1) and the weighted generative tasks metered against credits.monthly (doc 12 §3.3). A `level` entitlement lists its levels lowest first, so the resolver can keep the most generous one (doc 12 §3.2); no other kind has levels. tools/codegen/gen-kernel.mjs validates this file and also checks that every entitlement's kind is declared in `kinds`.",
   "type": "object",
   "additionalProperties": false,
   "required": ["kinds", "entitlements", "creditMeters"],
@@ -23,8 +23,21 @@
         "required": ["kind", "description"],
         "properties": {
           "kind": { "type": "string" },
-          "description": { "type": "string", "minLength": 1 }
-        }
+          "description": { "type": "string", "minLength": 1 },
+          "levels": {
+            "type": "array",
+            "description": "The levels of a `level` entitlement, lowest first. A ladder code of SPINE §4 is written as is (`A1`, `G2`); a qualifier joins it with `_` in lowercase (`A1_all_poses`); any other level is a lowercase snake_case word (`basic`). Never renamed or reused: they are wire values of GET /v1/me/entitlements.",
+            "minItems": 2,
+            "uniqueItems": true,
+            "items": { "type": "string", "pattern": "^[A-Za-z0-9]+(_[a-z0-9]+)*$", "maxLength": 32 }
+          }
+        },
+        "if": {
+          "properties": { "kind": { "const": "level" } },
+          "required": ["kind"]
+        },
+        "then": { "properties": { "levels": true }, "required": ["levels"] },
+        "else": { "properties": { "levels": false } }
       }
     },
     "creditMeters": {

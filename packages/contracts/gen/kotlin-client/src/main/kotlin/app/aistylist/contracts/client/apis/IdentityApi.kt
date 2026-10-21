@@ -8,10 +8,13 @@ import okhttp3.RequestBody
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
+import app.aistylist.contracts.client.models.AccountDeletionRequest
 import app.aistylist.contracts.client.models.CompleteSignUpRequest
 import app.aistylist.contracts.client.models.ConsentChange
 import app.aistylist.contracts.client.models.ConsentPage
 import app.aistylist.contracts.client.models.ConsentRecord
+import app.aistylist.contracts.client.models.DataExport
+import app.aistylist.contracts.client.models.DataExportInProgress
 import app.aistylist.contracts.client.models.DeviceSessionPage
 import app.aistylist.contracts.client.models.IdTokenSignInRequest
 import app.aistylist.contracts.client.models.PasskeyCreationOptions
@@ -29,6 +32,25 @@ import app.aistylist.contracts.client.models.SignInResult
 import app.aistylist.contracts.client.models.SignOutResult
 
 interface IdentityApi {
+    /**
+     * DELETE v1/me/deletion
+     * Cancel the account deletion inside its grace window
+     * Stops a pending account deletion during its 7-day grace window (DEC-65). The only credential accepted is the cancel credential of the &#x60;deletion_pending&#x60; sign-in outcome (&#x60;deletionCancelToken&#x60;); the caller holds no session, because the deletion revoked them all. The account is active again, but no session is opened or restored: the client signs in again. Once the window has ended the cancel is refused with 410 &#x60;ACCOUNT_DELETED&#x60;. 
+     * Responses:
+     *  - 204: The deletion is cancelled and the account is active; sign in to open a session.
+     *  - 401: `UNAUTHENTICATED`: the cancel credential is missing, malformed or expired. The client signs in again; during the window that sign-in answers `deletion_pending` with a new credential. 
+     *  - 404: `NOT_FOUND`: the account has no pending deletion, e.g. it was already cancelled.
+     *  - 409: `IDEMPOTENCY_KEY_REUSED` when the `Idempotency-Key` was already used with a different request; `VERSION_MISMATCH` when `If-Match` no longer matches the stored version; `CONFLICT` otherwise. 
+     *  - 410: `ACCOUNT_DELETED`: the grace window has ended, so the deletion can no longer be cancelled; the account is deleted or being purged. The client erases everything it stores for the account and returns to its signed-out start. Not cached. 
+     *  - 429: `RATE_LIMITED`: a rate limit was hit (doc 11 §14); retry after `Retry-After` seconds.
+     *  - 0: Error (RFC 9457)
+     *
+     * @param idempotencyKey Client-generated ULID that makes a mutating request safe to retry (doc 06 §2; the mobile mutation-log &#x60;opId&#x60;). The server keeps key, request hash and response for 48 h: a replay with the same body returns the stored response, the same key with a different body is refused with 409 &#x60;IDEMPOTENCY_KEY_REUSED&#x60;. Optional for the caller.  (optional)
+     * @return [Unit]
+     */
+    @DELETE("v1/me/deletion")
+    suspend fun cancelAccountDeletion(@Header("Idempotency-Key") idempotencyKey: kotlin.String? = null): Response<Unit>
+
     /**
      * DELETE v1/me/recovery
      * Cancel a pending account recovery
@@ -82,6 +104,24 @@ interface IdentityApi {
      */
     @POST("v1/auth/sign-up/complete")
     suspend fun completeSignUp(@Body completeSignUpRequest: CompleteSignUpRequest, @Header("Idempotency-Key") idempotencyKey: kotlin.String? = null): Response<SignInResult>
+
+    /**
+     * GET v1/me/exports/{id}
+     * Read one of the caller&#39;s data exports
+     * The state of an export. While it is &#x60;ready&#x60;, every read mints a new download link after the same authorization check; the link lives at most 10 minutes (DEC-44, doc 11 §5.4). The archive itself is kept until &#x60;availableUntil&#x60;. Never cached. 
+     * Responses:
+     *  - 200: The export
+     *  - 401: `UNAUTHENTICATED`: the credential is missing, malformed, expired or revoked. The client renews the session once (`refreshSession`); if the renewal is refused too, it signs in again. 
+     *  - 404: `NOT_FOUND`: the caller has no export with this id.
+     *  - 410: `ACCOUNT_DELETED`: the account is deleted or its deletion is in progress. The client erases everything it stores for the account and returns to its signed-out start; it tells this reply from 401 by the status alone. A 410 is cacheable by default (RFC 9110 §15.5.11), so the reply carries `Cache-Control: no-store` and must not be cached. 
+     *  - 429: `RATE_LIMITED`: a rate limit was hit (doc 11 §14); retry after `Retry-After` seconds.
+     *  - 0: Error (RFC 9457)
+     *
+     * @param id 
+     * @return [DataExport]
+     */
+    @GET("v1/me/exports/{id}")
+    suspend fun getDataExport(@Path("id") id: kotlin.String): Response<DataExport>
 
     /**
      * GET v1/auth/passkey/generate-register-options
@@ -226,6 +266,25 @@ interface IdentityApi {
     suspend fun registerPasskey(@Body passkeyRegistrationRequest: PasskeyRegistrationRequest, @Header("Idempotency-Key") idempotencyKey: kotlin.String? = null): Response<PasskeySummary>
 
     /**
+     * POST v1/me/deletion
+     * Request deletion of the caller&#39;s account
+     * Starts the deletion of the caller&#39;s account (doc 11 §13.2). At once every session of the account is revoked, this one included, and a sign-in opens no session; the account is kept for a 7-day grace window (DEC-65). A sign-in during the window answers &#x60;deletion_pending&#x60;, whose cancel credential can stop the deletion (&#x60;cancelAccountDeletion&#x60;). After the window the purge runs and cannot be stopped. Re-authentication (doc 02 §11.3): needs a recently created session (better-auth &#x60;freshAge&#x60;); otherwise 403 &#x60;FORBIDDEN&#x60;, and the client signs in again first. After the answer the token of this request no longer works and the client returns to its signed-out start. Deleting the account does not cancel a store subscription. 
+     * Responses:
+     *  - 202: The deletion is requested; its grace window has started
+     *  - 401: `UNAUTHENTICATED`: the credential is missing, malformed, expired or revoked. The client renews the session once (`refreshSession`); if the renewal is refused too, it signs in again. 
+     *  - 403: `FORBIDDEN`: the session was not created recently enough to confirm it is the person. The client signs in again with the same account and repeats the request. 
+     *  - 409: `IDEMPOTENCY_KEY_REUSED` when the `Idempotency-Key` was already used with a different request; `VERSION_MISMATCH` when `If-Match` no longer matches the stored version; `CONFLICT` otherwise. 
+     *  - 410: `ACCOUNT_DELETED`: the account is deleted or its deletion is in progress. The client erases everything it stores for the account and returns to its signed-out start; it tells this reply from 401 by the status alone. A 410 is cacheable by default (RFC 9110 §15.5.11), so the reply carries `Cache-Control: no-store` and must not be cached. 
+     *  - 429: `RATE_LIMITED`: the account requested a deletion within the last 30 days (doc 11 §14), or another rate limit was hit; retry after `Retry-After` seconds. 
+     *  - 0: Error (RFC 9457)
+     *
+     * @param idempotencyKey Client-generated ULID that makes a mutating request safe to retry (doc 06 §2; the mobile mutation-log &#x60;opId&#x60;). The server keeps key, request hash and response for 48 h: a replay with the same body returns the stored response, the same key with a different body is refused with 409 &#x60;IDEMPOTENCY_KEY_REUSED&#x60;. Optional for the caller.  (optional)
+     * @return [AccountDeletionRequest]
+     */
+    @POST("v1/me/deletion")
+    suspend fun requestAccountDeletion(@Header("Idempotency-Key") idempotencyKey: kotlin.String? = null): Response<AccountDeletionRequest>
+
+    /**
      * POST v1/auth/sign-in/magic-link
      * Ask for an account-recovery link by email
      * Fallback for a person who lost their passkeys (doc 11 §15). The answer is the same status and body whether or not an account exists for the address, so it discloses nothing. When one exists, a single-use link is emailed; it works from 24 to 48 hours after the request, and any signed-in session of the account can cancel it before then (&#x60;cancelAccountRecovery&#x60;). Never creates an account. 
@@ -241,6 +300,24 @@ interface IdentityApi {
      */
     @POST("v1/auth/sign-in/magic-link")
     suspend fun requestAccountRecovery(@Body recoveryRequest: RecoveryRequest, @Header("Idempotency-Key") idempotencyKey: kotlin.String? = null): Response<RecoveryRequestAccepted>
+
+    /**
+     * POST v1/me/exports
+     * Request an export of the caller&#39;s data
+     * Starts an asynchronous export of the caller&#39;s data (doc 11 §13.1), open on every plan (&#x60;data.export&#x60;). Answers at once with the new export &#x60;in_progress&#x60;; the client reads it with &#x60;getDataExport&#x60; until it is &#x60;ready&#x60; (a notification follows as well). One export runs at a time per account: while one is in progress, a new request is refused with 429 and the running export. 
+     * Responses:
+     *  - 202: The export is accepted and in progress
+     *  - 401: `UNAUTHENTICATED`: the credential is missing, malformed, expired or revoked. The client renews the session once (`refreshSession`); if the renewal is refused too, it signs in again. 
+     *  - 409: `IDEMPOTENCY_KEY_REUSED` when the `Idempotency-Key` was already used with a different request; `VERSION_MISMATCH` when `If-Match` no longer matches the stored version; `CONFLICT` otherwise. 
+     *  - 410: `ACCOUNT_DELETED`: the account is deleted or its deletion is in progress. The client erases everything it stores for the account and returns to its signed-out start; it tells this reply from 401 by the status alone. A 410 is cacheable by default (RFC 9110 §15.5.11), so the reply carries `Cache-Control: no-store` and must not be cached. 
+     *  - 429: `RATE_LIMITED`: an export of this account is already in progress, and `current` is that export (read it with `getDataExport`); or another rate limit was hit, without `current`. Retry after `Retry-After` seconds (doc 11 §14). 
+     *  - 0: Error (RFC 9457)
+     *
+     * @param idempotencyKey Client-generated ULID that makes a mutating request safe to retry (doc 06 §2; the mobile mutation-log &#x60;opId&#x60;). The server keeps key, request hash and response for 48 h: a replay with the same body returns the stored response, the same key with a different body is refused with 409 &#x60;IDEMPOTENCY_KEY_REUSED&#x60;. Optional for the caller.  (optional)
+     * @return [DataExport]
+     */
+    @POST("v1/me/exports")
+    suspend fun requestDataExport(@Header("Idempotency-Key") idempotencyKey: kotlin.String? = null): Response<DataExport>
 
     /**
      * POST v1/auth/sign-in/social

@@ -1,5 +1,6 @@
-# `identity` module contract (docs/modules/identity.md): sign-in, sessions, account recovery and
-# the consent registry. Included from ../openapi.yaml.
+# `identity` module contract (docs/modules/identity.md): sign-in, sessions, account recovery, the
+# consent registry, the data export and account deletion (export and deletion: owner decision
+# 2026-10-13). Included from ../openapi.yaml.
 #
 # `/v1/auth/*` is served by better-auth 1.7.12 with `@better-auth/passkey` 1.7.12, mounted at
 # basePath `/v1/auth` inside `identity` (doc 11 §4.1). Paths are the library's own. The bodies
@@ -537,8 +538,196 @@ paths:
           $ref: './platform.yaml#/components/responses/RateLimited'
         default:
           $ref: './platform.yaml#/components/responses/Problem'
+  /v1/me/exports:
+    post:
+      operationId: requestDataExport
+      tags: [identity]
+      summary: Request an export of the caller's data
+      description: |
+        Starts an asynchronous export of the caller's data (doc 11 §13.1), open on every plan
+        (`data.export`). Answers at once with the new export `in_progress`; the client reads it
+        with `getDataExport` until it is `ready` (a notification follows as well). One export
+        runs at a time per account: while one is in progress, a new request is refused with 429
+        and the running export.
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: './platform.yaml#/components/parameters/IdempotencyKey'
+      responses:
+        '202':
+          description: The export is accepted and in progress
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DataExport'
+        '401':
+          $ref: './platform.yaml#/components/responses/Unauthenticated'
+        '409':
+          $ref: './platform.yaml#/components/responses/Conflict'
+        '410':
+          $ref: './platform.yaml#/components/responses/AccountDeleted'
+        '429':
+          $ref: '#/components/responses/DataExportLimited'
+        default:
+          $ref: './platform.yaml#/components/responses/Problem'
+  /v1/me/exports/{id}:
+    get:
+      operationId: getDataExport
+      tags: [identity]
+      summary: Read one of the caller's data exports
+      description: |
+        The state of an export. While it is `ready`, every read mints a new download link after
+        the same authorization check; the link lives at most 10 minutes (DEC-44, doc 11 §5.4).
+        The archive itself is kept until `availableUntil`. Never cached.
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/DataExportId'
+      responses:
+        '200':
+          description: The export
+          headers:
+            Cache-Control:
+              $ref: './platform.yaml#/components/headers/CacheControlNoStore'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DataExport'
+        '401':
+          $ref: './platform.yaml#/components/responses/Unauthenticated'
+        '404':
+          description: '`NOT_FOUND`: the caller has no export with this id.'
+          content:
+            application/problem+json:
+              schema:
+                $ref: './platform.yaml#/components/schemas/ProblemDetails'
+        '410':
+          $ref: './platform.yaml#/components/responses/AccountDeleted'
+        '429':
+          $ref: './platform.yaml#/components/responses/RateLimited'
+        default:
+          $ref: './platform.yaml#/components/responses/Problem'
+  /v1/me/deletion:
+    post:
+      operationId: requestAccountDeletion
+      tags: [identity]
+      summary: Request deletion of the caller's account
+      description: |
+        Starts the deletion of the caller's account (doc 11 §13.2). At once every session of the
+        account is revoked, this one included, and a sign-in opens no session; the account is
+        kept for a 7-day grace window (DEC-65). A sign-in during the window answers
+        `deletion_pending`, whose cancel credential can stop the deletion
+        (`cancelAccountDeletion`). After the window the purge runs and cannot be stopped.
+        Re-authentication (doc 02 §11.3): needs a recently created session (better-auth
+        `freshAge`); otherwise 403 `FORBIDDEN`, and the client signs in again first. After the
+        answer the token of this request no longer works and the client returns to its
+        signed-out start. Deleting the account does not cancel a store subscription.
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: './platform.yaml#/components/parameters/IdempotencyKey'
+      responses:
+        '202':
+          description: The deletion is requested; its grace window has started
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AccountDeletionRequest'
+        '401':
+          $ref: './platform.yaml#/components/responses/Unauthenticated'
+        '403':
+          description: |
+            `FORBIDDEN`: the session was not created recently enough to confirm it is the person.
+            The client signs in again with the same account and repeats the request.
+          content:
+            application/problem+json:
+              schema:
+                $ref: './platform.yaml#/components/schemas/ProblemDetails'
+        '409':
+          $ref: './platform.yaml#/components/responses/Conflict'
+        '410':
+          $ref: './platform.yaml#/components/responses/AccountDeleted'
+        '429':
+          description: |
+            `RATE_LIMITED`: the account requested a deletion within the last 30 days (doc 11
+            §14), or another rate limit was hit; retry after `Retry-After` seconds.
+          headers:
+            Retry-After:
+              $ref: './platform.yaml#/components/headers/RetryAfter'
+          content:
+            application/problem+json:
+              schema:
+                $ref: './platform.yaml#/components/schemas/ProblemDetails'
+        default:
+          $ref: './platform.yaml#/components/responses/Problem'
+    delete:
+      operationId: cancelAccountDeletion
+      tags: [identity]
+      summary: Cancel the account deletion inside its grace window
+      description: |
+        Stops a pending account deletion during its 7-day grace window (DEC-65). The only
+        credential accepted is the cancel credential of the `deletion_pending` sign-in outcome
+        (`deletionCancelToken`); the caller holds no session, because the deletion revoked them
+        all. The account is active again, but no session is opened or restored: the client signs
+        in again. Once the window has ended the cancel is refused with 410 `ACCOUNT_DELETED`.
+      security:
+        - deletionCancelToken: []
+      parameters:
+        - $ref: './platform.yaml#/components/parameters/IdempotencyKey'
+      responses:
+        '204':
+          description: The deletion is cancelled and the account is active; sign in to open a session.
+        '401':
+          description: |
+            `UNAUTHENTICATED`: the cancel credential is missing, malformed or expired. The client
+            signs in again; during the window that sign-in answers `deletion_pending` with a new
+            credential.
+          content:
+            application/problem+json:
+              schema:
+                $ref: './platform.yaml#/components/schemas/ProblemDetails'
+        '404':
+          description: '`NOT_FOUND`: the account has no pending deletion, e.g. it was already cancelled.'
+          content:
+            application/problem+json:
+              schema:
+                $ref: './platform.yaml#/components/schemas/ProblemDetails'
+        '409':
+          $ref: './platform.yaml#/components/responses/Conflict'
+        '410':
+          description: |
+            `ACCOUNT_DELETED`: the grace window has ended, so the deletion can no longer be
+            cancelled; the account is deleted or being purged. The client erases everything it
+            stores for the account and returns to its signed-out start. Not cached.
+          headers:
+            Cache-Control:
+              $ref: './platform.yaml#/components/headers/CacheControlNoStore'
+          content:
+            application/problem+json:
+              schema:
+                $ref: './platform.yaml#/components/schemas/ProblemDetails'
+        '429':
+          $ref: './platform.yaml#/components/responses/RateLimited'
+        default:
+          $ref: './platform.yaml#/components/responses/Problem'
 components:
   responses:
+    DataExportLimited:
+      description: |
+        `RATE_LIMITED`: an export of this account is already in progress, and `current` is that
+        export (read it with `getDataExport`); or another rate limit was hit, without `current`.
+        Retry after `Retry-After` seconds (doc 11 §14).
+      headers:
+        Retry-After:
+          $ref: './platform.yaml#/components/headers/RetryAfter'
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/DataExportInProgress'
     SignInAnswer:
       description: The outcome of a sign-in (see `SignInResult`)
       headers:
@@ -1070,3 +1259,88 @@ components:
       type: string
       description: Identifier of the app screen where the decision was made, e.g. `onboarding_consent`.
       pattern: '^[a-z][a-z0-9_]{0,63}$'
+    DataExportId:
+      type: string
+      description: Data-export id, a prefixed ULID (`xpt_`, shared-kernel `ID_PREFIXES.exportRequest`).
+      pattern: '^xpt_[0-7][0-9A-HJKMNP-TV-Z]{25}$'
+      examples: ['xpt_01J9Z3K8X2Q7N5V4B6C8D0E1F5']
+    DataExportStatus:
+      type: string
+      description: |
+        `in_progress` until the archive is built; then `ready` until `availableUntil`, when the
+        archive is deleted and the export becomes `expired`. `failed` when it could not be
+        built: nothing is kept, and the person may request a new export.
+      enum: [in_progress, ready, failed, expired]
+    DataExport:
+      type: object
+      description: |
+        One data export of the caller (doc 11 §13.1): a ZIP archive of the caller's data in
+        machine-readable JSON plus the media they uploaded. This object never carries archive
+        content.
+      required: [id, status, requestedAt]
+      properties:
+        id:
+          $ref: '#/components/schemas/DataExportId'
+        status:
+          $ref: '#/components/schemas/DataExportStatus'
+        requestedAt:
+          type: string
+          format: date-time
+        readyAt:
+          type: string
+          format: date-time
+          description: When the archive was built; present for `ready` and `expired`.
+        availableUntil:
+          type: string
+          format: date-time
+          description: |
+            When the archive is deleted, 24 hours after `readyAt` (doc 11 §13.1); present for
+            `ready` and `expired`. This is how long the archive is kept, not how long a link
+            works: every read of a `ready` export mints a new link.
+        download:
+          $ref: '#/components/schemas/DataExportDownload'
+    DataExportDownload:
+      type: object
+      description: Present only while the export is `ready`. Minted for this response; never stored by the server.
+      required: [url, expiresAt]
+      properties:
+        url:
+          type: string
+          format: uri
+          description: |
+            Presigned GET of the archive, minted after the same authorization check as the
+            export (doc 11 §13.1). It carries a live signature: never log, share or store it
+            (doc 11 §8). Read the export again for a fresh link.
+        expiresAt:
+          type: string
+          format: date-time
+          description: When the link stops working, at most 10 minutes after it was minted (DEC-44, doc 11 §5.4).
+    DataExportInProgress:
+      description: A problem (RFC 9457) that carries the running export when an export is already in progress.
+      allOf:
+        - $ref: './platform.yaml#/components/schemas/ProblemDetails'
+        - type: object
+          properties:
+            current:
+              $ref: '#/components/schemas/DataExport'
+    AccountDeletionRequestId:
+      type: string
+      description: Account-deletion request id, a prefixed ULID (`del_`, shared-kernel `ID_PREFIXES.deletionRequest`).
+      pattern: '^del_[0-7][0-9A-HJKMNP-TV-Z]{25}$'
+      examples: ['del_01J9Z3K8X2Q7N5V4B6C8D0E1F6']
+    AccountDeletionRequest:
+      type: object
+      description: An accepted account-deletion request (doc 11 §13.2).
+      required: [id, requestedAt, graceEndsAt]
+      properties:
+        id:
+          $ref: '#/components/schemas/AccountDeletionRequestId'
+        requestedAt:
+          type: string
+          format: date-time
+        graceEndsAt:
+          type: string
+          format: date-time
+          description: |
+            End of the 7-day grace window (DEC-65). Until then a sign-in offers to cancel the
+            deletion; after it the purge runs, and a cancel is refused with 410 `ACCOUNT_DELETED`.

@@ -4,8 +4,14 @@ import { type ProblemDetails as KernelProblem, problem } from '@ai-stylist/share
 import { describe, expect, expectTypeOf, it } from 'vitest';
 
 import {
+  type AccountDeletionRequest,
   type CompleteSignUpResponse,
   type ConsentPage,
+  type DataExport,
+  type DataExportInProgress,
+  type EntitlementState,
+  type GetDataExportResponse,
+  type GetEntitlementsResponse,
   type GetHealthError,
   type GetHealthResponse,
   type GetVersionResponse,
@@ -15,12 +21,18 @@ import {
   type PreferencesVersionConflict,
   type ProblemDetails,
   type RecordConsentError,
+  type RequestAccountDeletionResponse,
+  type RequestDataExportError,
+  type RequestDataExportResponse,
+  type ResolvedEntitlement,
   type SignInResult,
   type SignInWithIdTokenResponse,
   type SignInWithPasskeyResponse,
   type UpdatePreferencesError,
   type UpdatePreferencesResponse,
   type VersionInfo,
+  cancelAccountDeletion,
+  getEntitlements,
   getHealth,
   getVersion,
   listConsents,
@@ -105,6 +117,7 @@ describe('generated ts-client: identity', () => {
 
   it('bundle exposes every identity operation with its operationId', () => {
     expect(operationsTagged('identity')).toEqual([
+      'DELETE /v1/me/deletion cancelAccountDeletion',
       'DELETE /v1/me/recovery cancelAccountRecovery',
       'GET /v1/auth/get-session getSession',
       'GET /v1/auth/list-sessions listDeviceSessions',
@@ -112,6 +125,7 @@ describe('generated ts-client: identity', () => {
       'GET /v1/auth/passkey/generate-authenticate-options getPasskeySignInOptions',
       'GET /v1/auth/passkey/generate-register-options getPasskeyRegistrationOptions',
       'GET /v1/me/consents listConsents',
+      'GET /v1/me/exports/{id} getDataExport',
       'POST /v1/auth/get-session refreshSession',
       'POST /v1/auth/passkey/verify-authentication signInWithPasskey',
       'POST /v1/auth/passkey/verify-registration registerPasskey',
@@ -121,6 +135,38 @@ describe('generated ts-client: identity', () => {
       'POST /v1/auth/sign-out signOut',
       'POST /v1/auth/sign-up/complete completeSignUp',
       'POST /v1/me/consents recordConsent',
+      'POST /v1/me/deletion requestAccountDeletion',
+      'POST /v1/me/exports requestDataExport',
+    ]);
+  });
+
+  it('types the export and deletion answers', () => {
+    expectTypeOf<RequestDataExportResponse>().toEqualTypeOf<DataExport>();
+    expectTypeOf<GetDataExportResponse>().toEqualTypeOf<DataExport>();
+    expectTypeOf<RequestDataExportError>().toEqualTypeOf<ProblemDetails | DataExportInProgress>();
+    expectTypeOf<RequestAccountDeletionResponse>().toEqualTypeOf<AccountDeletionRequest>();
+  });
+
+  it('cancels a deletion with the cancel credential only, never a session token', async () => {
+    const cancelToken = 'synthetic-cancel-credential';
+    const seen: { line: string; cancel: string | null; authorization: string | null }[] = [];
+    const client = createClient({
+      baseUrl: 'http://localhost:3000',
+      auth: (scheme) => (scheme.type === 'apiKey' ? cancelToken : synthetic.token),
+      fetch: (input: string | URL | Request) => {
+        const request = new Request(input);
+        seen.push({
+          line: `${request.method} ${new URL(request.url).pathname}`,
+          cancel: request.headers.get('deletion-cancel-token'),
+          authorization: request.headers.get('authorization'),
+        });
+        return Promise.resolve(new Response(null, { status: 204 }));
+      },
+    });
+    const { error } = await cancelAccountDeletion({ client });
+    expect(error).toBeUndefined();
+    expect(seen).toEqual([
+      { line: 'DELETE /v1/me/deletion', cancel: cancelToken, authorization: null },
     ]);
   });
 
@@ -276,5 +322,36 @@ describe('generated ts-client: profile', () => {
     expect(data).toBeUndefined();
     expect(error?.code).toBe('VERSION_MISMATCH');
     expect(error && 'current' in error ? error.current?.version : undefined).toBe(4);
+  });
+});
+
+describe('generated ts-client: billing', () => {
+  it('bundle exposes the billing operation with its operationId', () => {
+    expect(operationsTagged('billing')).toEqual(['GET /v1/me/entitlements getEntitlements']);
+  });
+
+  it('types the entitlement state; an unlimited limit is null', () => {
+    expectTypeOf<GetEntitlementsResponse>().toEqualTypeOf<EntitlementState>();
+    expectTypeOf<ResolvedEntitlement['limit']>().toEqualTypeOf<number | null | undefined>();
+  });
+
+  it('reads the trial state with its end and one value per entitlement kind', async () => {
+    const answer: EntitlementState = {
+      state: 'trial',
+      stateEndsAt: '2026-10-24T10:00:00Z',
+      entitlements: [
+        { name: 'closet.max_items', source: 'trial_grant', limit: null },
+        { name: 'tryon.generative', source: 'trial_grant', level: 'G2' },
+        { name: 'data.export', granted: true },
+      ],
+    };
+    const client = createClient({
+      baseUrl: 'http://localhost:3000',
+      auth: 'synthetic-session-token',
+      fetch: () => Promise.resolve(jsonResponse(answer)),
+    });
+    const { data, error } = await getEntitlements({ client });
+    expect(error).toBeUndefined();
+    expect(data).toEqual(answer);
   });
 });

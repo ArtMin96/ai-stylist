@@ -8,6 +8,12 @@ import {
   type ClimateTolerance as KernelClimateTolerance,
   type ConsentPurpose as KernelConsentPurpose,
   DEFAULT_STARTING_SHAPE,
+  ENTITLEMENTS,
+  ENTITLEMENT_GRANT_KINDS,
+  ENTITLEMENT_LIFECYCLE_STATES,
+  type EntitlementGrantKind as KernelEntitlementGrantKind,
+  type EntitlementLifecycleState as KernelEntitlementLifecycleState,
+  type EntitlementName as KernelEntitlementName,
   FIT_CHOICES,
   type FitChoice as KernelFitChoice,
   GARMENT_GROUPS,
@@ -41,6 +47,9 @@ import { describe, expect, expectTypeOf, it } from 'vitest';
 import type {
   ClimateTolerance,
   ConsentPurpose,
+  EntitlementGrantKind,
+  EntitlementLifecycleState,
+  EntitlementName,
   FitChoice,
   GarmentGroup,
   Material,
@@ -114,6 +123,33 @@ describe('OpenAPI enums mirror the shared kernel', () => {
   });
 });
 
+describe('OpenAPI entitlements mirror the entitlement registry', () => {
+  it('EntitlementName holds the 17 registered names, in registry order', () => {
+    expect(schemas.EntitlementName.enum).toEqual(Object.keys(ENTITLEMENTS));
+    expect(schemas.EntitlementName.enum).toHaveLength(17);
+    expectTypeOf<EntitlementName>().toEqualTypeOf<KernelEntitlementName>();
+  });
+
+  it('EntitlementGrantKind and EntitlementLifecycleState equal the kernel lists, in order', () => {
+    expect(schemas.EntitlementGrantKind.enum).toEqual([...ENTITLEMENT_GRANT_KINDS]);
+    expect(schemas.EntitlementLifecycleState.enum).toEqual([...ENTITLEMENT_LIFECYCLE_STATES]);
+    expectTypeOf<EntitlementGrantKind>().toEqualTypeOf<KernelEntitlementGrantKind>();
+    expectTypeOf<EntitlementLifecycleState>().toEqualTypeOf<KernelEntitlementLifecycleState>();
+  });
+
+  it('EntitlementLevel accepts every registered level and is not an enum', () => {
+    const { pattern, maxLength } = schemas.EntitlementLevel;
+    const levels = Object.values(ENTITLEMENTS).flatMap((definition) =>
+      'levels' in definition ? definition.levels : [],
+    );
+    expect(levels.length).toBeGreaterThan(0);
+    for (const level of levels) {
+      expect(new RegExp(pattern).test(level) && level.length <= maxLength, level).toBe(true);
+    }
+    expect(schemas.EntitlementLevel).not.toHaveProperty('enum');
+  });
+});
+
 describe('OpenAPI measurements mirror the measurement-definitions registry', () => {
   const definitions = Object.entries(MEASUREMENT_DEFINITIONS);
 
@@ -155,6 +191,8 @@ describe('OpenAPI id patterns use the shared-kernel prefixes', () => {
     ['UserId', 'user'],
     ['ConsentRecordId', 'consentRecord'],
     ['ProfileId', 'profile'],
+    ['DataExportId', 'exportRequest'],
+    ['AccountDeletionRequestId', 'deletionRequest'],
   ] as const satisfies readonly (readonly [keyof typeof schemas, IdKind])[];
 
   it.each(idSchemas)('%s matches newId(%s) and no other kind', (schemaName, kind) => {

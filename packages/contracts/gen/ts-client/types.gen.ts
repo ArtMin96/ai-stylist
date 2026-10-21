@@ -452,6 +452,86 @@ export type ConsentChange = {
 };
 
 /**
+ * Data-export id, a prefixed ULID (`xpt_`, shared-kernel `ID_PREFIXES.exportRequest`).
+ */
+export type DataExportId = string;
+
+/**
+ * `in_progress` until the archive is built; then `ready` until `availableUntil`, when the
+ * archive is deleted and the export becomes `expired`. `failed` when it could not be
+ * built: nothing is kept, and the person may request a new export.
+ *
+ */
+export type DataExportStatus = 'in_progress' | 'ready' | 'failed' | 'expired';
+
+/**
+ * Present only while the export is `ready`. Minted for this response; never stored by the server.
+ */
+export type DataExportDownload = {
+  /**
+   * Presigned GET of the archive, minted after the same authorization check as the
+   * export (doc 11 §13.1). It carries a live signature: never log, share or store it
+   * (doc 11 §8). Read the export again for a fresh link.
+   *
+   */
+  url: string;
+  /**
+   * When the link stops working, at most 10 minutes after it was minted (DEC-44, doc 11 §5.4).
+   */
+  expiresAt: string;
+};
+
+/**
+ * One data export of the caller (doc 11 §13.1): a ZIP archive of the caller's data in
+ * machine-readable JSON plus the media they uploaded. This object never carries archive
+ * content.
+ *
+ */
+export type DataExport = {
+  id: DataExportId;
+  status: DataExportStatus;
+  requestedAt: string;
+  /**
+   * When the archive was built; present for `ready` and `expired`.
+   */
+  readyAt?: string;
+  /**
+   * When the archive is deleted, 24 hours after `readyAt` (doc 11 §13.1); present for
+   * `ready` and `expired`. This is how long the archive is kept, not how long a link
+   * works: every read of a `ready` export mints a new link.
+   *
+   */
+  availableUntil?: string;
+  download?: DataExportDownload;
+};
+
+/**
+ * A problem (RFC 9457) that carries the running export when an export is already in progress.
+ */
+export type DataExportInProgress = ProblemDetails & {
+  current?: DataExport;
+};
+
+/**
+ * Account-deletion request id, a prefixed ULID (`del_`, shared-kernel `ID_PREFIXES.deletionRequest`).
+ */
+export type AccountDeletionRequestId = string;
+
+/**
+ * An accepted account-deletion request (doc 11 §13.2).
+ */
+export type AccountDeletionRequest = {
+  id: AccountDeletionRequestId;
+  requestedAt: string;
+  /**
+   * End of the 7-day grace window (DEC-65). Until then a sign-in offers to cancel the
+   * deletion; after it the purge runs, and a cancel is refused with 410 `ACCOUNT_DELETED`.
+   *
+   */
+  graceEndsAt: string;
+};
+
+/**
  * Profile id, a prefixed ULID (`prf_`, shared-kernel `ID_PREFIXES.profile`).
  */
 export type ProfileId = string;
@@ -903,6 +983,105 @@ export type OnboardingStepsUpdate = {
 
 export type OnboardingProgressUpdate = {
   steps: OnboardingStepsUpdate;
+};
+
+/**
+ * Lifecycle state of the caller's entitlements (doc 03 §4.3): the server-granted trial,
+ * Free, a paid subscription, its billing-retry grace period, or a cancelled subscription
+ * still paid until its period ends. Mirrors shared-kernel `ENTITLEMENT_LIFECYCLE_STATES`.
+ *
+ */
+export type EntitlementLifecycleState =
+  'trial' | 'free' | 'active_paid' | 'grace' | 'cancelled_active';
+
+/**
+ * Entitlement names (doc 12 §3.1), in registry order. Mirrors the keys of shared-kernel
+ * `ENTITLEMENTS` value for value; the apps read each name's kind and levels from the
+ * generated kernel.
+ *
+ */
+export type EntitlementName =
+  | 'closet.max_items'
+  | 'recs.daily_limit'
+  | 'recs.context.full'
+  | 'recs.future_planning'
+  | 'avatar.level'
+  | 'tryon.generative'
+  | 'views.missing_view'
+  | 'credits.monthly'
+  | 'credits.topup'
+  | 'credits.weights'
+  | 'trends.level'
+  | 'analytics.wardrobe'
+  | 'processing.priority'
+  | 'export.multi_angle'
+  | 'features.early_access'
+  | 'chat.stylist'
+  | 'data.export';
+
+/**
+ * The kind of grant that supplied the value (doc 12 §3.2): the subscription's plan, the
+ * 3-day trial (doc 12 §2), a promotion, or a capability kept from an older plan version
+ * (doc 12 §5.5). Absent from a `ResolvedEntitlement` when no active grant supplies the
+ * entitlement and its Free-plan value applies. Mirrors shared-kernel
+ * `ENTITLEMENT_GRANT_KINDS`.
+ *
+ */
+export type EntitlementGrantKind =
+  'plan_grant' | 'trial_grant' | 'promo_grant' | 'grandfather_grant';
+
+/**
+ * One of the levels the shared-kernel registry lists for the entitlement
+ * (`registry/entitlements.json`, `levels`, lowest first), e.g. `G2` for
+ * `tryon.generative`. A string, not an enum, because each level entitlement has levels of
+ * its own.
+ *
+ */
+export type EntitlementLevel = string;
+
+/**
+ * The resolved value of one entitlement. The value member present follows the kind of
+ * `name` in the shared-kernel registry (`registry/entitlements.json`): `boolean` →
+ * `granted`, always present; `limit` → `limit`, always present; `level` → `level`, absent
+ * when no level is granted; `map` (`credits.weights`) → none yet, the weights join with the
+ * credit ledger (P13).
+ *
+ */
+export type ResolvedEntitlement = {
+  name: EntitlementName;
+  source?: EntitlementGrantKind;
+  /**
+   * `boolean` kind: whether the capability is available.
+   */
+  granted?: boolean;
+  /**
+   * `limit` kind: the cap, e.g. closet items or recommendations per local day. `null`
+   * means unlimited (doc 06 §3.6).
+   *
+   */
+  limit?: number | null;
+  level?: EntitlementLevel;
+};
+
+/**
+ * The caller's entitlement state (doc 06 §3.6; semantics doc 12 §2–§3). `state` is the
+ * lifecycle state of doc 03 §4.3. Generative credits (doc 12 §4) join this object with the
+ * credit ledger (P13).
+ *
+ */
+export type EntitlementState = {
+  state: EntitlementLifecycleState;
+  /**
+   * When `state` ends unless something changes: the end of the trial for `trial`, the end
+   * of paid access for `grace` and `cancelled_active`. Absent for `free` and `active_paid`,
+   * which do not end on their own.
+   *
+   */
+  stateEndsAt?: string;
+  /**
+   * One entry per registered entitlement, in shared-kernel registry order.
+   */
+  entitlements: Array<ResolvedEntitlement>;
 };
 
 /**
@@ -1867,6 +2046,261 @@ export type RecordConsentResponses = {
 
 export type RecordConsentResponse = RecordConsentResponses[keyof RecordConsentResponses];
 
+export type RequestDataExportData = {
+  body?: never;
+  headers?: {
+    /**
+     * Client-generated ULID that makes a mutating request safe to retry (doc 06 §2; the
+     * mobile mutation-log `opId`). The server keeps key, request hash and response for 48 h:
+     * a replay with the same body returns the stored response, the same key with a different
+     * body is refused with 409 `IDEMPOTENCY_KEY_REUSED`. Optional for the caller.
+     *
+     */
+    'Idempotency-Key'?: string;
+  };
+  path?: never;
+  query?: never;
+  url: '/v1/me/exports';
+};
+
+export type RequestDataExportErrors = {
+  /**
+   * `UNAUTHENTICATED`: the credential is missing, malformed, expired or revoked. The client
+   * renews the session once (`refreshSession`); if the renewal is refused too, it signs in
+   * again.
+   *
+   */
+  401: ProblemDetails;
+  /**
+   * `IDEMPOTENCY_KEY_REUSED` when the `Idempotency-Key` was already used with a different
+   * request; `VERSION_MISMATCH` when `If-Match` no longer matches the stored version;
+   * `CONFLICT` otherwise.
+   *
+   */
+  409: ProblemDetails;
+  /**
+   * `ACCOUNT_DELETED`: the account is deleted or its deletion is in progress. The client
+   * erases everything it stores for the account and returns to its signed-out start; it
+   * tells this reply from 401 by the status alone. A 410 is cacheable by default
+   * (RFC 9110 §15.5.11), so the reply carries `Cache-Control: no-store` and must not be
+   * cached.
+   *
+   */
+  410: ProblemDetails;
+  /**
+   * `RATE_LIMITED`: an export of this account is already in progress, and `current` is that
+   * export (read it with `getDataExport`); or another rate limit was hit, without `current`.
+   * Retry after `Retry-After` seconds (doc 11 §14).
+   *
+   */
+  429: DataExportInProgress;
+  /**
+   * Error (RFC 9457)
+   */
+  default: ProblemDetails;
+};
+
+export type RequestDataExportError = RequestDataExportErrors[keyof RequestDataExportErrors];
+
+export type RequestDataExportResponses = {
+  /**
+   * The export is accepted and in progress
+   */
+  202: DataExport;
+};
+
+export type RequestDataExportResponse =
+  RequestDataExportResponses[keyof RequestDataExportResponses];
+
+export type GetDataExportData = {
+  body?: never;
+  path: {
+    id: DataExportId;
+  };
+  query?: never;
+  url: '/v1/me/exports/{id}';
+};
+
+export type GetDataExportErrors = {
+  /**
+   * `UNAUTHENTICATED`: the credential is missing, malformed, expired or revoked. The client
+   * renews the session once (`refreshSession`); if the renewal is refused too, it signs in
+   * again.
+   *
+   */
+  401: ProblemDetails;
+  /**
+   * `NOT_FOUND`: the caller has no export with this id.
+   */
+  404: ProblemDetails;
+  /**
+   * `ACCOUNT_DELETED`: the account is deleted or its deletion is in progress. The client
+   * erases everything it stores for the account and returns to its signed-out start; it
+   * tells this reply from 401 by the status alone. A 410 is cacheable by default
+   * (RFC 9110 §15.5.11), so the reply carries `Cache-Control: no-store` and must not be
+   * cached.
+   *
+   */
+  410: ProblemDetails;
+  /**
+   * `RATE_LIMITED`: a rate limit was hit (doc 11 §14); retry after `Retry-After` seconds.
+   */
+  429: ProblemDetails;
+  /**
+   * Error (RFC 9457)
+   */
+  default: ProblemDetails;
+};
+
+export type GetDataExportError = GetDataExportErrors[keyof GetDataExportErrors];
+
+export type GetDataExportResponses = {
+  /**
+   * The export
+   */
+  200: DataExport;
+};
+
+export type GetDataExportResponse = GetDataExportResponses[keyof GetDataExportResponses];
+
+export type CancelAccountDeletionData = {
+  body?: never;
+  headers?: {
+    /**
+     * Client-generated ULID that makes a mutating request safe to retry (doc 06 §2; the
+     * mobile mutation-log `opId`). The server keeps key, request hash and response for 48 h:
+     * a replay with the same body returns the stored response, the same key with a different
+     * body is refused with 409 `IDEMPOTENCY_KEY_REUSED`. Optional for the caller.
+     *
+     */
+    'Idempotency-Key'?: string;
+  };
+  path?: never;
+  query?: never;
+  url: '/v1/me/deletion';
+};
+
+export type CancelAccountDeletionErrors = {
+  /**
+   * `UNAUTHENTICATED`: the cancel credential is missing, malformed or expired. The client
+   * signs in again; during the window that sign-in answers `deletion_pending` with a new
+   * credential.
+   *
+   */
+  401: ProblemDetails;
+  /**
+   * `NOT_FOUND`: the account has no pending deletion, e.g. it was already cancelled.
+   */
+  404: ProblemDetails;
+  /**
+   * `IDEMPOTENCY_KEY_REUSED` when the `Idempotency-Key` was already used with a different
+   * request; `VERSION_MISMATCH` when `If-Match` no longer matches the stored version;
+   * `CONFLICT` otherwise.
+   *
+   */
+  409: ProblemDetails;
+  /**
+   * `ACCOUNT_DELETED`: the grace window has ended, so the deletion can no longer be
+   * cancelled; the account is deleted or being purged. The client erases everything it
+   * stores for the account and returns to its signed-out start. Not cached.
+   *
+   */
+  410: ProblemDetails;
+  /**
+   * `RATE_LIMITED`: a rate limit was hit (doc 11 §14); retry after `Retry-After` seconds.
+   */
+  429: ProblemDetails;
+  /**
+   * Error (RFC 9457)
+   */
+  default: ProblemDetails;
+};
+
+export type CancelAccountDeletionError =
+  CancelAccountDeletionErrors[keyof CancelAccountDeletionErrors];
+
+export type CancelAccountDeletionResponses = {
+  /**
+   * The deletion is cancelled and the account is active; sign in to open a session.
+   */
+  204: void;
+};
+
+export type CancelAccountDeletionResponse =
+  CancelAccountDeletionResponses[keyof CancelAccountDeletionResponses];
+
+export type RequestAccountDeletionData = {
+  body?: never;
+  headers?: {
+    /**
+     * Client-generated ULID that makes a mutating request safe to retry (doc 06 §2; the
+     * mobile mutation-log `opId`). The server keeps key, request hash and response for 48 h:
+     * a replay with the same body returns the stored response, the same key with a different
+     * body is refused with 409 `IDEMPOTENCY_KEY_REUSED`. Optional for the caller.
+     *
+     */
+    'Idempotency-Key'?: string;
+  };
+  path?: never;
+  query?: never;
+  url: '/v1/me/deletion';
+};
+
+export type RequestAccountDeletionErrors = {
+  /**
+   * `UNAUTHENTICATED`: the credential is missing, malformed, expired or revoked. The client
+   * renews the session once (`refreshSession`); if the renewal is refused too, it signs in
+   * again.
+   *
+   */
+  401: ProblemDetails;
+  /**
+   * `FORBIDDEN`: the session was not created recently enough to confirm it is the person.
+   * The client signs in again with the same account and repeats the request.
+   *
+   */
+  403: ProblemDetails;
+  /**
+   * `IDEMPOTENCY_KEY_REUSED` when the `Idempotency-Key` was already used with a different
+   * request; `VERSION_MISMATCH` when `If-Match` no longer matches the stored version;
+   * `CONFLICT` otherwise.
+   *
+   */
+  409: ProblemDetails;
+  /**
+   * `ACCOUNT_DELETED`: the account is deleted or its deletion is in progress. The client
+   * erases everything it stores for the account and returns to its signed-out start; it
+   * tells this reply from 401 by the status alone. A 410 is cacheable by default
+   * (RFC 9110 §15.5.11), so the reply carries `Cache-Control: no-store` and must not be
+   * cached.
+   *
+   */
+  410: ProblemDetails;
+  /**
+   * `RATE_LIMITED`: the account requested a deletion within the last 30 days (doc 11
+   * §14), or another rate limit was hit; retry after `Retry-After` seconds.
+   *
+   */
+  429: ProblemDetails;
+  /**
+   * Error (RFC 9457)
+   */
+  default: ProblemDetails;
+};
+
+export type RequestAccountDeletionError =
+  RequestAccountDeletionErrors[keyof RequestAccountDeletionErrors];
+
+export type RequestAccountDeletionResponses = {
+  /**
+   * The deletion is requested; its grace window has started
+   */
+  202: AccountDeletionRequest;
+};
+
+export type RequestAccountDeletionResponse =
+  RequestAccountDeletionResponses[keyof RequestAccountDeletionResponses];
+
 export type GetProfileData = {
   body?: never;
   path?: never;
@@ -2349,3 +2783,48 @@ export type UpdateOnboardingProgressResponses = {
 
 export type UpdateOnboardingProgressResponse =
   UpdateOnboardingProgressResponses[keyof UpdateOnboardingProgressResponses];
+
+export type GetEntitlementsData = {
+  body?: never;
+  path?: never;
+  query?: never;
+  url: '/v1/me/entitlements';
+};
+
+export type GetEntitlementsErrors = {
+  /**
+   * `UNAUTHENTICATED`: the credential is missing, malformed, expired or revoked. The client
+   * renews the session once (`refreshSession`); if the renewal is refused too, it signs in
+   * again.
+   *
+   */
+  401: ProblemDetails;
+  /**
+   * `ACCOUNT_DELETED`: the account is deleted or its deletion is in progress. The client
+   * erases everything it stores for the account and returns to its signed-out start; it
+   * tells this reply from 401 by the status alone. A 410 is cacheable by default
+   * (RFC 9110 §15.5.11), so the reply carries `Cache-Control: no-store` and must not be
+   * cached.
+   *
+   */
+  410: ProblemDetails;
+  /**
+   * `RATE_LIMITED`: a rate limit was hit (doc 11 §14); retry after `Retry-After` seconds.
+   */
+  429: ProblemDetails;
+  /**
+   * Error (RFC 9457)
+   */
+  default: ProblemDetails;
+};
+
+export type GetEntitlementsError = GetEntitlementsErrors[keyof GetEntitlementsErrors];
+
+export type GetEntitlementsResponses = {
+  /**
+   * The caller's entitlement state
+   */
+  200: EntitlementState;
+};
+
+export type GetEntitlementsResponse = GetEntitlementsResponses[keyof GetEntitlementsResponses];

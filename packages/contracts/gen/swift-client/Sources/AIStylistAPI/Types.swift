@@ -193,6 +193,56 @@ public protocol APIProtocol: Sendable {
     /// - Remark: HTTP `POST /v1/me/consents`.
     /// - Remark: Generated from `#/paths//v1/me/consents/post(recordConsent)`.
     func recordConsent(_ input: Operations.RecordConsent.Input) async throws -> Operations.RecordConsent.Output
+    /// Request an export of the caller's data
+    ///
+    /// Starts an asynchronous export of the caller's data (doc 11 §13.1), open on every plan
+    /// (`data.export`). Answers at once with the new export `in_progress`; the client reads it
+    /// with `getDataExport` until it is `ready` (a notification follows as well). One export
+    /// runs at a time per account: while one is in progress, a new request is refused with 429
+    /// and the running export.
+    ///
+    ///
+    /// - Remark: HTTP `POST /v1/me/exports`.
+    /// - Remark: Generated from `#/paths//v1/me/exports/post(requestDataExport)`.
+    func requestDataExport(_ input: Operations.RequestDataExport.Input) async throws -> Operations.RequestDataExport.Output
+    /// Read one of the caller's data exports
+    ///
+    /// The state of an export. While it is `ready`, every read mints a new download link after
+    /// the same authorization check; the link lives at most 10 minutes (DEC-44, doc 11 §5.4).
+    /// The archive itself is kept until `availableUntil`. Never cached.
+    ///
+    ///
+    /// - Remark: HTTP `GET /v1/me/exports/{id}`.
+    /// - Remark: Generated from `#/paths//v1/me/exports/{id}/get(getDataExport)`.
+    func getDataExport(_ input: Operations.GetDataExport.Input) async throws -> Operations.GetDataExport.Output
+    /// Request deletion of the caller's account
+    ///
+    /// Starts the deletion of the caller's account (doc 11 §13.2). At once every session of the
+    /// account is revoked, this one included, and a sign-in opens no session; the account is
+    /// kept for a 7-day grace window (DEC-65). A sign-in during the window answers
+    /// `deletion_pending`, whose cancel credential can stop the deletion
+    /// (`cancelAccountDeletion`). After the window the purge runs and cannot be stopped.
+    /// Re-authentication (doc 02 §11.3): needs a recently created session (better-auth
+    /// `freshAge`); otherwise 403 `FORBIDDEN`, and the client signs in again first. After the
+    /// answer the token of this request no longer works and the client returns to its
+    /// signed-out start. Deleting the account does not cancel a store subscription.
+    ///
+    ///
+    /// - Remark: HTTP `POST /v1/me/deletion`.
+    /// - Remark: Generated from `#/paths//v1/me/deletion/post(requestAccountDeletion)`.
+    func requestAccountDeletion(_ input: Operations.RequestAccountDeletion.Input) async throws -> Operations.RequestAccountDeletion.Output
+    /// Cancel the account deletion inside its grace window
+    ///
+    /// Stops a pending account deletion during its 7-day grace window (DEC-65). The only
+    /// credential accepted is the cancel credential of the `deletion_pending` sign-in outcome
+    /// (`deletionCancelToken`); the caller holds no session, because the deletion revoked them
+    /// all. The account is active again, but no session is opened or restored: the client signs
+    /// in again. Once the window has ended the cancel is refused with 410 `ACCOUNT_DELETED`.
+    ///
+    ///
+    /// - Remark: HTTP `DELETE /v1/me/deletion`.
+    /// - Remark: Generated from `#/paths//v1/me/deletion/delete(cancelAccountDeletion)`.
+    func cancelAccountDeletion(_ input: Operations.CancelAccountDeletion.Input) async throws -> Operations.CancelAccountDeletion.Output
     /// Read the caller's profile settings
     ///
     /// Presentation, starting shape and the six settings of REQ-ONB-100. A profile nothing has
@@ -270,6 +320,18 @@ public protocol APIProtocol: Sendable {
     /// - Remark: HTTP `PATCH /v1/me/onboarding-progress`.
     /// - Remark: Generated from `#/paths//v1/me/onboarding-progress/patch(updateOnboardingProgress)`.
     func updateOnboardingProgress(_ input: Operations.UpdateOnboardingProgress.Input) async throws -> Operations.UpdateOnboardingProgress.Output
+    /// Read the caller's resolved entitlements
+    ///
+    /// The entitlements the server resolves for the caller now (doc 12 §3.2): over the caller's
+    /// active grants the most generous value wins, per entitlement; an entitlement no active
+    /// grant supplies takes its Free-plan value (doc 12 §1.2). Every registered entitlement
+    /// appears once. The apps may cache the answer briefly to render (doc 12 §3.3); a gated
+    /// request is decided by the server alone.
+    ///
+    ///
+    /// - Remark: HTTP `GET /v1/me/entitlements`.
+    /// - Remark: Generated from `#/paths//v1/me/entitlements/get(getEntitlements)`.
+    func getEntitlements(_ input: Operations.GetEntitlements.Input) async throws -> Operations.GetEntitlements.Output
 }
 
 /// Convenience overloads for operation inputs.
@@ -545,6 +607,70 @@ extension APIProtocol {
             body: body
         ))
     }
+    /// Request an export of the caller's data
+    ///
+    /// Starts an asynchronous export of the caller's data (doc 11 §13.1), open on every plan
+    /// (`data.export`). Answers at once with the new export `in_progress`; the client reads it
+    /// with `getDataExport` until it is `ready` (a notification follows as well). One export
+    /// runs at a time per account: while one is in progress, a new request is refused with 429
+    /// and the running export.
+    ///
+    ///
+    /// - Remark: HTTP `POST /v1/me/exports`.
+    /// - Remark: Generated from `#/paths//v1/me/exports/post(requestDataExport)`.
+    public func requestDataExport(headers: Operations.RequestDataExport.Input.Headers = .init()) async throws -> Operations.RequestDataExport.Output {
+        try await requestDataExport(Operations.RequestDataExport.Input(headers: headers))
+    }
+    /// Read one of the caller's data exports
+    ///
+    /// The state of an export. While it is `ready`, every read mints a new download link after
+    /// the same authorization check; the link lives at most 10 minutes (DEC-44, doc 11 §5.4).
+    /// The archive itself is kept until `availableUntil`. Never cached.
+    ///
+    ///
+    /// - Remark: HTTP `GET /v1/me/exports/{id}`.
+    /// - Remark: Generated from `#/paths//v1/me/exports/{id}/get(getDataExport)`.
+    public func getDataExport(
+        path: Operations.GetDataExport.Input.Path,
+        headers: Operations.GetDataExport.Input.Headers = .init()
+    ) async throws -> Operations.GetDataExport.Output {
+        try await getDataExport(Operations.GetDataExport.Input(
+            path: path,
+            headers: headers
+        ))
+    }
+    /// Request deletion of the caller's account
+    ///
+    /// Starts the deletion of the caller's account (doc 11 §13.2). At once every session of the
+    /// account is revoked, this one included, and a sign-in opens no session; the account is
+    /// kept for a 7-day grace window (DEC-65). A sign-in during the window answers
+    /// `deletion_pending`, whose cancel credential can stop the deletion
+    /// (`cancelAccountDeletion`). After the window the purge runs and cannot be stopped.
+    /// Re-authentication (doc 02 §11.3): needs a recently created session (better-auth
+    /// `freshAge`); otherwise 403 `FORBIDDEN`, and the client signs in again first. After the
+    /// answer the token of this request no longer works and the client returns to its
+    /// signed-out start. Deleting the account does not cancel a store subscription.
+    ///
+    ///
+    /// - Remark: HTTP `POST /v1/me/deletion`.
+    /// - Remark: Generated from `#/paths//v1/me/deletion/post(requestAccountDeletion)`.
+    public func requestAccountDeletion(headers: Operations.RequestAccountDeletion.Input.Headers = .init()) async throws -> Operations.RequestAccountDeletion.Output {
+        try await requestAccountDeletion(Operations.RequestAccountDeletion.Input(headers: headers))
+    }
+    /// Cancel the account deletion inside its grace window
+    ///
+    /// Stops a pending account deletion during its 7-day grace window (DEC-65). The only
+    /// credential accepted is the cancel credential of the `deletion_pending` sign-in outcome
+    /// (`deletionCancelToken`); the caller holds no session, because the deletion revoked them
+    /// all. The account is active again, but no session is opened or restored: the client signs
+    /// in again. Once the window has ended the cancel is refused with 410 `ACCOUNT_DELETED`.
+    ///
+    ///
+    /// - Remark: HTTP `DELETE /v1/me/deletion`.
+    /// - Remark: Generated from `#/paths//v1/me/deletion/delete(cancelAccountDeletion)`.
+    public func cancelAccountDeletion(headers: Operations.CancelAccountDeletion.Input.Headers = .init()) async throws -> Operations.CancelAccountDeletion.Output {
+        try await cancelAccountDeletion(Operations.CancelAccountDeletion.Input(headers: headers))
+    }
     /// Read the caller's profile settings
     ///
     /// Presentation, starting shape and the six settings of REQ-ONB-100. A profile nothing has
@@ -661,6 +787,20 @@ extension APIProtocol {
             headers: headers,
             body: body
         ))
+    }
+    /// Read the caller's resolved entitlements
+    ///
+    /// The entitlements the server resolves for the caller now (doc 12 §3.2): over the caller's
+    /// active grants the most generous value wins, per entitlement; an entitlement no active
+    /// grant supplies takes its Free-plan value (doc 12 §1.2). Every registered entitlement
+    /// appears once. The apps may cache the answer briefly to render (doc 12 §3.3); a gated
+    /// request is decided by the server alone.
+    ///
+    ///
+    /// - Remark: HTTP `GET /v1/me/entitlements`.
+    /// - Remark: Generated from `#/paths//v1/me/entitlements/get(getEntitlements)`.
+    public func getEntitlements(headers: Operations.GetEntitlements.Input.Headers = .init()) async throws -> Operations.GetEntitlements.Output {
+        try await getEntitlements(Operations.GetEntitlements.Input(headers: headers))
     }
 }
 

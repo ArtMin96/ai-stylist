@@ -3,8 +3,9 @@
 // feature-flags, measurement-definitions and starting-shapes. They live in
 // packages/shared-kernel/registry; Ajv lives here (as it does for
 // gen-kernel.mjs, which also validates the first four before emitting them for Python; their
-// Python output is pinned by kernel-python.test.ts). The cross-references a schema cannot express
-// are checked in packages/shared-kernel/tests.
+// Python output is pinned by kernel-python.test.ts). It also checks the `levels` rule of
+// entitlements.json, a registry gen-kernel.mjs emits for TS, Swift and Kotlin. The cross-references
+// a schema cannot express are checked in packages/shared-kernel/tests.
 import { readFile } from 'node:fs/promises';
 
 import { Ajv2020, type SchemaObject } from 'ajv/dist/2020.js';
@@ -236,6 +237,38 @@ describe('starting-shapes.json', async () => {
     expect(check(noDefault)).toBe(false);
     expect(check({ ...minimal, labels: {} })).toBe(false);
     expect(check({ ...minimal, shapes: { shape_a: { ...shape, morphs: {} } } })).toBe(false);
+  });
+});
+
+describe('entitlements.json', async () => {
+  const { data, check, errors } = await validatorFor('entitlements');
+  const level = { kind: 'level', description: 'fixture', levels: ['L1', 'L2'] };
+  const flag = { kind: 'boolean', description: 'fixture' };
+  const one = (definition: unknown) =>
+    check({
+      kinds: ['boolean', 'level'],
+      entitlements: { 'fixture.one': definition },
+      creditMeters: [],
+    });
+
+  it('validates against its schema', () => {
+    expect(check(data), errors()).toBe(true);
+    expect(one(level), errors()).toBe(true);
+    expect(one(flag), errors()).toBe(true);
+  });
+
+  it('requires two or more distinct levels on a level entitlement and none on any other kind', () => {
+    const { levels: _dropped, ...noLevels } = level;
+    expect(one(noLevels)).toBe(false);
+    expect(one({ ...level, levels: ['L1'] })).toBe(false);
+    expect(one({ ...level, levels: ['L1', 'L1'] })).toBe(false);
+    expect(one({ ...flag, levels: ['L1', 'L2'] })).toBe(false);
+  });
+
+  it('rejects a level that is not a ladder code or a snake_case word', () => {
+    for (const bad of ['A1 + all poses', 'a-1', '', 'G2_All']) {
+      expect(one({ ...level, levels: ['L1', bad] }), bad).toBe(false);
+    }
   });
 });
 

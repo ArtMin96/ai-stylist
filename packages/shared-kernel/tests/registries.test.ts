@@ -9,6 +9,9 @@ import {
   DEFAULT_PRESENTATION,
   DEFAULT_STARTING_SHAPE,
   ENTITLEMENTS,
+  ENTITLEMENT_GRANT_KINDS,
+  ENTITLEMENT_LIFECYCLE_STATES,
+  type EntitlementLevel,
   FIT_CHOICES,
   GARMENT_GROUPS,
   INCHES_PER_FOOT,
@@ -24,6 +27,7 @@ import {
   STARTING_SHAPE_BASE_MESH,
   STYLE_TYPES,
   type StartingShape,
+  compareEntitlementLevels,
   convert,
 } from '../src/index.js';
 
@@ -43,6 +47,46 @@ describe('entitlement registry', () => {
   it('holds exactly the 17 names from doc 12 §3.1', () => {
     expect(Object.keys(ENTITLEMENTS)).toHaveLength(17);
     for (const name of Object.keys(ENTITLEMENTS)) expect(name).toMatch(/^[a-z]+(\.[a-z_]+)+$/);
+  });
+
+  it('lists the levels of each level entitlement lowest first, as doc 12 §1.2 ranks the plans', () => {
+    const levelsByName = Object.fromEntries(
+      Object.entries(ENTITLEMENTS).flatMap(([name, definition]) =>
+        'levels' in definition ? [[name, definition.levels]] : [],
+      ),
+    );
+    expect(levelsByName).toEqual({
+      'avatar.level': ['A1', 'A1_all_poses'],
+      'tryon.generative': ['G0', 'G2'],
+      'trends.level': ['basic', 'personalized'],
+    });
+    for (const definition of Object.values(ENTITLEMENTS)) {
+      expect('levels' in definition).toBe(definition.kind === 'level');
+    }
+  });
+
+  it('compares two levels of one entitlement by the registry order (AC-9)', () => {
+    expect(compareEntitlementLevels('tryon.generative', 'G2', 'G0')).toBeGreaterThan(0);
+    expect(compareEntitlementLevels('tryon.generative', 'G0', 'G2')).toBeLessThan(0);
+    expect(compareEntitlementLevels('avatar.level', 'A1', 'A1')).toBe(0);
+    expect(compareEntitlementLevels('trends.level', 'personalized', 'basic')).toBeGreaterThan(0);
+    expectTypeOf<EntitlementLevel<'tryon.generative'>>().toEqualTypeOf<'G0' | 'G2'>();
+  });
+
+  it('grant kinds are the four of doc 12 §3.2; lifecycle states the five of doc 03 §4.3', () => {
+    expect([...ENTITLEMENT_GRANT_KINDS]).toEqual([
+      'plan_grant',
+      'trial_grant',
+      'promo_grant',
+      'grandfather_grant',
+    ]);
+    expect([...ENTITLEMENT_LIFECYCLE_STATES]).toEqual([
+      'trial',
+      'free',
+      'active_paid',
+      'grace',
+      'cancelled_active',
+    ]);
   });
 });
 

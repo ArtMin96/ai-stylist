@@ -1,0 +1,139 @@
+# `billing` module contract (docs/modules/billing.md): the caller's resolved entitlements.
+# Included from ../openapi.yaml.
+#
+# Entitlements are decided by the server (doc 12 §3.3). The apps read this resolution to render
+# paywalls and hide buttons, never to authorize: every gated request is checked again on the
+# server. No operation lets a client set or change an entitlement. Enums restate shared-kernel
+# lists value for value; packages/contracts/tests/kernel-enums.test.ts pins each one.
+openapi: 3.1.0
+info:
+  title: AI Stylist API — billing
+  version: 1.0.0
+paths:
+  /v1/me/entitlements:
+    get:
+      operationId: getEntitlements
+      tags: [billing]
+      summary: Read the caller's resolved entitlements
+      description: |
+        The entitlements the server resolves for the caller now (doc 12 §3.2): over the caller's
+        active grants the most generous value wins, per entitlement; an entitlement no active
+        grant supplies takes its Free-plan value (doc 12 §1.2). Every registered entitlement
+        appears once. The apps may cache the answer briefly to render (doc 12 §3.3); a gated
+        request is decided by the server alone.
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: The caller's entitlement state
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EntitlementState'
+        '401':
+          $ref: './platform.yaml#/components/responses/Unauthenticated'
+        '410':
+          $ref: './platform.yaml#/components/responses/AccountDeleted'
+        '429':
+          $ref: './platform.yaml#/components/responses/RateLimited'
+        default:
+          $ref: './platform.yaml#/components/responses/Problem'
+components:
+  schemas:
+    EntitlementState:
+      type: object
+      description: |
+        The caller's entitlement state (doc 06 §3.6; semantics doc 12 §2–§3). `state` is the
+        lifecycle state of doc 03 §4.3. Generative credits (doc 12 §4) join this object with the
+        credit ledger (P13).
+      required: [state, entitlements]
+      properties:
+        state:
+          $ref: '#/components/schemas/EntitlementLifecycleState'
+        stateEndsAt:
+          type: string
+          format: date-time
+          description: |
+            When `state` ends unless something changes: the end of the trial for `trial`, the end
+            of paid access for `grace` and `cancelled_active`. Absent for `free` and `active_paid`,
+            which do not end on their own.
+        entitlements:
+          type: array
+          description: One entry per registered entitlement, in shared-kernel registry order.
+          items:
+            $ref: '#/components/schemas/ResolvedEntitlement'
+    ResolvedEntitlement:
+      type: object
+      description: |
+        The resolved value of one entitlement. The value member present follows the kind of
+        `name` in the shared-kernel registry (`registry/entitlements.json`): `boolean` →
+        `granted`, always present; `limit` → `limit`, always present; `level` → `level`, absent
+        when no level is granted; `map` (`credits.weights`) → none yet, the weights join with the
+        credit ledger (P13).
+      required: [name]
+      properties:
+        name:
+          $ref: '#/components/schemas/EntitlementName'
+        source:
+          $ref: '#/components/schemas/EntitlementGrantKind'
+        granted:
+          type: boolean
+          description: '`boolean` kind: whether the capability is available.'
+        limit:
+          type: [integer, 'null']
+          minimum: 0
+          description: |
+            `limit` kind: the cap, e.g. closet items or recommendations per local day. `null`
+            means unlimited (doc 06 §3.6).
+        level:
+          $ref: '#/components/schemas/EntitlementLevel'
+    EntitlementName:
+      type: string
+      description: |
+        Entitlement names (doc 12 §3.1), in registry order. Mirrors the keys of shared-kernel
+        `ENTITLEMENTS` value for value; the apps read each name's kind and levels from the
+        generated kernel.
+      enum:
+        - closet.max_items
+        - recs.daily_limit
+        - recs.context.full
+        - recs.future_planning
+        - avatar.level
+        - tryon.generative
+        - views.missing_view
+        - credits.monthly
+        - credits.topup
+        - credits.weights
+        - trends.level
+        - analytics.wardrobe
+        - processing.priority
+        - export.multi_angle
+        - features.early_access
+        - chat.stylist
+        - data.export
+    EntitlementGrantKind:
+      type: string
+      description: |
+        The kind of grant that supplied the value (doc 12 §3.2): the subscription's plan, the
+        3-day trial (doc 12 §2), a promotion, or a capability kept from an older plan version
+        (doc 12 §5.5). Absent from a `ResolvedEntitlement` when no active grant supplies the
+        entitlement and its Free-plan value applies. Mirrors shared-kernel
+        `ENTITLEMENT_GRANT_KINDS`.
+      enum: [plan_grant, trial_grant, promo_grant, grandfather_grant]
+    EntitlementLifecycleState:
+      type: string
+      description: |
+        Lifecycle state of the caller's entitlements (doc 03 §4.3): the server-granted trial,
+        Free, a paid subscription, its billing-retry grace period, or a cancelled subscription
+        still paid until its period ends. Mirrors shared-kernel `ENTITLEMENT_LIFECYCLE_STATES`.
+      enum: [trial, free, active_paid, grace, cancelled_active]
+    EntitlementLevel:
+      type: string
+      description: |
+        One of the levels the shared-kernel registry lists for the entitlement
+        (`registry/entitlements.json`, `levels`, lowest first), e.g. `G2` for
+        `tryon.generative`. A string, not an enum, because each level entitlement has levels of
+        its own.
+      pattern: '^[A-Za-z0-9]+(_[a-z0-9]+)*$'
+      maxLength: 32
+      examples: ['G2']

@@ -339,6 +339,12 @@ public final class CaptureModel {
 
   // MARK: - Library import
 
+  /// The picked still while its tips show (`cap-screen-import-tips` shows it above the tips, SC20).
+  public var importedPhoto: CapturePhotoID? {
+    guard case .importTips = screen else { return nil }
+    return review?.front
+  }
+
   /// The picked still and the platform's observation of it. No failing check: straight to review.
   public func importPicked(_ photo: CapturePhotoID, observation: CaptureObservation) {
     let family = importFamily

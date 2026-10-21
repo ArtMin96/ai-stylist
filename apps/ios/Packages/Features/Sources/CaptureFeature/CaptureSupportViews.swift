@@ -26,27 +26,36 @@
           closeID: "cap-camera-close",
           onClose: onClose
         )
-        ScrollView {
-          VStack(alignment: .leading, spacing: AppSpacing.space12) {
-            AppIcon(glyph, size: .xl, tint: .textSecondary)
-            Text(CaptureText.localized(titleKey))
-              .font(theme.font(AppTypography.title3))
-              .foregroundStyle(theme.color(.text))
-              .accessibilityAddTraits(.isHeader)
-            Text(CaptureText.localized(bodyKey))
-              .font(theme.font(card.typography))
-              .foregroundStyle(theme.color(.textSecondary))
-              .fixedSize(horizontal: false, vertical: true)
-            VStack(spacing: AppSpacing.space12) {
-              actions()
+        // SC20: the C04 state card sits in the middle of the screen; it scrolls at large text sizes.
+        GeometryReader { proxy in
+          ScrollView {
+            VStack(spacing: AppSpacing.space8) {
+              AppIcon(glyph, size: .xl, tint: .textSecondary)
+                .frame(width: CaptureMetrics.stateSlotWidth, height: CaptureMetrics.stateSlotHeight)
+                .background(RoundedRectangle(cornerRadius: AppRadius.radius16).fill(theme.color(.surface2)))
+                .padding(.bottom, AppSpacing.space4)
+              Text(CaptureText.localized(titleKey))
+                .font(theme.font(AppTypography.title3))
+                .foregroundStyle(theme.color(.text))
+                .accessibilityAddTraits(.isHeader)
+              Text(CaptureText.localized(bodyKey))
+                .font(theme.font(card.typography))
+                .foregroundStyle(theme.color(.textSecondary))
+                .fixedSize(horizontal: false, vertical: true)
+              VStack(spacing: AppSpacing.space8) {
+                actions()
+              }
+              .padding(.top, AppSpacing.space8)
             }
-            .padding(.top, AppSpacing.space8)
+            .multilineTextAlignment(.center)
+            .padding(.top, card.paddingTop)
+            .padding(.horizontal, card.paddingStart)
+            .padding(.bottom, card.paddingBottom)
+            .background(RoundedRectangle(cornerRadius: card.rounded).fill(theme.color(.surface)))
+            .overlay(RoundedRectangle(cornerRadius: card.rounded).strokeBorder(theme.color(.divider), lineWidth: 1))
+            .padding(AppSpacing.space20)
+            .frame(minHeight: proxy.size.height)
           }
-          .padding(.top, card.paddingTop)
-          .padding(.horizontal, card.paddingStart)
-          .padding(.bottom, card.paddingBottom)
-          .background(RoundedRectangle(cornerRadius: card.rounded).fill(theme.color(.surface)))
-          .padding(AppSpacing.space20)
         }
       }
       .background(theme.color(.background).ignoresSafeArea())
@@ -63,7 +72,7 @@
     var body: some View {
       CaptureStateScreen(
         screenID: "cap-screen-permission",
-        glyph: .privacy,
+        glyph: .capture,
         titleKey: "capture.access.permission.title",
         bodyKey: "capture.access.permission.body",
         onClose: model.close
@@ -81,9 +90,8 @@
         .accessibilityIdentifier("cap-permission-settings")
         AppButton(
           CaptureText.localized("capture.access.import"),
-          variant: .secondary,
-          size: .large,
-          leadingIcon: .photo,
+          variant: .tonal,
+          size: .card,
           fullWidth: true,
           action: model.startImport
         )
@@ -99,7 +107,7 @@
     var body: some View {
       CaptureStateScreen(
         screenID: "cap-screen-no-camera",
-        glyph: .photo,
+        glyph: .capture,
         titleKey: "capture.access.noCamera.title",
         bodyKey: "capture.access.noCamera.body",
         onClose: model.close
@@ -108,7 +116,6 @@
           CaptureText.localized("capture.access.import"),
           variant: .primary,
           size: .card,
-          leadingIcon: .photo,
           fullWidth: true,
           action: model.startImport
         )

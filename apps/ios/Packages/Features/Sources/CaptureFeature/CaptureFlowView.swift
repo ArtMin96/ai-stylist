@@ -79,7 +79,7 @@
       case .importPicker:
         CaptureImportPickerView(model: model, photos: controller.photos)
       case .importTips(let tips):
-        CaptureImportTipsView(model: model, tips: tips)
+        CaptureImportTipsView(model: model, tips: tips, photos: controller.photos)
       case .review(let review):
         CaptureReviewView(model: model, review: review, photos: controller.photos)
       case .batchSummary(let photoIDs):

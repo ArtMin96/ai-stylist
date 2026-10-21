@@ -373,8 +373,10 @@ struct CaptureImportTests {
     model.startImport()
     model.importPicked(front, observation: darkEmptyStill)
     #expect(model.screen == .importTips([.noItem, .tooDark]))
+    #expect(model.importedPhoto == front)
     model.keepImportAnyway()
     #expect(review(model)?.front == front)
+    #expect(model.importedPhoto == nil)
   }
 
   @Test("Choose another opens the system picker again")

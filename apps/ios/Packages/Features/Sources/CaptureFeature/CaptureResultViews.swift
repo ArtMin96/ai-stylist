@@ -225,37 +225,42 @@
     }
   }
 
-  /// `cap-screen-import-tips`: each failing check of the still as a tip; "Keep anyway" and "Choose
-  /// another". An import is never refused.
+  /// `cap-screen-import-tips` (SC20): the picked photo, then each failing check of it as a C04 warning
+  /// banner; "Choose another" and "Keep anyway". An import is never refused.
   struct CaptureImportTipsView: View {
     let model: CaptureModel
     let tips: [CaptureHint]
+    let photos: CapturePhotoStore
     @Environment(\.appTheme) private var theme
 
     var body: some View {
       VStack(spacing: 0) {
         CaptureModalHeader(
-          title: CaptureText.localized("capture.access.header"),
+          title: CaptureText.localized("capture.review.title"),
           closeID: "cap-import-close",
           onClose: model.close
         )
         ScrollView {
-          VStack(alignment: .leading, spacing: AppSpacing.space16) {
+          VStack(alignment: .leading, spacing: 0) {
+            if let photo = model.importedPhoto {
+              CapturePhotoTile(
+                image: photos.images[photo],
+                label: CaptureText.localized("capture.review.photo.front"),
+                height: CaptureMetrics.importPhotoHeight,
+                cornerRadius: AppRadius.radius24
+              )
+              .padding(.bottom, AppSpacing.space20)
+            }
             Text(CaptureText.localized("capture.import.title"))
-              .font(theme.font(AppTypography.title3))
+              .font(theme.font(AppTypography.headline))
               .foregroundStyle(theme.color(.text))
               .accessibilityAddTraits(.isHeader)
-            ForEach(tips, id: \.self) { tip in
-              HStack(alignment: .firstTextBaseline, spacing: AppSpacing.space12) {
-                AppIcon(CaptureHintCard.glyph(for: tip), size: .md, tint: .warningFg)
-                Text(CaptureText.hint(tip, guide: CaptureGuide(family: .generic, mode: .flat, side: .front)))
-                  .font(theme.font(AppTypography.callout))
-                  .foregroundStyle(theme.color(.text))
-                  .fixedSize(horizontal: false, vertical: true)
+            VStack(spacing: AppSpacing.space8) {
+              ForEach(tips, id: \.self) { tip in
+                tipBanner(tip)
               }
-              .accessibilityElement(children: .combine)
-              .accessibilityIdentifier("cap-import-tip-\(tip.rawValue.replacingOccurrences(of: "cap-hint-", with: ""))")
             }
+            .padding(.top, AppSpacing.space12)
           }
           .frame(maxWidth: .infinity, alignment: .leading)
           .padding(AppSpacing.space20)
@@ -284,6 +289,25 @@
       .background(theme.color(.background).ignoresSafeArea())
       .accessibilityElement(children: .contain)
       .accessibilityIdentifier("cap-screen-import-tips")
+    }
+
+    /// One failing check as a C04 warning banner: icon md + the hint's words (never colour alone).
+    private func tipBanner(_ tip: CaptureHint) -> some View {
+      let banner = CaptureTokens(theme: theme).bannerWarning
+      return HStack(alignment: .firstTextBaseline, spacing: CaptureMetrics.hintGap) {
+        AppIcon(CaptureHintCard.glyph(for: tip), size: .md, tint: .warningFg)
+        Text(CaptureText.hint(tip, guide: CaptureGuide(family: .generic, mode: .flat, side: .front)))
+          .font(theme.font(banner.typography))
+          .foregroundStyle(theme.color(banner.textColor))
+          .fixedSize(horizontal: false, vertical: true)
+          .frame(maxWidth: .infinity, alignment: .leading)
+      }
+      .padding(.vertical, banner.paddingTop)
+      // No dismiss action here, so both sides take the banner's leading padding (SC20: 12 14).
+      .padding(.horizontal, banner.paddingStart)
+      .background(RoundedRectangle(cornerRadius: banner.rounded).fill(theme.color(banner.backgroundColor)))
+      .accessibilityElement(children: .combine)
+      .accessibilityIdentifier("cap-import-tip-\(tip.rawValue.replacingOccurrences(of: "cap-hint-", with: ""))")
     }
   }
 
@@ -314,7 +338,7 @@
             LazyVGrid(columns: columns, spacing: AppSpacing.space12) {
               ForEach(Array(photoIDs.enumerated()), id: \.offset) { index, id in
                 let label = CaptureText.formatted("capture.summary.photo", index + 1)
-                VStack(spacing: AppSpacing.space4) {
+                VStack(alignment: .leading, spacing: AppSpacing.space4) {
                   CapturePhotoTile(image: photos.images[id], label: label)
                   Text(label)
                     .font(theme.font(AppTypography.caption))

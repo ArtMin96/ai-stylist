@@ -50,6 +50,11 @@
     // Review photo (SC19): one photo 350 high; front and back side by side 220 high.
     static let reviewPhotoHeight = 350.0
     static let reviewPairPhotoHeight = 220.0
+    // Import tips photo (SC20): 280 high.
+    static let importPhotoHeight = 280.0
+    // C04 state card's art slot (SC20 permission and no camera): 96 x 64.
+    static let stateSlotWidth = 96.0
+    static let stateSlotHeight = 64.0
     // Sheet actions: stacked 52 buttons, gap 10 (C09).
     static let sheetActionGap = 10.0
     /// Every control's minimum touch target (DESIGN.md "Touch targets").
@@ -90,6 +95,15 @@
     }
 
     var stateCard: StateCardTokens {
+      switch theme {
+      case .dark: .dark
+      case .highContrastLight: .hcLight
+      case .highContrastDark: .hcDark
+      default: .light
+      }
+    }
+
+    var bannerWarning: BannerWarningTokens {
       switch theme {
       case .dark: .dark
       case .highContrastLight: .hcLight

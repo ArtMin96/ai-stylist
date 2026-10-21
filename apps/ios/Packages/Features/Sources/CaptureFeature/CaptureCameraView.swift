@@ -58,8 +58,12 @@
         topBar
         preview(output)
         anywaySlot(output)
-        if model.modesOffered.count > 1 {
-          CaptureModeSwitch(modes: model.modesOffered, selected: currentSetup.mode, onSelect: controller.selectMode)
+        // The mode row stays reserved with one mode (SC17), so the preview keeps one size for every family.
+        ZStack {
+          Color.clear.frame(height: CaptureMetrics.minTouchTarget)
+          if model.modesOffered.count > 1 {
+            CaptureModeSwitch(modes: model.modesOffered, selected: currentSetup.mode, onSelect: controller.selectMode)
+          }
         }
         bottomRow(output)
       }

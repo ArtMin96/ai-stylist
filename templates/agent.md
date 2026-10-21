@@ -26,8 +26,9 @@ description: Implements <area work> under <owned paths>. Use for "<trigger>", "<
 # Plain tool names only. A `Bash(just:*)`-style specifier in `tools` does NOT restrict Bash (probed
 # 2026-09-25); the Bash hook below does. Write agents use exactly this line. Engineers that must read
 # current docs for fast-moving APIs (ios, android, api, platform, ml, contracts) add `WebFetch, WebSearch`.
+# Every agent keeps the two context7 documentation tools, readers and writers alike.
 # Read-only reviewers drop `Edit, Write` and the write-set hook.
-tools: Read, Grep, Glob, Edit, Write, Bash, Skill, ToolSearch
+tools: Read, Grep, Glob, Edit, Write, Bash, Skill, ToolSearch, mcp__plugin_context7_context7__resolve-library-id, mcp__plugin_context7_context7__query-docs
 
 # The FULL SKILL.md of each listed skill is injected at startup. Always `agent-operating-contract`, plus
 # every skill whose `metadata.owner-agent` names this agent. A listed skill must not set

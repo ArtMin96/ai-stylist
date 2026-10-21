@@ -3,6 +3,10 @@
 One Claude Code subagent per area of the AI Stylist monorepo. Each runs in its own context with a
 plain tool list, preloads the `agent-operating-contract` skill plus the skills it owns, and carries
 two per-agent hooks: a write-set guard and a Bash allowlist. `CLAUDE.md` always applies on top.
+Every agent's tool list includes the two context7 documentation tools
+(`mcp__plugin_context7_context7__resolve-library-id`, `mcp__plugin_context7_context7__query-docs`),
+so any agent can read current library docs. They come from the `context7@claude-plugins-official`
+plugin, which each developer enables in their own Claude Code settings.
 Every agent that writes or reviews code (all except `docs-maintainer`, `observability-engineer` and
 `release-manager`) also preloads `code-quality`, the per-language line-level quality bar; the table
 below lists only the area skills.

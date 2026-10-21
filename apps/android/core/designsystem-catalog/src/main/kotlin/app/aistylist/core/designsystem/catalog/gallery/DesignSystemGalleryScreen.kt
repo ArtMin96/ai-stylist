@@ -122,6 +122,10 @@ private fun GallerySectionView(
                 when (kind.component) {
                     GalleryComponent.BUTTON -> GalleryButtons()
                     GalleryComponent.ICON -> GalleryIcons()
+                    GalleryComponent.BADGE -> GalleryBadges()
+                    GalleryComponent.CHIP -> GalleryChips()
+                    GalleryComponent.REASON_ROW -> GalleryReasonRow()
+                    GalleryComponent.TAG -> GalleryTags()
                 }
             }
         }

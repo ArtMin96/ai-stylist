@@ -24,23 +24,63 @@ import app.aistylist.core.designsystem.generated.AppColors
 import app.aistylist.core.designsystem.generated.AppRadius
 import app.aistylist.core.designsystem.generated.AppSpacing
 import app.aistylist.core.designsystem.generated.AppTypography
+import app.aistylist.core.designsystem.generated.BadgeSpec
 import app.aistylist.core.designsystem.generated.ButtonSpec
+import app.aistylist.core.designsystem.generated.ChipSpec
+import app.aistylist.core.designsystem.generated.ReasonRowSpec
+import app.aistylist.core.designsystem.generated.TagSpec
 
 /**
- * One DESIGN.md token context: the generated colours and button looks of one scheme. `brand` (S3)
- * is generated but not selected anywhere yet.
+ * One DESIGN.md token context: the generated colours and component looks of one scheme. `brand`
+ * (S3) is generated but not selected anywhere yet.
  *
- * For the catalog and snapshot tests only; product UI uses `AppButton` and `AppTheme {}`.
+ * For the catalog and snapshot tests only; product UI uses the components and `AppTheme {}`.
  */
 enum class AppScheme(
     val colors: AppColors,
     val buttons: ButtonSpec,
+    val chips: ChipSpec,
+    val tags: TagSpec,
+    val badges: BadgeSpec,
+    val reasonRows: ReasonRowSpec,
     val isDark: Boolean,
 ) {
-    LIGHT(AppColors.light, ButtonSpec.light, isDark = false),
-    DARK(AppColors.dark, ButtonSpec.dark, isDark = true),
-    HC_LIGHT(AppColors.hcLight, ButtonSpec.hcLight, isDark = false),
-    HC_DARK(AppColors.hcDark, ButtonSpec.hcDark, isDark = true),
+    LIGHT(
+        AppColors.light,
+        ButtonSpec.light,
+        ChipSpec.light,
+        TagSpec.light,
+        BadgeSpec.light,
+        ReasonRowSpec.light,
+        isDark = false,
+    ),
+    DARK(
+        AppColors.dark,
+        ButtonSpec.dark,
+        ChipSpec.dark,
+        TagSpec.dark,
+        BadgeSpec.dark,
+        ReasonRowSpec.dark,
+        isDark = true,
+    ),
+    HC_LIGHT(
+        AppColors.hcLight,
+        ButtonSpec.hcLight,
+        ChipSpec.hcLight,
+        TagSpec.hcLight,
+        BadgeSpec.hcLight,
+        ReasonRowSpec.hcLight,
+        isDark = false,
+    ),
+    HC_DARK(
+        AppColors.hcDark,
+        ButtonSpec.hcDark,
+        ChipSpec.hcDark,
+        TagSpec.hcDark,
+        BadgeSpec.hcDark,
+        ReasonRowSpec.hcDark,
+        isDark = true,
+    ),
     ;
 
     companion object {
@@ -79,7 +119,7 @@ fun AppTheme(content: @Composable () -> Unit) {
 /**
  * [AppTheme] with a fixed scheme (catalog previews and tests).
  *
- * For the catalog and snapshot tests only; product UI uses `AppButton` and `AppTheme {}`.
+ * For the catalog and snapshot tests only; product UI uses the components and `AppTheme {}`.
  */
 @Composable
 fun AppTheme(
@@ -110,6 +150,26 @@ object AppTheme {
         @Composable
         @ReadOnlyComposable
         get() = LocalAppScheme.current.buttons
+
+    val chips: ChipSpec
+        @Composable
+        @ReadOnlyComposable
+        get() = LocalAppScheme.current.chips
+
+    val tags: TagSpec
+        @Composable
+        @ReadOnlyComposable
+        get() = LocalAppScheme.current.tags
+
+    val badges: BadgeSpec
+        @Composable
+        @ReadOnlyComposable
+        get() = LocalAppScheme.current.badges
+
+    val reasonRows: ReasonRowSpec
+        @Composable
+        @ReadOnlyComposable
+        get() = LocalAppScheme.current.reasonRows
 
     /** The type styles; render one with [toTextStyle] (bundled fonts). */
     val typography: AppTypography get() = AppTypography

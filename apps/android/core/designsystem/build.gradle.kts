@@ -1,7 +1,7 @@
 // :core:designsystem: the app-internal design system (DEC-87, ADR-0011): generated DESIGN.md tokens,
-// the bundled fonts, AppTheme and the base components (AppButton, AppIcon). It depends on no other project
-// module (checkModuleGraph). The generated tokens live in src/main/kotlin/.../generated/ (written by
-// `just generate`, never hand-edited).
+// the bundled fonts, AppTheme and the base components (AppButton, AppIcon, AppChip, AppTag, AppBadge,
+// AppReasonRow). It depends on no other project module (checkModuleGraph). The generated tokens live
+// in src/main/kotlin/.../generated/ (written by `just generate`, never hand-edited).
 plugins {
     alias(libs.plugins.aistylist.android.library.compose)
 }

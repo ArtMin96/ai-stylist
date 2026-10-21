@@ -90,6 +90,29 @@ public enum EntitlementName: String, CaseIterable, Sendable {
     case .dataExport: "Personal data export"
     }
   }
+
+  /// Levels of a `level` entitlement, lowest first (planning/12 §3.2); empty for every other kind.
+  public var levels: [String] {
+    switch self {
+    case .closetMaxItems: []
+    case .recsDailyLimit: []
+    case .recsContextFull: []
+    case .recsFuturePlanning: []
+    case .avatarLevel: ["A1", "A1_all_poses"]
+    case .tryonGenerative: ["G0", "G2"]
+    case .viewsMissingView: []
+    case .creditsMonthly: []
+    case .creditsTopup: []
+    case .creditsWeights: []
+    case .trendsLevel: ["basic", "personalized"]
+    case .analyticsWardrobe: []
+    case .processingPriority: []
+    case .exportMultiAngle: []
+    case .featuresEarlyAccess: []
+    case .chatStylist: []
+    case .dataExport: []
+    }
+  }
 }
 
 /// Weighted generative task metered against `credits.monthly` (planning/12 §3.3).

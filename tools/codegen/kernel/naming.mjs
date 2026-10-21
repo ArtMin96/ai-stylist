@@ -58,3 +58,25 @@ export const num = (n) => {
   const s = String(n);
   return /[.eE]/.test(s) ? s : `${s}.0`;
 };
+
+/** An Int literal in Swift/Kotlin (an HTTP status); `num` would write `400.0`. */
+export const int = (n) => {
+  if (!Number.isSafeInteger(n)) {
+    throw new Error(`not an integer in registry: ${JSON.stringify(n)}`);
+  }
+  return String(n);
+};
+
+/**
+ * Two registry values that map to one Swift or Kotlin identifier (`recs.context.full` and
+ * `recs.context_full`) would not compile, and no gate compiles the kernel, so the run fails here.
+ */
+export function assertUniqueIds(typeName, cases) {
+  const seen = new Set();
+  for (const { id, raw } of cases) {
+    if (seen.has(id)) {
+      throw new Error(`${typeName}: '${raw}' maps to the identifier '${id}' of another value`);
+    }
+    seen.add(id);
+  }
+}

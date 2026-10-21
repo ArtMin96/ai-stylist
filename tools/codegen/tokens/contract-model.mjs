@@ -1,8 +1,8 @@
 // A checked component contract + the in-memory token model -> the API model the component-API
 // emitters read (ADR-0011 follow-up 7, DEC-87): the axes, the allowed combinations and one ready,
 // merged look per combination and context (owner decision 2026-10-20: base, then state, then
-// size, then the size's icon slot). Also the reference grammar the checker (contracts.mjs)
-// shares. Only run buildApi on a contract that passed CC-01 to CC-08.
+// size, then the size's icon slots). Also the reference grammar the checker (contracts.mjs)
+// shares. Only run buildApi on a contract that passed CC-01 to CC-08 and CC-13.
 // tools/codegen/tokens/README.md, "Component contracts".
 import { contextsOf, typedValue } from './declarations.mjs';
 import {
@@ -15,21 +15,61 @@ import {
   tokensTypeName,
 } from './naming.mjs';
 import { ICON_SIZE_EXTENSION, resolveComponents } from './normalise.mjs';
-import { CONTEXTS, iconStepOf, isColourProperty, splitState } from './syntax.mjs';
+import {
+  CONTEXTS,
+  iconStepOf,
+  isColourProperty,
+  isIconSizeProperty,
+  splitState,
+} from './syntax.mjs';
 
 /** The state every variant has before any state applies: its base entry is this look. */
 export const BASE_STATE = 'enabled';
 
 /**
- * The leading-icon slot (the leading icon, or the loading spinner in its place). It depends on the
- * size only, never on the variant (.impeccable/components/button.yaml, `leadingIcon`; DESIGN.md
- * "Buttons"), so every look reads it from the shared size entry `<id>-<size>` (`slotEntryOf`), even
- * where the variant's own entry holds that size's height and padding.
+ * The icon slots: the leading one (the leading icon, or the loading spinner in its place) and the
+ * trailing one after the label (.impeccable/components/README.md G3: a chevron, a pencil). A slot
+ * follows the size (button.yaml `leadingIcon`; DESIGN.md "Buttons", "Chips and tags (C03)"): the
+ * shared size entry `<id>-<size>` (`slotEntryOf`) holds it for every variant, even where the
+ * variant's own entry holds that size's height and padding. A slot value the variant's own base or
+ * state entry names wins over it (G6: the group and sort chip's gap 6 at 36).
  */
-export const ICON_SLOT = ['iconSize', 'iconGap'];
+export const LEADING_SLOT = ['iconSize', 'iconGap'];
+export const TRAILING_SLOT = ['trailingIconSize', 'trailingIconGap'];
+export const ICON_SLOTS = [...LEADING_SLOT, ...TRAILING_SLOT];
+/** The slot properties that name an icon size: `iconSize`, `trailingIconSize`. */
+export const SLOT_SIZES = ICON_SLOTS.filter(isIconSizeProperty);
 
-/** The shared size entry holding a size's icon slot: `button`, `compact` -> `button-compact`. */
+/** The shared size entry holding a size's icon slots: `button`, `compact` -> `button-compact`. */
 export const slotEntryOf = (id, size) => `${id}-${size}`;
+
+/** An `icons` source draws an icon: a glyph id or a `{props.…}` reference; `null` draws none. */
+const drawsIcon = (source) => source !== undefined && source !== null;
+
+/**
+ * The icon slots each used size draws, in `sizes` order: `[size, { leading, trailing }]` (G11).
+ * With `icons` (G4) a look draws a slot when its state's entry there, else its variant's, names an
+ * icon. Without `icons` every look draws the leading slot (the button: its `leadingIcon` prop, or
+ * the spinner while loading) and none a trailing one. A compound state (G2) that takes its
+ * toggle's icons adds no size: a compound is allowed only where its toggle is.
+ */
+export function slotsDrawn(contract) {
+  const drawn = new Map();
+  for (const { variant, size, state } of allowedCombinations(contract)) {
+    const slots = drawn.get(size) ?? { leading: false, trailing: false };
+    if (contract.icons === undefined) {
+      slots.leading = true;
+    } else {
+      const icons = contract.icons[variant] ?? {};
+      const own = icons.states?.[state] ?? {};
+      const source = (side) => (Object.hasOwn(own, side) ? own[side] : icons[side]);
+      slots.leading ||= drawsIcon(source('leading'));
+      slots.trailing ||= drawsIcon(source('trailing'));
+    }
+    drawn.set(size, slots);
+  }
+  return contract.sizes.filter((size) => drawn.has(size)).map((size) => [size, drawn.get(size)]);
+}
 
 export const isToken = (node) => Object.hasOwn(node, '$value');
 
@@ -105,12 +145,14 @@ export function tableContexts(contract, model) {
  * The API model of one checked contract (`{ findings, api }`): its axes, its allowed combinations,
  * the fields of its merged look, that look for every combination in every context of the table,
  * and its gallery. A field some look lacks is optional; so is an overlay. A look with a
- * `borderColor` ring also gets `borderWidth` from `<id>-outline-ring` (.impeccable/components
- * README, "Fields": the ring's width). A missing ring width or a property whose type differs
- * between looks is a CC-06 finding. The gallery's `title` is `<board> <gallery.title>` and its
- * `slug` the kebab of that title (`C01 Buttons`, `c01-buttons`). With `iconSizeType` (the size
- * enum of the approved icon set beside it: `AppIconSize`), an `iconSize` that names an icon size
- * is that enum's case (`.md`) instead of its number (CC-12 makes every slot name one).
+ * `borderColor` ring and no `borderWidth` of its own gets the default width of `<id>-outline-ring`
+ * (.impeccable/components README, "Fields": the ring's width; G5: an entry's own `borderWidth`
+ * wins, the never-suggest chip's pressed 2 px). A ring with neither width, or a property whose
+ * type differs between looks, is a CC-06 finding. The gallery's `title` is
+ * `<board> <gallery.title>` and its `slug` the kebab of that title (`C01 Buttons`, `c01-buttons`).
+ * With `iconSizeType` (the size enum of the approved icon set beside it: `AppIconSize`), a slot
+ * size (SLOT_SIZES) that names an icon size is that enum's case (`.md`) instead of its number
+ * (CC-12 makes every drawn slot name one).
  */
 export function buildApi(contract, file, model, iconSizeType = null) {
   const findings = [];
@@ -122,7 +164,7 @@ export function buildApi(contract, file, model, iconSizeType = null) {
     const resolved = resolveComponents(model, context);
     looks[context] = combinations.map((combo) => {
       const values = lookValues(contract, combo, { resolved, context, model, iconSizeType });
-      if (values.borderColor) {
+      if (values.borderColor && !values.borderWidth) {
         const width = resolved[ring]?.width;
         if (width && isToken(width)) values.borderWidth = typedValue(width);
         else {
@@ -160,35 +202,45 @@ export function buildApi(contract, file, model, iconSizeType = null) {
  * One look's typed values (`typedValue`): the base entry's properties, then the state's, then the
  * size entry's, later overriding earlier. A size entry that is the base itself adds nothing: the
  * base is already applied, and applying it again would undo the state (the destructive-filled
- * disabled label weight). Last, the icon slot replaces any slot value with the shared size
- * entry's (ICON_SLOT). An overlay state adds a field named after its component that holds that
- * component's instance for the context (`focusRing: FocusRingTokens.hcDark`) and changes no colour
- * (owner decision 2026-10-20: focused is the focus ring drawn over the enabled look).
+ * disabled label weight). Last, the icon slots (ICON_SLOTS, in that order): each value the base or
+ * the state entry names (G6), else the shared size entry's, which a size without a drawn slot may
+ * lack (G11). An overlay state adds a field named after its component that holds that component's
+ * instance for the context (`focusRing: FocusRingTokens.hcDark`) and changes no colour (owner
+ * decision 2026-10-20: focused is the focus ring drawn over the enabled look).
  */
 function lookValues(contract, { variant, size, state }, table) {
   const { resolved, context, model, iconSizeType } = table;
   const tokens = contract.tokens[variant];
   const base = resolveReference(tokens.base, model).component;
   const props = propertiesOf(resolved[base]);
+  const own = slotOf(props);
   const overlays = {};
   const stateReference = state === BASE_STATE ? undefined : tokens.states[state];
   if (stateReference) {
     const r = resolveReference(stateReference, model);
     if (r.state === null) overlays[memberId(r.component)] = r.component;
-    else Object.assign(props, propertiesOf(resolved[r.component][r.state]));
+    else {
+      const stateProps = propertiesOf(resolved[r.component][r.state]);
+      Object.assign(props, stateProps);
+      Object.assign(own, slotOf(stateProps));
+    }
   }
   const sizeEntry = resolveReference(tokens.sizes[size], model).component;
   if (sizeEntry !== base) Object.assign(props, propertiesOf(resolved[sizeEntry]));
-  // The icon slot comes from the shared size entry only (ICON_SLOT), after everything else.
-  for (const name of ICON_SLOT) delete props[name];
-  Object.assign(props, slotOf(resolved[slotEntryOf(contract.id, size)]));
+  for (const name of ICON_SLOTS) delete props[name];
+  const shared = slotOf(resolved[slotEntryOf(contract.id, size)] ?? {});
+  for (const name of ICON_SLOTS) {
+    const token = own[name] ?? shared[name];
+    if (token) props[name] = token;
+  }
   const values = Object.fromEntries(
     Object.entries(props).map(([name, token]) => [name, typedValue(token)]),
   );
-  const iconSize = iconSizeKeyOf(props.iconSize);
-  if (iconSizeType && iconSize) {
+  for (const name of SLOT_SIZES) {
+    const iconSize = iconSizeKeyOf(props[name]);
+    if (!iconSizeType || !iconSize) continue;
     const value = { t: 'case', type: iconSizeType, id: memberId(iconStepOf(iconSize)) };
-    values.iconSize = { type: iconSizeType, value };
+    values[name] = { type: iconSizeType, value };
   }
   for (const [name, component] of Object.entries(overlays)) {
     const type = tokensTypeName(component);
@@ -201,8 +253,14 @@ function lookValues(contract, { variant, size, state }, table) {
 const propertiesOf = (group) =>
   Object.fromEntries(Object.entries(group).filter(([, node]) => isToken(node)));
 
-/** The ICON_SLOT tokens of a resolved size entry, in ICON_SLOT order (CC-08 guarantees both). */
-const slotOf = (group) => Object.fromEntries(ICON_SLOT.map((name) => [name, group[name]]));
+/** The ICON_SLOTS tokens a resolved group holds, in ICON_SLOTS order. */
+const slotOf = (group) =>
+  Object.fromEntries(
+    ICON_SLOTS.filter((name) => group[name] && isToken(group[name])).map((name) => [
+      name,
+      group[name],
+    ]),
+  );
 
 /**
  * The merged look's fields: colours first, then `borderWidth`, then the other properties, then

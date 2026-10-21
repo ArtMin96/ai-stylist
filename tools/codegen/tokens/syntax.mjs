@@ -110,12 +110,19 @@ export const ICON_SIZE_KEY = /^icon-[a-z][a-z0-9]*$/;
 export const iconStepOf = (key) => key.slice('icon-'.length);
 
 /**
- * The component an `iconSize` value names, or null: the bare step key (`icon-md`, which the
- * pinned design.md lint accepts) or a reference (`{components.icon-md}`, which that lint cannot
- * resolve, so TK-12 fails on it). Any other property, or a number, names none.
+ * A property that sizes an icon slot: `iconSize` (the leading slot) or any `…IconSize`
+ * (`trailingIconSize`, .impeccable/components/README.md G3). Only these may name an icon size.
+ */
+export const isIconSizeProperty = (prop) => prop === 'iconSize' || prop.endsWith('IconSize');
+
+/**
+ * The component an icon-slot size (isIconSizeProperty) names, or null: the bare step key
+ * (`icon-md`, which the pinned design.md lint accepts) or a reference (`{components.icon-md}`,
+ * which that lint cannot resolve, so TK-12 fails on it). Any other property, or a number, names
+ * none.
  */
 export function iconSizeNamed(prop, value) {
-  if (prop !== 'iconSize' || typeof value !== 'string') return null;
+  if (!isIconSizeProperty(prop) || typeof value !== 'string') return null;
   const ref = parseReference(value);
   if (ref) return ref.group === 'components' ? ref.key : null;
   return ICON_SIZE_KEY.test(value.trim()) ? value.trim() : null;

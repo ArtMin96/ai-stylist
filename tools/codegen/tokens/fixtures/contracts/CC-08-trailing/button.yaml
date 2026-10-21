@@ -1,0 +1,72 @@
+# CC-08 fixture: ../_valid/button.yaml with one defect. primary also draws the trailing plus, so
+# its small size draws the trailing slot, which {components.button-small} does not hold
+# (trailingIconSize, trailingIconGap; README G3, G11).
+id: button
+board: C01
+name: AppButton
+
+props:
+  - name: label
+    type: string
+    required: true
+  - name: action
+    type: action
+    required: true
+  - name: leadingIcon
+    type: icon
+    default: null
+  - name: loading
+    type: bool
+    default: false
+
+variants: [primary, secondary]
+sizes: [large, small]
+states: [enabled, pressed, focused, disabled, loading]
+
+combinations:
+  primary:
+    sizes: [large, small]
+    states: [enabled, pressed, focused, disabled, loading]
+  secondary:
+    sizes: [large]
+    states: [enabled, pressed, focused, loading]
+
+tokens:
+  primary:
+    base: '{components.button-primary}'
+    states:
+      pressed: '{components.button-primary-pressed}'
+      focused: '{components.focus-ring}'
+      disabled: '{components.button-primary-disabled}'
+    sizes:
+      large: '{components.button-primary}'
+      small: '{components.button-small}'
+  secondary:
+    base: '{components.button-secondary}'
+    states:
+      pressed: '{components.button-secondary-pressed}'
+      focused: '{components.focus-ring}'
+      loading: '{components.button-secondary-loading}'
+    sizes:
+      large: '{components.button-secondary}'
+
+# The icons each variant draws: the caller's leading icon, and on secondary a trailing plus, whose
+# slot only button-large holds in ../DESIGN.md (no small size draws one).
+icons:
+  primary: { leading: '{props.leadingIcon}', trailing: plus }
+  secondary: { leading: '{props.leadingIcon}', trailing: plus }
+
+accessibility:
+  role: button
+  label: '{props.label}'
+  busy: loading
+  minTouchTarget: { ios: 44, android: 48 }
+
+gallery:
+  title: Fixture buttons
+  label: Fixture label
+  include: all
+
+testId: 'ds-{component}-{variant}-{size}-{state}'
+
+approved: 2026-10-20

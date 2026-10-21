@@ -8,6 +8,7 @@ import {
   ICON_SIZE_KEY,
   M3_ROLES,
   iconSizeNamed,
+  isIconSizeProperty,
   META_KEYS,
   TOKEN_GROUPS,
   dynamicTypeName,
@@ -283,14 +284,16 @@ function checkPadding(ctx, at, value, scheme) {
 }
 
 /**
- * TK-06 a component an `iconSize` names (`icon-md` or `{components.icon-md}`, iconSizeNamed), or
- * any other `{components.<key>}` reference: only `iconSize` may name a component, and that
- * component is an icon size (`icon-<step>: { size: <n>px, strokeWidth: <w> }`, the C02 scale).
+ * TK-06 a component an icon-slot size names (`iconSize` or `…IconSize`: `icon-md` or
+ * `{components.icon-md}`, iconSizeNamed), or any other `{components.<key>}` reference: only an
+ * icon-slot size may name a component, and that component is an icon size
+ * (`icon-<step>: { size: <n>px, strokeWidth: <w> }`, the C02 scale).
  */
 function checkIconSizeReference({ fm, add }, at, prop, ref) {
   const text = `{components.${ref.key}}`;
-  if (prop !== 'iconSize') {
-    add('TK-06', at, `\`${text}\` cannot be referenced here: only iconSize names a component`);
+  if (!isIconSizeProperty(prop)) {
+    const message = 'only iconSize or a …IconSize property names a component';
+    add('TK-06', at, `\`${text}\` cannot be referenced here: ${message}`);
     return;
   }
   if (!Object.hasOwn(fm.components, ref.key)) {

@@ -2,9 +2,9 @@
 // (ADR-0011 follow-up 7, DEC-87; field rules: .impeccable/components/README.md). CC-01 parses the
 // YAML and checks it against component-contract.schema.json with the generators' shared Ajv
 // (../ajv.mjs: draft 2020-12 + ajv-formats from the packages/contracts devDependencies, as
-// gen-kernel.mjs uses it). A contract without `kind` is a control (the button): CC-02 to CC-08
-// check its fields against each other and against the in-memory token model, and
-// contract-model.mjs then merges the looks; beside an icon set its icon slot also meets CC-12.
+// gen-kernel.mjs uses it). A contract without `kind` is a control (the button): CC-02 to CC-08 and
+// CC-13 check its fields against each other and against the in-memory token model, and
+// contract-model.mjs then merges the looks; beside an icon set its icon slots also meet CC-12.
 // `kind: icon-set` (C02) runs CC-02 and CC-09 to CC-11 (icon-set.mjs) instead. Rules: tools/codegen/tokens/README.md, "Component contracts" and
 // "Icon sets".
 import { readdirSync, readFileSync } from 'node:fs';
@@ -15,7 +15,8 @@ import { parseDocument } from 'yaml';
 import { createAjv } from '../ajv.mjs';
 import {
   BASE_STATE,
-  ICON_SLOT,
+  LEADING_SLOT,
+  TRAILING_SLOT,
   allowedCombinations,
   buildApi,
   comboKey,
@@ -24,6 +25,7 @@ import {
   isToken,
   resolveReference,
   slotEntryOf,
+  slotsDrawn,
   tableContexts,
 } from './contract-model.mjs';
 import { contextsOf, typedValue } from './declarations.mjs';
@@ -117,10 +119,14 @@ function checkParsed(contract, file, model, iconSets) {
   return { findings: [], api, pending: contract.approved === 'pending' };
 }
 
-/** A control contract (no `kind`: the button): CC-02 to CC-08, then CC-12, in their stages. */
+/** A control contract (no `kind`: the button): CC-02 to CC-08 and CC-13, then CC-12, in stages. */
 const controlStages = (contract, file, model, iconSets) => [
   () => [...checkId(contract, file), ...checkAxes(contract, file)],
-  () => [...checkTokenShape(contract, file), ...checkUsage(contract, file)],
+  () => [
+    ...checkTokenShape(contract, file),
+    ...checkUsage(contract, file),
+    ...checkTouchTarget(contract, file),
+  ],
   () => checkReferences(contract, file, model),
   () => checkRoles(contract, file, model),
   () => checkIconSlot(contract, file, model),
@@ -237,11 +243,11 @@ function checkTokenShape(contract, file) {
   return out;
 }
 
-/** CC-07: `accessibility.busy` is a state; an explicit gallery names only allowed combinations. */
+/** CC-07: `accessibility.busy` (G1: optional) is a state; a listed gallery names allowed ones. */
 function checkUsage(contract, file) {
   const out = [];
   const { busy } = contract.accessibility;
-  if (!contract.states.includes(busy)) {
+  if (busy !== undefined && !contract.states.includes(busy)) {
     const message = `"${busy}" is not in \`states\``;
     out.push(finding('CC-07', `${file} accessibility.busy`, message));
   }
@@ -254,6 +260,29 @@ function checkUsage(contract, file) {
     out.push(finding('CC-07', `${file} gallery.include.${i}`, message));
   });
   return out;
+}
+
+/** Roles a screen reader reads or skips but nobody activates (G9); every other role acts. */
+const PASSIVE_ROLES = ['text', 'region', 'decorative'];
+
+/**
+ * CC-13: an interactive role (any role outside PASSIVE_ROLES: button, toggle, menu, …) needs
+ * `minTouchTarget` and an `action` prop; a passive one has no `action` prop and may leave the
+ * touch target out (G9: tags, badges, the reason row).
+ */
+function checkTouchTarget(contract, file) {
+  const { role, minTouchTarget } = contract.accessibility;
+  const hasAction = contract.props.some(({ type }) => type === 'action');
+  if (PASSIVE_ROLES.includes(role)) {
+    const message = `role ${role} is never activated, so no prop is an action`;
+    return hasAction ? [finding('CC-13', `${file} props`, message)] : [];
+  }
+  const needs = (where, what) =>
+    finding('CC-13', `${file} ${where}`, `role ${role} is interactive: it needs ${what}`);
+  return [
+    ...(minTouchTarget === undefined ? [needs('accessibility', 'minTouchTarget')] : []),
+    ...(hasAction ? [] : [needs('props', 'an action prop')]),
+  ];
 }
 
 /** CC-05: every `{components.…}` reference resolves in the token model, `{props.…}` to a prop. */
@@ -334,22 +363,25 @@ function isSizeEntry(component, model) {
 }
 
 /**
- * CC-08: every size an allowed combination uses has its shared size entry `<id>-<size>`, and that
- * entry holds the icon slot (ICON_SLOT: `iconSize`, `iconGap`) as dimensions in every context of
- * the table. The slot depends on the size only, so a missing value is a finding, never a default.
+ * CC-08: every size where an allowed look draws an icon slot (slotsDrawn, G11: the leading one,
+ * and the trailing one, G3) has its shared size entry `<id>-<size>`, and that entry holds each
+ * drawn slot (LEADING_SLOT: `iconSize`, `iconGap`; TRAILING_SLOT: `trailingIconSize`,
+ * `trailingIconGap`) as dimensions in every context of the table. The entry is the size's value:
+ * a variant's own slot value wins over it in the merge (G6), but a missing one is a finding here.
  */
 function checkIconSlot(contract, file, model) {
   const out = [];
   const resolved = tableContexts(contract, model).map((c) => resolveComponents(model, c));
-  const sizes = new Set(allowedCombinations(contract).map(({ size }) => size));
-  for (const size of contract.sizes.filter((s) => sizes.has(s))) {
+  for (const [size, { leading, trailing }] of slotsDrawn(contract)) {
+    const slot = [...(leading ? LEADING_SLOT : []), ...(trailing ? TRAILING_SLOT : [])];
+    if (slot.length === 0) continue;
     const entry = slotEntryOf(contract.id, size);
     const at = `${file} sizes.${size}`;
     if (!Object.hasOwn(model.sets.components, entry)) {
       out.push(finding('CC-08', at, `no {components.${entry}} holds the ${size} icon slot`));
       continue;
     }
-    const missing = ICON_SLOT.filter((name) =>
+    const missing = slot.filter((name) =>
       resolved.some((components) => {
         const node = components[entry]?.[name];
         return !node || !isToken(node) || typedValue(node).type !== 'double';

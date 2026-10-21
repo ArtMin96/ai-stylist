@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "Component contract",
-  "description": "One .impeccable/components/<id>.yaml file (ADR-0011 follow-up 7, DEC-87). Field rules: .impeccable/components/README.md. Checked by tools/codegen/tokens/contracts.mjs (rule CC-01); the cross-field rules CC-02 to CC-12 are in tools/codegen/tokens/README.md. Without `kind` it is a control contract (button); `kind: icon-set` is an icon set (C02).",
+  "description": "One .impeccable/components/<id>.yaml file (ADR-0011 follow-up 7, DEC-87). Field rules: .impeccable/components/README.md. Checked by tools/codegen/tokens/contracts.mjs (rule CC-01); the cross-field rules CC-02 to CC-13 are in tools/codegen/tokens/README.md. Without `kind` it is a control contract (button); `kind: icon-set` is an icon set (C02). A control's `icons` (README G4) is accepted by shape only: CC-08 and CC-12 read it for the sizes that draw an icon slot (G11).",
   "type": "object",
   "if": { "type": "object", "properties": { "kind": true }, "required": ["kind"] },
   "then": { "$ref": "#/$defs/iconSet" },
@@ -49,10 +49,15 @@
           "propertyNames": { "$ref": "#/$defs/kebab" },
           "additionalProperties": { "$ref": "#/$defs/variantTokens" }
         },
+        "icons": {
+          "type": "object",
+          "propertyNames": { "$ref": "#/$defs/kebab" },
+          "additionalProperties": { "$ref": "#/$defs/variantIcons" }
+        },
         "accessibility": {
           "type": "object",
           "additionalProperties": false,
-          "required": ["role", "label", "busy", "minTouchTarget"],
+          "required": ["role", "label"],
           "properties": {
             "role": { "type": "string", "pattern": "^[a-z]+$" },
             "label": { "type": "string", "pattern": "^\\{props\\.[a-z][A-Za-z0-9]*\\}$" },
@@ -202,6 +207,34 @@
         "base": { "$ref": "#/$defs/reference" },
         "states": { "$ref": "#/$defs/referenceMap" },
         "sizes": { "$ref": "#/$defs/referenceMap" }
+      }
+    },
+    "iconSource": {
+      "oneOf": [
+        { "type": "null" },
+        { "$ref": "#/$defs/kebab" },
+        { "type": "string", "pattern": "^\\{props\\.[a-z][A-Za-z0-9]*\\}$" }
+      ]
+    },
+    "slotIcons": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "leading": { "$ref": "#/$defs/iconSource" },
+        "trailing": { "$ref": "#/$defs/iconSource" }
+      }
+    },
+    "variantIcons": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "leading": { "$ref": "#/$defs/iconSource" },
+        "trailing": { "$ref": "#/$defs/iconSource" },
+        "states": {
+          "type": "object",
+          "propertyNames": { "$ref": "#/$defs/kebab" },
+          "additionalProperties": { "$ref": "#/$defs/slotIcons" }
+        }
       }
     },
     "galleryItem": {

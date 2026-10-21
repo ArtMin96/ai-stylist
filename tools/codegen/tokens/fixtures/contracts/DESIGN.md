@@ -98,7 +98,9 @@ components:
     textColor: '{colors.text-secondary-dark}'
     typography: '{typography.label-muted}'
   # Shared size entries: each holds its size's icon slot (iconSize, iconGap) for every variant.
-  # button-large serves only the slot: the variants' own bases hold the large height and padding.
+  # button-large serves only the slots: the variants' own bases hold the large height and padding.
+  # It also holds the trailing slot (trailingIconSize, trailingIconGap), which only the large
+  # secondary draws; button-small lacks it on purpose (../CC-08-trailing/button.yaml).
   # button-medium lacks the slot on purpose: only ../CC-08/button.yaml uses the medium size.
   # The slot names an icon size (CC-12), by its key (large: the form the pinned design.md lint
   # accepts) or as a {components.…} reference (small), and the spacing scale; 4px is on no scale.
@@ -107,6 +109,8 @@ components:
     padding: '0 {spacing.16}'
     iconSize: icon-md
     iconGap: '{spacing.8}'
+    trailingIconSize: icon-sm
+    trailingIconGap: 6px
   button-medium: { height: 40px, padding: 0 14px }
   button-small:
     typography: '{typography.body}'

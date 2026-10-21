@@ -3,7 +3,7 @@
 # the DESIGN.md frontmatter parser, our rules TK-01..TK-11 (the repository DESIGN.md passes them;
 # every tools/codegen/tokens/fixtures/TK-NN case fails on its own rule only), the pinned design.md
 # lint hook TK-12 (against a shell stub; the real CLI never runs here), the in-memory DTCG 2025.10
-# model and resolver, the Swift and Kotlin emitters, the component-contract checker CC-01..CC-12
+# model and resolver, the Swift and Kotlin emitters, the component-contract checker CC-01..CC-13
 # (icon sets included) with the SVG path compiler, the golden parity test (both read back into
 # one name -> value table, the icon glyph table included) and the CLI with its output directories.
 # TOKENS_REPO_ROOT=<checkout> runs the repository tests against another checkout's DESIGN.md and

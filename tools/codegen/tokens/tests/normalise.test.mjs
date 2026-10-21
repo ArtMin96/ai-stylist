@@ -216,6 +216,21 @@ test('an iconSize naming an icon size is its px value, and keeps the size it nam
   });
 });
 
+test('a trailing slot (G3): its size names an icon size like iconSize, its gap is a dimension', () => {
+  const model = modelOfEdited((fm) => {
+    fm.components['icon-xs'] = { size: '12px', strokeWidth: 2.2 };
+    fm.components.overlay.trailingIconSize = 'icon-xs';
+    fm.components.overlay.trailingIconGap = '{spacing.4}';
+  });
+  const { overlay } = model.sets.components;
+  assert.deepEqual(overlay.trailingIconSize, {
+    $type: 'dimension',
+    $value: px(12),
+    $extensions: { 'app.iconSize': 'icon-xs' },
+  });
+  assert.deepEqual(overlay.trailingIconGap, { $type: 'dimension', $value: px(4) });
+});
+
 test('an unpaired key beside a scheme-independent one is its own component in every context', () => {
   const unpaired = modelOfEdited((fm, parsed) => {
     fm.components['overlay-dark'] = { backgroundColor: '{colors.surface-2-dark}' };

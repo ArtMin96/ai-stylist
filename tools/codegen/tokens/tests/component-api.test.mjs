@@ -109,6 +109,28 @@ test('the icon slot: an icon-scale step and a gap, md / 6 at compact and md / 8 
   assert.match(repoKotlin(), /\n {36}iconSize = AppIconSize\.MD,\n {36}iconGap = 6\.0,\n/);
 });
 
+test('the trailing slot: an optional icon-scale step and gap, nil / null where a size has none', () => {
+  const fieldsOf = (text, pattern) => {
+    const fields = firstGroups(text, pattern);
+    const after = fields.indexOf(fields.find((field) => field.startsWith('iconGap')));
+    return fields.slice(after + 1, after + 3);
+  };
+  const appearance = block(swift, 'nonisolated public struct ButtonAppearance');
+  assert.deepEqual(fieldsOf(appearance, /^ {2}public let (\w+: \S+)$/gm), [
+    'trailingIconSize: AppIconSize?',
+    'trailingIconGap: Double?',
+  ]);
+  const ktAppearance = block(kotlin, 'data class ButtonAppearance(');
+  assert.deepEqual(fieldsOf(ktAppearance, /^ {4}val (\w+: \S+),$/gm), [
+    'trailingIconSize: AppIconSize?',
+    'trailingIconGap: Double?',
+  ]);
+  assert.match(swift, /\n {10}trailingIconSize: \.sm,\n {10}trailingIconGap: 6\.0,\n/);
+  assert.match(swift, /\n {10}trailingIconSize: nil,\n {10}trailingIconGap: nil,\n/);
+  assert.match(kotlin, /\n {36}trailingIconSize = AppIconSize\.SM,\n {36}trailingIconGap = 6\.0,/);
+  assert.match(kotlin, /\n {36}trailingIconSize = null,\n {36}trailingIconGap = null,\n/);
+});
+
 test('ButtonSpec: one instance per context, the lookup returns none for a disallowed one', () => {
   const spec = block(swift, 'nonisolated public struct ButtonSpec');
   assert.match(spec, /\n {2}public let looks: \[ButtonLook\]\n/);

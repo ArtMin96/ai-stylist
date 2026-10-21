@@ -152,6 +152,30 @@ test('the repository scales and type styles: every step and style named by its D
   }
 });
 
+test('the repository C03 entries: trailing slots, rings, parts and type styles in both tables', () => {
+  const tables = { Swift: swiftTable(repo.swift), Kotlin: kotlinTable(repo.kotlin) };
+  const expected = {
+    'ChipCompactTokens.light.trailingIconSize': 'num:12',
+    'ChipCompactTokens.light.trailingIconGap': 'num:6',
+    'ChipMediumTokens.hcDark.trailingIconSize': 'num:16',
+    'ChipMediumTokens.hcDark.trailingIconGap': 'num:4',
+    'ChipOverrideTokens.dark.borderWidth': 'num:1.5',
+    'TagProvisionalTokens.light.borderDash': 'num:3',
+    'ChipFilterTokens.light.detailTypography': 'ref:AppTypography.labelMdMedium',
+    'ChipFilterTokens.light.detailColor': 'role:TEXT_SECONDARY',
+    'ChipSwatchTokens.dark.swatchEdgeMinContrast': 'num:3',
+    'BadgeDotTokens.light.outerRingWidth': 'num:2',
+    'AppTypography.labelMdNormal.fontWeight': 'num:400',
+    'AppTypography.labelMdMedium.fontWeight': 'num:500',
+    'AppTypography.labelSmMedium.fontSize': 'num:13',
+  };
+  for (const [language, table] of Object.entries(tables)) {
+    for (const [name, value] of Object.entries(expected)) {
+      assert.equal(table[name], value, `${language} ${name}`);
+    }
+  }
+});
+
 test('the contract fixture: both component API files spell the same table', () => {
   assert.deepEqual(swiftTable(contractFixture.swift), kotlinTable(contractFixture.kotlin));
 });

@@ -53,6 +53,13 @@ const ICON_SM = '  icon-sm: { size: 16px, strokeWidth: 1.9 }\n';
 /** The fixture tokens with the `line` (icon-sm by default) replaced by `replacement`. */
 const tokensWith = (replacement, line = ICON_SM) =>
   modelOf(CONTRACT_TOKENS.replace(line, replacement));
+/** The fixture tokens with `line` added to both scheme variants of `entry` (`button-secondary`). */
+const withProperty = (entry, line, text = CONTRACT_TOKENS) =>
+  text.replace(new RegExp(`( {2}${entry}-(light|dark):\\n)`, 'g'), `$1    ${line}\n`);
+/** The fixture contract's `icons` block and the shared small slot of its tokens. */
+const ICONS = /^icons:\n(?: {2}.*\n)+/m;
+const SMALL_SLOT = "    iconSize: '{components.icon-sm}'\n    iconGap: 4px\n";
+const ACTION_PROP = '  - name: action\n    type: action\n    required: true\n';
 
 /** One merged look's values: `{ field: { type, value } }`. */
 function look(api, context, variant, size, state) {
@@ -73,10 +80,16 @@ test('the repository contracts pass, and the button and icon contracts are appro
   );
 });
 
-test('the fixtures hold the valid contracts and one failing case per rule, CC-01 to CC-12', () => {
-  const expected = Array.from({ length: 12 }, (_, i) => `CC-${String(i + 1).padStart(2, '0')}`);
+test('the fixtures hold the valid contracts and one failing case per rule, CC-01 to CC-13', () => {
+  const expected = Array.from({ length: 13 }, (_, i) => `CC-${String(i + 1).padStart(2, '0')}`);
   assert.deepEqual([...new Set(RULE_CASES.map(ruleOf))], expected);
-  const cases = ['CC-01-gallery-title', 'CC-01-icon-kind', 'CC-01-icon-paint', 'CC-11-viewbox'];
+  const cases = [
+    'CC-01-gallery-title',
+    'CC-01-icon-kind',
+    'CC-01-icon-paint',
+    'CC-08-trailing',
+    'CC-11-viewbox',
+  ];
   for (const name of cases) {
     assert.ok(RULE_CASES.includes(name), name);
   }
@@ -158,6 +171,106 @@ test('CC-08: a used size without its shared size entry, or with half a slot, fai
   assert.match(listed(gap.findings), /sizes\.small: \{components\.button-small\} has no iconGap/);
 });
 
+test('CC-08 (G3): a size where a look draws a trailing icon holds the trailing slot', () => {
+  const trailing = loadContracts(path.join(CONTRACT_FIXTURES, 'CC-08-trailing'), fixtureModel);
+  const entry = '{components.button-small}';
+  assert.deepEqual(messagesOf(trailing), [
+    `CC-08 button.yaml sizes.small: ${entry} has no trailingIconSize or trailingIconGap dimension`,
+  ]);
+});
+
+test('CC-08 (G11): a size needs its slot entry only where a look draws an icon there', () => {
+  const noSmallSlot = modelOf(CONTRACT_TOKENS.replace(SMALL_SLOT, ''));
+  const leading = "primary: { leading: '{props.leadingIcon}' }";
+  const quiet = (t) => t.replace(leading, 'primary: { leading: null }');
+  const result = checkContract(quiet(VALID_TEXT), 'button.yaml', noSmallSlot);
+  assert.deepEqual(result.findings, [], listed(result.findings));
+  assert.equal(look(result.api, 'light', 'primary', 'small', 'enabled').iconSize, undefined);
+  assert.equal(result.api.fields.find(({ name }) => name === 'iconSize').optional, true);
+  // A state's icon draws the slot too; without `icons` every look draws the leading one.
+  const pressed = (t) => t.replace(leading, 'primary: { states: { pressed: { leading: plus } } }');
+  const message = 'CC-08 button.yaml sizes.small: {components.button-small} has no iconSize or';
+  for (const edit of [pressed, (t) => t.replace(ICONS, '')]) {
+    const missing = checkContract(edit(VALID_TEXT), 'button.yaml', noSmallSlot);
+    assert.deepEqual(messagesOf(missing), [`${message} iconGap dimension`]);
+  }
+});
+
+test('the trailing slot (G3): the shared entry holds it at large only, beside the leading one', () => {
+  const slot = (values) => [values.trailingIconSize?.value.id, values.trailingIconGap?.value.n];
+  for (const context of fixture.contexts) {
+    for (const { variant, size, state, values } of fixture.looks[context]) {
+      const expected = size === 'large' ? ['sm', 6] : [undefined, undefined];
+      assert.deepEqual(slot(values), expected, `${variant}/${size}/${state} in ${context}`);
+    }
+  }
+});
+
+test('the merge (G6): a slot value the base or state entry names wins over the shared one', () => {
+  const gaps = withProperty('button-secondary', 'iconGap: 2px');
+  const own = withProperty('button-primary-pressed', 'trailingIconGap: 9px', gaps);
+  const { findings, api } = checkContract(VALID_TEXT, 'button.yaml', modelOf(own));
+  assert.deepEqual(findings, [], listed(findings));
+  const value = (variant, size, state, field) => look(api, 'dark', variant, size, state)[field];
+  assert.equal(value('secondary', 'large', 'pressed', 'iconGap').value.n, 2, 'the base wins');
+  assert.equal(value('primary', 'large', 'enabled', 'iconGap').value.n, 8, 'button-large');
+  assert.equal(value('primary', 'large', 'pressed', 'trailingIconGap').value.n, 9, 'the state');
+  assert.equal(value('primary', 'large', 'enabled', 'trailingIconGap').value.n, 6);
+  assert.equal(value('primary', 'small', 'pressed', 'trailingIconGap').value.n, 9);
+  assert.equal(value('primary', 'small', 'enabled', 'trailingIconGap'), undefined);
+});
+
+test("the merge (G5): an entry's own borderWidth wins; <id>-outline-ring is the default", () => {
+  const pressed = withProperty('button-secondary-pressed', 'borderWidth: 2px');
+  const { api } = checkContract(VALID_TEXT, 'button.yaml', modelOf(pressed));
+  const width = (state) => look(api, 'dark', 'secondary', 'large', state).borderWidth.value.n;
+  assert.deepEqual([width('pressed'), width('enabled')], [2, 1.5]);
+  const ring = '  button-outline-ring: { width: 1.5px }\n';
+  const own = withProperty('button-secondary', 'borderWidth: 1px').replace(ring, '');
+  const alone = checkContract(VALID_TEXT, 'button.yaml', modelOf(own));
+  assert.deepEqual(alone.findings, [], 'every ringed look names its width: no ring entry needed');
+  assert.equal(look(alone.api, 'light', 'secondary', 'large', 'loading').borderWidth.value.n, 1);
+});
+
+test('a dashed ring (G13): borderDash is a dimension the look carries like any property', () => {
+  const dashed = modelOf(withProperty('button-secondary', 'borderDash: 3px'));
+  const { findings, api } = checkContract(VALID_TEXT, 'button.yaml', dashed);
+  assert.deepEqual(findings, [], listed(findings));
+  const { borderDash } = look(api, 'hc-light', 'secondary', 'large', 'pressed');
+  assert.deepEqual(borderDash, { type: 'double', value: { t: 'number', n: 3 } });
+  assert.equal(api.fields.find(({ name }) => name === 'borderDash').optional, true);
+});
+
+test('CC-07 (G1): accessibility.busy is optional; when given, it is a state', () => {
+  const noBusy = checkEdited((t) => t.replace('  busy: loading\n', ''));
+  assert.deepEqual(noBusy.findings, [], listed(noBusy.findings));
+  const unknown = checkEdited((t) => t.replace('busy: loading', 'busy: spinning'));
+  assert.deepEqual(messagesOf(unknown), [
+    'CC-07 button.yaml accessibility.busy: "spinning" is not in `states`',
+  ]);
+});
+
+test('CC-13 (G9): an interactive role needs a touch target and an action; a passive one neither', () => {
+  const missing = loadContracts(path.join(CONTRACT_FIXTURES, 'CC-13'), fixtureModel);
+  assert.deepEqual(messagesOf(missing), [
+    'CC-13 button.yaml accessibility: role button is interactive: it needs minTouchTarget',
+  ]);
+  const noAction = checkEdited((t) => t.replace(ACTION_PROP, ''));
+  assert.deepEqual(messagesOf(noAction), [
+    'CC-13 button.yaml props: role button is interactive: it needs an action prop',
+  ]);
+  const target = '  minTouchTarget: { ios: 44, android: 48 }\n';
+  for (const role of ['text', 'region', 'decorative']) {
+    const passive = (t) =>
+      t.replace('role: button', `role: ${role}`).replace(ACTION_PROP, '').replace(target, '');
+    assert.deepEqual(checkEdited(passive).findings, [], role);
+  }
+  const acting = checkEdited((t) => t.replace('role: button', 'role: text'));
+  assert.deepEqual(messagesOf(acting), [
+    'CC-13 button.yaml props: role text is never activated, so no prop is an action',
+  ]);
+});
+
 test('a pending contract is checked but gets no API', () => {
   const pending = (t) => t.replace('approved: 2026-10-20', 'approved: pending');
   assert.equal(checkEdited(pending).pending, true);
@@ -211,6 +324,8 @@ test('the fixture API: merged fields, colours first, optional where a look lacks
     ...padding.map((side) => [side, 'double', false]),
     ['iconSize', 'AppIconSize', false],
     ['iconGap', 'double', false],
+    ['trailingIconSize', 'AppIconSize', true],
+    ['trailingIconGap', 'double', true],
     ['focusRing', 'FocusRingTokens', true],
   ]);
 });
@@ -471,6 +586,26 @@ test('CC-12: beside an icon set, every icon slot names one of its sizes', () => 
   const alone = checkContract(VALID_TEXT, 'button.yaml', literal);
   assert.deepEqual(alone.findings, []);
   assert.equal(alone.api.fields.find(({ name }) => name === 'iconSize').type, 'double');
+});
+
+test("CC-12 (G3, G6): the trailing slot and a variant's own slot size name the set's sizes", () => {
+  const iconSet = [iconSetOf(parseYaml(VALID_ICON_TEXT), 'icon.yaml')];
+  const check = (text) =>
+    messagesOf(checkContract(VALID_TEXT, 'button.yaml', modelOf(text), iconSet));
+  const large = '{components.button-large} trailingIconSize';
+  const trailing = CONTRACT_TOKENS.replace('trailingIconSize: icon-sm', 'trailingIconSize: 14px');
+  assert.deepEqual(check(trailing), [
+    `CC-12 button.yaml sizes.large: ${large} is a number, not a size of icon.yaml`,
+  ]);
+  const own = '{components.button-secondary} iconSize';
+  assert.deepEqual(check(withProperty('button-secondary', 'iconSize: 18px')), [
+    `CC-12 button.yaml tokens.secondary: ${own} is a number, not a size of icon.yaml`,
+  ]);
+  const xs = withProperty('button-secondary', 'iconSize: icon-xs');
+  const { findings, api } = checkContract(VALID_TEXT, 'button.yaml', modelOf(xs), iconSet);
+  assert.deepEqual(findings, [], listed(findings));
+  assert.equal(look(api, 'light', 'secondary', 'large', 'enabled').iconSize.value.id, 'xs');
+  assert.equal(look(api, 'light', 'primary', 'large', 'enabled').iconSize.value.id, 'md');
 });
 
 test('the icon slot is the size enum of the icon set only once that set is approved', () => {

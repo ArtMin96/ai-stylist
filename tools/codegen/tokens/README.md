@@ -14,7 +14,7 @@ directory turns it into native theme code in the DEC-87 pipeline:
    and `tests/parity.test.mjs` reads both languages' output back into one name-to-value table and
    requires the two tables to be equal.
 
-## Status (Linear AI-189, AI-198, AI-201)
+## Status (Linear AI-189, AI-198, AI-201, AI-204)
 
 Built: all four stages, with their tests, and the wiring: `tools/codegen/generate.sh` runs
 `gen-tokens.mjs` right after the shared-kernel registries, in every lane (it needs only Node), and
@@ -35,6 +35,15 @@ glyph table in a file of its own. The amendment of 2026-10-21 (owner: a Tailwind
 components that point at the shared scales) adds the step names (`icon-xs` … `icon-hero`, enum
 cases `xs` … `hero`), `iconSize` naming an icon size (the button's slot is then `AppIconSize`) and
 `{spacing.<key>}` parts in a padding shorthand.
+
+AI-204 part A (C03 chips, tags, badges, reason row; `.impeccable/components/README.md` "Proposed
+fields") adds the validation and token side: the trailing icon slot (G3), an entry's own
+`borderWidth` (G5) and slot values (G6) winning in the merge, a slot entry only where an icon is
+drawn (G11, reading `icons` by shape), `accessibility.busy` optional (G1), `minTouchTarget` optional
+for a passive role (G9, CC-13), and the C03 entry properties (G12 parts, G13 `borderDash`) as
+ordinary tokens. Part B (compound states G2, the icons API G4, roles G7, prop types G8,
+`gallery.props` G10 and the contract-side `parts` of G12) is not built: until it is, the four C03
+contracts fail CC-01 on those fields and `just generate` writes nothing.
 
 ## Usage
 
@@ -83,10 +92,11 @@ per directory; nothing is written when any input has a finding. A contract still
   components may reference every group, `elevation` colours, radii and spacing, `motion` other
   `motion` values (`easing: '{motion.easing-enter}'`). A part of a `padding` shorthand may be a
   `{spacing.<key>}` reference and nothing else (`'0 {spacing.24}'`, `'0 {spacing.12} 0 10px'`;
-  fixture `fixtures/TK-06-padding/`). Only `iconSize` names a component, and only an icon size
-  `icon-<step>` holding exactly `size` (px) and `strokeWidth` (a number), written as the bare key
-  (`iconSize: icon-md`) or as `'{components.icon-md}'`. The pinned design.md lint (TK-12) resolves
-  no `{components.…}` reference, so only the bare key passes it.
+  fixture `fixtures/TK-06-padding/`). Only an icon-slot size names a component: `iconSize` or a
+  property ending in `IconSize` (`trailingIconSize`, G3; fixture `fixtures/TK-06-trailing-icon/`),
+  and only an icon size `icon-<step>` holding exactly `size` (px) and `strokeWidth` (a number),
+  written as the bare key (`iconSize: icon-md`) or as `'{components.icon-md}'`. The pinned
+  design.md lint (TK-12) resolves no `{components.…}` reference, so only the bare key passes it.
 - **TK-07** Every `elevation` and `motion` entry is a single value, or a mapping one level deep of
   single values: no CSS shorthand (`150ms linear`, `0 8px 24px …`), no list.
 - **TK-08** Every `typography` entry has exactly `fontFamily`, `fontSize` (px), `fontWeight`
@@ -100,7 +110,7 @@ per directory; nothing is written when any input has a finding. A contract still
   (`surface-2` and `surface2`, `padding` and `paddingTop`).
 - **TK-11** Values parse: colours `#RRGGBB`, `#RRGGBBAA`, `rgb()` or `rgba()`; radii and spacing
   px or a number; component values px, a number, a `{reference}`, an icon-size key for `iconSize`
-  or a 1–4 part `padding` (each part `0`, `Npx` or a `{spacing.<key>}` reference);
+  or a `…IconSize`, or a 1–4 part `padding` (each part `0`, `Npx` or a `{spacing.<key>}` reference);
   durations `ms` or `s`; curves `cubic-bezier()` or `linear`.
 - **TK-12** The pinned `@google/design.md` `lint` exits 0. Warnings are allowed, such as the
   accepted `token-like-ignored` for `elevation` and `motion`; its output is shown when it fails.
@@ -125,7 +135,10 @@ DEC-87; field rules in `.impeccable/components/README.md`). `contracts.mjs` chec
   The schema has two closed branches: a contract without `kind` is a control (the button, the
   fields below), and `kind: icon-set` is an icon set (Icon sets); any other `kind` fails
   (`fixtures/contracts/CC-01-icon-kind/`). Ajv's own "must match the then/else schema" error is
-  left out, since the branch's errors say what is wrong.
+  left out, since the branch's errors say what is wrong. A control's optional `icons` (G4: per
+  variant `leading`, `trailing` and `states.<state>`, each a kebab glyph id, a `'{props.<name>}'`
+  reference or `null`) is checked by shape only: CC-08 and CC-12 read it to find the sizes that
+  draw a slot; no rule checks its glyph ids or props yet, and no API is emitted for it.
 - **CC-02** `id` is the file name without `.yaml`.
 - **CC-03** The axes agree: `combinations` names exactly the variants, each allows only listed
   sizes and states, every listed size and state is allowed by some variant, and the ids and test-ID
@@ -139,29 +152,42 @@ DEC-87; field rules in `.impeccable/components/README.md`). `contracts.mjs` chec
 - **CC-06** Each reference plays its part. A base is a whole component. A state names the same
   state of the variant's base, or a whole component drawn over the enabled look (an overlay:
   `focus-ring`) with an instance in every context of the table. A size is the base itself or a size
-  entry (a whole component with no colour and no state). A look with a `borderColor` needs
-  `<id>-outline-ring` with a `width`. A merged property has one type in every look.
-- **CC-07** `accessibility.busy` is a state, and an explicit `gallery.include` names only allowed
-  combinations.
-- **CC-08** Every size an allowed combination uses has its shared size entry `<id>-<size>`
-  (`button-compact`), and that entry holds the leading-icon slot, `iconSize` and `iconGap`, as
-  dimensions in every context of the table. The slot depends on the size only, never the variant
-  (`button.yaml` `leadingIcon`, DESIGN.md "Buttons"), so a missing value is a finding, never a
-  default.
+  entry (a whole component with no colour and no state). A look with a `borderColor` and no
+  `borderWidth` of its own (G5) needs `<id>-outline-ring` with a `width`. A merged property has one
+  type in every look.
+- **CC-07** `accessibility.busy`, when given, is a state (without it the component has no busy
+  state, G1), and an explicit `gallery.include` names only allowed combinations.
+- **CC-08** Every size where an allowed look draws an icon slot has its shared size entry
+  `<id>-<size>` (`button-compact`), and that entry holds each drawn slot as dimensions in every
+  context of the table: the leading one, `iconSize` and `iconGap`, and the trailing one,
+  `trailingIconSize` and `trailingIconGap` (G3; fixture `fixtures/contracts/CC-08-trailing/`). A
+  look draws a slot where `icons` gives its state, else its variant, a glyph or a prop there (G11:
+  the 18 Differs tag and the 8 and 18 badges draw none, so they need no entry). A contract without
+  `icons` draws the leading slot at every size and no trailing one (the button: its `leadingIcon`
+  prop, or the spinner while loading). The slot follows the size (`button.yaml` `leadingIcon`,
+  DESIGN.md "Buttons"), so a missing value is a finding; a value the variant's own base or state
+  entry names wins over it in the merge (G6).
 - **CC-12** Beside an icon set (a contract with `kind: icon-set` in the same directory that passes
-  its own rules, approved or pending), every size an allowed combination uses names one of that
-  set's `sizes` in its slot: the shared size entry's `iconSize` is an icon-size key
-  (`iconSize: icon-md`, TK-06), never a number, in every context of the table. Two icon sets
-  are a finding: the slot names one scale. Fixture `fixtures/contracts/CC-12/` holds the valid
-  button beside an icon set without `icon-md`. Without an icon set the slot may be a number.
+  its own rules, approved or pending), every drawn slot names one of that set's `sizes`: the
+  shared size entry's `iconSize` (leading) or `trailingIconSize` (trailing) is an icon-size key
+  (`iconSize: icon-md`, TK-06), never a number, in every context of the table, and so is a slot
+  size that a variant's own base or state entry names (G6). Two icon sets are a finding: the slot
+  names one scale. Fixture `fixtures/contracts/CC-12/` holds the valid button beside an icon set
+  without `icon-md`. Without an icon set the slot may be a number.
+- **CC-13** An interactive role needs `accessibility.minTouchTarget` and an `action` prop; a
+  passive role (`text`, `region`, `decorative`: read or skipped, never activated) has no `action`
+  prop and may leave `minTouchTarget` out (G9). Any role outside those three counts as
+  interactive. Only `accessibility.role` is read; per-variant `roles` (G7) are not built yet.
+  Fixture `fixtures/contracts/CC-13/` is the valid button without `minTouchTarget`.
 
-`iconSize` and `iconGap` are ordinary component properties for TK-11 (px, a number or a
-reference, like `height`); the normaliser makes them `dimension` tokens. An `iconSize` that names an
-icon size is that size's px value, with the key kept in `$extensions['app.iconSize']`. Beside an
-approved icon set the merged look's `iconSize` is that set's size enum (`AppIconSize`, case `.md`)
-instead of its number; beside a pending one it stays the number, since the enum is not emitted yet.
+`iconSize`, `iconGap`, `trailingIconSize` and `trailingIconGap` are ordinary component properties
+for TK-11 (px, a number or a reference, like `height`); the normaliser makes them `dimension`
+tokens. An icon-slot size that names an icon size is that size's px value, with the key kept in
+`$extensions['app.iconSize']`. Beside an approved icon set the merged look's `iconSize` and
+`trailingIconSize` are that set's size enum (`AppIconSize`, case `.md`) instead of their number;
+beside a pending one they stay the number, since the enum is not emitted yet.
 
-The rules run in stages (CC-01; CC-02 and CC-03; CC-04 and CC-07; CC-05; CC-06; CC-08; CC-12; for
+The rules run in stages (CC-01; CC-02 and CC-03; CC-04, CC-07 and CC-13; CC-05; CC-06; CC-08; CC-12; for
 an icon set CC-01; CC-02 and CC-09; CC-10; CC-11) and stop at the first stage with a finding, so
 each `fixtures/contracts/CC-NN/` (or `CC-NN-<case>/`) case fails on its own rule only.
 `loadContracts` checks the icon sets in a directory first, so a control sees them.
@@ -173,14 +199,19 @@ earlier. `enabled`, and a state the variant names no token for (`loading` on pri
 look. A size entry that is the base itself adds nothing: applying it again would undo the state
 (the destructive-filled disabled label weight). An overlay state (`focused: {components.focus-ring}`)
 changes no colour: it adds a field named after its component that holds that component's instance
-for the context (`focusRing = FocusRingTokens.hcDark`). A look with a `borderColor` ring gets
-`borderWidth` from `<id>-outline-ring` (`button-outline-ring`, 1.5). Last, every look takes
-`iconSize` and `iconGap` from the shared size entry `<id>-<size>`, even where the variant's own
-entry holds that size's height and padding (`button-compact-filled`, `button-text-compact`, a
-variant base): `icon-md` at every size, gap 6 at compact and 8 elsewhere. The look's fields are colours,
-then `borderWidth`, then the other properties, then overlays; a field some look lacks is optional
-(`nil` / `null`: no fill, no ring, the spinner takes the label colour). Only allowed combinations
-get a look, so a disallowed one is never offered.
+for the context (`focusRing = FocusRingTokens.hcDark`). A look with a `borderColor` ring and no
+`borderWidth` of its own gets the default width of `<id>-outline-ring` (`button-outline-ring`,
+1.5); an entry's own `borderWidth` wins (G5: the never-suggest chip's pressed 2, the override chip's
+1.5 over `chip-outline-ring`'s 1). Last, every look takes its icon slots, `iconSize`, `iconGap`,
+`trailingIconSize` and `trailingIconGap` in that order: each value the variant's own base or state
+entry names (G6: the group and sort chip's gaps of 6 at 36, where `chip-medium` has 4), else the
+shared size entry `<id>-<size>`'s, even where a size entry of the variant holds that size's
+height and padding (`button-compact-filled`, `button-text-compact`): the button is `icon-md` at
+every size, gap 6 at compact and 8 elsewhere. A size with no shared entry (G11) adds no slot.
+The look's fields are colours, then `borderWidth`, then the other properties, then overlays; a
+field some look lacks is optional (`nil` / `null`: no fill, no ring, the spinner takes the label
+colour, no trailing slot). Only allowed combinations get a look, so a disallowed one is never
+offered.
 
 ## Icon sets (Linear AI-201)
 
@@ -397,9 +428,13 @@ order, wherever they appear in the file.
   shorthand (`'0 {spacing.12} 0 10px'`), resolves to that step's px `dimension`, so a component
   holds the same numbers whichever way `DESIGN.md` writes them (owner decision 2026-10-21:
   components point at the shared scales; the emitted values stay the same). An `iconSize` that
-  names an icon size (`icon-md`) is its px `dimension` plus `$extensions['app.iconSize']`.
+  names an icon size (`icon-md`) is its px `dimension` plus `$extensions['app.iconSize']`; so is a
+  `trailingIconSize` (G3).
 - Other properties are aliases (`{typography.label}`, `{rounded.full}`, `{motion.press}`) or
-  literals (`dimension`, `number`).
+  literals (`dimension`, `number`). The C03 entry properties (`.impeccable/components/README.md`
+  "Entry properties": rings with `borderWidth`, `borderDash` and `outerRingWidth`, the part
+  styles such as `detailTypography`, `detailColor` and `detailGap`, the swatch and the dot) are
+  such properties: each becomes a field of its `<Component>Tokens` type like any other.
 
 ### Naming rules
 
@@ -436,8 +471,9 @@ guarantees that no two generated identifiers collide. Any other derivation loses
 - `tools/codegen/tokens/emit-kotlin.mjs`: the Kotlin dialect. `just generate` writes its output to
   `apps/android/core/designsystem/src/main/kotlin/app/aistylist/core/designsystem/generated/`.
 - `tools/codegen/tokens/component-contract.schema.json`, `contracts.mjs` (`loadContracts`,
-  `checkContract`: CC-01 to CC-12), `contract-model.mjs` (the reference grammar, the allowed
-  combinations and the merged API model), `api-declarations.mjs` (the API declaration tree) and
+  `checkContract`: CC-01 to CC-13), `contract-model.mjs` (the reference grammar, the allowed
+  combinations, the drawn icon slots and the merged API model), `api-declarations.mjs` (the API
+  declaration tree) and
   `emit-api-swift.mjs` / `emit-api-kotlin.mjs`: the component API surface, written as
   `ComponentAPI.swift` and `ComponentApi.kt` beside the tier files.
 - `tools/codegen/tokens/icon-set.mjs` (CC-09 to CC-12 and the icon-set API model),
@@ -495,10 +531,12 @@ ARGB (`UInt32`/`Long`, `0xFFFA_FAFA`). The theme code in each app maps them to S
   `enum class` entries with `val id: String`: `PRIMARY_OUTLINE("primary-outline")`);
   `<Name>TestId` (one string constant per allowed combination: `primaryLargeEnabled` =
   `"ds-button-primary-large-enabled"`); `<Name>Appearance` (the merged look: optional colours and
-  `borderWidth`, then `typography`, `rounded`, `height`, the four paddings, the non-optional
-  `iconSize` and `iconGap: Double` (pt/dp; `iconSize` is the icon set's size enum beside an
-  approved icon set, Swift `public let iconSize: AppIconSize`, Kotlin `val iconSize: AppIconSize`,
-  and a `Double` without one), then the optional
+  `borderWidth`, then `typography`, `rounded`, `height`, the four paddings, `iconSize` and
+  `iconGap: Double` (pt/dp; `iconSize` is the icon set's size enum beside an approved icon set,
+  Swift `public let iconSize: AppIconSize`, Kotlin `val iconSize: AppIconSize`, and a `Double`
+  without one; optional only where some size draws no leading icon, G11), then `trailingIconSize`
+  and `trailingIconGap` where some size holds the trailing slot (optional where one does not:
+  `AppIconSize?`, `Double?`), then the optional
   `focusRing`); `<Name>Look`
   (variant, size, state, appearance); `<Name>Spec` (`looks`, one instance per context of the table,
   and `appearance(variant:size:state:)` returning that combination's `<Name>Appearance`, or
@@ -541,14 +579,18 @@ component API emitters (`component-api.test.mjs`), the golden parity test (`pari
 the icon glyph table included) and the CLI against a design.md stub (`cli.test.mjs`). The
 repository `DESIGN.md` and `fixtures/_valid/` must pass; each `fixtures/TK-NN/` (and
 `TK-NN-<case>/`, a second case of the same rule: `TK-06-padding`) is the valid file with one defect
-and must fail on rule TK-NN and nothing else. The repository contracts and
-`fixtures/contracts/_valid/` (`button.yaml`, and `icon.yaml`, whose glyphs use arcs, relative
-commands, a filled dot and a filled twin) pass against their tokens (`fixtures/contracts/DESIGN.md`,
-synthetic, with the scale `icon-xs` … `icon-lg`, slots naming it in both spellings and spacing
-references in padding and gap); each `fixtures/contracts/CC-NN/button.yaml` or `icon.yaml` (and
-`CC-NN-<case>/`, a second case of the same rule: `CC-01-icon-kind`, `CC-01-icon-paint`, `CC-11-viewbox`) is a valid
-contract with one defect and must fail on rule CC-NN and nothing else (`CC-12/` holds the valid
-button beside a defective pairing). `TOKENS_REPO_ROOT=<checkout>` points the repository tests at
+and must fail on rule TK-NN and nothing else (`TK-06-trailing-icon`: a `trailingIconSize` naming
+a missing step). The repository contracts and
+`fixtures/contracts/_valid/` (`button.yaml`, whose `icons` draw a trailing plus on the large
+secondary, and `icon.yaml`, whose glyphs use arcs, relative commands, a filled dot and a filled
+twin) pass against their tokens (`fixtures/contracts/DESIGN.md`, synthetic, with the scale
+`icon-xs` … `icon-lg`, slots naming it in both spellings, a trailing slot at large only and
+spacing references in padding and gap); each `fixtures/contracts/CC-NN/button.yaml` or `icon.yaml`
+(and `CC-NN-<case>/`, a second case of the same rule: `CC-01-icon-kind`, `CC-01-icon-paint`,
+`CC-08-trailing`, `CC-11-viewbox`) is a valid contract with one defect and must fail on rule CC-NN
+and nothing else (`CC-12/` holds the valid button beside a defective pairing). Until part B lands,
+the repository contracts fail CC-01 (the four C03 contracts use its fields), so the tests that read
+them fail while every fixture test runs. `TOKENS_REPO_ROOT=<checkout>` points the repository tests at
 another checkout's `DESIGN.md` and `.impeccable/components/` (a worktree whose inputs are not
 integrated yet). The tests read the repository contracts lazily
 (`once` in `tests/models.mjs`), so a defect there fails the repository tests and leaves the

@@ -9,6 +9,9 @@ props:
   - name: label
     type: string
     required: true
+  - name: action
+    type: action
+    required: true
   - name: leadingIcon
     type: icon
     default: null
@@ -46,6 +49,12 @@ tokens:
       loading: '{components.button-secondary-loading}'
     sizes:
       large: '{components.button-secondary}'
+
+# The icons each variant draws: the caller's leading icon, and on secondary a trailing plus, whose
+# slot only button-large holds in ../DESIGN.md (no small size draws one).
+icons:
+  primary: { leading: '{props.leadingIcon}' }
+  secondary: { leading: '{props.leadingIcon}', trailing: plus }
 
 accessibility:
   role: button

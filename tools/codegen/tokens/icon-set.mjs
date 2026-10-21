@@ -8,12 +8,14 @@ import { readFileSync } from 'node:fs';
 import path from 'node:path';
 
 import {
-  allowedCombinations,
+  SLOT_SIZES,
   finding,
   iconSizeKeyOf,
   identifierFindings,
   isToken,
+  resolveReference,
   slotEntryOf,
+  slotsDrawn,
   tableContexts,
 } from './contract-model.mjs';
 import { typedValue } from './declarations.mjs';
@@ -141,9 +143,11 @@ function sizeTokenFindings(size, resolved, at) {
 
 /**
  * CC-12: with an icon set beside it (`iconSets`: each passing icon-set contract's `{ file,
- * sizes }`), a control's icon slot names that set's sizes. For every size an allowed combination
- * uses, the shared size entry's `iconSize` (CC-08) is a `{components.icon-<step>}` reference to one
- * of the set's `sizes` in every context of the table, never a number. Two icon sets would leave the
+ * sizes }`), a control's icon slots name that set's sizes. For every size where an allowed look
+ * draws a slot (slotsDrawn, G11), the shared size entry's `iconSize`, or `trailingIconSize` for
+ * the trailing slot (CC-08), is a `{components.icon-<step>}` reference to one of the set's
+ * `sizes` in every context of the table, never a number. So is a slot size that a variant's own
+ * base or state entry names, which wins over the shared one (G6). Two icon sets would leave the
  * slot two scales to name, so that is a finding too.
  */
 export function checkIconSlotSizes(contract, file, model, iconSets) {
@@ -155,17 +159,36 @@ export function checkIconSlotSizes(contract, file, model, iconSets) {
   const [iconSet] = iconSets;
   const out = [];
   const resolved = tableContexts(contract, model).map((c) => resolveComponents(model, c));
-  const used = new Set(allowedCombinations(contract).map(({ size }) => size));
-  for (const size of contract.sizes.filter((s) => used.has(s))) {
-    const entry = slotEntryOf(contract.id, size);
-    const at = `${file} sizes.${size}`;
-    const named = new Set(resolved.map((components) => iconSizeKeyOf(components[entry].iconSize)));
-    for (const key of named) {
+  /** A finding per size key outside the set (null: a number) that `nodes` of `entry` name. */
+  const check = (at, entry, name, nodes) => {
+    for (const key of new Set(nodes.map(iconSizeKeyOf))) {
       const message =
         key === null
-          ? `{components.${entry}} iconSize is a number, not a size of ${iconSet.file}`
-          : `{components.${entry}} iconSize names ${key}, which ${iconSet.file} does not list`;
+          ? `${entry} ${name} is a number, not a size of ${iconSet.file}`
+          : `${entry} ${name} names ${key}, which ${iconSet.file} does not list`;
       if (key === null || !iconSet.sizes.includes(key)) out.push(finding('CC-12', at, message));
+    }
+  };
+  for (const [size, { leading, trailing }] of slotsDrawn(contract)) {
+    const entry = slotEntryOf(contract.id, size);
+    const names = [...(leading ? ['iconSize'] : []), ...(trailing ? ['trailingIconSize'] : [])];
+    for (const name of names) {
+      const nodes = resolved.map((components) => components[entry][name]);
+      check(`${file} sizes.${size}`, `{components.${entry}}`, name, nodes);
+    }
+  }
+  for (const [variant, tokens] of Object.entries(contract.tokens)) {
+    const own = [tokens.base, ...Object.values(tokens.states)]
+      .map((reference) => ({ reference, ...resolveReference(reference, model) }))
+      .filter(({ reference, state }) => reference === tokens.base || state !== null);
+    for (const { reference, component, state } of own) {
+      const groups = resolved.map((components) =>
+        state === null ? components[component] : components[component][state],
+      );
+      for (const name of SLOT_SIZES) {
+        const nodes = groups.map((group) => group[name]).filter((node) => node && isToken(node));
+        if (nodes.length > 0) check(`${file} tokens.${variant}`, reference, name, nodes);
+      }
     }
   }
   return out;

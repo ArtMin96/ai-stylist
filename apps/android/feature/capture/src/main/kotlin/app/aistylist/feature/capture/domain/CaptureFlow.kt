@@ -153,6 +153,13 @@ data class CaptureFlowState(
             copy(wornOptIn = optInFor(allowWorn), screen = CaptureScreen.UnderwearPicker)
         }
 
+    /** Back or a scrim tap on the opt-in sheet or the sub-pick: the picker again; an unanswered opt-in stays unasked. */
+    fun dismissUnderwear(): CaptureFlowState =
+        when (screen) {
+            CaptureScreen.WornOptInSheet, CaptureScreen.UnderwearPicker -> copy(screen = CaptureScreen.Picker)
+            else -> this
+        }
+
     fun pickUnderwearItem(pick: UnderwearPick): CaptureFlowState =
         if (screen != CaptureScreen.UnderwearPicker) {
             this

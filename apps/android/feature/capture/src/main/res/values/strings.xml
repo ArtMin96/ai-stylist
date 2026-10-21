@@ -1,0 +1,161 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Guided capture camera copy (capture brief 2026-10-22 §2, §6–§8; surface brief sc16-capture-camera
+     "Copy"). Byte-identical on iOS and Android. -->
+<resources>
+    <!-- Picker (cap-screen-picker) -->
+    <string name="cap_picker_title">What are you adding?</string>
+    <string name="cap_family_top">Top</string>
+    <string name="cap_family_top_subtitle">T-shirts, shirts, knitwear, hoodies</string>
+    <string name="cap_family_long_bottom">Trousers</string>
+    <string name="cap_family_long_bottom_subtitle">Jeans, trousers, leggings, joggers</string>
+    <string name="cap_family_short_bottom">Shorts and skirts</string>
+    <string name="cap_family_one_piece">Dress or jumpsuit</string>
+    <string name="cap_family_outerwear">Jacket or coat</string>
+    <string name="cap_family_shoes">Shoes</string>
+    <string name="cap_family_bag">Bag</string>
+    <string name="cap_family_small_item">Accessory</string>
+    <string name="cap_family_small_item_subtitle">Hats, belts, scarves, glasses, watches, jewellery</string>
+    <string name="cap_family_underwear">Underwear and swimwear</string>
+    <string name="cap_picker_not_sure">Not sure</string>
+    <string name="cap_picker_batch">Many items (batch)</string>
+    <string name="cap_import">Import from photos</string>
+
+    <!-- Underwear opt-in (cap-optin-sheet) and sub-pick -->
+    <string name="cap_optin_title">Photos of underwear and swimwear</string>
+    <string name="cap_optin_body">These are photographed laid flat or on a hanger. Do you also want to take photos while wearing them? You can change this later.</string>
+    <string name="cap_optin_flat_only">Flat and hanger only</string>
+    <string name="cap_optin_allow_worn">Also allow worn photos</string>
+    <string name="cap_underwear_top">Bra or top</string>
+    <string name="cap_underwear_bottoms">Briefs or bottoms</string>
+    <string name="cap_underwear_swimsuit">Swimsuit or bodysuit</string>
+    <string name="cap_underwear_tights">Tights</string>
+    <string name="cap_underwear_socks">Socks</string>
+
+    <!-- Camera (cap-screen-camera) -->
+    <string name="cap_close">Close</string>
+    <string name="cap_help">Help</string>
+    <string name="cap_torch">Torch</string>
+    <string name="cap_speech_on">Spoken hints, on</string>
+    <string name="cap_speech_off">Spoken hints, off</string>
+    <string name="cap_more_options">More options</string>
+    <string name="cap_take_photo">Take photo</string>
+    <string name="cap_take_photo_unavailable">Take photo, unavailable: %1$s</string>
+    <string name="cap_mode_group">Capture mode</string>
+    <string name="cap_mode_flat">Flat</string>
+    <string name="cap_mode_hanger">Hanger</string>
+    <string name="cap_mode_worn">Worn</string>
+    <string name="cap_selected">selected</string>
+    <string name="cap_step_back">Back</string>
+    <string name="cap_step_pair">Pair</string>
+    <string name="cap_skip">Skip</string>
+    <string name="cap_done">Done</string>
+    <string name="cap_anyway">Take photo anyway</string>
+    <string name="cap_anyway_no_item">No item found. A plain surface in a different colour helps.</string>
+    <string name="cap_anyway_try_hanger">Too big to fit? Try hanger mode.</string>
+    <string name="cap_ring_value">%1$d %%</string>
+    <plurals name="cap_batch_count">
+        <item quantity="one">%1$d item</item>
+        <item quantity="other">%1$d items</item>
+    </plurals>
+    <string name="cap_preview_label">Camera view with the guide outline</string>
+
+    <!-- Hints shown (brief §6) -->
+    <string name="cap_hint_warming_up">Looking for the item…</string>
+    <string name="cap_hint_no_item">Point the camera at the item</string>
+    <string name="cap_hint_cut_off_multiple">Move back. The item is cut off.</string>
+    <string name="cap_hint_cut_off_top">Move back. The top is cut off.</string>
+    <string name="cap_hint_cut_off_bottom">Move back. The bottom is cut off.</string>
+    <string name="cap_hint_cut_off_left">Move back. The left side is cut off.</string>
+    <string name="cap_hint_cut_off_right">Move back. The right side is cut off.</string>
+    <string name="cap_hint_body_shoulders_hips">Step back so your shoulders and hips show</string>
+    <string name="cap_hint_body_hips_ankles">Step back so your hips and ankles show</string>
+    <string name="cap_hint_body_hips_knees">Step back so your hips and knees show</string>
+    <string name="cap_hint_body_shoulders_knees">Step back so your shoulders and knees show</string>
+    <string name="cap_hint_too_small">Move closer</string>
+    <string name="cap_hint_not_steady">Hold the phone still</string>
+    <string name="cap_hint_too_dark">Too dark. Turn on a light.</string>
+    <string name="cap_hint_too_bright">Too bright. Move out of direct light.</string>
+    <string name="cap_hint_tilt">Hold the phone flat above the item</string>
+    <string name="cap_hint_ready">Keep still…</string>
+    <string name="cap_hint_capturing">Taking photo</string>
+    <string name="cap_hint_next_item">Next item</string>
+
+    <!-- Hints spoken, where they differ from the shown text (brief §6) -->
+    <string name="cap_spoken_no_item">No item found. Point the camera at the item.</string>
+    <string name="cap_spoken_too_small">The item is too small. Move closer.</string>
+    <string name="cap_spoken_not_steady">Hold the phone still.</string>
+    <string name="cap_spoken_ready">Ready. Keep still.</string>
+    <string name="cap_spoken_capturing">Photo taken.</string>
+    <string name="cap_spoken_next_item">Ready for the next item.</string>
+
+    <!-- Family instructions (cap-hint-guide, brief §6) -->
+    <string name="cap_guide_top_flat">Lay it flat, sleeves out</string>
+    <string name="cap_guide_top_hanger">Hang it on a door, front facing you</string>
+    <string name="cap_guide_top_worn">Stand back so your top fits in the frame</string>
+    <string name="cap_guide_long_bottom_flat">Lay it flat, both legs straight</string>
+    <string name="cap_guide_long_bottom_hanger">Hang it by the waist</string>
+    <string name="cap_guide_long_bottom_worn">Stand back so your legs fit in the frame</string>
+    <string name="cap_guide_short_bottom_flat">Lay it flat, waistband at the top</string>
+    <string name="cap_guide_short_bottom_hanger">Hang it by the waist</string>
+    <string name="cap_guide_short_bottom_worn">Stand back so it fits in the frame</string>
+    <string name="cap_guide_one_piece_flat">Lay it flat, straps or sleeves out</string>
+    <string name="cap_guide_one_piece_hanger">Hang it on a door, front facing you</string>
+    <string name="cap_guide_one_piece_worn">Stand back so the whole length fits</string>
+    <string name="cap_guide_outerwear_flat">Lay it flat. Close the zip or buttons.</string>
+    <string name="cap_guide_outerwear_hanger">Hang it, zip or buttons closed</string>
+    <string name="cap_guide_outerwear_worn">Stand back so the whole jacket fits</string>
+    <string name="cap_guide_shoes_flat">One shoe, side view</string>
+    <string name="cap_guide_shoes_pair">Both shoes, side by side</string>
+    <string name="cap_guide_bag_flat">Front view, strap up</string>
+    <string name="cap_guide_bag_hanger">Hang it by the strap</string>
+    <string name="cap_guide_bag_back">Turn it around.</string>
+    <string name="cap_guide_small_item_flat">Place it on a plain surface. Move close.</string>
+    <string name="cap_guide_generic_flat">Lay it flat on a plain surface</string>
+    <string name="cap_guide_generic_hanger">Hang it on a door</string>
+    <string name="cap_guide_generic_worn">Stand back so the item fits</string>
+    <string name="cap_guide_back">Turn it over. Back side up.</string>
+    <string name="cap_guide_turn_over">Turn it over.</string>
+
+    <!-- Help sheet and camera menu -->
+    <string name="cap_help_title">Photo tips</string>
+    <string name="cap_help_body">Lay the item flat. Hold the phone flat on top of it, screen up. Lift it slowly and follow the spoken hints.</string>
+    <string name="cap_help_done">Got it</string>
+    <string name="cap_menu_worn_title">Allow worn photos</string>
+    <string name="cap_menu_worn_helper">Underwear and swimwear only. Saved on this phone.</string>
+    <string name="cap_off">Off</string>
+    <string name="cap_on">On</string>
+
+    <!-- Review (cap-screen-review) -->
+    <string name="cap_review_title">Check the photo</string>
+    <string name="cap_review_back_question">Is the back different?</string>
+    <string name="cap_review_same">Same</string>
+    <string name="cap_review_different">Different</string>
+    <string name="cap_review_pair_question">Add a photo of the pair?</string>
+    <string name="cap_review_no">No</string>
+    <string name="cap_review_yes">Yes</string>
+    <string name="cap_review_take_back">Take back photo</string>
+    <string name="cap_review_take_pair">Take pair photo</string>
+    <string name="cap_review_retake">Retake</string>
+    <string name="cap_review_front">Front</string>
+    <string name="cap_review_back">Back</string>
+    <string name="cap_review_pair">Pair</string>
+    <string name="cap_review_photo_label">%1$s photo</string>
+
+    <!-- Import tips (cap-screen-import-tips) -->
+    <string name="cap_import_heading">This photo may be hard to use</string>
+    <string name="cap_import_choose_another">Choose another</string>
+    <string name="cap_import_keep_anyway">Keep anyway</string>
+    <string name="cap_import_photo_label">Imported photo</string>
+
+    <!-- Batch summary (cap-screen-batch-summary) -->
+    <string name="cap_batch_summary_line">Kept on this phone until you close.</string>
+    <string name="cap_batch_photo">Photo %1$d</string>
+
+    <!-- Permission denied and no camera -->
+    <string name="cap_add_item">Add item</string>
+    <string name="cap_permission_title">Camera access is off</string>
+    <string name="cap_permission_body">The camera is needed to photograph your clothes. Photos stay on your phone until you save an item.</string>
+    <string name="cap_permission_settings">Open Settings</string>
+    <string name="cap_no_camera_title">No camera found</string>
+    <string name="cap_no_camera_body">You can still add an item from your photos.</string>
+</resources>

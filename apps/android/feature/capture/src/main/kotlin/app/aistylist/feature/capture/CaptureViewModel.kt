@@ -57,6 +57,9 @@ class CaptureViewModel(
     private var cameraJob: Job? = null
     private var isForeground = true
 
+    /** The host opens the flow: a fresh picker, whatever an earlier flow left (it closed, photos dropped). */
+    fun onOpened() = updateFlow { CaptureFlowState() }
+
     fun onFamilyPicked(family: CaptureShapeFamily) = updateFlow { it.pickFamily(family) }
 
     fun onNotSurePicked() = updateFlow { it.pickNotSure() }
@@ -75,6 +78,8 @@ class CaptureViewModel(
     }
 
     fun onUnderwearItemPicked(pick: UnderwearPick) = updateFlow { it.pickUnderwearItem(pick) }
+
+    fun onUnderwearDismissed() = updateFlow { it.dismissUnderwear() }
 
     fun onBatchPicked() = updateFlow { it.startBatch() }
 

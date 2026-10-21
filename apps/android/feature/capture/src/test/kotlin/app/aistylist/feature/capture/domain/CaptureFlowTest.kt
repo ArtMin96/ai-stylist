@@ -307,4 +307,22 @@ class CaptureFlowTest {
         assertEquals(CaptureScreen.Closed, closed.screen)
         assertEquals(ReviewPhotos(), closed.review)
     }
+
+    @Test
+    fun `dismissing the opt-in sheet or the sub-pick returns to the picker and keeps the opt-in unasked`() {
+        val sheet = CaptureFlowState().pickUnderwear(WornOptIn.NOT_ASKED)
+
+        val dismissed = sheet.dismissUnderwear()
+
+        assertEquals(CaptureScreen.Picker, dismissed.screen)
+        assertEquals(WornOptIn.NOT_ASKED, dismissed.wornOptIn)
+        assertEquals(
+            CaptureScreen.Picker,
+            CaptureFlowState().pickUnderwear(WornOptIn.FLAT_ONLY).dismissUnderwear().screen,
+        )
+        assertEquals(
+            CaptureScreen.Camera(TOP_FLAT),
+            CaptureFlowState().pickFamily(CaptureShapeFamily.TOP).dismissUnderwear().screen,
+        )
+    }
 }

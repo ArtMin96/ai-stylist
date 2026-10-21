@@ -316,4 +316,19 @@ class CaptureViewModelTest {
             assertEquals(CaptureScreen.BatchSummary, viewModel.screen)
             assertEquals(0, source.openFeeds)
         }
+
+    @Test
+    fun `opening the flow again starts fresh at the picker after it closed`() =
+        runTest(dispatcher) {
+            val viewModel = CaptureViewModel(FakeObservationSource(clock()), FakeWornOptInStore(), clock())
+            viewModel.onFamilyPicked(CaptureShapeFamily.TOP)
+            runCurrent()
+            close(viewModel)
+            assertEquals(CaptureScreen.Closed, viewModel.screen)
+
+            viewModel.onOpened()
+
+            assertEquals(CaptureScreen.Picker, viewModel.screen)
+            assertNull(viewModel.camera)
+        }
 }

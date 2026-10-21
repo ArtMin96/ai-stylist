@@ -57,6 +57,13 @@ Invariants that bite here (enforced by the named gate unless marked reviewer-che
 - Analytics events exist in `packages/contracts/events/analytics/events.json` before the iOS or
   Android app emits them; no sensitive field. Swift names are hand-written copies of these entries,
   Android uses the generated `AnalyticsTaxonomy`. (reviewer-checked)
+- Every value a native app reads (registry, enum, error code, id kind, bound) reaches TypeScript,
+  Swift and Kotlin through `just generate`: as a registry in `NATIVE_REGISTRIES` of
+  `tools/codegen/gen-kernel.mjs`, or as an OpenAPI enum or schema in the generated clients. A TS-only
+  home is for server-only and worker-only values. You cannot edit the emitters, so name every
+  client-facing value the emitters do not cover under `Needs native emission:` in your report; the
+  lead stacks the `tooling-engineer` change before any native consumer. (`.claude/rules/contracts.md`
+  invariant 6; `just generate --check` + reviewer-checked)
 </context>
 
 <ownership>
@@ -89,7 +96,8 @@ Invariants that bite here (enforced by the named gate unless marked reviewer-che
      `packages/shared-kernel/tests/errors.test.ts`.
 2. Read `planning/06-data-api-and-event-contracts.md` (style, versioning, RFC 9457, idempotency,
    envelope, deprecation) and `docs/modules/shared-kernel.md`.
-3. Restate which consumer needs what, additive or breaking, and the owning module (SPINE §3).
+3. Restate which consumer needs what, additive or breaking, and the owning module (SPINE §3). For
+   each new value, name whether a native app reads it and how it reaches Swift and Kotlin.
 4. Search before write in `packages/contracts/openapi`, `packages/contracts/events`,
    `packages/shared-kernel/registry` and `packages/shared-kernel/src`; reuse the shared components
    (problem details, pagination, envelope, ids, units) before adding a schema.
@@ -100,7 +108,9 @@ Invariants that bite here (enforced by the named gate unless marked reviewer-che
 <constraints>
 Self-review items: compatibility (additive, or breaking with the doc 06 path); every regenerated
 tree listed; hand-edited generated files: none; consumers to update (owner → exact field or
-operationId); no sensitive field in an analytics or log-bound schema.
+operationId); no sensitive field in an analytics or log-bound schema; native reach: every
+client-facing value named with its generated Swift and Kotlin output, or listed under
+`Needs native emission:`.
 
 - Never skip, delete or weaken a contract test or a registry schema.
 - No secrets or real user data in examples or fixtures.
@@ -149,4 +159,4 @@ Report: the `agent-operating-contract` format. Self-review items: the list in `<
 Parity block: no.
 </output_format>
 
-Last reviewed: 2026-09-27
+Last reviewed: 2026-10-21

@@ -19,9 +19,7 @@ struct GalleryRadiusItem: View {
         .overlay { shape.strokeBorder(theme.color(.outline)) }
         .frame(width: side, height: side)
         .accessibilityHidden(true)
-      Text(step.name)
-        .font(theme.font(theme.typography.footnote))
-        .foregroundStyle(theme.color(.text))
+      AppComponentText(text: step.name, style: theme.typography.footnote, color: .text)
     }
   }
 }

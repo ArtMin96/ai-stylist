@@ -54,6 +54,7 @@ typography:
     fontWeight: 700
     lineHeight: 1.25
     letterSpacing: 0.5px
+    textTransform: uppercase
     dynamicType: caption2
     m3Roles: []
 rounded:

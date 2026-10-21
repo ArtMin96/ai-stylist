@@ -62,6 +62,13 @@ class EventEnvelope(BaseModel):
         ),
     ]
     actor: Actor
+    subjectUserId: Annotated[
+        str | None,
+        Field(
+            description="`usr_` ULID of the user the event is about (the data subject), whoever caused it; distinct from `actor`, the party that caused it. Lets per-user work be found and cancelled on account deletion (doc 06 §8 step 4, DEC-57). An id only, never another personal value; absent when the event concerns no single user",
+            pattern="^usr_[0-7][0-9A-HJKMNP-TV-Z]{25}$",
+        ),
+    ] = None
     correlationId: Annotated[
         str,
         Field(

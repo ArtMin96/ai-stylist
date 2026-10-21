@@ -26,6 +26,332 @@ public protocol APIProtocol: Sendable {
     /// - Remark: HTTP `GET /v1/version`.
     /// - Remark: Generated from `#/paths//v1/version/get(getVersion)`.
     func getVersion(_ input: Operations.GetVersion.Input) async throws -> Operations.GetVersion.Output
+    /// Sign in with an Apple or Google identity token
+    ///
+    /// The app runs the provider's native sign-in and sends the identity token it received.
+    /// The server verifies the token with the provider's keys, then answers with one
+    /// `SignInResult`: a session for an existing account, `sign_up_required` for an identity
+    /// with no account (nothing is stored until `completeSignUp` accepts the birth year), or
+    /// `deletion_pending` for an account inside its deletion grace window (no session). No
+    /// provider token is ever returned.
+    ///
+    ///
+    /// - Remark: HTTP `POST /v1/auth/sign-in/social`.
+    /// - Remark: Generated from `#/paths//v1/auth/sign-in/social/post(signInWithIdToken)`.
+    func signInWithIdToken(_ input: Operations.SignInWithIdToken.Input) async throws -> Operations.SignInWithIdToken.Output
+    /// Complete a pending sign-up with the self-declared birth year (age gate)
+    ///
+    /// Second part of a sign-up. The first part is a sign-in whose answer was
+    /// `sign_up_required`; the `signUpToken` of that answer authorizes this call. The server
+    /// applies the age gate (16+, DEC-60) to the birth year. Accepted: the account is created
+    /// and the answer is the `session` outcome. Refused: `AGE_GATE_FAILED`, nothing about the
+    /// attempt is stored, and the sign-up token is spent; a new attempt starts again with a
+    /// sign-in. Identity's own operation: better-auth 1.7.12 has no path for it.
+    ///
+    ///
+    /// - Remark: HTTP `POST /v1/auth/sign-up/complete`.
+    /// - Remark: Generated from `#/paths//v1/auth/sign-up/complete/post(completeSignUp)`.
+    func completeSignUp(_ input: Operations.CompleteSignUp.Input) async throws -> Operations.CompleteSignUp.Output
+    /// WebAuthn options for a passkey sign-in
+    ///
+    /// Returns a fresh challenge and the WebAuthn request options (W3C WebAuthn
+    /// `PublicKeyCredentialRequestOptionsJSON`) for the platform passkey API. Without a session
+    /// no credentials are listed, so the device offers its discoverable passkeys.
+    ///
+    ///
+    /// - Remark: HTTP `GET /v1/auth/passkey/generate-authenticate-options`.
+    /// - Remark: Generated from `#/paths//v1/auth/passkey/generate-authenticate-options/get(getPasskeySignInOptions)`.
+    func getPasskeySignInOptions(_ input: Operations.GetPasskeySignInOptions.Input) async throws -> Operations.GetPasskeySignInOptions.Output
+    /// Sign in with a passkey assertion
+    ///
+    /// Verifies the assertion the platform passkey API returned for the challenge of
+    /// `getPasskeySignInOptions`. Answers `session`, or `deletion_pending` for an account inside
+    /// its deletion grace window. A passkey always belongs to an existing account, so this
+    /// operation never answers `sign_up_required`.
+    ///
+    ///
+    /// - Remark: HTTP `POST /v1/auth/passkey/verify-authentication`.
+    /// - Remark: Generated from `#/paths//v1/auth/passkey/verify-authentication/post(signInWithPasskey)`.
+    func signInWithPasskey(_ input: Operations.SignInWithPasskey.Input) async throws -> Operations.SignInWithPasskey.Output
+    /// WebAuthn options to add a passkey to the signed-in account
+    ///
+    /// Returns a fresh challenge and the WebAuthn creation options (W3C WebAuthn
+    /// `PublicKeyCredentialCreationOptionsJSON`). The account's existing passkeys are listed as
+    /// excluded credentials. Needs a recent sign-in (`RecentSignInRequired`); otherwise 403
+    /// `FORBIDDEN`, and the client signs in again first.
+    ///
+    ///
+    /// - Remark: HTTP `GET /v1/auth/passkey/generate-register-options`.
+    /// - Remark: Generated from `#/paths//v1/auth/passkey/generate-register-options/get(getPasskeyRegistrationOptions)`.
+    func getPasskeyRegistrationOptions(_ input: Operations.GetPasskeyRegistrationOptions.Input) async throws -> Operations.GetPasskeyRegistrationOptions.Output
+    /// Add a passkey to the signed-in account
+    ///
+    /// Verifies the attestation the platform passkey API returned for the challenge of
+    /// `getPasskeyRegistrationOptions` and stores the passkey on the caller's account. An
+    /// account may hold several passkeys. Opens no new session.
+    ///
+    ///
+    /// - Remark: HTTP `POST /v1/auth/passkey/verify-registration`.
+    /// - Remark: Generated from `#/paths//v1/auth/passkey/verify-registration/post(registerPasskey)`.
+    func registerPasskey(_ input: Operations.RegisterPasskey.Input) async throws -> Operations.RegisterPasskey.Output
+    /// Read the current session
+    ///
+    /// The account of the session the access token belongs to, and when that access token
+    /// expires. Read-only: it extends nothing and returns no token (better-auth
+    /// `deferSessionRefresh`). A token with no live session is answered with 401, never with
+    /// an empty body.
+    ///
+    ///
+    /// - Remark: HTTP `GET /v1/auth/get-session`.
+    /// - Remark: Generated from `#/paths//v1/auth/get-session/get(getSession)`.
+    func getSession(_ input: Operations.GetSession.Input) async throws -> Operations.GetSession.Output
+    /// Renew a session with its refresh token
+    ///
+    /// Exchanges the session's refresh token for a new pair: a new access token and a new
+    /// refresh token (doc 11 §4.2). The refresh token travels in the body, never in
+    /// `Authorization`, and the access token never renews a session. The refresh token rotates
+    /// on every use: the presented one is spent, and the client stores the returned pair and
+    /// discards the old one. Presenting a refresh token that was already rotated revokes every
+    /// token of its session (the session family) and is answered 401. Every 401 here is a
+    /// refused renewal: the client erases the session's tokens on the device and signs in
+    /// again. If the answer is lost, the client may retry once with the same refresh token and
+    /// a new `Idempotency-Key`; a refused retry ends the session the same way. Identity's own
+    /// operation: better-auth 1.7.12 has no refresh token.
+    ///
+    ///
+    /// - Remark: HTTP `POST /v1/auth/session/refresh`.
+    /// - Remark: Generated from `#/paths//v1/auth/session/refresh/post(refreshSession)`.
+    func refreshSession(_ input: Operations.RefreshSession.Input) async throws -> Operations.RefreshSession.Output
+    /// Sign out this device
+    ///
+    /// Revokes the session the bearer token belongs to on the server.
+    ///
+    /// - Remark: HTTP `POST /v1/auth/sign-out`.
+    /// - Remark: Generated from `#/paths//v1/auth/sign-out/post(signOut)`.
+    func signOut(_ input: Operations.SignOut.Input) async throws -> Operations.SignOut.Output
+    /// List the signed-in devices of the caller
+    ///
+    /// One entry per active session of the caller's account (the device list, doc 11 §4.2),
+    /// newest first, cursor-paginated (doc 06 §2). Never another user's sessions and never a
+    /// session token.
+    ///
+    ///
+    /// - Remark: HTTP `GET /v1/auth/list-sessions`.
+    /// - Remark: Generated from `#/paths//v1/auth/list-sessions/get(listDeviceSessions)`.
+    func listDeviceSessions(_ input: Operations.ListDeviceSessions.Input) async throws -> Operations.ListDeviceSessions.Output
+    /// Sign out every device
+    ///
+    /// Revokes every session of the caller's account, the current one included.
+    ///
+    /// - Remark: HTTP `POST /v1/auth/revoke-sessions`.
+    /// - Remark: Generated from `#/paths//v1/auth/revoke-sessions/post(signOutAllDevices)`.
+    func signOutAllDevices(_ input: Operations.SignOutAllDevices.Input) async throws -> Operations.SignOutAllDevices.Output
+    /// Ask for an account-recovery link by email
+    ///
+    /// Fallback for a person who lost their passkeys (doc 11 §15). The answer is the same
+    /// status and body whether or not an account exists for the address, so it discloses
+    /// nothing. When one exists, a single-use link is emailed; it works from 24 to 48 hours
+    /// after the request, and any signed-in session of the account can cancel it before then
+    /// (`cancelAccountRecovery`). The link opens the app (a universal link on iOS, an app link
+    /// on Android), never an API URL, and carries its token in the URL fragment, which no
+    /// server, proxy or link scanner receives; the app then calls `completeAccountRecovery`.
+    /// Never creates an account.
+    ///
+    ///
+    /// - Remark: HTTP `POST /v1/auth/sign-in/magic-link`.
+    /// - Remark: Generated from `#/paths//v1/auth/sign-in/magic-link/post(requestAccountRecovery)`.
+    func requestAccountRecovery(_ input: Operations.RequestAccountRecovery.Input) async throws -> Operations.RequestAccountRecovery.Output
+    /// Use an account-recovery link
+    ///
+    /// The app sends the token of the recovery link it was opened with and gets a sign-in
+    /// (`SignInResult`). The token travels only in this request body: no GET spends it, and no
+    /// URL carries it to the API. Before the 24-hour delay has passed the use is refused and
+    /// the token is not spent, so the same link works once the delay is over. From 48 hours
+    /// after the request, after a cancel, and on a second use it is refused. The person then
+    /// adds a new passkey with `registerPasskey`. Identity's own operation: the better-auth
+    /// 1.7.12 magic-link plugin verifies only by a GET that spends the token, and that path is
+    /// not served.
+    ///
+    ///
+    /// - Remark: HTTP `POST /v1/auth/recovery/complete`.
+    /// - Remark: Generated from `#/paths//v1/auth/recovery/complete/post(completeAccountRecovery)`.
+    func completeAccountRecovery(_ input: Operations.CompleteAccountRecovery.Input) async throws -> Operations.CompleteAccountRecovery.Output
+    /// Cancel a pending account recovery
+    ///
+    /// Cancels the pending recovery link of the caller's account during its 24-hour delay.
+    /// Only a signed-in session of that account can cancel; holding the mailbox is not
+    /// enough. Identity's own operation: better-auth 1.7.12 has no path for it.
+    ///
+    ///
+    /// - Remark: HTTP `DELETE /v1/me/recovery`.
+    /// - Remark: Generated from `#/paths//v1/me/recovery/delete(cancelAccountRecovery)`.
+    func cancelAccountRecovery(_ input: Operations.CancelAccountRecovery.Input) async throws -> Operations.CancelAccountRecovery.Output
+    /// The consent the server applies to the caller, per purpose
+    ///
+    /// One `ResolvedConsent` for every purpose of `ConsentPurpose`, in that order (doc 11
+    /// §7.2), cursor-paginated; with the default `limit` one page holds every purpose. Each
+    /// entry gives the state the server applies now: the caller's latest record for the
+    /// purpose, or, when the caller has none, the purpose's default. The server decides each
+    /// default (some depend on the jurisdiction), and `withdrawable` marks the purposes the
+    /// person cannot withdraw, so the apps read both here and never hard-code them. The full
+    /// append-only history is part of the data export.
+    ///
+    ///
+    /// - Remark: HTTP `GET /v1/me/consents`.
+    /// - Remark: Generated from `#/paths//v1/me/consents/get(listConsents)`.
+    func listConsents(_ input: Operations.ListConsents.Input) async throws -> Operations.ListConsents.Output
+    /// Grant or withdraw consent for one purpose
+    ///
+    /// Appends a consent record for one purpose (doc 11 §7.1; append-only: a withdrawal is a
+    /// new record). 201 when a record was appended. 200 when the request repeats the current
+    /// state for the same policy version: nothing is stored and the current record, with its
+    /// original dates, is returned.
+    ///
+    ///
+    /// - Remark: HTTP `POST /v1/me/consents`.
+    /// - Remark: Generated from `#/paths//v1/me/consents/post(recordConsent)`.
+    func recordConsent(_ input: Operations.RecordConsent.Input) async throws -> Operations.RecordConsent.Output
+    /// Request an export of the caller's data
+    ///
+    /// Starts an asynchronous export of the caller's data (doc 11 §13.1), open on every plan
+    /// (`data.export`). Answers at once with the new export `in_progress`; the client reads it
+    /// with `getDataExport` until it is `ready` (a notification follows as well). One export
+    /// runs at a time per account: while one is in progress, a new request is refused with 429
+    /// and the running export. Re-authentication, the same rule as `requestAccountDeletion`:
+    /// needs a recent sign-in (`RecentSignInRequired`); otherwise 403 `FORBIDDEN`, and the
+    /// client signs in again first.
+    ///
+    ///
+    /// - Remark: HTTP `POST /v1/me/exports`.
+    /// - Remark: Generated from `#/paths//v1/me/exports/post(requestDataExport)`.
+    func requestDataExport(_ input: Operations.RequestDataExport.Input) async throws -> Operations.RequestDataExport.Output
+    /// Read one of the caller's data exports
+    ///
+    /// The state of an export. While it is `ready`, every read mints a new download link after
+    /// the same authorization check; the link lives at most 10 minutes (DEC-44, doc 11 §5.4).
+    /// The archive itself is kept until `availableUntil`. Never cached.
+    ///
+    ///
+    /// - Remark: HTTP `GET /v1/me/exports/{id}`.
+    /// - Remark: Generated from `#/paths//v1/me/exports/{id}/get(getDataExport)`.
+    func getDataExport(_ input: Operations.GetDataExport.Input) async throws -> Operations.GetDataExport.Output
+    /// Request deletion of the caller's account
+    ///
+    /// Starts the deletion of the caller's account (doc 11 §13.2). At once every session of the
+    /// account is revoked, this one included, and a sign-in opens no session; the account is
+    /// kept for a 7-day grace window (DEC-65). A sign-in during the window answers
+    /// `deletion_pending`, whose cancel credential can stop the deletion
+    /// (`cancelAccountDeletion`). After the window the purge runs and cannot be stopped.
+    /// Re-authentication (doc 02 §11.3): needs a recent sign-in (`RecentSignInRequired`);
+    /// otherwise 403 `FORBIDDEN`, and the client signs in again first. After the answer the
+    /// tokens of this session no longer work and the client returns to its signed-out start.
+    /// Deleting the account does not cancel a store subscription.
+    ///
+    ///
+    /// - Remark: HTTP `POST /v1/me/deletion`.
+    /// - Remark: Generated from `#/paths//v1/me/deletion/post(requestAccountDeletion)`.
+    func requestAccountDeletion(_ input: Operations.RequestAccountDeletion.Input) async throws -> Operations.RequestAccountDeletion.Output
+    /// Cancel the account deletion inside its grace window
+    ///
+    /// Stops a pending account deletion during its 7-day grace window (DEC-65). The only
+    /// credential accepted is the cancel credential of the `deletion_pending` sign-in outcome
+    /// (`deletionCancelToken`); the caller holds no session, because the deletion revoked them
+    /// all. The account is active again, but no session is opened or restored: the client signs
+    /// in again. Once the window has ended the cancel is refused with 410 `ACCOUNT_DELETED`.
+    ///
+    ///
+    /// - Remark: HTTP `DELETE /v1/me/deletion`.
+    /// - Remark: Generated from `#/paths//v1/me/deletion/delete(cancelAccountDeletion)`.
+    func cancelAccountDeletion(_ input: Operations.CancelAccountDeletion.Input) async throws -> Operations.CancelAccountDeletion.Output
+    /// Read the caller's profile settings
+    ///
+    /// Presentation, starting shape and the six settings of REQ-ONB-100. A profile nothing has
+    /// been written to answers with its defaults and `version` 0.
+    ///
+    ///
+    /// - Remark: HTTP `GET /v1/me/profile`.
+    /// - Remark: Generated from `#/paths//v1/me/profile/get(getProfile)`.
+    func getProfile(_ input: Operations.GetProfile.Input) async throws -> Operations.GetProfile.Output
+    /// Change some of the caller's profile settings
+    ///
+    /// Partial update (see the file header): each member present replaces its stored value.
+    /// Answers with the whole profile at its new `version`.
+    ///
+    ///
+    /// - Remark: HTTP `PATCH /v1/me/profile`.
+    /// - Remark: Generated from `#/paths//v1/me/profile/patch(updateProfile)`.
+    func updateProfile(_ input: Operations.UpdateProfile.Input) async throws -> Operations.UpdateProfile.Output
+    /// Read the caller's body measurements
+    ///
+    /// The caller's current measurement set, in SI units. A set nothing has been written to
+    /// answers with no measurement and `version` 0. Never cached.
+    ///
+    ///
+    /// - Remark: HTTP `GET /v1/me/measurements`.
+    /// - Remark: Generated from `#/paths//v1/me/measurements/get(getMeasurements)`.
+    func getMeasurements(_ input: Operations.GetMeasurements.Input) async throws -> Operations.GetMeasurements.Output
+    /// Replace the caller's body measurements
+    ///
+    /// Replaces the whole set. A measurement absent from `measurements` is removed, which is how
+    /// a single field is cleared; `{}` removes every measurement. Values are SI (`cm`, `kg`);
+    /// the app converts for display only. Answers with the stored set at its new `version`.
+    ///
+    ///
+    /// - Remark: HTTP `PUT /v1/me/measurements`.
+    /// - Remark: Generated from `#/paths//v1/me/measurements/put(replaceMeasurements)`.
+    func replaceMeasurements(_ input: Operations.ReplaceMeasurements.Input) async throws -> Operations.ReplaceMeasurements.Output
+    /// Read the caller's style preferences
+    ///
+    /// Fit and style preferences, soft dislikes and hard exclusions, climate tolerance,
+    /// occasions and the typical day, and usual sizes. Preferences nothing has been written to
+    /// answer with empty lists and `version` 0.
+    ///
+    ///
+    /// - Remark: HTTP `GET /v1/me/preferences`.
+    /// - Remark: Generated from `#/paths//v1/me/preferences/get(getPreferences)`.
+    func getPreferences(_ input: Operations.GetPreferences.Input) async throws -> Operations.GetPreferences.Output
+    /// Change some of the caller's style preferences
+    ///
+    /// Partial update (see the file header): each member present replaces its stored value
+    /// whole, an empty list or object empties it, and `clear` removes `climateTolerance` or
+    /// `typicalDay`. Answers with all preferences at their new `version`.
+    ///
+    ///
+    /// - Remark: HTTP `PATCH /v1/me/preferences`.
+    /// - Remark: Generated from `#/paths//v1/me/preferences/patch(updatePreferences)`.
+    func updatePreferences(_ input: Operations.UpdatePreferences.Input) async throws -> Operations.UpdatePreferences.Output
+    /// Read the caller's onboarding progress
+    ///
+    /// Per-step progress of the onboarding flow (doc 02 §3.2) and the step the app resumes at
+    /// after a quit or a crash.
+    ///
+    ///
+    /// - Remark: HTTP `GET /v1/me/onboarding-progress`.
+    /// - Remark: Generated from `#/paths//v1/me/onboarding-progress/get(getOnboardingProgress)`.
+    func getOnboardingProgress(_ input: Operations.GetOnboardingProgress.Input) async throws -> Operations.GetOnboardingProgress.Output
+    /// Record the outcome of onboarding steps
+    ///
+    /// Records `completed` or `skipped` for each step present. A status only moves forward
+    /// (`pending` → `skipped` → `completed`): a write that would move a step back leaves it
+    /// unchanged and is still answered with 200, so a replayed or late write from a device's
+    /// local buffer is harmless. Answers with the whole progress.
+    ///
+    ///
+    /// - Remark: HTTP `PATCH /v1/me/onboarding-progress`.
+    /// - Remark: Generated from `#/paths//v1/me/onboarding-progress/patch(updateOnboardingProgress)`.
+    func updateOnboardingProgress(_ input: Operations.UpdateOnboardingProgress.Input) async throws -> Operations.UpdateOnboardingProgress.Output
+    /// Read the caller's resolved entitlements
+    ///
+    /// The entitlements the server resolves for the caller now (doc 12 §3.2): over the caller's
+    /// active grants the most generous value wins, per entitlement; an entitlement no active
+    /// grant supplies takes its Free-plan value (doc 12 §1.2). Every registered entitlement
+    /// appears once. The apps may cache the answer briefly to render (doc 12 §3.3); a gated
+    /// request is decided by the server alone.
+    ///
+    ///
+    /// - Remark: HTTP `GET /v1/me/entitlements`.
+    /// - Remark: Generated from `#/paths//v1/me/entitlements/get(getEntitlements)`.
+    func getEntitlements(_ input: Operations.GetEntitlements.Input) async throws -> Operations.GetEntitlements.Output
 }
 
 /// Convenience overloads for operation inputs.
@@ -47,6 +373,480 @@ extension APIProtocol {
     /// - Remark: Generated from `#/paths//v1/version/get(getVersion)`.
     public func getVersion(headers: Operations.GetVersion.Input.Headers = .init()) async throws -> Operations.GetVersion.Output {
         try await getVersion(Operations.GetVersion.Input(headers: headers))
+    }
+    /// Sign in with an Apple or Google identity token
+    ///
+    /// The app runs the provider's native sign-in and sends the identity token it received.
+    /// The server verifies the token with the provider's keys, then answers with one
+    /// `SignInResult`: a session for an existing account, `sign_up_required` for an identity
+    /// with no account (nothing is stored until `completeSignUp` accepts the birth year), or
+    /// `deletion_pending` for an account inside its deletion grace window (no session). No
+    /// provider token is ever returned.
+    ///
+    ///
+    /// - Remark: HTTP `POST /v1/auth/sign-in/social`.
+    /// - Remark: Generated from `#/paths//v1/auth/sign-in/social/post(signInWithIdToken)`.
+    public func signInWithIdToken(
+        headers: Operations.SignInWithIdToken.Input.Headers = .init(),
+        body: Operations.SignInWithIdToken.Input.Body
+    ) async throws -> Operations.SignInWithIdToken.Output {
+        try await signInWithIdToken(Operations.SignInWithIdToken.Input(
+            headers: headers,
+            body: body
+        ))
+    }
+    /// Complete a pending sign-up with the self-declared birth year (age gate)
+    ///
+    /// Second part of a sign-up. The first part is a sign-in whose answer was
+    /// `sign_up_required`; the `signUpToken` of that answer authorizes this call. The server
+    /// applies the age gate (16+, DEC-60) to the birth year. Accepted: the account is created
+    /// and the answer is the `session` outcome. Refused: `AGE_GATE_FAILED`, nothing about the
+    /// attempt is stored, and the sign-up token is spent; a new attempt starts again with a
+    /// sign-in. Identity's own operation: better-auth 1.7.12 has no path for it.
+    ///
+    ///
+    /// - Remark: HTTP `POST /v1/auth/sign-up/complete`.
+    /// - Remark: Generated from `#/paths//v1/auth/sign-up/complete/post(completeSignUp)`.
+    public func completeSignUp(
+        headers: Operations.CompleteSignUp.Input.Headers = .init(),
+        body: Operations.CompleteSignUp.Input.Body
+    ) async throws -> Operations.CompleteSignUp.Output {
+        try await completeSignUp(Operations.CompleteSignUp.Input(
+            headers: headers,
+            body: body
+        ))
+    }
+    /// WebAuthn options for a passkey sign-in
+    ///
+    /// Returns a fresh challenge and the WebAuthn request options (W3C WebAuthn
+    /// `PublicKeyCredentialRequestOptionsJSON`) for the platform passkey API. Without a session
+    /// no credentials are listed, so the device offers its discoverable passkeys.
+    ///
+    ///
+    /// - Remark: HTTP `GET /v1/auth/passkey/generate-authenticate-options`.
+    /// - Remark: Generated from `#/paths//v1/auth/passkey/generate-authenticate-options/get(getPasskeySignInOptions)`.
+    public func getPasskeySignInOptions(headers: Operations.GetPasskeySignInOptions.Input.Headers = .init()) async throws -> Operations.GetPasskeySignInOptions.Output {
+        try await getPasskeySignInOptions(Operations.GetPasskeySignInOptions.Input(headers: headers))
+    }
+    /// Sign in with a passkey assertion
+    ///
+    /// Verifies the assertion the platform passkey API returned for the challenge of
+    /// `getPasskeySignInOptions`. Answers `session`, or `deletion_pending` for an account inside
+    /// its deletion grace window. A passkey always belongs to an existing account, so this
+    /// operation never answers `sign_up_required`.
+    ///
+    ///
+    /// - Remark: HTTP `POST /v1/auth/passkey/verify-authentication`.
+    /// - Remark: Generated from `#/paths//v1/auth/passkey/verify-authentication/post(signInWithPasskey)`.
+    public func signInWithPasskey(
+        headers: Operations.SignInWithPasskey.Input.Headers = .init(),
+        body: Operations.SignInWithPasskey.Input.Body
+    ) async throws -> Operations.SignInWithPasskey.Output {
+        try await signInWithPasskey(Operations.SignInWithPasskey.Input(
+            headers: headers,
+            body: body
+        ))
+    }
+    /// WebAuthn options to add a passkey to the signed-in account
+    ///
+    /// Returns a fresh challenge and the WebAuthn creation options (W3C WebAuthn
+    /// `PublicKeyCredentialCreationOptionsJSON`). The account's existing passkeys are listed as
+    /// excluded credentials. Needs a recent sign-in (`RecentSignInRequired`); otherwise 403
+    /// `FORBIDDEN`, and the client signs in again first.
+    ///
+    ///
+    /// - Remark: HTTP `GET /v1/auth/passkey/generate-register-options`.
+    /// - Remark: Generated from `#/paths//v1/auth/passkey/generate-register-options/get(getPasskeyRegistrationOptions)`.
+    public func getPasskeyRegistrationOptions(headers: Operations.GetPasskeyRegistrationOptions.Input.Headers = .init()) async throws -> Operations.GetPasskeyRegistrationOptions.Output {
+        try await getPasskeyRegistrationOptions(Operations.GetPasskeyRegistrationOptions.Input(headers: headers))
+    }
+    /// Add a passkey to the signed-in account
+    ///
+    /// Verifies the attestation the platform passkey API returned for the challenge of
+    /// `getPasskeyRegistrationOptions` and stores the passkey on the caller's account. An
+    /// account may hold several passkeys. Opens no new session.
+    ///
+    ///
+    /// - Remark: HTTP `POST /v1/auth/passkey/verify-registration`.
+    /// - Remark: Generated from `#/paths//v1/auth/passkey/verify-registration/post(registerPasskey)`.
+    public func registerPasskey(
+        headers: Operations.RegisterPasskey.Input.Headers = .init(),
+        body: Operations.RegisterPasskey.Input.Body
+    ) async throws -> Operations.RegisterPasskey.Output {
+        try await registerPasskey(Operations.RegisterPasskey.Input(
+            headers: headers,
+            body: body
+        ))
+    }
+    /// Read the current session
+    ///
+    /// The account of the session the access token belongs to, and when that access token
+    /// expires. Read-only: it extends nothing and returns no token (better-auth
+    /// `deferSessionRefresh`). A token with no live session is answered with 401, never with
+    /// an empty body.
+    ///
+    ///
+    /// - Remark: HTTP `GET /v1/auth/get-session`.
+    /// - Remark: Generated from `#/paths//v1/auth/get-session/get(getSession)`.
+    public func getSession(headers: Operations.GetSession.Input.Headers = .init()) async throws -> Operations.GetSession.Output {
+        try await getSession(Operations.GetSession.Input(headers: headers))
+    }
+    /// Renew a session with its refresh token
+    ///
+    /// Exchanges the session's refresh token for a new pair: a new access token and a new
+    /// refresh token (doc 11 §4.2). The refresh token travels in the body, never in
+    /// `Authorization`, and the access token never renews a session. The refresh token rotates
+    /// on every use: the presented one is spent, and the client stores the returned pair and
+    /// discards the old one. Presenting a refresh token that was already rotated revokes every
+    /// token of its session (the session family) and is answered 401. Every 401 here is a
+    /// refused renewal: the client erases the session's tokens on the device and signs in
+    /// again. If the answer is lost, the client may retry once with the same refresh token and
+    /// a new `Idempotency-Key`; a refused retry ends the session the same way. Identity's own
+    /// operation: better-auth 1.7.12 has no refresh token.
+    ///
+    ///
+    /// - Remark: HTTP `POST /v1/auth/session/refresh`.
+    /// - Remark: Generated from `#/paths//v1/auth/session/refresh/post(refreshSession)`.
+    public func refreshSession(
+        headers: Operations.RefreshSession.Input.Headers = .init(),
+        body: Operations.RefreshSession.Input.Body
+    ) async throws -> Operations.RefreshSession.Output {
+        try await refreshSession(Operations.RefreshSession.Input(
+            headers: headers,
+            body: body
+        ))
+    }
+    /// Sign out this device
+    ///
+    /// Revokes the session the bearer token belongs to on the server.
+    ///
+    /// - Remark: HTTP `POST /v1/auth/sign-out`.
+    /// - Remark: Generated from `#/paths//v1/auth/sign-out/post(signOut)`.
+    public func signOut(headers: Operations.SignOut.Input.Headers = .init()) async throws -> Operations.SignOut.Output {
+        try await signOut(Operations.SignOut.Input(headers: headers))
+    }
+    /// List the signed-in devices of the caller
+    ///
+    /// One entry per active session of the caller's account (the device list, doc 11 §4.2),
+    /// newest first, cursor-paginated (doc 06 §2). Never another user's sessions and never a
+    /// session token.
+    ///
+    ///
+    /// - Remark: HTTP `GET /v1/auth/list-sessions`.
+    /// - Remark: Generated from `#/paths//v1/auth/list-sessions/get(listDeviceSessions)`.
+    public func listDeviceSessions(
+        query: Operations.ListDeviceSessions.Input.Query = .init(),
+        headers: Operations.ListDeviceSessions.Input.Headers = .init()
+    ) async throws -> Operations.ListDeviceSessions.Output {
+        try await listDeviceSessions(Operations.ListDeviceSessions.Input(
+            query: query,
+            headers: headers
+        ))
+    }
+    /// Sign out every device
+    ///
+    /// Revokes every session of the caller's account, the current one included.
+    ///
+    /// - Remark: HTTP `POST /v1/auth/revoke-sessions`.
+    /// - Remark: Generated from `#/paths//v1/auth/revoke-sessions/post(signOutAllDevices)`.
+    public func signOutAllDevices(headers: Operations.SignOutAllDevices.Input.Headers = .init()) async throws -> Operations.SignOutAllDevices.Output {
+        try await signOutAllDevices(Operations.SignOutAllDevices.Input(headers: headers))
+    }
+    /// Ask for an account-recovery link by email
+    ///
+    /// Fallback for a person who lost their passkeys (doc 11 §15). The answer is the same
+    /// status and body whether or not an account exists for the address, so it discloses
+    /// nothing. When one exists, a single-use link is emailed; it works from 24 to 48 hours
+    /// after the request, and any signed-in session of the account can cancel it before then
+    /// (`cancelAccountRecovery`). The link opens the app (a universal link on iOS, an app link
+    /// on Android), never an API URL, and carries its token in the URL fragment, which no
+    /// server, proxy or link scanner receives; the app then calls `completeAccountRecovery`.
+    /// Never creates an account.
+    ///
+    ///
+    /// - Remark: HTTP `POST /v1/auth/sign-in/magic-link`.
+    /// - Remark: Generated from `#/paths//v1/auth/sign-in/magic-link/post(requestAccountRecovery)`.
+    public func requestAccountRecovery(
+        headers: Operations.RequestAccountRecovery.Input.Headers = .init(),
+        body: Operations.RequestAccountRecovery.Input.Body
+    ) async throws -> Operations.RequestAccountRecovery.Output {
+        try await requestAccountRecovery(Operations.RequestAccountRecovery.Input(
+            headers: headers,
+            body: body
+        ))
+    }
+    /// Use an account-recovery link
+    ///
+    /// The app sends the token of the recovery link it was opened with and gets a sign-in
+    /// (`SignInResult`). The token travels only in this request body: no GET spends it, and no
+    /// URL carries it to the API. Before the 24-hour delay has passed the use is refused and
+    /// the token is not spent, so the same link works once the delay is over. From 48 hours
+    /// after the request, after a cancel, and on a second use it is refused. The person then
+    /// adds a new passkey with `registerPasskey`. Identity's own operation: the better-auth
+    /// 1.7.12 magic-link plugin verifies only by a GET that spends the token, and that path is
+    /// not served.
+    ///
+    ///
+    /// - Remark: HTTP `POST /v1/auth/recovery/complete`.
+    /// - Remark: Generated from `#/paths//v1/auth/recovery/complete/post(completeAccountRecovery)`.
+    public func completeAccountRecovery(
+        headers: Operations.CompleteAccountRecovery.Input.Headers = .init(),
+        body: Operations.CompleteAccountRecovery.Input.Body
+    ) async throws -> Operations.CompleteAccountRecovery.Output {
+        try await completeAccountRecovery(Operations.CompleteAccountRecovery.Input(
+            headers: headers,
+            body: body
+        ))
+    }
+    /// Cancel a pending account recovery
+    ///
+    /// Cancels the pending recovery link of the caller's account during its 24-hour delay.
+    /// Only a signed-in session of that account can cancel; holding the mailbox is not
+    /// enough. Identity's own operation: better-auth 1.7.12 has no path for it.
+    ///
+    ///
+    /// - Remark: HTTP `DELETE /v1/me/recovery`.
+    /// - Remark: Generated from `#/paths//v1/me/recovery/delete(cancelAccountRecovery)`.
+    public func cancelAccountRecovery(headers: Operations.CancelAccountRecovery.Input.Headers = .init()) async throws -> Operations.CancelAccountRecovery.Output {
+        try await cancelAccountRecovery(Operations.CancelAccountRecovery.Input(headers: headers))
+    }
+    /// The consent the server applies to the caller, per purpose
+    ///
+    /// One `ResolvedConsent` for every purpose of `ConsentPurpose`, in that order (doc 11
+    /// §7.2), cursor-paginated; with the default `limit` one page holds every purpose. Each
+    /// entry gives the state the server applies now: the caller's latest record for the
+    /// purpose, or, when the caller has none, the purpose's default. The server decides each
+    /// default (some depend on the jurisdiction), and `withdrawable` marks the purposes the
+    /// person cannot withdraw, so the apps read both here and never hard-code them. The full
+    /// append-only history is part of the data export.
+    ///
+    ///
+    /// - Remark: HTTP `GET /v1/me/consents`.
+    /// - Remark: Generated from `#/paths//v1/me/consents/get(listConsents)`.
+    public func listConsents(
+        query: Operations.ListConsents.Input.Query = .init(),
+        headers: Operations.ListConsents.Input.Headers = .init()
+    ) async throws -> Operations.ListConsents.Output {
+        try await listConsents(Operations.ListConsents.Input(
+            query: query,
+            headers: headers
+        ))
+    }
+    /// Grant or withdraw consent for one purpose
+    ///
+    /// Appends a consent record for one purpose (doc 11 §7.1; append-only: a withdrawal is a
+    /// new record). 201 when a record was appended. 200 when the request repeats the current
+    /// state for the same policy version: nothing is stored and the current record, with its
+    /// original dates, is returned.
+    ///
+    ///
+    /// - Remark: HTTP `POST /v1/me/consents`.
+    /// - Remark: Generated from `#/paths//v1/me/consents/post(recordConsent)`.
+    public func recordConsent(
+        headers: Operations.RecordConsent.Input.Headers = .init(),
+        body: Operations.RecordConsent.Input.Body
+    ) async throws -> Operations.RecordConsent.Output {
+        try await recordConsent(Operations.RecordConsent.Input(
+            headers: headers,
+            body: body
+        ))
+    }
+    /// Request an export of the caller's data
+    ///
+    /// Starts an asynchronous export of the caller's data (doc 11 §13.1), open on every plan
+    /// (`data.export`). Answers at once with the new export `in_progress`; the client reads it
+    /// with `getDataExport` until it is `ready` (a notification follows as well). One export
+    /// runs at a time per account: while one is in progress, a new request is refused with 429
+    /// and the running export. Re-authentication, the same rule as `requestAccountDeletion`:
+    /// needs a recent sign-in (`RecentSignInRequired`); otherwise 403 `FORBIDDEN`, and the
+    /// client signs in again first.
+    ///
+    ///
+    /// - Remark: HTTP `POST /v1/me/exports`.
+    /// - Remark: Generated from `#/paths//v1/me/exports/post(requestDataExport)`.
+    public func requestDataExport(headers: Operations.RequestDataExport.Input.Headers = .init()) async throws -> Operations.RequestDataExport.Output {
+        try await requestDataExport(Operations.RequestDataExport.Input(headers: headers))
+    }
+    /// Read one of the caller's data exports
+    ///
+    /// The state of an export. While it is `ready`, every read mints a new download link after
+    /// the same authorization check; the link lives at most 10 minutes (DEC-44, doc 11 §5.4).
+    /// The archive itself is kept until `availableUntil`. Never cached.
+    ///
+    ///
+    /// - Remark: HTTP `GET /v1/me/exports/{id}`.
+    /// - Remark: Generated from `#/paths//v1/me/exports/{id}/get(getDataExport)`.
+    public func getDataExport(
+        path: Operations.GetDataExport.Input.Path,
+        headers: Operations.GetDataExport.Input.Headers = .init()
+    ) async throws -> Operations.GetDataExport.Output {
+        try await getDataExport(Operations.GetDataExport.Input(
+            path: path,
+            headers: headers
+        ))
+    }
+    /// Request deletion of the caller's account
+    ///
+    /// Starts the deletion of the caller's account (doc 11 §13.2). At once every session of the
+    /// account is revoked, this one included, and a sign-in opens no session; the account is
+    /// kept for a 7-day grace window (DEC-65). A sign-in during the window answers
+    /// `deletion_pending`, whose cancel credential can stop the deletion
+    /// (`cancelAccountDeletion`). After the window the purge runs and cannot be stopped.
+    /// Re-authentication (doc 02 §11.3): needs a recent sign-in (`RecentSignInRequired`);
+    /// otherwise 403 `FORBIDDEN`, and the client signs in again first. After the answer the
+    /// tokens of this session no longer work and the client returns to its signed-out start.
+    /// Deleting the account does not cancel a store subscription.
+    ///
+    ///
+    /// - Remark: HTTP `POST /v1/me/deletion`.
+    /// - Remark: Generated from `#/paths//v1/me/deletion/post(requestAccountDeletion)`.
+    public func requestAccountDeletion(headers: Operations.RequestAccountDeletion.Input.Headers = .init()) async throws -> Operations.RequestAccountDeletion.Output {
+        try await requestAccountDeletion(Operations.RequestAccountDeletion.Input(headers: headers))
+    }
+    /// Cancel the account deletion inside its grace window
+    ///
+    /// Stops a pending account deletion during its 7-day grace window (DEC-65). The only
+    /// credential accepted is the cancel credential of the `deletion_pending` sign-in outcome
+    /// (`deletionCancelToken`); the caller holds no session, because the deletion revoked them
+    /// all. The account is active again, but no session is opened or restored: the client signs
+    /// in again. Once the window has ended the cancel is refused with 410 `ACCOUNT_DELETED`.
+    ///
+    ///
+    /// - Remark: HTTP `DELETE /v1/me/deletion`.
+    /// - Remark: Generated from `#/paths//v1/me/deletion/delete(cancelAccountDeletion)`.
+    public func cancelAccountDeletion(headers: Operations.CancelAccountDeletion.Input.Headers = .init()) async throws -> Operations.CancelAccountDeletion.Output {
+        try await cancelAccountDeletion(Operations.CancelAccountDeletion.Input(headers: headers))
+    }
+    /// Read the caller's profile settings
+    ///
+    /// Presentation, starting shape and the six settings of REQ-ONB-100. A profile nothing has
+    /// been written to answers with its defaults and `version` 0.
+    ///
+    ///
+    /// - Remark: HTTP `GET /v1/me/profile`.
+    /// - Remark: Generated from `#/paths//v1/me/profile/get(getProfile)`.
+    public func getProfile(headers: Operations.GetProfile.Input.Headers = .init()) async throws -> Operations.GetProfile.Output {
+        try await getProfile(Operations.GetProfile.Input(headers: headers))
+    }
+    /// Change some of the caller's profile settings
+    ///
+    /// Partial update (see the file header): each member present replaces its stored value.
+    /// Answers with the whole profile at its new `version`.
+    ///
+    ///
+    /// - Remark: HTTP `PATCH /v1/me/profile`.
+    /// - Remark: Generated from `#/paths//v1/me/profile/patch(updateProfile)`.
+    public func updateProfile(
+        headers: Operations.UpdateProfile.Input.Headers,
+        body: Operations.UpdateProfile.Input.Body
+    ) async throws -> Operations.UpdateProfile.Output {
+        try await updateProfile(Operations.UpdateProfile.Input(
+            headers: headers,
+            body: body
+        ))
+    }
+    /// Read the caller's body measurements
+    ///
+    /// The caller's current measurement set, in SI units. A set nothing has been written to
+    /// answers with no measurement and `version` 0. Never cached.
+    ///
+    ///
+    /// - Remark: HTTP `GET /v1/me/measurements`.
+    /// - Remark: Generated from `#/paths//v1/me/measurements/get(getMeasurements)`.
+    public func getMeasurements(headers: Operations.GetMeasurements.Input.Headers = .init()) async throws -> Operations.GetMeasurements.Output {
+        try await getMeasurements(Operations.GetMeasurements.Input(headers: headers))
+    }
+    /// Replace the caller's body measurements
+    ///
+    /// Replaces the whole set. A measurement absent from `measurements` is removed, which is how
+    /// a single field is cleared; `{}` removes every measurement. Values are SI (`cm`, `kg`);
+    /// the app converts for display only. Answers with the stored set at its new `version`.
+    ///
+    ///
+    /// - Remark: HTTP `PUT /v1/me/measurements`.
+    /// - Remark: Generated from `#/paths//v1/me/measurements/put(replaceMeasurements)`.
+    public func replaceMeasurements(
+        headers: Operations.ReplaceMeasurements.Input.Headers,
+        body: Operations.ReplaceMeasurements.Input.Body
+    ) async throws -> Operations.ReplaceMeasurements.Output {
+        try await replaceMeasurements(Operations.ReplaceMeasurements.Input(
+            headers: headers,
+            body: body
+        ))
+    }
+    /// Read the caller's style preferences
+    ///
+    /// Fit and style preferences, soft dislikes and hard exclusions, climate tolerance,
+    /// occasions and the typical day, and usual sizes. Preferences nothing has been written to
+    /// answer with empty lists and `version` 0.
+    ///
+    ///
+    /// - Remark: HTTP `GET /v1/me/preferences`.
+    /// - Remark: Generated from `#/paths//v1/me/preferences/get(getPreferences)`.
+    public func getPreferences(headers: Operations.GetPreferences.Input.Headers = .init()) async throws -> Operations.GetPreferences.Output {
+        try await getPreferences(Operations.GetPreferences.Input(headers: headers))
+    }
+    /// Change some of the caller's style preferences
+    ///
+    /// Partial update (see the file header): each member present replaces its stored value
+    /// whole, an empty list or object empties it, and `clear` removes `climateTolerance` or
+    /// `typicalDay`. Answers with all preferences at their new `version`.
+    ///
+    ///
+    /// - Remark: HTTP `PATCH /v1/me/preferences`.
+    /// - Remark: Generated from `#/paths//v1/me/preferences/patch(updatePreferences)`.
+    public func updatePreferences(
+        headers: Operations.UpdatePreferences.Input.Headers,
+        body: Operations.UpdatePreferences.Input.Body
+    ) async throws -> Operations.UpdatePreferences.Output {
+        try await updatePreferences(Operations.UpdatePreferences.Input(
+            headers: headers,
+            body: body
+        ))
+    }
+    /// Read the caller's onboarding progress
+    ///
+    /// Per-step progress of the onboarding flow (doc 02 §3.2) and the step the app resumes at
+    /// after a quit or a crash.
+    ///
+    ///
+    /// - Remark: HTTP `GET /v1/me/onboarding-progress`.
+    /// - Remark: Generated from `#/paths//v1/me/onboarding-progress/get(getOnboardingProgress)`.
+    public func getOnboardingProgress(headers: Operations.GetOnboardingProgress.Input.Headers = .init()) async throws -> Operations.GetOnboardingProgress.Output {
+        try await getOnboardingProgress(Operations.GetOnboardingProgress.Input(headers: headers))
+    }
+    /// Record the outcome of onboarding steps
+    ///
+    /// Records `completed` or `skipped` for each step present. A status only moves forward
+    /// (`pending` → `skipped` → `completed`): a write that would move a step back leaves it
+    /// unchanged and is still answered with 200, so a replayed or late write from a device's
+    /// local buffer is harmless. Answers with the whole progress.
+    ///
+    ///
+    /// - Remark: HTTP `PATCH /v1/me/onboarding-progress`.
+    /// - Remark: Generated from `#/paths//v1/me/onboarding-progress/patch(updateOnboardingProgress)`.
+    public func updateOnboardingProgress(
+        headers: Operations.UpdateOnboardingProgress.Input.Headers = .init(),
+        body: Operations.UpdateOnboardingProgress.Input.Body
+    ) async throws -> Operations.UpdateOnboardingProgress.Output {
+        try await updateOnboardingProgress(Operations.UpdateOnboardingProgress.Input(
+            headers: headers,
+            body: body
+        ))
+    }
+    /// Read the caller's resolved entitlements
+    ///
+    /// The entitlements the server resolves for the caller now (doc 12 §3.2): over the caller's
+    /// active grants the most generous value wins, per entitlement; an entitlement no active
+    /// grant supplies takes its Free-plan value (doc 12 §1.2). Every registered entitlement
+    /// appears once. The apps may cache the answer briefly to render (doc 12 §3.3); a gated
+    /// request is decided by the server alone.
+    ///
+    ///
+    /// - Remark: HTTP `GET /v1/me/entitlements`.
+    /// - Remark: Generated from `#/paths//v1/me/entitlements/get(getEntitlements)`.
+    public func getEntitlements(headers: Operations.GetEntitlements.Input.Headers = .init()) async throws -> Operations.GetEntitlements.Output {
+        try await getEntitlements(Operations.GetEntitlements.Input(headers: headers))
     }
 }
 

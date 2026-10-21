@@ -35,6 +35,7 @@ Decide additive vs breaking with `oasdiff` (runs in the PR gate). Breaking = rem
 Every consumer of the generated output must be listed; producers land before consumers rebase.
 
 - `gen/ts-client` (api types, TS SDK): <yes/no — follow-up issue ID> · `gen/events-ts` (api): <…> · worker Pydantic models: <…>
+- `gen/swift-client` (`AIStylistAPI`, `AIStylistKernel`) and `gen/kotlin-client` (API client, `kernel`): <yes/no>. Every value a native app reads must come out of `just generate` for both. If the kernel emitter does not cover it yet, name the emitter issue (`tooling-engineer`), stacked in the same PR chain before any native consumer.
 - Server conformance in module: <name> — follow-up issue ID <…>
 
 ## Modules touched
@@ -54,6 +55,7 @@ SPINE §3 names owning the endpoint/event/registry entry.
 
 - [ ] Schema lives only in `packages/contracts`; constants/reason codes/entitlement names only in `shared-kernel`; taxonomy only in `closet` — nothing copied into mobile/workers/tests
 - [ ] Generated files regenerated with `just generate`, never hand-edited
+- [ ] Every client-facing value (registry, enum, error code, id kind, bound) reaches TypeScript, Swift and Kotlin through `just generate`; a TS-only home only for server-only and worker-only values (`.claude/rules/contracts.md` invariant 6)
 - [ ] Field-level contracts respect doc 11: no measurement fields in list endpoints; no sensitive fields in push/analytics payloads
 - [ ] Error model, idempotency, pagination and naming follow doc 06
 - [ ] Reason codes added to the registry carry the explanation template (explanations come from the decision trace)

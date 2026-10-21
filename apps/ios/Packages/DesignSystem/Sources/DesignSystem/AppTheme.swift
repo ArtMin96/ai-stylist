@@ -11,11 +11,47 @@ nonisolated public struct AppTheme: Sendable, Equatable {
   public let colors: AppColors
   /// Every allowed `AppButton` look in this context.
   public let buttons: ButtonSpec
+  /// Every allowed `AppChip` look in this context.
+  public let chips: ChipSpec
+  /// Every allowed `AppTag` look in this context.
+  public let tags: TagSpec
+  /// Every allowed `AppBadge` look in this context.
+  public let badges: BadgeSpec
+  /// Every allowed `AppReasonRow` look in this context.
+  public let reasonRows: ReasonRowSpec
 
-  public static let light = AppTheme(colors: .light, buttons: .light)
-  public static let dark = AppTheme(colors: .dark, buttons: .dark)
-  public static let highContrastLight = AppTheme(colors: .hcLight, buttons: .hcLight)
-  public static let highContrastDark = AppTheme(colors: .hcDark, buttons: .hcDark)
+  public static let light = AppTheme(
+    colors: .light,
+    buttons: .light,
+    chips: .light,
+    tags: .light,
+    badges: .light,
+    reasonRows: .light
+  )
+  public static let dark = AppTheme(
+    colors: .dark,
+    buttons: .dark,
+    chips: .dark,
+    tags: .dark,
+    badges: .dark,
+    reasonRows: .dark
+  )
+  public static let highContrastLight = AppTheme(
+    colors: .hcLight,
+    buttons: .hcLight,
+    chips: .hcLight,
+    tags: .hcLight,
+    badges: .hcLight,
+    reasonRows: .hcLight
+  )
+  public static let highContrastDark = AppTheme(
+    colors: .hcDark,
+    buttons: .hcDark,
+    chips: .hcDark,
+    tags: .hcDark,
+    badges: .hcDark,
+    reasonRows: .hcDark
+  )
 
   /// The type styles (one set for every context).
   public var typography: AppTypography.Type { AppTypography.self }

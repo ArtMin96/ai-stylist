@@ -63,6 +63,8 @@ test('the fixtures hold one failing case per rule, TK-01 to TK-11', () => {
   const expected = Array.from({ length: 11 }, (_, i) => `TK-${String(i + 1).padStart(2, '0')}`);
   assert.deepEqual([...new Set(RULE_CASES.map(ruleOf))], expected);
   assert.ok(RULE_CASES.includes('TK-06-padding'), 'an unresolved padding reference');
+  assert.ok(RULE_CASES.includes('TK-06-trailing-icon'), 'a trailing slot naming no icon size');
+  assert.ok(RULE_CASES.includes('TK-08-text-transform'), 'a text transform outside the list');
 });
 
 for (const name of RULE_CASES) {
@@ -238,6 +240,15 @@ test('TK-08: an unknown property, a bad Dynamic Type style, `0` spacing, bad M3 
   assertOnly(scalar, 'TK-08', /`m3Roles` must be a list/);
   const unknown = validateEdited((fm) => (fm.typography.badge.m3Roles = ['headline']));
   assertOnly(unknown, 'TK-08', /unknown M3 role "headline"/);
+  const transform = validateEdited((fm) => (fm.typography.body.textTransform = 'capitalize'));
+  assertOnly(transform, 'TK-08', /`textTransform` must be one of none, uppercase/);
+});
+
+test('TK-08: `textTransform` is optional, `none` or `uppercase`', () => {
+  for (const value of ['none', 'uppercase', undefined]) {
+    const findings = validateEdited((fm) => (fm.typography.badge.textTransform = value));
+    assert.deepEqual(findings, [], describeFindings(findings));
+  }
 });
 
 test('TK-09: an M3 role no style claims', () => {
@@ -278,29 +289,38 @@ test('TK-06: a padding part references only spacing, and only a step that exists
   assertOnly(malformed, 'TK-11', /padding takes 1–4 parts, each 0, Npx or a \{spacing/);
 });
 
-test('TK-06: only iconSize names a component, and only an icon size (icon-<step>)', () => {
+test('TK-06: only an icon-slot size names a component, and only an icon size (icon-<step>)', () => {
   const withSize = (fm) => (fm.components['icon-md'] = { size: '20px', strokeWidth: 1.7 });
-  for (const value of ['icon-md', '{components.icon-md}']) {
-    const named = validateEdited((fm) => {
-      withSize(fm);
-      fm.components.overlay.iconSize = value;
-    });
-    assert.deepEqual(named, [], `${value}: ${describeFindings(named)}`);
+  for (const prop of ['iconSize', 'trailingIconSize']) {
+    for (const value of ['icon-md', '{components.icon-md}', '16px']) {
+      const named = validateEdited((fm) => {
+        withSize(fm);
+        fm.components.overlay[prop] = value;
+      });
+      assert.deepEqual(named, [], `${prop}: ${value}: ${describeFindings(named)}`);
+    }
   }
   const cases = [
-    ['height', '{components.icon-md}', /only iconSize names a component/],
+    ['height', '{components.icon-md}', /only iconSize or a …IconSize property names a component/],
     ['iconSize', '{components.icon-xl}', /`\{components\.icon-xl\}` does not resolve/],
     ['iconSize', 'icon-xl', /`\{components\.icon-xl\}` does not resolve/],
     ['iconSize', '{components.overlay}', /`\{components\.overlay\}` is not an icon size/],
     ['iconSize', 'icon', /"icon" is not a px dimension, number or \{reference\}/],
+    ['trailingIconSize', 'icon-xl', /`\{components\.icon-xl\}` does not resolve/],
+    ['trailingIconSize', 'icon', /"icon" is not a px dimension, number or \{reference\}/],
+    ['trailingIconGap', 'icon-md', /"icon-md" is not a px dimension, number or \{reference\}/],
   ];
   for (const [prop, value, pattern] of cases) {
     const findings = validateEdited((fm) => {
       withSize(fm);
       fm.components.overlay[prop] = value;
     });
-    assertOnly(findings, value === 'icon' ? 'TK-11' : 'TK-06', pattern);
+    assertOnly(findings, pattern.source.includes('is not a px') ? 'TK-11' : 'TK-06', pattern);
   }
+  const trailing = loadTokens(fixtureText('TK-06-trailing-icon')).findings.map(formatFinding);
+  assert.deepEqual(trailing, [
+    'TK-06 components.overlay.trailingIconSize: `{components.icon-md}` does not resolve',
+  ]);
   const extra = validateEdited((fm) => {
     fm.components['icon-md'] = { size: '20px', strokeWidth: 1.7, color: '{colors.scrim}' };
     fm.components.overlay.iconSize = '{components.icon-md}';

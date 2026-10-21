@@ -18,6 +18,7 @@ describe('EventEnvelope (type-level)', () => {
       | 'aggregate'
       | 'sequence'
       | 'actor'
+      | 'subjectUserId'
       | 'correlationId'
       | 'causationId'
       | 'consentScope'
@@ -26,6 +27,7 @@ describe('EventEnvelope (type-level)', () => {
     >();
     expectTypeOf<EventEnvelope['id']>().toEqualTypeOf<Id<'event'>>();
     expectTypeOf<EventEnvelope['traceparent']>().toEqualTypeOf<string | undefined>();
+    expectTypeOf<EventEnvelope['subjectUserId']>().toEqualTypeOf<Id<'user'> | undefined>();
     expectTypeOf<EventEnvelope['sequence']>().toBeNumber();
     expectTypeOf<EventEnvelope['actor']['kind']>().toEqualTypeOf<ActorKind>();
     expectTypeOf<EventEnvelope['aggregate']>().toEqualTypeOf<{

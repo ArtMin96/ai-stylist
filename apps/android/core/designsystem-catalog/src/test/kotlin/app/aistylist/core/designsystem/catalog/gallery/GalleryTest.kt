@@ -2,6 +2,7 @@ package app.aistylist.core.designsystem.catalog.gallery
 
 import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertTextEquals
+import androidx.compose.ui.test.hasAnyAncestor
 import androidx.compose.ui.test.hasParent
 import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.hasText
@@ -10,10 +11,12 @@ import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import app.aistylist.core.designsystem.AppScheme
 import app.aistylist.core.designsystem.AppTheme
 import app.aistylist.core.designsystem.generated.AppIconName
 import app.aistylist.core.designsystem.generated.ComponentGallery
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -65,6 +68,58 @@ class GalleryTest {
     }
 
     @Test
+    fun rendersEveryC03CellExactlyOnceInItsSectionCaptionedWithItsTestId() {
+        show()
+
+        val cells =
+            mapOf(
+                "ds-gallery-section-c03-badges" to ComponentGallery.badge.map { it.testId },
+                "ds-gallery-section-c03-chips" to ComponentGallery.chip.map { it.testId },
+                "ds-gallery-section-c03-reason-row" to ComponentGallery.reasonRow.map { it.testId },
+                "ds-gallery-section-c03-tags" to ComponentGallery.tag.map { it.testId },
+            )
+        assertEquals(listOf(4, 84, 1, 12), cells.values.map { it.size })
+        cells.forEach { (section, ids) ->
+            assertEquals(section, ids.size, ids.toSet().size)
+            ids.forEach { id ->
+                compose.onAllNodesWithTag(id, useUnmergedTree = true).assertCountEquals(1)
+                compose
+                    .onNode(hasTestTag(id) and hasAnyAncestor(hasTestTag(section)), useUnmergedTree = true)
+                    .assertExists()
+                compose
+                    .onNode(
+                        hasText(id) and hasAnyAncestor(hasTestTag(section)),
+                        useUnmergedTree = true,
+                    ).assertExists()
+            }
+        }
+    }
+
+    @Test
+    fun everyComponentCellDrawsItsOwnEntrysLabel() {
+        show()
+
+        // The dot draws no text: only looks with a label style show the entry's label.
+        val labelledBadges =
+            ComponentGallery.badge.filter {
+                AppScheme.LIGHT.badges
+                    .appearance(it.variant, it.size, it.state)
+                    ?.typography != null
+            }
+        val cells =
+            ComponentGallery.button.map { it.testId to it.label } +
+                ComponentGallery.chip.map { it.testId to it.label } +
+                ComponentGallery.tag.map { it.testId to it.label } +
+                ComponentGallery.reasonRow.map { it.testId to it.label } +
+                labelledBadges.map { it.testId to it.label }
+        // The trial pills have their own words, so a component-wide sample label would fail here.
+        assertTrue(labelledBadges.any { it.label != ComponentGallery.badgeLabel })
+        cells.forEach { (id, label) ->
+            compose.onNode(hasText(label) and hasAnyAncestor(hasTestTag(id)), useUnmergedTree = true).assertExists()
+        }
+    }
+
+    @Test
     fun rendersEveryIconCellExactlyOnceCaptionedWithItsGlyphId() {
         show()
 
@@ -94,6 +149,10 @@ class GalleryTest {
                 "ds-gallery-section-radius" to "Radius",
                 "ds-gallery-section-c01-buttons" to "C01 Buttons",
                 "ds-gallery-section-c02-icons" to "C02 Icons",
+                "ds-gallery-section-c03-badges" to "C03 Badges",
+                "ds-gallery-section-c03-chips" to "C03 Chips",
+                "ds-gallery-section-c03-reason-row" to "C03 Reason row",
+                "ds-gallery-section-c03-tags" to "C03 Tags",
             )
     }
 }

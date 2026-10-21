@@ -17,9 +17,7 @@ struct GalleryColourItem: View {
         .overlay { swatch.strokeBorder(theme.color(.divider)) }
         .frame(width: theme.spacing.space40, height: theme.spacing.space40)
         .accessibilityHidden(true)
-      Text(role.rawValue)
-        .font(theme.font(theme.typography.footnote))
-        .foregroundStyle(theme.color(.text))
+      AppComponentText(text: role.rawValue, style: theme.typography.footnote, color: .text)
     }
   }
 }

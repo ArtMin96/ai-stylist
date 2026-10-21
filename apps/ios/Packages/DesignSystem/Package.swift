@@ -5,9 +5,10 @@
 //                 them into Sources/DesignTokens/generated/ (never hand-edit that directory). Beside
 //                 generated/ it also holds the hand-written C02 icon geometry (AppIconGeometry), UI-free
 //                 so it tests on Linux.
-//   DesignSystem  SwiftUI base components on top of DesignTokens (AppButton C01, AppIcon C02); Apple
-//                 platforms only (left out of this manifest on Linux). System core: no previews, no dev
-//                 tools.
+//   DesignSystem  SwiftUI base components on top of DesignTokens (AppButton C01, AppIcon C02, AppChip,
+//                 AppTag, AppBadge and AppReasonRow C03); Apple platforms only (left out of this manifest
+//                 on Linux). System core: no previews, no dev tools. Its copy lives in the String Catalog
+//                 Resources/Localizable.xcstrings (source language en, `defaultLocalization` below).
 //   DesignSystemCatalog  dev-only: the Xcode previews and the debug "Design system gallery" (AI-195).
 //                 Apple platforms only. Only the app target's Dev configuration links it (project.yml,
 //                 Config/Dev.xcconfig); production code never imports it.
@@ -47,6 +48,7 @@ var targets: [Target] = [
   // SwiftUI exists only on Apple platforms.
   products.append(.library(name: "DesignSystem", targets: ["DesignSystem"]))
   // Resources/Fonts: the bundled Figtree and Young Serif fonts (OFL 1.1), registered by AppFonts.
+  // Resources/Localizable.xcstrings: the components' copy, read through AppStrings.
   targets.append(
     .target(
       name: "DesignSystem",
@@ -83,6 +85,7 @@ var targets: [Target] = [
 
 let package = Package(
   name: "DesignSystem",
+  defaultLocalization: "en",
   platforms: [.iOS(.v26), .macOS(.v26)],
   products: products,
   targets: targets

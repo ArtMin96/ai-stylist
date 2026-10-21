@@ -103,7 +103,7 @@ test('the resolver names the five contexts, their source order and the default',
   assert.deepEqual(model.resolver.resolutionOrder, ['primitives', 'theme', 'components']);
 });
 
-test('type styles are DTCG composites with dynamicType and m3Roles extensions', () => {
+test('type styles are DTCG composites with dynamicType, m3Roles and textTransform extensions', () => {
   const { heading, label, badge } = primitives.typography;
   assert.deepEqual(heading.$value, {
     fontFamily: ['Fixture Serif', 'serif'],
@@ -124,6 +124,8 @@ test('type styles are DTCG composites with dynamicType and m3Roles extensions', 
   assert.equal(badge.$value.lineHeight, 1.25);
   assert.deepEqual(badge.$value.letterSpacing, px(0.5));
   assert.deepEqual(badge.$extensions['app.m3Roles'], []);
+  assert.equal(badge.$extensions['app.textTransform'], 'uppercase');
+  assert.equal(heading.$extensions['app.textTransform'], 'none', 'absent is none');
 });
 
 test('spacing and radii are px dimensions', () => {
@@ -214,6 +216,21 @@ test('an iconSize naming an icon size is its px value, and keeps the size it nam
     $value: px(20),
     $extensions: { 'app.iconSize': 'icon-md' },
   });
+});
+
+test('a trailing slot (G3): its size names an icon size like iconSize, its gap is a dimension', () => {
+  const model = modelOfEdited((fm) => {
+    fm.components['icon-xs'] = { size: '12px', strokeWidth: 2.2 };
+    fm.components.overlay.trailingIconSize = 'icon-xs';
+    fm.components.overlay.trailingIconGap = '{spacing.4}';
+  });
+  const { overlay } = model.sets.components;
+  assert.deepEqual(overlay.trailingIconSize, {
+    $type: 'dimension',
+    $value: px(12),
+    $extensions: { 'app.iconSize': 'icon-xs' },
+  });
+  assert.deepEqual(overlay.trailingIconGap, { $type: 'dimension', $value: px(4) });
 });
 
 test('an unpaired key beside a scheme-independent one is its own component in every context', () => {

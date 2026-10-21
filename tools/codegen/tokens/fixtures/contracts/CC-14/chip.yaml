@@ -1,0 +1,130 @@
+# ../_valid/chip.yaml with one defect: the icons map spells a variant `assists`, so the assist chip
+# would silently draw no icon (CC-14, G4: every icons key is a variant).
+id: chip
+board: C03
+name: AppChip
+
+props:
+  - name: label
+    type: string
+    required: true
+  - name: action
+    type: action
+    required: true
+  - name: leadingIcon
+    type: icon
+    required: true
+    variants: [assist]
+  - name: hostSurface
+    type: colorRole
+    required: true
+    variants: [assist]
+  - name: note
+    type: string
+    default: null
+    variants: [assist]
+  - name: selected
+    type: bool
+    default: false
+    variants: [choice]
+  - name: selection
+    type: enum
+    values: [multiple, single]
+    default: multiple
+    variants: [choice]
+  - name: swatch
+    type: color
+    required: true
+    variants: [choice]
+  - name: detail
+    type: string
+    default: null
+    variants: [choice]
+  - name: accessibilityLabel
+    type: string
+    default: null
+
+variants: [assist, choice]
+sizes: [medium]
+states: [enabled, pressed, focused, selected, selected-pressed, selected-focused]
+
+combinations:
+  assist:
+    sizes: [medium]
+    states: [enabled, pressed, focused]
+  choice:
+    sizes: [medium]
+    states: [enabled, pressed, focused, selected, selected-pressed, selected-focused]
+
+tokens:
+  assist:
+    base: '{components.chip-assist}'
+    states:
+      pressed: '{components.chip-assist-pressed}'
+      focused: '{components.focus-ring}'
+    sizes:
+      medium: '{components.chip-medium}'
+  choice:
+    base: '{components.chip-choice}'
+    states:
+      pressed: '{components.chip-choice-pressed}'
+      focused: '{components.focus-ring}'
+      selected: '{components.chip-choice-selected}'
+      selected-pressed: '{components.chip-choice-selected-pressed}'
+      selected-focused: '{components.focus-ring}'
+    sizes:
+      medium: '{components.chip-choice}'
+
+icons:
+  assists: { leading: '{props.leadingIcon}', trailing: back }
+  choice:
+    states:
+      selected: { leading: plus }
+
+parts:
+  - name: dot
+    kind: dot
+    position: before-label
+    variants: [assist]
+  - name: swatch
+    kind: swatch
+    position: before-label
+    variants: [choice]
+  - name: detail
+    kind: text
+    position: after-label
+    separator: '· '
+    variants: [choice]
+  - name: note
+    kind: text
+    position: line
+    icon: leading
+    variants: [assist]
+  - name: outerRing
+    kind: ring
+    position: outside
+    color: '{props.hostSurface}'
+    variants: [assist]
+
+accessibility:
+  role: button
+  roles:
+    choice: selectable
+  selection: '{props.selection}'
+  label: '{props.label}'
+  labelOverride: '{props.accessibilityLabel}'
+  minTouchTarget: { ios: 44, android: 48 }
+
+gallery:
+  title: Fixture chips
+  label: Fixture chip
+  props:
+    leadingIcon: wave
+    hostSurface: '{colors.surface-2}'
+    swatch: '{colors.primary}'
+    detail: '12'
+  include: all
+
+testId: 'ds-{component}-{variant}-{size}-{state}'
+
+approved: 2026-10-21

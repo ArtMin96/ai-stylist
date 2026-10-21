@@ -147,24 +147,24 @@ Per the [14 §15](../14-observability-operations-and-analytics.md) P03 row:
 
 Small enough for one AI-assisted session each (~half-day). Task IDs `P03-T##` are referenced by handoff entries.
 
-| ID | Task | Depends on | Est. sessions |
-|---|---|---|---|
-| P03-T01 | `shared-kernel`: unit converters + measurement bounds registry + enums + error codes, with property tests (metric↔imperial round-trip, symmetric bounds) | — | 1 |
-| P03-T02 | Contracts: author all §7 endpoints + the four event schemas; `just generate`; spectral/oasdiff green (single-writer task — lands before consumers) | P03-T01 | 2 |
-| P03-T03 | `identity` core: better-auth mount (Apple/Google/passkey; no email+password — DEC-64), Postgres sessions, age gate (16+, DEC-60), `account.created` event + migration (`users.home_region`, DEC-61; no cross-module foreign keys, ADR-0009, with the migration lint that rejects a cross-module `REFERENCES`) | P03-T02 | 2 |
-| P03-T04 | `identity` hardening: session rotation + reuse revocation, device list/sign-out-all, recovery flow, rate limits + `*.sec.test.ts` | P03-T03 | 2 |
-| P03-T05 | Consent registry: `consents` append-only + purposes, `consent.changed` event, audit rows, withdrawal-halts-processing wiring (analytics gate) | P03-T03 | 1 |
-| P03-T06 | `profile`: schema + services (measurements w/ SI canonical + provenance + bounds validation, presentation/base-model, preferences incl. hard exclusions, settings values) + migration + unit/property tests | P03-T02 | 2 |
-| P03-T07 | `billing` seam: entitlements table + resolver, trial-grant consumer of `account.created` (72 h Pro grant, `source=trial_grant`), `GET /v1/me/entitlements`, flag `entitlement-enforcement` off; idempotent grant (replay-safe) | P03-T02, P03-T03 | 1 |
-| P03-T08 | AuthZ matrix harness: generated endpoint × principal (anon/userA/userB/support) suite over all §7 routes (NFR-SEC-030; the harness every later phase extends) | P03-T03…T07 | 1 |
-| P03-T09 | Export job: pg-boss job chain → ZIP (profile/measurements/preferences/consent history) → R2 signed link 24 h, 1-concurrent, notification stub | P03-T06, P03-T05 | 1 |
-| P03-T10 | Deletion cascade v1: 7-day grace window (DEC-65) + cancel, ordered chain per [06 §8](../06-data-api-and-event-contracts.md) (sessions → providers → R2 prefix → Postgres cascade → retained set → verification), per-step audit + idempotency, deletion-step coverage test (every table with a `user_id` column registers a step — ADR-0009, DEC-67; *was: FK coverage test*) | P03-T09 | 2 |
-| P03-T11 | Mobile: onboarding steps 1–5 (welcome, sign-in + age gate, core consents, units/locale, presentation + base model) with per-step server persistence + resume | P03-T02 (client), P03-T03, P03-T05 | 2 |
-| P03-T12 | Mobile: onboarding steps 6–9 + 11 (height/weight, measurements, preferences, occasions, capture nudge) + stub Today tab; unit-aware inline validation UX | P03-T06, P03-T11 | 2 |
-| P03-T13 | Mobile: settings baseline — consent toggles, profile edit/clear-field, units/accessibility, export, delete (re-auth + caveats), subscription trial line; consent-gated PostHog + P03 events | P03-T05…T07, P03-T09, P03-T10 | 2 |
-| P03-T14 | Observability: §11 metrics/alerts/panels, deletion/export SLA wiring, A12 measurement run + record, runbook #7 | P03-T08…T10 | 1 |
-| P03-T15 | E2E: Maestro onboarding journey (incl. consent choices, skip paths, resume-after-kill) + export + deletion flows on iOS and Android; nightly-tier wiring (NFR-TST-050) | P03-T11…T13 | 2 |
-| P03-T16 | Close-out: LR-02/03/04/07/09 status verified (or `BLOCKED`); Sentry DEC logged (OQ-21; DO-SEC-01 and the grace window are decided — DEC-64, DEC-65); device demo (§18) recorded; docs + PROGRESS + handoff | all | 1 |
+| ID | Task | Depends on | Est. sessions | State (2026-10-21) |
+|---|---|---|---|---|
+| P03-T01 | `shared-kernel`: unit converters + measurement bounds registry + enums + error codes, with property tests (metric↔imperial round-trip, symmetric bounds) | — | 1 | `DONE` — 2026-10-21 (Linear AI-51), on branch `feat/p03-t01-kernel` @ `e317b5b`; PR #47 open, not merged; `just ci-parity --core` not yet run on the branch. Evidence: the 2026-10-21 (p03-t01) handoff entry of `planning/PROGRESS.md` |
+| P03-T02 | Contracts: author all §7 endpoints + the four event schemas; `just generate`; spectral/oasdiff green (single-writer task — lands before consumers) | P03-T01 | 2 | `DONE` — 2026-10-21 (Linear AI-48; AI-49, AI-53, AI-58, AI-61, AI-64), on branch `feat/p03-t02-contracts` @ `bd1d7cb` plus the docs sync, stacked on PR #47; PR not merged. The spectral half of the AI-48 AC-8 proof waits for P03-X06 (AI-95); oasdiff runs in the PR gate. Evidence: the 2026-10-21 (p03-t02) handoff entry of `planning/PROGRESS.md` |
+| P03-T03 | `identity` core: better-auth mount (Apple/Google/passkey; no email+password — DEC-64), Postgres sessions, age gate (16+, DEC-60), `account.created` event + migration (`users.home_region`, DEC-61; no cross-module foreign keys, ADR-0009, with the migration lint that rejects a cross-module `REFERENCES`) | P03-T02 | 2 | `NOT_STARTED` |
+| P03-T04 | `identity` hardening: session rotation + reuse revocation, device list/sign-out-all, recovery flow, rate limits + `*.sec.test.ts` | P03-T03 | 2 | `NOT_STARTED` |
+| P03-T05 | Consent registry: `consents` append-only + purposes, `consent.changed` event, audit rows, withdrawal-halts-processing wiring (analytics gate) | P03-T03 | 1 | `NOT_STARTED` |
+| P03-T06 | `profile`: schema + services (measurements w/ SI canonical + provenance + bounds validation, presentation/base-model, preferences incl. hard exclusions, settings values) + migration + unit/property tests | P03-T02 | 2 | `NOT_STARTED` |
+| P03-T07 | `billing` seam: entitlements table + resolver, trial-grant consumer of `account.created` (72 h Pro grant, `source=trial_grant`), `GET /v1/me/entitlements`, flag `entitlement-enforcement` off; idempotent grant (replay-safe) | P03-T02, P03-T03 | 1 | `NOT_STARTED` |
+| P03-T08 | AuthZ matrix harness: generated endpoint × principal (anon/userA/userB/support) suite over all §7 routes (NFR-SEC-030; the harness every later phase extends) | P03-T03…T07 | 1 | `NOT_STARTED` |
+| P03-T09 | Export job: pg-boss job chain → ZIP (profile/measurements/preferences/consent history) → R2 signed link 24 h, 1-concurrent, notification stub | P03-T06, P03-T05 | 1 | `NOT_STARTED` |
+| P03-T10 | Deletion cascade v1: 7-day grace window (DEC-65) + cancel, ordered chain per [06 §8](../06-data-api-and-event-contracts.md) (sessions → providers → R2 prefix → Postgres cascade → retained set → verification), per-step audit + idempotency, deletion-step coverage test (every table with a `user_id` column registers a step — ADR-0009, DEC-67; *was: FK coverage test*) | P03-T09 | 2 | `NOT_STARTED` |
+| P03-T11 | Mobile: onboarding steps 1–5 (welcome, sign-in + age gate, core consents, units/locale, presentation + base model) with per-step server persistence + resume | P03-T02 (client), P03-T03, P03-T05 | 2 | `NOT_STARTED` |
+| P03-T12 | Mobile: onboarding steps 6–9 + 11 (height/weight, measurements, preferences, occasions, capture nudge) + stub Today tab; unit-aware inline validation UX | P03-T06, P03-T11 | 2 | `NOT_STARTED` |
+| P03-T13 | Mobile: settings baseline — consent toggles, profile edit/clear-field, units/accessibility, export, delete (re-auth + caveats), subscription trial line; consent-gated PostHog + P03 events | P03-T05…T07, P03-T09, P03-T10 | 2 | `NOT_STARTED` |
+| P03-T14 | Observability: §11 metrics/alerts/panels, deletion/export SLA wiring, A12 measurement run + record, runbook #7 | P03-T08…T10 | 1 | `NOT_STARTED` |
+| P03-T15 | E2E: Maestro onboarding journey (incl. consent choices, skip paths, resume-after-kill) + export + deletion flows on iOS and Android; nightly-tier wiring (NFR-TST-050) | P03-T11…T13 | 2 | `NOT_STARTED` |
+| P03-T16 | Close-out: LR-02/03/04/07/09 status verified (or `BLOCKED`); Sentry DEC logged (OQ-21; DO-SEC-01 and the grace window are decided — DEC-64, DEC-65); device demo (§18) recorded; docs + PROGRESS + handoff | all | 1 | `NOT_STARTED` |
 
 ## 13. Parallelization
 

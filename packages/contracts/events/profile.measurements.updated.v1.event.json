@@ -1,0 +1,90 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://contracts.ai-stylist.app/events/profile.measurements.updated.v1.json",
+  "title": "ProfileMeasurementsUpdatedV1",
+  "description": "A person's measurement set changed (`replaceMeasurements`): measurements were set, replaced or removed. Producer `profile`; aggregate `profile` with the profile's `prf_` id; `subjectUserId` is the person's `usr_` id. Names the changed measurements and their units, never a value: measurements are S3 (doc 11 §6) and an outbox payload holds ids and references only (doc 06 §6), so a consumer reads the current set through profile's public API. The full event is the envelope (envelope.json) narrowed by this schema; the payload is open content, so consumers ignore properties they do not know (doc 06 §4), but each change object is closed and holds the unit only.",
+  "type": "object",
+  "required": ["type", "payload"],
+  "properties": {
+    "type": { "const": "profile.measurements.updated.v1" },
+    "payload": { "$ref": "#/$defs/ProfileMeasurementsUpdatedV1Payload" }
+  },
+  "$defs": {
+    "ProfileMeasurementsUpdatedV1Payload": {
+      "type": "object",
+      "required": ["userId", "changed"],
+      "properties": {
+        "userId": {
+          "type": "string",
+          "description": "The person whose measurements changed, a prefixed ULID (`usr_`, shared-kernel `ID_PREFIXES.user`); the API's `UserId`",
+          "pattern": "^usr_[0-7][0-9A-HJKMNP-TV-Z]{25}$"
+        },
+        "changed": { "$ref": "#/$defs/ProfileMeasurementsUpdatedV1Changes" }
+      }
+    },
+    "ProfileMeasurementsUpdatedV1Changes": {
+      "type": "object",
+      "description": "The measurements this write set, replaced or removed, keyed by measurement id (shared-kernel `registry/measurement-definitions.json`, as in the API's `BodyMeasurements`). Each entry names the stored unit and nothing else",
+      "minProperties": 1,
+      "properties": {
+        "height": { "$ref": "#/$defs/ProfileMeasurementsUpdatedV1LengthChange" },
+        "weight": { "$ref": "#/$defs/ProfileMeasurementsUpdatedV1MassChange" },
+        "chest": { "$ref": "#/$defs/ProfileMeasurementsUpdatedV1LengthChange" },
+        "waist": { "$ref": "#/$defs/ProfileMeasurementsUpdatedV1LengthChange" },
+        "hips": { "$ref": "#/$defs/ProfileMeasurementsUpdatedV1LengthChange" },
+        "inseam": { "$ref": "#/$defs/ProfileMeasurementsUpdatedV1LengthChange" },
+        "shoulder": { "$ref": "#/$defs/ProfileMeasurementsUpdatedV1LengthChange" },
+        "sleeve": { "$ref": "#/$defs/ProfileMeasurementsUpdatedV1LengthChange" },
+        "thigh": { "$ref": "#/$defs/ProfileMeasurementsUpdatedV1LengthChange" },
+        "neck": { "$ref": "#/$defs/ProfileMeasurementsUpdatedV1LengthChange" }
+      }
+    },
+    "ProfileMeasurementsUpdatedV1LengthChange": {
+      "type": "object",
+      "description": "A changed length measurement: its stored unit, never its value. Closed, so no later v1 producer can add a value or any other field (doc 11 §6)",
+      "additionalProperties": false,
+      "required": ["unit"],
+      "properties": {
+        "unit": {
+          "type": "string",
+          "description": "Stored length unit; mirrors shared-kernel `LENGTH_UNITS`",
+          "enum": ["cm"]
+        }
+      }
+    },
+    "ProfileMeasurementsUpdatedV1MassChange": {
+      "type": "object",
+      "description": "A changed mass measurement: its stored unit, never its value. Closed, so no later v1 producer can add a value or any other field (doc 11 §6)",
+      "additionalProperties": false,
+      "required": ["unit"],
+      "properties": {
+        "unit": {
+          "type": "string",
+          "description": "Stored mass unit; mirrors shared-kernel `MASS_UNITS`",
+          "enum": ["kg"]
+        }
+      }
+    }
+  },
+  "examples": [
+    {
+      "id": "evt_00000000000000000000000015",
+      "type": "profile.measurements.updated.v1",
+      "occurredAt": "2026-10-21T09:05:00Z",
+      "producer": "profile",
+      "aggregate": { "kind": "profile", "id": "prf_00000000000000000000000001" },
+      "sequence": 1,
+      "actor": { "kind": "user", "id": "usr_00000000000000000000000001" },
+      "subjectUserId": "usr_00000000000000000000000001",
+      "correlationId": "corr-measurements-updated-1",
+      "payload": {
+        "userId": "usr_00000000000000000000000001",
+        "changed": {
+          "height": { "unit": "cm" },
+          "weight": { "unit": "kg" },
+          "inseam": { "unit": "cm" }
+        }
+      }
+    }
+  ]
+}

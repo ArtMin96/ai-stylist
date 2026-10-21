@@ -5,29 +5,14 @@ import DesignSystem
 import DesignTokens
 import SwiftUI
 
-/// The gallery's C01 section on the theme background, scrollable.
-private struct ButtonSectionPreview: View {
-  @Environment(\.appTheme) private var theme
-
-  var body: some View {
-    ScrollView {
-      GallerySectionView(section: GallerySection(component: .button))
-        .padding(theme.spacing.space20)
-    }
-    .background(theme.color(.background))
-  }
-}
-
 #Preview("AppButton states, light") {
-  ButtonSectionPreview()
-    .appTheme()
-    .environment(\.colorScheme, .light)
+  GallerySectionPreview(component: .button)
+    .previewFrame(.light)
 }
 
 #Preview("AppButton states, dark") {
-  ButtonSectionPreview()
-    .appTheme()
-    .environment(\.colorScheme, .dark)
+  GallerySectionPreview(component: .button)
+    .previewFrame(.dark)
 }
 
 #Preview("AppButton playground") {
@@ -38,9 +23,6 @@ private struct ButtonSectionPreview: View {
   @Previewable @State var fullWidth = false
   @Previewable @State var label = ComponentGallery.buttonLabel
   @Previewable @State var leadingIcon: AppIconName? = nil
-
-  // The allowed pairs are the same in every context, so the light spec answers for all of them.
-  let sizes = ButtonSize.allCases.filter { AppButtonRules.isAllowed(variant, $0, in: AppTheme.light.buttons) }
 
   Form {
     Section {
@@ -55,12 +37,11 @@ private struct ButtonSectionPreview: View {
       ) {}
     }
     Section {
-      Picker("Variant", selection: $variant) {
-        ForEach(ButtonVariant.allCases, id: \.self) { Text($0.rawValue) }
-      }
-      Picker("Size", selection: $size) {
-        ForEach(sizes, id: \.self) { Text($0.rawValue) }
-      }
+      PlaygroundPickers(
+        variant: $variant,
+        size: $size,
+        sizes: ButtonSize.allCases.filter { AppButtonRules.isAllowed(variant, $0, in: AppTheme.light.buttons) }
+      )
       Picker("Leading icon", selection: $leadingIcon) {
         Text("none").tag(AppIconName?.none)
         ForEach(AppIconName.allCases, id: \.self) { Text($0.rawValue).tag(AppIconName?.some($0)) }
@@ -69,11 +50,6 @@ private struct ButtonSectionPreview: View {
       Toggle("Loading", isOn: $loading)
       Toggle("Full width", isOn: $fullWidth)
       TextField("Label", text: $label)
-    }
-  }
-  .onChange(of: variant) {
-    if !sizes.contains(size), let first = sizes.first {
-      size = first
     }
   }
   .appTheme()

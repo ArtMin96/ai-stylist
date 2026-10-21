@@ -3,7 +3,7 @@
 > Module names are canonical per [SPINE §3](../../planning/SPINE.md). Path: `apps/api/src/platform`. This contract is the module's source of truth; code that contradicts it is wrong until a DEC entry says otherwise.
 
 - **Responsibility (one sentence):** Infrastructure adapters that implement the ports declared by domain modules: storage (R2), durable jobs (pg-boss), outbox relay, logger, OTel init, PostHog server, resilience utilities, provider SDK wrappers; deployment target is owned servers + Coolify (DEC-42).
-- **Owner:** @ArtMin96 (see `CODEOWNERS`) · **Status:** draft · **Last updated:** 2026-10-13
+- **Owner:** @ArtMin96 (see `CODEOWNERS`) · **Status:** draft · **Last updated:** 2026-10-21
 
 ## Public interface
 
@@ -37,6 +37,16 @@ Public interface: `index.ts` only. Domain modules never import from here; only c
 | `FEATURE_FLAG_TIMEOUT_MS`, `FEATURE_FLAG_CACHE_TTL_MS`, `FEATURE_FLAGS_DISTINCT_ID`                                                                                      | constant                               | Per-request timeout (1500 ms), evaluation reuse window (10 000 ms) and the one distinct id (`ai-stylist-api`) flags are evaluated for                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
 
 Adapter details: `apps/api/src/platform/queue/README.md`, `outbox/README.md`, `idempotency/README.md`, `telemetry/README.md` (OTel pipeline, instrumentations, span names and attributes, correlation id, metrics), `feature-flags/README.md` (PostHog flag evaluation), `storage/README.md` (R2 presigned URLs, the SigV4 signer).
+
+HTTP contract: `packages/contracts/openapi/modules/platform.yaml` holds `getHealth` (`GET /v1/health`) and `getVersion` (`GET /v1/version`) with their schemas `HealthReport`, `HealthCheckStatus` and `VersionInfo`. It also holds the shared OpenAPI components that every module file reaches by `$ref` and never copies (P03-T02):
+
+- schemas: `ProblemDetails`, `ProblemFieldError` and `Locale` (BCP 47 tag);
+- security scheme: `bearerAuth`, the short-lived session access token;
+- parameters: `IdempotencyKey`, `IfMatch`, `Cursor` and `Limit`;
+- headers: `RetryAfter` and `CacheControlNoStore`;
+- responses: `Problem`, `Unauthenticated` (401), `Forbidden` (403), `Conflict` (409), `AccountDeleted` (410, `no-store`) and `RateLimited` (429).
+
+An `IdempotencyKey` is scoped to the caller and the operation. An operation marked `x-idempotency-replay: never` is never answered from the store, and a repeated key on it gets 409 `CONFLICT`. A scheme only one module uses lives in that module's file, e.g. `deletionCancelToken` in `identity.yaml`.
 
 ## Owned data
 

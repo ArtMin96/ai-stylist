@@ -38,6 +38,13 @@ export type EventEnvelope<
   readonly sequence: number;
   readonly actor: EventActor;
   /**
+   * `usr_` id of the user the event is about (the data subject), whoever caused it; distinct from
+   * `actor`, the party that caused it. Lets per-user work be found and cancelled on account
+   * deletion (doc 06 §8 step 4, DEC-57). An id only, never another personal value; absent when the
+   * event concerns no single user.
+   */
+  readonly subjectUserId?: Id<'user'>;
+  /**
    * Correlation id of the logical operation, shared across the whole causal chain (doc 14 §2):
    * 1–128 characters of `[A-Za-z0-9._:-]` (envelope.json `pattern`; a UUID, ULID or `corr-…`).
    * Our own correlation metadata, never user data.

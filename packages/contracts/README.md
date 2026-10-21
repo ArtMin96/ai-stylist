@@ -7,6 +7,18 @@ Canonical wire contracts (planning/06 §1): OpenAPI 3.1 per module under `openap
 `gen/` holds the generated clients and the bundle; only `just generate` writes it. Change a
 contract with the `api-contract-change` skill.
 
+## Event schemas (`events/`)
+
+One file per event version, `events/<type>.event.json` (e.g.
+`events/identity.account.created.v1.event.json`; the P02 `demo.event.json`, with its closed payload
+and free-text `note`, predates these rules and P03-X02 retires it). Each
+narrows the envelope by its `type` const, holds its payload in `$defs` and ships an `examples`
+envelope with synthetic ids. Payloads carry ids, enums and timestamps only (doc 06 §6) and are open
+content: consumers ignore properties they do not know (doc 06 §4). `just generate` writes the TS
+types to `gen/events-ts/index.ts` and one Pydantic module per file to
+`workers/ml/generated/ai_stylist_generated/events/`; `tests/events.test.ts` validates each example
+and pins every id pattern and enum to the API and the shared kernel.
+
 ## Worker HTTP contracts (`workers/`)
 
 One JSON Schema 2020-12 file per worker service and contract version, e.g.

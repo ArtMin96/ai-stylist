@@ -7,7 +7,9 @@ import {
   DYNAMIC_TYPE_STYLES,
   ICON_SIZE_KEY,
   M3_ROLES,
+  TEXT_TRANSFORMS,
   iconSizeNamed,
+  isIconSizeProperty,
   META_KEYS,
   TOKEN_GROUPS,
   dynamicTypeName,
@@ -35,6 +37,8 @@ const TYPE_KEYS = [
   'dynamicType',
   'm3Roles',
 ];
+/** Typography properties a style may leave out (`textTransform` absent: `none`). */
+const OPTIONAL_TYPE_KEYS = ['textTransform'];
 /** Groups whose keys name a type, role or style, so they must start with a letter. */
 const NAMED_GROUPS = ['colors', 'typography', 'components'];
 const SCALE_GROUPS = ['rounded', 'spacing', 'elevation', 'motion'];
@@ -96,9 +100,13 @@ function checkTypography(typography, add) {
       continue;
     }
     for (const k of Object.keys(style)) {
-      if (!TYPE_KEYS.includes(k)) bad(`unknown property \`${k}\`: the generator would drop it`);
+      if (TYPE_KEYS.includes(k) || OPTIONAL_TYPE_KEYS.includes(k)) continue;
+      bad(`unknown property \`${k}\`: the generator would drop it`);
     }
     for (const k of TYPE_KEYS.filter((k) => style[k] === undefined)) bad(`missing \`${k}\``);
+    if (style.textTransform !== undefined && !TEXT_TRANSFORMS.includes(style.textTransform)) {
+      bad(`\`textTransform\` must be one of ${TEXT_TRANSFORMS.join(', ')}`);
+    }
     const { fontFamily, fontSize, fontWeight, lineHeight, letterSpacing, dynamicType } = style;
     if (fontFamily !== undefined && !(typeof fontFamily === 'string' && fontFamily.trim())) {
       bad('`fontFamily` must be a non-empty string');
@@ -283,14 +291,16 @@ function checkPadding(ctx, at, value, scheme) {
 }
 
 /**
- * TK-06 a component an `iconSize` names (`icon-md` or `{components.icon-md}`, iconSizeNamed), or
- * any other `{components.<key>}` reference: only `iconSize` may name a component, and that
- * component is an icon size (`icon-<step>: { size: <n>px, strokeWidth: <w> }`, the C02 scale).
+ * TK-06 a component an icon-slot size names (`iconSize` or `…IconSize`: `icon-md` or
+ * `{components.icon-md}`, iconSizeNamed), or any other `{components.<key>}` reference: only an
+ * icon-slot size may name a component, and that component is an icon size
+ * (`icon-<step>: { size: <n>px, strokeWidth: <w> }`, the C02 scale).
  */
 function checkIconSizeReference({ fm, add }, at, prop, ref) {
   const text = `{components.${ref.key}}`;
-  if (prop !== 'iconSize') {
-    add('TK-06', at, `\`${text}\` cannot be referenced here: only iconSize names a component`);
+  if (!isIconSizeProperty(prop)) {
+    const message = 'only iconSize or a …IconSize property names a component';
+    add('TK-06', at, `\`${text}\` cannot be referenced here: ${message}`);
     return;
   }
   if (!Object.hasOwn(fm.components, ref.key)) {

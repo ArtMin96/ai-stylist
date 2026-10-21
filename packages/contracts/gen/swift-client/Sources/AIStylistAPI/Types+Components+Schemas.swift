@@ -232,5 +232,3254 @@ extension Components {
                 ])
             }
         }
+        /// Identity providers that sign in with a native identity token (DEC-64).
+        ///
+        /// - Remark: Generated from `#/components/schemas/IdentityProvider`.
+        @frozen public enum IdentityProvider: String, Codable, Hashable, Sendable, CaseIterable {
+            case apple = "apple"
+            case google = "google"
+        }
+        /// - Remark: Generated from `#/components/schemas/IdTokenSignInRequest`.
+        public struct IdTokenSignInRequest: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/IdTokenSignInRequest/provider`.
+            public var provider: Components.Schemas.IdentityProvider
+            /// - Remark: Generated from `#/components/schemas/IdTokenSignInRequest/idToken`.
+            public struct IdTokenPayload: Codable, Hashable, Sendable {
+                /// The provider's identity token (a JWT), verified against the provider's keys.
+                ///
+                /// - Remark: Generated from `#/components/schemas/IdTokenSignInRequest/idToken/token`.
+                public var token: Swift.String
+                /// The unhashed nonce the app generated for the provider request. The identity
+                /// token's `nonce` claim must equal it or its SHA-256 digest. Sign in with Apple
+                /// requires it.
+                ///
+                ///
+                /// - Remark: Generated from `#/components/schemas/IdTokenSignInRequest/idToken/nonce`.
+                public var nonce: Swift.String?
+                /// Name the provider reports to the app on the first authorization only (Sign in with Apple).
+                ///
+                /// - Remark: Generated from `#/components/schemas/IdTokenSignInRequest/idToken/user`.
+                public struct UserPayload: Codable, Hashable, Sendable {
+                    /// - Remark: Generated from `#/components/schemas/IdTokenSignInRequest/idToken/user/name`.
+                    public struct NamePayload: Codable, Hashable, Sendable {
+                        /// - Remark: Generated from `#/components/schemas/IdTokenSignInRequest/idToken/user/name/firstName`.
+                        public var firstName: Swift.String?
+                        /// - Remark: Generated from `#/components/schemas/IdTokenSignInRequest/idToken/user/name/lastName`.
+                        public var lastName: Swift.String?
+                        /// Creates a new `NamePayload`.
+                        ///
+                        /// - Parameters:
+                        ///   - firstName:
+                        ///   - lastName:
+                        public init(
+                            firstName: Swift.String? = nil,
+                            lastName: Swift.String? = nil
+                        ) {
+                            self.firstName = firstName
+                            self.lastName = lastName
+                        }
+                        public enum CodingKeys: String, CodingKey {
+                            case firstName
+                            case lastName
+                        }
+                        public init(from decoder: any Swift.Decoder) throws {
+                            let container = try decoder.container(keyedBy: CodingKeys.self)
+                            self.firstName = try container.decodeIfPresent(
+                                Swift.String.self,
+                                forKey: .firstName
+                            )
+                            self.lastName = try container.decodeIfPresent(
+                                Swift.String.self,
+                                forKey: .lastName
+                            )
+                            try decoder.ensureNoAdditionalProperties(knownKeys: [
+                                "firstName",
+                                "lastName"
+                            ])
+                        }
+                    }
+                    /// - Remark: Generated from `#/components/schemas/IdTokenSignInRequest/idToken/user/name`.
+                    public var name: Components.Schemas.IdTokenSignInRequest.IdTokenPayload.UserPayload.NamePayload?
+                    /// Creates a new `UserPayload`.
+                    ///
+                    /// - Parameters:
+                    ///   - name:
+                    public init(name: Components.Schemas.IdTokenSignInRequest.IdTokenPayload.UserPayload.NamePayload? = nil) {
+                        self.name = name
+                    }
+                    public enum CodingKeys: String, CodingKey {
+                        case name
+                    }
+                    public init(from decoder: any Swift.Decoder) throws {
+                        let container = try decoder.container(keyedBy: CodingKeys.self)
+                        self.name = try container.decodeIfPresent(
+                            Components.Schemas.IdTokenSignInRequest.IdTokenPayload.UserPayload.NamePayload.self,
+                            forKey: .name
+                        )
+                        try decoder.ensureNoAdditionalProperties(knownKeys: [
+                            "name"
+                        ])
+                    }
+                }
+                /// Name the provider reports to the app on the first authorization only (Sign in with Apple).
+                ///
+                /// - Remark: Generated from `#/components/schemas/IdTokenSignInRequest/idToken/user`.
+                public var user: Components.Schemas.IdTokenSignInRequest.IdTokenPayload.UserPayload?
+                /// Creates a new `IdTokenPayload`.
+                ///
+                /// - Parameters:
+                ///   - token: The provider's identity token (a JWT), verified against the provider's keys.
+                ///   - nonce: The unhashed nonce the app generated for the provider request. The identity
+                ///   - user: Name the provider reports to the app on the first authorization only (Sign in with Apple).
+                public init(
+                    token: Swift.String,
+                    nonce: Swift.String? = nil,
+                    user: Components.Schemas.IdTokenSignInRequest.IdTokenPayload.UserPayload? = nil
+                ) {
+                    self.token = token
+                    self.nonce = nonce
+                    self.user = user
+                }
+                public enum CodingKeys: String, CodingKey {
+                    case token
+                    case nonce
+                    case user
+                }
+                public init(from decoder: any Swift.Decoder) throws {
+                    let container = try decoder.container(keyedBy: CodingKeys.self)
+                    self.token = try container.decode(
+                        Swift.String.self,
+                        forKey: .token
+                    )
+                    self.nonce = try container.decodeIfPresent(
+                        Swift.String.self,
+                        forKey: .nonce
+                    )
+                    self.user = try container.decodeIfPresent(
+                        Components.Schemas.IdTokenSignInRequest.IdTokenPayload.UserPayload.self,
+                        forKey: .user
+                    )
+                    try decoder.ensureNoAdditionalProperties(knownKeys: [
+                        "token",
+                        "nonce",
+                        "user"
+                    ])
+                }
+            }
+            /// - Remark: Generated from `#/components/schemas/IdTokenSignInRequest/idToken`.
+            public var idToken: Components.Schemas.IdTokenSignInRequest.IdTokenPayload
+            /// Creates a new `IdTokenSignInRequest`.
+            ///
+            /// - Parameters:
+            ///   - provider:
+            ///   - idToken:
+            public init(
+                provider: Components.Schemas.IdentityProvider,
+                idToken: Components.Schemas.IdTokenSignInRequest.IdTokenPayload
+            ) {
+                self.provider = provider
+                self.idToken = idToken
+            }
+            public enum CodingKeys: String, CodingKey {
+                case provider
+                case idToken
+            }
+            public init(from decoder: any Swift.Decoder) throws {
+                let container = try decoder.container(keyedBy: CodingKeys.self)
+                self.provider = try container.decode(
+                    Components.Schemas.IdentityProvider.self,
+                    forKey: .provider
+                )
+                self.idToken = try container.decode(
+                    Components.Schemas.IdTokenSignInRequest.IdTokenPayload.self,
+                    forKey: .idToken
+                )
+                try decoder.ensureNoAdditionalProperties(knownKeys: [
+                    "provider",
+                    "idToken"
+                ])
+            }
+        }
+        /// Account id, a prefixed ULID (`usr_`, shared-kernel `ID_PREFIXES.user`).
+        ///
+        /// - Remark: Generated from `#/components/schemas/UserId`.
+        public typealias UserId = Swift.String
+        /// A session the server opened or renewed: a short-lived access token and a separate,
+        /// rotating refresh token (doc 11 §4.2). Both are kept in the Keychain or Keystore-backed
+        /// storage only, and both are replaced by every renewal.
+        ///
+        ///
+        /// - Remark: Generated from `#/components/schemas/SessionGrant`.
+        public struct SessionGrant: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/SessionGrant/userId`.
+            public var userId: Components.Schemas.UserId
+            /// Access token for `bearerAuth`, valid for about 15 minutes. Sent on API calls; it
+            /// never renews the session.
+            ///
+            ///
+            /// - Remark: Generated from `#/components/schemas/SessionGrant/token`.
+            public var token: Swift.String
+            /// When the access token `token` stops working, about 15 minutes after issue. The
+            /// server may refuse it earlier (revocation); the client then renews once with
+            /// `refreshSession`.
+            ///
+            ///
+            /// - Remark: Generated from `#/components/schemas/SessionGrant/expiresAt`.
+            public var expiresAt: Foundation.Date
+            /// Refresh token, sent only in the body of `refreshSession` and never in
+            /// `Authorization`. Single use: each renewal spends it and returns a new one. Presenting
+            /// a spent refresh token again revokes the whole session family.
+            ///
+            ///
+            /// - Remark: Generated from `#/components/schemas/SessionGrant/refreshToken`.
+            public var refreshToken: Swift.String
+            /// When the refresh token stops working and the session ends unless it was renewed
+            /// before; after it the client signs in again.
+            ///
+            ///
+            /// - Remark: Generated from `#/components/schemas/SessionGrant/refreshTokenExpiresAt`.
+            public var refreshTokenExpiresAt: Foundation.Date
+            /// Creates a new `SessionGrant`.
+            ///
+            /// - Parameters:
+            ///   - userId:
+            ///   - token: Access token for `bearerAuth`, valid for about 15 minutes. Sent on API calls; it
+            ///   - expiresAt: When the access token `token` stops working, about 15 minutes after issue. The
+            ///   - refreshToken: Refresh token, sent only in the body of `refreshSession` and never in
+            ///   - refreshTokenExpiresAt: When the refresh token stops working and the session ends unless it was renewed
+            public init(
+                userId: Components.Schemas.UserId,
+                token: Swift.String,
+                expiresAt: Foundation.Date,
+                refreshToken: Swift.String,
+                refreshTokenExpiresAt: Foundation.Date
+            ) {
+                self.userId = userId
+                self.token = token
+                self.expiresAt = expiresAt
+                self.refreshToken = refreshToken
+                self.refreshTokenExpiresAt = refreshTokenExpiresAt
+            }
+            public enum CodingKeys: String, CodingKey {
+                case userId
+                case token
+                case expiresAt
+                case refreshToken
+                case refreshTokenExpiresAt
+            }
+        }
+        /// The account is inside its 7-day deletion grace window (DEC-65): no session was opened.
+        /// The only thing the client can do is offer to cancel the deletion with `cancelToken`.
+        ///
+        ///
+        /// - Remark: Generated from `#/components/schemas/DeletionPending`.
+        public struct DeletionPending: Codable, Hashable, Sendable {
+            /// End of the grace window; the purge starts after it.
+            ///
+            /// - Remark: Generated from `#/components/schemas/DeletionPending/graceEndsAt`.
+            public var graceEndsAt: Foundation.Date
+            /// Value for the `Deletion-Cancel-Token` header (`deletionCancelToken`); valid only for `DELETE /v1/me/deletion`.
+            ///
+            /// - Remark: Generated from `#/components/schemas/DeletionPending/cancelToken`.
+            public var cancelToken: Swift.String
+            /// At most 15 minutes after issue (doc 11 §4.2).
+            ///
+            /// - Remark: Generated from `#/components/schemas/DeletionPending/cancelTokenExpiresAt`.
+            public var cancelTokenExpiresAt: Foundation.Date
+            /// Creates a new `DeletionPending`.
+            ///
+            /// - Parameters:
+            ///   - graceEndsAt: End of the grace window; the purge starts after it.
+            ///   - cancelToken: Value for the `Deletion-Cancel-Token` header (`deletionCancelToken`); valid only for `DELETE /v1/me/deletion`.
+            ///   - cancelTokenExpiresAt: At most 15 minutes after issue (doc 11 §4.2).
+            public init(
+                graceEndsAt: Foundation.Date,
+                cancelToken: Swift.String,
+                cancelTokenExpiresAt: Foundation.Date
+            ) {
+                self.graceEndsAt = graceEndsAt
+                self.cancelToken = cancelToken
+                self.cancelTokenExpiresAt = cancelTokenExpiresAt
+            }
+            public enum CodingKeys: String, CodingKey {
+                case graceEndsAt
+                case cancelToken
+                case cancelTokenExpiresAt
+            }
+        }
+        /// The verified identity has no account. Nothing is stored. The client asks for the birth
+        /// year and calls `completeSignUp` with `token`.
+        ///
+        ///
+        /// - Remark: Generated from `#/components/schemas/SignUpPending`.
+        public struct SignUpPending: Codable, Hashable, Sendable {
+            /// Sign-up credential for `CompleteSignUpRequest.signUpToken`. Single use, valid only
+            /// for `completeSignUp`; it opens no session and grants nothing else.
+            ///
+            ///
+            /// - Remark: Generated from `#/components/schemas/SignUpPending/token`.
+            public var token: Swift.String
+            /// At most 15 minutes after issue.
+            ///
+            /// - Remark: Generated from `#/components/schemas/SignUpPending/expiresAt`.
+            public var expiresAt: Foundation.Date
+            /// Creates a new `SignUpPending`.
+            ///
+            /// - Parameters:
+            ///   - token: Sign-up credential for `CompleteSignUpRequest.signUpToken`. Single use, valid only
+            ///   - expiresAt: At most 15 minutes after issue.
+            public init(
+                token: Swift.String,
+                expiresAt: Foundation.Date
+            ) {
+                self.token = token
+                self.expiresAt = expiresAt
+            }
+            public enum CodingKeys: String, CodingKey {
+                case token
+                case expiresAt
+            }
+        }
+        /// One sign-in outcome. `outcome` names it, and exactly the object of that outcome is
+        /// present: `session` for `session`, `deletionPending` for `deletion_pending`, `signUp` for
+        /// `sign_up_required`. Only `session` opens a session.
+        ///
+        ///
+        /// - Remark: Generated from `#/components/schemas/SignInResult`.
+        public struct SignInResult: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/SignInResult/outcome`.
+            @frozen public enum OutcomePayload: String, Codable, Hashable, Sendable, CaseIterable {
+                case session = "session"
+                case deletionPending = "deletion_pending"
+                case signUpRequired = "sign_up_required"
+            }
+            /// - Remark: Generated from `#/components/schemas/SignInResult/outcome`.
+            public var outcome: Components.Schemas.SignInResult.OutcomePayload
+            /// - Remark: Generated from `#/components/schemas/SignInResult/session`.
+            public var session: Components.Schemas.SessionGrant?
+            /// - Remark: Generated from `#/components/schemas/SignInResult/deletionPending`.
+            public var deletionPending: Components.Schemas.DeletionPending?
+            /// - Remark: Generated from `#/components/schemas/SignInResult/signUp`.
+            public var signUp: Components.Schemas.SignUpPending?
+            /// Creates a new `SignInResult`.
+            ///
+            /// - Parameters:
+            ///   - outcome:
+            ///   - session:
+            ///   - deletionPending:
+            ///   - signUp:
+            public init(
+                outcome: Components.Schemas.SignInResult.OutcomePayload,
+                session: Components.Schemas.SessionGrant? = nil,
+                deletionPending: Components.Schemas.DeletionPending? = nil,
+                signUp: Components.Schemas.SignUpPending? = nil
+            ) {
+                self.outcome = outcome
+                self.session = session
+                self.deletionPending = deletionPending
+                self.signUp = signUp
+            }
+            public enum CodingKeys: String, CodingKey {
+                case outcome
+                case session
+                case deletionPending
+                case signUp
+            }
+        }
+        /// - Remark: Generated from `#/components/schemas/CompleteSignUpRequest`.
+        public struct CompleteSignUpRequest: Codable, Hashable, Sendable {
+            /// `SignUpPending.token` of the `sign_up_required` answer.
+            ///
+            /// - Remark: Generated from `#/components/schemas/CompleteSignUpRequest/signUpToken`.
+            public var signUpToken: Swift.String
+            /// Self-declared birth year (DEC-60). Only a sanity range is enforced here; the age
+            /// floor is the server's rule and is never restated by a client.
+            ///
+            ///
+            /// - Remark: Generated from `#/components/schemas/CompleteSignUpRequest/birthYear`.
+            public var birthYear: Swift.Int
+            /// Creates a new `CompleteSignUpRequest`.
+            ///
+            /// - Parameters:
+            ///   - signUpToken: `SignUpPending.token` of the `sign_up_required` answer.
+            ///   - birthYear: Self-declared birth year (DEC-60). Only a sanity range is enforced here; the age
+            public init(
+                signUpToken: Swift.String,
+                birthYear: Swift.Int
+            ) {
+                self.signUpToken = signUpToken
+                self.birthYear = birthYear
+            }
+            public enum CodingKeys: String, CodingKey {
+                case signUpToken
+                case birthYear
+            }
+            public init(from decoder: any Swift.Decoder) throws {
+                let container = try decoder.container(keyedBy: CodingKeys.self)
+                self.signUpToken = try container.decode(
+                    Swift.String.self,
+                    forKey: .signUpToken
+                )
+                self.birthYear = try container.decode(
+                    Swift.Int.self,
+                    forKey: .birthYear
+                )
+                try decoder.ensureNoAdditionalProperties(knownKeys: [
+                    "signUpToken",
+                    "birthYear"
+                ])
+            }
+        }
+        /// Base64url without padding (RFC 4648 §5), as WebAuthn JSON encodes binary values.
+        ///
+        /// - Remark: Generated from `#/components/schemas/Base64Url`.
+        public typealias Base64Url = Swift.String
+        /// W3C WebAuthn `PublicKeyCredentialDescriptorJSON`.
+        ///
+        /// - Remark: Generated from `#/components/schemas/PasskeyCredentialDescriptor`.
+        public struct PasskeyCredentialDescriptor: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/PasskeyCredentialDescriptor/id`.
+            public var id: Components.Schemas.Base64Url
+            /// - Remark: Generated from `#/components/schemas/PasskeyCredentialDescriptor/type`.
+            @frozen public enum _TypePayload: String, Codable, Hashable, Sendable, CaseIterable {
+                case publicKey = "public-key"
+            }
+            /// - Remark: Generated from `#/components/schemas/PasskeyCredentialDescriptor/type`.
+            public var _type: Components.Schemas.PasskeyCredentialDescriptor._TypePayload
+            /// - Remark: Generated from `#/components/schemas/PasskeyCredentialDescriptor/transports`.
+            public var transports: [Swift.String]?
+            /// Creates a new `PasskeyCredentialDescriptor`.
+            ///
+            /// - Parameters:
+            ///   - id:
+            ///   - _type:
+            ///   - transports:
+            public init(
+                id: Components.Schemas.Base64Url,
+                _type: Components.Schemas.PasskeyCredentialDescriptor._TypePayload,
+                transports: [Swift.String]? = nil
+            ) {
+                self.id = id
+                self._type = _type
+                self.transports = transports
+            }
+            public enum CodingKeys: String, CodingKey {
+                case id
+                case _type = "type"
+                case transports
+            }
+        }
+        /// WebAuthn extension inputs (`AuthenticationExtensionsClientInputsJSON`). Only the
+        /// extensions this API requests are modelled.
+        ///
+        ///
+        /// - Remark: Generated from `#/components/schemas/PasskeyExtensionInputs`.
+        public struct PasskeyExtensionInputs: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/PasskeyExtensionInputs/credProps`.
+            public var credProps: Swift.Bool?
+            /// Creates a new `PasskeyExtensionInputs`.
+            ///
+            /// - Parameters:
+            ///   - credProps:
+            public init(credProps: Swift.Bool? = nil) {
+                self.credProps = credProps
+            }
+            public enum CodingKeys: String, CodingKey {
+                case credProps
+            }
+        }
+        /// W3C WebAuthn `PublicKeyCredentialRequestOptionsJSON`.
+        ///
+        /// - Remark: Generated from `#/components/schemas/PasskeyRequestOptions`.
+        public struct PasskeyRequestOptions: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/PasskeyRequestOptions/challenge`.
+            public var challenge: Components.Schemas.Base64Url
+            /// - Remark: Generated from `#/components/schemas/PasskeyRequestOptions/timeout`.
+            public var timeout: Swift.Int?
+            /// - Remark: Generated from `#/components/schemas/PasskeyRequestOptions/rpId`.
+            public var rpId: Swift.String?
+            /// - Remark: Generated from `#/components/schemas/PasskeyRequestOptions/allowCredentials`.
+            public var allowCredentials: [Components.Schemas.PasskeyCredentialDescriptor]?
+            /// - Remark: Generated from `#/components/schemas/PasskeyRequestOptions/userVerification`.
+            @frozen public enum UserVerificationPayload: String, Codable, Hashable, Sendable, CaseIterable {
+                case required = "required"
+                case preferred = "preferred"
+                case discouraged = "discouraged"
+            }
+            /// - Remark: Generated from `#/components/schemas/PasskeyRequestOptions/userVerification`.
+            public var userVerification: Components.Schemas.PasskeyRequestOptions.UserVerificationPayload?
+            /// - Remark: Generated from `#/components/schemas/PasskeyRequestOptions/hints`.
+            public var hints: [Swift.String]?
+            /// - Remark: Generated from `#/components/schemas/PasskeyRequestOptions/extensions`.
+            public var extensions: Components.Schemas.PasskeyExtensionInputs?
+            /// Creates a new `PasskeyRequestOptions`.
+            ///
+            /// - Parameters:
+            ///   - challenge:
+            ///   - timeout:
+            ///   - rpId:
+            ///   - allowCredentials:
+            ///   - userVerification:
+            ///   - hints:
+            ///   - extensions:
+            public init(
+                challenge: Components.Schemas.Base64Url,
+                timeout: Swift.Int? = nil,
+                rpId: Swift.String? = nil,
+                allowCredentials: [Components.Schemas.PasskeyCredentialDescriptor]? = nil,
+                userVerification: Components.Schemas.PasskeyRequestOptions.UserVerificationPayload? = nil,
+                hints: [Swift.String]? = nil,
+                extensions: Components.Schemas.PasskeyExtensionInputs? = nil
+            ) {
+                self.challenge = challenge
+                self.timeout = timeout
+                self.rpId = rpId
+                self.allowCredentials = allowCredentials
+                self.userVerification = userVerification
+                self.hints = hints
+                self.extensions = extensions
+            }
+            public enum CodingKeys: String, CodingKey {
+                case challenge
+                case timeout
+                case rpId
+                case allowCredentials
+                case userVerification
+                case hints
+                case extensions
+            }
+        }
+        /// WebAuthn extension outputs (`AuthenticationExtensionsClientOutputsJSON`). Only the
+        /// extensions this API reads are modelled; send `{}` when there are none.
+        ///
+        ///
+        /// - Remark: Generated from `#/components/schemas/PasskeyExtensionOutputs`.
+        public struct PasskeyExtensionOutputs: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/PasskeyExtensionOutputs/credProps`.
+            public struct CredPropsPayload: Codable, Hashable, Sendable {
+                /// - Remark: Generated from `#/components/schemas/PasskeyExtensionOutputs/credProps/rk`.
+                public var rk: Swift.Bool?
+                /// Creates a new `CredPropsPayload`.
+                ///
+                /// - Parameters:
+                ///   - rk:
+                public init(rk: Swift.Bool? = nil) {
+                    self.rk = rk
+                }
+                public enum CodingKeys: String, CodingKey {
+                    case rk
+                }
+            }
+            /// - Remark: Generated from `#/components/schemas/PasskeyExtensionOutputs/credProps`.
+            public var credProps: Components.Schemas.PasskeyExtensionOutputs.CredPropsPayload?
+            /// Creates a new `PasskeyExtensionOutputs`.
+            ///
+            /// - Parameters:
+            ///   - credProps:
+            public init(credProps: Components.Schemas.PasskeyExtensionOutputs.CredPropsPayload? = nil) {
+                self.credProps = credProps
+            }
+            public enum CodingKeys: String, CodingKey {
+                case credProps
+            }
+        }
+        /// W3C WebAuthn `AuthenticationResponseJSON`.
+        ///
+        /// - Remark: Generated from `#/components/schemas/PasskeyAuthenticationResponse`.
+        public struct PasskeyAuthenticationResponse: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/PasskeyAuthenticationResponse/id`.
+            public var id: Components.Schemas.Base64Url
+            /// - Remark: Generated from `#/components/schemas/PasskeyAuthenticationResponse/rawId`.
+            public var rawId: Components.Schemas.Base64Url
+            /// - Remark: Generated from `#/components/schemas/PasskeyAuthenticationResponse/type`.
+            @frozen public enum _TypePayload: String, Codable, Hashable, Sendable, CaseIterable {
+                case publicKey = "public-key"
+            }
+            /// - Remark: Generated from `#/components/schemas/PasskeyAuthenticationResponse/type`.
+            public var _type: Components.Schemas.PasskeyAuthenticationResponse._TypePayload
+            /// - Remark: Generated from `#/components/schemas/PasskeyAuthenticationResponse/authenticatorAttachment`.
+            @frozen public enum AuthenticatorAttachmentPayload: String, Codable, Hashable, Sendable, CaseIterable {
+                case platform = "platform"
+                case crossPlatform = "cross-platform"
+            }
+            /// - Remark: Generated from `#/components/schemas/PasskeyAuthenticationResponse/authenticatorAttachment`.
+            public var authenticatorAttachment: Components.Schemas.PasskeyAuthenticationResponse.AuthenticatorAttachmentPayload?
+            /// - Remark: Generated from `#/components/schemas/PasskeyAuthenticationResponse/clientExtensionResults`.
+            public var clientExtensionResults: Components.Schemas.PasskeyExtensionOutputs
+            /// - Remark: Generated from `#/components/schemas/PasskeyAuthenticationResponse/response`.
+            public struct ResponsePayload: Codable, Hashable, Sendable {
+                /// - Remark: Generated from `#/components/schemas/PasskeyAuthenticationResponse/response/clientDataJSON`.
+                public var clientDataJSON: Components.Schemas.Base64Url
+                /// - Remark: Generated from `#/components/schemas/PasskeyAuthenticationResponse/response/authenticatorData`.
+                public var authenticatorData: Components.Schemas.Base64Url
+                /// - Remark: Generated from `#/components/schemas/PasskeyAuthenticationResponse/response/signature`.
+                public var signature: Components.Schemas.Base64Url
+                /// - Remark: Generated from `#/components/schemas/PasskeyAuthenticationResponse/response/userHandle`.
+                public var userHandle: Components.Schemas.Base64Url?
+                /// Creates a new `ResponsePayload`.
+                ///
+                /// - Parameters:
+                ///   - clientDataJSON:
+                ///   - authenticatorData:
+                ///   - signature:
+                ///   - userHandle:
+                public init(
+                    clientDataJSON: Components.Schemas.Base64Url,
+                    authenticatorData: Components.Schemas.Base64Url,
+                    signature: Components.Schemas.Base64Url,
+                    userHandle: Components.Schemas.Base64Url? = nil
+                ) {
+                    self.clientDataJSON = clientDataJSON
+                    self.authenticatorData = authenticatorData
+                    self.signature = signature
+                    self.userHandle = userHandle
+                }
+                public enum CodingKeys: String, CodingKey {
+                    case clientDataJSON
+                    case authenticatorData
+                    case signature
+                    case userHandle
+                }
+            }
+            /// - Remark: Generated from `#/components/schemas/PasskeyAuthenticationResponse/response`.
+            public var response: Components.Schemas.PasskeyAuthenticationResponse.ResponsePayload
+            /// Creates a new `PasskeyAuthenticationResponse`.
+            ///
+            /// - Parameters:
+            ///   - id:
+            ///   - rawId:
+            ///   - _type:
+            ///   - authenticatorAttachment:
+            ///   - clientExtensionResults:
+            ///   - response:
+            public init(
+                id: Components.Schemas.Base64Url,
+                rawId: Components.Schemas.Base64Url,
+                _type: Components.Schemas.PasskeyAuthenticationResponse._TypePayload,
+                authenticatorAttachment: Components.Schemas.PasskeyAuthenticationResponse.AuthenticatorAttachmentPayload? = nil,
+                clientExtensionResults: Components.Schemas.PasskeyExtensionOutputs,
+                response: Components.Schemas.PasskeyAuthenticationResponse.ResponsePayload
+            ) {
+                self.id = id
+                self.rawId = rawId
+                self._type = _type
+                self.authenticatorAttachment = authenticatorAttachment
+                self.clientExtensionResults = clientExtensionResults
+                self.response = response
+            }
+            public enum CodingKeys: String, CodingKey {
+                case id
+                case rawId
+                case _type = "type"
+                case authenticatorAttachment
+                case clientExtensionResults
+                case response
+            }
+        }
+        /// - Remark: Generated from `#/components/schemas/PasskeySignInRequest`.
+        public struct PasskeySignInRequest: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/PasskeySignInRequest/response`.
+            public var response: Components.Schemas.PasskeyAuthenticationResponse
+            /// Creates a new `PasskeySignInRequest`.
+            ///
+            /// - Parameters:
+            ///   - response:
+            public init(response: Components.Schemas.PasskeyAuthenticationResponse) {
+                self.response = response
+            }
+            public enum CodingKeys: String, CodingKey {
+                case response
+            }
+            public init(from decoder: any Swift.Decoder) throws {
+                let container = try decoder.container(keyedBy: CodingKeys.self)
+                self.response = try container.decode(
+                    Components.Schemas.PasskeyAuthenticationResponse.self,
+                    forKey: .response
+                )
+                try decoder.ensureNoAdditionalProperties(knownKeys: [
+                    "response"
+                ])
+            }
+        }
+        /// W3C WebAuthn `PublicKeyCredentialCreationOptionsJSON`.
+        ///
+        /// - Remark: Generated from `#/components/schemas/PasskeyCreationOptions`.
+        public struct PasskeyCreationOptions: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/PasskeyCreationOptions/rp`.
+            public struct RpPayload: Codable, Hashable, Sendable {
+                /// - Remark: Generated from `#/components/schemas/PasskeyCreationOptions/rp/id`.
+                public var id: Swift.String?
+                /// - Remark: Generated from `#/components/schemas/PasskeyCreationOptions/rp/name`.
+                public var name: Swift.String
+                /// Creates a new `RpPayload`.
+                ///
+                /// - Parameters:
+                ///   - id:
+                ///   - name:
+                public init(
+                    id: Swift.String? = nil,
+                    name: Swift.String
+                ) {
+                    self.id = id
+                    self.name = name
+                }
+                public enum CodingKeys: String, CodingKey {
+                    case id
+                    case name
+                }
+            }
+            /// - Remark: Generated from `#/components/schemas/PasskeyCreationOptions/rp`.
+            public var rp: Components.Schemas.PasskeyCreationOptions.RpPayload
+            /// - Remark: Generated from `#/components/schemas/PasskeyCreationOptions/user`.
+            public struct UserPayload: Codable, Hashable, Sendable {
+                /// - Remark: Generated from `#/components/schemas/PasskeyCreationOptions/user/id`.
+                public var id: Components.Schemas.Base64Url
+                /// - Remark: Generated from `#/components/schemas/PasskeyCreationOptions/user/name`.
+                public var name: Swift.String
+                /// - Remark: Generated from `#/components/schemas/PasskeyCreationOptions/user/displayName`.
+                public var displayName: Swift.String
+                /// Creates a new `UserPayload`.
+                ///
+                /// - Parameters:
+                ///   - id:
+                ///   - name:
+                ///   - displayName:
+                public init(
+                    id: Components.Schemas.Base64Url,
+                    name: Swift.String,
+                    displayName: Swift.String
+                ) {
+                    self.id = id
+                    self.name = name
+                    self.displayName = displayName
+                }
+                public enum CodingKeys: String, CodingKey {
+                    case id
+                    case name
+                    case displayName
+                }
+            }
+            /// - Remark: Generated from `#/components/schemas/PasskeyCreationOptions/user`.
+            public var user: Components.Schemas.PasskeyCreationOptions.UserPayload
+            /// - Remark: Generated from `#/components/schemas/PasskeyCreationOptions/challenge`.
+            public var challenge: Components.Schemas.Base64Url
+            /// - Remark: Generated from `#/components/schemas/PasskeyCreationOptions/PubKeyCredParamsPayload`.
+            public struct PubKeyCredParamsPayloadPayload: Codable, Hashable, Sendable {
+                /// - Remark: Generated from `#/components/schemas/PasskeyCreationOptions/PubKeyCredParamsPayload/type`.
+                @frozen public enum _TypePayload: String, Codable, Hashable, Sendable, CaseIterable {
+                    case publicKey = "public-key"
+                }
+                /// - Remark: Generated from `#/components/schemas/PasskeyCreationOptions/PubKeyCredParamsPayload/type`.
+                public var _type: Components.Schemas.PasskeyCreationOptions.PubKeyCredParamsPayloadPayload._TypePayload
+                /// - Remark: Generated from `#/components/schemas/PasskeyCreationOptions/PubKeyCredParamsPayload/alg`.
+                public var alg: Swift.Int
+                /// Creates a new `PubKeyCredParamsPayloadPayload`.
+                ///
+                /// - Parameters:
+                ///   - _type:
+                ///   - alg:
+                public init(
+                    _type: Components.Schemas.PasskeyCreationOptions.PubKeyCredParamsPayloadPayload._TypePayload,
+                    alg: Swift.Int
+                ) {
+                    self._type = _type
+                    self.alg = alg
+                }
+                public enum CodingKeys: String, CodingKey {
+                    case _type = "type"
+                    case alg
+                }
+            }
+            /// - Remark: Generated from `#/components/schemas/PasskeyCreationOptions/pubKeyCredParams`.
+            public typealias PubKeyCredParamsPayload = [Components.Schemas.PasskeyCreationOptions.PubKeyCredParamsPayloadPayload]
+            /// - Remark: Generated from `#/components/schemas/PasskeyCreationOptions/pubKeyCredParams`.
+            public var pubKeyCredParams: Components.Schemas.PasskeyCreationOptions.PubKeyCredParamsPayload
+            /// - Remark: Generated from `#/components/schemas/PasskeyCreationOptions/timeout`.
+            public var timeout: Swift.Int?
+            /// - Remark: Generated from `#/components/schemas/PasskeyCreationOptions/excludeCredentials`.
+            public var excludeCredentials: [Components.Schemas.PasskeyCredentialDescriptor]?
+            /// - Remark: Generated from `#/components/schemas/PasskeyCreationOptions/authenticatorSelection`.
+            public struct AuthenticatorSelectionPayload: Codable, Hashable, Sendable {
+                /// - Remark: Generated from `#/components/schemas/PasskeyCreationOptions/authenticatorSelection/authenticatorAttachment`.
+                @frozen public enum AuthenticatorAttachmentPayload: String, Codable, Hashable, Sendable, CaseIterable {
+                    case platform = "platform"
+                    case crossPlatform = "cross-platform"
+                }
+                /// - Remark: Generated from `#/components/schemas/PasskeyCreationOptions/authenticatorSelection/authenticatorAttachment`.
+                public var authenticatorAttachment: Components.Schemas.PasskeyCreationOptions.AuthenticatorSelectionPayload.AuthenticatorAttachmentPayload?
+                /// - Remark: Generated from `#/components/schemas/PasskeyCreationOptions/authenticatorSelection/residentKey`.
+                @frozen public enum ResidentKeyPayload: String, Codable, Hashable, Sendable, CaseIterable {
+                    case discouraged = "discouraged"
+                    case preferred = "preferred"
+                    case required = "required"
+                }
+                /// - Remark: Generated from `#/components/schemas/PasskeyCreationOptions/authenticatorSelection/residentKey`.
+                public var residentKey: Components.Schemas.PasskeyCreationOptions.AuthenticatorSelectionPayload.ResidentKeyPayload?
+                /// - Remark: Generated from `#/components/schemas/PasskeyCreationOptions/authenticatorSelection/requireResidentKey`.
+                public var requireResidentKey: Swift.Bool?
+                /// - Remark: Generated from `#/components/schemas/PasskeyCreationOptions/authenticatorSelection/userVerification`.
+                @frozen public enum UserVerificationPayload: String, Codable, Hashable, Sendable, CaseIterable {
+                    case required = "required"
+                    case preferred = "preferred"
+                    case discouraged = "discouraged"
+                }
+                /// - Remark: Generated from `#/components/schemas/PasskeyCreationOptions/authenticatorSelection/userVerification`.
+                public var userVerification: Components.Schemas.PasskeyCreationOptions.AuthenticatorSelectionPayload.UserVerificationPayload?
+                /// Creates a new `AuthenticatorSelectionPayload`.
+                ///
+                /// - Parameters:
+                ///   - authenticatorAttachment:
+                ///   - residentKey:
+                ///   - requireResidentKey:
+                ///   - userVerification:
+                public init(
+                    authenticatorAttachment: Components.Schemas.PasskeyCreationOptions.AuthenticatorSelectionPayload.AuthenticatorAttachmentPayload? = nil,
+                    residentKey: Components.Schemas.PasskeyCreationOptions.AuthenticatorSelectionPayload.ResidentKeyPayload? = nil,
+                    requireResidentKey: Swift.Bool? = nil,
+                    userVerification: Components.Schemas.PasskeyCreationOptions.AuthenticatorSelectionPayload.UserVerificationPayload? = nil
+                ) {
+                    self.authenticatorAttachment = authenticatorAttachment
+                    self.residentKey = residentKey
+                    self.requireResidentKey = requireResidentKey
+                    self.userVerification = userVerification
+                }
+                public enum CodingKeys: String, CodingKey {
+                    case authenticatorAttachment
+                    case residentKey
+                    case requireResidentKey
+                    case userVerification
+                }
+            }
+            /// - Remark: Generated from `#/components/schemas/PasskeyCreationOptions/authenticatorSelection`.
+            public var authenticatorSelection: Components.Schemas.PasskeyCreationOptions.AuthenticatorSelectionPayload?
+            /// - Remark: Generated from `#/components/schemas/PasskeyCreationOptions/attestation`.
+            @frozen public enum AttestationPayload: String, Codable, Hashable, Sendable, CaseIterable {
+                case none = "none"
+                case indirect = "indirect"
+                case direct = "direct"
+                case enterprise = "enterprise"
+            }
+            /// - Remark: Generated from `#/components/schemas/PasskeyCreationOptions/attestation`.
+            public var attestation: Components.Schemas.PasskeyCreationOptions.AttestationPayload?
+            /// - Remark: Generated from `#/components/schemas/PasskeyCreationOptions/hints`.
+            public var hints: [Swift.String]?
+            /// - Remark: Generated from `#/components/schemas/PasskeyCreationOptions/extensions`.
+            public var extensions: Components.Schemas.PasskeyExtensionInputs?
+            /// Creates a new `PasskeyCreationOptions`.
+            ///
+            /// - Parameters:
+            ///   - rp:
+            ///   - user:
+            ///   - challenge:
+            ///   - pubKeyCredParams:
+            ///   - timeout:
+            ///   - excludeCredentials:
+            ///   - authenticatorSelection:
+            ///   - attestation:
+            ///   - hints:
+            ///   - extensions:
+            public init(
+                rp: Components.Schemas.PasskeyCreationOptions.RpPayload,
+                user: Components.Schemas.PasskeyCreationOptions.UserPayload,
+                challenge: Components.Schemas.Base64Url,
+                pubKeyCredParams: Components.Schemas.PasskeyCreationOptions.PubKeyCredParamsPayload,
+                timeout: Swift.Int? = nil,
+                excludeCredentials: [Components.Schemas.PasskeyCredentialDescriptor]? = nil,
+                authenticatorSelection: Components.Schemas.PasskeyCreationOptions.AuthenticatorSelectionPayload? = nil,
+                attestation: Components.Schemas.PasskeyCreationOptions.AttestationPayload? = nil,
+                hints: [Swift.String]? = nil,
+                extensions: Components.Schemas.PasskeyExtensionInputs? = nil
+            ) {
+                self.rp = rp
+                self.user = user
+                self.challenge = challenge
+                self.pubKeyCredParams = pubKeyCredParams
+                self.timeout = timeout
+                self.excludeCredentials = excludeCredentials
+                self.authenticatorSelection = authenticatorSelection
+                self.attestation = attestation
+                self.hints = hints
+                self.extensions = extensions
+            }
+            public enum CodingKeys: String, CodingKey {
+                case rp
+                case user
+                case challenge
+                case pubKeyCredParams
+                case timeout
+                case excludeCredentials
+                case authenticatorSelection
+                case attestation
+                case hints
+                case extensions
+            }
+        }
+        /// W3C WebAuthn `RegistrationResponseJSON`.
+        ///
+        /// - Remark: Generated from `#/components/schemas/PasskeyRegistrationResponse`.
+        public struct PasskeyRegistrationResponse: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/PasskeyRegistrationResponse/id`.
+            public var id: Components.Schemas.Base64Url
+            /// - Remark: Generated from `#/components/schemas/PasskeyRegistrationResponse/rawId`.
+            public var rawId: Components.Schemas.Base64Url
+            /// - Remark: Generated from `#/components/schemas/PasskeyRegistrationResponse/type`.
+            @frozen public enum _TypePayload: String, Codable, Hashable, Sendable, CaseIterable {
+                case publicKey = "public-key"
+            }
+            /// - Remark: Generated from `#/components/schemas/PasskeyRegistrationResponse/type`.
+            public var _type: Components.Schemas.PasskeyRegistrationResponse._TypePayload
+            /// - Remark: Generated from `#/components/schemas/PasskeyRegistrationResponse/authenticatorAttachment`.
+            @frozen public enum AuthenticatorAttachmentPayload: String, Codable, Hashable, Sendable, CaseIterable {
+                case platform = "platform"
+                case crossPlatform = "cross-platform"
+            }
+            /// - Remark: Generated from `#/components/schemas/PasskeyRegistrationResponse/authenticatorAttachment`.
+            public var authenticatorAttachment: Components.Schemas.PasskeyRegistrationResponse.AuthenticatorAttachmentPayload?
+            /// - Remark: Generated from `#/components/schemas/PasskeyRegistrationResponse/clientExtensionResults`.
+            public var clientExtensionResults: Components.Schemas.PasskeyExtensionOutputs
+            /// - Remark: Generated from `#/components/schemas/PasskeyRegistrationResponse/response`.
+            public struct ResponsePayload: Codable, Hashable, Sendable {
+                /// - Remark: Generated from `#/components/schemas/PasskeyRegistrationResponse/response/clientDataJSON`.
+                public var clientDataJSON: Components.Schemas.Base64Url
+                /// - Remark: Generated from `#/components/schemas/PasskeyRegistrationResponse/response/attestationObject`.
+                public var attestationObject: Components.Schemas.Base64Url
+                /// - Remark: Generated from `#/components/schemas/PasskeyRegistrationResponse/response/authenticatorData`.
+                public var authenticatorData: Components.Schemas.Base64Url?
+                /// - Remark: Generated from `#/components/schemas/PasskeyRegistrationResponse/response/transports`.
+                public var transports: [Swift.String]?
+                /// - Remark: Generated from `#/components/schemas/PasskeyRegistrationResponse/response/publicKeyAlgorithm`.
+                public var publicKeyAlgorithm: Swift.Int?
+                /// - Remark: Generated from `#/components/schemas/PasskeyRegistrationResponse/response/publicKey`.
+                public var publicKey: Components.Schemas.Base64Url?
+                /// Creates a new `ResponsePayload`.
+                ///
+                /// - Parameters:
+                ///   - clientDataJSON:
+                ///   - attestationObject:
+                ///   - authenticatorData:
+                ///   - transports:
+                ///   - publicKeyAlgorithm:
+                ///   - publicKey:
+                public init(
+                    clientDataJSON: Components.Schemas.Base64Url,
+                    attestationObject: Components.Schemas.Base64Url,
+                    authenticatorData: Components.Schemas.Base64Url? = nil,
+                    transports: [Swift.String]? = nil,
+                    publicKeyAlgorithm: Swift.Int? = nil,
+                    publicKey: Components.Schemas.Base64Url? = nil
+                ) {
+                    self.clientDataJSON = clientDataJSON
+                    self.attestationObject = attestationObject
+                    self.authenticatorData = authenticatorData
+                    self.transports = transports
+                    self.publicKeyAlgorithm = publicKeyAlgorithm
+                    self.publicKey = publicKey
+                }
+                public enum CodingKeys: String, CodingKey {
+                    case clientDataJSON
+                    case attestationObject
+                    case authenticatorData
+                    case transports
+                    case publicKeyAlgorithm
+                    case publicKey
+                }
+            }
+            /// - Remark: Generated from `#/components/schemas/PasskeyRegistrationResponse/response`.
+            public var response: Components.Schemas.PasskeyRegistrationResponse.ResponsePayload
+            /// Creates a new `PasskeyRegistrationResponse`.
+            ///
+            /// - Parameters:
+            ///   - id:
+            ///   - rawId:
+            ///   - _type:
+            ///   - authenticatorAttachment:
+            ///   - clientExtensionResults:
+            ///   - response:
+            public init(
+                id: Components.Schemas.Base64Url,
+                rawId: Components.Schemas.Base64Url,
+                _type: Components.Schemas.PasskeyRegistrationResponse._TypePayload,
+                authenticatorAttachment: Components.Schemas.PasskeyRegistrationResponse.AuthenticatorAttachmentPayload? = nil,
+                clientExtensionResults: Components.Schemas.PasskeyExtensionOutputs,
+                response: Components.Schemas.PasskeyRegistrationResponse.ResponsePayload
+            ) {
+                self.id = id
+                self.rawId = rawId
+                self._type = _type
+                self.authenticatorAttachment = authenticatorAttachment
+                self.clientExtensionResults = clientExtensionResults
+                self.response = response
+            }
+            public enum CodingKeys: String, CodingKey {
+                case id
+                case rawId
+                case _type = "type"
+                case authenticatorAttachment
+                case clientExtensionResults
+                case response
+            }
+        }
+        /// - Remark: Generated from `#/components/schemas/PasskeyRegistrationRequest`.
+        public struct PasskeyRegistrationRequest: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/PasskeyRegistrationRequest/response`.
+            public var response: Components.Schemas.PasskeyRegistrationResponse
+            /// Label the person gives the passkey.
+            ///
+            /// - Remark: Generated from `#/components/schemas/PasskeyRegistrationRequest/name`.
+            public var name: Swift.String?
+            /// Creates a new `PasskeyRegistrationRequest`.
+            ///
+            /// - Parameters:
+            ///   - response:
+            ///   - name: Label the person gives the passkey.
+            public init(
+                response: Components.Schemas.PasskeyRegistrationResponse,
+                name: Swift.String? = nil
+            ) {
+                self.response = response
+                self.name = name
+            }
+            public enum CodingKeys: String, CodingKey {
+                case response
+                case name
+            }
+            public init(from decoder: any Swift.Decoder) throws {
+                let container = try decoder.container(keyedBy: CodingKeys.self)
+                self.response = try container.decode(
+                    Components.Schemas.PasskeyRegistrationResponse.self,
+                    forKey: .response
+                )
+                self.name = try container.decodeIfPresent(
+                    Swift.String.self,
+                    forKey: .name
+                )
+                try decoder.ensureNoAdditionalProperties(knownKeys: [
+                    "response",
+                    "name"
+                ])
+            }
+        }
+        /// A passkey stored on the account. Carries no key material.
+        ///
+        /// - Remark: Generated from `#/components/schemas/PasskeySummary`.
+        public struct PasskeySummary: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/PasskeySummary/name`.
+            public var name: Swift.String?
+            /// - Remark: Generated from `#/components/schemas/PasskeySummary/createdAt`.
+            public var createdAt: Foundation.Date
+            /// Creates a new `PasskeySummary`.
+            ///
+            /// - Parameters:
+            ///   - name:
+            ///   - createdAt:
+            public init(
+                name: Swift.String? = nil,
+                createdAt: Foundation.Date
+            ) {
+                self.name = name
+                self.createdAt = createdAt
+            }
+            public enum CodingKeys: String, CodingKey {
+                case name
+                case createdAt
+            }
+        }
+        /// The current session, without any token.
+        ///
+        /// - Remark: Generated from `#/components/schemas/SessionInfo`.
+        public struct SessionInfo: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/SessionInfo/userId`.
+            public var userId: Components.Schemas.UserId
+            /// When the access token of this request stops working (`SessionGrant.expiresAt`).
+            ///
+            /// - Remark: Generated from `#/components/schemas/SessionInfo/expiresAt`.
+            public var expiresAt: Foundation.Date
+            /// True when the server asks the client to renew now with `refreshSession`.
+            ///
+            /// - Remark: Generated from `#/components/schemas/SessionInfo/needsRefresh`.
+            public var needsRefresh: Swift.Bool?
+            /// Creates a new `SessionInfo`.
+            ///
+            /// - Parameters:
+            ///   - userId:
+            ///   - expiresAt: When the access token of this request stops working (`SessionGrant.expiresAt`).
+            ///   - needsRefresh: True when the server asks the client to renew now with `refreshSession`.
+            public init(
+                userId: Components.Schemas.UserId,
+                expiresAt: Foundation.Date,
+                needsRefresh: Swift.Bool? = nil
+            ) {
+                self.userId = userId
+                self.expiresAt = expiresAt
+                self.needsRefresh = needsRefresh
+            }
+            public enum CodingKeys: String, CodingKey {
+                case userId
+                case expiresAt
+                case needsRefresh
+            }
+        }
+        /// - Remark: Generated from `#/components/schemas/RefreshSessionRequest`.
+        public struct RefreshSessionRequest: Codable, Hashable, Sendable {
+            /// `SessionGrant.refreshToken` of the latest grant of this session.
+            ///
+            /// - Remark: Generated from `#/components/schemas/RefreshSessionRequest/refreshToken`.
+            public var refreshToken: Swift.String
+            /// Creates a new `RefreshSessionRequest`.
+            ///
+            /// - Parameters:
+            ///   - refreshToken: `SessionGrant.refreshToken` of the latest grant of this session.
+            public init(refreshToken: Swift.String) {
+                self.refreshToken = refreshToken
+            }
+            public enum CodingKeys: String, CodingKey {
+                case refreshToken
+            }
+            public init(from decoder: any Swift.Decoder) throws {
+                let container = try decoder.container(keyedBy: CodingKeys.self)
+                self.refreshToken = try container.decode(
+                    Swift.String.self,
+                    forKey: .refreshToken
+                )
+                try decoder.ensureNoAdditionalProperties(knownKeys: [
+                    "refreshToken"
+                ])
+            }
+        }
+        /// - Remark: Generated from `#/components/schemas/SignOutResult`.
+        public struct SignOutResult: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/SignOutResult/success`.
+            public var success: Swift.Bool
+            /// Creates a new `SignOutResult`.
+            ///
+            /// - Parameters:
+            ///   - success:
+            public init(success: Swift.Bool) {
+                self.success = success
+            }
+            public enum CodingKeys: String, CodingKey {
+                case success
+            }
+        }
+        /// One signed-in device of the caller. Carries no token and no IP address.
+        ///
+        /// - Remark: Generated from `#/components/schemas/DeviceSession`.
+        public struct DeviceSession: Codable, Hashable, Sendable {
+            /// True for the session that made this request.
+            ///
+            /// - Remark: Generated from `#/components/schemas/DeviceSession/current`.
+            public var current: Swift.Bool
+            /// When the device signed in.
+            ///
+            /// - Remark: Generated from `#/components/schemas/DeviceSession/createdAt`.
+            public var createdAt: Foundation.Date
+            /// Last renewal of the session.
+            ///
+            /// - Remark: Generated from `#/components/schemas/DeviceSession/lastActiveAt`.
+            public var lastActiveAt: Foundation.Date
+            /// When the session ends unless renewed, the expiry of its current refresh token.
+            ///
+            /// - Remark: Generated from `#/components/schemas/DeviceSession/expiresAt`.
+            public var expiresAt: Foundation.Date
+            /// The `User-Agent` the device sent at sign-in, to tell devices apart.
+            ///
+            /// - Remark: Generated from `#/components/schemas/DeviceSession/userAgent`.
+            public var userAgent: Swift.String?
+            /// Creates a new `DeviceSession`.
+            ///
+            /// - Parameters:
+            ///   - current: True for the session that made this request.
+            ///   - createdAt: When the device signed in.
+            ///   - lastActiveAt: Last renewal of the session.
+            ///   - expiresAt: When the session ends unless renewed, the expiry of its current refresh token.
+            ///   - userAgent: The `User-Agent` the device sent at sign-in, to tell devices apart.
+            public init(
+                current: Swift.Bool,
+                createdAt: Foundation.Date,
+                lastActiveAt: Foundation.Date,
+                expiresAt: Foundation.Date,
+                userAgent: Swift.String? = nil
+            ) {
+                self.current = current
+                self.createdAt = createdAt
+                self.lastActiveAt = lastActiveAt
+                self.expiresAt = expiresAt
+                self.userAgent = userAgent
+            }
+            public enum CodingKeys: String, CodingKey {
+                case current
+                case createdAt
+                case lastActiveAt
+                case expiresAt
+                case userAgent
+            }
+        }
+        /// - Remark: Generated from `#/components/schemas/DeviceSessionPage`.
+        public struct DeviceSessionPage: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/DeviceSessionPage/items`.
+            public var items: [Components.Schemas.DeviceSession]
+            /// Cursor of the next page; null on the last page.
+            ///
+            /// - Remark: Generated from `#/components/schemas/DeviceSessionPage/nextCursor`.
+            public var nextCursor: Swift.String?
+            /// Creates a new `DeviceSessionPage`.
+            ///
+            /// - Parameters:
+            ///   - items:
+            ///   - nextCursor: Cursor of the next page; null on the last page.
+            public init(
+                items: [Components.Schemas.DeviceSession],
+                nextCursor: Swift.String? = nil
+            ) {
+                self.items = items
+                self.nextCursor = nextCursor
+            }
+            public enum CodingKeys: String, CodingKey {
+                case items
+                case nextCursor
+            }
+        }
+        /// - Remark: Generated from `#/components/schemas/RevokeSessionsResult`.
+        public struct RevokeSessionsResult: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/RevokeSessionsResult/status`.
+            public var status: Swift.Bool
+            /// Creates a new `RevokeSessionsResult`.
+            ///
+            /// - Parameters:
+            ///   - status:
+            public init(status: Swift.Bool) {
+                self.status = status
+            }
+            public enum CodingKeys: String, CodingKey {
+                case status
+            }
+        }
+        /// - Remark: Generated from `#/components/schemas/RecoveryRequest`.
+        public struct RecoveryRequest: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/RecoveryRequest/email`.
+            public var email: Swift.String
+            /// Creates a new `RecoveryRequest`.
+            ///
+            /// - Parameters:
+            ///   - email:
+            public init(email: Swift.String) {
+                self.email = email
+            }
+            public enum CodingKeys: String, CodingKey {
+                case email
+            }
+            public init(from decoder: any Swift.Decoder) throws {
+                let container = try decoder.container(keyedBy: CodingKeys.self)
+                self.email = try container.decode(
+                    Swift.String.self,
+                    forKey: .email
+                )
+                try decoder.ensureNoAdditionalProperties(knownKeys: [
+                    "email"
+                ])
+            }
+        }
+        /// - Remark: Generated from `#/components/schemas/RecoveryRequestAccepted`.
+        public struct RecoveryRequestAccepted: Codable, Hashable, Sendable {
+            /// Always true, whether or not an account exists for the address.
+            ///
+            /// - Remark: Generated from `#/components/schemas/RecoveryRequestAccepted/status`.
+            public var status: Swift.Bool
+            /// Creates a new `RecoveryRequestAccepted`.
+            ///
+            /// - Parameters:
+            ///   - status: Always true, whether or not an account exists for the address.
+            public init(status: Swift.Bool) {
+                self.status = status
+            }
+            public enum CodingKeys: String, CodingKey {
+                case status
+            }
+        }
+        /// - Remark: Generated from `#/components/schemas/RecoveryCompletionRequest`.
+        public struct RecoveryCompletionRequest: Codable, Hashable, Sendable {
+            /// Single-use token from the fragment of the emailed recovery link.
+            ///
+            /// - Remark: Generated from `#/components/schemas/RecoveryCompletionRequest/token`.
+            public var token: Swift.String
+            /// Creates a new `RecoveryCompletionRequest`.
+            ///
+            /// - Parameters:
+            ///   - token: Single-use token from the fragment of the emailed recovery link.
+            public init(token: Swift.String) {
+                self.token = token
+            }
+            public enum CodingKeys: String, CodingKey {
+                case token
+            }
+            public init(from decoder: any Swift.Decoder) throws {
+                let container = try decoder.container(keyedBy: CodingKeys.self)
+                self.token = try container.decode(
+                    Swift.String.self,
+                    forKey: .token
+                )
+                try decoder.ensureNoAdditionalProperties(knownKeys: [
+                    "token"
+                ])
+            }
+        }
+        /// Consent purpose keys of doc 11 §7.2, in that order. Mirrors shared-kernel
+        /// `CONSENT_PURPOSES` value for value (pinned by packages/contracts/tests/kernel-enums.test.ts).
+        ///
+        ///
+        /// - Remark: Generated from `#/components/schemas/ConsentPurpose`.
+        @frozen public enum ConsentPurpose: String, Codable, Hashable, Sendable, CaseIterable {
+            case coreService = "core_service"
+            case faceProcessing = "face_processing"
+            case locationPrecise = "location_precise"
+            case analytics = "analytics"
+            case aiGenerative = "ai_generative"
+            case notifications = "notifications"
+            case trainingData = "training_data"
+        }
+        /// Consent record id, a prefixed ULID (`cns_`, shared-kernel `ID_PREFIXES.consentRecord`).
+        ///
+        /// - Remark: Generated from `#/components/schemas/ConsentRecordId`.
+        public typealias ConsentRecordId = Swift.String
+        /// - Remark: Generated from `#/components/schemas/ConsentStatus`.
+        @frozen public enum ConsentStatus: String, Codable, Hashable, Sendable, CaseIterable {
+            case granted = "granted"
+            case withdrawn = "withdrawn"
+        }
+        /// Version of the policy text the person saw, e.g. `0.1.0-draft`.
+        ///
+        /// - Remark: Generated from `#/components/schemas/PolicyVersion`.
+        public typealias PolicyVersion = Swift.String
+        /// Identifier of the app screen where the decision was made, e.g. `onboarding_consent`.
+        ///
+        /// - Remark: Generated from `#/components/schemas/ConsentSurface`.
+        public typealias ConsentSurface = Swift.String
+        /// BCP 47 language tag, e.g. `en-GB`.
+        ///
+        /// - Remark: Generated from `#/components/schemas/Locale`.
+        public typealias Locale = Swift.String
+        /// One append-only consent record (doc 11 §7.1); `locale` is the language of the text the
+        /// person saw.
+        ///
+        ///
+        /// - Remark: Generated from `#/components/schemas/ConsentRecord`.
+        public struct ConsentRecord: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/ConsentRecord/id`.
+            public var id: Components.Schemas.ConsentRecordId
+            /// - Remark: Generated from `#/components/schemas/ConsentRecord/purpose`.
+            public var purpose: Components.Schemas.ConsentPurpose
+            /// - Remark: Generated from `#/components/schemas/ConsentRecord/status`.
+            public var status: Components.Schemas.ConsentStatus
+            /// - Remark: Generated from `#/components/schemas/ConsentRecord/policyVersion`.
+            public var policyVersion: Components.Schemas.PolicyVersion
+            /// When the consent was granted; present when `status` is `granted`.
+            ///
+            /// - Remark: Generated from `#/components/schemas/ConsentRecord/grantedAt`.
+            public var grantedAt: Foundation.Date?
+            /// When the consent was withdrawn; present when `status` is `withdrawn`.
+            ///
+            /// - Remark: Generated from `#/components/schemas/ConsentRecord/withdrawnAt`.
+            public var withdrawnAt: Foundation.Date?
+            /// - Remark: Generated from `#/components/schemas/ConsentRecord/surface`.
+            public var surface: Components.Schemas.ConsentSurface
+            /// - Remark: Generated from `#/components/schemas/ConsentRecord/locale`.
+            public var locale: Components.Schemas.Locale
+            /// Creates a new `ConsentRecord`.
+            ///
+            /// - Parameters:
+            ///   - id:
+            ///   - purpose:
+            ///   - status:
+            ///   - policyVersion:
+            ///   - grantedAt: When the consent was granted; present when `status` is `granted`.
+            ///   - withdrawnAt: When the consent was withdrawn; present when `status` is `withdrawn`.
+            ///   - surface:
+            ///   - locale:
+            public init(
+                id: Components.Schemas.ConsentRecordId,
+                purpose: Components.Schemas.ConsentPurpose,
+                status: Components.Schemas.ConsentStatus,
+                policyVersion: Components.Schemas.PolicyVersion,
+                grantedAt: Foundation.Date? = nil,
+                withdrawnAt: Foundation.Date? = nil,
+                surface: Components.Schemas.ConsentSurface,
+                locale: Components.Schemas.Locale
+            ) {
+                self.id = id
+                self.purpose = purpose
+                self.status = status
+                self.policyVersion = policyVersion
+                self.grantedAt = grantedAt
+                self.withdrawnAt = withdrawnAt
+                self.surface = surface
+                self.locale = locale
+            }
+            public enum CodingKeys: String, CodingKey {
+                case id
+                case purpose
+                case status
+                case policyVersion
+                case grantedAt
+                case withdrawnAt
+                case surface
+                case locale
+            }
+        }
+        /// The consent the server applies to one purpose now (doc 11 §7.2). `record` is the
+        /// caller's latest consent record for the purpose; `granted` is then true exactly when
+        /// `record.status` is `granted`. Without a record, `record` is absent and `granted` is
+        /// the purpose's default, which the server decides (some defaults depend on the
+        /// jurisdiction).
+        ///
+        ///
+        /// - Remark: Generated from `#/components/schemas/ResolvedConsent`.
+        public struct ResolvedConsent: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/ResolvedConsent/purpose`.
+            public var purpose: Components.Schemas.ConsentPurpose
+            /// Whether the server processes the caller's data for this purpose now.
+            ///
+            /// - Remark: Generated from `#/components/schemas/ResolvedConsent/granted`.
+            public var granted: Swift.Bool
+            /// `false` for a purpose the person cannot withdraw while the account exists:
+            /// `recordConsent` refuses its withdrawal with 403 `CONSENT_REQUIRED`, and the app
+            /// offers no switch to turn it off.
+            ///
+            ///
+            /// - Remark: Generated from `#/components/schemas/ResolvedConsent/withdrawable`.
+            public var withdrawable: Swift.Bool
+            /// - Remark: Generated from `#/components/schemas/ResolvedConsent/record`.
+            public var record: Components.Schemas.ConsentRecord?
+            /// Creates a new `ResolvedConsent`.
+            ///
+            /// - Parameters:
+            ///   - purpose:
+            ///   - granted: Whether the server processes the caller's data for this purpose now.
+            ///   - withdrawable: `false` for a purpose the person cannot withdraw while the account exists:
+            ///   - record:
+            public init(
+                purpose: Components.Schemas.ConsentPurpose,
+                granted: Swift.Bool,
+                withdrawable: Swift.Bool,
+                record: Components.Schemas.ConsentRecord? = nil
+            ) {
+                self.purpose = purpose
+                self.granted = granted
+                self.withdrawable = withdrawable
+                self.record = record
+            }
+            public enum CodingKeys: String, CodingKey {
+                case purpose
+                case granted
+                case withdrawable
+                case record
+            }
+        }
+        /// One page of `listConsents`: one entry per purpose, in `ConsentPurpose` order, across
+        /// the pages.
+        ///
+        ///
+        /// - Remark: Generated from `#/components/schemas/ConsentPage`.
+        public struct ConsentPage: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/ConsentPage/items`.
+            public var items: [Components.Schemas.ResolvedConsent]
+            /// Cursor of the next page; null on the last page.
+            ///
+            /// - Remark: Generated from `#/components/schemas/ConsentPage/nextCursor`.
+            public var nextCursor: Swift.String?
+            /// Creates a new `ConsentPage`.
+            ///
+            /// - Parameters:
+            ///   - items:
+            ///   - nextCursor: Cursor of the next page; null on the last page.
+            public init(
+                items: [Components.Schemas.ResolvedConsent],
+                nextCursor: Swift.String? = nil
+            ) {
+                self.items = items
+                self.nextCursor = nextCursor
+            }
+            public enum CodingKeys: String, CodingKey {
+                case items
+                case nextCursor
+            }
+        }
+        /// One consent decision; `locale` is the language of the text the person saw.
+        ///
+        /// - Remark: Generated from `#/components/schemas/ConsentChange`.
+        public struct ConsentChange: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/ConsentChange/purpose`.
+            public var purpose: Components.Schemas.ConsentPurpose
+            /// - Remark: Generated from `#/components/schemas/ConsentChange/status`.
+            public var status: Components.Schemas.ConsentStatus
+            /// - Remark: Generated from `#/components/schemas/ConsentChange/policyVersion`.
+            public var policyVersion: Components.Schemas.PolicyVersion
+            /// - Remark: Generated from `#/components/schemas/ConsentChange/surface`.
+            public var surface: Components.Schemas.ConsentSurface
+            /// - Remark: Generated from `#/components/schemas/ConsentChange/locale`.
+            public var locale: Components.Schemas.Locale
+            /// Creates a new `ConsentChange`.
+            ///
+            /// - Parameters:
+            ///   - purpose:
+            ///   - status:
+            ///   - policyVersion:
+            ///   - surface:
+            ///   - locale:
+            public init(
+                purpose: Components.Schemas.ConsentPurpose,
+                status: Components.Schemas.ConsentStatus,
+                policyVersion: Components.Schemas.PolicyVersion,
+                surface: Components.Schemas.ConsentSurface,
+                locale: Components.Schemas.Locale
+            ) {
+                self.purpose = purpose
+                self.status = status
+                self.policyVersion = policyVersion
+                self.surface = surface
+                self.locale = locale
+            }
+            public enum CodingKeys: String, CodingKey {
+                case purpose
+                case status
+                case policyVersion
+                case surface
+                case locale
+            }
+            public init(from decoder: any Swift.Decoder) throws {
+                let container = try decoder.container(keyedBy: CodingKeys.self)
+                self.purpose = try container.decode(
+                    Components.Schemas.ConsentPurpose.self,
+                    forKey: .purpose
+                )
+                self.status = try container.decode(
+                    Components.Schemas.ConsentStatus.self,
+                    forKey: .status
+                )
+                self.policyVersion = try container.decode(
+                    Components.Schemas.PolicyVersion.self,
+                    forKey: .policyVersion
+                )
+                self.surface = try container.decode(
+                    Components.Schemas.ConsentSurface.self,
+                    forKey: .surface
+                )
+                self.locale = try container.decode(
+                    Components.Schemas.Locale.self,
+                    forKey: .locale
+                )
+                try decoder.ensureNoAdditionalProperties(knownKeys: [
+                    "purpose",
+                    "status",
+                    "policyVersion",
+                    "surface",
+                    "locale"
+                ])
+            }
+        }
+        /// Data-export id, a prefixed ULID (`xpt_`, shared-kernel `ID_PREFIXES.exportRequest`).
+        ///
+        /// - Remark: Generated from `#/components/schemas/DataExportId`.
+        public typealias DataExportId = Swift.String
+        /// `in_progress` until the archive is built; then `ready` until `availableUntil`, when the
+        /// archive is deleted and the export becomes `expired`. `failed` when it could not be
+        /// built: nothing is kept, and the person may request a new export.
+        ///
+        ///
+        /// - Remark: Generated from `#/components/schemas/DataExportStatus`.
+        @frozen public enum DataExportStatus: String, Codable, Hashable, Sendable, CaseIterable {
+            case inProgress = "in_progress"
+            case ready = "ready"
+            case failed = "failed"
+            case expired = "expired"
+        }
+        /// Present only while the export is `ready`. Minted for this response; never stored by the server.
+        ///
+        /// - Remark: Generated from `#/components/schemas/DataExportDownload`.
+        public struct DataExportDownload: Codable, Hashable, Sendable {
+            /// Presigned GET of the archive, minted after the same authorization check as the
+            /// export (doc 11 §13.1). It carries a live signature: never log, share or store it
+            /// (doc 11 §8). Read the export again for a fresh link.
+            ///
+            ///
+            /// - Remark: Generated from `#/components/schemas/DataExportDownload/url`.
+            public var url: Swift.String
+            /// When the link stops working, at most 10 minutes after it was minted (DEC-44, doc 11 §5.4).
+            ///
+            /// - Remark: Generated from `#/components/schemas/DataExportDownload/expiresAt`.
+            public var expiresAt: Foundation.Date
+            /// Creates a new `DataExportDownload`.
+            ///
+            /// - Parameters:
+            ///   - url: Presigned GET of the archive, minted after the same authorization check as the
+            ///   - expiresAt: When the link stops working, at most 10 minutes after it was minted (DEC-44, doc 11 §5.4).
+            public init(
+                url: Swift.String,
+                expiresAt: Foundation.Date
+            ) {
+                self.url = url
+                self.expiresAt = expiresAt
+            }
+            public enum CodingKeys: String, CodingKey {
+                case url
+                case expiresAt
+            }
+        }
+        /// One data export of the caller (doc 11 §13.1): a ZIP archive of the caller's data in
+        /// machine-readable JSON plus the media they uploaded. This object never carries archive
+        /// content.
+        ///
+        ///
+        /// - Remark: Generated from `#/components/schemas/DataExport`.
+        public struct DataExport: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/DataExport/id`.
+            public var id: Components.Schemas.DataExportId
+            /// - Remark: Generated from `#/components/schemas/DataExport/status`.
+            public var status: Components.Schemas.DataExportStatus
+            /// - Remark: Generated from `#/components/schemas/DataExport/requestedAt`.
+            public var requestedAt: Foundation.Date
+            /// When the archive was built; present for `ready` and `expired`.
+            ///
+            /// - Remark: Generated from `#/components/schemas/DataExport/readyAt`.
+            public var readyAt: Foundation.Date?
+            /// When the archive is deleted, 24 hours after `readyAt` (doc 11 §13.1); present for
+            /// `ready` and `expired`. This is how long the archive is kept, not how long a link
+            /// works: every read of a `ready` export mints a new link.
+            ///
+            ///
+            /// - Remark: Generated from `#/components/schemas/DataExport/availableUntil`.
+            public var availableUntil: Foundation.Date?
+            /// - Remark: Generated from `#/components/schemas/DataExport/download`.
+            public var download: Components.Schemas.DataExportDownload?
+            /// Creates a new `DataExport`.
+            ///
+            /// - Parameters:
+            ///   - id:
+            ///   - status:
+            ///   - requestedAt:
+            ///   - readyAt: When the archive was built; present for `ready` and `expired`.
+            ///   - availableUntil: When the archive is deleted, 24 hours after `readyAt` (doc 11 §13.1); present for
+            ///   - download:
+            public init(
+                id: Components.Schemas.DataExportId,
+                status: Components.Schemas.DataExportStatus,
+                requestedAt: Foundation.Date,
+                readyAt: Foundation.Date? = nil,
+                availableUntil: Foundation.Date? = nil,
+                download: Components.Schemas.DataExportDownload? = nil
+            ) {
+                self.id = id
+                self.status = status
+                self.requestedAt = requestedAt
+                self.readyAt = readyAt
+                self.availableUntil = availableUntil
+                self.download = download
+            }
+            public enum CodingKeys: String, CodingKey {
+                case id
+                case status
+                case requestedAt
+                case readyAt
+                case availableUntil
+                case download
+            }
+        }
+        /// A problem (RFC 9457) that carries the running export when an export is already in progress.
+        ///
+        /// - Remark: Generated from `#/components/schemas/DataExportInProgress`.
+        public struct DataExportInProgress: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/DataExportInProgress/value1`.
+            public var value1: Components.Schemas.ProblemDetails
+            /// - Remark: Generated from `#/components/schemas/DataExportInProgress/value2`.
+            public struct Value2Payload: Codable, Hashable, Sendable {
+                /// - Remark: Generated from `#/components/schemas/DataExportInProgress/value2/current`.
+                public var current: Components.Schemas.DataExport?
+                /// Creates a new `Value2Payload`.
+                ///
+                /// - Parameters:
+                ///   - current:
+                public init(current: Components.Schemas.DataExport? = nil) {
+                    self.current = current
+                }
+                public enum CodingKeys: String, CodingKey {
+                    case current
+                }
+            }
+            /// - Remark: Generated from `#/components/schemas/DataExportInProgress/value2`.
+            public var value2: Components.Schemas.DataExportInProgress.Value2Payload
+            /// Creates a new `DataExportInProgress`.
+            ///
+            /// - Parameters:
+            ///   - value1:
+            ///   - value2:
+            public init(
+                value1: Components.Schemas.ProblemDetails,
+                value2: Components.Schemas.DataExportInProgress.Value2Payload
+            ) {
+                self.value1 = value1
+                self.value2 = value2
+            }
+            public init(from decoder: any Swift.Decoder) throws {
+                self.value1 = try .init(from: decoder)
+                self.value2 = try .init(from: decoder)
+            }
+            public func encode(to encoder: any Swift.Encoder) throws {
+                try self.value1.encode(to: encoder)
+                try self.value2.encode(to: encoder)
+            }
+        }
+        /// Account-deletion request id, a prefixed ULID (`del_`, shared-kernel `ID_PREFIXES.deletionRequest`).
+        ///
+        /// - Remark: Generated from `#/components/schemas/AccountDeletionRequestId`.
+        public typealias AccountDeletionRequestId = Swift.String
+        /// An accepted account-deletion request (doc 11 §13.2).
+        ///
+        /// - Remark: Generated from `#/components/schemas/AccountDeletionRequest`.
+        public struct AccountDeletionRequest: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/AccountDeletionRequest/id`.
+            public var id: Components.Schemas.AccountDeletionRequestId
+            /// - Remark: Generated from `#/components/schemas/AccountDeletionRequest/requestedAt`.
+            public var requestedAt: Foundation.Date
+            /// End of the 7-day grace window (DEC-65). Until then a sign-in offers to cancel the
+            /// deletion; after it the purge runs, and a cancel is refused with 410 `ACCOUNT_DELETED`.
+            ///
+            ///
+            /// - Remark: Generated from `#/components/schemas/AccountDeletionRequest/graceEndsAt`.
+            public var graceEndsAt: Foundation.Date
+            /// Creates a new `AccountDeletionRequest`.
+            ///
+            /// - Parameters:
+            ///   - id:
+            ///   - requestedAt:
+            ///   - graceEndsAt: End of the 7-day grace window (DEC-65). Until then a sign-in offers to cancel the
+            public init(
+                id: Components.Schemas.AccountDeletionRequestId,
+                requestedAt: Foundation.Date,
+                graceEndsAt: Foundation.Date
+            ) {
+                self.id = id
+                self.requestedAt = requestedAt
+                self.graceEndsAt = graceEndsAt
+            }
+            public enum CodingKeys: String, CodingKey {
+                case id
+                case requestedAt
+                case graceEndsAt
+            }
+        }
+        /// Profile id, a prefixed ULID (`prf_`, shared-kernel `ID_PREFIXES.profile`).
+        ///
+        /// - Remark: Generated from `#/components/schemas/ProfileId`.
+        public typealias ProfileId = Swift.String
+        /// Version of the resource (doc 06 §2). It grows by one with every accepted write; 0 means
+        /// nothing has been written yet. Send it back as `If-Match: "<version>"`.
+        ///
+        ///
+        /// - Remark: Generated from `#/components/schemas/ResourceVersion`.
+        public typealias ResourceVersion = Swift.Int
+        /// Presentation the person chooses (doc 03 §1.2, doc 07 §3.1); never inferred, and it never
+        /// limits which starting shape or measurements are valid. Default `unspecified`. Mirrors
+        /// shared-kernel `PRESENTATIONS`.
+        ///
+        ///
+        /// - Remark: Generated from `#/components/schemas/Presentation`.
+        @frozen public enum Presentation: String, Codable, Hashable, Sendable, CaseIterable {
+            case feminine = "feminine"
+            case masculine = "masculine"
+            case androgynous = "androgynous"
+            case unspecified = "unspecified"
+        }
+        /// Id of the starting shape the avatar begins from (doc 07 §3.1), the base-model selection
+        /// of onboarding. One of the shapes of the shared-kernel registry
+        /// `registry/starting-shapes.json`; the server refuses any other id with 400
+        /// `VALIDATION_FAILED`. Default `from_measurements`. An id string, not an enum, so that a
+        /// shape can be added or retired (P04) without a breaking contract change. The base mesh
+        /// all shapes share is a kernel constant and is not stored per person.
+        ///
+        ///
+        /// - Remark: Generated from `#/components/schemas/StartingShapeId`.
+        public typealias StartingShapeId = Swift.String
+        /// How the apps show measurements; it never changes what the API stores or returns (SI).
+        /// Mirrors shared-kernel `UNIT_SYSTEMS`.
+        ///
+        ///
+        /// - Remark: Generated from `#/components/schemas/UnitSystem`.
+        @frozen public enum UnitSystem: String, Codable, Hashable, Sendable, CaseIterable {
+            case metric = "metric"
+            case imperial = "imperial"
+        }
+        /// IANA time zone name, e.g. `Europe/Berlin`.
+        ///
+        /// - Remark: Generated from `#/components/schemas/TimeZone`.
+        public typealias TimeZone = Swift.String
+        /// ISO 3166-1 alpha-2 region code, e.g. `DE`. A setting the person chooses, not a location.
+        ///
+        /// - Remark: Generated from `#/components/schemas/RegionCode`.
+        public typealias RegionCode = Swift.String
+        /// Accessibility settings the apps apply (phase P03 §4). Both are `false` by default.
+        ///
+        /// - Remark: Generated from `#/components/schemas/AccessibilitySettings`.
+        public struct AccessibilitySettings: Codable, Hashable, Sendable {
+            /// Show no motion that is not needed to understand the screen.
+            ///
+            /// - Remark: Generated from `#/components/schemas/AccessibilitySettings/reducedMotion`.
+            public var reducedMotion: Swift.Bool
+            /// Prefer flat images to 3D views wherever the app offers both.
+            ///
+            /// - Remark: Generated from `#/components/schemas/AccessibilitySettings/prefersNon3d`.
+            public var prefersNon3d: Swift.Bool
+            /// Creates a new `AccessibilitySettings`.
+            ///
+            /// - Parameters:
+            ///   - reducedMotion: Show no motion that is not needed to understand the screen.
+            ///   - prefersNon3d: Prefer flat images to 3D views wherever the app offers both.
+            public init(
+                reducedMotion: Swift.Bool,
+                prefersNon3d: Swift.Bool
+            ) {
+                self.reducedMotion = reducedMotion
+                self.prefersNon3d = prefersNon3d
+            }
+            public enum CodingKeys: String, CodingKey {
+                case reducedMotion
+                case prefersNon3d
+            }
+        }
+        /// The caller's profile settings. `presentation` and `startingShape` are independent: any
+        /// presentation goes with any starting shape (REQ-ONB-050). The six settings of REQ-ONB-100
+        /// are `locale` (formats dates and numbers, e.g. `en-GB`), `language` (the language of the
+        /// app's text, e.g. `en`), `unitSystem`, `timezone`, `region` and `accessibility`. The first
+        /// five are absent until the person confirms them in onboarding (step "units and locale";
+        /// the app pre-fills them from the device), and are edited, not removed, after that.
+        ///
+        ///
+        /// - Remark: Generated from `#/components/schemas/Profile`.
+        public struct Profile: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/Profile/id`.
+            public var id: Components.Schemas.ProfileId
+            /// - Remark: Generated from `#/components/schemas/Profile/version`.
+            public var version: Components.Schemas.ResourceVersion
+            /// - Remark: Generated from `#/components/schemas/Profile/presentation`.
+            public var presentation: Components.Schemas.Presentation
+            /// - Remark: Generated from `#/components/schemas/Profile/startingShape`.
+            public var startingShape: Components.Schemas.StartingShapeId
+            /// - Remark: Generated from `#/components/schemas/Profile/locale`.
+            public var locale: Components.Schemas.Locale?
+            /// - Remark: Generated from `#/components/schemas/Profile/language`.
+            public var language: Components.Schemas.Locale?
+            /// - Remark: Generated from `#/components/schemas/Profile/unitSystem`.
+            public var unitSystem: Components.Schemas.UnitSystem?
+            /// - Remark: Generated from `#/components/schemas/Profile/timezone`.
+            public var timezone: Components.Schemas.TimeZone?
+            /// - Remark: Generated from `#/components/schemas/Profile/region`.
+            public var region: Components.Schemas.RegionCode?
+            /// - Remark: Generated from `#/components/schemas/Profile/accessibility`.
+            public var accessibility: Components.Schemas.AccessibilitySettings
+            /// Creates a new `Profile`.
+            ///
+            /// - Parameters:
+            ///   - id:
+            ///   - version:
+            ///   - presentation:
+            ///   - startingShape:
+            ///   - locale:
+            ///   - language:
+            ///   - unitSystem:
+            ///   - timezone:
+            ///   - region:
+            ///   - accessibility:
+            public init(
+                id: Components.Schemas.ProfileId,
+                version: Components.Schemas.ResourceVersion,
+                presentation: Components.Schemas.Presentation,
+                startingShape: Components.Schemas.StartingShapeId,
+                locale: Components.Schemas.Locale? = nil,
+                language: Components.Schemas.Locale? = nil,
+                unitSystem: Components.Schemas.UnitSystem? = nil,
+                timezone: Components.Schemas.TimeZone? = nil,
+                region: Components.Schemas.RegionCode? = nil,
+                accessibility: Components.Schemas.AccessibilitySettings
+            ) {
+                self.id = id
+                self.version = version
+                self.presentation = presentation
+                self.startingShape = startingShape
+                self.locale = locale
+                self.language = language
+                self.unitSystem = unitSystem
+                self.timezone = timezone
+                self.region = region
+                self.accessibility = accessibility
+            }
+            public enum CodingKeys: String, CodingKey {
+                case id
+                case version
+                case presentation
+                case startingShape
+                case locale
+                case language
+                case unitSystem
+                case timezone
+                case region
+                case accessibility
+            }
+        }
+        /// Partial update of `Profile`: each member present replaces its stored value. `presentation`
+        /// returns to its default by sending `unspecified`, `startingShape` by sending
+        /// `from_measurements`.
+        ///
+        ///
+        /// - Remark: Generated from `#/components/schemas/ProfileUpdate`.
+        public struct ProfileUpdate: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/ProfileUpdate/presentation`.
+            public var presentation: Components.Schemas.Presentation?
+            /// - Remark: Generated from `#/components/schemas/ProfileUpdate/startingShape`.
+            public var startingShape: Components.Schemas.StartingShapeId?
+            /// - Remark: Generated from `#/components/schemas/ProfileUpdate/locale`.
+            public var locale: Components.Schemas.Locale?
+            /// - Remark: Generated from `#/components/schemas/ProfileUpdate/language`.
+            public var language: Components.Schemas.Locale?
+            /// - Remark: Generated from `#/components/schemas/ProfileUpdate/unitSystem`.
+            public var unitSystem: Components.Schemas.UnitSystem?
+            /// - Remark: Generated from `#/components/schemas/ProfileUpdate/timezone`.
+            public var timezone: Components.Schemas.TimeZone?
+            /// - Remark: Generated from `#/components/schemas/ProfileUpdate/region`.
+            public var region: Components.Schemas.RegionCode?
+            /// - Remark: Generated from `#/components/schemas/ProfileUpdate/accessibility`.
+            public var accessibility: Components.Schemas.AccessibilitySettings?
+            /// Creates a new `ProfileUpdate`.
+            ///
+            /// - Parameters:
+            ///   - presentation:
+            ///   - startingShape:
+            ///   - locale:
+            ///   - language:
+            ///   - unitSystem:
+            ///   - timezone:
+            ///   - region:
+            ///   - accessibility:
+            public init(
+                presentation: Components.Schemas.Presentation? = nil,
+                startingShape: Components.Schemas.StartingShapeId? = nil,
+                locale: Components.Schemas.Locale? = nil,
+                language: Components.Schemas.Locale? = nil,
+                unitSystem: Components.Schemas.UnitSystem? = nil,
+                timezone: Components.Schemas.TimeZone? = nil,
+                region: Components.Schemas.RegionCode? = nil,
+                accessibility: Components.Schemas.AccessibilitySettings? = nil
+            ) {
+                self.presentation = presentation
+                self.startingShape = startingShape
+                self.locale = locale
+                self.language = language
+                self.unitSystem = unitSystem
+                self.timezone = timezone
+                self.region = region
+                self.accessibility = accessibility
+            }
+            public enum CodingKeys: String, CodingKey {
+                case presentation
+                case startingShape
+                case locale
+                case language
+                case unitSystem
+                case timezone
+                case region
+                case accessibility
+            }
+            public init(from decoder: any Swift.Decoder) throws {
+                let container = try decoder.container(keyedBy: CodingKeys.self)
+                self.presentation = try container.decodeIfPresent(
+                    Components.Schemas.Presentation.self,
+                    forKey: .presentation
+                )
+                self.startingShape = try container.decodeIfPresent(
+                    Components.Schemas.StartingShapeId.self,
+                    forKey: .startingShape
+                )
+                self.locale = try container.decodeIfPresent(
+                    Components.Schemas.Locale.self,
+                    forKey: .locale
+                )
+                self.language = try container.decodeIfPresent(
+                    Components.Schemas.Locale.self,
+                    forKey: .language
+                )
+                self.unitSystem = try container.decodeIfPresent(
+                    Components.Schemas.UnitSystem.self,
+                    forKey: .unitSystem
+                )
+                self.timezone = try container.decodeIfPresent(
+                    Components.Schemas.TimeZone.self,
+                    forKey: .timezone
+                )
+                self.region = try container.decodeIfPresent(
+                    Components.Schemas.RegionCode.self,
+                    forKey: .region
+                )
+                self.accessibility = try container.decodeIfPresent(
+                    Components.Schemas.AccessibilitySettings.self,
+                    forKey: .accessibility
+                )
+                try decoder.ensureNoAdditionalProperties(knownKeys: [
+                    "presentation",
+                    "startingShape",
+                    "locale",
+                    "language",
+                    "unitSystem",
+                    "timezone",
+                    "region",
+                    "accessibility"
+                ])
+            }
+        }
+        /// A problem (RFC 9457) that carries the stored profile when `code` is `VERSION_MISMATCH`.
+        ///
+        /// - Remark: Generated from `#/components/schemas/ProfileVersionConflict`.
+        public struct ProfileVersionConflict: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/ProfileVersionConflict/value1`.
+            public var value1: Components.Schemas.ProblemDetails
+            /// - Remark: Generated from `#/components/schemas/ProfileVersionConflict/value2`.
+            public struct Value2Payload: Codable, Hashable, Sendable {
+                /// - Remark: Generated from `#/components/schemas/ProfileVersionConflict/value2/current`.
+                public var current: Components.Schemas.Profile?
+                /// Creates a new `Value2Payload`.
+                ///
+                /// - Parameters:
+                ///   - current:
+                public init(current: Components.Schemas.Profile? = nil) {
+                    self.current = current
+                }
+                public enum CodingKeys: String, CodingKey {
+                    case current
+                }
+            }
+            /// - Remark: Generated from `#/components/schemas/ProfileVersionConflict/value2`.
+            public var value2: Components.Schemas.ProfileVersionConflict.Value2Payload
+            /// Creates a new `ProfileVersionConflict`.
+            ///
+            /// - Parameters:
+            ///   - value1:
+            ///   - value2:
+            public init(
+                value1: Components.Schemas.ProblemDetails,
+                value2: Components.Schemas.ProfileVersionConflict.Value2Payload
+            ) {
+                self.value1 = value1
+                self.value2 = value2
+            }
+            public init(from decoder: any Swift.Decoder) throws {
+                self.value1 = try .init(from: decoder)
+                self.value2 = try .init(from: decoder)
+            }
+            public func encode(to encoder: any Swift.Encoder) throws {
+                try self.value1.encode(to: encoder)
+                try self.value2.encode(to: encoder)
+            }
+        }
+        /// Confidence in the value, from 0 to 1.
+        ///
+        /// - Remark: Generated from `#/components/schemas/MeasurementConfidence`.
+        public typealias MeasurementConfidence = Swift.Double
+        /// Stored length unit. Mirrors shared-kernel `LENGTH_UNITS`.
+        ///
+        /// - Remark: Generated from `#/components/schemas/LengthUnit`.
+        @frozen public enum LengthUnit: String, Codable, Hashable, Sendable, CaseIterable {
+            case cm = "cm"
+        }
+        /// Who produced the value (doc 06 §3.1): the person (`user`), an estimate, or a value
+        /// derived from other values. Mirrors shared-kernel `MEASUREMENT_SOURCES`.
+        ///
+        ///
+        /// - Remark: Generated from `#/components/schemas/MeasurementSource`.
+        @frozen public enum MeasurementSource: String, Codable, Hashable, Sendable, CaseIterable {
+            case user = "user"
+            case estimated = "estimated"
+            case derived = "derived"
+        }
+        /// A body length in centimetres with its provenance (doc 06 §3.1). The schema requires
+        /// `confidence` when `source` is `estimated` or `derived`; it is optional for `user`.
+        ///
+        ///
+        /// - Remark: Generated from `#/components/schemas/LengthMeasurement`.
+        public struct LengthMeasurement: Codable, Hashable, Sendable {
+            /// The length, in `unit`.
+            ///
+            /// - Remark: Generated from `#/components/schemas/LengthMeasurement/value`.
+            public var value: Swift.Double
+            /// - Remark: Generated from `#/components/schemas/LengthMeasurement/unit`.
+            public var unit: Components.Schemas.LengthUnit
+            /// - Remark: Generated from `#/components/schemas/LengthMeasurement/source`.
+            public var source: Components.Schemas.MeasurementSource
+            /// - Remark: Generated from `#/components/schemas/LengthMeasurement/confidence`.
+            public var confidence: Components.Schemas.MeasurementConfidence?
+            /// When the value was taken or entered.
+            ///
+            /// - Remark: Generated from `#/components/schemas/LengthMeasurement/measuredAt`.
+            public var measuredAt: Foundation.Date?
+            /// Creates a new `LengthMeasurement`.
+            ///
+            /// - Parameters:
+            ///   - value: The length, in `unit`.
+            ///   - unit:
+            ///   - source:
+            ///   - confidence:
+            ///   - measuredAt: When the value was taken or entered.
+            public init(
+                value: Swift.Double,
+                unit: Components.Schemas.LengthUnit,
+                source: Components.Schemas.MeasurementSource,
+                confidence: Components.Schemas.MeasurementConfidence? = nil,
+                measuredAt: Foundation.Date? = nil
+            ) {
+                self.value = value
+                self.unit = unit
+                self.source = source
+                self.confidence = confidence
+                self.measuredAt = measuredAt
+            }
+            public enum CodingKeys: String, CodingKey {
+                case value
+                case unit
+                case source
+                case confidence
+                case measuredAt
+            }
+        }
+        /// Stored mass unit. Mirrors shared-kernel `MASS_UNITS`.
+        ///
+        /// - Remark: Generated from `#/components/schemas/MassUnit`.
+        @frozen public enum MassUnit: String, Codable, Hashable, Sendable, CaseIterable {
+            case kg = "kg"
+        }
+        /// A body mass in kilograms with its provenance (doc 06 §3.1). The schema requires
+        /// `confidence` when `source` is `estimated` or `derived`; it is optional for `user`.
+        ///
+        ///
+        /// - Remark: Generated from `#/components/schemas/MassMeasurement`.
+        public struct MassMeasurement: Codable, Hashable, Sendable {
+            /// The mass, in `unit`.
+            ///
+            /// - Remark: Generated from `#/components/schemas/MassMeasurement/value`.
+            public var value: Swift.Double
+            /// - Remark: Generated from `#/components/schemas/MassMeasurement/unit`.
+            public var unit: Components.Schemas.MassUnit
+            /// - Remark: Generated from `#/components/schemas/MassMeasurement/source`.
+            public var source: Components.Schemas.MeasurementSource
+            /// - Remark: Generated from `#/components/schemas/MassMeasurement/confidence`.
+            public var confidence: Components.Schemas.MeasurementConfidence?
+            /// When the value was taken or entered.
+            ///
+            /// - Remark: Generated from `#/components/schemas/MassMeasurement/measuredAt`.
+            public var measuredAt: Foundation.Date?
+            /// Creates a new `MassMeasurement`.
+            ///
+            /// - Parameters:
+            ///   - value: The mass, in `unit`.
+            ///   - unit:
+            ///   - source:
+            ///   - confidence:
+            ///   - measuredAt: When the value was taken or entered.
+            public init(
+                value: Swift.Double,
+                unit: Components.Schemas.MassUnit,
+                source: Components.Schemas.MeasurementSource,
+                confidence: Components.Schemas.MeasurementConfidence? = nil,
+                measuredAt: Foundation.Date? = nil
+            ) {
+                self.value = value
+                self.unit = unit
+                self.source = source
+                self.confidence = confidence
+                self.measuredAt = measuredAt
+            }
+            public enum CodingKeys: String, CodingKey {
+                case value
+                case unit
+                case source
+                case confidence
+                case measuredAt
+            }
+        }
+        /// The ten body measurements of doc 07 §3.3, each optional: an absent one has not been
+        /// given. Their ids, units and hard bounds are shared-kernel registry data
+        /// (`registry/measurement-definitions.json`); a value outside its bounds is refused with
+        /// 400 `MEASUREMENT_IMPLAUSIBLE` and never stored.
+        ///
+        ///
+        /// - Remark: Generated from `#/components/schemas/BodyMeasurements`.
+        public struct BodyMeasurements: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/BodyMeasurements/height`.
+            public var height: Components.Schemas.LengthMeasurement?
+            /// - Remark: Generated from `#/components/schemas/BodyMeasurements/weight`.
+            public var weight: Components.Schemas.MassMeasurement?
+            /// - Remark: Generated from `#/components/schemas/BodyMeasurements/chest`.
+            public var chest: Components.Schemas.LengthMeasurement?
+            /// - Remark: Generated from `#/components/schemas/BodyMeasurements/waist`.
+            public var waist: Components.Schemas.LengthMeasurement?
+            /// - Remark: Generated from `#/components/schemas/BodyMeasurements/hips`.
+            public var hips: Components.Schemas.LengthMeasurement?
+            /// - Remark: Generated from `#/components/schemas/BodyMeasurements/inseam`.
+            public var inseam: Components.Schemas.LengthMeasurement?
+            /// - Remark: Generated from `#/components/schemas/BodyMeasurements/shoulder`.
+            public var shoulder: Components.Schemas.LengthMeasurement?
+            /// - Remark: Generated from `#/components/schemas/BodyMeasurements/sleeve`.
+            public var sleeve: Components.Schemas.LengthMeasurement?
+            /// - Remark: Generated from `#/components/schemas/BodyMeasurements/thigh`.
+            public var thigh: Components.Schemas.LengthMeasurement?
+            /// - Remark: Generated from `#/components/schemas/BodyMeasurements/neck`.
+            public var neck: Components.Schemas.LengthMeasurement?
+            /// Creates a new `BodyMeasurements`.
+            ///
+            /// - Parameters:
+            ///   - height:
+            ///   - weight:
+            ///   - chest:
+            ///   - waist:
+            ///   - hips:
+            ///   - inseam:
+            ///   - shoulder:
+            ///   - sleeve:
+            ///   - thigh:
+            ///   - neck:
+            public init(
+                height: Components.Schemas.LengthMeasurement? = nil,
+                weight: Components.Schemas.MassMeasurement? = nil,
+                chest: Components.Schemas.LengthMeasurement? = nil,
+                waist: Components.Schemas.LengthMeasurement? = nil,
+                hips: Components.Schemas.LengthMeasurement? = nil,
+                inseam: Components.Schemas.LengthMeasurement? = nil,
+                shoulder: Components.Schemas.LengthMeasurement? = nil,
+                sleeve: Components.Schemas.LengthMeasurement? = nil,
+                thigh: Components.Schemas.LengthMeasurement? = nil,
+                neck: Components.Schemas.LengthMeasurement? = nil
+            ) {
+                self.height = height
+                self.weight = weight
+                self.chest = chest
+                self.waist = waist
+                self.hips = hips
+                self.inseam = inseam
+                self.shoulder = shoulder
+                self.sleeve = sleeve
+                self.thigh = thigh
+                self.neck = neck
+            }
+            public enum CodingKeys: String, CodingKey {
+                case height
+                case weight
+                case chest
+                case waist
+                case hips
+                case inseam
+                case shoulder
+                case sleeve
+                case thigh
+                case neck
+            }
+        }
+        /// The caller's current measurement set (doc 03 §1.2). Each value is SI with its unit and
+        /// source; `unitSystem` changes only how an app shows it.
+        ///
+        ///
+        /// - Remark: Generated from `#/components/schemas/MeasurementSet`.
+        public struct MeasurementSet: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/MeasurementSet/version`.
+            public var version: Components.Schemas.ResourceVersion
+            /// - Remark: Generated from `#/components/schemas/MeasurementSet/measurements`.
+            public var measurements: Components.Schemas.BodyMeasurements
+            /// Creates a new `MeasurementSet`.
+            ///
+            /// - Parameters:
+            ///   - version:
+            ///   - measurements:
+            public init(
+                version: Components.Schemas.ResourceVersion,
+                measurements: Components.Schemas.BodyMeasurements
+            ) {
+                self.version = version
+                self.measurements = measurements
+            }
+            public enum CodingKeys: String, CodingKey {
+                case version
+                case measurements
+            }
+        }
+        /// The whole new measurement set; a measurement left out is removed.
+        ///
+        /// - Remark: Generated from `#/components/schemas/MeasurementsReplacement`.
+        public struct MeasurementsReplacement: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/MeasurementsReplacement/measurements`.
+            public var measurements: Components.Schemas.BodyMeasurements
+            /// Creates a new `MeasurementsReplacement`.
+            ///
+            /// - Parameters:
+            ///   - measurements:
+            public init(measurements: Components.Schemas.BodyMeasurements) {
+                self.measurements = measurements
+            }
+            public enum CodingKeys: String, CodingKey {
+                case measurements
+            }
+            public init(from decoder: any Swift.Decoder) throws {
+                let container = try decoder.container(keyedBy: CodingKeys.self)
+                self.measurements = try container.decode(
+                    Components.Schemas.BodyMeasurements.self,
+                    forKey: .measurements
+                )
+                try decoder.ensureNoAdditionalProperties(knownKeys: [
+                    "measurements"
+                ])
+            }
+        }
+        /// A problem (RFC 9457) that carries the stored measurement set when `code` is `VERSION_MISMATCH`.
+        ///
+        /// - Remark: Generated from `#/components/schemas/MeasurementSetVersionConflict`.
+        public struct MeasurementSetVersionConflict: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/MeasurementSetVersionConflict/value1`.
+            public var value1: Components.Schemas.ProblemDetails
+            /// - Remark: Generated from `#/components/schemas/MeasurementSetVersionConflict/value2`.
+            public struct Value2Payload: Codable, Hashable, Sendable {
+                /// - Remark: Generated from `#/components/schemas/MeasurementSetVersionConflict/value2/current`.
+                public var current: Components.Schemas.MeasurementSet?
+                /// Creates a new `Value2Payload`.
+                ///
+                /// - Parameters:
+                ///   - current:
+                public init(current: Components.Schemas.MeasurementSet? = nil) {
+                    self.current = current
+                }
+                public enum CodingKeys: String, CodingKey {
+                    case current
+                }
+            }
+            /// - Remark: Generated from `#/components/schemas/MeasurementSetVersionConflict/value2`.
+            public var value2: Components.Schemas.MeasurementSetVersionConflict.Value2Payload
+            /// Creates a new `MeasurementSetVersionConflict`.
+            ///
+            /// - Parameters:
+            ///   - value1:
+            ///   - value2:
+            public init(
+                value1: Components.Schemas.ProblemDetails,
+                value2: Components.Schemas.MeasurementSetVersionConflict.Value2Payload
+            ) {
+                self.value1 = value1
+                self.value2 = value2
+            }
+            public init(from decoder: any Swift.Decoder) throws {
+                self.value1 = try .init(from: decoder)
+                self.value2 = try .init(from: decoder)
+            }
+            public func encode(to encoder: any Swift.Encoder) throws {
+                try self.value1.encode(to: encoder)
+                try self.value2.encode(to: encoder)
+            }
+        }
+        /// Mirrors shared-kernel `FIT_CHOICES`.
+        ///
+        /// - Remark: Generated from `#/components/schemas/FitChoice`.
+        @frozen public enum FitChoice: String, Codable, Hashable, Sendable, CaseIterable {
+            case fitted = "fitted"
+            case regular = "regular"
+            case relaxed = "relaxed"
+            case oversized = "oversized"
+        }
+        /// Preferred fit per garment group (doc 08 §4.2 `attr.cut`); a group with no choice is
+        /// absent. The keys are the shared-kernel `GARMENT_GROUPS` except `shoes`.
+        ///
+        ///
+        /// - Remark: Generated from `#/components/schemas/FitPreferences`.
+        public struct FitPreferences: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/FitPreferences/tops`.
+            public var tops: Components.Schemas.FitChoice?
+            /// - Remark: Generated from `#/components/schemas/FitPreferences/bottoms`.
+            public var bottoms: Components.Schemas.FitChoice?
+            /// - Remark: Generated from `#/components/schemas/FitPreferences/dresses`.
+            public var dresses: Components.Schemas.FitChoice?
+            /// - Remark: Generated from `#/components/schemas/FitPreferences/outerwear`.
+            public var outerwear: Components.Schemas.FitChoice?
+            /// Creates a new `FitPreferences`.
+            ///
+            /// - Parameters:
+            ///   - tops:
+            ///   - bottoms:
+            ///   - dresses:
+            ///   - outerwear:
+            public init(
+                tops: Components.Schemas.FitChoice? = nil,
+                bottoms: Components.Schemas.FitChoice? = nil,
+                dresses: Components.Schemas.FitChoice? = nil,
+                outerwear: Components.Schemas.FitChoice? = nil
+            ) {
+                self.tops = tops
+                self.bottoms = bottoms
+                self.dresses = dresses
+                self.outerwear = outerwear
+            }
+            public enum CodingKeys: String, CodingKey {
+                case tops
+                case bottoms
+                case dresses
+                case outerwear
+            }
+        }
+        /// Mirrors shared-kernel `STYLE_TYPES`.
+        ///
+        /// - Remark: Generated from `#/components/schemas/StyleType`.
+        @frozen public enum StyleType: String, Codable, Hashable, Sendable, CaseIterable {
+            case minimal = "minimal"
+            case classic = "classic"
+            case smartCasual = "smart_casual"
+        }
+        /// The style types the person selected (style identity, doc 03 §1.2).
+        ///
+        /// - Remark: Generated from `#/components/schemas/StyleTypeList`.
+        public typealias StyleTypeList = [Components.Schemas.StyleType]
+        /// Mirrors shared-kernel `PREFERENCE_KINDS`.
+        ///
+        /// - Remark: Generated from `#/components/schemas/PreferenceKind`.
+        @frozen public enum PreferenceKind: String, Codable, Hashable, Sendable, CaseIterable {
+            case material = "material"
+        }
+        /// Material values of doc 08 §4.1 `attr.material`. Mirrors shared-kernel `MATERIALS`.
+        ///
+        /// - Remark: Generated from `#/components/schemas/Material`.
+        @frozen public enum Material: String, Codable, Hashable, Sendable, CaseIterable {
+            case cotton = "cotton"
+            case linen = "linen"
+            case wool = "wool"
+            case cashmere = "cashmere"
+            case silk = "silk"
+            case denim = "denim"
+            case leather = "leather"
+            case suede = "suede"
+            case synthetic = "synthetic"
+            case blend = "blend"
+            case knit = "knit"
+            case down = "down"
+            case canvas = "canvas"
+            case metal = "metal"
+            case other = "other"
+        }
+        /// One soft dislike or hard exclusion. `kind` names the list `value` comes from; the only
+        /// kind is `material`.
+        ///
+        ///
+        /// - Remark: Generated from `#/components/schemas/PreferenceItem`.
+        public struct PreferenceItem: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/PreferenceItem/kind`.
+            public var kind: Components.Schemas.PreferenceKind
+            /// - Remark: Generated from `#/components/schemas/PreferenceItem/value`.
+            public var value: Components.Schemas.Material
+            /// Creates a new `PreferenceItem`.
+            ///
+            /// - Parameters:
+            ///   - kind:
+            ///   - value:
+            public init(
+                kind: Components.Schemas.PreferenceKind,
+                value: Components.Schemas.Material
+            ) {
+                self.kind = kind
+                self.value = value
+            }
+            public enum CodingKeys: String, CodingKey {
+                case kind
+                case value
+            }
+        }
+        /// - Remark: Generated from `#/components/schemas/PreferenceItemList`.
+        public typealias PreferenceItemList = [Components.Schemas.PreferenceItem]
+        /// How warm or cold the person usually feels (REQ-ONB-070). Mirrors shared-kernel `CLIMATE_TOLERANCES`.
+        ///
+        /// - Remark: Generated from `#/components/schemas/ClimateTolerance`.
+        @frozen public enum ClimateTolerance: String, Codable, Hashable, Sendable, CaseIterable {
+            case runsCold = "runs_cold"
+            case neutral = "neutral"
+            case runsHot = "runs_hot"
+        }
+        /// Occasion presets (doc 03 §1.7). As `typicalDay`, the occasion suggestions use whenever
+        /// the person selects none (DEC-71). Mirrors shared-kernel `OCCASION_PRESETS`.
+        ///
+        ///
+        /// - Remark: Generated from `#/components/schemas/OccasionPreset`.
+        @frozen public enum OccasionPreset: String, Codable, Hashable, Sendable, CaseIterable {
+            case workDay = "work_day"
+            case dinner = "dinner"
+            case travel = "travel"
+            case sport = "sport"
+        }
+        /// The occasions the person selected in onboarding.
+        ///
+        /// - Remark: Generated from `#/components/schemas/OccasionPresetList`.
+        public typealias OccasionPresetList = [Components.Schemas.OccasionPreset]
+        /// Label size systems (doc 08 §5). Mirrors shared-kernel `SIZE_SYSTEMS`.
+        ///
+        /// - Remark: Generated from `#/components/schemas/SizeSystem`.
+        @frozen public enum SizeSystem: String, Codable, Hashable, Sendable, CaseIterable {
+            case eu = "EU"
+            case us = "US"
+            case uk = "UK"
+            case alpha = "ALPHA"
+        }
+        /// Top-level garment groups (doc 08 §3 `cat.*`). Mirrors shared-kernel `GARMENT_GROUPS`.
+        ///
+        /// - Remark: Generated from `#/components/schemas/GarmentGroup`.
+        @frozen public enum GarmentGroup: String, Codable, Hashable, Sendable, CaseIterable {
+            case tops = "tops"
+            case bottoms = "bottoms"
+            case dresses = "dresses"
+            case outerwear = "outerwear"
+            case shoes = "shoes"
+        }
+        /// A usual label size in one size system for one garment group (doc 08 §5).
+        ///
+        /// - Remark: Generated from `#/components/schemas/UsualSize`.
+        public struct UsualSize: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/UsualSize/system`.
+            public var system: Components.Schemas.SizeSystem
+            /// - Remark: Generated from `#/components/schemas/UsualSize/group`.
+            public var group: Components.Schemas.GarmentGroup
+            /// The label size as written, e.g. `39`, `M` or `10.5`.
+            ///
+            /// - Remark: Generated from `#/components/schemas/UsualSize/size`.
+            public var size: Swift.String
+            /// Creates a new `UsualSize`.
+            ///
+            /// - Parameters:
+            ///   - system:
+            ///   - group:
+            ///   - size: The label size as written, e.g. `39`, `M` or `10.5`.
+            public init(
+                system: Components.Schemas.SizeSystem,
+                group: Components.Schemas.GarmentGroup,
+                size: Swift.String
+            ) {
+                self.system = system
+                self.group = group
+                self.size = size
+            }
+            public enum CodingKeys: String, CodingKey {
+                case system
+                case group
+                case size
+            }
+        }
+        /// The person's usual label sizes, at most one per size system and garment group (one entry
+        /// for each pair of `SizeSystem` and `GarmentGroup`). No size per brand.
+        ///
+        ///
+        /// - Remark: Generated from `#/components/schemas/UsualSizeList`.
+        public typealias UsualSizeList = [Components.Schemas.UsualSize]
+        /// The caller's style preferences. Hard exclusions are never broken by a suggestion; soft
+        /// dislikes only lower a score (REQ-ONB-060, doc 03 §1.2). An unset `climateTolerance`
+        /// counts as `neutral`.
+        ///
+        ///
+        /// - Remark: Generated from `#/components/schemas/Preferences`.
+        public struct Preferences: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/Preferences/version`.
+            public var version: Components.Schemas.ResourceVersion
+            /// - Remark: Generated from `#/components/schemas/Preferences/fitPreferences`.
+            public var fitPreferences: Components.Schemas.FitPreferences
+            /// - Remark: Generated from `#/components/schemas/Preferences/styleTypes`.
+            public var styleTypes: Components.Schemas.StyleTypeList
+            /// - Remark: Generated from `#/components/schemas/Preferences/softDislikes`.
+            public var softDislikes: Components.Schemas.PreferenceItemList
+            /// - Remark: Generated from `#/components/schemas/Preferences/hardExclusions`.
+            public var hardExclusions: Components.Schemas.PreferenceItemList
+            /// - Remark: Generated from `#/components/schemas/Preferences/climateTolerance`.
+            public var climateTolerance: Components.Schemas.ClimateTolerance?
+            /// - Remark: Generated from `#/components/schemas/Preferences/occasionPresets`.
+            public var occasionPresets: Components.Schemas.OccasionPresetList
+            /// - Remark: Generated from `#/components/schemas/Preferences/typicalDay`.
+            public var typicalDay: Components.Schemas.OccasionPreset?
+            /// - Remark: Generated from `#/components/schemas/Preferences/sizingByRegion`.
+            public var sizingByRegion: Components.Schemas.UsualSizeList
+            /// Creates a new `Preferences`.
+            ///
+            /// - Parameters:
+            ///   - version:
+            ///   - fitPreferences:
+            ///   - styleTypes:
+            ///   - softDislikes:
+            ///   - hardExclusions:
+            ///   - climateTolerance:
+            ///   - occasionPresets:
+            ///   - typicalDay:
+            ///   - sizingByRegion:
+            public init(
+                version: Components.Schemas.ResourceVersion,
+                fitPreferences: Components.Schemas.FitPreferences,
+                styleTypes: Components.Schemas.StyleTypeList,
+                softDislikes: Components.Schemas.PreferenceItemList,
+                hardExclusions: Components.Schemas.PreferenceItemList,
+                climateTolerance: Components.Schemas.ClimateTolerance? = nil,
+                occasionPresets: Components.Schemas.OccasionPresetList,
+                typicalDay: Components.Schemas.OccasionPreset? = nil,
+                sizingByRegion: Components.Schemas.UsualSizeList
+            ) {
+                self.version = version
+                self.fitPreferences = fitPreferences
+                self.styleTypes = styleTypes
+                self.softDislikes = softDislikes
+                self.hardExclusions = hardExclusions
+                self.climateTolerance = climateTolerance
+                self.occasionPresets = occasionPresets
+                self.typicalDay = typicalDay
+                self.sizingByRegion = sizingByRegion
+            }
+            public enum CodingKeys: String, CodingKey {
+                case version
+                case fitPreferences
+                case styleTypes
+                case softDislikes
+                case hardExclusions
+                case climateTolerance
+                case occasionPresets
+                case typicalDay
+                case sizingByRegion
+            }
+        }
+        /// A `Preferences` member that holds one optional value and can be removed.
+        ///
+        /// - Remark: Generated from `#/components/schemas/ClearablePreference`.
+        @frozen public enum ClearablePreference: String, Codable, Hashable, Sendable, CaseIterable {
+            case climateTolerance = "climateTolerance"
+            case typicalDay = "typicalDay"
+        }
+        /// Partial update of `Preferences`: each member present replaces its stored value whole. A
+        /// member may not be both set and named in `clear`.
+        ///
+        ///
+        /// - Remark: Generated from `#/components/schemas/PreferencesUpdate`.
+        public struct PreferencesUpdate: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/PreferencesUpdate/fitPreferences`.
+            public var fitPreferences: Components.Schemas.FitPreferences?
+            /// - Remark: Generated from `#/components/schemas/PreferencesUpdate/styleTypes`.
+            public var styleTypes: Components.Schemas.StyleTypeList?
+            /// - Remark: Generated from `#/components/schemas/PreferencesUpdate/softDislikes`.
+            public var softDislikes: Components.Schemas.PreferenceItemList?
+            /// - Remark: Generated from `#/components/schemas/PreferencesUpdate/hardExclusions`.
+            public var hardExclusions: Components.Schemas.PreferenceItemList?
+            /// - Remark: Generated from `#/components/schemas/PreferencesUpdate/climateTolerance`.
+            public var climateTolerance: Components.Schemas.ClimateTolerance?
+            /// - Remark: Generated from `#/components/schemas/PreferencesUpdate/occasionPresets`.
+            public var occasionPresets: Components.Schemas.OccasionPresetList?
+            /// - Remark: Generated from `#/components/schemas/PreferencesUpdate/typicalDay`.
+            public var typicalDay: Components.Schemas.OccasionPreset?
+            /// - Remark: Generated from `#/components/schemas/PreferencesUpdate/sizingByRegion`.
+            public var sizingByRegion: Components.Schemas.UsualSizeList?
+            /// Optional single values to remove.
+            ///
+            /// - Remark: Generated from `#/components/schemas/PreferencesUpdate/clear`.
+            public var clear: [Components.Schemas.ClearablePreference]?
+            /// Creates a new `PreferencesUpdate`.
+            ///
+            /// - Parameters:
+            ///   - fitPreferences:
+            ///   - styleTypes:
+            ///   - softDislikes:
+            ///   - hardExclusions:
+            ///   - climateTolerance:
+            ///   - occasionPresets:
+            ///   - typicalDay:
+            ///   - sizingByRegion:
+            ///   - clear: Optional single values to remove.
+            public init(
+                fitPreferences: Components.Schemas.FitPreferences? = nil,
+                styleTypes: Components.Schemas.StyleTypeList? = nil,
+                softDislikes: Components.Schemas.PreferenceItemList? = nil,
+                hardExclusions: Components.Schemas.PreferenceItemList? = nil,
+                climateTolerance: Components.Schemas.ClimateTolerance? = nil,
+                occasionPresets: Components.Schemas.OccasionPresetList? = nil,
+                typicalDay: Components.Schemas.OccasionPreset? = nil,
+                sizingByRegion: Components.Schemas.UsualSizeList? = nil,
+                clear: [Components.Schemas.ClearablePreference]? = nil
+            ) {
+                self.fitPreferences = fitPreferences
+                self.styleTypes = styleTypes
+                self.softDislikes = softDislikes
+                self.hardExclusions = hardExclusions
+                self.climateTolerance = climateTolerance
+                self.occasionPresets = occasionPresets
+                self.typicalDay = typicalDay
+                self.sizingByRegion = sizingByRegion
+                self.clear = clear
+            }
+            public enum CodingKeys: String, CodingKey {
+                case fitPreferences
+                case styleTypes
+                case softDislikes
+                case hardExclusions
+                case climateTolerance
+                case occasionPresets
+                case typicalDay
+                case sizingByRegion
+                case clear
+            }
+            public init(from decoder: any Swift.Decoder) throws {
+                let container = try decoder.container(keyedBy: CodingKeys.self)
+                self.fitPreferences = try container.decodeIfPresent(
+                    Components.Schemas.FitPreferences.self,
+                    forKey: .fitPreferences
+                )
+                self.styleTypes = try container.decodeIfPresent(
+                    Components.Schemas.StyleTypeList.self,
+                    forKey: .styleTypes
+                )
+                self.softDislikes = try container.decodeIfPresent(
+                    Components.Schemas.PreferenceItemList.self,
+                    forKey: .softDislikes
+                )
+                self.hardExclusions = try container.decodeIfPresent(
+                    Components.Schemas.PreferenceItemList.self,
+                    forKey: .hardExclusions
+                )
+                self.climateTolerance = try container.decodeIfPresent(
+                    Components.Schemas.ClimateTolerance.self,
+                    forKey: .climateTolerance
+                )
+                self.occasionPresets = try container.decodeIfPresent(
+                    Components.Schemas.OccasionPresetList.self,
+                    forKey: .occasionPresets
+                )
+                self.typicalDay = try container.decodeIfPresent(
+                    Components.Schemas.OccasionPreset.self,
+                    forKey: .typicalDay
+                )
+                self.sizingByRegion = try container.decodeIfPresent(
+                    Components.Schemas.UsualSizeList.self,
+                    forKey: .sizingByRegion
+                )
+                self.clear = try container.decodeIfPresent(
+                    [Components.Schemas.ClearablePreference].self,
+                    forKey: .clear
+                )
+                try decoder.ensureNoAdditionalProperties(knownKeys: [
+                    "fitPreferences",
+                    "styleTypes",
+                    "softDislikes",
+                    "hardExclusions",
+                    "climateTolerance",
+                    "occasionPresets",
+                    "typicalDay",
+                    "sizingByRegion",
+                    "clear"
+                ])
+            }
+        }
+        /// A problem (RFC 9457) that carries the stored preferences when `code` is `VERSION_MISMATCH`.
+        ///
+        /// - Remark: Generated from `#/components/schemas/PreferencesVersionConflict`.
+        public struct PreferencesVersionConflict: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/PreferencesVersionConflict/value1`.
+            public var value1: Components.Schemas.ProblemDetails
+            /// - Remark: Generated from `#/components/schemas/PreferencesVersionConflict/value2`.
+            public struct Value2Payload: Codable, Hashable, Sendable {
+                /// - Remark: Generated from `#/components/schemas/PreferencesVersionConflict/value2/current`.
+                public var current: Components.Schemas.Preferences?
+                /// Creates a new `Value2Payload`.
+                ///
+                /// - Parameters:
+                ///   - current:
+                public init(current: Components.Schemas.Preferences? = nil) {
+                    self.current = current
+                }
+                public enum CodingKeys: String, CodingKey {
+                    case current
+                }
+            }
+            /// - Remark: Generated from `#/components/schemas/PreferencesVersionConflict/value2`.
+            public var value2: Components.Schemas.PreferencesVersionConflict.Value2Payload
+            /// Creates a new `PreferencesVersionConflict`.
+            ///
+            /// - Parameters:
+            ///   - value1:
+            ///   - value2:
+            public init(
+                value1: Components.Schemas.ProblemDetails,
+                value2: Components.Schemas.PreferencesVersionConflict.Value2Payload
+            ) {
+                self.value1 = value1
+                self.value2 = value2
+            }
+            public init(from decoder: any Swift.Decoder) throws {
+                self.value1 = try .init(from: decoder)
+                self.value2 = try .init(from: decoder)
+            }
+            public func encode(to encoder: any Swift.Encoder) throws {
+                try self.value1.encode(to: encoder)
+                try self.value2.encode(to: encoder)
+            }
+        }
+        /// `pending` until the person completes or skips the step; it never returns to `pending`.
+        ///
+        /// - Remark: Generated from `#/components/schemas/OnboardingStepStatus`.
+        @frozen public enum OnboardingStepStatus: String, Codable, Hashable, Sendable, CaseIterable {
+            case pending = "pending"
+            case completed = "completed"
+            case skipped = "skipped"
+        }
+        /// - Remark: Generated from `#/components/schemas/OnboardingStepState`.
+        public struct OnboardingStepState: Codable, Hashable, Sendable {
+            /// True when onboarding cannot finish without this step; only optional steps offer Skip.
+            ///
+            /// - Remark: Generated from `#/components/schemas/OnboardingStepState/required`.
+            public var required: Swift.Bool
+            /// - Remark: Generated from `#/components/schemas/OnboardingStepState/status`.
+            public var status: Components.Schemas.OnboardingStepStatus
+            /// Creates a new `OnboardingStepState`.
+            ///
+            /// - Parameters:
+            ///   - required: True when onboarding cannot finish without this step; only optional steps offer Skip.
+            ///   - status:
+            public init(
+                required: Swift.Bool,
+                status: Components.Schemas.OnboardingStepStatus
+            ) {
+                self.required = required
+                self.status = status
+            }
+            public enum CodingKeys: String, CodingKey {
+                case required
+                case status
+            }
+        }
+        /// One entry per onboarding step, keyed by step; the keys are the `OnboardingStep` values in
+        /// camelCase. `signIn` is completed by the server when the account is created.
+        ///
+        ///
+        /// - Remark: Generated from `#/components/schemas/OnboardingSteps`.
+        public struct OnboardingSteps: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/OnboardingSteps/welcome`.
+            public var welcome: Components.Schemas.OnboardingStepState
+            /// - Remark: Generated from `#/components/schemas/OnboardingSteps/signIn`.
+            public var signIn: Components.Schemas.OnboardingStepState
+            /// - Remark: Generated from `#/components/schemas/OnboardingSteps/coreConsents`.
+            public var coreConsents: Components.Schemas.OnboardingStepState
+            /// - Remark: Generated from `#/components/schemas/OnboardingSteps/unitsLocale`.
+            public var unitsLocale: Components.Schemas.OnboardingStepState
+            /// - Remark: Generated from `#/components/schemas/OnboardingSteps/presentationBaseModel`.
+            public var presentationBaseModel: Components.Schemas.OnboardingStepState
+            /// - Remark: Generated from `#/components/schemas/OnboardingSteps/heightWeight`.
+            public var heightWeight: Components.Schemas.OnboardingStepState
+            /// - Remark: Generated from `#/components/schemas/OnboardingSteps/additionalMeasurements`.
+            public var additionalMeasurements: Components.Schemas.OnboardingStepState
+            /// - Remark: Generated from `#/components/schemas/OnboardingSteps/fitStylePreferences`.
+            public var fitStylePreferences: Components.Schemas.OnboardingStepState
+            /// - Remark: Generated from `#/components/schemas/OnboardingSteps/lifestyleOccasions`.
+            public var lifestyleOccasions: Components.Schemas.OnboardingStepState
+            /// - Remark: Generated from `#/components/schemas/OnboardingSteps/firstCaptureNudge`.
+            public var firstCaptureNudge: Components.Schemas.OnboardingStepState
+            /// Creates a new `OnboardingSteps`.
+            ///
+            /// - Parameters:
+            ///   - welcome:
+            ///   - signIn:
+            ///   - coreConsents:
+            ///   - unitsLocale:
+            ///   - presentationBaseModel:
+            ///   - heightWeight:
+            ///   - additionalMeasurements:
+            ///   - fitStylePreferences:
+            ///   - lifestyleOccasions:
+            ///   - firstCaptureNudge:
+            public init(
+                welcome: Components.Schemas.OnboardingStepState,
+                signIn: Components.Schemas.OnboardingStepState,
+                coreConsents: Components.Schemas.OnboardingStepState,
+                unitsLocale: Components.Schemas.OnboardingStepState,
+                presentationBaseModel: Components.Schemas.OnboardingStepState,
+                heightWeight: Components.Schemas.OnboardingStepState,
+                additionalMeasurements: Components.Schemas.OnboardingStepState,
+                fitStylePreferences: Components.Schemas.OnboardingStepState,
+                lifestyleOccasions: Components.Schemas.OnboardingStepState,
+                firstCaptureNudge: Components.Schemas.OnboardingStepState
+            ) {
+                self.welcome = welcome
+                self.signIn = signIn
+                self.coreConsents = coreConsents
+                self.unitsLocale = unitsLocale
+                self.presentationBaseModel = presentationBaseModel
+                self.heightWeight = heightWeight
+                self.additionalMeasurements = additionalMeasurements
+                self.fitStylePreferences = fitStylePreferences
+                self.lifestyleOccasions = lifestyleOccasions
+                self.firstCaptureNudge = firstCaptureNudge
+            }
+            public enum CodingKeys: String, CodingKey {
+                case welcome
+                case signIn
+                case coreConsents
+                case unitsLocale
+                case presentationBaseModel
+                case heightWeight
+                case additionalMeasurements
+                case fitStylePreferences
+                case lifestyleOccasions
+                case firstCaptureNudge
+            }
+        }
+        /// Onboarding steps of doc 02 §3.2, in flow order.
+        ///
+        /// - Remark: Generated from `#/components/schemas/OnboardingStep`.
+        @frozen public enum OnboardingStep: String, Codable, Hashable, Sendable, CaseIterable {
+            case welcome = "welcome"
+            case signIn = "sign_in"
+            case coreConsents = "core_consents"
+            case unitsLocale = "units_locale"
+            case presentationBaseModel = "presentation_base_model"
+            case heightWeight = "height_weight"
+            case additionalMeasurements = "additional_measurements"
+            case fitStylePreferences = "fit_style_preferences"
+            case lifestyleOccasions = "lifestyle_occasions"
+            case firstCaptureNudge = "first_capture_nudge"
+        }
+        /// Per-step onboarding progress (doc 02 §3.2), kept on the server so the app resumes after
+        /// a quit or a crash. `nextRequiredStep` is the first required step not yet completed; the
+        /// app resumes there, and opens Today when it is absent.
+        ///
+        ///
+        /// - Remark: Generated from `#/components/schemas/OnboardingProgress`.
+        public struct OnboardingProgress: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/OnboardingProgress/steps`.
+            public var steps: Components.Schemas.OnboardingSteps
+            /// - Remark: Generated from `#/components/schemas/OnboardingProgress/nextRequiredStep`.
+            public var nextRequiredStep: Components.Schemas.OnboardingStep?
+            /// Creates a new `OnboardingProgress`.
+            ///
+            /// - Parameters:
+            ///   - steps:
+            ///   - nextRequiredStep:
+            public init(
+                steps: Components.Schemas.OnboardingSteps,
+                nextRequiredStep: Components.Schemas.OnboardingStep? = nil
+            ) {
+                self.steps = steps
+                self.nextRequiredStep = nextRequiredStep
+            }
+            public enum CodingKeys: String, CodingKey {
+                case steps
+                case nextRequiredStep
+            }
+        }
+        /// `skipped` is refused for a required step.
+        ///
+        /// - Remark: Generated from `#/components/schemas/OnboardingStepOutcome`.
+        @frozen public enum OnboardingStepOutcome: String, Codable, Hashable, Sendable, CaseIterable {
+            case completed = "completed"
+            case skipped = "skipped"
+        }
+        /// The outcome of each step present; an absent step is left unchanged.
+        ///
+        /// - Remark: Generated from `#/components/schemas/OnboardingStepsUpdate`.
+        public struct OnboardingStepsUpdate: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/OnboardingStepsUpdate/welcome`.
+            public var welcome: Components.Schemas.OnboardingStepOutcome?
+            /// - Remark: Generated from `#/components/schemas/OnboardingStepsUpdate/signIn`.
+            public var signIn: Components.Schemas.OnboardingStepOutcome?
+            /// - Remark: Generated from `#/components/schemas/OnboardingStepsUpdate/coreConsents`.
+            public var coreConsents: Components.Schemas.OnboardingStepOutcome?
+            /// - Remark: Generated from `#/components/schemas/OnboardingStepsUpdate/unitsLocale`.
+            public var unitsLocale: Components.Schemas.OnboardingStepOutcome?
+            /// - Remark: Generated from `#/components/schemas/OnboardingStepsUpdate/presentationBaseModel`.
+            public var presentationBaseModel: Components.Schemas.OnboardingStepOutcome?
+            /// - Remark: Generated from `#/components/schemas/OnboardingStepsUpdate/heightWeight`.
+            public var heightWeight: Components.Schemas.OnboardingStepOutcome?
+            /// - Remark: Generated from `#/components/schemas/OnboardingStepsUpdate/additionalMeasurements`.
+            public var additionalMeasurements: Components.Schemas.OnboardingStepOutcome?
+            /// - Remark: Generated from `#/components/schemas/OnboardingStepsUpdate/fitStylePreferences`.
+            public var fitStylePreferences: Components.Schemas.OnboardingStepOutcome?
+            /// - Remark: Generated from `#/components/schemas/OnboardingStepsUpdate/lifestyleOccasions`.
+            public var lifestyleOccasions: Components.Schemas.OnboardingStepOutcome?
+            /// - Remark: Generated from `#/components/schemas/OnboardingStepsUpdate/firstCaptureNudge`.
+            public var firstCaptureNudge: Components.Schemas.OnboardingStepOutcome?
+            /// Creates a new `OnboardingStepsUpdate`.
+            ///
+            /// - Parameters:
+            ///   - welcome:
+            ///   - signIn:
+            ///   - coreConsents:
+            ///   - unitsLocale:
+            ///   - presentationBaseModel:
+            ///   - heightWeight:
+            ///   - additionalMeasurements:
+            ///   - fitStylePreferences:
+            ///   - lifestyleOccasions:
+            ///   - firstCaptureNudge:
+            public init(
+                welcome: Components.Schemas.OnboardingStepOutcome? = nil,
+                signIn: Components.Schemas.OnboardingStepOutcome? = nil,
+                coreConsents: Components.Schemas.OnboardingStepOutcome? = nil,
+                unitsLocale: Components.Schemas.OnboardingStepOutcome? = nil,
+                presentationBaseModel: Components.Schemas.OnboardingStepOutcome? = nil,
+                heightWeight: Components.Schemas.OnboardingStepOutcome? = nil,
+                additionalMeasurements: Components.Schemas.OnboardingStepOutcome? = nil,
+                fitStylePreferences: Components.Schemas.OnboardingStepOutcome? = nil,
+                lifestyleOccasions: Components.Schemas.OnboardingStepOutcome? = nil,
+                firstCaptureNudge: Components.Schemas.OnboardingStepOutcome? = nil
+            ) {
+                self.welcome = welcome
+                self.signIn = signIn
+                self.coreConsents = coreConsents
+                self.unitsLocale = unitsLocale
+                self.presentationBaseModel = presentationBaseModel
+                self.heightWeight = heightWeight
+                self.additionalMeasurements = additionalMeasurements
+                self.fitStylePreferences = fitStylePreferences
+                self.lifestyleOccasions = lifestyleOccasions
+                self.firstCaptureNudge = firstCaptureNudge
+            }
+            public enum CodingKeys: String, CodingKey {
+                case welcome
+                case signIn
+                case coreConsents
+                case unitsLocale
+                case presentationBaseModel
+                case heightWeight
+                case additionalMeasurements
+                case fitStylePreferences
+                case lifestyleOccasions
+                case firstCaptureNudge
+            }
+            public init(from decoder: any Swift.Decoder) throws {
+                let container = try decoder.container(keyedBy: CodingKeys.self)
+                self.welcome = try container.decodeIfPresent(
+                    Components.Schemas.OnboardingStepOutcome.self,
+                    forKey: .welcome
+                )
+                self.signIn = try container.decodeIfPresent(
+                    Components.Schemas.OnboardingStepOutcome.self,
+                    forKey: .signIn
+                )
+                self.coreConsents = try container.decodeIfPresent(
+                    Components.Schemas.OnboardingStepOutcome.self,
+                    forKey: .coreConsents
+                )
+                self.unitsLocale = try container.decodeIfPresent(
+                    Components.Schemas.OnboardingStepOutcome.self,
+                    forKey: .unitsLocale
+                )
+                self.presentationBaseModel = try container.decodeIfPresent(
+                    Components.Schemas.OnboardingStepOutcome.self,
+                    forKey: .presentationBaseModel
+                )
+                self.heightWeight = try container.decodeIfPresent(
+                    Components.Schemas.OnboardingStepOutcome.self,
+                    forKey: .heightWeight
+                )
+                self.additionalMeasurements = try container.decodeIfPresent(
+                    Components.Schemas.OnboardingStepOutcome.self,
+                    forKey: .additionalMeasurements
+                )
+                self.fitStylePreferences = try container.decodeIfPresent(
+                    Components.Schemas.OnboardingStepOutcome.self,
+                    forKey: .fitStylePreferences
+                )
+                self.lifestyleOccasions = try container.decodeIfPresent(
+                    Components.Schemas.OnboardingStepOutcome.self,
+                    forKey: .lifestyleOccasions
+                )
+                self.firstCaptureNudge = try container.decodeIfPresent(
+                    Components.Schemas.OnboardingStepOutcome.self,
+                    forKey: .firstCaptureNudge
+                )
+                try decoder.ensureNoAdditionalProperties(knownKeys: [
+                    "welcome",
+                    "signIn",
+                    "coreConsents",
+                    "unitsLocale",
+                    "presentationBaseModel",
+                    "heightWeight",
+                    "additionalMeasurements",
+                    "fitStylePreferences",
+                    "lifestyleOccasions",
+                    "firstCaptureNudge"
+                ])
+            }
+        }
+        /// - Remark: Generated from `#/components/schemas/OnboardingProgressUpdate`.
+        public struct OnboardingProgressUpdate: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/OnboardingProgressUpdate/steps`.
+            public var steps: Components.Schemas.OnboardingStepsUpdate
+            /// Creates a new `OnboardingProgressUpdate`.
+            ///
+            /// - Parameters:
+            ///   - steps:
+            public init(steps: Components.Schemas.OnboardingStepsUpdate) {
+                self.steps = steps
+            }
+            public enum CodingKeys: String, CodingKey {
+                case steps
+            }
+            public init(from decoder: any Swift.Decoder) throws {
+                let container = try decoder.container(keyedBy: CodingKeys.self)
+                self.steps = try container.decode(
+                    Components.Schemas.OnboardingStepsUpdate.self,
+                    forKey: .steps
+                )
+                try decoder.ensureNoAdditionalProperties(knownKeys: [
+                    "steps"
+                ])
+            }
+        }
+        /// Lifecycle state of the caller's entitlements (doc 03 §4.3): the server-granted trial,
+        /// Free, a paid subscription, its billing-retry grace period, or a cancelled subscription
+        /// still paid until its period ends. Mirrors shared-kernel `ENTITLEMENT_LIFECYCLE_STATES`.
+        ///
+        ///
+        /// - Remark: Generated from `#/components/schemas/EntitlementLifecycleState`.
+        @frozen public enum EntitlementLifecycleState: String, Codable, Hashable, Sendable, CaseIterable {
+            case trial = "trial"
+            case free = "free"
+            case activePaid = "active_paid"
+            case grace = "grace"
+            case cancelledActive = "cancelled_active"
+        }
+        /// Entitlement names (doc 12 §3.1), in registry order. Mirrors the keys of shared-kernel
+        /// `ENTITLEMENTS` value for value. Each name's kind and, for a `level` entitlement, its
+        /// level order live in the shared-kernel entitlement registry (`registry/entitlements.json`).
+        /// TypeScript reads both generated. Swift and Kotlin read the kind from the generated
+        /// kernel, and the level order once the kernel emitter covers it.
+        ///
+        ///
+        /// - Remark: Generated from `#/components/schemas/EntitlementName`.
+        @frozen public enum EntitlementName: String, Codable, Hashable, Sendable, CaseIterable {
+            case closet_maxItems = "closet.max_items"
+            case recs_dailyLimit = "recs.daily_limit"
+            case recs_context_full = "recs.context.full"
+            case recs_futurePlanning = "recs.future_planning"
+            case avatar_level = "avatar.level"
+            case tryon_generative = "tryon.generative"
+            case views_missingView = "views.missing_view"
+            case credits_monthly = "credits.monthly"
+            case credits_topup = "credits.topup"
+            case credits_weights = "credits.weights"
+            case trends_level = "trends.level"
+            case analytics_wardrobe = "analytics.wardrobe"
+            case processing_priority = "processing.priority"
+            case export_multiAngle = "export.multi_angle"
+            case features_earlyAccess = "features.early_access"
+            case chat_stylist = "chat.stylist"
+            case data_export = "data.export"
+        }
+        /// The kind of grant that supplied the value (doc 12 §3.2): the subscription's plan, the
+        /// 3-day trial (doc 12 §2), a promotion, or a capability kept from an older plan version
+        /// (doc 12 §5.5). Absent from a `ResolvedEntitlement` when no active grant supplies the
+        /// entitlement and its Free-plan value applies. Mirrors shared-kernel
+        /// `ENTITLEMENT_GRANT_KINDS`.
+        ///
+        ///
+        /// - Remark: Generated from `#/components/schemas/EntitlementGrantKind`.
+        @frozen public enum EntitlementGrantKind: String, Codable, Hashable, Sendable, CaseIterable {
+            case planGrant = "plan_grant"
+            case trialGrant = "trial_grant"
+            case promoGrant = "promo_grant"
+            case grandfatherGrant = "grandfather_grant"
+        }
+        /// One of the levels the shared-kernel registry lists for the entitlement
+        /// (`registry/entitlements.json`, `levels`, lowest first), e.g. `G2` for
+        /// `tryon.generative`. A string, not an enum, because each level entitlement has levels of
+        /// its own.
+        ///
+        ///
+        /// - Remark: Generated from `#/components/schemas/EntitlementLevel`.
+        public typealias EntitlementLevel = Swift.String
+        /// The resolved value of one entitlement. The value member present follows the kind of
+        /// `name` in the shared-kernel registry (`registry/entitlements.json`): `boolean` →
+        /// `granted`, always present; `limit` → `limit`, always present; `level` → `level`, absent
+        /// when no level is granted; `map` (`credits.weights`) → none yet, the weights join with the
+        /// credit ledger (P13).
+        ///
+        ///
+        /// - Remark: Generated from `#/components/schemas/ResolvedEntitlement`.
+        public struct ResolvedEntitlement: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/ResolvedEntitlement/name`.
+            public var name: Components.Schemas.EntitlementName
+            /// - Remark: Generated from `#/components/schemas/ResolvedEntitlement/source`.
+            public var source: Components.Schemas.EntitlementGrantKind?
+            /// `boolean` kind: whether the capability is available.
+            ///
+            /// - Remark: Generated from `#/components/schemas/ResolvedEntitlement/granted`.
+            public var granted: Swift.Bool?
+            /// `limit` kind: the cap, e.g. closet items or recommendations per local day. `null`
+            /// means unlimited (doc 06 §3.6).
+            ///
+            ///
+            /// - Remark: Generated from `#/components/schemas/ResolvedEntitlement/limit`.
+            public var limit: Swift.Int?
+            /// - Remark: Generated from `#/components/schemas/ResolvedEntitlement/level`.
+            public var level: Components.Schemas.EntitlementLevel?
+            /// Creates a new `ResolvedEntitlement`.
+            ///
+            /// - Parameters:
+            ///   - name:
+            ///   - source:
+            ///   - granted: `boolean` kind: whether the capability is available.
+            ///   - limit: `limit` kind: the cap, e.g. closet items or recommendations per local day. `null`
+            ///   - level:
+            public init(
+                name: Components.Schemas.EntitlementName,
+                source: Components.Schemas.EntitlementGrantKind? = nil,
+                granted: Swift.Bool? = nil,
+                limit: Swift.Int? = nil,
+                level: Components.Schemas.EntitlementLevel? = nil
+            ) {
+                self.name = name
+                self.source = source
+                self.granted = granted
+                self.limit = limit
+                self.level = level
+            }
+            public enum CodingKeys: String, CodingKey {
+                case name
+                case source
+                case granted
+                case limit
+                case level
+            }
+        }
+        /// The caller's entitlement state (doc 06 §3.6; semantics doc 12 §2–§3). `state` is the
+        /// lifecycle state of doc 03 §4.3. Generative credits (doc 12 §4) join this object with the
+        /// credit ledger (P13).
+        ///
+        ///
+        /// - Remark: Generated from `#/components/schemas/EntitlementState`.
+        public struct EntitlementState: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/EntitlementState/state`.
+            public var state: Components.Schemas.EntitlementLifecycleState
+            /// When `state` ends unless something changes: the end of the trial for `trial`, the end
+            /// of paid access for `grace` and `cancelled_active`. Absent for `free` and `active_paid`,
+            /// which do not end on their own.
+            ///
+            ///
+            /// - Remark: Generated from `#/components/schemas/EntitlementState/stateEndsAt`.
+            public var stateEndsAt: Foundation.Date?
+            /// One entry per registered entitlement, in shared-kernel registry order.
+            ///
+            /// - Remark: Generated from `#/components/schemas/EntitlementState/entitlements`.
+            public var entitlements: [Components.Schemas.ResolvedEntitlement]
+            /// Creates a new `EntitlementState`.
+            ///
+            /// - Parameters:
+            ///   - state:
+            ///   - stateEndsAt: When `state` ends unless something changes: the end of the trial for `trial`, the end
+            ///   - entitlements: One entry per registered entitlement, in shared-kernel registry order.
+            public init(
+                state: Components.Schemas.EntitlementLifecycleState,
+                stateEndsAt: Foundation.Date? = nil,
+                entitlements: [Components.Schemas.ResolvedEntitlement]
+            ) {
+                self.state = state
+                self.stateEndsAt = stateEndsAt
+                self.entitlements = entitlements
+            }
+            public enum CodingKeys: String, CodingKey {
+                case state
+                case stateEndsAt
+                case entitlements
+            }
+        }
     }
 }

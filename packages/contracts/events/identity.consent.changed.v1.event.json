@@ -1,0 +1,80 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://contracts.ai-stylist.app/events/identity.consent.changed.v1.json",
+  "title": "IdentityConsentChangedV1",
+  "description": "A consent record was appended: a person granted or withdrew consent for one purpose, so processing that depends on it starts or halts (doc 11 §7.1, NFR-PRV-020). Producer `identity`; aggregate `user` with the person's `usr_` id, so `sequence` orders one person's consent changes; `subjectUserId` is that id. The purpose travels as `purpose` (doc 11 §7.1); the envelope's `consentScope` is a different field. Ids, enums and timestamps only (doc 06 §6). The full event is the envelope (envelope.json) narrowed by this schema; the payload is open content, so consumers ignore properties they do not know (doc 06 §4).",
+  "type": "object",
+  "required": ["type", "payload"],
+  "properties": {
+    "type": { "const": "identity.consent.changed.v1" },
+    "payload": { "$ref": "#/$defs/IdentityConsentChangedV1Payload" }
+  },
+  "$defs": {
+    "IdentityConsentChangedV1Payload": {
+      "type": "object",
+      "required": ["userId", "consentRecordId", "purpose", "status", "policyVersion", "changedAt"],
+      "properties": {
+        "userId": {
+          "type": "string",
+          "description": "The person whose consent changed, a prefixed ULID (`usr_`, shared-kernel `ID_PREFIXES.user`); the API's `UserId`",
+          "pattern": "^usr_[0-7][0-9A-HJKMNP-TV-Z]{25}$"
+        },
+        "consentRecordId": {
+          "type": "string",
+          "description": "The appended consent record, a prefixed ULID (`cns_`, shared-kernel `ID_PREFIXES.consentRecord`); the API's `ConsentRecord.id`",
+          "pattern": "^cns_[0-7][0-9A-HJKMNP-TV-Z]{25}$"
+        },
+        "purpose": {
+          "type": "string",
+          "description": "The consent purpose (doc 11 §7.2); mirrors shared-kernel `CONSENT_PURPOSES` and the API's `ConsentPurpose`",
+          "enum": [
+            "core_service",
+            "face_processing",
+            "location_precise",
+            "analytics",
+            "ai_generative",
+            "notifications",
+            "training_data"
+          ]
+        },
+        "status": {
+          "type": "string",
+          "description": "The purpose's state from this record on; the API's `ConsentStatus`",
+          "enum": ["granted", "withdrawn"]
+        },
+        "policyVersion": {
+          "type": "string",
+          "description": "Version of the policy text the person saw, e.g. `0.1.0-draft`; the API's `PolicyVersion`. The consent audit entry records it (doc 14 §10)",
+          "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+(-[0-9A-Za-z.-]+)?$",
+          "maxLength": 64
+        },
+        "changedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "When the record was appended: its `grantedAt` when `status` is `granted`, its `withdrawnAt` when `status` is `withdrawn`"
+        }
+      }
+    }
+  },
+  "examples": [
+    {
+      "id": "evt_00000000000000000000000012",
+      "type": "identity.consent.changed.v1",
+      "occurredAt": "2026-10-21T09:01:00Z",
+      "producer": "identity",
+      "aggregate": { "kind": "user", "id": "usr_00000000000000000000000001" },
+      "sequence": 2,
+      "actor": { "kind": "user", "id": "usr_00000000000000000000000001" },
+      "subjectUserId": "usr_00000000000000000000000001",
+      "correlationId": "corr-consent-changed-1",
+      "payload": {
+        "userId": "usr_00000000000000000000000001",
+        "consentRecordId": "cns_00000000000000000000000001",
+        "purpose": "analytics",
+        "status": "granted",
+        "policyVersion": "0.1.0-draft",
+        "changedAt": "2026-10-21T09:01:00Z"
+      }
+    }
+  ]
+}

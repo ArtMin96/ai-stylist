@@ -18,3 +18,15 @@ func themesHoldTheirContextTokens() {
   #expect(AppTheme.highContrastLight.colors == .hcLight && AppTheme.highContrastLight.buttons == .hcLight)
   #expect(AppTheme.highContrastDark.colors == .hcDark && AppTheme.highContrastDark.buttons == .hcDark)
 }
+
+@Test("each theme exposes the C03 chip, tag, badge and reason-row looks of its own context")
+func themesHoldTheirC03Looks() {
+  #expect(AppTheme.light.chips == .light && AppTheme.light.tags == .light)
+  #expect(AppTheme.light.badges == .light && AppTheme.light.reasonRows == .light)
+  #expect(AppTheme.dark.chips == .dark && AppTheme.dark.tags == .dark)
+  #expect(AppTheme.dark.badges == .dark && AppTheme.dark.reasonRows == .dark)
+  #expect(AppTheme.highContrastLight.chips == .hcLight && AppTheme.highContrastLight.tags == .hcLight)
+  #expect(AppTheme.highContrastLight.badges == .hcLight && AppTheme.highContrastLight.reasonRows == .hcLight)
+  #expect(AppTheme.highContrastDark.chips == .hcDark && AppTheme.highContrastDark.tags == .hcDark)
+  #expect(AppTheme.highContrastDark.badges == .hcDark && AppTheme.highContrastDark.reasonRows == .hcDark)
+}

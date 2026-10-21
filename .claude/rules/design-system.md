@@ -57,8 +57,16 @@ logo come from "Garderi Colour Schemes" (https://claude.ai/artifact/Db28dfjbyvJg
      table (`AppIconGlyphs.swift` / `AppIconGlyphs.kt`) into
      `apps/ios/Packages/DesignSystem/Sources/DesignTokens/generated/` and
      `apps/android/core/designsystem/src/main/kotlin/app/aistylist/core/designsystem/generated/`.
-   - The component API holds the variant, size and state enums, the test IDs, the gallery list and one
-     merged look per allowed combination and scheme (`<Name>Spec` → `<Name>Appearance`). For an icon
+   - Each type style (`AppTextStyle`) carries its `textTransform` (`AppTextTransform`: `none` or
+     `uppercase`; absent in `DESIGN.md` means `none`). An app applies it only when drawing and keeps
+     the original string as the spoken name.
+   - The component API holds the variant, size and state enums, the test IDs, the touch target
+     (`<Name>Accessibility.minTouchTarget` where the contract gives `accessibility.minTouchTarget`:
+     one name in both languages, 44 pt in Swift, 48 dp in Kotlin), the gallery list with each cell's
+     sample label (`<Name>GalleryEntry.label`: the variant's `gallery.labels` entry, else
+     `gallery.label`), the role enum and each variant's role, the enum props, the parts with their
+     separator resource keys, the icon sources, the gallery samples and one merged look per allowed
+     combination and scheme (`<Name>Spec` → `<Name>Appearance`). For an icon
      set (`kind: icon-set`) it holds the glyph-name, set and size enums (`AppIconName`, `AppIconSet`,
      `AppIconSize`), `AppIconMetrics` and the glyph value types; gallery cells use `ds-icon-<id>`.
    - Generated files are never hand-edited. Only `contracts-engineer` or the main session runs

@@ -15,9 +15,7 @@ struct GallerySpacingItem: View {
         .fill(theme.color(.primary))
         .frame(width: step.value, height: theme.spacing.space8)
         .accessibilityHidden(true)
-      Text(step.name)
-        .font(theme.font(theme.typography.footnote))
-        .foregroundStyle(theme.color(.text))
+      AppComponentText(text: step.name, style: theme.typography.footnote, color: .text)
     }
   }
 }

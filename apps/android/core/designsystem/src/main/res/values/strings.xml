@@ -1,5 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Design-system copy. Equal to iOS: the busy state text AppButton announces while loading. -->
+<!-- Design-system copy, equal to iOS byte for byte (C01 and C03 briefs). -->
 <resources>
+    <!-- AppButton's busy state, announced while loading. -->
     <string name="app_button_loading">Loading</string>
+    <!-- AppChip's detail run starts with this separator: U+00B7 then U+0020, quoted so the space stays.
+         The key is the generated ChipPart.DETAIL.separatorKey. -->
+    <string name="ds_chip_detail_separator">"· "</string>
+    <!-- The reason chip's spoken state. -->
+    <string name="ds_chip_state_expanded">Expanded</string>
+    <string name="ds_chip_state_collapsed">Collapsed</string>
 </resources>

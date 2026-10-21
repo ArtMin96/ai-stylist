@@ -293,6 +293,7 @@ typography:
       fontWeight: 600,
       lineHeight: '14px',
       letterSpacing: '0.08em',
+      textTransform: uppercase,
       dynamicType: caption2,
       m3Roles: [labelSmall],
     }
@@ -333,6 +334,38 @@ typography:
       fontFamily: 'Figtree, sans-serif',
       fontSize: '13px',
       fontWeight: 600,
+      lineHeight: '18px',
+      letterSpacing: '0em',
+      dynamicType: footnote,
+      m3Roles: [],
+    }
+  # Second text runs inside a chip (C03, C05): the group and sort prefix ("Group:"), the filter
+  # count ("· 12") and the override detail ("· your setting").
+  label-md-normal:
+    {
+      fontFamily: 'Figtree, sans-serif',
+      fontSize: '14px',
+      fontWeight: 400,
+      lineHeight: '18px',
+      letterSpacing: '0em',
+      dynamicType: subheadline,
+      m3Roles: [],
+    }
+  label-md-medium:
+    {
+      fontFamily: 'Figtree, sans-serif',
+      fontSize: '14px',
+      fontWeight: 500,
+      lineHeight: '18px',
+      letterSpacing: '0em',
+      dynamicType: subheadline,
+      m3Roles: [],
+    }
+  label-sm-medium:
+    {
+      fontFamily: 'Figtree, sans-serif',
+      fontSize: '13px',
+      fontWeight: 500,
       lineHeight: '18px',
       letterSpacing: '0em',
       dynamicType: footnote,
@@ -922,7 +955,39 @@ components:
   icon-lg: { size: '24px', strokeWidth: 1.7 }
   icon-xl: { size: '32px', strokeWidth: 1.7 }
   icon-hero: { size: '56px', strokeWidth: 1.7 }
-  # C03 Chips and tags
+  # C03 Chips and tags. The chip-* entries style AppChip (.impeccable/components/chip.yaml), the
+  # tappable chips; the tags, pills and badges after them are not chips (R4: chips act, tags label,
+  # badges flag).
+  # Shared chip size entries: the heights 32 (compact), 34 (small), 36 (medium) and 40 (large) and
+  # their icon slots: leading (iconSize, iconGap) and trailing (trailingIconSize, trailingIconGap;
+  # proposed grammar G3 in .impeccable/components/README.md). The slot follows the size: sm beside
+  # the 13/18 and 14/18 labels, md beside the 15/20 labels, the trailing chevron and pencil xs at 32
+  # and 34 ("Icons (C02)"). A variant entry that names its own slot value wins (G6: the group and
+  # sort chip's gap 6 at 36). medium also holds the 36 add chip's label, height and padding (SC06
+  # Save filter). Gap 6 is off the spacing scale.
+  chip-compact:
+    { iconSize: icon-sm, iconGap: '6px', trailingIconSize: icon-xs, trailingIconGap: '6px' }
+  chip-small:
+    { iconSize: icon-sm, iconGap: '6px', trailingIconSize: icon-xs, trailingIconGap: '6px' }
+  chip-medium:
+    {
+      typography: '{typography.label-md}',
+      height: '36px',
+      padding: '0 14px 0 10px',
+      iconSize: icon-sm,
+      iconGap: '{spacing.4}',
+      trailingIconSize: icon-sm,
+      trailingIconGap: '{spacing.4}',
+    }
+  chip-large: { iconSize: icon-md, iconGap: '6px' }
+  # Stroke width of the ring drawn inside the outlined chips (choice, filter, filter menu, swatch,
+  # group and sort, never-suggest, soft-dislike, add, the light snow condition chip). Each entry
+  # names the ring colour in borderColor; a selected chip draws no ring, so its ring is written in
+  # its fill colour. An entry's own borderWidth wins (G5): the never-suggest pressed ring is 2 px and
+  # the override ring 1.5 px. iconColor and trailingIconColor tint an icon that is not the label
+  # colour (reason, never-suggest, override). <part>Typography, <part>Color and <part>Gap style a
+  # second text run (G12: prefix, detail); swatch* style the colour swatch (G12).
+  chip-outline-ring: { width: '1px' }
   chip-weather-light:
     {
       backgroundColor: '{colors.accent-light}',
@@ -959,122 +1024,543 @@ components:
       textColor: '{colors.text-light}',
       typography: '{typography.label-sm}',
       rounded: '{rounded.full}',
+      height: '34px',
+      padding: '0 14px 0 11px',
     }
+  chip-context-pressed-light:
+    { backgroundColor: '{colors.divider-light}', textColor: '{colors.text-light}' }
   chip-context-dark:
     {
       backgroundColor: '{colors.surface-2-dark}',
       textColor: '{colors.text-dark}',
       typography: '{typography.label-sm}',
       rounded: '{rounded.full}',
+      height: '34px',
+      padding: '0 14px 0 11px',
     }
+  chip-context-pressed-dark:
+    { backgroundColor: '{colors.divider-dark}', textColor: '{colors.text-dark}' }
   chip-reason-light:
     {
       backgroundColor: '{colors.surface-2-light}',
       textColor: '{colors.text-light}',
+      iconColor: '{colors.primary-text-light}',
       typography: '{typography.label-sm}',
       rounded: '{rounded.full}',
       height: '32px',
       padding: '0 {spacing.12} 0 10px',
     }
+  chip-reason-pressed-light:
+    { backgroundColor: '{colors.divider-light}', textColor: '{colors.text-light}' }
+  # Expanded: the trailing chevron-up takes the end, so the end padding drops to 10.
   chip-reason-expanded-light:
-    { backgroundColor: '{colors.primary-text-light}', textColor: '{colors.on-primary-light}' }
+    {
+      backgroundColor: '{colors.primary-text-light}',
+      textColor: '{colors.on-primary-light}',
+      iconColor: '{colors.on-primary-light}',
+      padding: '0 10px',
+    }
+  # Compound toggle states (G2): <toggle>-<interaction> applies after the toggle's own entry. A
+  # pressed toggled chip keeps its fill under the pressed overlay, as the filled weather chip
+  # presses; derived, not drawn.
+  chip-reason-expanded-pressed-light: { overlayColor: '{colors.pressed-overlay-light}' }
   chip-reason-dark:
     {
       backgroundColor: '{colors.surface-2-dark}',
       textColor: '{colors.text-dark}',
+      iconColor: '{colors.primary-text-dark}',
       typography: '{typography.label-sm}',
       rounded: '{rounded.full}',
       height: '32px',
       padding: '0 {spacing.12} 0 10px',
     }
+  chip-reason-pressed-dark:
+    { backgroundColor: '{colors.divider-dark}', textColor: '{colors.text-dark}' }
   chip-reason-expanded-dark:
-    { backgroundColor: '{colors.primary-text-dark}', textColor: '{colors.on-primary-dark}' }
+    {
+      backgroundColor: '{colors.primary-text-dark}',
+      textColor: '{colors.on-primary-dark}',
+      iconColor: '{colors.on-primary-dark}',
+      padding: '0 10px',
+    }
+  chip-reason-expanded-pressed-dark: { overlayColor: '{colors.pressed-overlay-dark}' }
+  # Choice and filter: selected adds the check at the start, so the start padding drops to 10.
+  # Disabled is surface-2 in light and surface in dark, as C03 draws it. Selected + disabled is
+  # derived (not drawn): the disabled colours, and the check stays.
   chip-choice-light:
     {
       backgroundColor: '{colors.surface-light}',
       textColor: '{colors.text-light}',
+      borderColor: '{colors.outline-light}',
       typography: '{typography.subhead-medium}',
       rounded: '{rounded.full}',
       height: '40px',
       padding: '0 14px',
+    }
+  chip-choice-pressed-light:
+    { backgroundColor: '{colors.surface-2-light}', textColor: '{colors.text-light}' }
+  chip-choice-disabled-light:
+    {
+      backgroundColor: '{colors.surface-2-light}',
+      textColor: '{colors.text-secondary-light}',
+      borderColor: '{colors.divider-light}',
     }
   chip-choice-selected-light:
     {
       backgroundColor: '{colors.primary-text-light}',
       textColor: '{colors.on-primary-light}',
+      borderColor: '{colors.primary-text-light}',
       typography: '{typography.subhead}',
+      padding: '0 14px 0 10px',
+    }
+  chip-choice-selected-pressed-light: { overlayColor: '{colors.pressed-overlay-light}' }
+  chip-choice-selected-disabled-light:
+    {
+      backgroundColor: '{colors.surface-2-light}',
+      textColor: '{colors.text-secondary-light}',
+      borderColor: '{colors.divider-light}',
     }
   chip-choice-dark:
     {
       backgroundColor: '{colors.surface-dark}',
       textColor: '{colors.text-dark}',
+      borderColor: '{colors.outline-dark}',
       typography: '{typography.subhead-medium}',
       rounded: '{rounded.full}',
       height: '40px',
       padding: '0 14px',
+    }
+  chip-choice-pressed-dark:
+    { backgroundColor: '{colors.surface-2-dark}', textColor: '{colors.text-dark}' }
+  chip-choice-disabled-dark:
+    {
+      backgroundColor: '{colors.surface-dark}',
+      textColor: '{colors.text-secondary-dark}',
+      borderColor: '{colors.divider-dark}',
     }
   chip-choice-selected-dark:
     {
       backgroundColor: '{colors.primary-text-dark}',
       textColor: '{colors.on-primary-dark}',
+      borderColor: '{colors.primary-text-dark}',
       typography: '{typography.subhead}',
+      padding: '0 14px 0 10px',
     }
+  chip-choice-selected-pressed-dark: { overlayColor: '{colors.pressed-overlay-dark}' }
+  chip-choice-selected-disabled-dark:
+    {
+      backgroundColor: '{colors.surface-dark}',
+      textColor: '{colors.text-secondary-dark}',
+      borderColor: '{colors.divider-dark}',
+    }
+  # Filter: the count is the detail part, "· 12" in 14/500 text-secondary, 4 after the label
+  # (C03 "With count"). On the selected fill it takes the label colour (derived, not drawn).
   chip-filter-light:
     {
       backgroundColor: '{colors.surface-light}',
       textColor: '{colors.text-light}',
+      borderColor: '{colors.outline-light}',
+      detailColor: '{colors.text-secondary-light}',
       typography: '{typography.label-md}',
       rounded: '{rounded.full}',
       height: '36px',
       padding: '0 14px',
+      detailTypography: '{typography.label-md-medium}',
+      detailGap: '{spacing.4}',
+    }
+  chip-filter-pressed-light:
+    { backgroundColor: '{colors.surface-2-light}', textColor: '{colors.text-light}' }
+  chip-filter-disabled-light:
+    {
+      backgroundColor: '{colors.surface-2-light}',
+      textColor: '{colors.text-secondary-light}',
+      borderColor: '{colors.divider-light}',
     }
   chip-filter-selected-light:
-    { backgroundColor: '{colors.primary-text-light}', textColor: '{colors.on-primary-light}' }
+    {
+      backgroundColor: '{colors.primary-text-light}',
+      textColor: '{colors.on-primary-light}',
+      borderColor: '{colors.primary-text-light}',
+      detailColor: '{colors.on-primary-light}',
+      padding: '0 14px 0 10px',
+    }
+  chip-filter-selected-pressed-light: { overlayColor: '{colors.pressed-overlay-light}' }
+  chip-filter-selected-disabled-light:
+    {
+      backgroundColor: '{colors.surface-2-light}',
+      textColor: '{colors.text-secondary-light}',
+      borderColor: '{colors.divider-light}',
+      detailColor: '{colors.text-secondary-light}',
+    }
   chip-filter-dark:
     {
       backgroundColor: '{colors.surface-dark}',
       textColor: '{colors.text-dark}',
+      borderColor: '{colors.outline-dark}',
+      detailColor: '{colors.text-secondary-dark}',
       typography: '{typography.label-md}',
       rounded: '{rounded.full}',
       height: '36px',
       padding: '0 14px',
+      detailTypography: '{typography.label-md-medium}',
+      detailGap: '{spacing.4}',
+    }
+  chip-filter-pressed-dark:
+    { backgroundColor: '{colors.surface-2-dark}', textColor: '{colors.text-dark}' }
+  chip-filter-disabled-dark:
+    {
+      backgroundColor: '{colors.surface-dark}',
+      textColor: '{colors.text-secondary-dark}',
+      borderColor: '{colors.divider-dark}',
     }
   chip-filter-selected-dark:
-    { backgroundColor: '{colors.primary-text-dark}', textColor: '{colors.on-primary-dark}' }
+    {
+      backgroundColor: '{colors.primary-text-dark}',
+      textColor: '{colors.on-primary-dark}',
+      borderColor: '{colors.primary-text-dark}',
+      detailColor: '{colors.on-primary-dark}',
+      padding: '0 14px 0 10px',
+    }
+  chip-filter-selected-pressed-dark: { overlayColor: '{colors.pressed-overlay-dark}' }
+  chip-filter-selected-disabled-dark:
+    {
+      backgroundColor: '{colors.surface-dark}',
+      textColor: '{colors.text-secondary-dark}',
+      borderColor: '{colors.divider-dark}',
+      detailColor: '{colors.text-secondary-dark}',
+    }
+  # Filter menu: the filter chip that opens a list (C03 Dropdown; SC06 More, Brand, Tags; SC09
+  # More), with a trailing chevron-down, so the end padding is 10; selected = a value is chosen
+  # ("Season: Autumn"), check at the start and chevron at the end. Pressed is derived from the
+  # filter chip (not drawn).
+  chip-filter-menu-light:
+    {
+      backgroundColor: '{colors.surface-light}',
+      textColor: '{colors.text-light}',
+      borderColor: '{colors.outline-light}',
+      typography: '{typography.label-md}',
+      rounded: '{rounded.full}',
+      height: '36px',
+      padding: '0 10px 0 14px',
+    }
+  chip-filter-menu-pressed-light:
+    { backgroundColor: '{colors.surface-2-light}', textColor: '{colors.text-light}' }
+  chip-filter-menu-selected-light:
+    {
+      backgroundColor: '{colors.primary-text-light}',
+      textColor: '{colors.on-primary-light}',
+      borderColor: '{colors.primary-text-light}',
+      padding: '0 10px',
+    }
+  chip-filter-menu-selected-pressed-light: { overlayColor: '{colors.pressed-overlay-light}' }
+  chip-filter-menu-dark:
+    {
+      backgroundColor: '{colors.surface-dark}',
+      textColor: '{colors.text-dark}',
+      borderColor: '{colors.outline-dark}',
+      typography: '{typography.label-md}',
+      rounded: '{rounded.full}',
+      height: '36px',
+      padding: '0 10px 0 14px',
+    }
+  chip-filter-menu-pressed-dark:
+    { backgroundColor: '{colors.surface-2-dark}', textColor: '{colors.text-dark}' }
+  chip-filter-menu-selected-dark:
+    {
+      backgroundColor: '{colors.primary-text-dark}',
+      textColor: '{colors.on-primary-dark}',
+      borderColor: '{colors.primary-text-dark}',
+      padding: '0 10px',
+    }
+  chip-filter-menu-selected-pressed-dark: { overlayColor: '{colors.pressed-overlay-dark}' }
+  # Swatch: the choice chip with a 16 colour swatch before the label (C03; SC06 Colour, P03). The
+  # swatch colour is runtime closet data (the color prop), never a token. Default 0 14 0 12 with
+  # gap 8 to the label; an inside 1 px edge in outline when the swatch's contrast with the chip fill
+  # is below swatchEdgeMinContrast (C03 rings Ecru in light, Olive and Black in dark). Selected:
+  # check, then the swatch ringed 1.5 in surface, gaps 6. Disabled: a 1 px divider ring 1.5 off the
+  # swatch. Pressed is surface-2, as the choice chip.
+  chip-swatch-light:
+    {
+      backgroundColor: '{colors.surface-light}',
+      textColor: '{colors.text-light}',
+      borderColor: '{colors.outline-light}',
+      swatchEdgeColor: '{colors.outline-light}',
+      typography: '{typography.subhead-medium}',
+      rounded: '{rounded.full}',
+      height: '40px',
+      padding: '0 14px 0 {spacing.12}',
+      swatchSize: '16px',
+      swatchGap: '{spacing.8}',
+      swatchEdgeWidth: '1px',
+      swatchEdgeMinContrast: 3,
+    }
+  chip-swatch-pressed-light:
+    { backgroundColor: '{colors.surface-2-light}', textColor: '{colors.text-light}' }
+  chip-swatch-disabled-light:
+    {
+      backgroundColor: '{colors.surface-2-light}',
+      textColor: '{colors.text-secondary-light}',
+      borderColor: '{colors.divider-light}',
+      swatchRingColor: '{colors.divider-light}',
+      swatchRingWidth: '1px',
+      swatchRingGap: '1.5px',
+    }
+  chip-swatch-selected-light:
+    {
+      backgroundColor: '{colors.primary-text-light}',
+      textColor: '{colors.on-primary-light}',
+      borderColor: '{colors.primary-text-light}',
+      swatchRingColor: '{colors.surface-light}',
+      typography: '{typography.subhead}',
+      padding: '0 14px 0 10px',
+      swatchGap: '6px',
+      swatchRingWidth: '1.5px',
+      swatchRingGap: '0px',
+    }
+  chip-swatch-selected-pressed-light: { overlayColor: '{colors.pressed-overlay-light}' }
+  chip-swatch-selected-disabled-light:
+    {
+      backgroundColor: '{colors.surface-2-light}',
+      textColor: '{colors.text-secondary-light}',
+      borderColor: '{colors.divider-light}',
+      swatchRingColor: '{colors.divider-light}',
+      swatchRingWidth: '1px',
+      swatchRingGap: '1.5px',
+    }
+  chip-swatch-dark:
+    {
+      backgroundColor: '{colors.surface-dark}',
+      textColor: '{colors.text-dark}',
+      borderColor: '{colors.outline-dark}',
+      swatchEdgeColor: '{colors.outline-dark}',
+      typography: '{typography.subhead-medium}',
+      rounded: '{rounded.full}',
+      height: '40px',
+      padding: '0 14px 0 {spacing.12}',
+      swatchSize: '16px',
+      swatchGap: '{spacing.8}',
+      swatchEdgeWidth: '1px',
+      swatchEdgeMinContrast: 3,
+    }
+  chip-swatch-pressed-dark:
+    { backgroundColor: '{colors.surface-2-dark}', textColor: '{colors.text-dark}' }
+  chip-swatch-disabled-dark:
+    {
+      backgroundColor: '{colors.surface-dark}',
+      textColor: '{colors.text-secondary-dark}',
+      borderColor: '{colors.divider-dark}',
+      swatchRingColor: '{colors.divider-dark}',
+      swatchRingWidth: '1px',
+      swatchRingGap: '1.5px',
+    }
+  chip-swatch-selected-dark:
+    {
+      backgroundColor: '{colors.primary-text-dark}',
+      textColor: '{colors.on-primary-dark}',
+      borderColor: '{colors.primary-text-dark}',
+      swatchRingColor: '{colors.surface-dark}',
+      typography: '{typography.subhead}',
+      padding: '0 14px 0 10px',
+      swatchGap: '6px',
+      swatchRingWidth: '1.5px',
+      swatchRingGap: '0px',
+    }
+  chip-swatch-selected-pressed-dark: { overlayColor: '{colors.pressed-overlay-dark}' }
+  chip-swatch-selected-disabled-dark:
+    {
+      backgroundColor: '{colors.surface-dark}',
+      textColor: '{colors.text-secondary-dark}',
+      borderColor: '{colors.divider-dark}',
+      swatchRingColor: '{colors.divider-dark}',
+      swatchRingWidth: '1px',
+      swatchRingGap: '1.5px',
+    }
+  # Group and sort (C05 "Group and sort"; SC06, P09): the prefix part ("Group:", "Sort:") in
+  # 14/400 text-secondary, the value as the label at 600, the group or sort icon and a trailing
+  # chevron-down, gaps 6, 0 12 0 10, surface + divider ring. Pressed is surface-2 (derived from the
+  # outlined chips; not drawn). Its gaps of 6 at 36 win over chip-medium's 4 (G6).
+  chip-group-sort-light:
+    {
+      backgroundColor: '{colors.surface-light}',
+      textColor: '{colors.text-light}',
+      borderColor: '{colors.divider-light}',
+      prefixColor: '{colors.text-secondary-light}',
+      typography: '{typography.label-md}',
+      rounded: '{rounded.full}',
+      height: '36px',
+      padding: '0 {spacing.12} 0 10px',
+      iconGap: '6px',
+      trailingIconGap: '6px',
+      prefixTypography: '{typography.label-md-normal}',
+      prefixGap: '6px',
+    }
+  chip-group-sort-pressed-light: { backgroundColor: '{colors.surface-2-light}' }
+  chip-group-sort-dark:
+    {
+      backgroundColor: '{colors.surface-dark}',
+      textColor: '{colors.text-dark}',
+      borderColor: '{colors.divider-dark}',
+      prefixColor: '{colors.text-secondary-dark}',
+      typography: '{typography.label-md}',
+      rounded: '{rounded.full}',
+      height: '36px',
+      padding: '0 {spacing.12} 0 10px',
+      iconGap: '6px',
+      trailingIconGap: '6px',
+      prefixTypography: '{typography.label-md-normal}',
+      prefixGap: '6px',
+    }
+  chip-group-sort-pressed-dark: { backgroundColor: '{colors.surface-2-dark}' }
+  # Override (C03): the user's own context setting beside the weather chip, surface + 1.5
+  # primary-text ring, the caller's icon in primary-text, the detail part "· your setting" in
+  # 13/500 primary-text and a trailing pencil xs in primary-text, 0 11. Pressed is surface-2
+  # (derived from the outlined chips; not drawn).
+  chip-override-light:
+    {
+      backgroundColor: '{colors.surface-light}',
+      textColor: '{colors.text-light}',
+      borderColor: '{colors.primary-text-light}',
+      iconColor: '{colors.primary-text-light}',
+      trailingIconColor: '{colors.primary-text-light}',
+      detailColor: '{colors.primary-text-light}',
+      borderWidth: '1.5px',
+      typography: '{typography.label-sm}',
+      rounded: '{rounded.full}',
+      height: '34px',
+      padding: '0 11px',
+      detailTypography: '{typography.label-sm-medium}',
+      detailGap: '6px',
+    }
+  chip-override-pressed-light: { backgroundColor: '{colors.surface-2-light}' }
+  chip-override-dark:
+    {
+      backgroundColor: '{colors.surface-dark}',
+      textColor: '{colors.text-dark}',
+      borderColor: '{colors.primary-text-dark}',
+      iconColor: '{colors.primary-text-dark}',
+      trailingIconColor: '{colors.primary-text-dark}',
+      detailColor: '{colors.primary-text-dark}',
+      borderWidth: '1.5px',
+      typography: '{typography.label-sm}',
+      rounded: '{rounded.full}',
+      height: '34px',
+      padding: '0 11px',
+      detailTypography: '{typography.label-sm-medium}',
+      detailGap: '6px',
+    }
+  chip-override-pressed-dark: { backgroundColor: '{colors.surface-2-dark}' }
+  # Never-suggest: the slash icon in the error colour; pressed draws a 2 px ring (dark: divider
+  # fill).
   chip-never-suggest-light:
     {
       backgroundColor: '{colors.error-bg-light}',
       textColor: '{colors.text-light}',
+      borderColor: '{colors.error-fg-light}',
+      iconColor: '{colors.error-fg-light}',
       typography: '{typography.subhead}',
       rounded: '{rounded.6}',
       height: '40px',
       padding: '0 14px 0 10px',
     }
+  chip-never-suggest-pressed-light:
+    { backgroundColor: '{colors.error-bg-light}', borderWidth: '2px' }
   chip-never-suggest-dark:
     {
       backgroundColor: '{colors.surface-2-dark}',
       textColor: '{colors.text-dark}',
+      borderColor: '{colors.error-fg-dark}',
+      iconColor: '{colors.error-fg-dark}',
       typography: '{typography.subhead}',
       rounded: '{rounded.6}',
       height: '40px',
       padding: '0 14px 0 10px',
     }
+  chip-never-suggest-pressed-dark: { backgroundColor: '{colors.divider-dark}', borderWidth: '2px' }
+  # Soft-dislike: pressed darkens the fill one step, rings it in outline and inks the label.
   chip-soft-dislike-light:
     {
       backgroundColor: '{colors.surface-2-light}',
       textColor: '{colors.text-secondary-light}',
+      borderColor: '{colors.divider-light}',
       typography: '{typography.subhead-medium}',
       rounded: '{rounded.full}',
       height: '40px',
+      padding: '0 14px 0 10px',
+    }
+  chip-soft-dislike-pressed-light:
+    {
+      backgroundColor: '{colors.divider-light}',
+      textColor: '{colors.text-light}',
+      borderColor: '{colors.outline-light}',
     }
   chip-soft-dislike-dark:
     {
       backgroundColor: '{colors.surface-dark}',
       textColor: '{colors.text-secondary-dark}',
+      borderColor: '{colors.divider-dark}',
       typography: '{typography.subhead-medium}',
       rounded: '{rounded.full}',
       height: '40px',
+      padding: '0 14px 0 10px',
     }
+  chip-soft-dislike-pressed-dark:
+    {
+      backgroundColor: '{colors.surface-2-dark}',
+      textColor: '{colors.text-dark}',
+      borderColor: '{colors.outline-dark}',
+    }
+  # Add chip: no fill, outline ring, primary-text label and the add icon, closing a row of chips
+  # (C03; SC03, SC12, P03 at 40; SC06 Save filter at 36, chip-medium). Pill beside soft dislikes and
+  # filters, radius 6 beside never-suggest chips. Pressed is derived from the outlined chips
+  # (surface-2 fill); not drawn.
+  chip-add-light:
+    {
+      textColor: '{colors.primary-text-light}',
+      borderColor: '{colors.outline-light}',
+      typography: '{typography.subhead}',
+      rounded: '{rounded.full}',
+      height: '40px',
+      padding: '0 14px 0 10px',
+    }
+  chip-add-pressed-light:
+    { backgroundColor: '{colors.surface-2-light}', textColor: '{colors.primary-text-light}' }
+  chip-add-dark:
+    {
+      textColor: '{colors.primary-text-dark}',
+      borderColor: '{colors.outline-dark}',
+      typography: '{typography.subhead}',
+      rounded: '{rounded.full}',
+      height: '40px',
+      padding: '0 14px 0 10px',
+    }
+  chip-add-pressed-dark:
+    { backgroundColor: '{colors.surface-2-dark}', textColor: '{colors.primary-text-dark}' }
+  chip-never-suggest-add-light:
+    {
+      textColor: '{colors.primary-text-light}',
+      borderColor: '{colors.outline-light}',
+      typography: '{typography.subhead}',
+      rounded: '{rounded.6}',
+      height: '40px',
+      padding: '0 14px 0 10px',
+    }
+  chip-never-suggest-add-pressed-light:
+    { backgroundColor: '{colors.surface-2-light}', textColor: '{colors.primary-text-light}' }
+  chip-never-suggest-add-dark:
+    {
+      textColor: '{colors.primary-text-dark}',
+      borderColor: '{colors.outline-dark}',
+      typography: '{typography.subhead}',
+      rounded: '{rounded.6}',
+      height: '40px',
+      padding: '0 14px 0 10px',
+    }
+  chip-never-suggest-add-pressed-dark:
+    { backgroundColor: '{colors.surface-2-dark}', textColor: '{colors.primary-text-dark}' }
+  # Condition chips (C03, drawn 2026-10-21, owner: "Add condition chips as well in the canvas"):
+  # 36, 0 14 0 10, label-md, the condition glyph sm with gap 4 (chip-medium), fg / bg per theme.
+  # Pressed lays pressed-overlay-* over the fill, as the weather chip presses. Snow draws a 1 px
+  # condition-snow-ring-light ring in light only; its dark ring is the fill colour, so none shows.
   chip-condition-sunny-light:
     {
       backgroundColor: '{colors.condition-sunny-bg-light}',
@@ -1082,7 +1568,9 @@ components:
       typography: '{typography.label-md}',
       rounded: '{rounded.full}',
       height: '36px',
+      padding: '0 14px 0 10px',
     }
+  chip-condition-sunny-pressed-light: { overlayColor: '{colors.pressed-overlay-light}' }
   chip-condition-sunny-dark:
     {
       backgroundColor: '{colors.condition-sunny-bg-dark}',
@@ -1090,7 +1578,9 @@ components:
       typography: '{typography.label-md}',
       rounded: '{rounded.full}',
       height: '36px',
+      padding: '0 14px 0 10px',
     }
+  chip-condition-sunny-pressed-dark: { overlayColor: '{colors.pressed-overlay-dark}' }
   chip-condition-rain-light:
     {
       backgroundColor: '{colors.condition-rain-bg-light}',
@@ -1098,7 +1588,9 @@ components:
       typography: '{typography.label-md}',
       rounded: '{rounded.full}',
       height: '36px',
+      padding: '0 14px 0 10px',
     }
+  chip-condition-rain-pressed-light: { overlayColor: '{colors.pressed-overlay-light}' }
   chip-condition-rain-dark:
     {
       backgroundColor: '{colors.condition-rain-bg-dark}',
@@ -1106,7 +1598,9 @@ components:
       typography: '{typography.label-md}',
       rounded: '{rounded.full}',
       height: '36px',
+      padding: '0 14px 0 10px',
     }
+  chip-condition-rain-pressed-dark: { overlayColor: '{colors.pressed-overlay-dark}' }
   chip-condition-cold-light:
     {
       backgroundColor: '{colors.condition-cold-bg-light}',
@@ -1114,7 +1608,9 @@ components:
       typography: '{typography.label-md}',
       rounded: '{rounded.full}',
       height: '36px',
+      padding: '0 14px 0 10px',
     }
+  chip-condition-cold-pressed-light: { overlayColor: '{colors.pressed-overlay-light}' }
   chip-condition-cold-dark:
     {
       backgroundColor: '{colors.condition-cold-bg-dark}',
@@ -1122,7 +1618,9 @@ components:
       typography: '{typography.label-md}',
       rounded: '{rounded.full}',
       height: '36px',
+      padding: '0 14px 0 10px',
     }
+  chip-condition-cold-pressed-dark: { overlayColor: '{colors.pressed-overlay-dark}' }
   chip-condition-hot-light:
     {
       backgroundColor: '{colors.condition-hot-bg-light}',
@@ -1130,7 +1628,9 @@ components:
       typography: '{typography.label-md}',
       rounded: '{rounded.full}',
       height: '36px',
+      padding: '0 14px 0 10px',
     }
+  chip-condition-hot-pressed-light: { overlayColor: '{colors.pressed-overlay-light}' }
   chip-condition-hot-dark:
     {
       backgroundColor: '{colors.condition-hot-bg-dark}',
@@ -1138,7 +1638,9 @@ components:
       typography: '{typography.label-md}',
       rounded: '{rounded.full}',
       height: '36px',
+      padding: '0 14px 0 10px',
     }
+  chip-condition-hot-pressed-dark: { overlayColor: '{colors.pressed-overlay-dark}' }
   chip-condition-windy-light:
     {
       backgroundColor: '{colors.condition-windy-bg-light}',
@@ -1146,7 +1648,9 @@ components:
       typography: '{typography.label-md}',
       rounded: '{rounded.full}',
       height: '36px',
+      padding: '0 14px 0 10px',
     }
+  chip-condition-windy-pressed-light: { overlayColor: '{colors.pressed-overlay-light}' }
   chip-condition-windy-dark:
     {
       backgroundColor: '{colors.condition-windy-bg-dark}',
@@ -1154,23 +1658,31 @@ components:
       typography: '{typography.label-md}',
       rounded: '{rounded.full}',
       height: '36px',
+      padding: '0 14px 0 10px',
     }
+  chip-condition-windy-pressed-dark: { overlayColor: '{colors.pressed-overlay-dark}' }
   chip-condition-snow-light:
     {
       backgroundColor: '{colors.condition-snow-bg-light}',
       textColor: '{colors.condition-snow-fg-light}',
+      borderColor: '{colors.condition-snow-ring-light}',
       typography: '{typography.label-md}',
       rounded: '{rounded.full}',
       height: '36px',
+      padding: '0 14px 0 10px',
     }
+  chip-condition-snow-pressed-light: { overlayColor: '{colors.pressed-overlay-light}' }
   chip-condition-snow-dark:
     {
       backgroundColor: '{colors.condition-snow-bg-dark}',
       textColor: '{colors.condition-snow-fg-dark}',
+      borderColor: '{colors.condition-snow-bg-dark}',
       typography: '{typography.label-md}',
       rounded: '{rounded.full}',
       height: '36px',
+      padding: '0 14px 0 10px',
     }
+  chip-condition-snow-pressed-dark: { overlayColor: '{colors.pressed-overlay-dark}' }
   chip-condition-evening-light:
     {
       backgroundColor: '{colors.condition-evening-bg-light}',
@@ -1178,7 +1690,9 @@ components:
       typography: '{typography.label-md}',
       rounded: '{rounded.full}',
       height: '36px',
+      padding: '0 14px 0 10px',
     }
+  chip-condition-evening-pressed-light: { overlayColor: '{colors.pressed-overlay-light}' }
   chip-condition-evening-dark:
     {
       backgroundColor: '{colors.condition-evening-bg-dark}',
@@ -1186,7 +1700,16 @@ components:
       typography: '{typography.label-md}',
       rounded: '{rounded.full}',
       height: '36px',
+      padding: '0 14px 0 10px',
     }
+  chip-condition-evening-pressed-dark: { overlayColor: '{colors.pressed-overlay-dark}' }
+  # C03 tags (AppTag, .impeccable/components/tag.yaml): no tap and no pressed state (R4). 24 high,
+  # 12/600, radius full; the leading icon xs with gap 4 (tag-regular). tag-plan is the plan tags'
+  # shared size entry (label, height, padding). A ring is 1 px (tag-outline-ring), dashed where the
+  # entry names borderDash (G13: the provisional tag). The new tag draws a 6 px dot in its label
+  # colour (dot part, G12).
+  tag-regular: { iconSize: icon-xs, iconGap: '{spacing.4}' }
+  tag-outline-ring: { width: '1px' }
   tag-plan:
     {
       typography: '{typography.caption-strong}',
@@ -1194,42 +1717,262 @@ components:
       height: '24px',
       padding: '0 10px',
     }
+  # Plan tags (C03; SC14, SC15): Free surface-2, Essentials info, Plus success, Pro primary. In dark,
+  # Essentials and Plus are surface + a 1 px ring in the status fg; the light ring is the fill
+  # colour, so none shows. The name carries the meaning, not the colour.
+  tag-plan-free-light:
+    { backgroundColor: '{colors.surface-2-light}', textColor: '{colors.text-light}' }
+  tag-plan-free-dark:
+    { backgroundColor: '{colors.surface-2-dark}', textColor: '{colors.text-dark}' }
+  tag-plan-essentials-light:
+    {
+      backgroundColor: '{colors.info-bg-light}',
+      textColor: '{colors.info-fg-light}',
+      borderColor: '{colors.info-bg-light}',
+    }
+  tag-plan-essentials-dark:
+    {
+      backgroundColor: '{colors.surface-dark}',
+      textColor: '{colors.info-fg-dark}',
+      borderColor: '{colors.info-fg-dark}',
+    }
+  tag-plan-plus-light:
+    {
+      backgroundColor: '{colors.success-bg-light}',
+      textColor: '{colors.success-fg-light}',
+      borderColor: '{colors.success-bg-light}',
+    }
+  tag-plan-plus-dark:
+    {
+      backgroundColor: '{colors.surface-dark}',
+      textColor: '{colors.success-fg-dark}',
+      borderColor: '{colors.success-fg-dark}',
+    }
+  tag-plan-pro-light:
+    { backgroundColor: '{colors.primary-light}', textColor: '{colors.on-primary-light}' }
+  tag-plan-pro-dark:
+    { backgroundColor: '{colors.primary-dark}', textColor: '{colors.on-primary-dark}' }
+  # Status tags (C03; SC12 Later): 0 10 0 7 with the icon xs. Lock reads "Needs Plus"; Later is a
+  # text-secondary ring; Provisional is warning with a dashed ring and stays until the user confirms;
+  # New is info with the dot (dark: surface-2).
+  tag-lock-light:
+    {
+      backgroundColor: '{colors.surface-2-light}',
+      textColor: '{colors.text-light}',
+      typography: '{typography.caption-strong}',
+      rounded: '{rounded.full}',
+      height: '24px',
+      padding: '0 10px 0 7px',
+    }
+  tag-lock-dark:
+    {
+      backgroundColor: '{colors.surface-2-dark}',
+      textColor: '{colors.text-dark}',
+      typography: '{typography.caption-strong}',
+      rounded: '{rounded.full}',
+      height: '24px',
+      padding: '0 10px 0 7px',
+    }
+  tag-later-light:
+    {
+      textColor: '{colors.text-secondary-light}',
+      borderColor: '{colors.text-secondary-light}',
+      typography: '{typography.caption-strong}',
+      rounded: '{rounded.full}',
+      height: '24px',
+      padding: '0 10px 0 7px',
+    }
+  tag-later-dark:
+    {
+      textColor: '{colors.text-secondary-dark}',
+      borderColor: '{colors.text-secondary-dark}',
+      typography: '{typography.caption-strong}',
+      rounded: '{rounded.full}',
+      height: '24px',
+      padding: '0 10px 0 7px',
+    }
+  tag-provisional-light:
+    {
+      backgroundColor: '{colors.warning-bg-light}',
+      textColor: '{colors.warning-fg-light}',
+      borderColor: '{colors.warning-fg-light}',
+      typography: '{typography.caption-strong}',
+      rounded: '{rounded.full}',
+      height: '24px',
+      padding: '0 10px 0 7px',
+      borderDash: '3px',
+    }
+  tag-provisional-dark:
+    {
+      backgroundColor: '{colors.warning-bg-dark}',
+      textColor: '{colors.warning-fg-dark}',
+      borderColor: '{colors.warning-fg-dark}',
+      typography: '{typography.caption-strong}',
+      rounded: '{rounded.full}',
+      height: '24px',
+      padding: '0 10px 0 7px',
+      borderDash: '3px',
+    }
+  tag-new-light:
+    {
+      backgroundColor: '{colors.info-bg-light}',
+      textColor: '{colors.info-fg-light}',
+      typography: '{typography.caption-strong}',
+      rounded: '{rounded.full}',
+      height: '24px',
+      padding: '0 10px 0 {spacing.8}',
+      dotSize: '6px',
+      dotGap: '5px',
+    }
+  tag-new-dark:
+    {
+      backgroundColor: '{colors.surface-2-dark}',
+      textColor: '{colors.info-fg-dark}',
+      typography: '{typography.caption-strong}',
+      rounded: '{rounded.full}',
+      height: '24px',
+      padding: '0 10px 0 {spacing.8}',
+      dotSize: '6px',
+      dotGap: '5px',
+    }
+  # Availability tags (C07 item row; SC15 closet link): 0 8 with the icon xs. Available is success
+  # with the check (dark: surface-2 + success fg, as C07 and SC15 draw it); unavailable is surface-2
+  # / text-secondary with the caller's availability icon (laundry, packed, lent, repair).
+  tag-available-light:
+    {
+      backgroundColor: '{colors.success-bg-light}',
+      textColor: '{colors.success-fg-light}',
+      typography: '{typography.caption-strong}',
+      rounded: '{rounded.full}',
+      height: '24px',
+      padding: '0 {spacing.8}',
+    }
+  tag-available-dark:
+    {
+      backgroundColor: '{colors.surface-2-dark}',
+      textColor: '{colors.success-fg-dark}',
+      typography: '{typography.caption-strong}',
+      rounded: '{rounded.full}',
+      height: '24px',
+      padding: '0 {spacing.8}',
+    }
+  tag-unavailable-light:
+    {
+      backgroundColor: '{colors.surface-2-light}',
+      textColor: '{colors.text-secondary-light}',
+      typography: '{typography.caption-strong}',
+      rounded: '{rounded.full}',
+      height: '24px',
+      padding: '0 {spacing.8}',
+    }
+  tag-unavailable-dark:
+    {
+      backgroundColor: '{colors.surface-2-dark}',
+      textColor: '{colors.text-secondary-dark}',
+      typography: '{typography.caption-strong}',
+      rounded: '{rounded.full}',
+      height: '24px',
+      padding: '0 {spacing.8}',
+    }
+  # Kind tag (SC15 Discover card image): the content kind ("Trend", "Runway") in overline caps on
+  # surface, 0 10, at the image's top-left.
+  tag-kind-light:
+    {
+      backgroundColor: '{colors.surface-light}',
+      textColor: '{colors.text-light}',
+      typography: '{typography.overline}',
+      rounded: '{rounded.full}',
+      height: '24px',
+      padding: '0 10px',
+    }
+  tag-kind-dark:
+    {
+      backgroundColor: '{colors.surface-dark}',
+      textColor: '{colors.text-dark}',
+      typography: '{typography.overline}',
+      rounded: '{rounded.full}',
+      height: '24px',
+      padding: '0 10px',
+    }
+  # Differs (C08 compare card): 18 high, 0 7, 11/600, accent / on-accent, beside a differing reason.
   tag-differs-light:
     {
       backgroundColor: '{colors.accent-light}',
       textColor: '{colors.on-accent-light}',
-      typography: '{typography.caption-strong}',
+      typography: '{typography.badge}',
       rounded: '{rounded.full}',
+      height: '18px',
+      padding: '0 7px',
     }
   tag-differs-dark:
     {
       backgroundColor: '{colors.accent-dark}',
       textColor: '{colors.on-accent-dark}',
-      typography: '{typography.caption-strong}',
+      typography: '{typography.badge}',
       rounded: '{rounded.full}',
+      height: '18px',
+      padding: '0 7px',
     }
+  # C03 badges (AppBadge, .impeccable/components/badge.yaml): the count badge (dot 8, number 18)
+  # sits on an icon or a tab with a 2 px ring outside it in the host's surface (outerRingWidth; the
+  # colour is the hostSurface prop, G8, G12); the trial pill is 28 with a 1.5 ring
+  # (badge-outline-ring) and the clock sm with gap 5 (badge-large).
+  badge-large:
+    {
+      typography: '{typography.label-sm}',
+      rounded: '{rounded.full}',
+      height: '28px',
+      padding: '0 {spacing.12} 0 9px',
+      iconSize: icon-sm,
+      iconGap: '5px',
+    }
+  badge-outline-ring: { width: '1.5px' }
   pill-trial-light:
     {
       backgroundColor: '{colors.surface-light}',
       textColor: '{colors.text-light}',
+      borderColor: '{colors.text-light}',
       typography: '{typography.label-sm}',
       rounded: '{rounded.full}',
       height: '28px',
       padding: '0 {spacing.12} 0 9px',
     }
   pill-trial-last-day-light:
-    { backgroundColor: '{colors.warning-bg-light}', textColor: '{colors.warning-fg-light}' }
+    {
+      backgroundColor: '{colors.warning-bg-light}',
+      textColor: '{colors.warning-fg-light}',
+      borderColor: '{colors.warning-fg-light}',
+    }
   pill-trial-dark:
     {
       backgroundColor: '{colors.surface-dark}',
       textColor: '{colors.text-dark}',
+      borderColor: '{colors.text-dark}',
       typography: '{typography.label-sm}',
       rounded: '{rounded.full}',
       height: '28px',
       padding: '0 {spacing.12} 0 9px',
     }
   pill-trial-last-day-dark:
-    { backgroundColor: '{colors.warning-bg-dark}', textColor: '{colors.warning-fg-dark}' }
+    {
+      backgroundColor: '{colors.warning-bg-dark}',
+      textColor: '{colors.warning-fg-dark}',
+      borderColor: '{colors.warning-fg-dark}',
+    }
+  badge-dot-light:
+    {
+      backgroundColor: '{colors.error-fg-light}',
+      rounded: '{rounded.full}',
+      size: '8px',
+      outerRingWidth: '2px',
+    }
+  badge-dot-dark:
+    {
+      backgroundColor: '{colors.error-fg-dark}',
+      rounded: '{rounded.full}',
+      size: '8px',
+      outerRingWidth: '2px',
+    }
   badge-count-light:
     {
       backgroundColor: '{colors.error-fg-light}',
@@ -1237,6 +1980,9 @@ components:
       typography: '{typography.badge-count}',
       rounded: '{rounded.full}',
       height: '18px',
+      minWidth: '18px',
+      padding: '0 5px',
+      outerRingWidth: '2px',
     }
   badge-count-dark:
     {
@@ -1245,6 +1991,49 @@ components:
       typography: '{typography.badge-count}',
       rounded: '{rounded.full}',
       height: '18px',
+      minWidth: '18px',
+      padding: '0 5px',
+      outerRingWidth: '2px',
+    }
+  # Reason row (C03 "Expanded reason row"; SC08): the panel the expanded reason chip opens under
+  # the chips. The sentence is the label (Callout); then the fact line (13/600) behind a 24 icon
+  # disc in surface-2 with the icon sm in primary-text, gap 8; then the freshness line (Caption,
+  # text-secondary). Padding 14 16, radius 16, surface + 1 px divider ring, lines 8 apart.
+  reason-row-standard: { iconSize: icon-sm, iconGap: '{spacing.8}' }
+  reason-row-outline-ring: { width: '1px' }
+  reason-row-light:
+    {
+      backgroundColor: '{colors.surface-light}',
+      textColor: '{colors.text-light}',
+      borderColor: '{colors.divider-light}',
+      iconColor: '{colors.primary-text-light}',
+      iconDiscColor: '{colors.surface-2-light}',
+      factColor: '{colors.text-light}',
+      freshnessColor: '{colors.text-secondary-light}',
+      typography: '{typography.callout}',
+      rounded: '{rounded.16}',
+      padding: '14px {spacing.16}',
+      lineGap: '{spacing.8}',
+      iconDiscSize: '24px',
+      factTypography: '{typography.label-sm}',
+      freshnessTypography: '{typography.caption}',
+    }
+  reason-row-dark:
+    {
+      backgroundColor: '{colors.surface-dark}',
+      textColor: '{colors.text-dark}',
+      borderColor: '{colors.divider-dark}',
+      iconColor: '{colors.primary-text-dark}',
+      iconDiscColor: '{colors.surface-2-dark}',
+      factColor: '{colors.text-dark}',
+      freshnessColor: '{colors.text-secondary-dark}',
+      typography: '{typography.callout}',
+      rounded: '{rounded.16}',
+      padding: '14px {spacing.16}',
+      lineGap: '{spacing.8}',
+      iconDiscSize: '24px',
+      factTypography: '{typography.label-sm}',
+      freshnessTypography: '{typography.caption}',
     }
   # C04 Status and feedback
   badge-tile-light:
@@ -1839,7 +2628,7 @@ Dark status fg on `background-dark`: success 8.7, warning 8.6, error 7.1, info 7
 
 ### Condition chips
 
-Weather and occasion chips (`condition-<name>-fg|bg-*`): 36 high, radius full, Figtree 14/600, icon + words. Light ratios 5.9–11.7, dark 7.0–11.0. Sunny (7.2 · 8.1), Rain (6.3 · 7.5), Cold (10.4 · 8.1), Hot (5.9 · 7.0), Windy (6.1 · 7.1), Snow (8.0 · 11.0, light chip has a `condition-snow-ring-light` ring), Evening out (11.7 · 8.7). The Today context-strip weather chip is different: it uses accent / on-accent (C03).
+Weather and occasion chips (`condition-<name>-fg|bg-*`, AppChip `condition-*` variants, drawn on C03 2026-10-21): 36 high in a 44 target, padding 0 14 0 10, radius full, Figtree 14/600, icon sm with gap 4 + words (sun, rain, cold, hot, wind, snow, evening); pressed lays `pressed-overlay-*` over the fill, as the weather chip presses. Light ratios 5.9–11.7, dark 7.0–11.0. Sunny (7.2 · 8.1), Rain (6.3 · 7.5), Cold (10.4 · 8.1), Hot (5.9 · 7.0), Windy (6.1 · 7.1), Snow (8.0 · 11.0, light chip has a `condition-snow-ring-light` ring), Evening out (11.7 · 8.7). The Today context-strip weather chip is different: it uses accent / on-accent (C03).
 
 ### Contrast summary (WCAG, R2)
 
@@ -1863,7 +2652,7 @@ S7 High Contrast (light and dark): every text pair drawn on the S7 board is at l
 
 **The No New Colours Rule.** Every colour on screen is a token above. A colour the canvas does not have needs an approved canvas change first.
 
-**The Twin Rule.** Every `-light` colour, elevation or component token has a `-dark` twin of the same name, and the reverse, and no component points at a token with the other theme's suffix. A twin keeps the role, not always the tonal step; these differ on purpose, as drawn: the outlined destructive button pressed (error-bg in light, surface-2 in dark), `chip-never-suggest` (error-bg / surface-2), `chip-soft-dislike` (surface-2 / surface), `segmented-control` (surface-2 / surface) and its selected segment (surface / surface-2), and `camera-mode-selected` (paper pill in light, yellow pill in dark). The tokens without a twin are on the line below: the shared fill of the dark info, success, error and stale banners (each kind also has its own twin), the light-only snow-chip ring, and the light segment-thumb shadow (dark draws surface-2 + a 1 px outline instead).
+**The Twin Rule.** Every `-light` colour, elevation or component token has a `-dark` twin of the same name, and the reverse, and no component points at a token with the other theme's suffix. A twin keeps the role, not always the tonal step; these differ on purpose, as drawn: the outlined destructive button pressed (error-bg in light, surface-2 in dark), `chip-never-suggest` (error-bg / surface-2) and its pressed fill (error-bg / divider), `chip-soft-dislike` (surface-2 / surface) and its pressed fill (divider / surface-2), the disabled choice, filter and swatch chips and their selected twins (surface-2 / surface), the snow condition chip's ring (`condition-snow-ring-light` in light, its own fill in dark), the Essentials and Plus plan tags (status bg / surface + status ring), the new tag (info-bg / surface-2), the available tag (success-bg / surface-2), `segmented-control` (surface-2 / surface) and its selected segment (surface / surface-2), and `camera-mode-selected` (paper pill in light, yellow pill in dark). The tokens without a twin are on the line below: the shared fill of the dark info, success, error and stale banners (each kind also has its own twin), the light-only snow-chip ring, and the light segment-thumb shadow (dark draws surface-2 + a 1 px outline instead).
 
 Unpaired by design: banner-dark, condition-snow-ring-light, segment-thumb-light.
 
@@ -1893,7 +2682,7 @@ Sizes are pt on iOS and sp on Android at 100 %; every style scales with Dynamic 
 | overline | Figtree     | 11 / 14     | 600    | +8 %, caps | .caption2        | labelSmall                                | TYPICAL DAY                              |
 | button   | Figtree     | 17 / 22     | 600    | 0          | .headline        | labelLarge                                | Wear this                                |
 
-Each of the 15 Material 3 type roles is filled by exactly one style, so Android's built-in components (the date picker, for example) set their text in Garderi type, not the M3 default. R2 has no style for `displayLarge`, `displayMedium` or `headlineLarge`: `display` also fills the first two, and `large-title-bar` (below) fills `headlineLarge`, so those components get the serif look. The frontmatter carries the same mapping per style: `dynamicType` is the iOS column without the dot, `m3Roles` the Android column as a list.
+Each of the 15 Material 3 type roles is filled by exactly one style, so Android's built-in components (the date picker, for example) set their text in Garderi type, not the M3 default. R2 has no style for `displayLarge`, `displayMedium` or `headlineLarge`: `display` also fills the first two, and `large-title-bar` (below) fills `headlineLarge`, so those components get the serif look. The frontmatter carries the same mapping per style: `dynamicType` is the iOS column without the dot, `m3Roles` the Android column as a list, and `textTransform: uppercase` the Tracking column's "caps" (the overline only; a style without it is drawn as written). The apps draw the caps and keep the words as written for screen readers.
 
 Component label styles (drawn on C01–C10, not on R2) each scale with the nearest R2 style above, at or just over their size (the "Scales with" column), and take its Dynamic Type style. Only `large-title-bar` fills an M3 role; the others fill none (`m3Roles: []`) and scale in sp with the font scale. Tracking is 0 for all.
 
@@ -1902,6 +2691,9 @@ Component label styles (drawn on C01–C10, not on R2) each scale with the neare
 | large-title-bar | Young Serif | 34 / 40     | 400    | display     | .largeTitle      | headlineLarge | top-level large title (iOS large navigation title, M3 large top app bar)  |
 | label-md        | Figtree     | 14 / 18     | 600    | subhead     | .subheadline     | —             | filter, condition, group/sort chips                                       |
 | label-sm        | Figtree     | 13 / 18     | 600    | footnote    | .footnote        | —             | weather and reason chips, confidence label, trial pill, inline provenance |
+| label-md-normal | Figtree     | 14 / 18     | 400    | subhead     | .subheadline     | —             | group and sort chip prefix ("Group:")                                     |
+| label-md-medium | Figtree     | 14 / 18     | 500    | subhead     | .subheadline     | —             | filter chip count ("· 12")                                                |
+| label-sm-medium | Figtree     | 13 / 18     | 500    | footnote    | .footnote        | —             | override chip detail ("· your setting")                                   |
 | subhead-medium  | Figtree     | 15 / 20     | 500    | subhead     | .subheadline     | —             | choice chips, snackbar, toast, menu rows                                  |
 | label-action    | Figtree     | 15 / 20     | 700    | subhead     | .subheadline     | —             | snackbar Undo action                                                      |
 | caption-strong  | Figtree     | 12 / 16     | 600    | caption     | .caption         | —             | active tab label, plan tags                                               |
@@ -1921,7 +2713,7 @@ Phone reference 390 × 844. One column; content width = screen − 40.
 
 - **Side margin** 20 at every width (320 to 430). Rows, cards and the outfit card stretch to width − 40.
 - **Spacing scale** (`spacing`, pt / dp): 4, 8, 12, 16, 20, 24, 32, 40, 48, 64. Roles on R2: 16 card padding, 20 screen side margin, 24 section gap. On Today, R3 measures section gap 8 (12 on pushed screens). A component padding or gap part that equals a step names it in the frontmatter (`padding: '0 {spacing.24}'`); heights and off-scale parts stay literal (owner 2026-10-21).
-- **Screen anatomy (R3):** content starts 8 below the OS safe area; large title 72 (padding 8 0 6, overline + `large-title-bar`, profile 44); context strip 44 with chips inside 44 targets; source line in Caption; outfit card radius 24, padding 14, gap 10; primary button 52, one per screen; action row 72 (radius 20, padding 8 6, buttons 56 tall, 48 min wide); section header 44 (Subhead + text action); alternatives rail 60, cards 164 wide, gap 10, scrolls past the right margin; tab bar 78 with the home-indicator zone inside its bottom 20.
+- **Screen anatomy (R3):** content starts 8 below the OS safe area; large title 72 (padding 8 0 6, overline caps + `large-title-bar`, profile 44); context strip 44 with chips inside 44 targets; source line in Caption; outfit card radius 24, padding 14, gap 10; primary button 52, one per screen; action row 72 (radius 20, padding 8 6, buttons 56 tall, 48 min wide); section header 44 (Subhead + text action); alternatives rail 60, cards 164 wide, gap 10, scrolls past the right margin; tab bar 78 with the home-indicator zone inside its bottom 20.
 - **Top bars:** top-level tabs use the large title 72, collapsing to the compact 52 bar (surface, bottom divider) on scroll and expanding at the top. Pushed screens use the standard 52 bar (back 44, centred title, at most one text action). Modals use the 56 bar (close 44 left, title + position, Save right). The tab bar never hides on scroll. iOS: large navigation title collapsing to inline · Android: M3 large top app bar collapsing to small.
 - **Navigation:** five tabs, Today (launch) · Closet · Capture (centre, opens the camera modal) · Discover · You, each with its own stack. The tab bar shows on every screen inside a tab, top level and pushed; it hides only in modal flows (onboarding, the Capture flow, Edit and correct, Paywall, Trial ended recap, Deletion pending). A sheet sits over its parent with the tab bar under the scrim. iOS: tab view, one navigation stack per tab, full-screen cover for modals, sheets with detents · Android: M3 navigation bar, one back stack per tab, full-screen dialog destination, modal bottom sheet.
 - **Bottom sheet:** max height 772 (top inset 72 of 844); short sheets fit content.
@@ -1982,7 +2774,7 @@ Soft, rounded, friendly geometry. Interactive things are pills; containers are g
 
 ## Components
 
-Every component is drawn in S1 and S2 on its canvas board, with states in this order: default, pressed, focused (`focus-ring-*`: 2 px ring, 2 px gap, following the control's corners; 3 px in S7 High Contrast, `focus-ring-hc-*`), disabled (surface-2 fill + text-secondary label, never opacity alone on text, text ≥ 3:1), loading, error, selected. Frontmatter carries colours, type, radius and size, plus shadows (`elevation`), `motion`, the button outline ring (width `button-outline-ring`, colour `borderColor`), the button spinner colour (`spinnerColor`, where it is not the label colour), the focus ring and the pressed overlays (`overlayColor`); the other outline colours and rings are described here.
+Every component is drawn in S1 and S2 on its canvas board, with states in this order: default, pressed, focused (`focus-ring-*`: 2 px ring, 2 px gap, following the control's corners; 3 px in S7 High Contrast, `focus-ring-hc-*`), disabled (surface-2 fill + text-secondary label, never opacity alone on text, text ≥ 3:1), loading, error, selected. Frontmatter carries colours, type, radius and size, plus shadows (`elevation`), `motion`, the button and chip outline rings (widths `button-outline-ring` and `chip-outline-ring`, colour `borderColor`), the button spinner colour (`spinnerColor`, where it is not the label colour), the chip icon tint (`iconColor`, where it is not the label colour), the focus ring and the pressed overlays (`overlayColor`); the other outline colours and rings are described here. The chip, tag, badge and reason-row entries also name a trailing icon slot, second text runs, the colour swatch, dashed rings, a dot and an outer ring; `.impeccable/components/README.md` "Entry properties" defines each one.
 
 ### Buttons (C01)
 
@@ -2050,19 +2842,23 @@ Every component is drawn in S1 and S2 on its canvas board, with states in this o
 
 ### Chips and tags (C03)
 
+- **API (owner 2026-10-21: "I don't want to left anything behind"):** `.impeccable/components/chip.yaml` (`AppChip`) holds every tappable chip: weather, context, the seven condition chips, override, reason, choice, swatch, filter (with its count), filter menu, group and sort (drawn on C05), never-suggest, soft-dislike, add and never-suggest add. Sizes compact 32, small 34, medium 36 and large 40 (`chip-<size>`: leading icon sm up to 36, md at 40; trailing chevron or pencil xs at 32 and 34, sm at 36); rings 1 px (`chip-outline-ring`). Selected and expanded combine with pressed, focused and disabled (`selected-pressed` …). `tag.yaml` (`AppTag`) holds the tags, `badge.yaml` (`AppBadge`) the count badge and the trial pill, `reason-row.yaml` (`AppReasonRow`) the expanded reason row. Where C03 and the screens disagree, the screens win (owner 2026-10-20). Tags, pills and badges are not chips: no tap and no pressed state (R4).
 - **Weather chip (context strip):** 34 in a 44 target, padding 0 14 0 11, label-sm, accent / on-accent, icon sm; pressed `pressed-overlay-*` (ink 12 % light, background 16 % dark).
-- **Occasion / holiday chips:** surface-2 / text, pressed divider. Holiday only when one applies. **Override chip:** surface + 1.5 primary-text ring, house + pencil icon, "your setting" in primary-text. No selected state; tap opens a sheet.
+- **Condition chips:** see Colors › Condition chips; drawn on C03 beside the context chips.
+- **Occasion / holiday chips:** 34 in a 44 target, padding 0 14 0 11, label-sm, icon sm, surface-2 / text, pressed divider. Holiday only when one applies. **Override chip:** 34, padding 0 11, surface + 1.5 primary-text ring, the caller's icon (house) in primary-text, the detail "· your setting" in 13/500 (`label-sm-medium`) primary-text, a trailing pencil xs in primary-text; pressed surface-2 (derived, not drawn). No selected state; tap opens a sheet.
 - **Freshness caption:** chips gap 8; source + time ("Open-Meteo · 07:10") in Caption text-secondary, always visible.
-- **Reason chip:** 32 in a 44 target, padding 0 12 0 10, label-sm, surface-2 / text, icon sm in primary-text; text comes from reason-code templates. Expanded: primary-text fill + white (dark: primary-text / ink) + chevron up. **Expanded reason row:** padding 14 16, radius 16, surface + divider ring, sentence in Callout, fact 13/600 with icon disc, freshness in Caption.
-- **Choice chip (multi-select):** 40 in a 44 target, padding 0 14 (0 14 0 10 with check), 15/500 (selected 600), surface + 1 px outline; selected primary-text fill (dark: primary-text / ink) + check md.
-- **Filter chip:** 36 in a 44 target, label-md, surface + 1 px outline; selected as choice chip + check sm; count in 500 text-secondary; dropdown chevron sm.
-- **Never-suggest chip (hard exclusion):** 40, padding 0 14 0 10, radius 6 (never a pill), 15/600, error-bg + 1 px error ring (dark: surface-2 + 1 px dark error), slash icon md in error; pressed 2 px ring.
-- **Soft-dislike chip:** pill, 15/500, surface-2 / text-secondary + divider ring, minus icon md. **Add chip:** transparent, 1 px outline, primary-text, plus icon.
-- **Colour swatch chip:** 40, swatch 16 circle (outline ring on swatches near the ground), name always shown.
-- **Plan tags:** 24, padding 0 10, 12/600: Free surface-2, Essentials info, Plus success, Pro primary. The name carries meaning, not the colour.
-- **Status tags:** Lock (surface-2 + lock xs, read as "Needs Plus"), Later (1 px text-secondary ring + clock), Provisional (warning, dashed 1 px, stays until the user confirms), New (info + 6 px dot).
-- **Count badge:** dot 8 or number 18 high, badge-count, error fill with an `on-error-*` number, 2 px ring in the surface below; the count is also in the label.
-- **Trial pill:** 28, padding 0 12 0 9, label-sm, surface + 1.5 text ring, clock icon + days in words ("Trial · 2 days left"); last day uses warning colours.
+- **Reason chip:** 32 in a 44 target, padding 0 12 0 10, label-sm, surface-2 / text, icon sm in primary-text, pressed divider; text comes from reason-code templates. Expanded: primary-text fill + white (dark: primary-text / ink) + chevron up xs, padding 0 10. **Expanded reason row:** padding 14 16, radius 16, surface + divider ring, sentence in Callout, fact 13/600 with icon disc, freshness in Caption, lines 8 apart (`AppReasonRow`).
+- **Choice chip:** 40 in a 44 target, padding 0 14 (0 14 0 10 with check), 15/500 (selected 600), surface + 1 px outline; pressed surface-2; selected primary-text fill (dark: primary-text / ink) + check md, no ring; disabled surface-2 (dark: surface) + text-secondary + divider ring. Multi-select (feedback, onboarding) or one choice per group (SC08 What's on today).
+- **Filter chip:** 36 in a 44 target, label-md, surface + 1 px outline; pressed surface-2; selected as choice chip + check sm (padding 0 14 0 10); disabled as choice chip; the count is the detail "· 12" in 14/500 (`label-md-medium`) text-secondary, 4 after the label (on the selected fill it takes the label colour, derived). **Filter menu** (opens a list): chevron-down sm at the end, padding 0 10 0 14; selected (a value chosen) 0 10 with check and chevron (SC06 More, Brand, Tags; SC09 More).
+- **Never-suggest chip (hard exclusion):** 40, padding 0 14 0 10, radius 6 (never a pill), 15/600, error-bg + 1 px error ring (dark: surface-2 + 1 px dark error), slash icon md in error; pressed 2 px ring (dark: divider fill).
+- **Soft-dislike chip:** 40, pill, padding 0 14 0 10, 15/500, surface-2 / text-secondary + divider ring (dark: surface), minus icon md; pressed divider fill + outline ring + text (dark: surface-2). **Add chip:** transparent, 1 px outline, primary-text, plus icon; 40 (15/600, gap 6) or 36 (label-md, icon sm, gap 4: SC06 Save filter); radius 6 beside never-suggest chips, a pill elsewhere; pressed surface-2 (derived, not drawn).
+- **Colour swatch chip:** the choice chip with a 16 swatch circle, padding 0 14 0 12, gap 8 (selected: check, then the swatch ringed 1.5 in surface, gaps 6, padding 0 14 0 10); a 1 px outline edge inside the swatch when its contrast with the chip fill is below 3:1 ("swatches near the ground"); disabled rings the swatch in divider 1.5 off it; name always shown. The swatch colour is closet data passed at runtime, never a token.
+- **Group and sort chips:** see Navigation › In-screen controls (AppChip `group-sort`).
+- **Plan tags:** 24, padding 0 10, 12/600: Free surface-2, Essentials info, Plus success, Pro primary (dark: Essentials and Plus on surface with a 1 px ring in their fg). The name carries meaning, not the colour (`AppTag`).
+- **Status tags:** 24, padding 0 10 0 7, icon xs, gap 4: Lock (surface-2 + lock xs, read as "Needs Plus"), Later (1 px text-secondary ring + clock), Provisional (warning, dashed 1 px, the pending ring icon, stays until the user confirms), New (info + 6 px dot, gap 5, padding 0 10 0 8; dark surface-2).
+- **Other tags (`AppTag`):** availability on item rows (C07, SC15: 24, padding 0 8; Available success + check, dark surface-2; unavailable surface-2 / text-secondary + the availability icon); the Discover kind tag on card images (SC15: "Trend", "Runway" in overline caps on surface, 24, padding 0 10); the Differs tag (C08: 18, padding 0 7, 11/600, accent / on-accent).
+- **Count badge:** dot 8 or number 18 high (min width 18, padding 0 5), badge-count, error fill with an `on-error-*` number, 2 px ring in the surface below; the count is also in the label (`AppBadge`).
+- **Trial pill:** 28, padding 0 12 0 9, label-sm, surface + 1.5 text ring, clock icon sm with gap 5 + days in words ("Trial · 2 days left"); last day uses warning colours with a warning ring (`AppBadge`).
 
 ### Status and feedback (C04)
 
@@ -2083,7 +2879,7 @@ Every component is drawn in S1 and S2 on its canvas board, with states in this o
 - **Segmented control:** track 44, padding 4, pill; segment 36; selected surface + segment-thumb shadow (dark: surface-2 + 1 px outline), 15/20 600; others 500 text-secondary; disabled no track fill, 1 px divider.
 - **Camera mode switch:** Single | Batch | Library on camera-ground; track camera-track; segment 36, padding 0 18; labels `camera-paper`; selected `camera-paper` / `camera-ink` (dark: `camera-yellow` / `camera-ink`, the S2 primary yellow); upload badge 36 with 1.5 ring, 14/600.
 - **Page dots:** row 44; active 24 × 8 primary; inactive 8 × 8 outline; gap 8. **Step progress:** back 44, "Step 5 of 6" Footnote 13/18 600, "Finish later" 15/600 primary-text, bar 4 (track divider, fill primary).
-- **In-screen controls:** group/sort chips 36 in 44 targets (surface, divider ring, 14/18, value 600, opens a list sheet); grid/list toggle (track 44 surface-2, icon segments 44 × 36, labelled "Grid" / "List").
+- **In-screen controls:** group/sort chips 36 in 44 targets (surface, divider ring, padding 0 12 0 10, group or sort icon sm, prefix "Group:" / "Sort:" in 14/400 `label-md-normal` text-secondary, value 600, chevron-down sm, gaps 6, opens a list sheet; AppChip `group-sort`); grid/list toggle (track 44 surface-2, icon segments 44 × 36, labelled "Grid" / "List").
 - **Deep-link fallback banner:** radius 16, info colours (dark: surface-2 + divider), dismiss 44 ("That item was deleted — here's your closet").
 
 ### Inputs and forms (C06)
@@ -2101,10 +2897,10 @@ Every component is drawn in S1 and S2 on its canvas board, with states in this o
 
 ### Lists and rows (C07)
 
-- **Grouped list:** Overline section header, inset card radius 16 on surface, settings rows 52, divider inset 52, icon lg primary-text, value 15 secondary. **Plain list:** rows 52, full-width divider; pressed surface-2 radius 12.
+- **Grouped list:** section header in Overline caps, inset card radius 16 on surface, settings rows 52, divider inset 52, icon lg primary-text, value 15 secondary. **Plain list:** rows 52, full-width divider; pressed surface-2 radius 12.
 - **Toggle row** 64 (label 17 + helper 13, switch); **destructive row** 64 (error fg + icon + plain words; pressed error-bg).
 - **Detail row with confidence:** label 12/500 + value 15/600, confidence as text; low band on warning-bg with icon. **Provisional row:** estimated value with dashed underline + Provisional tag until confirmed; Confirm is a primary outline button, Compact.
-- **Device row** 64 (Sign out outlined 44; none on this device). **Item row** 72 (photo 56 radius 12, name 15/600, category · colour 13, availability chip 24; unavailable mutes the photo, text stays readable). **Planned outfit row** (date 15/600, 3 thumbs 28 radius 8; flagged strip warning-bg + icon + "Rain now expected — review your plan"). **Collection row** 64 (3 overlapping thumbs).
+- **Device row** 64 (Sign out outlined 44; none on this device). **Item row** 72 (photo 56 radius 12, name 15/600, category · colour 13, availability tag 24, `AppTag`; unavailable mutes the photo, text stays readable). **Planned outfit row** (date 15/600, 3 thumbs 28 radius 8; flagged strip warning-bg + icon + "Rain now expected — review your plan"). **Collection row** 64 (3 overlapping thumbs).
 - **Feedback history row** (Undo text button + Delete destructive text button, both Compact with icon md). **Upload queue rows** (photo 44 radius 10, status icon + text, progress 4; failed shows "Upload failed · photo is safe" + Retry). **Consent processor row** 60 (purpose · processor · region).
 
 ### Cards (C08)
@@ -2112,7 +2908,7 @@ Every component is drawn in S1 and S2 on its canvas board, with states in this o
 - **Item tile:** 110 square, radius 16, surface-2, garment 64, badge 22; selected 2 px primary ring + check; muted garment at 40 %, label at full contrast.
 - **Outfit card (signature):** 350 wide, padding 14, radius 24, surface + 1 px divider, collage 176 radius 18, Young Serif title, 3 reason chips, confidence as text, "5 items from your closet". **Partial:** missing slot 1.5 dashed outline radius 14 named in Footnote 13/600 ("Shoes — none that suit rain"), "Partial outfit" pill in warning, "Add shoes to unlock outfits".
 - **Outfit option thumbnail:** 140 wide, collage 140 × 112 radius 14, Subhead label, selected 2 px primary ring + "Showing".
-- **Compare card:** 500 wide, padding 16, radius 20, 2 columns gap 16; differing reasons get a "Differs" tag (accent / on-accent) + 600 weight.
+- **Compare card:** 500 wide, padding 16, radius 20, 2 columns gap 16; differing reasons get a "Differs" tag (accent / on-accent, `AppTag`) + 600 weight.
 - **Discover card:** 360 wide, radius 20, image 170, Young Serif 20/26, source + freshness Footnote, closet link row 52 ("Pairs with your black wide-leg trousers"), "Why you're seeing this", actions 44 (Save, Follow, Show less, Hide, Report). No shopping links.
 - **Upgrade card:** padding 18, radius 20, readable, never blurred, Headline + Callout, link button 44.
 - **Paywall tier card:** min 84, padding 16, radius 18, radio 22, selected 2 px primary ring + "Selected" pill; prices show "[PRICE]" (pricing not final).

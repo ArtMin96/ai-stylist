@@ -71,6 +71,14 @@ object AppRadius {
         )
 }
 
+/** How a type style draws its text (`textTransform`); the spoken text stays as written. */
+enum class AppTextTransform(
+    val id: String,
+) {
+    NONE("none"),
+    UPPERCASE("uppercase"),
+}
+
 /** A type style: sizes in pt/sp, letter spacing in pt/sp, line height as a height. */
 data class AppTextStyle(
     val name: String,
@@ -79,6 +87,7 @@ data class AppTextStyle(
     val fontWeight: Int,
     val lineHeight: Double,
     val letterSpacing: Double,
+    val textTransform: AppTextTransform,
     val dynamicType: String,
     val m3Roles: List<String>,
 )
@@ -93,6 +102,7 @@ object AppTypography {
             fontWeight = 400,
             lineHeight = 46.0,
             letterSpacing = 0.0,
+            textTransform = AppTextTransform.NONE,
             dynamicType = "largeTitle",
             m3Roles = listOf("displayLarge", "displayMedium", "displaySmall"),
         )
@@ -105,6 +115,7 @@ object AppTypography {
             fontWeight = 400,
             lineHeight = 38.0,
             letterSpacing = 0.0,
+            textTransform = AppTextTransform.NONE,
             dynamicType = "title",
             m3Roles = listOf("headlineMedium"),
         )
@@ -117,6 +128,7 @@ object AppTypography {
             fontWeight = 400,
             lineHeight = 32.0,
             letterSpacing = 0.0,
+            textTransform = AppTextTransform.NONE,
             dynamicType = "title2",
             m3Roles = listOf("headlineSmall"),
         )
@@ -129,6 +141,7 @@ object AppTypography {
             fontWeight = 400,
             lineHeight = 26.0,
             letterSpacing = 0.0,
+            textTransform = AppTextTransform.NONE,
             dynamicType = "title3",
             m3Roles = listOf("titleLarge"),
         )
@@ -141,6 +154,7 @@ object AppTypography {
             fontWeight = 600,
             lineHeight = 22.0,
             letterSpacing = 0.0,
+            textTransform = AppTextTransform.NONE,
             dynamicType = "headline",
             m3Roles = listOf("titleMedium"),
         )
@@ -153,6 +167,7 @@ object AppTypography {
             fontWeight = 400,
             lineHeight = 24.0,
             letterSpacing = 0.0,
+            textTransform = AppTextTransform.NONE,
             dynamicType = "body",
             m3Roles = listOf("bodyLarge"),
         )
@@ -165,6 +180,7 @@ object AppTypography {
             fontWeight = 400,
             lineHeight = 21.0,
             letterSpacing = 0.0,
+            textTransform = AppTextTransform.NONE,
             dynamicType = "callout",
             m3Roles = listOf("bodyMedium"),
         )
@@ -177,6 +193,7 @@ object AppTypography {
             fontWeight = 600,
             lineHeight = 20.0,
             letterSpacing = 0.0,
+            textTransform = AppTextTransform.NONE,
             dynamicType = "subheadline",
             m3Roles = listOf("titleSmall"),
         )
@@ -189,6 +206,7 @@ object AppTypography {
             fontWeight = 400,
             lineHeight = 18.0,
             letterSpacing = 0.0,
+            textTransform = AppTextTransform.NONE,
             dynamicType = "footnote",
             m3Roles = listOf("bodySmall"),
         )
@@ -201,6 +219,7 @@ object AppTypography {
             fontWeight = 500,
             lineHeight = 16.0,
             letterSpacing = 0.0,
+            textTransform = AppTextTransform.NONE,
             dynamicType = "caption",
             m3Roles = listOf("labelMedium"),
         )
@@ -213,6 +232,7 @@ object AppTypography {
             fontWeight = 600,
             lineHeight = 14.0,
             letterSpacing = 0.88,
+            textTransform = AppTextTransform.UPPERCASE,
             dynamicType = "caption2",
             m3Roles = listOf("labelSmall"),
         )
@@ -225,6 +245,7 @@ object AppTypography {
             fontWeight = 600,
             lineHeight = 22.0,
             letterSpacing = 0.0,
+            textTransform = AppTextTransform.NONE,
             dynamicType = "headline",
             m3Roles = listOf("labelLarge"),
         )
@@ -237,6 +258,7 @@ object AppTypography {
             fontWeight = 400,
             lineHeight = 40.0,
             letterSpacing = 0.0,
+            textTransform = AppTextTransform.NONE,
             dynamicType = "largeTitle",
             m3Roles = listOf("headlineLarge"),
         )
@@ -249,6 +271,7 @@ object AppTypography {
             fontWeight = 600,
             lineHeight = 18.0,
             letterSpacing = 0.0,
+            textTransform = AppTextTransform.NONE,
             dynamicType = "subheadline",
             m3Roles = emptyList(),
         )
@@ -261,6 +284,46 @@ object AppTypography {
             fontWeight = 600,
             lineHeight = 18.0,
             letterSpacing = 0.0,
+            textTransform = AppTextTransform.NONE,
+            dynamicType = "footnote",
+            m3Roles = emptyList(),
+        )
+
+    val labelMdNormal: AppTextStyle =
+        AppTextStyle(
+            name = "label-md-normal",
+            fontFamily = "Figtree",
+            fontSize = 14.0,
+            fontWeight = 400,
+            lineHeight = 18.0,
+            letterSpacing = 0.0,
+            textTransform = AppTextTransform.NONE,
+            dynamicType = "subheadline",
+            m3Roles = emptyList(),
+        )
+
+    val labelMdMedium: AppTextStyle =
+        AppTextStyle(
+            name = "label-md-medium",
+            fontFamily = "Figtree",
+            fontSize = 14.0,
+            fontWeight = 500,
+            lineHeight = 18.0,
+            letterSpacing = 0.0,
+            textTransform = AppTextTransform.NONE,
+            dynamicType = "subheadline",
+            m3Roles = emptyList(),
+        )
+
+    val labelSmMedium: AppTextStyle =
+        AppTextStyle(
+            name = "label-sm-medium",
+            fontFamily = "Figtree",
+            fontSize = 13.0,
+            fontWeight = 500,
+            lineHeight = 18.0,
+            letterSpacing = 0.0,
+            textTransform = AppTextTransform.NONE,
             dynamicType = "footnote",
             m3Roles = emptyList(),
         )
@@ -273,6 +336,7 @@ object AppTypography {
             fontWeight = 500,
             lineHeight = 20.0,
             letterSpacing = 0.0,
+            textTransform = AppTextTransform.NONE,
             dynamicType = "subheadline",
             m3Roles = emptyList(),
         )
@@ -285,6 +349,7 @@ object AppTypography {
             fontWeight = 700,
             lineHeight = 20.0,
             letterSpacing = 0.0,
+            textTransform = AppTextTransform.NONE,
             dynamicType = "subheadline",
             m3Roles = emptyList(),
         )
@@ -297,6 +362,7 @@ object AppTypography {
             fontWeight = 600,
             lineHeight = 16.0,
             letterSpacing = 0.0,
+            textTransform = AppTextTransform.NONE,
             dynamicType = "caption",
             m3Roles = emptyList(),
         )
@@ -309,6 +375,7 @@ object AppTypography {
             fontWeight = 600,
             lineHeight = 14.0,
             letterSpacing = 0.0,
+            textTransform = AppTextTransform.NONE,
             dynamicType = "caption2",
             m3Roles = emptyList(),
         )
@@ -321,6 +388,7 @@ object AppTypography {
             fontWeight = 700,
             lineHeight = 18.0,
             letterSpacing = 0.0,
+            textTransform = AppTextTransform.NONE,
             dynamicType = "caption2",
             m3Roles = emptyList(),
         )
@@ -333,6 +401,7 @@ object AppTypography {
             fontWeight = 500,
             lineHeight = 22.0,
             letterSpacing = 0.0,
+            textTransform = AppTextTransform.NONE,
             dynamicType = "headline",
             m3Roles = emptyList(),
         )
@@ -354,6 +423,9 @@ object AppTypography {
             AppTypography.largeTitleBar,
             AppTypography.labelMd,
             AppTypography.labelSm,
+            AppTypography.labelMdNormal,
+            AppTypography.labelMdMedium,
+            AppTypography.labelSmMedium,
             AppTypography.subheadMedium,
             AppTypography.labelAction,
             AppTypography.captionStrong,

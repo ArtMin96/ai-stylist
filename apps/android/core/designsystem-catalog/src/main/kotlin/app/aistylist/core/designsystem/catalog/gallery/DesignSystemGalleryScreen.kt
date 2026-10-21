@@ -9,7 +9,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -29,8 +28,6 @@ import app.aistylist.core.designsystem.color
 import app.aistylist.core.designsystem.generated.AppColorRole
 import app.aistylist.core.designsystem.generated.ButtonSize
 import app.aistylist.core.designsystem.generated.ButtonVariant
-import app.aistylist.core.designsystem.generated.GalleryComponent
-import app.aistylist.core.designsystem.toTextStyle
 
 /**
  * The debug-only design-system gallery (AI-195): every token section, then every component
@@ -69,10 +66,10 @@ private fun GalleryHeader(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(AppTheme.spacing.space12.dp),
     ) {
-        Text(
+        GalleryLabel(
             text = stringResource(R.string.ds_gallery_title),
-            style = AppTheme.typography.title2.toTextStyle(),
-            color = AppTheme.colors.color(AppColorRole.TEXT),
+            style = AppTheme.typography.title2,
+            role = AppColorRole.TEXT,
             modifier = Modifier.weight(1f).semantics { heading() },
         )
         AppButton(
@@ -94,10 +91,10 @@ private fun GallerySectionView(
         modifier = modifier.fillMaxWidth().testTag(section.id),
         verticalArrangement = Arrangement.spacedBy(AppTheme.spacing.space12.dp),
     ) {
-        Text(
+        GalleryLabel(
             text = section.title,
-            style = AppTheme.typography.title3.toTextStyle(),
-            color = AppTheme.colors.color(AppColorRole.TEXT),
+            style = AppTheme.typography.title3,
+            role = AppColorRole.TEXT,
             modifier = Modifier.semantics { heading() },
         )
         when (val kind = section.kind) {
@@ -117,12 +114,8 @@ private fun GallerySectionView(
                 GalleryRadius()
             }
 
-            // Exhaustive: a new component contract fails the build until it has a renderer.
             is GallerySectionKind.Component -> {
-                when (kind.component) {
-                    GalleryComponent.BUTTON -> GalleryButtons()
-                    GalleryComponent.ICON -> GalleryIcons()
-                }
+                GalleryComponentCells(kind.component)
             }
         }
     }

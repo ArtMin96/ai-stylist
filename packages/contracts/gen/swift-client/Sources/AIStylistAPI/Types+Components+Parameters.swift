@@ -12,5 +12,37 @@ public import struct Foundation.Date
 #endif
 extension Components {
     /// Types generated from the `#/components/parameters` section of the OpenAPI document.
-    public enum Parameters {}
+    public enum Parameters {
+        /// Client-generated ULID that makes a mutating request safe to retry (doc 06 §2; the
+        /// mobile mutation-log `opId`). A key is scoped to the caller and the operation: the
+        /// authenticated principal, or for an operation with `security: []` the credential in its
+        /// body (for `requestAccountRecovery`, which carries none, the request hash alone). The
+        /// server keeps key, request hash and response for 48 h: a replay with the same body
+        /// returns the stored response; the same key with a different body is refused with 409
+        /// `IDEMPOTENCY_KEY_REUSED`. Exception: an operation whose answer carries a credential
+        /// (`SessionGrant.token`, `SessionGrant.refreshToken`, `DeletionPending.cancelToken`,
+        /// `SignUpPending.token`) is never answered from the store, and its credential is never
+        /// stored. Such an operation is marked `x-idempotency-replay: never`. A repeated key on it
+        /// is refused with 409 `CONFLICT`, and the client starts that step again. Optional for the
+        /// caller.
+        ///
+        ///
+        /// - Remark: Generated from `#/components/parameters/IdempotencyKey`.
+        public typealias IdempotencyKey = Swift.String
+        /// Opaque cursor from the `nextCursor` of the previous page; omit for the first page.
+        ///
+        /// - Remark: Generated from `#/components/parameters/Cursor`.
+        public typealias Cursor = Swift.String
+        /// Page size (doc 06 §2 cursor pagination).
+        ///
+        /// - Remark: Generated from `#/components/parameters/Limit`.
+        public typealias Limit = Swift.Int
+        /// The `version` of the resource the client last read, as a quoted integer, e.g. `"3"`
+        /// (doc 06 §2). Every write to a versioned resource sends it; a stale version is refused
+        /// with 409 `VERSION_MISMATCH`.
+        ///
+        ///
+        /// - Remark: Generated from `#/components/parameters/IfMatch`.
+        public typealias IfMatch = Swift.String
+    }
 }

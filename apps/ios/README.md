@@ -33,8 +33,9 @@ Packages/DesignSystem/   app-internal design system (DEC-87); no dependency on C
                            (AppIconGeometry, `package` access)
   Sources/DesignSystem     SwiftUI layer (Apple platforms only; left out of the manifest on Linux): AppTheme
                            (`\.appTheme`, set by `.appTheme()`), AppFonts (bundled fonts, Resources/Fonts),
-                           AppButton (C01) with its face, style and rules, AppIcon (C02); system core, so
-                           no previews
+                           AppButton (C01) with its face, style and rules, AppIcon (C02), AppChip (C03) with
+                           its face, style and rules, AppTag, AppBadge and AppReasonRow (C03); the copy in
+                           the String Catalog Resources/Localizable.xcstrings; system core, so no previews
   Sources/DesignSystemCatalog  dev-only (Apple platforms only): the Xcode previews and the debug "Design
                            system gallery"; linked by the Dev configuration only (see "Design system")
   tests/<Target>Tests      DesignTokensTests, DesignSystemTests, DesignSystemCatalogTests
@@ -69,20 +70,66 @@ The generated client lives in `packages/contracts/gen/swift-client/`. `tools/cod
   scales with it (`AppIconGeometry` in `DesignTokens`, tested on Linux). `tint: nil` draws in the inherited foreground style; a role draws in
   `theme.color(role)`. The frame is exactly the rendered size; the host control owns the 44 pt target and
   the accessible name, because the icon is hidden from VoiceOver.
+- **AppChip.** `AppChip(_:variant:size:leadingIcon:selected:expanded:enabled:selection:prefix:detail:swatch:accessibilityLabel:action:)`
+  follows the C03 contract `.impeccable/components/chip.yaml`. `AppChipRules` picks the state shown (G2:
+  disabled, else pressed, else focused, prefixed with `selected-` or `expanded-` while that toggle is on).
+  When the resting state has no look at that variant and size (a size the variant does not take, or a
+  toggle or `enabled: false` it does not take) the chip renders nothing; a pressed or focused state with no
+  look shows the resting look. The look follows the chip's `enabled` only, never the environment's
+  `isEnabled`, so a parent's `.disabled(true)` blocks activation but keeps the look. The content is the
+  leading icon, the before-label parts (prefix, swatch), the label, the detail (behind the separator copy)
+  and the trailing icon. A swatch gets its inner edge when its WCAG contrast with the fill is below
+  `swatchEdgeMinContrast` (`AppColorContrast`), and always on a look with no fill. Every chip has the
+  generated touch target `ChipAccessibility.minTouchTarget` (44 pt; `AppButtonStyle` reads
+  `ButtonAccessibility.minTouchTarget`, both through `appTouchTarget` in `AppInteraction`) and the
+  `AppMotion.Press` transition, none under Reduce Motion. VoiceOver
+  reads `accessibilityLabel ?? label` in the role of `variant.role`: button; selectable as a toggle
+  (`selection: .multiple`) or a button that is selected (`.single`); disclosure with the value "Expanded" /
+  "Collapsed"; menu as a button that is selected while `selected`. `AppChipFace` has `package` access, so
+  the catalog can draw forced states.
+- **AppTag, AppBadge, AppReasonRow.** `AppTag(_:variant:size:leadingIcon:accessibilityLabel:)` (tag.yaml)
+  reads as static text, with a dashed ring where the look sets `borderDash`. `AppBadge(variant:size:label:hostSurface:)`
+  (badge.yaml) draws the dot, the count or a trial pill; a look that draws a label renders nothing without
+  one; the dot and the count are hidden from VoiceOver, and `hostSurface` colours the ring outside them.
+  `AppReasonRow(_:fact:factIcon:freshness:accessibilityLabel:)` (reason-row.yaml) is a region named by
+  `accessibilityLabel` that fills the offered width, its icon disc grown with Dynamic Type as the icon is.
+  None of the three has an action or a touch target. A variant and size pair the contract does not allow
+  renders nothing.
+- **Shared drawing.** One copy each, used by every component: `AppComponentText` draws every run of text in
+  a type style (the components' labels and parts, and every catalog text), applying the style's
+  `textTransform` to the drawn string only (the overline draws in caps; VoiceOver reads the caller's
+  string); `appFace` (`AppFaceLook`) pads and sizes the button, chip and tag pills, and `AppShapeStyle`
+  draws every fill, pressed overlay, inner ring and focus ring; `AppOutsideRing` draws the focus ring, the
+  badge's outer ring and the selected swatch's ring.
+- **Copy.** The components' strings live in the String Catalog `Sources/DesignSystem/Resources/Localizable.xcstrings`
+  (source language en, `defaultLocalization: "en"` in `Package.swift`), never in Swift: `app_button_loading`,
+  `ds_chip_detail_separator` (`· `, read by its generated key `ChipPart.detail.separatorKey`),
+  `ds_chip_state_expanded`, `ds_chip_state_collapsed`. Keys and values equal the Android string resources.
 - **Catalog (dev-only).** Previews and dev tools never live in the `DesignSystem` target (owner rule,
   2026-10-20). They live in the `DesignSystemCatalog` target of the same package, which carries no
   `#if DEBUG`. `AppButtonPreviews.swift` holds "AppButton states, light" and "AppButton states, dark"
   (the gallery's C01 section) and "AppButton playground" (with a leading-icon picker).
   `AppIconPreviews.swift` holds "AppIcon set, light", "AppIcon set, dark" and "AppIcon set, largest text"
-  (the gallery's C02 section; the largest-text one first draws one glyph at every step). `AppButtonFace` has `package` access, so the
-  catalog can draw forced states (pressed, focused, loading, disabled); `HomeFeature` and the app cannot.
+  (the gallery's C02 section; the largest-text one first draws one glyph at every step).
+  `AppChipPreviews.swift`, `AppTagPreviews.swift`, `AppBadgePreviews.swift` and `AppReasonRowPreviews.swift`
+  each hold "<Component> states, light", "<Component> states, dark" (the gallery's C03 section) and a
+  "<Component> playground" with live controls. Every previews file shares one scaffold: the state grid
+  `GallerySectionPreview(component:)`, the light and dark frames `previewFrame(_:)`, and the variant and
+  size rows `PlaygroundPickers`. `AppButtonFace` and `AppChipFace` have `package` access, so
+  the catalog can draw forced states (pressed, focused, loading, disabled, the toggles); `HomeFeature` and
+  the app cannot.
 - **Design system gallery (AI-195).** In the Dev build, Home's debug section shows "Design system gallery"
   (`debug_open_ds_gallery`). It opens `DesignSystemGalleryScreen` full screen (root `ds-gallery`, "Close"
   = `debug_close_ds_gallery`). The screen shows the sections Colours, Typography, Spacing, Radius, then
-  one section per generated `GalleryComponent` (today "C01 Buttons", "C02 Icons"), each tagged
-  `ds-gallery-section-<slug>`. "C02 Icons" has a "Size" and "Tint" playground, then every glyph grouped by
-  `AppIconSet`, each cell tagged `ds-icon-<id>` and captioned with the glyph id; the cells wrap, and a
-  caption wider than the screen wraps inside its cell. Every item comes from the generated manifest
+  one section per generated `GalleryComponent` (today "C01 Buttons", "C02 Icons", "C03 Badges", "C03 Chips",
+  "C03 Reason row", "C03 Tags"), each tagged `ds-gallery-section-<slug>`. "C02 Icons" has a "Size" and
+  "Tint" playground, then every glyph grouped by `AppIconSet`, each cell tagged `ds-icon-<id>` and captioned
+  with the glyph id; the cells wrap, and a caption wider than the screen wraps inside its cell. The C01 and
+  C03 sections draw every `ComponentGallery` entry in generated order with the generated samples and the
+  entry's own sample label (`entry.label`; the trial pills have words of their own), each cell
+  (`GalleryCaptionedCell`) tagged with the entry's test ID and captioned with it: the chips (forced states through `AppChipFace`)
+  and the tags in wrapping rows, the badges on their host surface `ComponentGallery.badgeHostSurface`, the
+  reason row on its own. Every item comes from the generated manifest
   (`AppColorRole` raw values, `AppTypography.all`, `AppSpacing.all`, `AppRadius.all`, `ComponentGallery`,
   `AppIconName`, `AppIconSet`), so a new token, component cell or glyph appears without a hand edit, and a new component fails the build until
   `GallerySection` maps it. The scheme follows the system appearance (S1, S2, S7).

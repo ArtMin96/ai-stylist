@@ -28,10 +28,12 @@ export const ENTITLEMENTS = {
   'avatar.level': {
     kind: 'level',
     description: 'Avatar ladder level (A1, A1 + all poses)',
+    levels: ['A1', 'A1_all_poses'],
   },
   'tryon.generative': {
     kind: 'level',
     description: 'Outfit view generation ladder level (G0, G2)',
+    levels: ['G0', 'G2'],
   },
   'views.missing_view': {
     kind: 'boolean',
@@ -52,6 +54,7 @@ export const ENTITLEMENTS = {
   'trends.level': {
     kind: 'level',
     description: 'Trends feed level (basic, personalized)',
+    levels: ['basic', 'personalized'],
   },
   'analytics.wardrobe': {
     kind: 'boolean',

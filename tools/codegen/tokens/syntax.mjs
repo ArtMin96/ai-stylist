@@ -6,16 +6,41 @@ export const SCHEMES = ['hc-light', 'hc-dark', 'light', 'dark', 'brand'];
 /** The five DEC-87 resolver contexts, in emission order. */
 export const CONTEXTS = ['light', 'dark', 'brand', 'hc-light', 'hc-dark'];
 
-/** Component states: the DESIGN.md "Components" state list (after default) plus `expanded`. */
+/** The toggles a caller sets (G2): each combines with an interaction as `<toggle>-<interaction>`. */
+export const TOGGLES = ['selected', 'expanded'];
+
+/**
+ * The compound toggle states (.impeccable/components/README.md G2): a toggle joined with the
+ * interaction drawn while it is on (`selected-pressed`).
+ */
+export const COMPOUND_STATES = [
+  'selected-pressed',
+  'selected-focused',
+  'selected-disabled',
+  'expanded-pressed',
+  'expanded-focused',
+];
+
+/**
+ * Component states: the DESIGN.md "Components" state list (after default), `expanded`, and the
+ * compound toggle states (G2).
+ */
 export const STATES = [
   'pressed',
   'focused',
   'disabled',
   'loading',
   'error',
-  'selected',
-  'expanded',
+  ...TOGGLES,
+  ...COMPOUND_STATES,
 ];
+
+/** The toggle of a compound state (`selected-pressed` -> `selected`); null for any other state. */
+export const toggleOf = (state) =>
+  COMPOUND_STATES.includes(state) ? TOGGLES.find((t) => state.startsWith(`${t}-`)) : null;
+
+/** STATES longest first, so a compound suffix wins over the interaction it ends with. */
+const STATES_LONGEST_FIRST = [...STATES].sort((a, b) => b.length - a.length);
 
 /** The 15 Material 3 type roles (Compose `Typography` property names). */
 export const M3_ROLES = [
@@ -50,6 +75,12 @@ export const DYNAMIC_TYPE_STYLES = [
   'caption',
   'caption2',
 ];
+
+/**
+ * A type style's optional `textTransform`, in `AppTextTransform` order: how the text is drawn
+ * (`uppercase`: the overline's caps). Absent is `none`; the spoken text stays as written.
+ */
+export const TEXT_TRANSFORMS = ['none', 'uppercase'];
 
 export const TOKEN_GROUPS = [
   'colors',
@@ -88,9 +119,12 @@ export function splitScheme(key) {
   return { base: key, scheme: null };
 }
 
-/** `button-primary-pressed` -> `{ component: 'button-primary', state: 'pressed' }`. */
+/**
+ * `button-primary-pressed` -> `{ component: 'button-primary', state: 'pressed' }`. The longest
+ * state suffix wins (G2): `chip-choice-selected-pressed` is `chip-choice` -> `selected-pressed`.
+ */
 export function splitState(base) {
-  for (const state of STATES) {
+  for (const state of STATES_LONGEST_FIRST) {
     const suffix = `-${state}`;
     if (base.endsWith(suffix) && base.length > suffix.length) {
       return { component: base.slice(0, -suffix.length), state };
@@ -110,12 +144,19 @@ export const ICON_SIZE_KEY = /^icon-[a-z][a-z0-9]*$/;
 export const iconStepOf = (key) => key.slice('icon-'.length);
 
 /**
- * The component an `iconSize` value names, or null: the bare step key (`icon-md`, which the
- * pinned design.md lint accepts) or a reference (`{components.icon-md}`, which that lint cannot
- * resolve, so TK-12 fails on it). Any other property, or a number, names none.
+ * A property that sizes an icon slot: `iconSize` (the leading slot) or any `…IconSize`
+ * (`trailingIconSize`, .impeccable/components/README.md G3). Only these may name an icon size.
+ */
+export const isIconSizeProperty = (prop) => prop === 'iconSize' || prop.endsWith('IconSize');
+
+/**
+ * The component an icon-slot size (isIconSizeProperty) names, or null: the bare step key
+ * (`icon-md`, which the pinned design.md lint accepts) or a reference (`{components.icon-md}`,
+ * which that lint cannot resolve, so TK-12 fails on it). Any other property, or a number, names
+ * none.
  */
 export function iconSizeNamed(prop, value) {
-  if (prop !== 'iconSize' || typeof value !== 'string') return null;
+  if (!isIconSizeProperty(prop) || typeof value !== 'string') return null;
   const ref = parseReference(value);
   if (ref) return ref.group === 'components' ? ref.key : null;
   return ICON_SIZE_KEY.test(value.trim()) ? value.trim() : null;

@@ -12,6 +12,7 @@ const INDENT = '  ';
 const TYPE = {
   double: 'Double',
   int: 'Int',
+  bool: 'Bool',
   string: 'String',
   color: 'UInt32',
   role: 'AppColorRole',
@@ -28,6 +29,8 @@ const typeName = (type) => {
 
 export const swift = {
   extension: 'swift',
+  // The key of a `platform` value this dialect spells (a contract's `{ ios, android }`).
+  platform: 'ios',
   indent: INDENT,
   limit: 120,
   wrapAfterAssign: false,
@@ -41,6 +44,7 @@ export const swift = {
     role: (id) => `.${swiftIdent(id)}`,
     ref: (namespace, member) => `${namespace}.${swiftIdent(member)}`,
     enumCase: (_type, id) => `.${swiftIdent(id)}`,
+    unionCase: (_type, name) => `.${swiftIdent(name)}`,
     none: 'nil',
   },
   header: (source, title) => [
@@ -49,15 +53,17 @@ export const swift = {
     `// ${title} (DEC-87).`,
   ],
   doc: (text, pad) => `${pad}/// ${docText(text)}`,
-  namespaceHead: (name) => `nonisolated public enum ${name}`,
+  namespaceHead: (name, access = 'public') => `nonisolated ${access} enum ${name}`,
   emptyNamespace: (name) => `nonisolated public enum ${name} {}`,
-  constant(member, depth) {
+  /** A constant; inside a private namespace it takes no modifier (its namespace caps it). */
+  constant(member, depth, access = 'public') {
     const pad = INDENT.repeat(depth);
     const id = swiftIdent(member.name);
+    const modifier = access === 'private' ? '' : 'public ';
     const head =
       member.value.t === 'init'
-        ? `${pad}public static let ${id} = `
-        : `${pad}public static let ${id}: ${typeName(member.type)} = `;
+        ? `${pad}${modifier}static let ${id} = `
+        : `${pad}${modifier}static let ${id}: ${typeName(member.type)} = `;
     return valueLines(swift, head, member, pad);
   },
   struct(decl, depth) {
@@ -67,9 +73,12 @@ export const swift = {
       (f) => `${inner}public let ${swiftIdent(f.name)}: ${typeName(f.type)}`,
     );
     const nested = decl.nested.map((n) => renderDeclaration(swift, n, depth + 1));
-    const instances = decl.instances.map(({ name, value }) =>
-      valueLines(swift, `${inner}public static let ${swiftIdent(name)} = `, { value }, inner),
-    );
+    const instances = decl.instances.map(({ name, value }) => {
+      // A struct value names its type; a reference (`Light.spec`) declares it.
+      const type = value.t === 'init' ? '' : `: ${decl.name}`;
+      const head = `${inner}public static let ${swiftIdent(name)}${type} = `;
+      return valueLines(swift, head, { value }, inner);
+    });
     const lookup = decl.lookup ? [lookupLines(decl, inner)] : [];
     const find = decl.find ? [findLines(decl.find, inner)] : [];
     return [
@@ -97,6 +106,20 @@ export const swift = {
     ];
   },
   roles: (decl) => swift.enum(decl),
+  /** A closed set of cases, some with a labelled payload: `case glyph(name: AppIconName)`. */
+  union(decl) {
+    const cases = decl.cases.map(({ name, doc, fields }) => {
+      const payload = fields.map((f) => `${swiftIdent(f.name)}: ${typeName(f.type)}`).join(', ');
+      const head = `${INDENT}case ${swiftIdent(name)}`;
+      return [`${INDENT}/// ${docText(doc)}`, fields.length ? `${head}(${payload})` : head];
+    });
+    return [
+      `/// ${docText(decl.doc)}`,
+      `nonisolated public enum ${decl.name}: Sendable, Equatable {`,
+      ...joinMembers(cases),
+      '}',
+    ];
+  },
 };
 
 /** `title`: a value per case, as a computed property switching over the cases. */

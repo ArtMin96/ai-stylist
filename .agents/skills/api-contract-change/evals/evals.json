@@ -38,6 +38,30 @@
         "The plan addresses backfill of stored closet item attributes and rewriting saved filters, not just the registry edit",
         "The plan states that rows with source: user keep source: user after migration"
       ]
+    },
+    {
+      "id": 4,
+      "prompt": "Both apps need to show the garment care symbols (wash 30, do not tumble dry, iron low, ...) on the closet item screen. Add the care-symbol codes as a shared-kernel registry so the API validates them and the iOS and Android screens can render them, and expose them on the closet item response.",
+      "expected_output": "The agent adds the care-symbol registry under packages/shared-kernel/registry/ with its JSON Schema and the OpenAPI field, runs `just generate`, and recognises that both native apps read the codes. It checks `NATIVE_REGISTRIES` in tools/codegen/gen-kernel.mjs, sees the new registry is not emitted for Swift and Kotlin, and reports it under `Needs native emission:` with the emitter change for tooling-engineer, to land in the same PR stack before any native consumer. It does not edit tools/codegen and copies no code into apps/ios or apps/android. The OpenAPI enum that mirrors the registry gets a contract test pinning it to the kernel list value for value.",
+      "files": [],
+      "assertions": [
+        "The agent states that the iOS and Android apps read the new care-symbol codes (a client-facing value)",
+        "The agent checks whether tools/codegen/gen-kernel.mjs emits the new registry for Swift and Kotlin (NATIVE_REGISTRIES)",
+        "The report names the uncovered registry under `Needs native emission:` with a tooling-engineer emitter change that lands before any native consumer",
+        "The agent edits nothing under tools/codegen/ and hand-copies no code into apps/ios or apps/android",
+        "A contract test pins the OpenAPI care-symbol enum to the kernel registry value for value"
+      ]
+    },
+    {
+      "id": 5,
+      "prompt": "Add `sessionFamilyId` to the forbidden log keys so the API and the workers never log it.",
+      "expected_output": "The agent adds the key to packages/shared-kernel/registry/forbidden-log-keys.json (and its examples if the schema needs one), runs `just generate` so the Python kernel output for the workers updates, and states that the value is server- and worker-only: no native app reads it, so no Swift or Kotlin output is needed and `Needs native emission:` is `none`.",
+      "files": [],
+      "assertions": [
+        "The agent edits packages/shared-kernel/registry/forbidden-log-keys.json and regenerates with `just generate`",
+        "The agent classifies the value as server- and worker-only and reports `Needs native emission: none`",
+        "The agent does not propose a Swift or Kotlin emitter change for this registry"
+      ]
     }
   ]
 }

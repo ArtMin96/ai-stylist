@@ -4,7 +4,7 @@ import DesignSystem
 import DesignTokens
 import Testing
 
-private let specs: [ButtonSpec] = [.light, .dark, .hcLight, .hcDark]
+private let specs = ButtonSpec.contexts
 
 private let flags = [false, true]
 
@@ -74,11 +74,7 @@ func loadingStateText() {
   #expect(AppButtonRules.loadingStateText == "Loading")
 }
 
-@Test("the gallery lists 100 cells with unique ids of the form ds-button-<variant>-<size>-<state>")
+@Test("the gallery lists 100 cells with unique ids of the form ds-button-<variant>-<size>-<state>, all looks")
 func galleryTestIds() {
-  #expect(ComponentGallery.button.count == 100)
-  #expect(Set(ComponentGallery.button.map(\.testId)).count == ComponentGallery.button.count)
-  for entry in ComponentGallery.button {
-    #expect(entry.testId == "ds-button-\(entry.variant.rawValue)-\(entry.size.rawValue)-\(entry.state.rawValue)")
-  }
+  expectGallery(ComponentGallery.button, of: .button, count: 100)
 }

@@ -12,5 +12,16 @@ public import struct Foundation.Date
 #endif
 extension Components {
     /// Types generated from the `#/components/headers` section of the OpenAPI document.
-    public enum Headers {}
+    public enum Headers {
+        /// Always `no-store`; the response must not be stored by any cache.
+        ///
+        /// - Remark: Generated from `#/components/headers/CacheControlNoStore`.
+        @frozen public enum CacheControlNoStore: String, Codable, Hashable, Sendable, CaseIterable {
+            case noStore = "no-store"
+        }
+        /// Seconds to wait before retrying (RFC 9110 §10.2.3, delay-seconds form).
+        ///
+        /// - Remark: Generated from `#/components/headers/RetryAfter`.
+        public typealias RetryAfter = Swift.Int
+    }
 }

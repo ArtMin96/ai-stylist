@@ -1866,6 +1866,219 @@ data class IconHeroTokens(
     }
 }
 
+/** Component `chip-compact` per context: colours are role keys, sizes in pt/dp. */
+data class ChipCompactTokens(
+    val iconSize: Double,
+    val iconGap: Double,
+    val trailingIconSize: Double,
+    val trailingIconGap: Double,
+) {
+    companion object {
+        val light: ChipCompactTokens =
+            ChipCompactTokens(
+                iconSize = 16.0,
+                iconGap = 6.0,
+                trailingIconSize = 12.0,
+                trailingIconGap = 6.0,
+            )
+
+        val dark: ChipCompactTokens =
+            ChipCompactTokens(
+                iconSize = 16.0,
+                iconGap = 6.0,
+                trailingIconSize = 12.0,
+                trailingIconGap = 6.0,
+            )
+
+        val brand: ChipCompactTokens =
+            ChipCompactTokens(
+                iconSize = 16.0,
+                iconGap = 6.0,
+                trailingIconSize = 12.0,
+                trailingIconGap = 6.0,
+            )
+
+        val hcLight: ChipCompactTokens =
+            ChipCompactTokens(
+                iconSize = 16.0,
+                iconGap = 6.0,
+                trailingIconSize = 12.0,
+                trailingIconGap = 6.0,
+            )
+
+        val hcDark: ChipCompactTokens =
+            ChipCompactTokens(
+                iconSize = 16.0,
+                iconGap = 6.0,
+                trailingIconSize = 12.0,
+                trailingIconGap = 6.0,
+            )
+    }
+}
+
+/** Component `chip-small` per context: colours are role keys, sizes in pt/dp. */
+data class ChipSmallTokens(
+    val iconSize: Double,
+    val iconGap: Double,
+    val trailingIconSize: Double,
+    val trailingIconGap: Double,
+) {
+    companion object {
+        val light: ChipSmallTokens =
+            ChipSmallTokens(
+                iconSize = 16.0,
+                iconGap = 6.0,
+                trailingIconSize = 12.0,
+                trailingIconGap = 6.0,
+            )
+
+        val dark: ChipSmallTokens =
+            ChipSmallTokens(
+                iconSize = 16.0,
+                iconGap = 6.0,
+                trailingIconSize = 12.0,
+                trailingIconGap = 6.0,
+            )
+
+        val brand: ChipSmallTokens =
+            ChipSmallTokens(
+                iconSize = 16.0,
+                iconGap = 6.0,
+                trailingIconSize = 12.0,
+                trailingIconGap = 6.0,
+            )
+
+        val hcLight: ChipSmallTokens =
+            ChipSmallTokens(
+                iconSize = 16.0,
+                iconGap = 6.0,
+                trailingIconSize = 12.0,
+                trailingIconGap = 6.0,
+            )
+
+        val hcDark: ChipSmallTokens =
+            ChipSmallTokens(
+                iconSize = 16.0,
+                iconGap = 6.0,
+                trailingIconSize = 12.0,
+                trailingIconGap = 6.0,
+            )
+    }
+}
+
+/** Component `chip-medium` per context: colours are role keys, sizes in pt/dp. */
+data class ChipMediumTokens(
+    val typography: AppTextStyle,
+    val height: Double,
+    val paddingTop: Double,
+    val paddingEnd: Double,
+    val paddingBottom: Double,
+    val paddingStart: Double,
+    val iconSize: Double,
+    val iconGap: Double,
+    val trailingIconSize: Double,
+    val trailingIconGap: Double,
+) {
+    companion object {
+        val light: ChipMediumTokens =
+            ChipMediumTokens(
+                typography = AppTypography.labelMd,
+                height = 36.0,
+                paddingTop = 0.0,
+                paddingEnd = 14.0,
+                paddingBottom = 0.0,
+                paddingStart = 10.0,
+                iconSize = 16.0,
+                iconGap = 4.0,
+                trailingIconSize = 16.0,
+                trailingIconGap = 4.0,
+            )
+
+        val dark: ChipMediumTokens =
+            ChipMediumTokens(
+                typography = AppTypography.labelMd,
+                height = 36.0,
+                paddingTop = 0.0,
+                paddingEnd = 14.0,
+                paddingBottom = 0.0,
+                paddingStart = 10.0,
+                iconSize = 16.0,
+                iconGap = 4.0,
+                trailingIconSize = 16.0,
+                trailingIconGap = 4.0,
+            )
+
+        val brand: ChipMediumTokens =
+            ChipMediumTokens(
+                typography = AppTypography.labelMd,
+                height = 36.0,
+                paddingTop = 0.0,
+                paddingEnd = 14.0,
+                paddingBottom = 0.0,
+                paddingStart = 10.0,
+                iconSize = 16.0,
+                iconGap = 4.0,
+                trailingIconSize = 16.0,
+                trailingIconGap = 4.0,
+            )
+
+        val hcLight: ChipMediumTokens =
+            ChipMediumTokens(
+                typography = AppTypography.labelMd,
+                height = 36.0,
+                paddingTop = 0.0,
+                paddingEnd = 14.0,
+                paddingBottom = 0.0,
+                paddingStart = 10.0,
+                iconSize = 16.0,
+                iconGap = 4.0,
+                trailingIconSize = 16.0,
+                trailingIconGap = 4.0,
+            )
+
+        val hcDark: ChipMediumTokens =
+            ChipMediumTokens(
+                typography = AppTypography.labelMd,
+                height = 36.0,
+                paddingTop = 0.0,
+                paddingEnd = 14.0,
+                paddingBottom = 0.0,
+                paddingStart = 10.0,
+                iconSize = 16.0,
+                iconGap = 4.0,
+                trailingIconSize = 16.0,
+                trailingIconGap = 4.0,
+            )
+    }
+}
+
+/** Component `chip-large` per context: colours are role keys, sizes in pt/dp. */
+data class ChipLargeTokens(
+    val iconSize: Double,
+    val iconGap: Double,
+) {
+    companion object {
+        val light: ChipLargeTokens = ChipLargeTokens(iconSize = 20.0, iconGap = 6.0)
+        val dark: ChipLargeTokens = ChipLargeTokens(iconSize = 20.0, iconGap = 6.0)
+        val brand: ChipLargeTokens = ChipLargeTokens(iconSize = 20.0, iconGap = 6.0)
+        val hcLight: ChipLargeTokens = ChipLargeTokens(iconSize = 20.0, iconGap = 6.0)
+        val hcDark: ChipLargeTokens = ChipLargeTokens(iconSize = 20.0, iconGap = 6.0)
+    }
+}
+
+/** Component `chip-outline-ring` per context: colours are role keys, sizes in pt/dp. */
+data class ChipOutlineRingTokens(
+    val width: Double,
+) {
+    companion object {
+        val light: ChipOutlineRingTokens = ChipOutlineRingTokens(width = 1.0)
+        val dark: ChipOutlineRingTokens = ChipOutlineRingTokens(width = 1.0)
+        val brand: ChipOutlineRingTokens = ChipOutlineRingTokens(width = 1.0)
+        val hcLight: ChipOutlineRingTokens = ChipOutlineRingTokens(width = 1.0)
+        val hcDark: ChipOutlineRingTokens = ChipOutlineRingTokens(width = 1.0)
+    }
+}
+
 /** Component `chip-weather` per context: colours are role keys, sizes in pt/dp. */
 data class ChipWeatherTokens(
     val backgroundColor: AppColorRole,
@@ -1989,7 +2202,18 @@ data class ChipContextTokens(
     val textColor: AppColorRole,
     val typography: AppTextStyle,
     val rounded: Double,
+    val height: Double,
+    val paddingTop: Double,
+    val paddingEnd: Double,
+    val paddingBottom: Double,
+    val paddingStart: Double,
+    val pressed: Pressed,
 ) {
+    data class Pressed(
+        val backgroundColor: AppColorRole,
+        val textColor: AppColorRole,
+    )
+
     companion object {
         val light: ChipContextTokens =
             ChipContextTokens(
@@ -1997,6 +2221,12 @@ data class ChipContextTokens(
                 textColor = AppColorRole.TEXT,
                 typography = AppTypography.labelSm,
                 rounded = AppRadius.full,
+                height = 34.0,
+                paddingTop = 0.0,
+                paddingEnd = 14.0,
+                paddingBottom = 0.0,
+                paddingStart = 11.0,
+                pressed = Pressed(backgroundColor = AppColorRole.DIVIDER, textColor = AppColorRole.TEXT),
             )
 
         val dark: ChipContextTokens =
@@ -2005,6 +2235,12 @@ data class ChipContextTokens(
                 textColor = AppColorRole.TEXT,
                 typography = AppTypography.labelSm,
                 rounded = AppRadius.full,
+                height = 34.0,
+                paddingTop = 0.0,
+                paddingEnd = 14.0,
+                paddingBottom = 0.0,
+                paddingStart = 11.0,
+                pressed = Pressed(backgroundColor = AppColorRole.DIVIDER, textColor = AppColorRole.TEXT),
             )
 
         val brand: ChipContextTokens =
@@ -2013,6 +2249,12 @@ data class ChipContextTokens(
                 textColor = AppColorRole.TEXT,
                 typography = AppTypography.labelSm,
                 rounded = AppRadius.full,
+                height = 34.0,
+                paddingTop = 0.0,
+                paddingEnd = 14.0,
+                paddingBottom = 0.0,
+                paddingStart = 11.0,
+                pressed = Pressed(backgroundColor = AppColorRole.DIVIDER, textColor = AppColorRole.TEXT),
             )
 
         val hcLight: ChipContextTokens =
@@ -2021,6 +2263,12 @@ data class ChipContextTokens(
                 textColor = AppColorRole.TEXT,
                 typography = AppTypography.labelSm,
                 rounded = AppRadius.full,
+                height = 34.0,
+                paddingTop = 0.0,
+                paddingEnd = 14.0,
+                paddingBottom = 0.0,
+                paddingStart = 11.0,
+                pressed = Pressed(backgroundColor = AppColorRole.DIVIDER, textColor = AppColorRole.TEXT),
             )
 
         val hcDark: ChipContextTokens =
@@ -2029,6 +2277,12 @@ data class ChipContextTokens(
                 textColor = AppColorRole.TEXT,
                 typography = AppTypography.labelSm,
                 rounded = AppRadius.full,
+                height = 34.0,
+                paddingTop = 0.0,
+                paddingEnd = 14.0,
+                paddingBottom = 0.0,
+                paddingStart = 11.0,
+                pressed = Pressed(backgroundColor = AppColorRole.DIVIDER, textColor = AppColorRole.TEXT),
             )
     }
 }
@@ -2037,6 +2291,7 @@ data class ChipContextTokens(
 data class ChipReasonTokens(
     val backgroundColor: AppColorRole,
     val textColor: AppColorRole,
+    val iconColor: AppColorRole,
     val typography: AppTextStyle,
     val rounded: Double,
     val height: Double,
@@ -2044,11 +2299,27 @@ data class ChipReasonTokens(
     val paddingEnd: Double,
     val paddingBottom: Double,
     val paddingStart: Double,
+    val pressed: Pressed,
     val expanded: Expanded,
+    val expandedPressed: ExpandedPressed,
 ) {
+    data class Pressed(
+        val backgroundColor: AppColorRole,
+        val textColor: AppColorRole,
+    )
+
     data class Expanded(
         val backgroundColor: AppColorRole,
         val textColor: AppColorRole,
+        val iconColor: AppColorRole,
+        val paddingTop: Double,
+        val paddingEnd: Double,
+        val paddingBottom: Double,
+        val paddingStart: Double,
+    )
+
+    data class ExpandedPressed(
+        val overlayColor: AppColorRole,
     )
 
     companion object {
@@ -2056,6 +2327,7 @@ data class ChipReasonTokens(
             ChipReasonTokens(
                 backgroundColor = AppColorRole.SURFACE2,
                 textColor = AppColorRole.TEXT,
+                iconColor = AppColorRole.PRIMARY_TEXT,
                 typography = AppTypography.labelSm,
                 rounded = AppRadius.full,
                 height = 32.0,
@@ -2063,13 +2335,25 @@ data class ChipReasonTokens(
                 paddingEnd = 12.0,
                 paddingBottom = 0.0,
                 paddingStart = 10.0,
-                expanded = Expanded(backgroundColor = AppColorRole.PRIMARY_TEXT, textColor = AppColorRole.ON_PRIMARY),
+                pressed = Pressed(backgroundColor = AppColorRole.DIVIDER, textColor = AppColorRole.TEXT),
+                expanded =
+                    Expanded(
+                        backgroundColor = AppColorRole.PRIMARY_TEXT,
+                        textColor = AppColorRole.ON_PRIMARY,
+                        iconColor = AppColorRole.ON_PRIMARY,
+                        paddingTop = 0.0,
+                        paddingEnd = 10.0,
+                        paddingBottom = 0.0,
+                        paddingStart = 10.0,
+                    ),
+                expandedPressed = ExpandedPressed(overlayColor = AppColorRole.PRESSED_OVERLAY),
             )
 
         val dark: ChipReasonTokens =
             ChipReasonTokens(
                 backgroundColor = AppColorRole.SURFACE2,
                 textColor = AppColorRole.TEXT,
+                iconColor = AppColorRole.PRIMARY_TEXT,
                 typography = AppTypography.labelSm,
                 rounded = AppRadius.full,
                 height = 32.0,
@@ -2077,13 +2361,25 @@ data class ChipReasonTokens(
                 paddingEnd = 12.0,
                 paddingBottom = 0.0,
                 paddingStart = 10.0,
-                expanded = Expanded(backgroundColor = AppColorRole.PRIMARY_TEXT, textColor = AppColorRole.ON_PRIMARY),
+                pressed = Pressed(backgroundColor = AppColorRole.DIVIDER, textColor = AppColorRole.TEXT),
+                expanded =
+                    Expanded(
+                        backgroundColor = AppColorRole.PRIMARY_TEXT,
+                        textColor = AppColorRole.ON_PRIMARY,
+                        iconColor = AppColorRole.ON_PRIMARY,
+                        paddingTop = 0.0,
+                        paddingEnd = 10.0,
+                        paddingBottom = 0.0,
+                        paddingStart = 10.0,
+                    ),
+                expandedPressed = ExpandedPressed(overlayColor = AppColorRole.PRESSED_OVERLAY),
             )
 
         val brand: ChipReasonTokens =
             ChipReasonTokens(
                 backgroundColor = AppColorRole.SURFACE2,
                 textColor = AppColorRole.TEXT,
+                iconColor = AppColorRole.PRIMARY_TEXT,
                 typography = AppTypography.labelSm,
                 rounded = AppRadius.full,
                 height = 32.0,
@@ -2091,13 +2387,25 @@ data class ChipReasonTokens(
                 paddingEnd = 12.0,
                 paddingBottom = 0.0,
                 paddingStart = 10.0,
-                expanded = Expanded(backgroundColor = AppColorRole.PRIMARY_TEXT, textColor = AppColorRole.ON_PRIMARY),
+                pressed = Pressed(backgroundColor = AppColorRole.DIVIDER, textColor = AppColorRole.TEXT),
+                expanded =
+                    Expanded(
+                        backgroundColor = AppColorRole.PRIMARY_TEXT,
+                        textColor = AppColorRole.ON_PRIMARY,
+                        iconColor = AppColorRole.ON_PRIMARY,
+                        paddingTop = 0.0,
+                        paddingEnd = 10.0,
+                        paddingBottom = 0.0,
+                        paddingStart = 10.0,
+                    ),
+                expandedPressed = ExpandedPressed(overlayColor = AppColorRole.PRESSED_OVERLAY),
             )
 
         val hcLight: ChipReasonTokens =
             ChipReasonTokens(
                 backgroundColor = AppColorRole.SURFACE2,
                 textColor = AppColorRole.TEXT,
+                iconColor = AppColorRole.PRIMARY_TEXT,
                 typography = AppTypography.labelSm,
                 rounded = AppRadius.full,
                 height = 32.0,
@@ -2105,13 +2413,25 @@ data class ChipReasonTokens(
                 paddingEnd = 12.0,
                 paddingBottom = 0.0,
                 paddingStart = 10.0,
-                expanded = Expanded(backgroundColor = AppColorRole.PRIMARY_TEXT, textColor = AppColorRole.ON_PRIMARY),
+                pressed = Pressed(backgroundColor = AppColorRole.DIVIDER, textColor = AppColorRole.TEXT),
+                expanded =
+                    Expanded(
+                        backgroundColor = AppColorRole.PRIMARY_TEXT,
+                        textColor = AppColorRole.ON_PRIMARY,
+                        iconColor = AppColorRole.ON_PRIMARY,
+                        paddingTop = 0.0,
+                        paddingEnd = 10.0,
+                        paddingBottom = 0.0,
+                        paddingStart = 10.0,
+                    ),
+                expandedPressed = ExpandedPressed(overlayColor = AppColorRole.PRESSED_OVERLAY),
             )
 
         val hcDark: ChipReasonTokens =
             ChipReasonTokens(
                 backgroundColor = AppColorRole.SURFACE2,
                 textColor = AppColorRole.TEXT,
+                iconColor = AppColorRole.PRIMARY_TEXT,
                 typography = AppTypography.labelSm,
                 rounded = AppRadius.full,
                 height = 32.0,
@@ -2119,7 +2439,18 @@ data class ChipReasonTokens(
                 paddingEnd = 12.0,
                 paddingBottom = 0.0,
                 paddingStart = 10.0,
-                expanded = Expanded(backgroundColor = AppColorRole.PRIMARY_TEXT, textColor = AppColorRole.ON_PRIMARY),
+                pressed = Pressed(backgroundColor = AppColorRole.DIVIDER, textColor = AppColorRole.TEXT),
+                expanded =
+                    Expanded(
+                        backgroundColor = AppColorRole.PRIMARY_TEXT,
+                        textColor = AppColorRole.ON_PRIMARY,
+                        iconColor = AppColorRole.ON_PRIMARY,
+                        paddingTop = 0.0,
+                        paddingEnd = 10.0,
+                        paddingBottom = 0.0,
+                        paddingStart = 10.0,
+                    ),
+                expandedPressed = ExpandedPressed(overlayColor = AppColorRole.PRESSED_OVERLAY),
             )
     }
 }
@@ -2128,6 +2459,7 @@ data class ChipReasonTokens(
 data class ChipChoiceTokens(
     val backgroundColor: AppColorRole,
     val textColor: AppColorRole,
+    val borderColor: AppColorRole,
     val typography: AppTextStyle,
     val rounded: Double,
     val height: Double,
@@ -2135,12 +2467,42 @@ data class ChipChoiceTokens(
     val paddingEnd: Double,
     val paddingBottom: Double,
     val paddingStart: Double,
+    val pressed: Pressed,
+    val disabled: Disabled,
     val selected: Selected,
+    val selectedPressed: SelectedPressed,
+    val selectedDisabled: SelectedDisabled,
 ) {
+    data class Pressed(
+        val backgroundColor: AppColorRole,
+        val textColor: AppColorRole,
+    )
+
+    data class Disabled(
+        val textColor: AppColorRole,
+        val borderColor: AppColorRole,
+        val backgroundColor: AppColorRole,
+    )
+
     data class Selected(
         val backgroundColor: AppColorRole,
         val textColor: AppColorRole,
+        val borderColor: AppColorRole,
         val typography: AppTextStyle,
+        val paddingTop: Double,
+        val paddingEnd: Double,
+        val paddingBottom: Double,
+        val paddingStart: Double,
+    )
+
+    data class SelectedPressed(
+        val overlayColor: AppColorRole,
+    )
+
+    data class SelectedDisabled(
+        val textColor: AppColorRole,
+        val borderColor: AppColorRole,
+        val backgroundColor: AppColorRole,
     )
 
     companion object {
@@ -2148,6 +2510,7 @@ data class ChipChoiceTokens(
             ChipChoiceTokens(
                 backgroundColor = AppColorRole.SURFACE,
                 textColor = AppColorRole.TEXT,
+                borderColor = AppColorRole.OUTLINE,
                 typography = AppTypography.subheadMedium,
                 rounded = AppRadius.full,
                 height = 40.0,
@@ -2155,11 +2518,30 @@ data class ChipChoiceTokens(
                 paddingEnd = 14.0,
                 paddingBottom = 0.0,
                 paddingStart = 14.0,
+                pressed = Pressed(backgroundColor = AppColorRole.SURFACE2, textColor = AppColorRole.TEXT),
+                disabled =
+                    Disabled(
+                        textColor = AppColorRole.TEXT_SECONDARY,
+                        borderColor = AppColorRole.DIVIDER,
+                        backgroundColor = AppColorRole.SURFACE2,
+                    ),
                 selected =
                     Selected(
                         backgroundColor = AppColorRole.PRIMARY_TEXT,
                         textColor = AppColorRole.ON_PRIMARY,
+                        borderColor = AppColorRole.PRIMARY_TEXT,
                         typography = AppTypography.subhead,
+                        paddingTop = 0.0,
+                        paddingEnd = 14.0,
+                        paddingBottom = 0.0,
+                        paddingStart = 10.0,
+                    ),
+                selectedPressed = SelectedPressed(overlayColor = AppColorRole.PRESSED_OVERLAY),
+                selectedDisabled =
+                    SelectedDisabled(
+                        textColor = AppColorRole.TEXT_SECONDARY,
+                        borderColor = AppColorRole.DIVIDER,
+                        backgroundColor = AppColorRole.SURFACE2,
                     ),
             )
 
@@ -2167,6 +2549,7 @@ data class ChipChoiceTokens(
             ChipChoiceTokens(
                 backgroundColor = AppColorRole.SURFACE,
                 textColor = AppColorRole.TEXT,
+                borderColor = AppColorRole.OUTLINE,
                 typography = AppTypography.subheadMedium,
                 rounded = AppRadius.full,
                 height = 40.0,
@@ -2174,11 +2557,30 @@ data class ChipChoiceTokens(
                 paddingEnd = 14.0,
                 paddingBottom = 0.0,
                 paddingStart = 14.0,
+                pressed = Pressed(backgroundColor = AppColorRole.SURFACE2, textColor = AppColorRole.TEXT),
+                disabled =
+                    Disabled(
+                        textColor = AppColorRole.TEXT_SECONDARY,
+                        borderColor = AppColorRole.DIVIDER,
+                        backgroundColor = AppColorRole.SURFACE,
+                    ),
                 selected =
                     Selected(
                         backgroundColor = AppColorRole.PRIMARY_TEXT,
                         textColor = AppColorRole.ON_PRIMARY,
+                        borderColor = AppColorRole.PRIMARY_TEXT,
                         typography = AppTypography.subhead,
+                        paddingTop = 0.0,
+                        paddingEnd = 14.0,
+                        paddingBottom = 0.0,
+                        paddingStart = 10.0,
+                    ),
+                selectedPressed = SelectedPressed(overlayColor = AppColorRole.PRESSED_OVERLAY),
+                selectedDisabled =
+                    SelectedDisabled(
+                        textColor = AppColorRole.TEXT_SECONDARY,
+                        borderColor = AppColorRole.DIVIDER,
+                        backgroundColor = AppColorRole.SURFACE,
                     ),
             )
 
@@ -2186,6 +2588,7 @@ data class ChipChoiceTokens(
             ChipChoiceTokens(
                 backgroundColor = AppColorRole.SURFACE,
                 textColor = AppColorRole.TEXT,
+                borderColor = AppColorRole.OUTLINE,
                 typography = AppTypography.subheadMedium,
                 rounded = AppRadius.full,
                 height = 40.0,
@@ -2193,11 +2596,30 @@ data class ChipChoiceTokens(
                 paddingEnd = 14.0,
                 paddingBottom = 0.0,
                 paddingStart = 14.0,
+                pressed = Pressed(backgroundColor = AppColorRole.SURFACE2, textColor = AppColorRole.TEXT),
+                disabled =
+                    Disabled(
+                        textColor = AppColorRole.TEXT_SECONDARY,
+                        borderColor = AppColorRole.DIVIDER,
+                        backgroundColor = AppColorRole.SURFACE,
+                    ),
                 selected =
                     Selected(
                         backgroundColor = AppColorRole.PRIMARY_TEXT,
                         textColor = AppColorRole.ON_PRIMARY,
+                        borderColor = AppColorRole.PRIMARY_TEXT,
                         typography = AppTypography.subhead,
+                        paddingTop = 0.0,
+                        paddingEnd = 14.0,
+                        paddingBottom = 0.0,
+                        paddingStart = 10.0,
+                    ),
+                selectedPressed = SelectedPressed(overlayColor = AppColorRole.PRESSED_OVERLAY),
+                selectedDisabled =
+                    SelectedDisabled(
+                        textColor = AppColorRole.TEXT_SECONDARY,
+                        borderColor = AppColorRole.DIVIDER,
+                        backgroundColor = AppColorRole.SURFACE,
                     ),
             )
 
@@ -2205,6 +2627,7 @@ data class ChipChoiceTokens(
             ChipChoiceTokens(
                 backgroundColor = AppColorRole.SURFACE,
                 textColor = AppColorRole.TEXT,
+                borderColor = AppColorRole.OUTLINE,
                 typography = AppTypography.subheadMedium,
                 rounded = AppRadius.full,
                 height = 40.0,
@@ -2212,11 +2635,30 @@ data class ChipChoiceTokens(
                 paddingEnd = 14.0,
                 paddingBottom = 0.0,
                 paddingStart = 14.0,
+                pressed = Pressed(backgroundColor = AppColorRole.SURFACE2, textColor = AppColorRole.TEXT),
+                disabled =
+                    Disabled(
+                        textColor = AppColorRole.TEXT_SECONDARY,
+                        borderColor = AppColorRole.DIVIDER,
+                        backgroundColor = AppColorRole.SURFACE2,
+                    ),
                 selected =
                     Selected(
                         backgroundColor = AppColorRole.PRIMARY_TEXT,
                         textColor = AppColorRole.ON_PRIMARY,
+                        borderColor = AppColorRole.PRIMARY_TEXT,
                         typography = AppTypography.subhead,
+                        paddingTop = 0.0,
+                        paddingEnd = 14.0,
+                        paddingBottom = 0.0,
+                        paddingStart = 10.0,
+                    ),
+                selectedPressed = SelectedPressed(overlayColor = AppColorRole.PRESSED_OVERLAY),
+                selectedDisabled =
+                    SelectedDisabled(
+                        textColor = AppColorRole.TEXT_SECONDARY,
+                        borderColor = AppColorRole.DIVIDER,
+                        backgroundColor = AppColorRole.SURFACE2,
                     ),
             )
 
@@ -2224,6 +2666,7 @@ data class ChipChoiceTokens(
             ChipChoiceTokens(
                 backgroundColor = AppColorRole.SURFACE,
                 textColor = AppColorRole.TEXT,
+                borderColor = AppColorRole.OUTLINE,
                 typography = AppTypography.subheadMedium,
                 rounded = AppRadius.full,
                 height = 40.0,
@@ -2231,11 +2674,30 @@ data class ChipChoiceTokens(
                 paddingEnd = 14.0,
                 paddingBottom = 0.0,
                 paddingStart = 14.0,
+                pressed = Pressed(backgroundColor = AppColorRole.SURFACE2, textColor = AppColorRole.TEXT),
+                disabled =
+                    Disabled(
+                        textColor = AppColorRole.TEXT_SECONDARY,
+                        borderColor = AppColorRole.DIVIDER,
+                        backgroundColor = AppColorRole.SURFACE,
+                    ),
                 selected =
                     Selected(
                         backgroundColor = AppColorRole.PRIMARY_TEXT,
                         textColor = AppColorRole.ON_PRIMARY,
+                        borderColor = AppColorRole.PRIMARY_TEXT,
                         typography = AppTypography.subhead,
+                        paddingTop = 0.0,
+                        paddingEnd = 14.0,
+                        paddingBottom = 0.0,
+                        paddingStart = 10.0,
+                    ),
+                selectedPressed = SelectedPressed(overlayColor = AppColorRole.PRESSED_OVERLAY),
+                selectedDisabled =
+                    SelectedDisabled(
+                        textColor = AppColorRole.TEXT_SECONDARY,
+                        borderColor = AppColorRole.DIVIDER,
+                        backgroundColor = AppColorRole.SURFACE,
                     ),
             )
     }
@@ -2245,6 +2707,8 @@ data class ChipChoiceTokens(
 data class ChipFilterTokens(
     val backgroundColor: AppColorRole,
     val textColor: AppColorRole,
+    val borderColor: AppColorRole,
+    val detailColor: AppColorRole,
     val typography: AppTextStyle,
     val rounded: Double,
     val height: Double,
@@ -2252,11 +2716,45 @@ data class ChipFilterTokens(
     val paddingEnd: Double,
     val paddingBottom: Double,
     val paddingStart: Double,
+    val detailTypography: AppTextStyle,
+    val detailGap: Double,
+    val pressed: Pressed,
+    val disabled: Disabled,
     val selected: Selected,
+    val selectedPressed: SelectedPressed,
+    val selectedDisabled: SelectedDisabled,
 ) {
+    data class Pressed(
+        val backgroundColor: AppColorRole,
+        val textColor: AppColorRole,
+    )
+
+    data class Disabled(
+        val textColor: AppColorRole,
+        val borderColor: AppColorRole,
+        val backgroundColor: AppColorRole,
+    )
+
     data class Selected(
         val backgroundColor: AppColorRole,
         val textColor: AppColorRole,
+        val borderColor: AppColorRole,
+        val detailColor: AppColorRole,
+        val paddingTop: Double,
+        val paddingEnd: Double,
+        val paddingBottom: Double,
+        val paddingStart: Double,
+    )
+
+    data class SelectedPressed(
+        val overlayColor: AppColorRole,
+    )
+
+    data class SelectedDisabled(
+        val textColor: AppColorRole,
+        val borderColor: AppColorRole,
+        val detailColor: AppColorRole,
+        val backgroundColor: AppColorRole,
     )
 
     companion object {
@@ -2264,6 +2762,8 @@ data class ChipFilterTokens(
             ChipFilterTokens(
                 backgroundColor = AppColorRole.SURFACE,
                 textColor = AppColorRole.TEXT,
+                borderColor = AppColorRole.OUTLINE,
+                detailColor = AppColorRole.TEXT_SECONDARY,
                 typography = AppTypography.labelMd,
                 rounded = AppRadius.full,
                 height = 36.0,
@@ -2271,13 +2771,42 @@ data class ChipFilterTokens(
                 paddingEnd = 14.0,
                 paddingBottom = 0.0,
                 paddingStart = 14.0,
-                selected = Selected(backgroundColor = AppColorRole.PRIMARY_TEXT, textColor = AppColorRole.ON_PRIMARY),
+                detailTypography = AppTypography.labelMdMedium,
+                detailGap = 4.0,
+                pressed = Pressed(backgroundColor = AppColorRole.SURFACE2, textColor = AppColorRole.TEXT),
+                disabled =
+                    Disabled(
+                        textColor = AppColorRole.TEXT_SECONDARY,
+                        borderColor = AppColorRole.DIVIDER,
+                        backgroundColor = AppColorRole.SURFACE2,
+                    ),
+                selected =
+                    Selected(
+                        backgroundColor = AppColorRole.PRIMARY_TEXT,
+                        textColor = AppColorRole.ON_PRIMARY,
+                        borderColor = AppColorRole.PRIMARY_TEXT,
+                        detailColor = AppColorRole.ON_PRIMARY,
+                        paddingTop = 0.0,
+                        paddingEnd = 14.0,
+                        paddingBottom = 0.0,
+                        paddingStart = 10.0,
+                    ),
+                selectedPressed = SelectedPressed(overlayColor = AppColorRole.PRESSED_OVERLAY),
+                selectedDisabled =
+                    SelectedDisabled(
+                        textColor = AppColorRole.TEXT_SECONDARY,
+                        borderColor = AppColorRole.DIVIDER,
+                        detailColor = AppColorRole.TEXT_SECONDARY,
+                        backgroundColor = AppColorRole.SURFACE2,
+                    ),
             )
 
         val dark: ChipFilterTokens =
             ChipFilterTokens(
                 backgroundColor = AppColorRole.SURFACE,
                 textColor = AppColorRole.TEXT,
+                borderColor = AppColorRole.OUTLINE,
+                detailColor = AppColorRole.TEXT_SECONDARY,
                 typography = AppTypography.labelMd,
                 rounded = AppRadius.full,
                 height = 36.0,
@@ -2285,13 +2814,42 @@ data class ChipFilterTokens(
                 paddingEnd = 14.0,
                 paddingBottom = 0.0,
                 paddingStart = 14.0,
-                selected = Selected(backgroundColor = AppColorRole.PRIMARY_TEXT, textColor = AppColorRole.ON_PRIMARY),
+                detailTypography = AppTypography.labelMdMedium,
+                detailGap = 4.0,
+                pressed = Pressed(backgroundColor = AppColorRole.SURFACE2, textColor = AppColorRole.TEXT),
+                disabled =
+                    Disabled(
+                        textColor = AppColorRole.TEXT_SECONDARY,
+                        borderColor = AppColorRole.DIVIDER,
+                        backgroundColor = AppColorRole.SURFACE,
+                    ),
+                selected =
+                    Selected(
+                        backgroundColor = AppColorRole.PRIMARY_TEXT,
+                        textColor = AppColorRole.ON_PRIMARY,
+                        borderColor = AppColorRole.PRIMARY_TEXT,
+                        detailColor = AppColorRole.ON_PRIMARY,
+                        paddingTop = 0.0,
+                        paddingEnd = 14.0,
+                        paddingBottom = 0.0,
+                        paddingStart = 10.0,
+                    ),
+                selectedPressed = SelectedPressed(overlayColor = AppColorRole.PRESSED_OVERLAY),
+                selectedDisabled =
+                    SelectedDisabled(
+                        textColor = AppColorRole.TEXT_SECONDARY,
+                        borderColor = AppColorRole.DIVIDER,
+                        detailColor = AppColorRole.TEXT_SECONDARY,
+                        backgroundColor = AppColorRole.SURFACE,
+                    ),
             )
 
         val brand: ChipFilterTokens =
             ChipFilterTokens(
                 backgroundColor = AppColorRole.SURFACE,
                 textColor = AppColorRole.TEXT,
+                borderColor = AppColorRole.OUTLINE,
+                detailColor = AppColorRole.TEXT_SECONDARY,
                 typography = AppTypography.labelMd,
                 rounded = AppRadius.full,
                 height = 36.0,
@@ -2299,13 +2857,42 @@ data class ChipFilterTokens(
                 paddingEnd = 14.0,
                 paddingBottom = 0.0,
                 paddingStart = 14.0,
-                selected = Selected(backgroundColor = AppColorRole.PRIMARY_TEXT, textColor = AppColorRole.ON_PRIMARY),
+                detailTypography = AppTypography.labelMdMedium,
+                detailGap = 4.0,
+                pressed = Pressed(backgroundColor = AppColorRole.SURFACE2, textColor = AppColorRole.TEXT),
+                disabled =
+                    Disabled(
+                        textColor = AppColorRole.TEXT_SECONDARY,
+                        borderColor = AppColorRole.DIVIDER,
+                        backgroundColor = AppColorRole.SURFACE,
+                    ),
+                selected =
+                    Selected(
+                        backgroundColor = AppColorRole.PRIMARY_TEXT,
+                        textColor = AppColorRole.ON_PRIMARY,
+                        borderColor = AppColorRole.PRIMARY_TEXT,
+                        detailColor = AppColorRole.ON_PRIMARY,
+                        paddingTop = 0.0,
+                        paddingEnd = 14.0,
+                        paddingBottom = 0.0,
+                        paddingStart = 10.0,
+                    ),
+                selectedPressed = SelectedPressed(overlayColor = AppColorRole.PRESSED_OVERLAY),
+                selectedDisabled =
+                    SelectedDisabled(
+                        textColor = AppColorRole.TEXT_SECONDARY,
+                        borderColor = AppColorRole.DIVIDER,
+                        detailColor = AppColorRole.TEXT_SECONDARY,
+                        backgroundColor = AppColorRole.SURFACE,
+                    ),
             )
 
         val hcLight: ChipFilterTokens =
             ChipFilterTokens(
                 backgroundColor = AppColorRole.SURFACE,
                 textColor = AppColorRole.TEXT,
+                borderColor = AppColorRole.OUTLINE,
+                detailColor = AppColorRole.TEXT_SECONDARY,
                 typography = AppTypography.labelMd,
                 rounded = AppRadius.full,
                 height = 36.0,
@@ -2313,13 +2900,42 @@ data class ChipFilterTokens(
                 paddingEnd = 14.0,
                 paddingBottom = 0.0,
                 paddingStart = 14.0,
-                selected = Selected(backgroundColor = AppColorRole.PRIMARY_TEXT, textColor = AppColorRole.ON_PRIMARY),
+                detailTypography = AppTypography.labelMdMedium,
+                detailGap = 4.0,
+                pressed = Pressed(backgroundColor = AppColorRole.SURFACE2, textColor = AppColorRole.TEXT),
+                disabled =
+                    Disabled(
+                        textColor = AppColorRole.TEXT_SECONDARY,
+                        borderColor = AppColorRole.DIVIDER,
+                        backgroundColor = AppColorRole.SURFACE2,
+                    ),
+                selected =
+                    Selected(
+                        backgroundColor = AppColorRole.PRIMARY_TEXT,
+                        textColor = AppColorRole.ON_PRIMARY,
+                        borderColor = AppColorRole.PRIMARY_TEXT,
+                        detailColor = AppColorRole.ON_PRIMARY,
+                        paddingTop = 0.0,
+                        paddingEnd = 14.0,
+                        paddingBottom = 0.0,
+                        paddingStart = 10.0,
+                    ),
+                selectedPressed = SelectedPressed(overlayColor = AppColorRole.PRESSED_OVERLAY),
+                selectedDisabled =
+                    SelectedDisabled(
+                        textColor = AppColorRole.TEXT_SECONDARY,
+                        borderColor = AppColorRole.DIVIDER,
+                        detailColor = AppColorRole.TEXT_SECONDARY,
+                        backgroundColor = AppColorRole.SURFACE2,
+                    ),
             )
 
         val hcDark: ChipFilterTokens =
             ChipFilterTokens(
                 backgroundColor = AppColorRole.SURFACE,
                 textColor = AppColorRole.TEXT,
+                borderColor = AppColorRole.OUTLINE,
+                detailColor = AppColorRole.TEXT_SECONDARY,
                 typography = AppTypography.labelMd,
                 rounded = AppRadius.full,
                 height = 36.0,
@@ -2327,7 +2943,798 @@ data class ChipFilterTokens(
                 paddingEnd = 14.0,
                 paddingBottom = 0.0,
                 paddingStart = 14.0,
-                selected = Selected(backgroundColor = AppColorRole.PRIMARY_TEXT, textColor = AppColorRole.ON_PRIMARY),
+                detailTypography = AppTypography.labelMdMedium,
+                detailGap = 4.0,
+                pressed = Pressed(backgroundColor = AppColorRole.SURFACE2, textColor = AppColorRole.TEXT),
+                disabled =
+                    Disabled(
+                        textColor = AppColorRole.TEXT_SECONDARY,
+                        borderColor = AppColorRole.DIVIDER,
+                        backgroundColor = AppColorRole.SURFACE,
+                    ),
+                selected =
+                    Selected(
+                        backgroundColor = AppColorRole.PRIMARY_TEXT,
+                        textColor = AppColorRole.ON_PRIMARY,
+                        borderColor = AppColorRole.PRIMARY_TEXT,
+                        detailColor = AppColorRole.ON_PRIMARY,
+                        paddingTop = 0.0,
+                        paddingEnd = 14.0,
+                        paddingBottom = 0.0,
+                        paddingStart = 10.0,
+                    ),
+                selectedPressed = SelectedPressed(overlayColor = AppColorRole.PRESSED_OVERLAY),
+                selectedDisabled =
+                    SelectedDisabled(
+                        textColor = AppColorRole.TEXT_SECONDARY,
+                        borderColor = AppColorRole.DIVIDER,
+                        detailColor = AppColorRole.TEXT_SECONDARY,
+                        backgroundColor = AppColorRole.SURFACE,
+                    ),
+            )
+    }
+}
+
+/** Component `chip-filter-menu` per context: colours are role keys, sizes in pt/dp. */
+data class ChipFilterMenuTokens(
+    val backgroundColor: AppColorRole,
+    val textColor: AppColorRole,
+    val borderColor: AppColorRole,
+    val typography: AppTextStyle,
+    val rounded: Double,
+    val height: Double,
+    val paddingTop: Double,
+    val paddingEnd: Double,
+    val paddingBottom: Double,
+    val paddingStart: Double,
+    val pressed: Pressed,
+    val selected: Selected,
+    val selectedPressed: SelectedPressed,
+) {
+    data class Pressed(
+        val backgroundColor: AppColorRole,
+        val textColor: AppColorRole,
+    )
+
+    data class Selected(
+        val backgroundColor: AppColorRole,
+        val textColor: AppColorRole,
+        val borderColor: AppColorRole,
+        val paddingTop: Double,
+        val paddingEnd: Double,
+        val paddingBottom: Double,
+        val paddingStart: Double,
+    )
+
+    data class SelectedPressed(
+        val overlayColor: AppColorRole,
+    )
+
+    companion object {
+        val light: ChipFilterMenuTokens =
+            ChipFilterMenuTokens(
+                backgroundColor = AppColorRole.SURFACE,
+                textColor = AppColorRole.TEXT,
+                borderColor = AppColorRole.OUTLINE,
+                typography = AppTypography.labelMd,
+                rounded = AppRadius.full,
+                height = 36.0,
+                paddingTop = 0.0,
+                paddingEnd = 10.0,
+                paddingBottom = 0.0,
+                paddingStart = 14.0,
+                pressed = Pressed(backgroundColor = AppColorRole.SURFACE2, textColor = AppColorRole.TEXT),
+                selected =
+                    Selected(
+                        backgroundColor = AppColorRole.PRIMARY_TEXT,
+                        textColor = AppColorRole.ON_PRIMARY,
+                        borderColor = AppColorRole.PRIMARY_TEXT,
+                        paddingTop = 0.0,
+                        paddingEnd = 10.0,
+                        paddingBottom = 0.0,
+                        paddingStart = 10.0,
+                    ),
+                selectedPressed = SelectedPressed(overlayColor = AppColorRole.PRESSED_OVERLAY),
+            )
+
+        val dark: ChipFilterMenuTokens =
+            ChipFilterMenuTokens(
+                backgroundColor = AppColorRole.SURFACE,
+                textColor = AppColorRole.TEXT,
+                borderColor = AppColorRole.OUTLINE,
+                typography = AppTypography.labelMd,
+                rounded = AppRadius.full,
+                height = 36.0,
+                paddingTop = 0.0,
+                paddingEnd = 10.0,
+                paddingBottom = 0.0,
+                paddingStart = 14.0,
+                pressed = Pressed(backgroundColor = AppColorRole.SURFACE2, textColor = AppColorRole.TEXT),
+                selected =
+                    Selected(
+                        backgroundColor = AppColorRole.PRIMARY_TEXT,
+                        textColor = AppColorRole.ON_PRIMARY,
+                        borderColor = AppColorRole.PRIMARY_TEXT,
+                        paddingTop = 0.0,
+                        paddingEnd = 10.0,
+                        paddingBottom = 0.0,
+                        paddingStart = 10.0,
+                    ),
+                selectedPressed = SelectedPressed(overlayColor = AppColorRole.PRESSED_OVERLAY),
+            )
+
+        val brand: ChipFilterMenuTokens =
+            ChipFilterMenuTokens(
+                backgroundColor = AppColorRole.SURFACE,
+                textColor = AppColorRole.TEXT,
+                borderColor = AppColorRole.OUTLINE,
+                typography = AppTypography.labelMd,
+                rounded = AppRadius.full,
+                height = 36.0,
+                paddingTop = 0.0,
+                paddingEnd = 10.0,
+                paddingBottom = 0.0,
+                paddingStart = 14.0,
+                pressed = Pressed(backgroundColor = AppColorRole.SURFACE2, textColor = AppColorRole.TEXT),
+                selected =
+                    Selected(
+                        backgroundColor = AppColorRole.PRIMARY_TEXT,
+                        textColor = AppColorRole.ON_PRIMARY,
+                        borderColor = AppColorRole.PRIMARY_TEXT,
+                        paddingTop = 0.0,
+                        paddingEnd = 10.0,
+                        paddingBottom = 0.0,
+                        paddingStart = 10.0,
+                    ),
+                selectedPressed = SelectedPressed(overlayColor = AppColorRole.PRESSED_OVERLAY),
+            )
+
+        val hcLight: ChipFilterMenuTokens =
+            ChipFilterMenuTokens(
+                backgroundColor = AppColorRole.SURFACE,
+                textColor = AppColorRole.TEXT,
+                borderColor = AppColorRole.OUTLINE,
+                typography = AppTypography.labelMd,
+                rounded = AppRadius.full,
+                height = 36.0,
+                paddingTop = 0.0,
+                paddingEnd = 10.0,
+                paddingBottom = 0.0,
+                paddingStart = 14.0,
+                pressed = Pressed(backgroundColor = AppColorRole.SURFACE2, textColor = AppColorRole.TEXT),
+                selected =
+                    Selected(
+                        backgroundColor = AppColorRole.PRIMARY_TEXT,
+                        textColor = AppColorRole.ON_PRIMARY,
+                        borderColor = AppColorRole.PRIMARY_TEXT,
+                        paddingTop = 0.0,
+                        paddingEnd = 10.0,
+                        paddingBottom = 0.0,
+                        paddingStart = 10.0,
+                    ),
+                selectedPressed = SelectedPressed(overlayColor = AppColorRole.PRESSED_OVERLAY),
+            )
+
+        val hcDark: ChipFilterMenuTokens =
+            ChipFilterMenuTokens(
+                backgroundColor = AppColorRole.SURFACE,
+                textColor = AppColorRole.TEXT,
+                borderColor = AppColorRole.OUTLINE,
+                typography = AppTypography.labelMd,
+                rounded = AppRadius.full,
+                height = 36.0,
+                paddingTop = 0.0,
+                paddingEnd = 10.0,
+                paddingBottom = 0.0,
+                paddingStart = 14.0,
+                pressed = Pressed(backgroundColor = AppColorRole.SURFACE2, textColor = AppColorRole.TEXT),
+                selected =
+                    Selected(
+                        backgroundColor = AppColorRole.PRIMARY_TEXT,
+                        textColor = AppColorRole.ON_PRIMARY,
+                        borderColor = AppColorRole.PRIMARY_TEXT,
+                        paddingTop = 0.0,
+                        paddingEnd = 10.0,
+                        paddingBottom = 0.0,
+                        paddingStart = 10.0,
+                    ),
+                selectedPressed = SelectedPressed(overlayColor = AppColorRole.PRESSED_OVERLAY),
+            )
+    }
+}
+
+/** Component `chip-swatch` per context: colours are role keys, sizes in pt/dp. */
+data class ChipSwatchTokens(
+    val backgroundColor: AppColorRole,
+    val textColor: AppColorRole,
+    val borderColor: AppColorRole,
+    val swatchEdgeColor: AppColorRole,
+    val typography: AppTextStyle,
+    val rounded: Double,
+    val height: Double,
+    val paddingTop: Double,
+    val paddingEnd: Double,
+    val paddingBottom: Double,
+    val paddingStart: Double,
+    val swatchSize: Double,
+    val swatchGap: Double,
+    val swatchEdgeWidth: Double,
+    val swatchEdgeMinContrast: Double,
+    val pressed: Pressed,
+    val disabled: Disabled,
+    val selected: Selected,
+    val selectedPressed: SelectedPressed,
+    val selectedDisabled: SelectedDisabled,
+) {
+    data class Pressed(
+        val backgroundColor: AppColorRole,
+        val textColor: AppColorRole,
+    )
+
+    data class Disabled(
+        val textColor: AppColorRole,
+        val borderColor: AppColorRole,
+        val swatchRingColor: AppColorRole,
+        val swatchRingWidth: Double,
+        val swatchRingGap: Double,
+        val backgroundColor: AppColorRole,
+    )
+
+    data class Selected(
+        val backgroundColor: AppColorRole,
+        val textColor: AppColorRole,
+        val borderColor: AppColorRole,
+        val swatchRingColor: AppColorRole,
+        val typography: AppTextStyle,
+        val paddingTop: Double,
+        val paddingEnd: Double,
+        val paddingBottom: Double,
+        val paddingStart: Double,
+        val swatchGap: Double,
+        val swatchRingWidth: Double,
+        val swatchRingGap: Double,
+    )
+
+    data class SelectedPressed(
+        val overlayColor: AppColorRole,
+    )
+
+    data class SelectedDisabled(
+        val textColor: AppColorRole,
+        val borderColor: AppColorRole,
+        val swatchRingColor: AppColorRole,
+        val swatchRingWidth: Double,
+        val swatchRingGap: Double,
+        val backgroundColor: AppColorRole,
+    )
+
+    companion object {
+        val light: ChipSwatchTokens =
+            ChipSwatchTokens(
+                backgroundColor = AppColorRole.SURFACE,
+                textColor = AppColorRole.TEXT,
+                borderColor = AppColorRole.OUTLINE,
+                swatchEdgeColor = AppColorRole.OUTLINE,
+                typography = AppTypography.subheadMedium,
+                rounded = AppRadius.full,
+                height = 40.0,
+                paddingTop = 0.0,
+                paddingEnd = 14.0,
+                paddingBottom = 0.0,
+                paddingStart = 12.0,
+                swatchSize = 16.0,
+                swatchGap = 8.0,
+                swatchEdgeWidth = 1.0,
+                swatchEdgeMinContrast = 3.0,
+                pressed = Pressed(backgroundColor = AppColorRole.SURFACE2, textColor = AppColorRole.TEXT),
+                disabled =
+                    Disabled(
+                        textColor = AppColorRole.TEXT_SECONDARY,
+                        borderColor = AppColorRole.DIVIDER,
+                        swatchRingColor = AppColorRole.DIVIDER,
+                        swatchRingWidth = 1.0,
+                        swatchRingGap = 1.5,
+                        backgroundColor = AppColorRole.SURFACE2,
+                    ),
+                selected =
+                    Selected(
+                        backgroundColor = AppColorRole.PRIMARY_TEXT,
+                        textColor = AppColorRole.ON_PRIMARY,
+                        borderColor = AppColorRole.PRIMARY_TEXT,
+                        swatchRingColor = AppColorRole.SURFACE,
+                        typography = AppTypography.subhead,
+                        paddingTop = 0.0,
+                        paddingEnd = 14.0,
+                        paddingBottom = 0.0,
+                        paddingStart = 10.0,
+                        swatchGap = 6.0,
+                        swatchRingWidth = 1.5,
+                        swatchRingGap = 0.0,
+                    ),
+                selectedPressed = SelectedPressed(overlayColor = AppColorRole.PRESSED_OVERLAY),
+                selectedDisabled =
+                    SelectedDisabled(
+                        textColor = AppColorRole.TEXT_SECONDARY,
+                        borderColor = AppColorRole.DIVIDER,
+                        swatchRingColor = AppColorRole.DIVIDER,
+                        swatchRingWidth = 1.0,
+                        swatchRingGap = 1.5,
+                        backgroundColor = AppColorRole.SURFACE2,
+                    ),
+            )
+
+        val dark: ChipSwatchTokens =
+            ChipSwatchTokens(
+                backgroundColor = AppColorRole.SURFACE,
+                textColor = AppColorRole.TEXT,
+                borderColor = AppColorRole.OUTLINE,
+                swatchEdgeColor = AppColorRole.OUTLINE,
+                typography = AppTypography.subheadMedium,
+                rounded = AppRadius.full,
+                height = 40.0,
+                paddingTop = 0.0,
+                paddingEnd = 14.0,
+                paddingBottom = 0.0,
+                paddingStart = 12.0,
+                swatchSize = 16.0,
+                swatchGap = 8.0,
+                swatchEdgeWidth = 1.0,
+                swatchEdgeMinContrast = 3.0,
+                pressed = Pressed(backgroundColor = AppColorRole.SURFACE2, textColor = AppColorRole.TEXT),
+                disabled =
+                    Disabled(
+                        textColor = AppColorRole.TEXT_SECONDARY,
+                        borderColor = AppColorRole.DIVIDER,
+                        swatchRingColor = AppColorRole.DIVIDER,
+                        swatchRingWidth = 1.0,
+                        swatchRingGap = 1.5,
+                        backgroundColor = AppColorRole.SURFACE,
+                    ),
+                selected =
+                    Selected(
+                        backgroundColor = AppColorRole.PRIMARY_TEXT,
+                        textColor = AppColorRole.ON_PRIMARY,
+                        borderColor = AppColorRole.PRIMARY_TEXT,
+                        swatchRingColor = AppColorRole.SURFACE,
+                        typography = AppTypography.subhead,
+                        paddingTop = 0.0,
+                        paddingEnd = 14.0,
+                        paddingBottom = 0.0,
+                        paddingStart = 10.0,
+                        swatchGap = 6.0,
+                        swatchRingWidth = 1.5,
+                        swatchRingGap = 0.0,
+                    ),
+                selectedPressed = SelectedPressed(overlayColor = AppColorRole.PRESSED_OVERLAY),
+                selectedDisabled =
+                    SelectedDisabled(
+                        textColor = AppColorRole.TEXT_SECONDARY,
+                        borderColor = AppColorRole.DIVIDER,
+                        swatchRingColor = AppColorRole.DIVIDER,
+                        swatchRingWidth = 1.0,
+                        swatchRingGap = 1.5,
+                        backgroundColor = AppColorRole.SURFACE,
+                    ),
+            )
+
+        val brand: ChipSwatchTokens =
+            ChipSwatchTokens(
+                backgroundColor = AppColorRole.SURFACE,
+                textColor = AppColorRole.TEXT,
+                borderColor = AppColorRole.OUTLINE,
+                swatchEdgeColor = AppColorRole.OUTLINE,
+                typography = AppTypography.subheadMedium,
+                rounded = AppRadius.full,
+                height = 40.0,
+                paddingTop = 0.0,
+                paddingEnd = 14.0,
+                paddingBottom = 0.0,
+                paddingStart = 12.0,
+                swatchSize = 16.0,
+                swatchGap = 8.0,
+                swatchEdgeWidth = 1.0,
+                swatchEdgeMinContrast = 3.0,
+                pressed = Pressed(backgroundColor = AppColorRole.SURFACE2, textColor = AppColorRole.TEXT),
+                disabled =
+                    Disabled(
+                        textColor = AppColorRole.TEXT_SECONDARY,
+                        borderColor = AppColorRole.DIVIDER,
+                        swatchRingColor = AppColorRole.DIVIDER,
+                        swatchRingWidth = 1.0,
+                        swatchRingGap = 1.5,
+                        backgroundColor = AppColorRole.SURFACE,
+                    ),
+                selected =
+                    Selected(
+                        backgroundColor = AppColorRole.PRIMARY_TEXT,
+                        textColor = AppColorRole.ON_PRIMARY,
+                        borderColor = AppColorRole.PRIMARY_TEXT,
+                        swatchRingColor = AppColorRole.SURFACE,
+                        typography = AppTypography.subhead,
+                        paddingTop = 0.0,
+                        paddingEnd = 14.0,
+                        paddingBottom = 0.0,
+                        paddingStart = 10.0,
+                        swatchGap = 6.0,
+                        swatchRingWidth = 1.5,
+                        swatchRingGap = 0.0,
+                    ),
+                selectedPressed = SelectedPressed(overlayColor = AppColorRole.PRESSED_OVERLAY),
+                selectedDisabled =
+                    SelectedDisabled(
+                        textColor = AppColorRole.TEXT_SECONDARY,
+                        borderColor = AppColorRole.DIVIDER,
+                        swatchRingColor = AppColorRole.DIVIDER,
+                        swatchRingWidth = 1.0,
+                        swatchRingGap = 1.5,
+                        backgroundColor = AppColorRole.SURFACE,
+                    ),
+            )
+
+        val hcLight: ChipSwatchTokens =
+            ChipSwatchTokens(
+                backgroundColor = AppColorRole.SURFACE,
+                textColor = AppColorRole.TEXT,
+                borderColor = AppColorRole.OUTLINE,
+                swatchEdgeColor = AppColorRole.OUTLINE,
+                typography = AppTypography.subheadMedium,
+                rounded = AppRadius.full,
+                height = 40.0,
+                paddingTop = 0.0,
+                paddingEnd = 14.0,
+                paddingBottom = 0.0,
+                paddingStart = 12.0,
+                swatchSize = 16.0,
+                swatchGap = 8.0,
+                swatchEdgeWidth = 1.0,
+                swatchEdgeMinContrast = 3.0,
+                pressed = Pressed(backgroundColor = AppColorRole.SURFACE2, textColor = AppColorRole.TEXT),
+                disabled =
+                    Disabled(
+                        textColor = AppColorRole.TEXT_SECONDARY,
+                        borderColor = AppColorRole.DIVIDER,
+                        swatchRingColor = AppColorRole.DIVIDER,
+                        swatchRingWidth = 1.0,
+                        swatchRingGap = 1.5,
+                        backgroundColor = AppColorRole.SURFACE2,
+                    ),
+                selected =
+                    Selected(
+                        backgroundColor = AppColorRole.PRIMARY_TEXT,
+                        textColor = AppColorRole.ON_PRIMARY,
+                        borderColor = AppColorRole.PRIMARY_TEXT,
+                        swatchRingColor = AppColorRole.SURFACE,
+                        typography = AppTypography.subhead,
+                        paddingTop = 0.0,
+                        paddingEnd = 14.0,
+                        paddingBottom = 0.0,
+                        paddingStart = 10.0,
+                        swatchGap = 6.0,
+                        swatchRingWidth = 1.5,
+                        swatchRingGap = 0.0,
+                    ),
+                selectedPressed = SelectedPressed(overlayColor = AppColorRole.PRESSED_OVERLAY),
+                selectedDisabled =
+                    SelectedDisabled(
+                        textColor = AppColorRole.TEXT_SECONDARY,
+                        borderColor = AppColorRole.DIVIDER,
+                        swatchRingColor = AppColorRole.DIVIDER,
+                        swatchRingWidth = 1.0,
+                        swatchRingGap = 1.5,
+                        backgroundColor = AppColorRole.SURFACE2,
+                    ),
+            )
+
+        val hcDark: ChipSwatchTokens =
+            ChipSwatchTokens(
+                backgroundColor = AppColorRole.SURFACE,
+                textColor = AppColorRole.TEXT,
+                borderColor = AppColorRole.OUTLINE,
+                swatchEdgeColor = AppColorRole.OUTLINE,
+                typography = AppTypography.subheadMedium,
+                rounded = AppRadius.full,
+                height = 40.0,
+                paddingTop = 0.0,
+                paddingEnd = 14.0,
+                paddingBottom = 0.0,
+                paddingStart = 12.0,
+                swatchSize = 16.0,
+                swatchGap = 8.0,
+                swatchEdgeWidth = 1.0,
+                swatchEdgeMinContrast = 3.0,
+                pressed = Pressed(backgroundColor = AppColorRole.SURFACE2, textColor = AppColorRole.TEXT),
+                disabled =
+                    Disabled(
+                        textColor = AppColorRole.TEXT_SECONDARY,
+                        borderColor = AppColorRole.DIVIDER,
+                        swatchRingColor = AppColorRole.DIVIDER,
+                        swatchRingWidth = 1.0,
+                        swatchRingGap = 1.5,
+                        backgroundColor = AppColorRole.SURFACE,
+                    ),
+                selected =
+                    Selected(
+                        backgroundColor = AppColorRole.PRIMARY_TEXT,
+                        textColor = AppColorRole.ON_PRIMARY,
+                        borderColor = AppColorRole.PRIMARY_TEXT,
+                        swatchRingColor = AppColorRole.SURFACE,
+                        typography = AppTypography.subhead,
+                        paddingTop = 0.0,
+                        paddingEnd = 14.0,
+                        paddingBottom = 0.0,
+                        paddingStart = 10.0,
+                        swatchGap = 6.0,
+                        swatchRingWidth = 1.5,
+                        swatchRingGap = 0.0,
+                    ),
+                selectedPressed = SelectedPressed(overlayColor = AppColorRole.PRESSED_OVERLAY),
+                selectedDisabled =
+                    SelectedDisabled(
+                        textColor = AppColorRole.TEXT_SECONDARY,
+                        borderColor = AppColorRole.DIVIDER,
+                        swatchRingColor = AppColorRole.DIVIDER,
+                        swatchRingWidth = 1.0,
+                        swatchRingGap = 1.5,
+                        backgroundColor = AppColorRole.SURFACE,
+                    ),
+            )
+    }
+}
+
+/** Component `chip-group-sort` per context: colours are role keys, sizes in pt/dp. */
+data class ChipGroupSortTokens(
+    val backgroundColor: AppColorRole,
+    val textColor: AppColorRole,
+    val borderColor: AppColorRole,
+    val prefixColor: AppColorRole,
+    val typography: AppTextStyle,
+    val rounded: Double,
+    val height: Double,
+    val paddingTop: Double,
+    val paddingEnd: Double,
+    val paddingBottom: Double,
+    val paddingStart: Double,
+    val iconGap: Double,
+    val trailingIconGap: Double,
+    val prefixTypography: AppTextStyle,
+    val prefixGap: Double,
+    val pressed: Pressed,
+) {
+    data class Pressed(
+        val backgroundColor: AppColorRole,
+    )
+
+    companion object {
+        val light: ChipGroupSortTokens =
+            ChipGroupSortTokens(
+                backgroundColor = AppColorRole.SURFACE,
+                textColor = AppColorRole.TEXT,
+                borderColor = AppColorRole.DIVIDER,
+                prefixColor = AppColorRole.TEXT_SECONDARY,
+                typography = AppTypography.labelMd,
+                rounded = AppRadius.full,
+                height = 36.0,
+                paddingTop = 0.0,
+                paddingEnd = 12.0,
+                paddingBottom = 0.0,
+                paddingStart = 10.0,
+                iconGap = 6.0,
+                trailingIconGap = 6.0,
+                prefixTypography = AppTypography.labelMdNormal,
+                prefixGap = 6.0,
+                pressed = Pressed(backgroundColor = AppColorRole.SURFACE2),
+            )
+
+        val dark: ChipGroupSortTokens =
+            ChipGroupSortTokens(
+                backgroundColor = AppColorRole.SURFACE,
+                textColor = AppColorRole.TEXT,
+                borderColor = AppColorRole.DIVIDER,
+                prefixColor = AppColorRole.TEXT_SECONDARY,
+                typography = AppTypography.labelMd,
+                rounded = AppRadius.full,
+                height = 36.0,
+                paddingTop = 0.0,
+                paddingEnd = 12.0,
+                paddingBottom = 0.0,
+                paddingStart = 10.0,
+                iconGap = 6.0,
+                trailingIconGap = 6.0,
+                prefixTypography = AppTypography.labelMdNormal,
+                prefixGap = 6.0,
+                pressed = Pressed(backgroundColor = AppColorRole.SURFACE2),
+            )
+
+        val brand: ChipGroupSortTokens =
+            ChipGroupSortTokens(
+                backgroundColor = AppColorRole.SURFACE,
+                textColor = AppColorRole.TEXT,
+                borderColor = AppColorRole.DIVIDER,
+                prefixColor = AppColorRole.TEXT_SECONDARY,
+                typography = AppTypography.labelMd,
+                rounded = AppRadius.full,
+                height = 36.0,
+                paddingTop = 0.0,
+                paddingEnd = 12.0,
+                paddingBottom = 0.0,
+                paddingStart = 10.0,
+                iconGap = 6.0,
+                trailingIconGap = 6.0,
+                prefixTypography = AppTypography.labelMdNormal,
+                prefixGap = 6.0,
+                pressed = Pressed(backgroundColor = AppColorRole.SURFACE2),
+            )
+
+        val hcLight: ChipGroupSortTokens =
+            ChipGroupSortTokens(
+                backgroundColor = AppColorRole.SURFACE,
+                textColor = AppColorRole.TEXT,
+                borderColor = AppColorRole.DIVIDER,
+                prefixColor = AppColorRole.TEXT_SECONDARY,
+                typography = AppTypography.labelMd,
+                rounded = AppRadius.full,
+                height = 36.0,
+                paddingTop = 0.0,
+                paddingEnd = 12.0,
+                paddingBottom = 0.0,
+                paddingStart = 10.0,
+                iconGap = 6.0,
+                trailingIconGap = 6.0,
+                prefixTypography = AppTypography.labelMdNormal,
+                prefixGap = 6.0,
+                pressed = Pressed(backgroundColor = AppColorRole.SURFACE2),
+            )
+
+        val hcDark: ChipGroupSortTokens =
+            ChipGroupSortTokens(
+                backgroundColor = AppColorRole.SURFACE,
+                textColor = AppColorRole.TEXT,
+                borderColor = AppColorRole.DIVIDER,
+                prefixColor = AppColorRole.TEXT_SECONDARY,
+                typography = AppTypography.labelMd,
+                rounded = AppRadius.full,
+                height = 36.0,
+                paddingTop = 0.0,
+                paddingEnd = 12.0,
+                paddingBottom = 0.0,
+                paddingStart = 10.0,
+                iconGap = 6.0,
+                trailingIconGap = 6.0,
+                prefixTypography = AppTypography.labelMdNormal,
+                prefixGap = 6.0,
+                pressed = Pressed(backgroundColor = AppColorRole.SURFACE2),
+            )
+    }
+}
+
+/** Component `chip-override` per context: colours are role keys, sizes in pt/dp. */
+data class ChipOverrideTokens(
+    val backgroundColor: AppColorRole,
+    val textColor: AppColorRole,
+    val borderColor: AppColorRole,
+    val iconColor: AppColorRole,
+    val trailingIconColor: AppColorRole,
+    val detailColor: AppColorRole,
+    val borderWidth: Double,
+    val typography: AppTextStyle,
+    val rounded: Double,
+    val height: Double,
+    val paddingTop: Double,
+    val paddingEnd: Double,
+    val paddingBottom: Double,
+    val paddingStart: Double,
+    val detailTypography: AppTextStyle,
+    val detailGap: Double,
+    val pressed: Pressed,
+) {
+    data class Pressed(
+        val backgroundColor: AppColorRole,
+    )
+
+    companion object {
+        val light: ChipOverrideTokens =
+            ChipOverrideTokens(
+                backgroundColor = AppColorRole.SURFACE,
+                textColor = AppColorRole.TEXT,
+                borderColor = AppColorRole.PRIMARY_TEXT,
+                iconColor = AppColorRole.PRIMARY_TEXT,
+                trailingIconColor = AppColorRole.PRIMARY_TEXT,
+                detailColor = AppColorRole.PRIMARY_TEXT,
+                borderWidth = 1.5,
+                typography = AppTypography.labelSm,
+                rounded = AppRadius.full,
+                height = 34.0,
+                paddingTop = 0.0,
+                paddingEnd = 11.0,
+                paddingBottom = 0.0,
+                paddingStart = 11.0,
+                detailTypography = AppTypography.labelSmMedium,
+                detailGap = 6.0,
+                pressed = Pressed(backgroundColor = AppColorRole.SURFACE2),
+            )
+
+        val dark: ChipOverrideTokens =
+            ChipOverrideTokens(
+                backgroundColor = AppColorRole.SURFACE,
+                textColor = AppColorRole.TEXT,
+                borderColor = AppColorRole.PRIMARY_TEXT,
+                iconColor = AppColorRole.PRIMARY_TEXT,
+                trailingIconColor = AppColorRole.PRIMARY_TEXT,
+                detailColor = AppColorRole.PRIMARY_TEXT,
+                borderWidth = 1.5,
+                typography = AppTypography.labelSm,
+                rounded = AppRadius.full,
+                height = 34.0,
+                paddingTop = 0.0,
+                paddingEnd = 11.0,
+                paddingBottom = 0.0,
+                paddingStart = 11.0,
+                detailTypography = AppTypography.labelSmMedium,
+                detailGap = 6.0,
+                pressed = Pressed(backgroundColor = AppColorRole.SURFACE2),
+            )
+
+        val brand: ChipOverrideTokens =
+            ChipOverrideTokens(
+                backgroundColor = AppColorRole.SURFACE,
+                textColor = AppColorRole.TEXT,
+                borderColor = AppColorRole.PRIMARY_TEXT,
+                iconColor = AppColorRole.PRIMARY_TEXT,
+                trailingIconColor = AppColorRole.PRIMARY_TEXT,
+                detailColor = AppColorRole.PRIMARY_TEXT,
+                borderWidth = 1.5,
+                typography = AppTypography.labelSm,
+                rounded = AppRadius.full,
+                height = 34.0,
+                paddingTop = 0.0,
+                paddingEnd = 11.0,
+                paddingBottom = 0.0,
+                paddingStart = 11.0,
+                detailTypography = AppTypography.labelSmMedium,
+                detailGap = 6.0,
+                pressed = Pressed(backgroundColor = AppColorRole.SURFACE2),
+            )
+
+        val hcLight: ChipOverrideTokens =
+            ChipOverrideTokens(
+                backgroundColor = AppColorRole.SURFACE,
+                textColor = AppColorRole.TEXT,
+                borderColor = AppColorRole.PRIMARY_TEXT,
+                iconColor = AppColorRole.PRIMARY_TEXT,
+                trailingIconColor = AppColorRole.PRIMARY_TEXT,
+                detailColor = AppColorRole.PRIMARY_TEXT,
+                borderWidth = 1.5,
+                typography = AppTypography.labelSm,
+                rounded = AppRadius.full,
+                height = 34.0,
+                paddingTop = 0.0,
+                paddingEnd = 11.0,
+                paddingBottom = 0.0,
+                paddingStart = 11.0,
+                detailTypography = AppTypography.labelSmMedium,
+                detailGap = 6.0,
+                pressed = Pressed(backgroundColor = AppColorRole.SURFACE2),
+            )
+
+        val hcDark: ChipOverrideTokens =
+            ChipOverrideTokens(
+                backgroundColor = AppColorRole.SURFACE,
+                textColor = AppColorRole.TEXT,
+                borderColor = AppColorRole.PRIMARY_TEXT,
+                iconColor = AppColorRole.PRIMARY_TEXT,
+                trailingIconColor = AppColorRole.PRIMARY_TEXT,
+                detailColor = AppColorRole.PRIMARY_TEXT,
+                borderWidth = 1.5,
+                typography = AppTypography.labelSm,
+                rounded = AppRadius.full,
+                height = 34.0,
+                paddingTop = 0.0,
+                paddingEnd = 11.0,
+                paddingBottom = 0.0,
+                paddingStart = 11.0,
+                detailTypography = AppTypography.labelSmMedium,
+                detailGap = 6.0,
+                pressed = Pressed(backgroundColor = AppColorRole.SURFACE2),
             )
     }
 }
@@ -2335,6 +3742,8 @@ data class ChipFilterTokens(
 /** Component `chip-never-suggest` per context: colours are role keys, sizes in pt/dp. */
 data class ChipNeverSuggestTokens(
     val textColor: AppColorRole,
+    val borderColor: AppColorRole,
+    val iconColor: AppColorRole,
     val typography: AppTextStyle,
     val rounded: Double,
     val height: Double,
@@ -2343,11 +3752,19 @@ data class ChipNeverSuggestTokens(
     val paddingBottom: Double,
     val paddingStart: Double,
     val backgroundColor: AppColorRole,
+    val pressed: Pressed,
 ) {
+    data class Pressed(
+        val borderWidth: Double,
+        val backgroundColor: AppColorRole,
+    )
+
     companion object {
         val light: ChipNeverSuggestTokens =
             ChipNeverSuggestTokens(
                 textColor = AppColorRole.TEXT,
+                borderColor = AppColorRole.ERROR_FG,
+                iconColor = AppColorRole.ERROR_FG,
                 typography = AppTypography.subhead,
                 rounded = AppRadius.radius6,
                 height = 40.0,
@@ -2356,11 +3773,14 @@ data class ChipNeverSuggestTokens(
                 paddingBottom = 0.0,
                 paddingStart = 10.0,
                 backgroundColor = AppColorRole.ERROR_BG,
+                pressed = Pressed(borderWidth = 2.0, backgroundColor = AppColorRole.ERROR_BG),
             )
 
         val dark: ChipNeverSuggestTokens =
             ChipNeverSuggestTokens(
                 textColor = AppColorRole.TEXT,
+                borderColor = AppColorRole.ERROR_FG,
+                iconColor = AppColorRole.ERROR_FG,
                 typography = AppTypography.subhead,
                 rounded = AppRadius.radius6,
                 height = 40.0,
@@ -2369,11 +3789,14 @@ data class ChipNeverSuggestTokens(
                 paddingBottom = 0.0,
                 paddingStart = 10.0,
                 backgroundColor = AppColorRole.SURFACE2,
+                pressed = Pressed(borderWidth = 2.0, backgroundColor = AppColorRole.DIVIDER),
             )
 
         val brand: ChipNeverSuggestTokens =
             ChipNeverSuggestTokens(
                 textColor = AppColorRole.TEXT,
+                borderColor = AppColorRole.ERROR_FG,
+                iconColor = AppColorRole.ERROR_FG,
                 typography = AppTypography.subhead,
                 rounded = AppRadius.radius6,
                 height = 40.0,
@@ -2382,11 +3805,14 @@ data class ChipNeverSuggestTokens(
                 paddingBottom = 0.0,
                 paddingStart = 10.0,
                 backgroundColor = AppColorRole.SURFACE2,
+                pressed = Pressed(borderWidth = 2.0, backgroundColor = AppColorRole.DIVIDER),
             )
 
         val hcLight: ChipNeverSuggestTokens =
             ChipNeverSuggestTokens(
                 textColor = AppColorRole.TEXT,
+                borderColor = AppColorRole.ERROR_FG,
+                iconColor = AppColorRole.ERROR_FG,
                 typography = AppTypography.subhead,
                 rounded = AppRadius.radius6,
                 height = 40.0,
@@ -2395,11 +3821,14 @@ data class ChipNeverSuggestTokens(
                 paddingBottom = 0.0,
                 paddingStart = 10.0,
                 backgroundColor = AppColorRole.ERROR_BG,
+                pressed = Pressed(borderWidth = 2.0, backgroundColor = AppColorRole.ERROR_BG),
             )
 
         val hcDark: ChipNeverSuggestTokens =
             ChipNeverSuggestTokens(
                 textColor = AppColorRole.TEXT,
+                borderColor = AppColorRole.ERROR_FG,
+                iconColor = AppColorRole.ERROR_FG,
                 typography = AppTypography.subhead,
                 rounded = AppRadius.radius6,
                 height = 40.0,
@@ -2408,6 +3837,7 @@ data class ChipNeverSuggestTokens(
                 paddingBottom = 0.0,
                 paddingStart = 10.0,
                 backgroundColor = AppColorRole.SURFACE2,
+                pressed = Pressed(borderWidth = 2.0, backgroundColor = AppColorRole.DIVIDER),
             )
     }
 }
@@ -2415,55 +3845,304 @@ data class ChipNeverSuggestTokens(
 /** Component `chip-soft-dislike` per context: colours are role keys, sizes in pt/dp. */
 data class ChipSoftDislikeTokens(
     val textColor: AppColorRole,
+    val borderColor: AppColorRole,
     val typography: AppTextStyle,
     val rounded: Double,
     val height: Double,
+    val paddingTop: Double,
+    val paddingEnd: Double,
+    val paddingBottom: Double,
+    val paddingStart: Double,
     val backgroundColor: AppColorRole,
+    val pressed: Pressed,
 ) {
+    data class Pressed(
+        val textColor: AppColorRole,
+        val borderColor: AppColorRole,
+        val backgroundColor: AppColorRole,
+    )
+
     companion object {
         val light: ChipSoftDislikeTokens =
             ChipSoftDislikeTokens(
                 textColor = AppColorRole.TEXT_SECONDARY,
+                borderColor = AppColorRole.DIVIDER,
                 typography = AppTypography.subheadMedium,
                 rounded = AppRadius.full,
                 height = 40.0,
+                paddingTop = 0.0,
+                paddingEnd = 14.0,
+                paddingBottom = 0.0,
+                paddingStart = 10.0,
                 backgroundColor = AppColorRole.SURFACE2,
+                pressed =
+                    Pressed(
+                        textColor = AppColorRole.TEXT,
+                        borderColor = AppColorRole.OUTLINE,
+                        backgroundColor = AppColorRole.DIVIDER,
+                    ),
             )
 
         val dark: ChipSoftDislikeTokens =
             ChipSoftDislikeTokens(
                 textColor = AppColorRole.TEXT_SECONDARY,
+                borderColor = AppColorRole.DIVIDER,
                 typography = AppTypography.subheadMedium,
                 rounded = AppRadius.full,
                 height = 40.0,
+                paddingTop = 0.0,
+                paddingEnd = 14.0,
+                paddingBottom = 0.0,
+                paddingStart = 10.0,
                 backgroundColor = AppColorRole.SURFACE,
+                pressed =
+                    Pressed(
+                        textColor = AppColorRole.TEXT,
+                        borderColor = AppColorRole.OUTLINE,
+                        backgroundColor = AppColorRole.SURFACE2,
+                    ),
             )
 
         val brand: ChipSoftDislikeTokens =
             ChipSoftDislikeTokens(
                 textColor = AppColorRole.TEXT_SECONDARY,
+                borderColor = AppColorRole.DIVIDER,
                 typography = AppTypography.subheadMedium,
                 rounded = AppRadius.full,
                 height = 40.0,
+                paddingTop = 0.0,
+                paddingEnd = 14.0,
+                paddingBottom = 0.0,
+                paddingStart = 10.0,
                 backgroundColor = AppColorRole.SURFACE,
+                pressed =
+                    Pressed(
+                        textColor = AppColorRole.TEXT,
+                        borderColor = AppColorRole.OUTLINE,
+                        backgroundColor = AppColorRole.SURFACE2,
+                    ),
             )
 
         val hcLight: ChipSoftDislikeTokens =
             ChipSoftDislikeTokens(
                 textColor = AppColorRole.TEXT_SECONDARY,
+                borderColor = AppColorRole.DIVIDER,
                 typography = AppTypography.subheadMedium,
                 rounded = AppRadius.full,
                 height = 40.0,
+                paddingTop = 0.0,
+                paddingEnd = 14.0,
+                paddingBottom = 0.0,
+                paddingStart = 10.0,
                 backgroundColor = AppColorRole.SURFACE2,
+                pressed =
+                    Pressed(
+                        textColor = AppColorRole.TEXT,
+                        borderColor = AppColorRole.OUTLINE,
+                        backgroundColor = AppColorRole.DIVIDER,
+                    ),
             )
 
         val hcDark: ChipSoftDislikeTokens =
             ChipSoftDislikeTokens(
                 textColor = AppColorRole.TEXT_SECONDARY,
+                borderColor = AppColorRole.DIVIDER,
                 typography = AppTypography.subheadMedium,
                 rounded = AppRadius.full,
                 height = 40.0,
+                paddingTop = 0.0,
+                paddingEnd = 14.0,
+                paddingBottom = 0.0,
+                paddingStart = 10.0,
                 backgroundColor = AppColorRole.SURFACE,
+                pressed =
+                    Pressed(
+                        textColor = AppColorRole.TEXT,
+                        borderColor = AppColorRole.OUTLINE,
+                        backgroundColor = AppColorRole.SURFACE2,
+                    ),
+            )
+    }
+}
+
+/** Component `chip-add` per context: colours are role keys, sizes in pt/dp. */
+data class ChipAddTokens(
+    val textColor: AppColorRole,
+    val borderColor: AppColorRole,
+    val typography: AppTextStyle,
+    val rounded: Double,
+    val height: Double,
+    val paddingTop: Double,
+    val paddingEnd: Double,
+    val paddingBottom: Double,
+    val paddingStart: Double,
+    val pressed: Pressed,
+) {
+    data class Pressed(
+        val backgroundColor: AppColorRole,
+        val textColor: AppColorRole,
+    )
+
+    companion object {
+        val light: ChipAddTokens =
+            ChipAddTokens(
+                textColor = AppColorRole.PRIMARY_TEXT,
+                borderColor = AppColorRole.OUTLINE,
+                typography = AppTypography.subhead,
+                rounded = AppRadius.full,
+                height = 40.0,
+                paddingTop = 0.0,
+                paddingEnd = 14.0,
+                paddingBottom = 0.0,
+                paddingStart = 10.0,
+                pressed = Pressed(backgroundColor = AppColorRole.SURFACE2, textColor = AppColorRole.PRIMARY_TEXT),
+            )
+
+        val dark: ChipAddTokens =
+            ChipAddTokens(
+                textColor = AppColorRole.PRIMARY_TEXT,
+                borderColor = AppColorRole.OUTLINE,
+                typography = AppTypography.subhead,
+                rounded = AppRadius.full,
+                height = 40.0,
+                paddingTop = 0.0,
+                paddingEnd = 14.0,
+                paddingBottom = 0.0,
+                paddingStart = 10.0,
+                pressed = Pressed(backgroundColor = AppColorRole.SURFACE2, textColor = AppColorRole.PRIMARY_TEXT),
+            )
+
+        val brand: ChipAddTokens =
+            ChipAddTokens(
+                textColor = AppColorRole.PRIMARY_TEXT,
+                borderColor = AppColorRole.OUTLINE,
+                typography = AppTypography.subhead,
+                rounded = AppRadius.full,
+                height = 40.0,
+                paddingTop = 0.0,
+                paddingEnd = 14.0,
+                paddingBottom = 0.0,
+                paddingStart = 10.0,
+                pressed = Pressed(backgroundColor = AppColorRole.SURFACE2, textColor = AppColorRole.PRIMARY_TEXT),
+            )
+
+        val hcLight: ChipAddTokens =
+            ChipAddTokens(
+                textColor = AppColorRole.PRIMARY_TEXT,
+                borderColor = AppColorRole.OUTLINE,
+                typography = AppTypography.subhead,
+                rounded = AppRadius.full,
+                height = 40.0,
+                paddingTop = 0.0,
+                paddingEnd = 14.0,
+                paddingBottom = 0.0,
+                paddingStart = 10.0,
+                pressed = Pressed(backgroundColor = AppColorRole.SURFACE2, textColor = AppColorRole.PRIMARY_TEXT),
+            )
+
+        val hcDark: ChipAddTokens =
+            ChipAddTokens(
+                textColor = AppColorRole.PRIMARY_TEXT,
+                borderColor = AppColorRole.OUTLINE,
+                typography = AppTypography.subhead,
+                rounded = AppRadius.full,
+                height = 40.0,
+                paddingTop = 0.0,
+                paddingEnd = 14.0,
+                paddingBottom = 0.0,
+                paddingStart = 10.0,
+                pressed = Pressed(backgroundColor = AppColorRole.SURFACE2, textColor = AppColorRole.PRIMARY_TEXT),
+            )
+    }
+}
+
+/** Component `chip-never-suggest-add` per context: colours are role keys, sizes in pt/dp. */
+data class ChipNeverSuggestAddTokens(
+    val textColor: AppColorRole,
+    val borderColor: AppColorRole,
+    val typography: AppTextStyle,
+    val rounded: Double,
+    val height: Double,
+    val paddingTop: Double,
+    val paddingEnd: Double,
+    val paddingBottom: Double,
+    val paddingStart: Double,
+    val pressed: Pressed,
+) {
+    data class Pressed(
+        val backgroundColor: AppColorRole,
+        val textColor: AppColorRole,
+    )
+
+    companion object {
+        val light: ChipNeverSuggestAddTokens =
+            ChipNeverSuggestAddTokens(
+                textColor = AppColorRole.PRIMARY_TEXT,
+                borderColor = AppColorRole.OUTLINE,
+                typography = AppTypography.subhead,
+                rounded = AppRadius.radius6,
+                height = 40.0,
+                paddingTop = 0.0,
+                paddingEnd = 14.0,
+                paddingBottom = 0.0,
+                paddingStart = 10.0,
+                pressed = Pressed(backgroundColor = AppColorRole.SURFACE2, textColor = AppColorRole.PRIMARY_TEXT),
+            )
+
+        val dark: ChipNeverSuggestAddTokens =
+            ChipNeverSuggestAddTokens(
+                textColor = AppColorRole.PRIMARY_TEXT,
+                borderColor = AppColorRole.OUTLINE,
+                typography = AppTypography.subhead,
+                rounded = AppRadius.radius6,
+                height = 40.0,
+                paddingTop = 0.0,
+                paddingEnd = 14.0,
+                paddingBottom = 0.0,
+                paddingStart = 10.0,
+                pressed = Pressed(backgroundColor = AppColorRole.SURFACE2, textColor = AppColorRole.PRIMARY_TEXT),
+            )
+
+        val brand: ChipNeverSuggestAddTokens =
+            ChipNeverSuggestAddTokens(
+                textColor = AppColorRole.PRIMARY_TEXT,
+                borderColor = AppColorRole.OUTLINE,
+                typography = AppTypography.subhead,
+                rounded = AppRadius.radius6,
+                height = 40.0,
+                paddingTop = 0.0,
+                paddingEnd = 14.0,
+                paddingBottom = 0.0,
+                paddingStart = 10.0,
+                pressed = Pressed(backgroundColor = AppColorRole.SURFACE2, textColor = AppColorRole.PRIMARY_TEXT),
+            )
+
+        val hcLight: ChipNeverSuggestAddTokens =
+            ChipNeverSuggestAddTokens(
+                textColor = AppColorRole.PRIMARY_TEXT,
+                borderColor = AppColorRole.OUTLINE,
+                typography = AppTypography.subhead,
+                rounded = AppRadius.radius6,
+                height = 40.0,
+                paddingTop = 0.0,
+                paddingEnd = 14.0,
+                paddingBottom = 0.0,
+                paddingStart = 10.0,
+                pressed = Pressed(backgroundColor = AppColorRole.SURFACE2, textColor = AppColorRole.PRIMARY_TEXT),
+            )
+
+        val hcDark: ChipNeverSuggestAddTokens =
+            ChipNeverSuggestAddTokens(
+                textColor = AppColorRole.PRIMARY_TEXT,
+                borderColor = AppColorRole.OUTLINE,
+                typography = AppTypography.subhead,
+                rounded = AppRadius.radius6,
+                height = 40.0,
+                paddingTop = 0.0,
+                paddingEnd = 14.0,
+                paddingBottom = 0.0,
+                paddingStart = 10.0,
+                pressed = Pressed(backgroundColor = AppColorRole.SURFACE2, textColor = AppColorRole.PRIMARY_TEXT),
             )
     }
 }
@@ -2475,7 +4154,16 @@ data class ChipConditionSunnyTokens(
     val typography: AppTextStyle,
     val rounded: Double,
     val height: Double,
+    val paddingTop: Double,
+    val paddingEnd: Double,
+    val paddingBottom: Double,
+    val paddingStart: Double,
+    val pressed: Pressed,
 ) {
+    data class Pressed(
+        val overlayColor: AppColorRole,
+    )
+
     companion object {
         val light: ChipConditionSunnyTokens =
             ChipConditionSunnyTokens(
@@ -2484,6 +4172,11 @@ data class ChipConditionSunnyTokens(
                 typography = AppTypography.labelMd,
                 rounded = AppRadius.full,
                 height = 36.0,
+                paddingTop = 0.0,
+                paddingEnd = 14.0,
+                paddingBottom = 0.0,
+                paddingStart = 10.0,
+                pressed = Pressed(overlayColor = AppColorRole.PRESSED_OVERLAY),
             )
 
         val dark: ChipConditionSunnyTokens =
@@ -2493,6 +4186,11 @@ data class ChipConditionSunnyTokens(
                 typography = AppTypography.labelMd,
                 rounded = AppRadius.full,
                 height = 36.0,
+                paddingTop = 0.0,
+                paddingEnd = 14.0,
+                paddingBottom = 0.0,
+                paddingStart = 10.0,
+                pressed = Pressed(overlayColor = AppColorRole.PRESSED_OVERLAY),
             )
 
         val brand: ChipConditionSunnyTokens =
@@ -2502,6 +4200,11 @@ data class ChipConditionSunnyTokens(
                 typography = AppTypography.labelMd,
                 rounded = AppRadius.full,
                 height = 36.0,
+                paddingTop = 0.0,
+                paddingEnd = 14.0,
+                paddingBottom = 0.0,
+                paddingStart = 10.0,
+                pressed = Pressed(overlayColor = AppColorRole.PRESSED_OVERLAY),
             )
 
         val hcLight: ChipConditionSunnyTokens =
@@ -2511,6 +4214,11 @@ data class ChipConditionSunnyTokens(
                 typography = AppTypography.labelMd,
                 rounded = AppRadius.full,
                 height = 36.0,
+                paddingTop = 0.0,
+                paddingEnd = 14.0,
+                paddingBottom = 0.0,
+                paddingStart = 10.0,
+                pressed = Pressed(overlayColor = AppColorRole.PRESSED_OVERLAY),
             )
 
         val hcDark: ChipConditionSunnyTokens =
@@ -2520,6 +4228,11 @@ data class ChipConditionSunnyTokens(
                 typography = AppTypography.labelMd,
                 rounded = AppRadius.full,
                 height = 36.0,
+                paddingTop = 0.0,
+                paddingEnd = 14.0,
+                paddingBottom = 0.0,
+                paddingStart = 10.0,
+                pressed = Pressed(overlayColor = AppColorRole.PRESSED_OVERLAY),
             )
     }
 }
@@ -2531,7 +4244,16 @@ data class ChipConditionRainTokens(
     val typography: AppTextStyle,
     val rounded: Double,
     val height: Double,
+    val paddingTop: Double,
+    val paddingEnd: Double,
+    val paddingBottom: Double,
+    val paddingStart: Double,
+    val pressed: Pressed,
 ) {
+    data class Pressed(
+        val overlayColor: AppColorRole,
+    )
+
     companion object {
         val light: ChipConditionRainTokens =
             ChipConditionRainTokens(
@@ -2540,6 +4262,11 @@ data class ChipConditionRainTokens(
                 typography = AppTypography.labelMd,
                 rounded = AppRadius.full,
                 height = 36.0,
+                paddingTop = 0.0,
+                paddingEnd = 14.0,
+                paddingBottom = 0.0,
+                paddingStart = 10.0,
+                pressed = Pressed(overlayColor = AppColorRole.PRESSED_OVERLAY),
             )
 
         val dark: ChipConditionRainTokens =
@@ -2549,6 +4276,11 @@ data class ChipConditionRainTokens(
                 typography = AppTypography.labelMd,
                 rounded = AppRadius.full,
                 height = 36.0,
+                paddingTop = 0.0,
+                paddingEnd = 14.0,
+                paddingBottom = 0.0,
+                paddingStart = 10.0,
+                pressed = Pressed(overlayColor = AppColorRole.PRESSED_OVERLAY),
             )
 
         val brand: ChipConditionRainTokens =
@@ -2558,6 +4290,11 @@ data class ChipConditionRainTokens(
                 typography = AppTypography.labelMd,
                 rounded = AppRadius.full,
                 height = 36.0,
+                paddingTop = 0.0,
+                paddingEnd = 14.0,
+                paddingBottom = 0.0,
+                paddingStart = 10.0,
+                pressed = Pressed(overlayColor = AppColorRole.PRESSED_OVERLAY),
             )
 
         val hcLight: ChipConditionRainTokens =
@@ -2567,6 +4304,11 @@ data class ChipConditionRainTokens(
                 typography = AppTypography.labelMd,
                 rounded = AppRadius.full,
                 height = 36.0,
+                paddingTop = 0.0,
+                paddingEnd = 14.0,
+                paddingBottom = 0.0,
+                paddingStart = 10.0,
+                pressed = Pressed(overlayColor = AppColorRole.PRESSED_OVERLAY),
             )
 
         val hcDark: ChipConditionRainTokens =
@@ -2576,6 +4318,11 @@ data class ChipConditionRainTokens(
                 typography = AppTypography.labelMd,
                 rounded = AppRadius.full,
                 height = 36.0,
+                paddingTop = 0.0,
+                paddingEnd = 14.0,
+                paddingBottom = 0.0,
+                paddingStart = 10.0,
+                pressed = Pressed(overlayColor = AppColorRole.PRESSED_OVERLAY),
             )
     }
 }
@@ -2587,7 +4334,16 @@ data class ChipConditionColdTokens(
     val typography: AppTextStyle,
     val rounded: Double,
     val height: Double,
+    val paddingTop: Double,
+    val paddingEnd: Double,
+    val paddingBottom: Double,
+    val paddingStart: Double,
+    val pressed: Pressed,
 ) {
+    data class Pressed(
+        val overlayColor: AppColorRole,
+    )
+
     companion object {
         val light: ChipConditionColdTokens =
             ChipConditionColdTokens(
@@ -2596,6 +4352,11 @@ data class ChipConditionColdTokens(
                 typography = AppTypography.labelMd,
                 rounded = AppRadius.full,
                 height = 36.0,
+                paddingTop = 0.0,
+                paddingEnd = 14.0,
+                paddingBottom = 0.0,
+                paddingStart = 10.0,
+                pressed = Pressed(overlayColor = AppColorRole.PRESSED_OVERLAY),
             )
 
         val dark: ChipConditionColdTokens =
@@ -2605,6 +4366,11 @@ data class ChipConditionColdTokens(
                 typography = AppTypography.labelMd,
                 rounded = AppRadius.full,
                 height = 36.0,
+                paddingTop = 0.0,
+                paddingEnd = 14.0,
+                paddingBottom = 0.0,
+                paddingStart = 10.0,
+                pressed = Pressed(overlayColor = AppColorRole.PRESSED_OVERLAY),
             )
 
         val brand: ChipConditionColdTokens =
@@ -2614,6 +4380,11 @@ data class ChipConditionColdTokens(
                 typography = AppTypography.labelMd,
                 rounded = AppRadius.full,
                 height = 36.0,
+                paddingTop = 0.0,
+                paddingEnd = 14.0,
+                paddingBottom = 0.0,
+                paddingStart = 10.0,
+                pressed = Pressed(overlayColor = AppColorRole.PRESSED_OVERLAY),
             )
 
         val hcLight: ChipConditionColdTokens =
@@ -2623,6 +4394,11 @@ data class ChipConditionColdTokens(
                 typography = AppTypography.labelMd,
                 rounded = AppRadius.full,
                 height = 36.0,
+                paddingTop = 0.0,
+                paddingEnd = 14.0,
+                paddingBottom = 0.0,
+                paddingStart = 10.0,
+                pressed = Pressed(overlayColor = AppColorRole.PRESSED_OVERLAY),
             )
 
         val hcDark: ChipConditionColdTokens =
@@ -2632,6 +4408,11 @@ data class ChipConditionColdTokens(
                 typography = AppTypography.labelMd,
                 rounded = AppRadius.full,
                 height = 36.0,
+                paddingTop = 0.0,
+                paddingEnd = 14.0,
+                paddingBottom = 0.0,
+                paddingStart = 10.0,
+                pressed = Pressed(overlayColor = AppColorRole.PRESSED_OVERLAY),
             )
     }
 }
@@ -2643,7 +4424,16 @@ data class ChipConditionHotTokens(
     val typography: AppTextStyle,
     val rounded: Double,
     val height: Double,
+    val paddingTop: Double,
+    val paddingEnd: Double,
+    val paddingBottom: Double,
+    val paddingStart: Double,
+    val pressed: Pressed,
 ) {
+    data class Pressed(
+        val overlayColor: AppColorRole,
+    )
+
     companion object {
         val light: ChipConditionHotTokens =
             ChipConditionHotTokens(
@@ -2652,6 +4442,11 @@ data class ChipConditionHotTokens(
                 typography = AppTypography.labelMd,
                 rounded = AppRadius.full,
                 height = 36.0,
+                paddingTop = 0.0,
+                paddingEnd = 14.0,
+                paddingBottom = 0.0,
+                paddingStart = 10.0,
+                pressed = Pressed(overlayColor = AppColorRole.PRESSED_OVERLAY),
             )
 
         val dark: ChipConditionHotTokens =
@@ -2661,6 +4456,11 @@ data class ChipConditionHotTokens(
                 typography = AppTypography.labelMd,
                 rounded = AppRadius.full,
                 height = 36.0,
+                paddingTop = 0.0,
+                paddingEnd = 14.0,
+                paddingBottom = 0.0,
+                paddingStart = 10.0,
+                pressed = Pressed(overlayColor = AppColorRole.PRESSED_OVERLAY),
             )
 
         val brand: ChipConditionHotTokens =
@@ -2670,6 +4470,11 @@ data class ChipConditionHotTokens(
                 typography = AppTypography.labelMd,
                 rounded = AppRadius.full,
                 height = 36.0,
+                paddingTop = 0.0,
+                paddingEnd = 14.0,
+                paddingBottom = 0.0,
+                paddingStart = 10.0,
+                pressed = Pressed(overlayColor = AppColorRole.PRESSED_OVERLAY),
             )
 
         val hcLight: ChipConditionHotTokens =
@@ -2679,6 +4484,11 @@ data class ChipConditionHotTokens(
                 typography = AppTypography.labelMd,
                 rounded = AppRadius.full,
                 height = 36.0,
+                paddingTop = 0.0,
+                paddingEnd = 14.0,
+                paddingBottom = 0.0,
+                paddingStart = 10.0,
+                pressed = Pressed(overlayColor = AppColorRole.PRESSED_OVERLAY),
             )
 
         val hcDark: ChipConditionHotTokens =
@@ -2688,6 +4498,11 @@ data class ChipConditionHotTokens(
                 typography = AppTypography.labelMd,
                 rounded = AppRadius.full,
                 height = 36.0,
+                paddingTop = 0.0,
+                paddingEnd = 14.0,
+                paddingBottom = 0.0,
+                paddingStart = 10.0,
+                pressed = Pressed(overlayColor = AppColorRole.PRESSED_OVERLAY),
             )
     }
 }
@@ -2699,7 +4514,16 @@ data class ChipConditionWindyTokens(
     val typography: AppTextStyle,
     val rounded: Double,
     val height: Double,
+    val paddingTop: Double,
+    val paddingEnd: Double,
+    val paddingBottom: Double,
+    val paddingStart: Double,
+    val pressed: Pressed,
 ) {
+    data class Pressed(
+        val overlayColor: AppColorRole,
+    )
+
     companion object {
         val light: ChipConditionWindyTokens =
             ChipConditionWindyTokens(
@@ -2708,6 +4532,11 @@ data class ChipConditionWindyTokens(
                 typography = AppTypography.labelMd,
                 rounded = AppRadius.full,
                 height = 36.0,
+                paddingTop = 0.0,
+                paddingEnd = 14.0,
+                paddingBottom = 0.0,
+                paddingStart = 10.0,
+                pressed = Pressed(overlayColor = AppColorRole.PRESSED_OVERLAY),
             )
 
         val dark: ChipConditionWindyTokens =
@@ -2717,6 +4546,11 @@ data class ChipConditionWindyTokens(
                 typography = AppTypography.labelMd,
                 rounded = AppRadius.full,
                 height = 36.0,
+                paddingTop = 0.0,
+                paddingEnd = 14.0,
+                paddingBottom = 0.0,
+                paddingStart = 10.0,
+                pressed = Pressed(overlayColor = AppColorRole.PRESSED_OVERLAY),
             )
 
         val brand: ChipConditionWindyTokens =
@@ -2726,6 +4560,11 @@ data class ChipConditionWindyTokens(
                 typography = AppTypography.labelMd,
                 rounded = AppRadius.full,
                 height = 36.0,
+                paddingTop = 0.0,
+                paddingEnd = 14.0,
+                paddingBottom = 0.0,
+                paddingStart = 10.0,
+                pressed = Pressed(overlayColor = AppColorRole.PRESSED_OVERLAY),
             )
 
         val hcLight: ChipConditionWindyTokens =
@@ -2735,6 +4574,11 @@ data class ChipConditionWindyTokens(
                 typography = AppTypography.labelMd,
                 rounded = AppRadius.full,
                 height = 36.0,
+                paddingTop = 0.0,
+                paddingEnd = 14.0,
+                paddingBottom = 0.0,
+                paddingStart = 10.0,
+                pressed = Pressed(overlayColor = AppColorRole.PRESSED_OVERLAY),
             )
 
         val hcDark: ChipConditionWindyTokens =
@@ -2744,6 +4588,11 @@ data class ChipConditionWindyTokens(
                 typography = AppTypography.labelMd,
                 rounded = AppRadius.full,
                 height = 36.0,
+                paddingTop = 0.0,
+                paddingEnd = 14.0,
+                paddingBottom = 0.0,
+                paddingStart = 10.0,
+                pressed = Pressed(overlayColor = AppColorRole.PRESSED_OVERLAY),
             )
     }
 }
@@ -2755,7 +4604,17 @@ data class ChipConditionSnowTokens(
     val typography: AppTextStyle,
     val rounded: Double,
     val height: Double,
+    val paddingTop: Double,
+    val paddingEnd: Double,
+    val paddingBottom: Double,
+    val paddingStart: Double,
+    val borderColor: AppColorRole,
+    val pressed: Pressed,
 ) {
+    data class Pressed(
+        val overlayColor: AppColorRole,
+    )
+
     companion object {
         val light: ChipConditionSnowTokens =
             ChipConditionSnowTokens(
@@ -2764,6 +4623,12 @@ data class ChipConditionSnowTokens(
                 typography = AppTypography.labelMd,
                 rounded = AppRadius.full,
                 height = 36.0,
+                paddingTop = 0.0,
+                paddingEnd = 14.0,
+                paddingBottom = 0.0,
+                paddingStart = 10.0,
+                borderColor = AppColorRole.CONDITION_SNOW_RING_LIGHT,
+                pressed = Pressed(overlayColor = AppColorRole.PRESSED_OVERLAY),
             )
 
         val dark: ChipConditionSnowTokens =
@@ -2773,6 +4638,12 @@ data class ChipConditionSnowTokens(
                 typography = AppTypography.labelMd,
                 rounded = AppRadius.full,
                 height = 36.0,
+                paddingTop = 0.0,
+                paddingEnd = 14.0,
+                paddingBottom = 0.0,
+                paddingStart = 10.0,
+                borderColor = AppColorRole.CONDITION_SNOW_BG,
+                pressed = Pressed(overlayColor = AppColorRole.PRESSED_OVERLAY),
             )
 
         val brand: ChipConditionSnowTokens =
@@ -2782,6 +4653,12 @@ data class ChipConditionSnowTokens(
                 typography = AppTypography.labelMd,
                 rounded = AppRadius.full,
                 height = 36.0,
+                paddingTop = 0.0,
+                paddingEnd = 14.0,
+                paddingBottom = 0.0,
+                paddingStart = 10.0,
+                borderColor = AppColorRole.CONDITION_SNOW_BG,
+                pressed = Pressed(overlayColor = AppColorRole.PRESSED_OVERLAY),
             )
 
         val hcLight: ChipConditionSnowTokens =
@@ -2791,6 +4668,12 @@ data class ChipConditionSnowTokens(
                 typography = AppTypography.labelMd,
                 rounded = AppRadius.full,
                 height = 36.0,
+                paddingTop = 0.0,
+                paddingEnd = 14.0,
+                paddingBottom = 0.0,
+                paddingStart = 10.0,
+                borderColor = AppColorRole.CONDITION_SNOW_RING_LIGHT,
+                pressed = Pressed(overlayColor = AppColorRole.PRESSED_OVERLAY),
             )
 
         val hcDark: ChipConditionSnowTokens =
@@ -2800,6 +4683,12 @@ data class ChipConditionSnowTokens(
                 typography = AppTypography.labelMd,
                 rounded = AppRadius.full,
                 height = 36.0,
+                paddingTop = 0.0,
+                paddingEnd = 14.0,
+                paddingBottom = 0.0,
+                paddingStart = 10.0,
+                borderColor = AppColorRole.CONDITION_SNOW_BG,
+                pressed = Pressed(overlayColor = AppColorRole.PRESSED_OVERLAY),
             )
     }
 }
@@ -2811,7 +4700,16 @@ data class ChipConditionEveningTokens(
     val typography: AppTextStyle,
     val rounded: Double,
     val height: Double,
+    val paddingTop: Double,
+    val paddingEnd: Double,
+    val paddingBottom: Double,
+    val paddingStart: Double,
+    val pressed: Pressed,
 ) {
+    data class Pressed(
+        val overlayColor: AppColorRole,
+    )
+
     companion object {
         val light: ChipConditionEveningTokens =
             ChipConditionEveningTokens(
@@ -2820,6 +4718,11 @@ data class ChipConditionEveningTokens(
                 typography = AppTypography.labelMd,
                 rounded = AppRadius.full,
                 height = 36.0,
+                paddingTop = 0.0,
+                paddingEnd = 14.0,
+                paddingBottom = 0.0,
+                paddingStart = 10.0,
+                pressed = Pressed(overlayColor = AppColorRole.PRESSED_OVERLAY),
             )
 
         val dark: ChipConditionEveningTokens =
@@ -2829,6 +4732,11 @@ data class ChipConditionEveningTokens(
                 typography = AppTypography.labelMd,
                 rounded = AppRadius.full,
                 height = 36.0,
+                paddingTop = 0.0,
+                paddingEnd = 14.0,
+                paddingBottom = 0.0,
+                paddingStart = 10.0,
+                pressed = Pressed(overlayColor = AppColorRole.PRESSED_OVERLAY),
             )
 
         val brand: ChipConditionEveningTokens =
@@ -2838,6 +4746,11 @@ data class ChipConditionEveningTokens(
                 typography = AppTypography.labelMd,
                 rounded = AppRadius.full,
                 height = 36.0,
+                paddingTop = 0.0,
+                paddingEnd = 14.0,
+                paddingBottom = 0.0,
+                paddingStart = 10.0,
+                pressed = Pressed(overlayColor = AppColorRole.PRESSED_OVERLAY),
             )
 
         val hcLight: ChipConditionEveningTokens =
@@ -2847,6 +4760,11 @@ data class ChipConditionEveningTokens(
                 typography = AppTypography.labelMd,
                 rounded = AppRadius.full,
                 height = 36.0,
+                paddingTop = 0.0,
+                paddingEnd = 14.0,
+                paddingBottom = 0.0,
+                paddingStart = 10.0,
+                pressed = Pressed(overlayColor = AppColorRole.PRESSED_OVERLAY),
             )
 
         val hcDark: ChipConditionEveningTokens =
@@ -2856,7 +4774,39 @@ data class ChipConditionEveningTokens(
                 typography = AppTypography.labelMd,
                 rounded = AppRadius.full,
                 height = 36.0,
+                paddingTop = 0.0,
+                paddingEnd = 14.0,
+                paddingBottom = 0.0,
+                paddingStart = 10.0,
+                pressed = Pressed(overlayColor = AppColorRole.PRESSED_OVERLAY),
             )
+    }
+}
+
+/** Component `tag-regular` per context: colours are role keys, sizes in pt/dp. */
+data class TagRegularTokens(
+    val iconSize: Double,
+    val iconGap: Double,
+) {
+    companion object {
+        val light: TagRegularTokens = TagRegularTokens(iconSize = 12.0, iconGap = 4.0)
+        val dark: TagRegularTokens = TagRegularTokens(iconSize = 12.0, iconGap = 4.0)
+        val brand: TagRegularTokens = TagRegularTokens(iconSize = 12.0, iconGap = 4.0)
+        val hcLight: TagRegularTokens = TagRegularTokens(iconSize = 12.0, iconGap = 4.0)
+        val hcDark: TagRegularTokens = TagRegularTokens(iconSize = 12.0, iconGap = 4.0)
+    }
+}
+
+/** Component `tag-outline-ring` per context: colours are role keys, sizes in pt/dp. */
+data class TagOutlineRingTokens(
+    val width: Double,
+) {
+    companion object {
+        val light: TagOutlineRingTokens = TagOutlineRingTokens(width = 1.0)
+        val dark: TagOutlineRingTokens = TagOutlineRingTokens(width = 1.0)
+        val brand: TagOutlineRingTokens = TagOutlineRingTokens(width = 1.0)
+        val hcLight: TagOutlineRingTokens = TagOutlineRingTokens(width = 1.0)
+        val hcDark: TagOutlineRingTokens = TagOutlineRingTokens(width = 1.0)
     }
 }
 
@@ -2928,53 +4878,924 @@ data class TagPlanTokens(
     }
 }
 
+/** Component `tag-plan-free` per context: colours are role keys, sizes in pt/dp. */
+data class TagPlanFreeTokens(
+    val backgroundColor: AppColorRole,
+    val textColor: AppColorRole,
+) {
+    companion object {
+        val light: TagPlanFreeTokens =
+            TagPlanFreeTokens(
+                backgroundColor = AppColorRole.SURFACE2,
+                textColor = AppColorRole.TEXT,
+            )
+
+        val dark: TagPlanFreeTokens =
+            TagPlanFreeTokens(
+                backgroundColor = AppColorRole.SURFACE2,
+                textColor = AppColorRole.TEXT,
+            )
+
+        val brand: TagPlanFreeTokens =
+            TagPlanFreeTokens(
+                backgroundColor = AppColorRole.SURFACE2,
+                textColor = AppColorRole.TEXT,
+            )
+
+        val hcLight: TagPlanFreeTokens =
+            TagPlanFreeTokens(
+                backgroundColor = AppColorRole.SURFACE2,
+                textColor = AppColorRole.TEXT,
+            )
+
+        val hcDark: TagPlanFreeTokens =
+            TagPlanFreeTokens(
+                backgroundColor = AppColorRole.SURFACE2,
+                textColor = AppColorRole.TEXT,
+            )
+    }
+}
+
+/** Component `tag-plan-essentials` per context: colours are role keys, sizes in pt/dp. */
+data class TagPlanEssentialsTokens(
+    val textColor: AppColorRole,
+    val backgroundColor: AppColorRole,
+    val borderColor: AppColorRole,
+) {
+    companion object {
+        val light: TagPlanEssentialsTokens =
+            TagPlanEssentialsTokens(
+                textColor = AppColorRole.INFO_FG,
+                backgroundColor = AppColorRole.INFO_BG,
+                borderColor = AppColorRole.INFO_BG,
+            )
+
+        val dark: TagPlanEssentialsTokens =
+            TagPlanEssentialsTokens(
+                textColor = AppColorRole.INFO_FG,
+                backgroundColor = AppColorRole.SURFACE,
+                borderColor = AppColorRole.INFO_FG,
+            )
+
+        val brand: TagPlanEssentialsTokens =
+            TagPlanEssentialsTokens(
+                textColor = AppColorRole.INFO_FG,
+                backgroundColor = AppColorRole.SURFACE,
+                borderColor = AppColorRole.INFO_FG,
+            )
+
+        val hcLight: TagPlanEssentialsTokens =
+            TagPlanEssentialsTokens(
+                textColor = AppColorRole.INFO_FG,
+                backgroundColor = AppColorRole.INFO_BG,
+                borderColor = AppColorRole.INFO_BG,
+            )
+
+        val hcDark: TagPlanEssentialsTokens =
+            TagPlanEssentialsTokens(
+                textColor = AppColorRole.INFO_FG,
+                backgroundColor = AppColorRole.SURFACE,
+                borderColor = AppColorRole.INFO_FG,
+            )
+    }
+}
+
+/** Component `tag-plan-plus` per context: colours are role keys, sizes in pt/dp. */
+data class TagPlanPlusTokens(
+    val textColor: AppColorRole,
+    val backgroundColor: AppColorRole,
+    val borderColor: AppColorRole,
+) {
+    companion object {
+        val light: TagPlanPlusTokens =
+            TagPlanPlusTokens(
+                textColor = AppColorRole.SUCCESS_FG,
+                backgroundColor = AppColorRole.SUCCESS_BG,
+                borderColor = AppColorRole.SUCCESS_BG,
+            )
+
+        val dark: TagPlanPlusTokens =
+            TagPlanPlusTokens(
+                textColor = AppColorRole.SUCCESS_FG,
+                backgroundColor = AppColorRole.SURFACE,
+                borderColor = AppColorRole.SUCCESS_FG,
+            )
+
+        val brand: TagPlanPlusTokens =
+            TagPlanPlusTokens(
+                textColor = AppColorRole.SUCCESS_FG,
+                backgroundColor = AppColorRole.SURFACE,
+                borderColor = AppColorRole.SUCCESS_FG,
+            )
+
+        val hcLight: TagPlanPlusTokens =
+            TagPlanPlusTokens(
+                textColor = AppColorRole.SUCCESS_FG,
+                backgroundColor = AppColorRole.SUCCESS_BG,
+                borderColor = AppColorRole.SUCCESS_BG,
+            )
+
+        val hcDark: TagPlanPlusTokens =
+            TagPlanPlusTokens(
+                textColor = AppColorRole.SUCCESS_FG,
+                backgroundColor = AppColorRole.SURFACE,
+                borderColor = AppColorRole.SUCCESS_FG,
+            )
+    }
+}
+
+/** Component `tag-plan-pro` per context: colours are role keys, sizes in pt/dp. */
+data class TagPlanProTokens(
+    val backgroundColor: AppColorRole,
+    val textColor: AppColorRole,
+) {
+    companion object {
+        val light: TagPlanProTokens =
+            TagPlanProTokens(
+                backgroundColor = AppColorRole.PRIMARY,
+                textColor = AppColorRole.ON_PRIMARY,
+            )
+
+        val dark: TagPlanProTokens =
+            TagPlanProTokens(
+                backgroundColor = AppColorRole.PRIMARY,
+                textColor = AppColorRole.ON_PRIMARY,
+            )
+
+        val brand: TagPlanProTokens =
+            TagPlanProTokens(
+                backgroundColor = AppColorRole.PRIMARY,
+                textColor = AppColorRole.ON_PRIMARY,
+            )
+
+        val hcLight: TagPlanProTokens =
+            TagPlanProTokens(
+                backgroundColor = AppColorRole.PRIMARY,
+                textColor = AppColorRole.ON_PRIMARY,
+            )
+
+        val hcDark: TagPlanProTokens =
+            TagPlanProTokens(
+                backgroundColor = AppColorRole.PRIMARY,
+                textColor = AppColorRole.ON_PRIMARY,
+            )
+    }
+}
+
+/** Component `tag-lock` per context: colours are role keys, sizes in pt/dp. */
+data class TagLockTokens(
+    val backgroundColor: AppColorRole,
+    val textColor: AppColorRole,
+    val typography: AppTextStyle,
+    val rounded: Double,
+    val height: Double,
+    val paddingTop: Double,
+    val paddingEnd: Double,
+    val paddingBottom: Double,
+    val paddingStart: Double,
+) {
+    companion object {
+        val light: TagLockTokens =
+            TagLockTokens(
+                backgroundColor = AppColorRole.SURFACE2,
+                textColor = AppColorRole.TEXT,
+                typography = AppTypography.captionStrong,
+                rounded = AppRadius.full,
+                height = 24.0,
+                paddingTop = 0.0,
+                paddingEnd = 10.0,
+                paddingBottom = 0.0,
+                paddingStart = 7.0,
+            )
+
+        val dark: TagLockTokens =
+            TagLockTokens(
+                backgroundColor = AppColorRole.SURFACE2,
+                textColor = AppColorRole.TEXT,
+                typography = AppTypography.captionStrong,
+                rounded = AppRadius.full,
+                height = 24.0,
+                paddingTop = 0.0,
+                paddingEnd = 10.0,
+                paddingBottom = 0.0,
+                paddingStart = 7.0,
+            )
+
+        val brand: TagLockTokens =
+            TagLockTokens(
+                backgroundColor = AppColorRole.SURFACE2,
+                textColor = AppColorRole.TEXT,
+                typography = AppTypography.captionStrong,
+                rounded = AppRadius.full,
+                height = 24.0,
+                paddingTop = 0.0,
+                paddingEnd = 10.0,
+                paddingBottom = 0.0,
+                paddingStart = 7.0,
+            )
+
+        val hcLight: TagLockTokens =
+            TagLockTokens(
+                backgroundColor = AppColorRole.SURFACE2,
+                textColor = AppColorRole.TEXT,
+                typography = AppTypography.captionStrong,
+                rounded = AppRadius.full,
+                height = 24.0,
+                paddingTop = 0.0,
+                paddingEnd = 10.0,
+                paddingBottom = 0.0,
+                paddingStart = 7.0,
+            )
+
+        val hcDark: TagLockTokens =
+            TagLockTokens(
+                backgroundColor = AppColorRole.SURFACE2,
+                textColor = AppColorRole.TEXT,
+                typography = AppTypography.captionStrong,
+                rounded = AppRadius.full,
+                height = 24.0,
+                paddingTop = 0.0,
+                paddingEnd = 10.0,
+                paddingBottom = 0.0,
+                paddingStart = 7.0,
+            )
+    }
+}
+
+/** Component `tag-later` per context: colours are role keys, sizes in pt/dp. */
+data class TagLaterTokens(
+    val textColor: AppColorRole,
+    val borderColor: AppColorRole,
+    val typography: AppTextStyle,
+    val rounded: Double,
+    val height: Double,
+    val paddingTop: Double,
+    val paddingEnd: Double,
+    val paddingBottom: Double,
+    val paddingStart: Double,
+) {
+    companion object {
+        val light: TagLaterTokens =
+            TagLaterTokens(
+                textColor = AppColorRole.TEXT_SECONDARY,
+                borderColor = AppColorRole.TEXT_SECONDARY,
+                typography = AppTypography.captionStrong,
+                rounded = AppRadius.full,
+                height = 24.0,
+                paddingTop = 0.0,
+                paddingEnd = 10.0,
+                paddingBottom = 0.0,
+                paddingStart = 7.0,
+            )
+
+        val dark: TagLaterTokens =
+            TagLaterTokens(
+                textColor = AppColorRole.TEXT_SECONDARY,
+                borderColor = AppColorRole.TEXT_SECONDARY,
+                typography = AppTypography.captionStrong,
+                rounded = AppRadius.full,
+                height = 24.0,
+                paddingTop = 0.0,
+                paddingEnd = 10.0,
+                paddingBottom = 0.0,
+                paddingStart = 7.0,
+            )
+
+        val brand: TagLaterTokens =
+            TagLaterTokens(
+                textColor = AppColorRole.TEXT_SECONDARY,
+                borderColor = AppColorRole.TEXT_SECONDARY,
+                typography = AppTypography.captionStrong,
+                rounded = AppRadius.full,
+                height = 24.0,
+                paddingTop = 0.0,
+                paddingEnd = 10.0,
+                paddingBottom = 0.0,
+                paddingStart = 7.0,
+            )
+
+        val hcLight: TagLaterTokens =
+            TagLaterTokens(
+                textColor = AppColorRole.TEXT_SECONDARY,
+                borderColor = AppColorRole.TEXT_SECONDARY,
+                typography = AppTypography.captionStrong,
+                rounded = AppRadius.full,
+                height = 24.0,
+                paddingTop = 0.0,
+                paddingEnd = 10.0,
+                paddingBottom = 0.0,
+                paddingStart = 7.0,
+            )
+
+        val hcDark: TagLaterTokens =
+            TagLaterTokens(
+                textColor = AppColorRole.TEXT_SECONDARY,
+                borderColor = AppColorRole.TEXT_SECONDARY,
+                typography = AppTypography.captionStrong,
+                rounded = AppRadius.full,
+                height = 24.0,
+                paddingTop = 0.0,
+                paddingEnd = 10.0,
+                paddingBottom = 0.0,
+                paddingStart = 7.0,
+            )
+    }
+}
+
+/** Component `tag-provisional` per context: colours are role keys, sizes in pt/dp. */
+data class TagProvisionalTokens(
+    val backgroundColor: AppColorRole,
+    val textColor: AppColorRole,
+    val borderColor: AppColorRole,
+    val typography: AppTextStyle,
+    val rounded: Double,
+    val height: Double,
+    val paddingTop: Double,
+    val paddingEnd: Double,
+    val paddingBottom: Double,
+    val paddingStart: Double,
+    val borderDash: Double,
+) {
+    companion object {
+        val light: TagProvisionalTokens =
+            TagProvisionalTokens(
+                backgroundColor = AppColorRole.WARNING_BG,
+                textColor = AppColorRole.WARNING_FG,
+                borderColor = AppColorRole.WARNING_FG,
+                typography = AppTypography.captionStrong,
+                rounded = AppRadius.full,
+                height = 24.0,
+                paddingTop = 0.0,
+                paddingEnd = 10.0,
+                paddingBottom = 0.0,
+                paddingStart = 7.0,
+                borderDash = 3.0,
+            )
+
+        val dark: TagProvisionalTokens =
+            TagProvisionalTokens(
+                backgroundColor = AppColorRole.WARNING_BG,
+                textColor = AppColorRole.WARNING_FG,
+                borderColor = AppColorRole.WARNING_FG,
+                typography = AppTypography.captionStrong,
+                rounded = AppRadius.full,
+                height = 24.0,
+                paddingTop = 0.0,
+                paddingEnd = 10.0,
+                paddingBottom = 0.0,
+                paddingStart = 7.0,
+                borderDash = 3.0,
+            )
+
+        val brand: TagProvisionalTokens =
+            TagProvisionalTokens(
+                backgroundColor = AppColorRole.WARNING_BG,
+                textColor = AppColorRole.WARNING_FG,
+                borderColor = AppColorRole.WARNING_FG,
+                typography = AppTypography.captionStrong,
+                rounded = AppRadius.full,
+                height = 24.0,
+                paddingTop = 0.0,
+                paddingEnd = 10.0,
+                paddingBottom = 0.0,
+                paddingStart = 7.0,
+                borderDash = 3.0,
+            )
+
+        val hcLight: TagProvisionalTokens =
+            TagProvisionalTokens(
+                backgroundColor = AppColorRole.WARNING_BG,
+                textColor = AppColorRole.WARNING_FG,
+                borderColor = AppColorRole.WARNING_FG,
+                typography = AppTypography.captionStrong,
+                rounded = AppRadius.full,
+                height = 24.0,
+                paddingTop = 0.0,
+                paddingEnd = 10.0,
+                paddingBottom = 0.0,
+                paddingStart = 7.0,
+                borderDash = 3.0,
+            )
+
+        val hcDark: TagProvisionalTokens =
+            TagProvisionalTokens(
+                backgroundColor = AppColorRole.WARNING_BG,
+                textColor = AppColorRole.WARNING_FG,
+                borderColor = AppColorRole.WARNING_FG,
+                typography = AppTypography.captionStrong,
+                rounded = AppRadius.full,
+                height = 24.0,
+                paddingTop = 0.0,
+                paddingEnd = 10.0,
+                paddingBottom = 0.0,
+                paddingStart = 7.0,
+                borderDash = 3.0,
+            )
+    }
+}
+
+/** Component `tag-new` per context: colours are role keys, sizes in pt/dp. */
+data class TagNewTokens(
+    val textColor: AppColorRole,
+    val typography: AppTextStyle,
+    val rounded: Double,
+    val height: Double,
+    val paddingTop: Double,
+    val paddingEnd: Double,
+    val paddingBottom: Double,
+    val paddingStart: Double,
+    val dotSize: Double,
+    val dotGap: Double,
+    val backgroundColor: AppColorRole,
+) {
+    companion object {
+        val light: TagNewTokens =
+            TagNewTokens(
+                textColor = AppColorRole.INFO_FG,
+                typography = AppTypography.captionStrong,
+                rounded = AppRadius.full,
+                height = 24.0,
+                paddingTop = 0.0,
+                paddingEnd = 10.0,
+                paddingBottom = 0.0,
+                paddingStart = 8.0,
+                dotSize = 6.0,
+                dotGap = 5.0,
+                backgroundColor = AppColorRole.INFO_BG,
+            )
+
+        val dark: TagNewTokens =
+            TagNewTokens(
+                textColor = AppColorRole.INFO_FG,
+                typography = AppTypography.captionStrong,
+                rounded = AppRadius.full,
+                height = 24.0,
+                paddingTop = 0.0,
+                paddingEnd = 10.0,
+                paddingBottom = 0.0,
+                paddingStart = 8.0,
+                dotSize = 6.0,
+                dotGap = 5.0,
+                backgroundColor = AppColorRole.SURFACE2,
+            )
+
+        val brand: TagNewTokens =
+            TagNewTokens(
+                textColor = AppColorRole.INFO_FG,
+                typography = AppTypography.captionStrong,
+                rounded = AppRadius.full,
+                height = 24.0,
+                paddingTop = 0.0,
+                paddingEnd = 10.0,
+                paddingBottom = 0.0,
+                paddingStart = 8.0,
+                dotSize = 6.0,
+                dotGap = 5.0,
+                backgroundColor = AppColorRole.SURFACE2,
+            )
+
+        val hcLight: TagNewTokens =
+            TagNewTokens(
+                textColor = AppColorRole.INFO_FG,
+                typography = AppTypography.captionStrong,
+                rounded = AppRadius.full,
+                height = 24.0,
+                paddingTop = 0.0,
+                paddingEnd = 10.0,
+                paddingBottom = 0.0,
+                paddingStart = 8.0,
+                dotSize = 6.0,
+                dotGap = 5.0,
+                backgroundColor = AppColorRole.INFO_BG,
+            )
+
+        val hcDark: TagNewTokens =
+            TagNewTokens(
+                textColor = AppColorRole.INFO_FG,
+                typography = AppTypography.captionStrong,
+                rounded = AppRadius.full,
+                height = 24.0,
+                paddingTop = 0.0,
+                paddingEnd = 10.0,
+                paddingBottom = 0.0,
+                paddingStart = 8.0,
+                dotSize = 6.0,
+                dotGap = 5.0,
+                backgroundColor = AppColorRole.SURFACE2,
+            )
+    }
+}
+
+/** Component `tag-available` per context: colours are role keys, sizes in pt/dp. */
+data class TagAvailableTokens(
+    val textColor: AppColorRole,
+    val typography: AppTextStyle,
+    val rounded: Double,
+    val height: Double,
+    val paddingTop: Double,
+    val paddingEnd: Double,
+    val paddingBottom: Double,
+    val paddingStart: Double,
+    val backgroundColor: AppColorRole,
+) {
+    companion object {
+        val light: TagAvailableTokens =
+            TagAvailableTokens(
+                textColor = AppColorRole.SUCCESS_FG,
+                typography = AppTypography.captionStrong,
+                rounded = AppRadius.full,
+                height = 24.0,
+                paddingTop = 0.0,
+                paddingEnd = 8.0,
+                paddingBottom = 0.0,
+                paddingStart = 8.0,
+                backgroundColor = AppColorRole.SUCCESS_BG,
+            )
+
+        val dark: TagAvailableTokens =
+            TagAvailableTokens(
+                textColor = AppColorRole.SUCCESS_FG,
+                typography = AppTypography.captionStrong,
+                rounded = AppRadius.full,
+                height = 24.0,
+                paddingTop = 0.0,
+                paddingEnd = 8.0,
+                paddingBottom = 0.0,
+                paddingStart = 8.0,
+                backgroundColor = AppColorRole.SURFACE2,
+            )
+
+        val brand: TagAvailableTokens =
+            TagAvailableTokens(
+                textColor = AppColorRole.SUCCESS_FG,
+                typography = AppTypography.captionStrong,
+                rounded = AppRadius.full,
+                height = 24.0,
+                paddingTop = 0.0,
+                paddingEnd = 8.0,
+                paddingBottom = 0.0,
+                paddingStart = 8.0,
+                backgroundColor = AppColorRole.SURFACE2,
+            )
+
+        val hcLight: TagAvailableTokens =
+            TagAvailableTokens(
+                textColor = AppColorRole.SUCCESS_FG,
+                typography = AppTypography.captionStrong,
+                rounded = AppRadius.full,
+                height = 24.0,
+                paddingTop = 0.0,
+                paddingEnd = 8.0,
+                paddingBottom = 0.0,
+                paddingStart = 8.0,
+                backgroundColor = AppColorRole.SUCCESS_BG,
+            )
+
+        val hcDark: TagAvailableTokens =
+            TagAvailableTokens(
+                textColor = AppColorRole.SUCCESS_FG,
+                typography = AppTypography.captionStrong,
+                rounded = AppRadius.full,
+                height = 24.0,
+                paddingTop = 0.0,
+                paddingEnd = 8.0,
+                paddingBottom = 0.0,
+                paddingStart = 8.0,
+                backgroundColor = AppColorRole.SURFACE2,
+            )
+    }
+}
+
+/** Component `tag-unavailable` per context: colours are role keys, sizes in pt/dp. */
+data class TagUnavailableTokens(
+    val backgroundColor: AppColorRole,
+    val textColor: AppColorRole,
+    val typography: AppTextStyle,
+    val rounded: Double,
+    val height: Double,
+    val paddingTop: Double,
+    val paddingEnd: Double,
+    val paddingBottom: Double,
+    val paddingStart: Double,
+) {
+    companion object {
+        val light: TagUnavailableTokens =
+            TagUnavailableTokens(
+                backgroundColor = AppColorRole.SURFACE2,
+                textColor = AppColorRole.TEXT_SECONDARY,
+                typography = AppTypography.captionStrong,
+                rounded = AppRadius.full,
+                height = 24.0,
+                paddingTop = 0.0,
+                paddingEnd = 8.0,
+                paddingBottom = 0.0,
+                paddingStart = 8.0,
+            )
+
+        val dark: TagUnavailableTokens =
+            TagUnavailableTokens(
+                backgroundColor = AppColorRole.SURFACE2,
+                textColor = AppColorRole.TEXT_SECONDARY,
+                typography = AppTypography.captionStrong,
+                rounded = AppRadius.full,
+                height = 24.0,
+                paddingTop = 0.0,
+                paddingEnd = 8.0,
+                paddingBottom = 0.0,
+                paddingStart = 8.0,
+            )
+
+        val brand: TagUnavailableTokens =
+            TagUnavailableTokens(
+                backgroundColor = AppColorRole.SURFACE2,
+                textColor = AppColorRole.TEXT_SECONDARY,
+                typography = AppTypography.captionStrong,
+                rounded = AppRadius.full,
+                height = 24.0,
+                paddingTop = 0.0,
+                paddingEnd = 8.0,
+                paddingBottom = 0.0,
+                paddingStart = 8.0,
+            )
+
+        val hcLight: TagUnavailableTokens =
+            TagUnavailableTokens(
+                backgroundColor = AppColorRole.SURFACE2,
+                textColor = AppColorRole.TEXT_SECONDARY,
+                typography = AppTypography.captionStrong,
+                rounded = AppRadius.full,
+                height = 24.0,
+                paddingTop = 0.0,
+                paddingEnd = 8.0,
+                paddingBottom = 0.0,
+                paddingStart = 8.0,
+            )
+
+        val hcDark: TagUnavailableTokens =
+            TagUnavailableTokens(
+                backgroundColor = AppColorRole.SURFACE2,
+                textColor = AppColorRole.TEXT_SECONDARY,
+                typography = AppTypography.captionStrong,
+                rounded = AppRadius.full,
+                height = 24.0,
+                paddingTop = 0.0,
+                paddingEnd = 8.0,
+                paddingBottom = 0.0,
+                paddingStart = 8.0,
+            )
+    }
+}
+
+/** Component `tag-kind` per context: colours are role keys, sizes in pt/dp. */
+data class TagKindTokens(
+    val backgroundColor: AppColorRole,
+    val textColor: AppColorRole,
+    val typography: AppTextStyle,
+    val rounded: Double,
+    val height: Double,
+    val paddingTop: Double,
+    val paddingEnd: Double,
+    val paddingBottom: Double,
+    val paddingStart: Double,
+) {
+    companion object {
+        val light: TagKindTokens =
+            TagKindTokens(
+                backgroundColor = AppColorRole.SURFACE,
+                textColor = AppColorRole.TEXT,
+                typography = AppTypography.overline,
+                rounded = AppRadius.full,
+                height = 24.0,
+                paddingTop = 0.0,
+                paddingEnd = 10.0,
+                paddingBottom = 0.0,
+                paddingStart = 10.0,
+            )
+
+        val dark: TagKindTokens =
+            TagKindTokens(
+                backgroundColor = AppColorRole.SURFACE,
+                textColor = AppColorRole.TEXT,
+                typography = AppTypography.overline,
+                rounded = AppRadius.full,
+                height = 24.0,
+                paddingTop = 0.0,
+                paddingEnd = 10.0,
+                paddingBottom = 0.0,
+                paddingStart = 10.0,
+            )
+
+        val brand: TagKindTokens =
+            TagKindTokens(
+                backgroundColor = AppColorRole.SURFACE,
+                textColor = AppColorRole.TEXT,
+                typography = AppTypography.overline,
+                rounded = AppRadius.full,
+                height = 24.0,
+                paddingTop = 0.0,
+                paddingEnd = 10.0,
+                paddingBottom = 0.0,
+                paddingStart = 10.0,
+            )
+
+        val hcLight: TagKindTokens =
+            TagKindTokens(
+                backgroundColor = AppColorRole.SURFACE,
+                textColor = AppColorRole.TEXT,
+                typography = AppTypography.overline,
+                rounded = AppRadius.full,
+                height = 24.0,
+                paddingTop = 0.0,
+                paddingEnd = 10.0,
+                paddingBottom = 0.0,
+                paddingStart = 10.0,
+            )
+
+        val hcDark: TagKindTokens =
+            TagKindTokens(
+                backgroundColor = AppColorRole.SURFACE,
+                textColor = AppColorRole.TEXT,
+                typography = AppTypography.overline,
+                rounded = AppRadius.full,
+                height = 24.0,
+                paddingTop = 0.0,
+                paddingEnd = 10.0,
+                paddingBottom = 0.0,
+                paddingStart = 10.0,
+            )
+    }
+}
+
 /** Component `tag-differs` per context: colours are role keys, sizes in pt/dp. */
 data class TagDiffersTokens(
     val backgroundColor: AppColorRole,
     val textColor: AppColorRole,
     val typography: AppTextStyle,
     val rounded: Double,
+    val height: Double,
+    val paddingTop: Double,
+    val paddingEnd: Double,
+    val paddingBottom: Double,
+    val paddingStart: Double,
 ) {
     companion object {
         val light: TagDiffersTokens =
             TagDiffersTokens(
                 backgroundColor = AppColorRole.ACCENT,
                 textColor = AppColorRole.ON_ACCENT,
-                typography = AppTypography.captionStrong,
+                typography = AppTypography.badge,
                 rounded = AppRadius.full,
+                height = 18.0,
+                paddingTop = 0.0,
+                paddingEnd = 7.0,
+                paddingBottom = 0.0,
+                paddingStart = 7.0,
             )
 
         val dark: TagDiffersTokens =
             TagDiffersTokens(
                 backgroundColor = AppColorRole.ACCENT,
                 textColor = AppColorRole.ON_ACCENT,
-                typography = AppTypography.captionStrong,
+                typography = AppTypography.badge,
                 rounded = AppRadius.full,
+                height = 18.0,
+                paddingTop = 0.0,
+                paddingEnd = 7.0,
+                paddingBottom = 0.0,
+                paddingStart = 7.0,
             )
 
         val brand: TagDiffersTokens =
             TagDiffersTokens(
                 backgroundColor = AppColorRole.ACCENT,
                 textColor = AppColorRole.ON_ACCENT,
-                typography = AppTypography.captionStrong,
+                typography = AppTypography.badge,
                 rounded = AppRadius.full,
+                height = 18.0,
+                paddingTop = 0.0,
+                paddingEnd = 7.0,
+                paddingBottom = 0.0,
+                paddingStart = 7.0,
             )
 
         val hcLight: TagDiffersTokens =
             TagDiffersTokens(
                 backgroundColor = AppColorRole.ACCENT,
                 textColor = AppColorRole.ON_ACCENT,
-                typography = AppTypography.captionStrong,
+                typography = AppTypography.badge,
                 rounded = AppRadius.full,
+                height = 18.0,
+                paddingTop = 0.0,
+                paddingEnd = 7.0,
+                paddingBottom = 0.0,
+                paddingStart = 7.0,
             )
 
         val hcDark: TagDiffersTokens =
             TagDiffersTokens(
                 backgroundColor = AppColorRole.ACCENT,
                 textColor = AppColorRole.ON_ACCENT,
-                typography = AppTypography.captionStrong,
+                typography = AppTypography.badge,
                 rounded = AppRadius.full,
+                height = 18.0,
+                paddingTop = 0.0,
+                paddingEnd = 7.0,
+                paddingBottom = 0.0,
+                paddingStart = 7.0,
             )
+    }
+}
+
+/** Component `badge-large` per context: colours are role keys, sizes in pt/dp. */
+data class BadgeLargeTokens(
+    val typography: AppTextStyle,
+    val rounded: Double,
+    val height: Double,
+    val paddingTop: Double,
+    val paddingEnd: Double,
+    val paddingBottom: Double,
+    val paddingStart: Double,
+    val iconSize: Double,
+    val iconGap: Double,
+) {
+    companion object {
+        val light: BadgeLargeTokens =
+            BadgeLargeTokens(
+                typography = AppTypography.labelSm,
+                rounded = AppRadius.full,
+                height = 28.0,
+                paddingTop = 0.0,
+                paddingEnd = 12.0,
+                paddingBottom = 0.0,
+                paddingStart = 9.0,
+                iconSize = 16.0,
+                iconGap = 5.0,
+            )
+
+        val dark: BadgeLargeTokens =
+            BadgeLargeTokens(
+                typography = AppTypography.labelSm,
+                rounded = AppRadius.full,
+                height = 28.0,
+                paddingTop = 0.0,
+                paddingEnd = 12.0,
+                paddingBottom = 0.0,
+                paddingStart = 9.0,
+                iconSize = 16.0,
+                iconGap = 5.0,
+            )
+
+        val brand: BadgeLargeTokens =
+            BadgeLargeTokens(
+                typography = AppTypography.labelSm,
+                rounded = AppRadius.full,
+                height = 28.0,
+                paddingTop = 0.0,
+                paddingEnd = 12.0,
+                paddingBottom = 0.0,
+                paddingStart = 9.0,
+                iconSize = 16.0,
+                iconGap = 5.0,
+            )
+
+        val hcLight: BadgeLargeTokens =
+            BadgeLargeTokens(
+                typography = AppTypography.labelSm,
+                rounded = AppRadius.full,
+                height = 28.0,
+                paddingTop = 0.0,
+                paddingEnd = 12.0,
+                paddingBottom = 0.0,
+                paddingStart = 9.0,
+                iconSize = 16.0,
+                iconGap = 5.0,
+            )
+
+        val hcDark: BadgeLargeTokens =
+            BadgeLargeTokens(
+                typography = AppTypography.labelSm,
+                rounded = AppRadius.full,
+                height = 28.0,
+                paddingTop = 0.0,
+                paddingEnd = 12.0,
+                paddingBottom = 0.0,
+                paddingStart = 9.0,
+                iconSize = 16.0,
+                iconGap = 5.0,
+            )
+    }
+}
+
+/** Component `badge-outline-ring` per context: colours are role keys, sizes in pt/dp. */
+data class BadgeOutlineRingTokens(
+    val width: Double,
+) {
+    companion object {
+        val light: BadgeOutlineRingTokens = BadgeOutlineRingTokens(width = 1.5)
+        val dark: BadgeOutlineRingTokens = BadgeOutlineRingTokens(width = 1.5)
+        val brand: BadgeOutlineRingTokens = BadgeOutlineRingTokens(width = 1.5)
+        val hcLight: BadgeOutlineRingTokens = BadgeOutlineRingTokens(width = 1.5)
+        val hcDark: BadgeOutlineRingTokens = BadgeOutlineRingTokens(width = 1.5)
     }
 }
 
@@ -2982,6 +5803,7 @@ data class TagDiffersTokens(
 data class PillTrialTokens(
     val backgroundColor: AppColorRole,
     val textColor: AppColorRole,
+    val borderColor: AppColorRole,
     val typography: AppTextStyle,
     val rounded: Double,
     val height: Double,
@@ -2995,6 +5817,7 @@ data class PillTrialTokens(
             PillTrialTokens(
                 backgroundColor = AppColorRole.SURFACE,
                 textColor = AppColorRole.TEXT,
+                borderColor = AppColorRole.TEXT,
                 typography = AppTypography.labelSm,
                 rounded = AppRadius.full,
                 height = 28.0,
@@ -3008,6 +5831,7 @@ data class PillTrialTokens(
             PillTrialTokens(
                 backgroundColor = AppColorRole.SURFACE,
                 textColor = AppColorRole.TEXT,
+                borderColor = AppColorRole.TEXT,
                 typography = AppTypography.labelSm,
                 rounded = AppRadius.full,
                 height = 28.0,
@@ -3021,6 +5845,7 @@ data class PillTrialTokens(
             PillTrialTokens(
                 backgroundColor = AppColorRole.SURFACE,
                 textColor = AppColorRole.TEXT,
+                borderColor = AppColorRole.TEXT,
                 typography = AppTypography.labelSm,
                 rounded = AppRadius.full,
                 height = 28.0,
@@ -3034,6 +5859,7 @@ data class PillTrialTokens(
             PillTrialTokens(
                 backgroundColor = AppColorRole.SURFACE,
                 textColor = AppColorRole.TEXT,
+                borderColor = AppColorRole.TEXT,
                 typography = AppTypography.labelSm,
                 rounded = AppRadius.full,
                 height = 28.0,
@@ -3047,6 +5873,7 @@ data class PillTrialTokens(
             PillTrialTokens(
                 backgroundColor = AppColorRole.SURFACE,
                 textColor = AppColorRole.TEXT,
+                borderColor = AppColorRole.TEXT,
                 typography = AppTypography.labelSm,
                 rounded = AppRadius.full,
                 height = 28.0,
@@ -3062,36 +5889,92 @@ data class PillTrialTokens(
 data class PillTrialLastDayTokens(
     val backgroundColor: AppColorRole,
     val textColor: AppColorRole,
+    val borderColor: AppColorRole,
 ) {
     companion object {
         val light: PillTrialLastDayTokens =
             PillTrialLastDayTokens(
                 backgroundColor = AppColorRole.WARNING_BG,
                 textColor = AppColorRole.WARNING_FG,
+                borderColor = AppColorRole.WARNING_FG,
             )
 
         val dark: PillTrialLastDayTokens =
             PillTrialLastDayTokens(
                 backgroundColor = AppColorRole.WARNING_BG,
                 textColor = AppColorRole.WARNING_FG,
+                borderColor = AppColorRole.WARNING_FG,
             )
 
         val brand: PillTrialLastDayTokens =
             PillTrialLastDayTokens(
                 backgroundColor = AppColorRole.WARNING_BG,
                 textColor = AppColorRole.WARNING_FG,
+                borderColor = AppColorRole.WARNING_FG,
             )
 
         val hcLight: PillTrialLastDayTokens =
             PillTrialLastDayTokens(
                 backgroundColor = AppColorRole.WARNING_BG,
                 textColor = AppColorRole.WARNING_FG,
+                borderColor = AppColorRole.WARNING_FG,
             )
 
         val hcDark: PillTrialLastDayTokens =
             PillTrialLastDayTokens(
                 backgroundColor = AppColorRole.WARNING_BG,
                 textColor = AppColorRole.WARNING_FG,
+                borderColor = AppColorRole.WARNING_FG,
+            )
+    }
+}
+
+/** Component `badge-dot` per context: colours are role keys, sizes in pt/dp. */
+data class BadgeDotTokens(
+    val backgroundColor: AppColorRole,
+    val rounded: Double,
+    val size: Double,
+    val outerRingWidth: Double,
+) {
+    companion object {
+        val light: BadgeDotTokens =
+            BadgeDotTokens(
+                backgroundColor = AppColorRole.ERROR_FG,
+                rounded = AppRadius.full,
+                size = 8.0,
+                outerRingWidth = 2.0,
+            )
+
+        val dark: BadgeDotTokens =
+            BadgeDotTokens(
+                backgroundColor = AppColorRole.ERROR_FG,
+                rounded = AppRadius.full,
+                size = 8.0,
+                outerRingWidth = 2.0,
+            )
+
+        val brand: BadgeDotTokens =
+            BadgeDotTokens(
+                backgroundColor = AppColorRole.ERROR_FG,
+                rounded = AppRadius.full,
+                size = 8.0,
+                outerRingWidth = 2.0,
+            )
+
+        val hcLight: BadgeDotTokens =
+            BadgeDotTokens(
+                backgroundColor = AppColorRole.ERROR_FG,
+                rounded = AppRadius.full,
+                size = 8.0,
+                outerRingWidth = 2.0,
+            )
+
+        val hcDark: BadgeDotTokens =
+            BadgeDotTokens(
+                backgroundColor = AppColorRole.ERROR_FG,
+                rounded = AppRadius.full,
+                size = 8.0,
+                outerRingWidth = 2.0,
             )
     }
 }
@@ -3103,6 +5986,12 @@ data class BadgeCountTokens(
     val typography: AppTextStyle,
     val rounded: Double,
     val height: Double,
+    val minWidth: Double,
+    val paddingTop: Double,
+    val paddingEnd: Double,
+    val paddingBottom: Double,
+    val paddingStart: Double,
+    val outerRingWidth: Double,
 ) {
     companion object {
         val light: BadgeCountTokens =
@@ -3112,6 +6001,12 @@ data class BadgeCountTokens(
                 typography = AppTypography.badgeCount,
                 rounded = AppRadius.full,
                 height = 18.0,
+                minWidth = 18.0,
+                paddingTop = 0.0,
+                paddingEnd = 5.0,
+                paddingBottom = 0.0,
+                paddingStart = 5.0,
+                outerRingWidth = 2.0,
             )
 
         val dark: BadgeCountTokens =
@@ -3121,6 +6016,12 @@ data class BadgeCountTokens(
                 typography = AppTypography.badgeCount,
                 rounded = AppRadius.full,
                 height = 18.0,
+                minWidth = 18.0,
+                paddingTop = 0.0,
+                paddingEnd = 5.0,
+                paddingBottom = 0.0,
+                paddingStart = 5.0,
+                outerRingWidth = 2.0,
             )
 
         val brand: BadgeCountTokens =
@@ -3130,6 +6031,12 @@ data class BadgeCountTokens(
                 typography = AppTypography.badgeCount,
                 rounded = AppRadius.full,
                 height = 18.0,
+                minWidth = 18.0,
+                paddingTop = 0.0,
+                paddingEnd = 5.0,
+                paddingBottom = 0.0,
+                paddingStart = 5.0,
+                outerRingWidth = 2.0,
             )
 
         val hcLight: BadgeCountTokens =
@@ -3139,6 +6046,12 @@ data class BadgeCountTokens(
                 typography = AppTypography.badgeCount,
                 rounded = AppRadius.full,
                 height = 18.0,
+                minWidth = 18.0,
+                paddingTop = 0.0,
+                paddingEnd = 5.0,
+                paddingBottom = 0.0,
+                paddingStart = 5.0,
+                outerRingWidth = 2.0,
             )
 
         val hcDark: BadgeCountTokens =
@@ -3148,6 +6061,167 @@ data class BadgeCountTokens(
                 typography = AppTypography.badgeCount,
                 rounded = AppRadius.full,
                 height = 18.0,
+                minWidth = 18.0,
+                paddingTop = 0.0,
+                paddingEnd = 5.0,
+                paddingBottom = 0.0,
+                paddingStart = 5.0,
+                outerRingWidth = 2.0,
+            )
+    }
+}
+
+/** Component `reason-row-standard` per context: colours are role keys, sizes in pt/dp. */
+data class ReasonRowStandardTokens(
+    val iconSize: Double,
+    val iconGap: Double,
+) {
+    companion object {
+        val light: ReasonRowStandardTokens = ReasonRowStandardTokens(iconSize = 16.0, iconGap = 8.0)
+        val dark: ReasonRowStandardTokens = ReasonRowStandardTokens(iconSize = 16.0, iconGap = 8.0)
+        val brand: ReasonRowStandardTokens = ReasonRowStandardTokens(iconSize = 16.0, iconGap = 8.0)
+        val hcLight: ReasonRowStandardTokens = ReasonRowStandardTokens(iconSize = 16.0, iconGap = 8.0)
+        val hcDark: ReasonRowStandardTokens = ReasonRowStandardTokens(iconSize = 16.0, iconGap = 8.0)
+    }
+}
+
+/** Component `reason-row-outline-ring` per context: colours are role keys, sizes in pt/dp. */
+data class ReasonRowOutlineRingTokens(
+    val width: Double,
+) {
+    companion object {
+        val light: ReasonRowOutlineRingTokens = ReasonRowOutlineRingTokens(width = 1.0)
+        val dark: ReasonRowOutlineRingTokens = ReasonRowOutlineRingTokens(width = 1.0)
+        val brand: ReasonRowOutlineRingTokens = ReasonRowOutlineRingTokens(width = 1.0)
+        val hcLight: ReasonRowOutlineRingTokens = ReasonRowOutlineRingTokens(width = 1.0)
+        val hcDark: ReasonRowOutlineRingTokens = ReasonRowOutlineRingTokens(width = 1.0)
+    }
+}
+
+/** Component `reason-row` per context: colours are role keys, sizes in pt/dp. */
+data class ReasonRowTokens(
+    val backgroundColor: AppColorRole,
+    val textColor: AppColorRole,
+    val borderColor: AppColorRole,
+    val iconColor: AppColorRole,
+    val iconDiscColor: AppColorRole,
+    val factColor: AppColorRole,
+    val freshnessColor: AppColorRole,
+    val typography: AppTextStyle,
+    val rounded: Double,
+    val paddingTop: Double,
+    val paddingEnd: Double,
+    val paddingBottom: Double,
+    val paddingStart: Double,
+    val lineGap: Double,
+    val iconDiscSize: Double,
+    val factTypography: AppTextStyle,
+    val freshnessTypography: AppTextStyle,
+) {
+    companion object {
+        val light: ReasonRowTokens =
+            ReasonRowTokens(
+                backgroundColor = AppColorRole.SURFACE,
+                textColor = AppColorRole.TEXT,
+                borderColor = AppColorRole.DIVIDER,
+                iconColor = AppColorRole.PRIMARY_TEXT,
+                iconDiscColor = AppColorRole.SURFACE2,
+                factColor = AppColorRole.TEXT,
+                freshnessColor = AppColorRole.TEXT_SECONDARY,
+                typography = AppTypography.callout,
+                rounded = AppRadius.radius16,
+                paddingTop = 14.0,
+                paddingEnd = 16.0,
+                paddingBottom = 14.0,
+                paddingStart = 16.0,
+                lineGap = 8.0,
+                iconDiscSize = 24.0,
+                factTypography = AppTypography.labelSm,
+                freshnessTypography = AppTypography.caption,
+            )
+
+        val dark: ReasonRowTokens =
+            ReasonRowTokens(
+                backgroundColor = AppColorRole.SURFACE,
+                textColor = AppColorRole.TEXT,
+                borderColor = AppColorRole.DIVIDER,
+                iconColor = AppColorRole.PRIMARY_TEXT,
+                iconDiscColor = AppColorRole.SURFACE2,
+                factColor = AppColorRole.TEXT,
+                freshnessColor = AppColorRole.TEXT_SECONDARY,
+                typography = AppTypography.callout,
+                rounded = AppRadius.radius16,
+                paddingTop = 14.0,
+                paddingEnd = 16.0,
+                paddingBottom = 14.0,
+                paddingStart = 16.0,
+                lineGap = 8.0,
+                iconDiscSize = 24.0,
+                factTypography = AppTypography.labelSm,
+                freshnessTypography = AppTypography.caption,
+            )
+
+        val brand: ReasonRowTokens =
+            ReasonRowTokens(
+                backgroundColor = AppColorRole.SURFACE,
+                textColor = AppColorRole.TEXT,
+                borderColor = AppColorRole.DIVIDER,
+                iconColor = AppColorRole.PRIMARY_TEXT,
+                iconDiscColor = AppColorRole.SURFACE2,
+                factColor = AppColorRole.TEXT,
+                freshnessColor = AppColorRole.TEXT_SECONDARY,
+                typography = AppTypography.callout,
+                rounded = AppRadius.radius16,
+                paddingTop = 14.0,
+                paddingEnd = 16.0,
+                paddingBottom = 14.0,
+                paddingStart = 16.0,
+                lineGap = 8.0,
+                iconDiscSize = 24.0,
+                factTypography = AppTypography.labelSm,
+                freshnessTypography = AppTypography.caption,
+            )
+
+        val hcLight: ReasonRowTokens =
+            ReasonRowTokens(
+                backgroundColor = AppColorRole.SURFACE,
+                textColor = AppColorRole.TEXT,
+                borderColor = AppColorRole.DIVIDER,
+                iconColor = AppColorRole.PRIMARY_TEXT,
+                iconDiscColor = AppColorRole.SURFACE2,
+                factColor = AppColorRole.TEXT,
+                freshnessColor = AppColorRole.TEXT_SECONDARY,
+                typography = AppTypography.callout,
+                rounded = AppRadius.radius16,
+                paddingTop = 14.0,
+                paddingEnd = 16.0,
+                paddingBottom = 14.0,
+                paddingStart = 16.0,
+                lineGap = 8.0,
+                iconDiscSize = 24.0,
+                factTypography = AppTypography.labelSm,
+                freshnessTypography = AppTypography.caption,
+            )
+
+        val hcDark: ReasonRowTokens =
+            ReasonRowTokens(
+                backgroundColor = AppColorRole.SURFACE,
+                textColor = AppColorRole.TEXT,
+                borderColor = AppColorRole.DIVIDER,
+                iconColor = AppColorRole.PRIMARY_TEXT,
+                iconDiscColor = AppColorRole.SURFACE2,
+                factColor = AppColorRole.TEXT,
+                freshnessColor = AppColorRole.TEXT_SECONDARY,
+                typography = AppTypography.callout,
+                rounded = AppRadius.radius16,
+                paddingTop = 14.0,
+                paddingEnd = 16.0,
+                paddingBottom = 14.0,
+                paddingStart = 16.0,
+                lineGap = 8.0,
+                iconDiscSize = 24.0,
+                factTypography = AppTypography.labelSm,
+                freshnessTypography = AppTypography.caption,
             )
     }
 }

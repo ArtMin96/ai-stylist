@@ -153,6 +153,8 @@ function typographyToken(style) {
     $extensions: {
       'app.dynamicType': dynamicTypeName(style.dynamicType),
       'app.m3Roles': [...style.m3Roles],
+      // Absent: drawn as written (TEXT_TRANSFORMS).
+      'app.textTransform': style.textTransform ?? 'none',
     },
   };
 }

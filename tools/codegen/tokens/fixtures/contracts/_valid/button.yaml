@@ -1,4 +1,4 @@
-# Synthetic contract for the component-contract tests: it passes CC-01 to CC-08 against
+# Synthetic contract for the component-contract tests: it passes CC-01 to CC-08 and CC-13 against
 # ../DESIGN.md. Each ../CC-NN/button.yaml (or ../CC-NN-<case>/button.yaml) is this file with one
 # defect that fails rule CC-NN only.
 # secondary allows no small size and no disabled state, so the API must not offer them.
@@ -9,6 +9,9 @@ name: AppButton
 props:
   - name: label
     type: string
+    required: true
+  - name: action
+    type: action
     required: true
   - name: leadingIcon
     type: icon
@@ -47,6 +50,12 @@ tokens:
       loading: '{components.button-secondary-loading}'
     sizes:
       large: '{components.button-secondary}'
+
+# The icons each variant draws: the caller's leading icon, and on secondary a trailing plus, whose
+# slot only button-large holds in ../DESIGN.md (no small size draws one).
+icons:
+  primary: { leading: '{props.leadingIcon}' }
+  secondary: { leading: '{props.leadingIcon}', trailing: plus }
 
 accessibility:
   role: button

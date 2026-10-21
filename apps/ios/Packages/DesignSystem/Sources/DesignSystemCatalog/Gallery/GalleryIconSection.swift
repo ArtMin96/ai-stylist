@@ -45,18 +45,14 @@ struct GalleryIconSection: View {
     return LabeledContent {
       content.labelsHidden()
     } label: {
-      Text(label)
-        .font(theme.font(theme.typography.headline))
-        .foregroundStyle(theme.color(.text))
+      AppComponentText(text: label, style: theme.typography.headline, color: .text)
     }
   }
 
   /// The set's id as a header, then its glyphs in generated order, wrapping as they grow.
   private func group(_ set: AppIconSet) -> some View {
     VStack(alignment: .leading, spacing: theme.spacing.space12) {
-      Text(set.rawValue)
-        .font(theme.font(theme.typography.headline))
-        .foregroundStyle(theme.color(.text))
+      AppComponentText(text: set.rawValue, style: theme.typography.headline, color: .text)
         .accessibilityAddTraits(.isHeader)
       GalleryFlowLayout(spacing: theme.spacing.space12) {
         ForEach(names.filter { $0.set == set }, id: \.self) { name in

@@ -1,0 +1,43 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://contracts.ai-stylist.app/shared-kernel/registry/starting-shapes.schema.json",
+  "title": "StartingShapeRegistry",
+  "description": "Avatar starting shapes offered at onboarding (planning/07 §3.1; owner decision 2026-10-13). Every shape is tied to the one base mesh named here. A starting shape is independent of presentation: any presentation goes with any shape (REQ-ONB-050). Ids are stable: never rename or reuse one. packages/shared-kernel/tests also check what a schema cannot express: default is one of the shape ids.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["baseMesh", "default", "shapes"],
+  "properties": {
+    "$schema": { "type": "string" },
+    "baseMesh": {
+      "type": "string",
+      "description": "Base mesh id every shape starts from (doc 07 §3.1, §3.2)",
+      "pattern": "^[a-z][a-z0-9]*(-[a-z0-9]+)*$"
+    },
+    "default": {
+      "type": "string",
+      "description": "The shape id preselected when the person makes no choice",
+      "pattern": "^[a-z][a-z0-9]*(_[a-z0-9]+)*$"
+    },
+    "shapes": {
+      "type": "object",
+      "description": "Starting shape id (snake_case, the wire value) to its definition, in display order",
+      "minProperties": 1,
+      "propertyNames": { "pattern": "^[a-z][a-z0-9]*(_[a-z0-9]+)*$" },
+      "additionalProperties": { "$ref": "#/$defs/StartingShape" }
+    }
+  },
+  "$defs": {
+    "StartingShape": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["description"],
+      "properties": {
+        "description": {
+          "type": "string",
+          "minLength": 1,
+          "description": "What the shape is, for engineers; never user-facing copy"
+        }
+      }
+    }
+  }
+}

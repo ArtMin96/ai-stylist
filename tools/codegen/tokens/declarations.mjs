@@ -3,14 +3,14 @@
 // so the Swift and Kotlin emitters (emit-swift.mjs, emit-kotlin.mjs) only spell it.
 //
 // Declarations: namespace { name, doc, members } · struct { name, doc, fields, nested, instances,
-// lookup } · roles { name, doc, valuesType, cases: [{ name, id }] }. Members: const { name, type,
-// value } or a nested namespace. Types: double, int, string, color, role, textStyle, stringList,
-// doubleList, list:<Struct>, or the name of a nested struct. Values: number, color (32-bit ARGB),
-// string, list, role (a role id, never a resolved colour), ref (another constant), init (a struct
-// value { struct, args }).
+// lookup } · roles { name, doc, valuesType, cases: [{ name, id }] } · enum { name, doc, cases }.
+// Members: const { name, type, value } or a nested namespace. Types: double, int, string, color,
+// role, textStyle, stringList, doubleList, list:<Struct>, or the name of a nested struct or enum.
+// Values: number, color (32-bit ARGB), string, list, role (a role id, never a resolved colour),
+// ref (another constant), case (an enum case), init (a struct value { struct, args }).
 import { contextId, memberId, nestedTypeName, roundTo, tokensTypeName } from './naming.mjs';
 import { CONTEXT_SOURCES, resolveColors, resolveComponents } from './normalise.mjs';
-import { CONTEXTS, splitScheme } from './syntax.mjs';
+import { CONTEXTS, TEXT_TRANSFORMS, splitScheme } from './syntax.mjs';
 
 export const TIERS = [
   { tier: 'reference', file: 'ReferenceTokens', title: 'Tier 1 of 3: reference scales' },
@@ -40,6 +40,7 @@ const TEXT_STYLE_FIELDS = [
   ['fontWeight', 'int'],
   ['lineHeight', 'double'],
   ['letterSpacing', 'double'],
+  ['textTransform', 'AppTextTransform'],
   ['dynamicType', 'string'],
   ['m3Roles', 'stringList'],
 ];
@@ -85,6 +86,12 @@ export function declarations(model) {
       },
       steppedScale('spacing', 'Spacing scale (`spacing`): pt on iOS, dp on Android.'),
       steppedScale('rounded', 'Corner radii (`rounded`): pt on iOS, dp on Android.'),
+      {
+        kind: 'enum',
+        name: 'AppTextTransform',
+        doc: 'How a type style draws its text (`textTransform`); the spoken text stays as written.',
+        cases: TEXT_TRANSFORMS.map((id) => ({ name: memberId(id), id })),
+      },
       {
         kind: 'struct',
         name: 'AppTextStyle',
@@ -197,6 +204,11 @@ function textStyleValue(key, { $value: v, $extensions: ext }) {
     fontWeight: { t: 'number', n: v.fontWeight },
     lineHeight: { t: 'number', n: round4(v.lineHeight * v.fontSize.value) },
     letterSpacing: { t: 'number', n: round4(v.letterSpacing.value) },
+    textTransform: {
+      t: 'case',
+      type: 'AppTextTransform',
+      id: memberId(ext['app.textTransform']),
+    },
     dynamicType: { t: 'string', s: ext['app.dynamicType'] },
     m3Roles: { t: 'list', items: ext['app.m3Roles'].map((s) => ({ t: 'string', s })) },
   };
@@ -250,16 +262,21 @@ function componentDeclarations(model) {
       nested: [],
       instances: [],
     }));
+    // A compound state (G2) names its field in lowerCamelCase: `selected-pressed` -> selectedPressed.
+    const stateField = (state) => memberId(state);
     return {
       kind: 'struct',
       name,
       doc: `Component \`${component}\` per context: colours are role keys, sizes in pt/dp.`,
-      fields: [...fields, ...states.map((state, i) => ({ name: state, type: nested[i].name }))],
+      fields: [
+        ...fields,
+        ...states.map((state, i) => ({ name: stateField(state), type: nested[i].name })),
+      ],
       nested,
       instances: groups.map(([context, group]) => {
         const where = `${component} (${context})`;
         const stateArgs = states.map((state, i) => ({
-          name: state,
+          name: stateField(state),
           type: nested[i].name,
           value: {
             t: 'init',

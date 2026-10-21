@@ -11,9 +11,7 @@ struct GallerySectionView: View {
 
   var body: some View {
     VStack(alignment: .leading, spacing: theme.spacing.space12) {
-      Text(section.title)
-        .font(theme.font(theme.typography.title3))
-        .foregroundStyle(theme.color(.text))
+      AppComponentText(text: section.title, style: theme.typography.title3, color: .text)
         .accessibilityAddTraits(.isHeader)
       items
     }
@@ -36,6 +34,24 @@ struct GallerySectionView: View {
       ForEach(entries, id: \.testId) { GalleryButtonCell(entry: $0) }
     case .icons(let names):
       GalleryIconSection(names: names)
+    case .badges(let entries):
+      // The badges sit on their host surface, the colour their outer ring takes.
+      GalleryFlowLayout(spacing: theme.spacing.space12) {
+        ForEach(entries, id: \.testId) { GalleryBadgeCell(entry: $0) }
+      }
+      .padding(theme.spacing.space12)
+      .frame(maxWidth: .infinity, alignment: .leading)
+      .background(theme.color(ComponentGallery.badgeHostSurface), in: .rect(cornerRadius: theme.radius.radius12))
+    case .chips(let entries):
+      GalleryFlowLayout(spacing: theme.spacing.space12) {
+        ForEach(entries, id: \.testId) { GalleryChipCell(entry: $0) }
+      }
+    case .reasonRows(let entries):
+      ForEach(entries, id: \.testId) { GalleryReasonRowCell(entry: $0) }
+    case .tags(let entries):
+      GalleryFlowLayout(spacing: theme.spacing.space12) {
+        ForEach(entries, id: \.testId) { GalleryTagCell(entry: $0) }
+      }
     }
   }
 }

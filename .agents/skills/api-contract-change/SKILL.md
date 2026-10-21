@@ -3,7 +3,7 @@ name: api-contract-change
 description: Change the OpenAPI 3.1 API contract, event schemas, the analytics taxonomy, or a shared-kernel registry in packages/contracts and packages/shared-kernel, then regenerate every client with `just generate`. Use for any new or changed endpoint, request/response schema, operationId, event envelope/payload, RFC 9457 error shape, a reason code, entitlement name, credit meter or unit (`packages/shared-kernel/registry/*.json`), an analytics event name, or a shared enum that crosses the iOS / Android / API / workers boundary; a failing `just generate --check`; a spectral lint error; or an oasdiff breaking-change report. Not for implementing the behavior behind an existing endpoint — use `backend-module` instead. Not for a database table or migration — use `db-migration` instead. Not for editing a codegen script in tools/codegen — that belongs to its owner (see Overlap).
 metadata:
   modules: shared-kernel
-  last-reviewed: 2026-09-27
+  last-reviewed: 2026-10-21
   owner-agent: contracts-engineer
 ---
 
@@ -50,7 +50,8 @@ metadata:
 4. Additive (new optional field or endpoint) is a normal change. Breaking (remove, rename, retype, semantic change) needs the doc 06 versioning path, a deprecation note, and `feat(contracts)!:` with a `BREAKING CHANGE:` footer.
 5. Every mutating endpoint declares auth, idempotency behaviour, and the full error surface; every list paginates; every generated-content field carries provenance + confidence (CLAUDE.md honesty invariants). Shapes serve every client (both native apps, workers, the future `assistant`), so no screen-specific fields.
 6. Edit the YAML/JSON source, run `just generate`, and commit source and every generated output together: `packages/contracts/gen/ts-client`, `packages/contracts/gen/events-ts`, `packages/contracts/gen/swift-client`, `packages/contracts/gen/kotlin-client`, `packages/shared-kernel/src/gen`, `workers/ml/generated`. Never hand-edit any of them.
-7. Consumers you must name in the report: `apps/api/tests/http.test.ts` (`api-engineer`) validates responses against generated types. Swift and Kotlin kernels are generated but no app target consumes them yet (ADR-0005). Error codes, IDs and the envelope are TS-only. Swift analytics event names are hand-written and must equal `events.json` byte for byte, so list every new analytics name for `ios-engineer`; Android uses the generated `AnalyticsTaxonomy`.
+7. Consumers you must name in the report: `apps/api/tests/http.test.ts` (`api-engineer`) validates responses against generated types. Swift and Kotlin kernels are generated but no app target consumes them yet (ADR-0005). Error codes, IDs and the envelope are TS-only today; when a native app needs one of them, step 8 applies. Swift analytics event names are hand-written and must equal `events.json` byte for byte, so list every new analytics name for `ios-engineer`; Android uses the generated `AnalyticsTaxonomy`.
+8. Native reach (`.claude/rules/contracts.md` invariant 6): every value a native app reads (registry, enum, error code, id kind, bound) must come out of `just generate` for TypeScript, Swift and Kotlin. It travels either as a registry in `NATIVE_REGISTRIES` of `tools/codegen/gen-kernel.mjs` or as an OpenAPI enum or schema in the generated clients. A JSON import or a hand-written `as const` list is TS-only: use it for server-only and worker-only values. When a client-facing value is not covered, name it under `Needs native emission:` in the report. The emitter change (`tools/codegen/kernel/`, `tooling-engineer`) then lands in the same PR stack, before any native consumer. Never split it into a backlog ticket with no landing point. An OpenAPI enum that mirrors a kernel list gets a contract test that pins the two value for value.
 
 ## Validation commands
 
@@ -73,7 +74,7 @@ oasdiff runs inside `just lint` only when `OASDIFF_BASE` is set. The contracts j
 - One PR: contract diff + regenerated artifacts + a one-line compatibility statement ("additive" or "breaking: vN + deprecation note") + the consumer list from Workflow step 7. Report in the `agent-operating-contract` format.
 - Consumers land in the same PR only when the change is additive and their diff is regenerated types; otherwise a linked follow-up per consumer lands before release.
 
-Done checklist: `generate --check` clean · contract tests green · typecheck green · Swift/Kotlin compile shown or listed under Not run · no hand-edited generated file · compatibility stated · new analytics names listed for iOS · `PROGRESS.md` line suggested.
+Done checklist: `generate --check` clean · contract tests green · typecheck green · Swift/Kotlin compile shown or listed under Not run · every client-facing value reaches Swift and Kotlin (generated output, or named under `Needs native emission:`) · no hand-edited generated file · compatibility stated · new analytics names listed for iOS · `PROGRESS.md` line suggested.
 
 ## Stop / escalation
 

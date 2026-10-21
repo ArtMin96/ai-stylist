@@ -1,0 +1,94 @@
+# AppReasonRow: the API contract for the expanded reason row on canvas board C03 (DESIGN.md
+# "### Chips and tags (C03)": Expanded reason row). This file is the master for its API; DESIGN.md
+# is the master for its values, so this file only names tokens. Field rules: README.md beside this
+# file; fields marked G<n> are the C03 fields of README.md "Fields", which the generator implements.
+# Sources (canvas read 2026-10-21): C03 draws the row in S1 and S2 under the reason chips (padding
+# 14 16, radius 16, surface + 1 px divider, sentence 15/21, fact 13/600 behind a 24 icon disc,
+# freshness 12/16 text-secondary, lines 8 apart); SC08 opens it under "Warm layers for 14° with
+# wind". It shows below the chips while its reason chip is expanded (chip.yaml, reason).
+# Honesty: the sentence and the fact come from the reason-code templates, never written by hand or
+# by a model, and never mention body data; the freshness line names the source and its time.
+# High contrast: no -hc-* token; the S7 colours come from the colour roles.
+# C03 fields used here: G1 no busy, G4 icons, G7 role region, G8 per-variant props, G9 no
+# touch target, G10 gallery.props, G12 the fact and freshness lines. The generator implements
+# every one.
+id: reason-row
+board: C03
+name: AppReasonRow
+
+props:
+  # The reason sentence ("Rain is expected after 4 pm, so this look has a water-resistant outer
+  # layer."), the row's label in Callout.
+  - name: label
+    type: string
+    required: true
+  # The fact behind it ("Rain from 16:00 · 2 mm expected").
+  - name: fact
+    type: string
+    required: true
+  # The fact's glyph from icon.yaml, the same as its reason chip's (rain for "Rain-ready").
+  - name: factIcon
+    type: icon
+    required: true
+  # The source and time ("Open-Meteo · as of 07:10").
+  - name: freshness
+    type: string
+    required: true
+  # The region's name: "Why: " + the reason chip's label ("Why: Rain-ready", C03).
+  - name: accessibilityLabel
+    type: string
+    required: true
+
+variants: [standard]
+sizes: [standard]
+states: [enabled]
+
+combinations:
+  standard:
+    sizes: [standard]
+    states: [enabled]
+
+tokens:
+  standard:
+    base: '{components.reason-row}'
+    states: {}
+    sizes:
+      standard: '{components.reason-row}'
+
+# G4: the fact glyph, drawn in the fact line's icon disc (parts.fact.icon), in iconColor.
+icons:
+  standard: { leading: '{props.factIcon}' }
+
+# G12: two lines under the sentence, lineGap apart: the fact (the leading icon in a disc of
+# iconDiscSize and iconDiscColor, then factTypography in factColor, iconGap apart) and the freshness
+# (freshnessTypography in freshnessColor).
+parts:
+  - name: fact
+    kind: text
+    position: line
+    icon: leading
+  - name: freshness
+    kind: text
+    position: line
+
+# A region named by accessibilityLabel; its lines are read in order. No tap, so no touch target
+# (G9). Every line scales with Dynamic Type and Android font scale to 200 % and wraps, never
+# truncated; the disc and its icon grow with the text.
+accessibility:
+  role: region
+  label: '{props.accessibilityLabel}'
+
+gallery:
+  title: Reason row
+  label: Rain is expected after 4 pm, so this look has a water-resistant outer layer.
+  props:
+    fact: 'Rain from 16:00 · 2 mm expected'
+    factIcon: rain
+    freshness: 'Open-Meteo · as of 07:10'
+    accessibilityLabel: 'Why: Rain-ready'
+  include: all
+
+testId: 'ds-{component}-{variant}-{size}-{state}'
+
+# Owner, 2026-10-21, in chat, on AppBadge and AppReasonRow: "Approve both (Recommended)".
+approved: 2026-10-21

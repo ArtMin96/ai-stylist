@@ -5,7 +5,8 @@
 package import DesignTokens
 package import SwiftUI
 
-/// The visible pill of an `AppButton` in a given `ButtonAppearance`; no interaction of its own.
+/// The visible pill of an `AppButton` in a given `ButtonAppearance`, laid out and drawn by `appFace` (its fill,
+/// pressed overlay, ring and focus ring come from `AppShapeStyle`); no interaction of its own.
 package struct AppButtonFace: View {
   let label: String
   let appearance: ButtonAppearance
@@ -39,47 +40,16 @@ package struct AppButtonFace: View {
   }
 
   package var body: some View {
-    let shape = RoundedRectangle(cornerRadius: appearance.rounded)
     HStack(spacing: appearance.iconGap) {
       leadingSlot
-      Text(label)
-        .font(theme.font(appearance.typography))
-        .tracking(appearance.typography.letterSpacing)
-        .multilineTextAlignment(.center)
-        .lineLimit(nil)
-        .fixedSize(horizontal: false, vertical: true)
+      AppComponentText(text: label, style: appearance.typography, color: appearance.textColor, alignment: .center)
     }
-    .foregroundStyle(theme.color(appearance.textColor))
-    .padding(
-      EdgeInsets(
-        top: appearance.paddingTop,
-        leading: appearance.paddingStart,
-        bottom: appearance.paddingBottom,
-        trailing: appearance.paddingEnd
-      )
-    )
-    .frame(maxWidth: fullWidth ? .infinity : nil, minHeight: appearance.height)
-    .background {
-      shape.fill(appearance.backgroundColor.map(theme.color) ?? .clear)
-      if let overlay = appearance.overlayColor {
-        shape.fill(theme.color(overlay))
-      }
-    }
-    .overlay {
-      if let border = appearance.borderColor, let width = appearance.borderWidth {
-        shape.strokeBorder(theme.color(border), lineWidth: width)
-      }
-    }
-    .overlay {
-      if let ring = appearance.focusRing {
-        focusRing(ring)
-      }
-    }
+    .appFace(appearance, maxWidth: fullWidth ? .infinity : nil)
   }
 
-  /// The spinner while loading, else the leading icon at the look's icon step, in the label colour
-  /// inherited from the row; both decorative. The system spinner keeps one size under Dynamic Type, so it
-  /// is scaled by the slot's Dynamic Type factor to grow like the icon it replaces.
+  /// The spinner while loading, else the leading icon at the look's icon step, in the label colour; both
+  /// decorative. The system spinner keeps one size under Dynamic Type, so it is scaled by the slot's Dynamic
+  /// Type factor to grow like the icon it replaces.
   @ViewBuilder private var leadingSlot: some View {
     if loading {
       ProgressView()
@@ -89,15 +59,7 @@ package struct AppButtonFace: View {
         .frame(width: slotSize, height: slotSize)
         .accessibilityHidden(true)
     } else if let leadingIcon {
-      AppIcon(leadingIcon, size: appearance.iconSize)
+      AppIcon(leadingIcon, size: appearance.iconSize, tint: appearance.textColor)
     }
-  }
-
-  /// The focus ring: outside the pill by `offset`, following its corners.
-  private func focusRing(_ ring: FocusRingTokens) -> some View {
-    let outset = ring.offset + ring.width
-    return RoundedRectangle(cornerRadius: appearance.rounded + outset)
-      .strokeBorder(theme.color(ring.color), lineWidth: ring.width)
-      .padding(-outset)
   }
 }

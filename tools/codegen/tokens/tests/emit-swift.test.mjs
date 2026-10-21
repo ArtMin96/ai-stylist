@@ -75,12 +75,22 @@ test('type styles: one AppTextStyle each, line height as a height, letter spacin
     '    fontWeight: 600,',
     '    lineHeight: 16.0,',
     '    letterSpacing: 0.6,',
+    '    textTransform: .none,',
     '    dynamicType: "caption",',
     '    m3Roles: ["bodyMedium", "bodySmall", "labelLarge", "labelMedium", "labelSmall"]',
     '  )',
   ];
   assert.equal(block(reference, 'public static let label = AppTextStyle('), label.join('\n'));
   assert.match(reference, /\n {4}lineHeight: 13\.75,\n/);
+  assert.match(reference, /\n {4}textTransform: \.uppercase,\n/);
+  assert.match(reference, /\n {2}public let textTransform: AppTextTransform\n/);
+  const transform = [
+    'nonisolated public enum AppTextTransform: String, CaseIterable, Sendable {',
+    '  case none',
+    '  case uppercase',
+    '}',
+  ];
+  assert.equal(block(reference, 'nonisolated public enum AppTextTransform'), transform.join('\n'));
   assert.match(reference, /\n {4}m3Roles: \[\]\n/);
   const all = [
     '  public static let all: [AppTextStyle] = [',

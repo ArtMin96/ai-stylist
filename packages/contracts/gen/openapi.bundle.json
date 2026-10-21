@@ -25,6 +25,18 @@
     {
       "name": "platform",
       "description": "Health, version and other non-domain endpoints"
+    },
+    {
+      "name": "identity",
+      "description": "Sign-in, sessions, account recovery, consent, data export and account deletion"
+    },
+    {
+      "name": "profile",
+      "description": "Profile settings, body measurements, style preferences and onboarding progress"
+    },
+    {
+      "name": "billing",
+      "description": "Resolved entitlements"
     }
   ],
   "paths": {
@@ -79,6 +91,1476 @@
                 }
               }
             }
+          },
+          "default": {
+            "$ref": "#/components/responses/Problem"
+          }
+        }
+      }
+    },
+    "/v1/auth/sign-in/social": {
+      "post": {
+        "operationId": "signInWithIdToken",
+        "tags": ["identity"],
+        "summary": "Sign in with an Apple or Google identity token",
+        "description": "The app runs the provider's native sign-in and sends the identity token it received.\nThe server verifies the token with the provider's keys, then answers with one\n`SignInResult`: a session for an existing account, `sign_up_required` for an identity\nwith no account (nothing is stored until `completeSignUp` accepts the birth year), or\n`deletion_pending` for an account inside its deletion grace window (no session). No\nprovider token is ever returned.\n",
+        "security": [],
+        "x-idempotency-replay": "never",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/IdempotencyKey"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/IdTokenSignInRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/SignInAnswer"
+          },
+          "401": {
+            "$ref": "#/components/responses/SignInRefused"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "default": {
+            "$ref": "#/components/responses/Problem"
+          }
+        }
+      }
+    },
+    "/v1/auth/sign-up/complete": {
+      "post": {
+        "operationId": "completeSignUp",
+        "tags": ["identity"],
+        "summary": "Complete a pending sign-up with the self-declared birth year (age gate)",
+        "description": "Second part of a sign-up. The first part is a sign-in whose answer was\n`sign_up_required`; the `signUpToken` of that answer authorizes this call. The server\napplies the age gate (16+, DEC-60) to the birth year. Accepted: the account is created\nand the answer is the `session` outcome. Refused: `AGE_GATE_FAILED`, nothing about the\nattempt is stored, and the sign-up token is spent; a new attempt starts again with a\nsign-in. Identity's own operation: better-auth 1.7.12 has no path for it.\n",
+        "security": [],
+        "x-idempotency-replay": "never",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/IdempotencyKey"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CompleteSignUpRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/SignInAnswer"
+          },
+          "401": {
+            "description": "`UNAUTHENTICATED`: the sign-up token is missing, expired, already spent or unknown. Start again with a sign-in.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "`AGE_GATE_FAILED`: the birth year lies fewer than 16 years back (DEC-60). Terminal\nfor this attempt: nothing is stored and the sign-up token is spent. The client shows\nits refusal screen and offers no way to change the year.\n",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "default": {
+            "$ref": "#/components/responses/Problem"
+          }
+        }
+      }
+    },
+    "/v1/auth/passkey/generate-authenticate-options": {
+      "get": {
+        "operationId": "getPasskeySignInOptions",
+        "tags": ["identity"],
+        "summary": "WebAuthn options for a passkey sign-in",
+        "description": "Returns a fresh challenge and the WebAuthn request options (W3C WebAuthn\n`PublicKeyCredentialRequestOptionsJSON`) for the platform passkey API. Without a session\nno credentials are listed, so the device offers its discoverable passkeys.\n",
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "WebAuthn request options",
+            "headers": {
+              "Cache-Control": {
+                "$ref": "#/components/headers/CacheControlNoStore"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PasskeyRequestOptions"
+                }
+              }
+            }
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "default": {
+            "$ref": "#/components/responses/Problem"
+          }
+        }
+      }
+    },
+    "/v1/auth/passkey/verify-authentication": {
+      "post": {
+        "operationId": "signInWithPasskey",
+        "tags": ["identity"],
+        "summary": "Sign in with a passkey assertion",
+        "description": "Verifies the assertion the platform passkey API returned for the challenge of\n`getPasskeySignInOptions`. Answers `session`, or `deletion_pending` for an account inside\nits deletion grace window. A passkey always belongs to an existing account, so this\noperation never answers `sign_up_required`.\n",
+        "security": [],
+        "x-idempotency-replay": "never",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/IdempotencyKey"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PasskeySignInRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/SignInAnswer"
+          },
+          "401": {
+            "$ref": "#/components/responses/SignInRefused"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "default": {
+            "$ref": "#/components/responses/Problem"
+          }
+        }
+      }
+    },
+    "/v1/auth/passkey/generate-register-options": {
+      "get": {
+        "operationId": "getPasskeyRegistrationOptions",
+        "tags": ["identity"],
+        "summary": "WebAuthn options to add a passkey to the signed-in account",
+        "description": "Returns a fresh challenge and the WebAuthn creation options (W3C WebAuthn\n`PublicKeyCredentialCreationOptionsJSON`). The account's existing passkeys are listed as\nexcluded credentials. Needs a recent sign-in (`RecentSignInRequired`); otherwise 403\n`FORBIDDEN`, and the client signs in again first.\n",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "WebAuthn creation options",
+            "headers": {
+              "Cache-Control": {
+                "$ref": "#/components/headers/CacheControlNoStore"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PasskeyCreationOptions"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/RecentSignInRequired"
+          },
+          "410": {
+            "$ref": "#/components/responses/AccountDeleted"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "default": {
+            "$ref": "#/components/responses/Problem"
+          }
+        }
+      }
+    },
+    "/v1/auth/passkey/verify-registration": {
+      "post": {
+        "operationId": "registerPasskey",
+        "tags": ["identity"],
+        "summary": "Add a passkey to the signed-in account",
+        "description": "Verifies the attestation the platform passkey API returned for the challenge of\n`getPasskeyRegistrationOptions` and stores the passkey on the caller's account. An\naccount may hold several passkeys. Opens no new session.\n",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/IdempotencyKey"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PasskeyRegistrationRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The stored passkey",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PasskeySummary"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "410": {
+            "$ref": "#/components/responses/AccountDeleted"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "default": {
+            "$ref": "#/components/responses/Problem"
+          }
+        }
+      }
+    },
+    "/v1/auth/get-session": {
+      "get": {
+        "operationId": "getSession",
+        "tags": ["identity"],
+        "summary": "Read the current session",
+        "description": "The account of the session the access token belongs to, and when that access token\nexpires. Read-only: it extends nothing and returns no token (better-auth\n`deferSessionRefresh`). A token with no live session is answered with 401, never with\nan empty body.\n",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The current session",
+            "headers": {
+              "Cache-Control": {
+                "$ref": "#/components/headers/CacheControlNoStore"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SessionInfo"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "410": {
+            "$ref": "#/components/responses/AccountDeleted"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "default": {
+            "$ref": "#/components/responses/Problem"
+          }
+        }
+      }
+    },
+    "/v1/auth/session/refresh": {
+      "post": {
+        "operationId": "refreshSession",
+        "tags": ["identity"],
+        "summary": "Renew a session with its refresh token",
+        "description": "Exchanges the session's refresh token for a new pair: a new access token and a new\nrefresh token (doc 11 §4.2). The refresh token travels in the body, never in\n`Authorization`, and the access token never renews a session. The refresh token rotates\non every use: the presented one is spent, and the client stores the returned pair and\ndiscards the old one. Presenting a refresh token that was already rotated revokes every\ntoken of its session (the session family) and is answered 401. Every 401 here is a\nrefused renewal: the client erases the session's tokens on the device and signs in\nagain. If the answer is lost, the client may retry once with the same refresh token and\na new `Idempotency-Key`; a refused retry ends the session the same way. Identity's own\noperation: better-auth 1.7.12 has no refresh token.\n",
+        "security": [],
+        "x-idempotency-replay": "never",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/IdempotencyKey"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RefreshSessionRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The new access token and refresh token of the session",
+            "headers": {
+              "Cache-Control": {
+                "$ref": "#/components/headers/CacheControlNoStore"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SessionGrant"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "`UNAUTHENTICATED`: the refresh token is missing, unknown, expired, revoked or\nalready rotated. A rotated refresh token presented again also revokes its whole\nsession family (doc 11 §4.2). The client erases the session's tokens and signs in\nagain.\n",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "410": {
+            "$ref": "#/components/responses/AccountDeleted"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "default": {
+            "$ref": "#/components/responses/Problem"
+          }
+        }
+      }
+    },
+    "/v1/auth/sign-out": {
+      "post": {
+        "operationId": "signOut",
+        "tags": ["identity"],
+        "summary": "Sign out this device",
+        "description": "Revokes the session the bearer token belongs to on the server.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/IdempotencyKey"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The session is revoked",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SignOutResult"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "410": {
+            "$ref": "#/components/responses/AccountDeleted"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "default": {
+            "$ref": "#/components/responses/Problem"
+          }
+        }
+      }
+    },
+    "/v1/auth/list-sessions": {
+      "get": {
+        "operationId": "listDeviceSessions",
+        "tags": ["identity"],
+        "summary": "List the signed-in devices of the caller",
+        "description": "One entry per active session of the caller's account (the device list, doc 11 §4.2),\nnewest first, cursor-paginated (doc 06 §2). Never another user's sessions and never a\nsession token.\n",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/Cursor"
+          },
+          {
+            "$ref": "#/components/parameters/Limit"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "One page of the caller's sessions",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeviceSessionPage"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "410": {
+            "$ref": "#/components/responses/AccountDeleted"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "default": {
+            "$ref": "#/components/responses/Problem"
+          }
+        }
+      }
+    },
+    "/v1/auth/revoke-sessions": {
+      "post": {
+        "operationId": "signOutAllDevices",
+        "tags": ["identity"],
+        "summary": "Sign out every device",
+        "description": "Revokes every session of the caller's account, the current one included.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/IdempotencyKey"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Every session of the account is revoked",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RevokeSessionsResult"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "410": {
+            "$ref": "#/components/responses/AccountDeleted"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "default": {
+            "$ref": "#/components/responses/Problem"
+          }
+        }
+      }
+    },
+    "/v1/auth/sign-in/magic-link": {
+      "post": {
+        "operationId": "requestAccountRecovery",
+        "tags": ["identity"],
+        "summary": "Ask for an account-recovery link by email",
+        "description": "Fallback for a person who lost their passkeys (doc 11 §15). The answer is the same\nstatus and body whether or not an account exists for the address, so it discloses\nnothing. When one exists, a single-use link is emailed; it works from 24 to 48 hours\nafter the request, and any signed-in session of the account can cancel it before then\n(`cancelAccountRecovery`). The link opens the app (a universal link on iOS, an app link\non Android), never an API URL, and carries its token in the URL fragment, which no\nserver, proxy or link scanner receives; the app then calls `completeAccountRecovery`.\nNever creates an account.\n",
+        "security": [],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/IdempotencyKey"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RecoveryRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Accepted (uniform for every address)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RecoveryRequestAccepted"
+                }
+              }
+            }
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "default": {
+            "$ref": "#/components/responses/Problem"
+          }
+        }
+      }
+    },
+    "/v1/auth/recovery/complete": {
+      "post": {
+        "operationId": "completeAccountRecovery",
+        "tags": ["identity"],
+        "summary": "Use an account-recovery link",
+        "description": "The app sends the token of the recovery link it was opened with and gets a sign-in\n(`SignInResult`). The token travels only in this request body: no GET spends it, and no\nURL carries it to the API. Before the 24-hour delay has passed the use is refused and\nthe token is not spent, so the same link works once the delay is over. From 48 hours\nafter the request, after a cancel, and on a second use it is refused. The person then\nadds a new passkey with `registerPasskey`. Identity's own operation: the better-auth\n1.7.12 magic-link plugin verifies only by a GET that spends the token, and that path is\nnot served.\n",
+        "security": [],
+        "x-idempotency-replay": "never",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/IdempotencyKey"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RecoveryCompletionRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/SignInAnswer"
+          },
+          "401": {
+            "description": "`UNAUTHENTICATED`: the link is unknown, used, cancelled, expired or not yet valid. A\nlink used before its 24-hour delay is refused without being spent.\n",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "default": {
+            "$ref": "#/components/responses/Problem"
+          }
+        }
+      }
+    },
+    "/v1/me/recovery": {
+      "delete": {
+        "operationId": "cancelAccountRecovery",
+        "tags": ["identity"],
+        "summary": "Cancel a pending account recovery",
+        "description": "Cancels the pending recovery link of the caller's account during its 24-hour delay.\nOnly a signed-in session of that account can cancel; holding the mailbox is not\nenough. Identity's own operation: better-auth 1.7.12 has no path for it.\n",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/IdempotencyKey"
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "The pending recovery is cancelled; its link no longer works."
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "404": {
+            "description": "`NOT_FOUND`: the account has no pending recovery.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "410": {
+            "$ref": "#/components/responses/AccountDeleted"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "default": {
+            "$ref": "#/components/responses/Problem"
+          }
+        }
+      }
+    },
+    "/v1/me/consents": {
+      "get": {
+        "operationId": "listConsents",
+        "tags": ["identity"],
+        "summary": "The consent the server applies to the caller, per purpose",
+        "description": "One `ResolvedConsent` for every purpose of `ConsentPurpose`, in that order (doc 11\n§7.2), cursor-paginated; with the default `limit` one page holds every purpose. Each\nentry gives the state the server applies now: the caller's latest record for the\npurpose, or, when the caller has none, the purpose's default. The server decides each\ndefault (some depend on the jurisdiction), and `withdrawable` marks the purposes the\nperson cannot withdraw, so the apps read both here and never hard-code them. The full\nappend-only history is part of the data export.\n",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/Cursor"
+          },
+          {
+            "$ref": "#/components/parameters/Limit"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "One page of the consent the server applies, one entry per purpose",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConsentPage"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "410": {
+            "$ref": "#/components/responses/AccountDeleted"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "default": {
+            "$ref": "#/components/responses/Problem"
+          }
+        }
+      },
+      "post": {
+        "operationId": "recordConsent",
+        "tags": ["identity"],
+        "summary": "Grant or withdraw consent for one purpose",
+        "description": "Appends a consent record for one purpose (doc 11 §7.1; append-only: a withdrawal is a\nnew record). 201 when a record was appended. 200 when the request repeats the current\nstate for the same policy version: nothing is stored and the current record, with its\noriginal dates, is returned.\n",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/IdempotencyKey"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ConsentChange"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Unchanged; the current record",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConsentRecord"
+                }
+              }
+            }
+          },
+          "201": {
+            "description": "The appended record",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConsentRecord"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "description": "`CONSENT_REQUIRED`: a withdrawal of a purpose that `listConsents` marks\n`withdrawable: false` (`core_service` today) is refused. That consent is required\nto use the app (doc 11 §7.2). Deleting the account is what ends this processing\n(`POST /v1/me/deletion`).\n",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "410": {
+            "$ref": "#/components/responses/AccountDeleted"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "default": {
+            "$ref": "#/components/responses/Problem"
+          }
+        }
+      }
+    },
+    "/v1/me/exports": {
+      "post": {
+        "operationId": "requestDataExport",
+        "tags": ["identity"],
+        "summary": "Request an export of the caller's data",
+        "description": "Starts an asynchronous export of the caller's data (doc 11 §13.1), open on every plan\n(`data.export`). Answers at once with the new export `in_progress`; the client reads it\nwith `getDataExport` until it is `ready` (a notification follows as well). One export\nruns at a time per account: while one is in progress, a new request is refused with 429\nand the running export. Re-authentication, the same rule as `requestAccountDeletion`:\nneeds a recent sign-in (`RecentSignInRequired`); otherwise 403 `FORBIDDEN`, and the\nclient signs in again first.\n",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/IdempotencyKey"
+          }
+        ],
+        "responses": {
+          "202": {
+            "description": "The export is accepted and in progress",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DataExport"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/RecentSignInRequired"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "410": {
+            "$ref": "#/components/responses/AccountDeleted"
+          },
+          "429": {
+            "$ref": "#/components/responses/DataExportLimited"
+          },
+          "default": {
+            "$ref": "#/components/responses/Problem"
+          }
+        }
+      }
+    },
+    "/v1/me/exports/{id}": {
+      "get": {
+        "operationId": "getDataExport",
+        "tags": ["identity"],
+        "summary": "Read one of the caller's data exports",
+        "description": "The state of an export. While it is `ready`, every read mints a new download link after\nthe same authorization check; the link lives at most 10 minutes (DEC-44, doc 11 §5.4).\nThe archive itself is kept until `availableUntil`. Never cached.\n",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/DataExportId"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The export",
+            "headers": {
+              "Cache-Control": {
+                "$ref": "#/components/headers/CacheControlNoStore"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DataExport"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "404": {
+            "description": "`NOT_FOUND`: the caller has no export with this id.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "410": {
+            "$ref": "#/components/responses/AccountDeleted"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "default": {
+            "$ref": "#/components/responses/Problem"
+          }
+        }
+      }
+    },
+    "/v1/me/deletion": {
+      "post": {
+        "operationId": "requestAccountDeletion",
+        "tags": ["identity"],
+        "summary": "Request deletion of the caller's account",
+        "description": "Starts the deletion of the caller's account (doc 11 §13.2). At once every session of the\naccount is revoked, this one included, and a sign-in opens no session; the account is\nkept for a 7-day grace window (DEC-65). A sign-in during the window answers\n`deletion_pending`, whose cancel credential can stop the deletion\n(`cancelAccountDeletion`). After the window the purge runs and cannot be stopped.\nRe-authentication (doc 02 §11.3): needs a recent sign-in (`RecentSignInRequired`);\notherwise 403 `FORBIDDEN`, and the client signs in again first. After the answer the\ntokens of this session no longer work and the client returns to its signed-out start.\nDeleting the account does not cancel a store subscription.\n",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/IdempotencyKey"
+          }
+        ],
+        "responses": {
+          "202": {
+            "description": "The deletion is requested; its grace window has started",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AccountDeletionRequest"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/RecentSignInRequired"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "410": {
+            "$ref": "#/components/responses/AccountDeleted"
+          },
+          "429": {
+            "description": "`RATE_LIMITED`: the account requested a deletion within the last 30 days that was\nnot cancelled (doc 11 §14); a request stopped with `cancelAccountDeletion` does not\ncount. Or another rate limit was hit. Retry after `Retry-After` seconds.\n",
+            "headers": {
+              "Retry-After": {
+                "$ref": "#/components/headers/RetryAfter"
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/components/responses/Problem"
+          }
+        }
+      },
+      "delete": {
+        "operationId": "cancelAccountDeletion",
+        "tags": ["identity"],
+        "summary": "Cancel the account deletion inside its grace window",
+        "description": "Stops a pending account deletion during its 7-day grace window (DEC-65). The only\ncredential accepted is the cancel credential of the `deletion_pending` sign-in outcome\n(`deletionCancelToken`); the caller holds no session, because the deletion revoked them\nall. The account is active again, but no session is opened or restored: the client signs\nin again. Once the window has ended the cancel is refused with 410 `ACCOUNT_DELETED`.\n",
+        "security": [
+          {
+            "deletionCancelToken": []
+          }
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/IdempotencyKey"
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "The deletion is cancelled and the account is active; sign in to open a session."
+          },
+          "401": {
+            "description": "`UNAUTHENTICATED`: the cancel credential is missing, malformed or expired. The client\nsigns in again; during the window that sign-in answers `deletion_pending` with a new\ncredential.\n",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "`NOT_FOUND`: the account has no pending deletion, e.g. it was already cancelled.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "410": {
+            "description": "`ACCOUNT_DELETED`: the grace window has ended, so the deletion can no longer be\ncancelled; the account is deleted or being purged. The client erases everything it\nstores for the account and returns to its signed-out start. Not cached.\n",
+            "headers": {
+              "Cache-Control": {
+                "$ref": "#/components/headers/CacheControlNoStore"
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "default": {
+            "$ref": "#/components/responses/Problem"
+          }
+        }
+      }
+    },
+    "/v1/me/profile": {
+      "get": {
+        "operationId": "getProfile",
+        "tags": ["profile"],
+        "summary": "Read the caller's profile settings",
+        "description": "Presentation, starting shape and the six settings of REQ-ONB-100. A profile nothing has\nbeen written to answers with its defaults and `version` 0.\n",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The caller's profile",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Profile"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "410": {
+            "$ref": "#/components/responses/AccountDeleted"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "default": {
+            "$ref": "#/components/responses/Problem"
+          }
+        }
+      },
+      "patch": {
+        "operationId": "updateProfile",
+        "tags": ["profile"],
+        "summary": "Change some of the caller's profile settings",
+        "description": "Partial update (see the file header): each member present replaces its stored value.\nAnswers with the whole profile at its new `version`.\n",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/IdempotencyKey"
+          },
+          {
+            "$ref": "#/components/parameters/IfMatch"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProfileUpdate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The updated profile",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Profile"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "`VALIDATION_FAILED`: the body breaks this schema, or `startingShape` is not a shape\nof the shared-kernel registry. `errors[]` names each field.\n",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "409": {
+            "$ref": "#/components/responses/ProfileConflict"
+          },
+          "410": {
+            "$ref": "#/components/responses/AccountDeleted"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "default": {
+            "$ref": "#/components/responses/Problem"
+          }
+        }
+      }
+    },
+    "/v1/me/measurements": {
+      "get": {
+        "operationId": "getMeasurements",
+        "tags": ["profile"],
+        "summary": "Read the caller's body measurements",
+        "description": "The caller's current measurement set, in SI units. A set nothing has been written to\nanswers with no measurement and `version` 0. Never cached.\n",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The caller's measurement set",
+            "headers": {
+              "Cache-Control": {
+                "$ref": "#/components/headers/CacheControlNoStore"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MeasurementSet"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "410": {
+            "$ref": "#/components/responses/AccountDeleted"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "default": {
+            "$ref": "#/components/responses/Problem"
+          }
+        }
+      },
+      "put": {
+        "operationId": "replaceMeasurements",
+        "tags": ["profile"],
+        "summary": "Replace the caller's body measurements",
+        "description": "Replaces the whole set. A measurement absent from `measurements` is removed, which is how\na single field is cleared; `{}` removes every measurement. Values are SI (`cm`, `kg`);\nthe app converts for display only. Answers with the stored set at its new `version`.\n",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/IdempotencyKey"
+          },
+          {
+            "$ref": "#/components/parameters/IfMatch"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MeasurementsReplacement"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The stored measurement set",
+            "headers": {
+              "Cache-Control": {
+                "$ref": "#/components/headers/CacheControlNoStore"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MeasurementSet"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "`MEASUREMENT_IMPLAUSIBLE`: a value lies outside its hard bounds (shared-kernel\n`registry/measurement-definitions.json`, doc 07 §3.3). Nothing of the request is\nstored. `errors[]` points at each refused value (e.g. `/measurements/height/value`)\nand never repeats it (doc 11 §8). `VALIDATION_FAILED`: the body breaks this schema,\ne.g. an `estimated` or `derived` value without `confidence`.\n",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "409": {
+            "$ref": "#/components/responses/MeasurementSetConflict"
+          },
+          "410": {
+            "$ref": "#/components/responses/AccountDeleted"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "default": {
+            "$ref": "#/components/responses/Problem"
+          }
+        }
+      }
+    },
+    "/v1/me/preferences": {
+      "get": {
+        "operationId": "getPreferences",
+        "tags": ["profile"],
+        "summary": "Read the caller's style preferences",
+        "description": "Fit and style preferences, soft dislikes and hard exclusions, climate tolerance,\noccasions and the typical day, and usual sizes. Preferences nothing has been written to\nanswer with empty lists and `version` 0.\n",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The caller's preferences",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Preferences"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "410": {
+            "$ref": "#/components/responses/AccountDeleted"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "default": {
+            "$ref": "#/components/responses/Problem"
+          }
+        }
+      },
+      "patch": {
+        "operationId": "updatePreferences",
+        "tags": ["profile"],
+        "summary": "Change some of the caller's style preferences",
+        "description": "Partial update (see the file header): each member present replaces its stored value\nwhole, an empty list or object empties it, and `clear` removes `climateTolerance` or\n`typicalDay`. Answers with all preferences at their new `version`.\n",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/IdempotencyKey"
+          },
+          {
+            "$ref": "#/components/parameters/IfMatch"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PreferencesUpdate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The updated preferences",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Preferences"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "`VALIDATION_FAILED`: the body breaks this schema, a member is both set and named in\n`clear`, or `sizingByRegion` holds two entries for one size system and garment group.\n`errors[]` names each field.\n",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "409": {
+            "$ref": "#/components/responses/PreferencesConflict"
+          },
+          "410": {
+            "$ref": "#/components/responses/AccountDeleted"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "default": {
+            "$ref": "#/components/responses/Problem"
+          }
+        }
+      }
+    },
+    "/v1/me/onboarding-progress": {
+      "get": {
+        "operationId": "getOnboardingProgress",
+        "tags": ["profile"],
+        "summary": "Read the caller's onboarding progress",
+        "description": "Per-step progress of the onboarding flow (doc 02 §3.2) and the step the app resumes at\nafter a quit or a crash.\n",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The caller's onboarding progress",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OnboardingProgress"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "410": {
+            "$ref": "#/components/responses/AccountDeleted"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "default": {
+            "$ref": "#/components/responses/Problem"
+          }
+        }
+      },
+      "patch": {
+        "operationId": "updateOnboardingProgress",
+        "tags": ["profile"],
+        "summary": "Record the outcome of onboarding steps",
+        "description": "Records `completed` or `skipped` for each step present. A status only moves forward\n(`pending` → `skipped` → `completed`): a write that would move a step back leaves it\nunchanged and is still answered with 200, so a replayed or late write from a device's\nlocal buffer is harmless. Answers with the whole progress.\n",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/IdempotencyKey"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OnboardingProgressUpdate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The updated onboarding progress",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OnboardingProgress"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "`VALIDATION_FAILED`: the body breaks this schema, or it marks a required step\n`skipped`. `errors[]` names each step.\n",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "410": {
+            "$ref": "#/components/responses/AccountDeleted"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "default": {
+            "$ref": "#/components/responses/Problem"
+          }
+        }
+      }
+    },
+    "/v1/me/entitlements": {
+      "get": {
+        "operationId": "getEntitlements",
+        "tags": ["billing"],
+        "summary": "Read the caller's resolved entitlements",
+        "description": "The entitlements the server resolves for the caller now (doc 12 §3.2): over the caller's\nactive grants the most generous value wins, per entitlement; an entitlement no active\ngrant supplies takes its Free-plan value (doc 12 §1.2). Every registered entitlement\nappears once. The apps may cache the answer briefly to render (doc 12 §3.3); a gated\nrequest is decided by the server alone.\n",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The caller's entitlement state",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EntitlementState"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "410": {
+            "$ref": "#/components/responses/AccountDeleted"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
           },
           "default": {
             "$ref": "#/components/responses/Problem"
@@ -189,6 +1671,1734 @@
             "description": "RFC 3339 UTC build timestamp"
           }
         }
+      },
+      "IdentityProvider": {
+        "type": "string",
+        "description": "Identity providers that sign in with a native identity token (DEC-64).",
+        "enum": ["apple", "google"]
+      },
+      "IdTokenSignInRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["provider", "idToken"],
+        "properties": {
+          "provider": {
+            "$ref": "#/components/schemas/IdentityProvider"
+          },
+          "idToken": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["token"],
+            "properties": {
+              "token": {
+                "type": "string",
+                "minLength": 1,
+                "description": "The provider's identity token (a JWT), verified against the provider's keys."
+              },
+              "nonce": {
+                "type": "string",
+                "minLength": 1,
+                "description": "The unhashed nonce the app generated for the provider request. The identity\ntoken's `nonce` claim must equal it or its SHA-256 digest. Sign in with Apple\nrequires it.\n"
+              },
+              "user": {
+                "type": "object",
+                "additionalProperties": false,
+                "description": "Name the provider reports to the app on the first authorization only (Sign in with Apple).",
+                "properties": {
+                  "name": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "properties": {
+                      "firstName": {
+                        "type": "string",
+                        "maxLength": 100
+                      },
+                      "lastName": {
+                        "type": "string",
+                        "maxLength": 100
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "UserId": {
+        "type": "string",
+        "description": "Account id, a prefixed ULID (`usr_`, shared-kernel `ID_PREFIXES.user`).",
+        "pattern": "^usr_[0-7][0-9A-HJKMNP-TV-Z]{25}$",
+        "examples": ["usr_01J9Z3K8X2Q7N5V4B6C8D0E1F2"]
+      },
+      "SessionGrant": {
+        "type": "object",
+        "description": "A session the server opened or renewed: a short-lived access token and a separate,\nrotating refresh token (doc 11 §4.2). Both are kept in the Keychain or Keystore-backed\nstorage only, and both are replaced by every renewal.\n",
+        "required": ["userId", "token", "expiresAt", "refreshToken", "refreshTokenExpiresAt"],
+        "properties": {
+          "userId": {
+            "$ref": "#/components/schemas/UserId"
+          },
+          "token": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Access token for `bearerAuth`, valid for about 15 minutes. Sent on API calls; it\nnever renews the session.\n"
+          },
+          "expiresAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "When the access token `token` stops working, about 15 minutes after issue. The\nserver may refuse it earlier (revocation); the client then renews once with\n`refreshSession`.\n"
+          },
+          "refreshToken": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Refresh token, sent only in the body of `refreshSession` and never in\n`Authorization`. Single use: each renewal spends it and returns a new one. Presenting\na spent refresh token again revokes the whole session family.\n"
+          },
+          "refreshTokenExpiresAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "When the refresh token stops working and the session ends unless it was renewed\nbefore; after it the client signs in again.\n"
+          }
+        }
+      },
+      "DeletionPending": {
+        "type": "object",
+        "description": "The account is inside its 7-day deletion grace window (DEC-65): no session was opened.\nThe only thing the client can do is offer to cancel the deletion with `cancelToken`.\n",
+        "required": ["graceEndsAt", "cancelToken", "cancelTokenExpiresAt"],
+        "properties": {
+          "graceEndsAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "End of the grace window; the purge starts after it."
+          },
+          "cancelToken": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Value for the `Deletion-Cancel-Token` header (`deletionCancelToken`); valid only for `DELETE /v1/me/deletion`."
+          },
+          "cancelTokenExpiresAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "At most 15 minutes after issue (doc 11 §4.2)."
+          }
+        }
+      },
+      "SignUpPending": {
+        "type": "object",
+        "description": "The verified identity has no account. Nothing is stored. The client asks for the birth\nyear and calls `completeSignUp` with `token`.\n",
+        "required": ["token", "expiresAt"],
+        "properties": {
+          "token": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Sign-up credential for `CompleteSignUpRequest.signUpToken`. Single use, valid only\nfor `completeSignUp`; it opens no session and grants nothing else.\n"
+          },
+          "expiresAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "At most 15 minutes after issue."
+          }
+        }
+      },
+      "SignInResult": {
+        "type": "object",
+        "description": "One sign-in outcome. `outcome` names it, and exactly the object of that outcome is\npresent: `session` for `session`, `deletionPending` for `deletion_pending`, `signUp` for\n`sign_up_required`. Only `session` opens a session.\n",
+        "required": ["outcome"],
+        "properties": {
+          "outcome": {
+            "type": "string",
+            "enum": ["session", "deletion_pending", "sign_up_required"]
+          },
+          "session": {
+            "$ref": "#/components/schemas/SessionGrant"
+          },
+          "deletionPending": {
+            "$ref": "#/components/schemas/DeletionPending"
+          },
+          "signUp": {
+            "$ref": "#/components/schemas/SignUpPending"
+          }
+        }
+      },
+      "CompleteSignUpRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["signUpToken", "birthYear"],
+        "properties": {
+          "signUpToken": {
+            "type": "string",
+            "minLength": 1,
+            "description": "`SignUpPending.token` of the `sign_up_required` answer."
+          },
+          "birthYear": {
+            "type": "integer",
+            "description": "Self-declared birth year (DEC-60). Only a sanity range is enforced here; the age\nfloor is the server's rule and is never restated by a client.\n",
+            "minimum": 1900,
+            "maximum": 2100
+          }
+        }
+      },
+      "Base64Url": {
+        "type": "string",
+        "description": "Base64url without padding (RFC 4648 §5), as WebAuthn JSON encodes binary values.",
+        "pattern": "^[A-Za-z0-9_-]*$"
+      },
+      "PasskeyCredentialDescriptor": {
+        "type": "object",
+        "description": "W3C WebAuthn `PublicKeyCredentialDescriptorJSON`.",
+        "required": ["id", "type"],
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/Base64Url"
+          },
+          "type": {
+            "type": "string",
+            "enum": ["public-key"]
+          },
+          "transports": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "PasskeyExtensionInputs": {
+        "type": "object",
+        "description": "WebAuthn extension inputs (`AuthenticationExtensionsClientInputsJSON`). Only the\nextensions this API requests are modelled.\n",
+        "properties": {
+          "credProps": {
+            "type": "boolean"
+          }
+        }
+      },
+      "PasskeyRequestOptions": {
+        "type": "object",
+        "description": "W3C WebAuthn `PublicKeyCredentialRequestOptionsJSON`.",
+        "required": ["challenge"],
+        "properties": {
+          "challenge": {
+            "$ref": "#/components/schemas/Base64Url"
+          },
+          "timeout": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "rpId": {
+            "type": "string"
+          },
+          "allowCredentials": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PasskeyCredentialDescriptor"
+            }
+          },
+          "userVerification": {
+            "type": "string",
+            "enum": ["required", "preferred", "discouraged"]
+          },
+          "hints": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "extensions": {
+            "$ref": "#/components/schemas/PasskeyExtensionInputs"
+          }
+        }
+      },
+      "PasskeyExtensionOutputs": {
+        "type": "object",
+        "description": "WebAuthn extension outputs (`AuthenticationExtensionsClientOutputsJSON`). Only the\nextensions this API reads are modelled; send `{}` when there are none.\n",
+        "properties": {
+          "credProps": {
+            "type": "object",
+            "properties": {
+              "rk": {
+                "type": "boolean"
+              }
+            }
+          }
+        }
+      },
+      "PasskeyAuthenticationResponse": {
+        "type": "object",
+        "description": "W3C WebAuthn `AuthenticationResponseJSON`.",
+        "required": ["id", "rawId", "type", "response", "clientExtensionResults"],
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/Base64Url"
+          },
+          "rawId": {
+            "$ref": "#/components/schemas/Base64Url"
+          },
+          "type": {
+            "type": "string",
+            "enum": ["public-key"]
+          },
+          "authenticatorAttachment": {
+            "type": "string",
+            "enum": ["platform", "cross-platform"]
+          },
+          "clientExtensionResults": {
+            "$ref": "#/components/schemas/PasskeyExtensionOutputs"
+          },
+          "response": {
+            "type": "object",
+            "required": ["clientDataJSON", "authenticatorData", "signature"],
+            "properties": {
+              "clientDataJSON": {
+                "$ref": "#/components/schemas/Base64Url"
+              },
+              "authenticatorData": {
+                "$ref": "#/components/schemas/Base64Url"
+              },
+              "signature": {
+                "$ref": "#/components/schemas/Base64Url"
+              },
+              "userHandle": {
+                "$ref": "#/components/schemas/Base64Url"
+              }
+            }
+          }
+        }
+      },
+      "PasskeySignInRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["response"],
+        "properties": {
+          "response": {
+            "$ref": "#/components/schemas/PasskeyAuthenticationResponse"
+          }
+        }
+      },
+      "PasskeyCreationOptions": {
+        "type": "object",
+        "description": "W3C WebAuthn `PublicKeyCredentialCreationOptionsJSON`.",
+        "required": ["rp", "user", "challenge", "pubKeyCredParams"],
+        "properties": {
+          "rp": {
+            "type": "object",
+            "required": ["name"],
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "name": {
+                "type": "string"
+              }
+            }
+          },
+          "user": {
+            "type": "object",
+            "required": ["id", "name", "displayName"],
+            "properties": {
+              "id": {
+                "$ref": "#/components/schemas/Base64Url"
+              },
+              "name": {
+                "type": "string"
+              },
+              "displayName": {
+                "type": "string"
+              }
+            }
+          },
+          "challenge": {
+            "$ref": "#/components/schemas/Base64Url"
+          },
+          "pubKeyCredParams": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": ["type", "alg"],
+              "properties": {
+                "type": {
+                  "type": "string",
+                  "enum": ["public-key"]
+                },
+                "alg": {
+                  "type": "integer"
+                }
+              }
+            }
+          },
+          "timeout": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "excludeCredentials": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PasskeyCredentialDescriptor"
+            }
+          },
+          "authenticatorSelection": {
+            "type": "object",
+            "properties": {
+              "authenticatorAttachment": {
+                "type": "string",
+                "enum": ["platform", "cross-platform"]
+              },
+              "residentKey": {
+                "type": "string",
+                "enum": ["discouraged", "preferred", "required"]
+              },
+              "requireResidentKey": {
+                "type": "boolean"
+              },
+              "userVerification": {
+                "type": "string",
+                "enum": ["required", "preferred", "discouraged"]
+              }
+            }
+          },
+          "attestation": {
+            "type": "string",
+            "enum": ["none", "indirect", "direct", "enterprise"]
+          },
+          "hints": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "extensions": {
+            "$ref": "#/components/schemas/PasskeyExtensionInputs"
+          }
+        }
+      },
+      "PasskeyRegistrationResponse": {
+        "type": "object",
+        "description": "W3C WebAuthn `RegistrationResponseJSON`.",
+        "required": ["id", "rawId", "type", "response", "clientExtensionResults"],
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/Base64Url"
+          },
+          "rawId": {
+            "$ref": "#/components/schemas/Base64Url"
+          },
+          "type": {
+            "type": "string",
+            "enum": ["public-key"]
+          },
+          "authenticatorAttachment": {
+            "type": "string",
+            "enum": ["platform", "cross-platform"]
+          },
+          "clientExtensionResults": {
+            "$ref": "#/components/schemas/PasskeyExtensionOutputs"
+          },
+          "response": {
+            "type": "object",
+            "required": ["clientDataJSON", "attestationObject"],
+            "properties": {
+              "clientDataJSON": {
+                "$ref": "#/components/schemas/Base64Url"
+              },
+              "attestationObject": {
+                "$ref": "#/components/schemas/Base64Url"
+              },
+              "authenticatorData": {
+                "$ref": "#/components/schemas/Base64Url"
+              },
+              "transports": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "publicKeyAlgorithm": {
+                "type": "integer"
+              },
+              "publicKey": {
+                "$ref": "#/components/schemas/Base64Url"
+              }
+            }
+          }
+        }
+      },
+      "PasskeyRegistrationRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["response"],
+        "properties": {
+          "response": {
+            "$ref": "#/components/schemas/PasskeyRegistrationResponse"
+          },
+          "name": {
+            "type": "string",
+            "maxLength": 100,
+            "description": "Label the person gives the passkey."
+          }
+        }
+      },
+      "PasskeySummary": {
+        "type": "object",
+        "description": "A passkey stored on the account. Carries no key material.",
+        "required": ["createdAt"],
+        "properties": {
+          "name": {
+            "type": "string",
+            "maxLength": 100
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "SessionInfo": {
+        "type": "object",
+        "description": "The current session, without any token.",
+        "required": ["userId", "expiresAt"],
+        "properties": {
+          "userId": {
+            "$ref": "#/components/schemas/UserId"
+          },
+          "expiresAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "When the access token of this request stops working (`SessionGrant.expiresAt`)."
+          },
+          "needsRefresh": {
+            "type": "boolean",
+            "description": "True when the server asks the client to renew now with `refreshSession`."
+          }
+        }
+      },
+      "RefreshSessionRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["refreshToken"],
+        "properties": {
+          "refreshToken": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 512,
+            "description": "`SessionGrant.refreshToken` of the latest grant of this session."
+          }
+        }
+      },
+      "SignOutResult": {
+        "type": "object",
+        "required": ["success"],
+        "properties": {
+          "success": {
+            "type": "boolean"
+          }
+        }
+      },
+      "DeviceSession": {
+        "type": "object",
+        "description": "One signed-in device of the caller. Carries no token and no IP address.",
+        "required": ["current", "createdAt", "lastActiveAt", "expiresAt"],
+        "properties": {
+          "current": {
+            "type": "boolean",
+            "description": "True for the session that made this request."
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "When the device signed in."
+          },
+          "lastActiveAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Last renewal of the session."
+          },
+          "expiresAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "When the session ends unless renewed, the expiry of its current refresh token."
+          },
+          "userAgent": {
+            "type": "string",
+            "maxLength": 512,
+            "description": "The `User-Agent` the device sent at sign-in, to tell devices apart."
+          }
+        }
+      },
+      "DeviceSessionPage": {
+        "type": "object",
+        "required": ["items", "nextCursor"],
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DeviceSession"
+            }
+          },
+          "nextCursor": {
+            "type": ["string", "null"],
+            "description": "Cursor of the next page; null on the last page."
+          }
+        }
+      },
+      "RevokeSessionsResult": {
+        "type": "object",
+        "required": ["status"],
+        "properties": {
+          "status": {
+            "type": "boolean"
+          }
+        }
+      },
+      "RecoveryRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["email"],
+        "properties": {
+          "email": {
+            "type": "string",
+            "format": "email",
+            "maxLength": 254
+          }
+        }
+      },
+      "RecoveryRequestAccepted": {
+        "type": "object",
+        "required": ["status"],
+        "properties": {
+          "status": {
+            "type": "boolean",
+            "description": "Always true, whether or not an account exists for the address."
+          }
+        }
+      },
+      "RecoveryCompletionRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["token"],
+        "properties": {
+          "token": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 512,
+            "description": "Single-use token from the fragment of the emailed recovery link."
+          }
+        }
+      },
+      "ConsentPurpose": {
+        "type": "string",
+        "description": "Consent purpose keys of doc 11 §7.2, in that order. Mirrors shared-kernel\n`CONSENT_PURPOSES` value for value (pinned by packages/contracts/tests/kernel-enums.test.ts).\n",
+        "enum": [
+          "core_service",
+          "face_processing",
+          "location_precise",
+          "analytics",
+          "ai_generative",
+          "notifications",
+          "training_data"
+        ]
+      },
+      "ConsentRecordId": {
+        "type": "string",
+        "description": "Consent record id, a prefixed ULID (`cns_`, shared-kernel `ID_PREFIXES.consentRecord`).",
+        "pattern": "^cns_[0-7][0-9A-HJKMNP-TV-Z]{25}$",
+        "examples": ["cns_01J9Z3K8X2Q7N5V4B6C8D0E1F3"]
+      },
+      "ConsentStatus": {
+        "type": "string",
+        "enum": ["granted", "withdrawn"]
+      },
+      "PolicyVersion": {
+        "type": "string",
+        "description": "Version of the policy text the person saw, e.g. `0.1.0-draft`.",
+        "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+(-[0-9A-Za-z.-]+)?$",
+        "maxLength": 64,
+        "examples": ["0.1.0-draft"]
+      },
+      "ConsentSurface": {
+        "type": "string",
+        "description": "Identifier of the app screen where the decision was made, e.g. `onboarding_consent`.",
+        "pattern": "^[a-z][a-z0-9_]{0,63}$"
+      },
+      "Locale": {
+        "type": "string",
+        "description": "BCP 47 language tag, e.g. `en-GB`.",
+        "pattern": "^[A-Za-z]{2,3}(-[A-Za-z0-9]{2,8})*$",
+        "maxLength": 35
+      },
+      "ConsentRecord": {
+        "type": "object",
+        "description": "One append-only consent record (doc 11 §7.1); `locale` is the language of the text the\nperson saw.\n",
+        "required": ["id", "purpose", "status", "policyVersion", "surface", "locale"],
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/ConsentRecordId"
+          },
+          "purpose": {
+            "$ref": "#/components/schemas/ConsentPurpose"
+          },
+          "status": {
+            "$ref": "#/components/schemas/ConsentStatus"
+          },
+          "policyVersion": {
+            "$ref": "#/components/schemas/PolicyVersion"
+          },
+          "grantedAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "When the consent was granted; present when `status` is `granted`."
+          },
+          "withdrawnAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "When the consent was withdrawn; present when `status` is `withdrawn`."
+          },
+          "surface": {
+            "$ref": "#/components/schemas/ConsentSurface"
+          },
+          "locale": {
+            "$ref": "#/components/schemas/Locale"
+          }
+        }
+      },
+      "ResolvedConsent": {
+        "type": "object",
+        "description": "The consent the server applies to one purpose now (doc 11 §7.2). `record` is the\ncaller's latest consent record for the purpose; `granted` is then true exactly when\n`record.status` is `granted`. Without a record, `record` is absent and `granted` is\nthe purpose's default, which the server decides (some defaults depend on the\njurisdiction).\n",
+        "required": ["purpose", "granted", "withdrawable"],
+        "properties": {
+          "purpose": {
+            "$ref": "#/components/schemas/ConsentPurpose"
+          },
+          "granted": {
+            "type": "boolean",
+            "description": "Whether the server processes the caller's data for this purpose now."
+          },
+          "withdrawable": {
+            "type": "boolean",
+            "description": "`false` for a purpose the person cannot withdraw while the account exists:\n`recordConsent` refuses its withdrawal with 403 `CONSENT_REQUIRED`, and the app\noffers no switch to turn it off.\n"
+          },
+          "record": {
+            "$ref": "#/components/schemas/ConsentRecord"
+          }
+        }
+      },
+      "ConsentPage": {
+        "type": "object",
+        "description": "One page of `listConsents`: one entry per purpose, in `ConsentPurpose` order, across\nthe pages.\n",
+        "required": ["items", "nextCursor"],
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ResolvedConsent"
+            }
+          },
+          "nextCursor": {
+            "type": ["string", "null"],
+            "description": "Cursor of the next page; null on the last page."
+          }
+        },
+        "examples": [
+          {
+            "items": [
+              {
+                "purpose": "core_service",
+                "granted": true,
+                "withdrawable": false,
+                "record": {
+                  "id": "cns_00000000000000000000000001",
+                  "purpose": "core_service",
+                  "status": "granted",
+                  "policyVersion": "0.1.0-draft",
+                  "grantedAt": "2026-10-21T10:00:00Z",
+                  "surface": "onboarding_consent",
+                  "locale": "en-GB"
+                }
+              },
+              {
+                "purpose": "face_processing",
+                "granted": false,
+                "withdrawable": true
+              },
+              {
+                "purpose": "location_precise",
+                "granted": false,
+                "withdrawable": true
+              },
+              {
+                "purpose": "analytics",
+                "granted": false,
+                "withdrawable": true,
+                "record": {
+                  "id": "cns_00000000000000000000000002",
+                  "purpose": "analytics",
+                  "status": "withdrawn",
+                  "policyVersion": "0.1.0-draft",
+                  "withdrawnAt": "2026-10-21T10:01:00Z",
+                  "surface": "settings_privacy",
+                  "locale": "en-GB"
+                }
+              },
+              {
+                "purpose": "ai_generative",
+                "granted": false,
+                "withdrawable": true
+              },
+              {
+                "purpose": "notifications",
+                "granted": false,
+                "withdrawable": true
+              },
+              {
+                "purpose": "training_data",
+                "granted": false,
+                "withdrawable": true
+              }
+            ],
+            "nextCursor": null
+          }
+        ]
+      },
+      "ConsentChange": {
+        "type": "object",
+        "description": "One consent decision; `locale` is the language of the text the person saw.",
+        "additionalProperties": false,
+        "required": ["purpose", "status", "policyVersion", "surface", "locale"],
+        "properties": {
+          "purpose": {
+            "$ref": "#/components/schemas/ConsentPurpose"
+          },
+          "status": {
+            "$ref": "#/components/schemas/ConsentStatus"
+          },
+          "policyVersion": {
+            "$ref": "#/components/schemas/PolicyVersion"
+          },
+          "surface": {
+            "$ref": "#/components/schemas/ConsentSurface"
+          },
+          "locale": {
+            "$ref": "#/components/schemas/Locale"
+          }
+        }
+      },
+      "DataExportId": {
+        "type": "string",
+        "description": "Data-export id, a prefixed ULID (`xpt_`, shared-kernel `ID_PREFIXES.exportRequest`).",
+        "pattern": "^xpt_[0-7][0-9A-HJKMNP-TV-Z]{25}$",
+        "examples": ["xpt_01J9Z3K8X2Q7N5V4B6C8D0E1F5"]
+      },
+      "DataExportStatus": {
+        "type": "string",
+        "description": "`in_progress` until the archive is built; then `ready` until `availableUntil`, when the\narchive is deleted and the export becomes `expired`. `failed` when it could not be\nbuilt: nothing is kept, and the person may request a new export.\n",
+        "enum": ["in_progress", "ready", "failed", "expired"]
+      },
+      "DataExportDownload": {
+        "type": "object",
+        "description": "Present only while the export is `ready`. Minted for this response; never stored by the server.",
+        "required": ["url", "expiresAt"],
+        "properties": {
+          "url": {
+            "type": "string",
+            "format": "uri",
+            "description": "Presigned GET of the archive, minted after the same authorization check as the\nexport (doc 11 §13.1). It carries a live signature: never log, share or store it\n(doc 11 §8). Read the export again for a fresh link.\n"
+          },
+          "expiresAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "When the link stops working, at most 10 minutes after it was minted (DEC-44, doc 11 §5.4)."
+          }
+        }
+      },
+      "DataExport": {
+        "type": "object",
+        "description": "One data export of the caller (doc 11 §13.1): a ZIP archive of the caller's data in\nmachine-readable JSON plus the media they uploaded. This object never carries archive\ncontent.\n",
+        "required": ["id", "status", "requestedAt"],
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/DataExportId"
+          },
+          "status": {
+            "$ref": "#/components/schemas/DataExportStatus"
+          },
+          "requestedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "readyAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "When the archive was built; present for `ready` and `expired`."
+          },
+          "availableUntil": {
+            "type": "string",
+            "format": "date-time",
+            "description": "When the archive is deleted, 24 hours after `readyAt` (doc 11 §13.1); present for\n`ready` and `expired`. This is how long the archive is kept, not how long a link\nworks: every read of a `ready` export mints a new link.\n"
+          },
+          "download": {
+            "$ref": "#/components/schemas/DataExportDownload"
+          }
+        }
+      },
+      "DataExportInProgress": {
+        "description": "A problem (RFC 9457) that carries the running export when an export is already in progress.",
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/ProblemDetails"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "current": {
+                "$ref": "#/components/schemas/DataExport"
+              }
+            }
+          }
+        ]
+      },
+      "AccountDeletionRequestId": {
+        "type": "string",
+        "description": "Account-deletion request id, a prefixed ULID (`del_`, shared-kernel `ID_PREFIXES.deletionRequest`).",
+        "pattern": "^del_[0-7][0-9A-HJKMNP-TV-Z]{25}$",
+        "examples": ["del_01J9Z3K8X2Q7N5V4B6C8D0E1F6"]
+      },
+      "AccountDeletionRequest": {
+        "type": "object",
+        "description": "An accepted account-deletion request (doc 11 §13.2).",
+        "required": ["id", "requestedAt", "graceEndsAt"],
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/AccountDeletionRequestId"
+          },
+          "requestedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "graceEndsAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "End of the 7-day grace window (DEC-65). Until then a sign-in offers to cancel the\ndeletion; after it the purge runs, and a cancel is refused with 410 `ACCOUNT_DELETED`.\n"
+          }
+        }
+      },
+      "ProfileId": {
+        "type": "string",
+        "description": "Profile id, a prefixed ULID (`prf_`, shared-kernel `ID_PREFIXES.profile`).",
+        "pattern": "^prf_[0-7][0-9A-HJKMNP-TV-Z]{25}$",
+        "examples": ["prf_01J9Z3K8X2Q7N5V4B6C8D0E1F4"]
+      },
+      "ResourceVersion": {
+        "type": "integer",
+        "minimum": 0,
+        "description": "Version of the resource (doc 06 §2). It grows by one with every accepted write; 0 means\nnothing has been written yet. Send it back as `If-Match: \"<version>\"`.\n"
+      },
+      "Presentation": {
+        "type": "string",
+        "description": "Presentation the person chooses (doc 03 §1.2, doc 07 §3.1); never inferred, and it never\nlimits which starting shape or measurements are valid. Default `unspecified`. Mirrors\nshared-kernel `PRESENTATIONS`.\n",
+        "enum": ["feminine", "masculine", "androgynous", "unspecified"]
+      },
+      "StartingShapeId": {
+        "type": "string",
+        "description": "Id of the starting shape the avatar begins from (doc 07 §3.1), the base-model selection\nof onboarding. One of the shapes of the shared-kernel registry\n`registry/starting-shapes.json`; the server refuses any other id with 400\n`VALIDATION_FAILED`. Default `from_measurements`. An id string, not an enum, so that a\nshape can be added or retired (P04) without a breaking contract change. The base mesh\nall shapes share is a kernel constant and is not stored per person.\n",
+        "pattern": "^[a-z][a-z0-9_]{0,63}$",
+        "examples": ["from_measurements"]
+      },
+      "UnitSystem": {
+        "type": "string",
+        "description": "How the apps show measurements; it never changes what the API stores or returns (SI).\nMirrors shared-kernel `UNIT_SYSTEMS`.\n",
+        "enum": ["metric", "imperial"]
+      },
+      "TimeZone": {
+        "type": "string",
+        "description": "IANA time zone name, e.g. `Europe/Berlin`.",
+        "pattern": "^[A-Za-z][A-Za-z0-9_+-]*(/[A-Za-z0-9_+-]+)*$",
+        "maxLength": 64,
+        "examples": ["Europe/Berlin"]
+      },
+      "RegionCode": {
+        "type": "string",
+        "description": "ISO 3166-1 alpha-2 region code, e.g. `DE`. A setting the person chooses, not a location.",
+        "pattern": "^[A-Z]{2}$",
+        "examples": ["DE"]
+      },
+      "AccessibilitySettings": {
+        "type": "object",
+        "description": "Accessibility settings the apps apply (phase P03 §4). Both are `false` by default.",
+        "required": ["reducedMotion", "prefersNon3d"],
+        "properties": {
+          "reducedMotion": {
+            "type": "boolean",
+            "description": "Show no motion that is not needed to understand the screen."
+          },
+          "prefersNon3d": {
+            "type": "boolean",
+            "description": "Prefer flat images to 3D views wherever the app offers both."
+          }
+        }
+      },
+      "Profile": {
+        "type": "object",
+        "description": "The caller's profile settings. `presentation` and `startingShape` are independent: any\npresentation goes with any starting shape (REQ-ONB-050). The six settings of REQ-ONB-100\nare `locale` (formats dates and numbers, e.g. `en-GB`), `language` (the language of the\napp's text, e.g. `en`), `unitSystem`, `timezone`, `region` and `accessibility`. The first\nfive are absent until the person confirms them in onboarding (step \"units and locale\";\nthe app pre-fills them from the device), and are edited, not removed, after that.\n",
+        "required": ["id", "version", "presentation", "startingShape", "accessibility"],
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/ProfileId"
+          },
+          "version": {
+            "$ref": "#/components/schemas/ResourceVersion"
+          },
+          "presentation": {
+            "$ref": "#/components/schemas/Presentation"
+          },
+          "startingShape": {
+            "$ref": "#/components/schemas/StartingShapeId"
+          },
+          "locale": {
+            "$ref": "#/components/schemas/Locale"
+          },
+          "language": {
+            "$ref": "#/components/schemas/Locale"
+          },
+          "unitSystem": {
+            "$ref": "#/components/schemas/UnitSystem"
+          },
+          "timezone": {
+            "$ref": "#/components/schemas/TimeZone"
+          },
+          "region": {
+            "$ref": "#/components/schemas/RegionCode"
+          },
+          "accessibility": {
+            "$ref": "#/components/schemas/AccessibilitySettings"
+          }
+        }
+      },
+      "ProfileUpdate": {
+        "type": "object",
+        "description": "Partial update of `Profile`: each member present replaces its stored value. `presentation`\nreturns to its default by sending `unspecified`, `startingShape` by sending\n`from_measurements`.\n",
+        "additionalProperties": false,
+        "minProperties": 1,
+        "properties": {
+          "presentation": {
+            "$ref": "#/components/schemas/Presentation"
+          },
+          "startingShape": {
+            "$ref": "#/components/schemas/StartingShapeId"
+          },
+          "locale": {
+            "$ref": "#/components/schemas/Locale"
+          },
+          "language": {
+            "$ref": "#/components/schemas/Locale"
+          },
+          "unitSystem": {
+            "$ref": "#/components/schemas/UnitSystem"
+          },
+          "timezone": {
+            "$ref": "#/components/schemas/TimeZone"
+          },
+          "region": {
+            "$ref": "#/components/schemas/RegionCode"
+          },
+          "accessibility": {
+            "$ref": "#/components/schemas/AccessibilitySettings"
+          }
+        }
+      },
+      "ProfileVersionConflict": {
+        "description": "A problem (RFC 9457) that carries the stored profile when `code` is `VERSION_MISMATCH`.",
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/ProblemDetails"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "current": {
+                "$ref": "#/components/schemas/Profile"
+              }
+            }
+          }
+        ]
+      },
+      "MeasurementConfidence": {
+        "type": "number",
+        "description": "Confidence in the value, from 0 to 1.",
+        "minimum": 0,
+        "maximum": 1
+      },
+      "LengthUnit": {
+        "type": "string",
+        "description": "Stored length unit. Mirrors shared-kernel `LENGTH_UNITS`.",
+        "enum": ["cm"]
+      },
+      "MeasurementSource": {
+        "type": "string",
+        "description": "Who produced the value (doc 06 §3.1): the person (`user`), an estimate, or a value\nderived from other values. Mirrors shared-kernel `MEASUREMENT_SOURCES`.\n",
+        "enum": ["user", "estimated", "derived"]
+      },
+      "LengthMeasurement": {
+        "type": "object",
+        "description": "A body length in centimetres with its provenance (doc 06 §3.1). The schema requires\n`confidence` when `source` is `estimated` or `derived`; it is optional for `user`.\n",
+        "required": ["value", "unit", "source"],
+        "properties": {
+          "value": {
+            "type": "number",
+            "description": "The length, in `unit`."
+          },
+          "unit": {
+            "$ref": "#/components/schemas/LengthUnit"
+          },
+          "source": {
+            "$ref": "#/components/schemas/MeasurementSource"
+          },
+          "confidence": {
+            "$ref": "#/components/schemas/MeasurementConfidence"
+          },
+          "measuredAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "When the value was taken or entered."
+          }
+        },
+        "if": {
+          "type": "object",
+          "required": ["source"],
+          "properties": {
+            "source": {
+              "enum": ["estimated", "derived"]
+            }
+          }
+        },
+        "then": {
+          "type": "object",
+          "required": ["confidence"],
+          "properties": {
+            "confidence": {
+              "$ref": "#/components/schemas/MeasurementConfidence"
+            }
+          }
+        },
+        "examples": [
+          {
+            "value": 176,
+            "unit": "cm",
+            "source": "user"
+          },
+          {
+            "value": 176,
+            "unit": "cm",
+            "source": "estimated",
+            "confidence": 0.6
+          },
+          {
+            "value": 176,
+            "unit": "cm",
+            "source": "derived",
+            "confidence": 0.8
+          }
+        ]
+      },
+      "MassUnit": {
+        "type": "string",
+        "description": "Stored mass unit. Mirrors shared-kernel `MASS_UNITS`.",
+        "enum": ["kg"]
+      },
+      "MassMeasurement": {
+        "type": "object",
+        "description": "A body mass in kilograms with its provenance (doc 06 §3.1). The schema requires\n`confidence` when `source` is `estimated` or `derived`; it is optional for `user`.\n",
+        "required": ["value", "unit", "source"],
+        "properties": {
+          "value": {
+            "type": "number",
+            "description": "The mass, in `unit`."
+          },
+          "unit": {
+            "$ref": "#/components/schemas/MassUnit"
+          },
+          "source": {
+            "$ref": "#/components/schemas/MeasurementSource"
+          },
+          "confidence": {
+            "$ref": "#/components/schemas/MeasurementConfidence"
+          },
+          "measuredAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "When the value was taken or entered."
+          }
+        },
+        "if": {
+          "type": "object",
+          "required": ["source"],
+          "properties": {
+            "source": {
+              "enum": ["estimated", "derived"]
+            }
+          }
+        },
+        "then": {
+          "type": "object",
+          "required": ["confidence"],
+          "properties": {
+            "confidence": {
+              "$ref": "#/components/schemas/MeasurementConfidence"
+            }
+          }
+        }
+      },
+      "BodyMeasurements": {
+        "type": "object",
+        "description": "The ten body measurements of doc 07 §3.3, each optional: an absent one has not been\ngiven. Their ids, units and hard bounds are shared-kernel registry data\n(`registry/measurement-definitions.json`); a value outside its bounds is refused with\n400 `MEASUREMENT_IMPLAUSIBLE` and never stored.\n",
+        "properties": {
+          "height": {
+            "$ref": "#/components/schemas/LengthMeasurement"
+          },
+          "weight": {
+            "$ref": "#/components/schemas/MassMeasurement"
+          },
+          "chest": {
+            "$ref": "#/components/schemas/LengthMeasurement"
+          },
+          "waist": {
+            "$ref": "#/components/schemas/LengthMeasurement"
+          },
+          "hips": {
+            "$ref": "#/components/schemas/LengthMeasurement"
+          },
+          "inseam": {
+            "$ref": "#/components/schemas/LengthMeasurement"
+          },
+          "shoulder": {
+            "$ref": "#/components/schemas/LengthMeasurement"
+          },
+          "sleeve": {
+            "$ref": "#/components/schemas/LengthMeasurement"
+          },
+          "thigh": {
+            "$ref": "#/components/schemas/LengthMeasurement"
+          },
+          "neck": {
+            "$ref": "#/components/schemas/LengthMeasurement"
+          }
+        }
+      },
+      "MeasurementSet": {
+        "type": "object",
+        "description": "The caller's current measurement set (doc 03 §1.2). Each value is SI with its unit and\nsource; `unitSystem` changes only how an app shows it.\n",
+        "required": ["version", "measurements"],
+        "properties": {
+          "version": {
+            "$ref": "#/components/schemas/ResourceVersion"
+          },
+          "measurements": {
+            "$ref": "#/components/schemas/BodyMeasurements"
+          }
+        }
+      },
+      "MeasurementsReplacement": {
+        "type": "object",
+        "description": "The whole new measurement set; a measurement left out is removed.",
+        "additionalProperties": false,
+        "required": ["measurements"],
+        "properties": {
+          "measurements": {
+            "$ref": "#/components/schemas/BodyMeasurements"
+          }
+        }
+      },
+      "MeasurementSetVersionConflict": {
+        "description": "A problem (RFC 9457) that carries the stored measurement set when `code` is `VERSION_MISMATCH`.",
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/ProblemDetails"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "current": {
+                "$ref": "#/components/schemas/MeasurementSet"
+              }
+            }
+          }
+        ]
+      },
+      "FitChoice": {
+        "type": "string",
+        "description": "Mirrors shared-kernel `FIT_CHOICES`.",
+        "enum": ["fitted", "regular", "relaxed", "oversized"]
+      },
+      "FitPreferences": {
+        "type": "object",
+        "description": "Preferred fit per garment group (doc 08 §4.2 `attr.cut`); a group with no choice is\nabsent. The keys are the shared-kernel `GARMENT_GROUPS` except `shoes`.\n",
+        "properties": {
+          "tops": {
+            "$ref": "#/components/schemas/FitChoice"
+          },
+          "bottoms": {
+            "$ref": "#/components/schemas/FitChoice"
+          },
+          "dresses": {
+            "$ref": "#/components/schemas/FitChoice"
+          },
+          "outerwear": {
+            "$ref": "#/components/schemas/FitChoice"
+          }
+        }
+      },
+      "StyleType": {
+        "type": "string",
+        "description": "Mirrors shared-kernel `STYLE_TYPES`.",
+        "enum": ["minimal", "classic", "smart_casual"]
+      },
+      "StyleTypeList": {
+        "type": "array",
+        "description": "The style types the person selected (style identity, doc 03 §1.2).",
+        "uniqueItems": true,
+        "items": {
+          "$ref": "#/components/schemas/StyleType"
+        }
+      },
+      "PreferenceKind": {
+        "type": "string",
+        "description": "Mirrors shared-kernel `PREFERENCE_KINDS`.",
+        "enum": ["material"]
+      },
+      "Material": {
+        "type": "string",
+        "description": "Material values of doc 08 §4.1 `attr.material`. Mirrors shared-kernel `MATERIALS`.",
+        "enum": [
+          "cotton",
+          "linen",
+          "wool",
+          "cashmere",
+          "silk",
+          "denim",
+          "leather",
+          "suede",
+          "synthetic",
+          "blend",
+          "knit",
+          "down",
+          "canvas",
+          "metal",
+          "other"
+        ]
+      },
+      "PreferenceItem": {
+        "type": "object",
+        "description": "One soft dislike or hard exclusion. `kind` names the list `value` comes from; the only\nkind is `material`.\n",
+        "required": ["kind", "value"],
+        "properties": {
+          "kind": {
+            "$ref": "#/components/schemas/PreferenceKind"
+          },
+          "value": {
+            "$ref": "#/components/schemas/Material"
+          }
+        }
+      },
+      "PreferenceItemList": {
+        "type": "array",
+        "uniqueItems": true,
+        "items": {
+          "$ref": "#/components/schemas/PreferenceItem"
+        }
+      },
+      "ClimateTolerance": {
+        "type": "string",
+        "description": "How warm or cold the person usually feels (REQ-ONB-070). Mirrors shared-kernel `CLIMATE_TOLERANCES`.",
+        "enum": ["runs_cold", "neutral", "runs_hot"]
+      },
+      "OccasionPreset": {
+        "type": "string",
+        "description": "Occasion presets (doc 03 §1.7). As `typicalDay`, the occasion suggestions use whenever\nthe person selects none (DEC-71). Mirrors shared-kernel `OCCASION_PRESETS`.\n",
+        "enum": ["work_day", "dinner", "travel", "sport"]
+      },
+      "OccasionPresetList": {
+        "type": "array",
+        "description": "The occasions the person selected in onboarding.",
+        "uniqueItems": true,
+        "items": {
+          "$ref": "#/components/schemas/OccasionPreset"
+        }
+      },
+      "SizeSystem": {
+        "type": "string",
+        "description": "Label size systems (doc 08 §5). Mirrors shared-kernel `SIZE_SYSTEMS`.",
+        "enum": ["EU", "US", "UK", "ALPHA"]
+      },
+      "GarmentGroup": {
+        "type": "string",
+        "description": "Top-level garment groups (doc 08 §3 `cat.*`). Mirrors shared-kernel `GARMENT_GROUPS`.",
+        "enum": ["tops", "bottoms", "dresses", "outerwear", "shoes"]
+      },
+      "UsualSize": {
+        "type": "object",
+        "description": "A usual label size in one size system for one garment group (doc 08 §5).",
+        "required": ["system", "group", "size"],
+        "properties": {
+          "system": {
+            "$ref": "#/components/schemas/SizeSystem"
+          },
+          "group": {
+            "$ref": "#/components/schemas/GarmentGroup"
+          },
+          "size": {
+            "type": "string",
+            "description": "The label size as written, e.g. `39`, `M` or `10.5`.",
+            "minLength": 1,
+            "maxLength": 8,
+            "pattern": "^[A-Za-z0-9./ -]+$",
+            "examples": ["39", "M", "10.5"]
+          }
+        }
+      },
+      "UsualSizeList": {
+        "type": "array",
+        "description": "The person's usual label sizes, at most one per size system and garment group (one entry\nfor each pair of `SizeSystem` and `GarmentGroup`). No size per brand.\n",
+        "maxItems": 20,
+        "uniqueItems": true,
+        "items": {
+          "$ref": "#/components/schemas/UsualSize"
+        }
+      },
+      "Preferences": {
+        "type": "object",
+        "description": "The caller's style preferences. Hard exclusions are never broken by a suggestion; soft\ndislikes only lower a score (REQ-ONB-060, doc 03 §1.2). An unset `climateTolerance`\ncounts as `neutral`.\n",
+        "required": [
+          "version",
+          "fitPreferences",
+          "styleTypes",
+          "softDislikes",
+          "hardExclusions",
+          "occasionPresets",
+          "sizingByRegion"
+        ],
+        "properties": {
+          "version": {
+            "$ref": "#/components/schemas/ResourceVersion"
+          },
+          "fitPreferences": {
+            "$ref": "#/components/schemas/FitPreferences"
+          },
+          "styleTypes": {
+            "$ref": "#/components/schemas/StyleTypeList"
+          },
+          "softDislikes": {
+            "$ref": "#/components/schemas/PreferenceItemList"
+          },
+          "hardExclusions": {
+            "$ref": "#/components/schemas/PreferenceItemList"
+          },
+          "climateTolerance": {
+            "$ref": "#/components/schemas/ClimateTolerance"
+          },
+          "occasionPresets": {
+            "$ref": "#/components/schemas/OccasionPresetList"
+          },
+          "typicalDay": {
+            "$ref": "#/components/schemas/OccasionPreset"
+          },
+          "sizingByRegion": {
+            "$ref": "#/components/schemas/UsualSizeList"
+          }
+        }
+      },
+      "ClearablePreference": {
+        "type": "string",
+        "description": "A `Preferences` member that holds one optional value and can be removed.",
+        "enum": ["climateTolerance", "typicalDay"]
+      },
+      "PreferencesUpdate": {
+        "type": "object",
+        "description": "Partial update of `Preferences`: each member present replaces its stored value whole. A\nmember may not be both set and named in `clear`.\n",
+        "additionalProperties": false,
+        "minProperties": 1,
+        "properties": {
+          "fitPreferences": {
+            "$ref": "#/components/schemas/FitPreferences"
+          },
+          "styleTypes": {
+            "$ref": "#/components/schemas/StyleTypeList"
+          },
+          "softDislikes": {
+            "$ref": "#/components/schemas/PreferenceItemList"
+          },
+          "hardExclusions": {
+            "$ref": "#/components/schemas/PreferenceItemList"
+          },
+          "climateTolerance": {
+            "$ref": "#/components/schemas/ClimateTolerance"
+          },
+          "occasionPresets": {
+            "$ref": "#/components/schemas/OccasionPresetList"
+          },
+          "typicalDay": {
+            "$ref": "#/components/schemas/OccasionPreset"
+          },
+          "sizingByRegion": {
+            "$ref": "#/components/schemas/UsualSizeList"
+          },
+          "clear": {
+            "type": "array",
+            "description": "Optional single values to remove.",
+            "minItems": 1,
+            "uniqueItems": true,
+            "items": {
+              "$ref": "#/components/schemas/ClearablePreference"
+            }
+          }
+        }
+      },
+      "PreferencesVersionConflict": {
+        "description": "A problem (RFC 9457) that carries the stored preferences when `code` is `VERSION_MISMATCH`.",
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/ProblemDetails"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "current": {
+                "$ref": "#/components/schemas/Preferences"
+              }
+            }
+          }
+        ]
+      },
+      "OnboardingStepStatus": {
+        "type": "string",
+        "description": "`pending` until the person completes or skips the step; it never returns to `pending`.",
+        "enum": ["pending", "completed", "skipped"]
+      },
+      "OnboardingStepState": {
+        "type": "object",
+        "required": ["required", "status"],
+        "properties": {
+          "required": {
+            "type": "boolean",
+            "description": "True when onboarding cannot finish without this step; only optional steps offer Skip."
+          },
+          "status": {
+            "$ref": "#/components/schemas/OnboardingStepStatus"
+          }
+        }
+      },
+      "OnboardingSteps": {
+        "type": "object",
+        "description": "One entry per onboarding step, keyed by step; the keys are the `OnboardingStep` values in\ncamelCase. `signIn` is completed by the server when the account is created.\n",
+        "required": [
+          "welcome",
+          "signIn",
+          "coreConsents",
+          "unitsLocale",
+          "presentationBaseModel",
+          "heightWeight",
+          "additionalMeasurements",
+          "fitStylePreferences",
+          "lifestyleOccasions",
+          "firstCaptureNudge"
+        ],
+        "properties": {
+          "welcome": {
+            "$ref": "#/components/schemas/OnboardingStepState"
+          },
+          "signIn": {
+            "$ref": "#/components/schemas/OnboardingStepState"
+          },
+          "coreConsents": {
+            "$ref": "#/components/schemas/OnboardingStepState"
+          },
+          "unitsLocale": {
+            "$ref": "#/components/schemas/OnboardingStepState"
+          },
+          "presentationBaseModel": {
+            "$ref": "#/components/schemas/OnboardingStepState"
+          },
+          "heightWeight": {
+            "$ref": "#/components/schemas/OnboardingStepState"
+          },
+          "additionalMeasurements": {
+            "$ref": "#/components/schemas/OnboardingStepState"
+          },
+          "fitStylePreferences": {
+            "$ref": "#/components/schemas/OnboardingStepState"
+          },
+          "lifestyleOccasions": {
+            "$ref": "#/components/schemas/OnboardingStepState"
+          },
+          "firstCaptureNudge": {
+            "$ref": "#/components/schemas/OnboardingStepState"
+          }
+        }
+      },
+      "OnboardingStep": {
+        "type": "string",
+        "description": "Onboarding steps of doc 02 §3.2, in flow order.",
+        "enum": [
+          "welcome",
+          "sign_in",
+          "core_consents",
+          "units_locale",
+          "presentation_base_model",
+          "height_weight",
+          "additional_measurements",
+          "fit_style_preferences",
+          "lifestyle_occasions",
+          "first_capture_nudge"
+        ]
+      },
+      "OnboardingProgress": {
+        "type": "object",
+        "description": "Per-step onboarding progress (doc 02 §3.2), kept on the server so the app resumes after\na quit or a crash. `nextRequiredStep` is the first required step not yet completed; the\napp resumes there, and opens Today when it is absent.\n",
+        "required": ["steps"],
+        "properties": {
+          "steps": {
+            "$ref": "#/components/schemas/OnboardingSteps"
+          },
+          "nextRequiredStep": {
+            "$ref": "#/components/schemas/OnboardingStep"
+          }
+        }
+      },
+      "OnboardingStepOutcome": {
+        "type": "string",
+        "description": "`skipped` is refused for a required step.",
+        "enum": ["completed", "skipped"]
+      },
+      "OnboardingStepsUpdate": {
+        "type": "object",
+        "description": "The outcome of each step present; an absent step is left unchanged.",
+        "additionalProperties": false,
+        "minProperties": 1,
+        "properties": {
+          "welcome": {
+            "$ref": "#/components/schemas/OnboardingStepOutcome"
+          },
+          "signIn": {
+            "$ref": "#/components/schemas/OnboardingStepOutcome"
+          },
+          "coreConsents": {
+            "$ref": "#/components/schemas/OnboardingStepOutcome"
+          },
+          "unitsLocale": {
+            "$ref": "#/components/schemas/OnboardingStepOutcome"
+          },
+          "presentationBaseModel": {
+            "$ref": "#/components/schemas/OnboardingStepOutcome"
+          },
+          "heightWeight": {
+            "$ref": "#/components/schemas/OnboardingStepOutcome"
+          },
+          "additionalMeasurements": {
+            "$ref": "#/components/schemas/OnboardingStepOutcome"
+          },
+          "fitStylePreferences": {
+            "$ref": "#/components/schemas/OnboardingStepOutcome"
+          },
+          "lifestyleOccasions": {
+            "$ref": "#/components/schemas/OnboardingStepOutcome"
+          },
+          "firstCaptureNudge": {
+            "$ref": "#/components/schemas/OnboardingStepOutcome"
+          }
+        }
+      },
+      "OnboardingProgressUpdate": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["steps"],
+        "properties": {
+          "steps": {
+            "$ref": "#/components/schemas/OnboardingStepsUpdate"
+          }
+        }
+      },
+      "EntitlementLifecycleState": {
+        "type": "string",
+        "description": "Lifecycle state of the caller's entitlements (doc 03 §4.3): the server-granted trial,\nFree, a paid subscription, its billing-retry grace period, or a cancelled subscription\nstill paid until its period ends. Mirrors shared-kernel `ENTITLEMENT_LIFECYCLE_STATES`.\n",
+        "enum": ["trial", "free", "active_paid", "grace", "cancelled_active"]
+      },
+      "EntitlementName": {
+        "type": "string",
+        "description": "Entitlement names (doc 12 §3.1), in registry order. Mirrors the keys of shared-kernel\n`ENTITLEMENTS` value for value. Each name's kind and, for a `level` entitlement, its\nlevel order live in the shared-kernel entitlement registry (`registry/entitlements.json`).\nTypeScript reads both generated. Swift and Kotlin read the kind from the generated\nkernel, and the level order once the kernel emitter covers it.\n",
+        "enum": [
+          "closet.max_items",
+          "recs.daily_limit",
+          "recs.context.full",
+          "recs.future_planning",
+          "avatar.level",
+          "tryon.generative",
+          "views.missing_view",
+          "credits.monthly",
+          "credits.topup",
+          "credits.weights",
+          "trends.level",
+          "analytics.wardrobe",
+          "processing.priority",
+          "export.multi_angle",
+          "features.early_access",
+          "chat.stylist",
+          "data.export"
+        ]
+      },
+      "EntitlementGrantKind": {
+        "type": "string",
+        "description": "The kind of grant that supplied the value (doc 12 §3.2): the subscription's plan, the\n3-day trial (doc 12 §2), a promotion, or a capability kept from an older plan version\n(doc 12 §5.5). Absent from a `ResolvedEntitlement` when no active grant supplies the\nentitlement and its Free-plan value applies. Mirrors shared-kernel\n`ENTITLEMENT_GRANT_KINDS`.\n",
+        "enum": ["plan_grant", "trial_grant", "promo_grant", "grandfather_grant"]
+      },
+      "EntitlementLevel": {
+        "type": "string",
+        "description": "One of the levels the shared-kernel registry lists for the entitlement\n(`registry/entitlements.json`, `levels`, lowest first), e.g. `G2` for\n`tryon.generative`. A string, not an enum, because each level entitlement has levels of\nits own.\n",
+        "pattern": "^[A-Za-z0-9]+(_[a-z0-9]+)*$",
+        "maxLength": 32,
+        "examples": ["G2"]
+      },
+      "ResolvedEntitlement": {
+        "type": "object",
+        "description": "The resolved value of one entitlement. The value member present follows the kind of\n`name` in the shared-kernel registry (`registry/entitlements.json`): `boolean` →\n`granted`, always present; `limit` → `limit`, always present; `level` → `level`, absent\nwhen no level is granted; `map` (`credits.weights`) → none yet, the weights join with the\ncredit ledger (P13).\n",
+        "required": ["name"],
+        "properties": {
+          "name": {
+            "$ref": "#/components/schemas/EntitlementName"
+          },
+          "source": {
+            "$ref": "#/components/schemas/EntitlementGrantKind"
+          },
+          "granted": {
+            "type": "boolean",
+            "description": "`boolean` kind: whether the capability is available."
+          },
+          "limit": {
+            "type": ["integer", "null"],
+            "minimum": 0,
+            "description": "`limit` kind: the cap, e.g. closet items or recommendations per local day. `null`\nmeans unlimited (doc 06 §3.6).\n"
+          },
+          "level": {
+            "$ref": "#/components/schemas/EntitlementLevel"
+          }
+        }
+      },
+      "EntitlementState": {
+        "type": "object",
+        "description": "The caller's entitlement state (doc 06 §3.6; semantics doc 12 §2–§3). `state` is the\nlifecycle state of doc 03 §4.3. Generative credits (doc 12 §4) join this object with the\ncredit ledger (P13).\n",
+        "required": ["state", "entitlements"],
+        "properties": {
+          "state": {
+            "$ref": "#/components/schemas/EntitlementLifecycleState"
+          },
+          "stateEndsAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "When `state` ends unless something changes: the end of the trial for `trial`, the end\nof paid access for `grace` and `cancelled_active`. Absent for `free` and `active_paid`,\nwhich do not end on their own.\n"
+          },
+          "entitlements": {
+            "type": "array",
+            "description": "One entry per registered entitlement, in shared-kernel registry order.",
+            "items": {
+              "$ref": "#/components/schemas/ResolvedEntitlement"
+            }
+          }
+        }
       }
     },
     "responses": {
@@ -200,6 +3410,222 @@
               "$ref": "#/components/schemas/ProblemDetails"
             }
           }
+        }
+      },
+      "SignInAnswer": {
+        "description": "The outcome of a sign-in (see `SignInResult`)",
+        "headers": {
+          "Cache-Control": {
+            "$ref": "#/components/headers/CacheControlNoStore"
+          }
+        },
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/SignInResult"
+            }
+          }
+        }
+      },
+      "SignInRefused": {
+        "description": "`UNAUTHENTICATED`: the identity token or passkey assertion was not accepted.",
+        "content": {
+          "application/problem+json": {
+            "schema": {
+              "$ref": "#/components/schemas/ProblemDetails"
+            }
+          }
+        }
+      },
+      "Conflict": {
+        "description": "`IDEMPOTENCY_KEY_REUSED` when the `Idempotency-Key` was already used with a different\nrequest; `VERSION_MISMATCH` when `If-Match` no longer matches the stored version;\n`CONFLICT` otherwise. Exception: on an operation whose answer carries a credential\n(marked `x-idempotency-replay: never`), any repeated `Idempotency-Key` is refused with\n`CONFLICT`, never answered from the store, and the client starts that step again.\n",
+        "content": {
+          "application/problem+json": {
+            "schema": {
+              "$ref": "#/components/schemas/ProblemDetails"
+            }
+          }
+        }
+      },
+      "RateLimited": {
+        "description": "`RATE_LIMITED`: a rate limit was hit (doc 11 §14); retry after `Retry-After` seconds.",
+        "headers": {
+          "Retry-After": {
+            "$ref": "#/components/headers/RetryAfter"
+          }
+        },
+        "content": {
+          "application/problem+json": {
+            "schema": {
+              "$ref": "#/components/schemas/ProblemDetails"
+            }
+          }
+        }
+      },
+      "Unauthenticated": {
+        "description": "`UNAUTHENTICATED`: the access token is missing, malformed, expired or revoked. The\nclient renews the session once with its refresh token (`refreshSession`); if the renewal\nis refused too, it signs in again.\n",
+        "content": {
+          "application/problem+json": {
+            "schema": {
+              "$ref": "#/components/schemas/ProblemDetails"
+            }
+          }
+        }
+      },
+      "RecentSignInRequired": {
+        "description": "`FORBIDDEN`: re-authentication is needed. The operation needs a recent sign-in: the\nsession must have been opened by a sign-in a short time ago (better-auth `freshAge`; the\nserver sets the window). Recency counts from the sign-in that opened the session; a\nrenewal with `refreshSession` never resets it. The client signs in again with the same\naccount and repeats the request.\n",
+        "content": {
+          "application/problem+json": {
+            "schema": {
+              "$ref": "#/components/schemas/ProblemDetails"
+            }
+          }
+        }
+      },
+      "AccountDeleted": {
+        "description": "`ACCOUNT_DELETED`: the account is deleted or its deletion is in progress. The client\nerases everything it stores for the account and returns to its signed-out start; it\ntells this reply from 401 by the status alone. A 410 is cacheable by default\n(RFC 9110 §15.5.11), so the reply carries `Cache-Control: no-store` and must not be\ncached.\n",
+        "headers": {
+          "Cache-Control": {
+            "$ref": "#/components/headers/CacheControlNoStore"
+          }
+        },
+        "content": {
+          "application/problem+json": {
+            "schema": {
+              "$ref": "#/components/schemas/ProblemDetails"
+            }
+          }
+        }
+      },
+      "Forbidden": {
+        "description": "The caller is authenticated but may not perform this operation. `code` is `FORBIDDEN`\nunless the operation names a more specific code for this status.\n",
+        "content": {
+          "application/problem+json": {
+            "schema": {
+              "$ref": "#/components/schemas/ProblemDetails"
+            }
+          }
+        }
+      },
+      "DataExportLimited": {
+        "description": "`RATE_LIMITED`: an export of this account is already in progress, and `current` is that\nexport (read it with `getDataExport`); or another rate limit was hit, without `current`.\n`current` is always `in_progress`, so it never carries `download`: a link is minted\nonly by `getDataExport`. Retry after `Retry-After` seconds (doc 11 §14).\n",
+        "headers": {
+          "Retry-After": {
+            "$ref": "#/components/headers/RetryAfter"
+          }
+        },
+        "content": {
+          "application/problem+json": {
+            "schema": {
+              "$ref": "#/components/schemas/DataExportInProgress"
+            }
+          }
+        }
+      },
+      "ProfileConflict": {
+        "description": "`VERSION_MISMATCH`: `If-Match` names an older version than the stored one. `current` is\nthe stored profile, so the app can keep the losing edit and offer to re-apply it on top\n(doc 04 §8). `IDEMPOTENCY_KEY_REUSED` or `CONFLICT` otherwise, without `current`.\n",
+        "content": {
+          "application/problem+json": {
+            "schema": {
+              "$ref": "#/components/schemas/ProfileVersionConflict"
+            }
+          }
+        }
+      },
+      "MeasurementSetConflict": {
+        "description": "`VERSION_MISMATCH`: `If-Match` names an older version than the stored one. `current` is\nthe stored measurement set, so the app can keep the losing edit and offer to re-apply it\non top (doc 04 §8). `IDEMPOTENCY_KEY_REUSED` or `CONFLICT` otherwise, without `current`.\n",
+        "headers": {
+          "Cache-Control": {
+            "$ref": "#/components/headers/CacheControlNoStore"
+          }
+        },
+        "content": {
+          "application/problem+json": {
+            "schema": {
+              "$ref": "#/components/schemas/MeasurementSetVersionConflict"
+            }
+          }
+        }
+      },
+      "PreferencesConflict": {
+        "description": "`VERSION_MISMATCH`: `If-Match` names an older version than the stored one. `current` is\nthe stored preferences, so the app can keep the losing edit and offer to re-apply it on\ntop (doc 04 §8). `IDEMPOTENCY_KEY_REUSED` or `CONFLICT` otherwise, without `current`.\n",
+        "content": {
+          "application/problem+json": {
+            "schema": {
+              "$ref": "#/components/schemas/PreferencesVersionConflict"
+            }
+          }
+        }
+      }
+    },
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "description": "Short-lived access token of a session (`SessionGrant.token`, about 15 minutes, doc 11\n§4.2), sent as `Authorization: Bearer <token>` (doc 06 §2). Opaque to clients: never\nparse it. It never renews a session; only the separate refresh token\n(`SessionGrant.refreshToken`) does, through `refreshSession`, and the refresh token is\nnever sent in this header. A missing, malformed, expired or revoked access token is\nanswered with the `Unauthenticated` (401) problem. The client then renews once with\n`refreshSession`; a refused renewal ends the session on the device.\n"
+      },
+      "deletionCancelToken": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "Deletion-Cancel-Token",
+        "description": "Cancel credential of the `deletion_pending` sign-in outcome\n(`DeletionPending.cancelToken`), sent in the `Deletion-Cancel-Token` header. Its only\nuse is `DELETE /v1/me/deletion`, the cancel of an account deletion inside its 7-day\ngrace window (DEC-65); every other operation refuses it. Single purpose, and valid for\nat most 15 minutes from issue, no longer than an access token (doc 11 §4.2); the exact\nexpiry is `DeletionPending.cancelTokenExpiresAt`. It opens no session. A header of its\nown, not `Authorization`, so it can never be taken for a session token.\n"
+      }
+    },
+    "parameters": {
+      "IdempotencyKey": {
+        "name": "Idempotency-Key",
+        "in": "header",
+        "description": "Client-generated ULID that makes a mutating request safe to retry (doc 06 §2; the\nmobile mutation-log `opId`). A key is scoped to the caller and the operation: the\nauthenticated principal, or for an operation with `security: []` the credential in its\nbody (for `requestAccountRecovery`, which carries none, the request hash alone). The\nserver keeps key, request hash and response for 48 h: a replay with the same body\nreturns the stored response; the same key with a different body is refused with 409\n`IDEMPOTENCY_KEY_REUSED`. Exception: an operation whose answer carries a credential\n(`SessionGrant.token`, `SessionGrant.refreshToken`, `DeletionPending.cancelToken`,\n`SignUpPending.token`) is never answered from the store, and its credential is never\nstored. Such an operation is marked `x-idempotency-replay: never`. A repeated key on it\nis refused with 409 `CONFLICT`, and the client starts that step again. Optional for the\ncaller.\n",
+        "schema": {
+          "type": "string",
+          "pattern": "^[0-7][0-9A-HJKMNP-TV-Z]{25}$"
+        }
+      },
+      "Cursor": {
+        "name": "cursor",
+        "in": "query",
+        "description": "Opaque cursor from the `nextCursor` of the previous page; omit for the first page.",
+        "schema": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 512
+        }
+      },
+      "Limit": {
+        "name": "limit",
+        "in": "query",
+        "description": "Page size (doc 06 §2 cursor pagination).",
+        "schema": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 100,
+          "default": 25
+        }
+      },
+      "IfMatch": {
+        "name": "If-Match",
+        "in": "header",
+        "required": true,
+        "description": "The `version` of the resource the client last read, as a quoted integer, e.g. `\"3\"`\n(doc 06 §2). Every write to a versioned resource sends it; a stale version is refused\nwith 409 `VERSION_MISMATCH`.\n",
+        "schema": {
+          "type": "string",
+          "pattern": "^\"[0-9]+\"$"
+        }
+      }
+    },
+    "headers": {
+      "CacheControlNoStore": {
+        "description": "Always `no-store`; the response must not be stored by any cache.",
+        "schema": {
+          "type": "string",
+          "enum": ["no-store"]
+        }
+      },
+      "RetryAfter": {
+        "description": "Seconds to wait before retrying (RFC 9110 §10.2.3, delay-seconds form).",
+        "schema": {
+          "type": "integer",
+          "minimum": 0
         }
       }
     }

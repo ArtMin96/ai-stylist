@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "Component contract",
-  "description": "One .impeccable/components/<id>.yaml file (ADR-0011 follow-up 7, DEC-87). Field rules: .impeccable/components/README.md. Checked by tools/codegen/tokens/contracts.mjs (rule CC-01); the cross-field rules CC-02 to CC-12 are in tools/codegen/tokens/README.md. Without `kind` it is a control contract (button); `kind: icon-set` is an icon set (C02).",
+  "description": "One .impeccable/components/<id>.yaml file (ADR-0011 follow-up 7, DEC-87). Field rules: .impeccable/components/README.md. Checked by tools/codegen/tokens/contracts.mjs (rule CC-01); the cross-field rules CC-02 to CC-18 are in tools/codegen/tokens/README.md. Without `kind` it is a control contract (button, chip); `kind: icon-set` is an icon set (C02).",
   "type": "object",
   "if": { "type": "object", "properties": { "kind": true }, "required": ["kind"] },
   "then": { "$ref": "#/$defs/iconSet" },
@@ -49,13 +49,27 @@
           "propertyNames": { "$ref": "#/$defs/kebab" },
           "additionalProperties": { "$ref": "#/$defs/variantTokens" }
         },
+        "icons": {
+          "type": "object",
+          "propertyNames": { "$ref": "#/$defs/kebab" },
+          "additionalProperties": { "$ref": "#/$defs/variantIcons" }
+        },
+        "parts": { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/part" } },
         "accessibility": {
           "type": "object",
           "additionalProperties": false,
-          "required": ["role", "label", "busy", "minTouchTarget"],
+          "required": ["role", "label"],
           "properties": {
-            "role": { "type": "string", "pattern": "^[a-z]+$" },
-            "label": { "type": "string", "pattern": "^\\{props\\.[a-z][A-Za-z0-9]*\\}$" },
+            "role": { "$ref": "#/$defs/role" },
+            "roles": {
+              "type": "object",
+              "minProperties": 1,
+              "propertyNames": { "$ref": "#/$defs/kebab" },
+              "additionalProperties": { "$ref": "#/$defs/role" }
+            },
+            "selection": { "$ref": "#/$defs/propReference" },
+            "label": { "$ref": "#/$defs/propReference" },
+            "labelOverride": { "$ref": "#/$defs/propReference" },
             "busy": { "$ref": "#/$defs/kebab" },
             "minTouchTarget": {
               "type": "object",
@@ -75,6 +89,18 @@
           "properties": {
             "title": { "$ref": "#/$defs/galleryTitle" },
             "label": { "type": "string", "minLength": 1 },
+            "labels": {
+              "type": "object",
+              "minProperties": 1,
+              "propertyNames": { "$ref": "#/$defs/kebab" },
+              "additionalProperties": { "type": "string", "minLength": 1 }
+            },
+            "props": {
+              "type": "object",
+              "minProperties": 1,
+              "propertyNames": { "$ref": "#/$defs/propName" },
+              "additionalProperties": { "type": "string", "minLength": 1 }
+            },
             "include": {
               "oneOf": [
                 { "type": "string", "const": "all" },
@@ -151,7 +177,25 @@
       "items": { "$ref": "#/$defs/kebab" }
     },
     "propName": { "type": "string", "pattern": "^[a-z][A-Za-z0-9]*$" },
-    "propType": { "type": "string", "enum": ["string", "bool", "icon", "action"] },
+    "propReference": { "type": "string", "pattern": "^\\{props\\.[a-z][A-Za-z0-9]*\\}$" },
+    "propType": {
+      "type": "string",
+      "enum": ["string", "bool", "icon", "action", "enum", "color", "colorRole"]
+    },
+    "role": {
+      "type": "string",
+      "enum": [
+        "button",
+        "toggle",
+        "radio",
+        "selectable",
+        "disclosure",
+        "menu",
+        "text",
+        "region",
+        "decorative"
+      ]
+    },
     "prop": {
       "oneOf": [
         {
@@ -161,6 +205,8 @@
           "properties": {
             "name": { "$ref": "#/$defs/propName" },
             "type": { "$ref": "#/$defs/propType" },
+            "values": { "$ref": "#/$defs/idList" },
+            "variants": { "$ref": "#/$defs/idList" },
             "required": { "type": "boolean", "const": true }
           }
         },
@@ -171,10 +217,29 @@
           "properties": {
             "name": { "$ref": "#/$defs/propName" },
             "type": { "$ref": "#/$defs/propType" },
+            "values": { "$ref": "#/$defs/idList" },
+            "variants": { "$ref": "#/$defs/idList" },
             "default": {}
           }
         }
       ]
+    },
+    "part": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "kind", "position"],
+      "properties": {
+        "name": { "$ref": "#/$defs/propName" },
+        "kind": { "type": "string", "enum": ["text", "swatch", "dot", "ring"] },
+        "position": {
+          "type": "string",
+          "enum": ["before-label", "after-label", "line", "outside"]
+        },
+        "separator": { "type": "string", "minLength": 1 },
+        "color": { "$ref": "#/$defs/propReference" },
+        "icon": { "type": "string", "const": "leading" },
+        "variants": { "$ref": "#/$defs/idList" }
+      }
     },
     "combination": {
       "type": "object",
@@ -202,6 +267,34 @@
         "base": { "$ref": "#/$defs/reference" },
         "states": { "$ref": "#/$defs/referenceMap" },
         "sizes": { "$ref": "#/$defs/referenceMap" }
+      }
+    },
+    "iconSource": {
+      "oneOf": [
+        { "type": "null" },
+        { "$ref": "#/$defs/kebab" },
+        { "type": "string", "pattern": "^\\{props\\.[a-z][A-Za-z0-9]*\\}$" }
+      ]
+    },
+    "slotIcons": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "leading": { "$ref": "#/$defs/iconSource" },
+        "trailing": { "$ref": "#/$defs/iconSource" }
+      }
+    },
+    "variantIcons": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "leading": { "$ref": "#/$defs/iconSource" },
+        "trailing": { "$ref": "#/$defs/iconSource" },
+        "states": {
+          "type": "object",
+          "propertyNames": { "$ref": "#/$defs/kebab" },
+          "additionalProperties": { "$ref": "#/$defs/slotIcons" }
+        }
       }
     },
     "galleryItem": {

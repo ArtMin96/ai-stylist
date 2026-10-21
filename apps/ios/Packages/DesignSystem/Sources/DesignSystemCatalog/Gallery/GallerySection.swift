@@ -29,6 +29,10 @@ nonisolated package struct GallerySection: Equatable, Sendable, Identifiable {
       switch component {
       case .button: .buttons(ComponentGallery.button)
       case .icon: .icons(AppIconName.allCases)
+      case .badge: .badges(ComponentGallery.badge)
+      case .chip: .chips(ComponentGallery.chip)
+      case .reasonRow: .reasonRows(ComponentGallery.reasonRow)
+      case .tag: .tags(ComponentGallery.tag)
       }
     self.init(slug: component.slug, title: component.title, kind: kind)
   }

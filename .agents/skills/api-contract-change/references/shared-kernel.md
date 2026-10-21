@@ -1,6 +1,6 @@
 # `shared-kernel` — module reference
 
-Last reviewed: 2026-09-27
+Last reviewed: 2026-10-21
 
 ## Contract summary
 
@@ -13,6 +13,10 @@ envelope type, and the error/reason-code/entitlement registries. Full contract:
 - `shared-kernel-pure`: the only dependency is `ulid`; no workspace package, no framework, no I/O.
   Every module and `platform` may import it, and it may import nothing back.
 - To add a reason code, entitlement or unit: edit `registry/*.json`, run `just generate`, commit every output.
+- A value a native app reads reaches TypeScript, Swift and Kotlin through `just generate`
+  (`.claude/rules/contracts.md` invariant 6). The JSON-imported registries and the TS-only files
+  below (`errors.ts`, `ids.ts`, `envelope.ts`, hand-written `as const` lists) hold server-only and
+  worker-only values. A client-facing value there needs its emitter change in the same PR stack.
 - Registries are append-only: add a reason code, entitlement name, unit, or ID prefix — never
   rename or reuse one (explanations come from the decision trace; a renamed code breaks history).
 - Every export is a type, constant, registry entry, or pure function with a test; there is no

@@ -1,0 +1,114 @@
+# AppBadge: the API contract for the badges on canvas board C03 (DESIGN.md "### Chips and tags
+# (C03)": Count badge, Trial pill). This file is the master for the badge's API; DESIGN.md is the
+# master for its values, so this file only names tokens. Field rules: README.md beside this file;
+# fields marked G<n> are the C03 fields of README.md "Fields", which the generator implements.
+# A badge flags and never acts (R4: "Badge: count on an icon or tab · tile badges · trial pill";
+# "No · sits on another element"). C03 draws the count badge (dot 8 and number 18, on an icon
+# button and a tab) and the trial pill (28, default and last day), in S1 and S2.
+# Not here: the tile badges (Processing, Waiting to sync, Needs attention, availability on tiles)
+# and the provenance badge, which C04 draws: C04's next component. The Capture-tab queue badge is
+# C05's.
+# C03 draws the dark count number in on-error-dark (#0F1F1B), as DESIGN.md does (canvas redrawn
+# 2026-10-21; it drew #1B1B19 before).
+# C03 fields used here: G1 no busy, G4 icons, G7 accessibility roles, G8 the colorRole prop
+# and per-variant props, G9 no touch target, G10 gallery.props, G11 sizes without an icon slot,
+# G12 the outer ring part, G14 gallery.labels (the trial words). The generator implements every one.
+id: badge
+board: C03
+name: AppBadge
+
+props:
+  # The count ("2") or the trial words ("Trial · 2 days left", "Trial · ends today").
+  - name: label
+    type: string
+    required: true
+    variants: [count, trial, trial-last-day]
+  # The colour role of the surface the badge sits on, which its 2 px ring takes (C03: surface-2
+  # on the icon button, background on the tab bar), so the badge stands off the icon below it.
+  - name: hostSurface
+    type: colorRole
+    required: true
+    variants: [dot, count]
+
+# dot: new activity on an icon (8, no number). count: a number of items that need attention.
+# trial: the trial days left on the profile card. trial-last-day: the trial's last day (warning).
+variants: [dot, count, trial, trial-last-day]
+# small 8 (the dot), medium 18 (the number), large 28 (the trial pill: clock sm, gap 5, badge-large).
+sizes: [small, medium, large]
+states: [enabled]
+
+combinations:
+  dot:
+    sizes: [small]
+    states: [enabled]
+  count:
+    sizes: [medium]
+    states: [enabled]
+  trial:
+    sizes: [large]
+    states: [enabled]
+  trial-last-day:
+    sizes: [large]
+    states: [enabled]
+
+tokens:
+  dot:
+    base: '{components.badge-dot}'
+    states: {}
+    sizes:
+      small: '{components.badge-dot}'
+  count:
+    base: '{components.badge-count}'
+    states: {}
+    sizes:
+      medium: '{components.badge-count}'
+  trial:
+    base: '{components.pill-trial}'
+    states: {}
+    sizes:
+      large: '{components.badge-large}'
+  trial-last-day:
+    base: '{components.pill-trial-last-day}'
+    states: {}
+    sizes:
+      large: '{components.badge-large}'
+
+# G4: the clock (icon.yaml `schedule`) in the label colour.
+icons:
+  trial: { leading: schedule }
+  trial-last-day: { leading: schedule }
+
+# G12: the 2 px ring outside the dot and the count, in the host's surface (outerRingWidth).
+parts:
+  - name: outerRing
+    kind: ring
+    position: outside
+    color: '{props.hostSurface}'
+    variants: [dot, count]
+
+# The dot and the count are hidden from screen readers: the host names them ("Notifications, new
+# activity", "Closet, 2 items need attention"; R4: counts are in the label too). The trial pill is
+# read as text; its days are words, and the last day changes words and colour, never colour alone.
+# No tap, so no touch target (G9). The number and the words scale with Dynamic Type and Android
+# font scale; the count's min width 18 keeps one digit round.
+accessibility:
+  role: decorative
+  roles:
+    trial: text
+    trial-last-day: text
+  label: '{props.label}'
+
+gallery:
+  title: Badges
+  label: '2'
+  labels:
+    trial: 'Trial · 2 days left'
+    trial-last-day: 'Trial · ends today'
+  props:
+    hostSurface: '{colors.surface-2}'
+  include: all
+
+testId: 'ds-{component}-{variant}-{size}-{state}'
+
+# Owner, 2026-10-21, in chat, on AppBadge and AppReasonRow: "Approve both (Recommended)".
+approved: 2026-10-21

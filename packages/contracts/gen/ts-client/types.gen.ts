@@ -60,6 +60,1134 @@ export type VersionInfo = {
   builtAt: string;
 };
 
+/**
+ * Identity providers that sign in with a native identity token (DEC-64).
+ */
+export type IdentityProvider = 'apple' | 'google';
+
+export type IdTokenSignInRequest = {
+  provider: IdentityProvider;
+  idToken: {
+    /**
+     * The provider's identity token (a JWT), verified against the provider's keys.
+     */
+    token: string;
+    /**
+     * The unhashed nonce the app generated for the provider request. The identity
+     * token's `nonce` claim must equal it or its SHA-256 digest. Sign in with Apple
+     * requires it.
+     *
+     */
+    nonce?: string;
+    /**
+     * Name the provider reports to the app on the first authorization only (Sign in with Apple).
+     */
+    user?: {
+      name?: {
+        firstName?: string;
+        lastName?: string;
+      };
+    };
+  };
+};
+
+/**
+ * Account id, a prefixed ULID (`usr_`, shared-kernel `ID_PREFIXES.user`).
+ */
+export type UserId = string;
+
+/**
+ * A session the server opened or renewed: a short-lived access token and a separate,
+ * rotating refresh token (doc 11 §4.2). Both are kept in the Keychain or Keystore-backed
+ * storage only, and both are replaced by every renewal.
+ *
+ */
+export type SessionGrant = {
+  userId: UserId;
+  /**
+   * Access token for `bearerAuth`, valid for about 15 minutes. Sent on API calls; it
+   * never renews the session.
+   *
+   */
+  token: string;
+  /**
+   * When the access token `token` stops working, about 15 minutes after issue. The
+   * server may refuse it earlier (revocation); the client then renews once with
+   * `refreshSession`.
+   *
+   */
+  expiresAt: string;
+  /**
+   * Refresh token, sent only in the body of `refreshSession` and never in
+   * `Authorization`. Single use: each renewal spends it and returns a new one. Presenting
+   * a spent refresh token again revokes the whole session family.
+   *
+   */
+  refreshToken: string;
+  /**
+   * When the refresh token stops working and the session ends unless it was renewed
+   * before; after it the client signs in again.
+   *
+   */
+  refreshTokenExpiresAt: string;
+};
+
+/**
+ * The account is inside its 7-day deletion grace window (DEC-65): no session was opened.
+ * The only thing the client can do is offer to cancel the deletion with `cancelToken`.
+ *
+ */
+export type DeletionPending = {
+  /**
+   * End of the grace window; the purge starts after it.
+   */
+  graceEndsAt: string;
+  /**
+   * Value for the `Deletion-Cancel-Token` header (`deletionCancelToken`); valid only for `DELETE /v1/me/deletion`.
+   */
+  cancelToken: string;
+  /**
+   * At most 15 minutes after issue (doc 11 §4.2).
+   */
+  cancelTokenExpiresAt: string;
+};
+
+/**
+ * The verified identity has no account. Nothing is stored. The client asks for the birth
+ * year and calls `completeSignUp` with `token`.
+ *
+ */
+export type SignUpPending = {
+  /**
+   * Sign-up credential for `CompleteSignUpRequest.signUpToken`. Single use, valid only
+   * for `completeSignUp`; it opens no session and grants nothing else.
+   *
+   */
+  token: string;
+  /**
+   * At most 15 minutes after issue.
+   */
+  expiresAt: string;
+};
+
+/**
+ * One sign-in outcome. `outcome` names it, and exactly the object of that outcome is
+ * present: `session` for `session`, `deletionPending` for `deletion_pending`, `signUp` for
+ * `sign_up_required`. Only `session` opens a session.
+ *
+ */
+export type SignInResult = {
+  outcome: 'session' | 'deletion_pending' | 'sign_up_required';
+  session?: SessionGrant;
+  deletionPending?: DeletionPending;
+  signUp?: SignUpPending;
+};
+
+export type CompleteSignUpRequest = {
+  /**
+   * `SignUpPending.token` of the `sign_up_required` answer.
+   */
+  signUpToken: string;
+  /**
+   * Self-declared birth year (DEC-60). Only a sanity range is enforced here; the age
+   * floor is the server's rule and is never restated by a client.
+   *
+   */
+  birthYear: number;
+};
+
+/**
+ * Base64url without padding (RFC 4648 §5), as WebAuthn JSON encodes binary values.
+ */
+export type Base64Url = string;
+
+/**
+ * W3C WebAuthn `PublicKeyCredentialDescriptorJSON`.
+ */
+export type PasskeyCredentialDescriptor = {
+  id: Base64Url;
+  type: 'public-key';
+  transports?: Array<string>;
+};
+
+/**
+ * WebAuthn extension inputs (`AuthenticationExtensionsClientInputsJSON`). Only the
+ * extensions this API requests are modelled.
+ *
+ */
+export type PasskeyExtensionInputs = {
+  credProps?: boolean;
+};
+
+/**
+ * W3C WebAuthn `PublicKeyCredentialRequestOptionsJSON`.
+ */
+export type PasskeyRequestOptions = {
+  challenge: Base64Url;
+  timeout?: number;
+  rpId?: string;
+  allowCredentials?: Array<PasskeyCredentialDescriptor>;
+  userVerification?: 'required' | 'preferred' | 'discouraged';
+  hints?: Array<string>;
+  extensions?: PasskeyExtensionInputs;
+};
+
+/**
+ * WebAuthn extension outputs (`AuthenticationExtensionsClientOutputsJSON`). Only the
+ * extensions this API reads are modelled; send `{}` when there are none.
+ *
+ */
+export type PasskeyExtensionOutputs = {
+  credProps?: {
+    rk?: boolean;
+  };
+};
+
+/**
+ * W3C WebAuthn `AuthenticationResponseJSON`.
+ */
+export type PasskeyAuthenticationResponse = {
+  id: Base64Url;
+  rawId: Base64Url;
+  type: 'public-key';
+  authenticatorAttachment?: 'platform' | 'cross-platform';
+  clientExtensionResults: PasskeyExtensionOutputs;
+  response: {
+    clientDataJSON: Base64Url;
+    authenticatorData: Base64Url;
+    signature: Base64Url;
+    userHandle?: Base64Url;
+  };
+};
+
+export type PasskeySignInRequest = {
+  response: PasskeyAuthenticationResponse;
+};
+
+/**
+ * W3C WebAuthn `PublicKeyCredentialCreationOptionsJSON`.
+ */
+export type PasskeyCreationOptions = {
+  rp: {
+    id?: string;
+    name: string;
+  };
+  user: {
+    id: Base64Url;
+    name: string;
+    displayName: string;
+  };
+  challenge: Base64Url;
+  pubKeyCredParams: Array<{
+    type: 'public-key';
+    alg: number;
+  }>;
+  timeout?: number;
+  excludeCredentials?: Array<PasskeyCredentialDescriptor>;
+  authenticatorSelection?: {
+    authenticatorAttachment?: 'platform' | 'cross-platform';
+    residentKey?: 'discouraged' | 'preferred' | 'required';
+    requireResidentKey?: boolean;
+    userVerification?: 'required' | 'preferred' | 'discouraged';
+  };
+  attestation?: 'none' | 'indirect' | 'direct' | 'enterprise';
+  hints?: Array<string>;
+  extensions?: PasskeyExtensionInputs;
+};
+
+/**
+ * W3C WebAuthn `RegistrationResponseJSON`.
+ */
+export type PasskeyRegistrationResponse = {
+  id: Base64Url;
+  rawId: Base64Url;
+  type: 'public-key';
+  authenticatorAttachment?: 'platform' | 'cross-platform';
+  clientExtensionResults: PasskeyExtensionOutputs;
+  response: {
+    clientDataJSON: Base64Url;
+    attestationObject: Base64Url;
+    authenticatorData?: Base64Url;
+    transports?: Array<string>;
+    publicKeyAlgorithm?: number;
+    publicKey?: Base64Url;
+  };
+};
+
+export type PasskeyRegistrationRequest = {
+  response: PasskeyRegistrationResponse;
+  /**
+   * Label the person gives the passkey.
+   */
+  name?: string;
+};
+
+/**
+ * A passkey stored on the account. Carries no key material.
+ */
+export type PasskeySummary = {
+  name?: string;
+  createdAt: string;
+};
+
+/**
+ * The current session, without any token.
+ */
+export type SessionInfo = {
+  userId: UserId;
+  /**
+   * When the access token of this request stops working (`SessionGrant.expiresAt`).
+   */
+  expiresAt: string;
+  /**
+   * True when the server asks the client to renew now with `refreshSession`.
+   */
+  needsRefresh?: boolean;
+};
+
+export type RefreshSessionRequest = {
+  /**
+   * `SessionGrant.refreshToken` of the latest grant of this session.
+   */
+  refreshToken: string;
+};
+
+export type SignOutResult = {
+  success: boolean;
+};
+
+/**
+ * One signed-in device of the caller. Carries no token and no IP address.
+ */
+export type DeviceSession = {
+  /**
+   * True for the session that made this request.
+   */
+  current: boolean;
+  /**
+   * When the device signed in.
+   */
+  createdAt: string;
+  /**
+   * Last renewal of the session.
+   */
+  lastActiveAt: string;
+  /**
+   * When the session ends unless renewed, the expiry of its current refresh token.
+   */
+  expiresAt: string;
+  /**
+   * The `User-Agent` the device sent at sign-in, to tell devices apart.
+   */
+  userAgent?: string;
+};
+
+export type DeviceSessionPage = {
+  items: Array<DeviceSession>;
+  /**
+   * Cursor of the next page; null on the last page.
+   */
+  nextCursor: string | null;
+};
+
+export type RevokeSessionsResult = {
+  status: boolean;
+};
+
+export type RecoveryRequest = {
+  email: string;
+};
+
+export type RecoveryRequestAccepted = {
+  /**
+   * Always true, whether or not an account exists for the address.
+   */
+  status: boolean;
+};
+
+export type RecoveryCompletionRequest = {
+  /**
+   * Single-use token from the fragment of the emailed recovery link.
+   */
+  token: string;
+};
+
+/**
+ * Consent purpose keys of doc 11 §7.2, in that order. Mirrors shared-kernel
+ * `CONSENT_PURPOSES` value for value (pinned by packages/contracts/tests/kernel-enums.test.ts).
+ *
+ */
+export type ConsentPurpose =
+  | 'core_service'
+  | 'face_processing'
+  | 'location_precise'
+  | 'analytics'
+  | 'ai_generative'
+  | 'notifications'
+  | 'training_data';
+
+/**
+ * Consent record id, a prefixed ULID (`cns_`, shared-kernel `ID_PREFIXES.consentRecord`).
+ */
+export type ConsentRecordId = string;
+
+export type ConsentStatus = 'granted' | 'withdrawn';
+
+/**
+ * Version of the policy text the person saw, e.g. `0.1.0-draft`.
+ */
+export type PolicyVersion = string;
+
+/**
+ * Identifier of the app screen where the decision was made, e.g. `onboarding_consent`.
+ */
+export type ConsentSurface = string;
+
+/**
+ * BCP 47 language tag, e.g. `en-GB`.
+ */
+export type Locale = string;
+
+/**
+ * One append-only consent record (doc 11 §7.1); `locale` is the language of the text the
+ * person saw.
+ *
+ */
+export type ConsentRecord = {
+  id: ConsentRecordId;
+  purpose: ConsentPurpose;
+  status: ConsentStatus;
+  policyVersion: PolicyVersion;
+  /**
+   * When the consent was granted; present when `status` is `granted`.
+   */
+  grantedAt?: string;
+  /**
+   * When the consent was withdrawn; present when `status` is `withdrawn`.
+   */
+  withdrawnAt?: string;
+  surface: ConsentSurface;
+  locale: Locale;
+};
+
+/**
+ * The consent the server applies to one purpose now (doc 11 §7.2). `record` is the
+ * caller's latest consent record for the purpose; `granted` is then true exactly when
+ * `record.status` is `granted`. Without a record, `record` is absent and `granted` is
+ * the purpose's default, which the server decides (some defaults depend on the
+ * jurisdiction).
+ *
+ */
+export type ResolvedConsent = {
+  purpose: ConsentPurpose;
+  /**
+   * Whether the server processes the caller's data for this purpose now.
+   */
+  granted: boolean;
+  /**
+   * `false` for a purpose the person cannot withdraw while the account exists:
+   * `recordConsent` refuses its withdrawal with 403 `CONSENT_REQUIRED`, and the app
+   * offers no switch to turn it off.
+   *
+   */
+  withdrawable: boolean;
+  record?: ConsentRecord;
+};
+
+/**
+ * One page of `listConsents`: one entry per purpose, in `ConsentPurpose` order, across
+ * the pages.
+ *
+ */
+export type ConsentPage = {
+  items: Array<ResolvedConsent>;
+  /**
+   * Cursor of the next page; null on the last page.
+   */
+  nextCursor: string | null;
+};
+
+/**
+ * One consent decision; `locale` is the language of the text the person saw.
+ */
+export type ConsentChange = {
+  purpose: ConsentPurpose;
+  status: ConsentStatus;
+  policyVersion: PolicyVersion;
+  surface: ConsentSurface;
+  locale: Locale;
+};
+
+/**
+ * Data-export id, a prefixed ULID (`xpt_`, shared-kernel `ID_PREFIXES.exportRequest`).
+ */
+export type DataExportId = string;
+
+/**
+ * `in_progress` until the archive is built; then `ready` until `availableUntil`, when the
+ * archive is deleted and the export becomes `expired`. `failed` when it could not be
+ * built: nothing is kept, and the person may request a new export.
+ *
+ */
+export type DataExportStatus = 'in_progress' | 'ready' | 'failed' | 'expired';
+
+/**
+ * Present only while the export is `ready`. Minted for this response; never stored by the server.
+ */
+export type DataExportDownload = {
+  /**
+   * Presigned GET of the archive, minted after the same authorization check as the
+   * export (doc 11 §13.1). It carries a live signature: never log, share or store it
+   * (doc 11 §8). Read the export again for a fresh link.
+   *
+   */
+  url: string;
+  /**
+   * When the link stops working, at most 10 minutes after it was minted (DEC-44, doc 11 §5.4).
+   */
+  expiresAt: string;
+};
+
+/**
+ * One data export of the caller (doc 11 §13.1): a ZIP archive of the caller's data in
+ * machine-readable JSON plus the media they uploaded. This object never carries archive
+ * content.
+ *
+ */
+export type DataExport = {
+  id: DataExportId;
+  status: DataExportStatus;
+  requestedAt: string;
+  /**
+   * When the archive was built; present for `ready` and `expired`.
+   */
+  readyAt?: string;
+  /**
+   * When the archive is deleted, 24 hours after `readyAt` (doc 11 §13.1); present for
+   * `ready` and `expired`. This is how long the archive is kept, not how long a link
+   * works: every read of a `ready` export mints a new link.
+   *
+   */
+  availableUntil?: string;
+  download?: DataExportDownload;
+};
+
+/**
+ * A problem (RFC 9457) that carries the running export when an export is already in progress.
+ */
+export type DataExportInProgress = ProblemDetails & {
+  current?: DataExport;
+};
+
+/**
+ * Account-deletion request id, a prefixed ULID (`del_`, shared-kernel `ID_PREFIXES.deletionRequest`).
+ */
+export type AccountDeletionRequestId = string;
+
+/**
+ * An accepted account-deletion request (doc 11 §13.2).
+ */
+export type AccountDeletionRequest = {
+  id: AccountDeletionRequestId;
+  requestedAt: string;
+  /**
+   * End of the 7-day grace window (DEC-65). Until then a sign-in offers to cancel the
+   * deletion; after it the purge runs, and a cancel is refused with 410 `ACCOUNT_DELETED`.
+   *
+   */
+  graceEndsAt: string;
+};
+
+/**
+ * Profile id, a prefixed ULID (`prf_`, shared-kernel `ID_PREFIXES.profile`).
+ */
+export type ProfileId = string;
+
+/**
+ * Version of the resource (doc 06 §2). It grows by one with every accepted write; 0 means
+ * nothing has been written yet. Send it back as `If-Match: "<version>"`.
+ *
+ */
+export type ResourceVersion = number;
+
+/**
+ * Presentation the person chooses (doc 03 §1.2, doc 07 §3.1); never inferred, and it never
+ * limits which starting shape or measurements are valid. Default `unspecified`. Mirrors
+ * shared-kernel `PRESENTATIONS`.
+ *
+ */
+export type Presentation = 'feminine' | 'masculine' | 'androgynous' | 'unspecified';
+
+/**
+ * Id of the starting shape the avatar begins from (doc 07 §3.1), the base-model selection
+ * of onboarding. One of the shapes of the shared-kernel registry
+ * `registry/starting-shapes.json`; the server refuses any other id with 400
+ * `VALIDATION_FAILED`. Default `from_measurements`. An id string, not an enum, so that a
+ * shape can be added or retired (P04) without a breaking contract change. The base mesh
+ * all shapes share is a kernel constant and is not stored per person.
+ *
+ */
+export type StartingShapeId = string;
+
+/**
+ * How the apps show measurements; it never changes what the API stores or returns (SI).
+ * Mirrors shared-kernel `UNIT_SYSTEMS`.
+ *
+ */
+export type UnitSystem = 'metric' | 'imperial';
+
+/**
+ * IANA time zone name, e.g. `Europe/Berlin`.
+ */
+export type TimeZone = string;
+
+/**
+ * ISO 3166-1 alpha-2 region code, e.g. `DE`. A setting the person chooses, not a location.
+ */
+export type RegionCode = string;
+
+/**
+ * Accessibility settings the apps apply (phase P03 §4). Both are `false` by default.
+ */
+export type AccessibilitySettings = {
+  /**
+   * Show no motion that is not needed to understand the screen.
+   */
+  reducedMotion: boolean;
+  /**
+   * Prefer flat images to 3D views wherever the app offers both.
+   */
+  prefersNon3d: boolean;
+};
+
+/**
+ * The caller's profile settings. `presentation` and `startingShape` are independent: any
+ * presentation goes with any starting shape (REQ-ONB-050). The six settings of REQ-ONB-100
+ * are `locale` (formats dates and numbers, e.g. `en-GB`), `language` (the language of the
+ * app's text, e.g. `en`), `unitSystem`, `timezone`, `region` and `accessibility`. The first
+ * five are absent until the person confirms them in onboarding (step "units and locale";
+ * the app pre-fills them from the device), and are edited, not removed, after that.
+ *
+ */
+export type Profile = {
+  id: ProfileId;
+  version: ResourceVersion;
+  presentation: Presentation;
+  startingShape: StartingShapeId;
+  locale?: Locale;
+  language?: Locale;
+  unitSystem?: UnitSystem;
+  timezone?: TimeZone;
+  region?: RegionCode;
+  accessibility: AccessibilitySettings;
+};
+
+/**
+ * Partial update of `Profile`: each member present replaces its stored value. `presentation`
+ * returns to its default by sending `unspecified`, `startingShape` by sending
+ * `from_measurements`.
+ *
+ */
+export type ProfileUpdate = {
+  presentation?: Presentation;
+  startingShape?: StartingShapeId;
+  locale?: Locale;
+  language?: Locale;
+  unitSystem?: UnitSystem;
+  timezone?: TimeZone;
+  region?: RegionCode;
+  accessibility?: AccessibilitySettings;
+};
+
+/**
+ * A problem (RFC 9457) that carries the stored profile when `code` is `VERSION_MISMATCH`.
+ */
+export type ProfileVersionConflict = ProblemDetails & {
+  current?: Profile;
+};
+
+/**
+ * Confidence in the value, from 0 to 1.
+ */
+export type MeasurementConfidence = number;
+
+/**
+ * Stored length unit. Mirrors shared-kernel `LENGTH_UNITS`.
+ */
+export type LengthUnit = 'cm';
+
+/**
+ * Who produced the value (doc 06 §3.1): the person (`user`), an estimate, or a value
+ * derived from other values. Mirrors shared-kernel `MEASUREMENT_SOURCES`.
+ *
+ */
+export type MeasurementSource = 'user' | 'estimated' | 'derived';
+
+/**
+ * A body length in centimetres with its provenance (doc 06 §3.1). The schema requires
+ * `confidence` when `source` is `estimated` or `derived`; it is optional for `user`.
+ *
+ */
+export type LengthMeasurement = {
+  /**
+   * The length, in `unit`.
+   */
+  value: number;
+  unit: LengthUnit;
+  source: MeasurementSource;
+  confidence?: MeasurementConfidence;
+  /**
+   * When the value was taken or entered.
+   */
+  measuredAt?: string;
+};
+
+/**
+ * Stored mass unit. Mirrors shared-kernel `MASS_UNITS`.
+ */
+export type MassUnit = 'kg';
+
+/**
+ * A body mass in kilograms with its provenance (doc 06 §3.1). The schema requires
+ * `confidence` when `source` is `estimated` or `derived`; it is optional for `user`.
+ *
+ */
+export type MassMeasurement = {
+  /**
+   * The mass, in `unit`.
+   */
+  value: number;
+  unit: MassUnit;
+  source: MeasurementSource;
+  confidence?: MeasurementConfidence;
+  /**
+   * When the value was taken or entered.
+   */
+  measuredAt?: string;
+};
+
+/**
+ * The ten body measurements of doc 07 §3.3, each optional: an absent one has not been
+ * given. Their ids, units and hard bounds are shared-kernel registry data
+ * (`registry/measurement-definitions.json`); a value outside its bounds is refused with
+ * 400 `MEASUREMENT_IMPLAUSIBLE` and never stored.
+ *
+ */
+export type BodyMeasurements = {
+  height?: LengthMeasurement;
+  weight?: MassMeasurement;
+  chest?: LengthMeasurement;
+  waist?: LengthMeasurement;
+  hips?: LengthMeasurement;
+  inseam?: LengthMeasurement;
+  shoulder?: LengthMeasurement;
+  sleeve?: LengthMeasurement;
+  thigh?: LengthMeasurement;
+  neck?: LengthMeasurement;
+};
+
+/**
+ * The caller's current measurement set (doc 03 §1.2). Each value is SI with its unit and
+ * source; `unitSystem` changes only how an app shows it.
+ *
+ */
+export type MeasurementSet = {
+  version: ResourceVersion;
+  measurements: BodyMeasurements;
+};
+
+/**
+ * The whole new measurement set; a measurement left out is removed.
+ */
+export type MeasurementsReplacement = {
+  measurements: BodyMeasurements;
+};
+
+/**
+ * A problem (RFC 9457) that carries the stored measurement set when `code` is `VERSION_MISMATCH`.
+ */
+export type MeasurementSetVersionConflict = ProblemDetails & {
+  current?: MeasurementSet;
+};
+
+/**
+ * Mirrors shared-kernel `FIT_CHOICES`.
+ */
+export type FitChoice = 'fitted' | 'regular' | 'relaxed' | 'oversized';
+
+/**
+ * Preferred fit per garment group (doc 08 §4.2 `attr.cut`); a group with no choice is
+ * absent. The keys are the shared-kernel `GARMENT_GROUPS` except `shoes`.
+ *
+ */
+export type FitPreferences = {
+  tops?: FitChoice;
+  bottoms?: FitChoice;
+  dresses?: FitChoice;
+  outerwear?: FitChoice;
+};
+
+/**
+ * Mirrors shared-kernel `STYLE_TYPES`.
+ */
+export type StyleType = 'minimal' | 'classic' | 'smart_casual';
+
+/**
+ * The style types the person selected (style identity, doc 03 §1.2).
+ */
+export type StyleTypeList = Array<StyleType>;
+
+/**
+ * Mirrors shared-kernel `PREFERENCE_KINDS`.
+ */
+export type PreferenceKind = 'material';
+
+/**
+ * Material values of doc 08 §4.1 `attr.material`. Mirrors shared-kernel `MATERIALS`.
+ */
+export type Material =
+  | 'cotton'
+  | 'linen'
+  | 'wool'
+  | 'cashmere'
+  | 'silk'
+  | 'denim'
+  | 'leather'
+  | 'suede'
+  | 'synthetic'
+  | 'blend'
+  | 'knit'
+  | 'down'
+  | 'canvas'
+  | 'metal'
+  | 'other';
+
+/**
+ * One soft dislike or hard exclusion. `kind` names the list `value` comes from; the only
+ * kind is `material`.
+ *
+ */
+export type PreferenceItem = {
+  kind: PreferenceKind;
+  value: Material;
+};
+
+export type PreferenceItemList = Array<PreferenceItem>;
+
+/**
+ * How warm or cold the person usually feels (REQ-ONB-070). Mirrors shared-kernel `CLIMATE_TOLERANCES`.
+ */
+export type ClimateTolerance = 'runs_cold' | 'neutral' | 'runs_hot';
+
+/**
+ * Occasion presets (doc 03 §1.7). As `typicalDay`, the occasion suggestions use whenever
+ * the person selects none (DEC-71). Mirrors shared-kernel `OCCASION_PRESETS`.
+ *
+ */
+export type OccasionPreset = 'work_day' | 'dinner' | 'travel' | 'sport';
+
+/**
+ * The occasions the person selected in onboarding.
+ */
+export type OccasionPresetList = Array<OccasionPreset>;
+
+/**
+ * Label size systems (doc 08 §5). Mirrors shared-kernel `SIZE_SYSTEMS`.
+ */
+export type SizeSystem = 'EU' | 'US' | 'UK' | 'ALPHA';
+
+/**
+ * Top-level garment groups (doc 08 §3 `cat.*`). Mirrors shared-kernel `GARMENT_GROUPS`.
+ */
+export type GarmentGroup = 'tops' | 'bottoms' | 'dresses' | 'outerwear' | 'shoes';
+
+/**
+ * A usual label size in one size system for one garment group (doc 08 §5).
+ */
+export type UsualSize = {
+  system: SizeSystem;
+  group: GarmentGroup;
+  /**
+   * The label size as written, e.g. `39`, `M` or `10.5`.
+   */
+  size: string;
+};
+
+/**
+ * The person's usual label sizes, at most one per size system and garment group (one entry
+ * for each pair of `SizeSystem` and `GarmentGroup`). No size per brand.
+ *
+ */
+export type UsualSizeList = Array<UsualSize>;
+
+/**
+ * The caller's style preferences. Hard exclusions are never broken by a suggestion; soft
+ * dislikes only lower a score (REQ-ONB-060, doc 03 §1.2). An unset `climateTolerance`
+ * counts as `neutral`.
+ *
+ */
+export type Preferences = {
+  version: ResourceVersion;
+  fitPreferences: FitPreferences;
+  styleTypes: StyleTypeList;
+  softDislikes: PreferenceItemList;
+  hardExclusions: PreferenceItemList;
+  climateTolerance?: ClimateTolerance;
+  occasionPresets: OccasionPresetList;
+  typicalDay?: OccasionPreset;
+  sizingByRegion: UsualSizeList;
+};
+
+/**
+ * A `Preferences` member that holds one optional value and can be removed.
+ */
+export type ClearablePreference = 'climateTolerance' | 'typicalDay';
+
+/**
+ * Partial update of `Preferences`: each member present replaces its stored value whole. A
+ * member may not be both set and named in `clear`.
+ *
+ */
+export type PreferencesUpdate = {
+  fitPreferences?: FitPreferences;
+  styleTypes?: StyleTypeList;
+  softDislikes?: PreferenceItemList;
+  hardExclusions?: PreferenceItemList;
+  climateTolerance?: ClimateTolerance;
+  occasionPresets?: OccasionPresetList;
+  typicalDay?: OccasionPreset;
+  sizingByRegion?: UsualSizeList;
+  /**
+   * Optional single values to remove.
+   */
+  clear?: Array<ClearablePreference>;
+};
+
+/**
+ * A problem (RFC 9457) that carries the stored preferences when `code` is `VERSION_MISMATCH`.
+ */
+export type PreferencesVersionConflict = ProblemDetails & {
+  current?: Preferences;
+};
+
+/**
+ * `pending` until the person completes or skips the step; it never returns to `pending`.
+ */
+export type OnboardingStepStatus = 'pending' | 'completed' | 'skipped';
+
+export type OnboardingStepState = {
+  /**
+   * True when onboarding cannot finish without this step; only optional steps offer Skip.
+   */
+  required: boolean;
+  status: OnboardingStepStatus;
+};
+
+/**
+ * One entry per onboarding step, keyed by step; the keys are the `OnboardingStep` values in
+ * camelCase. `signIn` is completed by the server when the account is created.
+ *
+ */
+export type OnboardingSteps = {
+  welcome: OnboardingStepState;
+  signIn: OnboardingStepState;
+  coreConsents: OnboardingStepState;
+  unitsLocale: OnboardingStepState;
+  presentationBaseModel: OnboardingStepState;
+  heightWeight: OnboardingStepState;
+  additionalMeasurements: OnboardingStepState;
+  fitStylePreferences: OnboardingStepState;
+  lifestyleOccasions: OnboardingStepState;
+  firstCaptureNudge: OnboardingStepState;
+};
+
+/**
+ * Onboarding steps of doc 02 §3.2, in flow order.
+ */
+export type OnboardingStep =
+  | 'welcome'
+  | 'sign_in'
+  | 'core_consents'
+  | 'units_locale'
+  | 'presentation_base_model'
+  | 'height_weight'
+  | 'additional_measurements'
+  | 'fit_style_preferences'
+  | 'lifestyle_occasions'
+  | 'first_capture_nudge';
+
+/**
+ * Per-step onboarding progress (doc 02 §3.2), kept on the server so the app resumes after
+ * a quit or a crash. `nextRequiredStep` is the first required step not yet completed; the
+ * app resumes there, and opens Today when it is absent.
+ *
+ */
+export type OnboardingProgress = {
+  steps: OnboardingSteps;
+  nextRequiredStep?: OnboardingStep;
+};
+
+/**
+ * `skipped` is refused for a required step.
+ */
+export type OnboardingStepOutcome = 'completed' | 'skipped';
+
+/**
+ * The outcome of each step present; an absent step is left unchanged.
+ */
+export type OnboardingStepsUpdate = {
+  welcome?: OnboardingStepOutcome;
+  signIn?: OnboardingStepOutcome;
+  coreConsents?: OnboardingStepOutcome;
+  unitsLocale?: OnboardingStepOutcome;
+  presentationBaseModel?: OnboardingStepOutcome;
+  heightWeight?: OnboardingStepOutcome;
+  additionalMeasurements?: OnboardingStepOutcome;
+  fitStylePreferences?: OnboardingStepOutcome;
+  lifestyleOccasions?: OnboardingStepOutcome;
+  firstCaptureNudge?: OnboardingStepOutcome;
+};
+
+export type OnboardingProgressUpdate = {
+  steps: OnboardingStepsUpdate;
+};
+
+/**
+ * Lifecycle state of the caller's entitlements (doc 03 §4.3): the server-granted trial,
+ * Free, a paid subscription, its billing-retry grace period, or a cancelled subscription
+ * still paid until its period ends. Mirrors shared-kernel `ENTITLEMENT_LIFECYCLE_STATES`.
+ *
+ */
+export type EntitlementLifecycleState =
+  'trial' | 'free' | 'active_paid' | 'grace' | 'cancelled_active';
+
+/**
+ * Entitlement names (doc 12 §3.1), in registry order. Mirrors the keys of shared-kernel
+ * `ENTITLEMENTS` value for value. Each name's kind and, for a `level` entitlement, its
+ * level order live in the shared-kernel entitlement registry (`registry/entitlements.json`).
+ * TypeScript reads both generated. Swift and Kotlin read the kind from the generated
+ * kernel, and the level order once the kernel emitter covers it.
+ *
+ */
+export type EntitlementName =
+  | 'closet.max_items'
+  | 'recs.daily_limit'
+  | 'recs.context.full'
+  | 'recs.future_planning'
+  | 'avatar.level'
+  | 'tryon.generative'
+  | 'views.missing_view'
+  | 'credits.monthly'
+  | 'credits.topup'
+  | 'credits.weights'
+  | 'trends.level'
+  | 'analytics.wardrobe'
+  | 'processing.priority'
+  | 'export.multi_angle'
+  | 'features.early_access'
+  | 'chat.stylist'
+  | 'data.export';
+
+/**
+ * The kind of grant that supplied the value (doc 12 §3.2): the subscription's plan, the
+ * 3-day trial (doc 12 §2), a promotion, or a capability kept from an older plan version
+ * (doc 12 §5.5). Absent from a `ResolvedEntitlement` when no active grant supplies the
+ * entitlement and its Free-plan value applies. Mirrors shared-kernel
+ * `ENTITLEMENT_GRANT_KINDS`.
+ *
+ */
+export type EntitlementGrantKind =
+  'plan_grant' | 'trial_grant' | 'promo_grant' | 'grandfather_grant';
+
+/**
+ * One of the levels the shared-kernel registry lists for the entitlement
+ * (`registry/entitlements.json`, `levels`, lowest first), e.g. `G2` for
+ * `tryon.generative`. A string, not an enum, because each level entitlement has levels of
+ * its own.
+ *
+ */
+export type EntitlementLevel = string;
+
+/**
+ * The resolved value of one entitlement. The value member present follows the kind of
+ * `name` in the shared-kernel registry (`registry/entitlements.json`): `boolean` →
+ * `granted`, always present; `limit` → `limit`, always present; `level` → `level`, absent
+ * when no level is granted; `map` (`credits.weights`) → none yet, the weights join with the
+ * credit ledger (P13).
+ *
+ */
+export type ResolvedEntitlement = {
+  name: EntitlementName;
+  source?: EntitlementGrantKind;
+  /**
+   * `boolean` kind: whether the capability is available.
+   */
+  granted?: boolean;
+  /**
+   * `limit` kind: the cap, e.g. closet items or recommendations per local day. `null`
+   * means unlimited (doc 06 §3.6).
+   *
+   */
+  limit?: number | null;
+  level?: EntitlementLevel;
+};
+
+/**
+ * The caller's entitlement state (doc 06 §3.6; semantics doc 12 §2–§3). `state` is the
+ * lifecycle state of doc 03 §4.3. Generative credits (doc 12 §4) join this object with the
+ * credit ledger (P13).
+ *
+ */
+export type EntitlementState = {
+  state: EntitlementLifecycleState;
+  /**
+   * When `state` ends unless something changes: the end of the trial for `trial`, the end
+   * of paid access for `grace` and `cancelled_active`. Absent for `free` and `active_paid`,
+   * which do not end on their own.
+   *
+   */
+  stateEndsAt?: string;
+  /**
+   * One entry per registered entitlement, in shared-kernel registry order.
+   */
+  entitlements: Array<ResolvedEntitlement>;
+};
+
+/**
+ * Client-generated ULID that makes a mutating request safe to retry (doc 06 §2; the
+ * mobile mutation-log `opId`). A key is scoped to the caller and the operation: the
+ * authenticated principal, or for an operation with `security: []` the credential in its
+ * body (for `requestAccountRecovery`, which carries none, the request hash alone). The
+ * server keeps key, request hash and response for 48 h: a replay with the same body
+ * returns the stored response; the same key with a different body is refused with 409
+ * `IDEMPOTENCY_KEY_REUSED`. Exception: an operation whose answer carries a credential
+ * (`SessionGrant.token`, `SessionGrant.refreshToken`, `DeletionPending.cancelToken`,
+ * `SignUpPending.token`) is never answered from the store, and its credential is never
+ * stored. Such an operation is marked `x-idempotency-replay: never`. A repeated key on it
+ * is refused with 409 `CONFLICT`, and the client starts that step again. Optional for the
+ * caller.
+ *
+ */
+export type IdempotencyKey = string;
+
+/**
+ * Opaque cursor from the `nextCursor` of the previous page; omit for the first page.
+ */
+export type Cursor = string;
+
+/**
+ * Page size (doc 06 §2 cursor pagination).
+ */
+export type Limit = number;
+
+/**
+ * The `version` of the resource the client last read, as a quoted integer, e.g. `"3"`
+ * (doc 06 §2). Every write to a versioned resource sends it; a stale version is refused
+ * with 409 `VERSION_MISMATCH`.
+ *
+ */
+export type IfMatch = string;
+
 export type GetHealthData = {
   body?: never;
   path?: never;
@@ -113,3 +1241,1874 @@ export type GetVersionResponses = {
 };
 
 export type GetVersionResponse = GetVersionResponses[keyof GetVersionResponses];
+
+export type SignInWithIdTokenData = {
+  body: IdTokenSignInRequest;
+  headers?: {
+    /**
+     * Client-generated ULID that makes a mutating request safe to retry (doc 06 §2; the
+     * mobile mutation-log `opId`). A key is scoped to the caller and the operation: the
+     * authenticated principal, or for an operation with `security: []` the credential in its
+     * body (for `requestAccountRecovery`, which carries none, the request hash alone). The
+     * server keeps key, request hash and response for 48 h: a replay with the same body
+     * returns the stored response; the same key with a different body is refused with 409
+     * `IDEMPOTENCY_KEY_REUSED`. Exception: an operation whose answer carries a credential
+     * (`SessionGrant.token`, `SessionGrant.refreshToken`, `DeletionPending.cancelToken`,
+     * `SignUpPending.token`) is never answered from the store, and its credential is never
+     * stored. Such an operation is marked `x-idempotency-replay: never`. A repeated key on it
+     * is refused with 409 `CONFLICT`, and the client starts that step again. Optional for the
+     * caller.
+     *
+     */
+    'Idempotency-Key'?: string;
+  };
+  path?: never;
+  query?: never;
+  url: '/v1/auth/sign-in/social';
+};
+
+export type SignInWithIdTokenErrors = {
+  /**
+   * `UNAUTHENTICATED`: the identity token or passkey assertion was not accepted.
+   */
+  401: ProblemDetails;
+  /**
+   * `IDEMPOTENCY_KEY_REUSED` when the `Idempotency-Key` was already used with a different
+   * request; `VERSION_MISMATCH` when `If-Match` no longer matches the stored version;
+   * `CONFLICT` otherwise. Exception: on an operation whose answer carries a credential
+   * (marked `x-idempotency-replay: never`), any repeated `Idempotency-Key` is refused with
+   * `CONFLICT`, never answered from the store, and the client starts that step again.
+   *
+   */
+  409: ProblemDetails;
+  /**
+   * `RATE_LIMITED`: a rate limit was hit (doc 11 §14); retry after `Retry-After` seconds.
+   */
+  429: ProblemDetails;
+  /**
+   * Error (RFC 9457)
+   */
+  default: ProblemDetails;
+};
+
+export type SignInWithIdTokenError = SignInWithIdTokenErrors[keyof SignInWithIdTokenErrors];
+
+export type SignInWithIdTokenResponses = {
+  /**
+   * The outcome of a sign-in (see `SignInResult`)
+   */
+  200: SignInResult;
+};
+
+export type SignInWithIdTokenResponse =
+  SignInWithIdTokenResponses[keyof SignInWithIdTokenResponses];
+
+export type CompleteSignUpData = {
+  body: CompleteSignUpRequest;
+  headers?: {
+    /**
+     * Client-generated ULID that makes a mutating request safe to retry (doc 06 §2; the
+     * mobile mutation-log `opId`). A key is scoped to the caller and the operation: the
+     * authenticated principal, or for an operation with `security: []` the credential in its
+     * body (for `requestAccountRecovery`, which carries none, the request hash alone). The
+     * server keeps key, request hash and response for 48 h: a replay with the same body
+     * returns the stored response; the same key with a different body is refused with 409
+     * `IDEMPOTENCY_KEY_REUSED`. Exception: an operation whose answer carries a credential
+     * (`SessionGrant.token`, `SessionGrant.refreshToken`, `DeletionPending.cancelToken`,
+     * `SignUpPending.token`) is never answered from the store, and its credential is never
+     * stored. Such an operation is marked `x-idempotency-replay: never`. A repeated key on it
+     * is refused with 409 `CONFLICT`, and the client starts that step again. Optional for the
+     * caller.
+     *
+     */
+    'Idempotency-Key'?: string;
+  };
+  path?: never;
+  query?: never;
+  url: '/v1/auth/sign-up/complete';
+};
+
+export type CompleteSignUpErrors = {
+  /**
+   * `UNAUTHENTICATED`: the sign-up token is missing, expired, already spent or unknown. Start again with a sign-in.
+   */
+  401: ProblemDetails;
+  /**
+   * `AGE_GATE_FAILED`: the birth year lies fewer than 16 years back (DEC-60). Terminal
+   * for this attempt: nothing is stored and the sign-up token is spent. The client shows
+   * its refusal screen and offers no way to change the year.
+   *
+   */
+  403: ProblemDetails;
+  /**
+   * `IDEMPOTENCY_KEY_REUSED` when the `Idempotency-Key` was already used with a different
+   * request; `VERSION_MISMATCH` when `If-Match` no longer matches the stored version;
+   * `CONFLICT` otherwise. Exception: on an operation whose answer carries a credential
+   * (marked `x-idempotency-replay: never`), any repeated `Idempotency-Key` is refused with
+   * `CONFLICT`, never answered from the store, and the client starts that step again.
+   *
+   */
+  409: ProblemDetails;
+  /**
+   * `RATE_LIMITED`: a rate limit was hit (doc 11 §14); retry after `Retry-After` seconds.
+   */
+  429: ProblemDetails;
+  /**
+   * Error (RFC 9457)
+   */
+  default: ProblemDetails;
+};
+
+export type CompleteSignUpError = CompleteSignUpErrors[keyof CompleteSignUpErrors];
+
+export type CompleteSignUpResponses = {
+  /**
+   * The outcome of a sign-in (see `SignInResult`)
+   */
+  200: SignInResult;
+};
+
+export type CompleteSignUpResponse = CompleteSignUpResponses[keyof CompleteSignUpResponses];
+
+export type GetPasskeySignInOptionsData = {
+  body?: never;
+  path?: never;
+  query?: never;
+  url: '/v1/auth/passkey/generate-authenticate-options';
+};
+
+export type GetPasskeySignInOptionsErrors = {
+  /**
+   * `RATE_LIMITED`: a rate limit was hit (doc 11 §14); retry after `Retry-After` seconds.
+   */
+  429: ProblemDetails;
+  /**
+   * Error (RFC 9457)
+   */
+  default: ProblemDetails;
+};
+
+export type GetPasskeySignInOptionsError =
+  GetPasskeySignInOptionsErrors[keyof GetPasskeySignInOptionsErrors];
+
+export type GetPasskeySignInOptionsResponses = {
+  /**
+   * WebAuthn request options
+   */
+  200: PasskeyRequestOptions;
+};
+
+export type GetPasskeySignInOptionsResponse =
+  GetPasskeySignInOptionsResponses[keyof GetPasskeySignInOptionsResponses];
+
+export type SignInWithPasskeyData = {
+  body: PasskeySignInRequest;
+  headers?: {
+    /**
+     * Client-generated ULID that makes a mutating request safe to retry (doc 06 §2; the
+     * mobile mutation-log `opId`). A key is scoped to the caller and the operation: the
+     * authenticated principal, or for an operation with `security: []` the credential in its
+     * body (for `requestAccountRecovery`, which carries none, the request hash alone). The
+     * server keeps key, request hash and response for 48 h: a replay with the same body
+     * returns the stored response; the same key with a different body is refused with 409
+     * `IDEMPOTENCY_KEY_REUSED`. Exception: an operation whose answer carries a credential
+     * (`SessionGrant.token`, `SessionGrant.refreshToken`, `DeletionPending.cancelToken`,
+     * `SignUpPending.token`) is never answered from the store, and its credential is never
+     * stored. Such an operation is marked `x-idempotency-replay: never`. A repeated key on it
+     * is refused with 409 `CONFLICT`, and the client starts that step again. Optional for the
+     * caller.
+     *
+     */
+    'Idempotency-Key'?: string;
+  };
+  path?: never;
+  query?: never;
+  url: '/v1/auth/passkey/verify-authentication';
+};
+
+export type SignInWithPasskeyErrors = {
+  /**
+   * `UNAUTHENTICATED`: the identity token or passkey assertion was not accepted.
+   */
+  401: ProblemDetails;
+  /**
+   * `IDEMPOTENCY_KEY_REUSED` when the `Idempotency-Key` was already used with a different
+   * request; `VERSION_MISMATCH` when `If-Match` no longer matches the stored version;
+   * `CONFLICT` otherwise. Exception: on an operation whose answer carries a credential
+   * (marked `x-idempotency-replay: never`), any repeated `Idempotency-Key` is refused with
+   * `CONFLICT`, never answered from the store, and the client starts that step again.
+   *
+   */
+  409: ProblemDetails;
+  /**
+   * `RATE_LIMITED`: a rate limit was hit (doc 11 §14); retry after `Retry-After` seconds.
+   */
+  429: ProblemDetails;
+  /**
+   * Error (RFC 9457)
+   */
+  default: ProblemDetails;
+};
+
+export type SignInWithPasskeyError = SignInWithPasskeyErrors[keyof SignInWithPasskeyErrors];
+
+export type SignInWithPasskeyResponses = {
+  /**
+   * The outcome of a sign-in (see `SignInResult`)
+   */
+  200: SignInResult;
+};
+
+export type SignInWithPasskeyResponse =
+  SignInWithPasskeyResponses[keyof SignInWithPasskeyResponses];
+
+export type GetPasskeyRegistrationOptionsData = {
+  body?: never;
+  path?: never;
+  query?: never;
+  url: '/v1/auth/passkey/generate-register-options';
+};
+
+export type GetPasskeyRegistrationOptionsErrors = {
+  /**
+   * `UNAUTHENTICATED`: the access token is missing, malformed, expired or revoked. The
+   * client renews the session once with its refresh token (`refreshSession`); if the renewal
+   * is refused too, it signs in again.
+   *
+   */
+  401: ProblemDetails;
+  /**
+   * `FORBIDDEN`: re-authentication is needed. The operation needs a recent sign-in: the
+   * session must have been opened by a sign-in a short time ago (better-auth `freshAge`; the
+   * server sets the window). Recency counts from the sign-in that opened the session; a
+   * renewal with `refreshSession` never resets it. The client signs in again with the same
+   * account and repeats the request.
+   *
+   */
+  403: ProblemDetails;
+  /**
+   * `ACCOUNT_DELETED`: the account is deleted or its deletion is in progress. The client
+   * erases everything it stores for the account and returns to its signed-out start; it
+   * tells this reply from 401 by the status alone. A 410 is cacheable by default
+   * (RFC 9110 §15.5.11), so the reply carries `Cache-Control: no-store` and must not be
+   * cached.
+   *
+   */
+  410: ProblemDetails;
+  /**
+   * `RATE_LIMITED`: a rate limit was hit (doc 11 §14); retry after `Retry-After` seconds.
+   */
+  429: ProblemDetails;
+  /**
+   * Error (RFC 9457)
+   */
+  default: ProblemDetails;
+};
+
+export type GetPasskeyRegistrationOptionsError =
+  GetPasskeyRegistrationOptionsErrors[keyof GetPasskeyRegistrationOptionsErrors];
+
+export type GetPasskeyRegistrationOptionsResponses = {
+  /**
+   * WebAuthn creation options
+   */
+  200: PasskeyCreationOptions;
+};
+
+export type GetPasskeyRegistrationOptionsResponse =
+  GetPasskeyRegistrationOptionsResponses[keyof GetPasskeyRegistrationOptionsResponses];
+
+export type RegisterPasskeyData = {
+  body: PasskeyRegistrationRequest;
+  headers?: {
+    /**
+     * Client-generated ULID that makes a mutating request safe to retry (doc 06 §2; the
+     * mobile mutation-log `opId`). A key is scoped to the caller and the operation: the
+     * authenticated principal, or for an operation with `security: []` the credential in its
+     * body (for `requestAccountRecovery`, which carries none, the request hash alone). The
+     * server keeps key, request hash and response for 48 h: a replay with the same body
+     * returns the stored response; the same key with a different body is refused with 409
+     * `IDEMPOTENCY_KEY_REUSED`. Exception: an operation whose answer carries a credential
+     * (`SessionGrant.token`, `SessionGrant.refreshToken`, `DeletionPending.cancelToken`,
+     * `SignUpPending.token`) is never answered from the store, and its credential is never
+     * stored. Such an operation is marked `x-idempotency-replay: never`. A repeated key on it
+     * is refused with 409 `CONFLICT`, and the client starts that step again. Optional for the
+     * caller.
+     *
+     */
+    'Idempotency-Key'?: string;
+  };
+  path?: never;
+  query?: never;
+  url: '/v1/auth/passkey/verify-registration';
+};
+
+export type RegisterPasskeyErrors = {
+  /**
+   * `UNAUTHENTICATED`: the access token is missing, malformed, expired or revoked. The
+   * client renews the session once with its refresh token (`refreshSession`); if the renewal
+   * is refused too, it signs in again.
+   *
+   */
+  401: ProblemDetails;
+  /**
+   * The caller is authenticated but may not perform this operation. `code` is `FORBIDDEN`
+   * unless the operation names a more specific code for this status.
+   *
+   */
+  403: ProblemDetails;
+  /**
+   * `IDEMPOTENCY_KEY_REUSED` when the `Idempotency-Key` was already used with a different
+   * request; `VERSION_MISMATCH` when `If-Match` no longer matches the stored version;
+   * `CONFLICT` otherwise. Exception: on an operation whose answer carries a credential
+   * (marked `x-idempotency-replay: never`), any repeated `Idempotency-Key` is refused with
+   * `CONFLICT`, never answered from the store, and the client starts that step again.
+   *
+   */
+  409: ProblemDetails;
+  /**
+   * `ACCOUNT_DELETED`: the account is deleted or its deletion is in progress. The client
+   * erases everything it stores for the account and returns to its signed-out start; it
+   * tells this reply from 401 by the status alone. A 410 is cacheable by default
+   * (RFC 9110 §15.5.11), so the reply carries `Cache-Control: no-store` and must not be
+   * cached.
+   *
+   */
+  410: ProblemDetails;
+  /**
+   * `RATE_LIMITED`: a rate limit was hit (doc 11 §14); retry after `Retry-After` seconds.
+   */
+  429: ProblemDetails;
+  /**
+   * Error (RFC 9457)
+   */
+  default: ProblemDetails;
+};
+
+export type RegisterPasskeyError = RegisterPasskeyErrors[keyof RegisterPasskeyErrors];
+
+export type RegisterPasskeyResponses = {
+  /**
+   * The stored passkey
+   */
+  200: PasskeySummary;
+};
+
+export type RegisterPasskeyResponse = RegisterPasskeyResponses[keyof RegisterPasskeyResponses];
+
+export type GetSessionData = {
+  body?: never;
+  path?: never;
+  query?: never;
+  url: '/v1/auth/get-session';
+};
+
+export type GetSessionErrors = {
+  /**
+   * `UNAUTHENTICATED`: the access token is missing, malformed, expired or revoked. The
+   * client renews the session once with its refresh token (`refreshSession`); if the renewal
+   * is refused too, it signs in again.
+   *
+   */
+  401: ProblemDetails;
+  /**
+   * `ACCOUNT_DELETED`: the account is deleted or its deletion is in progress. The client
+   * erases everything it stores for the account and returns to its signed-out start; it
+   * tells this reply from 401 by the status alone. A 410 is cacheable by default
+   * (RFC 9110 §15.5.11), so the reply carries `Cache-Control: no-store` and must not be
+   * cached.
+   *
+   */
+  410: ProblemDetails;
+  /**
+   * `RATE_LIMITED`: a rate limit was hit (doc 11 §14); retry after `Retry-After` seconds.
+   */
+  429: ProblemDetails;
+  /**
+   * Error (RFC 9457)
+   */
+  default: ProblemDetails;
+};
+
+export type GetSessionError = GetSessionErrors[keyof GetSessionErrors];
+
+export type GetSessionResponses = {
+  /**
+   * The current session
+   */
+  200: SessionInfo;
+};
+
+export type GetSessionResponse = GetSessionResponses[keyof GetSessionResponses];
+
+export type RefreshSessionData = {
+  body: RefreshSessionRequest;
+  headers?: {
+    /**
+     * Client-generated ULID that makes a mutating request safe to retry (doc 06 §2; the
+     * mobile mutation-log `opId`). A key is scoped to the caller and the operation: the
+     * authenticated principal, or for an operation with `security: []` the credential in its
+     * body (for `requestAccountRecovery`, which carries none, the request hash alone). The
+     * server keeps key, request hash and response for 48 h: a replay with the same body
+     * returns the stored response; the same key with a different body is refused with 409
+     * `IDEMPOTENCY_KEY_REUSED`. Exception: an operation whose answer carries a credential
+     * (`SessionGrant.token`, `SessionGrant.refreshToken`, `DeletionPending.cancelToken`,
+     * `SignUpPending.token`) is never answered from the store, and its credential is never
+     * stored. Such an operation is marked `x-idempotency-replay: never`. A repeated key on it
+     * is refused with 409 `CONFLICT`, and the client starts that step again. Optional for the
+     * caller.
+     *
+     */
+    'Idempotency-Key'?: string;
+  };
+  path?: never;
+  query?: never;
+  url: '/v1/auth/session/refresh';
+};
+
+export type RefreshSessionErrors = {
+  /**
+   * `UNAUTHENTICATED`: the refresh token is missing, unknown, expired, revoked or
+   * already rotated. A rotated refresh token presented again also revokes its whole
+   * session family (doc 11 §4.2). The client erases the session's tokens and signs in
+   * again.
+   *
+   */
+  401: ProblemDetails;
+  /**
+   * `IDEMPOTENCY_KEY_REUSED` when the `Idempotency-Key` was already used with a different
+   * request; `VERSION_MISMATCH` when `If-Match` no longer matches the stored version;
+   * `CONFLICT` otherwise. Exception: on an operation whose answer carries a credential
+   * (marked `x-idempotency-replay: never`), any repeated `Idempotency-Key` is refused with
+   * `CONFLICT`, never answered from the store, and the client starts that step again.
+   *
+   */
+  409: ProblemDetails;
+  /**
+   * `ACCOUNT_DELETED`: the account is deleted or its deletion is in progress. The client
+   * erases everything it stores for the account and returns to its signed-out start; it
+   * tells this reply from 401 by the status alone. A 410 is cacheable by default
+   * (RFC 9110 §15.5.11), so the reply carries `Cache-Control: no-store` and must not be
+   * cached.
+   *
+   */
+  410: ProblemDetails;
+  /**
+   * `RATE_LIMITED`: a rate limit was hit (doc 11 §14); retry after `Retry-After` seconds.
+   */
+  429: ProblemDetails;
+  /**
+   * Error (RFC 9457)
+   */
+  default: ProblemDetails;
+};
+
+export type RefreshSessionError = RefreshSessionErrors[keyof RefreshSessionErrors];
+
+export type RefreshSessionResponses = {
+  /**
+   * The new access token and refresh token of the session
+   */
+  200: SessionGrant;
+};
+
+export type RefreshSessionResponse = RefreshSessionResponses[keyof RefreshSessionResponses];
+
+export type SignOutData = {
+  body?: never;
+  headers?: {
+    /**
+     * Client-generated ULID that makes a mutating request safe to retry (doc 06 §2; the
+     * mobile mutation-log `opId`). A key is scoped to the caller and the operation: the
+     * authenticated principal, or for an operation with `security: []` the credential in its
+     * body (for `requestAccountRecovery`, which carries none, the request hash alone). The
+     * server keeps key, request hash and response for 48 h: a replay with the same body
+     * returns the stored response; the same key with a different body is refused with 409
+     * `IDEMPOTENCY_KEY_REUSED`. Exception: an operation whose answer carries a credential
+     * (`SessionGrant.token`, `SessionGrant.refreshToken`, `DeletionPending.cancelToken`,
+     * `SignUpPending.token`) is never answered from the store, and its credential is never
+     * stored. Such an operation is marked `x-idempotency-replay: never`. A repeated key on it
+     * is refused with 409 `CONFLICT`, and the client starts that step again. Optional for the
+     * caller.
+     *
+     */
+    'Idempotency-Key'?: string;
+  };
+  path?: never;
+  query?: never;
+  url: '/v1/auth/sign-out';
+};
+
+export type SignOutErrors = {
+  /**
+   * `UNAUTHENTICATED`: the access token is missing, malformed, expired or revoked. The
+   * client renews the session once with its refresh token (`refreshSession`); if the renewal
+   * is refused too, it signs in again.
+   *
+   */
+  401: ProblemDetails;
+  /**
+   * `IDEMPOTENCY_KEY_REUSED` when the `Idempotency-Key` was already used with a different
+   * request; `VERSION_MISMATCH` when `If-Match` no longer matches the stored version;
+   * `CONFLICT` otherwise. Exception: on an operation whose answer carries a credential
+   * (marked `x-idempotency-replay: never`), any repeated `Idempotency-Key` is refused with
+   * `CONFLICT`, never answered from the store, and the client starts that step again.
+   *
+   */
+  409: ProblemDetails;
+  /**
+   * `ACCOUNT_DELETED`: the account is deleted or its deletion is in progress. The client
+   * erases everything it stores for the account and returns to its signed-out start; it
+   * tells this reply from 401 by the status alone. A 410 is cacheable by default
+   * (RFC 9110 §15.5.11), so the reply carries `Cache-Control: no-store` and must not be
+   * cached.
+   *
+   */
+  410: ProblemDetails;
+  /**
+   * `RATE_LIMITED`: a rate limit was hit (doc 11 §14); retry after `Retry-After` seconds.
+   */
+  429: ProblemDetails;
+  /**
+   * Error (RFC 9457)
+   */
+  default: ProblemDetails;
+};
+
+export type SignOutError = SignOutErrors[keyof SignOutErrors];
+
+export type SignOutResponses = {
+  /**
+   * The session is revoked
+   */
+  200: SignOutResult;
+};
+
+export type SignOutResponse = SignOutResponses[keyof SignOutResponses];
+
+export type ListDeviceSessionsData = {
+  body?: never;
+  path?: never;
+  query?: {
+    /**
+     * Opaque cursor from the `nextCursor` of the previous page; omit for the first page.
+     */
+    cursor?: string;
+    /**
+     * Page size (doc 06 §2 cursor pagination).
+     */
+    limit?: number;
+  };
+  url: '/v1/auth/list-sessions';
+};
+
+export type ListDeviceSessionsErrors = {
+  /**
+   * `UNAUTHENTICATED`: the access token is missing, malformed, expired or revoked. The
+   * client renews the session once with its refresh token (`refreshSession`); if the renewal
+   * is refused too, it signs in again.
+   *
+   */
+  401: ProblemDetails;
+  /**
+   * `ACCOUNT_DELETED`: the account is deleted or its deletion is in progress. The client
+   * erases everything it stores for the account and returns to its signed-out start; it
+   * tells this reply from 401 by the status alone. A 410 is cacheable by default
+   * (RFC 9110 §15.5.11), so the reply carries `Cache-Control: no-store` and must not be
+   * cached.
+   *
+   */
+  410: ProblemDetails;
+  /**
+   * `RATE_LIMITED`: a rate limit was hit (doc 11 §14); retry after `Retry-After` seconds.
+   */
+  429: ProblemDetails;
+  /**
+   * Error (RFC 9457)
+   */
+  default: ProblemDetails;
+};
+
+export type ListDeviceSessionsError = ListDeviceSessionsErrors[keyof ListDeviceSessionsErrors];
+
+export type ListDeviceSessionsResponses = {
+  /**
+   * One page of the caller's sessions
+   */
+  200: DeviceSessionPage;
+};
+
+export type ListDeviceSessionsResponse =
+  ListDeviceSessionsResponses[keyof ListDeviceSessionsResponses];
+
+export type SignOutAllDevicesData = {
+  body?: never;
+  headers?: {
+    /**
+     * Client-generated ULID that makes a mutating request safe to retry (doc 06 §2; the
+     * mobile mutation-log `opId`). A key is scoped to the caller and the operation: the
+     * authenticated principal, or for an operation with `security: []` the credential in its
+     * body (for `requestAccountRecovery`, which carries none, the request hash alone). The
+     * server keeps key, request hash and response for 48 h: a replay with the same body
+     * returns the stored response; the same key with a different body is refused with 409
+     * `IDEMPOTENCY_KEY_REUSED`. Exception: an operation whose answer carries a credential
+     * (`SessionGrant.token`, `SessionGrant.refreshToken`, `DeletionPending.cancelToken`,
+     * `SignUpPending.token`) is never answered from the store, and its credential is never
+     * stored. Such an operation is marked `x-idempotency-replay: never`. A repeated key on it
+     * is refused with 409 `CONFLICT`, and the client starts that step again. Optional for the
+     * caller.
+     *
+     */
+    'Idempotency-Key'?: string;
+  };
+  path?: never;
+  query?: never;
+  url: '/v1/auth/revoke-sessions';
+};
+
+export type SignOutAllDevicesErrors = {
+  /**
+   * `UNAUTHENTICATED`: the access token is missing, malformed, expired or revoked. The
+   * client renews the session once with its refresh token (`refreshSession`); if the renewal
+   * is refused too, it signs in again.
+   *
+   */
+  401: ProblemDetails;
+  /**
+   * `IDEMPOTENCY_KEY_REUSED` when the `Idempotency-Key` was already used with a different
+   * request; `VERSION_MISMATCH` when `If-Match` no longer matches the stored version;
+   * `CONFLICT` otherwise. Exception: on an operation whose answer carries a credential
+   * (marked `x-idempotency-replay: never`), any repeated `Idempotency-Key` is refused with
+   * `CONFLICT`, never answered from the store, and the client starts that step again.
+   *
+   */
+  409: ProblemDetails;
+  /**
+   * `ACCOUNT_DELETED`: the account is deleted or its deletion is in progress. The client
+   * erases everything it stores for the account and returns to its signed-out start; it
+   * tells this reply from 401 by the status alone. A 410 is cacheable by default
+   * (RFC 9110 §15.5.11), so the reply carries `Cache-Control: no-store` and must not be
+   * cached.
+   *
+   */
+  410: ProblemDetails;
+  /**
+   * `RATE_LIMITED`: a rate limit was hit (doc 11 §14); retry after `Retry-After` seconds.
+   */
+  429: ProblemDetails;
+  /**
+   * Error (RFC 9457)
+   */
+  default: ProblemDetails;
+};
+
+export type SignOutAllDevicesError = SignOutAllDevicesErrors[keyof SignOutAllDevicesErrors];
+
+export type SignOutAllDevicesResponses = {
+  /**
+   * Every session of the account is revoked
+   */
+  200: RevokeSessionsResult;
+};
+
+export type SignOutAllDevicesResponse =
+  SignOutAllDevicesResponses[keyof SignOutAllDevicesResponses];
+
+export type RequestAccountRecoveryData = {
+  body: RecoveryRequest;
+  headers?: {
+    /**
+     * Client-generated ULID that makes a mutating request safe to retry (doc 06 §2; the
+     * mobile mutation-log `opId`). A key is scoped to the caller and the operation: the
+     * authenticated principal, or for an operation with `security: []` the credential in its
+     * body (for `requestAccountRecovery`, which carries none, the request hash alone). The
+     * server keeps key, request hash and response for 48 h: a replay with the same body
+     * returns the stored response; the same key with a different body is refused with 409
+     * `IDEMPOTENCY_KEY_REUSED`. Exception: an operation whose answer carries a credential
+     * (`SessionGrant.token`, `SessionGrant.refreshToken`, `DeletionPending.cancelToken`,
+     * `SignUpPending.token`) is never answered from the store, and its credential is never
+     * stored. Such an operation is marked `x-idempotency-replay: never`. A repeated key on it
+     * is refused with 409 `CONFLICT`, and the client starts that step again. Optional for the
+     * caller.
+     *
+     */
+    'Idempotency-Key'?: string;
+  };
+  path?: never;
+  query?: never;
+  url: '/v1/auth/sign-in/magic-link';
+};
+
+export type RequestAccountRecoveryErrors = {
+  /**
+   * `IDEMPOTENCY_KEY_REUSED` when the `Idempotency-Key` was already used with a different
+   * request; `VERSION_MISMATCH` when `If-Match` no longer matches the stored version;
+   * `CONFLICT` otherwise. Exception: on an operation whose answer carries a credential
+   * (marked `x-idempotency-replay: never`), any repeated `Idempotency-Key` is refused with
+   * `CONFLICT`, never answered from the store, and the client starts that step again.
+   *
+   */
+  409: ProblemDetails;
+  /**
+   * `RATE_LIMITED`: a rate limit was hit (doc 11 §14); retry after `Retry-After` seconds.
+   */
+  429: ProblemDetails;
+  /**
+   * Error (RFC 9457)
+   */
+  default: ProblemDetails;
+};
+
+export type RequestAccountRecoveryError =
+  RequestAccountRecoveryErrors[keyof RequestAccountRecoveryErrors];
+
+export type RequestAccountRecoveryResponses = {
+  /**
+   * Accepted (uniform for every address)
+   */
+  200: RecoveryRequestAccepted;
+};
+
+export type RequestAccountRecoveryResponse =
+  RequestAccountRecoveryResponses[keyof RequestAccountRecoveryResponses];
+
+export type CompleteAccountRecoveryData = {
+  body: RecoveryCompletionRequest;
+  headers?: {
+    /**
+     * Client-generated ULID that makes a mutating request safe to retry (doc 06 §2; the
+     * mobile mutation-log `opId`). A key is scoped to the caller and the operation: the
+     * authenticated principal, or for an operation with `security: []` the credential in its
+     * body (for `requestAccountRecovery`, which carries none, the request hash alone). The
+     * server keeps key, request hash and response for 48 h: a replay with the same body
+     * returns the stored response; the same key with a different body is refused with 409
+     * `IDEMPOTENCY_KEY_REUSED`. Exception: an operation whose answer carries a credential
+     * (`SessionGrant.token`, `SessionGrant.refreshToken`, `DeletionPending.cancelToken`,
+     * `SignUpPending.token`) is never answered from the store, and its credential is never
+     * stored. Such an operation is marked `x-idempotency-replay: never`. A repeated key on it
+     * is refused with 409 `CONFLICT`, and the client starts that step again. Optional for the
+     * caller.
+     *
+     */
+    'Idempotency-Key'?: string;
+  };
+  path?: never;
+  query?: never;
+  url: '/v1/auth/recovery/complete';
+};
+
+export type CompleteAccountRecoveryErrors = {
+  /**
+   * `UNAUTHENTICATED`: the link is unknown, used, cancelled, expired or not yet valid. A
+   * link used before its 24-hour delay is refused without being spent.
+   *
+   */
+  401: ProblemDetails;
+  /**
+   * `IDEMPOTENCY_KEY_REUSED` when the `Idempotency-Key` was already used with a different
+   * request; `VERSION_MISMATCH` when `If-Match` no longer matches the stored version;
+   * `CONFLICT` otherwise. Exception: on an operation whose answer carries a credential
+   * (marked `x-idempotency-replay: never`), any repeated `Idempotency-Key` is refused with
+   * `CONFLICT`, never answered from the store, and the client starts that step again.
+   *
+   */
+  409: ProblemDetails;
+  /**
+   * `RATE_LIMITED`: a rate limit was hit (doc 11 §14); retry after `Retry-After` seconds.
+   */
+  429: ProblemDetails;
+  /**
+   * Error (RFC 9457)
+   */
+  default: ProblemDetails;
+};
+
+export type CompleteAccountRecoveryError =
+  CompleteAccountRecoveryErrors[keyof CompleteAccountRecoveryErrors];
+
+export type CompleteAccountRecoveryResponses = {
+  /**
+   * The outcome of a sign-in (see `SignInResult`)
+   */
+  200: SignInResult;
+};
+
+export type CompleteAccountRecoveryResponse =
+  CompleteAccountRecoveryResponses[keyof CompleteAccountRecoveryResponses];
+
+export type CancelAccountRecoveryData = {
+  body?: never;
+  headers?: {
+    /**
+     * Client-generated ULID that makes a mutating request safe to retry (doc 06 §2; the
+     * mobile mutation-log `opId`). A key is scoped to the caller and the operation: the
+     * authenticated principal, or for an operation with `security: []` the credential in its
+     * body (for `requestAccountRecovery`, which carries none, the request hash alone). The
+     * server keeps key, request hash and response for 48 h: a replay with the same body
+     * returns the stored response; the same key with a different body is refused with 409
+     * `IDEMPOTENCY_KEY_REUSED`. Exception: an operation whose answer carries a credential
+     * (`SessionGrant.token`, `SessionGrant.refreshToken`, `DeletionPending.cancelToken`,
+     * `SignUpPending.token`) is never answered from the store, and its credential is never
+     * stored. Such an operation is marked `x-idempotency-replay: never`. A repeated key on it
+     * is refused with 409 `CONFLICT`, and the client starts that step again. Optional for the
+     * caller.
+     *
+     */
+    'Idempotency-Key'?: string;
+  };
+  path?: never;
+  query?: never;
+  url: '/v1/me/recovery';
+};
+
+export type CancelAccountRecoveryErrors = {
+  /**
+   * `UNAUTHENTICATED`: the access token is missing, malformed, expired or revoked. The
+   * client renews the session once with its refresh token (`refreshSession`); if the renewal
+   * is refused too, it signs in again.
+   *
+   */
+  401: ProblemDetails;
+  /**
+   * `NOT_FOUND`: the account has no pending recovery.
+   */
+  404: ProblemDetails;
+  /**
+   * `IDEMPOTENCY_KEY_REUSED` when the `Idempotency-Key` was already used with a different
+   * request; `VERSION_MISMATCH` when `If-Match` no longer matches the stored version;
+   * `CONFLICT` otherwise. Exception: on an operation whose answer carries a credential
+   * (marked `x-idempotency-replay: never`), any repeated `Idempotency-Key` is refused with
+   * `CONFLICT`, never answered from the store, and the client starts that step again.
+   *
+   */
+  409: ProblemDetails;
+  /**
+   * `ACCOUNT_DELETED`: the account is deleted or its deletion is in progress. The client
+   * erases everything it stores for the account and returns to its signed-out start; it
+   * tells this reply from 401 by the status alone. A 410 is cacheable by default
+   * (RFC 9110 §15.5.11), so the reply carries `Cache-Control: no-store` and must not be
+   * cached.
+   *
+   */
+  410: ProblemDetails;
+  /**
+   * `RATE_LIMITED`: a rate limit was hit (doc 11 §14); retry after `Retry-After` seconds.
+   */
+  429: ProblemDetails;
+  /**
+   * Error (RFC 9457)
+   */
+  default: ProblemDetails;
+};
+
+export type CancelAccountRecoveryError =
+  CancelAccountRecoveryErrors[keyof CancelAccountRecoveryErrors];
+
+export type CancelAccountRecoveryResponses = {
+  /**
+   * The pending recovery is cancelled; its link no longer works.
+   */
+  204: void;
+};
+
+export type CancelAccountRecoveryResponse =
+  CancelAccountRecoveryResponses[keyof CancelAccountRecoveryResponses];
+
+export type ListConsentsData = {
+  body?: never;
+  path?: never;
+  query?: {
+    /**
+     * Opaque cursor from the `nextCursor` of the previous page; omit for the first page.
+     */
+    cursor?: string;
+    /**
+     * Page size (doc 06 §2 cursor pagination).
+     */
+    limit?: number;
+  };
+  url: '/v1/me/consents';
+};
+
+export type ListConsentsErrors = {
+  /**
+   * `UNAUTHENTICATED`: the access token is missing, malformed, expired or revoked. The
+   * client renews the session once with its refresh token (`refreshSession`); if the renewal
+   * is refused too, it signs in again.
+   *
+   */
+  401: ProblemDetails;
+  /**
+   * `ACCOUNT_DELETED`: the account is deleted or its deletion is in progress. The client
+   * erases everything it stores for the account and returns to its signed-out start; it
+   * tells this reply from 401 by the status alone. A 410 is cacheable by default
+   * (RFC 9110 §15.5.11), so the reply carries `Cache-Control: no-store` and must not be
+   * cached.
+   *
+   */
+  410: ProblemDetails;
+  /**
+   * `RATE_LIMITED`: a rate limit was hit (doc 11 §14); retry after `Retry-After` seconds.
+   */
+  429: ProblemDetails;
+  /**
+   * Error (RFC 9457)
+   */
+  default: ProblemDetails;
+};
+
+export type ListConsentsError = ListConsentsErrors[keyof ListConsentsErrors];
+
+export type ListConsentsResponses = {
+  /**
+   * One page of the consent the server applies, one entry per purpose
+   */
+  200: ConsentPage;
+};
+
+export type ListConsentsResponse = ListConsentsResponses[keyof ListConsentsResponses];
+
+export type RecordConsentData = {
+  body: ConsentChange;
+  headers?: {
+    /**
+     * Client-generated ULID that makes a mutating request safe to retry (doc 06 §2; the
+     * mobile mutation-log `opId`). A key is scoped to the caller and the operation: the
+     * authenticated principal, or for an operation with `security: []` the credential in its
+     * body (for `requestAccountRecovery`, which carries none, the request hash alone). The
+     * server keeps key, request hash and response for 48 h: a replay with the same body
+     * returns the stored response; the same key with a different body is refused with 409
+     * `IDEMPOTENCY_KEY_REUSED`. Exception: an operation whose answer carries a credential
+     * (`SessionGrant.token`, `SessionGrant.refreshToken`, `DeletionPending.cancelToken`,
+     * `SignUpPending.token`) is never answered from the store, and its credential is never
+     * stored. Such an operation is marked `x-idempotency-replay: never`. A repeated key on it
+     * is refused with 409 `CONFLICT`, and the client starts that step again. Optional for the
+     * caller.
+     *
+     */
+    'Idempotency-Key'?: string;
+  };
+  path?: never;
+  query?: never;
+  url: '/v1/me/consents';
+};
+
+export type RecordConsentErrors = {
+  /**
+   * `UNAUTHENTICATED`: the access token is missing, malformed, expired or revoked. The
+   * client renews the session once with its refresh token (`refreshSession`); if the renewal
+   * is refused too, it signs in again.
+   *
+   */
+  401: ProblemDetails;
+  /**
+   * `CONSENT_REQUIRED`: a withdrawal of a purpose that `listConsents` marks
+   * `withdrawable: false` (`core_service` today) is refused. That consent is required
+   * to use the app (doc 11 §7.2). Deleting the account is what ends this processing
+   * (`POST /v1/me/deletion`).
+   *
+   */
+  403: ProblemDetails;
+  /**
+   * `IDEMPOTENCY_KEY_REUSED` when the `Idempotency-Key` was already used with a different
+   * request; `VERSION_MISMATCH` when `If-Match` no longer matches the stored version;
+   * `CONFLICT` otherwise. Exception: on an operation whose answer carries a credential
+   * (marked `x-idempotency-replay: never`), any repeated `Idempotency-Key` is refused with
+   * `CONFLICT`, never answered from the store, and the client starts that step again.
+   *
+   */
+  409: ProblemDetails;
+  /**
+   * `ACCOUNT_DELETED`: the account is deleted or its deletion is in progress. The client
+   * erases everything it stores for the account and returns to its signed-out start; it
+   * tells this reply from 401 by the status alone. A 410 is cacheable by default
+   * (RFC 9110 §15.5.11), so the reply carries `Cache-Control: no-store` and must not be
+   * cached.
+   *
+   */
+  410: ProblemDetails;
+  /**
+   * `RATE_LIMITED`: a rate limit was hit (doc 11 §14); retry after `Retry-After` seconds.
+   */
+  429: ProblemDetails;
+  /**
+   * Error (RFC 9457)
+   */
+  default: ProblemDetails;
+};
+
+export type RecordConsentError = RecordConsentErrors[keyof RecordConsentErrors];
+
+export type RecordConsentResponses = {
+  /**
+   * Unchanged; the current record
+   */
+  200: ConsentRecord;
+  /**
+   * The appended record
+   */
+  201: ConsentRecord;
+};
+
+export type RecordConsentResponse = RecordConsentResponses[keyof RecordConsentResponses];
+
+export type RequestDataExportData = {
+  body?: never;
+  headers?: {
+    /**
+     * Client-generated ULID that makes a mutating request safe to retry (doc 06 §2; the
+     * mobile mutation-log `opId`). A key is scoped to the caller and the operation: the
+     * authenticated principal, or for an operation with `security: []` the credential in its
+     * body (for `requestAccountRecovery`, which carries none, the request hash alone). The
+     * server keeps key, request hash and response for 48 h: a replay with the same body
+     * returns the stored response; the same key with a different body is refused with 409
+     * `IDEMPOTENCY_KEY_REUSED`. Exception: an operation whose answer carries a credential
+     * (`SessionGrant.token`, `SessionGrant.refreshToken`, `DeletionPending.cancelToken`,
+     * `SignUpPending.token`) is never answered from the store, and its credential is never
+     * stored. Such an operation is marked `x-idempotency-replay: never`. A repeated key on it
+     * is refused with 409 `CONFLICT`, and the client starts that step again. Optional for the
+     * caller.
+     *
+     */
+    'Idempotency-Key'?: string;
+  };
+  path?: never;
+  query?: never;
+  url: '/v1/me/exports';
+};
+
+export type RequestDataExportErrors = {
+  /**
+   * `UNAUTHENTICATED`: the access token is missing, malformed, expired or revoked. The
+   * client renews the session once with its refresh token (`refreshSession`); if the renewal
+   * is refused too, it signs in again.
+   *
+   */
+  401: ProblemDetails;
+  /**
+   * `FORBIDDEN`: re-authentication is needed. The operation needs a recent sign-in: the
+   * session must have been opened by a sign-in a short time ago (better-auth `freshAge`; the
+   * server sets the window). Recency counts from the sign-in that opened the session; a
+   * renewal with `refreshSession` never resets it. The client signs in again with the same
+   * account and repeats the request.
+   *
+   */
+  403: ProblemDetails;
+  /**
+   * `IDEMPOTENCY_KEY_REUSED` when the `Idempotency-Key` was already used with a different
+   * request; `VERSION_MISMATCH` when `If-Match` no longer matches the stored version;
+   * `CONFLICT` otherwise. Exception: on an operation whose answer carries a credential
+   * (marked `x-idempotency-replay: never`), any repeated `Idempotency-Key` is refused with
+   * `CONFLICT`, never answered from the store, and the client starts that step again.
+   *
+   */
+  409: ProblemDetails;
+  /**
+   * `ACCOUNT_DELETED`: the account is deleted or its deletion is in progress. The client
+   * erases everything it stores for the account and returns to its signed-out start; it
+   * tells this reply from 401 by the status alone. A 410 is cacheable by default
+   * (RFC 9110 §15.5.11), so the reply carries `Cache-Control: no-store` and must not be
+   * cached.
+   *
+   */
+  410: ProblemDetails;
+  /**
+   * `RATE_LIMITED`: an export of this account is already in progress, and `current` is that
+   * export (read it with `getDataExport`); or another rate limit was hit, without `current`.
+   * `current` is always `in_progress`, so it never carries `download`: a link is minted
+   * only by `getDataExport`. Retry after `Retry-After` seconds (doc 11 §14).
+   *
+   */
+  429: DataExportInProgress;
+  /**
+   * Error (RFC 9457)
+   */
+  default: ProblemDetails;
+};
+
+export type RequestDataExportError = RequestDataExportErrors[keyof RequestDataExportErrors];
+
+export type RequestDataExportResponses = {
+  /**
+   * The export is accepted and in progress
+   */
+  202: DataExport;
+};
+
+export type RequestDataExportResponse =
+  RequestDataExportResponses[keyof RequestDataExportResponses];
+
+export type GetDataExportData = {
+  body?: never;
+  path: {
+    id: DataExportId;
+  };
+  query?: never;
+  url: '/v1/me/exports/{id}';
+};
+
+export type GetDataExportErrors = {
+  /**
+   * `UNAUTHENTICATED`: the access token is missing, malformed, expired or revoked. The
+   * client renews the session once with its refresh token (`refreshSession`); if the renewal
+   * is refused too, it signs in again.
+   *
+   */
+  401: ProblemDetails;
+  /**
+   * `NOT_FOUND`: the caller has no export with this id.
+   */
+  404: ProblemDetails;
+  /**
+   * `ACCOUNT_DELETED`: the account is deleted or its deletion is in progress. The client
+   * erases everything it stores for the account and returns to its signed-out start; it
+   * tells this reply from 401 by the status alone. A 410 is cacheable by default
+   * (RFC 9110 §15.5.11), so the reply carries `Cache-Control: no-store` and must not be
+   * cached.
+   *
+   */
+  410: ProblemDetails;
+  /**
+   * `RATE_LIMITED`: a rate limit was hit (doc 11 §14); retry after `Retry-After` seconds.
+   */
+  429: ProblemDetails;
+  /**
+   * Error (RFC 9457)
+   */
+  default: ProblemDetails;
+};
+
+export type GetDataExportError = GetDataExportErrors[keyof GetDataExportErrors];
+
+export type GetDataExportResponses = {
+  /**
+   * The export
+   */
+  200: DataExport;
+};
+
+export type GetDataExportResponse = GetDataExportResponses[keyof GetDataExportResponses];
+
+export type CancelAccountDeletionData = {
+  body?: never;
+  headers?: {
+    /**
+     * Client-generated ULID that makes a mutating request safe to retry (doc 06 §2; the
+     * mobile mutation-log `opId`). A key is scoped to the caller and the operation: the
+     * authenticated principal, or for an operation with `security: []` the credential in its
+     * body (for `requestAccountRecovery`, which carries none, the request hash alone). The
+     * server keeps key, request hash and response for 48 h: a replay with the same body
+     * returns the stored response; the same key with a different body is refused with 409
+     * `IDEMPOTENCY_KEY_REUSED`. Exception: an operation whose answer carries a credential
+     * (`SessionGrant.token`, `SessionGrant.refreshToken`, `DeletionPending.cancelToken`,
+     * `SignUpPending.token`) is never answered from the store, and its credential is never
+     * stored. Such an operation is marked `x-idempotency-replay: never`. A repeated key on it
+     * is refused with 409 `CONFLICT`, and the client starts that step again. Optional for the
+     * caller.
+     *
+     */
+    'Idempotency-Key'?: string;
+  };
+  path?: never;
+  query?: never;
+  url: '/v1/me/deletion';
+};
+
+export type CancelAccountDeletionErrors = {
+  /**
+   * `UNAUTHENTICATED`: the cancel credential is missing, malformed or expired. The client
+   * signs in again; during the window that sign-in answers `deletion_pending` with a new
+   * credential.
+   *
+   */
+  401: ProblemDetails;
+  /**
+   * `NOT_FOUND`: the account has no pending deletion, e.g. it was already cancelled.
+   */
+  404: ProblemDetails;
+  /**
+   * `IDEMPOTENCY_KEY_REUSED` when the `Idempotency-Key` was already used with a different
+   * request; `VERSION_MISMATCH` when `If-Match` no longer matches the stored version;
+   * `CONFLICT` otherwise. Exception: on an operation whose answer carries a credential
+   * (marked `x-idempotency-replay: never`), any repeated `Idempotency-Key` is refused with
+   * `CONFLICT`, never answered from the store, and the client starts that step again.
+   *
+   */
+  409: ProblemDetails;
+  /**
+   * `ACCOUNT_DELETED`: the grace window has ended, so the deletion can no longer be
+   * cancelled; the account is deleted or being purged. The client erases everything it
+   * stores for the account and returns to its signed-out start. Not cached.
+   *
+   */
+  410: ProblemDetails;
+  /**
+   * `RATE_LIMITED`: a rate limit was hit (doc 11 §14); retry after `Retry-After` seconds.
+   */
+  429: ProblemDetails;
+  /**
+   * Error (RFC 9457)
+   */
+  default: ProblemDetails;
+};
+
+export type CancelAccountDeletionError =
+  CancelAccountDeletionErrors[keyof CancelAccountDeletionErrors];
+
+export type CancelAccountDeletionResponses = {
+  /**
+   * The deletion is cancelled and the account is active; sign in to open a session.
+   */
+  204: void;
+};
+
+export type CancelAccountDeletionResponse =
+  CancelAccountDeletionResponses[keyof CancelAccountDeletionResponses];
+
+export type RequestAccountDeletionData = {
+  body?: never;
+  headers?: {
+    /**
+     * Client-generated ULID that makes a mutating request safe to retry (doc 06 §2; the
+     * mobile mutation-log `opId`). A key is scoped to the caller and the operation: the
+     * authenticated principal, or for an operation with `security: []` the credential in its
+     * body (for `requestAccountRecovery`, which carries none, the request hash alone). The
+     * server keeps key, request hash and response for 48 h: a replay with the same body
+     * returns the stored response; the same key with a different body is refused with 409
+     * `IDEMPOTENCY_KEY_REUSED`. Exception: an operation whose answer carries a credential
+     * (`SessionGrant.token`, `SessionGrant.refreshToken`, `DeletionPending.cancelToken`,
+     * `SignUpPending.token`) is never answered from the store, and its credential is never
+     * stored. Such an operation is marked `x-idempotency-replay: never`. A repeated key on it
+     * is refused with 409 `CONFLICT`, and the client starts that step again. Optional for the
+     * caller.
+     *
+     */
+    'Idempotency-Key'?: string;
+  };
+  path?: never;
+  query?: never;
+  url: '/v1/me/deletion';
+};
+
+export type RequestAccountDeletionErrors = {
+  /**
+   * `UNAUTHENTICATED`: the access token is missing, malformed, expired or revoked. The
+   * client renews the session once with its refresh token (`refreshSession`); if the renewal
+   * is refused too, it signs in again.
+   *
+   */
+  401: ProblemDetails;
+  /**
+   * `FORBIDDEN`: re-authentication is needed. The operation needs a recent sign-in: the
+   * session must have been opened by a sign-in a short time ago (better-auth `freshAge`; the
+   * server sets the window). Recency counts from the sign-in that opened the session; a
+   * renewal with `refreshSession` never resets it. The client signs in again with the same
+   * account and repeats the request.
+   *
+   */
+  403: ProblemDetails;
+  /**
+   * `IDEMPOTENCY_KEY_REUSED` when the `Idempotency-Key` was already used with a different
+   * request; `VERSION_MISMATCH` when `If-Match` no longer matches the stored version;
+   * `CONFLICT` otherwise. Exception: on an operation whose answer carries a credential
+   * (marked `x-idempotency-replay: never`), any repeated `Idempotency-Key` is refused with
+   * `CONFLICT`, never answered from the store, and the client starts that step again.
+   *
+   */
+  409: ProblemDetails;
+  /**
+   * `ACCOUNT_DELETED`: the account is deleted or its deletion is in progress. The client
+   * erases everything it stores for the account and returns to its signed-out start; it
+   * tells this reply from 401 by the status alone. A 410 is cacheable by default
+   * (RFC 9110 §15.5.11), so the reply carries `Cache-Control: no-store` and must not be
+   * cached.
+   *
+   */
+  410: ProblemDetails;
+  /**
+   * `RATE_LIMITED`: the account requested a deletion within the last 30 days that was
+   * not cancelled (doc 11 §14); a request stopped with `cancelAccountDeletion` does not
+   * count. Or another rate limit was hit. Retry after `Retry-After` seconds.
+   *
+   */
+  429: ProblemDetails;
+  /**
+   * Error (RFC 9457)
+   */
+  default: ProblemDetails;
+};
+
+export type RequestAccountDeletionError =
+  RequestAccountDeletionErrors[keyof RequestAccountDeletionErrors];
+
+export type RequestAccountDeletionResponses = {
+  /**
+   * The deletion is requested; its grace window has started
+   */
+  202: AccountDeletionRequest;
+};
+
+export type RequestAccountDeletionResponse =
+  RequestAccountDeletionResponses[keyof RequestAccountDeletionResponses];
+
+export type GetProfileData = {
+  body?: never;
+  path?: never;
+  query?: never;
+  url: '/v1/me/profile';
+};
+
+export type GetProfileErrors = {
+  /**
+   * `UNAUTHENTICATED`: the access token is missing, malformed, expired or revoked. The
+   * client renews the session once with its refresh token (`refreshSession`); if the renewal
+   * is refused too, it signs in again.
+   *
+   */
+  401: ProblemDetails;
+  /**
+   * `ACCOUNT_DELETED`: the account is deleted or its deletion is in progress. The client
+   * erases everything it stores for the account and returns to its signed-out start; it
+   * tells this reply from 401 by the status alone. A 410 is cacheable by default
+   * (RFC 9110 §15.5.11), so the reply carries `Cache-Control: no-store` and must not be
+   * cached.
+   *
+   */
+  410: ProblemDetails;
+  /**
+   * `RATE_LIMITED`: a rate limit was hit (doc 11 §14); retry after `Retry-After` seconds.
+   */
+  429: ProblemDetails;
+  /**
+   * Error (RFC 9457)
+   */
+  default: ProblemDetails;
+};
+
+export type GetProfileError = GetProfileErrors[keyof GetProfileErrors];
+
+export type GetProfileResponses = {
+  /**
+   * The caller's profile
+   */
+  200: Profile;
+};
+
+export type GetProfileResponse = GetProfileResponses[keyof GetProfileResponses];
+
+export type UpdateProfileData = {
+  body: ProfileUpdate;
+  headers: {
+    /**
+     * Client-generated ULID that makes a mutating request safe to retry (doc 06 §2; the
+     * mobile mutation-log `opId`). A key is scoped to the caller and the operation: the
+     * authenticated principal, or for an operation with `security: []` the credential in its
+     * body (for `requestAccountRecovery`, which carries none, the request hash alone). The
+     * server keeps key, request hash and response for 48 h: a replay with the same body
+     * returns the stored response; the same key with a different body is refused with 409
+     * `IDEMPOTENCY_KEY_REUSED`. Exception: an operation whose answer carries a credential
+     * (`SessionGrant.token`, `SessionGrant.refreshToken`, `DeletionPending.cancelToken`,
+     * `SignUpPending.token`) is never answered from the store, and its credential is never
+     * stored. Such an operation is marked `x-idempotency-replay: never`. A repeated key on it
+     * is refused with 409 `CONFLICT`, and the client starts that step again. Optional for the
+     * caller.
+     *
+     */
+    'Idempotency-Key'?: string;
+    /**
+     * The `version` of the resource the client last read, as a quoted integer, e.g. `"3"`
+     * (doc 06 §2). Every write to a versioned resource sends it; a stale version is refused
+     * with 409 `VERSION_MISMATCH`.
+     *
+     */
+    'If-Match': string;
+  };
+  path?: never;
+  query?: never;
+  url: '/v1/me/profile';
+};
+
+export type UpdateProfileErrors = {
+  /**
+   * `VALIDATION_FAILED`: the body breaks this schema, or `startingShape` is not a shape
+   * of the shared-kernel registry. `errors[]` names each field.
+   *
+   */
+  400: ProblemDetails;
+  /**
+   * `UNAUTHENTICATED`: the access token is missing, malformed, expired or revoked. The
+   * client renews the session once with its refresh token (`refreshSession`); if the renewal
+   * is refused too, it signs in again.
+   *
+   */
+  401: ProblemDetails;
+  /**
+   * `VERSION_MISMATCH`: `If-Match` names an older version than the stored one. `current` is
+   * the stored profile, so the app can keep the losing edit and offer to re-apply it on top
+   * (doc 04 §8). `IDEMPOTENCY_KEY_REUSED` or `CONFLICT` otherwise, without `current`.
+   *
+   */
+  409: ProfileVersionConflict;
+  /**
+   * `ACCOUNT_DELETED`: the account is deleted or its deletion is in progress. The client
+   * erases everything it stores for the account and returns to its signed-out start; it
+   * tells this reply from 401 by the status alone. A 410 is cacheable by default
+   * (RFC 9110 §15.5.11), so the reply carries `Cache-Control: no-store` and must not be
+   * cached.
+   *
+   */
+  410: ProblemDetails;
+  /**
+   * `RATE_LIMITED`: a rate limit was hit (doc 11 §14); retry after `Retry-After` seconds.
+   */
+  429: ProblemDetails;
+  /**
+   * Error (RFC 9457)
+   */
+  default: ProblemDetails;
+};
+
+export type UpdateProfileError = UpdateProfileErrors[keyof UpdateProfileErrors];
+
+export type UpdateProfileResponses = {
+  /**
+   * The updated profile
+   */
+  200: Profile;
+};
+
+export type UpdateProfileResponse = UpdateProfileResponses[keyof UpdateProfileResponses];
+
+export type GetMeasurementsData = {
+  body?: never;
+  path?: never;
+  query?: never;
+  url: '/v1/me/measurements';
+};
+
+export type GetMeasurementsErrors = {
+  /**
+   * `UNAUTHENTICATED`: the access token is missing, malformed, expired or revoked. The
+   * client renews the session once with its refresh token (`refreshSession`); if the renewal
+   * is refused too, it signs in again.
+   *
+   */
+  401: ProblemDetails;
+  /**
+   * `ACCOUNT_DELETED`: the account is deleted or its deletion is in progress. The client
+   * erases everything it stores for the account and returns to its signed-out start; it
+   * tells this reply from 401 by the status alone. A 410 is cacheable by default
+   * (RFC 9110 §15.5.11), so the reply carries `Cache-Control: no-store` and must not be
+   * cached.
+   *
+   */
+  410: ProblemDetails;
+  /**
+   * `RATE_LIMITED`: a rate limit was hit (doc 11 §14); retry after `Retry-After` seconds.
+   */
+  429: ProblemDetails;
+  /**
+   * Error (RFC 9457)
+   */
+  default: ProblemDetails;
+};
+
+export type GetMeasurementsError = GetMeasurementsErrors[keyof GetMeasurementsErrors];
+
+export type GetMeasurementsResponses = {
+  /**
+   * The caller's measurement set
+   */
+  200: MeasurementSet;
+};
+
+export type GetMeasurementsResponse = GetMeasurementsResponses[keyof GetMeasurementsResponses];
+
+export type ReplaceMeasurementsData = {
+  body: MeasurementsReplacement;
+  headers: {
+    /**
+     * Client-generated ULID that makes a mutating request safe to retry (doc 06 §2; the
+     * mobile mutation-log `opId`). A key is scoped to the caller and the operation: the
+     * authenticated principal, or for an operation with `security: []` the credential in its
+     * body (for `requestAccountRecovery`, which carries none, the request hash alone). The
+     * server keeps key, request hash and response for 48 h: a replay with the same body
+     * returns the stored response; the same key with a different body is refused with 409
+     * `IDEMPOTENCY_KEY_REUSED`. Exception: an operation whose answer carries a credential
+     * (`SessionGrant.token`, `SessionGrant.refreshToken`, `DeletionPending.cancelToken`,
+     * `SignUpPending.token`) is never answered from the store, and its credential is never
+     * stored. Such an operation is marked `x-idempotency-replay: never`. A repeated key on it
+     * is refused with 409 `CONFLICT`, and the client starts that step again. Optional for the
+     * caller.
+     *
+     */
+    'Idempotency-Key'?: string;
+    /**
+     * The `version` of the resource the client last read, as a quoted integer, e.g. `"3"`
+     * (doc 06 §2). Every write to a versioned resource sends it; a stale version is refused
+     * with 409 `VERSION_MISMATCH`.
+     *
+     */
+    'If-Match': string;
+  };
+  path?: never;
+  query?: never;
+  url: '/v1/me/measurements';
+};
+
+export type ReplaceMeasurementsErrors = {
+  /**
+   * `MEASUREMENT_IMPLAUSIBLE`: a value lies outside its hard bounds (shared-kernel
+   * `registry/measurement-definitions.json`, doc 07 §3.3). Nothing of the request is
+   * stored. `errors[]` points at each refused value (e.g. `/measurements/height/value`)
+   * and never repeats it (doc 11 §8). `VALIDATION_FAILED`: the body breaks this schema,
+   * e.g. an `estimated` or `derived` value without `confidence`.
+   *
+   */
+  400: ProblemDetails;
+  /**
+   * `UNAUTHENTICATED`: the access token is missing, malformed, expired or revoked. The
+   * client renews the session once with its refresh token (`refreshSession`); if the renewal
+   * is refused too, it signs in again.
+   *
+   */
+  401: ProblemDetails;
+  /**
+   * `VERSION_MISMATCH`: `If-Match` names an older version than the stored one. `current` is
+   * the stored measurement set, so the app can keep the losing edit and offer to re-apply it
+   * on top (doc 04 §8). `IDEMPOTENCY_KEY_REUSED` or `CONFLICT` otherwise, without `current`.
+   *
+   */
+  409: MeasurementSetVersionConflict;
+  /**
+   * `ACCOUNT_DELETED`: the account is deleted or its deletion is in progress. The client
+   * erases everything it stores for the account and returns to its signed-out start; it
+   * tells this reply from 401 by the status alone. A 410 is cacheable by default
+   * (RFC 9110 §15.5.11), so the reply carries `Cache-Control: no-store` and must not be
+   * cached.
+   *
+   */
+  410: ProblemDetails;
+  /**
+   * `RATE_LIMITED`: a rate limit was hit (doc 11 §14); retry after `Retry-After` seconds.
+   */
+  429: ProblemDetails;
+  /**
+   * Error (RFC 9457)
+   */
+  default: ProblemDetails;
+};
+
+export type ReplaceMeasurementsError = ReplaceMeasurementsErrors[keyof ReplaceMeasurementsErrors];
+
+export type ReplaceMeasurementsResponses = {
+  /**
+   * The stored measurement set
+   */
+  200: MeasurementSet;
+};
+
+export type ReplaceMeasurementsResponse =
+  ReplaceMeasurementsResponses[keyof ReplaceMeasurementsResponses];
+
+export type GetPreferencesData = {
+  body?: never;
+  path?: never;
+  query?: never;
+  url: '/v1/me/preferences';
+};
+
+export type GetPreferencesErrors = {
+  /**
+   * `UNAUTHENTICATED`: the access token is missing, malformed, expired or revoked. The
+   * client renews the session once with its refresh token (`refreshSession`); if the renewal
+   * is refused too, it signs in again.
+   *
+   */
+  401: ProblemDetails;
+  /**
+   * `ACCOUNT_DELETED`: the account is deleted or its deletion is in progress. The client
+   * erases everything it stores for the account and returns to its signed-out start; it
+   * tells this reply from 401 by the status alone. A 410 is cacheable by default
+   * (RFC 9110 §15.5.11), so the reply carries `Cache-Control: no-store` and must not be
+   * cached.
+   *
+   */
+  410: ProblemDetails;
+  /**
+   * `RATE_LIMITED`: a rate limit was hit (doc 11 §14); retry after `Retry-After` seconds.
+   */
+  429: ProblemDetails;
+  /**
+   * Error (RFC 9457)
+   */
+  default: ProblemDetails;
+};
+
+export type GetPreferencesError = GetPreferencesErrors[keyof GetPreferencesErrors];
+
+export type GetPreferencesResponses = {
+  /**
+   * The caller's preferences
+   */
+  200: Preferences;
+};
+
+export type GetPreferencesResponse = GetPreferencesResponses[keyof GetPreferencesResponses];
+
+export type UpdatePreferencesData = {
+  body: PreferencesUpdate;
+  headers: {
+    /**
+     * Client-generated ULID that makes a mutating request safe to retry (doc 06 §2; the
+     * mobile mutation-log `opId`). A key is scoped to the caller and the operation: the
+     * authenticated principal, or for an operation with `security: []` the credential in its
+     * body (for `requestAccountRecovery`, which carries none, the request hash alone). The
+     * server keeps key, request hash and response for 48 h: a replay with the same body
+     * returns the stored response; the same key with a different body is refused with 409
+     * `IDEMPOTENCY_KEY_REUSED`. Exception: an operation whose answer carries a credential
+     * (`SessionGrant.token`, `SessionGrant.refreshToken`, `DeletionPending.cancelToken`,
+     * `SignUpPending.token`) is never answered from the store, and its credential is never
+     * stored. Such an operation is marked `x-idempotency-replay: never`. A repeated key on it
+     * is refused with 409 `CONFLICT`, and the client starts that step again. Optional for the
+     * caller.
+     *
+     */
+    'Idempotency-Key'?: string;
+    /**
+     * The `version` of the resource the client last read, as a quoted integer, e.g. `"3"`
+     * (doc 06 §2). Every write to a versioned resource sends it; a stale version is refused
+     * with 409 `VERSION_MISMATCH`.
+     *
+     */
+    'If-Match': string;
+  };
+  path?: never;
+  query?: never;
+  url: '/v1/me/preferences';
+};
+
+export type UpdatePreferencesErrors = {
+  /**
+   * `VALIDATION_FAILED`: the body breaks this schema, a member is both set and named in
+   * `clear`, or `sizingByRegion` holds two entries for one size system and garment group.
+   * `errors[]` names each field.
+   *
+   */
+  400: ProblemDetails;
+  /**
+   * `UNAUTHENTICATED`: the access token is missing, malformed, expired or revoked. The
+   * client renews the session once with its refresh token (`refreshSession`); if the renewal
+   * is refused too, it signs in again.
+   *
+   */
+  401: ProblemDetails;
+  /**
+   * `VERSION_MISMATCH`: `If-Match` names an older version than the stored one. `current` is
+   * the stored preferences, so the app can keep the losing edit and offer to re-apply it on
+   * top (doc 04 §8). `IDEMPOTENCY_KEY_REUSED` or `CONFLICT` otherwise, without `current`.
+   *
+   */
+  409: PreferencesVersionConflict;
+  /**
+   * `ACCOUNT_DELETED`: the account is deleted or its deletion is in progress. The client
+   * erases everything it stores for the account and returns to its signed-out start; it
+   * tells this reply from 401 by the status alone. A 410 is cacheable by default
+   * (RFC 9110 §15.5.11), so the reply carries `Cache-Control: no-store` and must not be
+   * cached.
+   *
+   */
+  410: ProblemDetails;
+  /**
+   * `RATE_LIMITED`: a rate limit was hit (doc 11 §14); retry after `Retry-After` seconds.
+   */
+  429: ProblemDetails;
+  /**
+   * Error (RFC 9457)
+   */
+  default: ProblemDetails;
+};
+
+export type UpdatePreferencesError = UpdatePreferencesErrors[keyof UpdatePreferencesErrors];
+
+export type UpdatePreferencesResponses = {
+  /**
+   * The updated preferences
+   */
+  200: Preferences;
+};
+
+export type UpdatePreferencesResponse =
+  UpdatePreferencesResponses[keyof UpdatePreferencesResponses];
+
+export type GetOnboardingProgressData = {
+  body?: never;
+  path?: never;
+  query?: never;
+  url: '/v1/me/onboarding-progress';
+};
+
+export type GetOnboardingProgressErrors = {
+  /**
+   * `UNAUTHENTICATED`: the access token is missing, malformed, expired or revoked. The
+   * client renews the session once with its refresh token (`refreshSession`); if the renewal
+   * is refused too, it signs in again.
+   *
+   */
+  401: ProblemDetails;
+  /**
+   * `ACCOUNT_DELETED`: the account is deleted or its deletion is in progress. The client
+   * erases everything it stores for the account and returns to its signed-out start; it
+   * tells this reply from 401 by the status alone. A 410 is cacheable by default
+   * (RFC 9110 §15.5.11), so the reply carries `Cache-Control: no-store` and must not be
+   * cached.
+   *
+   */
+  410: ProblemDetails;
+  /**
+   * `RATE_LIMITED`: a rate limit was hit (doc 11 §14); retry after `Retry-After` seconds.
+   */
+  429: ProblemDetails;
+  /**
+   * Error (RFC 9457)
+   */
+  default: ProblemDetails;
+};
+
+export type GetOnboardingProgressError =
+  GetOnboardingProgressErrors[keyof GetOnboardingProgressErrors];
+
+export type GetOnboardingProgressResponses = {
+  /**
+   * The caller's onboarding progress
+   */
+  200: OnboardingProgress;
+};
+
+export type GetOnboardingProgressResponse =
+  GetOnboardingProgressResponses[keyof GetOnboardingProgressResponses];
+
+export type UpdateOnboardingProgressData = {
+  body: OnboardingProgressUpdate;
+  headers?: {
+    /**
+     * Client-generated ULID that makes a mutating request safe to retry (doc 06 §2; the
+     * mobile mutation-log `opId`). A key is scoped to the caller and the operation: the
+     * authenticated principal, or for an operation with `security: []` the credential in its
+     * body (for `requestAccountRecovery`, which carries none, the request hash alone). The
+     * server keeps key, request hash and response for 48 h: a replay with the same body
+     * returns the stored response; the same key with a different body is refused with 409
+     * `IDEMPOTENCY_KEY_REUSED`. Exception: an operation whose answer carries a credential
+     * (`SessionGrant.token`, `SessionGrant.refreshToken`, `DeletionPending.cancelToken`,
+     * `SignUpPending.token`) is never answered from the store, and its credential is never
+     * stored. Such an operation is marked `x-idempotency-replay: never`. A repeated key on it
+     * is refused with 409 `CONFLICT`, and the client starts that step again. Optional for the
+     * caller.
+     *
+     */
+    'Idempotency-Key'?: string;
+  };
+  path?: never;
+  query?: never;
+  url: '/v1/me/onboarding-progress';
+};
+
+export type UpdateOnboardingProgressErrors = {
+  /**
+   * `VALIDATION_FAILED`: the body breaks this schema, or it marks a required step
+   * `skipped`. `errors[]` names each step.
+   *
+   */
+  400: ProblemDetails;
+  /**
+   * `UNAUTHENTICATED`: the access token is missing, malformed, expired or revoked. The
+   * client renews the session once with its refresh token (`refreshSession`); if the renewal
+   * is refused too, it signs in again.
+   *
+   */
+  401: ProblemDetails;
+  /**
+   * `IDEMPOTENCY_KEY_REUSED` when the `Idempotency-Key` was already used with a different
+   * request; `VERSION_MISMATCH` when `If-Match` no longer matches the stored version;
+   * `CONFLICT` otherwise. Exception: on an operation whose answer carries a credential
+   * (marked `x-idempotency-replay: never`), any repeated `Idempotency-Key` is refused with
+   * `CONFLICT`, never answered from the store, and the client starts that step again.
+   *
+   */
+  409: ProblemDetails;
+  /**
+   * `ACCOUNT_DELETED`: the account is deleted or its deletion is in progress. The client
+   * erases everything it stores for the account and returns to its signed-out start; it
+   * tells this reply from 401 by the status alone. A 410 is cacheable by default
+   * (RFC 9110 §15.5.11), so the reply carries `Cache-Control: no-store` and must not be
+   * cached.
+   *
+   */
+  410: ProblemDetails;
+  /**
+   * `RATE_LIMITED`: a rate limit was hit (doc 11 §14); retry after `Retry-After` seconds.
+   */
+  429: ProblemDetails;
+  /**
+   * Error (RFC 9457)
+   */
+  default: ProblemDetails;
+};
+
+export type UpdateOnboardingProgressError =
+  UpdateOnboardingProgressErrors[keyof UpdateOnboardingProgressErrors];
+
+export type UpdateOnboardingProgressResponses = {
+  /**
+   * The updated onboarding progress
+   */
+  200: OnboardingProgress;
+};
+
+export type UpdateOnboardingProgressResponse =
+  UpdateOnboardingProgressResponses[keyof UpdateOnboardingProgressResponses];
+
+export type GetEntitlementsData = {
+  body?: never;
+  path?: never;
+  query?: never;
+  url: '/v1/me/entitlements';
+};
+
+export type GetEntitlementsErrors = {
+  /**
+   * `UNAUTHENTICATED`: the access token is missing, malformed, expired or revoked. The
+   * client renews the session once with its refresh token (`refreshSession`); if the renewal
+   * is refused too, it signs in again.
+   *
+   */
+  401: ProblemDetails;
+  /**
+   * `ACCOUNT_DELETED`: the account is deleted or its deletion is in progress. The client
+   * erases everything it stores for the account and returns to its signed-out start; it
+   * tells this reply from 401 by the status alone. A 410 is cacheable by default
+   * (RFC 9110 §15.5.11), so the reply carries `Cache-Control: no-store` and must not be
+   * cached.
+   *
+   */
+  410: ProblemDetails;
+  /**
+   * `RATE_LIMITED`: a rate limit was hit (doc 11 §14); retry after `Retry-After` seconds.
+   */
+  429: ProblemDetails;
+  /**
+   * Error (RFC 9457)
+   */
+  default: ProblemDetails;
+};
+
+export type GetEntitlementsError = GetEntitlementsErrors[keyof GetEntitlementsErrors];
+
+export type GetEntitlementsResponses = {
+  /**
+   * The caller's entitlement state
+   */
+  200: EntitlementState;
+};
+
+export type GetEntitlementsResponse = GetEntitlementsResponses[keyof GetEntitlementsResponses];

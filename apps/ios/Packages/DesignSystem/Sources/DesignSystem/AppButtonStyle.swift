@@ -1,5 +1,5 @@
 // The ButtonStyle behind AppButton: reads the interaction (pressed, focused, enabled) from SwiftUI,
-// picks the look with AppButtonRules and draws it with AppButtonFace.
+// picks the look with AppButtonRules and draws it with AppButtonFace inside the generated touch target.
 import DesignTokens
 import SwiftUI
 
@@ -19,19 +19,12 @@ struct AppButtonStyle: ButtonStyle {
 
 /// The style's view, so it can read the environment.
 private struct AppButtonStyleBody: View {
-  /// The minimum touch target on iOS, in points, for every size (contract
-  /// `accessibility.minTouchTarget.ios`; DESIGN.md Layout "Touch targets"). No token carries it yet.
-  private static let minTouchTarget: CGFloat = 44
-  /// `AppMotion.Press.duration` is in milliseconds.
-  private static let millisecondsPerSecond = 1000.0
-
   let style: AppButtonStyle
   let isPressed: Bool
 
   @Environment(\.appTheme) private var theme
   @Environment(\.isEnabled) private var isEnabled
   @Environment(\.isFocused) private var isFocused
-  @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
   var body: some View {
     if let appearance = AppButtonRules.appearance(
@@ -50,19 +43,7 @@ private struct AppButtonStyleBody: View {
         loading: style.loading,
         fullWidth: style.fullWidth
       )
-      .frame(minWidth: Self.minTouchTarget, minHeight: Self.minTouchTarget)
-      .contentShape(.rect)
-      .animation(reduceMotion ? nil : Self.pressAnimation, value: appearance)
+      .appTouchTarget(ButtonAccessibility.minTouchTarget, animating: appearance)
     }
-  }
-
-  /// The pressed transition: `AppMotion.Press` duration and easing (a cubic Bézier).
-  private static var pressAnimation: Animation {
-    let seconds = AppMotion.Press.duration / millisecondsPerSecond
-    let curve = AppMotion.Press.easing
-    guard curve.count == 4 else {
-      return .linear(duration: seconds)
-    }
-    return .timingCurve(curve[0], curve[1], curve[2], curve[3], duration: seconds)
   }
 }

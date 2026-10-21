@@ -25,6 +25,14 @@ export const ID_PREFIXES = {
   entitlement: 'ent',
   /** domain event envelope id / outbox row id (`evt_`, doc 06 §4, §6). */
   event: 'evt',
+  /** identity: one append-only consent record (`cns_`, doc 11 §7.1; chosen in P03). */
+  consentRecord: 'cns',
+  /** admin: one audit-log entry (`aud_`, SPINE §3 `audit_log`; chosen in P03). */
+  auditEntry: 'aud',
+  /** a data-export request (`xpt_`, P03-T09; not `exp`, which reads as a token expiry in auth logs). */
+  exportRequest: 'xpt',
+  /** identity: an account-deletion request (`del_`, doc 06 §8, DEC-65 grace window; chosen in P03). */
+  deletionRequest: 'del',
 } as const;
 
 export type IdKind = keyof typeof ID_PREFIXES;

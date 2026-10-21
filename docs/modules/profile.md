@@ -2,8 +2,8 @@
 
 > Module names are canonical per [SPINE §3](../../planning/SPINE.md). Path: `apps/api/src/modules/profile`. This contract is the module's source of truth; code that contradicts it is wrong until a DEC entry says otherwise.
 
-- **Responsibility (one sentence):** Measurements, body data, preferences, style identity, and units/locale for a user.
-- **Owner:** @ArtMin96 (see `CODEOWNERS`) · **Status:** skeleton (P02) · **Last updated:** 2026-10-13
+- **Responsibility (one sentence):** Measurements, body data, preferences, style identity, units/locale, and onboarding progress for a user (onboarding progress: owner decision 2026-10-13).
+- **Owner:** @ArtMin96 (see `CODEOWNERS`) · **Status:** skeleton (P02) · **Last updated:** 2026-10-21
 
 ## Public interface
 
@@ -12,6 +12,14 @@ Public interface: `index.ts` only. P02 skeleton: the sole export is the empty Ne
 | Export | Kind (service/command/query/type/port) | Purpose  |
 | ------ | -------------------------------------- | -------- |
 | —      | —                                      | none yet |
+
+HTTP contract (`packages/contracts/openapi/modules/profile.yaml`, P03-T02.2). No server code serves it yet: P03-T06 and P03-T11.2 implement it.
+
+- **Operations:** `getProfile` / `updateProfile` (`/v1/me/profile`), `getMeasurements` / `replaceMeasurements` (`/v1/me/measurements`), `getPreferences` / `updatePreferences` (`/v1/me/preferences`) and `getOnboardingProgress` / `updateOnboardingProgress` (`/v1/me/onboarding-progress`).
+- **Versioning:** profile, measurements and preferences carry `version`; `0` means nothing is stored yet. Every write to one of them sends `If-Match`. A stale version is answered 409 `VERSION_MISMATCH` with the stored state in `current`.
+- **Partial updates:** PATCH is a partial update in plain JSON. A present member replaces its value, an absent member is unchanged, and `null` is not accepted. `clear` removes `climateTolerance` or `typicalDay`.
+- **Measurements:** SI only, and `PUT` replaces the whole set. A value outside its registry bounds is refused with 400 `MEASUREMENT_IMPLAUSIBLE`. An `estimated` or `derived` value without `confidence` is refused by the schema. Responses carry `Cache-Control: no-store`.
+- **Onboarding progress:** one status per doc 02 §3.2 step that P03 runs (step 10, the selfie, joins in P05); a step only moves forward. The server names `nextRequiredStep`, and no If-Match is needed.
 
 ## Owned data
 
@@ -25,9 +33,9 @@ None yet (P02 skeleton). Planned per SPINE §3: `profiles`, `measurements`, `pre
 
 ## Events
 
-| Event (published) | Payload schema (owner: `packages/contracts`) | When emitted |
-| ----------------- | -------------------------------------------- | ------------ |
-| —                 | —                                            | none yet     |
+| Event (published)                 | Payload schema (owner: `packages/contracts`)                           | When emitted                                                                                                                                                                                                           |
+| --------------------------------- | ---------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `profile.measurements.updated.v1` | `packages/contracts/events/profile.measurements.updated.v1.event.json` | `replaceMeasurements` stored a set that sets, replaces or removes at least one measurement. The payload names each changed measurement and its unit, never a value. Schema only (P03-T02.4); the producer is P03-T06.4 |
 
 | Event (consumed) | From module | Reaction |
 | ---------------- | ----------- | -------- |
@@ -59,4 +67,4 @@ Derived from P02 brief §5 and doc 04 §4.2; every rule has a failing fixture (`
 
 - Unit definitions and conversions come from `shared-kernel`; new preference kinds extend the preferences model without a second store.
 
-Status: skeleton (P02).
+Status: skeleton (P02): no domain code yet. P03-T02 added the HTTP contract and the published event schema in `packages/contracts`.

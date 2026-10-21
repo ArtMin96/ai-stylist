@@ -1,0 +1,53 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://contracts.ai-stylist.app/events/identity.account.export_requested.v1.json",
+  "title": "IdentityAccountExportRequestedV1",
+  "description": "A data export was requested (`requestDataExport`, doc 11 §13.1); it starts the export job chain (doc 04 §9.1 step 1). Producer `identity`; aggregate `user` with the account's `usr_` id; `subjectUserId` is that id. The payload holds the export id, the user id and the request time, nothing else (doc 06 §6). The full event is the envelope (envelope.json) narrowed by this schema; the payload is open content, so consumers ignore properties they do not know (doc 06 §4).",
+  "type": "object",
+  "required": ["type", "payload"],
+  "properties": {
+    "type": { "const": "identity.account.export_requested.v1" },
+    "payload": { "$ref": "#/$defs/IdentityAccountExportRequestedV1Payload" }
+  },
+  "$defs": {
+    "IdentityAccountExportRequestedV1Payload": {
+      "type": "object",
+      "required": ["exportId", "userId", "requestedAt"],
+      "properties": {
+        "exportId": {
+          "type": "string",
+          "description": "The requested export, a prefixed ULID (`xpt_`, shared-kernel `ID_PREFIXES.exportRequest`); the API's `DataExport.id`",
+          "pattern": "^xpt_[0-7][0-9A-HJKMNP-TV-Z]{25}$"
+        },
+        "userId": {
+          "type": "string",
+          "description": "The account whose data is exported, a prefixed ULID (`usr_`, shared-kernel `ID_PREFIXES.user`); the API's `UserId`",
+          "pattern": "^usr_[0-7][0-9A-HJKMNP-TV-Z]{25}$"
+        },
+        "requestedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "When the export was requested; the API's `DataExport.requestedAt`"
+        }
+      }
+    }
+  },
+  "examples": [
+    {
+      "id": "evt_00000000000000000000000014",
+      "type": "identity.account.export_requested.v1",
+      "occurredAt": "2026-10-21T09:02:00Z",
+      "producer": "identity",
+      "aggregate": { "kind": "user", "id": "usr_00000000000000000000000001" },
+      "sequence": 3,
+      "actor": { "kind": "user", "id": "usr_00000000000000000000000001" },
+      "subjectUserId": "usr_00000000000000000000000001",
+      "correlationId": "corr-export-requested-1",
+      "payload": {
+        "exportId": "xpt_00000000000000000000000001",
+        "userId": "usr_00000000000000000000000001",
+        "requestedAt": "2026-10-21T09:02:00Z"
+      }
+    }
+  ]
+}

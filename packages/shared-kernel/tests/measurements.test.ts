@@ -17,6 +17,13 @@ const ids = Object.keys(MEASUREMENT_DEFINITIONS) as MeasurementId[];
 const idArb = fc.constantFrom(...ids);
 const anyNumber = fc.oneof(fc.double(), fc.constantFrom(Number.NaN, Infinity, -Infinity, -0));
 
+/** A measurement id paired with a value drawn from an arbitrary built on that id's definition. */
+function idWith<T>(
+  valueOf: (definition: (typeof MEASUREMENT_DEFINITIONS)[MeasurementId]) => fc.Arbitrary<T>,
+): fc.Arbitrary<[MeasurementId, T]> {
+  return idArb.chain((id) => fc.tuple(fc.constant(id), valueOf(MEASUREMENT_DEFINITIONS[id])));
+}
+
 describe('measurement-definition registry', () => {
   it('holds exactly the ten definitions decided on 2026-10-13, bound for bound', () => {
     const length = (min: number, max: number) => ({ dimension: 'length', unit: 'cm', min, max });
@@ -69,10 +76,7 @@ describe('checkMeasurementBounds', () => {
   it('accepts every value inside the bounds and hands back no substitute value (never clamps)', () => {
     fc.assert(
       fc.property(
-        idArb.chain((id) => {
-          const { min, max } = MEASUREMENT_DEFINITIONS[id];
-          return fc.tuple(fc.constant(id), fc.double({ min, max, noNaN: true }));
-        }),
+        idWith(({ min, max }) => fc.double({ min, max, noNaN: true })),
         ([id, value]) => {
           expect(checkMeasurementBounds(id, value)).toStrictEqual({ ok: true });
         },
@@ -93,15 +97,13 @@ describe('checkMeasurementBounds', () => {
   it('refuses below the lower bound and above the upper bound alike, naming only the bound', () => {
     fc.assert(
       fc.property(
-        idArb.chain((id) => {
-          const { min, max } = MEASUREMENT_DEFINITIONS[id];
-          return fc.tuple(
-            fc.constant(id),
+        idWith(({ min, max }) =>
+          fc.tuple(
             fc.double({ max: min, maxExcluded: true, noNaN: true, noDefaultInfinity: true }),
             fc.double({ min: max, minExcluded: true, noNaN: true, noDefaultInfinity: true }),
-          );
-        }),
-        ([id, below, above]) => {
+          ),
+        ),
+        ([id, [below, above]]) => {
           const { min, max } = MEASUREMENT_DEFINITIONS[id];
           expect(checkMeasurementBounds(id, below)).toEqual({
             ok: false,

@@ -38,7 +38,7 @@ import type {
   ProfileMeasurementsUpdatedV1,
   ProfileMeasurementsUpdatedV1Payload,
 } from '../gen/events-ts/index.js';
-import bundle from '../gen/openapi.bundle.json' with { type: 'json' };
+import { schemas as bundleSchemas } from './openapi-bundle.js';
 
 type SchemaDoc = AnySchema & { examples?: unknown[] };
 
@@ -236,8 +236,6 @@ describe('demo.outbox-flow.requested.v1', () => {
     >().toEqualTypeOf<'demo.outbox-flow.requested.v1'>();
   });
 });
-
-const bundleSchemas = bundle.components.schemas;
 
 function p03Schema(type: P03EventType): EventSchemaDoc {
   const doc = p03Schemas.get(type);

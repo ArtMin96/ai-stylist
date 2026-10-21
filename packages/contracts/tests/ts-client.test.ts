@@ -47,7 +47,7 @@ import {
   updatePreferences,
 } from '../gen/ts-client/index.js';
 import { createClient } from '../gen/ts-client/client/index.js';
-import bundle from '../gen/openapi.bundle.json' with { type: 'json' };
+import { bundle } from './openapi-bundle.js';
 
 function jsonResponse(body: unknown, status = 200, contentType = 'application/json'): Response {
   return new Response(JSON.stringify(body), { status, headers: { 'content-type': contentType } });

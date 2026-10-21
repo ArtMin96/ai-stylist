@@ -3,26 +3,9 @@
 // unit, source and the confidence rule (P03-T02.2 AC-3), hard exclusions stay apart from soft
 // dislikes (AC-5), and onboarding steps line up across progress, update and resume step.
 import { MEASUREMENT_DEFINITIONS, MEASUREMENT_SOURCES } from '@ai-stylist/shared-kernel';
-import { Ajv2020 } from 'ajv/dist/2020.js';
-import addFormats from 'ajv-formats';
 import { describe, expect, it } from 'vitest';
 
-import bundle from '../gen/openapi.bundle.json' with { type: 'json' };
-
-const schemas = bundle.components.schemas;
-const BUNDLE_ID = 'https://contracts.ai-stylist.app/openapi.bundle.json';
-
-const ajv = new Ajv2020({ strict: true, allErrors: true });
-addFormats.default(ajv);
-// The bundle's components are a schema container, not a keyword: refs point into it.
-ajv.addKeyword('components');
-ajv.addSchema({ $id: BUNDLE_ID, components: bundle.components });
-
-function validatorFor(name: keyof typeof schemas) {
-  const validate = ajv.getSchema(`${BUNDLE_ID}#/components/schemas/${name}`);
-  if (!validate) throw new Error(`no schema ${name} in the bundle`);
-  return validate;
-}
+import { schemas, validatorFor } from './openapi-bundle.js';
 
 /** A value inside the hard bounds that describes no one: the registry's lower bound. */
 const syntheticValue = (id: keyof typeof MEASUREMENT_DEFINITIONS): number =>

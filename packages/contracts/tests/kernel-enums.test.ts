@@ -61,9 +61,7 @@ import type {
   StyleType,
   UnitSystem,
 } from '../gen/ts-client/index.js';
-import bundle from '../gen/openapi.bundle.json' with { type: 'json' };
-
-const schemas = bundle.components.schemas;
+import { schemas } from './openapi-bundle.js';
 
 /** The parts of a bundled schema these pins read; other keywords pass through as `unknown`. */
 type SchemaNode = {

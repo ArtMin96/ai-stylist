@@ -34,6 +34,14 @@ async function validatorFor(name: string) {
   return { data, check, errors: () => JSON.stringify(validate.errors) };
 }
 
+type RegistryValidator = Awaited<ReturnType<typeof validatorFor>>;
+
+/** Expects the committed registry and a minimal hand-made one to pass the registry's schema. */
+function expectBothValid({ data, check, errors }: RegistryValidator, minimal: unknown): void {
+  expect(check(data), errors()).toBe(true);
+  expect(check(minimal), errors()).toBe(true);
+}
+
 describe('forbidden-log-keys.json', async () => {
   const { data, check, errors } = await validatorFor('forbidden-log-keys');
 
@@ -49,12 +57,12 @@ describe('forbidden-log-keys.json', async () => {
 });
 
 describe('forbidden-log-keys.examples.json', async () => {
-  const { data, check, errors } = await validatorFor('forbidden-log-keys.examples');
+  const registry = await validatorFor('forbidden-log-keys.examples');
+  const { check } = registry;
   const minimal = { forbidden: ['userEmail'], allowed: ['userId'] };
 
   it('validates against its schema', () => {
-    expect(check(data), errors()).toBe(true);
-    expect(check(minimal), errors()).toBe(true);
+    expectBothValid(registry, minimal);
   });
 
   it('rejects empty or duplicated lists, non-key entries, a missing list, unknown fields', () => {
@@ -69,7 +77,8 @@ describe('forbidden-log-keys.examples.json', async () => {
 });
 
 describe('log-redaction.json', async () => {
-  const { data, check, errors } = await validatorFor('log-redaction');
+  const registry = await validatorFor('log-redaction');
+  const { check } = registry;
   const vectors = {
     exceptionType: { kept: ['TypeError'], replaced: ['Error: boom'] },
     nestContext: { kept: ['ProblemFilter'], redacted: ['someone@example.test'] },
@@ -83,8 +92,7 @@ describe('log-redaction.json', async () => {
   };
 
   it('validates against its schema', () => {
-    expect(check(data), errors()).toBe(true);
-    expect(check(minimal), errors()).toBe(true);
+    expectBothValid(registry, minimal);
   });
 
   it('rejects an unanchored or invalid shape', () => {
@@ -213,13 +221,13 @@ describe('measurement-definitions.json', async () => {
 });
 
 describe('starting-shapes.json', async () => {
-  const { data, check, errors } = await validatorFor('starting-shapes');
+  const registry = await validatorFor('starting-shapes');
+  const { check } = registry;
   const shape = { description: 'fixture' };
   const minimal = { baseMesh: 'fixture-mesh-v1', default: 'shape_a', shapes: { shape_a: shape } };
 
   it('validates against its schema', () => {
-    expect(check(data), errors()).toBe(true);
-    expect(check(minimal), errors()).toBe(true);
+    expectBothValid(registry, minimal);
   });
 
   it('rejects an empty shape map, non-snake shape ids and a shape without a description', () => {
@@ -273,7 +281,8 @@ describe('entitlements.json', async () => {
 });
 
 describe('correlation.json', async () => {
-  const { data, check, errors } = await validatorFor('correlation');
+  const registry = await validatorFor('correlation');
+  const { check } = registry;
   const minimal = {
     header: 'x-correlation-id',
     logKey: 'correlation_id',
@@ -281,8 +290,7 @@ describe('correlation.json', async () => {
   };
 
   it('validates against its schema', () => {
-    expect(check(data), errors()).toBe(true);
-    expect(check(minimal), errors()).toBe(true);
+    expectBothValid(registry, minimal);
   });
 
   it('rejects a header or log key that is not lowercase kebab or snake case', () => {

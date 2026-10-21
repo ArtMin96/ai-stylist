@@ -32,7 +32,7 @@ import {
   resolveReference,
   tableContexts,
 } from './contract-model.mjs';
-import { checkGalleryProps, checkParts, partsApi } from './contract-parts.mjs';
+import { checkGalleryLabels, checkGalleryProps, checkParts, partsApi } from './contract-parts.mjs';
 import { contextsOf } from './declarations.mjs';
 import {
   ICON_SET_STAGES,
@@ -145,8 +145,8 @@ function controlApi(contract, file, model, iconSet) {
 
 /**
  * A control contract (no `kind`: the button, the chip), in stages: CC-02 and CC-03; CC-04, CC-07,
- * CC-15 and CC-16; CC-13 (it reads the roles CC-15 checks); CC-05; CC-06; CC-14, CC-17 and
- * CC-18; CC-08; CC-12.
+ * CC-15 and CC-16; CC-13 (it reads the roles CC-15 checks); CC-05; CC-06; CC-14, CC-17, CC-18 and
+ * CC-19; CC-08; CC-12.
  */
 const controlStages = (contract, file, model, iconSets) => [
   () => [...checkId(contract, file), ...checkAxes(contract, file)],
@@ -163,6 +163,7 @@ const controlStages = (contract, file, model, iconSets) => [
     ...checkIcons(contract, file, iconSets),
     ...checkGalleryProps(contract, file, model, iconSets),
     ...checkParts(contract, file),
+    ...checkGalleryLabels(contract, file),
   ],
   () => checkIconSlot(contract, file, model),
   () => checkIconSlotSizes(contract, file, model, iconSets),

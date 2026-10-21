@@ -164,6 +164,7 @@ export function tableContexts(contract, model) {
  * wins, the never-suggest chip's pressed 2 px). A ring with neither width, or a property whose
  * type differs between looks, is a CC-06 finding. The gallery's `title` is
  * `<board> <gallery.title>` and its `slug` the kebab of that title (`C01 Buttons`, `c01-buttons`).
+ * The gallery keeps `labels`, each variant's own sample label (CC-19), `{}` without any.
  * With `iconSet` (the approved icon set beside it, `iconSetOf` in contracts.mjs), a slot size
  * (SLOT_SIZES) that names an icon size is that set's size enum case (`AppIconSize.md`) instead of
  * its number (CC-12 makes every drawn slot name one), and a contract with `icons` (G4) gives each
@@ -198,7 +199,7 @@ export function buildApi(contract, file, model, iconSet = null) {
     });
   }
   const fields = fieldsOf(Object.values(looks).flat(), file, findings);
-  const { title, label, include } = contract.gallery;
+  const { title, label, labels = {}, include } = contract.gallery;
   const api = {
     id: contract.id,
     name: contract.name,
@@ -215,6 +216,7 @@ export function buildApi(contract, file, model, iconSet = null) {
     gallery: {
       ...galleryTitle(contract.board, title),
       label,
+      labels,
       items: include === 'all' ? combinations : include,
     },
   };

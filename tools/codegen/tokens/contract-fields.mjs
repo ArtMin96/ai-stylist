@@ -43,6 +43,7 @@ const API_SUFFIXES = [
   'Look',
   'Spec',
   'GalleryEntry',
+  'Accessibility',
   'IconSource',
   'Part',
   'PartKind',
@@ -228,11 +229,13 @@ function enumPropFindings(contract, prop, at) {
 }
 
 /**
- * The roles in use (`<Name>Role`, G7) with each variant's, and the enum props with their types
- * and values (`<Name><Prop>`, G8), for the API model.
+ * The roles in use (`<Name>Role`, G7) with each variant's, the enum props with their types and
+ * values (`<Name><Prop>`, G8), and the touch target (`{ ios, android }`, or null without one:
+ * `<Name>Accessibility`), for the API model.
  */
 export function fieldsApi(contract) {
   return {
+    minTouchTarget: contract.accessibility.minTouchTarget ?? null,
     roles: rolesUsed(contract),
     variantRoles: Object.fromEntries(contract.variants.map((v) => [v, roleOf(contract, v)])),
     enums: contract.props

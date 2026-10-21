@@ -29,6 +29,8 @@ const typeName = (type) => {
 
 export const kotlin = {
   extension: 'kt',
+  // The key of a `platform` value this dialect spells (a contract's `{ ios, android }`).
+  platform: 'android',
   indent: INDENT,
   limit: 120,
   wrapAfterAssign: true,

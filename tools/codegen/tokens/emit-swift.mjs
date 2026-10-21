@@ -29,6 +29,8 @@ const typeName = (type) => {
 
 export const swift = {
   extension: 'swift',
+  // The key of a `platform` value this dialect spells (a contract's `{ ios, android }`).
+  platform: 'ios',
   indent: INDENT,
   limit: 120,
   wrapAfterAssign: false,

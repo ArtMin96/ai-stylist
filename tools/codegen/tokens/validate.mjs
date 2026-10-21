@@ -7,6 +7,7 @@ import {
   DYNAMIC_TYPE_STYLES,
   ICON_SIZE_KEY,
   M3_ROLES,
+  TEXT_TRANSFORMS,
   iconSizeNamed,
   isIconSizeProperty,
   META_KEYS,
@@ -36,6 +37,8 @@ const TYPE_KEYS = [
   'dynamicType',
   'm3Roles',
 ];
+/** Typography properties a style may leave out (`textTransform` absent: `none`). */
+const OPTIONAL_TYPE_KEYS = ['textTransform'];
 /** Groups whose keys name a type, role or style, so they must start with a letter. */
 const NAMED_GROUPS = ['colors', 'typography', 'components'];
 const SCALE_GROUPS = ['rounded', 'spacing', 'elevation', 'motion'];
@@ -97,9 +100,13 @@ function checkTypography(typography, add) {
       continue;
     }
     for (const k of Object.keys(style)) {
-      if (!TYPE_KEYS.includes(k)) bad(`unknown property \`${k}\`: the generator would drop it`);
+      if (TYPE_KEYS.includes(k) || OPTIONAL_TYPE_KEYS.includes(k)) continue;
+      bad(`unknown property \`${k}\`: the generator would drop it`);
     }
     for (const k of TYPE_KEYS.filter((k) => style[k] === undefined)) bad(`missing \`${k}\``);
+    if (style.textTransform !== undefined && !TEXT_TRANSFORMS.includes(style.textTransform)) {
+      bad(`\`textTransform\` must be one of ${TEXT_TRANSFORMS.join(', ')}`);
+    }
     const { fontFamily, fontSize, fontWeight, lineHeight, letterSpacing, dynamicType } = style;
     if (fontFamily !== undefined && !(typeof fontFamily === 'string' && fontFamily.trim())) {
       bad('`fontFamily` must be a non-empty string');

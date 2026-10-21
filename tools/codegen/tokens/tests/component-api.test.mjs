@@ -94,6 +94,23 @@ test('test IDs: one constant per allowed combination and no other', () => {
   }
 });
 
+test('the touch target (G9): one Double per contract that gives one, each its own platform', () => {
+  const swiftTouch = [
+    '/// The minimum touch target of `AppButton` (`accessibility.minTouchTarget`): pt on iOS, dp on Android.',
+    'nonisolated public enum ButtonAccessibility {',
+    '  public static let minTouchTarget: Double = 44.0',
+    '}',
+  ];
+  assert.equal(block(swift, '/// The minimum touch target of `AppButton`'), swiftTouch.join('\n'));
+  const ktTouch = ['object ChipAccessibility {', '    val minTouchTarget: Double = 48.0', '}'];
+  assert.equal(block(kotlin, 'object ChipAccessibility'), ktTouch.join('\n'));
+  // A passive contract (G9: the tag, the badge, the reason row) gives none, so it emits none.
+  for (const text of [repoSwift(), repoKotlin()]) {
+    assert.match(text, /\bButtonAccessibility\b/);
+    assert.doesNotMatch(text, /\b(Tag|Badge|ReasonRow)Accessibility\b/);
+  }
+});
+
 test('the merged look: optional where a look lacks the property, the focus ring as a type', () => {
   const appearance = block(swift, 'nonisolated public struct ButtonAppearance');
   const fields = firstGroups(appearance, /^ {2}public let (\w+: \S+)$/gm);
@@ -215,9 +232,21 @@ test('the gallery: per contract its label and its entries with their test-ID con
   const gallery = block(swift, 'nonisolated public enum ComponentGallery');
   assert.match(gallery, /\n {2}public static let buttonLabel: String = "Fixture label"\n/);
   assert.match(gallery, /\n {2}public static let button: \[ButtonGalleryEntry\] = \[\n/);
-  assert.match(gallery, /testId: ButtonTestId\.primaryLargeEnabled\)/);
+  assert.match(gallery, /testId: ButtonTestId\.primaryLargeEnabled,\n {6}label: "Fixture label"\n/);
   assert.equal(firstGroups(gallery, /ButtonGalleryEntry\(/g).length, 14);
   assert.match(kotlin, /\n {4}val button: List<ButtonGalleryEntry> =\n {8}listOf\(\n/);
+});
+
+test('the gallery sample label (CC-19): a variant its own, the others gallery.label', () => {
+  const entry = block(swift, 'nonisolated public struct ChipGalleryEntry');
+  assert.match(entry, /\n {2}public let testId: String\n {2}public let label: String\n\}$/);
+  assert.match(kotlin, /\n {4}val testId: String,\n {4}val label: String,\n\)\n/);
+  // The fixture chip's 3 assist cells keep gallery.label; its 6 choice cells take their own.
+  const count = (text, pattern) => (text.match(pattern) ?? []).length;
+  assert.equal(count(swift, /\blabel: "Fixture chip"/g), 3);
+  assert.equal(count(swift, /\blabel: "Fixture choice"/g), 6);
+  assert.equal(count(kotlin, /\blabel = "Fixture chip"/g), 3);
+  assert.equal(count(kotlin, /\blabel = "Fixture choice"/g), 6);
 });
 
 test('GalleryComponent: a case per contract with its id, the board-prefixed title and slug', () => {
@@ -593,10 +622,12 @@ test('the repository API: the types each component emits, in order, in both lang
   const head = ['Variant', 'Size', 'State', 'Role'];
   const parts = ['PartKind', 'PartPosition', 'Part', 'IconSource'];
   const tail = ['TestId', 'Appearance', 'Look', 'Spec', 'GalleryEntry'];
+  // An interactive contract's touch target (G9) follows its test IDs.
+  const touch = ['TestId', 'Accessibility', ...tail.slice(1)];
   const expected = {
     Badge: [...head, ...parts, ...tail],
-    Button: [...head, ...tail],
-    Chip: [...head, 'Selection', ...parts, ...tail],
+    Button: [...head, ...touch],
+    Chip: [...head, 'Selection', ...parts, ...touch],
     ReasonRow: [...head, ...parts, ...tail],
     Tag: [...head, ...parts, ...tail],
   };

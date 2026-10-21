@@ -13,6 +13,7 @@ import { emitApiSwift } from '../emit-api-swift.mjs';
 import { emitKotlin } from '../emit-kotlin.mjs';
 import { emitSwift } from '../emit-swift.mjs';
 import {
+  apiTypeName,
   contextId,
   ktEnumEntry,
   memberId,
@@ -52,14 +53,66 @@ const repoModel = modelOf(REPO_DESIGN_MD);
 const repo = filesOf(repoModel);
 const contractModel = modelOf(CONTRACT_TOKENS);
 const contractFixture = withApiOf(contractModel, VALID_CONTRACTS);
+const contractApis = apisOf(contractModel, VALID_CONTRACTS);
 const repoWithApi = once(() => withApiOf(repoModel, REPO_CONTRACTS));
+const repoApis = once(() => apisOf(repoModel, REPO_CONTRACTS));
+
+/** Each language's table of its emitted files: `{ Swift, Kotlin }`. */
+const tablesOf = ({ swift, kotlin }) => ({
+  Swift: swiftTable(swift),
+  Kotlin: kotlinTable(kotlin),
+});
+
+/** Every `expected` row (name -> value, `undefined` for an absent row) holds in both tables. */
+function expectInBoth(tables, expected) {
+  for (const [language, table] of Object.entries(tables)) {
+    for (const [name, value] of Object.entries(expected)) {
+      assert.equal(table[name], value, `${language} ${name}`);
+    }
+  }
+}
+
+/**
+ * The rows a contract sets per platform, `{ name: { Swift, Kotlin } }`: the touch target
+ * (`accessibility.minTouchTarget`), `<Name>Accessibility.minTouchTarget`, pt on iOS and dp on
+ * Android. Read from the API model, so each row is held to the contract, not to the declarations.
+ */
+const platformRows = (apis) =>
+  Object.fromEntries(
+    apis
+      .filter(({ minTouchTarget }) => minTouchTarget)
+      .map(({ id, minTouchTarget: { ios, android } }) => [
+        `${apiTypeName(id, 'Accessibility')}.minTouchTarget`,
+        { Swift: `num:${ios}`, Kotlin: `num:${android}` },
+      ]),
+  );
+
+/**
+ * The names whose values differ between the Swift and the Kotlin files. A per-platform row
+ * (platformRows) must hold its own platform's value in each language, and is then left out.
+ */
+function differingRows(files, apis = []) {
+  const tables = tablesOf(files);
+  for (const [name, values] of Object.entries(platformRows(apis))) {
+    for (const [language, table] of Object.entries(tables)) {
+      assert.equal(table[name], values[language], `${language} ${name}`);
+      delete table[name];
+    }
+  }
+  const { Swift: swift, Kotlin: kotlin } = tables;
+  return Object.keys({ ...swift, ...kotlin }).filter((name) => swift[name] !== kotlin[name]);
+}
+
+/** `files` with `from` replaced by `to` in every text. */
+const replaced = (files, from, to) =>
+  Object.fromEntries(Object.entries(files).map(([file, text]) => [file, text.replace(from, to)]));
 
 test('the fixture: Swift and Kotlin spell the same name -> value table', () => {
-  assert.deepEqual(swiftTable(fixture.swift), kotlinTable(fixture.kotlin));
+  assert.deepEqual(differingRows(fixture), []);
 });
 
 test('the repository DESIGN.md: Swift and Kotlin spell the same name -> value table', () => {
-  assert.deepEqual(swiftTable(repo.swift), kotlinTable(repo.kotlin));
+  assert.deepEqual(differingRows(repo), []);
 });
 
 test('the table holds values of every tier, in one spelling', () => {
@@ -71,6 +124,11 @@ test('the table holds values of every tier, in one spelling', () => {
     'AppTypography.label.letterSpacing': 'num:0.6',
     'AppTypography.badge.m3Roles': 'list:[]',
     'AppTextStyle.m3Roles:type': 'list<String>',
+    'AppTextStyle.textTransform:type': 'AppTextTransform',
+    'AppTextTransform.cases': 'NONE,UPPERCASE',
+    'AppTextTransform[UPPERCASE].id': 'str:"uppercase"',
+    'AppTypography.badge.textTransform': 'role:UPPERCASE',
+    'AppTypography.label.textTransform': 'role:NONE',
     'AppElevation.Sheet.color': 'role:SCRIM',
     'AppMotion.easingEnter': 'list:[num:0.2,num:0,num:0,num:1]',
     'AppColorRole.cases': [
@@ -153,8 +211,7 @@ test('the repository scales and type styles: every step and style named by its D
 });
 
 test('the repository C03 entries: trailing slots, rings, parts and type styles in both tables', () => {
-  const tables = { Swift: swiftTable(repo.swift), Kotlin: kotlinTable(repo.kotlin) };
-  const expected = {
+  expectInBoth(tablesOf(repo), {
     'ChipCompactTokens.light.trailingIconSize': 'num:12',
     'ChipCompactTokens.light.trailingIconGap': 'num:6',
     'ChipMediumTokens.hcDark.trailingIconSize': 'num:16',
@@ -168,21 +225,39 @@ test('the repository C03 entries: trailing slots, rings, parts and type styles i
     'AppTypography.labelMdNormal.fontWeight': 'num:400',
     'AppTypography.labelMdMedium.fontWeight': 'num:500',
     'AppTypography.labelSmMedium.fontSize': 'num:13',
-  };
-  for (const [language, table] of Object.entries(tables)) {
-    for (const [name, value] of Object.entries(expected)) {
-      assert.equal(table[name], value, `${language} ${name}`);
-    }
-  }
+  });
 });
 
 test('the contract fixture: both component API files spell the same table', () => {
-  assert.deepEqual(swiftTable(contractFixture.swift), kotlinTable(contractFixture.kotlin));
+  assert.deepEqual(differingRows(contractFixture, contractApis), []);
 });
 
 test('the repository contracts: both component API files spell the same table', () => {
-  const { swift, kotlin } = repoWithApi();
-  assert.deepEqual(swiftTable(swift), kotlinTable(kotlin));
+  assert.deepEqual(differingRows(repoWithApi(), repoApis()), []);
+});
+
+test('the touch target: one name and type in both, 44 pt in Swift and 48 dp in Kotlin', () => {
+  const tables = tablesOf(repoWithApi());
+  for (const name of ['ButtonAccessibility', 'ChipAccessibility']) {
+    assert.equal(tables.Swift[`${name}.minTouchTarget`], 'num:44', name);
+    assert.equal(tables.Kotlin[`${name}.minTouchTarget`], 'num:48', name);
+  }
+  expectInBoth(tables, {
+    'ButtonAccessibility.minTouchTarget:type': 'Double',
+    'ChipAccessibility.minTouchTarget:type': 'Double',
+    // G9: a passive contract gives no touch target, so it has no accessibility constants.
+    'TagAccessibility.minTouchTarget': undefined,
+    'BadgeAccessibility.minTouchTarget': undefined,
+    'ReasonRowAccessibility.minTouchTarget': undefined,
+  });
+  // The narrowing is no hole: Kotlin spelling the iOS value fails on that row.
+  const kotlin = replaced(
+    contractFixture.kotlin,
+    'TouchTarget: Double = 48.0',
+    'TouchTarget: Double = 44.0',
+  );
+  const kotlinSpellsIos = () => differingRows({ ...contractFixture, kotlin }, contractApis);
+  assert.throws(kotlinSpellsIos, /Kotlin ButtonAccessibility\.minTouchTarget/);
 });
 
 /** The holder of one context's looks: `hc-light` -> `HcLight` (`ButtonSpec.HcLight.spec`). */
@@ -238,11 +313,8 @@ test('the API table holds the ids, the test IDs, the lookup and every merged loo
 });
 
 test('the repository C03 API: compound states, roles, enums, parts, icons and samples in both', () => {
-  const tables = {
-    Swift: swiftTable(repoWithApi().swift),
-    Kotlin: kotlinTable(repoWithApi().kotlin),
-  };
-  const expected = {
+  const tables = tablesOf(repoWithApi());
+  expectInBoth(tables, {
     'ChipState[SELECTED_PRESSED].id': 'str:"selected-pressed"',
     'ChipTestId.choiceLargeSelectedPressed': 'str:"ds-chip-choice-large-selected-pressed"',
     'ChipRole.cases': 'BUTTON,SELECTABLE,DISCLOSURE,MENU',
@@ -263,34 +335,29 @@ test('the repository C03 API: compound states, roles, enums, parts, icons and sa
     'TagPart[DOT].kind': 'role:DOT',
     'ChipChoiceTokens.light.selectedPressed:init': 'SelectedPressed',
     'ChipReasonTokens.dark.expandedPressed.overlayColor': 'role:PRESSED_OVERLAY',
-  };
-  for (const [language, table] of Object.entries(tables)) {
-    for (const [name, value] of Object.entries(expected)) {
-      assert.equal(table[name], value, `${language} ${name}`);
-    }
-    assert.equal(table['ChipChoiceSelectedTokens.light:init'], undefined, 'the compound regroups');
-  }
-  const chip = apisOf(repoModel, REPO_CONTRACTS).find(({ id }) => id === 'chip');
+    // The compound state regroups under its component: no `ChipChoiceSelectedTokens`.
+    'ChipChoiceSelectedTokens.light:init': undefined,
+  });
+  const chip = repoApis().find(({ id }) => id === 'chip');
   const index = chip.looks['hc-dark'].findIndex(
     (l) => l.variant === 'reason' && l.state === 'expanded-focused',
   );
   const at = `ChipSpec.HcDark.spec.looks[${index}].appearance`;
-  for (const table of Object.values(tables)) {
-    assert.equal(table[`${at}.trailingIcon:init`], 'case:GLYPH', at);
-    assert.equal(table[`${at}.trailingIcon.name`], 'role:CHEVRON_UP', at);
-    assert.equal(table[`${at}.leadingIcon`], 'role:PROP', at);
-    assert.equal(table[`${at}.focusRing`], 'ref:FocusRingTokens.hcDark', at);
-  }
+  expectInBoth(tables, {
+    [`${at}.trailingIcon:init`]: 'case:GLYPH',
+    [`${at}.trailingIcon.name`]: 'role:CHEVRON_UP',
+    [`${at}.leadingIcon`]: 'role:PROP',
+    [`${at}.focusRing`]: 'ref:FocusRingTokens.hcDark',
+  });
 });
 
 test('a merged look, an id or a test ID spelled differently in one API file fails', () => {
-  const differs = (from, to) => {
-    const kotlin = Object.fromEntries(
-      Object.entries(contractFixture.kotlin).map(([file, text]) => [file, text.replace(from, to)]),
+  /** The names whose values differ once `from` becomes `to` in the Kotlin API files. */
+  const differs = (from, to) =>
+    differingRows(
+      { ...contractFixture, kotlin: replaced(contractFixture.kotlin, from, to) },
+      contractApis,
     );
-    const [swift, kt] = [swiftTable(contractFixture.swift), kotlinTable(kotlin)];
-    return Object.keys({ ...swift, ...kt }).filter((name) => swift[name] !== kt[name]);
-  };
   assert.deepEqual(differs('SECONDARY("secondary",', 'SECONDARY("secondary-1",'), [
     'ButtonVariant[SECONDARY].id',
   ]);
@@ -310,6 +377,9 @@ test('a merged look, an id or a test ID spelled differently in one API file fail
   assert.deepEqual(separator, ['ChipPart[DETAIL].separatorKey']);
   const sample = differs('AppColorRole = AppColorRole.PRIMARY', 'AppColorRole = AppColorRole.TEXT');
   assert.deepEqual(sample, ['ComponentGallery.chipSwatch']);
+  // CC-19: a variant's own gallery sample label, on its first cell (chip[3], choice enabled).
+  const label = differs('label = "Fixture choice"', 'label = "Fixture chip"');
+  assert.deepEqual(label, ['ComponentGallery.chip[3].label']);
   const instance = differs('val dark: ChipSpec = Dark.spec', 'val dark: ChipSpec = Light.spec');
   assert.deepEqual(instance, ['ChipSpec.dark']);
   assert.deepEqual(differs('"ds-button-primary-large-enabled"', '"ds-button-primary-large"'), [
@@ -325,13 +395,8 @@ test('a merged look, an id or a test ID spelled differently in one API file fail
 
 test('a value, a role or a name spelled differently in one language fails the comparison', () => {
   /** The names whose values differ once `from` becomes `to` in the Kotlin text. */
-  const differs = (from, to) => {
-    const kotlin = Object.fromEntries(
-      Object.entries(fixture.kotlin).map(([file, text]) => [file, text.replace(from, to)]),
-    );
-    const [swift, kt] = [swiftTable(fixture.swift), kotlinTable(kotlin)];
-    return Object.keys({ ...swift, ...kt }).filter((name) => swift[name] !== kt[name]);
-  };
+  const differs = (from, to) =>
+    differingRows({ ...fixture, kotlin: replaced(fixture.kotlin, from, to) });
   const value = differs('background = 0xFFFA_FAFA', 'background = 0xFFFA_FAFB');
   assert.deepEqual(value, ['AppColors.light.background']);
   const role = differs('textColor = AppColorRole.ON_PRIMARY', 'textColor = AppColorRole.TEXT');
@@ -398,6 +463,9 @@ test('the glyph table: every segment of every fixture glyph, the same in both la
     'AppIconCommand.cases': 'MOVE,LINE,CUBIC,CLOSE',
     'AppIconGlyphs.Info.glyph.shapes[0].segments[5].points': 'list:[]',
     'GalleryComponent.cases': 'BUTTON,ICON,CHIP',
+    'ChipGalleryEntry.label:type': 'String',
+    'ComponentGallery.chip[2].label': 'str:"Fixture chip"',
+    'ComponentGallery.chip[3].label': 'str:"Fixture choice"',
     'GalleryComponent[ICON].title': 'str:"C02 Fixture icons"',
     'GalleryComponent[ICON].slug': 'str:"c02-fixture-icons"',
   };
@@ -405,13 +473,13 @@ test('the glyph table: every segment of every fixture glyph, the same in both la
 });
 
 test('a glyph point, a paint, a stroke width or an icon test ID spelled differently fails', () => {
+  /** The names whose values differ once `from` becomes `to` in the Kotlin `file` alone. */
   const differs = (file, from, to) => {
-    const text = contractFixture.kotlin[file].replace(from, to);
-    const [swift, kt] = [
-      swiftTable(contractFixture.swift),
-      kotlinTable({ ...contractFixture.kotlin, [file]: text }),
-    ];
-    return Object.keys({ ...swift, ...kt }).filter((name) => swift[name] !== kt[name]);
+    const kotlin = {
+      ...contractFixture.kotlin,
+      [file]: contractFixture.kotlin[file].replace(from, to),
+    };
+    return differingRows({ ...contractFixture, kotlin }, contractApis);
   };
   const glyphs = 'AppIconGlyphs.kt';
   assert.deepEqual(differs(glyphs, 'listOf(14.5, 5.5)', 'listOf(14.5, 5.6)'), [

@@ -70,12 +70,24 @@ test('type styles: a multiline AppTextStyle value starts on the line after its `
     '            fontWeight = 600,',
     '            lineHeight = 16.0,',
     '            letterSpacing = 0.6,',
+    '            textTransform = AppTextTransform.NONE,',
     '            dynamicType = "caption",',
     '            m3Roles = listOf("bodyMedium", "bodySmall", "labelLarge", "labelMedium", "labelSmall"),',
     '        )',
   ];
   assert.equal(block(reference, 'val label: AppTextStyle =', 4), label.join('\n'));
   assert.match(reference, /\n {12}m3Roles = emptyList\(\),\n/);
+  assert.match(reference, /\n {12}textTransform = AppTextTransform\.UPPERCASE,\n/);
+  assert.match(reference, /\n {4}val textTransform: AppTextTransform,\n/);
+  const transform = [
+    'enum class AppTextTransform(',
+    '    val id: String,',
+    ') {',
+    '    NONE("none"),',
+    '    UPPERCASE("uppercase"),',
+    '}',
+  ];
+  assert.equal(block(reference, 'enum class AppTextTransform('), transform.join('\n'));
   const all = [
     '    val all: List<AppTextStyle> =',
     '        listOf(',

@@ -95,6 +95,9 @@ function scalar(dialect, value, type) {
       return dialect.spell.unionCase(value.type, value.case);
     case 'none':
       return dialect.spell.none;
+    case 'platform':
+      // One value per platform (a touch target: pt on iOS, dp on Android); each dialect its own.
+      return scalar(dialect, value.values[dialect.platform], type);
     default:
       throw new Error(`gen-tokens: no ${dialect.extension} spelling for a ${value.t} value`);
   }

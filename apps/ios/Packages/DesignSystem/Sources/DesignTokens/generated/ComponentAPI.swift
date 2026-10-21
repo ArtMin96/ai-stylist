@@ -668,12 +668,13 @@ nonisolated public struct BadgeSpec: Sendable, Equatable {
   }
 }
 
-/// One `AppBadge` gallery cell and its test ID.
+/// One `AppBadge` gallery cell, its test ID and sample label.
 nonisolated public struct BadgeGalleryEntry: Sendable, Equatable {
   public let variant: BadgeVariant
   public let size: BadgeSize
   public let state: BadgeState
   public let testId: String
+  public let label: String
 }
 
 /// Variants of `AppButton` (button.yaml, board C01), each with its contract id.
@@ -829,6 +830,11 @@ nonisolated public enum ButtonTestId {
   public static let destructiveFilledLargeFocused: String = "ds-button-destructive-filled-large-focused"
   public static let destructiveFilledLargeDisabled: String = "ds-button-destructive-filled-large-disabled"
   public static let destructiveFilledLargeLoading: String = "ds-button-destructive-filled-large-loading"
+}
+
+/// The minimum touch target of `AppButton` (`accessibility.minTouchTarget`): pt on iOS, dp on Android.
+nonisolated public enum ButtonAccessibility {
+  public static let minTouchTarget: Double = 44.0
 }
 
 /// One merged `AppButton` look (base, state, size): colours are role keys, sizes pt/dp.
@@ -12410,12 +12416,13 @@ nonisolated public struct ButtonSpec: Sendable, Equatable {
   }
 }
 
-/// One `AppButton` gallery cell and its test ID.
+/// One `AppButton` gallery cell, its test ID and sample label.
 nonisolated public struct ButtonGalleryEntry: Sendable, Equatable {
   public let variant: ButtonVariant
   public let size: ButtonSize
   public let state: ButtonState
   public let testId: String
+  public let label: String
 }
 
 /// Variants of `AppChip` (chip.yaml, board C03), each with its contract id.
@@ -12681,6 +12688,11 @@ nonisolated public enum ChipTestId {
   public static let neverSuggestAddLargeEnabled: String = "ds-chip-never-suggest-add-large-enabled"
   public static let neverSuggestAddLargePressed: String = "ds-chip-never-suggest-add-large-pressed"
   public static let neverSuggestAddLargeFocused: String = "ds-chip-never-suggest-add-large-focused"
+}
+
+/// The minimum touch target of `AppChip` (`accessibility.minTouchTarget`): pt on iOS, dp on Android.
+nonisolated public enum ChipAccessibility {
+  public static let minTouchTarget: Double = 44.0
 }
 
 /// One merged `AppChip` look (base, state, size): colours are role keys, sizes pt/dp.
@@ -30421,12 +30433,13 @@ nonisolated public struct ChipSpec: Sendable, Equatable {
   }
 }
 
-/// One `AppChip` gallery cell and its test ID.
+/// One `AppChip` gallery cell, its test ID and sample label.
 nonisolated public struct ChipGalleryEntry: Sendable, Equatable {
   public let variant: ChipVariant
   public let size: ChipSize
   public let state: ChipState
   public let testId: String
+  public let label: String
 }
 
 /// Glyphs of `AppIcon` (icon.yaml, board C02), each with its contract id, in contract order.
@@ -31354,12 +31367,13 @@ nonisolated public struct ReasonRowSpec: Sendable, Equatable {
   }
 }
 
-/// One `AppReasonRow` gallery cell and its test ID.
+/// One `AppReasonRow` gallery cell, its test ID and sample label.
 nonisolated public struct ReasonRowGalleryEntry: Sendable, Equatable {
   public let variant: ReasonRowVariant
   public let size: ReasonRowSize
   public let state: ReasonRowState
   public let testId: String
+  public let label: String
 }
 
 /// Variants of `AppTag` (tag.yaml, board C03), each with its contract id.
@@ -33018,12 +33032,13 @@ nonisolated public struct TagSpec: Sendable, Equatable {
   }
 }
 
-/// One `AppTag` gallery cell and its test ID.
+/// One `AppTag` gallery cell, its test ID and sample label.
 nonisolated public struct TagGalleryEntry: Sendable, Equatable {
   public let variant: TagVariant
   public let size: TagSize
   public let state: TagState
   public let testId: String
+  public let label: String
 }
 
 /// The gallery sections of the components, in board order, each with its contract id.
@@ -33066,334 +33081,732 @@ nonisolated public enum ComponentGallery {
   public static let badgeHostSurface: AppColorRole = .surface2
 
   public static let badge: [BadgeGalleryEntry] = [
-    BadgeGalleryEntry(variant: .dot, size: .small, state: .enabled, testId: BadgeTestId.dotSmallEnabled),
-    BadgeGalleryEntry(variant: .count, size: .medium, state: .enabled, testId: BadgeTestId.countMediumEnabled),
-    BadgeGalleryEntry(variant: .trial, size: .large, state: .enabled, testId: BadgeTestId.trialLargeEnabled),
+    BadgeGalleryEntry(variant: .dot, size: .small, state: .enabled, testId: BadgeTestId.dotSmallEnabled, label: "2"),
+    BadgeGalleryEntry(
+      variant: .count,
+      size: .medium,
+      state: .enabled,
+      testId: BadgeTestId.countMediumEnabled,
+      label: "2"
+    ),
+    BadgeGalleryEntry(
+      variant: .trial,
+      size: .large,
+      state: .enabled,
+      testId: BadgeTestId.trialLargeEnabled,
+      label: "2"
+    ),
     BadgeGalleryEntry(
       variant: .trialLastDay,
       size: .large,
       state: .enabled,
-      testId: BadgeTestId.trialLastDayLargeEnabled
+      testId: BadgeTestId.trialLastDayLargeEnabled,
+      label: "2"
     ),
   ]
 
   public static let buttonLabel: String = "Continue"
 
   public static let button: [ButtonGalleryEntry] = [
-    ButtonGalleryEntry(variant: .primary, size: .large, state: .enabled, testId: ButtonTestId.primaryLargeEnabled),
-    ButtonGalleryEntry(variant: .primary, size: .large, state: .pressed, testId: ButtonTestId.primaryLargePressed),
-    ButtonGalleryEntry(variant: .primary, size: .large, state: .focused, testId: ButtonTestId.primaryLargeFocused),
-    ButtonGalleryEntry(variant: .primary, size: .large, state: .disabled, testId: ButtonTestId.primaryLargeDisabled),
-    ButtonGalleryEntry(variant: .primary, size: .large, state: .loading, testId: ButtonTestId.primaryLargeLoading),
-    ButtonGalleryEntry(variant: .primary, size: .card, state: .enabled, testId: ButtonTestId.primaryCardEnabled),
-    ButtonGalleryEntry(variant: .primary, size: .card, state: .pressed, testId: ButtonTestId.primaryCardPressed),
-    ButtonGalleryEntry(variant: .primary, size: .card, state: .focused, testId: ButtonTestId.primaryCardFocused),
-    ButtonGalleryEntry(variant: .primary, size: .card, state: .disabled, testId: ButtonTestId.primaryCardDisabled),
-    ButtonGalleryEntry(variant: .primary, size: .card, state: .loading, testId: ButtonTestId.primaryCardLoading),
-    ButtonGalleryEntry(variant: .primary, size: .medium, state: .enabled, testId: ButtonTestId.primaryMediumEnabled),
-    ButtonGalleryEntry(variant: .primary, size: .medium, state: .pressed, testId: ButtonTestId.primaryMediumPressed),
-    ButtonGalleryEntry(variant: .primary, size: .medium, state: .focused, testId: ButtonTestId.primaryMediumFocused),
-    ButtonGalleryEntry(variant: .primary, size: .medium, state: .disabled, testId: ButtonTestId.primaryMediumDisabled),
-    ButtonGalleryEntry(variant: .primary, size: .medium, state: .loading, testId: ButtonTestId.primaryMediumLoading),
-    ButtonGalleryEntry(variant: .primary, size: .compact, state: .enabled, testId: ButtonTestId.primaryCompactEnabled),
-    ButtonGalleryEntry(variant: .primary, size: .compact, state: .pressed, testId: ButtonTestId.primaryCompactPressed),
-    ButtonGalleryEntry(variant: .primary, size: .compact, state: .focused, testId: ButtonTestId.primaryCompactFocused),
+    ButtonGalleryEntry(
+      variant: .primary,
+      size: .large,
+      state: .enabled,
+      testId: ButtonTestId.primaryLargeEnabled,
+      label: "Continue"
+    ),
+    ButtonGalleryEntry(
+      variant: .primary,
+      size: .large,
+      state: .pressed,
+      testId: ButtonTestId.primaryLargePressed,
+      label: "Continue"
+    ),
+    ButtonGalleryEntry(
+      variant: .primary,
+      size: .large,
+      state: .focused,
+      testId: ButtonTestId.primaryLargeFocused,
+      label: "Continue"
+    ),
+    ButtonGalleryEntry(
+      variant: .primary,
+      size: .large,
+      state: .disabled,
+      testId: ButtonTestId.primaryLargeDisabled,
+      label: "Continue"
+    ),
+    ButtonGalleryEntry(
+      variant: .primary,
+      size: .large,
+      state: .loading,
+      testId: ButtonTestId.primaryLargeLoading,
+      label: "Continue"
+    ),
+    ButtonGalleryEntry(
+      variant: .primary,
+      size: .card,
+      state: .enabled,
+      testId: ButtonTestId.primaryCardEnabled,
+      label: "Continue"
+    ),
+    ButtonGalleryEntry(
+      variant: .primary,
+      size: .card,
+      state: .pressed,
+      testId: ButtonTestId.primaryCardPressed,
+      label: "Continue"
+    ),
+    ButtonGalleryEntry(
+      variant: .primary,
+      size: .card,
+      state: .focused,
+      testId: ButtonTestId.primaryCardFocused,
+      label: "Continue"
+    ),
+    ButtonGalleryEntry(
+      variant: .primary,
+      size: .card,
+      state: .disabled,
+      testId: ButtonTestId.primaryCardDisabled,
+      label: "Continue"
+    ),
+    ButtonGalleryEntry(
+      variant: .primary,
+      size: .card,
+      state: .loading,
+      testId: ButtonTestId.primaryCardLoading,
+      label: "Continue"
+    ),
+    ButtonGalleryEntry(
+      variant: .primary,
+      size: .medium,
+      state: .enabled,
+      testId: ButtonTestId.primaryMediumEnabled,
+      label: "Continue"
+    ),
+    ButtonGalleryEntry(
+      variant: .primary,
+      size: .medium,
+      state: .pressed,
+      testId: ButtonTestId.primaryMediumPressed,
+      label: "Continue"
+    ),
+    ButtonGalleryEntry(
+      variant: .primary,
+      size: .medium,
+      state: .focused,
+      testId: ButtonTestId.primaryMediumFocused,
+      label: "Continue"
+    ),
+    ButtonGalleryEntry(
+      variant: .primary,
+      size: .medium,
+      state: .disabled,
+      testId: ButtonTestId.primaryMediumDisabled,
+      label: "Continue"
+    ),
+    ButtonGalleryEntry(
+      variant: .primary,
+      size: .medium,
+      state: .loading,
+      testId: ButtonTestId.primaryMediumLoading,
+      label: "Continue"
+    ),
+    ButtonGalleryEntry(
+      variant: .primary,
+      size: .compact,
+      state: .enabled,
+      testId: ButtonTestId.primaryCompactEnabled,
+      label: "Continue"
+    ),
+    ButtonGalleryEntry(
+      variant: .primary,
+      size: .compact,
+      state: .pressed,
+      testId: ButtonTestId.primaryCompactPressed,
+      label: "Continue"
+    ),
+    ButtonGalleryEntry(
+      variant: .primary,
+      size: .compact,
+      state: .focused,
+      testId: ButtonTestId.primaryCompactFocused,
+      label: "Continue"
+    ),
     ButtonGalleryEntry(
       variant: .primary,
       size: .compact,
       state: .disabled,
-      testId: ButtonTestId.primaryCompactDisabled
+      testId: ButtonTestId.primaryCompactDisabled,
+      label: "Continue"
     ),
-    ButtonGalleryEntry(variant: .primary, size: .compact, state: .loading, testId: ButtonTestId.primaryCompactLoading),
-    ButtonGalleryEntry(variant: .primary, size: .small, state: .enabled, testId: ButtonTestId.primarySmallEnabled),
-    ButtonGalleryEntry(variant: .primary, size: .small, state: .pressed, testId: ButtonTestId.primarySmallPressed),
-    ButtonGalleryEntry(variant: .primary, size: .small, state: .focused, testId: ButtonTestId.primarySmallFocused),
-    ButtonGalleryEntry(variant: .primary, size: .small, state: .disabled, testId: ButtonTestId.primarySmallDisabled),
-    ButtonGalleryEntry(variant: .primary, size: .small, state: .loading, testId: ButtonTestId.primarySmallLoading),
-    ButtonGalleryEntry(variant: .secondary, size: .large, state: .enabled, testId: ButtonTestId.secondaryLargeEnabled),
-    ButtonGalleryEntry(variant: .secondary, size: .large, state: .pressed, testId: ButtonTestId.secondaryLargePressed),
-    ButtonGalleryEntry(variant: .secondary, size: .large, state: .focused, testId: ButtonTestId.secondaryLargeFocused),
+    ButtonGalleryEntry(
+      variant: .primary,
+      size: .compact,
+      state: .loading,
+      testId: ButtonTestId.primaryCompactLoading,
+      label: "Continue"
+    ),
+    ButtonGalleryEntry(
+      variant: .primary,
+      size: .small,
+      state: .enabled,
+      testId: ButtonTestId.primarySmallEnabled,
+      label: "Continue"
+    ),
+    ButtonGalleryEntry(
+      variant: .primary,
+      size: .small,
+      state: .pressed,
+      testId: ButtonTestId.primarySmallPressed,
+      label: "Continue"
+    ),
+    ButtonGalleryEntry(
+      variant: .primary,
+      size: .small,
+      state: .focused,
+      testId: ButtonTestId.primarySmallFocused,
+      label: "Continue"
+    ),
+    ButtonGalleryEntry(
+      variant: .primary,
+      size: .small,
+      state: .disabled,
+      testId: ButtonTestId.primarySmallDisabled,
+      label: "Continue"
+    ),
+    ButtonGalleryEntry(
+      variant: .primary,
+      size: .small,
+      state: .loading,
+      testId: ButtonTestId.primarySmallLoading,
+      label: "Continue"
+    ),
+    ButtonGalleryEntry(
+      variant: .secondary,
+      size: .large,
+      state: .enabled,
+      testId: ButtonTestId.secondaryLargeEnabled,
+      label: "Continue"
+    ),
+    ButtonGalleryEntry(
+      variant: .secondary,
+      size: .large,
+      state: .pressed,
+      testId: ButtonTestId.secondaryLargePressed,
+      label: "Continue"
+    ),
+    ButtonGalleryEntry(
+      variant: .secondary,
+      size: .large,
+      state: .focused,
+      testId: ButtonTestId.secondaryLargeFocused,
+      label: "Continue"
+    ),
     ButtonGalleryEntry(
       variant: .secondary,
       size: .large,
       state: .disabled,
-      testId: ButtonTestId.secondaryLargeDisabled
+      testId: ButtonTestId.secondaryLargeDisabled,
+      label: "Continue"
     ),
-    ButtonGalleryEntry(variant: .secondary, size: .large, state: .loading, testId: ButtonTestId.secondaryLargeLoading),
+    ButtonGalleryEntry(
+      variant: .secondary,
+      size: .large,
+      state: .loading,
+      testId: ButtonTestId.secondaryLargeLoading,
+      label: "Continue"
+    ),
     ButtonGalleryEntry(
       variant: .secondary,
       size: .medium,
       state: .enabled,
-      testId: ButtonTestId.secondaryMediumEnabled
+      testId: ButtonTestId.secondaryMediumEnabled,
+      label: "Continue"
     ),
     ButtonGalleryEntry(
       variant: .secondary,
       size: .medium,
       state: .pressed,
-      testId: ButtonTestId.secondaryMediumPressed
+      testId: ButtonTestId.secondaryMediumPressed,
+      label: "Continue"
     ),
     ButtonGalleryEntry(
       variant: .secondary,
       size: .medium,
       state: .focused,
-      testId: ButtonTestId.secondaryMediumFocused
+      testId: ButtonTestId.secondaryMediumFocused,
+      label: "Continue"
     ),
     ButtonGalleryEntry(
       variant: .secondary,
       size: .medium,
       state: .disabled,
-      testId: ButtonTestId.secondaryMediumDisabled
+      testId: ButtonTestId.secondaryMediumDisabled,
+      label: "Continue"
     ),
     ButtonGalleryEntry(
       variant: .secondary,
       size: .medium,
       state: .loading,
-      testId: ButtonTestId.secondaryMediumLoading
+      testId: ButtonTestId.secondaryMediumLoading,
+      label: "Continue"
     ),
     ButtonGalleryEntry(
       variant: .secondary,
       size: .compact,
       state: .enabled,
-      testId: ButtonTestId.secondaryCompactEnabled
+      testId: ButtonTestId.secondaryCompactEnabled,
+      label: "Continue"
     ),
     ButtonGalleryEntry(
       variant: .secondary,
       size: .compact,
       state: .pressed,
-      testId: ButtonTestId.secondaryCompactPressed
+      testId: ButtonTestId.secondaryCompactPressed,
+      label: "Continue"
     ),
     ButtonGalleryEntry(
       variant: .secondary,
       size: .compact,
       state: .focused,
-      testId: ButtonTestId.secondaryCompactFocused
+      testId: ButtonTestId.secondaryCompactFocused,
+      label: "Continue"
     ),
     ButtonGalleryEntry(
       variant: .secondary,
       size: .compact,
       state: .disabled,
-      testId: ButtonTestId.secondaryCompactDisabled
+      testId: ButtonTestId.secondaryCompactDisabled,
+      label: "Continue"
     ),
     ButtonGalleryEntry(
       variant: .secondary,
       size: .compact,
       state: .loading,
-      testId: ButtonTestId.secondaryCompactLoading
+      testId: ButtonTestId.secondaryCompactLoading,
+      label: "Continue"
     ),
-    ButtonGalleryEntry(variant: .secondary, size: .small, state: .enabled, testId: ButtonTestId.secondarySmallEnabled),
-    ButtonGalleryEntry(variant: .secondary, size: .small, state: .pressed, testId: ButtonTestId.secondarySmallPressed),
-    ButtonGalleryEntry(variant: .secondary, size: .small, state: .focused, testId: ButtonTestId.secondarySmallFocused),
+    ButtonGalleryEntry(
+      variant: .secondary,
+      size: .small,
+      state: .enabled,
+      testId: ButtonTestId.secondarySmallEnabled,
+      label: "Continue"
+    ),
+    ButtonGalleryEntry(
+      variant: .secondary,
+      size: .small,
+      state: .pressed,
+      testId: ButtonTestId.secondarySmallPressed,
+      label: "Continue"
+    ),
+    ButtonGalleryEntry(
+      variant: .secondary,
+      size: .small,
+      state: .focused,
+      testId: ButtonTestId.secondarySmallFocused,
+      label: "Continue"
+    ),
     ButtonGalleryEntry(
       variant: .secondary,
       size: .small,
       state: .disabled,
-      testId: ButtonTestId.secondarySmallDisabled
+      testId: ButtonTestId.secondarySmallDisabled,
+      label: "Continue"
     ),
-    ButtonGalleryEntry(variant: .secondary, size: .small, state: .loading, testId: ButtonTestId.secondarySmallLoading),
+    ButtonGalleryEntry(
+      variant: .secondary,
+      size: .small,
+      state: .loading,
+      testId: ButtonTestId.secondarySmallLoading,
+      label: "Continue"
+    ),
     ButtonGalleryEntry(
       variant: .primaryOutline,
       size: .compact,
       state: .enabled,
-      testId: ButtonTestId.primaryOutlineCompactEnabled
+      testId: ButtonTestId.primaryOutlineCompactEnabled,
+      label: "Continue"
     ),
     ButtonGalleryEntry(
       variant: .primaryOutline,
       size: .compact,
       state: .pressed,
-      testId: ButtonTestId.primaryOutlineCompactPressed
+      testId: ButtonTestId.primaryOutlineCompactPressed,
+      label: "Continue"
     ),
     ButtonGalleryEntry(
       variant: .primaryOutline,
       size: .compact,
       state: .focused,
-      testId: ButtonTestId.primaryOutlineCompactFocused
+      testId: ButtonTestId.primaryOutlineCompactFocused,
+      label: "Continue"
     ),
     ButtonGalleryEntry(
       variant: .primaryOutline,
       size: .compact,
       state: .disabled,
-      testId: ButtonTestId.primaryOutlineCompactDisabled
+      testId: ButtonTestId.primaryOutlineCompactDisabled,
+      label: "Continue"
     ),
     ButtonGalleryEntry(
       variant: .primaryOutline,
       size: .compact,
       state: .loading,
-      testId: ButtonTestId.primaryOutlineCompactLoading
+      testId: ButtonTestId.primaryOutlineCompactLoading,
+      label: "Continue"
     ),
-    ButtonGalleryEntry(variant: .text, size: .medium, state: .enabled, testId: ButtonTestId.textMediumEnabled),
-    ButtonGalleryEntry(variant: .text, size: .medium, state: .pressed, testId: ButtonTestId.textMediumPressed),
-    ButtonGalleryEntry(variant: .text, size: .medium, state: .focused, testId: ButtonTestId.textMediumFocused),
-    ButtonGalleryEntry(variant: .text, size: .medium, state: .disabled, testId: ButtonTestId.textMediumDisabled),
-    ButtonGalleryEntry(variant: .text, size: .medium, state: .loading, testId: ButtonTestId.textMediumLoading),
-    ButtonGalleryEntry(variant: .text, size: .compact, state: .enabled, testId: ButtonTestId.textCompactEnabled),
-    ButtonGalleryEntry(variant: .text, size: .compact, state: .pressed, testId: ButtonTestId.textCompactPressed),
-    ButtonGalleryEntry(variant: .text, size: .compact, state: .focused, testId: ButtonTestId.textCompactFocused),
-    ButtonGalleryEntry(variant: .text, size: .compact, state: .disabled, testId: ButtonTestId.textCompactDisabled),
-    ButtonGalleryEntry(variant: .text, size: .compact, state: .loading, testId: ButtonTestId.textCompactLoading),
-    ButtonGalleryEntry(variant: .tonal, size: .large, state: .enabled, testId: ButtonTestId.tonalLargeEnabled),
-    ButtonGalleryEntry(variant: .tonal, size: .large, state: .pressed, testId: ButtonTestId.tonalLargePressed),
-    ButtonGalleryEntry(variant: .tonal, size: .large, state: .focused, testId: ButtonTestId.tonalLargeFocused),
-    ButtonGalleryEntry(variant: .tonal, size: .large, state: .disabled, testId: ButtonTestId.tonalLargeDisabled),
-    ButtonGalleryEntry(variant: .tonal, size: .large, state: .loading, testId: ButtonTestId.tonalLargeLoading),
-    ButtonGalleryEntry(variant: .tonal, size: .card, state: .enabled, testId: ButtonTestId.tonalCardEnabled),
-    ButtonGalleryEntry(variant: .tonal, size: .card, state: .pressed, testId: ButtonTestId.tonalCardPressed),
-    ButtonGalleryEntry(variant: .tonal, size: .card, state: .focused, testId: ButtonTestId.tonalCardFocused),
-    ButtonGalleryEntry(variant: .tonal, size: .card, state: .disabled, testId: ButtonTestId.tonalCardDisabled),
-    ButtonGalleryEntry(variant: .tonal, size: .card, state: .loading, testId: ButtonTestId.tonalCardLoading),
-    ButtonGalleryEntry(variant: .tonal, size: .compact, state: .enabled, testId: ButtonTestId.tonalCompactEnabled),
-    ButtonGalleryEntry(variant: .tonal, size: .compact, state: .pressed, testId: ButtonTestId.tonalCompactPressed),
-    ButtonGalleryEntry(variant: .tonal, size: .compact, state: .focused, testId: ButtonTestId.tonalCompactFocused),
-    ButtonGalleryEntry(variant: .tonal, size: .compact, state: .disabled, testId: ButtonTestId.tonalCompactDisabled),
-    ButtonGalleryEntry(variant: .tonal, size: .compact, state: .loading, testId: ButtonTestId.tonalCompactLoading),
+    ButtonGalleryEntry(
+      variant: .text,
+      size: .medium,
+      state: .enabled,
+      testId: ButtonTestId.textMediumEnabled,
+      label: "Continue"
+    ),
+    ButtonGalleryEntry(
+      variant: .text,
+      size: .medium,
+      state: .pressed,
+      testId: ButtonTestId.textMediumPressed,
+      label: "Continue"
+    ),
+    ButtonGalleryEntry(
+      variant: .text,
+      size: .medium,
+      state: .focused,
+      testId: ButtonTestId.textMediumFocused,
+      label: "Continue"
+    ),
+    ButtonGalleryEntry(
+      variant: .text,
+      size: .medium,
+      state: .disabled,
+      testId: ButtonTestId.textMediumDisabled,
+      label: "Continue"
+    ),
+    ButtonGalleryEntry(
+      variant: .text,
+      size: .medium,
+      state: .loading,
+      testId: ButtonTestId.textMediumLoading,
+      label: "Continue"
+    ),
+    ButtonGalleryEntry(
+      variant: .text,
+      size: .compact,
+      state: .enabled,
+      testId: ButtonTestId.textCompactEnabled,
+      label: "Continue"
+    ),
+    ButtonGalleryEntry(
+      variant: .text,
+      size: .compact,
+      state: .pressed,
+      testId: ButtonTestId.textCompactPressed,
+      label: "Continue"
+    ),
+    ButtonGalleryEntry(
+      variant: .text,
+      size: .compact,
+      state: .focused,
+      testId: ButtonTestId.textCompactFocused,
+      label: "Continue"
+    ),
+    ButtonGalleryEntry(
+      variant: .text,
+      size: .compact,
+      state: .disabled,
+      testId: ButtonTestId.textCompactDisabled,
+      label: "Continue"
+    ),
+    ButtonGalleryEntry(
+      variant: .text,
+      size: .compact,
+      state: .loading,
+      testId: ButtonTestId.textCompactLoading,
+      label: "Continue"
+    ),
+    ButtonGalleryEntry(
+      variant: .tonal,
+      size: .large,
+      state: .enabled,
+      testId: ButtonTestId.tonalLargeEnabled,
+      label: "Continue"
+    ),
+    ButtonGalleryEntry(
+      variant: .tonal,
+      size: .large,
+      state: .pressed,
+      testId: ButtonTestId.tonalLargePressed,
+      label: "Continue"
+    ),
+    ButtonGalleryEntry(
+      variant: .tonal,
+      size: .large,
+      state: .focused,
+      testId: ButtonTestId.tonalLargeFocused,
+      label: "Continue"
+    ),
+    ButtonGalleryEntry(
+      variant: .tonal,
+      size: .large,
+      state: .disabled,
+      testId: ButtonTestId.tonalLargeDisabled,
+      label: "Continue"
+    ),
+    ButtonGalleryEntry(
+      variant: .tonal,
+      size: .large,
+      state: .loading,
+      testId: ButtonTestId.tonalLargeLoading,
+      label: "Continue"
+    ),
+    ButtonGalleryEntry(
+      variant: .tonal,
+      size: .card,
+      state: .enabled,
+      testId: ButtonTestId.tonalCardEnabled,
+      label: "Continue"
+    ),
+    ButtonGalleryEntry(
+      variant: .tonal,
+      size: .card,
+      state: .pressed,
+      testId: ButtonTestId.tonalCardPressed,
+      label: "Continue"
+    ),
+    ButtonGalleryEntry(
+      variant: .tonal,
+      size: .card,
+      state: .focused,
+      testId: ButtonTestId.tonalCardFocused,
+      label: "Continue"
+    ),
+    ButtonGalleryEntry(
+      variant: .tonal,
+      size: .card,
+      state: .disabled,
+      testId: ButtonTestId.tonalCardDisabled,
+      label: "Continue"
+    ),
+    ButtonGalleryEntry(
+      variant: .tonal,
+      size: .card,
+      state: .loading,
+      testId: ButtonTestId.tonalCardLoading,
+      label: "Continue"
+    ),
+    ButtonGalleryEntry(
+      variant: .tonal,
+      size: .compact,
+      state: .enabled,
+      testId: ButtonTestId.tonalCompactEnabled,
+      label: "Continue"
+    ),
+    ButtonGalleryEntry(
+      variant: .tonal,
+      size: .compact,
+      state: .pressed,
+      testId: ButtonTestId.tonalCompactPressed,
+      label: "Continue"
+    ),
+    ButtonGalleryEntry(
+      variant: .tonal,
+      size: .compact,
+      state: .focused,
+      testId: ButtonTestId.tonalCompactFocused,
+      label: "Continue"
+    ),
+    ButtonGalleryEntry(
+      variant: .tonal,
+      size: .compact,
+      state: .disabled,
+      testId: ButtonTestId.tonalCompactDisabled,
+      label: "Continue"
+    ),
+    ButtonGalleryEntry(
+      variant: .tonal,
+      size: .compact,
+      state: .loading,
+      testId: ButtonTestId.tonalCompactLoading,
+      label: "Continue"
+    ),
     ButtonGalleryEntry(
       variant: .destructive,
       size: .large,
       state: .enabled,
-      testId: ButtonTestId.destructiveLargeEnabled
+      testId: ButtonTestId.destructiveLargeEnabled,
+      label: "Continue"
     ),
     ButtonGalleryEntry(
       variant: .destructive,
       size: .large,
       state: .pressed,
-      testId: ButtonTestId.destructiveLargePressed
+      testId: ButtonTestId.destructiveLargePressed,
+      label: "Continue"
     ),
     ButtonGalleryEntry(
       variant: .destructive,
       size: .large,
       state: .focused,
-      testId: ButtonTestId.destructiveLargeFocused
+      testId: ButtonTestId.destructiveLargeFocused,
+      label: "Continue"
     ),
     ButtonGalleryEntry(
       variant: .destructive,
       size: .large,
       state: .disabled,
-      testId: ButtonTestId.destructiveLargeDisabled
+      testId: ButtonTestId.destructiveLargeDisabled,
+      label: "Continue"
     ),
     ButtonGalleryEntry(
       variant: .destructive,
       size: .large,
       state: .loading,
-      testId: ButtonTestId.destructiveLargeLoading
+      testId: ButtonTestId.destructiveLargeLoading,
+      label: "Continue"
     ),
     ButtonGalleryEntry(
       variant: .destructive,
       size: .medium,
       state: .enabled,
-      testId: ButtonTestId.destructiveMediumEnabled
+      testId: ButtonTestId.destructiveMediumEnabled,
+      label: "Continue"
     ),
     ButtonGalleryEntry(
       variant: .destructive,
       size: .medium,
       state: .pressed,
-      testId: ButtonTestId.destructiveMediumPressed
+      testId: ButtonTestId.destructiveMediumPressed,
+      label: "Continue"
     ),
     ButtonGalleryEntry(
       variant: .destructive,
       size: .medium,
       state: .focused,
-      testId: ButtonTestId.destructiveMediumFocused
+      testId: ButtonTestId.destructiveMediumFocused,
+      label: "Continue"
     ),
     ButtonGalleryEntry(
       variant: .destructive,
       size: .medium,
       state: .disabled,
-      testId: ButtonTestId.destructiveMediumDisabled
+      testId: ButtonTestId.destructiveMediumDisabled,
+      label: "Continue"
     ),
     ButtonGalleryEntry(
       variant: .destructive,
       size: .medium,
       state: .loading,
-      testId: ButtonTestId.destructiveMediumLoading
+      testId: ButtonTestId.destructiveMediumLoading,
+      label: "Continue"
     ),
     ButtonGalleryEntry(
       variant: .destructiveText,
       size: .compact,
       state: .enabled,
-      testId: ButtonTestId.destructiveTextCompactEnabled
+      testId: ButtonTestId.destructiveTextCompactEnabled,
+      label: "Continue"
     ),
     ButtonGalleryEntry(
       variant: .destructiveText,
       size: .compact,
       state: .pressed,
-      testId: ButtonTestId.destructiveTextCompactPressed
+      testId: ButtonTestId.destructiveTextCompactPressed,
+      label: "Continue"
     ),
     ButtonGalleryEntry(
       variant: .destructiveText,
       size: .compact,
       state: .focused,
-      testId: ButtonTestId.destructiveTextCompactFocused
+      testId: ButtonTestId.destructiveTextCompactFocused,
+      label: "Continue"
     ),
     ButtonGalleryEntry(
       variant: .destructiveText,
       size: .compact,
       state: .disabled,
-      testId: ButtonTestId.destructiveTextCompactDisabled
+      testId: ButtonTestId.destructiveTextCompactDisabled,
+      label: "Continue"
     ),
     ButtonGalleryEntry(
       variant: .destructiveText,
       size: .compact,
       state: .loading,
-      testId: ButtonTestId.destructiveTextCompactLoading
+      testId: ButtonTestId.destructiveTextCompactLoading,
+      label: "Continue"
     ),
     ButtonGalleryEntry(
       variant: .destructiveTonal,
       size: .large,
       state: .enabled,
-      testId: ButtonTestId.destructiveTonalLargeEnabled
+      testId: ButtonTestId.destructiveTonalLargeEnabled,
+      label: "Continue"
     ),
     ButtonGalleryEntry(
       variant: .destructiveTonal,
       size: .large,
       state: .pressed,
-      testId: ButtonTestId.destructiveTonalLargePressed
+      testId: ButtonTestId.destructiveTonalLargePressed,
+      label: "Continue"
     ),
     ButtonGalleryEntry(
       variant: .destructiveTonal,
       size: .large,
       state: .focused,
-      testId: ButtonTestId.destructiveTonalLargeFocused
+      testId: ButtonTestId.destructiveTonalLargeFocused,
+      label: "Continue"
     ),
     ButtonGalleryEntry(
       variant: .destructiveTonal,
       size: .large,
       state: .disabled,
-      testId: ButtonTestId.destructiveTonalLargeDisabled
+      testId: ButtonTestId.destructiveTonalLargeDisabled,
+      label: "Continue"
     ),
     ButtonGalleryEntry(
       variant: .destructiveTonal,
       size: .large,
       state: .loading,
-      testId: ButtonTestId.destructiveTonalLargeLoading
+      testId: ButtonTestId.destructiveTonalLargeLoading,
+      label: "Continue"
     ),
     ButtonGalleryEntry(
       variant: .destructiveFilled,
       size: .large,
       state: .enabled,
-      testId: ButtonTestId.destructiveFilledLargeEnabled
+      testId: ButtonTestId.destructiveFilledLargeEnabled,
+      label: "Continue"
     ),
     ButtonGalleryEntry(
       variant: .destructiveFilled,
       size: .large,
       state: .pressed,
-      testId: ButtonTestId.destructiveFilledLargePressed
+      testId: ButtonTestId.destructiveFilledLargePressed,
+      label: "Continue"
     ),
     ButtonGalleryEntry(
       variant: .destructiveFilled,
       size: .large,
       state: .focused,
-      testId: ButtonTestId.destructiveFilledLargeFocused
+      testId: ButtonTestId.destructiveFilledLargeFocused,
+      label: "Continue"
     ),
     ButtonGalleryEntry(
       variant: .destructiveFilled,
       size: .large,
       state: .disabled,
-      testId: ButtonTestId.destructiveFilledLargeDisabled
+      testId: ButtonTestId.destructiveFilledLargeDisabled,
+      label: "Continue"
     ),
     ButtonGalleryEntry(
       variant: .destructiveFilled,
       size: .large,
       state: .loading,
-      testId: ButtonTestId.destructiveFilledLargeLoading
+      testId: ButtonTestId.destructiveFilledLargeLoading,
+      label: "Continue"
     ),
   ]
 
@@ -33404,294 +33817,557 @@ nonisolated public enum ComponentGallery {
   public static let chipSwatch: AppColorRole = .cameraInk
 
   public static let chip: [ChipGalleryEntry] = [
-    ChipGalleryEntry(variant: .weather, size: .small, state: .enabled, testId: ChipTestId.weatherSmallEnabled),
-    ChipGalleryEntry(variant: .weather, size: .small, state: .pressed, testId: ChipTestId.weatherSmallPressed),
-    ChipGalleryEntry(variant: .weather, size: .small, state: .focused, testId: ChipTestId.weatherSmallFocused),
-    ChipGalleryEntry(variant: .context, size: .small, state: .enabled, testId: ChipTestId.contextSmallEnabled),
-    ChipGalleryEntry(variant: .context, size: .small, state: .pressed, testId: ChipTestId.contextSmallPressed),
-    ChipGalleryEntry(variant: .context, size: .small, state: .focused, testId: ChipTestId.contextSmallFocused),
+    ChipGalleryEntry(
+      variant: .weather,
+      size: .small,
+      state: .enabled,
+      testId: ChipTestId.weatherSmallEnabled,
+      label: "Wool"
+    ),
+    ChipGalleryEntry(
+      variant: .weather,
+      size: .small,
+      state: .pressed,
+      testId: ChipTestId.weatherSmallPressed,
+      label: "Wool"
+    ),
+    ChipGalleryEntry(
+      variant: .weather,
+      size: .small,
+      state: .focused,
+      testId: ChipTestId.weatherSmallFocused,
+      label: "Wool"
+    ),
+    ChipGalleryEntry(
+      variant: .context,
+      size: .small,
+      state: .enabled,
+      testId: ChipTestId.contextSmallEnabled,
+      label: "Wool"
+    ),
+    ChipGalleryEntry(
+      variant: .context,
+      size: .small,
+      state: .pressed,
+      testId: ChipTestId.contextSmallPressed,
+      label: "Wool"
+    ),
+    ChipGalleryEntry(
+      variant: .context,
+      size: .small,
+      state: .focused,
+      testId: ChipTestId.contextSmallFocused,
+      label: "Wool"
+    ),
     ChipGalleryEntry(
       variant: .conditionSunny,
       size: .medium,
       state: .enabled,
-      testId: ChipTestId.conditionSunnyMediumEnabled
+      testId: ChipTestId.conditionSunnyMediumEnabled,
+      label: "Wool"
     ),
     ChipGalleryEntry(
       variant: .conditionSunny,
       size: .medium,
       state: .pressed,
-      testId: ChipTestId.conditionSunnyMediumPressed
+      testId: ChipTestId.conditionSunnyMediumPressed,
+      label: "Wool"
     ),
     ChipGalleryEntry(
       variant: .conditionSunny,
       size: .medium,
       state: .focused,
-      testId: ChipTestId.conditionSunnyMediumFocused
+      testId: ChipTestId.conditionSunnyMediumFocused,
+      label: "Wool"
     ),
     ChipGalleryEntry(
       variant: .conditionRain,
       size: .medium,
       state: .enabled,
-      testId: ChipTestId.conditionRainMediumEnabled
+      testId: ChipTestId.conditionRainMediumEnabled,
+      label: "Wool"
     ),
     ChipGalleryEntry(
       variant: .conditionRain,
       size: .medium,
       state: .pressed,
-      testId: ChipTestId.conditionRainMediumPressed
+      testId: ChipTestId.conditionRainMediumPressed,
+      label: "Wool"
     ),
     ChipGalleryEntry(
       variant: .conditionRain,
       size: .medium,
       state: .focused,
-      testId: ChipTestId.conditionRainMediumFocused
+      testId: ChipTestId.conditionRainMediumFocused,
+      label: "Wool"
     ),
     ChipGalleryEntry(
       variant: .conditionCold,
       size: .medium,
       state: .enabled,
-      testId: ChipTestId.conditionColdMediumEnabled
+      testId: ChipTestId.conditionColdMediumEnabled,
+      label: "Wool"
     ),
     ChipGalleryEntry(
       variant: .conditionCold,
       size: .medium,
       state: .pressed,
-      testId: ChipTestId.conditionColdMediumPressed
+      testId: ChipTestId.conditionColdMediumPressed,
+      label: "Wool"
     ),
     ChipGalleryEntry(
       variant: .conditionCold,
       size: .medium,
       state: .focused,
-      testId: ChipTestId.conditionColdMediumFocused
+      testId: ChipTestId.conditionColdMediumFocused,
+      label: "Wool"
     ),
     ChipGalleryEntry(
       variant: .conditionHot,
       size: .medium,
       state: .enabled,
-      testId: ChipTestId.conditionHotMediumEnabled
+      testId: ChipTestId.conditionHotMediumEnabled,
+      label: "Wool"
     ),
     ChipGalleryEntry(
       variant: .conditionHot,
       size: .medium,
       state: .pressed,
-      testId: ChipTestId.conditionHotMediumPressed
+      testId: ChipTestId.conditionHotMediumPressed,
+      label: "Wool"
     ),
     ChipGalleryEntry(
       variant: .conditionHot,
       size: .medium,
       state: .focused,
-      testId: ChipTestId.conditionHotMediumFocused
+      testId: ChipTestId.conditionHotMediumFocused,
+      label: "Wool"
     ),
     ChipGalleryEntry(
       variant: .conditionWindy,
       size: .medium,
       state: .enabled,
-      testId: ChipTestId.conditionWindyMediumEnabled
+      testId: ChipTestId.conditionWindyMediumEnabled,
+      label: "Wool"
     ),
     ChipGalleryEntry(
       variant: .conditionWindy,
       size: .medium,
       state: .pressed,
-      testId: ChipTestId.conditionWindyMediumPressed
+      testId: ChipTestId.conditionWindyMediumPressed,
+      label: "Wool"
     ),
     ChipGalleryEntry(
       variant: .conditionWindy,
       size: .medium,
       state: .focused,
-      testId: ChipTestId.conditionWindyMediumFocused
+      testId: ChipTestId.conditionWindyMediumFocused,
+      label: "Wool"
     ),
     ChipGalleryEntry(
       variant: .conditionSnow,
       size: .medium,
       state: .enabled,
-      testId: ChipTestId.conditionSnowMediumEnabled
+      testId: ChipTestId.conditionSnowMediumEnabled,
+      label: "Wool"
     ),
     ChipGalleryEntry(
       variant: .conditionSnow,
       size: .medium,
       state: .pressed,
-      testId: ChipTestId.conditionSnowMediumPressed
+      testId: ChipTestId.conditionSnowMediumPressed,
+      label: "Wool"
     ),
     ChipGalleryEntry(
       variant: .conditionSnow,
       size: .medium,
       state: .focused,
-      testId: ChipTestId.conditionSnowMediumFocused
+      testId: ChipTestId.conditionSnowMediumFocused,
+      label: "Wool"
     ),
     ChipGalleryEntry(
       variant: .conditionEvening,
       size: .medium,
       state: .enabled,
-      testId: ChipTestId.conditionEveningMediumEnabled
+      testId: ChipTestId.conditionEveningMediumEnabled,
+      label: "Wool"
     ),
     ChipGalleryEntry(
       variant: .conditionEvening,
       size: .medium,
       state: .pressed,
-      testId: ChipTestId.conditionEveningMediumPressed
+      testId: ChipTestId.conditionEveningMediumPressed,
+      label: "Wool"
     ),
     ChipGalleryEntry(
       variant: .conditionEvening,
       size: .medium,
       state: .focused,
-      testId: ChipTestId.conditionEveningMediumFocused
+      testId: ChipTestId.conditionEveningMediumFocused,
+      label: "Wool"
     ),
-    ChipGalleryEntry(variant: .override, size: .small, state: .enabled, testId: ChipTestId.overrideSmallEnabled),
-    ChipGalleryEntry(variant: .override, size: .small, state: .pressed, testId: ChipTestId.overrideSmallPressed),
-    ChipGalleryEntry(variant: .override, size: .small, state: .focused, testId: ChipTestId.overrideSmallFocused),
-    ChipGalleryEntry(variant: .reason, size: .compact, state: .enabled, testId: ChipTestId.reasonCompactEnabled),
-    ChipGalleryEntry(variant: .reason, size: .compact, state: .pressed, testId: ChipTestId.reasonCompactPressed),
-    ChipGalleryEntry(variant: .reason, size: .compact, state: .focused, testId: ChipTestId.reasonCompactFocused),
-    ChipGalleryEntry(variant: .reason, size: .compact, state: .expanded, testId: ChipTestId.reasonCompactExpanded),
+    ChipGalleryEntry(
+      variant: .override,
+      size: .small,
+      state: .enabled,
+      testId: ChipTestId.overrideSmallEnabled,
+      label: "Wool"
+    ),
+    ChipGalleryEntry(
+      variant: .override,
+      size: .small,
+      state: .pressed,
+      testId: ChipTestId.overrideSmallPressed,
+      label: "Wool"
+    ),
+    ChipGalleryEntry(
+      variant: .override,
+      size: .small,
+      state: .focused,
+      testId: ChipTestId.overrideSmallFocused,
+      label: "Wool"
+    ),
+    ChipGalleryEntry(
+      variant: .reason,
+      size: .compact,
+      state: .enabled,
+      testId: ChipTestId.reasonCompactEnabled,
+      label: "Wool"
+    ),
+    ChipGalleryEntry(
+      variant: .reason,
+      size: .compact,
+      state: .pressed,
+      testId: ChipTestId.reasonCompactPressed,
+      label: "Wool"
+    ),
+    ChipGalleryEntry(
+      variant: .reason,
+      size: .compact,
+      state: .focused,
+      testId: ChipTestId.reasonCompactFocused,
+      label: "Wool"
+    ),
+    ChipGalleryEntry(
+      variant: .reason,
+      size: .compact,
+      state: .expanded,
+      testId: ChipTestId.reasonCompactExpanded,
+      label: "Wool"
+    ),
     ChipGalleryEntry(
       variant: .reason,
       size: .compact,
       state: .expandedPressed,
-      testId: ChipTestId.reasonCompactExpandedPressed
+      testId: ChipTestId.reasonCompactExpandedPressed,
+      label: "Wool"
     ),
     ChipGalleryEntry(
       variant: .reason,
       size: .compact,
       state: .expandedFocused,
-      testId: ChipTestId.reasonCompactExpandedFocused
+      testId: ChipTestId.reasonCompactExpandedFocused,
+      label: "Wool"
     ),
-    ChipGalleryEntry(variant: .choice, size: .large, state: .enabled, testId: ChipTestId.choiceLargeEnabled),
-    ChipGalleryEntry(variant: .choice, size: .large, state: .pressed, testId: ChipTestId.choiceLargePressed),
-    ChipGalleryEntry(variant: .choice, size: .large, state: .focused, testId: ChipTestId.choiceLargeFocused),
-    ChipGalleryEntry(variant: .choice, size: .large, state: .disabled, testId: ChipTestId.choiceLargeDisabled),
-    ChipGalleryEntry(variant: .choice, size: .large, state: .selected, testId: ChipTestId.choiceLargeSelected),
+    ChipGalleryEntry(
+      variant: .choice,
+      size: .large,
+      state: .enabled,
+      testId: ChipTestId.choiceLargeEnabled,
+      label: "Wool"
+    ),
+    ChipGalleryEntry(
+      variant: .choice,
+      size: .large,
+      state: .pressed,
+      testId: ChipTestId.choiceLargePressed,
+      label: "Wool"
+    ),
+    ChipGalleryEntry(
+      variant: .choice,
+      size: .large,
+      state: .focused,
+      testId: ChipTestId.choiceLargeFocused,
+      label: "Wool"
+    ),
+    ChipGalleryEntry(
+      variant: .choice,
+      size: .large,
+      state: .disabled,
+      testId: ChipTestId.choiceLargeDisabled,
+      label: "Wool"
+    ),
+    ChipGalleryEntry(
+      variant: .choice,
+      size: .large,
+      state: .selected,
+      testId: ChipTestId.choiceLargeSelected,
+      label: "Wool"
+    ),
     ChipGalleryEntry(
       variant: .choice,
       size: .large,
       state: .selectedPressed,
-      testId: ChipTestId.choiceLargeSelectedPressed
+      testId: ChipTestId.choiceLargeSelectedPressed,
+      label: "Wool"
     ),
     ChipGalleryEntry(
       variant: .choice,
       size: .large,
       state: .selectedFocused,
-      testId: ChipTestId.choiceLargeSelectedFocused
+      testId: ChipTestId.choiceLargeSelectedFocused,
+      label: "Wool"
     ),
     ChipGalleryEntry(
       variant: .choice,
       size: .large,
       state: .selectedDisabled,
-      testId: ChipTestId.choiceLargeSelectedDisabled
+      testId: ChipTestId.choiceLargeSelectedDisabled,
+      label: "Wool"
     ),
-    ChipGalleryEntry(variant: .swatch, size: .large, state: .enabled, testId: ChipTestId.swatchLargeEnabled),
-    ChipGalleryEntry(variant: .swatch, size: .large, state: .pressed, testId: ChipTestId.swatchLargePressed),
-    ChipGalleryEntry(variant: .swatch, size: .large, state: .focused, testId: ChipTestId.swatchLargeFocused),
-    ChipGalleryEntry(variant: .swatch, size: .large, state: .disabled, testId: ChipTestId.swatchLargeDisabled),
-    ChipGalleryEntry(variant: .swatch, size: .large, state: .selected, testId: ChipTestId.swatchLargeSelected),
+    ChipGalleryEntry(
+      variant: .swatch,
+      size: .large,
+      state: .enabled,
+      testId: ChipTestId.swatchLargeEnabled,
+      label: "Wool"
+    ),
+    ChipGalleryEntry(
+      variant: .swatch,
+      size: .large,
+      state: .pressed,
+      testId: ChipTestId.swatchLargePressed,
+      label: "Wool"
+    ),
+    ChipGalleryEntry(
+      variant: .swatch,
+      size: .large,
+      state: .focused,
+      testId: ChipTestId.swatchLargeFocused,
+      label: "Wool"
+    ),
+    ChipGalleryEntry(
+      variant: .swatch,
+      size: .large,
+      state: .disabled,
+      testId: ChipTestId.swatchLargeDisabled,
+      label: "Wool"
+    ),
+    ChipGalleryEntry(
+      variant: .swatch,
+      size: .large,
+      state: .selected,
+      testId: ChipTestId.swatchLargeSelected,
+      label: "Wool"
+    ),
     ChipGalleryEntry(
       variant: .swatch,
       size: .large,
       state: .selectedPressed,
-      testId: ChipTestId.swatchLargeSelectedPressed
+      testId: ChipTestId.swatchLargeSelectedPressed,
+      label: "Wool"
     ),
     ChipGalleryEntry(
       variant: .swatch,
       size: .large,
       state: .selectedFocused,
-      testId: ChipTestId.swatchLargeSelectedFocused
+      testId: ChipTestId.swatchLargeSelectedFocused,
+      label: "Wool"
     ),
     ChipGalleryEntry(
       variant: .swatch,
       size: .large,
       state: .selectedDisabled,
-      testId: ChipTestId.swatchLargeSelectedDisabled
+      testId: ChipTestId.swatchLargeSelectedDisabled,
+      label: "Wool"
     ),
-    ChipGalleryEntry(variant: .filter, size: .medium, state: .enabled, testId: ChipTestId.filterMediumEnabled),
-    ChipGalleryEntry(variant: .filter, size: .medium, state: .pressed, testId: ChipTestId.filterMediumPressed),
-    ChipGalleryEntry(variant: .filter, size: .medium, state: .focused, testId: ChipTestId.filterMediumFocused),
-    ChipGalleryEntry(variant: .filter, size: .medium, state: .disabled, testId: ChipTestId.filterMediumDisabled),
-    ChipGalleryEntry(variant: .filter, size: .medium, state: .selected, testId: ChipTestId.filterMediumSelected),
+    ChipGalleryEntry(
+      variant: .filter,
+      size: .medium,
+      state: .enabled,
+      testId: ChipTestId.filterMediumEnabled,
+      label: "Wool"
+    ),
+    ChipGalleryEntry(
+      variant: .filter,
+      size: .medium,
+      state: .pressed,
+      testId: ChipTestId.filterMediumPressed,
+      label: "Wool"
+    ),
+    ChipGalleryEntry(
+      variant: .filter,
+      size: .medium,
+      state: .focused,
+      testId: ChipTestId.filterMediumFocused,
+      label: "Wool"
+    ),
+    ChipGalleryEntry(
+      variant: .filter,
+      size: .medium,
+      state: .disabled,
+      testId: ChipTestId.filterMediumDisabled,
+      label: "Wool"
+    ),
+    ChipGalleryEntry(
+      variant: .filter,
+      size: .medium,
+      state: .selected,
+      testId: ChipTestId.filterMediumSelected,
+      label: "Wool"
+    ),
     ChipGalleryEntry(
       variant: .filter,
       size: .medium,
       state: .selectedPressed,
-      testId: ChipTestId.filterMediumSelectedPressed
+      testId: ChipTestId.filterMediumSelectedPressed,
+      label: "Wool"
     ),
     ChipGalleryEntry(
       variant: .filter,
       size: .medium,
       state: .selectedFocused,
-      testId: ChipTestId.filterMediumSelectedFocused
+      testId: ChipTestId.filterMediumSelectedFocused,
+      label: "Wool"
     ),
     ChipGalleryEntry(
       variant: .filter,
       size: .medium,
       state: .selectedDisabled,
-      testId: ChipTestId.filterMediumSelectedDisabled
+      testId: ChipTestId.filterMediumSelectedDisabled,
+      label: "Wool"
     ),
-    ChipGalleryEntry(variant: .filterMenu, size: .medium, state: .enabled, testId: ChipTestId.filterMenuMediumEnabled),
-    ChipGalleryEntry(variant: .filterMenu, size: .medium, state: .pressed, testId: ChipTestId.filterMenuMediumPressed),
-    ChipGalleryEntry(variant: .filterMenu, size: .medium, state: .focused, testId: ChipTestId.filterMenuMediumFocused),
+    ChipGalleryEntry(
+      variant: .filterMenu,
+      size: .medium,
+      state: .enabled,
+      testId: ChipTestId.filterMenuMediumEnabled,
+      label: "Wool"
+    ),
+    ChipGalleryEntry(
+      variant: .filterMenu,
+      size: .medium,
+      state: .pressed,
+      testId: ChipTestId.filterMenuMediumPressed,
+      label: "Wool"
+    ),
+    ChipGalleryEntry(
+      variant: .filterMenu,
+      size: .medium,
+      state: .focused,
+      testId: ChipTestId.filterMenuMediumFocused,
+      label: "Wool"
+    ),
     ChipGalleryEntry(
       variant: .filterMenu,
       size: .medium,
       state: .selected,
-      testId: ChipTestId.filterMenuMediumSelected
+      testId: ChipTestId.filterMenuMediumSelected,
+      label: "Wool"
     ),
     ChipGalleryEntry(
       variant: .filterMenu,
       size: .medium,
       state: .selectedPressed,
-      testId: ChipTestId.filterMenuMediumSelectedPressed
+      testId: ChipTestId.filterMenuMediumSelectedPressed,
+      label: "Wool"
     ),
     ChipGalleryEntry(
       variant: .filterMenu,
       size: .medium,
       state: .selectedFocused,
-      testId: ChipTestId.filterMenuMediumSelectedFocused
+      testId: ChipTestId.filterMenuMediumSelectedFocused,
+      label: "Wool"
     ),
-    ChipGalleryEntry(variant: .groupSort, size: .medium, state: .enabled, testId: ChipTestId.groupSortMediumEnabled),
-    ChipGalleryEntry(variant: .groupSort, size: .medium, state: .pressed, testId: ChipTestId.groupSortMediumPressed),
-    ChipGalleryEntry(variant: .groupSort, size: .medium, state: .focused, testId: ChipTestId.groupSortMediumFocused),
+    ChipGalleryEntry(
+      variant: .groupSort,
+      size: .medium,
+      state: .enabled,
+      testId: ChipTestId.groupSortMediumEnabled,
+      label: "Wool"
+    ),
+    ChipGalleryEntry(
+      variant: .groupSort,
+      size: .medium,
+      state: .pressed,
+      testId: ChipTestId.groupSortMediumPressed,
+      label: "Wool"
+    ),
+    ChipGalleryEntry(
+      variant: .groupSort,
+      size: .medium,
+      state: .focused,
+      testId: ChipTestId.groupSortMediumFocused,
+      label: "Wool"
+    ),
     ChipGalleryEntry(
       variant: .neverSuggest,
       size: .large,
       state: .enabled,
-      testId: ChipTestId.neverSuggestLargeEnabled
+      testId: ChipTestId.neverSuggestLargeEnabled,
+      label: "Wool"
     ),
     ChipGalleryEntry(
       variant: .neverSuggest,
       size: .large,
       state: .pressed,
-      testId: ChipTestId.neverSuggestLargePressed
+      testId: ChipTestId.neverSuggestLargePressed,
+      label: "Wool"
     ),
     ChipGalleryEntry(
       variant: .neverSuggest,
       size: .large,
       state: .focused,
-      testId: ChipTestId.neverSuggestLargeFocused
+      testId: ChipTestId.neverSuggestLargeFocused,
+      label: "Wool"
     ),
-    ChipGalleryEntry(variant: .softDislike, size: .large, state: .enabled, testId: ChipTestId.softDislikeLargeEnabled),
-    ChipGalleryEntry(variant: .softDislike, size: .large, state: .pressed, testId: ChipTestId.softDislikeLargePressed),
-    ChipGalleryEntry(variant: .softDislike, size: .large, state: .focused, testId: ChipTestId.softDislikeLargeFocused),
-    ChipGalleryEntry(variant: .add, size: .medium, state: .enabled, testId: ChipTestId.addMediumEnabled),
-    ChipGalleryEntry(variant: .add, size: .medium, state: .pressed, testId: ChipTestId.addMediumPressed),
-    ChipGalleryEntry(variant: .add, size: .medium, state: .focused, testId: ChipTestId.addMediumFocused),
-    ChipGalleryEntry(variant: .add, size: .large, state: .enabled, testId: ChipTestId.addLargeEnabled),
-    ChipGalleryEntry(variant: .add, size: .large, state: .pressed, testId: ChipTestId.addLargePressed),
-    ChipGalleryEntry(variant: .add, size: .large, state: .focused, testId: ChipTestId.addLargeFocused),
+    ChipGalleryEntry(
+      variant: .softDislike,
+      size: .large,
+      state: .enabled,
+      testId: ChipTestId.softDislikeLargeEnabled,
+      label: "Wool"
+    ),
+    ChipGalleryEntry(
+      variant: .softDislike,
+      size: .large,
+      state: .pressed,
+      testId: ChipTestId.softDislikeLargePressed,
+      label: "Wool"
+    ),
+    ChipGalleryEntry(
+      variant: .softDislike,
+      size: .large,
+      state: .focused,
+      testId: ChipTestId.softDislikeLargeFocused,
+      label: "Wool"
+    ),
+    ChipGalleryEntry(variant: .add, size: .medium, state: .enabled, testId: ChipTestId.addMediumEnabled, label: "Wool"),
+    ChipGalleryEntry(variant: .add, size: .medium, state: .pressed, testId: ChipTestId.addMediumPressed, label: "Wool"),
+    ChipGalleryEntry(variant: .add, size: .medium, state: .focused, testId: ChipTestId.addMediumFocused, label: "Wool"),
+    ChipGalleryEntry(variant: .add, size: .large, state: .enabled, testId: ChipTestId.addLargeEnabled, label: "Wool"),
+    ChipGalleryEntry(variant: .add, size: .large, state: .pressed, testId: ChipTestId.addLargePressed, label: "Wool"),
+    ChipGalleryEntry(variant: .add, size: .large, state: .focused, testId: ChipTestId.addLargeFocused, label: "Wool"),
     ChipGalleryEntry(
       variant: .neverSuggestAdd,
       size: .large,
       state: .enabled,
-      testId: ChipTestId.neverSuggestAddLargeEnabled
+      testId: ChipTestId.neverSuggestAddLargeEnabled,
+      label: "Wool"
     ),
     ChipGalleryEntry(
       variant: .neverSuggestAdd,
       size: .large,
       state: .pressed,
-      testId: ChipTestId.neverSuggestAddLargePressed
+      testId: ChipTestId.neverSuggestAddLargePressed,
+      label: "Wool"
     ),
     ChipGalleryEntry(
       variant: .neverSuggestAdd,
       size: .large,
       state: .focused,
-      testId: ChipTestId.neverSuggestAddLargeFocused
+      testId: ChipTestId.neverSuggestAddLargeFocused,
+      label: "Wool"
     ),
   ]
 
@@ -33708,7 +34384,8 @@ nonisolated public enum ComponentGallery {
       variant: .standard,
       size: .standard,
       state: .enabled,
-      testId: ReasonRowTestId.standardStandardEnabled
+      testId: ReasonRowTestId.standardStandardEnabled,
+      label: "Rain is expected after 4 pm, so this look has a water-resistant outer layer."
     )
   ]
 
@@ -33716,32 +34393,83 @@ nonisolated public enum ComponentGallery {
   public static let tagLeadingIcon: AppIconName = .laundry
 
   public static let tag: [TagGalleryEntry] = [
-    TagGalleryEntry(variant: .planFree, size: .regular, state: .enabled, testId: TagTestId.planFreeRegularEnabled),
+    TagGalleryEntry(
+      variant: .planFree,
+      size: .regular,
+      state: .enabled,
+      testId: TagTestId.planFreeRegularEnabled,
+      label: "Plus"
+    ),
     TagGalleryEntry(
       variant: .planEssentials,
       size: .regular,
       state: .enabled,
-      testId: TagTestId.planEssentialsRegularEnabled
+      testId: TagTestId.planEssentialsRegularEnabled,
+      label: "Plus"
     ),
-    TagGalleryEntry(variant: .planPlus, size: .regular, state: .enabled, testId: TagTestId.planPlusRegularEnabled),
-    TagGalleryEntry(variant: .planPro, size: .regular, state: .enabled, testId: TagTestId.planProRegularEnabled),
-    TagGalleryEntry(variant: .lock, size: .regular, state: .enabled, testId: TagTestId.lockRegularEnabled),
-    TagGalleryEntry(variant: .later, size: .regular, state: .enabled, testId: TagTestId.laterRegularEnabled),
+    TagGalleryEntry(
+      variant: .planPlus,
+      size: .regular,
+      state: .enabled,
+      testId: TagTestId.planPlusRegularEnabled,
+      label: "Plus"
+    ),
+    TagGalleryEntry(
+      variant: .planPro,
+      size: .regular,
+      state: .enabled,
+      testId: TagTestId.planProRegularEnabled,
+      label: "Plus"
+    ),
+    TagGalleryEntry(
+      variant: .lock,
+      size: .regular,
+      state: .enabled,
+      testId: TagTestId.lockRegularEnabled,
+      label: "Plus"
+    ),
+    TagGalleryEntry(
+      variant: .later,
+      size: .regular,
+      state: .enabled,
+      testId: TagTestId.laterRegularEnabled,
+      label: "Plus"
+    ),
     TagGalleryEntry(
       variant: .provisional,
       size: .regular,
       state: .enabled,
-      testId: TagTestId.provisionalRegularEnabled
+      testId: TagTestId.provisionalRegularEnabled,
+      label: "Plus"
     ),
-    TagGalleryEntry(variant: .new, size: .regular, state: .enabled, testId: TagTestId.newRegularEnabled),
-    TagGalleryEntry(variant: .available, size: .regular, state: .enabled, testId: TagTestId.availableRegularEnabled),
+    TagGalleryEntry(variant: .new, size: .regular, state: .enabled, testId: TagTestId.newRegularEnabled, label: "Plus"),
+    TagGalleryEntry(
+      variant: .available,
+      size: .regular,
+      state: .enabled,
+      testId: TagTestId.availableRegularEnabled,
+      label: "Plus"
+    ),
     TagGalleryEntry(
       variant: .unavailable,
       size: .regular,
       state: .enabled,
-      testId: TagTestId.unavailableRegularEnabled
+      testId: TagTestId.unavailableRegularEnabled,
+      label: "Plus"
     ),
-    TagGalleryEntry(variant: .differs, size: .small, state: .enabled, testId: TagTestId.differsSmallEnabled),
-    TagGalleryEntry(variant: .kind, size: .regular, state: .enabled, testId: TagTestId.kindRegularEnabled),
+    TagGalleryEntry(
+      variant: .differs,
+      size: .small,
+      state: .enabled,
+      testId: TagTestId.differsSmallEnabled,
+      label: "Plus"
+    ),
+    TagGalleryEntry(
+      variant: .kind,
+      size: .regular,
+      state: .enabled,
+      testId: TagTestId.kindRegularEnabled,
+      label: "Plus"
+    ),
   ]
 }

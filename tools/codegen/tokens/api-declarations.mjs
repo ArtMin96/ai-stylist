@@ -136,6 +136,7 @@ function componentDeclarations(api) {
         value: { t: 'string', s: testIdOf(api.id, combo) },
       })),
     },
+    ...accessibilityDeclarations(api, type, name),
     struct(
       type('Appearance'),
       `One merged ${name} look (base, state, size): colours are role keys, sizes pt/dp.`,
@@ -179,9 +180,10 @@ function componentDeclarations(api) {
         },
       },
     ),
-    struct(type('GalleryEntry'), `One ${name} gallery cell and its test ID.`, [
+    struct(type('GalleryEntry'), `One ${name} gallery cell, its test ID and sample label.`, [
       ...keys,
       { name: 'testId', type: 'string' },
+      { name: 'label', type: 'string' },
     ]),
   ];
 }
@@ -259,6 +261,28 @@ function partDeclarations(api, type, axis, enumOf) {
   ];
 }
 
+/**
+ * `<Name>Accessibility` for a contract with `accessibility.minTouchTarget` (G9): the minimum touch
+ * target, one name in both languages, each spelling its own platform's value (a `platform` value:
+ * 44 pt in Swift, 48 dp in Kotlin).
+ */
+function accessibilityDeclarations(api, type, name) {
+  if (!api.minTouchTarget) return [];
+  const { ios, android } = api.minTouchTarget;
+  const minTouchTarget = {
+    t: 'platform',
+    values: { ios: { t: 'number', n: ios }, android: { t: 'number', n: android } },
+  };
+  return [
+    {
+      kind: 'namespace',
+      name: type('Accessibility'),
+      doc: `The minimum touch target of ${name} (\`accessibility.minTouchTarget\`): pt on iOS, dp on Android.`,
+      members: [{ kind: 'const', name: 'minTouchTarget', type: 'double', value: minTouchTarget }],
+    },
+  ];
+}
+
 /** `<Name>IconSource` (G4) beside an approved icon set: a glyph of its name enum, or the prop. */
 function iconSourceDeclarations(api, name) {
   if (!api.iconSource) return [];
@@ -312,8 +336,9 @@ function specValue(api, context, type, appearanceFields) {
 
 /**
  * `ComponentGallery`: per control contract its gallery label, its samples (`gallery.props`, one
- * constant per prop: `<id><Prop>`) and its entries, in contract order. An icon set's gallery reads
- * its `<Name>Name` cases instead.
+ * constant per prop: `<id><Prop>`) and its entries, in contract order, each with its sample label:
+ * the variant's own `gallery.labels` entry (CC-19), else `gallery.label`. An icon set's gallery
+ * reads its `<Name>Name` cases instead.
  */
 function galleryDeclaration(apis) {
   return {
@@ -323,6 +348,7 @@ function galleryDeclaration(apis) {
     members: apis.flatMap((api) => {
       const entry = apiTypeName(api.id, 'GalleryEntry');
       const testIds = apiTypeName(api.id, 'TestId');
+      const { label, labels } = api.gallery;
       const item = (combo) => ({
         t: 'init',
         struct: entry,
@@ -332,6 +358,11 @@ function galleryDeclaration(apis) {
             name: 'testId',
             type: 'string',
             value: { t: 'ref', namespace: testIds, member: testIdName(combo) },
+          },
+          {
+            name: 'label',
+            type: 'string',
+            value: { t: 'string', s: labels[combo.variant] ?? label },
           },
         ],
       });

@@ -68,6 +68,12 @@ nonisolated public enum AppRadius {
   ]
 }
 
+/// How a type style draws its text (`textTransform`); the spoken text stays as written.
+nonisolated public enum AppTextTransform: String, CaseIterable, Sendable {
+  case none
+  case uppercase
+}
+
 /// A type style: sizes in pt/sp, letter spacing in pt/sp, line height as a height.
 nonisolated public struct AppTextStyle: Sendable, Equatable {
   public let name: String
@@ -76,6 +82,7 @@ nonisolated public struct AppTextStyle: Sendable, Equatable {
   public let fontWeight: Int
   public let lineHeight: Double
   public let letterSpacing: Double
+  public let textTransform: AppTextTransform
   public let dynamicType: String
   public let m3Roles: [String]
 }
@@ -89,6 +96,7 @@ nonisolated public enum AppTypography {
     fontWeight: 400,
     lineHeight: 46.0,
     letterSpacing: 0.0,
+    textTransform: .none,
     dynamicType: "largeTitle",
     m3Roles: ["displayLarge", "displayMedium", "displaySmall"]
   )
@@ -100,6 +108,7 @@ nonisolated public enum AppTypography {
     fontWeight: 400,
     lineHeight: 38.0,
     letterSpacing: 0.0,
+    textTransform: .none,
     dynamicType: "title",
     m3Roles: ["headlineMedium"]
   )
@@ -111,6 +120,7 @@ nonisolated public enum AppTypography {
     fontWeight: 400,
     lineHeight: 32.0,
     letterSpacing: 0.0,
+    textTransform: .none,
     dynamicType: "title2",
     m3Roles: ["headlineSmall"]
   )
@@ -122,6 +132,7 @@ nonisolated public enum AppTypography {
     fontWeight: 400,
     lineHeight: 26.0,
     letterSpacing: 0.0,
+    textTransform: .none,
     dynamicType: "title3",
     m3Roles: ["titleLarge"]
   )
@@ -133,6 +144,7 @@ nonisolated public enum AppTypography {
     fontWeight: 600,
     lineHeight: 22.0,
     letterSpacing: 0.0,
+    textTransform: .none,
     dynamicType: "headline",
     m3Roles: ["titleMedium"]
   )
@@ -144,6 +156,7 @@ nonisolated public enum AppTypography {
     fontWeight: 400,
     lineHeight: 24.0,
     letterSpacing: 0.0,
+    textTransform: .none,
     dynamicType: "body",
     m3Roles: ["bodyLarge"]
   )
@@ -155,6 +168,7 @@ nonisolated public enum AppTypography {
     fontWeight: 400,
     lineHeight: 21.0,
     letterSpacing: 0.0,
+    textTransform: .none,
     dynamicType: "callout",
     m3Roles: ["bodyMedium"]
   )
@@ -166,6 +180,7 @@ nonisolated public enum AppTypography {
     fontWeight: 600,
     lineHeight: 20.0,
     letterSpacing: 0.0,
+    textTransform: .none,
     dynamicType: "subheadline",
     m3Roles: ["titleSmall"]
   )
@@ -177,6 +192,7 @@ nonisolated public enum AppTypography {
     fontWeight: 400,
     lineHeight: 18.0,
     letterSpacing: 0.0,
+    textTransform: .none,
     dynamicType: "footnote",
     m3Roles: ["bodySmall"]
   )
@@ -188,6 +204,7 @@ nonisolated public enum AppTypography {
     fontWeight: 500,
     lineHeight: 16.0,
     letterSpacing: 0.0,
+    textTransform: .none,
     dynamicType: "caption",
     m3Roles: ["labelMedium"]
   )
@@ -199,6 +216,7 @@ nonisolated public enum AppTypography {
     fontWeight: 600,
     lineHeight: 14.0,
     letterSpacing: 0.88,
+    textTransform: .none,
     dynamicType: "caption2",
     m3Roles: ["labelSmall"]
   )
@@ -210,6 +228,7 @@ nonisolated public enum AppTypography {
     fontWeight: 600,
     lineHeight: 22.0,
     letterSpacing: 0.0,
+    textTransform: .none,
     dynamicType: "headline",
     m3Roles: ["labelLarge"]
   )
@@ -221,6 +240,7 @@ nonisolated public enum AppTypography {
     fontWeight: 400,
     lineHeight: 40.0,
     letterSpacing: 0.0,
+    textTransform: .none,
     dynamicType: "largeTitle",
     m3Roles: ["headlineLarge"]
   )
@@ -232,6 +252,7 @@ nonisolated public enum AppTypography {
     fontWeight: 600,
     lineHeight: 18.0,
     letterSpacing: 0.0,
+    textTransform: .none,
     dynamicType: "subheadline",
     m3Roles: []
   )
@@ -243,6 +264,7 @@ nonisolated public enum AppTypography {
     fontWeight: 600,
     lineHeight: 18.0,
     letterSpacing: 0.0,
+    textTransform: .none,
     dynamicType: "footnote",
     m3Roles: []
   )
@@ -254,6 +276,7 @@ nonisolated public enum AppTypography {
     fontWeight: 400,
     lineHeight: 18.0,
     letterSpacing: 0.0,
+    textTransform: .none,
     dynamicType: "subheadline",
     m3Roles: []
   )
@@ -265,6 +288,7 @@ nonisolated public enum AppTypography {
     fontWeight: 500,
     lineHeight: 18.0,
     letterSpacing: 0.0,
+    textTransform: .none,
     dynamicType: "subheadline",
     m3Roles: []
   )
@@ -276,6 +300,7 @@ nonisolated public enum AppTypography {
     fontWeight: 500,
     lineHeight: 18.0,
     letterSpacing: 0.0,
+    textTransform: .none,
     dynamicType: "footnote",
     m3Roles: []
   )
@@ -287,6 +312,7 @@ nonisolated public enum AppTypography {
     fontWeight: 500,
     lineHeight: 20.0,
     letterSpacing: 0.0,
+    textTransform: .none,
     dynamicType: "subheadline",
     m3Roles: []
   )
@@ -298,6 +324,7 @@ nonisolated public enum AppTypography {
     fontWeight: 700,
     lineHeight: 20.0,
     letterSpacing: 0.0,
+    textTransform: .none,
     dynamicType: "subheadline",
     m3Roles: []
   )
@@ -309,6 +336,7 @@ nonisolated public enum AppTypography {
     fontWeight: 600,
     lineHeight: 16.0,
     letterSpacing: 0.0,
+    textTransform: .none,
     dynamicType: "caption",
     m3Roles: []
   )
@@ -320,6 +348,7 @@ nonisolated public enum AppTypography {
     fontWeight: 600,
     lineHeight: 14.0,
     letterSpacing: 0.0,
+    textTransform: .none,
     dynamicType: "caption2",
     m3Roles: []
   )
@@ -331,6 +360,7 @@ nonisolated public enum AppTypography {
     fontWeight: 700,
     lineHeight: 18.0,
     letterSpacing: 0.0,
+    textTransform: .none,
     dynamicType: "caption2",
     m3Roles: []
   )
@@ -342,6 +372,7 @@ nonisolated public enum AppTypography {
     fontWeight: 500,
     lineHeight: 22.0,
     letterSpacing: 0.0,
+    textTransform: .none,
     dynamicType: "headline",
     m3Roles: []
   )

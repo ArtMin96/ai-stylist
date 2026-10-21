@@ -87,8 +87,8 @@ test('the repository contracts pass, and all six are approved', () => {
   );
 });
 
-test('the fixtures hold the valid contracts and one failing case per rule, CC-01 to CC-18', () => {
-  const expected = Array.from({ length: 18 }, (_, i) => `CC-${String(i + 1).padStart(2, '0')}`);
+test('the fixtures hold the valid contracts and one failing case per rule, CC-01 to CC-19', () => {
+  const expected = Array.from({ length: 19 }, (_, i) => `CC-${String(i + 1).padStart(2, '0')}`);
   assert.deepEqual([...new Set(RULE_CASES.map(ruleOf))], expected);
   const cases = [
     'CC-01-gallery-title',
@@ -848,6 +848,11 @@ test('CC-16 (G8): enum props hold their values; prop names and variants agree', 
     ['  - name: tone\n    type: string\n    values: [a]\n    default: null\n', 'props.10.values'],
     ['  - name: tone\n    type: enum\n    values: [default, loud]\n    default: loud\n', 'keyword'],
     ['  - name: variant\n    type: enum\n    values: [a, b]\n    default: a\n', 'type ChipVariant'],
+    // The touch-target namespace (G9) is `<Name>Accessibility`.
+    [
+      '  - name: accessibility\n    type: enum\n    values: [a, b]\n    default: a\n',
+      'type ChipAccessibility',
+    ],
     ['  - name: note\n    type: string\n    default: null\n', 'props.10: "note" is not unique'],
     ['  - name: tone\n    type: bool\n    default: false\n    variants: [ghost]\n', '"ghost"'],
   ];
@@ -906,6 +911,16 @@ test('CC-18 (G12): each part has its prop, its position and only the fields its 
     assert.deepEqual(rulesOf(result), ['CC-18'], message);
     assert.ok(listed(result.findings).includes(message), listed(result.findings));
   }
+});
+
+test('CC-19: every gallery.labels key is a variant; a variant without one keeps gallery.label', () => {
+  const misspelt = loadContracts(path.join(CONTRACT_FIXTURES, 'CC-19'), fixtureModel);
+  assert.deepEqual(messagesOf(misspelt), [
+    'CC-19 chip.yaml gallery.labels.choices: "choices" is not a variant',
+  ]);
+  assert.deepEqual(chipFixture.gallery.labels, { choice: 'Fixture choice' });
+  assert.equal(chipFixture.gallery.label, 'Fixture chip');
+  assert.deepEqual(fixture.gallery.labels, {}, 'the button gives none');
 });
 
 test('the fixture chip API: roles, the enum prop, the parts and the gallery samples', () => {

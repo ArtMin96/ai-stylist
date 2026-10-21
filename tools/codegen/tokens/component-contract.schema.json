@@ -89,6 +89,12 @@
           "properties": {
             "title": { "$ref": "#/$defs/galleryTitle" },
             "label": { "type": "string", "minLength": 1 },
+            "labels": {
+              "type": "object",
+              "minProperties": 1,
+              "propertyNames": { "$ref": "#/$defs/kebab" },
+              "additionalProperties": { "type": "string", "minLength": 1 }
+            },
             "props": {
               "type": "object",
               "minProperties": 1,

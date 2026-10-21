@@ -1,10 +1,10 @@
 # Synthetic contract for the C03 fields (.impeccable/components/README.md G2, G4, G7, G8, G10,
-# G12): it passes CC-01 to CC-18 against ../DESIGN.md beside icon.yaml. Each ../CC-NN/chip.yaml
+# G12): it passes CC-01 to CC-19 against ../DESIGN.md beside icon.yaml. Each ../CC-NN/chip.yaml
 # (or ../CC-NN-<case>/chip.yaml) is this file with one defect that fails rule CC-NN only.
 # assist draws the caller's icon, a trailing back glyph, a dot, a note line that opens with the
 # leading icon and a ring in the host's surface; choice is selectable (G7), with the compound
 # states selected-pressed and selected-focused (G2), the plus glyph while selected, a swatch and a
-# detail after a separator.
+# detail after a separator, and its own gallery sample label (gallery.labels, CC-19).
 id: chip
 board: C03
 name: AppChip
@@ -123,6 +123,8 @@ accessibility:
 gallery:
   title: Fixture chips
   label: Fixture chip
+  labels:
+    choice: Fixture choice
   props:
     leadingIcon: wave
     hostSurface: '{colors.surface-2}'

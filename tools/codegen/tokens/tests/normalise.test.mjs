@@ -103,7 +103,7 @@ test('the resolver names the five contexts, their source order and the default',
   assert.deepEqual(model.resolver.resolutionOrder, ['primitives', 'theme', 'components']);
 });
 
-test('type styles are DTCG composites with dynamicType and m3Roles extensions', () => {
+test('type styles are DTCG composites with dynamicType, m3Roles and textTransform extensions', () => {
   const { heading, label, badge } = primitives.typography;
   assert.deepEqual(heading.$value, {
     fontFamily: ['Fixture Serif', 'serif'],
@@ -124,6 +124,8 @@ test('type styles are DTCG composites with dynamicType and m3Roles extensions', 
   assert.equal(badge.$value.lineHeight, 1.25);
   assert.deepEqual(badge.$value.letterSpacing, px(0.5));
   assert.deepEqual(badge.$extensions['app.m3Roles'], []);
+  assert.equal(badge.$extensions['app.textTransform'], 'uppercase');
+  assert.equal(heading.$extensions['app.textTransform'], 'none', 'absent is none');
 });
 
 test('spacing and radii are px dimensions', () => {

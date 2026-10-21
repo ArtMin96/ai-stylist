@@ -64,6 +64,7 @@ test('the fixtures hold one failing case per rule, TK-01 to TK-11', () => {
   assert.deepEqual([...new Set(RULE_CASES.map(ruleOf))], expected);
   assert.ok(RULE_CASES.includes('TK-06-padding'), 'an unresolved padding reference');
   assert.ok(RULE_CASES.includes('TK-06-trailing-icon'), 'a trailing slot naming no icon size');
+  assert.ok(RULE_CASES.includes('TK-08-text-transform'), 'a text transform outside the list');
 });
 
 for (const name of RULE_CASES) {
@@ -239,6 +240,15 @@ test('TK-08: an unknown property, a bad Dynamic Type style, `0` spacing, bad M3 
   assertOnly(scalar, 'TK-08', /`m3Roles` must be a list/);
   const unknown = validateEdited((fm) => (fm.typography.badge.m3Roles = ['headline']));
   assertOnly(unknown, 'TK-08', /unknown M3 role "headline"/);
+  const transform = validateEdited((fm) => (fm.typography.body.textTransform = 'capitalize'));
+  assertOnly(transform, 'TK-08', /`textTransform` must be one of none, uppercase/);
+});
+
+test('TK-08: `textTransform` is optional, `none` or `uppercase`', () => {
+  for (const value of ['none', 'uppercase', undefined]) {
+    const findings = validateEdited((fm) => (fm.typography.badge.textTransform = value));
+    assert.deepEqual(findings, [], describeFindings(findings));
+  }
 });
 
 test('TK-09: an M3 role no style claims', () => {

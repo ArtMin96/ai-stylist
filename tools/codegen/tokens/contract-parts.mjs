@@ -1,7 +1,7 @@
 // The gallery samples and the parts of a control contract (.impeccable/components/README.md G10,
-// G12) and their rules: CC-17 (`gallery.props`) and CC-18 (`parts`). contracts.mjs runs them in
-// its stages; `partsApi` adds the parts and the samples to the API model, which
-// api-declarations.mjs reads. tools/codegen/tokens/README.md, "Component contracts".
+// G12) and their rules: CC-17 (`gallery.props`), CC-18 (`parts`) and CC-19 (`gallery.labels`).
+// contracts.mjs runs them in its stages; `partsApi` adds the parts and the samples to the API
+// model, which api-declarations.mjs reads. tools/codegen/tokens/README.md, "Component contracts".
 import { appliesTo, propNameOf, propOf, propTypeName } from './contract-fields.mjs';
 import { finding, identifierFindings } from './contract-model.mjs';
 import { ktEnumEntry, memberId } from './naming.mjs';
@@ -48,6 +48,18 @@ export function checkGalleryProps(contract, file, model, iconSets) {
     out.push(finding('CC-17', `${file} gallery.props`, message));
   }
   return out;
+}
+
+/**
+ * CC-19: every `gallery.labels` key is a variant, whose gallery cells show that sample label
+ * instead of `gallery.label` (the trial badges' own words).
+ */
+export function checkGalleryLabels(contract, file) {
+  return Object.keys(contract.gallery.labels ?? {})
+    .filter((variant) => !contract.variants.includes(variant))
+    .map((variant) =>
+      finding('CC-19', `${file} gallery.labels.${variant}`, `"${variant}" is not a variant`),
+    );
 }
 
 /** What is wrong with one `gallery.props` sample, or null. */

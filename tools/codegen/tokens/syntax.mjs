@@ -76,6 +76,12 @@ export const DYNAMIC_TYPE_STYLES = [
   'caption2',
 ];
 
+/**
+ * A type style's optional `textTransform`, in `AppTextTransform` order: how the text is drawn
+ * (`uppercase`: the overline's caps). Absent is `none`; the spoken text stays as written.
+ */
+export const TEXT_TRANSFORMS = ['none', 'uppercase'];
+
 export const TOKEN_GROUPS = [
   'colors',
   'typography',

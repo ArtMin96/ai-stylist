@@ -47,7 +47,10 @@ icon sources (G4, CC-14), per-variant roles with `selection` and `labelOverride`
 CC-15), the prop types `enum`, `color` and `colorRole` with per-variant props (G8, CC-16),
 `gallery.props` (G10, CC-17) and the contract-side `parts` (G12, CC-18), each with its emitted
 API, and one holder per context in every `<Name>Spec` (the JVM class-initialiser limit). The
-four C03 contracts (chip, tag, badge, reason row) pass and emit their API.
+four C03 contracts (chip, tag, badge, reason row) pass and emit their API. The follow-up emits
+the touch target (`<Name>Accessibility.minTouchTarget`, each language its own platform's value),
+a type style's optional `textTransform` (`AppTextStyle.textTransform`, TK-08) and a variant's own
+gallery sample label (`gallery.labels`, CC-19, read as `<Name>GalleryEntry.label`).
 
 ## Usage
 
@@ -106,7 +109,9 @@ per directory; nothing is written when any input has a finding. A contract still
 - **TK-08** Every `typography` entry has exactly `fontFamily`, `fontSize` (px), `fontWeight`
   (1–1000), `lineHeight` (px or a ratio), `letterSpacing` (px or em: `0em`, not `0`),
   `dynamicType` (a SwiftUI `Font.TextStyle`, leading dot optional) and `m3Roles` (a list, may be
-  empty).
+  empty), and may have `textTransform`: `none` or `uppercase` (the overline's caps), absent is
+  `none` (fixture `fixtures/TK-08-text-transform/`). The pinned design.md lint (TK-12) reads only
+  the typography properties it knows and skips the rest, as it skips `dynamicType`.
 - **TK-09** Each of the 15 Material 3 type roles (`displayLarge` … `labelSmall`) appears in exactly
   one `m3Roles` list.
 - **TK-10** Keys are lowercase kebab-case; colour, typography and component keys start with a
@@ -213,8 +218,8 @@ its looks; `api-declarations.mjs` decides the API's names and values; `emit-api-
 - **CC-16** Props (G8): names are unique and each `variants` entry is a variant. Only an `enum`
   prop has `values`, and it must have them: each a case that is no keyword, the `default` one of
   them (or `null`), and its type `<Name><Prop>` no other API type (a prop named `variant`,
-  `size`, `state`, `role`, `part`, `spec`, … fails). Fixture `fixtures/contracts/CC-16/` defaults
-  the selection to `both`.
+  `size`, `state`, `role`, `part`, `spec`, `accessibility`, … fails). Fixture
+  `fixtures/contracts/CC-16/` defaults the selection to `both`.
 - **CC-17** `gallery.props` (G10): every key is a prop other than `label` (whose sample is
   `gallery.label`), and its sample fits: an `icon` a glyph id (of the icon set beside it), a
   `color` or `colorRole` a `{colors.<role>}` role key of `DESIGN.md` (`camera-ink`, `surface-2`),
@@ -228,6 +233,10 @@ its looks; `api-declarations.mjs` decides the API's names and values; `emit-api-
   `color` from a `colorRole` prop; no other part has a `color`. Only a `text` part has a
   `separator`, only a `line` takes `icon: leading`, and at most one part of a variant takes it.
   Fixture `fixtures/contracts/CC-18/` makes the string `detail` a swatch.
+- **CC-19** `gallery.labels` (optional, variant id to a synthetic sample label): every key is a
+  variant. That variant's gallery cells show its own label; every other variant keeps
+  `gallery.label` (the trial badges' words beside the count badge's `2`). Fixture
+  `fixtures/contracts/CC-19/` gives a label to `choices`, which is not a variant.
 
 `iconSize`, `iconGap`, `trailingIconSize` and `trailingIconGap` are ordinary component properties
 for TK-11 (px, a number or a reference, like `height`); the normaliser makes them `dimension`
@@ -237,10 +246,10 @@ tokens. An icon-slot size that names an icon size is that size's px value, with 
 beside a pending one they stay the number, since the enum is not emitted yet.
 
 The rules run in stages (CC-01; CC-02 and CC-03; CC-04, CC-07, CC-15 and CC-16; CC-13, which
-reads the roles CC-15 checks; CC-05; CC-06; CC-14, CC-17 and CC-18; CC-08; CC-12; for an icon set
-CC-01; CC-02 and CC-09; CC-10; CC-11) and stop at the first stage with a finding, so each
+reads the roles CC-15 checks; CC-05; CC-06; CC-14, CC-17, CC-18 and CC-19; CC-08; CC-12; for an
+icon set CC-01; CC-02 and CC-09; CC-10; CC-11) and stop at the first stage with a finding, so each
 `fixtures/contracts/CC-NN/` (or `CC-NN-<case>/`) case fails on its own rule only. CC-13 to CC-16
-live in `contract-fields.mjs`, CC-17 and CC-18 in `contract-parts.mjs`, CC-08 to CC-12 in
+live in `contract-fields.mjs`, CC-17 to CC-19 in `contract-parts.mjs`, CC-08 to CC-12 in
 `icon-set.mjs`. `loadContracts` checks the icon sets in a directory first, so a control sees them.
 
 **The merge** (owner decision 2026-10-20: one ready look per allowed variant x size x state x
@@ -373,6 +382,7 @@ data (no `Map`, no class instances), the same for the same input, and never writ
     first; `toggleOf(state)` is a compound's toggle (`selected`), or null.
   - `M3_ROLES`: the 15 Compose `Typography` properties, `displayLarge` … `labelSmall`.
   - `DYNAMIC_TYPE_STYLES`: the SwiftUI `Font.TextStyle` cases, `largeTitle` … `caption2`.
+  - `TEXT_TRANSFORMS`: a type style's `textTransform` values, `none` then `uppercase`.
 - `tools/codegen/tokens/naming.mjs`: every identifier helper (see Naming rules).
 - `tools/codegen/gen-tokens.mjs`: the CLI (Usage).
 
@@ -428,7 +438,8 @@ order, wherever they appear in the file.
   `$extensions['app.dynamicType']` is one `DYNAMIC_TYPE_STYLES` name with no leading dot (`'caption'`).
   `$extensions['app.m3Roles']` is a list of `M3_ROLES` names, possibly empty. Each of the 15 roles
   appears in exactly one style's list (TK-09), so a full Compose `Typography(...)` can always be
-  built. A style with `[]` maps to no M3 role.
+  built. A style with `[]` maps to no M3 role. `$extensions['app.textTransform']` is one
+  `TEXT_TRANSFORMS` value, `'none'` where the style gives none.
 - `elevation` and `motion`: each entry is a single token, or a group one level deep whose fields
   are lowerCamelCase names holding single tokens (`elevation.sheet.offsetY`,
   `elevation.sheet.color`). There are no shorthands and no lists (TK-07). Tokens are `dimension`,
@@ -539,9 +550,9 @@ guarantees that no two generated identifiers collide. Any other derivation loses
 - `tools/codegen/tokens/emit-kotlin.mjs`: the Kotlin dialect. `just generate` writes its output to
   `apps/android/core/designsystem/src/main/kotlin/app/aistylist/core/designsystem/generated/`.
 - `tools/codegen/tokens/component-contract.schema.json`, `contracts.mjs` (`loadContracts`,
-  `checkContract`: CC-01 to CC-18, in stages), `contract-fields.mjs` (CC-13 to CC-16 and the
-  roles and enum props of the API model), `contract-parts.mjs` (CC-17, CC-18 and the parts and
-  gallery samples of the API model), `contract-model.mjs` (the reference grammar, the allowed
+  `checkContract`: CC-01 to CC-19, in stages), `contract-fields.mjs` (CC-13 to CC-16 and the
+  touch target, roles and enum props of the API model), `contract-parts.mjs` (CC-17 to CC-19
+  and the parts and gallery samples of the API model), `contract-model.mjs` (the reference grammar, the allowed
   combinations, the drawn icon slots, the icon sources and the merged looks),
   `api-declarations.mjs` (the API declaration tree) and `emit-api-swift.mjs` /
   `emit-api-kotlin.mjs`: the component API surface, written as `ComponentAPI.swift` and
@@ -575,7 +586,10 @@ ARGB (`UInt32`/`Long`, `0xFFFA_FAFA`). The theme code in each app maps them to S
   (Swift `enum`, Kotlin `object`) of constants; a one-level group is a nested namespace
   (`AppElevation.SheetLight.offsetY`, `AppMotion.Sheet.easing`). `AppTextStyle` is a value type
   (`name` = its `DESIGN.md` key such as `title-1`, `fontFamily` = the first family of the stack,
-  `lineHeight` as a height, `letterSpacing` in pt/sp, `dynamicType`, `m3Roles`). An alias stays a
+  `lineHeight` as a height, `letterSpacing` in pt/sp, `textTransform`, `dynamicType`, `m3Roles`).
+  `textTransform` is the enum `AppTextTransform` (Swift `case none`, `case uppercase`; Kotlin
+  `NONE("none")`, `UPPERCASE("uppercase")`), never optional: each app applies `uppercase` only
+  when drawing and keeps the string as written for the spoken name. An alias stays a
   reference (`AppMotion.easingEnter`); a shadow colour is a role or ARGB. For the gallery, each of
   `AppSpacing`, `AppRadius` and `AppTypography` ends with `all`, every entry in model (`DESIGN.md`)
   order: `AppSpacing.all` and `AppRadius.all` are `AppScaleStep(name, value)` lists (`name` the
@@ -632,6 +646,13 @@ ARGB (`UInt32`/`Long`, `0xFFFA_FAFA`). The theme code in each app maps them to S
   - `<Name>TestId` (one string constant per allowed combination: `primaryLargeEnabled` =
     `"ds-button-primary-large-enabled"`, `choiceLargeSelectedPressed` =
     `"ds-chip-choice-large-selected-pressed"`).
+  - `<Name>Accessibility`, for a contract with `accessibility.minTouchTarget` (G9; the button
+    and the chip, not the passive tag, badge or reason row): `minTouchTarget: Double`, the
+    minimum hit area, one name in both languages with each its own platform's value (Swift
+    `ButtonAccessibility.minTouchTarget = 44.0` pt, the `ios` value; Kotlin `48.0` dp, the
+    `android` value). It is the one declaration whose value differs by language (a `platform`
+    value, `render.mjs`), so the parity test holds those rows to the contract's `ios` and
+    `android` values and compares every other row for equality.
   - `<Name>Appearance` (the merged look: optional colours and `borderWidth`, then `typography`,
     `rounded`, `height`, the four paddings, the entry properties (`detailTypography`,
     `swatchSize`, `dotSize`, `outerRingWidth`, `lineGap`, …), `iconSize` and `iconGap: Double`
@@ -646,7 +667,8 @@ ARGB (`UInt32`/`Long`, `0xFFFA_FAFA`). The theme code in each app maps them to S
     that context's `spec`; the public instances `light` … `hcDark` refer to them,
     `ChipSpec.light = Light.spec`; and `appearance(variant:size:state:)` returning that combination's
     `<Name>Appearance`, or `nil` / `null` for a combination the contract does not allow);
-    `<Name>GalleryEntry` (variant, size, state, `testId`).
+    `<Name>GalleryEntry` (variant, size, state, `testId`, `label`: the cell's sample label, the
+    variant's own `gallery.labels` entry or else `gallery.label`, CC-19).
 - After the contracts, `GalleryComponent`: one case per approved contract in board order (file
   order within a board), its id the contract id, with `title` (`<board> <gallery.title>`:
   `C01 Buttons`) and `slug` (the title in lower-case kebab: `c01-buttons`); Swift
@@ -657,7 +679,8 @@ ARGB (`UInt32`/`Long`, `0xFFFA_FAFA`). The theme code in each app maps them to S
   constant per `gallery.props` sample in prop order (G10: `chipLeadingIcon: AppIconName = .rain`,
   `chipPrefix: String = "Group:"`, `chipSwatch: AppColorRole = .cameraInk`, resolved per context
   by the app; an icon sample only beside an approved icon set) and `<id>` (its entries, each
-  `testId` a reference to the constant). Props stay hand-written in each app (owner decision
+  `testId` a reference to the constant and each `label` its sample label as text). Props stay
+  hand-written in each app (owner decision
   2026-10-20); no props descriptor is emitted, so the prop types map as below. An icon set emits
   its own types instead (Icon sets: `AppIconName`, `AppIconSet`, `AppIconSize`, `AppIconMetrics`
   and the glyph types) and its glyph table `AppIconGlyphs` in `AppIconGlyphs.swift` /
@@ -715,14 +738,15 @@ contract checker, the merge and the icon-set rules (`contracts.test.mjs`), the S
 (`svg-path.test.mjs`: every command, relative and absolute, arcs, rounding, rejected input), the
 component API emitters (`component-api.test.mjs`), the golden parity test (`parity.test.mjs`,
 the icon glyph table included) and the CLI against a design.md stub (`cli.test.mjs`). The
-repository `DESIGN.md` and `fixtures/_valid/` must pass; each `fixtures/TK-NN/` (and
-`TK-NN-<case>/`, a second case of the same rule: `TK-06-padding`) is the valid file with one defect
-and must fail on rule TK-NN and nothing else (`TK-06-trailing-icon`: a `trailingIconSize` naming
-a missing step). The repository contracts and
+repository `DESIGN.md` and `fixtures/_valid/` (whose `badge` style is `textTransform: uppercase`)
+must pass; each `fixtures/TK-NN/` (and `TK-NN-<case>/`, a second case of the same rule:
+`TK-06-padding`) is the valid file with one defect and must fail on rule TK-NN and nothing else
+(`TK-06-trailing-icon`: a `trailingIconSize` naming a missing step; `TK-08-text-transform`: a
+`textTransform` of `capitalize`). The repository contracts and
 `fixtures/contracts/_valid/` (`button.yaml`, whose `icons` draw a trailing plus on the large
 secondary; `chip.yaml`, the C03 fields: compound states, icons with a toggle's glyph, a
-selectable role with its selection enum, colour and colour-role props, gallery samples and all
-four part kinds; and `icon.yaml`, whose glyphs use arcs, relative commands, a filled dot and a
+selectable role with its selection enum, colour and colour-role props, gallery samples, the
+choice's own gallery label and all four part kinds; and `icon.yaml`, whose glyphs use arcs, relative commands, a filled dot and a
 filled twin) pass against their tokens (`fixtures/contracts/DESIGN.md`, synthetic, with the scale
 `icon-xs` … `icon-lg`, slots naming it in both spellings, a trailing slot at large only, spacing
 references in padding and gap, and a compound `chip-choice-selected-pressed` key); each

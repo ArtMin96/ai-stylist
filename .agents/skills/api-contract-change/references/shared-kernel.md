@@ -35,7 +35,7 @@ envelope type, and the error/reason-code/entitlement registries. Full contract:
 - `packages/shared-kernel/src/owners.ts` — `OWNERS_REGISTRY`: people and roles that own flags, dashboards, alerts and runbooks.
 - `packages/shared-kernel/src/feature-flags.ts` — the flag registry types and the `FeatureFlags` port (the PostHog adapter lives in `platform`).
 - `packages/shared-kernel/src/reason-codes.ts` — the recommendation reason-code registry types (data from `packages/shared-kernel/src/gen`).
-- `packages/shared-kernel/src/entitlements.ts` — `ENTITLEMENTS`, `CREDIT_METERS`: names shared by billing, recommendation, and the native apps (through the generated Swift/Kotlin kernels, which no app target consumes yet — ADR-0005).
+- `packages/shared-kernel/src/entitlements.ts` — `ENTITLEMENTS`, `CREDIT_METERS`: names shared by billing, recommendation, and the native apps (through the generated Swift/Kotlin kernels, with each `level` entitlement's levels as `EntitlementName.levels`; iOS Core's `APIData` and Android `:core:data` compile them — ADR-0005).
 - `packages/shared-kernel/tests/` — this package's test suite (single-writer, per `CLAUDE.md` "Parallel sessions").
 
 ## Owned data

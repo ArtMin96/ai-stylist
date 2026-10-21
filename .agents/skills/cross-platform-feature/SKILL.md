@@ -87,8 +87,9 @@ metadata:
      `.claude/plans/2026-10-20-app-button-brief.md`.
    - Registry values (reason codes, entitlements and their levels, units, error codes, measurement bounds, starting shapes): the apps import the generated
      `AIStylistKernel` (Swift) and `app.aistylist.contracts.kernel` (Kotlin) from
-     `packages/shared-kernel/registry/*.json` (DEC-55, ADR-0005). No app target consumes them yet,
-     so the brief fixes the wiring once for both lanes (template "Contract" section).
+     `packages/shared-kernel/registry/*.json` (DEC-55, ADR-0005). iOS Core's `APIData` and Android
+     `:core:data` compile them; the brief names any other target that needs them (template
+     "Contract" section).
 
 3. **Contract lane (only when an operation, field, event or registry entry is missing or
    changes).** Launch `contracts-engineer` alone in the lead checkout (no isolation; it needs

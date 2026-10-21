@@ -40,6 +40,7 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.withTransform
 import androidx.compose.ui.graphics.shadow.Shadow
 import androidx.compose.ui.graphics.vector.PathParser
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
@@ -49,6 +50,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import app.aistylist.core.designsystem.AppIcon
 import app.aistylist.core.designsystem.AppText
 import app.aistylist.core.designsystem.AppTheme
@@ -124,7 +126,7 @@ internal fun DrawScope.drawInViewport(
 
 /**
  * A proposed C02 glyph (speaker, speaker-off: C11 board) drawn like `AppIcon`: 24 grid, stroke 1.7,
- * round caps and joins, decorative.
+ * round caps and joins, decorative, growing with the font scale.
  */
 @Composable
 internal fun ProposedGlyph(
@@ -134,7 +136,9 @@ internal fun ProposedGlyph(
     size: AppIconSize = AppIconMetrics.defaultSize,
 ) {
     val path = rememberSvgPath(pathData)
-    Canvas(modifier = modifier.size(size.size.dp)) {
+    // Like AppIcon: the step is treated as sp, so the glyph grows with the font scale.
+    val rendered = with(LocalDensity.current) { size.size.sp.toDp() }
+    Canvas(modifier = modifier.size(rendered)) {
         drawInViewport(
             path,
             Size(GLYPH_GRID, GLYPH_GRID),

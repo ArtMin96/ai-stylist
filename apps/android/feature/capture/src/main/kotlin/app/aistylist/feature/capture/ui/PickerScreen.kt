@@ -8,13 +8,16 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
@@ -97,11 +100,10 @@ fun PickerScreen(
         modifier =
             modifier
                 .fillMaxSize()
-                .background(
-                    role(AppColorRole.BACKGROUND),
-                ).testTag(CaptureTestTags.SCREEN_PICKER),
+                .background(role(AppColorRole.BACKGROUND))
+                .testTag(CaptureTestTags.SCREEN_PICKER),
     ) {
-        Column(modifier = Modifier.fillMaxSize()) {
+        Column(modifier = Modifier.fillMaxSize().windowInsetsPadding(WindowInsets.safeDrawing)) {
             ModalHeader(
                 title = stringResource(R.string.cap_picker_title),
                 onClose = actions::onClose,
@@ -212,7 +214,6 @@ private fun FamilyTile(
         modifier =
             modifier
                 .fillMaxWidth()
-                .clip(RoundedCornerShape(AppTheme.radius.radius16.dp))
                 .clickable(onClick = onClick)
                 .clearAndSetSemantics {
                     contentDescription = name

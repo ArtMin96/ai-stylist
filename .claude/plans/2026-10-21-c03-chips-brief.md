@@ -81,7 +81,7 @@ cite: `.impeccable/components/chip.yaml`, `tag.yaml`, `badge.yaml`, `reason-row.
        - Shape radius `rounded`, min height `height`, padding top/end/bottom/start.
        - Label in `typography` / `textColor`.
        - Focus ring `appearance.focusRing`, outside the chip, following its corners (as AppButton).
-     - **Content, in order:** leading icon, before-label parts in `ChipPart` order (swatch, prefix),
+     - **Content, in order:** leading icon, before-label parts in `ChipPart` order (prefix, swatch; no variant has both),
        label, after-label parts (detail), trailing icon. Gaps: `iconGap` after the leading icon,
        `swatchGap`, `prefixGap`, `detailGap` before the detail, `trailingIconGap` before the trailing
        icon.

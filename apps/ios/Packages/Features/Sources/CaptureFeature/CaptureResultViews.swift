@@ -30,17 +30,23 @@
         )
         ScrollView {
           VStack(alignment: .leading, spacing: AppSpacing.space24) {
-            HStack(alignment: .top, spacing: AppSpacing.space12) {
-              photo(review.front, labelKey: "capture.review.photo.front", id: "cap-review-photo-front")
-              if let second = review.second {
-                photo(
+            if let second = review.second {
+              HStack(alignment: .top, spacing: CaptureMetrics.pickerColumnGap) {
+                labelledPhoto(review.front, labelKey: "capture.review.photo.front", id: "cap-review-photo-front")
+                labelledPhoto(
                   second,
                   labelKey: isPair ? "capture.review.photo.pair" : "capture.review.photo.back",
                   id: "cap-review-photo-back"
                 )
               }
-            }
-            if review.second == nil {
+            } else {
+              CapturePhotoTile(
+                image: photos.images[review.front],
+                label: CaptureText.localized("capture.review.photo.front"),
+                height: CaptureMetrics.reviewPhotoHeight,
+                cornerRadius: AppRadius.radius24
+              )
+              .accessibilityIdentifier("cap-review-photo-front")
               question
             }
           }
@@ -53,9 +59,22 @@
       .accessibilityIdentifier("cap-screen-review")
     }
 
-    private func photo(_ id: CapturePhotoID, labelKey: String, id testID: String) -> some View {
-      CapturePhotoTile(image: photos.images[id], label: CaptureText.localized(labelKey))
+    /// One of the two photos side by side (SC19 "both"): 220 high, radius 16, its name below.
+    private func labelledPhoto(_ id: CapturePhotoID, labelKey: String, id testID: String) -> some View {
+      let label = CaptureText.localized(labelKey)
+      return VStack(alignment: .leading, spacing: AppSpacing.space4) {
+        CapturePhotoTile(
+          image: photos.images[id],
+          label: label,
+          height: CaptureMetrics.reviewPairPhotoHeight,
+          cornerRadius: AppRadius.radius16
+        )
         .accessibilityIdentifier(testID)
+        Text(label)
+          .font(theme.font(AppTypography.labelSm))
+          .foregroundStyle(theme.color(.text))
+          .accessibilityHidden(true)
+      }
     }
 
     private var question: some View {
@@ -120,28 +139,39 @@
     }
   }
 
-  /// One photo from the store, kept at its aspect ratio (radius 16); a real photo never gets the AI badge.
+  /// One photo from the store, whole and at its aspect ratio on a surface-2 box; a real photo never gets
+  /// the AI badge. With `height` the box has that height (the review, SC19), so the photo never pushes the
+  /// back question and its buttons off screen; without it the box is square (the batch summary tiles).
   struct CapturePhotoTile: View {
     let image: UIImage?
     let label: String
+    var height: Double?
+    var cornerRadius = AppRadius.radius16
     @Environment(\.appTheme) private var theme
 
     var body: some View {
-      Group {
-        if let image {
-          Image(uiImage: image)
-            .resizable()
-            .scaledToFit()
-        } else {
-          theme.color(.surface2)
-            .aspectRatio(1, contentMode: .fit)
+      box
+        .overlay {
+          if let image {
+            Image(uiImage: image)
+              .resizable()
+              .scaledToFit()
+          }
         }
+        .clipShape(RoundedRectangle(cornerRadius: cornerRadius))
+        .frame(maxWidth: .infinity)
+        .accessibilityElement()
+        .accessibilityLabel(label)
+        .accessibilityAddTraits(.isImage)
+    }
+
+    @ViewBuilder private var box: some View {
+      let fill = theme.color(.surface2)
+      if let height {
+        fill.frame(height: height)
+      } else {
+        fill.aspectRatio(1, contentMode: .fit)
       }
-      .clipShape(RoundedRectangle(cornerRadius: AppRadius.radius16))
-      .frame(maxWidth: .infinity)
-      .accessibilityElement()
-      .accessibilityLabel(label)
-      .accessibilityAddTraits(.isImage)
     }
   }
 

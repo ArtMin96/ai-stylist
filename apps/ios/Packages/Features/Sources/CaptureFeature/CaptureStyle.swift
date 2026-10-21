@@ -51,6 +51,9 @@
     static let modeSwitchGap = 2.0
     // Picker grid (SC16): tiles in 3 columns, row gap 12, column gap 10.
     static let pickerColumnGap = 10.0
+    // Review photo (SC19): one photo 350 high; front and back side by side 220 high.
+    static let reviewPhotoHeight = 350.0
+    static let reviewPairPhotoHeight = 220.0
     // Sheet actions: stacked 52 buttons, gap 10 (C09).
     static let sheetActionGap = 10.0
     /// Every control's minimum touch target (DESIGN.md "Touch targets").

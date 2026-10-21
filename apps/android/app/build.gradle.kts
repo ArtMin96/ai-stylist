@@ -124,12 +124,13 @@ tasks.withType<PostHogCliExecTask>().configureEach {
 
 dependencies {
     implementation(project(":feature:home"))
-    // Not wired to a screen yet (phase B); the dependency puts :feature:capture under `lintDebug`.
     implementation(project(":feature:capture"))
     implementation(project(":core:data"))
     implementation(project(":core:analytics"))
     implementation(project(":core:designsystem"))
     debugImplementation(project(":core:designsystem-catalog"))
+    // The capture camera's test-frame harness: `debug` only, like the catalog (capture brief §11).
+    debugImplementation(project(":feature:capture-debug"))
 
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.activity.compose)

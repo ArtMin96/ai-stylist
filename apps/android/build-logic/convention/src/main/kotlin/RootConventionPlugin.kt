@@ -23,6 +23,7 @@ internal val ALLOWED_MODULE_EDGES: Map<String, Set<String>> =
             setOf(
                 ":feature:home",
                 ":feature:capture",
+                ":feature:capture-debug",
                 ":core:data",
                 ":core:analytics",
                 ":core:designsystem",
@@ -30,7 +31,10 @@ internal val ALLOWED_MODULE_EDGES: Map<String, Set<String>> =
             ),
         ":feature:home" to setOf(":core:data", ":core:analytics", ":core:designsystem"),
         // Guided capture camera: reads every threshold from the generated capture rules.
-        ":feature:capture" to setOf(":core:kernel"),
+        ":feature:capture" to setOf(":core:kernel", ":core:designsystem"),
+        // Capture camera debug harness (capture brief §1, §11): the one feature-to-feature edge. It plays
+        // test frames into :feature:capture's observation-source port; only `:app` debugImplementation.
+        ":feature:capture-debug" to setOf(":feature:capture", ":core:kernel", ":core:designsystem"),
         ":core:data" to setOf(":core:api-client"),
         ":core:analytics" to emptySet(),
         ":core:api-client" to emptySet(),

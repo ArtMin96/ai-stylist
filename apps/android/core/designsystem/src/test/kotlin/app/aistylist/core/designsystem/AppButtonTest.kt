@@ -1,44 +1,32 @@
 package app.aistylist.core.designsystem
 
 import androidx.compose.foundation.layout.Column
+import androidx.compose.material3.LocalMinimumInteractiveComponentSize
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.Role
-import androidx.compose.ui.semantics.SemanticsProperties
-import androidx.compose.ui.test.SemanticsMatcher
-import androidx.compose.ui.test.assert
-import androidx.compose.ui.test.assertHeightIsAtLeast
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.assertTextEquals
-import androidx.compose.ui.test.assertWidthIsAtLeast
-import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.unit.dp
+import app.aistylist.core.designsystem.generated.ButtonAccessibility
 import app.aistylist.core.designsystem.generated.ButtonSize
 import app.aistylist.core.designsystem.generated.ButtonState
 import app.aistylist.core.designsystem.generated.ButtonVariant
 import app.aistylist.core.designsystem.generated.ComponentGallery
 import org.junit.Assert.assertEquals
-import org.junit.Rule
+import org.junit.Assert.assertNotNull
 import org.junit.Test
-import org.junit.runner.RunWith
-import org.robolectric.RobolectricTestRunner
-import org.robolectric.annotation.Config
 
 private const val LABEL = "Continue"
-private const val TAG = "ds-button-under-test"
 
 /** JVM (Robolectric) tests of AppButton against the C01 contract. */
-@RunWith(RobolectricTestRunner::class)
-@Config(sdk = [37])
-class AppButtonTest {
-    @get:Rule
-    val compose = createComposeRule()
-
+class AppButtonTest : DesignSystemComposeTest() {
     private var actions = 0
 
     private fun show(
@@ -47,18 +35,16 @@ class AppButtonTest {
         enabled: Boolean = true,
         loading: Boolean = false,
     ) {
-        compose.setContent {
-            AppTheme {
-                AppButton(
-                    label = LABEL,
-                    variant = variant,
-                    size = size,
-                    action = { actions++ },
-                    modifier = Modifier.testTag(TAG),
-                    enabled = enabled,
-                    loading = loading,
-                )
-            }
+        showThemed {
+            AppButton(
+                label = LABEL,
+                variant = variant,
+                size = size,
+                action = { actions++ },
+                modifier = subjectTag,
+                enabled = enabled,
+                loading = loading,
+            )
         }
     }
 
@@ -66,10 +52,9 @@ class AppButtonTest {
     fun anEnabledButtonIsFoundByItsTagAndRunsItsActionOncePerClick() {
         show()
 
-        compose
-            .onNodeWithTag(TAG)
+        subject()
             .assertTextEquals(LABEL)
-            .assert(SemanticsMatcher.expectValue(SemanticsProperties.Role, Role.Button))
+            .assertRole(Role.Button)
             .performClick()
 
         assertEquals(1, actions)
@@ -79,10 +64,9 @@ class AppButtonTest {
     fun aClickWhileLoadingIsIgnoredAndTheButtonIsAnnouncedAsLoading() {
         show(loading = true)
 
-        compose
-            .onNodeWithTag(TAG)
+        subject()
             .assertIsEnabled()
-            .assert(SemanticsMatcher.expectValue(SemanticsProperties.StateDescription, "Loading"))
+            .assertStateWords("Loading")
             .performClick()
 
         assertEquals(0, actions)
@@ -93,7 +77,7 @@ class AppButtonTest {
     fun aDisabledButtonIsNotEnabledAndIgnoresClicks() {
         show(enabled = false)
 
-        compose.onNodeWithTag(TAG).assertIsNotEnabled().performClick()
+        subject().assertIsNotEnabled().performClick()
 
         assertEquals(0, actions)
     }
@@ -102,18 +86,19 @@ class AppButtonTest {
     fun aCombinationTheContractDoesNotAllowRendersNothing() {
         show(variant = ButtonVariant.TEXT, size = ButtonSize.SMALL)
 
-        compose.onNodeWithTag(TAG).assertDoesNotExist()
+        subject().assertDoesNotExist()
         compose.onNodeWithText(LABEL).assertDoesNotExist()
     }
 
     @Test
-    fun everySizeHasATouchTargetOfAtLeast48dp() {
+    fun everySizeHasTheGeneratedTouchTargetEvenUnderASmallerAncestorMinimum() {
         val variantForSize =
             ButtonSize.entries.associateWith { size ->
                 ComponentGallery.button.first { it.size == size }.variant
             }
-        compose.setContent {
-            AppTheme {
+        showThemed {
+            // The button provides its own minimum from the contract, whatever the screen sets.
+            CompositionLocalProvider(LocalMinimumInteractiveComponentSize provides 0.dp) {
                 Column {
                     variantForSize.forEach { (size, variant) ->
                         AppButton(
@@ -129,7 +114,7 @@ class AppButtonTest {
         }
 
         ButtonSize.entries.forEach { size ->
-            compose.onNodeWithTag(size.id).assertHeightIsAtLeast(48.dp).assertWidthIsAtLeast(48.dp)
+            compose.onNodeWithTag(size.id).assertTouchTargetAtLeast(ButtonAccessibility.minTouchTarget)
         }
     }
 
@@ -173,6 +158,21 @@ class AppButtonTest {
                 ButtonSize.entries.forEach { size ->
                     val resolves = scheme.buttons.appearance(variant, size, ButtonState.ENABLED) != null
                     assertEquals("$scheme $variant $size", (variant to size) in galleryPairs, resolves)
+                }
+            }
+        }
+    }
+
+    @Test
+    fun everyAllowedPairHasAPressedAndAFocusedLookInEveryScheme() {
+        // So the resting-look fallback for an interaction state with no look never shows today.
+        AppScheme.entries.forEach { scheme ->
+            ComponentGallery.button.filter { it.state == ButtonState.ENABLED }.forEach { entry ->
+                listOf(ButtonState.PRESSED, ButtonState.FOCUSED).forEach { state ->
+                    assertNotNull(
+                        "$scheme ${entry.testId} $state",
+                        scheme.buttons.appearance(entry.variant, entry.size, state),
+                    )
                 }
             }
         }

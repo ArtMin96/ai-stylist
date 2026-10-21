@@ -1,50 +1,32 @@
 package app.aistylist.core.designsystem
 
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.semantics.SemanticsProperties
-import androidx.compose.ui.test.SemanticsMatcher
-import androidx.compose.ui.test.assert
-import androidx.compose.ui.test.junit4.v2.createComposeRule
-import androidx.compose.ui.test.onNodeWithTag
+import androidx.compose.ui.test.onNodeWithText
 import app.aistylist.core.designsystem.generated.ComponentGallery
 import app.aistylist.core.designsystem.generated.TagSize
 import app.aistylist.core.designsystem.generated.TagSpec
 import app.aistylist.core.designsystem.generated.TagVariant
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
-import org.junit.Rule
 import org.junit.Test
-import org.junit.runner.RunWith
-import org.robolectric.RobolectricTestRunner
-import org.robolectric.annotation.Config
-
-private const val TAG = "ds-tag-under-test"
 
 /** JVM (Robolectric) tests of AppTag against the C03 tag contract. */
-@RunWith(RobolectricTestRunner::class)
-@Config(sdk = [37])
-class AppTagTest {
-    @get:Rule
-    val compose = createComposeRule()
-
+class AppTagTest : DesignSystemComposeTest() {
     private fun show(
         variant: TagVariant,
         size: TagSize,
         accessibilityLabel: String? = null,
     ) {
-        compose.setContent {
-            AppTheme {
-                AppTag(
-                    label = ComponentGallery.tagLabel,
-                    variant = variant,
-                    size = size,
-                    modifier = Modifier.testTag(TAG),
-                    leadingIcon = ComponentGallery.tagLeadingIcon,
-                    accessibilityLabel = accessibilityLabel,
-                )
-            }
+        showThemed {
+            AppTag(
+                label = ComponentGallery.tagLabel,
+                variant = variant,
+                size = size,
+                modifier = subjectTag,
+                leadingIcon = ComponentGallery.tagLeadingIcon,
+                accessibilityLabel = accessibilityLabel,
+            )
         }
     }
 
@@ -52,29 +34,35 @@ class AppTagTest {
     fun aTagIsReadAsItsLabelWithNoRoleNoActionAndNoFocus() {
         show(TagVariant.PLAN_PLUS, TagSize.REGULAR)
 
-        compose
-            .onNodeWithTag(TAG)
-            .assert(
-                SemanticsMatcher.expectValue(SemanticsProperties.ContentDescription, listOf(ComponentGallery.tagLabel)),
-            ).assert(SemanticsMatcher.keyNotDefined(SemanticsProperties.Role))
-            .assert(SemanticsMatcher.keyNotDefined(SemanticsActions.OnClick))
-            .assert(SemanticsMatcher.keyNotDefined(SemanticsProperties.Focused))
+        subject()
+            .assertNamed(ComponentGallery.tagLabel)
+            .assertLacks(SemanticsProperties.Role)
+            .assertLacks(SemanticsActions.OnClick)
+            .assertLacks(SemanticsProperties.Focused)
     }
 
     @Test
     fun theAccessibilityLabelOverridesTheLabel() {
         show(TagVariant.LOCK, TagSize.REGULAR, accessibilityLabel = "Needs Plus")
 
-        compose
-            .onNodeWithTag(TAG)
-            .assert(SemanticsMatcher.expectValue(SemanticsProperties.ContentDescription, listOf("Needs Plus")))
+        subject().assertNamed("Needs Plus")
+    }
+
+    @Test
+    fun theKindTagDrawsItsOverlineLabelInCapitalsAndIsReadAsWritten() {
+        show(TagVariant.KIND, TagSize.REGULAR)
+
+        subject().assertNamed("Plus")
+        val label = compose.onNodeWithText("Plus", useUnmergedTree = true)
+        assertEquals("PLUS", label.drawnText())
+        compose.onNodeWithText("PLUS", useUnmergedTree = true).assertDoesNotExist()
     }
 
     @Test
     fun aCombinationTheContractDoesNotAllowRendersNothing() {
         show(TagVariant.DIFFERS, TagSize.REGULAR)
 
-        compose.onNodeWithTag(TAG).assertDoesNotExist()
+        subject().assertDoesNotExist()
     }
 
     @Test

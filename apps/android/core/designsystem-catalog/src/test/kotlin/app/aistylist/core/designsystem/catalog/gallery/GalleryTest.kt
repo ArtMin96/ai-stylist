@@ -11,10 +11,12 @@ import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import app.aistylist.core.designsystem.AppScheme
 import app.aistylist.core.designsystem.AppTheme
 import app.aistylist.core.designsystem.generated.AppIconName
 import app.aistylist.core.designsystem.generated.ComponentGallery
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -90,6 +92,30 @@ class GalleryTest {
                         useUnmergedTree = true,
                     ).assertExists()
             }
+        }
+    }
+
+    @Test
+    fun everyComponentCellDrawsItsOwnEntrysLabel() {
+        show()
+
+        // The dot draws no text: only looks with a label style show the entry's label.
+        val labelledBadges =
+            ComponentGallery.badge.filter {
+                AppScheme.LIGHT.badges
+                    .appearance(it.variant, it.size, it.state)
+                    ?.typography != null
+            }
+        val cells =
+            ComponentGallery.button.map { it.testId to it.label } +
+                ComponentGallery.chip.map { it.testId to it.label } +
+                ComponentGallery.tag.map { it.testId to it.label } +
+                ComponentGallery.reasonRow.map { it.testId to it.label } +
+                labelledBadges.map { it.testId to it.label }
+        // The trial pills have their own words, so a component-wide sample label would fail here.
+        assertTrue(labelledBadges.any { it.label != ComponentGallery.badgeLabel })
+        cells.forEach { (id, label) ->
+            compose.onNode(hasText(label) and hasAnyAncestor(hasTestTag(id)), useUnmergedTree = true).assertExists()
         }
     }
 

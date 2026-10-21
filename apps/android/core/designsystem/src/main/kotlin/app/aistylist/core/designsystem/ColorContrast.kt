@@ -21,9 +21,12 @@ internal fun contrastRatio(
     return (max(a, b) + WCAG_FLARE) / (min(a, b) + WCAG_FLARE)
 }
 
-/** Whether a swatch needs its edge: its contrast with the chip's [fill] is below [minContrast]. */
+/**
+ * Whether a swatch draws its edge: the chip has no [fill], so nothing is known behind the swatch, or
+ * the swatch's contrast with [fill] is below [minContrast].
+ */
 internal fun needsSwatchEdge(
     swatch: Color,
-    fill: Color,
+    fill: Color?,
     minContrast: Double,
-): Boolean = contrastRatio(swatch, fill) < minContrast
+): Boolean = fill == null || contrastRatio(swatch, fill) < minContrast

@@ -16,8 +16,8 @@ import androidx.compose.ui.semantics.Role
 internal fun PlaygroundSwitch(
     label: String,
     checked: Boolean,
-    onCheckedChange: (Boolean) -> Unit,
     modifier: Modifier = Modifier,
+    onCheckedChange: (Boolean) -> Unit,
 ) {
     Row(
         modifier =

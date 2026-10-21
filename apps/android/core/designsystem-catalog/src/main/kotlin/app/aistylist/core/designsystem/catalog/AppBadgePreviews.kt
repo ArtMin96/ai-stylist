@@ -1,100 +1,54 @@
 package app.aistylist.core.designsystem.catalog
 
-import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.FlowRow
-import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.FilterChip
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.unit.dp
 import app.aistylist.core.designsystem.AppBadge
-import app.aistylist.core.designsystem.AppScheme
 import app.aistylist.core.designsystem.AppTheme
-import app.aistylist.core.designsystem.catalog.gallery.GalleryBadges
-import app.aistylist.core.designsystem.color
-import app.aistylist.core.designsystem.generated.AppColorRole
+import app.aistylist.core.designsystem.catalog.gallery.badgeHostSurface
 import app.aistylist.core.designsystem.generated.BadgeSize
 import app.aistylist.core.designsystem.generated.BadgeState
 import app.aistylist.core.designsystem.generated.BadgeVariant
 import app.aistylist.core.designsystem.generated.ComponentGallery
+import app.aistylist.core.designsystem.generated.GalleryComponent
 
 @Preview(name = "AppBadge states, light", heightDp = 400)
 @Composable
 private fun AppBadgeStatesLightPreview() {
-    AppBadgeStates(scheme = AppScheme.LIGHT)
+    StateGrid(GalleryComponent.BADGE, dark = false)
 }
 
 @Preview(name = "AppBadge states, dark", heightDp = 400)
 @Composable
 private fun AppBadgeStatesDarkPreview() {
-    AppBadgeStates(scheme = AppScheme.DARK)
+    StateGrid(GalleryComponent.BADGE, dark = true)
 }
 
-/** The gallery's C03 badges section: every `ComponentGallery.badge` cell on the sample host surface. */
-@Composable
-private fun AppBadgeStates(
-    scheme: AppScheme,
-    modifier: Modifier = Modifier,
-) {
-    AppTheme(scheme = scheme) {
-        GalleryBadges(
-            modifier =
-                modifier
-                    .background(AppTheme.colors.color(AppColorRole.BACKGROUND))
-                    .padding(AppTheme.spacing.space16.dp),
-        )
-    }
-}
+/** The playground's props: every AppBadge parameter it controls. */
+private data class BadgeProps(
+    val variant: BadgeVariant = BadgeVariant.COUNT,
+    val size: BadgeSize = BadgeSize.MEDIUM,
+    val label: String = ComponentGallery.badgeLabel,
+)
 
 /** Live controls for Android Studio's interactive preview mode, on the sample host surface. */
 @Preview(name = "AppBadge playground", showBackground = true)
 @Composable
 private fun AppBadgePlaygroundPreview() {
-    var variant by remember { mutableStateOf(BadgeVariant.COUNT) }
-    var size by remember { mutableStateOf(BadgeSize.MEDIUM) }
-    var label by remember { mutableStateOf(ComponentGallery.badgeLabel) }
-    AppTheme {
+    Playground(BadgeProps()) { props, update ->
         // Only the sizes the contract allows for the variant.
-        val sizes = BadgeSize.entries.filter { AppTheme.badges.appearance(variant, it, BadgeState.ENABLED) != null }
-        val shownSize = if (size in sizes) size else sizes.first()
-        Column(
-            modifier = Modifier.padding(AppTheme.spacing.space16.dp),
-            verticalArrangement = Arrangement.spacedBy(AppTheme.spacing.space12.dp),
-        ) {
-            AppBadge(
-                variant = variant,
-                size = shownSize,
-                modifier =
-                    Modifier
-                        .background(AppTheme.colors.color(ComponentGallery.badgeHostSurface))
-                        .padding(AppTheme.spacing.space8.dp),
-                label = label,
-                hostSurface = ComponentGallery.badgeHostSurface,
-            )
-            FlowRow(horizontalArrangement = Arrangement.spacedBy(AppTheme.spacing.space8.dp)) {
-                BadgeVariant.entries.forEach { option ->
-                    FilterChip(
-                        selected = option == variant,
-                        onClick = { variant = option },
-                        label = { Text(option.id) },
-                    )
-                }
-            }
-            FlowRow(horizontalArrangement = Arrangement.spacedBy(AppTheme.spacing.space8.dp)) {
-                sizes.forEach { option ->
-                    FilterChip(selected = option == shownSize, onClick = { size = option }, label = { Text(option.id) })
-                }
-            }
-            OutlinedTextField(value = label, onValueChange = { label = it }, label = { Text("label") })
-        }
+        val sizes =
+            BadgeSize.entries.filter { AppTheme.badges.appearance(props.variant, it, BadgeState.ENABLED) != null }
+        val shownSize = sizes.shownSize(props.size)
+        AppBadge(
+            variant = props.variant,
+            size = shownSize,
+            modifier = Modifier.badgeHostSurface(AppTheme.colors),
+            label = props.label,
+            hostSurface = ComponentGallery.badgeHostSurface,
+        )
+        PlaygroundOptions(BadgeVariant.entries, props.variant, BadgeVariant::id) { update(props.copy(variant = it)) }
+        PlaygroundOptions(sizes, shownSize, BadgeSize::id) { update(props.copy(size = it)) }
+        PlaygroundTextField("label", props.label) { update(props.copy(label = it)) }
     }
 }

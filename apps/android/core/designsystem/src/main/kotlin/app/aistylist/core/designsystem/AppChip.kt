@@ -1,20 +1,14 @@
 package app.aistylist.core.designsystem
 
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.interaction.MutableInteractionSource
-import androidx.compose.foundation.interaction.collectIsFocusedAsState
-import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.selection.toggleable
 import androidx.compose.material3.minimumInteractiveComponentSize
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
-import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.collapse
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.expand
@@ -22,6 +16,7 @@ import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
 import app.aistylist.core.designsystem.generated.AppIconName
+import app.aistylist.core.designsystem.generated.ChipAccessibility
 import app.aistylist.core.designsystem.generated.ChipRole
 import app.aistylist.core.designsystem.generated.ChipSelection
 import app.aistylist.core.designsystem.generated.ChipSize
@@ -32,11 +27,14 @@ import app.aistylist.core.designsystem.generated.ChipVariant
  * The C03 chip (`.impeccable/components/chip.yaml`), every tappable chip. Its look comes only from
  * `AppTheme.chips`. When the resting state (the state rule with no interaction) has no look at
  * [variant] × [size], the chip renders nothing: a size, a toggle or `enabled = false` the variant
- * does not take. [selection] matters only for a selectable variant.
+ * does not take. [selection] matters only for a selectable variant. A chip is disabled through
+ * [enabled] only; its look follows that prop, and an interaction state with no look shows the
+ * resting look.
  *
  * It is one accessibility element named [accessibilityLabel] or [label], in the role of
  * `variant.role`; its icons, swatch, prefix and detail are not read. Activation runs [action] once
- * in every state but the disabled ones. The hit area is at least 48 × 48 dp at every size.
+ * in every state but the disabled ones. The hit area is at least `ChipAccessibility.minTouchTarget`
+ * (48 dp) square at every size.
  */
 @Composable
 fun AppChip(
@@ -65,16 +63,14 @@ fun AppChip(
             focused = false,
         )
     val restingAppearance = resting?.let { chips.appearance(variant, size, it) } ?: return
-    val interactions = remember { MutableInteractionSource() }
-    val pressed by interactions.collectIsPressedAsState()
-    val focused by interactions.collectIsFocusedAsState()
+    val interaction = rememberControlInteraction()
     val state =
         displayedChipState(
             selected = selected,
             expanded = expanded,
             enabled = enabled,
-            pressed = pressed,
-            focused = focused,
+            pressed = interaction.pressed,
+            focused = interaction.focused,
         )
             ?: resting
     val activatable = state.isActivatable
@@ -84,11 +80,17 @@ fun AppChip(
     val activation =
         when (variant.role) {
             ChipRole.BUTTON -> {
-                Modifier.clickable(interactions, null, enabled = activatable, role = Role.Button, onClick = action)
+                Modifier.clickable(
+                    interaction.source,
+                    null,
+                    enabled = activatable,
+                    role = Role.Button,
+                    onClick = action,
+                )
             }
 
             ChipRole.SELECTABLE -> {
-                Modifier.selectableChip(selection, selected = selected, enabled = activatable, interactions, action)
+                Modifier.selectableChip(selection, selected = selected, enabled = activatable, interaction, action)
             }
 
             ChipRole.DISCLOSURE -> {
@@ -96,31 +98,33 @@ fun AppChip(
                     expanded = expanded,
                     disclosureState,
                     enabled = activatable,
-                    interactions,
+                    interaction,
                     action,
                 )
             }
 
             ChipRole.MENU -> {
-                Modifier.menuChip(selected = selected, enabled = activatable, interactions, action)
+                Modifier.menuChip(selected = selected, enabled = activatable, interaction, action)
             }
         }
-    AppChipFace(
-        appearance = chips.appearance(variant, size, state) ?: restingAppearance,
-        variant = variant,
-        label = label,
-        modifier =
-            modifier
-                .semantics { contentDescription = name }
-                .then(activation)
-                .minimumInteractiveComponentSize()
-                // Innermost, so the role, state and actions above stay and only the content is hidden.
-                .clearAndSetSemantics {},
-        leadingIcon = leadingIcon,
-        prefix = prefix,
-        detail = detail,
-        swatch = swatch,
-    )
+    ProvideTouchTarget(ChipAccessibility.minTouchTarget) {
+        AppChipFace(
+            appearance = chips.appearance(variant, size, state) ?: restingAppearance,
+            variant = variant,
+            label = label,
+            modifier =
+                modifier
+                    .semantics { contentDescription = name }
+                    .then(activation)
+                    .minimumInteractiveComponentSize()
+                    // Innermost, so the role, state and actions above stay and only the content is hidden.
+                    .hideContentSemantics(),
+            leadingIcon = leadingIcon,
+            prefix = prefix,
+            detail = detail,
+            swatch = swatch,
+        )
+    }
 }
 
 /** A selectable chip: a checkbox toggle in a multiple selection, a radio button in a single one. */
@@ -128,14 +132,14 @@ private fun Modifier.selectableChip(
     selection: ChipSelection,
     selected: Boolean,
     enabled: Boolean,
-    interactions: MutableInteractionSource,
+    interaction: ControlInteraction,
     action: () -> Unit,
 ): Modifier =
     when (selection) {
         ChipSelection.MULTIPLE -> {
             toggleable(
                 value = selected,
-                interactionSource = interactions,
+                interactionSource = interaction.source,
                 indication = null,
                 enabled = enabled,
                 role = Role.Checkbox,
@@ -146,7 +150,7 @@ private fun Modifier.selectableChip(
         ChipSelection.SINGLE -> {
             selectable(
                 selected = selected,
-                interactionSource = interactions,
+                interactionSource = interaction.source,
                 indication = null,
                 enabled = enabled,
                 role = Role.RadioButton,
@@ -160,7 +164,7 @@ private fun Modifier.disclosureChip(
     expanded: Boolean,
     stateWords: String,
     enabled: Boolean,
-    interactions: MutableInteractionSource,
+    interaction: ControlInteraction,
     action: () -> Unit,
 ): Modifier =
     semantics {
@@ -173,17 +177,17 @@ private fun Modifier.disclosureChip(
             // Only the action that changes the state is offered.
             if (expanded) collapse(action = toggle) else expand(action = toggle)
         }
-    }.clickable(interactions, null, enabled = enabled, role = Role.Button, onClick = action)
+    }.clickable(interaction.source, null, enabled = enabled, role = Role.Button, onClick = action)
 
 /** A chip that opens a list: a drop-down list, marked selected while selected. */
 private fun Modifier.menuChip(
     selected: Boolean,
     enabled: Boolean,
-    interactions: MutableInteractionSource,
+    interaction: ControlInteraction,
     action: () -> Unit,
 ): Modifier =
     semantics { if (selected) this.selected = true }
-        .clickable(interactions, null, enabled = enabled, role = Role.DropdownList, onClick = action)
+        .clickable(interaction.source, null, enabled = enabled, role = Role.DropdownList, onClick = action)
 
 /**
  * The state shown (contract G2), first match wins: disabled if not [enabled], else pressed, else

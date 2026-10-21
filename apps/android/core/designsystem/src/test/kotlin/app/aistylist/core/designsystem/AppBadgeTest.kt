@@ -1,12 +1,6 @@
 package app.aistylist.core.designsystem
 
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.SemanticsProperties
-import androidx.compose.ui.test.SemanticsMatcher
-import androidx.compose.ui.test.assert
-import androidx.compose.ui.test.junit4.v2.createComposeRule
-import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import app.aistylist.core.designsystem.generated.AppColorRole
 import app.aistylist.core.designsystem.generated.BadgeSize
@@ -15,46 +9,33 @@ import app.aistylist.core.designsystem.generated.BadgeVariant
 import app.aistylist.core.designsystem.generated.ComponentGallery
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
-import org.junit.Rule
 import org.junit.Test
-import org.junit.runner.RunWith
-import org.robolectric.RobolectricTestRunner
-import org.robolectric.annotation.Config
 
-private const val TAG = "ds-badge-under-test"
 private const val TRIAL = "Trial · 2 days left"
 
 /** JVM (Robolectric) tests of AppBadge against the C03 badge contract. */
-@RunWith(RobolectricTestRunner::class)
-@Config(sdk = [37])
-class AppBadgeTest {
-    @get:Rule
-    val compose = createComposeRule()
-
+class AppBadgeTest : DesignSystemComposeTest() {
     private fun show(
         variant: BadgeVariant,
         size: BadgeSize,
         label: String?,
     ) {
-        compose.setContent {
-            AppTheme {
-                AppBadge(
-                    variant = variant,
-                    size = size,
-                    modifier = Modifier.testTag(TAG),
-                    label = label,
-                    hostSurface = AppColorRole.SURFACE2,
-                )
-            }
+        showThemed {
+            AppBadge(
+                variant = variant,
+                size = size,
+                modifier = subjectTag,
+                label = label,
+                hostSurface = AppColorRole.SURFACE2,
+            )
         }
     }
 
     private fun assertExposesNothing() {
-        compose
-            .onNodeWithTag(TAG, useUnmergedTree = true)
-            .assert(SemanticsMatcher.keyNotDefined(SemanticsProperties.ContentDescription))
-            .assert(SemanticsMatcher.keyNotDefined(SemanticsProperties.Text))
-            .assert(SemanticsMatcher.keyNotDefined(SemanticsProperties.Role))
+        subject(unmerged = true)
+            .assertLacks(SemanticsProperties.ContentDescription)
+            .assertLacks(SemanticsProperties.Text)
+            .assertLacks(SemanticsProperties.Role)
     }
 
     @Test
@@ -78,31 +59,30 @@ class AppBadgeTest {
     fun theTrialPillIsReadAsItsLabel() {
         show(BadgeVariant.TRIAL_LAST_DAY, BadgeSize.LARGE, label = TRIAL)
 
-        compose
-            .onNodeWithTag(TAG)
-            .assert(SemanticsMatcher.expectValue(SemanticsProperties.ContentDescription, listOf(TRIAL)))
-            .assert(SemanticsMatcher.keyNotDefined(SemanticsProperties.Role))
+        subject()
+            .assertNamed(TRIAL)
+            .assertLacks(SemanticsProperties.Role)
     }
 
     @Test
     fun aLabelledVariantWithoutALabelRendersNothing() {
         show(BadgeVariant.COUNT, BadgeSize.MEDIUM, label = null)
 
-        compose.onNodeWithTag(TAG, useUnmergedTree = true).assertDoesNotExist()
+        subject(unmerged = true).assertDoesNotExist()
     }
 
     @Test
     fun aTrialWithoutALabelRendersNothing() {
         show(BadgeVariant.TRIAL, BadgeSize.LARGE, label = null)
 
-        compose.onNodeWithTag(TAG, useUnmergedTree = true).assertDoesNotExist()
+        subject(unmerged = true).assertDoesNotExist()
     }
 
     @Test
     fun aCombinationTheContractDoesNotAllowRendersNothing() {
         show(BadgeVariant.DOT, BadgeSize.LARGE, label = null)
 
-        compose.onNodeWithTag(TAG, useUnmergedTree = true).assertDoesNotExist()
+        subject(unmerged = true).assertDoesNotExist()
     }
 
     @Test

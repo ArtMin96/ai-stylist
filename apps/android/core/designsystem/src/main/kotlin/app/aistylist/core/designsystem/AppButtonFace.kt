@@ -1,24 +1,13 @@
 package app.aistylist.core.designsystem
 
-import androidx.compose.animation.animateColorAsState
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.heightIn
-import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.LocalContentColor
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.CompositionLocalProvider
-import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import app.aistylist.core.designsystem.generated.AppIconName
@@ -40,48 +29,43 @@ fun AppButtonFace(
     fullWidth: Boolean = false,
 ) {
     val colors = AppTheme.colors
-    val shape = RoundedCornerShape(appearance.rounded.dp)
-    val background by animateColorAsState(colors.colorOrClear(appearance.backgroundColor), PressTransition, "fill")
-    val overlay by animateColorAsState(colors.colorOrClear(appearance.overlayColor), PressTransition, "overlay")
-    val content by animateColorAsState(colors.color(appearance.textColor), PressTransition, "label")
-    // The spinner shares the icon slot, so it grows with the font scale exactly as the icon does.
-    val slotSize = appearance.iconSize.renderedDp()
+    val content = animatedRoleColor(appearance.textColor, "button label")
     Row(
         modifier =
             modifier
                 .then(if (fullWidth) Modifier.fillMaxWidth() else Modifier)
                 .focusRing(appearance.focusRing, colors, appearance.rounded)
-                .background(background, shape)
-                .background(overlay, shape)
-                .insideRing(colors, appearance.borderColor, appearance.borderWidth, shape)
-                .heightIn(min = appearance.height.dp)
-                .padding(appearance.contentPadding()),
+                .appShape(
+                    colors,
+                    appearance.rounded,
+                    fill = animatedRoleColor(appearance.backgroundColor, "button fill"),
+                    ringRole = appearance.borderColor,
+                    ringWidth = appearance.borderWidth,
+                    overlay = animatedRoleColor(appearance.overlayColor, "button overlay"),
+                ).lookFrame(
+                    appearance.height,
+                    appearance.paddingTop,
+                    appearance.paddingEnd,
+                    appearance.paddingBottom,
+                    appearance.paddingStart,
+                ),
         horizontalArrangement = Arrangement.spacedBy(appearance.iconGap.dp, Alignment.CenterHorizontally),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         when {
             // The button announces "Loading" itself, so the spinner adds nothing for assistive tech.
+            // It shares the icon slot, so it grows with the font scale exactly as the icon does.
             showsSpinner -> {
                 CircularProgressIndicator(
-                    modifier = Modifier.size(slotSize).clearAndSetSemantics {},
+                    modifier = Modifier.size(appearance.iconSize.renderedDp()).hideContentSemantics(),
                     color = colors.color(appearance.spinnerColor ?: appearance.textColor),
                 )
             }
 
             leadingIcon != null -> {
-                CompositionLocalProvider(LocalContentColor provides content) {
-                    AppIcon(leadingIcon, size = appearance.iconSize)
-                }
+                FaceIcon(leadingIcon, appearance.iconSize, content)
             }
         }
-        Text(
-            text = label,
-            color = content,
-            style = appearance.typography.toTextStyle(),
-            textAlign = TextAlign.Center,
-        )
+        AppText(text = label, style = appearance.typography, color = content, textAlign = TextAlign.Center)
     }
 }
-
-private fun ButtonAppearance.contentPadding(): PaddingValues =
-    lookPadding(paddingTop, paddingEnd, paddingBottom, paddingStart)

@@ -171,7 +171,7 @@ object AppTheme {
         @ReadOnlyComposable
         get() = LocalAppScheme.current.reasonRows
 
-    /** The type styles; render one with [toTextStyle] (bundled fonts). */
+    /** The type styles; draw one with [AppText] (bundled fonts, text transform). */
     val typography: AppTypography get() = AppTypography
 
     val spacing: AppSpacing get() = AppSpacing

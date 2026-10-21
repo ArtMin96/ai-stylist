@@ -33,8 +33,11 @@ private val bundledFontFamilies: Map<String, FontFamily> =
         "Young Serif" to YoungSerifFontFamily,
     )
 
-/** This type style as a Compose [TextStyle] in its bundled font; sizes in sp, so it follows font scale. */
-fun AppTextStyle.toTextStyle(): TextStyle =
+/**
+ * This type style as a Compose [TextStyle] in its bundled font; sizes in sp, so it follows font scale.
+ * A [TextStyle] cannot carry the style's `textTransform`, so text is drawn through [AppText].
+ */
+internal fun AppTextStyle.toTextStyle(): TextStyle =
     TextStyle(
         fontFamily = checkNotNull(bundledFontFamilies[fontFamily]) { "No bundled font for the family $fontFamily" },
         fontWeight = FontWeight(fontWeight),

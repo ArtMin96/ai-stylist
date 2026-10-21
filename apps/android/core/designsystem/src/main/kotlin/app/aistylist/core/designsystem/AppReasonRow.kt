@@ -1,17 +1,13 @@
 package app.aistylist.core.designsystem
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -31,7 +27,8 @@ import app.aistylist.core.designsystem.generated.ReasonRowVariant
 
 /**
  * The C03 expanded reason row (`.impeccable/components/reason-row.yaml`), shown under its reason
- * chip while that chip is expanded. Its look comes only from `AppTheme.reasonRows`.
+ * chip while that chip is expanded. Its look comes only from `AppTheme.reasonRows`. It fills the
+ * width it is given.
  *
  * Three lines, `lineGap` apart: [label], then [fact] behind [factIcon] in its disc, then
  * [freshness]. Every line wraps and grows with the font scale, the disc and its icon too. It is a
@@ -51,19 +48,28 @@ fun AppReasonRow(
     val appearance =
         AppTheme.reasonRows.appearance(variant, ReasonRowSize.STANDARD, ReasonRowState.ENABLED) ?: return
     val colors = AppTheme.colors
-    val shape = RoundedCornerShape(appearance.rounded.dp)
     Column(
         modifier =
             modifier
+                .fillMaxWidth()
                 .semantics {
                     contentDescription = accessibilityLabel
                     isTraversalGroup = true
-                }.background(colors.color(appearance.backgroundColor), shape)
-                .border(appearance.borderWidth.dp, colors.color(appearance.borderColor), shape)
-                .padding(appearance.contentPadding()),
+                }.appShape(
+                    colors,
+                    appearance.rounded,
+                    fill = colors.color(appearance.backgroundColor),
+                    ringRole = appearance.borderColor,
+                    ringWidth = appearance.borderWidth,
+                ).lookPadding(
+                    appearance.paddingTop,
+                    appearance.paddingEnd,
+                    appearance.paddingBottom,
+                    appearance.paddingStart,
+                ),
         verticalArrangement = Arrangement.spacedBy(appearance.lineGap.dp),
     ) {
-        Text(text = label, color = colors.color(appearance.textColor), style = appearance.typography.toTextStyle())
+        AppText(text = label, style = appearance.typography, color = colors.color(appearance.textColor))
         variant.parts.forEach { part ->
             when (part) {
                 ReasonRowPart.FACT -> {
@@ -71,10 +77,10 @@ fun AppReasonRow(
                 }
 
                 ReasonRowPart.FRESHNESS -> {
-                    Text(
+                    AppText(
                         text = freshness,
+                        style = appearance.freshnessTypography,
                         color = colors.color(appearance.freshnessColor),
-                        style = appearance.freshnessTypography.toTextStyle(),
                     )
                 }
             }
@@ -102,7 +108,7 @@ private fun FactLine(
         ) {
             AppIcon(icon, size = appearance.iconSize, tint = appearance.iconColor)
         }
-        Text(text = fact, color = colors.color(appearance.factColor), style = appearance.factTypography.toTextStyle())
+        AppText(text = fact, style = appearance.factTypography, color = colors.color(appearance.factColor))
     }
 }
 
@@ -112,6 +118,3 @@ private fun ReasonRowIconSource.glyph(prop: AppIconName): AppIconName =
         is ReasonRowIconSource.Glyph -> name
         ReasonRowIconSource.Prop -> prop
     }
-
-private fun ReasonRowAppearance.contentPadding(): PaddingValues =
-    lookPadding(paddingTop, paddingEnd, paddingBottom, paddingStart)

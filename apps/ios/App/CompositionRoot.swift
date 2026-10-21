@@ -5,6 +5,7 @@ import APIData
 import Analytics
 import AppConfig
 import AppServices
+import CaptureFeature
 import Foundation
 
 enum CompositionRoot {
@@ -39,6 +40,11 @@ enum CompositionRoot {
       analytics: ConsentGatedAnalytics(sink: makeAnalyticsSink(postHog)),
       debug: makeDebugTools()
     )
+  }
+
+  /// The capture flow's adapters: the on-device opt-in store, and the Dev build's harness (nil elsewhere).
+  static func makeCaptureDependencies(harness: (any CaptureHarness)? = nil) -> CaptureFlowDependencies {
+    CaptureFlowDependencies(optInStore: UserDefaultsUnderwearOptInStore(), harness: harness)
   }
 
   /// No PostHog key in this build: `NoopSink`, so no PostHog code ever runs.

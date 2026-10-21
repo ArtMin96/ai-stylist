@@ -104,6 +104,9 @@ public final class CaptureModel {
   public private(set) var isScreenReaderOn: Bool
   /// The speaker button (`cap-camera-speech`, Q-B).
   public private(set) var isSpeechToggledOn = false
+  /// Counts camera screens opened; each opening is a new camera run (warming up, timers from zero), so the
+  /// app restarts its camera when this changes, even for the same family and mode.
+  public private(set) var cameraOpenCount = 0
 
   @ObservationIgnored private let clock: any CaptureClock
   @ObservationIgnored private let optInStore: any UnderwearOptInStore
@@ -144,6 +147,12 @@ public final class CaptureModel {
 
   /// The sheet closed without an answer: it asks again next time.
   public func dismissUnderwearOptIn() {
+    screen = .picker
+  }
+
+  /// Back from the underwear sub-pick to the category picker.
+  public func backToPicker() {
+    guard screen == .underwearPicker else { return }
     screen = .picker
   }
 
@@ -387,6 +396,7 @@ public final class CaptureModel {
     )
     self.session = session
     camera = session.output
+    cameraOpenCount += 1
     screen = .camera(setup)
   }
 

@@ -6,7 +6,7 @@
 // APIData or the generated API client (enforced by apps/ios/scripts/check-banned.sh). The generated
 // package's AIStylistKernel product (registry constants, no network code; ADR-0005) is allowed: the
 // capture rules come from it. *Feature targets draw with the DesignSystem package (AppButton,
-// `\.appTheme`).
+// `\.appTheme`). CaptureDebug is the dev-only capture test harness (see its target below).
 import PackageDescription
 
 // jscpd:ignore-start (SwiftPM manifests cannot share code; the copies are kept in sync by hand.)
@@ -76,10 +76,51 @@ var targets: [Target] = [
       swiftSettings: strictSettings
     )
   )
+  // Guided capture camera screens and camera plumbing (capture brief §1): SwiftUI, AVFoundation, Vision,
+  // CoreMotion, PhotosUI, AVFAudio; system frameworks only. Its sources are iOS-only (`#if os(iOS)`), so
+  // the macOS `swift test` build compiles only CaptureText, which its tests read. Resources: the copy
+  // (Localizable.xcstrings), keyed by the registry's hint keys.
+  products.append(.library(name: "CaptureFeature", targets: ["CaptureFeature"]))
+  targets.append(
+    .target(
+      name: "CaptureFeature",
+      dependencies: ["CaptureModel", kernel] + designSystem,
+      resources: [.process("Resources")],
+      swiftSettings: strictSettings
+    )
+  )
+  targets.append(
+    .testTarget(
+      name: "CaptureFeatureTests",
+      dependencies: ["CaptureFeature", "CaptureModel", kernel],
+      path: "tests/CaptureFeatureTests",
+      swiftSettings: strictSettings
+    )
+  )
+  // Dev-only capture test harness (capture brief §11): the test-frame source, the screen-reader flag, the
+  // sweep and the results log. Like DesignSystemCatalog, the app target builds it with `link: false` and
+  // only apps/ios/Config/Dev.xcconfig links its object, so Preview and Prod hold no harness code.
+  products.append(.library(name: "CaptureDebug", targets: ["CaptureDebug"]))
+  targets.append(
+    .target(
+      name: "CaptureDebug",
+      dependencies: ["CaptureFeature", "CaptureModel", kernel] + designSystem,
+      swiftSettings: strictSettings
+    )
+  )
+  targets.append(
+    .testTarget(
+      name: "CaptureDebugTests",
+      dependencies: ["CaptureDebug"],
+      path: "tests/CaptureDebugTests",
+      swiftSettings: strictSettings
+    )
+  )
 #endif
 
 let package = Package(
   name: "Features",
+  defaultLocalization: "en",
   platforms: [.iOS(.v26), .macOS(.v26)],
   products: products,
   dependencies: dependencies,

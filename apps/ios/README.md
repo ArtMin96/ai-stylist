@@ -25,10 +25,16 @@ Packages/Core/           no UI; builds and tests on macOS AND Linux
 Packages/Features/       one pair of targets per screen
   Sources/HomeModel        @Observable view model (no SwiftUI; tests run on Linux too)
   Sources/HomeFeature      SwiftUI view (Apple platforms only; left out of the manifest on Linux)
-  Sources/CaptureModel     guided capture camera logic (no UI, camera, Vision or analytics; tests run on
-                           Linux too); its screens and camera plumbing (CaptureFeature) come later
+  Sources/CaptureModel     guided capture camera logic and pixel measuring (no UI, camera, Vision or
+                           analytics; tests run on Linux too)
+  Sources/CaptureFeature   capture screens + camera plumbing (SwiftUI, AVFoundation, Vision, CoreMotion,
+                           PhotosUI; iOS-only sources, `#if os(iOS)`); copy in Resources/Localizable.xcstrings
+  Sources/CaptureDebug     dev-only capture test harness (frame sets, sweep, results log); linked by the
+                           Dev configuration only, like DesignSystemCatalog
   tests/HomeModelTests
   tests/CaptureModelTests
+  tests/CaptureFeatureTests  every capture string key exists (runs under `swift test` on macOS too)
+  tests/CaptureDebugTests    the harness launch arguments (runs under `swift test` on macOS too)
 Packages/DesignSystem/   app-internal design system (DEC-87); no dependency on Core or APIData; used by the app
                          target (`.appTheme()` at the root) and the *Feature targets
   Sources/DesignTokens     Foundation-only tokens (tests run on Linux too); `just generate` writes them into
@@ -71,8 +77,39 @@ injected clock (`CaptureClock`; the app uses `ContinuousCaptureClock`), so every
   step, batch, library import); it reads the clock and owns one session per camera screen.
 - `CaptureObservationSource`: the port the live camera + Vision source and the debug test-frame source implement.
 
-Hints, guides and reasons are keys (`CaptureHint`, `CaptureGuide`, `CaptureAnywayReason`); the copy lives in the
-screen layer's strings.
+Hints, guides and reasons are keys (`CaptureHint`, `CaptureGuide`, `CaptureAnywayReason`); the copy lives in
+`CaptureFeature`'s String Catalog, keyed by the hint keys (`CaptureText`).
+
+### Screens and camera (CaptureFeature)
+
+- `CaptureFlowView(dependencies:onClose:)` renders `CaptureModel.screen`: picker, underwear opt-in sheet and
+  sub-pick, camera, inline photo picker, import tips, review, batch summary. The app opens it from Home's
+  "Add item" (`home-open-capture`), Dev builds only (capture brief Q-F); nothing is saved, photos stay in memory.
+- `CaptureCamera` is the port the screen runs: `LiveCaptureCamera` (AVCaptureSession, preview-sized analysis
+  buffers, Vision foreground mask and body pose, luma, CoreMotion) or the Dev harness's frame camera.
+  `CaptureCameraController` feeds observations and ticks to the model and performs its effects (photo, speech
+  or VoiceOver announcement, haptics) inside the camera view's `.task`, which stops on leave or background.
+- The surface brief's "Proposed values" (guide stroke, shutter, hint card, step pill, count chip, anyway slot)
+  are in `CaptureMetrics` until they are DESIGN.md tokens. `NSCameraUsageDescription` is in `App/Info.plist`.
+
+### Capture test harness (CaptureDebug, Dev only)
+
+Launch arguments (`-key value`, as `xcrun simctl launch` and Maestro `launchApp: arguments` pass them, or
+`key=value`):
+
+- `captureFrameSet <set id>`: the camera plays that set from `index.json` in real time (30 fps).
+- `captureScreenReader 1`: VoiceOver behaviour (anyway at once, spoken hints) plus the visible spoken log.
+- `captureSweep 1`: the capture flow opens at launch and plays every set (or only `captureFrameSet`) on a
+  virtual clock; a capture is recorded and the camera carries on (batch sets still count photos).
+- `captureFramesDir <absolute path>`: the frames folder; default `<repo>/artifacts/capture-camera/frames` of
+  the checkout the Dev build was compiled from (`just capture-frames` writes it; the Simulator reads the
+  Mac's file system).
+
+Results: one JSON line per played segment in `Documents/capture-results.jsonl` of the app's data container
+(`xcrun simctl get_app_container booted app.aistylist.mobile.dev data`); a sweep writes
+`Documents/capture-results.done` when it ends. A launch with any harness argument starts a fresh log. The debug
+panel (`cap-debug-panel`) switches the source and the set (`cap-debug-frameset-<set id>`) for the next camera
+opening.
 
 ## Design system
 
@@ -160,7 +197,8 @@ screen layer's strings.
   `GallerySection` maps it. The scheme follows the system appearance (S1, S2, S7).
 - **How Prod excludes the catalog.** `project.yml` adds `DesignSystemCatalog` as a build dependency
   with `link: false`, and only `Config/Dev.xcconfig` links its object
-  (`OTHER_LDFLAGS = $(inherited) $(BUILT_PRODUCTS_DIR)/DesignSystemCatalog.o`). `App/AIStylistApp.swift`
+  (`OTHER_LDFLAGS = $(inherited) $(BUILT_PRODUCTS_DIR)/DesignSystemCatalog.o …`; the capture harness
+  `CaptureDebug.o` is linked the same way). `App/AIStylistApp.swift`
   imports and uses it under `#if DEBUG` only. In the P0 spike (2026-10-20), a plain link put 37 symbols of a
   throwaway catalog into the Prod binary, even with the `#if DEBUG` in the app. With this setup Prod
   had 0 symbols and 0 strings. Check with `strings -a` and `nm -m` on

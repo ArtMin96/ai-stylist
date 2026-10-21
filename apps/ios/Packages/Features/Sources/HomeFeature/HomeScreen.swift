@@ -12,11 +12,21 @@ public import SwiftUI
 public struct HomeScreen: View {
   @State private var model: HomeModel
 
-  /// - Parameter onOpenDesignSystemGallery: the Dev build's gallery presenter; nil (Preview, Prod)
-  ///   hides the "Design system gallery" debug button.
-  public init(services: AppServices, onOpenDesignSystemGallery: (() -> Void)? = nil) {
+  /// - Parameters:
+  ///   - onOpenDesignSystemGallery: the Dev build's gallery presenter; nil (Preview, Prod) hides the
+  ///     "Design system gallery" debug button.
+  ///   - onOpenCapture: the Dev build's capture presenter; nil (Preview, Prod) hides "Add item".
+  public init(
+    services: AppServices,
+    onOpenDesignSystemGallery: (() -> Void)? = nil,
+    onOpenCapture: (() -> Void)? = nil
+  ) {
     _model = State(
-      initialValue: HomeModel(services: services, openDesignSystemGallery: onOpenDesignSystemGallery)
+      initialValue: HomeModel(
+        services: services,
+        openDesignSystemGallery: onOpenDesignSystemGallery,
+        openCapture: onOpenCapture
+      )
     )
   }
 
@@ -30,6 +40,14 @@ public struct HomeScreen: View {
         .foregroundStyle(.secondary)
 
       versionCard
+
+      if model.showsCaptureEntry {
+        // Dev build only (capture brief Q-F): the capture camera saves nothing yet.
+        AppButton("Add item", variant: .primary, size: .medium, leadingIcon: .capture, fullWidth: true) {
+          model.openCapture()
+        }
+        .accessibilityIdentifier("home-open-capture")
+      }
 
       HStack {
         Text("Share anonymous usage data")

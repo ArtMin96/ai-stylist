@@ -95,6 +95,17 @@ struct CapturePickerTests {
     #expect(model.camera?.isAnywayVisible == true)
   }
 
+  @Test("every camera opening counts, even for the same family and mode, so the app restarts its camera")
+  func cameraOpenCount() {
+    let (model, _, _) = makeModel()
+    #expect(model.cameraOpenCount == 0)
+    model.chooseFamily(.top)
+    model.selectMode(.hanger)
+    #expect(model.cameraOpenCount == 1)
+    model.chooseFamily(.top)
+    #expect(model.cameraOpenCount == 2)
+  }
+
   @Test("the speaker button stays on for the next camera")
   func speakerPersists() {
     let (model, clock, _) = makeModel()
@@ -121,6 +132,18 @@ struct CaptureUnderwearTests {
     model.chooseUnderwear()
     #expect(model.screen == .underwearPicker)
     #expect(store.saves == 1)
+  }
+
+  @Test("back from the sub-pick returns to the picker; elsewhere it does nothing")
+  func backToPicker() {
+    let (model, _, _) = makeModel(optIn: .flatAndHangerOnly)
+    model.chooseUnderwear()
+    #expect(model.screen == .underwearPicker)
+    model.backToPicker()
+    #expect(model.screen == .picker)
+    model.chooseFamily(.top)
+    model.backToPicker()
+    #expect(cameraSetup(model)?.family == .top)
   }
 
   @Test("closing the sheet without an answer stores nothing and asks again")

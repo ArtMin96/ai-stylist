@@ -18,6 +18,9 @@
 	<string>$(POSTHOG_API_KEY)</string>
 	<key>AIStylistPostHogHost</key>
 	<string>$(POSTHOG_HOST)</string>
+	<!-- Capture camera (capture brief §7 C23): the same words as the in-app permission screen. -->
+	<key>NSCameraUsageDescription</key>
+	<string>The camera is needed to photograph your clothes. Photos stay on your phone until you save an item.</string>
 	<key>NSAppTransportSecurity</key>
 	<dict>
 		<!-- Dev talks to http://localhost:3000; local networking only, never arbitrary loads. -->

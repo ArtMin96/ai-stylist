@@ -91,6 +91,9 @@ nonisolated public struct CaptureCameraSession: Sendable {
   private var lastBlockingHint: CaptureHint?
   private var lastItemBox: NormalizedRect?
   private var capturedBox: NormalizedRect?
+  /// The hint shown before the capture began, read before `capturing` replaces it; a failed capture
+  /// shows it again.
+  private var hintBeforeCapture: CaptureHint?
   private var isFallback = false
 
   public init(setup: CaptureCameraSetup, screenReaderOn: Bool = false, speechToggledOn: Bool = false) {
@@ -132,6 +135,7 @@ nonisolated public struct CaptureCameraSession: Sendable {
     lastItemBox = nil
     capturedBox = nil
     captureTrigger = nil
+    hintBeforeCapture = nil
     isFallback = false
     return show(.guide, atMs: now)
   }
@@ -202,16 +206,21 @@ nonisolated public struct CaptureCameraSession: Sendable {
     let isBatch = setup.flow == .batch
     lock.captureFinished(isBatch: isBatch, box: capturedBox)
     captureTrigger = nil
+    hintBeforeCapture = nil
     guard isBatch else { return [] }
     return show(.nextItem, atMs: now)
   }
 
-  /// The photo request failed: locked again, with the last blocking hint.
+  /// The photo request failed: locked again. A capture from the unlocked shutter shows the hint from before
+  /// it (for an auto-capture "Keep still…", not a blocking hint from before the unlock); "Take photo
+  /// anyway" shows the last blocking hint.
   public mutating func captureFailed(atMs now: Int) -> [CaptureEffect] {
     guard lock.state == .capturing else { return [] }
     lock.captureFailed()
     captureTrigger = nil
-    return show(lastBlockingHint ?? .noItem, atMs: now)
+    let restored = hintBeforeCapture ?? lastBlockingHint ?? .noItem
+    hintBeforeCapture = nil
+    return show(restored, atMs: now)
   }
 
   /// "Next item" in batch cooldown.
@@ -305,6 +314,9 @@ nonisolated public struct CaptureCameraSession: Sendable {
   private mutating func startCapturing(_ trigger: CaptureTrigger, atMs now: Int) -> [CaptureEffect] {
     captureTrigger = trigger
     capturedBox = lastItemBox
+    // Read before `show(.capturing)` below replaces it. Only a capture from the unlocked shutter (auto,
+    // manual, hardware) restores it; "Take photo anyway" came from a lock, so its blocking hint stays right.
+    hintBeforeCapture = trigger == .anyway ? nil : hints.shown
     return [.requestCapture(trigger), .haptic(.capture)] + show(.capturing, atMs: now)
   }
 

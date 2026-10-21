@@ -193,6 +193,22 @@ struct CaptureSessionHintTests {
     #expect(driver.output.shutter == .locked(.tooSmall))
     #expect(driver.output.hint == .tooSmall)
   }
+
+  @Test("a failed auto-capture shows the hint from before the capture, not capturing or a stale block")
+  func autoCaptureFailedRestoresHint() {
+    var driver = SessionDriver()
+    while !driver.captures.contains(.auto), driver.now < anywayMs {
+      let before = driver.output.hint
+      driver.feed(frame())
+      if driver.captures.contains(.auto) {
+        #expect(before == .ready)
+      }
+    }
+    #expect(driver.output.shutter == .capturing)
+    #expect(driver.output.hint == .capturing)
+    driver.effects += driver.session.captureFailed(atMs: driver.now)
+    #expect(driver.output.hint == .ready)
+  }
 }
 
 @Suite("Camera session: Take photo anyway")

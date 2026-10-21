@@ -1,7 +1,7 @@
 # AppReasonRow: the API contract for the expanded reason row on canvas board C03 (DESIGN.md
 # "### Chips and tags (C03)": Expanded reason row). This file is the master for its API; DESIGN.md
 # is the master for its values, so this file only names tokens. Field rules: README.md beside this
-# file; fields marked G<n> are the proposed fields of README.md "Proposed fields".
+# file; fields marked G<n> are the C03 fields of README.md "Fields", which the generator implements.
 # Sources (canvas read 2026-10-21): C03 draws the row in S1 and S2 under the reason chips (padding
 # 14 16, radius 16, surface + 1 px divider, sentence 15/21, fact 13/600 behind a 24 icon disc,
 # freshness 12/16 text-secondary, lines 8 apart); SC08 opens it under "Warm layers for 14° with
@@ -9,9 +9,9 @@
 # Honesty: the sentence and the fact come from the reason-code templates, never written by hand or
 # by a model, and never mention body data; the freshness line names the source and its time.
 # High contrast: no -hc-* token; the S7 colours come from the colour roles.
-# Proposed fields used here: G1 no busy, G4 icons, G7 role region, G8 per-variant props, G9 no
-# touch target, G10 gallery.props, G12 the fact and freshness lines. Until the generator has them
-# this file fails CC-01.
+# C03 fields used here: G1 no busy, G4 icons, G7 role region, G8 per-variant props, G9 no
+# touch target, G10 gallery.props, G12 the fact and freshness lines. The generator implements
+# every one.
 id: reason-row
 board: C03
 name: AppReasonRow

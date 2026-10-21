@@ -1,7 +1,7 @@
 # AppChip: the API contract for canvas board C03 (DESIGN.md "### Chips and tags (C03)").
 # This file is the master for the chip's API; DESIGN.md is the master for its values, so this
 # file only names tokens. Field rules: README.md beside this file. Fields marked G<n> are the
-# proposed fields that README.md "Proposed fields" defines; the generator implements them next.
+# C03 fields that README.md "Fields" defines; the generator implements them.
 # Sources (canvas read 2026-10-21): C03 (condition chips drawn there 2026-10-21, owner), C05 (group
 # and sort), the screens on page 6 that draw chips (SC02, SC03, SC06, SC08-SC12, SC15), the
 # prototype on page 7 (P03, P05, P08, P09, P14), C09 and rule R4 ("Chips act, tags label, badges
@@ -12,10 +12,10 @@
 # AppBadge (badge.yaml), the expanded reason row AppReasonRow (reason-row.yaml).
 # High contrast: no chip token has an -hc-* variant; the S7 colours come from the colour roles and
 # the focus ring from focus-ring-hc-*. None was added.
-# Proposed fields used here (README.md "Proposed fields"): G1 no busy, G2 compound toggle states,
+# C03 fields used here (README.md "Fields"): G1 no busy, G2 compound toggle states,
 # G3 trailing icon slot, G4 icons, G5 an entry's own borderWidth, G6 a variant's own slot values,
 # G7 accessibility roles, selection and labelOverride, G8 prop types and per-variant props,
-# G10 gallery.props, G12 parts. Until the generator has them this file fails CC-01.
+# G10 gallery.props, G12 parts. The generator implements every one.
 id: chip
 board: C03
 name: AppChip

@@ -1,7 +1,7 @@
 # AppBadge: the API contract for the badges on canvas board C03 (DESIGN.md "### Chips and tags
 # (C03)": Count badge, Trial pill). This file is the master for the badge's API; DESIGN.md is the
 # master for its values, so this file only names tokens. Field rules: README.md beside this file;
-# fields marked G<n> are the proposed fields of README.md "Proposed fields".
+# fields marked G<n> are the C03 fields of README.md "Fields", which the generator implements.
 # A badge flags and never acts (R4: "Badge: count on an icon or tab · tile badges · trial pill";
 # "No · sits on another element"). C03 draws the count badge (dot 8 and number 18, on an icon
 # button and a tab) and the trial pill (28, default and last day), in S1 and S2.
@@ -9,9 +9,9 @@
 # and the provenance badge, which C04 draws: C04's next component. The Capture-tab queue badge is
 # C05's.
 # Drift: C03 draws the dark count number in #1B1B19; DESIGN.md wins with on-error-dark (#0F1F1B).
-# Proposed fields used here: G1 no busy, G4 icons, G7 accessibility roles, G8 the colorRole prop
+# C03 fields used here: G1 no busy, G4 icons, G7 accessibility roles, G8 the colorRole prop
 # and per-variant props, G9 no touch target, G10 gallery.props, G11 sizes without an icon slot,
-# G12 the outer ring part. Until the generator has them this file fails CC-01.
+# G12 the outer ring part. The generator implements every one.
 id: badge
 board: C03
 name: AppBadge

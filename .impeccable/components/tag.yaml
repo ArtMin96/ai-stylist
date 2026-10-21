@@ -1,7 +1,7 @@
 # AppTag: the API contract for the tags on canvas board C03 (DESIGN.md "### Chips and tags (C03)").
 # This file is the master for the tag's API; DESIGN.md is the master for its values, so this file
-# only names tokens. Field rules: README.md beside this file; fields marked G<n> are the proposed
-# fields of README.md "Proposed fields", which the generator implements next.
+# only names tokens. Field rules: README.md beside this file; fields marked G<n> are the C03
+# fields of README.md "Fields", which the generator implements.
 # A tag labels and never acts: no tap, no pressed state, no chevron (R4: "Chips act, tags label,
 # badges flag"). Sources (canvas read 2026-10-21): C03 (plan and status tags), C07 (the item-row
 # availability tag), C08 (the compare card's "Differs" tag), SC12 (Later), SC14 and SC15 (plan
@@ -10,9 +10,9 @@
 # Not here: the count badge and the trial pill (AppBadge, badge.yaml); the 22-high tile badges and
 # the provenance badge, which are C04's next component.
 # High contrast: no tag token has an -hc-* variant; the S7 colours come from the colour roles.
-# Proposed fields used here: G1 no busy, G4 icons, G7 accessibility role text and labelOverride,
+# C03 fields used here: G1 no busy, G4 icons, G7 accessibility role text and labelOverride,
 # G8 per-variant props, G9 no touch target, G10 gallery.props, G11 sizes without an icon slot,
-# G12 the dot part, G13 the dashed ring. Until the generator has them this file fails CC-01.
+# G12 the dot part, G13 the dashed ring. The generator implements every one.
 id: tag
 board: C03
 name: AppTag

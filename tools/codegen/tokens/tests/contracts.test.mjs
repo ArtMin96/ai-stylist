@@ -673,7 +673,7 @@ test('the icon fixture API: token sizes, the default, sets by first use, compile
   assert.equal(heart('heart-filled').paint, 'both');
 });
 
-// The C03 fields (.impeccable/components/README.md "Proposed fields", Linear AI-204 part B):
+// The C03 fields (.impeccable/components/README.md "Fields", Linear AI-204 part B):
 // compound states (G2), icons (G4), roles (G7), prop types (G8), gallery samples (G10), parts
 // (G12), on the fixture chip (../fixtures/contracts/_valid/chip.yaml) and the repository C03.
 

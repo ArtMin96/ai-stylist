@@ -36,8 +36,8 @@ components that point at the shared scales) adds the step names (`icon-xs` … `
 cases `xs` … `hero`), `iconSize` naming an icon size (the button's slot is then `AppIconSize`) and
 `{spacing.<key>}` parts in a padding shorthand.
 
-AI-204 part A (C03 chips, tags, badges, reason row; `.impeccable/components/README.md` "Proposed
-fields") adds the validation and token side: the trailing icon slot (G3), an entry's own
+AI-204 part A (C03 chips, tags, badges, reason row; `.impeccable/components/README.md`
+"Fields") adds the validation and token side: the trailing icon slot (G3), an entry's own
 `borderWidth` (G5) and slot values (G6) winning in the merge, a slot entry only where an icon is
 drawn (G11, reading `icons` by shape), `accessibility.busy` optional (G1), `minTouchTarget` optional
 for a passive role (G9, CC-13), and the C03 entry properties (G12 parts, G13 `borderDash`) as
@@ -144,7 +144,7 @@ its looks; `api-declarations.mjs` decides the API's names and values; `emit-api-
   fields below), and `kind: icon-set` is an icon set (Icon sets); any other `kind` fails
   (`fixtures/contracts/CC-01-icon-kind/`). Ajv's own "must match the then/else schema" error is
   left out, since the branch's errors say what is wrong. The shapes of a control's C03 fields
-  (README "Proposed fields"): `icons` (G4: per variant `leading`, `trailing` and
+  (README "Fields"): `icons` (G4: per variant `leading`, `trailing` and
   `states.<state>`, each a kebab glyph id, a `'{props.<name>}'` reference or `null`);
   `accessibility.role` and each `accessibility.roles` value one of the nine roles (`button`,
   `toggle`, `radio`, `selectable`, `disclosure`, `menu`, `text`, `region`, `decorative`),

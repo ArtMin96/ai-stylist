@@ -303,3 +303,22 @@ Notes for the lanes:
   2026-10-21.
 - Swatch colour type: SwiftUI `Color`, Compose `Color`; the contrast formula is the same. Platform
   idiom; lead, 2026-10-21.
+- Badge gallery id: on iOS it sits on the captioned cell, because the badge is hidden from VoiceOver
+  and XCUITest cannot find a hidden element. On Android it sits on the badge, where the `testTag`
+  survives `clearAndSetSemantics`. Each id occurs once on each app. Platform API; lead, 2026-10-21
+  (architecture review).
+- Disclosure actions: Android offers `expand` only while collapsed and `collapse` only while expanded
+  (Compose convention); iOS is a button whose value is the state word. Platform API; lead,
+  2026-10-21 (architecture review).
+
+## Rules settled after the architecture review (2026-10-21; both apps)
+
+- An interaction state with no look (pressed or focused where the contract has none) shows the
+  resting look. Today both test suites prove the case cannot occur.
+- A swatch chip whose look has no fill draws the swatch edge. Today every swatch look sets a fill.
+  Both suites assert the rule.
+- The chip's look follows its `enabled` prop only. iOS does not read `\.isEnabled` from the
+  environment for the look: a parent `.disabled(true)` would otherwise remove a variant with no
+  disabled look. The doc comment says a chip is disabled through `enabled`.
+- Shared drawing is extracted once, and every existing sibling uses it. No component keeps a
+  private copy, and `just clone-check` passes.

@@ -2,8 +2,8 @@
 
 > Module names are canonical per [SPINE §3](../../planning/SPINE.md). Path: `apps/api/src/modules/identity`. This contract is the module's source of truth; code that contradicts it is wrong until a DEC entry says otherwise.
 
-- **Responsibility (one sentence):** Accounts, sessions, auth providers, consent records, and the age gate.
-- **Owner:** @ArtMin96 (see `CODEOWNERS`) · **Status:** skeleton (P02) · **Last updated:** 2026-10-13
+- **Responsibility (one sentence):** Accounts, sessions, auth providers, account recovery, consent records, the age gate, and the data-export and account-deletion requests (export and deletion: owner decision 2026-10-13).
+- **Owner:** @ArtMin96 (see `CODEOWNERS`) · **Status:** skeleton (P02) · **Last updated:** 2026-10-21
 
 ## Public interface
 
@@ -12,6 +12,14 @@ Public interface: `index.ts` only. P02 skeleton: the sole export is the empty Ne
 | Export | Kind (service/command/query/type/port) | Purpose  |
 | ------ | -------------------------------------- | -------- |
 | —      | —                                      | none yet |
+
+HTTP contract (`packages/contracts/openapi/modules/identity.yaml`, P03-T02). No server code serves it yet: P03-T03 to P03-T05, P03-T09 and P03-T10 implement it. better-auth 1.7.12 with `@better-auth/passkey` 1.7.12 serves `/v1/auth/*` at basePath `/v1/auth`. Only the operations listed here are served under that path.
+
+- **Sign-in and sessions:** `signInWithIdToken` (Apple or Google), `completeSignUp`, `getPasskeySignInOptions`, `signInWithPasskey`, `getPasskeyRegistrationOptions`, `registerPasskey`, `getSession`, `refreshSession`, `signOut`, `listDeviceSessions` and `signOutAllDevices`. A sign-in answers one `SignInResult`: `session`, `sign_up_required` (the age gate, through `completeSignUp`) or `deletion_pending` (a cancel credential for `DELETE /v1/me/deletion`, no session). In P03 an account is created with Apple or Google only. A passkey is added to a signed-in account (`registerPasskey`) and then signs in (owner decision 2026-10-21). A session is a `SessionGrant`: a short-lived access token (`bearerAuth`, about 15 min) and a separate refresh token. `refreshSession` (`POST /v1/auth/session/refresh`, refresh token in the body) rotates both. Reuse of a rotated refresh token revokes the session family (doc 11 §4.2; owner decision 2026-10-21).
+- **Account recovery:** `requestAccountRecovery` (`POST /v1/auth/sign-in/magic-link`) gives a uniform answer. The emailed link opens the app with the token in the URL fragment, and works from 24 to 48 h after the request. The app calls `completeAccountRecovery` (`POST /v1/auth/recovery/complete`, token in the body). `cancelAccountRecovery` is `DELETE /v1/me/recovery`. `completeSignUp`, `refreshSession`, `completeAccountRecovery` and `cancelAccountRecovery` are identity's own routes, not library paths.
+- **Consents** (`/v1/me/consents`): `listConsents` answers one `ResolvedConsent` per `ConsentPurpose`, in enum order. Each entry has `granted` (the state the server applies), `withdrawable` and `record` (the latest consent record, absent while the server default applies). `recordConsent` appends a record (201), or answers 200 and stores nothing when the request repeats the current state. A withdrawal of a purpose with `withdrawable: false` (`core_service` today) is refused with 403 `CONSENT_REQUIRED`.
+- **Data export and deletion** (owner decision 2026-10-13): `requestDataExport` (`POST /v1/me/exports`, 202) starts an export. A second request while one runs gets 429 with the running export as `current`. `getDataExport` (`GET /v1/me/exports/{id}`, `no-store`) reads it. An export is `in_progress`, `ready`, `failed` or `expired`. While it is `ready`, each read mints a download link that lives at most 10 min (DEC-44). The archive is kept until `availableUntil`, 24 h after it was built (doc 11 §13.1). `requestAccountDeletion` (`POST /v1/me/deletion`, 202) revokes every session and starts the 7-day grace window (`graceEndsAt`, DEC-65). `cancelAccountDeletion` (`DELETE /v1/me/deletion`, 204) accepts only the `deletionCancelToken` credential (header `Deletion-Cancel-Token`; the scheme lives in `identity.yaml`). It opens no session, and is refused with 410 `ACCOUNT_DELETED` once the window has ended.
+- **Rules across operations:** `requestDataExport`, `requestAccountDeletion` and `getPasskeyRegistrationOptions` need a recent sign-in (`RecentSignInRequired`, 403 `FORBIDDEN`). A `refreshSession` renewal never resets that recency (export: owner decision 2026-10-21). Every bearer-authenticated operation answers the shared 410 `AccountDeleted`. The operations whose answer carries a credential are `signInWithIdToken`, `completeSignUp`, `signInWithPasskey`, `refreshSession` and `completeAccountRecovery`. They are marked `x-idempotency-replay: never` and are never answered from the idempotency store.
 
 ## Owned data
 
@@ -25,9 +33,14 @@ None yet (P02 skeleton). Planned per SPINE §3: `users`, `sessions`, `consents`.
 
 ## Events
 
-| Event (published) | Payload schema (owner: `packages/contracts`) | When emitted |
-| ----------------- | -------------------------------------------- | ------------ |
-| —                 | —                                            | none yet     |
+| Event (published)                        | Payload schema (owner: `packages/contracts`)                                  | When emitted                                                                                                               |
+| ---------------------------------------- | ----------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
+| `identity.account.created.v1`            | `packages/contracts/events/identity.account.created.v1.event.json`            | `completeSignUp` created the account, in the same transaction. Schema only (P03-T02.4); the producer is P03-T03.6          |
+| `identity.consent.changed.v1`            | `packages/contracts/events/identity.consent.changed.v1.event.json`            | `recordConsent` appended a consent record (201; not when it answers 200 unchanged). Schema only; the producer is P03-T05.1 |
+| `identity.account.deletion_requested.v1` | `packages/contracts/events/identity.account.deletion_requested.v1.event.json` | `requestAccountDeletion` accepted a request, and the 7-day grace window starts. Schema only; the producer is P03-T10.3     |
+| `identity.account.export_requested.v1`   | `packages/contracts/events/identity.account.export_requested.v1.event.json`   | `requestDataExport` accepted a request, which starts the export job chain. Schema only; the producer is P03-T09.6          |
+
+Payloads carry ids, enums and timestamps only, and every example sets the envelope's `subjectUserId` to the payload's `userId`.
 
 | Event (consumed) | From module | Reaction |
 | ---------------- | ----------- | -------- |
@@ -57,6 +70,6 @@ Derived from P02 brief §5 and doc 04 §4.2; every rule has a failing fixture (`
 
 ## Extension points
 
-- New auth providers register behind an auth-provider port; consent scopes are named in `shared-kernel` registries, not hard-coded here.
+- New auth providers register behind an auth-provider port; consent purposes are named in `shared-kernel` (`CONSENT_PURPOSES`), not hard-coded here.
 
-Status: skeleton (P02).
+Status: skeleton (P02): no domain code yet. P03-T02 added the HTTP contract and the four published event schemas in `packages/contracts`.

@@ -43,8 +43,8 @@ Rules:
 
 ## ➡️ Next session starts here
 
-**Tracking (Linear; the design-system line as of 2026-10-20, the rest as the close-out session left it on 2026-10-13):**
-- Design system (Brand v1, milestone "Design system", umbrella AI-193): AI-196, AI-200 and AI-197 are Done; AI-189, AI-198, AI-186 and AI-188 are In Progress; AI-194 has nothing left (the owner decides cancel or rescope). State and open PRs: the 2026-10-20 (design-system) entry.
+**Tracking (Linear; the design-system line as of 2026-10-21, the rest as the close-out session left it on 2026-10-13):**
+- Design system (Brand v1, milestone "Design system", umbrella AI-193): AI-196, AI-200, AI-197, AI-189, AI-198, AI-186, AI-188, AI-195 and AI-190 are Done. AI-201 (C02 icons) is In Progress. AI-202 (C03 chips) and AI-203 to AI-206 are Done (PR #50, stacked on #48; the 2026-10-21 (c03-chips) entry). AI-194 is in Backlog with nothing left (the owner decides cancel or rescope).
 - P02 (its Linear project: [P02 — Repo foundations and CI](https://linear.app/ai-stylist-app/project/p02-repo-foundations-and-ci-f1943b23882e)): AI-31, AI-21, AI-36, AI-6 and AI-27 are `Done`. AI-20 (Renovate) and AI-26 (T18 close-out) were to close with the close-out pull request, which merged as PR #26 on 2026-10-13.
 - P00: T01…T10 are AI-34, AI-35, AI-37, AI-38, AI-39, AI-40, AI-43, AI-44, AI-45, AI-46.
 - Deferred work, new project "First minimal release — environments, accounts and legal": AI-16 (the rest of T07), AI-22 and AI-23 (T14, T15), AI-30 (overlaps DEC-85; the owner may close it after the merge, its file changes moved to AI-182), AI-32 (branch protection after the organization move), AI-38, AI-39 and AI-40 (the legal part of P00), AI-41 (observability follow-ups).
@@ -58,7 +58,7 @@ Rules:
 
 Next actions, in order:
 
-1. **Design system: the button on both apps** (deferred by the owner on 2026-10-20). Follow the four steps under "Next session starts" in the 2026-10-20 (design-system) entry: merge PR #34 and the AI-189 PR; the Swift and Kotlin token emitters, the golden parity test and the `just generate` / `--check` wiring (AI-189); the AI-198 generator half, then `just generate`; then the iOS and Android button lanes in parallel.
+1. **Design system: C03 chips on `feat/c03-chips`** (AI-202; state in the 2026-10-21 (c03-chips) entry). PR #50 is stacked on PR #48 (base `feat/p03-t02-contracts`), which stacks on PR #47; the next P03 PR stacks on PR #50. The `vite` 8.3.4 bump landed in `fad7ada`. The owner, in order: (1) check the C03 chips, tags, badges and reason row, and the button, in the debug gallery on both apps (DEC-87: no screenshots; the fix rounds also changed how the button draws); (2) merge PR #47, PR #48, then PR #50.
 2. **P03 is `IN_PROGRESS`** ([phase file](phases/P03-identity-consent-onboarding.md); P02 and P00 `ACCEPTED` by the owner on 2026-10-21). P03-T01 is done on `feat/p03-t01-kernel` (PR #47). P03-T02 is done on `feat/p03-t02-contracts`; its PR is stacked on PR #47. Next, each stacked on the T02 PR (owner decision 2026-10-21): P03-X03 (AI-87, error codes as a kernel JSON registry) → P03-X04 (AI-88, the kernel emitter for Swift and Kotlin) → P03-X06 (AI-95, the spectral `Idempotency-Key` rule). The owner applies [`.claude/plans/2026-10-21-p03-contract-decisions-proposal.md`](../.claude/plans/2026-10-21-p03-contract-decisions-proposal.md) (decision-log rows, planning-doc line fixes). AI-42 before P03-T10; the Mac checks at the first P03 client task. Carry into P03: the owner keeps `packages/db` as is (no ADR-0008), so P03's first module table must compose without breaking `public-api-only-external` ([`.claude/plans/2026-10-04-repo-split-readiness-proposal.md`](../.claude/plans/2026-10-04-repo-split-readiness-proposal.md)); cross-module foreign keys are ruled out by ADR-0009 (DEC-67).
 
 **Human-only steps outstanding** (agents stop at config + `.env.example` keys):
@@ -91,6 +91,35 @@ Log hygiene: when this log exceeds ~30 entries, move the oldest entries to `plan
 
 *(newest first)*
 
+### 2026-10-21 (c03-chips) — AI-202: C03 chips, tags, badges and reason row on both apps (branch `feat/c03-chips`, PR #50 stacked on #48)
+
+*Lead session on the owner's Mac, main checkout, branch `feat/c03-chips` rebuilt on 2026-10-21 as its own commits on top of `feat/p03-t02-contracts` @ `619f290` (PR #48, after the owner's GitHub stack rebase rewrote PR #47 and PR #48), and pushed as PR #50. Written by docs-maintainer from the lead's hand-over; the lead verified every fact below on 2026-10-21. This ledger update is uncommitted.*
+
+- **Phase / tasks worked:** none (Brand v1, AI-202 under the AI-193 umbrella: AI-203 design, AI-204 generator, AI-205 iOS, AI-206 Android).
+- **Status changes:** None in the phase table. Linear: AI-202 to AI-206 are Done, each with a closing comment and the PR #50 link.
+- **Done this session (commits in order):**
+  - Design and generator: `42a8792` (contracts chip, tag, badge, reason-row; `DESIGN.md` C03 tokens; canvas C03 condition chips); `b5a5377` and `8232e01` (generator parts A and B, CC-13 to CC-18); `03d54ad` and `396ae94` (approvals and docs); `d653ace` (generated API); `78018a0` (Kotlin lookup wrap, so `just format` and `just generate` agree).
+  - Lanes: `b53a3c2` (lane brief `.claude/plans/2026-10-21-c03-chips-brief.md`); iOS `6283542`; `898d2df` (`AppIconTests` Float precision on Xcode 27.1); Android `613e961`.
+  - Fix round: `f80dbe0`, `92c9e4c` and `5cc0883` (brief fixes, settled rules, fix round); `353a632` (the generator emits `<Name>Accessibility.minTouchTarget`, `AppTextStyle.textTransform` (TK-08) and `<C>GalleryEntry.label` (CC-19)); `4fc0f57` (overline `textTransform: uppercase`; badge `gallery.labels`; canvas C03 and C08 dark ink fixed, canvas v75); iOS `cf9c2dc`; Android `a455400`.
+  - Reviews: architecture CHANGES REQUESTED; its one blocker (iOS `AppButtonFace` drew its own shape) is fixed in `cf9c2dc`. UI CHANGES REQUESTED; B1 (Android chip at 200 % font scale) and B2 (Android reason-row width) are fixed in `a455400`. Each fix has a test that failed before and passes after.
+  - Files: `DESIGN.md`, `.impeccable/components/{README.md,chip.yaml,tag.yaml,badge.yaml,reason-row.yaml}`, `tools/codegen/gen-tokens.mjs`, `tools/codegen/tokens/**`, `scripts/test/design-tokens.test.sh`, `apps/ios/Packages/DesignSystem/**`, `apps/android/core/designsystem/**`, `apps/android/core/designsystem-catalog/**`, both app READMEs, `.claude/rules/design-system.md`, the lane brief.
+- **Not done / in flight:**
+  - No re-review ran after the fix rounds.
+  - Waiting on the owner: the debug-gallery check, the `vite` bump, push and PR ("Next session starts" below).
+  - Open follow-ups: the C08 cards board (owner-private canvas, `C08-cards.dc.html:587`) has an icon disc that may have the same dark-ink drift (ui-designer, with C08); pre-existing Kotlin clones `AppContainerTest` ↔ `ConsentGatedAnalyticsTest` and `PostHogAnalyticsSinkTest` ↔ `PostHogConfigTest` (android-engineer); `PlaygroundSwitch.kt` is a near copy of the HomeScreen consent row; a generated shared shape-look interface would remove the repeated field lists (tooling-engineer); HomeScreen still uses Material `Text`.
+- **Repository state:** buildable ✅ on the scoped gates; `just ci-parity` ❌ only in `just security-scan`, and `main` fails the same way. The lead's runs on the integrated tree:
+  - `env -u POSTHOG_CLI_API_KEY -u POSTHOG_CLI_HOST -u POSTHOG_CLI_PROJECT_ID just ios-check` → exit 0 after the iOS fix round (`cf9c2dc`) ("Build Succeeded", "dSYM upload skipped", "Test Succeeded").
+  - The iOS Prod-binary catalog check (`strings -a` / `nm -m` find no DesignSystemCatalog, gallery or preview symbols) passed after the iOS lane (`6283542`), before the fix rounds; it was not rerun after them.
+  - The same `env -u` keys, `just android-check` → exit 0 after the Android fix round (`a455400`) (`checkModuleGraph: 14 edges, all allowed`, mapping uploads SKIPPED, BUILD SUCCESSFUL).
+  - The owner's GitHub stack rebase rewrote PR #47 and PR #48. `feat/c03-chips` was rebuilt as its own commits on the new PR #48 head and force-pushed with the owner's approval. Its tree equals the old branch merged with the new PR #48, which differs from the old one only by `2edba92` from `main` (agent docs), so the gate runs above stand.
+  - `just clone-check` → exit 0, total 0.39 % against 0.48 % (Swift 0 clones; Kotlin 3, all older than the branch). `bash scripts/test/design-tokens.test.sh` → 236 of 236. `just generate --check` → up to date. `just docs-check` → ok.
+  - The same `env -u` keys, `just ci-parity` → exit 1. Every step passed up to `just security-scan`. It fails on GHSA-587h-7wmj-h5pm (CVSS 7.5), GHSA-698v-4r3x-3vcv and GHSA-r825-w8mm-5pxw, all `vite` 8.2.2 in `pnpm-lock.yaml`, fixed in 8.2.4. The branch does not touch `pnpm-lock.yaml`, so `main` @ `96dd5f1` has the same failure. The fix needs a human-granted dependency bump; Dependabot may open it.
+- **New decisions / risks / questions filed:** None in doc 16. Owner decisions (chat, 2026-10-21): "You do all. Add condition chips as well in the canvas, then in DESIGN.md if its missing and then implement like any normal chip. I don't want to left anything behind"; AppBadge and AppReasonRow approved ("Approve both"); local branch and commits allowed, nothing pushed until the owner asks for a PR. Lead decision: the three new label styles (`label-md-normal`, `label-md-medium`, `label-sm-medium`) stay in the `DESIGN.md` component label table, not on canvas R2, as the existing component label styles do. DEC-87 (no screenshots) is why the owner checks the UI by hand.
+- **Surprises / gotchas:**
+  - `AppIconTests` failed on Xcode 27.1 on Float precision, on `main` @ `96dd5f1` too; `898d2df` fixes it on this branch only.
+  - `just format` and `just generate` wrapped a Kotlin lookup body differently until `78018a0`.
+  - The fix rounds also changed how the button draws, so the gallery check covers the button.
+- **Next session starts:** the owner, in order: (1) check the C03 chips, tags, badges and reason row, and the button, in the debug gallery on both apps (DEC-87: no screenshots); (2) merge PR #47, PR #48, then PR #50. The owner ran the approved `vite` update; it took 8.3.4, the newest in range, and landed in `fad7ada` (`just security-scan`, `just typecheck` and `just test` exit 0).
 ### 2026-10-21 (p03-t02) — AI-48: P03-T02 contracts for identity, profile and billing, five event schemas, both reviews fixed (branch `feat/p03-t02-contracts`)
 
 *Lead session; contracts by contracts-engineer; module contracts and ledger by docs-maintainer from the engineer notes, the security-fix notes and the lead's facts.*

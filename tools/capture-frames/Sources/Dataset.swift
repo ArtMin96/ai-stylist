@@ -7,8 +7,8 @@ struct DatasetImage {
 }
 
 /// The CC0 clothing dataset (github.com/alexeygrigorev/clothing-dataset). Only images.csv, the
-/// README (licence evidence) and the individual images the generator tries are fetched, each once,
-/// into the gitignored cache; nothing clones the repository.
+/// LICENSE file (licence evidence) and the individual images the generator tries are fetched, each
+/// once, into the gitignored cache; nothing clones the repository.
 struct Dataset {
     static let repository = "alexeygrigorev/clothing-dataset"
     static let homepage = "https://github.com/\(repository)"
@@ -31,13 +31,14 @@ struct Dataset {
     let images: [DatasetImage]
     let licenceEvidence: String
 
-    /// Loads the image list and checks the README states CC0. Throws the reason the dataset cannot
-    /// be used (offline, moved, or no CC0 statement); the caller then draws every family.
+    /// Loads the image list and checks the LICENSE file is CC0. Throws the reason the dataset cannot
+    /// be used (offline, moved, or no CC0 statement); the caller then draws every family. The README
+    /// never names the licence; the repository's LICENSE file holds the CC0 1.0 legal code.
     static func open(cacheDirectory: URL) throws -> Dataset {
         var reasons: [String] = []
         for branch in branches {
             let csvFile = cacheDirectory.appendingPathComponent("images-\(branch).csv")
-            let readmeFile = cacheDirectory.appendingPathComponent("README-\(branch).md")
+            let licenceFile = cacheDirectory.appendingPathComponent("LICENSE-\(branch)")
             guard
                 fetchOnce(rawURL(branch: branch, path: "images.csv"), to: csvFile),
                 let csv = try? String(contentsOf: csvFile, encoding: .utf8)
@@ -47,15 +48,15 @@ struct Dataset {
             }
             let images = try parse(csv: csv)
             guard
-                fetchOnce(rawURL(branch: branch, path: "README.md"), to: readmeFile),
-                let readme = try? String(contentsOf: readmeFile, encoding: .utf8)
+                fetchOnce(rawURL(branch: branch, path: "LICENSE"), to: licenceFile),
+                let licence = try? String(contentsOf: licenceFile, encoding: .utf8)
             else {
-                throw GeneratorError("README.md not reachable on branch \(branch); licence unverified")
+                throw GeneratorError("LICENSE not reachable on branch \(branch); licence unverified")
             }
-            guard let line = readme.split(separator: "\n").first(where: { $0.contains("CC0") }) else {
-                throw GeneratorError("README.md on branch \(branch) does not state CC0; dataset not used")
+            guard let line = licence.split(separator: "\n").first(where: { $0.contains("CC0") }) else {
+                throw GeneratorError("LICENSE on branch \(branch) does not state CC0; dataset not used")
             }
-            let evidence = "README.md (\(branch)): \(line.trimmingCharacters(in: .whitespaces))"
+            let evidence = "LICENSE (\(branch)): \(line.trimmingCharacters(in: .whitespaces))"
             return Dataset(
                 branch: branch, cacheDirectory: cacheDirectory, images: images, licenceEvidence: evidence)
         }

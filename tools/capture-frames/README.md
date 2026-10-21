@@ -17,7 +17,7 @@ just capture-frames   # macOS only; writes artifacts/capture-camera/frames/ (git
   script, `packages/shared-kernel/registry/capture-rules.json` and the Xcode pin. Delete
   `artifacts/capture-camera/frames/` to force a rebuild. A run builds into `frames.partial/` and
   swaps it in, so a failed run never leaves half a set.
-- **Network.** Only `images.csv`, `README.md` and the images the generator tries are fetched from
+- **Network.** Only `images.csv`, `LICENSE` and the images the generator tries are fetched from
   `raw.githubusercontent.com` (Git LFS objects from `media.githubusercontent.com`). Each file is
   fetched once into `artifacts/capture-camera/source/clothing-dataset/`. Nothing clones the
   repository. Offline, every family uses drawn items, and `manifest.json` and the summary say so.
@@ -52,8 +52,8 @@ sharp, so the generator uses 45°.
    the labels to families: `top` (T-Shirt, Shirt, Longsleeve, Polo, Top, Blouse, Hoodie),
    `long-bottom` (Pants), `short-bottom` (Shorts, Skirt), `one-piece` (Dress), `outerwear` (Outwear,
    Blazer), `shoes` (Shoes) and `small-item` (Hat). The licence is not assumed: the generator reads
-   the dataset README and records the line that states CC0. Without that line the dataset is not
-   used.
+   the dataset's `LICENSE` file and records the line that states CC0 (`CC0 1.0 Universal`). The
+   README does not name the licence. Without that line the dataset is not used.
 2. **A photo is used only when** Vision finds no face, human body or hand in it. This is the
    mechanical "no real person" check. The photo must also hold exactly one foreground instance
    that touches no edge band and covers at least 3 % of the photo.

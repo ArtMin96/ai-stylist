@@ -38,3 +38,12 @@ module, `just test` (the package tests have no scoped route), and
    `ai_stylist_generated.kernel` (DEC-59). All are validated by `packages/contracts/tests/kernel-registries.test.ts` (`just test`).
 5. Analytics event names live in `packages/contracts/events/analytics/events.json`. Android uses the
    generated `AnalyticsTaxonomy`; the hand-written iOS names equal it byte for byte (reviewer-checked).
+6. Every value a native app reads reaches TypeScript, Swift and Kotlin through `just generate`. That
+   covers registries, enums, error codes, id kinds and bounds. Each one is either a kernel registry that
+   `tools/codegen/gen-kernel.mjs` emits for all three (`NATIVE_REGISTRIES`), or an OpenAPI enum or
+   schema that lands in the generated `swift-client` and `kotlin-client`. A TS-only home (a JSON import,
+   a hand-written `as const` list, `errors.ts`) is for server-only and worker-only values. A
+   client-facing value without native output is not done. Its emitter change (`tools/codegen/kernel/`,
+   owner `tooling-engineer`) lands in the same PR stack, before any native consumer. An OpenAPI enum
+   that mirrors a kernel list has a contract test that pins the two value for value
+   (`just generate --check` for the output; the rest reviewer-checked).

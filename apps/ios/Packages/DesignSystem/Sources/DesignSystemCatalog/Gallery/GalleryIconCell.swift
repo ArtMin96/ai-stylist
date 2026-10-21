@@ -10,14 +10,9 @@ struct GalleryIconCell: View {
   let size: AppIconSize
   let tint: AppColorRole
 
-  @Environment(\.appTheme) private var theme
-
   var body: some View {
-    VStack(spacing: theme.spacing.space4) {
+    GalleryCaptionedCell(caption: name.rawValue, alignment: .center) {
       AppIcon(name, size: size, tint: tint)
-      Text(name.rawValue)
-        .font(theme.font(theme.typography.caption))
-        .foregroundStyle(theme.color(.textSecondary))
     }
     .accessibilityElement(children: .combine)
     .accessibilityIdentifier(name.testId)

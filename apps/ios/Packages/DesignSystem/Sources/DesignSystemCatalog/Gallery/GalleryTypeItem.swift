@@ -3,16 +3,11 @@ import DesignSystem
 import DesignTokens
 import SwiftUI
 
-/// The style's DESIGN.md name, set in that style.
+/// The style's DESIGN.md name, set in that style with its text transform (the overline in caps).
 struct GalleryTypeItem: View {
   let style: AppTextStyle
 
-  @Environment(\.appTheme) private var theme
-
   var body: some View {
-    Text(style.name)
-      .font(theme.font(style))
-      .tracking(style.letterSpacing)
-      .foregroundStyle(theme.color(.text))
+    AppComponentText(text: style.name, style: style, color: .text)
   }
 }

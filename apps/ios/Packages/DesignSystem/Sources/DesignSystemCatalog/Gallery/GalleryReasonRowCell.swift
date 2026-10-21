@@ -4,14 +4,14 @@ import DesignSystem
 import DesignTokens
 import SwiftUI
 
-/// The `AppReasonRow` of `entry`, tagged with its test ID, then the test ID as text.
+/// The `AppReasonRow` of `entry` with its sample label, tagged with its test ID, then the test ID as text.
 struct GalleryReasonRowCell: View {
   let entry: ReasonRowGalleryEntry
 
   var body: some View {
     GalleryCaptionedCell(caption: entry.testId) {
       AppReasonRow(
-        ComponentGallery.reasonRowLabel,
+        entry.label,
         fact: ComponentGallery.reasonRowFact,
         factIcon: ComponentGallery.reasonRowFactIcon,
         freshness: ComponentGallery.reasonRowFreshness,

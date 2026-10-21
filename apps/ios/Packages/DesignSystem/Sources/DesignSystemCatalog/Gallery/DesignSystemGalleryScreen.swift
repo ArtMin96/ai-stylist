@@ -34,9 +34,7 @@ public struct DesignSystemGalleryScreen: View {
 
   private var header: some View {
     HStack(alignment: .firstTextBaseline, spacing: theme.spacing.space12) {
-      Text("Design system gallery")
-        .font(theme.font(theme.typography.title2))
-        .foregroundStyle(theme.color(.text))
+      AppComponentText(text: "Design system gallery", style: theme.typography.title2, color: .text)
         .accessibilityAddTraits(.isHeader)
       Spacer()
       AppButton("Close", variant: .text, size: .compact, action: onClose)
@@ -47,12 +45,10 @@ public struct DesignSystemGalleryScreen: View {
 
 #Preview("Design system gallery, light") {
   DesignSystemGalleryScreen {}
-    .appTheme()
-    .environment(\.colorScheme, .light)
+    .previewFrame(.light)
 }
 
 #Preview("Design system gallery, dark") {
   DesignSystemGalleryScreen {}
-    .appTheme()
-    .environment(\.colorScheme, .dark)
+    .previewFrame(.dark)
 }

@@ -11,9 +11,7 @@ struct GallerySectionView: View {
 
   var body: some View {
     VStack(alignment: .leading, spacing: theme.spacing.space12) {
-      Text(section.title)
-        .font(theme.font(theme.typography.title3))
-        .foregroundStyle(theme.color(.text))
+      AppComponentText(text: section.title, style: theme.typography.title3, color: .text)
         .accessibilityAddTraits(.isHeader)
       items
     }

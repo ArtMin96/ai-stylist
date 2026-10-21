@@ -57,6 +57,33 @@ nonisolated public enum AppChipRules {
     displayedState(selected: selected, expanded: expanded, enabled: enabled, pressed: false, focused: false)
   }
 
+  /// The look for the inputs, read through `lookup` (the look of one state at the chip's variant × size): the
+  /// displayed state's look, else the resting look when that pressed or focused state has none (settled rule,
+  /// 2026-10-21); nil when the resting state has no look, so the chip renders nothing.
+  public static func look<Look>(
+    selected: Bool,
+    expanded: Bool,
+    enabled: Bool,
+    pressed: Bool,
+    focused: Bool,
+    lookup: (ChipState) -> Look?
+  ) -> Look? {
+    guard
+      let resting = restingState(selected: selected, expanded: expanded, enabled: enabled),
+      let restingLook = lookup(resting)
+    else {
+      return nil
+    }
+    let shown = displayedState(
+      selected: selected,
+      expanded: expanded,
+      enabled: enabled,
+      pressed: pressed,
+      focused: focused
+    )
+    return shown.flatMap(lookup) ?? restingLook
+  }
+
   /// Whether the chip renders: its resting state has a look at `variant` × `size`. A size the variant does
   /// not take, or a toggle or `enabled: false` it does not take, renders nothing (the AppButton rule).
   public static func isAllowed(
@@ -67,13 +94,20 @@ nonisolated public enum AppChipRules {
     enabled: Bool,
     in spec: ChipSpec
   ) -> Bool {
-    guard let resting = restingState(selected: selected, expanded: expanded, enabled: enabled) else {
-      return false
-    }
-    return spec.appearance(variant: variant, size: size, state: resting) != nil
+    appearance(
+      in: spec,
+      variant: variant,
+      size: size,
+      selected: selected,
+      expanded: expanded,
+      enabled: enabled,
+      pressed: false,
+      focused: false
+    ) != nil
   }
 
-  /// The look to draw for the inputs; nil when the chip is not allowed, so it renders nothing.
+  /// The look to draw for the inputs from `spec` (`look(selected:expanded:enabled:pressed:focused:lookup:)`);
+  /// nil when the chip is not allowed, so it renders nothing.
   public static func appearance(
     in spec: ChipSpec,
     variant: ChipVariant,
@@ -84,19 +118,9 @@ nonisolated public enum AppChipRules {
     pressed: Bool,
     focused: Bool
   ) -> ChipAppearance? {
-    guard
-      isAllowed(variant, size, selected: selected, expanded: expanded, enabled: enabled, in: spec),
-      let state = displayedState(
-        selected: selected,
-        expanded: expanded,
-        enabled: enabled,
-        pressed: pressed,
-        focused: focused
-      )
-    else {
-      return nil
+    look(selected: selected, expanded: expanded, enabled: enabled, pressed: pressed, focused: focused) {
+      spec.appearance(variant: variant, size: size, state: $0)
     }
-    return spec.appearance(variant: variant, size: size, state: state)
   }
 
   /// Handles one activation (tap, keyboard, assistive): runs `action` only when enabled. `AppChip`'s only

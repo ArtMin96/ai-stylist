@@ -8,25 +8,18 @@ import SwiftUI
 
 #Preview("AppBadge states, light") {
   GallerySectionPreview(component: .badge)
-    .appTheme()
-    .environment(\.colorScheme, .light)
+    .previewFrame(.light)
 }
 
 #Preview("AppBadge states, dark") {
   GallerySectionPreview(component: .badge)
-    .appTheme()
-    .environment(\.colorScheme, .dark)
+    .previewFrame(.dark)
 }
 
 #Preview("AppBadge playground") {
   @Previewable @State var variant = BadgeVariant.count
   @Previewable @State var size = BadgeSize.medium
   @Previewable @State var label = ComponentGallery.badgeLabel
-
-  // The allowed sizes are the same in every context, so the light spec answers for all of them.
-  let sizes = BadgeSize.allCases.filter {
-    AppTheme.light.badges.appearance(variant: variant, size: $0, state: .enabled) != nil
-  }
 
   Form {
     Section {
@@ -38,18 +31,15 @@ import SwiftUI
       )
     }
     Section {
-      Picker("Variant", selection: $variant) {
-        ForEach(BadgeVariant.allCases, id: \.self) { Text($0.rawValue) }
-      }
-      Picker("Size", selection: $size) {
-        ForEach(sizes, id: \.self) { Text($0.rawValue) }
-      }
+      PlaygroundPickers(
+        variant: $variant,
+        size: $size,
+        sizes: BadgeSize.allCases.filter {
+          AppTheme.light.badges.appearance(variant: variant, size: $0, state: .enabled) != nil
+        }
+      )
+      // An empty label is nil: a count or trial pill without one renders nothing.
       TextField("Label", text: $label)
-    }
-  }
-  .onChange(of: variant) {
-    if !sizes.contains(size), let first = sizes.first {
-      size = first
     }
   }
   .appTheme()

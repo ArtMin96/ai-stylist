@@ -1,5 +1,5 @@
 // The ButtonStyle behind AppButton: reads the interaction (pressed, focused, enabled) from SwiftUI,
-// picks the look with AppButtonRules and draws it with AppButtonFace.
+// picks the look with AppButtonRules and draws it with AppButtonFace inside the generated touch target.
 import DesignTokens
 import SwiftUI
 
@@ -25,7 +25,6 @@ private struct AppButtonStyleBody: View {
   @Environment(\.appTheme) private var theme
   @Environment(\.isEnabled) private var isEnabled
   @Environment(\.isFocused) private var isFocused
-  @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
   var body: some View {
     if let appearance = AppButtonRules.appearance(
@@ -44,9 +43,7 @@ private struct AppButtonStyleBody: View {
         loading: style.loading,
         fullWidth: style.fullWidth
       )
-      .frame(minWidth: AppInteraction.minTouchTarget, minHeight: AppInteraction.minTouchTarget)
-      .contentShape(.rect)
-      .animation(AppInteraction.pressAnimation(reduceMotion: reduceMotion), value: appearance)
+      .appTouchTarget(ButtonAccessibility.minTouchTarget, animating: appearance)
     }
   }
 }

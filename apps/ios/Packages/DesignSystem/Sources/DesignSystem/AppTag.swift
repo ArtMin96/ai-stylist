@@ -47,22 +47,7 @@ public struct AppTag: View {
         ForEach(variant.parts, id: \.self) { part($0, in: appearance) }
         AppComponentText(text: label, style: appearance.typography, color: appearance.textColor)
       }
-      .padding(
-        EdgeInsets(
-          top: appearance.paddingTop,
-          leading: appearance.paddingStart,
-          bottom: appearance.paddingBottom,
-          trailing: appearance.paddingEnd
-        )
-      )
-      .frame(minHeight: appearance.height)
-      .appShape(
-        cornerRadius: appearance.rounded,
-        fill: appearance.backgroundColor,
-        border: appearance.borderColor,
-        borderWidth: appearance.borderWidth,
-        borderDash: appearance.borderDash
-      )
+      .appFace(appearance)
       .accessibilityElement(children: .ignore)
       .accessibilityLabel(accessibilityLabel ?? label)
       .accessibilityAddTraits(roleTraits)

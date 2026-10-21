@@ -1,59 +1,31 @@
-// The ButtonStyle behind AppChip: reads the interaction (pressed, focused, enabled) from SwiftUI, picks the
-// look with AppChipRules and draws it with AppChipFace inside the 44 pt touch target.
+// The ButtonStyle behind AppChip: reads the interaction (pressed, focused) from SwiftUI, picks the chip's look
+// (`AppChip.appearance(in:pressed:focused:)`, which follows the chip's own `enabled`) and draws its face inside the
+// generated touch target.
 import DesignTokens
 import SwiftUI
 
 /// Draws an `AppChip` in the look of its displayed state.
 struct AppChipStyle: ButtonStyle {
-  let label: String
-  let variant: ChipVariant
-  let size: ChipSize
-  let leadingIcon: AppIconName?
-  let selected: Bool
-  let expanded: Bool
-  let prefix: String?
-  let detail: String?
-  let swatch: Color?
+  let chip: AppChip
 
   func makeBody(configuration: Configuration) -> some View {
-    AppChipStyleBody(style: self, isPressed: configuration.isPressed)
+    AppChipStyleBody(chip: chip, isPressed: configuration.isPressed)
   }
 }
 
-/// The style's view, so it can read the environment.
+/// The style's view, so it can read the environment. It never reads `\.isEnabled`: the look follows the chip's
+/// `enabled` only (settled rule, 2026-10-21).
 private struct AppChipStyleBody: View {
-  let style: AppChipStyle
+  let chip: AppChip
   let isPressed: Bool
 
   @Environment(\.appTheme) private var theme
-  @Environment(\.isEnabled) private var isEnabled
   @Environment(\.isFocused) private var isFocused
-  @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
   var body: some View {
-    if let appearance = AppChipRules.appearance(
-      in: theme.chips,
-      variant: style.variant,
-      size: style.size,
-      selected: style.selected,
-      expanded: style.expanded,
-      enabled: isEnabled,
-      pressed: isPressed,
-      focused: isFocused
-    ) {
-      AppChipFace(
-        label: style.label,
-        variant: style.variant,
-        appearance: appearance,
-        leadingIcon: style.leadingIcon,
-        prefix: style.prefix,
-        detail: style.detail,
-        swatch: style.swatch
-      )
-      // The hit area is part of the layout, so a wrapping row of chips sits 44 pt apart.
-      .frame(minWidth: AppInteraction.minTouchTarget, minHeight: AppInteraction.minTouchTarget)
-      .contentShape(.rect)
-      .animation(AppInteraction.pressAnimation(reduceMotion: reduceMotion), value: appearance)
+    if let appearance = chip.appearance(in: theme.chips, pressed: isPressed, focused: isFocused) {
+      chip.face(appearance)
+        .appTouchTarget(ChipAccessibility.minTouchTarget, animating: appearance)
     }
   }
 }

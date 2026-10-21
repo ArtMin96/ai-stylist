@@ -7,9 +7,9 @@ package import SwiftUI
 
 /// The visible chip of an `AppChip` in a given `ChipAppearance`; no interaction of its own.
 ///
-/// Content, in order: the leading icon, the before-label parts (swatch, prefix) in `variant.parts` order,
+/// Content, in order: the leading icon, the before-label parts (prefix, swatch) in `variant.parts` order,
 /// the label, the after-label part (detail), the trailing icon. Each gap sits on the label's side of its
-/// element: `iconGap` after the leading icon, `swatchGap` and `prefixGap` after their parts, `detailGap`
+/// element: `iconGap` after the leading icon, `prefixGap` and `swatchGap` after their parts, `detailGap`
 /// before the detail, `trailingIconGap` before the trailing icon. A part is drawn only when the variant
 /// lists it and its prop is non-nil.
 package struct AppChipFace: View {
@@ -43,9 +43,21 @@ package struct AppChipFace: View {
   }
 
   /// Whether a swatch needs its edge on `fill`: its WCAG contrast with the fill is below `minContrast`
-  /// (`swatchEdgeMinContrast`; DESIGN.md "Colour swatch chip": "swatches near the ground").
-  package static func showsSwatchEdge(_ swatch: Color.Resolved, on fill: Color.Resolved, minContrast: Double) -> Bool {
-    AppColorContrast.ratio(swatch, fill) < minContrast
+  /// (`swatchEdgeMinContrast`; DESIGN.md "Colour swatch chip": "swatches near the ground"). A look with no fill
+  /// always draws the edge, because the ground behind the chip is unknown (settled rule, 2026-10-21); a look
+  /// with no threshold draws none.
+  package static func showsSwatchEdge(
+    _ swatch: Color.Resolved,
+    on fill: Color.Resolved?,
+    minContrast: Double?
+  ) -> Bool {
+    guard let fill else {
+      return true
+    }
+    guard let minContrast else {
+      return false
+    }
+    return AppColorContrast.ratio(swatch, fill) < minContrast
   }
 
   package var body: some View {
@@ -62,27 +74,7 @@ package struct AppChipFace: View {
           .padding(.leading, appearance.trailingIconGap ?? 0)
       }
     }
-    .padding(
-      EdgeInsets(
-        top: appearance.paddingTop,
-        leading: appearance.paddingStart,
-        bottom: appearance.paddingBottom,
-        trailing: appearance.paddingEnd
-      )
-    )
-    .frame(minHeight: appearance.height)
-    .appShape(
-      cornerRadius: appearance.rounded,
-      fill: appearance.backgroundColor,
-      overlay: appearance.overlayColor,
-      border: appearance.borderColor,
-      borderWidth: appearance.borderWidth
-    )
-    .overlay {
-      if let ring = appearance.focusRing {
-        AppFocusRing(ring: ring, cornerRadius: appearance.rounded)
-      }
-    }
+    .appFace(appearance)
   }
 
   /// The glyph an icon source draws: its own glyph, or the caller's `leadingIcon` for `.prop` (nil leaves the
@@ -143,24 +135,18 @@ package struct AppChipFace: View {
       }
       .overlay {
         if let ring = appearance.swatchRingColor, let width = appearance.swatchRingWidth {
-          let outset = (appearance.swatchRingGap ?? 0) + width
-          Circle()
-            .strokeBorder(theme.color(ring), lineWidth: width)
-            .padding(-outset)
+          AppOutsideRing(shape: Circle(), color: ring, width: width, gap: appearance.swatchRingGap ?? 0)
         }
       }
       .accessibilityHidden(true)
   }
 
-  /// The edge rule against the look's resolved fill; no fill or no threshold draws no edge.
+  /// The edge rule (`showsSwatchEdge`) against the look's resolved fill.
   private func showsEdge(_ colour: Color) -> Bool {
-    guard let fill = appearance.backgroundColor, let minContrast = appearance.swatchEdgeMinContrast else {
-      return false
-    }
-    return Self.showsSwatchEdge(
+    Self.showsSwatchEdge(
       colour.resolve(in: environment),
-      on: theme.color(fill).resolve(in: environment),
-      minContrast: minContrast
+      on: appearance.backgroundColor.map { theme.color($0).resolve(in: environment) },
+      minContrast: appearance.swatchEdgeMinContrast
     )
   }
 }

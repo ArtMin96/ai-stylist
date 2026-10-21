@@ -4,14 +4,14 @@ import DesignSystem
 import DesignTokens
 import SwiftUI
 
-/// The `AppTag` of `entry`, tagged with its test ID, then the test ID as text.
+/// The `AppTag` of `entry` with its sample label, tagged with its test ID, then the test ID as text.
 struct GalleryTagCell: View {
   let entry: TagGalleryEntry
 
   var body: some View {
     GalleryCaptionedCell(caption: entry.testId) {
       AppTag(
-        ComponentGallery.tagLabel,
+        entry.label,
         variant: entry.variant,
         size: entry.size,
         leadingIcon: ComponentGallery.tagLeadingIcon

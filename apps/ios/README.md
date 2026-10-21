@@ -74,11 +74,15 @@ The generated client lives in `packages/contracts/gen/swift-client/`. `tools/cod
   follows the C03 contract `.impeccable/components/chip.yaml`. `AppChipRules` picks the state shown (G2:
   disabled, else pressed, else focused, prefixed with `selected-` or `expanded-` while that toggle is on).
   When the resting state has no look at that variant and size (a size the variant does not take, or a
-  toggle or `enabled: false` it does not take) the chip renders nothing. The content is the leading icon,
-  the before-label parts (swatch, prefix), the label, the detail (behind the separator copy) and the
-  trailing icon. A swatch gets its inner edge when its WCAG contrast with the fill is below
-  `swatchEdgeMinContrast` (`AppColorContrast`). Every chip has a 44 pt touch target (`AppInteraction`,
-  shared with `AppButtonStyle`) and the `AppMotion.Press` transition, none under Reduce Motion. VoiceOver
+  toggle or `enabled: false` it does not take) the chip renders nothing; a pressed or focused state with no
+  look shows the resting look. The look follows the chip's `enabled` only, never the environment's
+  `isEnabled`, so a parent's `.disabled(true)` blocks activation but keeps the look. The content is the
+  leading icon, the before-label parts (prefix, swatch), the label, the detail (behind the separator copy)
+  and the trailing icon. A swatch gets its inner edge when its WCAG contrast with the fill is below
+  `swatchEdgeMinContrast` (`AppColorContrast`), and always on a look with no fill. Every chip has the
+  generated touch target `ChipAccessibility.minTouchTarget` (44 pt; `AppButtonStyle` reads
+  `ButtonAccessibility.minTouchTarget`, both through `appTouchTarget` in `AppInteraction`) and the
+  `AppMotion.Press` transition, none under Reduce Motion. VoiceOver
   reads `accessibilityLabel ?? label` in the role of `variant.role`: button; selectable as a toggle
   (`selection: .multiple`) or a button that is selected (`.single`); disclosure with the value "Expanded" /
   "Collapsed"; menu as a button that is selected while `selected`. `AppChipFace` has `package` access, so
@@ -91,6 +95,12 @@ The generated client lives in `packages/contracts/gen/swift-client/`. `tools/cod
   `accessibilityLabel` that fills the offered width, its icon disc grown with Dynamic Type as the icon is.
   None of the three has an action or a touch target. A variant and size pair the contract does not allow
   renders nothing.
+- **Shared drawing.** One copy each, used by every component: `AppComponentText` draws every run of text in
+  a type style (the components' labels and parts, and every catalog text), applying the style's
+  `textTransform` to the drawn string only (the overline draws in caps; VoiceOver reads the caller's
+  string); `appFace` (`AppFaceLook`) pads and sizes the button, chip and tag pills, and `AppShapeStyle`
+  draws every fill, pressed overlay, inner ring and focus ring; `AppOutsideRing` draws the focus ring, the
+  badge's outer ring and the selected swatch's ring.
 - **Copy.** The components' strings live in the String Catalog `Sources/DesignSystem/Resources/Localizable.xcstrings`
   (source language en, `defaultLocalization: "en"` in `Package.swift`), never in Swift: `app_button_loading`,
   `ds_chip_detail_separator` (`· `, read by its generated key `ChipPart.detail.separatorKey`),
@@ -103,7 +113,9 @@ The generated client lives in `packages/contracts/gen/swift-client/`. `tools/cod
   (the gallery's C02 section; the largest-text one first draws one glyph at every step).
   `AppChipPreviews.swift`, `AppTagPreviews.swift`, `AppBadgePreviews.swift` and `AppReasonRowPreviews.swift`
   each hold "<Component> states, light", "<Component> states, dark" (the gallery's C03 section) and a
-  "<Component> playground" with live controls. `AppButtonFace` and `AppChipFace` have `package` access, so
+  "<Component> playground" with live controls. Every previews file shares one scaffold: the state grid
+  `GallerySectionPreview(component:)`, the light and dark frames `previewFrame(_:)`, and the variant and
+  size rows `PlaygroundPickers`. `AppButtonFace` and `AppChipFace` have `package` access, so
   the catalog can draw forced states (pressed, focused, loading, disabled, the toggles); `HomeFeature` and
   the app cannot.
 - **Design system gallery (AI-195).** In the Dev build, Home's debug section shows "Design system gallery"
@@ -112,9 +124,10 @@ The generated client lives in `packages/contracts/gen/swift-client/`. `tools/cod
   one section per generated `GalleryComponent` (today "C01 Buttons", "C02 Icons", "C03 Badges", "C03 Chips",
   "C03 Reason row", "C03 Tags"), each tagged `ds-gallery-section-<slug>`. "C02 Icons" has a "Size" and
   "Tint" playground, then every glyph grouped by `AppIconSet`, each cell tagged `ds-icon-<id>` and captioned
-  with the glyph id; the cells wrap, and a caption wider than the screen wraps inside its cell. The C03
-  sections draw every `ComponentGallery` entry in generated order with the generated samples, each cell
-  tagged with the entry's test ID and captioned with it: the chips (forced states through `AppChipFace`)
+  with the glyph id; the cells wrap, and a caption wider than the screen wraps inside its cell. The C01 and
+  C03 sections draw every `ComponentGallery` entry in generated order with the generated samples and the
+  entry's own sample label (`entry.label`; the trial pills have words of their own), each cell
+  (`GalleryCaptionedCell`) tagged with the entry's test ID and captioned with it: the chips (forced states through `AppChipFace`)
   and the tags in wrapping rows, the badges on their host surface `ComponentGallery.badgeHostSurface`, the
   reason row on its own. Every item comes from the generated manifest
   (`AppColorRole` raw values, `AppTypography.all`, `AppSpacing.all`, `AppRadius.all`, `ComponentGallery`,

@@ -7,14 +7,12 @@ import SwiftUI
 
 #Preview("AppReasonRow states, light") {
   GallerySectionPreview(component: .reasonRow)
-    .appTheme()
-    .environment(\.colorScheme, .light)
+    .previewFrame(.light)
 }
 
 #Preview("AppReasonRow states, dark") {
   GallerySectionPreview(component: .reasonRow)
-    .appTheme()
-    .environment(\.colorScheme, .dark)
+    .previewFrame(.dark)
 }
 
 #Preview("AppReasonRow playground") {

@@ -7,14 +7,12 @@ import SwiftUI
 
 #Preview("AppChip states, light") {
   GallerySectionPreview(component: .chip)
-    .appTheme()
-    .environment(\.colorScheme, .light)
+    .previewFrame(.light)
 }
 
 #Preview("AppChip states, dark") {
   GallerySectionPreview(component: .chip)
-    .appTheme()
-    .environment(\.colorScheme, .dark)
+    .previewFrame(.dark)
 }
 
 #Preview("AppChip playground") {
@@ -27,11 +25,6 @@ import SwiftUI
   @Previewable @State var label = ComponentGallery.chipLabel
   @Previewable @State var prefix = ComponentGallery.chipPrefix
   @Previewable @State var detail = ComponentGallery.chipDetail
-
-  // The allowed sizes are the same in every context, so the light spec answers for all of them.
-  let sizes = ChipSize.allCases.filter {
-    AppChipRules.isAllowed(variant, $0, selected: false, expanded: false, enabled: true, in: AppTheme.light.chips)
-  }
 
   Form {
     Section {
@@ -58,12 +51,13 @@ import SwiftUI
       }
     }
     Section {
-      Picker("Variant", selection: $variant) {
-        ForEach(ChipVariant.allCases, id: \.self) { Text($0.rawValue) }
-      }
-      Picker("Size", selection: $size) {
-        ForEach(sizes, id: \.self) { Text($0.rawValue) }
-      }
+      PlaygroundPickers(
+        variant: $variant,
+        size: $size,
+        sizes: ChipSize.allCases.filter {
+          AppChipRules.isAllowed(variant, $0, selected: false, expanded: false, enabled: true, in: AppTheme.light.chips)
+        }
+      )
       Picker("Selection", selection: $selection) {
         ForEach(ChipSelection.allCases, id: \.self) { Text($0.rawValue) }
       }
@@ -74,11 +68,6 @@ import SwiftUI
       TextField("Label", text: $label)
       TextField("Prefix", text: $prefix)
       TextField("Detail", text: $detail)
-    }
-  }
-  .onChange(of: variant) {
-    if !sizes.contains(size), let first = sizes.first {
-      size = first
     }
   }
   .appTheme()

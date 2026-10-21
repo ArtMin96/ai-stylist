@@ -7,14 +7,12 @@ import SwiftUI
 
 #Preview("AppTag states, light") {
   GallerySectionPreview(component: .tag)
-    .appTheme()
-    .environment(\.colorScheme, .light)
+    .previewFrame(.light)
 }
 
 #Preview("AppTag states, dark") {
   GallerySectionPreview(component: .tag)
-    .appTheme()
-    .environment(\.colorScheme, .dark)
+    .previewFrame(.dark)
 }
 
 #Preview("AppTag playground") {
@@ -22,28 +20,19 @@ import SwiftUI
   @Previewable @State var size = TagSize.regular
   @Previewable @State var label = ComponentGallery.tagLabel
 
-  // The allowed sizes are the same in every context, so the light spec answers for all of them.
-  let sizes = TagSize.allCases.filter {
-    AppTheme.light.tags.appearance(variant: variant, size: $0, state: .enabled) != nil
-  }
-
   Form {
     Section {
       AppTag(label, variant: variant, size: size, leadingIcon: ComponentGallery.tagLeadingIcon)
     }
     Section {
-      Picker("Variant", selection: $variant) {
-        ForEach(TagVariant.allCases, id: \.self) { Text($0.rawValue) }
-      }
-      Picker("Size", selection: $size) {
-        ForEach(sizes, id: \.self) { Text($0.rawValue) }
-      }
+      PlaygroundPickers(
+        variant: $variant,
+        size: $size,
+        sizes: TagSize.allCases.filter {
+          AppTheme.light.tags.appearance(variant: variant, size: $0, state: .enabled) != nil
+        }
+      )
       TextField("Label", text: $label)
-    }
-  }
-  .onChange(of: variant) {
-    if !sizes.contains(size), let first = sizes.first {
-      size = first
     }
   }
   .appTheme()

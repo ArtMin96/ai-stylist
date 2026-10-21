@@ -4,27 +4,20 @@ import DesignSystem
 import DesignTokens
 import SwiftUI
 
-/// The forced `AppButton` look of `entry`, tagged with its test ID, then the test ID as text.
-/// Display-only: it has no action.
+/// The forced `AppButton` look of `entry` with its sample label, tagged with its test ID, then the test ID as
+/// text. Display-only: it has no action.
 struct GalleryButtonCell: View {
   let entry: ButtonGalleryEntry
 
   @Environment(\.appTheme) private var theme
 
   var body: some View {
-    VStack(alignment: .leading, spacing: theme.spacing.space4) {
-      // Every generated gallery entry resolves a look in every context (GalleryTests).
+    GalleryCaptionedCell(caption: entry.testId) {
+      // Each button entry resolves a look in all five contexts (AppButtonTests, `expectGallery`).
       if let appearance = theme.buttons.appearance(variant: entry.variant, size: entry.size, state: entry.state) {
-        AppButtonFace(
-          label: ComponentGallery.buttonLabel,
-          appearance: appearance,
-          loading: entry.state == .loading
-        )
-        .accessibilityIdentifier(entry.testId)
+        AppButtonFace(label: entry.label, appearance: appearance, loading: entry.state == .loading)
+          .accessibilityIdentifier(entry.testId)
       }
-      Text(entry.testId)
-        .font(theme.font(theme.typography.caption))
-        .foregroundStyle(theme.color(.textSecondary))
     }
   }
 }

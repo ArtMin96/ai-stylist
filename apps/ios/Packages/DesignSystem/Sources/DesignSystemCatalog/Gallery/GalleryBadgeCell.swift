@@ -4,9 +4,9 @@ import DesignSystem
 import DesignTokens
 import SwiftUI
 
-/// The `AppBadge` of `entry`, then the test ID as text, as one accessibility element tagged with the test
-/// ID. The dot and the count are hidden from VoiceOver (the host names them), so the cell carries the id and
-/// reads as its caption, as the icon cells do.
+/// The `AppBadge` of `entry` with its sample label (the count, or the trial pill's own words), then the test ID
+/// as text, as one accessibility element tagged with the test ID. The dot and the count are hidden from
+/// VoiceOver (the host names them), so the cell carries the id and reads as its caption, as the icon cells do.
 struct GalleryBadgeCell: View {
   let entry: BadgeGalleryEntry
 
@@ -15,7 +15,7 @@ struct GalleryBadgeCell: View {
       AppBadge(
         variant: entry.variant,
         size: entry.size,
-        label: ComponentGallery.badgeLabel,
+        label: entry.label,
         hostSurface: ComponentGallery.badgeHostSurface
       )
     }

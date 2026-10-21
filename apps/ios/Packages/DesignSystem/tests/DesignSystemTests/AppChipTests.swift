@@ -1,12 +1,13 @@
 // AppChip behaviour without rendering (contract .impeccable/components/chip.yaml): the G2 state rule, the
-// "not allowed → nothing" rule, the activation gate, the copy from the String Catalog and the swatch edge
-// contrast rule.
+// "not allowed → nothing" rule, the rules settled after the architecture review (the resting look for an
+// interaction state with no look, the look following `enabled` only, the edge of a swatch with no fill), the
+// activation gate, the copy from the String Catalog and the swatch edge contrast rule.
 import DesignSystem
 import DesignTokens
 import SwiftUI
 import Testing
 
-private let specs: [ChipSpec] = [.light, .dark, .brand, .hcLight, .hcDark]
+private let specs = ChipSpec.contexts
 
 private let flags = [false, true]
 
@@ -123,6 +124,51 @@ func notAllowedExamples() {
   #expect(AppChipRules.isAllowed(.reason, .compact, selected: false, expanded: true, enabled: true, in: spec))
 }
 
+@Test("a pressed or focused state with no look shows the resting look; a resting state with no look shows nothing")
+func interactionWithoutLookShowsRestingLook() {
+  /// A contract that draws only the resting looks `enabled` and `selected`.
+  func restingOnly(_ state: ChipState) -> String? {
+    [.enabled, .selected].contains(state) ? state.rawValue : nil
+  }
+  func look(selected: Bool = false, enabled: Bool = true, pressed: Bool, focused: Bool) -> String? {
+    AppChipRules.look(
+      selected: selected,
+      expanded: false,
+      enabled: enabled,
+      pressed: pressed,
+      focused: focused,
+      lookup: restingOnly
+    )
+  }
+  #expect(look(pressed: true, focused: false) == "enabled")
+  #expect(look(pressed: false, focused: true) == "enabled")
+  #expect(look(selected: true, pressed: true, focused: true) == "selected")
+  // The resting state decides rendering: disabled has no look here, so the chip renders nothing.
+  #expect(look(enabled: false, pressed: true, focused: false) == nil)
+  // An interaction state with its own look still shows it.
+  let pressedLook = AppChipRules.look(
+    selected: false,
+    expanded: false,
+    enabled: true,
+    pressed: true,
+    focused: false
+  ) { [.enabled, .pressed].contains($0) ? $0.rawValue : nil }
+  #expect(pressedLook == "pressed")
+}
+
+@Test("the chip's look follows its enabled prop only, never a parent's disabled environment")
+func lookFollowsEnabledPropOnly() throws {
+  // weather has no disabled look: a parent's `.disabled(true)` must not remove it (settled rule, 2026-10-21).
+  // `AppChip.appearance(in:pressed:focused:)`, which AppChipStyle draws, takes no environment input.
+  let weatherEnabled = try #require(ChipSpec.light.appearance(variant: .weather, size: .small, state: .enabled))
+  #expect(ChipSpec.light.appearance(variant: .weather, size: .small, state: .disabled) == nil)
+  let weather = AppChip(ComponentGallery.chipLabel, variant: .weather, size: .small) {}
+  #expect(weather.appearance(in: .light, pressed: false, focused: false) == weatherEnabled)
+  let filterDisabled = try #require(ChipSpec.light.appearance(variant: .filter, size: .medium, state: .disabled))
+  let filter = AppChip(ComponentGallery.chipLabel, variant: .filter, size: .medium, enabled: false) {}
+  #expect(filter.appearance(in: .light, pressed: true, focused: true) == filterDisabled)
+}
+
 @Test("an activation runs the action once only when enabled", arguments: [(true, 1), (false, 0)])
 func chipActivationGate(enabled: Bool, expectedCalls: Int) {
   var calls = 0
@@ -169,4 +215,21 @@ func swatchEdge() throws {
   let nearWhite = AppTheme.light.color(.cameraPaper).resolve(in: environment)
   #expect(!AppChipFace.showsSwatchEdge(ink, on: fill, minContrast: minContrast))
   #expect(AppChipFace.showsSwatchEdge(nearWhite, on: fill, minContrast: minContrast))
+}
+
+@Test("a swatch on a look with no fill draws its edge, whatever its colour; a look with no threshold draws none")
+func swatchEdgeWithoutFill() {
+  let environment = EnvironmentValues()
+  let ink = AppTheme.light.color(ComponentGallery.chipSwatch).resolve(in: environment)
+  let fill = AppTheme.light.color(.surface).resolve(in: environment)
+  #expect(AppChipFace.showsSwatchEdge(ink, on: nil, minContrast: 3))
+  #expect(AppChipFace.showsSwatchEdge(ink, on: nil, minContrast: nil))
+  #expect(!AppChipFace.showsSwatchEdge(ink, on: fill, minContrast: nil))
+  // Every swatch look sets a fill today, so the rule above guards future looks.
+  for spec in specs {
+    for entry in ComponentGallery.chip where entry.variant == .swatch {
+      let look = spec.appearance(variant: entry.variant, size: entry.size, state: entry.state)
+      #expect(look?.backgroundColor != nil, "\(entry.testId)")
+    }
+  }
 }

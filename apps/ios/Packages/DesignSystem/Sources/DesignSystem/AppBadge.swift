@@ -62,7 +62,8 @@ public struct AppBadge: View {
           AppIcon(name, size: iconSize, tint: textColor)
             .padding(.trailing, appearance.iconGap ?? 0)
         }
-        AppComponentText(text: label, style: typography, color: textColor)
+        // A trial pill's words wrap centred at the largest text sizes.
+        AppComponentText(text: label, style: typography, color: textColor, alignment: .center)
       }
       .padding(
         EdgeInsets(
@@ -88,9 +89,12 @@ public struct AppBadge: View {
   /// colour, so the badge stands off the icon below it; none without a `hostSurface`.
   @ViewBuilder private func outerRing(_ appearance: BadgeAppearance) -> some View {
     if variant.parts.contains(.outerRing), let width = appearance.outerRingWidth, let hostSurface {
-      RoundedRectangle(cornerRadius: appearance.rounded + width)
-        .strokeBorder(theme.color(hostSurface), lineWidth: width)
-        .padding(-width)
+      AppOutsideRing(
+        shape: RoundedRectangle(cornerRadius: appearance.rounded),
+        color: hostSurface,
+        width: width,
+        gap: 0
+      )
     }
   }
 }

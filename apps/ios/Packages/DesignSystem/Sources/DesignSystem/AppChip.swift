@@ -7,10 +7,11 @@ public import SwiftUI
 /// The app's chip: a SwiftUI `Button` drawn from the C03 tokens of the current `\.appTheme`.
 ///
 /// The state shown follows the contract (G2): disabled, else pressed, else focused, prefixed with the toggle
-/// that is on. When the resting state has no look at `variant` × `size` (a size the variant does not take, or
-/// a toggle or `enabled: false` it does not take), the chip renders nothing. It is announced by
-/// `accessibilityLabel ?? label` in the role of `variant.role`; its icons and parts are hidden inside that one
-/// element.
+/// that is on; a pressed or focused state with no look shows the resting look. When the resting state has no
+/// look at `variant` × `size` (a size the variant does not take, or a toggle or `enabled: false` it does not
+/// take), the chip renders nothing. A chip is disabled through `enabled`: a parent's `.disabled(true)` blocks
+/// its activation but never changes its look. It is announced by `accessibilityLabel ?? label` in the role of
+/// `variant.role`; its icons and parts are hidden inside that one element.
 public struct AppChip: View {
   private let label: String
   private let variant: ChipVariant
@@ -86,25 +87,42 @@ public struct AppChip: View {
       } label: {
         Text(label)
       }
-      .buttonStyle(
-        AppChipStyle(
-          label: label,
-          variant: variant,
-          size: size,
-          leadingIcon: leadingIcon,
-          selected: selected,
-          expanded: expanded,
-          prefix: prefix,
-          detail: detail,
-          swatch: swatch
-        )
-      )
+      .buttonStyle(AppChipStyle(chip: self))
       .disabled(!enabled)
       .focusEffectDisabled()  // AppChipFace draws the C03 focus ring instead of the system halo.
       .accessibilityLabel(accessibilityLabel ?? label)
       .accessibilityAddTraits(roleTraits)
       .accessibilityValue(variant.role == .disclosure ? AppChipRules.disclosureStateText(expanded: expanded) : "")
     }
+  }
+
+  /// The look of this chip in `spec` under the platform's interaction (`AppChipRules`). Its `enabled` input is the
+  /// chip's own prop, never the environment's `isEnabled` (settled rule, 2026-10-21), so a parent's
+  /// `.disabled(true)` cannot remove a variant that has no disabled look. `AppChipStyle` draws it.
+  package func appearance(in spec: ChipSpec, pressed: Bool, focused: Bool) -> ChipAppearance? {
+    AppChipRules.appearance(
+      in: spec,
+      variant: variant,
+      size: size,
+      selected: selected,
+      expanded: expanded,
+      enabled: enabled,
+      pressed: pressed,
+      focused: focused
+    )
+  }
+
+  /// This chip's content drawn in `appearance`.
+  func face(_ appearance: ChipAppearance) -> AppChipFace {
+    AppChipFace(
+      label: label,
+      variant: variant,
+      appearance: appearance,
+      leadingIcon: leadingIcon,
+      prefix: prefix,
+      detail: detail,
+      swatch: swatch
+    )
   }
 
   /// The traits of `variant.role` beside the button trait the `Button` carries: a multi-select chip is a

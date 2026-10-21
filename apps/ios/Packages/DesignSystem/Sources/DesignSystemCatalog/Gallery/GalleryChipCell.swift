@@ -4,9 +4,9 @@ import DesignSystem
 import DesignTokens
 import SwiftUI
 
-/// The forced `AppChip` look of `entry`, tagged with its test ID, then the test ID as text. Display-only: it
-/// has no action. The face draws each sample only where the look asks for it: the leading icon where its
-/// source is the prop, the prefix, swatch and detail where the variant lists that part.
+/// The forced `AppChip` look of `entry` with its sample label, tagged with its test ID, then the test ID as text.
+/// Display-only: it has no action. The face draws each other sample only where the look asks for it: the
+/// leading icon where its source is the prop, the prefix, swatch and detail where the variant lists that part.
 struct GalleryChipCell: View {
   let entry: ChipGalleryEntry
 
@@ -17,7 +17,7 @@ struct GalleryChipCell: View {
       // Every generated gallery entry resolves a look in every context (C03GalleryTests).
       if let appearance = theme.chips.appearance(variant: entry.variant, size: entry.size, state: entry.state) {
         AppChipFace(
-          label: ComponentGallery.chipLabel,
+          label: entry.label,
           variant: entry.variant,
           appearance: appearance,
           leadingIcon: ComponentGallery.chipLeadingIcon,

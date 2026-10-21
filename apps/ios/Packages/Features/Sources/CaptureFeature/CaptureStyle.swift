@@ -14,10 +14,6 @@
     static let guideStroke = 2.0
     static let guideHalo = AppSpacing.space4
     static let guideDash = 6.0
-    // Guide box inside the preview: top 68, sides 32, bottom 104.
-    static let guideInsetTop = 68.0
-    static let guideInsetSide = AppSpacing.space32
-    static let guideInsetBottom = 104.0
     // capture-shutter: size 76, ringWidth 4 (centre line r 36), disc 60, discCapturing 52.
     static let shutterSize = 76.0
     static let shutterRing = AppSpacing.space4

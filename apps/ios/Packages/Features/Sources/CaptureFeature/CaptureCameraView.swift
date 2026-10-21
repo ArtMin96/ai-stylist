@@ -153,7 +153,7 @@
       return ZStack {
         CapturePreviewContent(preview: controller.camera.preview)
         if let output {
-          CaptureGuideOutline(guide: output.guide, isUnlocked: output.isUnlockedLook)
+          CaptureGuideOutlineView(guide: output.guide, isUnlocked: output.isUnlockedLook)
         }
         VStack(spacing: 0) {
           CaptureStepPill(side: currentSetup.side)

@@ -11,22 +11,20 @@
   import SwiftUI
   import UIKit
 
-  /// The guide outline (`cap-guide-<family>-<mode>[-back|-pair]`): two-tone so it reads over any video
-  /// (camera-paper 2 over camera-ink 4); dashed while locked, solid once unlocked.
-  struct CaptureGuideOutline: View {
+  /// The guide outline (`cap-guide-<family>-<mode>[-back|-pair]`): the family's C11 silhouette, two-tone so
+  /// it reads over any video (camera-paper 2 over camera-ink 4); dashed while locked, solid once unlocked.
+  /// It fills the preview: the C11 paths already sit inside the guide box (top 68, sides 32, bottom 104).
+  struct CaptureGuideOutlineView: View {
     let guide: CaptureGuide
     let isUnlocked: Bool
     @Environment(\.appTheme) private var theme
 
     var body: some View {
-      let shape = RoundedRectangle(cornerRadius: AppRadius.radius16)
+      let shape = CaptureGuideShape(outline: CaptureGuideOutline(guide: guide))
       ZStack {
         shape.stroke(theme.color(.cameraInk), style: style(width: CaptureMetrics.guideHalo))
         shape.stroke(theme.color(.cameraPaper), style: style(width: CaptureMetrics.guideStroke))
       }
-      .padding(.top, CaptureMetrics.guideInsetTop)
-      .padding(.horizontal, CaptureMetrics.guideInsetSide)
-      .padding(.bottom, CaptureMetrics.guideInsetBottom)
       .accessibilityElement()
       .accessibilityLabel(CaptureText.instruction(for: guide))
       .accessibilityIdentifier(guide.testID)
@@ -35,7 +33,46 @@
     private func style(width: Double) -> StrokeStyle {
       isUnlocked
         ? StrokeStyle(lineWidth: width, lineCap: .round, lineJoin: .round)
-        : StrokeStyle(lineWidth: width, lineCap: .butt, dash: [CaptureMetrics.guideDash, CaptureMetrics.guideDash])
+        : StrokeStyle(
+          lineWidth: width,
+          lineCap: .butt,
+          lineJoin: .round,
+          dash: [CaptureMetrics.guideDash, CaptureMetrics.guideDash]
+        )
+    }
+  }
+
+  /// A guide outline scaled into its frame: the C11 350 × 506 preview fitted whole and centred, so the
+  /// silhouette keeps its proportions on every phone.
+  /// `nonisolated`: `Shape.path(in:)` is nonisolated; the outline is a pure value.
+  nonisolated struct CaptureGuideShape: Shape {
+    let outline: CaptureGuideOutline
+
+    func path(in rect: CGRect) -> Path {
+      let width = CaptureGuideOutline.canvasWidth
+      let height = CaptureGuideOutline.canvasHeight
+      let scale = min(rect.width / width, rect.height / height)
+      let originX = rect.midX - width * scale / 2
+      let originY = rect.midY - height * scale / 2
+      func point(_ point: CaptureOutlinePoint) -> CGPoint {
+        CGPoint(x: originX + point.x * scale, y: originY + point.y * scale)
+      }
+      var path = Path()
+      for segment in outline.segments {
+        switch segment {
+        case .move(let to):
+          path.move(to: point(to))
+        case .line(let to):
+          path.addLine(to: point(to))
+        case .quad(let control, let to):
+          path.addQuadCurve(to: point(to), control: point(control))
+        case .cubic(let control1, let control2, let to):
+          path.addCurve(to: point(to), control1: point(control1), control2: point(control2))
+        case .close:
+          path.closeSubpath()
+        }
+      }
+      return path
     }
   }
 

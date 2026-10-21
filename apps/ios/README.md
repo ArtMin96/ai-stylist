@@ -76,6 +76,8 @@ injected clock (`CaptureClock`; the app uses `ContinuousCaptureClock`), so every
 - `CaptureModel` (`@Observable`): the flow (picker, underwear opt-in through `UnderwearOptInStore`, back and pair
   step, batch, library import); it reads the clock and owns one session per camera screen.
 - `CaptureObservationSource`: the port the live camera + Vision source and the debug test-frame source implement.
+- `CaptureGuideOutline`: the guide outline per shape family and mode, back and pair, as path segments in the
+  350 × 506 preview the surface brief's C11 board draws them in; `CaptureFeature` scales them into the preview.
 
 Hints, guides and reasons are keys (`CaptureHint`, `CaptureGuide`, `CaptureAnywayReason`); the copy lives in
 `CaptureFeature`'s String Catalog, keyed by the hint keys (`CaptureText`).

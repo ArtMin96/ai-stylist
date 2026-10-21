@@ -41,5 +41,272 @@ extension Components {
                 self.body = body
             }
         }
+        public struct SignInAnswer: Sendable, Hashable {
+            /// - Remark: Generated from `#/components/responses/SignInAnswer/headers`.
+            public struct Headers: Sendable, Hashable {
+                /// - Remark: Generated from `#/components/headers/CacheControlNoStore`.
+                @frozen public enum CacheControlNoStore: String, Codable, Hashable, Sendable, CaseIterable {
+                    case noStore = "no-store"
+                }
+                /// Always `no-store`; the response must not be stored by any cache.
+                ///
+                /// - Remark: Generated from `#/components/responses/SignInAnswer/headers/Cache-Control`.
+                public var cacheControl: Components.Headers.CacheControlNoStore?
+                /// Creates a new `Headers`.
+                ///
+                /// - Parameters:
+                ///   - cacheControl: Always `no-store`; the response must not be stored by any cache.
+                public init(cacheControl: Components.Headers.CacheControlNoStore? = nil) {
+                    self.cacheControl = cacheControl
+                }
+            }
+            /// Received HTTP response headers
+            public var headers: Components.Responses.SignInAnswer.Headers
+            /// - Remark: Generated from `#/components/responses/SignInAnswer/content`.
+            @frozen public enum Body: Sendable, Hashable {
+                /// - Remark: Generated from `#/components/responses/SignInAnswer/content/application\/json`.
+                case json(Components.Schemas.SignInResult)
+                /// The associated value of the enum case if `self` is `.json`.
+                ///
+                /// - Throws: An error if `self` is not `.json`.
+                /// - SeeAlso: `.json`.
+                public var json: Components.Schemas.SignInResult {
+                    get throws {
+                        switch self {
+                        case let .json(body):
+                            return body
+                        }
+                    }
+                }
+            }
+            /// Received HTTP response body
+            public var body: Components.Responses.SignInAnswer.Body
+            /// Creates a new `SignInAnswer`.
+            ///
+            /// - Parameters:
+            ///   - headers: Received HTTP response headers
+            ///   - body: Received HTTP response body
+            public init(
+                headers: Components.Responses.SignInAnswer.Headers = .init(),
+                body: Components.Responses.SignInAnswer.Body
+            ) {
+                self.headers = headers
+                self.body = body
+            }
+        }
+        public struct SignInRefused: Sendable, Hashable {
+            /// - Remark: Generated from `#/components/responses/SignInRefused/content`.
+            @frozen public enum Body: Sendable, Hashable {
+                /// - Remark: Generated from `#/components/responses/SignInRefused/content/application\/problem+json`.
+                case applicationProblemJson(Components.Schemas.ProblemDetails)
+                /// The associated value of the enum case if `self` is `.applicationProblemJson`.
+                ///
+                /// - Throws: An error if `self` is not `.applicationProblemJson`.
+                /// - SeeAlso: `.applicationProblemJson`.
+                public var applicationProblemJson: Components.Schemas.ProblemDetails {
+                    get throws {
+                        switch self {
+                        case let .applicationProblemJson(body):
+                            return body
+                        }
+                    }
+                }
+            }
+            /// Received HTTP response body
+            public var body: Components.Responses.SignInRefused.Body
+            /// Creates a new `SignInRefused`.
+            ///
+            /// - Parameters:
+            ///   - body: Received HTTP response body
+            public init(body: Components.Responses.SignInRefused.Body) {
+                self.body = body
+            }
+        }
+        public struct Conflict: Sendable, Hashable {
+            /// - Remark: Generated from `#/components/responses/Conflict/content`.
+            @frozen public enum Body: Sendable, Hashable {
+                /// - Remark: Generated from `#/components/responses/Conflict/content/application\/problem+json`.
+                case applicationProblemJson(Components.Schemas.ProblemDetails)
+                /// The associated value of the enum case if `self` is `.applicationProblemJson`.
+                ///
+                /// - Throws: An error if `self` is not `.applicationProblemJson`.
+                /// - SeeAlso: `.applicationProblemJson`.
+                public var applicationProblemJson: Components.Schemas.ProblemDetails {
+                    get throws {
+                        switch self {
+                        case let .applicationProblemJson(body):
+                            return body
+                        }
+                    }
+                }
+            }
+            /// Received HTTP response body
+            public var body: Components.Responses.Conflict.Body
+            /// Creates a new `Conflict`.
+            ///
+            /// - Parameters:
+            ///   - body: Received HTTP response body
+            public init(body: Components.Responses.Conflict.Body) {
+                self.body = body
+            }
+        }
+        public struct RateLimited: Sendable, Hashable {
+            /// - Remark: Generated from `#/components/responses/RateLimited/headers`.
+            public struct Headers: Sendable, Hashable {
+                /// Seconds to wait before retrying (RFC 9110 §10.2.3, delay-seconds form).
+                ///
+                /// - Remark: Generated from `#/components/responses/RateLimited/headers/Retry-After`.
+                public var retryAfter: Components.Headers.RetryAfter?
+                /// Creates a new `Headers`.
+                ///
+                /// - Parameters:
+                ///   - retryAfter: Seconds to wait before retrying (RFC 9110 §10.2.3, delay-seconds form).
+                public init(retryAfter: Components.Headers.RetryAfter? = nil) {
+                    self.retryAfter = retryAfter
+                }
+            }
+            /// Received HTTP response headers
+            public var headers: Components.Responses.RateLimited.Headers
+            /// - Remark: Generated from `#/components/responses/RateLimited/content`.
+            @frozen public enum Body: Sendable, Hashable {
+                /// - Remark: Generated from `#/components/responses/RateLimited/content/application\/problem+json`.
+                case applicationProblemJson(Components.Schemas.ProblemDetails)
+                /// The associated value of the enum case if `self` is `.applicationProblemJson`.
+                ///
+                /// - Throws: An error if `self` is not `.applicationProblemJson`.
+                /// - SeeAlso: `.applicationProblemJson`.
+                public var applicationProblemJson: Components.Schemas.ProblemDetails {
+                    get throws {
+                        switch self {
+                        case let .applicationProblemJson(body):
+                            return body
+                        }
+                    }
+                }
+            }
+            /// Received HTTP response body
+            public var body: Components.Responses.RateLimited.Body
+            /// Creates a new `RateLimited`.
+            ///
+            /// - Parameters:
+            ///   - headers: Received HTTP response headers
+            ///   - body: Received HTTP response body
+            public init(
+                headers: Components.Responses.RateLimited.Headers = .init(),
+                body: Components.Responses.RateLimited.Body
+            ) {
+                self.headers = headers
+                self.body = body
+            }
+        }
+        public struct Unauthenticated: Sendable, Hashable {
+            /// - Remark: Generated from `#/components/responses/Unauthenticated/content`.
+            @frozen public enum Body: Sendable, Hashable {
+                /// - Remark: Generated from `#/components/responses/Unauthenticated/content/application\/problem+json`.
+                case applicationProblemJson(Components.Schemas.ProblemDetails)
+                /// The associated value of the enum case if `self` is `.applicationProblemJson`.
+                ///
+                /// - Throws: An error if `self` is not `.applicationProblemJson`.
+                /// - SeeAlso: `.applicationProblemJson`.
+                public var applicationProblemJson: Components.Schemas.ProblemDetails {
+                    get throws {
+                        switch self {
+                        case let .applicationProblemJson(body):
+                            return body
+                        }
+                    }
+                }
+            }
+            /// Received HTTP response body
+            public var body: Components.Responses.Unauthenticated.Body
+            /// Creates a new `Unauthenticated`.
+            ///
+            /// - Parameters:
+            ///   - body: Received HTTP response body
+            public init(body: Components.Responses.Unauthenticated.Body) {
+                self.body = body
+            }
+        }
+        public struct Forbidden: Sendable, Hashable {
+            /// - Remark: Generated from `#/components/responses/Forbidden/content`.
+            @frozen public enum Body: Sendable, Hashable {
+                /// - Remark: Generated from `#/components/responses/Forbidden/content/application\/problem+json`.
+                case applicationProblemJson(Components.Schemas.ProblemDetails)
+                /// The associated value of the enum case if `self` is `.applicationProblemJson`.
+                ///
+                /// - Throws: An error if `self` is not `.applicationProblemJson`.
+                /// - SeeAlso: `.applicationProblemJson`.
+                public var applicationProblemJson: Components.Schemas.ProblemDetails {
+                    get throws {
+                        switch self {
+                        case let .applicationProblemJson(body):
+                            return body
+                        }
+                    }
+                }
+            }
+            /// Received HTTP response body
+            public var body: Components.Responses.Forbidden.Body
+            /// Creates a new `Forbidden`.
+            ///
+            /// - Parameters:
+            ///   - body: Received HTTP response body
+            public init(body: Components.Responses.Forbidden.Body) {
+                self.body = body
+            }
+        }
+        public struct AccountDeleted: Sendable, Hashable {
+            /// - Remark: Generated from `#/components/responses/AccountDeleted/headers`.
+            public struct Headers: Sendable, Hashable {
+                /// - Remark: Generated from `#/components/headers/CacheControlNoStore`.
+                @frozen public enum CacheControlNoStore: String, Codable, Hashable, Sendable, CaseIterable {
+                    case noStore = "no-store"
+                }
+                /// Always `no-store`; the response must not be stored by any cache.
+                ///
+                /// - Remark: Generated from `#/components/responses/AccountDeleted/headers/Cache-Control`.
+                public var cacheControl: Components.Headers.CacheControlNoStore?
+                /// Creates a new `Headers`.
+                ///
+                /// - Parameters:
+                ///   - cacheControl: Always `no-store`; the response must not be stored by any cache.
+                public init(cacheControl: Components.Headers.CacheControlNoStore? = nil) {
+                    self.cacheControl = cacheControl
+                }
+            }
+            /// Received HTTP response headers
+            public var headers: Components.Responses.AccountDeleted.Headers
+            /// - Remark: Generated from `#/components/responses/AccountDeleted/content`.
+            @frozen public enum Body: Sendable, Hashable {
+                /// - Remark: Generated from `#/components/responses/AccountDeleted/content/application\/problem+json`.
+                case applicationProblemJson(Components.Schemas.ProblemDetails)
+                /// The associated value of the enum case if `self` is `.applicationProblemJson`.
+                ///
+                /// - Throws: An error if `self` is not `.applicationProblemJson`.
+                /// - SeeAlso: `.applicationProblemJson`.
+                public var applicationProblemJson: Components.Schemas.ProblemDetails {
+                    get throws {
+                        switch self {
+                        case let .applicationProblemJson(body):
+                            return body
+                        }
+                    }
+                }
+            }
+            /// Received HTTP response body
+            public var body: Components.Responses.AccountDeleted.Body
+            /// Creates a new `AccountDeleted`.
+            ///
+            /// - Parameters:
+            ///   - headers: Received HTTP response headers
+            ///   - body: Received HTTP response body
+            public init(
+                headers: Components.Responses.AccountDeleted.Headers = .init(),
+                body: Components.Responses.AccountDeleted.Body
+            ) {
+                self.headers = headers
+                self.body = body
+            }
+        }
     }
 }

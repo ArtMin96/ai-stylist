@@ -337,4 +337,4067 @@ public enum Operations {
             }
         }
     }
+    /// Sign in with an Apple or Google identity token
+    ///
+    /// The app runs the provider's native sign-in and sends the identity token it received.
+    /// The server verifies the token with the provider's keys, then answers with one
+    /// `SignInResult`: a session for an existing account, `sign_up_required` for an identity
+    /// with no account (nothing is stored until `completeSignUp` accepts the birth year), or
+    /// `deletion_pending` for an account inside its deletion grace window (no session). No
+    /// provider token is ever returned.
+    ///
+    ///
+    /// - Remark: HTTP `POST /v1/auth/sign-in/social`.
+    /// - Remark: Generated from `#/paths//v1/auth/sign-in/social/post(signInWithIdToken)`.
+    public enum SignInWithIdToken {
+        public static let id: Swift.String = "signInWithIdToken"
+        public struct Input: Sendable, Hashable {
+            /// - Remark: Generated from `#/paths/v1/auth/sign-in/social/POST/header`.
+            public struct Headers: Sendable, Hashable {
+                /// Client-generated ULID that makes a mutating request safe to retry (doc 06 §2; the
+                /// mobile mutation-log `opId`). The server keeps key, request hash and response for 48 h:
+                /// a replay with the same body returns the stored response, the same key with a different
+                /// body is refused with 409 `IDEMPOTENCY_KEY_REUSED`. Optional for the caller.
+                ///
+                ///
+                /// - Remark: Generated from `#/paths/v1/auth/sign-in/social/POST/header/Idempotency-Key`.
+                public var idempotencyKey: Components.Parameters.IdempotencyKey?
+                public var accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.SignInWithIdToken.AcceptableContentType>]
+                /// Creates a new `Headers`.
+                ///
+                /// - Parameters:
+                ///   - idempotencyKey: Client-generated ULID that makes a mutating request safe to retry (doc 06 §2; the
+                ///   - accept:
+                public init(
+                    idempotencyKey: Components.Parameters.IdempotencyKey? = nil,
+                    accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.SignInWithIdToken.AcceptableContentType>] = .defaultValues()
+                ) {
+                    self.idempotencyKey = idempotencyKey
+                    self.accept = accept
+                }
+            }
+            public var headers: Operations.SignInWithIdToken.Input.Headers
+            /// - Remark: Generated from `#/paths/v1/auth/sign-in/social/POST/requestBody`.
+            @frozen public enum Body: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/v1/auth/sign-in/social/POST/requestBody/content/application\/json`.
+                case json(Components.Schemas.IdTokenSignInRequest)
+            }
+            public var body: Operations.SignInWithIdToken.Input.Body
+            /// Creates a new `Input`.
+            ///
+            /// - Parameters:
+            ///   - headers:
+            ///   - body:
+            public init(
+                headers: Operations.SignInWithIdToken.Input.Headers = .init(),
+                body: Operations.SignInWithIdToken.Input.Body
+            ) {
+                self.headers = headers
+                self.body = body
+            }
+        }
+        @frozen public enum Output: Sendable, Hashable {
+            /// The outcome of a sign-in (see `SignInResult`)
+            ///
+            /// - Remark: Generated from `#/paths//v1/auth/sign-in/social/post(signInWithIdToken)/responses/200`.
+            ///
+            /// HTTP response code: `200 ok`.
+            case ok(Components.Responses.SignInAnswer)
+            /// The associated value of the enum case if `self` is `.ok`.
+            ///
+            /// - Throws: An error if `self` is not `.ok`.
+            /// - SeeAlso: `.ok`.
+            public var ok: Components.Responses.SignInAnswer {
+                get throws {
+                    switch self {
+                    case let .ok(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "ok",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// `UNAUTHENTICATED`: the identity token or passkey assertion was not accepted.
+            ///
+            /// - Remark: Generated from `#/paths//v1/auth/sign-in/social/post(signInWithIdToken)/responses/401`.
+            ///
+            /// HTTP response code: `401 unauthorized`.
+            case unauthorized(Components.Responses.SignInRefused)
+            /// The associated value of the enum case if `self` is `.unauthorized`.
+            ///
+            /// - Throws: An error if `self` is not `.unauthorized`.
+            /// - SeeAlso: `.unauthorized`.
+            public var unauthorized: Components.Responses.SignInRefused {
+                get throws {
+                    switch self {
+                    case let .unauthorized(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "unauthorized",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// `IDEMPOTENCY_KEY_REUSED` when the `Idempotency-Key` was already used with a different
+            /// request; `VERSION_MISMATCH` when `If-Match` no longer matches the stored version;
+            /// `CONFLICT` otherwise.
+            ///
+            ///
+            /// - Remark: Generated from `#/paths//v1/auth/sign-in/social/post(signInWithIdToken)/responses/409`.
+            ///
+            /// HTTP response code: `409 conflict`.
+            case conflict(Components.Responses.Conflict)
+            /// The associated value of the enum case if `self` is `.conflict`.
+            ///
+            /// - Throws: An error if `self` is not `.conflict`.
+            /// - SeeAlso: `.conflict`.
+            public var conflict: Components.Responses.Conflict {
+                get throws {
+                    switch self {
+                    case let .conflict(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "conflict",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// `RATE_LIMITED`: a rate limit was hit (doc 11 §14); retry after `Retry-After` seconds.
+            ///
+            /// - Remark: Generated from `#/paths//v1/auth/sign-in/social/post(signInWithIdToken)/responses/429`.
+            ///
+            /// HTTP response code: `429 tooManyRequests`.
+            case tooManyRequests(Components.Responses.RateLimited)
+            /// The associated value of the enum case if `self` is `.tooManyRequests`.
+            ///
+            /// - Throws: An error if `self` is not `.tooManyRequests`.
+            /// - SeeAlso: `.tooManyRequests`.
+            public var tooManyRequests: Components.Responses.RateLimited {
+                get throws {
+                    switch self {
+                    case let .tooManyRequests(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "tooManyRequests",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Error (RFC 9457)
+            ///
+            /// - Remark: Generated from `#/paths//v1/auth/sign-in/social/post(signInWithIdToken)/responses/default`.
+            ///
+            /// HTTP response code: `default`.
+            case `default`(statusCode: Swift.Int, Components.Responses.Problem)
+            /// The associated value of the enum case if `self` is `.`default``.
+            ///
+            /// - Throws: An error if `self` is not `.`default``.
+            /// - SeeAlso: `.`default``.
+            public var `default`: Components.Responses.Problem {
+                get throws {
+                    switch self {
+                    case let .`default`(_, response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "default",
+                            response: self
+                        )
+                    }
+                }
+            }
+        }
+        @frozen public enum AcceptableContentType: AcceptableProtocol {
+            case json
+            case applicationProblemJson
+            case other(Swift.String)
+            public init?(rawValue: Swift.String) {
+                switch rawValue.lowercased() {
+                case "application/json":
+                    self = .json
+                case "application/problem+json":
+                    self = .applicationProblemJson
+                default:
+                    self = .other(rawValue)
+                }
+            }
+            public var rawValue: Swift.String {
+                switch self {
+                case let .other(string):
+                    return string
+                case .json:
+                    return "application/json"
+                case .applicationProblemJson:
+                    return "application/problem+json"
+                }
+            }
+            public static var allCases: [Self] {
+                [
+                    .json,
+                    .applicationProblemJson
+                ]
+            }
+        }
+    }
+    /// Complete a pending sign-up with the self-declared birth year (age gate)
+    ///
+    /// Second part of a sign-up. The first part is a sign-in whose answer was
+    /// `sign_up_required`; the `signUpToken` of that answer authorizes this call. The server
+    /// applies the age gate (16+, DEC-60) to the birth year. Accepted: the account is created
+    /// and the answer is the `session` outcome. Refused: `AGE_GATE_FAILED`, nothing about the
+    /// attempt is stored, and the sign-up token is spent; a new attempt starts again with a
+    /// sign-in. Identity's own operation: better-auth 1.7.12 has no path for it.
+    ///
+    ///
+    /// - Remark: HTTP `POST /v1/auth/sign-up/complete`.
+    /// - Remark: Generated from `#/paths//v1/auth/sign-up/complete/post(completeSignUp)`.
+    public enum CompleteSignUp {
+        public static let id: Swift.String = "completeSignUp"
+        public struct Input: Sendable, Hashable {
+            /// - Remark: Generated from `#/paths/v1/auth/sign-up/complete/POST/header`.
+            public struct Headers: Sendable, Hashable {
+                /// Client-generated ULID that makes a mutating request safe to retry (doc 06 §2; the
+                /// mobile mutation-log `opId`). The server keeps key, request hash and response for 48 h:
+                /// a replay with the same body returns the stored response, the same key with a different
+                /// body is refused with 409 `IDEMPOTENCY_KEY_REUSED`. Optional for the caller.
+                ///
+                ///
+                /// - Remark: Generated from `#/paths/v1/auth/sign-up/complete/POST/header/Idempotency-Key`.
+                public var idempotencyKey: Components.Parameters.IdempotencyKey?
+                public var accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.CompleteSignUp.AcceptableContentType>]
+                /// Creates a new `Headers`.
+                ///
+                /// - Parameters:
+                ///   - idempotencyKey: Client-generated ULID that makes a mutating request safe to retry (doc 06 §2; the
+                ///   - accept:
+                public init(
+                    idempotencyKey: Components.Parameters.IdempotencyKey? = nil,
+                    accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.CompleteSignUp.AcceptableContentType>] = .defaultValues()
+                ) {
+                    self.idempotencyKey = idempotencyKey
+                    self.accept = accept
+                }
+            }
+            public var headers: Operations.CompleteSignUp.Input.Headers
+            /// - Remark: Generated from `#/paths/v1/auth/sign-up/complete/POST/requestBody`.
+            @frozen public enum Body: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/v1/auth/sign-up/complete/POST/requestBody/content/application\/json`.
+                case json(Components.Schemas.CompleteSignUpRequest)
+            }
+            public var body: Operations.CompleteSignUp.Input.Body
+            /// Creates a new `Input`.
+            ///
+            /// - Parameters:
+            ///   - headers:
+            ///   - body:
+            public init(
+                headers: Operations.CompleteSignUp.Input.Headers = .init(),
+                body: Operations.CompleteSignUp.Input.Body
+            ) {
+                self.headers = headers
+                self.body = body
+            }
+        }
+        @frozen public enum Output: Sendable, Hashable {
+            /// The outcome of a sign-in (see `SignInResult`)
+            ///
+            /// - Remark: Generated from `#/paths//v1/auth/sign-up/complete/post(completeSignUp)/responses/200`.
+            ///
+            /// HTTP response code: `200 ok`.
+            case ok(Components.Responses.SignInAnswer)
+            /// The associated value of the enum case if `self` is `.ok`.
+            ///
+            /// - Throws: An error if `self` is not `.ok`.
+            /// - SeeAlso: `.ok`.
+            public var ok: Components.Responses.SignInAnswer {
+                get throws {
+                    switch self {
+                    case let .ok(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "ok",
+                            response: self
+                        )
+                    }
+                }
+            }
+            public struct Unauthorized: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/v1/auth/sign-up/complete/POST/responses/401/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/v1/auth/sign-up/complete/POST/responses/401/content/application\/problem+json`.
+                    case applicationProblemJson(Components.Schemas.ProblemDetails)
+                    /// The associated value of the enum case if `self` is `.applicationProblemJson`.
+                    ///
+                    /// - Throws: An error if `self` is not `.applicationProblemJson`.
+                    /// - SeeAlso: `.applicationProblemJson`.
+                    public var applicationProblemJson: Components.Schemas.ProblemDetails {
+                        get throws {
+                            switch self {
+                            case let .applicationProblemJson(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.CompleteSignUp.Output.Unauthorized.Body
+                /// Creates a new `Unauthorized`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                public init(body: Operations.CompleteSignUp.Output.Unauthorized.Body) {
+                    self.body = body
+                }
+            }
+            /// `UNAUTHENTICATED`: the sign-up token is missing, expired, already spent or unknown. Start again with a sign-in.
+            ///
+            /// - Remark: Generated from `#/paths//v1/auth/sign-up/complete/post(completeSignUp)/responses/401`.
+            ///
+            /// HTTP response code: `401 unauthorized`.
+            case unauthorized(Operations.CompleteSignUp.Output.Unauthorized)
+            /// The associated value of the enum case if `self` is `.unauthorized`.
+            ///
+            /// - Throws: An error if `self` is not `.unauthorized`.
+            /// - SeeAlso: `.unauthorized`.
+            public var unauthorized: Operations.CompleteSignUp.Output.Unauthorized {
+                get throws {
+                    switch self {
+                    case let .unauthorized(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "unauthorized",
+                            response: self
+                        )
+                    }
+                }
+            }
+            public struct Forbidden: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/v1/auth/sign-up/complete/POST/responses/403/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/v1/auth/sign-up/complete/POST/responses/403/content/application\/problem+json`.
+                    case applicationProblemJson(Components.Schemas.ProblemDetails)
+                    /// The associated value of the enum case if `self` is `.applicationProblemJson`.
+                    ///
+                    /// - Throws: An error if `self` is not `.applicationProblemJson`.
+                    /// - SeeAlso: `.applicationProblemJson`.
+                    public var applicationProblemJson: Components.Schemas.ProblemDetails {
+                        get throws {
+                            switch self {
+                            case let .applicationProblemJson(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.CompleteSignUp.Output.Forbidden.Body
+                /// Creates a new `Forbidden`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                public init(body: Operations.CompleteSignUp.Output.Forbidden.Body) {
+                    self.body = body
+                }
+            }
+            /// `AGE_GATE_FAILED`: the birth year lies fewer than 16 years back (DEC-60). Terminal
+            /// for this attempt: nothing is stored and the sign-up token is spent. The client shows
+            /// its refusal screen and offers no way to change the year.
+            ///
+            ///
+            /// - Remark: Generated from `#/paths//v1/auth/sign-up/complete/post(completeSignUp)/responses/403`.
+            ///
+            /// HTTP response code: `403 forbidden`.
+            case forbidden(Operations.CompleteSignUp.Output.Forbidden)
+            /// The associated value of the enum case if `self` is `.forbidden`.
+            ///
+            /// - Throws: An error if `self` is not `.forbidden`.
+            /// - SeeAlso: `.forbidden`.
+            public var forbidden: Operations.CompleteSignUp.Output.Forbidden {
+                get throws {
+                    switch self {
+                    case let .forbidden(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "forbidden",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// `IDEMPOTENCY_KEY_REUSED` when the `Idempotency-Key` was already used with a different
+            /// request; `VERSION_MISMATCH` when `If-Match` no longer matches the stored version;
+            /// `CONFLICT` otherwise.
+            ///
+            ///
+            /// - Remark: Generated from `#/paths//v1/auth/sign-up/complete/post(completeSignUp)/responses/409`.
+            ///
+            /// HTTP response code: `409 conflict`.
+            case conflict(Components.Responses.Conflict)
+            /// The associated value of the enum case if `self` is `.conflict`.
+            ///
+            /// - Throws: An error if `self` is not `.conflict`.
+            /// - SeeAlso: `.conflict`.
+            public var conflict: Components.Responses.Conflict {
+                get throws {
+                    switch self {
+                    case let .conflict(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "conflict",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// `RATE_LIMITED`: a rate limit was hit (doc 11 §14); retry after `Retry-After` seconds.
+            ///
+            /// - Remark: Generated from `#/paths//v1/auth/sign-up/complete/post(completeSignUp)/responses/429`.
+            ///
+            /// HTTP response code: `429 tooManyRequests`.
+            case tooManyRequests(Components.Responses.RateLimited)
+            /// The associated value of the enum case if `self` is `.tooManyRequests`.
+            ///
+            /// - Throws: An error if `self` is not `.tooManyRequests`.
+            /// - SeeAlso: `.tooManyRequests`.
+            public var tooManyRequests: Components.Responses.RateLimited {
+                get throws {
+                    switch self {
+                    case let .tooManyRequests(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "tooManyRequests",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Error (RFC 9457)
+            ///
+            /// - Remark: Generated from `#/paths//v1/auth/sign-up/complete/post(completeSignUp)/responses/default`.
+            ///
+            /// HTTP response code: `default`.
+            case `default`(statusCode: Swift.Int, Components.Responses.Problem)
+            /// The associated value of the enum case if `self` is `.`default``.
+            ///
+            /// - Throws: An error if `self` is not `.`default``.
+            /// - SeeAlso: `.`default``.
+            public var `default`: Components.Responses.Problem {
+                get throws {
+                    switch self {
+                    case let .`default`(_, response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "default",
+                            response: self
+                        )
+                    }
+                }
+            }
+        }
+        @frozen public enum AcceptableContentType: AcceptableProtocol {
+            case json
+            case applicationProblemJson
+            case other(Swift.String)
+            public init?(rawValue: Swift.String) {
+                switch rawValue.lowercased() {
+                case "application/json":
+                    self = .json
+                case "application/problem+json":
+                    self = .applicationProblemJson
+                default:
+                    self = .other(rawValue)
+                }
+            }
+            public var rawValue: Swift.String {
+                switch self {
+                case let .other(string):
+                    return string
+                case .json:
+                    return "application/json"
+                case .applicationProblemJson:
+                    return "application/problem+json"
+                }
+            }
+            public static var allCases: [Self] {
+                [
+                    .json,
+                    .applicationProblemJson
+                ]
+            }
+        }
+    }
+    /// WebAuthn options for a passkey sign-in
+    ///
+    /// Returns a fresh challenge and the WebAuthn request options (W3C WebAuthn
+    /// `PublicKeyCredentialRequestOptionsJSON`) for the platform passkey API. Without a session
+    /// no credentials are listed, so the device offers its discoverable passkeys.
+    ///
+    ///
+    /// - Remark: HTTP `GET /v1/auth/passkey/generate-authenticate-options`.
+    /// - Remark: Generated from `#/paths//v1/auth/passkey/generate-authenticate-options/get(getPasskeySignInOptions)`.
+    public enum GetPasskeySignInOptions {
+        public static let id: Swift.String = "getPasskeySignInOptions"
+        public struct Input: Sendable, Hashable {
+            /// - Remark: Generated from `#/paths/v1/auth/passkey/generate-authenticate-options/GET/header`.
+            public struct Headers: Sendable, Hashable {
+                public var accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.GetPasskeySignInOptions.AcceptableContentType>]
+                /// Creates a new `Headers`.
+                ///
+                /// - Parameters:
+                ///   - accept:
+                public init(accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.GetPasskeySignInOptions.AcceptableContentType>] = .defaultValues()) {
+                    self.accept = accept
+                }
+            }
+            public var headers: Operations.GetPasskeySignInOptions.Input.Headers
+            /// Creates a new `Input`.
+            ///
+            /// - Parameters:
+            ///   - headers:
+            public init(headers: Operations.GetPasskeySignInOptions.Input.Headers = .init()) {
+                self.headers = headers
+            }
+        }
+        @frozen public enum Output: Sendable, Hashable {
+            public struct Ok: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/v1/auth/passkey/generate-authenticate-options/GET/responses/200/headers`.
+                public struct Headers: Sendable, Hashable {
+                    /// - Remark: Generated from `#/components/headers/CacheControlNoStore`.
+                    @frozen public enum CacheControlNoStore: String, Codable, Hashable, Sendable, CaseIterable {
+                        case noStore = "no-store"
+                    }
+                    /// Always `no-store`; the response must not be stored by any cache.
+                    ///
+                    /// - Remark: Generated from `#/paths/v1/auth/passkey/generate-authenticate-options/GET/responses/200/headers/Cache-Control`.
+                    public var cacheControl: Components.Headers.CacheControlNoStore?
+                    /// Creates a new `Headers`.
+                    ///
+                    /// - Parameters:
+                    ///   - cacheControl: Always `no-store`; the response must not be stored by any cache.
+                    public init(cacheControl: Components.Headers.CacheControlNoStore? = nil) {
+                        self.cacheControl = cacheControl
+                    }
+                }
+                /// Received HTTP response headers
+                public var headers: Operations.GetPasskeySignInOptions.Output.Ok.Headers
+                /// - Remark: Generated from `#/paths/v1/auth/passkey/generate-authenticate-options/GET/responses/200/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/v1/auth/passkey/generate-authenticate-options/GET/responses/200/content/application\/json`.
+                    case json(Components.Schemas.PasskeyRequestOptions)
+                    /// The associated value of the enum case if `self` is `.json`.
+                    ///
+                    /// - Throws: An error if `self` is not `.json`.
+                    /// - SeeAlso: `.json`.
+                    public var json: Components.Schemas.PasskeyRequestOptions {
+                        get throws {
+                            switch self {
+                            case let .json(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.GetPasskeySignInOptions.Output.Ok.Body
+                /// Creates a new `Ok`.
+                ///
+                /// - Parameters:
+                ///   - headers: Received HTTP response headers
+                ///   - body: Received HTTP response body
+                public init(
+                    headers: Operations.GetPasskeySignInOptions.Output.Ok.Headers = .init(),
+                    body: Operations.GetPasskeySignInOptions.Output.Ok.Body
+                ) {
+                    self.headers = headers
+                    self.body = body
+                }
+            }
+            /// WebAuthn request options
+            ///
+            /// - Remark: Generated from `#/paths//v1/auth/passkey/generate-authenticate-options/get(getPasskeySignInOptions)/responses/200`.
+            ///
+            /// HTTP response code: `200 ok`.
+            case ok(Operations.GetPasskeySignInOptions.Output.Ok)
+            /// The associated value of the enum case if `self` is `.ok`.
+            ///
+            /// - Throws: An error if `self` is not `.ok`.
+            /// - SeeAlso: `.ok`.
+            public var ok: Operations.GetPasskeySignInOptions.Output.Ok {
+                get throws {
+                    switch self {
+                    case let .ok(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "ok",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// `RATE_LIMITED`: a rate limit was hit (doc 11 §14); retry after `Retry-After` seconds.
+            ///
+            /// - Remark: Generated from `#/paths//v1/auth/passkey/generate-authenticate-options/get(getPasskeySignInOptions)/responses/429`.
+            ///
+            /// HTTP response code: `429 tooManyRequests`.
+            case tooManyRequests(Components.Responses.RateLimited)
+            /// The associated value of the enum case if `self` is `.tooManyRequests`.
+            ///
+            /// - Throws: An error if `self` is not `.tooManyRequests`.
+            /// - SeeAlso: `.tooManyRequests`.
+            public var tooManyRequests: Components.Responses.RateLimited {
+                get throws {
+                    switch self {
+                    case let .tooManyRequests(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "tooManyRequests",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Error (RFC 9457)
+            ///
+            /// - Remark: Generated from `#/paths//v1/auth/passkey/generate-authenticate-options/get(getPasskeySignInOptions)/responses/default`.
+            ///
+            /// HTTP response code: `default`.
+            case `default`(statusCode: Swift.Int, Components.Responses.Problem)
+            /// The associated value of the enum case if `self` is `.`default``.
+            ///
+            /// - Throws: An error if `self` is not `.`default``.
+            /// - SeeAlso: `.`default``.
+            public var `default`: Components.Responses.Problem {
+                get throws {
+                    switch self {
+                    case let .`default`(_, response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "default",
+                            response: self
+                        )
+                    }
+                }
+            }
+        }
+        @frozen public enum AcceptableContentType: AcceptableProtocol {
+            case json
+            case applicationProblemJson
+            case other(Swift.String)
+            public init?(rawValue: Swift.String) {
+                switch rawValue.lowercased() {
+                case "application/json":
+                    self = .json
+                case "application/problem+json":
+                    self = .applicationProblemJson
+                default:
+                    self = .other(rawValue)
+                }
+            }
+            public var rawValue: Swift.String {
+                switch self {
+                case let .other(string):
+                    return string
+                case .json:
+                    return "application/json"
+                case .applicationProblemJson:
+                    return "application/problem+json"
+                }
+            }
+            public static var allCases: [Self] {
+                [
+                    .json,
+                    .applicationProblemJson
+                ]
+            }
+        }
+    }
+    /// Sign in with a passkey assertion
+    ///
+    /// Verifies the assertion the platform passkey API returned for the challenge of
+    /// `getPasskeySignInOptions`. Answers `session`, or `deletion_pending` for an account inside
+    /// its deletion grace window. A passkey always belongs to an existing account, so this
+    /// operation never answers `sign_up_required`.
+    ///
+    ///
+    /// - Remark: HTTP `POST /v1/auth/passkey/verify-authentication`.
+    /// - Remark: Generated from `#/paths//v1/auth/passkey/verify-authentication/post(signInWithPasskey)`.
+    public enum SignInWithPasskey {
+        public static let id: Swift.String = "signInWithPasskey"
+        public struct Input: Sendable, Hashable {
+            /// - Remark: Generated from `#/paths/v1/auth/passkey/verify-authentication/POST/header`.
+            public struct Headers: Sendable, Hashable {
+                /// Client-generated ULID that makes a mutating request safe to retry (doc 06 §2; the
+                /// mobile mutation-log `opId`). The server keeps key, request hash and response for 48 h:
+                /// a replay with the same body returns the stored response, the same key with a different
+                /// body is refused with 409 `IDEMPOTENCY_KEY_REUSED`. Optional for the caller.
+                ///
+                ///
+                /// - Remark: Generated from `#/paths/v1/auth/passkey/verify-authentication/POST/header/Idempotency-Key`.
+                public var idempotencyKey: Components.Parameters.IdempotencyKey?
+                public var accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.SignInWithPasskey.AcceptableContentType>]
+                /// Creates a new `Headers`.
+                ///
+                /// - Parameters:
+                ///   - idempotencyKey: Client-generated ULID that makes a mutating request safe to retry (doc 06 §2; the
+                ///   - accept:
+                public init(
+                    idempotencyKey: Components.Parameters.IdempotencyKey? = nil,
+                    accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.SignInWithPasskey.AcceptableContentType>] = .defaultValues()
+                ) {
+                    self.idempotencyKey = idempotencyKey
+                    self.accept = accept
+                }
+            }
+            public var headers: Operations.SignInWithPasskey.Input.Headers
+            /// - Remark: Generated from `#/paths/v1/auth/passkey/verify-authentication/POST/requestBody`.
+            @frozen public enum Body: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/v1/auth/passkey/verify-authentication/POST/requestBody/content/application\/json`.
+                case json(Components.Schemas.PasskeySignInRequest)
+            }
+            public var body: Operations.SignInWithPasskey.Input.Body
+            /// Creates a new `Input`.
+            ///
+            /// - Parameters:
+            ///   - headers:
+            ///   - body:
+            public init(
+                headers: Operations.SignInWithPasskey.Input.Headers = .init(),
+                body: Operations.SignInWithPasskey.Input.Body
+            ) {
+                self.headers = headers
+                self.body = body
+            }
+        }
+        @frozen public enum Output: Sendable, Hashable {
+            /// The outcome of a sign-in (see `SignInResult`)
+            ///
+            /// - Remark: Generated from `#/paths//v1/auth/passkey/verify-authentication/post(signInWithPasskey)/responses/200`.
+            ///
+            /// HTTP response code: `200 ok`.
+            case ok(Components.Responses.SignInAnswer)
+            /// The associated value of the enum case if `self` is `.ok`.
+            ///
+            /// - Throws: An error if `self` is not `.ok`.
+            /// - SeeAlso: `.ok`.
+            public var ok: Components.Responses.SignInAnswer {
+                get throws {
+                    switch self {
+                    case let .ok(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "ok",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// `UNAUTHENTICATED`: the identity token or passkey assertion was not accepted.
+            ///
+            /// - Remark: Generated from `#/paths//v1/auth/passkey/verify-authentication/post(signInWithPasskey)/responses/401`.
+            ///
+            /// HTTP response code: `401 unauthorized`.
+            case unauthorized(Components.Responses.SignInRefused)
+            /// The associated value of the enum case if `self` is `.unauthorized`.
+            ///
+            /// - Throws: An error if `self` is not `.unauthorized`.
+            /// - SeeAlso: `.unauthorized`.
+            public var unauthorized: Components.Responses.SignInRefused {
+                get throws {
+                    switch self {
+                    case let .unauthorized(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "unauthorized",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// `IDEMPOTENCY_KEY_REUSED` when the `Idempotency-Key` was already used with a different
+            /// request; `VERSION_MISMATCH` when `If-Match` no longer matches the stored version;
+            /// `CONFLICT` otherwise.
+            ///
+            ///
+            /// - Remark: Generated from `#/paths//v1/auth/passkey/verify-authentication/post(signInWithPasskey)/responses/409`.
+            ///
+            /// HTTP response code: `409 conflict`.
+            case conflict(Components.Responses.Conflict)
+            /// The associated value of the enum case if `self` is `.conflict`.
+            ///
+            /// - Throws: An error if `self` is not `.conflict`.
+            /// - SeeAlso: `.conflict`.
+            public var conflict: Components.Responses.Conflict {
+                get throws {
+                    switch self {
+                    case let .conflict(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "conflict",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// `RATE_LIMITED`: a rate limit was hit (doc 11 §14); retry after `Retry-After` seconds.
+            ///
+            /// - Remark: Generated from `#/paths//v1/auth/passkey/verify-authentication/post(signInWithPasskey)/responses/429`.
+            ///
+            /// HTTP response code: `429 tooManyRequests`.
+            case tooManyRequests(Components.Responses.RateLimited)
+            /// The associated value of the enum case if `self` is `.tooManyRequests`.
+            ///
+            /// - Throws: An error if `self` is not `.tooManyRequests`.
+            /// - SeeAlso: `.tooManyRequests`.
+            public var tooManyRequests: Components.Responses.RateLimited {
+                get throws {
+                    switch self {
+                    case let .tooManyRequests(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "tooManyRequests",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Error (RFC 9457)
+            ///
+            /// - Remark: Generated from `#/paths//v1/auth/passkey/verify-authentication/post(signInWithPasskey)/responses/default`.
+            ///
+            /// HTTP response code: `default`.
+            case `default`(statusCode: Swift.Int, Components.Responses.Problem)
+            /// The associated value of the enum case if `self` is `.`default``.
+            ///
+            /// - Throws: An error if `self` is not `.`default``.
+            /// - SeeAlso: `.`default``.
+            public var `default`: Components.Responses.Problem {
+                get throws {
+                    switch self {
+                    case let .`default`(_, response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "default",
+                            response: self
+                        )
+                    }
+                }
+            }
+        }
+        @frozen public enum AcceptableContentType: AcceptableProtocol {
+            case json
+            case applicationProblemJson
+            case other(Swift.String)
+            public init?(rawValue: Swift.String) {
+                switch rawValue.lowercased() {
+                case "application/json":
+                    self = .json
+                case "application/problem+json":
+                    self = .applicationProblemJson
+                default:
+                    self = .other(rawValue)
+                }
+            }
+            public var rawValue: Swift.String {
+                switch self {
+                case let .other(string):
+                    return string
+                case .json:
+                    return "application/json"
+                case .applicationProblemJson:
+                    return "application/problem+json"
+                }
+            }
+            public static var allCases: [Self] {
+                [
+                    .json,
+                    .applicationProblemJson
+                ]
+            }
+        }
+    }
+    /// WebAuthn options to add a passkey to the signed-in account
+    ///
+    /// Returns a fresh challenge and the WebAuthn creation options (W3C WebAuthn
+    /// `PublicKeyCredentialCreationOptionsJSON`). The account's existing passkeys are listed as
+    /// excluded credentials. Needs a recently created session (better-auth `freshAge`);
+    /// otherwise 403 `FORBIDDEN`, and the client signs in again first.
+    ///
+    ///
+    /// - Remark: HTTP `GET /v1/auth/passkey/generate-register-options`.
+    /// - Remark: Generated from `#/paths//v1/auth/passkey/generate-register-options/get(getPasskeyRegistrationOptions)`.
+    public enum GetPasskeyRegistrationOptions {
+        public static let id: Swift.String = "getPasskeyRegistrationOptions"
+        public struct Input: Sendable, Hashable {
+            /// - Remark: Generated from `#/paths/v1/auth/passkey/generate-register-options/GET/header`.
+            public struct Headers: Sendable, Hashable {
+                public var accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.GetPasskeyRegistrationOptions.AcceptableContentType>]
+                /// Creates a new `Headers`.
+                ///
+                /// - Parameters:
+                ///   - accept:
+                public init(accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.GetPasskeyRegistrationOptions.AcceptableContentType>] = .defaultValues()) {
+                    self.accept = accept
+                }
+            }
+            public var headers: Operations.GetPasskeyRegistrationOptions.Input.Headers
+            /// Creates a new `Input`.
+            ///
+            /// - Parameters:
+            ///   - headers:
+            public init(headers: Operations.GetPasskeyRegistrationOptions.Input.Headers = .init()) {
+                self.headers = headers
+            }
+        }
+        @frozen public enum Output: Sendable, Hashable {
+            public struct Ok: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/v1/auth/passkey/generate-register-options/GET/responses/200/headers`.
+                public struct Headers: Sendable, Hashable {
+                    /// - Remark: Generated from `#/components/headers/CacheControlNoStore`.
+                    @frozen public enum CacheControlNoStore: String, Codable, Hashable, Sendable, CaseIterable {
+                        case noStore = "no-store"
+                    }
+                    /// Always `no-store`; the response must not be stored by any cache.
+                    ///
+                    /// - Remark: Generated from `#/paths/v1/auth/passkey/generate-register-options/GET/responses/200/headers/Cache-Control`.
+                    public var cacheControl: Components.Headers.CacheControlNoStore?
+                    /// Creates a new `Headers`.
+                    ///
+                    /// - Parameters:
+                    ///   - cacheControl: Always `no-store`; the response must not be stored by any cache.
+                    public init(cacheControl: Components.Headers.CacheControlNoStore? = nil) {
+                        self.cacheControl = cacheControl
+                    }
+                }
+                /// Received HTTP response headers
+                public var headers: Operations.GetPasskeyRegistrationOptions.Output.Ok.Headers
+                /// - Remark: Generated from `#/paths/v1/auth/passkey/generate-register-options/GET/responses/200/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/v1/auth/passkey/generate-register-options/GET/responses/200/content/application\/json`.
+                    case json(Components.Schemas.PasskeyCreationOptions)
+                    /// The associated value of the enum case if `self` is `.json`.
+                    ///
+                    /// - Throws: An error if `self` is not `.json`.
+                    /// - SeeAlso: `.json`.
+                    public var json: Components.Schemas.PasskeyCreationOptions {
+                        get throws {
+                            switch self {
+                            case let .json(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.GetPasskeyRegistrationOptions.Output.Ok.Body
+                /// Creates a new `Ok`.
+                ///
+                /// - Parameters:
+                ///   - headers: Received HTTP response headers
+                ///   - body: Received HTTP response body
+                public init(
+                    headers: Operations.GetPasskeyRegistrationOptions.Output.Ok.Headers = .init(),
+                    body: Operations.GetPasskeyRegistrationOptions.Output.Ok.Body
+                ) {
+                    self.headers = headers
+                    self.body = body
+                }
+            }
+            /// WebAuthn creation options
+            ///
+            /// - Remark: Generated from `#/paths//v1/auth/passkey/generate-register-options/get(getPasskeyRegistrationOptions)/responses/200`.
+            ///
+            /// HTTP response code: `200 ok`.
+            case ok(Operations.GetPasskeyRegistrationOptions.Output.Ok)
+            /// The associated value of the enum case if `self` is `.ok`.
+            ///
+            /// - Throws: An error if `self` is not `.ok`.
+            /// - SeeAlso: `.ok`.
+            public var ok: Operations.GetPasskeyRegistrationOptions.Output.Ok {
+                get throws {
+                    switch self {
+                    case let .ok(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "ok",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// `UNAUTHENTICATED`: the credential is missing, malformed, expired or revoked. The client
+            /// renews the session once (`refreshSession`); if the renewal is refused too, it signs in
+            /// again.
+            ///
+            ///
+            /// - Remark: Generated from `#/paths//v1/auth/passkey/generate-register-options/get(getPasskeyRegistrationOptions)/responses/401`.
+            ///
+            /// HTTP response code: `401 unauthorized`.
+            case unauthorized(Components.Responses.Unauthenticated)
+            /// The associated value of the enum case if `self` is `.unauthorized`.
+            ///
+            /// - Throws: An error if `self` is not `.unauthorized`.
+            /// - SeeAlso: `.unauthorized`.
+            public var unauthorized: Components.Responses.Unauthenticated {
+                get throws {
+                    switch self {
+                    case let .unauthorized(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "unauthorized",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// The caller is authenticated but may not perform this operation. `code` is `FORBIDDEN`
+            /// unless the operation names a more specific code for this status.
+            ///
+            ///
+            /// - Remark: Generated from `#/paths//v1/auth/passkey/generate-register-options/get(getPasskeyRegistrationOptions)/responses/403`.
+            ///
+            /// HTTP response code: `403 forbidden`.
+            case forbidden(Components.Responses.Forbidden)
+            /// The associated value of the enum case if `self` is `.forbidden`.
+            ///
+            /// - Throws: An error if `self` is not `.forbidden`.
+            /// - SeeAlso: `.forbidden`.
+            public var forbidden: Components.Responses.Forbidden {
+                get throws {
+                    switch self {
+                    case let .forbidden(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "forbidden",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// `ACCOUNT_DELETED`: the account is deleted or its deletion is in progress. The client
+            /// erases everything it stores for the account and returns to its signed-out start; it
+            /// tells this reply from 401 by the status alone. A 410 is cacheable by default
+            /// (RFC 9110 §15.5.11), so the reply carries `Cache-Control: no-store` and must not be
+            /// cached.
+            ///
+            ///
+            /// - Remark: Generated from `#/paths//v1/auth/passkey/generate-register-options/get(getPasskeyRegistrationOptions)/responses/410`.
+            ///
+            /// HTTP response code: `410 gone`.
+            case gone(Components.Responses.AccountDeleted)
+            /// The associated value of the enum case if `self` is `.gone`.
+            ///
+            /// - Throws: An error if `self` is not `.gone`.
+            /// - SeeAlso: `.gone`.
+            public var gone: Components.Responses.AccountDeleted {
+                get throws {
+                    switch self {
+                    case let .gone(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "gone",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// `RATE_LIMITED`: a rate limit was hit (doc 11 §14); retry after `Retry-After` seconds.
+            ///
+            /// - Remark: Generated from `#/paths//v1/auth/passkey/generate-register-options/get(getPasskeyRegistrationOptions)/responses/429`.
+            ///
+            /// HTTP response code: `429 tooManyRequests`.
+            case tooManyRequests(Components.Responses.RateLimited)
+            /// The associated value of the enum case if `self` is `.tooManyRequests`.
+            ///
+            /// - Throws: An error if `self` is not `.tooManyRequests`.
+            /// - SeeAlso: `.tooManyRequests`.
+            public var tooManyRequests: Components.Responses.RateLimited {
+                get throws {
+                    switch self {
+                    case let .tooManyRequests(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "tooManyRequests",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Error (RFC 9457)
+            ///
+            /// - Remark: Generated from `#/paths//v1/auth/passkey/generate-register-options/get(getPasskeyRegistrationOptions)/responses/default`.
+            ///
+            /// HTTP response code: `default`.
+            case `default`(statusCode: Swift.Int, Components.Responses.Problem)
+            /// The associated value of the enum case if `self` is `.`default``.
+            ///
+            /// - Throws: An error if `self` is not `.`default``.
+            /// - SeeAlso: `.`default``.
+            public var `default`: Components.Responses.Problem {
+                get throws {
+                    switch self {
+                    case let .`default`(_, response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "default",
+                            response: self
+                        )
+                    }
+                }
+            }
+        }
+        @frozen public enum AcceptableContentType: AcceptableProtocol {
+            case json
+            case applicationProblemJson
+            case other(Swift.String)
+            public init?(rawValue: Swift.String) {
+                switch rawValue.lowercased() {
+                case "application/json":
+                    self = .json
+                case "application/problem+json":
+                    self = .applicationProblemJson
+                default:
+                    self = .other(rawValue)
+                }
+            }
+            public var rawValue: Swift.String {
+                switch self {
+                case let .other(string):
+                    return string
+                case .json:
+                    return "application/json"
+                case .applicationProblemJson:
+                    return "application/problem+json"
+                }
+            }
+            public static var allCases: [Self] {
+                [
+                    .json,
+                    .applicationProblemJson
+                ]
+            }
+        }
+    }
+    /// Add a passkey to the signed-in account
+    ///
+    /// Verifies the attestation the platform passkey API returned for the challenge of
+    /// `getPasskeyRegistrationOptions` and stores the passkey on the caller's account. An
+    /// account may hold several passkeys. Opens no new session.
+    ///
+    ///
+    /// - Remark: HTTP `POST /v1/auth/passkey/verify-registration`.
+    /// - Remark: Generated from `#/paths//v1/auth/passkey/verify-registration/post(registerPasskey)`.
+    public enum RegisterPasskey {
+        public static let id: Swift.String = "registerPasskey"
+        public struct Input: Sendable, Hashable {
+            /// - Remark: Generated from `#/paths/v1/auth/passkey/verify-registration/POST/header`.
+            public struct Headers: Sendable, Hashable {
+                /// Client-generated ULID that makes a mutating request safe to retry (doc 06 §2; the
+                /// mobile mutation-log `opId`). The server keeps key, request hash and response for 48 h:
+                /// a replay with the same body returns the stored response, the same key with a different
+                /// body is refused with 409 `IDEMPOTENCY_KEY_REUSED`. Optional for the caller.
+                ///
+                ///
+                /// - Remark: Generated from `#/paths/v1/auth/passkey/verify-registration/POST/header/Idempotency-Key`.
+                public var idempotencyKey: Components.Parameters.IdempotencyKey?
+                public var accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.RegisterPasskey.AcceptableContentType>]
+                /// Creates a new `Headers`.
+                ///
+                /// - Parameters:
+                ///   - idempotencyKey: Client-generated ULID that makes a mutating request safe to retry (doc 06 §2; the
+                ///   - accept:
+                public init(
+                    idempotencyKey: Components.Parameters.IdempotencyKey? = nil,
+                    accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.RegisterPasskey.AcceptableContentType>] = .defaultValues()
+                ) {
+                    self.idempotencyKey = idempotencyKey
+                    self.accept = accept
+                }
+            }
+            public var headers: Operations.RegisterPasskey.Input.Headers
+            /// - Remark: Generated from `#/paths/v1/auth/passkey/verify-registration/POST/requestBody`.
+            @frozen public enum Body: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/v1/auth/passkey/verify-registration/POST/requestBody/content/application\/json`.
+                case json(Components.Schemas.PasskeyRegistrationRequest)
+            }
+            public var body: Operations.RegisterPasskey.Input.Body
+            /// Creates a new `Input`.
+            ///
+            /// - Parameters:
+            ///   - headers:
+            ///   - body:
+            public init(
+                headers: Operations.RegisterPasskey.Input.Headers = .init(),
+                body: Operations.RegisterPasskey.Input.Body
+            ) {
+                self.headers = headers
+                self.body = body
+            }
+        }
+        @frozen public enum Output: Sendable, Hashable {
+            public struct Ok: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/v1/auth/passkey/verify-registration/POST/responses/200/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/v1/auth/passkey/verify-registration/POST/responses/200/content/application\/json`.
+                    case json(Components.Schemas.PasskeySummary)
+                    /// The associated value of the enum case if `self` is `.json`.
+                    ///
+                    /// - Throws: An error if `self` is not `.json`.
+                    /// - SeeAlso: `.json`.
+                    public var json: Components.Schemas.PasskeySummary {
+                        get throws {
+                            switch self {
+                            case let .json(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.RegisterPasskey.Output.Ok.Body
+                /// Creates a new `Ok`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                public init(body: Operations.RegisterPasskey.Output.Ok.Body) {
+                    self.body = body
+                }
+            }
+            /// The stored passkey
+            ///
+            /// - Remark: Generated from `#/paths//v1/auth/passkey/verify-registration/post(registerPasskey)/responses/200`.
+            ///
+            /// HTTP response code: `200 ok`.
+            case ok(Operations.RegisterPasskey.Output.Ok)
+            /// The associated value of the enum case if `self` is `.ok`.
+            ///
+            /// - Throws: An error if `self` is not `.ok`.
+            /// - SeeAlso: `.ok`.
+            public var ok: Operations.RegisterPasskey.Output.Ok {
+                get throws {
+                    switch self {
+                    case let .ok(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "ok",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// `UNAUTHENTICATED`: the credential is missing, malformed, expired or revoked. The client
+            /// renews the session once (`refreshSession`); if the renewal is refused too, it signs in
+            /// again.
+            ///
+            ///
+            /// - Remark: Generated from `#/paths//v1/auth/passkey/verify-registration/post(registerPasskey)/responses/401`.
+            ///
+            /// HTTP response code: `401 unauthorized`.
+            case unauthorized(Components.Responses.Unauthenticated)
+            /// The associated value of the enum case if `self` is `.unauthorized`.
+            ///
+            /// - Throws: An error if `self` is not `.unauthorized`.
+            /// - SeeAlso: `.unauthorized`.
+            public var unauthorized: Components.Responses.Unauthenticated {
+                get throws {
+                    switch self {
+                    case let .unauthorized(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "unauthorized",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// The caller is authenticated but may not perform this operation. `code` is `FORBIDDEN`
+            /// unless the operation names a more specific code for this status.
+            ///
+            ///
+            /// - Remark: Generated from `#/paths//v1/auth/passkey/verify-registration/post(registerPasskey)/responses/403`.
+            ///
+            /// HTTP response code: `403 forbidden`.
+            case forbidden(Components.Responses.Forbidden)
+            /// The associated value of the enum case if `self` is `.forbidden`.
+            ///
+            /// - Throws: An error if `self` is not `.forbidden`.
+            /// - SeeAlso: `.forbidden`.
+            public var forbidden: Components.Responses.Forbidden {
+                get throws {
+                    switch self {
+                    case let .forbidden(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "forbidden",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// `IDEMPOTENCY_KEY_REUSED` when the `Idempotency-Key` was already used with a different
+            /// request; `VERSION_MISMATCH` when `If-Match` no longer matches the stored version;
+            /// `CONFLICT` otherwise.
+            ///
+            ///
+            /// - Remark: Generated from `#/paths//v1/auth/passkey/verify-registration/post(registerPasskey)/responses/409`.
+            ///
+            /// HTTP response code: `409 conflict`.
+            case conflict(Components.Responses.Conflict)
+            /// The associated value of the enum case if `self` is `.conflict`.
+            ///
+            /// - Throws: An error if `self` is not `.conflict`.
+            /// - SeeAlso: `.conflict`.
+            public var conflict: Components.Responses.Conflict {
+                get throws {
+                    switch self {
+                    case let .conflict(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "conflict",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// `ACCOUNT_DELETED`: the account is deleted or its deletion is in progress. The client
+            /// erases everything it stores for the account and returns to its signed-out start; it
+            /// tells this reply from 401 by the status alone. A 410 is cacheable by default
+            /// (RFC 9110 §15.5.11), so the reply carries `Cache-Control: no-store` and must not be
+            /// cached.
+            ///
+            ///
+            /// - Remark: Generated from `#/paths//v1/auth/passkey/verify-registration/post(registerPasskey)/responses/410`.
+            ///
+            /// HTTP response code: `410 gone`.
+            case gone(Components.Responses.AccountDeleted)
+            /// The associated value of the enum case if `self` is `.gone`.
+            ///
+            /// - Throws: An error if `self` is not `.gone`.
+            /// - SeeAlso: `.gone`.
+            public var gone: Components.Responses.AccountDeleted {
+                get throws {
+                    switch self {
+                    case let .gone(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "gone",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// `RATE_LIMITED`: a rate limit was hit (doc 11 §14); retry after `Retry-After` seconds.
+            ///
+            /// - Remark: Generated from `#/paths//v1/auth/passkey/verify-registration/post(registerPasskey)/responses/429`.
+            ///
+            /// HTTP response code: `429 tooManyRequests`.
+            case tooManyRequests(Components.Responses.RateLimited)
+            /// The associated value of the enum case if `self` is `.tooManyRequests`.
+            ///
+            /// - Throws: An error if `self` is not `.tooManyRequests`.
+            /// - SeeAlso: `.tooManyRequests`.
+            public var tooManyRequests: Components.Responses.RateLimited {
+                get throws {
+                    switch self {
+                    case let .tooManyRequests(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "tooManyRequests",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Error (RFC 9457)
+            ///
+            /// - Remark: Generated from `#/paths//v1/auth/passkey/verify-registration/post(registerPasskey)/responses/default`.
+            ///
+            /// HTTP response code: `default`.
+            case `default`(statusCode: Swift.Int, Components.Responses.Problem)
+            /// The associated value of the enum case if `self` is `.`default``.
+            ///
+            /// - Throws: An error if `self` is not `.`default``.
+            /// - SeeAlso: `.`default``.
+            public var `default`: Components.Responses.Problem {
+                get throws {
+                    switch self {
+                    case let .`default`(_, response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "default",
+                            response: self
+                        )
+                    }
+                }
+            }
+        }
+        @frozen public enum AcceptableContentType: AcceptableProtocol {
+            case json
+            case applicationProblemJson
+            case other(Swift.String)
+            public init?(rawValue: Swift.String) {
+                switch rawValue.lowercased() {
+                case "application/json":
+                    self = .json
+                case "application/problem+json":
+                    self = .applicationProblemJson
+                default:
+                    self = .other(rawValue)
+                }
+            }
+            public var rawValue: Swift.String {
+                switch self {
+                case let .other(string):
+                    return string
+                case .json:
+                    return "application/json"
+                case .applicationProblemJson:
+                    return "application/problem+json"
+                }
+            }
+            public static var allCases: [Self] {
+                [
+                    .json,
+                    .applicationProblemJson
+                ]
+            }
+        }
+    }
+    /// Read the current session
+    ///
+    /// The account and expiry of the session the bearer token belongs to. Read-only: it does
+    /// not extend the session (better-auth `deferSessionRefresh`). A token with no live session
+    /// is answered with 401, never with an empty body.
+    ///
+    ///
+    /// - Remark: HTTP `GET /v1/auth/get-session`.
+    /// - Remark: Generated from `#/paths//v1/auth/get-session/get(getSession)`.
+    public enum GetSession {
+        public static let id: Swift.String = "getSession"
+        public struct Input: Sendable, Hashable {
+            /// - Remark: Generated from `#/paths/v1/auth/get-session/GET/header`.
+            public struct Headers: Sendable, Hashable {
+                public var accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.GetSession.AcceptableContentType>]
+                /// Creates a new `Headers`.
+                ///
+                /// - Parameters:
+                ///   - accept:
+                public init(accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.GetSession.AcceptableContentType>] = .defaultValues()) {
+                    self.accept = accept
+                }
+            }
+            public var headers: Operations.GetSession.Input.Headers
+            /// Creates a new `Input`.
+            ///
+            /// - Parameters:
+            ///   - headers:
+            public init(headers: Operations.GetSession.Input.Headers = .init()) {
+                self.headers = headers
+            }
+        }
+        @frozen public enum Output: Sendable, Hashable {
+            public struct Ok: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/v1/auth/get-session/GET/responses/200/headers`.
+                public struct Headers: Sendable, Hashable {
+                    /// - Remark: Generated from `#/components/headers/CacheControlNoStore`.
+                    @frozen public enum CacheControlNoStore: String, Codable, Hashable, Sendable, CaseIterable {
+                        case noStore = "no-store"
+                    }
+                    /// Always `no-store`; the response must not be stored by any cache.
+                    ///
+                    /// - Remark: Generated from `#/paths/v1/auth/get-session/GET/responses/200/headers/Cache-Control`.
+                    public var cacheControl: Components.Headers.CacheControlNoStore?
+                    /// Creates a new `Headers`.
+                    ///
+                    /// - Parameters:
+                    ///   - cacheControl: Always `no-store`; the response must not be stored by any cache.
+                    public init(cacheControl: Components.Headers.CacheControlNoStore? = nil) {
+                        self.cacheControl = cacheControl
+                    }
+                }
+                /// Received HTTP response headers
+                public var headers: Operations.GetSession.Output.Ok.Headers
+                /// - Remark: Generated from `#/paths/v1/auth/get-session/GET/responses/200/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/v1/auth/get-session/GET/responses/200/content/application\/json`.
+                    case json(Components.Schemas.SessionInfo)
+                    /// The associated value of the enum case if `self` is `.json`.
+                    ///
+                    /// - Throws: An error if `self` is not `.json`.
+                    /// - SeeAlso: `.json`.
+                    public var json: Components.Schemas.SessionInfo {
+                        get throws {
+                            switch self {
+                            case let .json(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.GetSession.Output.Ok.Body
+                /// Creates a new `Ok`.
+                ///
+                /// - Parameters:
+                ///   - headers: Received HTTP response headers
+                ///   - body: Received HTTP response body
+                public init(
+                    headers: Operations.GetSession.Output.Ok.Headers = .init(),
+                    body: Operations.GetSession.Output.Ok.Body
+                ) {
+                    self.headers = headers
+                    self.body = body
+                }
+            }
+            /// The current session
+            ///
+            /// - Remark: Generated from `#/paths//v1/auth/get-session/get(getSession)/responses/200`.
+            ///
+            /// HTTP response code: `200 ok`.
+            case ok(Operations.GetSession.Output.Ok)
+            /// The associated value of the enum case if `self` is `.ok`.
+            ///
+            /// - Throws: An error if `self` is not `.ok`.
+            /// - SeeAlso: `.ok`.
+            public var ok: Operations.GetSession.Output.Ok {
+                get throws {
+                    switch self {
+                    case let .ok(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "ok",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// `UNAUTHENTICATED`: the credential is missing, malformed, expired or revoked. The client
+            /// renews the session once (`refreshSession`); if the renewal is refused too, it signs in
+            /// again.
+            ///
+            ///
+            /// - Remark: Generated from `#/paths//v1/auth/get-session/get(getSession)/responses/401`.
+            ///
+            /// HTTP response code: `401 unauthorized`.
+            case unauthorized(Components.Responses.Unauthenticated)
+            /// The associated value of the enum case if `self` is `.unauthorized`.
+            ///
+            /// - Throws: An error if `self` is not `.unauthorized`.
+            /// - SeeAlso: `.unauthorized`.
+            public var unauthorized: Components.Responses.Unauthenticated {
+                get throws {
+                    switch self {
+                    case let .unauthorized(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "unauthorized",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// `ACCOUNT_DELETED`: the account is deleted or its deletion is in progress. The client
+            /// erases everything it stores for the account and returns to its signed-out start; it
+            /// tells this reply from 401 by the status alone. A 410 is cacheable by default
+            /// (RFC 9110 §15.5.11), so the reply carries `Cache-Control: no-store` and must not be
+            /// cached.
+            ///
+            ///
+            /// - Remark: Generated from `#/paths//v1/auth/get-session/get(getSession)/responses/410`.
+            ///
+            /// HTTP response code: `410 gone`.
+            case gone(Components.Responses.AccountDeleted)
+            /// The associated value of the enum case if `self` is `.gone`.
+            ///
+            /// - Throws: An error if `self` is not `.gone`.
+            /// - SeeAlso: `.gone`.
+            public var gone: Components.Responses.AccountDeleted {
+                get throws {
+                    switch self {
+                    case let .gone(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "gone",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// `RATE_LIMITED`: a rate limit was hit (doc 11 §14); retry after `Retry-After` seconds.
+            ///
+            /// - Remark: Generated from `#/paths//v1/auth/get-session/get(getSession)/responses/429`.
+            ///
+            /// HTTP response code: `429 tooManyRequests`.
+            case tooManyRequests(Components.Responses.RateLimited)
+            /// The associated value of the enum case if `self` is `.tooManyRequests`.
+            ///
+            /// - Throws: An error if `self` is not `.tooManyRequests`.
+            /// - SeeAlso: `.tooManyRequests`.
+            public var tooManyRequests: Components.Responses.RateLimited {
+                get throws {
+                    switch self {
+                    case let .tooManyRequests(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "tooManyRequests",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Error (RFC 9457)
+            ///
+            /// - Remark: Generated from `#/paths//v1/auth/get-session/get(getSession)/responses/default`.
+            ///
+            /// HTTP response code: `default`.
+            case `default`(statusCode: Swift.Int, Components.Responses.Problem)
+            /// The associated value of the enum case if `self` is `.`default``.
+            ///
+            /// - Throws: An error if `self` is not `.`default``.
+            /// - SeeAlso: `.`default``.
+            public var `default`: Components.Responses.Problem {
+                get throws {
+                    switch self {
+                    case let .`default`(_, response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "default",
+                            response: self
+                        )
+                    }
+                }
+            }
+        }
+        @frozen public enum AcceptableContentType: AcceptableProtocol {
+            case json
+            case applicationProblemJson
+            case other(Swift.String)
+            public init?(rawValue: Swift.String) {
+                switch rawValue.lowercased() {
+                case "application/json":
+                    self = .json
+                case "application/problem+json":
+                    self = .applicationProblemJson
+                default:
+                    self = .other(rawValue)
+                }
+            }
+            public var rawValue: Swift.String {
+                switch self {
+                case let .other(string):
+                    return string
+                case .json:
+                    return "application/json"
+                case .applicationProblemJson:
+                    return "application/problem+json"
+                }
+            }
+            public static var allCases: [Self] {
+                [
+                    .json,
+                    .applicationProblemJson
+                ]
+            }
+        }
+    }
+    /// Renew the current session
+    ///
+    /// Extends the session the bearer token belongs to and answers with its token and new
+    /// expiry. The answer may carry a different token than the one presented: the client
+    /// stores the returned token and discards the old one. A 401 here is a refused renewal:
+    /// the client ends the session on the device and sends no further call for it.
+    ///
+    ///
+    /// - Remark: HTTP `POST /v1/auth/get-session`.
+    /// - Remark: Generated from `#/paths//v1/auth/get-session/post(refreshSession)`.
+    public enum RefreshSession {
+        public static let id: Swift.String = "refreshSession"
+        public struct Input: Sendable, Hashable {
+            /// - Remark: Generated from `#/paths/v1/auth/get-session/POST/header`.
+            public struct Headers: Sendable, Hashable {
+                /// Client-generated ULID that makes a mutating request safe to retry (doc 06 §2; the
+                /// mobile mutation-log `opId`). The server keeps key, request hash and response for 48 h:
+                /// a replay with the same body returns the stored response, the same key with a different
+                /// body is refused with 409 `IDEMPOTENCY_KEY_REUSED`. Optional for the caller.
+                ///
+                ///
+                /// - Remark: Generated from `#/paths/v1/auth/get-session/POST/header/Idempotency-Key`.
+                public var idempotencyKey: Components.Parameters.IdempotencyKey?
+                public var accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.RefreshSession.AcceptableContentType>]
+                /// Creates a new `Headers`.
+                ///
+                /// - Parameters:
+                ///   - idempotencyKey: Client-generated ULID that makes a mutating request safe to retry (doc 06 §2; the
+                ///   - accept:
+                public init(
+                    idempotencyKey: Components.Parameters.IdempotencyKey? = nil,
+                    accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.RefreshSession.AcceptableContentType>] = .defaultValues()
+                ) {
+                    self.idempotencyKey = idempotencyKey
+                    self.accept = accept
+                }
+            }
+            public var headers: Operations.RefreshSession.Input.Headers
+            /// Creates a new `Input`.
+            ///
+            /// - Parameters:
+            ///   - headers:
+            public init(headers: Operations.RefreshSession.Input.Headers = .init()) {
+                self.headers = headers
+            }
+        }
+        @frozen public enum Output: Sendable, Hashable {
+            public struct Ok: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/v1/auth/get-session/POST/responses/200/headers`.
+                public struct Headers: Sendable, Hashable {
+                    /// - Remark: Generated from `#/components/headers/CacheControlNoStore`.
+                    @frozen public enum CacheControlNoStore: String, Codable, Hashable, Sendable, CaseIterable {
+                        case noStore = "no-store"
+                    }
+                    /// Always `no-store`; the response must not be stored by any cache.
+                    ///
+                    /// - Remark: Generated from `#/paths/v1/auth/get-session/POST/responses/200/headers/Cache-Control`.
+                    public var cacheControl: Components.Headers.CacheControlNoStore?
+                    /// Creates a new `Headers`.
+                    ///
+                    /// - Parameters:
+                    ///   - cacheControl: Always `no-store`; the response must not be stored by any cache.
+                    public init(cacheControl: Components.Headers.CacheControlNoStore? = nil) {
+                        self.cacheControl = cacheControl
+                    }
+                }
+                /// Received HTTP response headers
+                public var headers: Operations.RefreshSession.Output.Ok.Headers
+                /// - Remark: Generated from `#/paths/v1/auth/get-session/POST/responses/200/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/v1/auth/get-session/POST/responses/200/content/application\/json`.
+                    case json(Components.Schemas.SessionGrant)
+                    /// The associated value of the enum case if `self` is `.json`.
+                    ///
+                    /// - Throws: An error if `self` is not `.json`.
+                    /// - SeeAlso: `.json`.
+                    public var json: Components.Schemas.SessionGrant {
+                        get throws {
+                            switch self {
+                            case let .json(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.RefreshSession.Output.Ok.Body
+                /// Creates a new `Ok`.
+                ///
+                /// - Parameters:
+                ///   - headers: Received HTTP response headers
+                ///   - body: Received HTTP response body
+                public init(
+                    headers: Operations.RefreshSession.Output.Ok.Headers = .init(),
+                    body: Operations.RefreshSession.Output.Ok.Body
+                ) {
+                    self.headers = headers
+                    self.body = body
+                }
+            }
+            /// The renewed session
+            ///
+            /// - Remark: Generated from `#/paths//v1/auth/get-session/post(refreshSession)/responses/200`.
+            ///
+            /// HTTP response code: `200 ok`.
+            case ok(Operations.RefreshSession.Output.Ok)
+            /// The associated value of the enum case if `self` is `.ok`.
+            ///
+            /// - Throws: An error if `self` is not `.ok`.
+            /// - SeeAlso: `.ok`.
+            public var ok: Operations.RefreshSession.Output.Ok {
+                get throws {
+                    switch self {
+                    case let .ok(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "ok",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// `UNAUTHENTICATED`: the credential is missing, malformed, expired or revoked. The client
+            /// renews the session once (`refreshSession`); if the renewal is refused too, it signs in
+            /// again.
+            ///
+            ///
+            /// - Remark: Generated from `#/paths//v1/auth/get-session/post(refreshSession)/responses/401`.
+            ///
+            /// HTTP response code: `401 unauthorized`.
+            case unauthorized(Components.Responses.Unauthenticated)
+            /// The associated value of the enum case if `self` is `.unauthorized`.
+            ///
+            /// - Throws: An error if `self` is not `.unauthorized`.
+            /// - SeeAlso: `.unauthorized`.
+            public var unauthorized: Components.Responses.Unauthenticated {
+                get throws {
+                    switch self {
+                    case let .unauthorized(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "unauthorized",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// `IDEMPOTENCY_KEY_REUSED` when the `Idempotency-Key` was already used with a different
+            /// request; `VERSION_MISMATCH` when `If-Match` no longer matches the stored version;
+            /// `CONFLICT` otherwise.
+            ///
+            ///
+            /// - Remark: Generated from `#/paths//v1/auth/get-session/post(refreshSession)/responses/409`.
+            ///
+            /// HTTP response code: `409 conflict`.
+            case conflict(Components.Responses.Conflict)
+            /// The associated value of the enum case if `self` is `.conflict`.
+            ///
+            /// - Throws: An error if `self` is not `.conflict`.
+            /// - SeeAlso: `.conflict`.
+            public var conflict: Components.Responses.Conflict {
+                get throws {
+                    switch self {
+                    case let .conflict(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "conflict",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// `ACCOUNT_DELETED`: the account is deleted or its deletion is in progress. The client
+            /// erases everything it stores for the account and returns to its signed-out start; it
+            /// tells this reply from 401 by the status alone. A 410 is cacheable by default
+            /// (RFC 9110 §15.5.11), so the reply carries `Cache-Control: no-store` and must not be
+            /// cached.
+            ///
+            ///
+            /// - Remark: Generated from `#/paths//v1/auth/get-session/post(refreshSession)/responses/410`.
+            ///
+            /// HTTP response code: `410 gone`.
+            case gone(Components.Responses.AccountDeleted)
+            /// The associated value of the enum case if `self` is `.gone`.
+            ///
+            /// - Throws: An error if `self` is not `.gone`.
+            /// - SeeAlso: `.gone`.
+            public var gone: Components.Responses.AccountDeleted {
+                get throws {
+                    switch self {
+                    case let .gone(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "gone",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// `RATE_LIMITED`: a rate limit was hit (doc 11 §14); retry after `Retry-After` seconds.
+            ///
+            /// - Remark: Generated from `#/paths//v1/auth/get-session/post(refreshSession)/responses/429`.
+            ///
+            /// HTTP response code: `429 tooManyRequests`.
+            case tooManyRequests(Components.Responses.RateLimited)
+            /// The associated value of the enum case if `self` is `.tooManyRequests`.
+            ///
+            /// - Throws: An error if `self` is not `.tooManyRequests`.
+            /// - SeeAlso: `.tooManyRequests`.
+            public var tooManyRequests: Components.Responses.RateLimited {
+                get throws {
+                    switch self {
+                    case let .tooManyRequests(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "tooManyRequests",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Error (RFC 9457)
+            ///
+            /// - Remark: Generated from `#/paths//v1/auth/get-session/post(refreshSession)/responses/default`.
+            ///
+            /// HTTP response code: `default`.
+            case `default`(statusCode: Swift.Int, Components.Responses.Problem)
+            /// The associated value of the enum case if `self` is `.`default``.
+            ///
+            /// - Throws: An error if `self` is not `.`default``.
+            /// - SeeAlso: `.`default``.
+            public var `default`: Components.Responses.Problem {
+                get throws {
+                    switch self {
+                    case let .`default`(_, response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "default",
+                            response: self
+                        )
+                    }
+                }
+            }
+        }
+        @frozen public enum AcceptableContentType: AcceptableProtocol {
+            case json
+            case applicationProblemJson
+            case other(Swift.String)
+            public init?(rawValue: Swift.String) {
+                switch rawValue.lowercased() {
+                case "application/json":
+                    self = .json
+                case "application/problem+json":
+                    self = .applicationProblemJson
+                default:
+                    self = .other(rawValue)
+                }
+            }
+            public var rawValue: Swift.String {
+                switch self {
+                case let .other(string):
+                    return string
+                case .json:
+                    return "application/json"
+                case .applicationProblemJson:
+                    return "application/problem+json"
+                }
+            }
+            public static var allCases: [Self] {
+                [
+                    .json,
+                    .applicationProblemJson
+                ]
+            }
+        }
+    }
+    /// Sign out this device
+    ///
+    /// Revokes the session the bearer token belongs to on the server.
+    ///
+    /// - Remark: HTTP `POST /v1/auth/sign-out`.
+    /// - Remark: Generated from `#/paths//v1/auth/sign-out/post(signOut)`.
+    public enum SignOut {
+        public static let id: Swift.String = "signOut"
+        public struct Input: Sendable, Hashable {
+            /// - Remark: Generated from `#/paths/v1/auth/sign-out/POST/header`.
+            public struct Headers: Sendable, Hashable {
+                /// Client-generated ULID that makes a mutating request safe to retry (doc 06 §2; the
+                /// mobile mutation-log `opId`). The server keeps key, request hash and response for 48 h:
+                /// a replay with the same body returns the stored response, the same key with a different
+                /// body is refused with 409 `IDEMPOTENCY_KEY_REUSED`. Optional for the caller.
+                ///
+                ///
+                /// - Remark: Generated from `#/paths/v1/auth/sign-out/POST/header/Idempotency-Key`.
+                public var idempotencyKey: Components.Parameters.IdempotencyKey?
+                public var accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.SignOut.AcceptableContentType>]
+                /// Creates a new `Headers`.
+                ///
+                /// - Parameters:
+                ///   - idempotencyKey: Client-generated ULID that makes a mutating request safe to retry (doc 06 §2; the
+                ///   - accept:
+                public init(
+                    idempotencyKey: Components.Parameters.IdempotencyKey? = nil,
+                    accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.SignOut.AcceptableContentType>] = .defaultValues()
+                ) {
+                    self.idempotencyKey = idempotencyKey
+                    self.accept = accept
+                }
+            }
+            public var headers: Operations.SignOut.Input.Headers
+            /// Creates a new `Input`.
+            ///
+            /// - Parameters:
+            ///   - headers:
+            public init(headers: Operations.SignOut.Input.Headers = .init()) {
+                self.headers = headers
+            }
+        }
+        @frozen public enum Output: Sendable, Hashable {
+            public struct Ok: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/v1/auth/sign-out/POST/responses/200/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/v1/auth/sign-out/POST/responses/200/content/application\/json`.
+                    case json(Components.Schemas.SignOutResult)
+                    /// The associated value of the enum case if `self` is `.json`.
+                    ///
+                    /// - Throws: An error if `self` is not `.json`.
+                    /// - SeeAlso: `.json`.
+                    public var json: Components.Schemas.SignOutResult {
+                        get throws {
+                            switch self {
+                            case let .json(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.SignOut.Output.Ok.Body
+                /// Creates a new `Ok`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                public init(body: Operations.SignOut.Output.Ok.Body) {
+                    self.body = body
+                }
+            }
+            /// The session is revoked
+            ///
+            /// - Remark: Generated from `#/paths//v1/auth/sign-out/post(signOut)/responses/200`.
+            ///
+            /// HTTP response code: `200 ok`.
+            case ok(Operations.SignOut.Output.Ok)
+            /// The associated value of the enum case if `self` is `.ok`.
+            ///
+            /// - Throws: An error if `self` is not `.ok`.
+            /// - SeeAlso: `.ok`.
+            public var ok: Operations.SignOut.Output.Ok {
+                get throws {
+                    switch self {
+                    case let .ok(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "ok",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// `UNAUTHENTICATED`: the credential is missing, malformed, expired or revoked. The client
+            /// renews the session once (`refreshSession`); if the renewal is refused too, it signs in
+            /// again.
+            ///
+            ///
+            /// - Remark: Generated from `#/paths//v1/auth/sign-out/post(signOut)/responses/401`.
+            ///
+            /// HTTP response code: `401 unauthorized`.
+            case unauthorized(Components.Responses.Unauthenticated)
+            /// The associated value of the enum case if `self` is `.unauthorized`.
+            ///
+            /// - Throws: An error if `self` is not `.unauthorized`.
+            /// - SeeAlso: `.unauthorized`.
+            public var unauthorized: Components.Responses.Unauthenticated {
+                get throws {
+                    switch self {
+                    case let .unauthorized(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "unauthorized",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// `IDEMPOTENCY_KEY_REUSED` when the `Idempotency-Key` was already used with a different
+            /// request; `VERSION_MISMATCH` when `If-Match` no longer matches the stored version;
+            /// `CONFLICT` otherwise.
+            ///
+            ///
+            /// - Remark: Generated from `#/paths//v1/auth/sign-out/post(signOut)/responses/409`.
+            ///
+            /// HTTP response code: `409 conflict`.
+            case conflict(Components.Responses.Conflict)
+            /// The associated value of the enum case if `self` is `.conflict`.
+            ///
+            /// - Throws: An error if `self` is not `.conflict`.
+            /// - SeeAlso: `.conflict`.
+            public var conflict: Components.Responses.Conflict {
+                get throws {
+                    switch self {
+                    case let .conflict(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "conflict",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// `ACCOUNT_DELETED`: the account is deleted or its deletion is in progress. The client
+            /// erases everything it stores for the account and returns to its signed-out start; it
+            /// tells this reply from 401 by the status alone. A 410 is cacheable by default
+            /// (RFC 9110 §15.5.11), so the reply carries `Cache-Control: no-store` and must not be
+            /// cached.
+            ///
+            ///
+            /// - Remark: Generated from `#/paths//v1/auth/sign-out/post(signOut)/responses/410`.
+            ///
+            /// HTTP response code: `410 gone`.
+            case gone(Components.Responses.AccountDeleted)
+            /// The associated value of the enum case if `self` is `.gone`.
+            ///
+            /// - Throws: An error if `self` is not `.gone`.
+            /// - SeeAlso: `.gone`.
+            public var gone: Components.Responses.AccountDeleted {
+                get throws {
+                    switch self {
+                    case let .gone(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "gone",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// `RATE_LIMITED`: a rate limit was hit (doc 11 §14); retry after `Retry-After` seconds.
+            ///
+            /// - Remark: Generated from `#/paths//v1/auth/sign-out/post(signOut)/responses/429`.
+            ///
+            /// HTTP response code: `429 tooManyRequests`.
+            case tooManyRequests(Components.Responses.RateLimited)
+            /// The associated value of the enum case if `self` is `.tooManyRequests`.
+            ///
+            /// - Throws: An error if `self` is not `.tooManyRequests`.
+            /// - SeeAlso: `.tooManyRequests`.
+            public var tooManyRequests: Components.Responses.RateLimited {
+                get throws {
+                    switch self {
+                    case let .tooManyRequests(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "tooManyRequests",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Error (RFC 9457)
+            ///
+            /// - Remark: Generated from `#/paths//v1/auth/sign-out/post(signOut)/responses/default`.
+            ///
+            /// HTTP response code: `default`.
+            case `default`(statusCode: Swift.Int, Components.Responses.Problem)
+            /// The associated value of the enum case if `self` is `.`default``.
+            ///
+            /// - Throws: An error if `self` is not `.`default``.
+            /// - SeeAlso: `.`default``.
+            public var `default`: Components.Responses.Problem {
+                get throws {
+                    switch self {
+                    case let .`default`(_, response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "default",
+                            response: self
+                        )
+                    }
+                }
+            }
+        }
+        @frozen public enum AcceptableContentType: AcceptableProtocol {
+            case json
+            case applicationProblemJson
+            case other(Swift.String)
+            public init?(rawValue: Swift.String) {
+                switch rawValue.lowercased() {
+                case "application/json":
+                    self = .json
+                case "application/problem+json":
+                    self = .applicationProblemJson
+                default:
+                    self = .other(rawValue)
+                }
+            }
+            public var rawValue: Swift.String {
+                switch self {
+                case let .other(string):
+                    return string
+                case .json:
+                    return "application/json"
+                case .applicationProblemJson:
+                    return "application/problem+json"
+                }
+            }
+            public static var allCases: [Self] {
+                [
+                    .json,
+                    .applicationProblemJson
+                ]
+            }
+        }
+    }
+    /// List the signed-in devices of the caller
+    ///
+    /// One entry per active session of the caller's account (the device list, doc 11 §4.2),
+    /// newest first, cursor-paginated (doc 06 §2). Never another user's sessions and never a
+    /// session token.
+    ///
+    ///
+    /// - Remark: HTTP `GET /v1/auth/list-sessions`.
+    /// - Remark: Generated from `#/paths//v1/auth/list-sessions/get(listDeviceSessions)`.
+    public enum ListDeviceSessions {
+        public static let id: Swift.String = "listDeviceSessions"
+        public struct Input: Sendable, Hashable {
+            /// - Remark: Generated from `#/paths/v1/auth/list-sessions/GET/query`.
+            public struct Query: Sendable, Hashable {
+                /// Opaque cursor from the `nextCursor` of the previous page; omit for the first page.
+                ///
+                /// - Remark: Generated from `#/paths/v1/auth/list-sessions/GET/query/cursor`.
+                public var cursor: Components.Parameters.Cursor?
+                /// Page size (doc 06 §2 cursor pagination).
+                ///
+                /// - Remark: Generated from `#/paths/v1/auth/list-sessions/GET/query/limit`.
+                public var limit: Components.Parameters.Limit?
+                /// Creates a new `Query`.
+                ///
+                /// - Parameters:
+                ///   - cursor: Opaque cursor from the `nextCursor` of the previous page; omit for the first page.
+                ///   - limit: Page size (doc 06 §2 cursor pagination).
+                public init(
+                    cursor: Components.Parameters.Cursor? = nil,
+                    limit: Components.Parameters.Limit? = nil
+                ) {
+                    self.cursor = cursor
+                    self.limit = limit
+                }
+            }
+            public var query: Operations.ListDeviceSessions.Input.Query
+            /// - Remark: Generated from `#/paths/v1/auth/list-sessions/GET/header`.
+            public struct Headers: Sendable, Hashable {
+                public var accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.ListDeviceSessions.AcceptableContentType>]
+                /// Creates a new `Headers`.
+                ///
+                /// - Parameters:
+                ///   - accept:
+                public init(accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.ListDeviceSessions.AcceptableContentType>] = .defaultValues()) {
+                    self.accept = accept
+                }
+            }
+            public var headers: Operations.ListDeviceSessions.Input.Headers
+            /// Creates a new `Input`.
+            ///
+            /// - Parameters:
+            ///   - query:
+            ///   - headers:
+            public init(
+                query: Operations.ListDeviceSessions.Input.Query = .init(),
+                headers: Operations.ListDeviceSessions.Input.Headers = .init()
+            ) {
+                self.query = query
+                self.headers = headers
+            }
+        }
+        @frozen public enum Output: Sendable, Hashable {
+            public struct Ok: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/v1/auth/list-sessions/GET/responses/200/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/v1/auth/list-sessions/GET/responses/200/content/application\/json`.
+                    case json(Components.Schemas.DeviceSessionPage)
+                    /// The associated value of the enum case if `self` is `.json`.
+                    ///
+                    /// - Throws: An error if `self` is not `.json`.
+                    /// - SeeAlso: `.json`.
+                    public var json: Components.Schemas.DeviceSessionPage {
+                        get throws {
+                            switch self {
+                            case let .json(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.ListDeviceSessions.Output.Ok.Body
+                /// Creates a new `Ok`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                public init(body: Operations.ListDeviceSessions.Output.Ok.Body) {
+                    self.body = body
+                }
+            }
+            /// One page of the caller's sessions
+            ///
+            /// - Remark: Generated from `#/paths//v1/auth/list-sessions/get(listDeviceSessions)/responses/200`.
+            ///
+            /// HTTP response code: `200 ok`.
+            case ok(Operations.ListDeviceSessions.Output.Ok)
+            /// The associated value of the enum case if `self` is `.ok`.
+            ///
+            /// - Throws: An error if `self` is not `.ok`.
+            /// - SeeAlso: `.ok`.
+            public var ok: Operations.ListDeviceSessions.Output.Ok {
+                get throws {
+                    switch self {
+                    case let .ok(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "ok",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// `UNAUTHENTICATED`: the credential is missing, malformed, expired or revoked. The client
+            /// renews the session once (`refreshSession`); if the renewal is refused too, it signs in
+            /// again.
+            ///
+            ///
+            /// - Remark: Generated from `#/paths//v1/auth/list-sessions/get(listDeviceSessions)/responses/401`.
+            ///
+            /// HTTP response code: `401 unauthorized`.
+            case unauthorized(Components.Responses.Unauthenticated)
+            /// The associated value of the enum case if `self` is `.unauthorized`.
+            ///
+            /// - Throws: An error if `self` is not `.unauthorized`.
+            /// - SeeAlso: `.unauthorized`.
+            public var unauthorized: Components.Responses.Unauthenticated {
+                get throws {
+                    switch self {
+                    case let .unauthorized(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "unauthorized",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// `ACCOUNT_DELETED`: the account is deleted or its deletion is in progress. The client
+            /// erases everything it stores for the account and returns to its signed-out start; it
+            /// tells this reply from 401 by the status alone. A 410 is cacheable by default
+            /// (RFC 9110 §15.5.11), so the reply carries `Cache-Control: no-store` and must not be
+            /// cached.
+            ///
+            ///
+            /// - Remark: Generated from `#/paths//v1/auth/list-sessions/get(listDeviceSessions)/responses/410`.
+            ///
+            /// HTTP response code: `410 gone`.
+            case gone(Components.Responses.AccountDeleted)
+            /// The associated value of the enum case if `self` is `.gone`.
+            ///
+            /// - Throws: An error if `self` is not `.gone`.
+            /// - SeeAlso: `.gone`.
+            public var gone: Components.Responses.AccountDeleted {
+                get throws {
+                    switch self {
+                    case let .gone(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "gone",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// `RATE_LIMITED`: a rate limit was hit (doc 11 §14); retry after `Retry-After` seconds.
+            ///
+            /// - Remark: Generated from `#/paths//v1/auth/list-sessions/get(listDeviceSessions)/responses/429`.
+            ///
+            /// HTTP response code: `429 tooManyRequests`.
+            case tooManyRequests(Components.Responses.RateLimited)
+            /// The associated value of the enum case if `self` is `.tooManyRequests`.
+            ///
+            /// - Throws: An error if `self` is not `.tooManyRequests`.
+            /// - SeeAlso: `.tooManyRequests`.
+            public var tooManyRequests: Components.Responses.RateLimited {
+                get throws {
+                    switch self {
+                    case let .tooManyRequests(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "tooManyRequests",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Error (RFC 9457)
+            ///
+            /// - Remark: Generated from `#/paths//v1/auth/list-sessions/get(listDeviceSessions)/responses/default`.
+            ///
+            /// HTTP response code: `default`.
+            case `default`(statusCode: Swift.Int, Components.Responses.Problem)
+            /// The associated value of the enum case if `self` is `.`default``.
+            ///
+            /// - Throws: An error if `self` is not `.`default``.
+            /// - SeeAlso: `.`default``.
+            public var `default`: Components.Responses.Problem {
+                get throws {
+                    switch self {
+                    case let .`default`(_, response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "default",
+                            response: self
+                        )
+                    }
+                }
+            }
+        }
+        @frozen public enum AcceptableContentType: AcceptableProtocol {
+            case json
+            case applicationProblemJson
+            case other(Swift.String)
+            public init?(rawValue: Swift.String) {
+                switch rawValue.lowercased() {
+                case "application/json":
+                    self = .json
+                case "application/problem+json":
+                    self = .applicationProblemJson
+                default:
+                    self = .other(rawValue)
+                }
+            }
+            public var rawValue: Swift.String {
+                switch self {
+                case let .other(string):
+                    return string
+                case .json:
+                    return "application/json"
+                case .applicationProblemJson:
+                    return "application/problem+json"
+                }
+            }
+            public static var allCases: [Self] {
+                [
+                    .json,
+                    .applicationProblemJson
+                ]
+            }
+        }
+    }
+    /// Sign out every device
+    ///
+    /// Revokes every session of the caller's account, the current one included.
+    ///
+    /// - Remark: HTTP `POST /v1/auth/revoke-sessions`.
+    /// - Remark: Generated from `#/paths//v1/auth/revoke-sessions/post(signOutAllDevices)`.
+    public enum SignOutAllDevices {
+        public static let id: Swift.String = "signOutAllDevices"
+        public struct Input: Sendable, Hashable {
+            /// - Remark: Generated from `#/paths/v1/auth/revoke-sessions/POST/header`.
+            public struct Headers: Sendable, Hashable {
+                /// Client-generated ULID that makes a mutating request safe to retry (doc 06 §2; the
+                /// mobile mutation-log `opId`). The server keeps key, request hash and response for 48 h:
+                /// a replay with the same body returns the stored response, the same key with a different
+                /// body is refused with 409 `IDEMPOTENCY_KEY_REUSED`. Optional for the caller.
+                ///
+                ///
+                /// - Remark: Generated from `#/paths/v1/auth/revoke-sessions/POST/header/Idempotency-Key`.
+                public var idempotencyKey: Components.Parameters.IdempotencyKey?
+                public var accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.SignOutAllDevices.AcceptableContentType>]
+                /// Creates a new `Headers`.
+                ///
+                /// - Parameters:
+                ///   - idempotencyKey: Client-generated ULID that makes a mutating request safe to retry (doc 06 §2; the
+                ///   - accept:
+                public init(
+                    idempotencyKey: Components.Parameters.IdempotencyKey? = nil,
+                    accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.SignOutAllDevices.AcceptableContentType>] = .defaultValues()
+                ) {
+                    self.idempotencyKey = idempotencyKey
+                    self.accept = accept
+                }
+            }
+            public var headers: Operations.SignOutAllDevices.Input.Headers
+            /// Creates a new `Input`.
+            ///
+            /// - Parameters:
+            ///   - headers:
+            public init(headers: Operations.SignOutAllDevices.Input.Headers = .init()) {
+                self.headers = headers
+            }
+        }
+        @frozen public enum Output: Sendable, Hashable {
+            public struct Ok: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/v1/auth/revoke-sessions/POST/responses/200/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/v1/auth/revoke-sessions/POST/responses/200/content/application\/json`.
+                    case json(Components.Schemas.RevokeSessionsResult)
+                    /// The associated value of the enum case if `self` is `.json`.
+                    ///
+                    /// - Throws: An error if `self` is not `.json`.
+                    /// - SeeAlso: `.json`.
+                    public var json: Components.Schemas.RevokeSessionsResult {
+                        get throws {
+                            switch self {
+                            case let .json(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.SignOutAllDevices.Output.Ok.Body
+                /// Creates a new `Ok`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                public init(body: Operations.SignOutAllDevices.Output.Ok.Body) {
+                    self.body = body
+                }
+            }
+            /// Every session of the account is revoked
+            ///
+            /// - Remark: Generated from `#/paths//v1/auth/revoke-sessions/post(signOutAllDevices)/responses/200`.
+            ///
+            /// HTTP response code: `200 ok`.
+            case ok(Operations.SignOutAllDevices.Output.Ok)
+            /// The associated value of the enum case if `self` is `.ok`.
+            ///
+            /// - Throws: An error if `self` is not `.ok`.
+            /// - SeeAlso: `.ok`.
+            public var ok: Operations.SignOutAllDevices.Output.Ok {
+                get throws {
+                    switch self {
+                    case let .ok(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "ok",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// `UNAUTHENTICATED`: the credential is missing, malformed, expired or revoked. The client
+            /// renews the session once (`refreshSession`); if the renewal is refused too, it signs in
+            /// again.
+            ///
+            ///
+            /// - Remark: Generated from `#/paths//v1/auth/revoke-sessions/post(signOutAllDevices)/responses/401`.
+            ///
+            /// HTTP response code: `401 unauthorized`.
+            case unauthorized(Components.Responses.Unauthenticated)
+            /// The associated value of the enum case if `self` is `.unauthorized`.
+            ///
+            /// - Throws: An error if `self` is not `.unauthorized`.
+            /// - SeeAlso: `.unauthorized`.
+            public var unauthorized: Components.Responses.Unauthenticated {
+                get throws {
+                    switch self {
+                    case let .unauthorized(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "unauthorized",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// `IDEMPOTENCY_KEY_REUSED` when the `Idempotency-Key` was already used with a different
+            /// request; `VERSION_MISMATCH` when `If-Match` no longer matches the stored version;
+            /// `CONFLICT` otherwise.
+            ///
+            ///
+            /// - Remark: Generated from `#/paths//v1/auth/revoke-sessions/post(signOutAllDevices)/responses/409`.
+            ///
+            /// HTTP response code: `409 conflict`.
+            case conflict(Components.Responses.Conflict)
+            /// The associated value of the enum case if `self` is `.conflict`.
+            ///
+            /// - Throws: An error if `self` is not `.conflict`.
+            /// - SeeAlso: `.conflict`.
+            public var conflict: Components.Responses.Conflict {
+                get throws {
+                    switch self {
+                    case let .conflict(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "conflict",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// `ACCOUNT_DELETED`: the account is deleted or its deletion is in progress. The client
+            /// erases everything it stores for the account and returns to its signed-out start; it
+            /// tells this reply from 401 by the status alone. A 410 is cacheable by default
+            /// (RFC 9110 §15.5.11), so the reply carries `Cache-Control: no-store` and must not be
+            /// cached.
+            ///
+            ///
+            /// - Remark: Generated from `#/paths//v1/auth/revoke-sessions/post(signOutAllDevices)/responses/410`.
+            ///
+            /// HTTP response code: `410 gone`.
+            case gone(Components.Responses.AccountDeleted)
+            /// The associated value of the enum case if `self` is `.gone`.
+            ///
+            /// - Throws: An error if `self` is not `.gone`.
+            /// - SeeAlso: `.gone`.
+            public var gone: Components.Responses.AccountDeleted {
+                get throws {
+                    switch self {
+                    case let .gone(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "gone",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// `RATE_LIMITED`: a rate limit was hit (doc 11 §14); retry after `Retry-After` seconds.
+            ///
+            /// - Remark: Generated from `#/paths//v1/auth/revoke-sessions/post(signOutAllDevices)/responses/429`.
+            ///
+            /// HTTP response code: `429 tooManyRequests`.
+            case tooManyRequests(Components.Responses.RateLimited)
+            /// The associated value of the enum case if `self` is `.tooManyRequests`.
+            ///
+            /// - Throws: An error if `self` is not `.tooManyRequests`.
+            /// - SeeAlso: `.tooManyRequests`.
+            public var tooManyRequests: Components.Responses.RateLimited {
+                get throws {
+                    switch self {
+                    case let .tooManyRequests(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "tooManyRequests",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Error (RFC 9457)
+            ///
+            /// - Remark: Generated from `#/paths//v1/auth/revoke-sessions/post(signOutAllDevices)/responses/default`.
+            ///
+            /// HTTP response code: `default`.
+            case `default`(statusCode: Swift.Int, Components.Responses.Problem)
+            /// The associated value of the enum case if `self` is `.`default``.
+            ///
+            /// - Throws: An error if `self` is not `.`default``.
+            /// - SeeAlso: `.`default``.
+            public var `default`: Components.Responses.Problem {
+                get throws {
+                    switch self {
+                    case let .`default`(_, response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "default",
+                            response: self
+                        )
+                    }
+                }
+            }
+        }
+        @frozen public enum AcceptableContentType: AcceptableProtocol {
+            case json
+            case applicationProblemJson
+            case other(Swift.String)
+            public init?(rawValue: Swift.String) {
+                switch rawValue.lowercased() {
+                case "application/json":
+                    self = .json
+                case "application/problem+json":
+                    self = .applicationProblemJson
+                default:
+                    self = .other(rawValue)
+                }
+            }
+            public var rawValue: Swift.String {
+                switch self {
+                case let .other(string):
+                    return string
+                case .json:
+                    return "application/json"
+                case .applicationProblemJson:
+                    return "application/problem+json"
+                }
+            }
+            public static var allCases: [Self] {
+                [
+                    .json,
+                    .applicationProblemJson
+                ]
+            }
+        }
+    }
+    /// Ask for an account-recovery link by email
+    ///
+    /// Fallback for a person who lost their passkeys (doc 11 §15). The answer is the same
+    /// status and body whether or not an account exists for the address, so it discloses
+    /// nothing. When one exists, a single-use link is emailed; it works from 24 to 48 hours
+    /// after the request, and any signed-in session of the account can cancel it before then
+    /// (`cancelAccountRecovery`). Never creates an account.
+    ///
+    ///
+    /// - Remark: HTTP `POST /v1/auth/sign-in/magic-link`.
+    /// - Remark: Generated from `#/paths//v1/auth/sign-in/magic-link/post(requestAccountRecovery)`.
+    public enum RequestAccountRecovery {
+        public static let id: Swift.String = "requestAccountRecovery"
+        public struct Input: Sendable, Hashable {
+            /// - Remark: Generated from `#/paths/v1/auth/sign-in/magic-link/POST/header`.
+            public struct Headers: Sendable, Hashable {
+                /// Client-generated ULID that makes a mutating request safe to retry (doc 06 §2; the
+                /// mobile mutation-log `opId`). The server keeps key, request hash and response for 48 h:
+                /// a replay with the same body returns the stored response, the same key with a different
+                /// body is refused with 409 `IDEMPOTENCY_KEY_REUSED`. Optional for the caller.
+                ///
+                ///
+                /// - Remark: Generated from `#/paths/v1/auth/sign-in/magic-link/POST/header/Idempotency-Key`.
+                public var idempotencyKey: Components.Parameters.IdempotencyKey?
+                public var accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.RequestAccountRecovery.AcceptableContentType>]
+                /// Creates a new `Headers`.
+                ///
+                /// - Parameters:
+                ///   - idempotencyKey: Client-generated ULID that makes a mutating request safe to retry (doc 06 §2; the
+                ///   - accept:
+                public init(
+                    idempotencyKey: Components.Parameters.IdempotencyKey? = nil,
+                    accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.RequestAccountRecovery.AcceptableContentType>] = .defaultValues()
+                ) {
+                    self.idempotencyKey = idempotencyKey
+                    self.accept = accept
+                }
+            }
+            public var headers: Operations.RequestAccountRecovery.Input.Headers
+            /// - Remark: Generated from `#/paths/v1/auth/sign-in/magic-link/POST/requestBody`.
+            @frozen public enum Body: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/v1/auth/sign-in/magic-link/POST/requestBody/content/application\/json`.
+                case json(Components.Schemas.RecoveryRequest)
+            }
+            public var body: Operations.RequestAccountRecovery.Input.Body
+            /// Creates a new `Input`.
+            ///
+            /// - Parameters:
+            ///   - headers:
+            ///   - body:
+            public init(
+                headers: Operations.RequestAccountRecovery.Input.Headers = .init(),
+                body: Operations.RequestAccountRecovery.Input.Body
+            ) {
+                self.headers = headers
+                self.body = body
+            }
+        }
+        @frozen public enum Output: Sendable, Hashable {
+            public struct Ok: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/v1/auth/sign-in/magic-link/POST/responses/200/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/v1/auth/sign-in/magic-link/POST/responses/200/content/application\/json`.
+                    case json(Components.Schemas.RecoveryRequestAccepted)
+                    /// The associated value of the enum case if `self` is `.json`.
+                    ///
+                    /// - Throws: An error if `self` is not `.json`.
+                    /// - SeeAlso: `.json`.
+                    public var json: Components.Schemas.RecoveryRequestAccepted {
+                        get throws {
+                            switch self {
+                            case let .json(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.RequestAccountRecovery.Output.Ok.Body
+                /// Creates a new `Ok`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                public init(body: Operations.RequestAccountRecovery.Output.Ok.Body) {
+                    self.body = body
+                }
+            }
+            /// Accepted (uniform for every address)
+            ///
+            /// - Remark: Generated from `#/paths//v1/auth/sign-in/magic-link/post(requestAccountRecovery)/responses/200`.
+            ///
+            /// HTTP response code: `200 ok`.
+            case ok(Operations.RequestAccountRecovery.Output.Ok)
+            /// The associated value of the enum case if `self` is `.ok`.
+            ///
+            /// - Throws: An error if `self` is not `.ok`.
+            /// - SeeAlso: `.ok`.
+            public var ok: Operations.RequestAccountRecovery.Output.Ok {
+                get throws {
+                    switch self {
+                    case let .ok(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "ok",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// `IDEMPOTENCY_KEY_REUSED` when the `Idempotency-Key` was already used with a different
+            /// request; `VERSION_MISMATCH` when `If-Match` no longer matches the stored version;
+            /// `CONFLICT` otherwise.
+            ///
+            ///
+            /// - Remark: Generated from `#/paths//v1/auth/sign-in/magic-link/post(requestAccountRecovery)/responses/409`.
+            ///
+            /// HTTP response code: `409 conflict`.
+            case conflict(Components.Responses.Conflict)
+            /// The associated value of the enum case if `self` is `.conflict`.
+            ///
+            /// - Throws: An error if `self` is not `.conflict`.
+            /// - SeeAlso: `.conflict`.
+            public var conflict: Components.Responses.Conflict {
+                get throws {
+                    switch self {
+                    case let .conflict(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "conflict",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// `RATE_LIMITED`: a rate limit was hit (doc 11 §14); retry after `Retry-After` seconds.
+            ///
+            /// - Remark: Generated from `#/paths//v1/auth/sign-in/magic-link/post(requestAccountRecovery)/responses/429`.
+            ///
+            /// HTTP response code: `429 tooManyRequests`.
+            case tooManyRequests(Components.Responses.RateLimited)
+            /// The associated value of the enum case if `self` is `.tooManyRequests`.
+            ///
+            /// - Throws: An error if `self` is not `.tooManyRequests`.
+            /// - SeeAlso: `.tooManyRequests`.
+            public var tooManyRequests: Components.Responses.RateLimited {
+                get throws {
+                    switch self {
+                    case let .tooManyRequests(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "tooManyRequests",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Error (RFC 9457)
+            ///
+            /// - Remark: Generated from `#/paths//v1/auth/sign-in/magic-link/post(requestAccountRecovery)/responses/default`.
+            ///
+            /// HTTP response code: `default`.
+            case `default`(statusCode: Swift.Int, Components.Responses.Problem)
+            /// The associated value of the enum case if `self` is `.`default``.
+            ///
+            /// - Throws: An error if `self` is not `.`default``.
+            /// - SeeAlso: `.`default``.
+            public var `default`: Components.Responses.Problem {
+                get throws {
+                    switch self {
+                    case let .`default`(_, response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "default",
+                            response: self
+                        )
+                    }
+                }
+            }
+        }
+        @frozen public enum AcceptableContentType: AcceptableProtocol {
+            case json
+            case applicationProblemJson
+            case other(Swift.String)
+            public init?(rawValue: Swift.String) {
+                switch rawValue.lowercased() {
+                case "application/json":
+                    self = .json
+                case "application/problem+json":
+                    self = .applicationProblemJson
+                default:
+                    self = .other(rawValue)
+                }
+            }
+            public var rawValue: Swift.String {
+                switch self {
+                case let .other(string):
+                    return string
+                case .json:
+                    return "application/json"
+                case .applicationProblemJson:
+                    return "application/problem+json"
+                }
+            }
+            public static var allCases: [Self] {
+                [
+                    .json,
+                    .applicationProblemJson
+                ]
+            }
+        }
+    }
+    /// Use an account-recovery link
+    ///
+    /// Exchanges the token of a recovery link for a sign-in. Refused before 24 hours and from
+    /// 48 hours after the request, after a cancel, and on a second use. The person then adds
+    /// a new passkey with `registerPasskey`. The server never logs the query string of this
+    /// path.
+    ///
+    ///
+    /// - Remark: HTTP `GET /v1/auth/magic-link/verify`.
+    /// - Remark: Generated from `#/paths//v1/auth/magic-link/verify/get(completeAccountRecovery)`.
+    public enum CompleteAccountRecovery {
+        public static let id: Swift.String = "completeAccountRecovery"
+        public struct Input: Sendable, Hashable {
+            /// - Remark: Generated from `#/paths/v1/auth/magic-link/verify/GET/query`.
+            public struct Query: Sendable, Hashable {
+                /// Single-use token from the emailed link.
+                ///
+                /// - Remark: Generated from `#/paths/v1/auth/magic-link/verify/GET/query/token`.
+                public var token: Swift.String
+                /// Creates a new `Query`.
+                ///
+                /// - Parameters:
+                ///   - token: Single-use token from the emailed link.
+                public init(token: Swift.String) {
+                    self.token = token
+                }
+            }
+            public var query: Operations.CompleteAccountRecovery.Input.Query
+            /// - Remark: Generated from `#/paths/v1/auth/magic-link/verify/GET/header`.
+            public struct Headers: Sendable, Hashable {
+                public var accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.CompleteAccountRecovery.AcceptableContentType>]
+                /// Creates a new `Headers`.
+                ///
+                /// - Parameters:
+                ///   - accept:
+                public init(accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.CompleteAccountRecovery.AcceptableContentType>] = .defaultValues()) {
+                    self.accept = accept
+                }
+            }
+            public var headers: Operations.CompleteAccountRecovery.Input.Headers
+            /// Creates a new `Input`.
+            ///
+            /// - Parameters:
+            ///   - query:
+            ///   - headers:
+            public init(
+                query: Operations.CompleteAccountRecovery.Input.Query,
+                headers: Operations.CompleteAccountRecovery.Input.Headers = .init()
+            ) {
+                self.query = query
+                self.headers = headers
+            }
+        }
+        @frozen public enum Output: Sendable, Hashable {
+            /// The outcome of a sign-in (see `SignInResult`)
+            ///
+            /// - Remark: Generated from `#/paths//v1/auth/magic-link/verify/get(completeAccountRecovery)/responses/200`.
+            ///
+            /// HTTP response code: `200 ok`.
+            case ok(Components.Responses.SignInAnswer)
+            /// The associated value of the enum case if `self` is `.ok`.
+            ///
+            /// - Throws: An error if `self` is not `.ok`.
+            /// - SeeAlso: `.ok`.
+            public var ok: Components.Responses.SignInAnswer {
+                get throws {
+                    switch self {
+                    case let .ok(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "ok",
+                            response: self
+                        )
+                    }
+                }
+            }
+            public struct Unauthorized: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/v1/auth/magic-link/verify/GET/responses/401/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/v1/auth/magic-link/verify/GET/responses/401/content/application\/problem+json`.
+                    case applicationProblemJson(Components.Schemas.ProblemDetails)
+                    /// The associated value of the enum case if `self` is `.applicationProblemJson`.
+                    ///
+                    /// - Throws: An error if `self` is not `.applicationProblemJson`.
+                    /// - SeeAlso: `.applicationProblemJson`.
+                    public var applicationProblemJson: Components.Schemas.ProblemDetails {
+                        get throws {
+                            switch self {
+                            case let .applicationProblemJson(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.CompleteAccountRecovery.Output.Unauthorized.Body
+                /// Creates a new `Unauthorized`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                public init(body: Operations.CompleteAccountRecovery.Output.Unauthorized.Body) {
+                    self.body = body
+                }
+            }
+            /// `UNAUTHENTICATED`: the link is unknown, used, cancelled, not yet valid or expired.
+            ///
+            /// - Remark: Generated from `#/paths//v1/auth/magic-link/verify/get(completeAccountRecovery)/responses/401`.
+            ///
+            /// HTTP response code: `401 unauthorized`.
+            case unauthorized(Operations.CompleteAccountRecovery.Output.Unauthorized)
+            /// The associated value of the enum case if `self` is `.unauthorized`.
+            ///
+            /// - Throws: An error if `self` is not `.unauthorized`.
+            /// - SeeAlso: `.unauthorized`.
+            public var unauthorized: Operations.CompleteAccountRecovery.Output.Unauthorized {
+                get throws {
+                    switch self {
+                    case let .unauthorized(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "unauthorized",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// `RATE_LIMITED`: a rate limit was hit (doc 11 §14); retry after `Retry-After` seconds.
+            ///
+            /// - Remark: Generated from `#/paths//v1/auth/magic-link/verify/get(completeAccountRecovery)/responses/429`.
+            ///
+            /// HTTP response code: `429 tooManyRequests`.
+            case tooManyRequests(Components.Responses.RateLimited)
+            /// The associated value of the enum case if `self` is `.tooManyRequests`.
+            ///
+            /// - Throws: An error if `self` is not `.tooManyRequests`.
+            /// - SeeAlso: `.tooManyRequests`.
+            public var tooManyRequests: Components.Responses.RateLimited {
+                get throws {
+                    switch self {
+                    case let .tooManyRequests(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "tooManyRequests",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Error (RFC 9457)
+            ///
+            /// - Remark: Generated from `#/paths//v1/auth/magic-link/verify/get(completeAccountRecovery)/responses/default`.
+            ///
+            /// HTTP response code: `default`.
+            case `default`(statusCode: Swift.Int, Components.Responses.Problem)
+            /// The associated value of the enum case if `self` is `.`default``.
+            ///
+            /// - Throws: An error if `self` is not `.`default``.
+            /// - SeeAlso: `.`default``.
+            public var `default`: Components.Responses.Problem {
+                get throws {
+                    switch self {
+                    case let .`default`(_, response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "default",
+                            response: self
+                        )
+                    }
+                }
+            }
+        }
+        @frozen public enum AcceptableContentType: AcceptableProtocol {
+            case json
+            case applicationProblemJson
+            case other(Swift.String)
+            public init?(rawValue: Swift.String) {
+                switch rawValue.lowercased() {
+                case "application/json":
+                    self = .json
+                case "application/problem+json":
+                    self = .applicationProblemJson
+                default:
+                    self = .other(rawValue)
+                }
+            }
+            public var rawValue: Swift.String {
+                switch self {
+                case let .other(string):
+                    return string
+                case .json:
+                    return "application/json"
+                case .applicationProblemJson:
+                    return "application/problem+json"
+                }
+            }
+            public static var allCases: [Self] {
+                [
+                    .json,
+                    .applicationProblemJson
+                ]
+            }
+        }
+    }
+    /// Cancel a pending account recovery
+    ///
+    /// Cancels the pending recovery link of the caller's account during its 24-hour delay.
+    /// Only a signed-in session of that account can cancel; holding the mailbox is not
+    /// enough. Identity's own operation: better-auth 1.7.12 has no path for it.
+    ///
+    ///
+    /// - Remark: HTTP `DELETE /v1/me/recovery`.
+    /// - Remark: Generated from `#/paths//v1/me/recovery/delete(cancelAccountRecovery)`.
+    public enum CancelAccountRecovery {
+        public static let id: Swift.String = "cancelAccountRecovery"
+        public struct Input: Sendable, Hashable {
+            /// - Remark: Generated from `#/paths/v1/me/recovery/DELETE/header`.
+            public struct Headers: Sendable, Hashable {
+                /// Client-generated ULID that makes a mutating request safe to retry (doc 06 §2; the
+                /// mobile mutation-log `opId`). The server keeps key, request hash and response for 48 h:
+                /// a replay with the same body returns the stored response, the same key with a different
+                /// body is refused with 409 `IDEMPOTENCY_KEY_REUSED`. Optional for the caller.
+                ///
+                ///
+                /// - Remark: Generated from `#/paths/v1/me/recovery/DELETE/header/Idempotency-Key`.
+                public var idempotencyKey: Components.Parameters.IdempotencyKey?
+                public var accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.CancelAccountRecovery.AcceptableContentType>]
+                /// Creates a new `Headers`.
+                ///
+                /// - Parameters:
+                ///   - idempotencyKey: Client-generated ULID that makes a mutating request safe to retry (doc 06 §2; the
+                ///   - accept:
+                public init(
+                    idempotencyKey: Components.Parameters.IdempotencyKey? = nil,
+                    accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.CancelAccountRecovery.AcceptableContentType>] = .defaultValues()
+                ) {
+                    self.idempotencyKey = idempotencyKey
+                    self.accept = accept
+                }
+            }
+            public var headers: Operations.CancelAccountRecovery.Input.Headers
+            /// Creates a new `Input`.
+            ///
+            /// - Parameters:
+            ///   - headers:
+            public init(headers: Operations.CancelAccountRecovery.Input.Headers = .init()) {
+                self.headers = headers
+            }
+        }
+        @frozen public enum Output: Sendable, Hashable {
+            public struct NoContent: Sendable, Hashable {
+                /// Creates a new `NoContent`.
+                public init() {}
+            }
+            /// The pending recovery is cancelled; its link no longer works.
+            ///
+            /// - Remark: Generated from `#/paths//v1/me/recovery/delete(cancelAccountRecovery)/responses/204`.
+            ///
+            /// HTTP response code: `204 noContent`.
+            case noContent(Operations.CancelAccountRecovery.Output.NoContent)
+            /// The pending recovery is cancelled; its link no longer works.
+            ///
+            /// - Remark: Generated from `#/paths//v1/me/recovery/delete(cancelAccountRecovery)/responses/204`.
+            ///
+            /// HTTP response code: `204 noContent`.
+            public static var noContent: Self {
+                .noContent(.init())
+            }
+            /// The associated value of the enum case if `self` is `.noContent`.
+            ///
+            /// - Throws: An error if `self` is not `.noContent`.
+            /// - SeeAlso: `.noContent`.
+            public var noContent: Operations.CancelAccountRecovery.Output.NoContent {
+                get throws {
+                    switch self {
+                    case let .noContent(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "noContent",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// `UNAUTHENTICATED`: the credential is missing, malformed, expired or revoked. The client
+            /// renews the session once (`refreshSession`); if the renewal is refused too, it signs in
+            /// again.
+            ///
+            ///
+            /// - Remark: Generated from `#/paths//v1/me/recovery/delete(cancelAccountRecovery)/responses/401`.
+            ///
+            /// HTTP response code: `401 unauthorized`.
+            case unauthorized(Components.Responses.Unauthenticated)
+            /// The associated value of the enum case if `self` is `.unauthorized`.
+            ///
+            /// - Throws: An error if `self` is not `.unauthorized`.
+            /// - SeeAlso: `.unauthorized`.
+            public var unauthorized: Components.Responses.Unauthenticated {
+                get throws {
+                    switch self {
+                    case let .unauthorized(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "unauthorized",
+                            response: self
+                        )
+                    }
+                }
+            }
+            public struct NotFound: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/v1/me/recovery/DELETE/responses/404/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/v1/me/recovery/DELETE/responses/404/content/application\/problem+json`.
+                    case applicationProblemJson(Components.Schemas.ProblemDetails)
+                    /// The associated value of the enum case if `self` is `.applicationProblemJson`.
+                    ///
+                    /// - Throws: An error if `self` is not `.applicationProblemJson`.
+                    /// - SeeAlso: `.applicationProblemJson`.
+                    public var applicationProblemJson: Components.Schemas.ProblemDetails {
+                        get throws {
+                            switch self {
+                            case let .applicationProblemJson(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.CancelAccountRecovery.Output.NotFound.Body
+                /// Creates a new `NotFound`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                public init(body: Operations.CancelAccountRecovery.Output.NotFound.Body) {
+                    self.body = body
+                }
+            }
+            /// `NOT_FOUND`: the account has no pending recovery.
+            ///
+            /// - Remark: Generated from `#/paths//v1/me/recovery/delete(cancelAccountRecovery)/responses/404`.
+            ///
+            /// HTTP response code: `404 notFound`.
+            case notFound(Operations.CancelAccountRecovery.Output.NotFound)
+            /// The associated value of the enum case if `self` is `.notFound`.
+            ///
+            /// - Throws: An error if `self` is not `.notFound`.
+            /// - SeeAlso: `.notFound`.
+            public var notFound: Operations.CancelAccountRecovery.Output.NotFound {
+                get throws {
+                    switch self {
+                    case let .notFound(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "notFound",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// `IDEMPOTENCY_KEY_REUSED` when the `Idempotency-Key` was already used with a different
+            /// request; `VERSION_MISMATCH` when `If-Match` no longer matches the stored version;
+            /// `CONFLICT` otherwise.
+            ///
+            ///
+            /// - Remark: Generated from `#/paths//v1/me/recovery/delete(cancelAccountRecovery)/responses/409`.
+            ///
+            /// HTTP response code: `409 conflict`.
+            case conflict(Components.Responses.Conflict)
+            /// The associated value of the enum case if `self` is `.conflict`.
+            ///
+            /// - Throws: An error if `self` is not `.conflict`.
+            /// - SeeAlso: `.conflict`.
+            public var conflict: Components.Responses.Conflict {
+                get throws {
+                    switch self {
+                    case let .conflict(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "conflict",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// `ACCOUNT_DELETED`: the account is deleted or its deletion is in progress. The client
+            /// erases everything it stores for the account and returns to its signed-out start; it
+            /// tells this reply from 401 by the status alone. A 410 is cacheable by default
+            /// (RFC 9110 §15.5.11), so the reply carries `Cache-Control: no-store` and must not be
+            /// cached.
+            ///
+            ///
+            /// - Remark: Generated from `#/paths//v1/me/recovery/delete(cancelAccountRecovery)/responses/410`.
+            ///
+            /// HTTP response code: `410 gone`.
+            case gone(Components.Responses.AccountDeleted)
+            /// The associated value of the enum case if `self` is `.gone`.
+            ///
+            /// - Throws: An error if `self` is not `.gone`.
+            /// - SeeAlso: `.gone`.
+            public var gone: Components.Responses.AccountDeleted {
+                get throws {
+                    switch self {
+                    case let .gone(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "gone",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// `RATE_LIMITED`: a rate limit was hit (doc 11 §14); retry after `Retry-After` seconds.
+            ///
+            /// - Remark: Generated from `#/paths//v1/me/recovery/delete(cancelAccountRecovery)/responses/429`.
+            ///
+            /// HTTP response code: `429 tooManyRequests`.
+            case tooManyRequests(Components.Responses.RateLimited)
+            /// The associated value of the enum case if `self` is `.tooManyRequests`.
+            ///
+            /// - Throws: An error if `self` is not `.tooManyRequests`.
+            /// - SeeAlso: `.tooManyRequests`.
+            public var tooManyRequests: Components.Responses.RateLimited {
+                get throws {
+                    switch self {
+                    case let .tooManyRequests(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "tooManyRequests",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Error (RFC 9457)
+            ///
+            /// - Remark: Generated from `#/paths//v1/me/recovery/delete(cancelAccountRecovery)/responses/default`.
+            ///
+            /// HTTP response code: `default`.
+            case `default`(statusCode: Swift.Int, Components.Responses.Problem)
+            /// The associated value of the enum case if `self` is `.`default``.
+            ///
+            /// - Throws: An error if `self` is not `.`default``.
+            /// - SeeAlso: `.`default``.
+            public var `default`: Components.Responses.Problem {
+                get throws {
+                    switch self {
+                    case let .`default`(_, response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "default",
+                            response: self
+                        )
+                    }
+                }
+            }
+        }
+        @frozen public enum AcceptableContentType: AcceptableProtocol {
+            case applicationProblemJson
+            case other(Swift.String)
+            public init?(rawValue: Swift.String) {
+                switch rawValue.lowercased() {
+                case "application/problem+json":
+                    self = .applicationProblemJson
+                default:
+                    self = .other(rawValue)
+                }
+            }
+            public var rawValue: Swift.String {
+                switch self {
+                case let .other(string):
+                    return string
+                case .applicationProblemJson:
+                    return "application/problem+json"
+                }
+            }
+            public static var allCases: [Self] {
+                [
+                    .applicationProblemJson
+                ]
+            }
+        }
+    }
+    /// The caller's current consent per purpose
+    ///
+    /// The latest consent record of each purpose the caller has decided on, cursor-paginated.
+    /// A purpose with no record is absent and its default applies (doc 11 §7.2). The full
+    /// append-only history is part of the data export.
+    ///
+    ///
+    /// - Remark: HTTP `GET /v1/me/consents`.
+    /// - Remark: Generated from `#/paths//v1/me/consents/get(listConsents)`.
+    public enum ListConsents {
+        public static let id: Swift.String = "listConsents"
+        public struct Input: Sendable, Hashable {
+            /// - Remark: Generated from `#/paths/v1/me/consents/GET/query`.
+            public struct Query: Sendable, Hashable {
+                /// Opaque cursor from the `nextCursor` of the previous page; omit for the first page.
+                ///
+                /// - Remark: Generated from `#/paths/v1/me/consents/GET/query/cursor`.
+                public var cursor: Components.Parameters.Cursor?
+                /// Page size (doc 06 §2 cursor pagination).
+                ///
+                /// - Remark: Generated from `#/paths/v1/me/consents/GET/query/limit`.
+                public var limit: Components.Parameters.Limit?
+                /// Creates a new `Query`.
+                ///
+                /// - Parameters:
+                ///   - cursor: Opaque cursor from the `nextCursor` of the previous page; omit for the first page.
+                ///   - limit: Page size (doc 06 §2 cursor pagination).
+                public init(
+                    cursor: Components.Parameters.Cursor? = nil,
+                    limit: Components.Parameters.Limit? = nil
+                ) {
+                    self.cursor = cursor
+                    self.limit = limit
+                }
+            }
+            public var query: Operations.ListConsents.Input.Query
+            /// - Remark: Generated from `#/paths/v1/me/consents/GET/header`.
+            public struct Headers: Sendable, Hashable {
+                public var accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.ListConsents.AcceptableContentType>]
+                /// Creates a new `Headers`.
+                ///
+                /// - Parameters:
+                ///   - accept:
+                public init(accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.ListConsents.AcceptableContentType>] = .defaultValues()) {
+                    self.accept = accept
+                }
+            }
+            public var headers: Operations.ListConsents.Input.Headers
+            /// Creates a new `Input`.
+            ///
+            /// - Parameters:
+            ///   - query:
+            ///   - headers:
+            public init(
+                query: Operations.ListConsents.Input.Query = .init(),
+                headers: Operations.ListConsents.Input.Headers = .init()
+            ) {
+                self.query = query
+                self.headers = headers
+            }
+        }
+        @frozen public enum Output: Sendable, Hashable {
+            public struct Ok: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/v1/me/consents/GET/responses/200/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/v1/me/consents/GET/responses/200/content/application\/json`.
+                    case json(Components.Schemas.ConsentPage)
+                    /// The associated value of the enum case if `self` is `.json`.
+                    ///
+                    /// - Throws: An error if `self` is not `.json`.
+                    /// - SeeAlso: `.json`.
+                    public var json: Components.Schemas.ConsentPage {
+                        get throws {
+                            switch self {
+                            case let .json(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.ListConsents.Output.Ok.Body
+                /// Creates a new `Ok`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                public init(body: Operations.ListConsents.Output.Ok.Body) {
+                    self.body = body
+                }
+            }
+            /// One page of current consent records
+            ///
+            /// - Remark: Generated from `#/paths//v1/me/consents/get(listConsents)/responses/200`.
+            ///
+            /// HTTP response code: `200 ok`.
+            case ok(Operations.ListConsents.Output.Ok)
+            /// The associated value of the enum case if `self` is `.ok`.
+            ///
+            /// - Throws: An error if `self` is not `.ok`.
+            /// - SeeAlso: `.ok`.
+            public var ok: Operations.ListConsents.Output.Ok {
+                get throws {
+                    switch self {
+                    case let .ok(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "ok",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// `UNAUTHENTICATED`: the credential is missing, malformed, expired or revoked. The client
+            /// renews the session once (`refreshSession`); if the renewal is refused too, it signs in
+            /// again.
+            ///
+            ///
+            /// - Remark: Generated from `#/paths//v1/me/consents/get(listConsents)/responses/401`.
+            ///
+            /// HTTP response code: `401 unauthorized`.
+            case unauthorized(Components.Responses.Unauthenticated)
+            /// The associated value of the enum case if `self` is `.unauthorized`.
+            ///
+            /// - Throws: An error if `self` is not `.unauthorized`.
+            /// - SeeAlso: `.unauthorized`.
+            public var unauthorized: Components.Responses.Unauthenticated {
+                get throws {
+                    switch self {
+                    case let .unauthorized(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "unauthorized",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// `ACCOUNT_DELETED`: the account is deleted or its deletion is in progress. The client
+            /// erases everything it stores for the account and returns to its signed-out start; it
+            /// tells this reply from 401 by the status alone. A 410 is cacheable by default
+            /// (RFC 9110 §15.5.11), so the reply carries `Cache-Control: no-store` and must not be
+            /// cached.
+            ///
+            ///
+            /// - Remark: Generated from `#/paths//v1/me/consents/get(listConsents)/responses/410`.
+            ///
+            /// HTTP response code: `410 gone`.
+            case gone(Components.Responses.AccountDeleted)
+            /// The associated value of the enum case if `self` is `.gone`.
+            ///
+            /// - Throws: An error if `self` is not `.gone`.
+            /// - SeeAlso: `.gone`.
+            public var gone: Components.Responses.AccountDeleted {
+                get throws {
+                    switch self {
+                    case let .gone(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "gone",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// `RATE_LIMITED`: a rate limit was hit (doc 11 §14); retry after `Retry-After` seconds.
+            ///
+            /// - Remark: Generated from `#/paths//v1/me/consents/get(listConsents)/responses/429`.
+            ///
+            /// HTTP response code: `429 tooManyRequests`.
+            case tooManyRequests(Components.Responses.RateLimited)
+            /// The associated value of the enum case if `self` is `.tooManyRequests`.
+            ///
+            /// - Throws: An error if `self` is not `.tooManyRequests`.
+            /// - SeeAlso: `.tooManyRequests`.
+            public var tooManyRequests: Components.Responses.RateLimited {
+                get throws {
+                    switch self {
+                    case let .tooManyRequests(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "tooManyRequests",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Error (RFC 9457)
+            ///
+            /// - Remark: Generated from `#/paths//v1/me/consents/get(listConsents)/responses/default`.
+            ///
+            /// HTTP response code: `default`.
+            case `default`(statusCode: Swift.Int, Components.Responses.Problem)
+            /// The associated value of the enum case if `self` is `.`default``.
+            ///
+            /// - Throws: An error if `self` is not `.`default``.
+            /// - SeeAlso: `.`default``.
+            public var `default`: Components.Responses.Problem {
+                get throws {
+                    switch self {
+                    case let .`default`(_, response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "default",
+                            response: self
+                        )
+                    }
+                }
+            }
+        }
+        @frozen public enum AcceptableContentType: AcceptableProtocol {
+            case json
+            case applicationProblemJson
+            case other(Swift.String)
+            public init?(rawValue: Swift.String) {
+                switch rawValue.lowercased() {
+                case "application/json":
+                    self = .json
+                case "application/problem+json":
+                    self = .applicationProblemJson
+                default:
+                    self = .other(rawValue)
+                }
+            }
+            public var rawValue: Swift.String {
+                switch self {
+                case let .other(string):
+                    return string
+                case .json:
+                    return "application/json"
+                case .applicationProblemJson:
+                    return "application/problem+json"
+                }
+            }
+            public static var allCases: [Self] {
+                [
+                    .json,
+                    .applicationProblemJson
+                ]
+            }
+        }
+    }
+    /// Grant or withdraw consent for one purpose
+    ///
+    /// Appends a consent record for one purpose (doc 11 §7.1; append-only: a withdrawal is a
+    /// new record). 201 when a record was appended. 200 when the request repeats the current
+    /// state for the same policy version: nothing is stored and the current record, with its
+    /// original dates, is returned.
+    ///
+    ///
+    /// - Remark: HTTP `POST /v1/me/consents`.
+    /// - Remark: Generated from `#/paths//v1/me/consents/post(recordConsent)`.
+    public enum RecordConsent {
+        public static let id: Swift.String = "recordConsent"
+        public struct Input: Sendable, Hashable {
+            /// - Remark: Generated from `#/paths/v1/me/consents/POST/header`.
+            public struct Headers: Sendable, Hashable {
+                /// Client-generated ULID that makes a mutating request safe to retry (doc 06 §2; the
+                /// mobile mutation-log `opId`). The server keeps key, request hash and response for 48 h:
+                /// a replay with the same body returns the stored response, the same key with a different
+                /// body is refused with 409 `IDEMPOTENCY_KEY_REUSED`. Optional for the caller.
+                ///
+                ///
+                /// - Remark: Generated from `#/paths/v1/me/consents/POST/header/Idempotency-Key`.
+                public var idempotencyKey: Components.Parameters.IdempotencyKey?
+                public var accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.RecordConsent.AcceptableContentType>]
+                /// Creates a new `Headers`.
+                ///
+                /// - Parameters:
+                ///   - idempotencyKey: Client-generated ULID that makes a mutating request safe to retry (doc 06 §2; the
+                ///   - accept:
+                public init(
+                    idempotencyKey: Components.Parameters.IdempotencyKey? = nil,
+                    accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.RecordConsent.AcceptableContentType>] = .defaultValues()
+                ) {
+                    self.idempotencyKey = idempotencyKey
+                    self.accept = accept
+                }
+            }
+            public var headers: Operations.RecordConsent.Input.Headers
+            /// - Remark: Generated from `#/paths/v1/me/consents/POST/requestBody`.
+            @frozen public enum Body: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/v1/me/consents/POST/requestBody/content/application\/json`.
+                case json(Components.Schemas.ConsentChange)
+            }
+            public var body: Operations.RecordConsent.Input.Body
+            /// Creates a new `Input`.
+            ///
+            /// - Parameters:
+            ///   - headers:
+            ///   - body:
+            public init(
+                headers: Operations.RecordConsent.Input.Headers = .init(),
+                body: Operations.RecordConsent.Input.Body
+            ) {
+                self.headers = headers
+                self.body = body
+            }
+        }
+        @frozen public enum Output: Sendable, Hashable {
+            public struct Ok: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/v1/me/consents/POST/responses/200/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/v1/me/consents/POST/responses/200/content/application\/json`.
+                    case json(Components.Schemas.ConsentRecord)
+                    /// The associated value of the enum case if `self` is `.json`.
+                    ///
+                    /// - Throws: An error if `self` is not `.json`.
+                    /// - SeeAlso: `.json`.
+                    public var json: Components.Schemas.ConsentRecord {
+                        get throws {
+                            switch self {
+                            case let .json(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.RecordConsent.Output.Ok.Body
+                /// Creates a new `Ok`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                public init(body: Operations.RecordConsent.Output.Ok.Body) {
+                    self.body = body
+                }
+            }
+            /// Unchanged; the current record
+            ///
+            /// - Remark: Generated from `#/paths//v1/me/consents/post(recordConsent)/responses/200`.
+            ///
+            /// HTTP response code: `200 ok`.
+            case ok(Operations.RecordConsent.Output.Ok)
+            /// The associated value of the enum case if `self` is `.ok`.
+            ///
+            /// - Throws: An error if `self` is not `.ok`.
+            /// - SeeAlso: `.ok`.
+            public var ok: Operations.RecordConsent.Output.Ok {
+                get throws {
+                    switch self {
+                    case let .ok(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "ok",
+                            response: self
+                        )
+                    }
+                }
+            }
+            public struct Created: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/v1/me/consents/POST/responses/201/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/v1/me/consents/POST/responses/201/content/application\/json`.
+                    case json(Components.Schemas.ConsentRecord)
+                    /// The associated value of the enum case if `self` is `.json`.
+                    ///
+                    /// - Throws: An error if `self` is not `.json`.
+                    /// - SeeAlso: `.json`.
+                    public var json: Components.Schemas.ConsentRecord {
+                        get throws {
+                            switch self {
+                            case let .json(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.RecordConsent.Output.Created.Body
+                /// Creates a new `Created`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                public init(body: Operations.RecordConsent.Output.Created.Body) {
+                    self.body = body
+                }
+            }
+            /// The appended record
+            ///
+            /// - Remark: Generated from `#/paths//v1/me/consents/post(recordConsent)/responses/201`.
+            ///
+            /// HTTP response code: `201 created`.
+            case created(Operations.RecordConsent.Output.Created)
+            /// The associated value of the enum case if `self` is `.created`.
+            ///
+            /// - Throws: An error if `self` is not `.created`.
+            /// - SeeAlso: `.created`.
+            public var created: Operations.RecordConsent.Output.Created {
+                get throws {
+                    switch self {
+                    case let .created(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "created",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// `UNAUTHENTICATED`: the credential is missing, malformed, expired or revoked. The client
+            /// renews the session once (`refreshSession`); if the renewal is refused too, it signs in
+            /// again.
+            ///
+            ///
+            /// - Remark: Generated from `#/paths//v1/me/consents/post(recordConsent)/responses/401`.
+            ///
+            /// HTTP response code: `401 unauthorized`.
+            case unauthorized(Components.Responses.Unauthenticated)
+            /// The associated value of the enum case if `self` is `.unauthorized`.
+            ///
+            /// - Throws: An error if `self` is not `.unauthorized`.
+            /// - SeeAlso: `.unauthorized`.
+            public var unauthorized: Components.Responses.Unauthenticated {
+                get throws {
+                    switch self {
+                    case let .unauthorized(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "unauthorized",
+                            response: self
+                        )
+                    }
+                }
+            }
+            public struct Forbidden: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/v1/me/consents/POST/responses/403/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/v1/me/consents/POST/responses/403/content/application\/problem+json`.
+                    case applicationProblemJson(Components.Schemas.ProblemDetails)
+                    /// The associated value of the enum case if `self` is `.applicationProblemJson`.
+                    ///
+                    /// - Throws: An error if `self` is not `.applicationProblemJson`.
+                    /// - SeeAlso: `.applicationProblemJson`.
+                    public var applicationProblemJson: Components.Schemas.ProblemDetails {
+                        get throws {
+                            switch self {
+                            case let .applicationProblemJson(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.RecordConsent.Output.Forbidden.Body
+                /// Creates a new `Forbidden`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                public init(body: Operations.RecordConsent.Output.Forbidden.Body) {
+                    self.body = body
+                }
+            }
+            /// `CONSENT_REQUIRED`: a withdrawal of `core_service` is refused. This consent is
+            /// required to use the app (doc 11 §7.2). Deleting the account is what ends this
+            /// processing (`POST /v1/me/deletion`).
+            ///
+            ///
+            /// - Remark: Generated from `#/paths//v1/me/consents/post(recordConsent)/responses/403`.
+            ///
+            /// HTTP response code: `403 forbidden`.
+            case forbidden(Operations.RecordConsent.Output.Forbidden)
+            /// The associated value of the enum case if `self` is `.forbidden`.
+            ///
+            /// - Throws: An error if `self` is not `.forbidden`.
+            /// - SeeAlso: `.forbidden`.
+            public var forbidden: Operations.RecordConsent.Output.Forbidden {
+                get throws {
+                    switch self {
+                    case let .forbidden(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "forbidden",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// `IDEMPOTENCY_KEY_REUSED` when the `Idempotency-Key` was already used with a different
+            /// request; `VERSION_MISMATCH` when `If-Match` no longer matches the stored version;
+            /// `CONFLICT` otherwise.
+            ///
+            ///
+            /// - Remark: Generated from `#/paths//v1/me/consents/post(recordConsent)/responses/409`.
+            ///
+            /// HTTP response code: `409 conflict`.
+            case conflict(Components.Responses.Conflict)
+            /// The associated value of the enum case if `self` is `.conflict`.
+            ///
+            /// - Throws: An error if `self` is not `.conflict`.
+            /// - SeeAlso: `.conflict`.
+            public var conflict: Components.Responses.Conflict {
+                get throws {
+                    switch self {
+                    case let .conflict(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "conflict",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// `ACCOUNT_DELETED`: the account is deleted or its deletion is in progress. The client
+            /// erases everything it stores for the account and returns to its signed-out start; it
+            /// tells this reply from 401 by the status alone. A 410 is cacheable by default
+            /// (RFC 9110 §15.5.11), so the reply carries `Cache-Control: no-store` and must not be
+            /// cached.
+            ///
+            ///
+            /// - Remark: Generated from `#/paths//v1/me/consents/post(recordConsent)/responses/410`.
+            ///
+            /// HTTP response code: `410 gone`.
+            case gone(Components.Responses.AccountDeleted)
+            /// The associated value of the enum case if `self` is `.gone`.
+            ///
+            /// - Throws: An error if `self` is not `.gone`.
+            /// - SeeAlso: `.gone`.
+            public var gone: Components.Responses.AccountDeleted {
+                get throws {
+                    switch self {
+                    case let .gone(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "gone",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// `RATE_LIMITED`: a rate limit was hit (doc 11 §14); retry after `Retry-After` seconds.
+            ///
+            /// - Remark: Generated from `#/paths//v1/me/consents/post(recordConsent)/responses/429`.
+            ///
+            /// HTTP response code: `429 tooManyRequests`.
+            case tooManyRequests(Components.Responses.RateLimited)
+            /// The associated value of the enum case if `self` is `.tooManyRequests`.
+            ///
+            /// - Throws: An error if `self` is not `.tooManyRequests`.
+            /// - SeeAlso: `.tooManyRequests`.
+            public var tooManyRequests: Components.Responses.RateLimited {
+                get throws {
+                    switch self {
+                    case let .tooManyRequests(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "tooManyRequests",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Error (RFC 9457)
+            ///
+            /// - Remark: Generated from `#/paths//v1/me/consents/post(recordConsent)/responses/default`.
+            ///
+            /// HTTP response code: `default`.
+            case `default`(statusCode: Swift.Int, Components.Responses.Problem)
+            /// The associated value of the enum case if `self` is `.`default``.
+            ///
+            /// - Throws: An error if `self` is not `.`default``.
+            /// - SeeAlso: `.`default``.
+            public var `default`: Components.Responses.Problem {
+                get throws {
+                    switch self {
+                    case let .`default`(_, response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "default",
+                            response: self
+                        )
+                    }
+                }
+            }
+        }
+        @frozen public enum AcceptableContentType: AcceptableProtocol {
+            case json
+            case applicationProblemJson
+            case other(Swift.String)
+            public init?(rawValue: Swift.String) {
+                switch rawValue.lowercased() {
+                case "application/json":
+                    self = .json
+                case "application/problem+json":
+                    self = .applicationProblemJson
+                default:
+                    self = .other(rawValue)
+                }
+            }
+            public var rawValue: Swift.String {
+                switch self {
+                case let .other(string):
+                    return string
+                case .json:
+                    return "application/json"
+                case .applicationProblemJson:
+                    return "application/problem+json"
+                }
+            }
+            public static var allCases: [Self] {
+                [
+                    .json,
+                    .applicationProblemJson
+                ]
+            }
+        }
+    }
 }

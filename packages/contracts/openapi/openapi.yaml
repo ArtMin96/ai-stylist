@@ -21,11 +21,41 @@ servers:
 tags:
   - name: platform
     description: Health, version and other non-domain endpoints
+  - name: identity
+    description: Sign-in, sessions, account recovery and consent
 paths:
   /v1/health:
     $ref: './modules/platform.yaml#/paths/~1v1~1health'
   /v1/version:
     $ref: './modules/platform.yaml#/paths/~1v1~1version'
+  /v1/auth/sign-in/social:
+    $ref: './modules/identity.yaml#/paths/~1v1~1auth~1sign-in~1social'
+  /v1/auth/sign-up/complete:
+    $ref: './modules/identity.yaml#/paths/~1v1~1auth~1sign-up~1complete'
+  /v1/auth/passkey/generate-authenticate-options:
+    $ref: './modules/identity.yaml#/paths/~1v1~1auth~1passkey~1generate-authenticate-options'
+  /v1/auth/passkey/verify-authentication:
+    $ref: './modules/identity.yaml#/paths/~1v1~1auth~1passkey~1verify-authentication'
+  /v1/auth/passkey/generate-register-options:
+    $ref: './modules/identity.yaml#/paths/~1v1~1auth~1passkey~1generate-register-options'
+  /v1/auth/passkey/verify-registration:
+    $ref: './modules/identity.yaml#/paths/~1v1~1auth~1passkey~1verify-registration'
+  /v1/auth/get-session:
+    $ref: './modules/identity.yaml#/paths/~1v1~1auth~1get-session'
+  /v1/auth/sign-out:
+    $ref: './modules/identity.yaml#/paths/~1v1~1auth~1sign-out'
+  /v1/auth/list-sessions:
+    $ref: './modules/identity.yaml#/paths/~1v1~1auth~1list-sessions'
+  /v1/auth/revoke-sessions:
+    $ref: './modules/identity.yaml#/paths/~1v1~1auth~1revoke-sessions'
+  /v1/auth/sign-in/magic-link:
+    $ref: './modules/identity.yaml#/paths/~1v1~1auth~1sign-in~1magic-link'
+  /v1/auth/magic-link/verify:
+    $ref: './modules/identity.yaml#/paths/~1v1~1auth~1magic-link~1verify'
+  /v1/me/recovery:
+    $ref: './modules/identity.yaml#/paths/~1v1~1me~1recovery'
+  /v1/me/consents:
+    $ref: './modules/identity.yaml#/paths/~1v1~1me~1consents'
 components:
   schemas:
     ProblemDetails:
@@ -33,3 +63,9 @@ components:
   responses:
     Problem:
       $ref: './modules/platform.yaml#/components/responses/Problem'
+  # Operations name schemes by key, not by $ref, so every scheme is wired here.
+  securitySchemes:
+    bearerAuth:
+      $ref: './modules/platform.yaml#/components/securitySchemes/bearerAuth'
+    deletionCancelToken:
+      $ref: './modules/platform.yaml#/components/securitySchemes/deletionCancelToken'

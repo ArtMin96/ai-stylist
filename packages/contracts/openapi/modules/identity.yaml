@@ -1,0 +1,1074 @@
+# `identity` module contract (docs/modules/identity.md): sign-in, sessions, account recovery and
+# the consent registry. Included from ../openapi.yaml.
+#
+# `/v1/auth/*` is served by better-auth 1.7.12 with `@better-auth/passkey` 1.7.12, mounted at
+# basePath `/v1/auth` inside `identity` (doc 11 §4.1). Paths are the library's own. The bodies
+# describe this API's wire shape, not the library's types: where they differ (problem+json
+# errors, the sign-in outcomes, the paginated device list) the identity mount shapes the reply.
+# `completeSignUp` and `DELETE /v1/me/recovery` have no library path and are identity's own.
+# Sign-in is Apple, Google or a passkey; nothing here accepts a secret typed by the person
+# (DEC-64).
+openapi: 3.1.0
+info:
+  title: AI Stylist API — identity
+  version: 1.0.0
+paths:
+  /v1/auth/sign-in/social:
+    post:
+      operationId: signInWithIdToken
+      tags: [identity]
+      summary: Sign in with an Apple or Google identity token
+      description: |
+        The app runs the provider's native sign-in and sends the identity token it received.
+        The server verifies the token with the provider's keys, then answers with one
+        `SignInResult`: a session for an existing account, `sign_up_required` for an identity
+        with no account (nothing is stored until `completeSignUp` accepts the birth year), or
+        `deletion_pending` for an account inside its deletion grace window (no session). No
+        provider token is ever returned.
+      security: []
+      parameters:
+        - $ref: './platform.yaml#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/IdTokenSignInRequest'
+      responses:
+        '200':
+          $ref: '#/components/responses/SignInAnswer'
+        '401':
+          $ref: '#/components/responses/SignInRefused'
+        '409':
+          $ref: './platform.yaml#/components/responses/Conflict'
+        '429':
+          $ref: './platform.yaml#/components/responses/RateLimited'
+        default:
+          $ref: './platform.yaml#/components/responses/Problem'
+  /v1/auth/sign-up/complete:
+    post:
+      operationId: completeSignUp
+      tags: [identity]
+      summary: Complete a pending sign-up with the self-declared birth year (age gate)
+      description: |
+        Second part of a sign-up. The first part is a sign-in whose answer was
+        `sign_up_required`; the `signUpToken` of that answer authorizes this call. The server
+        applies the age gate (16+, DEC-60) to the birth year. Accepted: the account is created
+        and the answer is the `session` outcome. Refused: `AGE_GATE_FAILED`, nothing about the
+        attempt is stored, and the sign-up token is spent; a new attempt starts again with a
+        sign-in. Identity's own operation: better-auth 1.7.12 has no path for it.
+      security: []
+      parameters:
+        - $ref: './platform.yaml#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CompleteSignUpRequest'
+      responses:
+        '200':
+          $ref: '#/components/responses/SignInAnswer'
+        '401':
+          description: '`UNAUTHENTICATED`: the sign-up token is missing, expired, already spent or unknown. Start again with a sign-in.'
+          content:
+            application/problem+json:
+              schema:
+                $ref: './platform.yaml#/components/schemas/ProblemDetails'
+        '403':
+          description: |
+            `AGE_GATE_FAILED`: the birth year lies fewer than 16 years back (DEC-60). Terminal
+            for this attempt: nothing is stored and the sign-up token is spent. The client shows
+            its refusal screen and offers no way to change the year.
+          content:
+            application/problem+json:
+              schema:
+                $ref: './platform.yaml#/components/schemas/ProblemDetails'
+        '409':
+          $ref: './platform.yaml#/components/responses/Conflict'
+        '429':
+          $ref: './platform.yaml#/components/responses/RateLimited'
+        default:
+          $ref: './platform.yaml#/components/responses/Problem'
+  /v1/auth/passkey/generate-authenticate-options:
+    get:
+      operationId: getPasskeySignInOptions
+      tags: [identity]
+      summary: WebAuthn options for a passkey sign-in
+      description: |
+        Returns a fresh challenge and the WebAuthn request options (W3C WebAuthn
+        `PublicKeyCredentialRequestOptionsJSON`) for the platform passkey API. Without a session
+        no credentials are listed, so the device offers its discoverable passkeys.
+      security: []
+      responses:
+        '200':
+          description: WebAuthn request options
+          headers:
+            Cache-Control:
+              $ref: './platform.yaml#/components/headers/CacheControlNoStore'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PasskeyRequestOptions'
+        '429':
+          $ref: './platform.yaml#/components/responses/RateLimited'
+        default:
+          $ref: './platform.yaml#/components/responses/Problem'
+  /v1/auth/passkey/verify-authentication:
+    post:
+      operationId: signInWithPasskey
+      tags: [identity]
+      summary: Sign in with a passkey assertion
+      description: |
+        Verifies the assertion the platform passkey API returned for the challenge of
+        `getPasskeySignInOptions`. Answers `session`, or `deletion_pending` for an account inside
+        its deletion grace window. A passkey always belongs to an existing account, so this
+        operation never answers `sign_up_required`.
+      security: []
+      parameters:
+        - $ref: './platform.yaml#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PasskeySignInRequest'
+      responses:
+        '200':
+          $ref: '#/components/responses/SignInAnswer'
+        '401':
+          $ref: '#/components/responses/SignInRefused'
+        '409':
+          $ref: './platform.yaml#/components/responses/Conflict'
+        '429':
+          $ref: './platform.yaml#/components/responses/RateLimited'
+        default:
+          $ref: './platform.yaml#/components/responses/Problem'
+  /v1/auth/passkey/generate-register-options:
+    get:
+      operationId: getPasskeyRegistrationOptions
+      tags: [identity]
+      summary: WebAuthn options to add a passkey to the signed-in account
+      description: |
+        Returns a fresh challenge and the WebAuthn creation options (W3C WebAuthn
+        `PublicKeyCredentialCreationOptionsJSON`). The account's existing passkeys are listed as
+        excluded credentials. Needs a recently created session (better-auth `freshAge`);
+        otherwise 403 `FORBIDDEN`, and the client signs in again first.
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: WebAuthn creation options
+          headers:
+            Cache-Control:
+              $ref: './platform.yaml#/components/headers/CacheControlNoStore'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PasskeyCreationOptions'
+        '401':
+          $ref: './platform.yaml#/components/responses/Unauthenticated'
+        '403':
+          $ref: './platform.yaml#/components/responses/Forbidden'
+        '410':
+          $ref: './platform.yaml#/components/responses/AccountDeleted'
+        '429':
+          $ref: './platform.yaml#/components/responses/RateLimited'
+        default:
+          $ref: './platform.yaml#/components/responses/Problem'
+  /v1/auth/passkey/verify-registration:
+    post:
+      operationId: registerPasskey
+      tags: [identity]
+      summary: Add a passkey to the signed-in account
+      description: |
+        Verifies the attestation the platform passkey API returned for the challenge of
+        `getPasskeyRegistrationOptions` and stores the passkey on the caller's account. An
+        account may hold several passkeys. Opens no new session.
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: './platform.yaml#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PasskeyRegistrationRequest'
+      responses:
+        '200':
+          description: The stored passkey
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PasskeySummary'
+        '401':
+          $ref: './platform.yaml#/components/responses/Unauthenticated'
+        '403':
+          $ref: './platform.yaml#/components/responses/Forbidden'
+        '409':
+          $ref: './platform.yaml#/components/responses/Conflict'
+        '410':
+          $ref: './platform.yaml#/components/responses/AccountDeleted'
+        '429':
+          $ref: './platform.yaml#/components/responses/RateLimited'
+        default:
+          $ref: './platform.yaml#/components/responses/Problem'
+  /v1/auth/get-session:
+    get:
+      operationId: getSession
+      tags: [identity]
+      summary: Read the current session
+      description: |
+        The account and expiry of the session the bearer token belongs to. Read-only: it does
+        not extend the session (better-auth `deferSessionRefresh`). A token with no live session
+        is answered with 401, never with an empty body.
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: The current session
+          headers:
+            Cache-Control:
+              $ref: './platform.yaml#/components/headers/CacheControlNoStore'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SessionInfo'
+        '401':
+          $ref: './platform.yaml#/components/responses/Unauthenticated'
+        '410':
+          $ref: './platform.yaml#/components/responses/AccountDeleted'
+        '429':
+          $ref: './platform.yaml#/components/responses/RateLimited'
+        default:
+          $ref: './platform.yaml#/components/responses/Problem'
+    post:
+      operationId: refreshSession
+      tags: [identity]
+      summary: Renew the current session
+      description: |
+        Extends the session the bearer token belongs to and answers with its token and new
+        expiry. The answer may carry a different token than the one presented: the client
+        stores the returned token and discards the old one. A 401 here is a refused renewal:
+        the client ends the session on the device and sends no further call for it.
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: './platform.yaml#/components/parameters/IdempotencyKey'
+      responses:
+        '200':
+          description: The renewed session
+          headers:
+            Cache-Control:
+              $ref: './platform.yaml#/components/headers/CacheControlNoStore'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SessionGrant'
+        '401':
+          $ref: './platform.yaml#/components/responses/Unauthenticated'
+        '409':
+          $ref: './platform.yaml#/components/responses/Conflict'
+        '410':
+          $ref: './platform.yaml#/components/responses/AccountDeleted'
+        '429':
+          $ref: './platform.yaml#/components/responses/RateLimited'
+        default:
+          $ref: './platform.yaml#/components/responses/Problem'
+  /v1/auth/sign-out:
+    post:
+      operationId: signOut
+      tags: [identity]
+      summary: Sign out this device
+      description: Revokes the session the bearer token belongs to on the server.
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: './platform.yaml#/components/parameters/IdempotencyKey'
+      responses:
+        '200':
+          description: The session is revoked
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SignOutResult'
+        '401':
+          $ref: './platform.yaml#/components/responses/Unauthenticated'
+        '409':
+          $ref: './platform.yaml#/components/responses/Conflict'
+        '410':
+          $ref: './platform.yaml#/components/responses/AccountDeleted'
+        '429':
+          $ref: './platform.yaml#/components/responses/RateLimited'
+        default:
+          $ref: './platform.yaml#/components/responses/Problem'
+  /v1/auth/list-sessions:
+    get:
+      operationId: listDeviceSessions
+      tags: [identity]
+      summary: List the signed-in devices of the caller
+      description: |
+        One entry per active session of the caller's account (the device list, doc 11 §4.2),
+        newest first, cursor-paginated (doc 06 §2). Never another user's sessions and never a
+        session token.
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: './platform.yaml#/components/parameters/Cursor'
+        - $ref: './platform.yaml#/components/parameters/Limit'
+      responses:
+        '200':
+          description: One page of the caller's sessions
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DeviceSessionPage'
+        '401':
+          $ref: './platform.yaml#/components/responses/Unauthenticated'
+        '410':
+          $ref: './platform.yaml#/components/responses/AccountDeleted'
+        '429':
+          $ref: './platform.yaml#/components/responses/RateLimited'
+        default:
+          $ref: './platform.yaml#/components/responses/Problem'
+  /v1/auth/revoke-sessions:
+    post:
+      operationId: signOutAllDevices
+      tags: [identity]
+      summary: Sign out every device
+      description: Revokes every session of the caller's account, the current one included.
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: './platform.yaml#/components/parameters/IdempotencyKey'
+      responses:
+        '200':
+          description: Every session of the account is revoked
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RevokeSessionsResult'
+        '401':
+          $ref: './platform.yaml#/components/responses/Unauthenticated'
+        '409':
+          $ref: './platform.yaml#/components/responses/Conflict'
+        '410':
+          $ref: './platform.yaml#/components/responses/AccountDeleted'
+        '429':
+          $ref: './platform.yaml#/components/responses/RateLimited'
+        default:
+          $ref: './platform.yaml#/components/responses/Problem'
+  /v1/auth/sign-in/magic-link:
+    post:
+      operationId: requestAccountRecovery
+      tags: [identity]
+      summary: Ask for an account-recovery link by email
+      description: |
+        Fallback for a person who lost their passkeys (doc 11 §15). The answer is the same
+        status and body whether or not an account exists for the address, so it discloses
+        nothing. When one exists, a single-use link is emailed; it works from 24 to 48 hours
+        after the request, and any signed-in session of the account can cancel it before then
+        (`cancelAccountRecovery`). Never creates an account.
+      security: []
+      parameters:
+        - $ref: './platform.yaml#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RecoveryRequest'
+      responses:
+        '200':
+          description: Accepted (uniform for every address)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RecoveryRequestAccepted'
+        '409':
+          $ref: './platform.yaml#/components/responses/Conflict'
+        '429':
+          $ref: './platform.yaml#/components/responses/RateLimited'
+        default:
+          $ref: './platform.yaml#/components/responses/Problem'
+  /v1/auth/magic-link/verify:
+    get:
+      operationId: completeAccountRecovery
+      tags: [identity]
+      summary: Use an account-recovery link
+      description: |
+        Exchanges the token of a recovery link for a sign-in. Refused before 24 hours and from
+        48 hours after the request, after a cancel, and on a second use. The person then adds
+        a new passkey with `registerPasskey`. The server never logs the query string of this
+        path.
+      security: []
+      parameters:
+        - name: token
+          in: query
+          required: true
+          description: Single-use token from the emailed link.
+          schema:
+            type: string
+            minLength: 1
+            maxLength: 512
+      responses:
+        '200':
+          $ref: '#/components/responses/SignInAnswer'
+        '401':
+          description: '`UNAUTHENTICATED`: the link is unknown, used, cancelled, not yet valid or expired.'
+          content:
+            application/problem+json:
+              schema:
+                $ref: './platform.yaml#/components/schemas/ProblemDetails'
+        '429':
+          $ref: './platform.yaml#/components/responses/RateLimited'
+        default:
+          $ref: './platform.yaml#/components/responses/Problem'
+  /v1/me/recovery:
+    delete:
+      operationId: cancelAccountRecovery
+      tags: [identity]
+      summary: Cancel a pending account recovery
+      description: |
+        Cancels the pending recovery link of the caller's account during its 24-hour delay.
+        Only a signed-in session of that account can cancel; holding the mailbox is not
+        enough. Identity's own operation: better-auth 1.7.12 has no path for it.
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: './platform.yaml#/components/parameters/IdempotencyKey'
+      responses:
+        '204':
+          description: The pending recovery is cancelled; its link no longer works.
+        '401':
+          $ref: './platform.yaml#/components/responses/Unauthenticated'
+        '404':
+          description: '`NOT_FOUND`: the account has no pending recovery.'
+          content:
+            application/problem+json:
+              schema:
+                $ref: './platform.yaml#/components/schemas/ProblemDetails'
+        '409':
+          $ref: './platform.yaml#/components/responses/Conflict'
+        '410':
+          $ref: './platform.yaml#/components/responses/AccountDeleted'
+        '429':
+          $ref: './platform.yaml#/components/responses/RateLimited'
+        default:
+          $ref: './platform.yaml#/components/responses/Problem'
+  /v1/me/consents:
+    get:
+      operationId: listConsents
+      tags: [identity]
+      summary: The caller's current consent per purpose
+      description: |
+        The latest consent record of each purpose the caller has decided on, cursor-paginated.
+        A purpose with no record is absent and its default applies (doc 11 §7.2). The full
+        append-only history is part of the data export.
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: './platform.yaml#/components/parameters/Cursor'
+        - $ref: './platform.yaml#/components/parameters/Limit'
+      responses:
+        '200':
+          description: One page of current consent records
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConsentPage'
+        '401':
+          $ref: './platform.yaml#/components/responses/Unauthenticated'
+        '410':
+          $ref: './platform.yaml#/components/responses/AccountDeleted'
+        '429':
+          $ref: './platform.yaml#/components/responses/RateLimited'
+        default:
+          $ref: './platform.yaml#/components/responses/Problem'
+    post:
+      operationId: recordConsent
+      tags: [identity]
+      summary: Grant or withdraw consent for one purpose
+      description: |
+        Appends a consent record for one purpose (doc 11 §7.1; append-only: a withdrawal is a
+        new record). 201 when a record was appended. 200 when the request repeats the current
+        state for the same policy version: nothing is stored and the current record, with its
+        original dates, is returned.
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: './platform.yaml#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ConsentChange'
+      responses:
+        '200':
+          description: Unchanged; the current record
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConsentRecord'
+        '201':
+          description: The appended record
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConsentRecord'
+        '401':
+          $ref: './platform.yaml#/components/responses/Unauthenticated'
+        '403':
+          description: |
+            `CONSENT_REQUIRED`: a withdrawal of `core_service` is refused. This consent is
+            required to use the app (doc 11 §7.2). Deleting the account is what ends this
+            processing (`POST /v1/me/deletion`).
+          content:
+            application/problem+json:
+              schema:
+                $ref: './platform.yaml#/components/schemas/ProblemDetails'
+        '409':
+          $ref: './platform.yaml#/components/responses/Conflict'
+        '410':
+          $ref: './platform.yaml#/components/responses/AccountDeleted'
+        '429':
+          $ref: './platform.yaml#/components/responses/RateLimited'
+        default:
+          $ref: './platform.yaml#/components/responses/Problem'
+components:
+  responses:
+    SignInAnswer:
+      description: The outcome of a sign-in (see `SignInResult`)
+      headers:
+        Cache-Control:
+          $ref: './platform.yaml#/components/headers/CacheControlNoStore'
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/SignInResult'
+    SignInRefused:
+      description: '`UNAUTHENTICATED`: the identity token or passkey assertion was not accepted.'
+      content:
+        application/problem+json:
+          schema:
+            $ref: './platform.yaml#/components/schemas/ProblemDetails'
+  schemas:
+    UserId:
+      type: string
+      description: Account id, a prefixed ULID (`usr_`, shared-kernel `ID_PREFIXES.user`).
+      pattern: '^usr_[0-7][0-9A-HJKMNP-TV-Z]{25}$'
+      examples: ['usr_01J9Z3K8X2Q7N5V4B6C8D0E1F2']
+    ConsentRecordId:
+      type: string
+      description: Consent record id, a prefixed ULID (`cns_`, shared-kernel `ID_PREFIXES.consentRecord`).
+      pattern: '^cns_[0-7][0-9A-HJKMNP-TV-Z]{25}$'
+      examples: ['cns_01J9Z3K8X2Q7N5V4B6C8D0E1F3']
+    Base64Url:
+      type: string
+      description: Base64url without padding (RFC 4648 §5), as WebAuthn JSON encodes binary values.
+      pattern: '^[A-Za-z0-9_-]*$'
+    IdentityProvider:
+      type: string
+      description: Identity providers that sign in with a native identity token (DEC-64).
+      enum: [apple, google]
+    IdTokenSignInRequest:
+      type: object
+      additionalProperties: false
+      required: [provider, idToken]
+      properties:
+        provider:
+          $ref: '#/components/schemas/IdentityProvider'
+        idToken:
+          type: object
+          additionalProperties: false
+          required: [token]
+          properties:
+            token:
+              type: string
+              minLength: 1
+              description: The provider's identity token (a JWT), verified against the provider's keys.
+            nonce:
+              type: string
+              minLength: 1
+              description: |
+                The unhashed nonce the app generated for the provider request. The identity
+                token's `nonce` claim must equal it or its SHA-256 digest. Sign in with Apple
+                requires it.
+            user:
+              type: object
+              additionalProperties: false
+              description: Name the provider reports to the app on the first authorization only (Sign in with Apple).
+              properties:
+                name:
+                  type: object
+                  additionalProperties: false
+                  properties:
+                    firstName:
+                      type: string
+                      maxLength: 100
+                    lastName:
+                      type: string
+                      maxLength: 100
+    CompleteSignUpRequest:
+      type: object
+      additionalProperties: false
+      required: [signUpToken, birthYear]
+      properties:
+        signUpToken:
+          type: string
+          minLength: 1
+          description: '`SignUpPending.token` of the `sign_up_required` answer.'
+        birthYear:
+          type: integer
+          description: |
+            Self-declared birth year (DEC-60). Only a sanity range is enforced here; the age
+            floor is the server's rule and is never restated by a client.
+          minimum: 1900
+          maximum: 2100
+    SignInResult:
+      type: object
+      description: |
+        One sign-in outcome. `outcome` names it, and exactly the object of that outcome is
+        present: `session` for `session`, `deletionPending` for `deletion_pending`, `signUp` for
+        `sign_up_required`. Only `session` opens a session.
+      required: [outcome]
+      properties:
+        outcome:
+          type: string
+          enum: [session, deletion_pending, sign_up_required]
+        session:
+          $ref: '#/components/schemas/SessionGrant'
+        deletionPending:
+          $ref: '#/components/schemas/DeletionPending'
+        signUp:
+          $ref: '#/components/schemas/SignUpPending'
+    SessionGrant:
+      type: object
+      description: A session the server opened or renewed.
+      required: [userId, token, expiresAt]
+      properties:
+        userId:
+          $ref: '#/components/schemas/UserId'
+        token:
+          type: string
+          minLength: 1
+          description: The session token for `bearerAuth`. Kept in the Keychain or Keystore-backed storage only (doc 11 §4.2).
+        expiresAt:
+          type: string
+          format: date-time
+          description: |
+            When the session ends unless renewed with `refreshSession`. The server may refuse
+            the token earlier (revocation, or a shorter access window, doc 11 §4.2); the client
+            then renews once.
+    SessionInfo:
+      type: object
+      description: The current session, without its token.
+      required: [userId, expiresAt]
+      properties:
+        userId:
+          $ref: '#/components/schemas/UserId'
+        expiresAt:
+          type: string
+          format: date-time
+        needsRefresh:
+          type: boolean
+          description: True when the server asks the client to renew now with `refreshSession`.
+    DeletionPending:
+      type: object
+      description: |
+        The account is inside its 7-day deletion grace window (DEC-65): no session was opened.
+        The only thing the client can do is offer to cancel the deletion with `cancelToken`.
+      required: [graceEndsAt, cancelToken, cancelTokenExpiresAt]
+      properties:
+        graceEndsAt:
+          type: string
+          format: date-time
+          description: End of the grace window; the purge starts after it.
+        cancelToken:
+          type: string
+          minLength: 1
+          description: Value for the `Deletion-Cancel-Token` header (`deletionCancelToken`); valid only for `DELETE /v1/me/deletion`.
+        cancelTokenExpiresAt:
+          type: string
+          format: date-time
+          description: At most 15 minutes after issue (doc 11 §4.2).
+    SignUpPending:
+      type: object
+      description: |
+        The verified identity has no account. Nothing is stored. The client asks for the birth
+        year and calls `completeSignUp` with `token`.
+      required: [token, expiresAt]
+      properties:
+        token:
+          type: string
+          minLength: 1
+          description: |
+            Sign-up credential for `CompleteSignUpRequest.signUpToken`. Single use, valid only
+            for `completeSignUp`; it opens no session and grants nothing else.
+        expiresAt:
+          type: string
+          format: date-time
+          description: At most 15 minutes after issue.
+    SignOutResult:
+      type: object
+      required: [success]
+      properties:
+        success:
+          type: boolean
+    RevokeSessionsResult:
+      type: object
+      required: [status]
+      properties:
+        status:
+          type: boolean
+    DeviceSession:
+      type: object
+      description: One signed-in device of the caller. Carries no token and no IP address.
+      required: [current, createdAt, lastActiveAt, expiresAt]
+      properties:
+        current:
+          type: boolean
+          description: True for the session that made this request.
+        createdAt:
+          type: string
+          format: date-time
+          description: When the device signed in.
+        lastActiveAt:
+          type: string
+          format: date-time
+          description: Last renewal of the session.
+        expiresAt:
+          type: string
+          format: date-time
+        userAgent:
+          type: string
+          maxLength: 512
+          description: The `User-Agent` the device sent at sign-in, to tell devices apart.
+    DeviceSessionPage:
+      type: object
+      required: [items, nextCursor]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/DeviceSession'
+        nextCursor:
+          type: [string, 'null']
+          description: Cursor of the next page; null on the last page.
+    RecoveryRequest:
+      type: object
+      additionalProperties: false
+      required: [email]
+      properties:
+        email:
+          type: string
+          format: email
+          maxLength: 254
+    RecoveryRequestAccepted:
+      type: object
+      required: [status]
+      properties:
+        status:
+          type: boolean
+          description: Always true, whether or not an account exists for the address.
+    PasskeyCredentialDescriptor:
+      type: object
+      description: W3C WebAuthn `PublicKeyCredentialDescriptorJSON`.
+      required: [id, type]
+      properties:
+        id:
+          $ref: '#/components/schemas/Base64Url'
+        type:
+          type: string
+          enum: [public-key]
+        transports:
+          type: array
+          items:
+            type: string
+    PasskeyRequestOptions:
+      type: object
+      description: W3C WebAuthn `PublicKeyCredentialRequestOptionsJSON`.
+      required: [challenge]
+      properties:
+        challenge:
+          $ref: '#/components/schemas/Base64Url'
+        timeout:
+          type: integer
+          minimum: 0
+        rpId:
+          type: string
+        allowCredentials:
+          type: array
+          items:
+            $ref: '#/components/schemas/PasskeyCredentialDescriptor'
+        userVerification:
+          type: string
+          enum: [required, preferred, discouraged]
+        hints:
+          type: array
+          items:
+            type: string
+        extensions:
+          $ref: '#/components/schemas/PasskeyExtensionInputs'
+    PasskeyCreationOptions:
+      type: object
+      description: W3C WebAuthn `PublicKeyCredentialCreationOptionsJSON`.
+      required: [rp, user, challenge, pubKeyCredParams]
+      properties:
+        rp:
+          type: object
+          required: [name]
+          properties:
+            id:
+              type: string
+            name:
+              type: string
+        user:
+          type: object
+          required: [id, name, displayName]
+          properties:
+            id:
+              $ref: '#/components/schemas/Base64Url'
+            name:
+              type: string
+            displayName:
+              type: string
+        challenge:
+          $ref: '#/components/schemas/Base64Url'
+        pubKeyCredParams:
+          type: array
+          items:
+            type: object
+            required: [type, alg]
+            properties:
+              type:
+                type: string
+                enum: [public-key]
+              alg:
+                type: integer
+        timeout:
+          type: integer
+          minimum: 0
+        excludeCredentials:
+          type: array
+          items:
+            $ref: '#/components/schemas/PasskeyCredentialDescriptor'
+        authenticatorSelection:
+          type: object
+          properties:
+            authenticatorAttachment:
+              type: string
+              enum: [platform, cross-platform]
+            residentKey:
+              type: string
+              enum: [discouraged, preferred, required]
+            requireResidentKey:
+              type: boolean
+            userVerification:
+              type: string
+              enum: [required, preferred, discouraged]
+        attestation:
+          type: string
+          enum: [none, indirect, direct, enterprise]
+        hints:
+          type: array
+          items:
+            type: string
+        extensions:
+          $ref: '#/components/schemas/PasskeyExtensionInputs'
+    PasskeyExtensionInputs:
+      type: object
+      description: |
+        WebAuthn extension inputs (`AuthenticationExtensionsClientInputsJSON`). Only the
+        extensions this API requests are modelled.
+      properties:
+        credProps:
+          type: boolean
+    PasskeyExtensionOutputs:
+      type: object
+      description: |
+        WebAuthn extension outputs (`AuthenticationExtensionsClientOutputsJSON`). Only the
+        extensions this API reads are modelled; send `{}` when there are none.
+      properties:
+        credProps:
+          type: object
+          properties:
+            rk:
+              type: boolean
+    PasskeyAuthenticationResponse:
+      type: object
+      description: W3C WebAuthn `AuthenticationResponseJSON`.
+      required: [id, rawId, type, response, clientExtensionResults]
+      properties:
+        id:
+          $ref: '#/components/schemas/Base64Url'
+        rawId:
+          $ref: '#/components/schemas/Base64Url'
+        type:
+          type: string
+          enum: [public-key]
+        authenticatorAttachment:
+          type: string
+          enum: [platform, cross-platform]
+        clientExtensionResults:
+          $ref: '#/components/schemas/PasskeyExtensionOutputs'
+        response:
+          type: object
+          required: [clientDataJSON, authenticatorData, signature]
+          properties:
+            clientDataJSON:
+              $ref: '#/components/schemas/Base64Url'
+            authenticatorData:
+              $ref: '#/components/schemas/Base64Url'
+            signature:
+              $ref: '#/components/schemas/Base64Url'
+            userHandle:
+              $ref: '#/components/schemas/Base64Url'
+    PasskeyRegistrationResponse:
+      type: object
+      description: W3C WebAuthn `RegistrationResponseJSON`.
+      required: [id, rawId, type, response, clientExtensionResults]
+      properties:
+        id:
+          $ref: '#/components/schemas/Base64Url'
+        rawId:
+          $ref: '#/components/schemas/Base64Url'
+        type:
+          type: string
+          enum: [public-key]
+        authenticatorAttachment:
+          type: string
+          enum: [platform, cross-platform]
+        clientExtensionResults:
+          $ref: '#/components/schemas/PasskeyExtensionOutputs'
+        response:
+          type: object
+          required: [clientDataJSON, attestationObject]
+          properties:
+            clientDataJSON:
+              $ref: '#/components/schemas/Base64Url'
+            attestationObject:
+              $ref: '#/components/schemas/Base64Url'
+            authenticatorData:
+              $ref: '#/components/schemas/Base64Url'
+            transports:
+              type: array
+              items:
+                type: string
+            publicKeyAlgorithm:
+              type: integer
+            publicKey:
+              $ref: '#/components/schemas/Base64Url'
+    PasskeySignInRequest:
+      type: object
+      additionalProperties: false
+      required: [response]
+      properties:
+        response:
+          $ref: '#/components/schemas/PasskeyAuthenticationResponse'
+    PasskeyRegistrationRequest:
+      type: object
+      additionalProperties: false
+      required: [response]
+      properties:
+        response:
+          $ref: '#/components/schemas/PasskeyRegistrationResponse'
+        name:
+          type: string
+          maxLength: 100
+          description: Label the person gives the passkey.
+    PasskeySummary:
+      type: object
+      description: A passkey stored on the account. Carries no key material.
+      required: [createdAt]
+      properties:
+        name:
+          type: string
+          maxLength: 100
+        createdAt:
+          type: string
+          format: date-time
+    ConsentPurpose:
+      type: string
+      description: |
+        Consent purpose keys of doc 11 §7.2, in that order. Mirrors shared-kernel
+        `CONSENT_PURPOSES` value for value (pinned by packages/contracts/tests/kernel-enums.test.ts).
+      enum:
+        - core_service
+        - face_processing
+        - location_precise
+        - analytics
+        - ai_generative
+        - notifications
+        - training_data
+    ConsentStatus:
+      type: string
+      enum: [granted, withdrawn]
+    ConsentChange:
+      type: object
+      additionalProperties: false
+      required: [purpose, status, policyVersion, surface, locale]
+      properties:
+        purpose:
+          $ref: '#/components/schemas/ConsentPurpose'
+        status:
+          $ref: '#/components/schemas/ConsentStatus'
+        policyVersion:
+          $ref: '#/components/schemas/PolicyVersion'
+        surface:
+          $ref: '#/components/schemas/ConsentSurface'
+        locale:
+          $ref: '#/components/schemas/Locale'
+    ConsentRecord:
+      type: object
+      description: One append-only consent record (doc 11 §7.1).
+      required: [id, purpose, status, policyVersion, surface, locale]
+      properties:
+        id:
+          $ref: '#/components/schemas/ConsentRecordId'
+        purpose:
+          $ref: '#/components/schemas/ConsentPurpose'
+        status:
+          $ref: '#/components/schemas/ConsentStatus'
+        policyVersion:
+          $ref: '#/components/schemas/PolicyVersion'
+        grantedAt:
+          type: string
+          format: date-time
+          description: When the consent was granted; present when `status` is `granted`.
+        withdrawnAt:
+          type: string
+          format: date-time
+          description: When the consent was withdrawn; present when `status` is `withdrawn`.
+        surface:
+          $ref: '#/components/schemas/ConsentSurface'
+        locale:
+          $ref: '#/components/schemas/Locale'
+    ConsentPage:
+      type: object
+      required: [items, nextCursor]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/ConsentRecord'
+        nextCursor:
+          type: [string, 'null']
+          description: Cursor of the next page; null on the last page.
+    PolicyVersion:
+      type: string
+      description: Version of the policy text the person saw, e.g. `0.1.0-draft`.
+      pattern: '^[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?$'
+      maxLength: 64
+      examples: ['0.1.0-draft']
+    ConsentSurface:
+      type: string
+      description: Identifier of the app screen where the decision was made, e.g. `onboarding_consent`.
+      pattern: '^[a-z][a-z0-9_]{0,63}$'
+    Locale:
+      type: string
+      description: BCP 47 language tag of the text the person saw, e.g. `en-GB`.
+      pattern: '^[A-Za-z]{2,3}(-[A-Za-z0-9]{2,8})*$'
+      maxLength: 35

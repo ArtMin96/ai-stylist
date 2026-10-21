@@ -12,5 +12,22 @@ public import struct Foundation.Date
 #endif
 extension Components {
     /// Types generated from the `#/components/parameters` section of the OpenAPI document.
-    public enum Parameters {}
+    public enum Parameters {
+        /// Client-generated ULID that makes a mutating request safe to retry (doc 06 §2; the
+        /// mobile mutation-log `opId`). The server keeps key, request hash and response for 48 h:
+        /// a replay with the same body returns the stored response, the same key with a different
+        /// body is refused with 409 `IDEMPOTENCY_KEY_REUSED`. Optional for the caller.
+        ///
+        ///
+        /// - Remark: Generated from `#/components/parameters/IdempotencyKey`.
+        public typealias IdempotencyKey = Swift.String
+        /// Opaque cursor from the `nextCursor` of the previous page; omit for the first page.
+        ///
+        /// - Remark: Generated from `#/components/parameters/Cursor`.
+        public typealias Cursor = Swift.String
+        /// Page size (doc 06 §2 cursor pagination).
+        ///
+        /// - Remark: Generated from `#/components/parameters/Limit`.
+        public typealias Limit = Swift.Int
+    }
 }

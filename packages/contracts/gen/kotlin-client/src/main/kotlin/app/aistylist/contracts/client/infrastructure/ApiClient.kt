@@ -1,6 +1,8 @@
 // GENERATED — run `just generate` (tools/codegen/gen-kotlin.sh). DO NOT EDIT BY HAND.
 package app.aistylist.contracts.client.infrastructure
 
+import app.aistylist.contracts.client.auth.HttpBearerAuth
+import app.aistylist.contracts.client.auth.ApiKeyAuth
 
 import okhttp3.Call
 import okhttp3.Interceptor
@@ -58,6 +60,43 @@ class ApiClient(
 
     init {
         normalizeBaseUrl()
+    }
+
+    constructor(
+        baseUrl: String = defaultBasePath,
+        okHttpClientBuilder: OkHttpClient.Builder? = null,
+        
+        authNames: Array<String>
+    ) : this(baseUrl, okHttpClientBuilder) {
+        authNames.forEach { authName ->
+            val auth: Interceptor? = when (authName) { 
+                "bearerAuth" -> HttpBearerAuth("bearer")
+                
+                "deletionCancelToken" -> ApiKeyAuth("header", "Deletion-Cancel-Token")
+                
+                else -> throw RuntimeException("auth name $authName not found in available auth names")
+            }
+            if (auth != null) {
+                addAuthorization(authName, auth)
+            }
+        }
+    }
+
+    constructor(
+        baseUrl: String = defaultBasePath,
+        okHttpClientBuilder: OkHttpClient.Builder? = null,
+        
+        authName: String,
+        bearerToken: String
+    ) : this(baseUrl, okHttpClientBuilder, arrayOf(authName)) {
+        setBearerToken(bearerToken)
+    }
+
+    fun setBearerToken(bearerToken: String): ApiClient {
+        apiAuthorizations.values.runOnFirst<Interceptor, HttpBearerAuth> {
+            this.bearerToken = bearerToken
+        }
+        return this
     }
 
     /**

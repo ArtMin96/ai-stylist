@@ -232,5 +232,1408 @@ extension Components {
                 ])
             }
         }
+        /// Identity providers that sign in with a native identity token (DEC-64).
+        ///
+        /// - Remark: Generated from `#/components/schemas/IdentityProvider`.
+        @frozen public enum IdentityProvider: String, Codable, Hashable, Sendable, CaseIterable {
+            case apple = "apple"
+            case google = "google"
+        }
+        /// - Remark: Generated from `#/components/schemas/IdTokenSignInRequest`.
+        public struct IdTokenSignInRequest: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/IdTokenSignInRequest/provider`.
+            public var provider: Components.Schemas.IdentityProvider
+            /// - Remark: Generated from `#/components/schemas/IdTokenSignInRequest/idToken`.
+            public struct IdTokenPayload: Codable, Hashable, Sendable {
+                /// The provider's identity token (a JWT), verified against the provider's keys.
+                ///
+                /// - Remark: Generated from `#/components/schemas/IdTokenSignInRequest/idToken/token`.
+                public var token: Swift.String
+                /// The unhashed nonce the app generated for the provider request. The identity
+                /// token's `nonce` claim must equal it or its SHA-256 digest. Sign in with Apple
+                /// requires it.
+                ///
+                ///
+                /// - Remark: Generated from `#/components/schemas/IdTokenSignInRequest/idToken/nonce`.
+                public var nonce: Swift.String?
+                /// Name the provider reports to the app on the first authorization only (Sign in with Apple).
+                ///
+                /// - Remark: Generated from `#/components/schemas/IdTokenSignInRequest/idToken/user`.
+                public struct UserPayload: Codable, Hashable, Sendable {
+                    /// - Remark: Generated from `#/components/schemas/IdTokenSignInRequest/idToken/user/name`.
+                    public struct NamePayload: Codable, Hashable, Sendable {
+                        /// - Remark: Generated from `#/components/schemas/IdTokenSignInRequest/idToken/user/name/firstName`.
+                        public var firstName: Swift.String?
+                        /// - Remark: Generated from `#/components/schemas/IdTokenSignInRequest/idToken/user/name/lastName`.
+                        public var lastName: Swift.String?
+                        /// Creates a new `NamePayload`.
+                        ///
+                        /// - Parameters:
+                        ///   - firstName:
+                        ///   - lastName:
+                        public init(
+                            firstName: Swift.String? = nil,
+                            lastName: Swift.String? = nil
+                        ) {
+                            self.firstName = firstName
+                            self.lastName = lastName
+                        }
+                        public enum CodingKeys: String, CodingKey {
+                            case firstName
+                            case lastName
+                        }
+                        public init(from decoder: any Swift.Decoder) throws {
+                            let container = try decoder.container(keyedBy: CodingKeys.self)
+                            self.firstName = try container.decodeIfPresent(
+                                Swift.String.self,
+                                forKey: .firstName
+                            )
+                            self.lastName = try container.decodeIfPresent(
+                                Swift.String.self,
+                                forKey: .lastName
+                            )
+                            try decoder.ensureNoAdditionalProperties(knownKeys: [
+                                "firstName",
+                                "lastName"
+                            ])
+                        }
+                    }
+                    /// - Remark: Generated from `#/components/schemas/IdTokenSignInRequest/idToken/user/name`.
+                    public var name: Components.Schemas.IdTokenSignInRequest.IdTokenPayload.UserPayload.NamePayload?
+                    /// Creates a new `UserPayload`.
+                    ///
+                    /// - Parameters:
+                    ///   - name:
+                    public init(name: Components.Schemas.IdTokenSignInRequest.IdTokenPayload.UserPayload.NamePayload? = nil) {
+                        self.name = name
+                    }
+                    public enum CodingKeys: String, CodingKey {
+                        case name
+                    }
+                    public init(from decoder: any Swift.Decoder) throws {
+                        let container = try decoder.container(keyedBy: CodingKeys.self)
+                        self.name = try container.decodeIfPresent(
+                            Components.Schemas.IdTokenSignInRequest.IdTokenPayload.UserPayload.NamePayload.self,
+                            forKey: .name
+                        )
+                        try decoder.ensureNoAdditionalProperties(knownKeys: [
+                            "name"
+                        ])
+                    }
+                }
+                /// Name the provider reports to the app on the first authorization only (Sign in with Apple).
+                ///
+                /// - Remark: Generated from `#/components/schemas/IdTokenSignInRequest/idToken/user`.
+                public var user: Components.Schemas.IdTokenSignInRequest.IdTokenPayload.UserPayload?
+                /// Creates a new `IdTokenPayload`.
+                ///
+                /// - Parameters:
+                ///   - token: The provider's identity token (a JWT), verified against the provider's keys.
+                ///   - nonce: The unhashed nonce the app generated for the provider request. The identity
+                ///   - user: Name the provider reports to the app on the first authorization only (Sign in with Apple).
+                public init(
+                    token: Swift.String,
+                    nonce: Swift.String? = nil,
+                    user: Components.Schemas.IdTokenSignInRequest.IdTokenPayload.UserPayload? = nil
+                ) {
+                    self.token = token
+                    self.nonce = nonce
+                    self.user = user
+                }
+                public enum CodingKeys: String, CodingKey {
+                    case token
+                    case nonce
+                    case user
+                }
+                public init(from decoder: any Swift.Decoder) throws {
+                    let container = try decoder.container(keyedBy: CodingKeys.self)
+                    self.token = try container.decode(
+                        Swift.String.self,
+                        forKey: .token
+                    )
+                    self.nonce = try container.decodeIfPresent(
+                        Swift.String.self,
+                        forKey: .nonce
+                    )
+                    self.user = try container.decodeIfPresent(
+                        Components.Schemas.IdTokenSignInRequest.IdTokenPayload.UserPayload.self,
+                        forKey: .user
+                    )
+                    try decoder.ensureNoAdditionalProperties(knownKeys: [
+                        "token",
+                        "nonce",
+                        "user"
+                    ])
+                }
+            }
+            /// - Remark: Generated from `#/components/schemas/IdTokenSignInRequest/idToken`.
+            public var idToken: Components.Schemas.IdTokenSignInRequest.IdTokenPayload
+            /// Creates a new `IdTokenSignInRequest`.
+            ///
+            /// - Parameters:
+            ///   - provider:
+            ///   - idToken:
+            public init(
+                provider: Components.Schemas.IdentityProvider,
+                idToken: Components.Schemas.IdTokenSignInRequest.IdTokenPayload
+            ) {
+                self.provider = provider
+                self.idToken = idToken
+            }
+            public enum CodingKeys: String, CodingKey {
+                case provider
+                case idToken
+            }
+            public init(from decoder: any Swift.Decoder) throws {
+                let container = try decoder.container(keyedBy: CodingKeys.self)
+                self.provider = try container.decode(
+                    Components.Schemas.IdentityProvider.self,
+                    forKey: .provider
+                )
+                self.idToken = try container.decode(
+                    Components.Schemas.IdTokenSignInRequest.IdTokenPayload.self,
+                    forKey: .idToken
+                )
+                try decoder.ensureNoAdditionalProperties(knownKeys: [
+                    "provider",
+                    "idToken"
+                ])
+            }
+        }
+        /// Account id, a prefixed ULID (`usr_`, shared-kernel `ID_PREFIXES.user`).
+        ///
+        /// - Remark: Generated from `#/components/schemas/UserId`.
+        public typealias UserId = Swift.String
+        /// A session the server opened or renewed.
+        ///
+        /// - Remark: Generated from `#/components/schemas/SessionGrant`.
+        public struct SessionGrant: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/SessionGrant/userId`.
+            public var userId: Components.Schemas.UserId
+            /// The session token for `bearerAuth`. Kept in the Keychain or Keystore-backed storage only (doc 11 §4.2).
+            ///
+            /// - Remark: Generated from `#/components/schemas/SessionGrant/token`.
+            public var token: Swift.String
+            /// When the session ends unless renewed with `refreshSession`. The server may refuse
+            /// the token earlier (revocation, or a shorter access window, doc 11 §4.2); the client
+            /// then renews once.
+            ///
+            ///
+            /// - Remark: Generated from `#/components/schemas/SessionGrant/expiresAt`.
+            public var expiresAt: Foundation.Date
+            /// Creates a new `SessionGrant`.
+            ///
+            /// - Parameters:
+            ///   - userId:
+            ///   - token: The session token for `bearerAuth`. Kept in the Keychain or Keystore-backed storage only (doc 11 §4.2).
+            ///   - expiresAt: When the session ends unless renewed with `refreshSession`. The server may refuse
+            public init(
+                userId: Components.Schemas.UserId,
+                token: Swift.String,
+                expiresAt: Foundation.Date
+            ) {
+                self.userId = userId
+                self.token = token
+                self.expiresAt = expiresAt
+            }
+            public enum CodingKeys: String, CodingKey {
+                case userId
+                case token
+                case expiresAt
+            }
+        }
+        /// The account is inside its 7-day deletion grace window (DEC-65): no session was opened.
+        /// The only thing the client can do is offer to cancel the deletion with `cancelToken`.
+        ///
+        ///
+        /// - Remark: Generated from `#/components/schemas/DeletionPending`.
+        public struct DeletionPending: Codable, Hashable, Sendable {
+            /// End of the grace window; the purge starts after it.
+            ///
+            /// - Remark: Generated from `#/components/schemas/DeletionPending/graceEndsAt`.
+            public var graceEndsAt: Foundation.Date
+            /// Value for the `Deletion-Cancel-Token` header (`deletionCancelToken`); valid only for `DELETE /v1/me/deletion`.
+            ///
+            /// - Remark: Generated from `#/components/schemas/DeletionPending/cancelToken`.
+            public var cancelToken: Swift.String
+            /// At most 15 minutes after issue (doc 11 §4.2).
+            ///
+            /// - Remark: Generated from `#/components/schemas/DeletionPending/cancelTokenExpiresAt`.
+            public var cancelTokenExpiresAt: Foundation.Date
+            /// Creates a new `DeletionPending`.
+            ///
+            /// - Parameters:
+            ///   - graceEndsAt: End of the grace window; the purge starts after it.
+            ///   - cancelToken: Value for the `Deletion-Cancel-Token` header (`deletionCancelToken`); valid only for `DELETE /v1/me/deletion`.
+            ///   - cancelTokenExpiresAt: At most 15 minutes after issue (doc 11 §4.2).
+            public init(
+                graceEndsAt: Foundation.Date,
+                cancelToken: Swift.String,
+                cancelTokenExpiresAt: Foundation.Date
+            ) {
+                self.graceEndsAt = graceEndsAt
+                self.cancelToken = cancelToken
+                self.cancelTokenExpiresAt = cancelTokenExpiresAt
+            }
+            public enum CodingKeys: String, CodingKey {
+                case graceEndsAt
+                case cancelToken
+                case cancelTokenExpiresAt
+            }
+        }
+        /// The verified identity has no account. Nothing is stored. The client asks for the birth
+        /// year and calls `completeSignUp` with `token`.
+        ///
+        ///
+        /// - Remark: Generated from `#/components/schemas/SignUpPending`.
+        public struct SignUpPending: Codable, Hashable, Sendable {
+            /// Sign-up credential for `CompleteSignUpRequest.signUpToken`. Single use, valid only
+            /// for `completeSignUp`; it opens no session and grants nothing else.
+            ///
+            ///
+            /// - Remark: Generated from `#/components/schemas/SignUpPending/token`.
+            public var token: Swift.String
+            /// At most 15 minutes after issue.
+            ///
+            /// - Remark: Generated from `#/components/schemas/SignUpPending/expiresAt`.
+            public var expiresAt: Foundation.Date
+            /// Creates a new `SignUpPending`.
+            ///
+            /// - Parameters:
+            ///   - token: Sign-up credential for `CompleteSignUpRequest.signUpToken`. Single use, valid only
+            ///   - expiresAt: At most 15 minutes after issue.
+            public init(
+                token: Swift.String,
+                expiresAt: Foundation.Date
+            ) {
+                self.token = token
+                self.expiresAt = expiresAt
+            }
+            public enum CodingKeys: String, CodingKey {
+                case token
+                case expiresAt
+            }
+        }
+        /// One sign-in outcome. `outcome` names it, and exactly the object of that outcome is
+        /// present: `session` for `session`, `deletionPending` for `deletion_pending`, `signUp` for
+        /// `sign_up_required`. Only `session` opens a session.
+        ///
+        ///
+        /// - Remark: Generated from `#/components/schemas/SignInResult`.
+        public struct SignInResult: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/SignInResult/outcome`.
+            @frozen public enum OutcomePayload: String, Codable, Hashable, Sendable, CaseIterable {
+                case session = "session"
+                case deletionPending = "deletion_pending"
+                case signUpRequired = "sign_up_required"
+            }
+            /// - Remark: Generated from `#/components/schemas/SignInResult/outcome`.
+            public var outcome: Components.Schemas.SignInResult.OutcomePayload
+            /// - Remark: Generated from `#/components/schemas/SignInResult/session`.
+            public var session: Components.Schemas.SessionGrant?
+            /// - Remark: Generated from `#/components/schemas/SignInResult/deletionPending`.
+            public var deletionPending: Components.Schemas.DeletionPending?
+            /// - Remark: Generated from `#/components/schemas/SignInResult/signUp`.
+            public var signUp: Components.Schemas.SignUpPending?
+            /// Creates a new `SignInResult`.
+            ///
+            /// - Parameters:
+            ///   - outcome:
+            ///   - session:
+            ///   - deletionPending:
+            ///   - signUp:
+            public init(
+                outcome: Components.Schemas.SignInResult.OutcomePayload,
+                session: Components.Schemas.SessionGrant? = nil,
+                deletionPending: Components.Schemas.DeletionPending? = nil,
+                signUp: Components.Schemas.SignUpPending? = nil
+            ) {
+                self.outcome = outcome
+                self.session = session
+                self.deletionPending = deletionPending
+                self.signUp = signUp
+            }
+            public enum CodingKeys: String, CodingKey {
+                case outcome
+                case session
+                case deletionPending
+                case signUp
+            }
+        }
+        /// - Remark: Generated from `#/components/schemas/CompleteSignUpRequest`.
+        public struct CompleteSignUpRequest: Codable, Hashable, Sendable {
+            /// `SignUpPending.token` of the `sign_up_required` answer.
+            ///
+            /// - Remark: Generated from `#/components/schemas/CompleteSignUpRequest/signUpToken`.
+            public var signUpToken: Swift.String
+            /// Self-declared birth year (DEC-60). Only a sanity range is enforced here; the age
+            /// floor is the server's rule and is never restated by a client.
+            ///
+            ///
+            /// - Remark: Generated from `#/components/schemas/CompleteSignUpRequest/birthYear`.
+            public var birthYear: Swift.Int
+            /// Creates a new `CompleteSignUpRequest`.
+            ///
+            /// - Parameters:
+            ///   - signUpToken: `SignUpPending.token` of the `sign_up_required` answer.
+            ///   - birthYear: Self-declared birth year (DEC-60). Only a sanity range is enforced here; the age
+            public init(
+                signUpToken: Swift.String,
+                birthYear: Swift.Int
+            ) {
+                self.signUpToken = signUpToken
+                self.birthYear = birthYear
+            }
+            public enum CodingKeys: String, CodingKey {
+                case signUpToken
+                case birthYear
+            }
+            public init(from decoder: any Swift.Decoder) throws {
+                let container = try decoder.container(keyedBy: CodingKeys.self)
+                self.signUpToken = try container.decode(
+                    Swift.String.self,
+                    forKey: .signUpToken
+                )
+                self.birthYear = try container.decode(
+                    Swift.Int.self,
+                    forKey: .birthYear
+                )
+                try decoder.ensureNoAdditionalProperties(knownKeys: [
+                    "signUpToken",
+                    "birthYear"
+                ])
+            }
+        }
+        /// Base64url without padding (RFC 4648 §5), as WebAuthn JSON encodes binary values.
+        ///
+        /// - Remark: Generated from `#/components/schemas/Base64Url`.
+        public typealias Base64Url = Swift.String
+        /// W3C WebAuthn `PublicKeyCredentialDescriptorJSON`.
+        ///
+        /// - Remark: Generated from `#/components/schemas/PasskeyCredentialDescriptor`.
+        public struct PasskeyCredentialDescriptor: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/PasskeyCredentialDescriptor/id`.
+            public var id: Components.Schemas.Base64Url
+            /// - Remark: Generated from `#/components/schemas/PasskeyCredentialDescriptor/type`.
+            @frozen public enum _TypePayload: String, Codable, Hashable, Sendable, CaseIterable {
+                case publicKey = "public-key"
+            }
+            /// - Remark: Generated from `#/components/schemas/PasskeyCredentialDescriptor/type`.
+            public var _type: Components.Schemas.PasskeyCredentialDescriptor._TypePayload
+            /// - Remark: Generated from `#/components/schemas/PasskeyCredentialDescriptor/transports`.
+            public var transports: [Swift.String]?
+            /// Creates a new `PasskeyCredentialDescriptor`.
+            ///
+            /// - Parameters:
+            ///   - id:
+            ///   - _type:
+            ///   - transports:
+            public init(
+                id: Components.Schemas.Base64Url,
+                _type: Components.Schemas.PasskeyCredentialDescriptor._TypePayload,
+                transports: [Swift.String]? = nil
+            ) {
+                self.id = id
+                self._type = _type
+                self.transports = transports
+            }
+            public enum CodingKeys: String, CodingKey {
+                case id
+                case _type = "type"
+                case transports
+            }
+        }
+        /// WebAuthn extension inputs (`AuthenticationExtensionsClientInputsJSON`). Only the
+        /// extensions this API requests are modelled.
+        ///
+        ///
+        /// - Remark: Generated from `#/components/schemas/PasskeyExtensionInputs`.
+        public struct PasskeyExtensionInputs: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/PasskeyExtensionInputs/credProps`.
+            public var credProps: Swift.Bool?
+            /// Creates a new `PasskeyExtensionInputs`.
+            ///
+            /// - Parameters:
+            ///   - credProps:
+            public init(credProps: Swift.Bool? = nil) {
+                self.credProps = credProps
+            }
+            public enum CodingKeys: String, CodingKey {
+                case credProps
+            }
+        }
+        /// W3C WebAuthn `PublicKeyCredentialRequestOptionsJSON`.
+        ///
+        /// - Remark: Generated from `#/components/schemas/PasskeyRequestOptions`.
+        public struct PasskeyRequestOptions: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/PasskeyRequestOptions/challenge`.
+            public var challenge: Components.Schemas.Base64Url
+            /// - Remark: Generated from `#/components/schemas/PasskeyRequestOptions/timeout`.
+            public var timeout: Swift.Int?
+            /// - Remark: Generated from `#/components/schemas/PasskeyRequestOptions/rpId`.
+            public var rpId: Swift.String?
+            /// - Remark: Generated from `#/components/schemas/PasskeyRequestOptions/allowCredentials`.
+            public var allowCredentials: [Components.Schemas.PasskeyCredentialDescriptor]?
+            /// - Remark: Generated from `#/components/schemas/PasskeyRequestOptions/userVerification`.
+            @frozen public enum UserVerificationPayload: String, Codable, Hashable, Sendable, CaseIterable {
+                case required = "required"
+                case preferred = "preferred"
+                case discouraged = "discouraged"
+            }
+            /// - Remark: Generated from `#/components/schemas/PasskeyRequestOptions/userVerification`.
+            public var userVerification: Components.Schemas.PasskeyRequestOptions.UserVerificationPayload?
+            /// - Remark: Generated from `#/components/schemas/PasskeyRequestOptions/hints`.
+            public var hints: [Swift.String]?
+            /// - Remark: Generated from `#/components/schemas/PasskeyRequestOptions/extensions`.
+            public var extensions: Components.Schemas.PasskeyExtensionInputs?
+            /// Creates a new `PasskeyRequestOptions`.
+            ///
+            /// - Parameters:
+            ///   - challenge:
+            ///   - timeout:
+            ///   - rpId:
+            ///   - allowCredentials:
+            ///   - userVerification:
+            ///   - hints:
+            ///   - extensions:
+            public init(
+                challenge: Components.Schemas.Base64Url,
+                timeout: Swift.Int? = nil,
+                rpId: Swift.String? = nil,
+                allowCredentials: [Components.Schemas.PasskeyCredentialDescriptor]? = nil,
+                userVerification: Components.Schemas.PasskeyRequestOptions.UserVerificationPayload? = nil,
+                hints: [Swift.String]? = nil,
+                extensions: Components.Schemas.PasskeyExtensionInputs? = nil
+            ) {
+                self.challenge = challenge
+                self.timeout = timeout
+                self.rpId = rpId
+                self.allowCredentials = allowCredentials
+                self.userVerification = userVerification
+                self.hints = hints
+                self.extensions = extensions
+            }
+            public enum CodingKeys: String, CodingKey {
+                case challenge
+                case timeout
+                case rpId
+                case allowCredentials
+                case userVerification
+                case hints
+                case extensions
+            }
+        }
+        /// WebAuthn extension outputs (`AuthenticationExtensionsClientOutputsJSON`). Only the
+        /// extensions this API reads are modelled; send `{}` when there are none.
+        ///
+        ///
+        /// - Remark: Generated from `#/components/schemas/PasskeyExtensionOutputs`.
+        public struct PasskeyExtensionOutputs: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/PasskeyExtensionOutputs/credProps`.
+            public struct CredPropsPayload: Codable, Hashable, Sendable {
+                /// - Remark: Generated from `#/components/schemas/PasskeyExtensionOutputs/credProps/rk`.
+                public var rk: Swift.Bool?
+                /// Creates a new `CredPropsPayload`.
+                ///
+                /// - Parameters:
+                ///   - rk:
+                public init(rk: Swift.Bool? = nil) {
+                    self.rk = rk
+                }
+                public enum CodingKeys: String, CodingKey {
+                    case rk
+                }
+            }
+            /// - Remark: Generated from `#/components/schemas/PasskeyExtensionOutputs/credProps`.
+            public var credProps: Components.Schemas.PasskeyExtensionOutputs.CredPropsPayload?
+            /// Creates a new `PasskeyExtensionOutputs`.
+            ///
+            /// - Parameters:
+            ///   - credProps:
+            public init(credProps: Components.Schemas.PasskeyExtensionOutputs.CredPropsPayload? = nil) {
+                self.credProps = credProps
+            }
+            public enum CodingKeys: String, CodingKey {
+                case credProps
+            }
+        }
+        /// W3C WebAuthn `AuthenticationResponseJSON`.
+        ///
+        /// - Remark: Generated from `#/components/schemas/PasskeyAuthenticationResponse`.
+        public struct PasskeyAuthenticationResponse: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/PasskeyAuthenticationResponse/id`.
+            public var id: Components.Schemas.Base64Url
+            /// - Remark: Generated from `#/components/schemas/PasskeyAuthenticationResponse/rawId`.
+            public var rawId: Components.Schemas.Base64Url
+            /// - Remark: Generated from `#/components/schemas/PasskeyAuthenticationResponse/type`.
+            @frozen public enum _TypePayload: String, Codable, Hashable, Sendable, CaseIterable {
+                case publicKey = "public-key"
+            }
+            /// - Remark: Generated from `#/components/schemas/PasskeyAuthenticationResponse/type`.
+            public var _type: Components.Schemas.PasskeyAuthenticationResponse._TypePayload
+            /// - Remark: Generated from `#/components/schemas/PasskeyAuthenticationResponse/authenticatorAttachment`.
+            @frozen public enum AuthenticatorAttachmentPayload: String, Codable, Hashable, Sendable, CaseIterable {
+                case platform = "platform"
+                case crossPlatform = "cross-platform"
+            }
+            /// - Remark: Generated from `#/components/schemas/PasskeyAuthenticationResponse/authenticatorAttachment`.
+            public var authenticatorAttachment: Components.Schemas.PasskeyAuthenticationResponse.AuthenticatorAttachmentPayload?
+            /// - Remark: Generated from `#/components/schemas/PasskeyAuthenticationResponse/clientExtensionResults`.
+            public var clientExtensionResults: Components.Schemas.PasskeyExtensionOutputs
+            /// - Remark: Generated from `#/components/schemas/PasskeyAuthenticationResponse/response`.
+            public struct ResponsePayload: Codable, Hashable, Sendable {
+                /// - Remark: Generated from `#/components/schemas/PasskeyAuthenticationResponse/response/clientDataJSON`.
+                public var clientDataJSON: Components.Schemas.Base64Url
+                /// - Remark: Generated from `#/components/schemas/PasskeyAuthenticationResponse/response/authenticatorData`.
+                public var authenticatorData: Components.Schemas.Base64Url
+                /// - Remark: Generated from `#/components/schemas/PasskeyAuthenticationResponse/response/signature`.
+                public var signature: Components.Schemas.Base64Url
+                /// - Remark: Generated from `#/components/schemas/PasskeyAuthenticationResponse/response/userHandle`.
+                public var userHandle: Components.Schemas.Base64Url?
+                /// Creates a new `ResponsePayload`.
+                ///
+                /// - Parameters:
+                ///   - clientDataJSON:
+                ///   - authenticatorData:
+                ///   - signature:
+                ///   - userHandle:
+                public init(
+                    clientDataJSON: Components.Schemas.Base64Url,
+                    authenticatorData: Components.Schemas.Base64Url,
+                    signature: Components.Schemas.Base64Url,
+                    userHandle: Components.Schemas.Base64Url? = nil
+                ) {
+                    self.clientDataJSON = clientDataJSON
+                    self.authenticatorData = authenticatorData
+                    self.signature = signature
+                    self.userHandle = userHandle
+                }
+                public enum CodingKeys: String, CodingKey {
+                    case clientDataJSON
+                    case authenticatorData
+                    case signature
+                    case userHandle
+                }
+            }
+            /// - Remark: Generated from `#/components/schemas/PasskeyAuthenticationResponse/response`.
+            public var response: Components.Schemas.PasskeyAuthenticationResponse.ResponsePayload
+            /// Creates a new `PasskeyAuthenticationResponse`.
+            ///
+            /// - Parameters:
+            ///   - id:
+            ///   - rawId:
+            ///   - _type:
+            ///   - authenticatorAttachment:
+            ///   - clientExtensionResults:
+            ///   - response:
+            public init(
+                id: Components.Schemas.Base64Url,
+                rawId: Components.Schemas.Base64Url,
+                _type: Components.Schemas.PasskeyAuthenticationResponse._TypePayload,
+                authenticatorAttachment: Components.Schemas.PasskeyAuthenticationResponse.AuthenticatorAttachmentPayload? = nil,
+                clientExtensionResults: Components.Schemas.PasskeyExtensionOutputs,
+                response: Components.Schemas.PasskeyAuthenticationResponse.ResponsePayload
+            ) {
+                self.id = id
+                self.rawId = rawId
+                self._type = _type
+                self.authenticatorAttachment = authenticatorAttachment
+                self.clientExtensionResults = clientExtensionResults
+                self.response = response
+            }
+            public enum CodingKeys: String, CodingKey {
+                case id
+                case rawId
+                case _type = "type"
+                case authenticatorAttachment
+                case clientExtensionResults
+                case response
+            }
+        }
+        /// - Remark: Generated from `#/components/schemas/PasskeySignInRequest`.
+        public struct PasskeySignInRequest: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/PasskeySignInRequest/response`.
+            public var response: Components.Schemas.PasskeyAuthenticationResponse
+            /// Creates a new `PasskeySignInRequest`.
+            ///
+            /// - Parameters:
+            ///   - response:
+            public init(response: Components.Schemas.PasskeyAuthenticationResponse) {
+                self.response = response
+            }
+            public enum CodingKeys: String, CodingKey {
+                case response
+            }
+            public init(from decoder: any Swift.Decoder) throws {
+                let container = try decoder.container(keyedBy: CodingKeys.self)
+                self.response = try container.decode(
+                    Components.Schemas.PasskeyAuthenticationResponse.self,
+                    forKey: .response
+                )
+                try decoder.ensureNoAdditionalProperties(knownKeys: [
+                    "response"
+                ])
+            }
+        }
+        /// W3C WebAuthn `PublicKeyCredentialCreationOptionsJSON`.
+        ///
+        /// - Remark: Generated from `#/components/schemas/PasskeyCreationOptions`.
+        public struct PasskeyCreationOptions: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/PasskeyCreationOptions/rp`.
+            public struct RpPayload: Codable, Hashable, Sendable {
+                /// - Remark: Generated from `#/components/schemas/PasskeyCreationOptions/rp/id`.
+                public var id: Swift.String?
+                /// - Remark: Generated from `#/components/schemas/PasskeyCreationOptions/rp/name`.
+                public var name: Swift.String
+                /// Creates a new `RpPayload`.
+                ///
+                /// - Parameters:
+                ///   - id:
+                ///   - name:
+                public init(
+                    id: Swift.String? = nil,
+                    name: Swift.String
+                ) {
+                    self.id = id
+                    self.name = name
+                }
+                public enum CodingKeys: String, CodingKey {
+                    case id
+                    case name
+                }
+            }
+            /// - Remark: Generated from `#/components/schemas/PasskeyCreationOptions/rp`.
+            public var rp: Components.Schemas.PasskeyCreationOptions.RpPayload
+            /// - Remark: Generated from `#/components/schemas/PasskeyCreationOptions/user`.
+            public struct UserPayload: Codable, Hashable, Sendable {
+                /// - Remark: Generated from `#/components/schemas/PasskeyCreationOptions/user/id`.
+                public var id: Components.Schemas.Base64Url
+                /// - Remark: Generated from `#/components/schemas/PasskeyCreationOptions/user/name`.
+                public var name: Swift.String
+                /// - Remark: Generated from `#/components/schemas/PasskeyCreationOptions/user/displayName`.
+                public var displayName: Swift.String
+                /// Creates a new `UserPayload`.
+                ///
+                /// - Parameters:
+                ///   - id:
+                ///   - name:
+                ///   - displayName:
+                public init(
+                    id: Components.Schemas.Base64Url,
+                    name: Swift.String,
+                    displayName: Swift.String
+                ) {
+                    self.id = id
+                    self.name = name
+                    self.displayName = displayName
+                }
+                public enum CodingKeys: String, CodingKey {
+                    case id
+                    case name
+                    case displayName
+                }
+            }
+            /// - Remark: Generated from `#/components/schemas/PasskeyCreationOptions/user`.
+            public var user: Components.Schemas.PasskeyCreationOptions.UserPayload
+            /// - Remark: Generated from `#/components/schemas/PasskeyCreationOptions/challenge`.
+            public var challenge: Components.Schemas.Base64Url
+            /// - Remark: Generated from `#/components/schemas/PasskeyCreationOptions/PubKeyCredParamsPayload`.
+            public struct PubKeyCredParamsPayloadPayload: Codable, Hashable, Sendable {
+                /// - Remark: Generated from `#/components/schemas/PasskeyCreationOptions/PubKeyCredParamsPayload/type`.
+                @frozen public enum _TypePayload: String, Codable, Hashable, Sendable, CaseIterable {
+                    case publicKey = "public-key"
+                }
+                /// - Remark: Generated from `#/components/schemas/PasskeyCreationOptions/PubKeyCredParamsPayload/type`.
+                public var _type: Components.Schemas.PasskeyCreationOptions.PubKeyCredParamsPayloadPayload._TypePayload
+                /// - Remark: Generated from `#/components/schemas/PasskeyCreationOptions/PubKeyCredParamsPayload/alg`.
+                public var alg: Swift.Int
+                /// Creates a new `PubKeyCredParamsPayloadPayload`.
+                ///
+                /// - Parameters:
+                ///   - _type:
+                ///   - alg:
+                public init(
+                    _type: Components.Schemas.PasskeyCreationOptions.PubKeyCredParamsPayloadPayload._TypePayload,
+                    alg: Swift.Int
+                ) {
+                    self._type = _type
+                    self.alg = alg
+                }
+                public enum CodingKeys: String, CodingKey {
+                    case _type = "type"
+                    case alg
+                }
+            }
+            /// - Remark: Generated from `#/components/schemas/PasskeyCreationOptions/pubKeyCredParams`.
+            public typealias PubKeyCredParamsPayload = [Components.Schemas.PasskeyCreationOptions.PubKeyCredParamsPayloadPayload]
+            /// - Remark: Generated from `#/components/schemas/PasskeyCreationOptions/pubKeyCredParams`.
+            public var pubKeyCredParams: Components.Schemas.PasskeyCreationOptions.PubKeyCredParamsPayload
+            /// - Remark: Generated from `#/components/schemas/PasskeyCreationOptions/timeout`.
+            public var timeout: Swift.Int?
+            /// - Remark: Generated from `#/components/schemas/PasskeyCreationOptions/excludeCredentials`.
+            public var excludeCredentials: [Components.Schemas.PasskeyCredentialDescriptor]?
+            /// - Remark: Generated from `#/components/schemas/PasskeyCreationOptions/authenticatorSelection`.
+            public struct AuthenticatorSelectionPayload: Codable, Hashable, Sendable {
+                /// - Remark: Generated from `#/components/schemas/PasskeyCreationOptions/authenticatorSelection/authenticatorAttachment`.
+                @frozen public enum AuthenticatorAttachmentPayload: String, Codable, Hashable, Sendable, CaseIterable {
+                    case platform = "platform"
+                    case crossPlatform = "cross-platform"
+                }
+                /// - Remark: Generated from `#/components/schemas/PasskeyCreationOptions/authenticatorSelection/authenticatorAttachment`.
+                public var authenticatorAttachment: Components.Schemas.PasskeyCreationOptions.AuthenticatorSelectionPayload.AuthenticatorAttachmentPayload?
+                /// - Remark: Generated from `#/components/schemas/PasskeyCreationOptions/authenticatorSelection/residentKey`.
+                @frozen public enum ResidentKeyPayload: String, Codable, Hashable, Sendable, CaseIterable {
+                    case discouraged = "discouraged"
+                    case preferred = "preferred"
+                    case required = "required"
+                }
+                /// - Remark: Generated from `#/components/schemas/PasskeyCreationOptions/authenticatorSelection/residentKey`.
+                public var residentKey: Components.Schemas.PasskeyCreationOptions.AuthenticatorSelectionPayload.ResidentKeyPayload?
+                /// - Remark: Generated from `#/components/schemas/PasskeyCreationOptions/authenticatorSelection/requireResidentKey`.
+                public var requireResidentKey: Swift.Bool?
+                /// - Remark: Generated from `#/components/schemas/PasskeyCreationOptions/authenticatorSelection/userVerification`.
+                @frozen public enum UserVerificationPayload: String, Codable, Hashable, Sendable, CaseIterable {
+                    case required = "required"
+                    case preferred = "preferred"
+                    case discouraged = "discouraged"
+                }
+                /// - Remark: Generated from `#/components/schemas/PasskeyCreationOptions/authenticatorSelection/userVerification`.
+                public var userVerification: Components.Schemas.PasskeyCreationOptions.AuthenticatorSelectionPayload.UserVerificationPayload?
+                /// Creates a new `AuthenticatorSelectionPayload`.
+                ///
+                /// - Parameters:
+                ///   - authenticatorAttachment:
+                ///   - residentKey:
+                ///   - requireResidentKey:
+                ///   - userVerification:
+                public init(
+                    authenticatorAttachment: Components.Schemas.PasskeyCreationOptions.AuthenticatorSelectionPayload.AuthenticatorAttachmentPayload? = nil,
+                    residentKey: Components.Schemas.PasskeyCreationOptions.AuthenticatorSelectionPayload.ResidentKeyPayload? = nil,
+                    requireResidentKey: Swift.Bool? = nil,
+                    userVerification: Components.Schemas.PasskeyCreationOptions.AuthenticatorSelectionPayload.UserVerificationPayload? = nil
+                ) {
+                    self.authenticatorAttachment = authenticatorAttachment
+                    self.residentKey = residentKey
+                    self.requireResidentKey = requireResidentKey
+                    self.userVerification = userVerification
+                }
+                public enum CodingKeys: String, CodingKey {
+                    case authenticatorAttachment
+                    case residentKey
+                    case requireResidentKey
+                    case userVerification
+                }
+            }
+            /// - Remark: Generated from `#/components/schemas/PasskeyCreationOptions/authenticatorSelection`.
+            public var authenticatorSelection: Components.Schemas.PasskeyCreationOptions.AuthenticatorSelectionPayload?
+            /// - Remark: Generated from `#/components/schemas/PasskeyCreationOptions/attestation`.
+            @frozen public enum AttestationPayload: String, Codable, Hashable, Sendable, CaseIterable {
+                case none = "none"
+                case indirect = "indirect"
+                case direct = "direct"
+                case enterprise = "enterprise"
+            }
+            /// - Remark: Generated from `#/components/schemas/PasskeyCreationOptions/attestation`.
+            public var attestation: Components.Schemas.PasskeyCreationOptions.AttestationPayload?
+            /// - Remark: Generated from `#/components/schemas/PasskeyCreationOptions/hints`.
+            public var hints: [Swift.String]?
+            /// - Remark: Generated from `#/components/schemas/PasskeyCreationOptions/extensions`.
+            public var extensions: Components.Schemas.PasskeyExtensionInputs?
+            /// Creates a new `PasskeyCreationOptions`.
+            ///
+            /// - Parameters:
+            ///   - rp:
+            ///   - user:
+            ///   - challenge:
+            ///   - pubKeyCredParams:
+            ///   - timeout:
+            ///   - excludeCredentials:
+            ///   - authenticatorSelection:
+            ///   - attestation:
+            ///   - hints:
+            ///   - extensions:
+            public init(
+                rp: Components.Schemas.PasskeyCreationOptions.RpPayload,
+                user: Components.Schemas.PasskeyCreationOptions.UserPayload,
+                challenge: Components.Schemas.Base64Url,
+                pubKeyCredParams: Components.Schemas.PasskeyCreationOptions.PubKeyCredParamsPayload,
+                timeout: Swift.Int? = nil,
+                excludeCredentials: [Components.Schemas.PasskeyCredentialDescriptor]? = nil,
+                authenticatorSelection: Components.Schemas.PasskeyCreationOptions.AuthenticatorSelectionPayload? = nil,
+                attestation: Components.Schemas.PasskeyCreationOptions.AttestationPayload? = nil,
+                hints: [Swift.String]? = nil,
+                extensions: Components.Schemas.PasskeyExtensionInputs? = nil
+            ) {
+                self.rp = rp
+                self.user = user
+                self.challenge = challenge
+                self.pubKeyCredParams = pubKeyCredParams
+                self.timeout = timeout
+                self.excludeCredentials = excludeCredentials
+                self.authenticatorSelection = authenticatorSelection
+                self.attestation = attestation
+                self.hints = hints
+                self.extensions = extensions
+            }
+            public enum CodingKeys: String, CodingKey {
+                case rp
+                case user
+                case challenge
+                case pubKeyCredParams
+                case timeout
+                case excludeCredentials
+                case authenticatorSelection
+                case attestation
+                case hints
+                case extensions
+            }
+        }
+        /// W3C WebAuthn `RegistrationResponseJSON`.
+        ///
+        /// - Remark: Generated from `#/components/schemas/PasskeyRegistrationResponse`.
+        public struct PasskeyRegistrationResponse: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/PasskeyRegistrationResponse/id`.
+            public var id: Components.Schemas.Base64Url
+            /// - Remark: Generated from `#/components/schemas/PasskeyRegistrationResponse/rawId`.
+            public var rawId: Components.Schemas.Base64Url
+            /// - Remark: Generated from `#/components/schemas/PasskeyRegistrationResponse/type`.
+            @frozen public enum _TypePayload: String, Codable, Hashable, Sendable, CaseIterable {
+                case publicKey = "public-key"
+            }
+            /// - Remark: Generated from `#/components/schemas/PasskeyRegistrationResponse/type`.
+            public var _type: Components.Schemas.PasskeyRegistrationResponse._TypePayload
+            /// - Remark: Generated from `#/components/schemas/PasskeyRegistrationResponse/authenticatorAttachment`.
+            @frozen public enum AuthenticatorAttachmentPayload: String, Codable, Hashable, Sendable, CaseIterable {
+                case platform = "platform"
+                case crossPlatform = "cross-platform"
+            }
+            /// - Remark: Generated from `#/components/schemas/PasskeyRegistrationResponse/authenticatorAttachment`.
+            public var authenticatorAttachment: Components.Schemas.PasskeyRegistrationResponse.AuthenticatorAttachmentPayload?
+            /// - Remark: Generated from `#/components/schemas/PasskeyRegistrationResponse/clientExtensionResults`.
+            public var clientExtensionResults: Components.Schemas.PasskeyExtensionOutputs
+            /// - Remark: Generated from `#/components/schemas/PasskeyRegistrationResponse/response`.
+            public struct ResponsePayload: Codable, Hashable, Sendable {
+                /// - Remark: Generated from `#/components/schemas/PasskeyRegistrationResponse/response/clientDataJSON`.
+                public var clientDataJSON: Components.Schemas.Base64Url
+                /// - Remark: Generated from `#/components/schemas/PasskeyRegistrationResponse/response/attestationObject`.
+                public var attestationObject: Components.Schemas.Base64Url
+                /// - Remark: Generated from `#/components/schemas/PasskeyRegistrationResponse/response/authenticatorData`.
+                public var authenticatorData: Components.Schemas.Base64Url?
+                /// - Remark: Generated from `#/components/schemas/PasskeyRegistrationResponse/response/transports`.
+                public var transports: [Swift.String]?
+                /// - Remark: Generated from `#/components/schemas/PasskeyRegistrationResponse/response/publicKeyAlgorithm`.
+                public var publicKeyAlgorithm: Swift.Int?
+                /// - Remark: Generated from `#/components/schemas/PasskeyRegistrationResponse/response/publicKey`.
+                public var publicKey: Components.Schemas.Base64Url?
+                /// Creates a new `ResponsePayload`.
+                ///
+                /// - Parameters:
+                ///   - clientDataJSON:
+                ///   - attestationObject:
+                ///   - authenticatorData:
+                ///   - transports:
+                ///   - publicKeyAlgorithm:
+                ///   - publicKey:
+                public init(
+                    clientDataJSON: Components.Schemas.Base64Url,
+                    attestationObject: Components.Schemas.Base64Url,
+                    authenticatorData: Components.Schemas.Base64Url? = nil,
+                    transports: [Swift.String]? = nil,
+                    publicKeyAlgorithm: Swift.Int? = nil,
+                    publicKey: Components.Schemas.Base64Url? = nil
+                ) {
+                    self.clientDataJSON = clientDataJSON
+                    self.attestationObject = attestationObject
+                    self.authenticatorData = authenticatorData
+                    self.transports = transports
+                    self.publicKeyAlgorithm = publicKeyAlgorithm
+                    self.publicKey = publicKey
+                }
+                public enum CodingKeys: String, CodingKey {
+                    case clientDataJSON
+                    case attestationObject
+                    case authenticatorData
+                    case transports
+                    case publicKeyAlgorithm
+                    case publicKey
+                }
+            }
+            /// - Remark: Generated from `#/components/schemas/PasskeyRegistrationResponse/response`.
+            public var response: Components.Schemas.PasskeyRegistrationResponse.ResponsePayload
+            /// Creates a new `PasskeyRegistrationResponse`.
+            ///
+            /// - Parameters:
+            ///   - id:
+            ///   - rawId:
+            ///   - _type:
+            ///   - authenticatorAttachment:
+            ///   - clientExtensionResults:
+            ///   - response:
+            public init(
+                id: Components.Schemas.Base64Url,
+                rawId: Components.Schemas.Base64Url,
+                _type: Components.Schemas.PasskeyRegistrationResponse._TypePayload,
+                authenticatorAttachment: Components.Schemas.PasskeyRegistrationResponse.AuthenticatorAttachmentPayload? = nil,
+                clientExtensionResults: Components.Schemas.PasskeyExtensionOutputs,
+                response: Components.Schemas.PasskeyRegistrationResponse.ResponsePayload
+            ) {
+                self.id = id
+                self.rawId = rawId
+                self._type = _type
+                self.authenticatorAttachment = authenticatorAttachment
+                self.clientExtensionResults = clientExtensionResults
+                self.response = response
+            }
+            public enum CodingKeys: String, CodingKey {
+                case id
+                case rawId
+                case _type = "type"
+                case authenticatorAttachment
+                case clientExtensionResults
+                case response
+            }
+        }
+        /// - Remark: Generated from `#/components/schemas/PasskeyRegistrationRequest`.
+        public struct PasskeyRegistrationRequest: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/PasskeyRegistrationRequest/response`.
+            public var response: Components.Schemas.PasskeyRegistrationResponse
+            /// Label the person gives the passkey.
+            ///
+            /// - Remark: Generated from `#/components/schemas/PasskeyRegistrationRequest/name`.
+            public var name: Swift.String?
+            /// Creates a new `PasskeyRegistrationRequest`.
+            ///
+            /// - Parameters:
+            ///   - response:
+            ///   - name: Label the person gives the passkey.
+            public init(
+                response: Components.Schemas.PasskeyRegistrationResponse,
+                name: Swift.String? = nil
+            ) {
+                self.response = response
+                self.name = name
+            }
+            public enum CodingKeys: String, CodingKey {
+                case response
+                case name
+            }
+            public init(from decoder: any Swift.Decoder) throws {
+                let container = try decoder.container(keyedBy: CodingKeys.self)
+                self.response = try container.decode(
+                    Components.Schemas.PasskeyRegistrationResponse.self,
+                    forKey: .response
+                )
+                self.name = try container.decodeIfPresent(
+                    Swift.String.self,
+                    forKey: .name
+                )
+                try decoder.ensureNoAdditionalProperties(knownKeys: [
+                    "response",
+                    "name"
+                ])
+            }
+        }
+        /// A passkey stored on the account. Carries no key material.
+        ///
+        /// - Remark: Generated from `#/components/schemas/PasskeySummary`.
+        public struct PasskeySummary: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/PasskeySummary/name`.
+            public var name: Swift.String?
+            /// - Remark: Generated from `#/components/schemas/PasskeySummary/createdAt`.
+            public var createdAt: Foundation.Date
+            /// Creates a new `PasskeySummary`.
+            ///
+            /// - Parameters:
+            ///   - name:
+            ///   - createdAt:
+            public init(
+                name: Swift.String? = nil,
+                createdAt: Foundation.Date
+            ) {
+                self.name = name
+                self.createdAt = createdAt
+            }
+            public enum CodingKeys: String, CodingKey {
+                case name
+                case createdAt
+            }
+        }
+        /// The current session, without its token.
+        ///
+        /// - Remark: Generated from `#/components/schemas/SessionInfo`.
+        public struct SessionInfo: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/SessionInfo/userId`.
+            public var userId: Components.Schemas.UserId
+            /// - Remark: Generated from `#/components/schemas/SessionInfo/expiresAt`.
+            public var expiresAt: Foundation.Date
+            /// True when the server asks the client to renew now with `refreshSession`.
+            ///
+            /// - Remark: Generated from `#/components/schemas/SessionInfo/needsRefresh`.
+            public var needsRefresh: Swift.Bool?
+            /// Creates a new `SessionInfo`.
+            ///
+            /// - Parameters:
+            ///   - userId:
+            ///   - expiresAt:
+            ///   - needsRefresh: True when the server asks the client to renew now with `refreshSession`.
+            public init(
+                userId: Components.Schemas.UserId,
+                expiresAt: Foundation.Date,
+                needsRefresh: Swift.Bool? = nil
+            ) {
+                self.userId = userId
+                self.expiresAt = expiresAt
+                self.needsRefresh = needsRefresh
+            }
+            public enum CodingKeys: String, CodingKey {
+                case userId
+                case expiresAt
+                case needsRefresh
+            }
+        }
+        /// - Remark: Generated from `#/components/schemas/SignOutResult`.
+        public struct SignOutResult: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/SignOutResult/success`.
+            public var success: Swift.Bool
+            /// Creates a new `SignOutResult`.
+            ///
+            /// - Parameters:
+            ///   - success:
+            public init(success: Swift.Bool) {
+                self.success = success
+            }
+            public enum CodingKeys: String, CodingKey {
+                case success
+            }
+        }
+        /// One signed-in device of the caller. Carries no token and no IP address.
+        ///
+        /// - Remark: Generated from `#/components/schemas/DeviceSession`.
+        public struct DeviceSession: Codable, Hashable, Sendable {
+            /// True for the session that made this request.
+            ///
+            /// - Remark: Generated from `#/components/schemas/DeviceSession/current`.
+            public var current: Swift.Bool
+            /// When the device signed in.
+            ///
+            /// - Remark: Generated from `#/components/schemas/DeviceSession/createdAt`.
+            public var createdAt: Foundation.Date
+            /// Last renewal of the session.
+            ///
+            /// - Remark: Generated from `#/components/schemas/DeviceSession/lastActiveAt`.
+            public var lastActiveAt: Foundation.Date
+            /// - Remark: Generated from `#/components/schemas/DeviceSession/expiresAt`.
+            public var expiresAt: Foundation.Date
+            /// The `User-Agent` the device sent at sign-in, to tell devices apart.
+            ///
+            /// - Remark: Generated from `#/components/schemas/DeviceSession/userAgent`.
+            public var userAgent: Swift.String?
+            /// Creates a new `DeviceSession`.
+            ///
+            /// - Parameters:
+            ///   - current: True for the session that made this request.
+            ///   - createdAt: When the device signed in.
+            ///   - lastActiveAt: Last renewal of the session.
+            ///   - expiresAt:
+            ///   - userAgent: The `User-Agent` the device sent at sign-in, to tell devices apart.
+            public init(
+                current: Swift.Bool,
+                createdAt: Foundation.Date,
+                lastActiveAt: Foundation.Date,
+                expiresAt: Foundation.Date,
+                userAgent: Swift.String? = nil
+            ) {
+                self.current = current
+                self.createdAt = createdAt
+                self.lastActiveAt = lastActiveAt
+                self.expiresAt = expiresAt
+                self.userAgent = userAgent
+            }
+            public enum CodingKeys: String, CodingKey {
+                case current
+                case createdAt
+                case lastActiveAt
+                case expiresAt
+                case userAgent
+            }
+        }
+        /// - Remark: Generated from `#/components/schemas/DeviceSessionPage`.
+        public struct DeviceSessionPage: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/DeviceSessionPage/items`.
+            public var items: [Components.Schemas.DeviceSession]
+            /// Cursor of the next page; null on the last page.
+            ///
+            /// - Remark: Generated from `#/components/schemas/DeviceSessionPage/nextCursor`.
+            public var nextCursor: Swift.String?
+            /// Creates a new `DeviceSessionPage`.
+            ///
+            /// - Parameters:
+            ///   - items:
+            ///   - nextCursor: Cursor of the next page; null on the last page.
+            public init(
+                items: [Components.Schemas.DeviceSession],
+                nextCursor: Swift.String? = nil
+            ) {
+                self.items = items
+                self.nextCursor = nextCursor
+            }
+            public enum CodingKeys: String, CodingKey {
+                case items
+                case nextCursor
+            }
+        }
+        /// - Remark: Generated from `#/components/schemas/RevokeSessionsResult`.
+        public struct RevokeSessionsResult: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/RevokeSessionsResult/status`.
+            public var status: Swift.Bool
+            /// Creates a new `RevokeSessionsResult`.
+            ///
+            /// - Parameters:
+            ///   - status:
+            public init(status: Swift.Bool) {
+                self.status = status
+            }
+            public enum CodingKeys: String, CodingKey {
+                case status
+            }
+        }
+        /// - Remark: Generated from `#/components/schemas/RecoveryRequest`.
+        public struct RecoveryRequest: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/RecoveryRequest/email`.
+            public var email: Swift.String
+            /// Creates a new `RecoveryRequest`.
+            ///
+            /// - Parameters:
+            ///   - email:
+            public init(email: Swift.String) {
+                self.email = email
+            }
+            public enum CodingKeys: String, CodingKey {
+                case email
+            }
+            public init(from decoder: any Swift.Decoder) throws {
+                let container = try decoder.container(keyedBy: CodingKeys.self)
+                self.email = try container.decode(
+                    Swift.String.self,
+                    forKey: .email
+                )
+                try decoder.ensureNoAdditionalProperties(knownKeys: [
+                    "email"
+                ])
+            }
+        }
+        /// - Remark: Generated from `#/components/schemas/RecoveryRequestAccepted`.
+        public struct RecoveryRequestAccepted: Codable, Hashable, Sendable {
+            /// Always true, whether or not an account exists for the address.
+            ///
+            /// - Remark: Generated from `#/components/schemas/RecoveryRequestAccepted/status`.
+            public var status: Swift.Bool
+            /// Creates a new `RecoveryRequestAccepted`.
+            ///
+            /// - Parameters:
+            ///   - status: Always true, whether or not an account exists for the address.
+            public init(status: Swift.Bool) {
+                self.status = status
+            }
+            public enum CodingKeys: String, CodingKey {
+                case status
+            }
+        }
+        /// Consent record id, a prefixed ULID (`cns_`, shared-kernel `ID_PREFIXES.consentRecord`).
+        ///
+        /// - Remark: Generated from `#/components/schemas/ConsentRecordId`.
+        public typealias ConsentRecordId = Swift.String
+        /// Consent purpose keys of doc 11 §7.2, in that order. Mirrors shared-kernel
+        /// `CONSENT_PURPOSES` value for value (pinned by packages/contracts/tests/kernel-enums.test.ts).
+        ///
+        ///
+        /// - Remark: Generated from `#/components/schemas/ConsentPurpose`.
+        @frozen public enum ConsentPurpose: String, Codable, Hashable, Sendable, CaseIterable {
+            case coreService = "core_service"
+            case faceProcessing = "face_processing"
+            case locationPrecise = "location_precise"
+            case analytics = "analytics"
+            case aiGenerative = "ai_generative"
+            case notifications = "notifications"
+            case trainingData = "training_data"
+        }
+        /// - Remark: Generated from `#/components/schemas/ConsentStatus`.
+        @frozen public enum ConsentStatus: String, Codable, Hashable, Sendable, CaseIterable {
+            case granted = "granted"
+            case withdrawn = "withdrawn"
+        }
+        /// Version of the policy text the person saw, e.g. `0.1.0-draft`.
+        ///
+        /// - Remark: Generated from `#/components/schemas/PolicyVersion`.
+        public typealias PolicyVersion = Swift.String
+        /// Identifier of the app screen where the decision was made, e.g. `onboarding_consent`.
+        ///
+        /// - Remark: Generated from `#/components/schemas/ConsentSurface`.
+        public typealias ConsentSurface = Swift.String
+        /// BCP 47 language tag of the text the person saw, e.g. `en-GB`.
+        ///
+        /// - Remark: Generated from `#/components/schemas/Locale`.
+        public typealias Locale = Swift.String
+        /// One append-only consent record (doc 11 §7.1).
+        ///
+        /// - Remark: Generated from `#/components/schemas/ConsentRecord`.
+        public struct ConsentRecord: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/ConsentRecord/id`.
+            public var id: Components.Schemas.ConsentRecordId
+            /// - Remark: Generated from `#/components/schemas/ConsentRecord/purpose`.
+            public var purpose: Components.Schemas.ConsentPurpose
+            /// - Remark: Generated from `#/components/schemas/ConsentRecord/status`.
+            public var status: Components.Schemas.ConsentStatus
+            /// - Remark: Generated from `#/components/schemas/ConsentRecord/policyVersion`.
+            public var policyVersion: Components.Schemas.PolicyVersion
+            /// When the consent was granted; present when `status` is `granted`.
+            ///
+            /// - Remark: Generated from `#/components/schemas/ConsentRecord/grantedAt`.
+            public var grantedAt: Foundation.Date?
+            /// When the consent was withdrawn; present when `status` is `withdrawn`.
+            ///
+            /// - Remark: Generated from `#/components/schemas/ConsentRecord/withdrawnAt`.
+            public var withdrawnAt: Foundation.Date?
+            /// - Remark: Generated from `#/components/schemas/ConsentRecord/surface`.
+            public var surface: Components.Schemas.ConsentSurface
+            /// - Remark: Generated from `#/components/schemas/ConsentRecord/locale`.
+            public var locale: Components.Schemas.Locale
+            /// Creates a new `ConsentRecord`.
+            ///
+            /// - Parameters:
+            ///   - id:
+            ///   - purpose:
+            ///   - status:
+            ///   - policyVersion:
+            ///   - grantedAt: When the consent was granted; present when `status` is `granted`.
+            ///   - withdrawnAt: When the consent was withdrawn; present when `status` is `withdrawn`.
+            ///   - surface:
+            ///   - locale:
+            public init(
+                id: Components.Schemas.ConsentRecordId,
+                purpose: Components.Schemas.ConsentPurpose,
+                status: Components.Schemas.ConsentStatus,
+                policyVersion: Components.Schemas.PolicyVersion,
+                grantedAt: Foundation.Date? = nil,
+                withdrawnAt: Foundation.Date? = nil,
+                surface: Components.Schemas.ConsentSurface,
+                locale: Components.Schemas.Locale
+            ) {
+                self.id = id
+                self.purpose = purpose
+                self.status = status
+                self.policyVersion = policyVersion
+                self.grantedAt = grantedAt
+                self.withdrawnAt = withdrawnAt
+                self.surface = surface
+                self.locale = locale
+            }
+            public enum CodingKeys: String, CodingKey {
+                case id
+                case purpose
+                case status
+                case policyVersion
+                case grantedAt
+                case withdrawnAt
+                case surface
+                case locale
+            }
+        }
+        /// - Remark: Generated from `#/components/schemas/ConsentPage`.
+        public struct ConsentPage: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/ConsentPage/items`.
+            public var items: [Components.Schemas.ConsentRecord]
+            /// Cursor of the next page; null on the last page.
+            ///
+            /// - Remark: Generated from `#/components/schemas/ConsentPage/nextCursor`.
+            public var nextCursor: Swift.String?
+            /// Creates a new `ConsentPage`.
+            ///
+            /// - Parameters:
+            ///   - items:
+            ///   - nextCursor: Cursor of the next page; null on the last page.
+            public init(
+                items: [Components.Schemas.ConsentRecord],
+                nextCursor: Swift.String? = nil
+            ) {
+                self.items = items
+                self.nextCursor = nextCursor
+            }
+            public enum CodingKeys: String, CodingKey {
+                case items
+                case nextCursor
+            }
+        }
+        /// - Remark: Generated from `#/components/schemas/ConsentChange`.
+        public struct ConsentChange: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/ConsentChange/purpose`.
+            public var purpose: Components.Schemas.ConsentPurpose
+            /// - Remark: Generated from `#/components/schemas/ConsentChange/status`.
+            public var status: Components.Schemas.ConsentStatus
+            /// - Remark: Generated from `#/components/schemas/ConsentChange/policyVersion`.
+            public var policyVersion: Components.Schemas.PolicyVersion
+            /// - Remark: Generated from `#/components/schemas/ConsentChange/surface`.
+            public var surface: Components.Schemas.ConsentSurface
+            /// - Remark: Generated from `#/components/schemas/ConsentChange/locale`.
+            public var locale: Components.Schemas.Locale
+            /// Creates a new `ConsentChange`.
+            ///
+            /// - Parameters:
+            ///   - purpose:
+            ///   - status:
+            ///   - policyVersion:
+            ///   - surface:
+            ///   - locale:
+            public init(
+                purpose: Components.Schemas.ConsentPurpose,
+                status: Components.Schemas.ConsentStatus,
+                policyVersion: Components.Schemas.PolicyVersion,
+                surface: Components.Schemas.ConsentSurface,
+                locale: Components.Schemas.Locale
+            ) {
+                self.purpose = purpose
+                self.status = status
+                self.policyVersion = policyVersion
+                self.surface = surface
+                self.locale = locale
+            }
+            public enum CodingKeys: String, CodingKey {
+                case purpose
+                case status
+                case policyVersion
+                case surface
+                case locale
+            }
+            public init(from decoder: any Swift.Decoder) throws {
+                let container = try decoder.container(keyedBy: CodingKeys.self)
+                self.purpose = try container.decode(
+                    Components.Schemas.ConsentPurpose.self,
+                    forKey: .purpose
+                )
+                self.status = try container.decode(
+                    Components.Schemas.ConsentStatus.self,
+                    forKey: .status
+                )
+                self.policyVersion = try container.decode(
+                    Components.Schemas.PolicyVersion.self,
+                    forKey: .policyVersion
+                )
+                self.surface = try container.decode(
+                    Components.Schemas.ConsentSurface.self,
+                    forKey: .surface
+                )
+                self.locale = try container.decode(
+                    Components.Schemas.Locale.self,
+                    forKey: .locale
+                )
+                try decoder.ensureNoAdditionalProperties(knownKeys: [
+                    "purpose",
+                    "status",
+                    "policyVersion",
+                    "surface",
+                    "locale"
+                ])
+            }
+        }
     }
 }

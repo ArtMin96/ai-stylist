@@ -37,16 +37,67 @@ struct Raster {
         return Double(count) / Double(width * height)
     }
 
-    /// Every colour channel times `factor`, clamped; alpha unchanged.
-    func scaled(by factor: Double) -> Raster {
-        var result = self
-        for index in 0..<(width * height) {
-            for channel in 0..<3 {
-                let offset = index * 4 + channel
-                result.pixels[offset] = UInt8(min(255, max(0, (Double(pixels[offset]) * factor).rounded())))
+    /// A dim-room frame as a phone camera delivers it: the overall level drops to `meanLuma`, but
+    /// local tone mapping keeps fine detail (the difference from a `detailRadiusPx` box mean) at full
+    /// contrast, and the raised sensor gain adds Gaussian luma noise of `noiseSigma`. Scaling the
+    /// whole frame instead would cut the sharpness measure by the scale squared, which no real
+    /// camera does (README "Too dark"). Alpha is unchanged; the noise is seeded, so output repeats.
+    func darkened(toMeanLuma target: Double, detailRadiusPx: Int, noiseSigma: Double, seed: UInt64) -> Raster {
+        let local = boxMean(radius: detailRadiusPx)
+        var noise = GaussianNoise(seed: seed)
+        let offsets = (0..<(width * height)).map { _ in noise.next() * noiseSigma }
+        func render(level: Double) -> Raster {
+            var result = self
+            for index in 0..<(width * height) {
+                for channel in 0..<3 {
+                    let offset = index * 4 + channel
+                    let value = Double(pixels[offset])
+                    let mean = local[offset]
+                    let dark = level * mean + (value - mean) + offsets[index]
+                    result.pixels[offset] = UInt8(min(255, max(0, dark.rounded())))
+                }
             }
+            return result
+        }
+        // Clipping at 0 lifts the mean above the linear target, so correct the level a few times.
+        var level = target / max(1, meanLuma)
+        var result = render(level: level)
+        for _ in 0..<4 {
+            level *= target / max(1, result.meanLuma)
+            result = render(level: level)
         }
         return result
+    }
+
+    /// Per colour channel, the mean over the (2r+1)² box around each pixel (clamped at the borders),
+    /// indexed like `pixels`; alpha entries are 0.
+    private func boxMean(radius: Int) -> [Double] {
+        var means = [Double](repeating: 0, count: pixels.count)
+        let stride = width + 1
+        for channel in 0..<3 {
+            // Summed-area table with a zero first row and column.
+            var table = [Double](repeating: 0, count: stride * (height + 1))
+            for y in 0..<height {
+                var row = 0.0
+                for x in 0..<width {
+                    row += Double(pixels[(y * width + x) * 4 + channel])
+                    table[(y + 1) * stride + x + 1] = table[y * stride + x + 1] + row
+                }
+            }
+            for y in 0..<height {
+                let top = max(0, y - radius)
+                let bottom = min(height, y + radius + 1)
+                for x in 0..<width {
+                    let left = max(0, x - radius)
+                    let right = min(width, x + radius + 1)
+                    let sum =
+                        table[bottom * stride + right] - table[top * stride + right]
+                        - table[bottom * stride + left] + table[top * stride + left]
+                    means[(y * width + x) * 4 + channel] = sum / Double((bottom - top) * (right - left))
+                }
+            }
+        }
+        return means
     }
 
     /// Fraction of pixels with alpha of at least one half.
@@ -56,6 +107,30 @@ struct Raster {
             count += 1
         }
         return Double(count) / Double(width * height)
+    }
+}
+
+/// Standard normal samples from a seeded SplitMix64 stream (Box–Muller), so a run repeats exactly.
+struct GaussianNoise {
+    private var state: UInt64
+
+    init(seed: UInt64) {
+        state = seed
+    }
+
+    mutating func next() -> Double {
+        let first = max(Double.leastNonzeroMagnitude, uniform())
+        let second = uniform()
+        return (-2 * log(first)).squareRoot() * cos(2 * Double.pi * second)
+    }
+
+    private mutating func uniform() -> Double {
+        state &+= 0x9E37_79B9_7F4A_7C15
+        var mixed = state
+        mixed = (mixed ^ (mixed >> 30)) &* 0xBF58_476D_1CE4_E5B9
+        mixed = (mixed ^ (mixed >> 27)) &* 0x94D0_49BB_1331_11EB
+        mixed ^= mixed >> 31
+        return Double(mixed >> 11) / Double(1 << 53)
     }
 }
 

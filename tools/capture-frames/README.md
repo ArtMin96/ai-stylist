@@ -35,14 +35,32 @@ light, worn-mode keypoint bounds, body parts, hint keys and lock reasons. Nothin
 - Playback (§11): 30 fps, 180 frames per segment, 30-frame gaps in sweeps and batches.
 - Cut off (§11): 25 % of the item's box past the edge.
 - Too small (§11): 35 % of the family minimum (box area).
-- Too dark (§11): mean luma 30, by scaling the whole good frame.
-- Motion blur (§11): Core Image motion blur, 25 px at a 640 px long side, at 45° (reading below).
+- Too dark (§11): mean luma 30 (how the frame is darkened: "Too dark" below).
+- Motion blur (§11): Core Image motion blur, 25 px at a 640 px long side (angle: below).
 - Jitter (§11): 0.06 of the frame, applied at playback.
 - Worn part cut off (§11): 25 % of the torso height past the edge.
 - Acceptance (§0, C1): unlock within 3000 ms; "Take photo anyway" at 10 s ± 500 ms.
 
-The brief gives no blur angle. A horizontal or vertical blur leaves the item's edges along that axis
-sharp, so the generator uses 45°.
+The brief gives no blur angle. A blur leaves the item's edges along its own direction sharp, so the
+generator tries 45° first, then 135°, 0° and 90°, and keeps the first blur that leaves the item
+clearly unsharp (the margin under "How base images are chosen").
+
+### Too dark
+
+C13 and the owner's Q15 answer say light never locks: a dim frame of a good item shows
+`cap-hint-too-dark` and the shutter still unlocks. So the too-dark frame must stay sharp enough to
+pass the steady check (`steady.minSharpness`) with the usual margin. Scaling the whole good frame
+down to mean luma 30 does not do that: it multiplies the Laplacian variance by the scale squared
+(about 0.07 at 118 → 30), and most items then measured under 24. A phone camera in a dim room does
+not behave like that either. Auto-exposure raises the sensor gain, and local tone mapping keeps
+fine detail at nearly full contrast, while the overall level stays low and the gain adds noise.
+
+The generator copies that. It splits the good frame into a local mean (a 7 × 7 px box at 640 px)
+and the detail around it, scales only the local mean until the frame's mean luma is 30, keeps the
+detail at full contrast, and adds seeded Gaussian luma noise with σ = 2 (`Layout.darkDetailRadiusPx`,
+`Layout.darkNoiseSigma`). No threshold in `capture-rules.json` changes. The noise is mild and does
+not decide the verdict. Measured with the noise off (2026-10-22), every too-dark frame kept at least
+half of its good frame's sharpness, 71 or more, far above the 2 × 12 margin; the noise adds about 10.
 
 ## How base images are chosen
 
@@ -65,7 +83,8 @@ sharp, so the generator uses 45°.
    10 inside the light limits. Otherwise the base is rejected, and `manifest.json` records why. The
    margins keep a small difference between the Mac's Vision and a phone's detector from flipping
    a verdict.
-4. **Drawn items.** `Sources/Shapes.swift` draws items in flat colour with a check texture. They
+4. **Drawn items.** `Sources/Shapes.swift` draws items in flat colour with a plaid texture (a
+   checkerboard repeats along the 45° blur and stays sharp). They
    fill `bag`, which has no dataset label. They fill any family with fewer than 5 passing photos,
    and every family when the dataset is unreachable. They are marked `synthetic` in the index and
    the manifest.
@@ -75,17 +94,24 @@ sharp, so the generator uses 45°.
 
 Flat mode, per base image, one set each: `good`, `cut-top`, `cut-bottom`, `cut-left`, `cut-right`,
 `too-small`, `too-dark`, `motion-blur`, `jitter` and `two-items`. `jitter` plays the good frame with
-playback jitter. `two-items` places the next base beside this one. Per family there is also one
+playback jitter. `two-items` places the next base beside this one, and ships only when Vision finds
+both as separate instances. Per family there is also one
 `empty` set (the shared plain background) and one `sweep` set: every good frame in turn, with 1 s
 of empty background between them. One `batch-<n>` set (C20) holds up to 10 different items judged
 under the `generic` family, with empty gaps between them.
 
 Worn mode, per family that offers it (`modes` in the registry): `whole`, `shoulders-cut`,
 `hips-cut`, `knees-cut`, `ankles-cut`, `too-small` and `jitter`. The person is drawn from simple
-shapes (`Figure` in `Sources/Shapes.swift`) and wears the family's first base. The generator places
+shapes (`Figure` in `Sources/Shapes.swift`) and wears the family's first base whose worn variants
+all hold up (`generic` takes only bases from a family that is worn, placed where that family's
+garment sits). The generator places
 the keypoints itself, so the keypoint file is ground truth. Shoulders and ankles move past the top
-or bottom edge. Hips and knees are "camera too close": the shoulders stay at 10 % from the top and
-the body is scaled until the part ends past the bottom edge. Joints are named by the subject's
+or bottom edge. Hips and knees are "camera too close". When the part sits below the middle of the
+garment, the shoulders stay at 10 % from the top and the body is scaled until the part ends past
+the bottom edge; at that scale the shoulders of a top also leave the sides, and the keypoint file
+says so. When it sits above the middle (the hips of `long-bottom` and `short-bottom`), the ankles
+stay at 10 % from the bottom and the part ends past the top edge, so the garment stays in view.
+Joints are named by the subject's
 side. The subject faces the camera, so `leftShoulder` is on the image's right.
 
 ## Output: `artifacts/capture-camera/frames/`

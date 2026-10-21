@@ -76,7 +76,7 @@ struct Outline {
 }
 
 /// Drawn silhouettes for the families the dataset lacks (bag, and small-item when it has too few
-/// hats) and for every family when the dataset cannot be fetched. Flat colours with a check
+/// hats) and for every family when the dataset cannot be fetched. Flat colours with a plaid
 /// texture: the texture gives the steady check's sharpness measure something to read, the way
 /// fabric does in a photo.
 enum Shapes {
@@ -86,7 +86,7 @@ enum Shapes {
     ]
     private static let canvasLongSidePx = 480.0
     private static let canvasPaddingShare = 0.08
-    private static let checkCellShare = 0.03
+    private static let stripeShare = 0.03
 
     static func cutout(family: String, design: Int) throws -> Cutout {
         guard let outline = outline(family: family, design: design) else {
@@ -129,16 +129,18 @@ enum Shapes {
             context.strokePath()
         }
 
-        // Check texture, clipped to the body of the item.
+        // Plaid texture (crossing stripes), clipped to the body of the item. Not a checkerboard: its
+        // cells repeat along both diagonals, so the 45° motion blur would leave it sharp.
         context.saveGState()
         context.addPath(path)
         context.clip(using: fillRule)
-        context.setFillColor(red: 0, green: 0, blue: 0, alpha: 0.2)
-        let cell = checkCellShare * canvasLongSidePx
-        for row in 0...Int(Double(canvasHeight) / cell) {
-            for column in 0...Int(Double(canvasWidth) / cell) where (row + column) % 2 == 0 {
-                context.fill(CGRect(x: Double(column) * cell, y: Double(row) * cell, width: cell, height: cell))
-            }
+        context.setFillColor(red: 0, green: 0, blue: 0, alpha: 0.12)
+        let cell = stripeShare * canvasLongSidePx
+        for row in stride(from: 0, through: Int(Double(canvasHeight) / cell), by: 2) {
+            context.fill(CGRect(x: 0, y: Double(row) * cell, width: Double(canvasWidth), height: cell))
+        }
+        for column in stride(from: 0, through: Int(Double(canvasWidth) / cell), by: 2) {
+            context.fill(CGRect(x: Double(column) * cell, y: 0, width: cell, height: Double(canvasHeight)))
         }
         context.restoreGState()
 
@@ -325,7 +327,9 @@ enum Figure {
     static let extent = CGRect(x: -0.2225, y: 0.015, width: 0.445, height: 0.96)
     private static let armWidth = 0.055
     private static let legWidth = 0.075
-    private static let bodyColour = (0.30, 0.27, 0.25)
+    /// A warm tan, unlike the neutral grey background, and light enough that a frame filled by the
+    /// zoomed figure stays well inside the light limits.
+    private static let bodyColour = (0.76, 0.60, 0.47)
 
     /// Where the garment sits on the body, in figure units.
     static func garmentRect(family: String) -> CGRect {

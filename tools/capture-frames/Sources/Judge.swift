@@ -36,8 +36,14 @@ enum Layout {
     static let jitterSafeMargin = 0.10
     static let twoItemMargin = 0.05
     static let twoItemGap = 0.04
-    /// 45°: a horizontal or vertical blur leaves the item's edges along that axis sharp.
-    static let motionBlurAngle = Double.pi / 4
+    /// Blur directions tried in turn, until the item's sharpness falls clearly under the minimum.
+    /// 45° first: a horizontal or vertical blur leaves the item's edges along that axis sharp, and
+    /// the diagonals and axes cover outlines that run along the first angle.
+    static let motionBlurAngles = [Double.pi / 4, 3 * Double.pi / 4, 0, Double.pi / 2]
+    /// Too dark: detail finer than this box radius (px at the 640 px long side) keeps its contrast,
+    /// and the gain noise has this standard deviation in luma (README "Too dark").
+    static let darkDetailRadiusPx = 3
+    static let darkNoiseSigma = 2.0
     static let sourceMinItemShare = 0.03
     static let sourceMaxSidePx = 1024
     static let sharpPassFactor = 2.0

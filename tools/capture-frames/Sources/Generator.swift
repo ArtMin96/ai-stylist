@@ -172,12 +172,30 @@ struct Generator {
 
         for family in otherFamilies + ["generic"] {
             guard rules.families[family]?.modes.contains("worn") == true, var result = results[family] else { continue }
-            guard let garment = result.bases.first else {
+            // Generic's bases are "<family>/<id>": only garments of a family that is worn qualify.
+            let garments: [(base: Base, family: String)] = result.bases.compactMap { base in
+                guard family == "generic" else { return (base, family) }
+                guard let source = base.id.split(separator: "/").first.map(String.init),
+                    rules.families[source]?.modes.contains("worn") == true
+                else { return nil }
+                return (base, source)
+            }
+            // The first garment whose worn variants all hold up; else the one with fewest rejections.
+            var chosen: (garment: Base, worn: (frames: [RenderedFrame], rejections: [Rejection]))?
+            for (garment, garmentFamily) in garments {
+                let worn = try renderer.wornVariants(
+                    garment: garment.cutout, family: family, garmentFamily: garmentFamily)
+                if chosen == nil || worn.rejections.count < chosen?.worn.rejections.count ?? 0 {
+                    chosen = (garment, worn)
+                }
+                if worn.rejections.isEmpty { break }
+            }
+            guard let chosen else {
                 progress("\(family): no base image to dress the worn figure")
                 continue
             }
-            result.wornGarment = garment.id
-            let worn = try renderer.wornVariants(garment: garment.cutout, family: family)
+            let worn = chosen.worn
+            result.wornGarment = chosen.garment.id
             for rejection in worn.rejections {
                 result.rejected.append(Manifest.Rejected(id: "worn", reason: rejection.reason))
             }
@@ -199,7 +217,7 @@ struct Generator {
                 sets.append(
                     SetEntry(
                         id: id, family: family, mode: "worn", variant: frame.variant, kind: "single",
-                        source: "synthetic", baseImages: ["synthetic-figure", garment.id],
+                        source: "synthetic", baseImages: ["synthetic-figure", chosen.garment.id],
                         segments: [
                             written.segment(frames: Harness.segmentFrames, jitter: frame.jitter, setId: id, expected: expected)
                         ]))
@@ -418,7 +436,8 @@ struct Generator {
             for item in rejected {
                 byReason[String(item.reason.prefix(48)), default: 0] += 1
             }
-            let reasons = byReason.sorted { $0.value > $1.value }.map { "\($0.value)× \($0.key)" }
+            // Ties sorted by reason: dictionary order differs between runs.
+            let reasons = byReason.sorted { ($1.value, $0.key) < ($0.value, $1.key) }.map { "\($0.value)× \($0.key)" }
             lines.append("  \(family): \(rejected.count) — " + reasons.joined(separator: "; "))
         }
         return lines.joined(separator: "\n") + "\n"

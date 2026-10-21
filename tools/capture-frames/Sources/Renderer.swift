@@ -112,17 +112,20 @@ struct Renderer {
         frames.append(try judged("too-small", image: smallImage, intent: smallIntent, judge: judge))
 
         let goodRaster = try Imaging.raster(of: goodImage, width: size.width, height: size.height)
-        let darkImage = try Imaging.image(of: goodRaster.scaled(by: Harness.tooDarkMeanLuma / goodRaster.meanLuma))
+        let longSideScale = Double(max(size.width, size.height)) / Harness.motionBlurReferenceLongSidePx
+        let darkRaster = goodRaster.darkened(
+            toMeanLuma: Harness.tooDarkMeanLuma,
+            detailRadiusPx: max(1, Int((Double(Layout.darkDetailRadiusPx) * longSideScale).rounded())),
+            noiseSigma: Layout.darkNoiseSigma, seed: UInt64(stableSeed("\(family)-too-dark")))
         var darkIntent = goodIntent
         darkIntent.dark = true
+        let darkImage = try Imaging.image(of: darkRaster)
         frames.append(try judged("too-dark", image: darkImage, intent: darkIntent, judge: judge))
 
-        let radius =
-            Harness.motionBlurPx * Double(max(size.width, size.height)) / Harness.motionBlurReferenceLongSidePx
-        let blurredImage = try Imaging.motionBlurred(goodImage, radiusPx: radius, angle: Layout.motionBlurAngle)
         var blurIntent = goodIntent
         blurIntent.sharp = false
-        frames.append(try judged("motion-blur", image: blurredImage, intent: blurIntent, judge: judge))
+        let blurPx = Harness.motionBlurPx * longSideScale
+        frames.append(try motionBlurred(goodImage, intent: blurIntent, judge: judge, radiusPx: blurPx))
 
         var jitterIntent = goodIntent
         jitterIntent.jittered = true
@@ -133,13 +136,30 @@ struct Renderer {
         return frames
     }
 
+    /// The good frame blurred along the first of `Layout.motionBlurAngles` that leaves the item
+    /// clearly unsharp; the last angle's rejection when none does.
+    private func motionBlurred(_ good: CGImage, intent: Intent, judge: Judge, radiusPx: Double) throws -> RenderedFrame {
+        var last = Rejection("motion-blur: no blur angle to try")
+        for angle in Layout.motionBlurAngles {
+            let blurred = try Imaging.motionBlurred(good, radiusPx: radiusPx, angle: angle)
+            do {
+                return try judged("motion-blur", image: blurred, intent: intent, judge: judge)
+            } catch let rejection as Rejection {
+                last = rejection
+            }
+        }
+        throw last
+    }
+
     /// Two items side by side: the family's item at 1.5× (else 1.25×) its minimum, a second item of
-    /// the same size or half its width and height, in a row or a column, whichever fits first.
+    /// the same size or half its width and height, in a row or a column: the first layout that fits
+    /// and in which Vision finds both items as separate instances.
     func twoItems(main: Cutout, second: Cutout, family: String) throws -> RenderedFrame {
         let judge = Judge(rules: rules, family: family, mode: try rules.mode("flat"))
         let minimum = try rules.family(family).minAreaShare
         let span = 1 - 2 * Layout.twoItemMargin
         let gap = Layout.twoItemGap
+        var last = Rejection("two-items: the two items do not fit side by side")
         for mainFactor in [1.5, 1.25] {
             for secondScale in [1.0, 0.5] {
                 for inRow in [true, false] {
@@ -172,11 +192,22 @@ struct Renderer {
                         Placement(cutout: main, rect: rects[0]), Placement(cutout: second, rect: rects[1]),
                     ])
                     let intent = Intent(iosMaskShare: area * main.coverage, boxAreaShare: area)
-                    return try judged("two-items", image: image, intent: intent, judge: judge)
+                    do {
+                        let frame = try judged("two-items", image: image, intent: intent, judge: judge)
+                        let items = frame.measure.instances.filter {
+                            $0.maskAreaShare >= rules.ios.minInstanceAreaShare
+                        }
+                        guard items.count >= 2 else {
+                            throw Rejection("two-items: Vision finds \(items.count) item instance(s), not 2")
+                        }
+                        return frame
+                    } catch let rejection as Rejection {
+                        last = rejection
+                    }
                 }
             }
         }
-        throw Rejection("two-items: the two items do not fit side by side")
+        throw last
     }
 
     /// The plain background with no item; fatal when Vision finds an item in it.
@@ -209,7 +240,11 @@ struct Renderer {
     /// The synthetic person wearing `garment`: whole body, each required part past an edge, too
     /// small, jittered. A variant whose frame does not hold up is returned as a rejection, the
     /// others still ship.
-    func wornVariants(garment: Cutout, family: String) throws -> (frames: [RenderedFrame], rejections: [Rejection]) {
+    /// `garmentFamily` places the garment on the body: the family itself, or for `generic` the family
+    /// the base came from.
+    func wornVariants(garment: Cutout, family: String, garmentFamily: String) throws -> (
+        frames: [RenderedFrame], rejections: [Rejection]
+    ) {
         let judge = Judge(rules: rules, family: family, mode: try rules.mode("worn"))
         let frameHeight = Double(size.height)
         let shoulderY = try figureY("leftShoulder")
@@ -229,11 +264,24 @@ struct Renderer {
         let hipY = try figureY("leftHip")
         let kneeY = try figureY("leftKnee")
         let ankleY = try figureY("leftAnkle")
-        let hips = zoomed(hipY)
-        let knees = zoomed(kneeY)
+        // Camera too close, aimed low: the ankles stay near the bottom and `partY` ends past the top.
+        func zoomedFromBelow(_ partY: Double) -> (top: Double, height: Double) {
+            let height = (frameHeight - anchor) / (ankleY - partY - past)
+            return (frameHeight - anchor - ankleY * height, height)
+        }
+        // A part above the garment's middle leaves through the top edge, so the garment stays in
+        // view (hips for trousers and shorts); otherwise it leaves through the bottom edge.
+        let garmentArea = Figure.garmentRect(family: garmentFamily)
+        let garmentMidY = Double(garmentArea.midY)
+        func cut(_ partY: Double) -> (top: Double, height: Double) {
+            partY < garmentMidY ? zoomedFromBelow(partY) : zoomed(partY)
+        }
+        let shoulders = (top: -(shoulderY + past) * wholeHeight, height: wholeHeight)
+        let hips = cut(hipY)
+        let knees = cut(kneeY)
         let poses: [(variant: String, top: Double, height: Double)] = [
             ("whole", Layout.wornWholeTopShare * frameHeight, wholeHeight),
-            ("shoulders-cut", -(shoulderY + past) * wholeHeight, wholeHeight),
+            ("shoulders-cut", shoulders.top, shoulders.height),
             ("hips-cut", hips.top, hips.height),
             ("knees-cut", knees.top, knees.height),
             ("ankles-cut", frameHeight + (past - ankleY) * wholeHeight, wholeHeight),
@@ -246,7 +294,8 @@ struct Renderer {
         var frames: [RenderedFrame] = []
         var rejections: [Rejection] = []
         for pose in poses {
-            let drawn = try figureFrame(garment: garment, family: family, top: pose.top, height: pose.height)
+            let drawn = try figureFrame(
+                garment: garment, garmentArea: garmentArea, family: family, top: pose.top, height: pose.height)
             do {
                 frames.append(
                     try judged(pose.variant, image: drawn.image, intent: drawn.intent, judge: judge, keypoints: drawn.keypoints))
@@ -274,7 +323,8 @@ struct Renderer {
         return Double(point.y)
     }
 
-    private func figureFrame(garment: Cutout, family: String, top: Double, height: Double) throws -> (
+    private func figureFrame(garment: Cutout, garmentArea: CGRect, family: String, top: Double, height: Double)
+        throws -> (
         image: CGImage, intent: Intent, keypoints: [String: Keypoint]
     ) {
         let width = Double(size.width)
@@ -284,7 +334,7 @@ struct Renderer {
         let layer = try Imaging.makeContext(width: size.width, height: size.height)
         Figure.draw(
             in: layer, frameHeight: size.height, centreX: centreX, top: top, height: height, garment: garment,
-            garmentArea: Figure.garmentRect(family: family))
+            garmentArea: garmentArea)
         guard let figure = layer.makeImage() else {
             throw GeneratorError("cannot finish the figure layer")
         }

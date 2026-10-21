@@ -1,0 +1,211 @@
+# AppTag: the API contract for the tags on canvas board C03 (DESIGN.md "### Chips and tags (C03)").
+# This file is the master for the tag's API; DESIGN.md is the master for its values, so this file
+# only names tokens. Field rules: README.md beside this file; fields marked G<n> are the proposed
+# fields of README.md "Proposed fields", which the generator implements next.
+# A tag labels and never acts: no tap, no pressed state, no chevron (R4: "Chips act, tags label,
+# badges flag"). Sources (canvas read 2026-10-21): C03 (plan and status tags), C07 (the item-row
+# availability tag), C08 (the compare card's "Differs" tag), SC12 (Later), SC14 and SC15 (plan
+# tags, the Available tag on the closet link, the "Trend" / "Runway" kind tag on card images).
+# Where a board and the screens disagree, the screens win; each choice is a "Screens win:" comment.
+# Not here: the count badge and the trial pill (AppBadge, badge.yaml); the 22-high tile badges and
+# the provenance badge, which are C04's next component.
+# High contrast: no tag token has an -hc-* variant; the S7 colours come from the colour roles.
+# Proposed fields used here: G1 no busy, G4 icons, G7 accessibility role text and labelOverride,
+# G8 per-variant props, G9 no touch target, G10 gallery.props, G11 sizes without an icon slot,
+# G12 the dot part, G13 the dashed ring. Until the generator has them this file fails CC-01.
+id: tag
+board: C03
+name: AppTag
+
+props:
+  - name: label
+    type: string
+    required: true
+  # The availability glyph from icon.yaml on an unavailable item: laundry, packed, lent, repair.
+  - name: leadingIcon
+    type: icon
+    required: true
+    variants: [unavailable]
+  # The spoken name when it differs from the label: the lock tag shows "Plus" and reads "Needs
+  # Plus" (C03).
+  - name: accessibilityLabel
+    type: string
+    default: null
+
+# plan-*: the plan names Free, Essentials, Plus and Pro (C03; SC14, SC15).
+# lock: a feature that needs a plan ("Plus" with the lock, read "Needs Plus").
+# later: an item set for later (SC12).
+# provisional: an estimated value until the user confirms it.
+# new: something new since the last visit.
+# available, unavailable: an item's availability on a row (C07; SC15 "Pairs with" link).
+# differs: a reason that differs between two compared outfits (C08).
+# kind: the content kind on a Discover card image ("Trend", "Runway"; SC15).
+variants:
+  [
+    plan-free,
+    plan-essentials,
+    plan-plus,
+    plan-pro,
+    lock,
+    later,
+    provisional,
+    new,
+    available,
+    unavailable,
+    differs,
+    kind,
+  ]
+# regular 24 (icon xs, gap 4: tag-regular), small 18 (the Differs tag; no icon, so no slot entry,
+# G11).
+sizes: [small, regular]
+# A tag has one state: it never changes while shown.
+states: [enabled]
+
+combinations:
+  # Screens win: SC14 and SC15 draw the plan tags as C03 does, dark Essentials and Plus included.
+  plan-free:
+    sizes: [regular]
+    states: [enabled]
+  plan-essentials:
+    sizes: [regular]
+    states: [enabled]
+  plan-plus:
+    sizes: [regular]
+    states: [enabled]
+  plan-pro:
+    sizes: [regular]
+    states: [enabled]
+  lock:
+    sizes: [regular]
+    states: [enabled]
+  # Screens win: SC12 draws Later as C03 does.
+  later:
+    sizes: [regular]
+    states: [enabled]
+  # Screens win: C03 draws a dashed ring with "!" as the icon; SC06, SC07 and P10 draw the
+  # Provisional status as the dashed ring alone, icon.yaml's `pending`, which the tag uses.
+  provisional:
+    sizes: [regular]
+    states: [enabled]
+  new:
+    sizes: [regular]
+    states: [enabled]
+  # Screens win: C07 draws the dark Available tag on surface once and on surface-2 once; SC15 draws
+  # it on surface-2 three times, so dark is surface-2.
+  available:
+    sizes: [regular]
+    states: [enabled]
+  # Screens win: C07 draws "In laundry" with a drop; the meaning is icon.yaml's `laundry` (icon.yaml
+  # owner decision 5), which the caller passes.
+  unavailable:
+    sizes: [regular]
+    states: [enabled]
+  # C08 draws it 18 high, 0 7, 11/18 600; the `badge` style (11/14 600) draws it inside the 18.
+  # DESIGN.md wins on the dark label: on-accent-dark (#0F1F1B), where C08 draws #1B1B19.
+  differs:
+    sizes: [small]
+    states: [enabled]
+  # SC15 draws it in overline caps (11, 600, +8 %) inside 24.
+  kind:
+    sizes: [regular]
+    states: [enabled]
+
+tokens:
+  plan-free:
+    base: '{components.tag-plan-free}'
+    states: {}
+    sizes:
+      regular: '{components.tag-plan}'
+  plan-essentials:
+    base: '{components.tag-plan-essentials}'
+    states: {}
+    sizes:
+      regular: '{components.tag-plan}'
+  plan-plus:
+    base: '{components.tag-plan-plus}'
+    states: {}
+    sizes:
+      regular: '{components.tag-plan}'
+  plan-pro:
+    base: '{components.tag-plan-pro}'
+    states: {}
+    sizes:
+      regular: '{components.tag-plan}'
+  lock:
+    base: '{components.tag-lock}'
+    states: {}
+    sizes:
+      regular: '{components.tag-lock}'
+  later:
+    base: '{components.tag-later}'
+    states: {}
+    sizes:
+      regular: '{components.tag-later}'
+  provisional:
+    base: '{components.tag-provisional}'
+    states: {}
+    sizes:
+      regular: '{components.tag-provisional}'
+  new:
+    base: '{components.tag-new}'
+    states: {}
+    sizes:
+      regular: '{components.tag-new}'
+  available:
+    base: '{components.tag-available}'
+    states: {}
+    sizes:
+      regular: '{components.tag-available}'
+  unavailable:
+    base: '{components.tag-unavailable}'
+    states: {}
+    sizes:
+      regular: '{components.tag-unavailable}'
+  differs:
+    base: '{components.tag-differs}'
+    states: {}
+    sizes:
+      small: '{components.tag-differs}'
+  kind:
+    base: '{components.tag-kind}'
+    states: {}
+    sizes:
+      regular: '{components.tag-kind}'
+
+# G4: the glyphs each variant draws (icon.yaml), in the label colour.
+icons:
+  lock: { leading: lock }
+  later: { leading: schedule }
+  provisional: { leading: pending }
+  available: { leading: check }
+  unavailable: { leading: '{props.leadingIcon}' }
+
+# G12: the new tag's 6 px dot before the label, in the label colour (dotSize, dotGap).
+parts:
+  - name: dot
+    kind: dot
+    position: before-label
+    variants: [new]
+
+# A tag is read as text and takes no focus or tap, so it has no touch target (G9). The meaning is
+# in the words, never the colour (plan names; "Needs Plus"). The label scales with Dynamic Type and
+# Android font scale to 200 % and wraps, never truncated; the height is a minimum. Icons grow with
+# the text. The kind tag's caps are the overline style's.
+accessibility:
+  role: text
+  label: '{props.label}'
+  labelOverride: '{props.accessibilityLabel}'
+
+gallery:
+  title: Tags
+  label: Plus
+  props:
+    leadingIcon: laundry
+  include: all
+
+testId: 'ds-{component}-{variant}-{size}-{state}'
+
+# Owner, 2026-10-21, in chat: "You do all. Add condition chips as well in the canvas, then in
+# DESIGN.md if its missing and then implement like any normal chip. I don't want to left anything
+# behind"; relayed by the lead with the tag contract's approval the same day.
+approved: 2026-10-21

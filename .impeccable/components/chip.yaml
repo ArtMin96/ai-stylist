@@ -1,0 +1,511 @@
+# AppChip: the API contract for canvas board C03 (DESIGN.md "### Chips and tags (C03)").
+# This file is the master for the chip's API; DESIGN.md is the master for its values, so this
+# file only names tokens. Field rules: README.md beside this file. Fields marked G<n> are the
+# proposed fields that README.md "Proposed fields" defines; the generator implements them next.
+# Sources (canvas read 2026-10-21): C03 (condition chips drawn there 2026-10-21, owner), C05 (group
+# and sort), the screens on page 6 that draw chips (SC02, SC03, SC06, SC08-SC12, SC15), the
+# prototype on page 7 (P03, P05, P08, P09, P14), C09 and rule R4 ("Chips act, tags label, badges
+# flag"). Where a board and the screens disagree, the screens and prototype win; each such choice
+# is a "Screens win:" comment below. Sizes, paddings, label styles and colours are measured from
+# those boards (design-system.md invariant 8).
+# AppChip is every tappable chip. The tags are AppTag (tag.yaml), the count badge and trial pill
+# AppBadge (badge.yaml), the expanded reason row AppReasonRow (reason-row.yaml).
+# High contrast: no chip token has an -hc-* variant; the S7 colours come from the colour roles and
+# the focus ring from focus-ring-hc-*. None was added.
+# Proposed fields used here (README.md "Proposed fields"): G1 no busy, G2 compound toggle states,
+# G3 trailing icon slot, G4 icons, G5 an entry's own borderWidth, G6 a variant's own slot values,
+# G7 accessibility roles, selection and labelOverride, G8 prop types and per-variant props,
+# G10 gallery.props, G12 parts. Until the generator has them this file fails CC-01.
+id: chip
+board: C03
+name: AppChip
+
+# G8: `variants` limits a prop to the variants named; `required: true` then means required there.
+props:
+  - name: label
+    type: string
+    required: true
+  - name: action
+    type: action
+    required: true
+  # The caller's glyph from icon.yaml (the weather symbol; office, holiday, indoors; the reason's
+  # glyph, thumbs-up for "a pairing you liked", icon.yaml owner decision 1; group or sort).
+  - name: leadingIcon
+    type: icon
+    required: true
+    variants: [weather, context, override, reason, group-sort]
+  # True while chosen. A selected chip shows the check, never colour alone.
+  - name: selected
+    type: bool
+    default: false
+    variants: [choice, swatch, filter, filter-menu]
+  # True while the reason row shows under the chips (SC08 "Warm layers for 14° with wind").
+  - name: expanded
+    type: bool
+    default: false
+    variants: [reason]
+  # The only chips drawn disabled.
+  - name: enabled
+    type: bool
+    default: true
+    variants: [choice, swatch, filter]
+  # multiple: a toggle in a multi-select group (feedback, onboarding, Closet filters); single: a
+  # radio in a one-choice group (SC08 What's on today, SC09 Occasion, the SC12 and SC15 tabs).
+  - name: selection
+    type: enum
+    values: [multiple, single]
+    default: multiple
+    variants: [choice, swatch, filter]
+  # The group and sort prefix, "Group:" or "Sort:" (C05, SC06).
+  - name: prefix
+    type: string
+    required: true
+    variants: [group-sort]
+  # The text after the label: the filter count ("12", C03) and the override's "your setting".
+  - name: detail
+    type: string
+    default: null
+    variants: [filter, override]
+  # The garment colour from the closet's colour data, runtime only, never a token (SC06, P03).
+  - name: swatch
+    type: color
+    required: true
+    variants: [swatch]
+  # The spoken name, written by the screen with its copy, when it differs from the label (C03,
+  # SC06, SC08, SC12): "Weather: 14 degrees, rain after 4 pm. Open weather details", "Never suggest:
+  # Wool. Edit", "Season: Autumn, change", "More categories", "Tops, 12 items".
+  - name: accessibilityLabel
+    type: string
+    default: null
+
+# weather: the Today context-strip weather chip (accent fill), opens the weather details.
+# context: the occasion and holiday chips beside it (surface-2), open a sheet.
+# condition-*: a weather or occasion condition in its own colours (sunny, rain, cold, hot, windy,
+#   snow, evening out), opens the weather details; drawn on C03 2026-10-21.
+# override: the user's own setting for today ("Indoors all day · your setting"), opens it to edit.
+# reason: a reason from the reason-code templates on the outfit card; tap shows its reason row.
+# choice: the 40 pill a user picks from a set (onboarding style, feedback, occasion).
+# swatch: the choice chip with a colour swatch (Colour filters, "Colours you reach for").
+# filter: the 36 pill that narrows a list (Closet filters, saved filters, Discover and You tabs).
+# filter-menu: the filter chip that opens a list ("More", "Brand", "Season: Autumn").
+# group-sort: the Closet group and sort control ("Group: Category"), opens a list sheet. C05 draws
+#   it ("In-screen controls"); it is a chip in look and API, so it lives here.
+# never-suggest: a hard exclusion (radius 6, never a pill); tap edits the rule.
+# soft-dislike: "Not my favourite", suggested less often; tap edits it.
+# add: the pill that closes a row of choice, soft-dislike or filter chips and adds one.
+# never-suggest-add: the add chip of the never-suggest row, radius 6 like its row.
+variants:
+  [
+    weather,
+    context,
+    condition-sunny,
+    condition-rain,
+    condition-cold,
+    condition-hot,
+    condition-windy,
+    condition-snow,
+    condition-evening,
+    override,
+    reason,
+    choice,
+    swatch,
+    filter,
+    filter-menu,
+    group-sort,
+    never-suggest,
+    soft-dislike,
+    add,
+    never-suggest-add,
+  ]
+# Each size is one chip height; height, padding and label style sit in each variant's base entry,
+# and the shared size entry chip-<size> holds the icon slots: compact 32 (icon sm, gap 6; trailing
+# xs, gap 6), small 34 (sm, 6; trailing xs, 6), medium 36 (sm, 4; trailing sm, 4), large 40 (md,
+# 6). The screens draw 18 at 34 and 40, which snaps to sm and md by label (DESIGN.md "Icons (C02)").
+sizes: [compact, small, medium, large]
+# G2: selected and expanded are toggles the caller sets; each combines with an interaction state
+# as <toggle>-<interaction>. The state shown, first match wins: disabled if not enabled, else
+# pressed, else focused (both from the platform), else none; prefixed with selected- or expanded-
+# while that toggle is on (a selected chip being pressed is selected-pressed).
+states:
+  [
+    enabled,
+    pressed,
+    focused,
+    disabled,
+    selected,
+    selected-pressed,
+    selected-focused,
+    selected-disabled,
+    expanded,
+    expanded-pressed,
+    expanded-focused,
+  ]
+
+# DERIVED STATES (not drawn on any board or screen; derived by the rule the drawn chips use, from
+# existing colour roles; design-system.md invariant 8):
+# - condition-*: pressed lays pressed-overlay-* over the fill, as the weather chip presses.
+# - override, group-sort, add, never-suggest-add, filter-menu: pressed fills surface-2, as the
+#   outlined choice and filter chips do.
+# - selected-pressed, expanded-pressed: the toggled look under pressed-overlay-*, as the filled
+#   weather chip presses. selected-focused, expanded-focused: the focus ring over the toggled look.
+#   selected-disabled: the disabled colours, and the check stays.
+# - every variant: focused is focus-ring (2 px, 2 px gap, the chip's corners; 3 px in S7).
+# Disabled is listed only where it is drawn (choice, swatch, filter). No chip has a busy state.
+combinations:
+  # Screens win: SC08-SC11, P05 and P08 draw the weather chip as C03 does (34, 0 14 0 11, 13/600,
+  # icon 18, which snaps to sm).
+  weather:
+    sizes: [small]
+    states: [enabled, pressed, focused]
+  # Screens win: SC08-SC11, P05 and P08 draw "Office day" and "Typical day" at 34, 0 14 0 11, as
+  # C03 draws occasion and holiday.
+  context:
+    sizes: [small]
+    states: [enabled, pressed, focused]
+  # Drawn on C03 2026-10-21 from DESIGN.md "Condition chips" (36, 14/600, icon + words) and the
+  # medium size's slot (icon sm, gap 4, 0 14 0 10, as the 36 add and selected filter chips).
+  condition-sunny:
+    sizes: [medium]
+    states: [enabled, pressed, focused]
+  condition-rain:
+    sizes: [medium]
+    states: [enabled, pressed, focused]
+  condition-cold:
+    sizes: [medium]
+    states: [enabled, pressed, focused]
+  condition-hot:
+    sizes: [medium]
+    states: [enabled, pressed, focused]
+  condition-windy:
+    sizes: [medium]
+    states: [enabled, pressed, focused]
+  condition-snow:
+    sizes: [medium]
+    states: [enabled, pressed, focused]
+  condition-evening:
+    sizes: [medium]
+    states: [enabled, pressed, focused]
+  # C03 only (default, focused); no screen draws it yet. C03's pencil (M4.5 19.5l1-4...) becomes
+  # icon.yaml's `edit` (one drawing per meaning, icon.yaml owner decision 5).
+  override:
+    sizes: [small]
+    states: [enabled, pressed, focused]
+  # Screens win: SC08 and SC09 draw the reason chips as C03 does (32, 0 12 0 10, icon 16 in
+  # primary-text); SC08 draws the expanded chip (0 10, chevron-up 14, which snaps to xs).
+  reason:
+    sizes: [compact]
+    states: [enabled, pressed, focused, expanded, expanded-pressed, expanded-focused]
+  # Screens win: C09's compact feedback sheet draws the "What didn't work?" chips 32 high, outlined,
+  # 0 12; SC09 and P08 draw them as 40 choice chips, so the feedback sheet uses choice. SC08 "What's
+  # on today?" uses the same look as a one-choice group (selection: single).
+  choice:
+    sizes: [large]
+    states:
+      [enabled, pressed, focused, disabled, selected, selected-pressed, selected-focused,
+       selected-disabled]
+  # Screens win: SC06 (Colour) and P03 ("Colours you reach for") draw the swatch chip as C03 does.
+  swatch:
+    sizes: [large]
+    states:
+      [enabled, pressed, focused, disabled, selected, selected-pressed, selected-focused,
+       selected-disabled]
+  # Screens win: SC06, SC09, SC12, SC15, P09 and P14 draw the filter chip as C03 does (36, 0 14,
+  # 14/600, selected 0 14 0 10 with check 16). SC09 Occasion and the SC12 and SC15 tabs use it as a
+  # one-choice group, SC06 as multi-select. The count is drawn on C03 only.
+  filter:
+    sizes: [medium]
+    states:
+      [enabled, pressed, focused, disabled, selected, selected-pressed, selected-focused,
+       selected-disabled]
+  # Screens win: C03 and SC06 draw this chevron as M7 10l5 5 5-5; SC09 draws icon.yaml's
+  # chevron-down (C02), which every chip uses (icon.yaml owner decision 5).
+  filter-menu:
+    sizes: [medium]
+    states: [enabled, pressed, focused, selected, selected-pressed, selected-focused]
+  # C05 draws group and sort (default, focused); SC06 and P09 draw "Group: Category" the same.
+  group-sort:
+    sizes: [medium]
+    states: [enabled, pressed, focused]
+  # Screens win: SC03, SC12 and P03 draw the never-suggest chip as C03 does (40, radius 6, 0 14 0 10,
+  # 15/600, slash 18 in error, which snaps to md).
+  never-suggest:
+    sizes: [large]
+    states: [enabled, pressed, focused]
+  # Screens win: SC03 and P03 draw the soft-dislike chip as C03 does, with padding 0 14 0 10.
+  soft-dislike:
+    sizes: [large]
+    states: [enabled, pressed, focused]
+  # Screens win: C03, SC03 and P03 draw the add chip at 40 (15/600, plus 18 -> md, gap 6) beside
+  # the soft dislikes; SC06 draws "Save filter" at 36 (14/600, plus 16 -> sm, gap 4) beside the
+  # saved filters, so add comes in medium as well.
+  add:
+    sizes: [medium, large]
+    states: [enabled, pressed, focused]
+  # Screens win: C03, SC03, SC12 and P03 draw the add chip of the never-suggest row with radius 6.
+  # C03's dashed border-style never draws (border 0); the ring is solid on every board.
+  never-suggest-add:
+    sizes: [large]
+    states: [enabled, pressed, focused]
+
+# A state is listed when it changes a colour, the label style or the padding; the others keep the
+# base. A compound state applies after its toggle's entry (G2). A ring colour is borderColor on the
+# entry, drawn inside the chip at chip-outline-ring's width unless the entry names borderWidth (G5).
+tokens:
+  weather:
+    base: '{components.chip-weather}'
+    states:
+      pressed: '{components.chip-weather-pressed}'
+      focused: '{components.focus-ring}'
+    sizes:
+      small: '{components.chip-weather}'
+  context:
+    base: '{components.chip-context}'
+    states:
+      pressed: '{components.chip-context-pressed}'
+      focused: '{components.focus-ring}'
+    sizes:
+      small: '{components.chip-context}'
+  condition-sunny:
+    base: '{components.chip-condition-sunny}'
+    states:
+      pressed: '{components.chip-condition-sunny-pressed}'
+      focused: '{components.focus-ring}'
+    sizes:
+      medium: '{components.chip-condition-sunny}'
+  condition-rain:
+    base: '{components.chip-condition-rain}'
+    states:
+      pressed: '{components.chip-condition-rain-pressed}'
+      focused: '{components.focus-ring}'
+    sizes:
+      medium: '{components.chip-condition-rain}'
+  condition-cold:
+    base: '{components.chip-condition-cold}'
+    states:
+      pressed: '{components.chip-condition-cold-pressed}'
+      focused: '{components.focus-ring}'
+    sizes:
+      medium: '{components.chip-condition-cold}'
+  condition-hot:
+    base: '{components.chip-condition-hot}'
+    states:
+      pressed: '{components.chip-condition-hot-pressed}'
+      focused: '{components.focus-ring}'
+    sizes:
+      medium: '{components.chip-condition-hot}'
+  condition-windy:
+    base: '{components.chip-condition-windy}'
+    states:
+      pressed: '{components.chip-condition-windy-pressed}'
+      focused: '{components.focus-ring}'
+    sizes:
+      medium: '{components.chip-condition-windy}'
+  condition-snow:
+    base: '{components.chip-condition-snow}'
+    states:
+      pressed: '{components.chip-condition-snow-pressed}'
+      focused: '{components.focus-ring}'
+    sizes:
+      medium: '{components.chip-condition-snow}'
+  condition-evening:
+    base: '{components.chip-condition-evening}'
+    states:
+      pressed: '{components.chip-condition-evening-pressed}'
+      focused: '{components.focus-ring}'
+    sizes:
+      medium: '{components.chip-condition-evening}'
+  override:
+    base: '{components.chip-override}'
+    states:
+      pressed: '{components.chip-override-pressed}'
+      focused: '{components.focus-ring}'
+    sizes:
+      small: '{components.chip-override}'
+  reason:
+    base: '{components.chip-reason}'
+    states:
+      pressed: '{components.chip-reason-pressed}'
+      focused: '{components.focus-ring}'
+      expanded: '{components.chip-reason-expanded}'
+      expanded-pressed: '{components.chip-reason-expanded-pressed}'
+      expanded-focused: '{components.focus-ring}'
+    sizes:
+      compact: '{components.chip-reason}'
+  choice:
+    base: '{components.chip-choice}'
+    states:
+      pressed: '{components.chip-choice-pressed}'
+      focused: '{components.focus-ring}'
+      disabled: '{components.chip-choice-disabled}'
+      selected: '{components.chip-choice-selected}'
+      selected-pressed: '{components.chip-choice-selected-pressed}'
+      selected-focused: '{components.focus-ring}'
+      selected-disabled: '{components.chip-choice-selected-disabled}'
+    sizes:
+      large: '{components.chip-choice}'
+  swatch:
+    base: '{components.chip-swatch}'
+    states:
+      pressed: '{components.chip-swatch-pressed}'
+      focused: '{components.focus-ring}'
+      disabled: '{components.chip-swatch-disabled}'
+      selected: '{components.chip-swatch-selected}'
+      selected-pressed: '{components.chip-swatch-selected-pressed}'
+      selected-focused: '{components.focus-ring}'
+      selected-disabled: '{components.chip-swatch-selected-disabled}'
+    sizes:
+      large: '{components.chip-swatch}'
+  filter:
+    base: '{components.chip-filter}'
+    states:
+      pressed: '{components.chip-filter-pressed}'
+      focused: '{components.focus-ring}'
+      disabled: '{components.chip-filter-disabled}'
+      selected: '{components.chip-filter-selected}'
+      selected-pressed: '{components.chip-filter-selected-pressed}'
+      selected-focused: '{components.focus-ring}'
+      selected-disabled: '{components.chip-filter-selected-disabled}'
+    sizes:
+      medium: '{components.chip-filter}'
+  filter-menu:
+    base: '{components.chip-filter-menu}'
+    states:
+      pressed: '{components.chip-filter-menu-pressed}'
+      focused: '{components.focus-ring}'
+      selected: '{components.chip-filter-menu-selected}'
+      selected-pressed: '{components.chip-filter-menu-selected-pressed}'
+      selected-focused: '{components.focus-ring}'
+    sizes:
+      medium: '{components.chip-filter-menu}'
+  group-sort:
+    base: '{components.chip-group-sort}'
+    states:
+      pressed: '{components.chip-group-sort-pressed}'
+      focused: '{components.focus-ring}'
+    sizes:
+      medium: '{components.chip-group-sort}'
+  never-suggest:
+    base: '{components.chip-never-suggest}'
+    states:
+      pressed: '{components.chip-never-suggest-pressed}'
+      focused: '{components.focus-ring}'
+    sizes:
+      large: '{components.chip-never-suggest}'
+  soft-dislike:
+    base: '{components.chip-soft-dislike}'
+    states:
+      pressed: '{components.chip-soft-dislike-pressed}'
+      focused: '{components.focus-ring}'
+    sizes:
+      large: '{components.chip-soft-dislike}'
+  add:
+    base: '{components.chip-add}'
+    states:
+      pressed: '{components.chip-add-pressed}'
+      focused: '{components.focus-ring}'
+    sizes:
+      medium: '{components.chip-medium}'
+      large: '{components.chip-add}'
+  never-suggest-add:
+    base: '{components.chip-never-suggest-add}'
+    states:
+      pressed: '{components.chip-never-suggest-add-pressed}'
+      focused: '{components.focus-ring}'
+    sizes:
+      large: '{components.chip-never-suggest-add}'
+
+# G4: the glyphs each variant draws, from icon.yaml, or the leadingIcon prop. The leading icon
+# takes iconColor when the entry names it, else the label colour; the trailing icon takes
+# trailingIconColor, else the label colour. A toggle state's icons also apply to its compounds.
+icons:
+  weather: { leading: '{props.leadingIcon}' }
+  context: { leading: '{props.leadingIcon}' }
+  condition-sunny: { leading: sun }
+  condition-rain: { leading: rain }
+  condition-cold: { leading: cold }
+  condition-hot: { leading: hot }
+  condition-windy: { leading: wind }
+  condition-snow: { leading: snow }
+  condition-evening: { leading: evening }
+  override: { leading: '{props.leadingIcon}', trailing: edit }
+  reason:
+    leading: '{props.leadingIcon}'
+    states:
+      expanded: { trailing: chevron-up }
+  choice:
+    states:
+      selected: { leading: check }
+  swatch:
+    states:
+      selected: { leading: check }
+  filter:
+    states:
+      selected: { leading: check }
+  filter-menu:
+    trailing: chevron-down
+    states:
+      selected: { leading: check }
+  group-sort: { leading: '{props.leadingIcon}', trailing: chevron-down }
+  never-suggest: { leading: never-suggest }
+  soft-dislike: { leading: minus-circle }
+  add: { leading: add }
+  never-suggest-add: { leading: add }
+
+# G12: the runs beside the label. Text parts take <name>Typography, <name>Color and <name>Gap from
+# the entry; the swatch takes the swatch* properties (README.md "Entry properties"). The separator
+# is copy, the same on both apps: U+00B7 MIDDLE DOT and a space.
+parts:
+  - name: prefix
+    kind: text
+    position: before-label
+    variants: [group-sort]
+  - name: swatch
+    kind: swatch
+    position: before-label
+    variants: [swatch]
+  - name: detail
+    kind: text
+    position: after-label
+    separator: '· '
+    variants: [filter, override]
+
+# Every chip is at least 44 pt high on iOS and pads its hit area to 48 dp on Android, even though
+# it draws 32 to 40; targets never overlap, so a wrapping row of chips is 44 pt apart on iOS and
+# 48 dp apart on Android (C03 draws 44 rows). The label and its parts scale with Dynamic Type and
+# Android font scale to 200 % and wrap, never truncated, so heights are minimums; chip rows wrap,
+# and chips drop under the text they share a line with (DESIGN.md Do's). Icons grow with the text.
+# Selection is never colour alone: the check shows. G7: the roles are iOS traits and Android
+# semantics: toggle = isToggle / Role.Checkbox, radio = isSelected in a group / Role.RadioButton,
+# disclosure = the expanded state in the value / expand and collapse actions, menu = a button with a
+# popup / Role.DropdownList. G1: no busy field.
+accessibility:
+  role: button
+  roles:
+    reason: disclosure
+    choice: selectable
+    swatch: selectable
+    filter: selectable
+    filter-menu: menu
+    group-sort: menu
+  selection: '{props.selection}'
+  label: '{props.label}'
+  labelOverride: '{props.accessibilityLabel}'
+  minTouchTarget: { ios: 44, android: 48 }
+
+# G10: synthetic samples for the gallery; the swatch sample is the fixed camera-ink role (black).
+gallery:
+  title: Chips
+  label: Wool
+  props:
+    leadingIcon: rain
+    prefix: 'Group:'
+    detail: '12'
+    swatch: '{colors.camera-ink}'
+  include: all
+
+testId: 'ds-{component}-{variant}-{size}-{state}'
+
+# Owner, 2026-10-21, in chat: "You do all. Add condition chips as well in the canvas, then in
+# DESIGN.md if its missing and then implement like any normal chip. I don't want to left anything
+# behind"; the owner approved the drafted contract the same day.
+approved: 2026-10-21

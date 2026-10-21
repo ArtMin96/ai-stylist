@@ -6,6 +6,7 @@ import { readFile } from 'node:fs/promises';
 import {
   CORRELATION_ID_EXAMPLES,
   type EventEnvelope as KernelEnvelope,
+  isId,
   newId,
 } from '@ai-stylist/shared-kernel';
 import { Ajv2020, type AnySchema } from 'ajv/dist/2020.js';
@@ -67,6 +68,28 @@ describe('demo.outbox-flow.requested.v1', () => {
       expect(validateEnvelope({ ...base, traceparent: malformed }), malformed).toBe(false);
     }
     expect(validateEnvelope({ ...base, traceparent: { traceId: 'x' } })).toBe(false);
+  });
+
+  it('accepts an optional usr_ subjectUserId, absent or present, and rejects any other value', () => {
+    const base = example as Record<string, unknown>;
+    expect(base).not.toHaveProperty('subjectUserId');
+    expect(validateEnvelope(base), JSON.stringify(validateEnvelope.errors)).toBe(true);
+    const subjectUserId = newId('user');
+    const withSubject = { ...base, subjectUserId };
+    expect(validateEnvelope(withSubject), JSON.stringify(validateEnvelope.errors)).toBe(true);
+    for (const malformed of [
+      'usr_not-a-ulid',
+      newId('event'),
+      subjectUserId.toLowerCase(),
+      `usr_8${subjectUserId.slice(5)}`,
+      '',
+    ]) {
+      // The schema pattern agrees with the kernel parser the job queue keys users by (`isId`).
+      expect(isId(malformed, 'user'), malformed).toBe(false);
+      expect(validateEnvelope({ ...base, subjectUserId: malformed }), malformed).toBe(false);
+    }
+    const asObject = { ...base, subjectUserId: { kind: 'user', id: subjectUserId } };
+    expect(validateEnvelope(asObject)).toBe(false);
   });
 
   it('accepts a correlationId of 1–128 [A-Za-z0-9._:-], rejects anything else (doc 14 §2)', () => {

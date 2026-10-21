@@ -88,6 +88,10 @@ export interface EventEnvelope {
     id?: string;
   };
   /**
+   * `usr_` ULID of the user the event is about (the data subject), whoever caused it; distinct from `actor`, the party that caused it. Lets per-user work be found and cancelled on account deletion (doc 06 §8 step 4, DEC-57). An id only, never another personal value; absent when the event concerns no single user
+   */
+  subjectUserId?: string;
+  /**
    * Correlation id of the logical operation (doc 14 §2): minted by the client per operation (or by the API when a request carried none or an invalid one) and carried request → outbox → job → worker as `x-correlation-id`. Our own correlation metadata, never user data. 1–128 characters of `[A-Za-z0-9._:-]` (a UUID, ULID or `corr-…`); producers and consumers accept exactly this pattern
    */
   correlationId: string;

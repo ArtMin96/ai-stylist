@@ -265,6 +265,42 @@ object AppTypography {
             m3Roles = emptyList(),
         )
 
+    val labelMdNormal: AppTextStyle =
+        AppTextStyle(
+            name = "label-md-normal",
+            fontFamily = "Figtree",
+            fontSize = 14.0,
+            fontWeight = 400,
+            lineHeight = 18.0,
+            letterSpacing = 0.0,
+            dynamicType = "subheadline",
+            m3Roles = emptyList(),
+        )
+
+    val labelMdMedium: AppTextStyle =
+        AppTextStyle(
+            name = "label-md-medium",
+            fontFamily = "Figtree",
+            fontSize = 14.0,
+            fontWeight = 500,
+            lineHeight = 18.0,
+            letterSpacing = 0.0,
+            dynamicType = "subheadline",
+            m3Roles = emptyList(),
+        )
+
+    val labelSmMedium: AppTextStyle =
+        AppTextStyle(
+            name = "label-sm-medium",
+            fontFamily = "Figtree",
+            fontSize = 13.0,
+            fontWeight = 500,
+            lineHeight = 18.0,
+            letterSpacing = 0.0,
+            dynamicType = "footnote",
+            m3Roles = emptyList(),
+        )
+
     val subheadMedium: AppTextStyle =
         AppTextStyle(
             name = "subhead-medium",
@@ -354,6 +390,9 @@ object AppTypography {
             AppTypography.largeTitleBar,
             AppTypography.labelMd,
             AppTypography.labelSm,
+            AppTypography.labelMdNormal,
+            AppTypography.labelMdMedium,
+            AppTypography.labelSmMedium,
             AppTypography.subheadMedium,
             AppTypography.labelAction,
             AppTypography.captionStrong,

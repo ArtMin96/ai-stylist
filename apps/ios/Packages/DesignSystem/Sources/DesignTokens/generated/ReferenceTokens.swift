@@ -247,6 +247,39 @@ nonisolated public enum AppTypography {
     m3Roles: []
   )
 
+  public static let labelMdNormal = AppTextStyle(
+    name: "label-md-normal",
+    fontFamily: "Figtree",
+    fontSize: 14.0,
+    fontWeight: 400,
+    lineHeight: 18.0,
+    letterSpacing: 0.0,
+    dynamicType: "subheadline",
+    m3Roles: []
+  )
+
+  public static let labelMdMedium = AppTextStyle(
+    name: "label-md-medium",
+    fontFamily: "Figtree",
+    fontSize: 14.0,
+    fontWeight: 500,
+    lineHeight: 18.0,
+    letterSpacing: 0.0,
+    dynamicType: "subheadline",
+    m3Roles: []
+  )
+
+  public static let labelSmMedium = AppTextStyle(
+    name: "label-sm-medium",
+    fontFamily: "Figtree",
+    fontSize: 13.0,
+    fontWeight: 500,
+    lineHeight: 18.0,
+    letterSpacing: 0.0,
+    dynamicType: "footnote",
+    m3Roles: []
+  )
+
   public static let subheadMedium = AppTextStyle(
     name: "subhead-medium",
     fontFamily: "Figtree",
@@ -329,6 +362,9 @@ nonisolated public enum AppTypography {
     AppTypography.largeTitleBar,
     AppTypography.labelMd,
     AppTypography.labelSm,
+    AppTypography.labelMdNormal,
+    AppTypography.labelMdMedium,
+    AppTypography.labelSmMedium,
     AppTypography.subheadMedium,
     AppTypography.labelAction,
     AppTypography.captionStrong,

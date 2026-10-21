@@ -57,8 +57,10 @@ logo come from "Garderi Colour Schemes" (https://claude.ai/artifact/Db28dfjbyvJg
      table (`AppIconGlyphs.swift` / `AppIconGlyphs.kt`) into
      `apps/ios/Packages/DesignSystem/Sources/DesignTokens/generated/` and
      `apps/android/core/designsystem/src/main/kotlin/app/aistylist/core/designsystem/generated/`.
-   - The component API holds the variant, size and state enums, the test IDs, the gallery list and one
-     merged look per allowed combination and scheme (`<Name>Spec` → `<Name>Appearance`). For an icon
+   - The component API holds the variant, size and state enums, the test IDs, the gallery list, the
+     role enum and each variant's role, the enum props, the parts with their separator resource keys,
+     the icon sources, the gallery samples and one merged look per allowed combination and scheme
+     (`<Name>Spec` → `<Name>Appearance`). For an icon
      set (`kind: icon-set`) it holds the glyph-name, set and size enums (`AppIconName`, `AppIconSet`,
      `AppIconSize`), `AppIconMetrics` and the glyph value types; gallery cells use `ds-icon-<id>`.
    - Generated files are never hand-edited. Only `contracts-engineer` or the main session runs

@@ -1540,6 +1540,166 @@ nonisolated public struct IconHeroTokens: Sendable, Equatable {
   public static let hcDark = IconHeroTokens(size: 56.0, strokeWidth: 1.7)
 }
 
+/// Component `chip-compact` per context: colours are role keys, sizes in pt/dp.
+nonisolated public struct ChipCompactTokens: Sendable, Equatable {
+  public let iconSize: Double
+  public let iconGap: Double
+  public let trailingIconSize: Double
+  public let trailingIconGap: Double
+
+  public static let light = ChipCompactTokens(
+    iconSize: 16.0,
+    iconGap: 6.0,
+    trailingIconSize: 12.0,
+    trailingIconGap: 6.0
+  )
+
+  public static let dark = ChipCompactTokens(iconSize: 16.0, iconGap: 6.0, trailingIconSize: 12.0, trailingIconGap: 6.0)
+
+  public static let brand = ChipCompactTokens(
+    iconSize: 16.0,
+    iconGap: 6.0,
+    trailingIconSize: 12.0,
+    trailingIconGap: 6.0
+  )
+
+  public static let hcLight = ChipCompactTokens(
+    iconSize: 16.0,
+    iconGap: 6.0,
+    trailingIconSize: 12.0,
+    trailingIconGap: 6.0
+  )
+
+  public static let hcDark = ChipCompactTokens(
+    iconSize: 16.0,
+    iconGap: 6.0,
+    trailingIconSize: 12.0,
+    trailingIconGap: 6.0
+  )
+}
+
+/// Component `chip-small` per context: colours are role keys, sizes in pt/dp.
+nonisolated public struct ChipSmallTokens: Sendable, Equatable {
+  public let iconSize: Double
+  public let iconGap: Double
+  public let trailingIconSize: Double
+  public let trailingIconGap: Double
+
+  public static let light = ChipSmallTokens(iconSize: 16.0, iconGap: 6.0, trailingIconSize: 12.0, trailingIconGap: 6.0)
+  public static let dark = ChipSmallTokens(iconSize: 16.0, iconGap: 6.0, trailingIconSize: 12.0, trailingIconGap: 6.0)
+  public static let brand = ChipSmallTokens(iconSize: 16.0, iconGap: 6.0, trailingIconSize: 12.0, trailingIconGap: 6.0)
+
+  public static let hcLight = ChipSmallTokens(
+    iconSize: 16.0,
+    iconGap: 6.0,
+    trailingIconSize: 12.0,
+    trailingIconGap: 6.0
+  )
+
+  public static let hcDark = ChipSmallTokens(iconSize: 16.0, iconGap: 6.0, trailingIconSize: 12.0, trailingIconGap: 6.0)
+}
+
+/// Component `chip-medium` per context: colours are role keys, sizes in pt/dp.
+nonisolated public struct ChipMediumTokens: Sendable, Equatable {
+  public let typography: AppTextStyle
+  public let height: Double
+  public let paddingTop: Double
+  public let paddingEnd: Double
+  public let paddingBottom: Double
+  public let paddingStart: Double
+  public let iconSize: Double
+  public let iconGap: Double
+  public let trailingIconSize: Double
+  public let trailingIconGap: Double
+
+  public static let light = ChipMediumTokens(
+    typography: AppTypography.labelMd,
+    height: 36.0,
+    paddingTop: 0.0,
+    paddingEnd: 14.0,
+    paddingBottom: 0.0,
+    paddingStart: 10.0,
+    iconSize: 16.0,
+    iconGap: 4.0,
+    trailingIconSize: 16.0,
+    trailingIconGap: 4.0
+  )
+
+  public static let dark = ChipMediumTokens(
+    typography: AppTypography.labelMd,
+    height: 36.0,
+    paddingTop: 0.0,
+    paddingEnd: 14.0,
+    paddingBottom: 0.0,
+    paddingStart: 10.0,
+    iconSize: 16.0,
+    iconGap: 4.0,
+    trailingIconSize: 16.0,
+    trailingIconGap: 4.0
+  )
+
+  public static let brand = ChipMediumTokens(
+    typography: AppTypography.labelMd,
+    height: 36.0,
+    paddingTop: 0.0,
+    paddingEnd: 14.0,
+    paddingBottom: 0.0,
+    paddingStart: 10.0,
+    iconSize: 16.0,
+    iconGap: 4.0,
+    trailingIconSize: 16.0,
+    trailingIconGap: 4.0
+  )
+
+  public static let hcLight = ChipMediumTokens(
+    typography: AppTypography.labelMd,
+    height: 36.0,
+    paddingTop: 0.0,
+    paddingEnd: 14.0,
+    paddingBottom: 0.0,
+    paddingStart: 10.0,
+    iconSize: 16.0,
+    iconGap: 4.0,
+    trailingIconSize: 16.0,
+    trailingIconGap: 4.0
+  )
+
+  public static let hcDark = ChipMediumTokens(
+    typography: AppTypography.labelMd,
+    height: 36.0,
+    paddingTop: 0.0,
+    paddingEnd: 14.0,
+    paddingBottom: 0.0,
+    paddingStart: 10.0,
+    iconSize: 16.0,
+    iconGap: 4.0,
+    trailingIconSize: 16.0,
+    trailingIconGap: 4.0
+  )
+}
+
+/// Component `chip-large` per context: colours are role keys, sizes in pt/dp.
+nonisolated public struct ChipLargeTokens: Sendable, Equatable {
+  public let iconSize: Double
+  public let iconGap: Double
+
+  public static let light = ChipLargeTokens(iconSize: 20.0, iconGap: 6.0)
+  public static let dark = ChipLargeTokens(iconSize: 20.0, iconGap: 6.0)
+  public static let brand = ChipLargeTokens(iconSize: 20.0, iconGap: 6.0)
+  public static let hcLight = ChipLargeTokens(iconSize: 20.0, iconGap: 6.0)
+  public static let hcDark = ChipLargeTokens(iconSize: 20.0, iconGap: 6.0)
+}
+
+/// Component `chip-outline-ring` per context: colours are role keys, sizes in pt/dp.
+nonisolated public struct ChipOutlineRingTokens: Sendable, Equatable {
+  public let width: Double
+  public static let light = ChipOutlineRingTokens(width: 1.0)
+  public static let dark = ChipOutlineRingTokens(width: 1.0)
+  public static let brand = ChipOutlineRingTokens(width: 1.0)
+  public static let hcLight = ChipOutlineRingTokens(width: 1.0)
+  public static let hcDark = ChipOutlineRingTokens(width: 1.0)
+}
+
 /// Component `chip-weather` per context: colours are role keys, sizes in pt/dp.
 nonisolated public struct ChipWeatherTokens: Sendable, Equatable {
   public let backgroundColor: AppColorRole
@@ -1631,40 +1791,81 @@ nonisolated public struct ChipContextTokens: Sendable, Equatable {
   public let textColor: AppColorRole
   public let typography: AppTextStyle
   public let rounded: Double
+  public let height: Double
+  public let paddingTop: Double
+  public let paddingEnd: Double
+  public let paddingBottom: Double
+  public let paddingStart: Double
+  public let pressed: Pressed
+
+  nonisolated public struct Pressed: Sendable, Equatable {
+    public let backgroundColor: AppColorRole
+    public let textColor: AppColorRole
+  }
 
   public static let light = ChipContextTokens(
     backgroundColor: .surface2,
     textColor: .text,
     typography: AppTypography.labelSm,
-    rounded: AppRadius.full
+    rounded: AppRadius.full,
+    height: 34.0,
+    paddingTop: 0.0,
+    paddingEnd: 14.0,
+    paddingBottom: 0.0,
+    paddingStart: 11.0,
+    pressed: Pressed(backgroundColor: .divider, textColor: .text)
   )
 
   public static let dark = ChipContextTokens(
     backgroundColor: .surface2,
     textColor: .text,
     typography: AppTypography.labelSm,
-    rounded: AppRadius.full
+    rounded: AppRadius.full,
+    height: 34.0,
+    paddingTop: 0.0,
+    paddingEnd: 14.0,
+    paddingBottom: 0.0,
+    paddingStart: 11.0,
+    pressed: Pressed(backgroundColor: .divider, textColor: .text)
   )
 
   public static let brand = ChipContextTokens(
     backgroundColor: .surface2,
     textColor: .text,
     typography: AppTypography.labelSm,
-    rounded: AppRadius.full
+    rounded: AppRadius.full,
+    height: 34.0,
+    paddingTop: 0.0,
+    paddingEnd: 14.0,
+    paddingBottom: 0.0,
+    paddingStart: 11.0,
+    pressed: Pressed(backgroundColor: .divider, textColor: .text)
   )
 
   public static let hcLight = ChipContextTokens(
     backgroundColor: .surface2,
     textColor: .text,
     typography: AppTypography.labelSm,
-    rounded: AppRadius.full
+    rounded: AppRadius.full,
+    height: 34.0,
+    paddingTop: 0.0,
+    paddingEnd: 14.0,
+    paddingBottom: 0.0,
+    paddingStart: 11.0,
+    pressed: Pressed(backgroundColor: .divider, textColor: .text)
   )
 
   public static let hcDark = ChipContextTokens(
     backgroundColor: .surface2,
     textColor: .text,
     typography: AppTypography.labelSm,
-    rounded: AppRadius.full
+    rounded: AppRadius.full,
+    height: 34.0,
+    paddingTop: 0.0,
+    paddingEnd: 14.0,
+    paddingBottom: 0.0,
+    paddingStart: 11.0,
+    pressed: Pressed(backgroundColor: .divider, textColor: .text)
   )
 }
 
@@ -1672,6 +1873,7 @@ nonisolated public struct ChipContextTokens: Sendable, Equatable {
 nonisolated public struct ChipReasonTokens: Sendable, Equatable {
   public let backgroundColor: AppColorRole
   public let textColor: AppColorRole
+  public let iconColor: AppColorRole
   public let typography: AppTextStyle
   public let rounded: Double
   public let height: Double
@@ -1679,16 +1881,33 @@ nonisolated public struct ChipReasonTokens: Sendable, Equatable {
   public let paddingEnd: Double
   public let paddingBottom: Double
   public let paddingStart: Double
+  public let pressed: Pressed
   public let expanded: Expanded
+  public let expandedPressed: ExpandedPressed
+
+  nonisolated public struct Pressed: Sendable, Equatable {
+    public let backgroundColor: AppColorRole
+    public let textColor: AppColorRole
+  }
 
   nonisolated public struct Expanded: Sendable, Equatable {
     public let backgroundColor: AppColorRole
     public let textColor: AppColorRole
+    public let iconColor: AppColorRole
+    public let paddingTop: Double
+    public let paddingEnd: Double
+    public let paddingBottom: Double
+    public let paddingStart: Double
+  }
+
+  nonisolated public struct ExpandedPressed: Sendable, Equatable {
+    public let overlayColor: AppColorRole
   }
 
   public static let light = ChipReasonTokens(
     backgroundColor: .surface2,
     textColor: .text,
+    iconColor: .primaryText,
     typography: AppTypography.labelSm,
     rounded: AppRadius.full,
     height: 32.0,
@@ -1696,12 +1915,23 @@ nonisolated public struct ChipReasonTokens: Sendable, Equatable {
     paddingEnd: 12.0,
     paddingBottom: 0.0,
     paddingStart: 10.0,
-    expanded: Expanded(backgroundColor: .primaryText, textColor: .onPrimary)
+    pressed: Pressed(backgroundColor: .divider, textColor: .text),
+    expanded: Expanded(
+      backgroundColor: .primaryText,
+      textColor: .onPrimary,
+      iconColor: .onPrimary,
+      paddingTop: 0.0,
+      paddingEnd: 10.0,
+      paddingBottom: 0.0,
+      paddingStart: 10.0
+    ),
+    expandedPressed: ExpandedPressed(overlayColor: .pressedOverlay)
   )
 
   public static let dark = ChipReasonTokens(
     backgroundColor: .surface2,
     textColor: .text,
+    iconColor: .primaryText,
     typography: AppTypography.labelSm,
     rounded: AppRadius.full,
     height: 32.0,
@@ -1709,12 +1939,23 @@ nonisolated public struct ChipReasonTokens: Sendable, Equatable {
     paddingEnd: 12.0,
     paddingBottom: 0.0,
     paddingStart: 10.0,
-    expanded: Expanded(backgroundColor: .primaryText, textColor: .onPrimary)
+    pressed: Pressed(backgroundColor: .divider, textColor: .text),
+    expanded: Expanded(
+      backgroundColor: .primaryText,
+      textColor: .onPrimary,
+      iconColor: .onPrimary,
+      paddingTop: 0.0,
+      paddingEnd: 10.0,
+      paddingBottom: 0.0,
+      paddingStart: 10.0
+    ),
+    expandedPressed: ExpandedPressed(overlayColor: .pressedOverlay)
   )
 
   public static let brand = ChipReasonTokens(
     backgroundColor: .surface2,
     textColor: .text,
+    iconColor: .primaryText,
     typography: AppTypography.labelSm,
     rounded: AppRadius.full,
     height: 32.0,
@@ -1722,12 +1963,23 @@ nonisolated public struct ChipReasonTokens: Sendable, Equatable {
     paddingEnd: 12.0,
     paddingBottom: 0.0,
     paddingStart: 10.0,
-    expanded: Expanded(backgroundColor: .primaryText, textColor: .onPrimary)
+    pressed: Pressed(backgroundColor: .divider, textColor: .text),
+    expanded: Expanded(
+      backgroundColor: .primaryText,
+      textColor: .onPrimary,
+      iconColor: .onPrimary,
+      paddingTop: 0.0,
+      paddingEnd: 10.0,
+      paddingBottom: 0.0,
+      paddingStart: 10.0
+    ),
+    expandedPressed: ExpandedPressed(overlayColor: .pressedOverlay)
   )
 
   public static let hcLight = ChipReasonTokens(
     backgroundColor: .surface2,
     textColor: .text,
+    iconColor: .primaryText,
     typography: AppTypography.labelSm,
     rounded: AppRadius.full,
     height: 32.0,
@@ -1735,12 +1987,23 @@ nonisolated public struct ChipReasonTokens: Sendable, Equatable {
     paddingEnd: 12.0,
     paddingBottom: 0.0,
     paddingStart: 10.0,
-    expanded: Expanded(backgroundColor: .primaryText, textColor: .onPrimary)
+    pressed: Pressed(backgroundColor: .divider, textColor: .text),
+    expanded: Expanded(
+      backgroundColor: .primaryText,
+      textColor: .onPrimary,
+      iconColor: .onPrimary,
+      paddingTop: 0.0,
+      paddingEnd: 10.0,
+      paddingBottom: 0.0,
+      paddingStart: 10.0
+    ),
+    expandedPressed: ExpandedPressed(overlayColor: .pressedOverlay)
   )
 
   public static let hcDark = ChipReasonTokens(
     backgroundColor: .surface2,
     textColor: .text,
+    iconColor: .primaryText,
     typography: AppTypography.labelSm,
     rounded: AppRadius.full,
     height: 32.0,
@@ -1748,7 +2011,17 @@ nonisolated public struct ChipReasonTokens: Sendable, Equatable {
     paddingEnd: 12.0,
     paddingBottom: 0.0,
     paddingStart: 10.0,
-    expanded: Expanded(backgroundColor: .primaryText, textColor: .onPrimary)
+    pressed: Pressed(backgroundColor: .divider, textColor: .text),
+    expanded: Expanded(
+      backgroundColor: .primaryText,
+      textColor: .onPrimary,
+      iconColor: .onPrimary,
+      paddingTop: 0.0,
+      paddingEnd: 10.0,
+      paddingBottom: 0.0,
+      paddingStart: 10.0
+    ),
+    expandedPressed: ExpandedPressed(overlayColor: .pressedOverlay)
   )
 }
 
@@ -1756,6 +2029,7 @@ nonisolated public struct ChipReasonTokens: Sendable, Equatable {
 nonisolated public struct ChipChoiceTokens: Sendable, Equatable {
   public let backgroundColor: AppColorRole
   public let textColor: AppColorRole
+  public let borderColor: AppColorRole
   public let typography: AppTextStyle
   public let rounded: Double
   public let height: Double
@@ -1763,17 +2037,48 @@ nonisolated public struct ChipChoiceTokens: Sendable, Equatable {
   public let paddingEnd: Double
   public let paddingBottom: Double
   public let paddingStart: Double
+  public let pressed: Pressed
+  public let disabled: Disabled
   public let selected: Selected
+  public let selectedPressed: SelectedPressed
+  public let selectedDisabled: SelectedDisabled
+
+  nonisolated public struct Pressed: Sendable, Equatable {
+    public let backgroundColor: AppColorRole
+    public let textColor: AppColorRole
+  }
+
+  nonisolated public struct Disabled: Sendable, Equatable {
+    public let textColor: AppColorRole
+    public let borderColor: AppColorRole
+    public let backgroundColor: AppColorRole
+  }
 
   nonisolated public struct Selected: Sendable, Equatable {
     public let backgroundColor: AppColorRole
     public let textColor: AppColorRole
+    public let borderColor: AppColorRole
     public let typography: AppTextStyle
+    public let paddingTop: Double
+    public let paddingEnd: Double
+    public let paddingBottom: Double
+    public let paddingStart: Double
+  }
+
+  nonisolated public struct SelectedPressed: Sendable, Equatable {
+    public let overlayColor: AppColorRole
+  }
+
+  nonisolated public struct SelectedDisabled: Sendable, Equatable {
+    public let textColor: AppColorRole
+    public let borderColor: AppColorRole
+    public let backgroundColor: AppColorRole
   }
 
   public static let light = ChipChoiceTokens(
     backgroundColor: .surface,
     textColor: .text,
+    borderColor: .outline,
     typography: AppTypography.subheadMedium,
     rounded: AppRadius.full,
     height: 40.0,
@@ -1781,12 +2086,26 @@ nonisolated public struct ChipChoiceTokens: Sendable, Equatable {
     paddingEnd: 14.0,
     paddingBottom: 0.0,
     paddingStart: 14.0,
-    selected: Selected(backgroundColor: .primaryText, textColor: .onPrimary, typography: AppTypography.subhead)
+    pressed: Pressed(backgroundColor: .surface2, textColor: .text),
+    disabled: Disabled(textColor: .textSecondary, borderColor: .divider, backgroundColor: .surface2),
+    selected: Selected(
+      backgroundColor: .primaryText,
+      textColor: .onPrimary,
+      borderColor: .primaryText,
+      typography: AppTypography.subhead,
+      paddingTop: 0.0,
+      paddingEnd: 14.0,
+      paddingBottom: 0.0,
+      paddingStart: 10.0
+    ),
+    selectedPressed: SelectedPressed(overlayColor: .pressedOverlay),
+    selectedDisabled: SelectedDisabled(textColor: .textSecondary, borderColor: .divider, backgroundColor: .surface2)
   )
 
   public static let dark = ChipChoiceTokens(
     backgroundColor: .surface,
     textColor: .text,
+    borderColor: .outline,
     typography: AppTypography.subheadMedium,
     rounded: AppRadius.full,
     height: 40.0,
@@ -1794,12 +2113,26 @@ nonisolated public struct ChipChoiceTokens: Sendable, Equatable {
     paddingEnd: 14.0,
     paddingBottom: 0.0,
     paddingStart: 14.0,
-    selected: Selected(backgroundColor: .primaryText, textColor: .onPrimary, typography: AppTypography.subhead)
+    pressed: Pressed(backgroundColor: .surface2, textColor: .text),
+    disabled: Disabled(textColor: .textSecondary, borderColor: .divider, backgroundColor: .surface),
+    selected: Selected(
+      backgroundColor: .primaryText,
+      textColor: .onPrimary,
+      borderColor: .primaryText,
+      typography: AppTypography.subhead,
+      paddingTop: 0.0,
+      paddingEnd: 14.0,
+      paddingBottom: 0.0,
+      paddingStart: 10.0
+    ),
+    selectedPressed: SelectedPressed(overlayColor: .pressedOverlay),
+    selectedDisabled: SelectedDisabled(textColor: .textSecondary, borderColor: .divider, backgroundColor: .surface)
   )
 
   public static let brand = ChipChoiceTokens(
     backgroundColor: .surface,
     textColor: .text,
+    borderColor: .outline,
     typography: AppTypography.subheadMedium,
     rounded: AppRadius.full,
     height: 40.0,
@@ -1807,12 +2140,26 @@ nonisolated public struct ChipChoiceTokens: Sendable, Equatable {
     paddingEnd: 14.0,
     paddingBottom: 0.0,
     paddingStart: 14.0,
-    selected: Selected(backgroundColor: .primaryText, textColor: .onPrimary, typography: AppTypography.subhead)
+    pressed: Pressed(backgroundColor: .surface2, textColor: .text),
+    disabled: Disabled(textColor: .textSecondary, borderColor: .divider, backgroundColor: .surface),
+    selected: Selected(
+      backgroundColor: .primaryText,
+      textColor: .onPrimary,
+      borderColor: .primaryText,
+      typography: AppTypography.subhead,
+      paddingTop: 0.0,
+      paddingEnd: 14.0,
+      paddingBottom: 0.0,
+      paddingStart: 10.0
+    ),
+    selectedPressed: SelectedPressed(overlayColor: .pressedOverlay),
+    selectedDisabled: SelectedDisabled(textColor: .textSecondary, borderColor: .divider, backgroundColor: .surface)
   )
 
   public static let hcLight = ChipChoiceTokens(
     backgroundColor: .surface,
     textColor: .text,
+    borderColor: .outline,
     typography: AppTypography.subheadMedium,
     rounded: AppRadius.full,
     height: 40.0,
@@ -1820,12 +2167,26 @@ nonisolated public struct ChipChoiceTokens: Sendable, Equatable {
     paddingEnd: 14.0,
     paddingBottom: 0.0,
     paddingStart: 14.0,
-    selected: Selected(backgroundColor: .primaryText, textColor: .onPrimary, typography: AppTypography.subhead)
+    pressed: Pressed(backgroundColor: .surface2, textColor: .text),
+    disabled: Disabled(textColor: .textSecondary, borderColor: .divider, backgroundColor: .surface2),
+    selected: Selected(
+      backgroundColor: .primaryText,
+      textColor: .onPrimary,
+      borderColor: .primaryText,
+      typography: AppTypography.subhead,
+      paddingTop: 0.0,
+      paddingEnd: 14.0,
+      paddingBottom: 0.0,
+      paddingStart: 10.0
+    ),
+    selectedPressed: SelectedPressed(overlayColor: .pressedOverlay),
+    selectedDisabled: SelectedDisabled(textColor: .textSecondary, borderColor: .divider, backgroundColor: .surface2)
   )
 
   public static let hcDark = ChipChoiceTokens(
     backgroundColor: .surface,
     textColor: .text,
+    borderColor: .outline,
     typography: AppTypography.subheadMedium,
     rounded: AppRadius.full,
     height: 40.0,
@@ -1833,7 +2194,20 @@ nonisolated public struct ChipChoiceTokens: Sendable, Equatable {
     paddingEnd: 14.0,
     paddingBottom: 0.0,
     paddingStart: 14.0,
-    selected: Selected(backgroundColor: .primaryText, textColor: .onPrimary, typography: AppTypography.subhead)
+    pressed: Pressed(backgroundColor: .surface2, textColor: .text),
+    disabled: Disabled(textColor: .textSecondary, borderColor: .divider, backgroundColor: .surface),
+    selected: Selected(
+      backgroundColor: .primaryText,
+      textColor: .onPrimary,
+      borderColor: .primaryText,
+      typography: AppTypography.subhead,
+      paddingTop: 0.0,
+      paddingEnd: 14.0,
+      paddingBottom: 0.0,
+      paddingStart: 10.0
+    ),
+    selectedPressed: SelectedPressed(overlayColor: .pressedOverlay),
+    selectedDisabled: SelectedDisabled(textColor: .textSecondary, borderColor: .divider, backgroundColor: .surface)
   )
 }
 
@@ -1841,6 +2215,8 @@ nonisolated public struct ChipChoiceTokens: Sendable, Equatable {
 nonisolated public struct ChipFilterTokens: Sendable, Equatable {
   public let backgroundColor: AppColorRole
   public let textColor: AppColorRole
+  public let borderColor: AppColorRole
+  public let detailColor: AppColorRole
   public let typography: AppTextStyle
   public let rounded: Double
   public let height: Double
@@ -1848,16 +2224,52 @@ nonisolated public struct ChipFilterTokens: Sendable, Equatable {
   public let paddingEnd: Double
   public let paddingBottom: Double
   public let paddingStart: Double
+  public let detailTypography: AppTextStyle
+  public let detailGap: Double
+  public let pressed: Pressed
+  public let disabled: Disabled
   public let selected: Selected
+  public let selectedPressed: SelectedPressed
+  public let selectedDisabled: SelectedDisabled
+
+  nonisolated public struct Pressed: Sendable, Equatable {
+    public let backgroundColor: AppColorRole
+    public let textColor: AppColorRole
+  }
+
+  nonisolated public struct Disabled: Sendable, Equatable {
+    public let textColor: AppColorRole
+    public let borderColor: AppColorRole
+    public let backgroundColor: AppColorRole
+  }
 
   nonisolated public struct Selected: Sendable, Equatable {
     public let backgroundColor: AppColorRole
     public let textColor: AppColorRole
+    public let borderColor: AppColorRole
+    public let detailColor: AppColorRole
+    public let paddingTop: Double
+    public let paddingEnd: Double
+    public let paddingBottom: Double
+    public let paddingStart: Double
+  }
+
+  nonisolated public struct SelectedPressed: Sendable, Equatable {
+    public let overlayColor: AppColorRole
+  }
+
+  nonisolated public struct SelectedDisabled: Sendable, Equatable {
+    public let textColor: AppColorRole
+    public let borderColor: AppColorRole
+    public let detailColor: AppColorRole
+    public let backgroundColor: AppColorRole
   }
 
   public static let light = ChipFilterTokens(
     backgroundColor: .surface,
     textColor: .text,
+    borderColor: .outline,
+    detailColor: .textSecondary,
     typography: AppTypography.labelMd,
     rounded: AppRadius.full,
     height: 36.0,
@@ -1865,12 +2277,34 @@ nonisolated public struct ChipFilterTokens: Sendable, Equatable {
     paddingEnd: 14.0,
     paddingBottom: 0.0,
     paddingStart: 14.0,
-    selected: Selected(backgroundColor: .primaryText, textColor: .onPrimary)
+    detailTypography: AppTypography.labelMdMedium,
+    detailGap: 4.0,
+    pressed: Pressed(backgroundColor: .surface2, textColor: .text),
+    disabled: Disabled(textColor: .textSecondary, borderColor: .divider, backgroundColor: .surface2),
+    selected: Selected(
+      backgroundColor: .primaryText,
+      textColor: .onPrimary,
+      borderColor: .primaryText,
+      detailColor: .onPrimary,
+      paddingTop: 0.0,
+      paddingEnd: 14.0,
+      paddingBottom: 0.0,
+      paddingStart: 10.0
+    ),
+    selectedPressed: SelectedPressed(overlayColor: .pressedOverlay),
+    selectedDisabled: SelectedDisabled(
+      textColor: .textSecondary,
+      borderColor: .divider,
+      detailColor: .textSecondary,
+      backgroundColor: .surface2
+    )
   )
 
   public static let dark = ChipFilterTokens(
     backgroundColor: .surface,
     textColor: .text,
+    borderColor: .outline,
+    detailColor: .textSecondary,
     typography: AppTypography.labelMd,
     rounded: AppRadius.full,
     height: 36.0,
@@ -1878,12 +2312,34 @@ nonisolated public struct ChipFilterTokens: Sendable, Equatable {
     paddingEnd: 14.0,
     paddingBottom: 0.0,
     paddingStart: 14.0,
-    selected: Selected(backgroundColor: .primaryText, textColor: .onPrimary)
+    detailTypography: AppTypography.labelMdMedium,
+    detailGap: 4.0,
+    pressed: Pressed(backgroundColor: .surface2, textColor: .text),
+    disabled: Disabled(textColor: .textSecondary, borderColor: .divider, backgroundColor: .surface),
+    selected: Selected(
+      backgroundColor: .primaryText,
+      textColor: .onPrimary,
+      borderColor: .primaryText,
+      detailColor: .onPrimary,
+      paddingTop: 0.0,
+      paddingEnd: 14.0,
+      paddingBottom: 0.0,
+      paddingStart: 10.0
+    ),
+    selectedPressed: SelectedPressed(overlayColor: .pressedOverlay),
+    selectedDisabled: SelectedDisabled(
+      textColor: .textSecondary,
+      borderColor: .divider,
+      detailColor: .textSecondary,
+      backgroundColor: .surface
+    )
   )
 
   public static let brand = ChipFilterTokens(
     backgroundColor: .surface,
     textColor: .text,
+    borderColor: .outline,
+    detailColor: .textSecondary,
     typography: AppTypography.labelMd,
     rounded: AppRadius.full,
     height: 36.0,
@@ -1891,12 +2347,34 @@ nonisolated public struct ChipFilterTokens: Sendable, Equatable {
     paddingEnd: 14.0,
     paddingBottom: 0.0,
     paddingStart: 14.0,
-    selected: Selected(backgroundColor: .primaryText, textColor: .onPrimary)
+    detailTypography: AppTypography.labelMdMedium,
+    detailGap: 4.0,
+    pressed: Pressed(backgroundColor: .surface2, textColor: .text),
+    disabled: Disabled(textColor: .textSecondary, borderColor: .divider, backgroundColor: .surface),
+    selected: Selected(
+      backgroundColor: .primaryText,
+      textColor: .onPrimary,
+      borderColor: .primaryText,
+      detailColor: .onPrimary,
+      paddingTop: 0.0,
+      paddingEnd: 14.0,
+      paddingBottom: 0.0,
+      paddingStart: 10.0
+    ),
+    selectedPressed: SelectedPressed(overlayColor: .pressedOverlay),
+    selectedDisabled: SelectedDisabled(
+      textColor: .textSecondary,
+      borderColor: .divider,
+      detailColor: .textSecondary,
+      backgroundColor: .surface
+    )
   )
 
   public static let hcLight = ChipFilterTokens(
     backgroundColor: .surface,
     textColor: .text,
+    borderColor: .outline,
+    detailColor: .textSecondary,
     typography: AppTypography.labelMd,
     rounded: AppRadius.full,
     height: 36.0,
@@ -1904,12 +2382,34 @@ nonisolated public struct ChipFilterTokens: Sendable, Equatable {
     paddingEnd: 14.0,
     paddingBottom: 0.0,
     paddingStart: 14.0,
-    selected: Selected(backgroundColor: .primaryText, textColor: .onPrimary)
+    detailTypography: AppTypography.labelMdMedium,
+    detailGap: 4.0,
+    pressed: Pressed(backgroundColor: .surface2, textColor: .text),
+    disabled: Disabled(textColor: .textSecondary, borderColor: .divider, backgroundColor: .surface2),
+    selected: Selected(
+      backgroundColor: .primaryText,
+      textColor: .onPrimary,
+      borderColor: .primaryText,
+      detailColor: .onPrimary,
+      paddingTop: 0.0,
+      paddingEnd: 14.0,
+      paddingBottom: 0.0,
+      paddingStart: 10.0
+    ),
+    selectedPressed: SelectedPressed(overlayColor: .pressedOverlay),
+    selectedDisabled: SelectedDisabled(
+      textColor: .textSecondary,
+      borderColor: .divider,
+      detailColor: .textSecondary,
+      backgroundColor: .surface2
+    )
   )
 
   public static let hcDark = ChipFilterTokens(
     backgroundColor: .surface,
     textColor: .text,
+    borderColor: .outline,
+    detailColor: .textSecondary,
     typography: AppTypography.labelMd,
     rounded: AppRadius.full,
     height: 36.0,
@@ -1917,13 +2417,751 @@ nonisolated public struct ChipFilterTokens: Sendable, Equatable {
     paddingEnd: 14.0,
     paddingBottom: 0.0,
     paddingStart: 14.0,
-    selected: Selected(backgroundColor: .primaryText, textColor: .onPrimary)
+    detailTypography: AppTypography.labelMdMedium,
+    detailGap: 4.0,
+    pressed: Pressed(backgroundColor: .surface2, textColor: .text),
+    disabled: Disabled(textColor: .textSecondary, borderColor: .divider, backgroundColor: .surface),
+    selected: Selected(
+      backgroundColor: .primaryText,
+      textColor: .onPrimary,
+      borderColor: .primaryText,
+      detailColor: .onPrimary,
+      paddingTop: 0.0,
+      paddingEnd: 14.0,
+      paddingBottom: 0.0,
+      paddingStart: 10.0
+    ),
+    selectedPressed: SelectedPressed(overlayColor: .pressedOverlay),
+    selectedDisabled: SelectedDisabled(
+      textColor: .textSecondary,
+      borderColor: .divider,
+      detailColor: .textSecondary,
+      backgroundColor: .surface
+    )
+  )
+}
+
+/// Component `chip-filter-menu` per context: colours are role keys, sizes in pt/dp.
+nonisolated public struct ChipFilterMenuTokens: Sendable, Equatable {
+  public let backgroundColor: AppColorRole
+  public let textColor: AppColorRole
+  public let borderColor: AppColorRole
+  public let typography: AppTextStyle
+  public let rounded: Double
+  public let height: Double
+  public let paddingTop: Double
+  public let paddingEnd: Double
+  public let paddingBottom: Double
+  public let paddingStart: Double
+  public let pressed: Pressed
+  public let selected: Selected
+  public let selectedPressed: SelectedPressed
+
+  nonisolated public struct Pressed: Sendable, Equatable {
+    public let backgroundColor: AppColorRole
+    public let textColor: AppColorRole
+  }
+
+  nonisolated public struct Selected: Sendable, Equatable {
+    public let backgroundColor: AppColorRole
+    public let textColor: AppColorRole
+    public let borderColor: AppColorRole
+    public let paddingTop: Double
+    public let paddingEnd: Double
+    public let paddingBottom: Double
+    public let paddingStart: Double
+  }
+
+  nonisolated public struct SelectedPressed: Sendable, Equatable {
+    public let overlayColor: AppColorRole
+  }
+
+  public static let light = ChipFilterMenuTokens(
+    backgroundColor: .surface,
+    textColor: .text,
+    borderColor: .outline,
+    typography: AppTypography.labelMd,
+    rounded: AppRadius.full,
+    height: 36.0,
+    paddingTop: 0.0,
+    paddingEnd: 10.0,
+    paddingBottom: 0.0,
+    paddingStart: 14.0,
+    pressed: Pressed(backgroundColor: .surface2, textColor: .text),
+    selected: Selected(
+      backgroundColor: .primaryText,
+      textColor: .onPrimary,
+      borderColor: .primaryText,
+      paddingTop: 0.0,
+      paddingEnd: 10.0,
+      paddingBottom: 0.0,
+      paddingStart: 10.0
+    ),
+    selectedPressed: SelectedPressed(overlayColor: .pressedOverlay)
+  )
+
+  public static let dark = ChipFilterMenuTokens(
+    backgroundColor: .surface,
+    textColor: .text,
+    borderColor: .outline,
+    typography: AppTypography.labelMd,
+    rounded: AppRadius.full,
+    height: 36.0,
+    paddingTop: 0.0,
+    paddingEnd: 10.0,
+    paddingBottom: 0.0,
+    paddingStart: 14.0,
+    pressed: Pressed(backgroundColor: .surface2, textColor: .text),
+    selected: Selected(
+      backgroundColor: .primaryText,
+      textColor: .onPrimary,
+      borderColor: .primaryText,
+      paddingTop: 0.0,
+      paddingEnd: 10.0,
+      paddingBottom: 0.0,
+      paddingStart: 10.0
+    ),
+    selectedPressed: SelectedPressed(overlayColor: .pressedOverlay)
+  )
+
+  public static let brand = ChipFilterMenuTokens(
+    backgroundColor: .surface,
+    textColor: .text,
+    borderColor: .outline,
+    typography: AppTypography.labelMd,
+    rounded: AppRadius.full,
+    height: 36.0,
+    paddingTop: 0.0,
+    paddingEnd: 10.0,
+    paddingBottom: 0.0,
+    paddingStart: 14.0,
+    pressed: Pressed(backgroundColor: .surface2, textColor: .text),
+    selected: Selected(
+      backgroundColor: .primaryText,
+      textColor: .onPrimary,
+      borderColor: .primaryText,
+      paddingTop: 0.0,
+      paddingEnd: 10.0,
+      paddingBottom: 0.0,
+      paddingStart: 10.0
+    ),
+    selectedPressed: SelectedPressed(overlayColor: .pressedOverlay)
+  )
+
+  public static let hcLight = ChipFilterMenuTokens(
+    backgroundColor: .surface,
+    textColor: .text,
+    borderColor: .outline,
+    typography: AppTypography.labelMd,
+    rounded: AppRadius.full,
+    height: 36.0,
+    paddingTop: 0.0,
+    paddingEnd: 10.0,
+    paddingBottom: 0.0,
+    paddingStart: 14.0,
+    pressed: Pressed(backgroundColor: .surface2, textColor: .text),
+    selected: Selected(
+      backgroundColor: .primaryText,
+      textColor: .onPrimary,
+      borderColor: .primaryText,
+      paddingTop: 0.0,
+      paddingEnd: 10.0,
+      paddingBottom: 0.0,
+      paddingStart: 10.0
+    ),
+    selectedPressed: SelectedPressed(overlayColor: .pressedOverlay)
+  )
+
+  public static let hcDark = ChipFilterMenuTokens(
+    backgroundColor: .surface,
+    textColor: .text,
+    borderColor: .outline,
+    typography: AppTypography.labelMd,
+    rounded: AppRadius.full,
+    height: 36.0,
+    paddingTop: 0.0,
+    paddingEnd: 10.0,
+    paddingBottom: 0.0,
+    paddingStart: 14.0,
+    pressed: Pressed(backgroundColor: .surface2, textColor: .text),
+    selected: Selected(
+      backgroundColor: .primaryText,
+      textColor: .onPrimary,
+      borderColor: .primaryText,
+      paddingTop: 0.0,
+      paddingEnd: 10.0,
+      paddingBottom: 0.0,
+      paddingStart: 10.0
+    ),
+    selectedPressed: SelectedPressed(overlayColor: .pressedOverlay)
+  )
+}
+
+/// Component `chip-swatch` per context: colours are role keys, sizes in pt/dp.
+nonisolated public struct ChipSwatchTokens: Sendable, Equatable {
+  public let backgroundColor: AppColorRole
+  public let textColor: AppColorRole
+  public let borderColor: AppColorRole
+  public let swatchEdgeColor: AppColorRole
+  public let typography: AppTextStyle
+  public let rounded: Double
+  public let height: Double
+  public let paddingTop: Double
+  public let paddingEnd: Double
+  public let paddingBottom: Double
+  public let paddingStart: Double
+  public let swatchSize: Double
+  public let swatchGap: Double
+  public let swatchEdgeWidth: Double
+  public let swatchEdgeMinContrast: Double
+  public let pressed: Pressed
+  public let disabled: Disabled
+  public let selected: Selected
+  public let selectedPressed: SelectedPressed
+  public let selectedDisabled: SelectedDisabled
+
+  nonisolated public struct Pressed: Sendable, Equatable {
+    public let backgroundColor: AppColorRole
+    public let textColor: AppColorRole
+  }
+
+  nonisolated public struct Disabled: Sendable, Equatable {
+    public let textColor: AppColorRole
+    public let borderColor: AppColorRole
+    public let swatchRingColor: AppColorRole
+    public let swatchRingWidth: Double
+    public let swatchRingGap: Double
+    public let backgroundColor: AppColorRole
+  }
+
+  nonisolated public struct Selected: Sendable, Equatable {
+    public let backgroundColor: AppColorRole
+    public let textColor: AppColorRole
+    public let borderColor: AppColorRole
+    public let swatchRingColor: AppColorRole
+    public let typography: AppTextStyle
+    public let paddingTop: Double
+    public let paddingEnd: Double
+    public let paddingBottom: Double
+    public let paddingStart: Double
+    public let swatchGap: Double
+    public let swatchRingWidth: Double
+    public let swatchRingGap: Double
+  }
+
+  nonisolated public struct SelectedPressed: Sendable, Equatable {
+    public let overlayColor: AppColorRole
+  }
+
+  nonisolated public struct SelectedDisabled: Sendable, Equatable {
+    public let textColor: AppColorRole
+    public let borderColor: AppColorRole
+    public let swatchRingColor: AppColorRole
+    public let swatchRingWidth: Double
+    public let swatchRingGap: Double
+    public let backgroundColor: AppColorRole
+  }
+
+  public static let light = ChipSwatchTokens(
+    backgroundColor: .surface,
+    textColor: .text,
+    borderColor: .outline,
+    swatchEdgeColor: .outline,
+    typography: AppTypography.subheadMedium,
+    rounded: AppRadius.full,
+    height: 40.0,
+    paddingTop: 0.0,
+    paddingEnd: 14.0,
+    paddingBottom: 0.0,
+    paddingStart: 12.0,
+    swatchSize: 16.0,
+    swatchGap: 8.0,
+    swatchEdgeWidth: 1.0,
+    swatchEdgeMinContrast: 3.0,
+    pressed: Pressed(backgroundColor: .surface2, textColor: .text),
+    disabled: Disabled(
+      textColor: .textSecondary,
+      borderColor: .divider,
+      swatchRingColor: .divider,
+      swatchRingWidth: 1.0,
+      swatchRingGap: 1.5,
+      backgroundColor: .surface2
+    ),
+    selected: Selected(
+      backgroundColor: .primaryText,
+      textColor: .onPrimary,
+      borderColor: .primaryText,
+      swatchRingColor: .surface,
+      typography: AppTypography.subhead,
+      paddingTop: 0.0,
+      paddingEnd: 14.0,
+      paddingBottom: 0.0,
+      paddingStart: 10.0,
+      swatchGap: 6.0,
+      swatchRingWidth: 1.5,
+      swatchRingGap: 0.0
+    ),
+    selectedPressed: SelectedPressed(overlayColor: .pressedOverlay),
+    selectedDisabled: SelectedDisabled(
+      textColor: .textSecondary,
+      borderColor: .divider,
+      swatchRingColor: .divider,
+      swatchRingWidth: 1.0,
+      swatchRingGap: 1.5,
+      backgroundColor: .surface2
+    )
+  )
+
+  public static let dark = ChipSwatchTokens(
+    backgroundColor: .surface,
+    textColor: .text,
+    borderColor: .outline,
+    swatchEdgeColor: .outline,
+    typography: AppTypography.subheadMedium,
+    rounded: AppRadius.full,
+    height: 40.0,
+    paddingTop: 0.0,
+    paddingEnd: 14.0,
+    paddingBottom: 0.0,
+    paddingStart: 12.0,
+    swatchSize: 16.0,
+    swatchGap: 8.0,
+    swatchEdgeWidth: 1.0,
+    swatchEdgeMinContrast: 3.0,
+    pressed: Pressed(backgroundColor: .surface2, textColor: .text),
+    disabled: Disabled(
+      textColor: .textSecondary,
+      borderColor: .divider,
+      swatchRingColor: .divider,
+      swatchRingWidth: 1.0,
+      swatchRingGap: 1.5,
+      backgroundColor: .surface
+    ),
+    selected: Selected(
+      backgroundColor: .primaryText,
+      textColor: .onPrimary,
+      borderColor: .primaryText,
+      swatchRingColor: .surface,
+      typography: AppTypography.subhead,
+      paddingTop: 0.0,
+      paddingEnd: 14.0,
+      paddingBottom: 0.0,
+      paddingStart: 10.0,
+      swatchGap: 6.0,
+      swatchRingWidth: 1.5,
+      swatchRingGap: 0.0
+    ),
+    selectedPressed: SelectedPressed(overlayColor: .pressedOverlay),
+    selectedDisabled: SelectedDisabled(
+      textColor: .textSecondary,
+      borderColor: .divider,
+      swatchRingColor: .divider,
+      swatchRingWidth: 1.0,
+      swatchRingGap: 1.5,
+      backgroundColor: .surface
+    )
+  )
+
+  public static let brand = ChipSwatchTokens(
+    backgroundColor: .surface,
+    textColor: .text,
+    borderColor: .outline,
+    swatchEdgeColor: .outline,
+    typography: AppTypography.subheadMedium,
+    rounded: AppRadius.full,
+    height: 40.0,
+    paddingTop: 0.0,
+    paddingEnd: 14.0,
+    paddingBottom: 0.0,
+    paddingStart: 12.0,
+    swatchSize: 16.0,
+    swatchGap: 8.0,
+    swatchEdgeWidth: 1.0,
+    swatchEdgeMinContrast: 3.0,
+    pressed: Pressed(backgroundColor: .surface2, textColor: .text),
+    disabled: Disabled(
+      textColor: .textSecondary,
+      borderColor: .divider,
+      swatchRingColor: .divider,
+      swatchRingWidth: 1.0,
+      swatchRingGap: 1.5,
+      backgroundColor: .surface
+    ),
+    selected: Selected(
+      backgroundColor: .primaryText,
+      textColor: .onPrimary,
+      borderColor: .primaryText,
+      swatchRingColor: .surface,
+      typography: AppTypography.subhead,
+      paddingTop: 0.0,
+      paddingEnd: 14.0,
+      paddingBottom: 0.0,
+      paddingStart: 10.0,
+      swatchGap: 6.0,
+      swatchRingWidth: 1.5,
+      swatchRingGap: 0.0
+    ),
+    selectedPressed: SelectedPressed(overlayColor: .pressedOverlay),
+    selectedDisabled: SelectedDisabled(
+      textColor: .textSecondary,
+      borderColor: .divider,
+      swatchRingColor: .divider,
+      swatchRingWidth: 1.0,
+      swatchRingGap: 1.5,
+      backgroundColor: .surface
+    )
+  )
+
+  public static let hcLight = ChipSwatchTokens(
+    backgroundColor: .surface,
+    textColor: .text,
+    borderColor: .outline,
+    swatchEdgeColor: .outline,
+    typography: AppTypography.subheadMedium,
+    rounded: AppRadius.full,
+    height: 40.0,
+    paddingTop: 0.0,
+    paddingEnd: 14.0,
+    paddingBottom: 0.0,
+    paddingStart: 12.0,
+    swatchSize: 16.0,
+    swatchGap: 8.0,
+    swatchEdgeWidth: 1.0,
+    swatchEdgeMinContrast: 3.0,
+    pressed: Pressed(backgroundColor: .surface2, textColor: .text),
+    disabled: Disabled(
+      textColor: .textSecondary,
+      borderColor: .divider,
+      swatchRingColor: .divider,
+      swatchRingWidth: 1.0,
+      swatchRingGap: 1.5,
+      backgroundColor: .surface2
+    ),
+    selected: Selected(
+      backgroundColor: .primaryText,
+      textColor: .onPrimary,
+      borderColor: .primaryText,
+      swatchRingColor: .surface,
+      typography: AppTypography.subhead,
+      paddingTop: 0.0,
+      paddingEnd: 14.0,
+      paddingBottom: 0.0,
+      paddingStart: 10.0,
+      swatchGap: 6.0,
+      swatchRingWidth: 1.5,
+      swatchRingGap: 0.0
+    ),
+    selectedPressed: SelectedPressed(overlayColor: .pressedOverlay),
+    selectedDisabled: SelectedDisabled(
+      textColor: .textSecondary,
+      borderColor: .divider,
+      swatchRingColor: .divider,
+      swatchRingWidth: 1.0,
+      swatchRingGap: 1.5,
+      backgroundColor: .surface2
+    )
+  )
+
+  public static let hcDark = ChipSwatchTokens(
+    backgroundColor: .surface,
+    textColor: .text,
+    borderColor: .outline,
+    swatchEdgeColor: .outline,
+    typography: AppTypography.subheadMedium,
+    rounded: AppRadius.full,
+    height: 40.0,
+    paddingTop: 0.0,
+    paddingEnd: 14.0,
+    paddingBottom: 0.0,
+    paddingStart: 12.0,
+    swatchSize: 16.0,
+    swatchGap: 8.0,
+    swatchEdgeWidth: 1.0,
+    swatchEdgeMinContrast: 3.0,
+    pressed: Pressed(backgroundColor: .surface2, textColor: .text),
+    disabled: Disabled(
+      textColor: .textSecondary,
+      borderColor: .divider,
+      swatchRingColor: .divider,
+      swatchRingWidth: 1.0,
+      swatchRingGap: 1.5,
+      backgroundColor: .surface
+    ),
+    selected: Selected(
+      backgroundColor: .primaryText,
+      textColor: .onPrimary,
+      borderColor: .primaryText,
+      swatchRingColor: .surface,
+      typography: AppTypography.subhead,
+      paddingTop: 0.0,
+      paddingEnd: 14.0,
+      paddingBottom: 0.0,
+      paddingStart: 10.0,
+      swatchGap: 6.0,
+      swatchRingWidth: 1.5,
+      swatchRingGap: 0.0
+    ),
+    selectedPressed: SelectedPressed(overlayColor: .pressedOverlay),
+    selectedDisabled: SelectedDisabled(
+      textColor: .textSecondary,
+      borderColor: .divider,
+      swatchRingColor: .divider,
+      swatchRingWidth: 1.0,
+      swatchRingGap: 1.5,
+      backgroundColor: .surface
+    )
+  )
+}
+
+/// Component `chip-group-sort` per context: colours are role keys, sizes in pt/dp.
+nonisolated public struct ChipGroupSortTokens: Sendable, Equatable {
+  public let backgroundColor: AppColorRole
+  public let textColor: AppColorRole
+  public let borderColor: AppColorRole
+  public let prefixColor: AppColorRole
+  public let typography: AppTextStyle
+  public let rounded: Double
+  public let height: Double
+  public let paddingTop: Double
+  public let paddingEnd: Double
+  public let paddingBottom: Double
+  public let paddingStart: Double
+  public let iconGap: Double
+  public let trailingIconGap: Double
+  public let prefixTypography: AppTextStyle
+  public let prefixGap: Double
+  public let pressed: Pressed
+
+  nonisolated public struct Pressed: Sendable, Equatable {
+    public let backgroundColor: AppColorRole
+  }
+
+  public static let light = ChipGroupSortTokens(
+    backgroundColor: .surface,
+    textColor: .text,
+    borderColor: .divider,
+    prefixColor: .textSecondary,
+    typography: AppTypography.labelMd,
+    rounded: AppRadius.full,
+    height: 36.0,
+    paddingTop: 0.0,
+    paddingEnd: 12.0,
+    paddingBottom: 0.0,
+    paddingStart: 10.0,
+    iconGap: 6.0,
+    trailingIconGap: 6.0,
+    prefixTypography: AppTypography.labelMdNormal,
+    prefixGap: 6.0,
+    pressed: Pressed(backgroundColor: .surface2)
+  )
+
+  public static let dark = ChipGroupSortTokens(
+    backgroundColor: .surface,
+    textColor: .text,
+    borderColor: .divider,
+    prefixColor: .textSecondary,
+    typography: AppTypography.labelMd,
+    rounded: AppRadius.full,
+    height: 36.0,
+    paddingTop: 0.0,
+    paddingEnd: 12.0,
+    paddingBottom: 0.0,
+    paddingStart: 10.0,
+    iconGap: 6.0,
+    trailingIconGap: 6.0,
+    prefixTypography: AppTypography.labelMdNormal,
+    prefixGap: 6.0,
+    pressed: Pressed(backgroundColor: .surface2)
+  )
+
+  public static let brand = ChipGroupSortTokens(
+    backgroundColor: .surface,
+    textColor: .text,
+    borderColor: .divider,
+    prefixColor: .textSecondary,
+    typography: AppTypography.labelMd,
+    rounded: AppRadius.full,
+    height: 36.0,
+    paddingTop: 0.0,
+    paddingEnd: 12.0,
+    paddingBottom: 0.0,
+    paddingStart: 10.0,
+    iconGap: 6.0,
+    trailingIconGap: 6.0,
+    prefixTypography: AppTypography.labelMdNormal,
+    prefixGap: 6.0,
+    pressed: Pressed(backgroundColor: .surface2)
+  )
+
+  public static let hcLight = ChipGroupSortTokens(
+    backgroundColor: .surface,
+    textColor: .text,
+    borderColor: .divider,
+    prefixColor: .textSecondary,
+    typography: AppTypography.labelMd,
+    rounded: AppRadius.full,
+    height: 36.0,
+    paddingTop: 0.0,
+    paddingEnd: 12.0,
+    paddingBottom: 0.0,
+    paddingStart: 10.0,
+    iconGap: 6.0,
+    trailingIconGap: 6.0,
+    prefixTypography: AppTypography.labelMdNormal,
+    prefixGap: 6.0,
+    pressed: Pressed(backgroundColor: .surface2)
+  )
+
+  public static let hcDark = ChipGroupSortTokens(
+    backgroundColor: .surface,
+    textColor: .text,
+    borderColor: .divider,
+    prefixColor: .textSecondary,
+    typography: AppTypography.labelMd,
+    rounded: AppRadius.full,
+    height: 36.0,
+    paddingTop: 0.0,
+    paddingEnd: 12.0,
+    paddingBottom: 0.0,
+    paddingStart: 10.0,
+    iconGap: 6.0,
+    trailingIconGap: 6.0,
+    prefixTypography: AppTypography.labelMdNormal,
+    prefixGap: 6.0,
+    pressed: Pressed(backgroundColor: .surface2)
+  )
+}
+
+/// Component `chip-override` per context: colours are role keys, sizes in pt/dp.
+nonisolated public struct ChipOverrideTokens: Sendable, Equatable {
+  public let backgroundColor: AppColorRole
+  public let textColor: AppColorRole
+  public let borderColor: AppColorRole
+  public let iconColor: AppColorRole
+  public let trailingIconColor: AppColorRole
+  public let detailColor: AppColorRole
+  public let borderWidth: Double
+  public let typography: AppTextStyle
+  public let rounded: Double
+  public let height: Double
+  public let paddingTop: Double
+  public let paddingEnd: Double
+  public let paddingBottom: Double
+  public let paddingStart: Double
+  public let detailTypography: AppTextStyle
+  public let detailGap: Double
+  public let pressed: Pressed
+
+  nonisolated public struct Pressed: Sendable, Equatable {
+    public let backgroundColor: AppColorRole
+  }
+
+  public static let light = ChipOverrideTokens(
+    backgroundColor: .surface,
+    textColor: .text,
+    borderColor: .primaryText,
+    iconColor: .primaryText,
+    trailingIconColor: .primaryText,
+    detailColor: .primaryText,
+    borderWidth: 1.5,
+    typography: AppTypography.labelSm,
+    rounded: AppRadius.full,
+    height: 34.0,
+    paddingTop: 0.0,
+    paddingEnd: 11.0,
+    paddingBottom: 0.0,
+    paddingStart: 11.0,
+    detailTypography: AppTypography.labelSmMedium,
+    detailGap: 6.0,
+    pressed: Pressed(backgroundColor: .surface2)
+  )
+
+  public static let dark = ChipOverrideTokens(
+    backgroundColor: .surface,
+    textColor: .text,
+    borderColor: .primaryText,
+    iconColor: .primaryText,
+    trailingIconColor: .primaryText,
+    detailColor: .primaryText,
+    borderWidth: 1.5,
+    typography: AppTypography.labelSm,
+    rounded: AppRadius.full,
+    height: 34.0,
+    paddingTop: 0.0,
+    paddingEnd: 11.0,
+    paddingBottom: 0.0,
+    paddingStart: 11.0,
+    detailTypography: AppTypography.labelSmMedium,
+    detailGap: 6.0,
+    pressed: Pressed(backgroundColor: .surface2)
+  )
+
+  public static let brand = ChipOverrideTokens(
+    backgroundColor: .surface,
+    textColor: .text,
+    borderColor: .primaryText,
+    iconColor: .primaryText,
+    trailingIconColor: .primaryText,
+    detailColor: .primaryText,
+    borderWidth: 1.5,
+    typography: AppTypography.labelSm,
+    rounded: AppRadius.full,
+    height: 34.0,
+    paddingTop: 0.0,
+    paddingEnd: 11.0,
+    paddingBottom: 0.0,
+    paddingStart: 11.0,
+    detailTypography: AppTypography.labelSmMedium,
+    detailGap: 6.0,
+    pressed: Pressed(backgroundColor: .surface2)
+  )
+
+  public static let hcLight = ChipOverrideTokens(
+    backgroundColor: .surface,
+    textColor: .text,
+    borderColor: .primaryText,
+    iconColor: .primaryText,
+    trailingIconColor: .primaryText,
+    detailColor: .primaryText,
+    borderWidth: 1.5,
+    typography: AppTypography.labelSm,
+    rounded: AppRadius.full,
+    height: 34.0,
+    paddingTop: 0.0,
+    paddingEnd: 11.0,
+    paddingBottom: 0.0,
+    paddingStart: 11.0,
+    detailTypography: AppTypography.labelSmMedium,
+    detailGap: 6.0,
+    pressed: Pressed(backgroundColor: .surface2)
+  )
+
+  public static let hcDark = ChipOverrideTokens(
+    backgroundColor: .surface,
+    textColor: .text,
+    borderColor: .primaryText,
+    iconColor: .primaryText,
+    trailingIconColor: .primaryText,
+    detailColor: .primaryText,
+    borderWidth: 1.5,
+    typography: AppTypography.labelSm,
+    rounded: AppRadius.full,
+    height: 34.0,
+    paddingTop: 0.0,
+    paddingEnd: 11.0,
+    paddingBottom: 0.0,
+    paddingStart: 11.0,
+    detailTypography: AppTypography.labelSmMedium,
+    detailGap: 6.0,
+    pressed: Pressed(backgroundColor: .surface2)
   )
 }
 
 /// Component `chip-never-suggest` per context: colours are role keys, sizes in pt/dp.
 nonisolated public struct ChipNeverSuggestTokens: Sendable, Equatable {
   public let textColor: AppColorRole
+  public let borderColor: AppColorRole
+  public let iconColor: AppColorRole
   public let typography: AppTextStyle
   public let rounded: Double
   public let height: Double
@@ -1932,9 +3170,17 @@ nonisolated public struct ChipNeverSuggestTokens: Sendable, Equatable {
   public let paddingBottom: Double
   public let paddingStart: Double
   public let backgroundColor: AppColorRole
+  public let pressed: Pressed
+
+  nonisolated public struct Pressed: Sendable, Equatable {
+    public let borderWidth: Double
+    public let backgroundColor: AppColorRole
+  }
 
   public static let light = ChipNeverSuggestTokens(
     textColor: .text,
+    borderColor: .errorFg,
+    iconColor: .errorFg,
     typography: AppTypography.subhead,
     rounded: AppRadius.radius6,
     height: 40.0,
@@ -1942,11 +3188,14 @@ nonisolated public struct ChipNeverSuggestTokens: Sendable, Equatable {
     paddingEnd: 14.0,
     paddingBottom: 0.0,
     paddingStart: 10.0,
-    backgroundColor: .errorBg
+    backgroundColor: .errorBg,
+    pressed: Pressed(borderWidth: 2.0, backgroundColor: .errorBg)
   )
 
   public static let dark = ChipNeverSuggestTokens(
     textColor: .text,
+    borderColor: .errorFg,
+    iconColor: .errorFg,
     typography: AppTypography.subhead,
     rounded: AppRadius.radius6,
     height: 40.0,
@@ -1954,11 +3203,14 @@ nonisolated public struct ChipNeverSuggestTokens: Sendable, Equatable {
     paddingEnd: 14.0,
     paddingBottom: 0.0,
     paddingStart: 10.0,
-    backgroundColor: .surface2
+    backgroundColor: .surface2,
+    pressed: Pressed(borderWidth: 2.0, backgroundColor: .divider)
   )
 
   public static let brand = ChipNeverSuggestTokens(
     textColor: .text,
+    borderColor: .errorFg,
+    iconColor: .errorFg,
     typography: AppTypography.subhead,
     rounded: AppRadius.radius6,
     height: 40.0,
@@ -1966,11 +3218,14 @@ nonisolated public struct ChipNeverSuggestTokens: Sendable, Equatable {
     paddingEnd: 14.0,
     paddingBottom: 0.0,
     paddingStart: 10.0,
-    backgroundColor: .surface2
+    backgroundColor: .surface2,
+    pressed: Pressed(borderWidth: 2.0, backgroundColor: .divider)
   )
 
   public static let hcLight = ChipNeverSuggestTokens(
     textColor: .text,
+    borderColor: .errorFg,
+    iconColor: .errorFg,
     typography: AppTypography.subhead,
     rounded: AppRadius.radius6,
     height: 40.0,
@@ -1978,11 +3233,14 @@ nonisolated public struct ChipNeverSuggestTokens: Sendable, Equatable {
     paddingEnd: 14.0,
     paddingBottom: 0.0,
     paddingStart: 10.0,
-    backgroundColor: .errorBg
+    backgroundColor: .errorBg,
+    pressed: Pressed(borderWidth: 2.0, backgroundColor: .errorBg)
   )
 
   public static let hcDark = ChipNeverSuggestTokens(
     textColor: .text,
+    borderColor: .errorFg,
+    iconColor: .errorFg,
     typography: AppTypography.subhead,
     rounded: AppRadius.radius6,
     height: 40.0,
@@ -1990,56 +3248,267 @@ nonisolated public struct ChipNeverSuggestTokens: Sendable, Equatable {
     paddingEnd: 14.0,
     paddingBottom: 0.0,
     paddingStart: 10.0,
-    backgroundColor: .surface2
+    backgroundColor: .surface2,
+    pressed: Pressed(borderWidth: 2.0, backgroundColor: .divider)
   )
 }
 
 /// Component `chip-soft-dislike` per context: colours are role keys, sizes in pt/dp.
 nonisolated public struct ChipSoftDislikeTokens: Sendable, Equatable {
   public let textColor: AppColorRole
+  public let borderColor: AppColorRole
   public let typography: AppTextStyle
   public let rounded: Double
   public let height: Double
+  public let paddingTop: Double
+  public let paddingEnd: Double
+  public let paddingBottom: Double
+  public let paddingStart: Double
   public let backgroundColor: AppColorRole
+  public let pressed: Pressed
+
+  nonisolated public struct Pressed: Sendable, Equatable {
+    public let textColor: AppColorRole
+    public let borderColor: AppColorRole
+    public let backgroundColor: AppColorRole
+  }
 
   public static let light = ChipSoftDislikeTokens(
     textColor: .textSecondary,
+    borderColor: .divider,
     typography: AppTypography.subheadMedium,
     rounded: AppRadius.full,
     height: 40.0,
-    backgroundColor: .surface2
+    paddingTop: 0.0,
+    paddingEnd: 14.0,
+    paddingBottom: 0.0,
+    paddingStart: 10.0,
+    backgroundColor: .surface2,
+    pressed: Pressed(textColor: .text, borderColor: .outline, backgroundColor: .divider)
   )
 
   public static let dark = ChipSoftDislikeTokens(
     textColor: .textSecondary,
+    borderColor: .divider,
     typography: AppTypography.subheadMedium,
     rounded: AppRadius.full,
     height: 40.0,
-    backgroundColor: .surface
+    paddingTop: 0.0,
+    paddingEnd: 14.0,
+    paddingBottom: 0.0,
+    paddingStart: 10.0,
+    backgroundColor: .surface,
+    pressed: Pressed(textColor: .text, borderColor: .outline, backgroundColor: .surface2)
   )
 
   public static let brand = ChipSoftDislikeTokens(
     textColor: .textSecondary,
+    borderColor: .divider,
     typography: AppTypography.subheadMedium,
     rounded: AppRadius.full,
     height: 40.0,
-    backgroundColor: .surface
+    paddingTop: 0.0,
+    paddingEnd: 14.0,
+    paddingBottom: 0.0,
+    paddingStart: 10.0,
+    backgroundColor: .surface,
+    pressed: Pressed(textColor: .text, borderColor: .outline, backgroundColor: .surface2)
   )
 
   public static let hcLight = ChipSoftDislikeTokens(
     textColor: .textSecondary,
+    borderColor: .divider,
     typography: AppTypography.subheadMedium,
     rounded: AppRadius.full,
     height: 40.0,
-    backgroundColor: .surface2
+    paddingTop: 0.0,
+    paddingEnd: 14.0,
+    paddingBottom: 0.0,
+    paddingStart: 10.0,
+    backgroundColor: .surface2,
+    pressed: Pressed(textColor: .text, borderColor: .outline, backgroundColor: .divider)
   )
 
   public static let hcDark = ChipSoftDislikeTokens(
     textColor: .textSecondary,
+    borderColor: .divider,
     typography: AppTypography.subheadMedium,
     rounded: AppRadius.full,
     height: 40.0,
-    backgroundColor: .surface
+    paddingTop: 0.0,
+    paddingEnd: 14.0,
+    paddingBottom: 0.0,
+    paddingStart: 10.0,
+    backgroundColor: .surface,
+    pressed: Pressed(textColor: .text, borderColor: .outline, backgroundColor: .surface2)
+  )
+}
+
+/// Component `chip-add` per context: colours are role keys, sizes in pt/dp.
+nonisolated public struct ChipAddTokens: Sendable, Equatable {
+  public let textColor: AppColorRole
+  public let borderColor: AppColorRole
+  public let typography: AppTextStyle
+  public let rounded: Double
+  public let height: Double
+  public let paddingTop: Double
+  public let paddingEnd: Double
+  public let paddingBottom: Double
+  public let paddingStart: Double
+  public let pressed: Pressed
+
+  nonisolated public struct Pressed: Sendable, Equatable {
+    public let backgroundColor: AppColorRole
+    public let textColor: AppColorRole
+  }
+
+  public static let light = ChipAddTokens(
+    textColor: .primaryText,
+    borderColor: .outline,
+    typography: AppTypography.subhead,
+    rounded: AppRadius.full,
+    height: 40.0,
+    paddingTop: 0.0,
+    paddingEnd: 14.0,
+    paddingBottom: 0.0,
+    paddingStart: 10.0,
+    pressed: Pressed(backgroundColor: .surface2, textColor: .primaryText)
+  )
+
+  public static let dark = ChipAddTokens(
+    textColor: .primaryText,
+    borderColor: .outline,
+    typography: AppTypography.subhead,
+    rounded: AppRadius.full,
+    height: 40.0,
+    paddingTop: 0.0,
+    paddingEnd: 14.0,
+    paddingBottom: 0.0,
+    paddingStart: 10.0,
+    pressed: Pressed(backgroundColor: .surface2, textColor: .primaryText)
+  )
+
+  public static let brand = ChipAddTokens(
+    textColor: .primaryText,
+    borderColor: .outline,
+    typography: AppTypography.subhead,
+    rounded: AppRadius.full,
+    height: 40.0,
+    paddingTop: 0.0,
+    paddingEnd: 14.0,
+    paddingBottom: 0.0,
+    paddingStart: 10.0,
+    pressed: Pressed(backgroundColor: .surface2, textColor: .primaryText)
+  )
+
+  public static let hcLight = ChipAddTokens(
+    textColor: .primaryText,
+    borderColor: .outline,
+    typography: AppTypography.subhead,
+    rounded: AppRadius.full,
+    height: 40.0,
+    paddingTop: 0.0,
+    paddingEnd: 14.0,
+    paddingBottom: 0.0,
+    paddingStart: 10.0,
+    pressed: Pressed(backgroundColor: .surface2, textColor: .primaryText)
+  )
+
+  public static let hcDark = ChipAddTokens(
+    textColor: .primaryText,
+    borderColor: .outline,
+    typography: AppTypography.subhead,
+    rounded: AppRadius.full,
+    height: 40.0,
+    paddingTop: 0.0,
+    paddingEnd: 14.0,
+    paddingBottom: 0.0,
+    paddingStart: 10.0,
+    pressed: Pressed(backgroundColor: .surface2, textColor: .primaryText)
+  )
+}
+
+/// Component `chip-never-suggest-add` per context: colours are role keys, sizes in pt/dp.
+nonisolated public struct ChipNeverSuggestAddTokens: Sendable, Equatable {
+  public let textColor: AppColorRole
+  public let borderColor: AppColorRole
+  public let typography: AppTextStyle
+  public let rounded: Double
+  public let height: Double
+  public let paddingTop: Double
+  public let paddingEnd: Double
+  public let paddingBottom: Double
+  public let paddingStart: Double
+  public let pressed: Pressed
+
+  nonisolated public struct Pressed: Sendable, Equatable {
+    public let backgroundColor: AppColorRole
+    public let textColor: AppColorRole
+  }
+
+  public static let light = ChipNeverSuggestAddTokens(
+    textColor: .primaryText,
+    borderColor: .outline,
+    typography: AppTypography.subhead,
+    rounded: AppRadius.radius6,
+    height: 40.0,
+    paddingTop: 0.0,
+    paddingEnd: 14.0,
+    paddingBottom: 0.0,
+    paddingStart: 10.0,
+    pressed: Pressed(backgroundColor: .surface2, textColor: .primaryText)
+  )
+
+  public static let dark = ChipNeverSuggestAddTokens(
+    textColor: .primaryText,
+    borderColor: .outline,
+    typography: AppTypography.subhead,
+    rounded: AppRadius.radius6,
+    height: 40.0,
+    paddingTop: 0.0,
+    paddingEnd: 14.0,
+    paddingBottom: 0.0,
+    paddingStart: 10.0,
+    pressed: Pressed(backgroundColor: .surface2, textColor: .primaryText)
+  )
+
+  public static let brand = ChipNeverSuggestAddTokens(
+    textColor: .primaryText,
+    borderColor: .outline,
+    typography: AppTypography.subhead,
+    rounded: AppRadius.radius6,
+    height: 40.0,
+    paddingTop: 0.0,
+    paddingEnd: 14.0,
+    paddingBottom: 0.0,
+    paddingStart: 10.0,
+    pressed: Pressed(backgroundColor: .surface2, textColor: .primaryText)
+  )
+
+  public static let hcLight = ChipNeverSuggestAddTokens(
+    textColor: .primaryText,
+    borderColor: .outline,
+    typography: AppTypography.subhead,
+    rounded: AppRadius.radius6,
+    height: 40.0,
+    paddingTop: 0.0,
+    paddingEnd: 14.0,
+    paddingBottom: 0.0,
+    paddingStart: 10.0,
+    pressed: Pressed(backgroundColor: .surface2, textColor: .primaryText)
+  )
+
+  public static let hcDark = ChipNeverSuggestAddTokens(
+    textColor: .primaryText,
+    borderColor: .outline,
+    typography: AppTypography.subhead,
+    rounded: AppRadius.radius6,
+    height: 40.0,
+    paddingTop: 0.0,
+    paddingEnd: 14.0,
+    paddingBottom: 0.0,
+    paddingStart: 10.0,
+    pressed: Pressed(backgroundColor: .surface2, textColor: .primaryText)
   )
 }
 
@@ -2050,13 +3519,27 @@ nonisolated public struct ChipConditionSunnyTokens: Sendable, Equatable {
   public let typography: AppTextStyle
   public let rounded: Double
   public let height: Double
+  public let paddingTop: Double
+  public let paddingEnd: Double
+  public let paddingBottom: Double
+  public let paddingStart: Double
+  public let pressed: Pressed
+
+  nonisolated public struct Pressed: Sendable, Equatable {
+    public let overlayColor: AppColorRole
+  }
 
   public static let light = ChipConditionSunnyTokens(
     backgroundColor: .conditionSunnyBg,
     textColor: .conditionSunnyFg,
     typography: AppTypography.labelMd,
     rounded: AppRadius.full,
-    height: 36.0
+    height: 36.0,
+    paddingTop: 0.0,
+    paddingEnd: 14.0,
+    paddingBottom: 0.0,
+    paddingStart: 10.0,
+    pressed: Pressed(overlayColor: .pressedOverlay)
   )
 
   public static let dark = ChipConditionSunnyTokens(
@@ -2064,7 +3547,12 @@ nonisolated public struct ChipConditionSunnyTokens: Sendable, Equatable {
     textColor: .conditionSunnyFg,
     typography: AppTypography.labelMd,
     rounded: AppRadius.full,
-    height: 36.0
+    height: 36.0,
+    paddingTop: 0.0,
+    paddingEnd: 14.0,
+    paddingBottom: 0.0,
+    paddingStart: 10.0,
+    pressed: Pressed(overlayColor: .pressedOverlay)
   )
 
   public static let brand = ChipConditionSunnyTokens(
@@ -2072,7 +3560,12 @@ nonisolated public struct ChipConditionSunnyTokens: Sendable, Equatable {
     textColor: .conditionSunnyFg,
     typography: AppTypography.labelMd,
     rounded: AppRadius.full,
-    height: 36.0
+    height: 36.0,
+    paddingTop: 0.0,
+    paddingEnd: 14.0,
+    paddingBottom: 0.0,
+    paddingStart: 10.0,
+    pressed: Pressed(overlayColor: .pressedOverlay)
   )
 
   public static let hcLight = ChipConditionSunnyTokens(
@@ -2080,7 +3573,12 @@ nonisolated public struct ChipConditionSunnyTokens: Sendable, Equatable {
     textColor: .conditionSunnyFg,
     typography: AppTypography.labelMd,
     rounded: AppRadius.full,
-    height: 36.0
+    height: 36.0,
+    paddingTop: 0.0,
+    paddingEnd: 14.0,
+    paddingBottom: 0.0,
+    paddingStart: 10.0,
+    pressed: Pressed(overlayColor: .pressedOverlay)
   )
 
   public static let hcDark = ChipConditionSunnyTokens(
@@ -2088,7 +3586,12 @@ nonisolated public struct ChipConditionSunnyTokens: Sendable, Equatable {
     textColor: .conditionSunnyFg,
     typography: AppTypography.labelMd,
     rounded: AppRadius.full,
-    height: 36.0
+    height: 36.0,
+    paddingTop: 0.0,
+    paddingEnd: 14.0,
+    paddingBottom: 0.0,
+    paddingStart: 10.0,
+    pressed: Pressed(overlayColor: .pressedOverlay)
   )
 }
 
@@ -2099,13 +3602,27 @@ nonisolated public struct ChipConditionRainTokens: Sendable, Equatable {
   public let typography: AppTextStyle
   public let rounded: Double
   public let height: Double
+  public let paddingTop: Double
+  public let paddingEnd: Double
+  public let paddingBottom: Double
+  public let paddingStart: Double
+  public let pressed: Pressed
+
+  nonisolated public struct Pressed: Sendable, Equatable {
+    public let overlayColor: AppColorRole
+  }
 
   public static let light = ChipConditionRainTokens(
     backgroundColor: .conditionRainBg,
     textColor: .conditionRainFg,
     typography: AppTypography.labelMd,
     rounded: AppRadius.full,
-    height: 36.0
+    height: 36.0,
+    paddingTop: 0.0,
+    paddingEnd: 14.0,
+    paddingBottom: 0.0,
+    paddingStart: 10.0,
+    pressed: Pressed(overlayColor: .pressedOverlay)
   )
 
   public static let dark = ChipConditionRainTokens(
@@ -2113,7 +3630,12 @@ nonisolated public struct ChipConditionRainTokens: Sendable, Equatable {
     textColor: .conditionRainFg,
     typography: AppTypography.labelMd,
     rounded: AppRadius.full,
-    height: 36.0
+    height: 36.0,
+    paddingTop: 0.0,
+    paddingEnd: 14.0,
+    paddingBottom: 0.0,
+    paddingStart: 10.0,
+    pressed: Pressed(overlayColor: .pressedOverlay)
   )
 
   public static let brand = ChipConditionRainTokens(
@@ -2121,7 +3643,12 @@ nonisolated public struct ChipConditionRainTokens: Sendable, Equatable {
     textColor: .conditionRainFg,
     typography: AppTypography.labelMd,
     rounded: AppRadius.full,
-    height: 36.0
+    height: 36.0,
+    paddingTop: 0.0,
+    paddingEnd: 14.0,
+    paddingBottom: 0.0,
+    paddingStart: 10.0,
+    pressed: Pressed(overlayColor: .pressedOverlay)
   )
 
   public static let hcLight = ChipConditionRainTokens(
@@ -2129,7 +3656,12 @@ nonisolated public struct ChipConditionRainTokens: Sendable, Equatable {
     textColor: .conditionRainFg,
     typography: AppTypography.labelMd,
     rounded: AppRadius.full,
-    height: 36.0
+    height: 36.0,
+    paddingTop: 0.0,
+    paddingEnd: 14.0,
+    paddingBottom: 0.0,
+    paddingStart: 10.0,
+    pressed: Pressed(overlayColor: .pressedOverlay)
   )
 
   public static let hcDark = ChipConditionRainTokens(
@@ -2137,7 +3669,12 @@ nonisolated public struct ChipConditionRainTokens: Sendable, Equatable {
     textColor: .conditionRainFg,
     typography: AppTypography.labelMd,
     rounded: AppRadius.full,
-    height: 36.0
+    height: 36.0,
+    paddingTop: 0.0,
+    paddingEnd: 14.0,
+    paddingBottom: 0.0,
+    paddingStart: 10.0,
+    pressed: Pressed(overlayColor: .pressedOverlay)
   )
 }
 
@@ -2148,13 +3685,27 @@ nonisolated public struct ChipConditionColdTokens: Sendable, Equatable {
   public let typography: AppTextStyle
   public let rounded: Double
   public let height: Double
+  public let paddingTop: Double
+  public let paddingEnd: Double
+  public let paddingBottom: Double
+  public let paddingStart: Double
+  public let pressed: Pressed
+
+  nonisolated public struct Pressed: Sendable, Equatable {
+    public let overlayColor: AppColorRole
+  }
 
   public static let light = ChipConditionColdTokens(
     backgroundColor: .conditionColdBg,
     textColor: .conditionColdFg,
     typography: AppTypography.labelMd,
     rounded: AppRadius.full,
-    height: 36.0
+    height: 36.0,
+    paddingTop: 0.0,
+    paddingEnd: 14.0,
+    paddingBottom: 0.0,
+    paddingStart: 10.0,
+    pressed: Pressed(overlayColor: .pressedOverlay)
   )
 
   public static let dark = ChipConditionColdTokens(
@@ -2162,7 +3713,12 @@ nonisolated public struct ChipConditionColdTokens: Sendable, Equatable {
     textColor: .conditionColdFg,
     typography: AppTypography.labelMd,
     rounded: AppRadius.full,
-    height: 36.0
+    height: 36.0,
+    paddingTop: 0.0,
+    paddingEnd: 14.0,
+    paddingBottom: 0.0,
+    paddingStart: 10.0,
+    pressed: Pressed(overlayColor: .pressedOverlay)
   )
 
   public static let brand = ChipConditionColdTokens(
@@ -2170,7 +3726,12 @@ nonisolated public struct ChipConditionColdTokens: Sendable, Equatable {
     textColor: .conditionColdFg,
     typography: AppTypography.labelMd,
     rounded: AppRadius.full,
-    height: 36.0
+    height: 36.0,
+    paddingTop: 0.0,
+    paddingEnd: 14.0,
+    paddingBottom: 0.0,
+    paddingStart: 10.0,
+    pressed: Pressed(overlayColor: .pressedOverlay)
   )
 
   public static let hcLight = ChipConditionColdTokens(
@@ -2178,7 +3739,12 @@ nonisolated public struct ChipConditionColdTokens: Sendable, Equatable {
     textColor: .conditionColdFg,
     typography: AppTypography.labelMd,
     rounded: AppRadius.full,
-    height: 36.0
+    height: 36.0,
+    paddingTop: 0.0,
+    paddingEnd: 14.0,
+    paddingBottom: 0.0,
+    paddingStart: 10.0,
+    pressed: Pressed(overlayColor: .pressedOverlay)
   )
 
   public static let hcDark = ChipConditionColdTokens(
@@ -2186,7 +3752,12 @@ nonisolated public struct ChipConditionColdTokens: Sendable, Equatable {
     textColor: .conditionColdFg,
     typography: AppTypography.labelMd,
     rounded: AppRadius.full,
-    height: 36.0
+    height: 36.0,
+    paddingTop: 0.0,
+    paddingEnd: 14.0,
+    paddingBottom: 0.0,
+    paddingStart: 10.0,
+    pressed: Pressed(overlayColor: .pressedOverlay)
   )
 }
 
@@ -2197,13 +3768,27 @@ nonisolated public struct ChipConditionHotTokens: Sendable, Equatable {
   public let typography: AppTextStyle
   public let rounded: Double
   public let height: Double
+  public let paddingTop: Double
+  public let paddingEnd: Double
+  public let paddingBottom: Double
+  public let paddingStart: Double
+  public let pressed: Pressed
+
+  nonisolated public struct Pressed: Sendable, Equatable {
+    public let overlayColor: AppColorRole
+  }
 
   public static let light = ChipConditionHotTokens(
     backgroundColor: .conditionHotBg,
     textColor: .conditionHotFg,
     typography: AppTypography.labelMd,
     rounded: AppRadius.full,
-    height: 36.0
+    height: 36.0,
+    paddingTop: 0.0,
+    paddingEnd: 14.0,
+    paddingBottom: 0.0,
+    paddingStart: 10.0,
+    pressed: Pressed(overlayColor: .pressedOverlay)
   )
 
   public static let dark = ChipConditionHotTokens(
@@ -2211,7 +3796,12 @@ nonisolated public struct ChipConditionHotTokens: Sendable, Equatable {
     textColor: .conditionHotFg,
     typography: AppTypography.labelMd,
     rounded: AppRadius.full,
-    height: 36.0
+    height: 36.0,
+    paddingTop: 0.0,
+    paddingEnd: 14.0,
+    paddingBottom: 0.0,
+    paddingStart: 10.0,
+    pressed: Pressed(overlayColor: .pressedOverlay)
   )
 
   public static let brand = ChipConditionHotTokens(
@@ -2219,7 +3809,12 @@ nonisolated public struct ChipConditionHotTokens: Sendable, Equatable {
     textColor: .conditionHotFg,
     typography: AppTypography.labelMd,
     rounded: AppRadius.full,
-    height: 36.0
+    height: 36.0,
+    paddingTop: 0.0,
+    paddingEnd: 14.0,
+    paddingBottom: 0.0,
+    paddingStart: 10.0,
+    pressed: Pressed(overlayColor: .pressedOverlay)
   )
 
   public static let hcLight = ChipConditionHotTokens(
@@ -2227,7 +3822,12 @@ nonisolated public struct ChipConditionHotTokens: Sendable, Equatable {
     textColor: .conditionHotFg,
     typography: AppTypography.labelMd,
     rounded: AppRadius.full,
-    height: 36.0
+    height: 36.0,
+    paddingTop: 0.0,
+    paddingEnd: 14.0,
+    paddingBottom: 0.0,
+    paddingStart: 10.0,
+    pressed: Pressed(overlayColor: .pressedOverlay)
   )
 
   public static let hcDark = ChipConditionHotTokens(
@@ -2235,7 +3835,12 @@ nonisolated public struct ChipConditionHotTokens: Sendable, Equatable {
     textColor: .conditionHotFg,
     typography: AppTypography.labelMd,
     rounded: AppRadius.full,
-    height: 36.0
+    height: 36.0,
+    paddingTop: 0.0,
+    paddingEnd: 14.0,
+    paddingBottom: 0.0,
+    paddingStart: 10.0,
+    pressed: Pressed(overlayColor: .pressedOverlay)
   )
 }
 
@@ -2246,13 +3851,27 @@ nonisolated public struct ChipConditionWindyTokens: Sendable, Equatable {
   public let typography: AppTextStyle
   public let rounded: Double
   public let height: Double
+  public let paddingTop: Double
+  public let paddingEnd: Double
+  public let paddingBottom: Double
+  public let paddingStart: Double
+  public let pressed: Pressed
+
+  nonisolated public struct Pressed: Sendable, Equatable {
+    public let overlayColor: AppColorRole
+  }
 
   public static let light = ChipConditionWindyTokens(
     backgroundColor: .conditionWindyBg,
     textColor: .conditionWindyFg,
     typography: AppTypography.labelMd,
     rounded: AppRadius.full,
-    height: 36.0
+    height: 36.0,
+    paddingTop: 0.0,
+    paddingEnd: 14.0,
+    paddingBottom: 0.0,
+    paddingStart: 10.0,
+    pressed: Pressed(overlayColor: .pressedOverlay)
   )
 
   public static let dark = ChipConditionWindyTokens(
@@ -2260,7 +3879,12 @@ nonisolated public struct ChipConditionWindyTokens: Sendable, Equatable {
     textColor: .conditionWindyFg,
     typography: AppTypography.labelMd,
     rounded: AppRadius.full,
-    height: 36.0
+    height: 36.0,
+    paddingTop: 0.0,
+    paddingEnd: 14.0,
+    paddingBottom: 0.0,
+    paddingStart: 10.0,
+    pressed: Pressed(overlayColor: .pressedOverlay)
   )
 
   public static let brand = ChipConditionWindyTokens(
@@ -2268,7 +3892,12 @@ nonisolated public struct ChipConditionWindyTokens: Sendable, Equatable {
     textColor: .conditionWindyFg,
     typography: AppTypography.labelMd,
     rounded: AppRadius.full,
-    height: 36.0
+    height: 36.0,
+    paddingTop: 0.0,
+    paddingEnd: 14.0,
+    paddingBottom: 0.0,
+    paddingStart: 10.0,
+    pressed: Pressed(overlayColor: .pressedOverlay)
   )
 
   public static let hcLight = ChipConditionWindyTokens(
@@ -2276,7 +3905,12 @@ nonisolated public struct ChipConditionWindyTokens: Sendable, Equatable {
     textColor: .conditionWindyFg,
     typography: AppTypography.labelMd,
     rounded: AppRadius.full,
-    height: 36.0
+    height: 36.0,
+    paddingTop: 0.0,
+    paddingEnd: 14.0,
+    paddingBottom: 0.0,
+    paddingStart: 10.0,
+    pressed: Pressed(overlayColor: .pressedOverlay)
   )
 
   public static let hcDark = ChipConditionWindyTokens(
@@ -2284,7 +3918,12 @@ nonisolated public struct ChipConditionWindyTokens: Sendable, Equatable {
     textColor: .conditionWindyFg,
     typography: AppTypography.labelMd,
     rounded: AppRadius.full,
-    height: 36.0
+    height: 36.0,
+    paddingTop: 0.0,
+    paddingEnd: 14.0,
+    paddingBottom: 0.0,
+    paddingStart: 10.0,
+    pressed: Pressed(overlayColor: .pressedOverlay)
   )
 }
 
@@ -2295,13 +3934,29 @@ nonisolated public struct ChipConditionSnowTokens: Sendable, Equatable {
   public let typography: AppTextStyle
   public let rounded: Double
   public let height: Double
+  public let paddingTop: Double
+  public let paddingEnd: Double
+  public let paddingBottom: Double
+  public let paddingStart: Double
+  public let borderColor: AppColorRole
+  public let pressed: Pressed
+
+  nonisolated public struct Pressed: Sendable, Equatable {
+    public let overlayColor: AppColorRole
+  }
 
   public static let light = ChipConditionSnowTokens(
     backgroundColor: .conditionSnowBg,
     textColor: .conditionSnowFg,
     typography: AppTypography.labelMd,
     rounded: AppRadius.full,
-    height: 36.0
+    height: 36.0,
+    paddingTop: 0.0,
+    paddingEnd: 14.0,
+    paddingBottom: 0.0,
+    paddingStart: 10.0,
+    borderColor: .conditionSnowRingLight,
+    pressed: Pressed(overlayColor: .pressedOverlay)
   )
 
   public static let dark = ChipConditionSnowTokens(
@@ -2309,7 +3964,13 @@ nonisolated public struct ChipConditionSnowTokens: Sendable, Equatable {
     textColor: .conditionSnowFg,
     typography: AppTypography.labelMd,
     rounded: AppRadius.full,
-    height: 36.0
+    height: 36.0,
+    paddingTop: 0.0,
+    paddingEnd: 14.0,
+    paddingBottom: 0.0,
+    paddingStart: 10.0,
+    borderColor: .conditionSnowBg,
+    pressed: Pressed(overlayColor: .pressedOverlay)
   )
 
   public static let brand = ChipConditionSnowTokens(
@@ -2317,7 +3978,13 @@ nonisolated public struct ChipConditionSnowTokens: Sendable, Equatable {
     textColor: .conditionSnowFg,
     typography: AppTypography.labelMd,
     rounded: AppRadius.full,
-    height: 36.0
+    height: 36.0,
+    paddingTop: 0.0,
+    paddingEnd: 14.0,
+    paddingBottom: 0.0,
+    paddingStart: 10.0,
+    borderColor: .conditionSnowBg,
+    pressed: Pressed(overlayColor: .pressedOverlay)
   )
 
   public static let hcLight = ChipConditionSnowTokens(
@@ -2325,7 +3992,13 @@ nonisolated public struct ChipConditionSnowTokens: Sendable, Equatable {
     textColor: .conditionSnowFg,
     typography: AppTypography.labelMd,
     rounded: AppRadius.full,
-    height: 36.0
+    height: 36.0,
+    paddingTop: 0.0,
+    paddingEnd: 14.0,
+    paddingBottom: 0.0,
+    paddingStart: 10.0,
+    borderColor: .conditionSnowRingLight,
+    pressed: Pressed(overlayColor: .pressedOverlay)
   )
 
   public static let hcDark = ChipConditionSnowTokens(
@@ -2333,7 +4006,13 @@ nonisolated public struct ChipConditionSnowTokens: Sendable, Equatable {
     textColor: .conditionSnowFg,
     typography: AppTypography.labelMd,
     rounded: AppRadius.full,
-    height: 36.0
+    height: 36.0,
+    paddingTop: 0.0,
+    paddingEnd: 14.0,
+    paddingBottom: 0.0,
+    paddingStart: 10.0,
+    borderColor: .conditionSnowBg,
+    pressed: Pressed(overlayColor: .pressedOverlay)
   )
 }
 
@@ -2344,13 +4023,27 @@ nonisolated public struct ChipConditionEveningTokens: Sendable, Equatable {
   public let typography: AppTextStyle
   public let rounded: Double
   public let height: Double
+  public let paddingTop: Double
+  public let paddingEnd: Double
+  public let paddingBottom: Double
+  public let paddingStart: Double
+  public let pressed: Pressed
+
+  nonisolated public struct Pressed: Sendable, Equatable {
+    public let overlayColor: AppColorRole
+  }
 
   public static let light = ChipConditionEveningTokens(
     backgroundColor: .conditionEveningBg,
     textColor: .conditionEveningFg,
     typography: AppTypography.labelMd,
     rounded: AppRadius.full,
-    height: 36.0
+    height: 36.0,
+    paddingTop: 0.0,
+    paddingEnd: 14.0,
+    paddingBottom: 0.0,
+    paddingStart: 10.0,
+    pressed: Pressed(overlayColor: .pressedOverlay)
   )
 
   public static let dark = ChipConditionEveningTokens(
@@ -2358,7 +4051,12 @@ nonisolated public struct ChipConditionEveningTokens: Sendable, Equatable {
     textColor: .conditionEveningFg,
     typography: AppTypography.labelMd,
     rounded: AppRadius.full,
-    height: 36.0
+    height: 36.0,
+    paddingTop: 0.0,
+    paddingEnd: 14.0,
+    paddingBottom: 0.0,
+    paddingStart: 10.0,
+    pressed: Pressed(overlayColor: .pressedOverlay)
   )
 
   public static let brand = ChipConditionEveningTokens(
@@ -2366,7 +4064,12 @@ nonisolated public struct ChipConditionEveningTokens: Sendable, Equatable {
     textColor: .conditionEveningFg,
     typography: AppTypography.labelMd,
     rounded: AppRadius.full,
-    height: 36.0
+    height: 36.0,
+    paddingTop: 0.0,
+    paddingEnd: 14.0,
+    paddingBottom: 0.0,
+    paddingStart: 10.0,
+    pressed: Pressed(overlayColor: .pressedOverlay)
   )
 
   public static let hcLight = ChipConditionEveningTokens(
@@ -2374,7 +4077,12 @@ nonisolated public struct ChipConditionEveningTokens: Sendable, Equatable {
     textColor: .conditionEveningFg,
     typography: AppTypography.labelMd,
     rounded: AppRadius.full,
-    height: 36.0
+    height: 36.0,
+    paddingTop: 0.0,
+    paddingEnd: 14.0,
+    paddingBottom: 0.0,
+    paddingStart: 10.0,
+    pressed: Pressed(overlayColor: .pressedOverlay)
   )
 
   public static let hcDark = ChipConditionEveningTokens(
@@ -2382,8 +4090,35 @@ nonisolated public struct ChipConditionEveningTokens: Sendable, Equatable {
     textColor: .conditionEveningFg,
     typography: AppTypography.labelMd,
     rounded: AppRadius.full,
-    height: 36.0
+    height: 36.0,
+    paddingTop: 0.0,
+    paddingEnd: 14.0,
+    paddingBottom: 0.0,
+    paddingStart: 10.0,
+    pressed: Pressed(overlayColor: .pressedOverlay)
   )
+}
+
+/// Component `tag-regular` per context: colours are role keys, sizes in pt/dp.
+nonisolated public struct TagRegularTokens: Sendable, Equatable {
+  public let iconSize: Double
+  public let iconGap: Double
+
+  public static let light = TagRegularTokens(iconSize: 12.0, iconGap: 4.0)
+  public static let dark = TagRegularTokens(iconSize: 12.0, iconGap: 4.0)
+  public static let brand = TagRegularTokens(iconSize: 12.0, iconGap: 4.0)
+  public static let hcLight = TagRegularTokens(iconSize: 12.0, iconGap: 4.0)
+  public static let hcDark = TagRegularTokens(iconSize: 12.0, iconGap: 4.0)
+}
+
+/// Component `tag-outline-ring` per context: colours are role keys, sizes in pt/dp.
+nonisolated public struct TagOutlineRingTokens: Sendable, Equatable {
+  public let width: Double
+  public static let light = TagOutlineRingTokens(width: 1.0)
+  public static let dark = TagOutlineRingTokens(width: 1.0)
+  public static let brand = TagOutlineRingTokens(width: 1.0)
+  public static let hcLight = TagOutlineRingTokens(width: 1.0)
+  public static let hcDark = TagOutlineRingTokens(width: 1.0)
 }
 
 /// Component `tag-plan` per context: colours are role keys, sizes in pt/dp.
@@ -2447,53 +4182,777 @@ nonisolated public struct TagPlanTokens: Sendable, Equatable {
   )
 }
 
+/// Component `tag-plan-free` per context: colours are role keys, sizes in pt/dp.
+nonisolated public struct TagPlanFreeTokens: Sendable, Equatable {
+  public let backgroundColor: AppColorRole
+  public let textColor: AppColorRole
+
+  public static let light = TagPlanFreeTokens(backgroundColor: .surface2, textColor: .text)
+  public static let dark = TagPlanFreeTokens(backgroundColor: .surface2, textColor: .text)
+  public static let brand = TagPlanFreeTokens(backgroundColor: .surface2, textColor: .text)
+  public static let hcLight = TagPlanFreeTokens(backgroundColor: .surface2, textColor: .text)
+  public static let hcDark = TagPlanFreeTokens(backgroundColor: .surface2, textColor: .text)
+}
+
+/// Component `tag-plan-essentials` per context: colours are role keys, sizes in pt/dp.
+nonisolated public struct TagPlanEssentialsTokens: Sendable, Equatable {
+  public let textColor: AppColorRole
+  public let backgroundColor: AppColorRole
+  public let borderColor: AppColorRole
+
+  public static let light = TagPlanEssentialsTokens(textColor: .infoFg, backgroundColor: .infoBg, borderColor: .infoBg)
+  public static let dark = TagPlanEssentialsTokens(textColor: .infoFg, backgroundColor: .surface, borderColor: .infoFg)
+  public static let brand = TagPlanEssentialsTokens(textColor: .infoFg, backgroundColor: .surface, borderColor: .infoFg)
+
+  public static let hcLight = TagPlanEssentialsTokens(
+    textColor: .infoFg,
+    backgroundColor: .infoBg,
+    borderColor: .infoBg
+  )
+
+  public static let hcDark = TagPlanEssentialsTokens(
+    textColor: .infoFg,
+    backgroundColor: .surface,
+    borderColor: .infoFg
+  )
+}
+
+/// Component `tag-plan-plus` per context: colours are role keys, sizes in pt/dp.
+nonisolated public struct TagPlanPlusTokens: Sendable, Equatable {
+  public let textColor: AppColorRole
+  public let backgroundColor: AppColorRole
+  public let borderColor: AppColorRole
+
+  public static let light = TagPlanPlusTokens(
+    textColor: .successFg,
+    backgroundColor: .successBg,
+    borderColor: .successBg
+  )
+
+  public static let dark = TagPlanPlusTokens(textColor: .successFg, backgroundColor: .surface, borderColor: .successFg)
+  public static let brand = TagPlanPlusTokens(textColor: .successFg, backgroundColor: .surface, borderColor: .successFg)
+
+  public static let hcLight = TagPlanPlusTokens(
+    textColor: .successFg,
+    backgroundColor: .successBg,
+    borderColor: .successBg
+  )
+
+  public static let hcDark = TagPlanPlusTokens(
+    textColor: .successFg,
+    backgroundColor: .surface,
+    borderColor: .successFg
+  )
+}
+
+/// Component `tag-plan-pro` per context: colours are role keys, sizes in pt/dp.
+nonisolated public struct TagPlanProTokens: Sendable, Equatable {
+  public let backgroundColor: AppColorRole
+  public let textColor: AppColorRole
+
+  public static let light = TagPlanProTokens(backgroundColor: .primary, textColor: .onPrimary)
+  public static let dark = TagPlanProTokens(backgroundColor: .primary, textColor: .onPrimary)
+  public static let brand = TagPlanProTokens(backgroundColor: .primary, textColor: .onPrimary)
+  public static let hcLight = TagPlanProTokens(backgroundColor: .primary, textColor: .onPrimary)
+  public static let hcDark = TagPlanProTokens(backgroundColor: .primary, textColor: .onPrimary)
+}
+
+/// Component `tag-lock` per context: colours are role keys, sizes in pt/dp.
+nonisolated public struct TagLockTokens: Sendable, Equatable {
+  public let backgroundColor: AppColorRole
+  public let textColor: AppColorRole
+  public let typography: AppTextStyle
+  public let rounded: Double
+  public let height: Double
+  public let paddingTop: Double
+  public let paddingEnd: Double
+  public let paddingBottom: Double
+  public let paddingStart: Double
+
+  public static let light = TagLockTokens(
+    backgroundColor: .surface2,
+    textColor: .text,
+    typography: AppTypography.captionStrong,
+    rounded: AppRadius.full,
+    height: 24.0,
+    paddingTop: 0.0,
+    paddingEnd: 10.0,
+    paddingBottom: 0.0,
+    paddingStart: 7.0
+  )
+
+  public static let dark = TagLockTokens(
+    backgroundColor: .surface2,
+    textColor: .text,
+    typography: AppTypography.captionStrong,
+    rounded: AppRadius.full,
+    height: 24.0,
+    paddingTop: 0.0,
+    paddingEnd: 10.0,
+    paddingBottom: 0.0,
+    paddingStart: 7.0
+  )
+
+  public static let brand = TagLockTokens(
+    backgroundColor: .surface2,
+    textColor: .text,
+    typography: AppTypography.captionStrong,
+    rounded: AppRadius.full,
+    height: 24.0,
+    paddingTop: 0.0,
+    paddingEnd: 10.0,
+    paddingBottom: 0.0,
+    paddingStart: 7.0
+  )
+
+  public static let hcLight = TagLockTokens(
+    backgroundColor: .surface2,
+    textColor: .text,
+    typography: AppTypography.captionStrong,
+    rounded: AppRadius.full,
+    height: 24.0,
+    paddingTop: 0.0,
+    paddingEnd: 10.0,
+    paddingBottom: 0.0,
+    paddingStart: 7.0
+  )
+
+  public static let hcDark = TagLockTokens(
+    backgroundColor: .surface2,
+    textColor: .text,
+    typography: AppTypography.captionStrong,
+    rounded: AppRadius.full,
+    height: 24.0,
+    paddingTop: 0.0,
+    paddingEnd: 10.0,
+    paddingBottom: 0.0,
+    paddingStart: 7.0
+  )
+}
+
+/// Component `tag-later` per context: colours are role keys, sizes in pt/dp.
+nonisolated public struct TagLaterTokens: Sendable, Equatable {
+  public let textColor: AppColorRole
+  public let borderColor: AppColorRole
+  public let typography: AppTextStyle
+  public let rounded: Double
+  public let height: Double
+  public let paddingTop: Double
+  public let paddingEnd: Double
+  public let paddingBottom: Double
+  public let paddingStart: Double
+
+  public static let light = TagLaterTokens(
+    textColor: .textSecondary,
+    borderColor: .textSecondary,
+    typography: AppTypography.captionStrong,
+    rounded: AppRadius.full,
+    height: 24.0,
+    paddingTop: 0.0,
+    paddingEnd: 10.0,
+    paddingBottom: 0.0,
+    paddingStart: 7.0
+  )
+
+  public static let dark = TagLaterTokens(
+    textColor: .textSecondary,
+    borderColor: .textSecondary,
+    typography: AppTypography.captionStrong,
+    rounded: AppRadius.full,
+    height: 24.0,
+    paddingTop: 0.0,
+    paddingEnd: 10.0,
+    paddingBottom: 0.0,
+    paddingStart: 7.0
+  )
+
+  public static let brand = TagLaterTokens(
+    textColor: .textSecondary,
+    borderColor: .textSecondary,
+    typography: AppTypography.captionStrong,
+    rounded: AppRadius.full,
+    height: 24.0,
+    paddingTop: 0.0,
+    paddingEnd: 10.0,
+    paddingBottom: 0.0,
+    paddingStart: 7.0
+  )
+
+  public static let hcLight = TagLaterTokens(
+    textColor: .textSecondary,
+    borderColor: .textSecondary,
+    typography: AppTypography.captionStrong,
+    rounded: AppRadius.full,
+    height: 24.0,
+    paddingTop: 0.0,
+    paddingEnd: 10.0,
+    paddingBottom: 0.0,
+    paddingStart: 7.0
+  )
+
+  public static let hcDark = TagLaterTokens(
+    textColor: .textSecondary,
+    borderColor: .textSecondary,
+    typography: AppTypography.captionStrong,
+    rounded: AppRadius.full,
+    height: 24.0,
+    paddingTop: 0.0,
+    paddingEnd: 10.0,
+    paddingBottom: 0.0,
+    paddingStart: 7.0
+  )
+}
+
+/// Component `tag-provisional` per context: colours are role keys, sizes in pt/dp.
+nonisolated public struct TagProvisionalTokens: Sendable, Equatable {
+  public let backgroundColor: AppColorRole
+  public let textColor: AppColorRole
+  public let borderColor: AppColorRole
+  public let typography: AppTextStyle
+  public let rounded: Double
+  public let height: Double
+  public let paddingTop: Double
+  public let paddingEnd: Double
+  public let paddingBottom: Double
+  public let paddingStart: Double
+  public let borderDash: Double
+
+  public static let light = TagProvisionalTokens(
+    backgroundColor: .warningBg,
+    textColor: .warningFg,
+    borderColor: .warningFg,
+    typography: AppTypography.captionStrong,
+    rounded: AppRadius.full,
+    height: 24.0,
+    paddingTop: 0.0,
+    paddingEnd: 10.0,
+    paddingBottom: 0.0,
+    paddingStart: 7.0,
+    borderDash: 3.0
+  )
+
+  public static let dark = TagProvisionalTokens(
+    backgroundColor: .warningBg,
+    textColor: .warningFg,
+    borderColor: .warningFg,
+    typography: AppTypography.captionStrong,
+    rounded: AppRadius.full,
+    height: 24.0,
+    paddingTop: 0.0,
+    paddingEnd: 10.0,
+    paddingBottom: 0.0,
+    paddingStart: 7.0,
+    borderDash: 3.0
+  )
+
+  public static let brand = TagProvisionalTokens(
+    backgroundColor: .warningBg,
+    textColor: .warningFg,
+    borderColor: .warningFg,
+    typography: AppTypography.captionStrong,
+    rounded: AppRadius.full,
+    height: 24.0,
+    paddingTop: 0.0,
+    paddingEnd: 10.0,
+    paddingBottom: 0.0,
+    paddingStart: 7.0,
+    borderDash: 3.0
+  )
+
+  public static let hcLight = TagProvisionalTokens(
+    backgroundColor: .warningBg,
+    textColor: .warningFg,
+    borderColor: .warningFg,
+    typography: AppTypography.captionStrong,
+    rounded: AppRadius.full,
+    height: 24.0,
+    paddingTop: 0.0,
+    paddingEnd: 10.0,
+    paddingBottom: 0.0,
+    paddingStart: 7.0,
+    borderDash: 3.0
+  )
+
+  public static let hcDark = TagProvisionalTokens(
+    backgroundColor: .warningBg,
+    textColor: .warningFg,
+    borderColor: .warningFg,
+    typography: AppTypography.captionStrong,
+    rounded: AppRadius.full,
+    height: 24.0,
+    paddingTop: 0.0,
+    paddingEnd: 10.0,
+    paddingBottom: 0.0,
+    paddingStart: 7.0,
+    borderDash: 3.0
+  )
+}
+
+/// Component `tag-new` per context: colours are role keys, sizes in pt/dp.
+nonisolated public struct TagNewTokens: Sendable, Equatable {
+  public let textColor: AppColorRole
+  public let typography: AppTextStyle
+  public let rounded: Double
+  public let height: Double
+  public let paddingTop: Double
+  public let paddingEnd: Double
+  public let paddingBottom: Double
+  public let paddingStart: Double
+  public let dotSize: Double
+  public let dotGap: Double
+  public let backgroundColor: AppColorRole
+
+  public static let light = TagNewTokens(
+    textColor: .infoFg,
+    typography: AppTypography.captionStrong,
+    rounded: AppRadius.full,
+    height: 24.0,
+    paddingTop: 0.0,
+    paddingEnd: 10.0,
+    paddingBottom: 0.0,
+    paddingStart: 8.0,
+    dotSize: 6.0,
+    dotGap: 5.0,
+    backgroundColor: .infoBg
+  )
+
+  public static let dark = TagNewTokens(
+    textColor: .infoFg,
+    typography: AppTypography.captionStrong,
+    rounded: AppRadius.full,
+    height: 24.0,
+    paddingTop: 0.0,
+    paddingEnd: 10.0,
+    paddingBottom: 0.0,
+    paddingStart: 8.0,
+    dotSize: 6.0,
+    dotGap: 5.0,
+    backgroundColor: .surface2
+  )
+
+  public static let brand = TagNewTokens(
+    textColor: .infoFg,
+    typography: AppTypography.captionStrong,
+    rounded: AppRadius.full,
+    height: 24.0,
+    paddingTop: 0.0,
+    paddingEnd: 10.0,
+    paddingBottom: 0.0,
+    paddingStart: 8.0,
+    dotSize: 6.0,
+    dotGap: 5.0,
+    backgroundColor: .surface2
+  )
+
+  public static let hcLight = TagNewTokens(
+    textColor: .infoFg,
+    typography: AppTypography.captionStrong,
+    rounded: AppRadius.full,
+    height: 24.0,
+    paddingTop: 0.0,
+    paddingEnd: 10.0,
+    paddingBottom: 0.0,
+    paddingStart: 8.0,
+    dotSize: 6.0,
+    dotGap: 5.0,
+    backgroundColor: .infoBg
+  )
+
+  public static let hcDark = TagNewTokens(
+    textColor: .infoFg,
+    typography: AppTypography.captionStrong,
+    rounded: AppRadius.full,
+    height: 24.0,
+    paddingTop: 0.0,
+    paddingEnd: 10.0,
+    paddingBottom: 0.0,
+    paddingStart: 8.0,
+    dotSize: 6.0,
+    dotGap: 5.0,
+    backgroundColor: .surface2
+  )
+}
+
+/// Component `tag-available` per context: colours are role keys, sizes in pt/dp.
+nonisolated public struct TagAvailableTokens: Sendable, Equatable {
+  public let textColor: AppColorRole
+  public let typography: AppTextStyle
+  public let rounded: Double
+  public let height: Double
+  public let paddingTop: Double
+  public let paddingEnd: Double
+  public let paddingBottom: Double
+  public let paddingStart: Double
+  public let backgroundColor: AppColorRole
+
+  public static let light = TagAvailableTokens(
+    textColor: .successFg,
+    typography: AppTypography.captionStrong,
+    rounded: AppRadius.full,
+    height: 24.0,
+    paddingTop: 0.0,
+    paddingEnd: 8.0,
+    paddingBottom: 0.0,
+    paddingStart: 8.0,
+    backgroundColor: .successBg
+  )
+
+  public static let dark = TagAvailableTokens(
+    textColor: .successFg,
+    typography: AppTypography.captionStrong,
+    rounded: AppRadius.full,
+    height: 24.0,
+    paddingTop: 0.0,
+    paddingEnd: 8.0,
+    paddingBottom: 0.0,
+    paddingStart: 8.0,
+    backgroundColor: .surface2
+  )
+
+  public static let brand = TagAvailableTokens(
+    textColor: .successFg,
+    typography: AppTypography.captionStrong,
+    rounded: AppRadius.full,
+    height: 24.0,
+    paddingTop: 0.0,
+    paddingEnd: 8.0,
+    paddingBottom: 0.0,
+    paddingStart: 8.0,
+    backgroundColor: .surface2
+  )
+
+  public static let hcLight = TagAvailableTokens(
+    textColor: .successFg,
+    typography: AppTypography.captionStrong,
+    rounded: AppRadius.full,
+    height: 24.0,
+    paddingTop: 0.0,
+    paddingEnd: 8.0,
+    paddingBottom: 0.0,
+    paddingStart: 8.0,
+    backgroundColor: .successBg
+  )
+
+  public static let hcDark = TagAvailableTokens(
+    textColor: .successFg,
+    typography: AppTypography.captionStrong,
+    rounded: AppRadius.full,
+    height: 24.0,
+    paddingTop: 0.0,
+    paddingEnd: 8.0,
+    paddingBottom: 0.0,
+    paddingStart: 8.0,
+    backgroundColor: .surface2
+  )
+}
+
+/// Component `tag-unavailable` per context: colours are role keys, sizes in pt/dp.
+nonisolated public struct TagUnavailableTokens: Sendable, Equatable {
+  public let backgroundColor: AppColorRole
+  public let textColor: AppColorRole
+  public let typography: AppTextStyle
+  public let rounded: Double
+  public let height: Double
+  public let paddingTop: Double
+  public let paddingEnd: Double
+  public let paddingBottom: Double
+  public let paddingStart: Double
+
+  public static let light = TagUnavailableTokens(
+    backgroundColor: .surface2,
+    textColor: .textSecondary,
+    typography: AppTypography.captionStrong,
+    rounded: AppRadius.full,
+    height: 24.0,
+    paddingTop: 0.0,
+    paddingEnd: 8.0,
+    paddingBottom: 0.0,
+    paddingStart: 8.0
+  )
+
+  public static let dark = TagUnavailableTokens(
+    backgroundColor: .surface2,
+    textColor: .textSecondary,
+    typography: AppTypography.captionStrong,
+    rounded: AppRadius.full,
+    height: 24.0,
+    paddingTop: 0.0,
+    paddingEnd: 8.0,
+    paddingBottom: 0.0,
+    paddingStart: 8.0
+  )
+
+  public static let brand = TagUnavailableTokens(
+    backgroundColor: .surface2,
+    textColor: .textSecondary,
+    typography: AppTypography.captionStrong,
+    rounded: AppRadius.full,
+    height: 24.0,
+    paddingTop: 0.0,
+    paddingEnd: 8.0,
+    paddingBottom: 0.0,
+    paddingStart: 8.0
+  )
+
+  public static let hcLight = TagUnavailableTokens(
+    backgroundColor: .surface2,
+    textColor: .textSecondary,
+    typography: AppTypography.captionStrong,
+    rounded: AppRadius.full,
+    height: 24.0,
+    paddingTop: 0.0,
+    paddingEnd: 8.0,
+    paddingBottom: 0.0,
+    paddingStart: 8.0
+  )
+
+  public static let hcDark = TagUnavailableTokens(
+    backgroundColor: .surface2,
+    textColor: .textSecondary,
+    typography: AppTypography.captionStrong,
+    rounded: AppRadius.full,
+    height: 24.0,
+    paddingTop: 0.0,
+    paddingEnd: 8.0,
+    paddingBottom: 0.0,
+    paddingStart: 8.0
+  )
+}
+
+/// Component `tag-kind` per context: colours are role keys, sizes in pt/dp.
+nonisolated public struct TagKindTokens: Sendable, Equatable {
+  public let backgroundColor: AppColorRole
+  public let textColor: AppColorRole
+  public let typography: AppTextStyle
+  public let rounded: Double
+  public let height: Double
+  public let paddingTop: Double
+  public let paddingEnd: Double
+  public let paddingBottom: Double
+  public let paddingStart: Double
+
+  public static let light = TagKindTokens(
+    backgroundColor: .surface,
+    textColor: .text,
+    typography: AppTypography.overline,
+    rounded: AppRadius.full,
+    height: 24.0,
+    paddingTop: 0.0,
+    paddingEnd: 10.0,
+    paddingBottom: 0.0,
+    paddingStart: 10.0
+  )
+
+  public static let dark = TagKindTokens(
+    backgroundColor: .surface,
+    textColor: .text,
+    typography: AppTypography.overline,
+    rounded: AppRadius.full,
+    height: 24.0,
+    paddingTop: 0.0,
+    paddingEnd: 10.0,
+    paddingBottom: 0.0,
+    paddingStart: 10.0
+  )
+
+  public static let brand = TagKindTokens(
+    backgroundColor: .surface,
+    textColor: .text,
+    typography: AppTypography.overline,
+    rounded: AppRadius.full,
+    height: 24.0,
+    paddingTop: 0.0,
+    paddingEnd: 10.0,
+    paddingBottom: 0.0,
+    paddingStart: 10.0
+  )
+
+  public static let hcLight = TagKindTokens(
+    backgroundColor: .surface,
+    textColor: .text,
+    typography: AppTypography.overline,
+    rounded: AppRadius.full,
+    height: 24.0,
+    paddingTop: 0.0,
+    paddingEnd: 10.0,
+    paddingBottom: 0.0,
+    paddingStart: 10.0
+  )
+
+  public static let hcDark = TagKindTokens(
+    backgroundColor: .surface,
+    textColor: .text,
+    typography: AppTypography.overline,
+    rounded: AppRadius.full,
+    height: 24.0,
+    paddingTop: 0.0,
+    paddingEnd: 10.0,
+    paddingBottom: 0.0,
+    paddingStart: 10.0
+  )
+}
+
 /// Component `tag-differs` per context: colours are role keys, sizes in pt/dp.
 nonisolated public struct TagDiffersTokens: Sendable, Equatable {
   public let backgroundColor: AppColorRole
   public let textColor: AppColorRole
   public let typography: AppTextStyle
   public let rounded: Double
+  public let height: Double
+  public let paddingTop: Double
+  public let paddingEnd: Double
+  public let paddingBottom: Double
+  public let paddingStart: Double
 
   public static let light = TagDiffersTokens(
     backgroundColor: .accent,
     textColor: .onAccent,
-    typography: AppTypography.captionStrong,
-    rounded: AppRadius.full
+    typography: AppTypography.badge,
+    rounded: AppRadius.full,
+    height: 18.0,
+    paddingTop: 0.0,
+    paddingEnd: 7.0,
+    paddingBottom: 0.0,
+    paddingStart: 7.0
   )
 
   public static let dark = TagDiffersTokens(
     backgroundColor: .accent,
     textColor: .onAccent,
-    typography: AppTypography.captionStrong,
-    rounded: AppRadius.full
+    typography: AppTypography.badge,
+    rounded: AppRadius.full,
+    height: 18.0,
+    paddingTop: 0.0,
+    paddingEnd: 7.0,
+    paddingBottom: 0.0,
+    paddingStart: 7.0
   )
 
   public static let brand = TagDiffersTokens(
     backgroundColor: .accent,
     textColor: .onAccent,
-    typography: AppTypography.captionStrong,
-    rounded: AppRadius.full
+    typography: AppTypography.badge,
+    rounded: AppRadius.full,
+    height: 18.0,
+    paddingTop: 0.0,
+    paddingEnd: 7.0,
+    paddingBottom: 0.0,
+    paddingStart: 7.0
   )
 
   public static let hcLight = TagDiffersTokens(
     backgroundColor: .accent,
     textColor: .onAccent,
-    typography: AppTypography.captionStrong,
-    rounded: AppRadius.full
+    typography: AppTypography.badge,
+    rounded: AppRadius.full,
+    height: 18.0,
+    paddingTop: 0.0,
+    paddingEnd: 7.0,
+    paddingBottom: 0.0,
+    paddingStart: 7.0
   )
 
   public static let hcDark = TagDiffersTokens(
     backgroundColor: .accent,
     textColor: .onAccent,
-    typography: AppTypography.captionStrong,
-    rounded: AppRadius.full
+    typography: AppTypography.badge,
+    rounded: AppRadius.full,
+    height: 18.0,
+    paddingTop: 0.0,
+    paddingEnd: 7.0,
+    paddingBottom: 0.0,
+    paddingStart: 7.0
   )
+}
+
+/// Component `badge-large` per context: colours are role keys, sizes in pt/dp.
+nonisolated public struct BadgeLargeTokens: Sendable, Equatable {
+  public let typography: AppTextStyle
+  public let rounded: Double
+  public let height: Double
+  public let paddingTop: Double
+  public let paddingEnd: Double
+  public let paddingBottom: Double
+  public let paddingStart: Double
+  public let iconSize: Double
+  public let iconGap: Double
+
+  public static let light = BadgeLargeTokens(
+    typography: AppTypography.labelSm,
+    rounded: AppRadius.full,
+    height: 28.0,
+    paddingTop: 0.0,
+    paddingEnd: 12.0,
+    paddingBottom: 0.0,
+    paddingStart: 9.0,
+    iconSize: 16.0,
+    iconGap: 5.0
+  )
+
+  public static let dark = BadgeLargeTokens(
+    typography: AppTypography.labelSm,
+    rounded: AppRadius.full,
+    height: 28.0,
+    paddingTop: 0.0,
+    paddingEnd: 12.0,
+    paddingBottom: 0.0,
+    paddingStart: 9.0,
+    iconSize: 16.0,
+    iconGap: 5.0
+  )
+
+  public static let brand = BadgeLargeTokens(
+    typography: AppTypography.labelSm,
+    rounded: AppRadius.full,
+    height: 28.0,
+    paddingTop: 0.0,
+    paddingEnd: 12.0,
+    paddingBottom: 0.0,
+    paddingStart: 9.0,
+    iconSize: 16.0,
+    iconGap: 5.0
+  )
+
+  public static let hcLight = BadgeLargeTokens(
+    typography: AppTypography.labelSm,
+    rounded: AppRadius.full,
+    height: 28.0,
+    paddingTop: 0.0,
+    paddingEnd: 12.0,
+    paddingBottom: 0.0,
+    paddingStart: 9.0,
+    iconSize: 16.0,
+    iconGap: 5.0
+  )
+
+  public static let hcDark = BadgeLargeTokens(
+    typography: AppTypography.labelSm,
+    rounded: AppRadius.full,
+    height: 28.0,
+    paddingTop: 0.0,
+    paddingEnd: 12.0,
+    paddingBottom: 0.0,
+    paddingStart: 9.0,
+    iconSize: 16.0,
+    iconGap: 5.0
+  )
+}
+
+/// Component `badge-outline-ring` per context: colours are role keys, sizes in pt/dp.
+nonisolated public struct BadgeOutlineRingTokens: Sendable, Equatable {
+  public let width: Double
+  public static let light = BadgeOutlineRingTokens(width: 1.5)
+  public static let dark = BadgeOutlineRingTokens(width: 1.5)
+  public static let brand = BadgeOutlineRingTokens(width: 1.5)
+  public static let hcLight = BadgeOutlineRingTokens(width: 1.5)
+  public static let hcDark = BadgeOutlineRingTokens(width: 1.5)
 }
 
 /// Component `pill-trial` per context: colours are role keys, sizes in pt/dp.
 nonisolated public struct PillTrialTokens: Sendable, Equatable {
   public let backgroundColor: AppColorRole
   public let textColor: AppColorRole
+  public let borderColor: AppColorRole
   public let typography: AppTextStyle
   public let rounded: Double
   public let height: Double
@@ -2505,6 +4964,7 @@ nonisolated public struct PillTrialTokens: Sendable, Equatable {
   public static let light = PillTrialTokens(
     backgroundColor: .surface,
     textColor: .text,
+    borderColor: .text,
     typography: AppTypography.labelSm,
     rounded: AppRadius.full,
     height: 28.0,
@@ -2517,6 +4977,7 @@ nonisolated public struct PillTrialTokens: Sendable, Equatable {
   public static let dark = PillTrialTokens(
     backgroundColor: .surface,
     textColor: .text,
+    borderColor: .text,
     typography: AppTypography.labelSm,
     rounded: AppRadius.full,
     height: 28.0,
@@ -2529,6 +4990,7 @@ nonisolated public struct PillTrialTokens: Sendable, Equatable {
   public static let brand = PillTrialTokens(
     backgroundColor: .surface,
     textColor: .text,
+    borderColor: .text,
     typography: AppTypography.labelSm,
     rounded: AppRadius.full,
     height: 28.0,
@@ -2541,6 +5003,7 @@ nonisolated public struct PillTrialTokens: Sendable, Equatable {
   public static let hcLight = PillTrialTokens(
     backgroundColor: .surface,
     textColor: .text,
+    borderColor: .text,
     typography: AppTypography.labelSm,
     rounded: AppRadius.full,
     height: 28.0,
@@ -2553,6 +5016,7 @@ nonisolated public struct PillTrialTokens: Sendable, Equatable {
   public static let hcDark = PillTrialTokens(
     backgroundColor: .surface,
     textColor: .text,
+    borderColor: .text,
     typography: AppTypography.labelSm,
     rounded: AppRadius.full,
     height: 28.0,
@@ -2567,12 +5031,80 @@ nonisolated public struct PillTrialTokens: Sendable, Equatable {
 nonisolated public struct PillTrialLastDayTokens: Sendable, Equatable {
   public let backgroundColor: AppColorRole
   public let textColor: AppColorRole
+  public let borderColor: AppColorRole
 
-  public static let light = PillTrialLastDayTokens(backgroundColor: .warningBg, textColor: .warningFg)
-  public static let dark = PillTrialLastDayTokens(backgroundColor: .warningBg, textColor: .warningFg)
-  public static let brand = PillTrialLastDayTokens(backgroundColor: .warningBg, textColor: .warningFg)
-  public static let hcLight = PillTrialLastDayTokens(backgroundColor: .warningBg, textColor: .warningFg)
-  public static let hcDark = PillTrialLastDayTokens(backgroundColor: .warningBg, textColor: .warningFg)
+  public static let light = PillTrialLastDayTokens(
+    backgroundColor: .warningBg,
+    textColor: .warningFg,
+    borderColor: .warningFg
+  )
+
+  public static let dark = PillTrialLastDayTokens(
+    backgroundColor: .warningBg,
+    textColor: .warningFg,
+    borderColor: .warningFg
+  )
+
+  public static let brand = PillTrialLastDayTokens(
+    backgroundColor: .warningBg,
+    textColor: .warningFg,
+    borderColor: .warningFg
+  )
+
+  public static let hcLight = PillTrialLastDayTokens(
+    backgroundColor: .warningBg,
+    textColor: .warningFg,
+    borderColor: .warningFg
+  )
+
+  public static let hcDark = PillTrialLastDayTokens(
+    backgroundColor: .warningBg,
+    textColor: .warningFg,
+    borderColor: .warningFg
+  )
+}
+
+/// Component `badge-dot` per context: colours are role keys, sizes in pt/dp.
+nonisolated public struct BadgeDotTokens: Sendable, Equatable {
+  public let backgroundColor: AppColorRole
+  public let rounded: Double
+  public let size: Double
+  public let outerRingWidth: Double
+
+  public static let light = BadgeDotTokens(
+    backgroundColor: .errorFg,
+    rounded: AppRadius.full,
+    size: 8.0,
+    outerRingWidth: 2.0
+  )
+
+  public static let dark = BadgeDotTokens(
+    backgroundColor: .errorFg,
+    rounded: AppRadius.full,
+    size: 8.0,
+    outerRingWidth: 2.0
+  )
+
+  public static let brand = BadgeDotTokens(
+    backgroundColor: .errorFg,
+    rounded: AppRadius.full,
+    size: 8.0,
+    outerRingWidth: 2.0
+  )
+
+  public static let hcLight = BadgeDotTokens(
+    backgroundColor: .errorFg,
+    rounded: AppRadius.full,
+    size: 8.0,
+    outerRingWidth: 2.0
+  )
+
+  public static let hcDark = BadgeDotTokens(
+    backgroundColor: .errorFg,
+    rounded: AppRadius.full,
+    size: 8.0,
+    outerRingWidth: 2.0
+  )
 }
 
 /// Component `badge-count` per context: colours are role keys, sizes in pt/dp.
@@ -2582,13 +5114,25 @@ nonisolated public struct BadgeCountTokens: Sendable, Equatable {
   public let typography: AppTextStyle
   public let rounded: Double
   public let height: Double
+  public let minWidth: Double
+  public let paddingTop: Double
+  public let paddingEnd: Double
+  public let paddingBottom: Double
+  public let paddingStart: Double
+  public let outerRingWidth: Double
 
   public static let light = BadgeCountTokens(
     backgroundColor: .errorFg,
     textColor: .onError,
     typography: AppTypography.badgeCount,
     rounded: AppRadius.full,
-    height: 18.0
+    height: 18.0,
+    minWidth: 18.0,
+    paddingTop: 0.0,
+    paddingEnd: 5.0,
+    paddingBottom: 0.0,
+    paddingStart: 5.0,
+    outerRingWidth: 2.0
   )
 
   public static let dark = BadgeCountTokens(
@@ -2596,7 +5140,13 @@ nonisolated public struct BadgeCountTokens: Sendable, Equatable {
     textColor: .onError,
     typography: AppTypography.badgeCount,
     rounded: AppRadius.full,
-    height: 18.0
+    height: 18.0,
+    minWidth: 18.0,
+    paddingTop: 0.0,
+    paddingEnd: 5.0,
+    paddingBottom: 0.0,
+    paddingStart: 5.0,
+    outerRingWidth: 2.0
   )
 
   public static let brand = BadgeCountTokens(
@@ -2604,7 +5154,13 @@ nonisolated public struct BadgeCountTokens: Sendable, Equatable {
     textColor: .onError,
     typography: AppTypography.badgeCount,
     rounded: AppRadius.full,
-    height: 18.0
+    height: 18.0,
+    minWidth: 18.0,
+    paddingTop: 0.0,
+    paddingEnd: 5.0,
+    paddingBottom: 0.0,
+    paddingStart: 5.0,
+    outerRingWidth: 2.0
   )
 
   public static let hcLight = BadgeCountTokens(
@@ -2612,7 +5168,13 @@ nonisolated public struct BadgeCountTokens: Sendable, Equatable {
     textColor: .onError,
     typography: AppTypography.badgeCount,
     rounded: AppRadius.full,
-    height: 18.0
+    height: 18.0,
+    minWidth: 18.0,
+    paddingTop: 0.0,
+    paddingEnd: 5.0,
+    paddingBottom: 0.0,
+    paddingStart: 5.0,
+    outerRingWidth: 2.0
   )
 
   public static let hcDark = BadgeCountTokens(
@@ -2620,7 +5182,156 @@ nonisolated public struct BadgeCountTokens: Sendable, Equatable {
     textColor: .onError,
     typography: AppTypography.badgeCount,
     rounded: AppRadius.full,
-    height: 18.0
+    height: 18.0,
+    minWidth: 18.0,
+    paddingTop: 0.0,
+    paddingEnd: 5.0,
+    paddingBottom: 0.0,
+    paddingStart: 5.0,
+    outerRingWidth: 2.0
+  )
+}
+
+/// Component `reason-row-standard` per context: colours are role keys, sizes in pt/dp.
+nonisolated public struct ReasonRowStandardTokens: Sendable, Equatable {
+  public let iconSize: Double
+  public let iconGap: Double
+
+  public static let light = ReasonRowStandardTokens(iconSize: 16.0, iconGap: 8.0)
+  public static let dark = ReasonRowStandardTokens(iconSize: 16.0, iconGap: 8.0)
+  public static let brand = ReasonRowStandardTokens(iconSize: 16.0, iconGap: 8.0)
+  public static let hcLight = ReasonRowStandardTokens(iconSize: 16.0, iconGap: 8.0)
+  public static let hcDark = ReasonRowStandardTokens(iconSize: 16.0, iconGap: 8.0)
+}
+
+/// Component `reason-row-outline-ring` per context: colours are role keys, sizes in pt/dp.
+nonisolated public struct ReasonRowOutlineRingTokens: Sendable, Equatable {
+  public let width: Double
+  public static let light = ReasonRowOutlineRingTokens(width: 1.0)
+  public static let dark = ReasonRowOutlineRingTokens(width: 1.0)
+  public static let brand = ReasonRowOutlineRingTokens(width: 1.0)
+  public static let hcLight = ReasonRowOutlineRingTokens(width: 1.0)
+  public static let hcDark = ReasonRowOutlineRingTokens(width: 1.0)
+}
+
+/// Component `reason-row` per context: colours are role keys, sizes in pt/dp.
+nonisolated public struct ReasonRowTokens: Sendable, Equatable {
+  public let backgroundColor: AppColorRole
+  public let textColor: AppColorRole
+  public let borderColor: AppColorRole
+  public let iconColor: AppColorRole
+  public let iconDiscColor: AppColorRole
+  public let factColor: AppColorRole
+  public let freshnessColor: AppColorRole
+  public let typography: AppTextStyle
+  public let rounded: Double
+  public let paddingTop: Double
+  public let paddingEnd: Double
+  public let paddingBottom: Double
+  public let paddingStart: Double
+  public let lineGap: Double
+  public let iconDiscSize: Double
+  public let factTypography: AppTextStyle
+  public let freshnessTypography: AppTextStyle
+
+  public static let light = ReasonRowTokens(
+    backgroundColor: .surface,
+    textColor: .text,
+    borderColor: .divider,
+    iconColor: .primaryText,
+    iconDiscColor: .surface2,
+    factColor: .text,
+    freshnessColor: .textSecondary,
+    typography: AppTypography.callout,
+    rounded: AppRadius.radius16,
+    paddingTop: 14.0,
+    paddingEnd: 16.0,
+    paddingBottom: 14.0,
+    paddingStart: 16.0,
+    lineGap: 8.0,
+    iconDiscSize: 24.0,
+    factTypography: AppTypography.labelSm,
+    freshnessTypography: AppTypography.caption
+  )
+
+  public static let dark = ReasonRowTokens(
+    backgroundColor: .surface,
+    textColor: .text,
+    borderColor: .divider,
+    iconColor: .primaryText,
+    iconDiscColor: .surface2,
+    factColor: .text,
+    freshnessColor: .textSecondary,
+    typography: AppTypography.callout,
+    rounded: AppRadius.radius16,
+    paddingTop: 14.0,
+    paddingEnd: 16.0,
+    paddingBottom: 14.0,
+    paddingStart: 16.0,
+    lineGap: 8.0,
+    iconDiscSize: 24.0,
+    factTypography: AppTypography.labelSm,
+    freshnessTypography: AppTypography.caption
+  )
+
+  public static let brand = ReasonRowTokens(
+    backgroundColor: .surface,
+    textColor: .text,
+    borderColor: .divider,
+    iconColor: .primaryText,
+    iconDiscColor: .surface2,
+    factColor: .text,
+    freshnessColor: .textSecondary,
+    typography: AppTypography.callout,
+    rounded: AppRadius.radius16,
+    paddingTop: 14.0,
+    paddingEnd: 16.0,
+    paddingBottom: 14.0,
+    paddingStart: 16.0,
+    lineGap: 8.0,
+    iconDiscSize: 24.0,
+    factTypography: AppTypography.labelSm,
+    freshnessTypography: AppTypography.caption
+  )
+
+  public static let hcLight = ReasonRowTokens(
+    backgroundColor: .surface,
+    textColor: .text,
+    borderColor: .divider,
+    iconColor: .primaryText,
+    iconDiscColor: .surface2,
+    factColor: .text,
+    freshnessColor: .textSecondary,
+    typography: AppTypography.callout,
+    rounded: AppRadius.radius16,
+    paddingTop: 14.0,
+    paddingEnd: 16.0,
+    paddingBottom: 14.0,
+    paddingStart: 16.0,
+    lineGap: 8.0,
+    iconDiscSize: 24.0,
+    factTypography: AppTypography.labelSm,
+    freshnessTypography: AppTypography.caption
+  )
+
+  public static let hcDark = ReasonRowTokens(
+    backgroundColor: .surface,
+    textColor: .text,
+    borderColor: .divider,
+    iconColor: .primaryText,
+    iconDiscColor: .surface2,
+    factColor: .text,
+    freshnessColor: .textSecondary,
+    typography: AppTypography.callout,
+    rounded: AppRadius.radius16,
+    paddingTop: 14.0,
+    paddingEnd: 16.0,
+    paddingBottom: 14.0,
+    paddingStart: 16.0,
+    lineGap: 8.0,
+    iconDiscSize: 24.0,
+    factTypography: AppTypography.labelSm,
+    freshnessTypography: AppTypography.caption
   )
 }
 

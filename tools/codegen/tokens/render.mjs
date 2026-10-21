@@ -54,14 +54,17 @@ export function joinMembers(memberLines) {
   return out;
 }
 
+/** A namespace; `access: 'private'` (a Spec's context holder) makes it and its members private. */
 function renderNamespace(dialect, ns, depth) {
   const pad = dialect.indent.repeat(depth);
   const doc = ns.doc ? [dialect.doc(ns.doc, pad)] : [];
   if (ns.members.length === 0) return [...doc, `${pad}${dialect.emptyNamespace(ns.name)}`];
   const inner = depth + 1;
   const member = (m) =>
-    m.kind === 'namespace' ? renderNamespace(dialect, m, inner) : dialect.constant(m, inner);
-  const head = `${pad}${dialect.namespaceHead(ns.name)} {`;
+    m.kind === 'namespace'
+      ? renderNamespace(dialect, m, inner)
+      : dialect.constant(m, inner, ns.access);
+  const head = `${pad}${dialect.namespaceHead(ns.name, ns.access)} {`;
   return [...doc, head, ...joinMembers(ns.members.map(member)), `${pad}}`];
 }
 
@@ -86,6 +89,10 @@ function scalar(dialect, value, type) {
       return dialect.spell.ref(value.namespace, value.member);
     case 'case':
       return dialect.spell.enumCase(value.type, value.id);
+    case 'bool':
+      return String(value.b);
+    case 'union':
+      return dialect.spell.unionCase(value.type, value.case);
     case 'none':
       return dialect.spell.none;
     default:
@@ -99,11 +106,16 @@ const itemTypeOf = (type) => {
   return type === 'doubleList' ? 'double' : 'string';
 };
 
-/** The parts of a bracketed value: a struct value (a call) or a list. */
+/**
+ * The parts of a bracketed value: a struct value or a union case with a payload (a call), or a
+ * list.
+ */
 function bracketed(dialect, value, type) {
-  if (value.t === 'init') {
+  if (value.t === 'init' || value.t === 'union') {
+    const callee =
+      value.t === 'init' ? value.struct : dialect.spell.unionCase(value.type, value.case);
     return {
-      open: `${value.struct}(`,
+      open: `${callee}(`,
       close: ')',
       items: value.args.map((arg) => ({ label: dialect.argLabel(arg.name), ...arg })),
       lastComma: dialect.callTrailingComma,
@@ -118,7 +130,10 @@ function bracketed(dialect, value, type) {
   };
 }
 
-const isBracketed = (value) => value.t === 'init' || (value.t === 'list' && value.items.length > 0);
+const isBracketed = (value) =>
+  value.t === 'init' ||
+  (value.t === 'union' && value.args.length > 0) ||
+  (value.t === 'list' && value.items.length > 0);
 
 /** A value on one line, in the dialect's spelling (an enum field's value). */
 export function inline(dialect, value, type) {
@@ -133,12 +148,18 @@ export function inline(dialect, value, type) {
  * `prefix` + the value + `suffix` at indentation `pad`. A value stays on one line when it fits in
  * `dialect.limit`; otherwise a struct value or list takes one item per line. A dialect with
  * `wrapAfterAssign` (ktlint multiline-expression-wrapping) starts it on the line after the `=`;
- * a list item has no `=` and starts where it stands.
+ * a list item has no `=` and starts where it stands. A single value too long for its line (a
+ * gallery sentence) goes on the line after its `=`, one indent in, in both dialects.
  */
 export function valueLines(dialect, prefix, { value, type }, pad, suffix = '') {
-  const single = `${prefix}${inline(dialect, value, type)}${suffix}`;
-  if (single.length <= dialect.limit || !isBracketed(value)) return [single];
-  const afterAssign = dialect.wrapAfterAssign && prefix.trimEnd().endsWith('=');
+  const text = inline(dialect, value, type);
+  const single = `${prefix}${text}${suffix}`;
+  if (single.length <= dialect.limit) return [single];
+  const assigns = prefix.trimEnd().endsWith('=');
+  if (!isBracketed(value)) {
+    return assigns ? [prefix.trimEnd(), `${pad}${dialect.indent}${text}${suffix}`] : [single];
+  }
+  const afterAssign = dialect.wrapAfterAssign && assigns;
   const outer = afterAssign ? pad + dialect.indent : pad;
   const inner = outer + dialect.indent;
   const { open, close, items, lastComma } = bracketed(dialect, value, type);

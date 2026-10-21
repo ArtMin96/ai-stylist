@@ -9,12 +9,14 @@ import { test } from 'node:test';
 
 import { emitApiKotlin } from '../emit-api-kotlin.mjs';
 import { emitApiSwift } from '../emit-api-swift.mjs';
+import { emitKotlin } from '../emit-kotlin.mjs';
 import {
   CONTRACT_TOKENS,
   REPO_CONTRACTS,
   REPO_DESIGN_MD,
   VALID_CONTRACTS,
   block,
+  emitted,
   emittedApi,
   emittedIconSet,
   firstGroups,
@@ -49,6 +51,14 @@ test('Swift enums: a case per id, the raw value only where it differs from the c
     'nonisolated public enum ButtonVariant: String, CaseIterable, Sendable {',
     '  case primary',
     '  case secondary',
+    '',
+    '  /// The accessibility role of the variant.',
+    '  public var role: ButtonRole {',
+    '    switch self {',
+    '    case .primary: .button',
+    '    case .secondary: .button',
+    '    }',
+    '  }',
     '}',
   ];
   assert.equal(block(swift, 'nonisolated public enum ButtonVariant'), variant.join('\n'));
@@ -64,11 +74,11 @@ test('Kotlin enums: an entry per id carrying the contract id', () => {
   const size = ['enum class ButtonSize(', '    val id: String,', ') {'];
   assert.ok(kotlin.includes(size.join('\n')), 'the ButtonSize header');
   assert.match(kotlin, /\n {4}LARGE\("large"\),\n {4}SMALL\("small"\),\n\}\n/);
-  assert.match(repoKotlin(), /\n {4}PRIMARY_OUTLINE\("primary-outline"\),\n/);
+  assert.match(repoKotlin(), /\n {4}PRIMARY_OUTLINE\("primary-outline", ButtonRole\.BUTTON\),\n/);
 });
 
 test('test IDs: one constant per allowed combination and no other', () => {
-  const ids = firstGroups(swift, /public static let \w+: String = "(ds-[a-z-]+)"/g);
+  const ids = firstGroups(swift, /public static let \w+: String = "(ds-button-[a-z-]+)"/g);
   assert.equal(ids.length, 14);
   assert.ok(ids.includes('ds-button-primary-small-disabled'));
   assert.ok(!ids.includes('ds-button-secondary-small-enabled'), 'secondary has no small');
@@ -78,7 +88,10 @@ test('test IDs: one constant per allowed combination and no other', () => {
   assert.equal(repoIds.length, 100);
   assert.ok(repoIds.includes('ds-button-text-compact-enabled'));
   assert.ok(!repoIds.some((id) => id.startsWith('ds-button-text-small-')), 'text small is gone');
-  for (const text of [repoSwift(), repoKotlin()]) assert.doesNotMatch(text, /textSmall|TEXT_SMALL/);
+  // `\b`: the chip's `contextSmallEnabled` is no text-small button.
+  for (const text of [repoSwift(), repoKotlin()]) {
+    assert.doesNotMatch(text, /\btextSmall|\bTEXT_SMALL/);
+  }
 });
 
 test('the merged look: optional where a look lacks the property, the focus ring as a type', () => {
@@ -101,9 +114,10 @@ test('the icon slot: an icon-scale step and a gap, md / 6 at compact and md / 8 
   const swiftSlot = /\n {2}public let iconSize: AppIconSize\n {2}public let iconGap: Double\n/;
   assert.match(appearance, swiftSlot);
   assert.match(kotlin, /\n {4}val iconSize: AppIconSize,\n {4}val iconGap: Double,\n/);
-  assert.match(swift, /\n {10}iconSize: \.md,\n {10}iconGap: 8\.0,\n/);
+  assert.match(swift, /\n {12}iconSize: \.md,\n {12}iconGap: 8\.0,\n/);
   assert.match(kotlin, /\n {36}iconSize = AppIconSize\.SM,\n {36}iconGap = 4\.0,\n/);
-  const sizes = firstGroups(repoSwift(), /^ {10}iconSize: (\.\w+),$/gm);
+  const buttonSpec = block(repoSwift(), 'nonisolated public struct ButtonSpec');
+  const sizes = firstGroups(buttonSpec, /^ {12}iconSize: (\.\w+),$/gm);
   assert.equal(sizes.length, 500, 'one slot per look');
   assert.deepEqual([...new Set(sizes)], ['.md']);
   assert.match(repoKotlin(), /\n {36}iconSize = AppIconSize\.MD,\n {36}iconGap = 6\.0,\n/);
@@ -125,8 +139,8 @@ test('the trailing slot: an optional icon-scale step and gap, nil / null where a
     'trailingIconSize: AppIconSize?',
     'trailingIconGap: Double?',
   ]);
-  assert.match(swift, /\n {10}trailingIconSize: \.sm,\n {10}trailingIconGap: 6\.0,\n/);
-  assert.match(swift, /\n {10}trailingIconSize: nil,\n {10}trailingIconGap: nil,\n/);
+  assert.match(swift, /\n {12}trailingIconSize: \.sm,\n {12}trailingIconGap: 6\.0,\n/);
+  assert.match(swift, /\n {12}trailingIconSize: nil,\n {12}trailingIconGap: nil,\n/);
   assert.match(kotlin, /\n {36}trailingIconSize = AppIconSize\.SM,\n {36}trailingIconGap = 6\.0,/);
   assert.match(kotlin, /\n {36}trailingIconSize = null,\n {36}trailingIconGap = null,\n/);
 });
@@ -134,7 +148,18 @@ test('the trailing slot: an optional icon-scale step and gap, nil / null where a
 test('ButtonSpec: one instance per context, the lookup returns none for a disallowed one', () => {
   const spec = block(swift, 'nonisolated public struct ButtonSpec');
   assert.match(spec, /\n {2}public let looks: \[ButtonLook\]\n/);
-  assert.deepEqual(firstGroups(spec, /^ {2}public static let (\w+) = ButtonSpec\(/gm), CONTEXT_IDS);
+  const instances = firstGroups(spec, /^ {2}public static let (\w+): ButtonSpec = \w+\.spec$/gm);
+  assert.deepEqual(instances, CONTEXT_IDS);
+  // Each context's looks sit in a private holder of their own: one JVM class initialiser per
+  // context, reached only through the Spec's own initialiser.
+  const holders = ['Light', 'Dark', 'Brand', 'HcLight', 'HcDark'];
+  assert.deepEqual(firstGroups(spec, /^ {2}nonisolated private enum (\w+) \{$/gm), holders);
+  assert.match(spec, /\n {2}nonisolated private enum Light \{\n {4}static let spec = ButtonSpec\(/);
+  assert.match(spec, /\n {2}public static let hcLight: ButtonSpec = HcLight\.spec\n/);
+  const ktSpec = block(kotlin, 'data class ButtonSpec(');
+  assert.deepEqual(firstGroups(ktSpec, /^ {4}private object (\w+) \{$/gm), holders);
+  assert.match(ktSpec, /\n {4}private object Light \{\n {8}val spec: ButtonSpec =\n/);
+  assert.match(ktSpec, /\n {8}val hcLight: ButtonSpec = HcLight\.spec\n/);
   const find = [
     '  public func appearance(variant: ButtonVariant, size: ButtonSize, state: ButtonState) -> ButtonAppearance? {',
     '    looks.first { $0.variant == variant && $0.size == size && $0.state == state }?.appearance',
@@ -154,16 +179,16 @@ test('ButtonSpec: one instance per context, the lookup returns none for a disall
 });
 
 test('a look spells its combination as cases and its absent values as nil / null', () => {
-  const light = block(swift, 'public static let light = ButtonSpec(');
+  const light = block(swift, 'nonisolated private enum Light');
   const first = [
-    '      ButtonLook(',
-    '        variant: .primary,',
-    '        size: .large,',
-    '        state: .enabled,',
-    '        appearance: ButtonAppearance(',
-    '          backgroundColor: .primary,',
-    '          textColor: .onPrimary,',
-    '          borderColor: nil,',
+    '        ButtonLook(',
+    '          variant: .primary,',
+    '          size: .large,',
+    '          state: .enabled,',
+    '          appearance: ButtonAppearance(',
+    '            backgroundColor: .primary,',
+    '            textColor: .onPrimary,',
+    '            borderColor: nil,',
   ];
   assert.ok(light.includes(first.join('\n')), 'the first Swift look');
   const ktFirst = [
@@ -174,7 +199,7 @@ test('a look spells its combination as cases and its absent values as nil / null
   ];
   assert.ok(kotlin.includes(ktFirst.join('\n')), 'a list item starts where it stands');
   assert.match(kotlin, /\n {36}borderColor = null,\n/);
-  assert.match(swift, /\n {10}focusRing: FocusRingTokens\.hcDark\n/);
+  assert.match(swift, /\n {12}focusRing: FocusRingTokens\.hcDark\n/);
 });
 
 test('the gallery: per contract its label and its entries with their test-ID constants', () => {
@@ -191,12 +216,14 @@ test('GalleryComponent: a case per contract with its id, the board-prefixed titl
     'nonisolated public enum GalleryComponent: String, CaseIterable, Sendable {',
     '  case button',
     '  case icon',
+    '  case chip',
     '',
     '  /// The section title: the board and the contract `gallery.title`.',
     '  public var title: String {',
     '    switch self {',
     '    case .button: "C01 Fixture buttons"',
     '    case .icon: "C02 Fixture icons"',
+    '    case .chip: "C03 Fixture chips"',
     '    }',
     '  }',
     '',
@@ -205,6 +232,7 @@ test('GalleryComponent: a case per contract with its id, the board-prefixed titl
     '    switch self {',
     '    case .button: "c01-fixture-buttons"',
     '    case .icon: "c02-fixture-icons"',
+    '    case .chip: "c03-fixture-chips"',
     '    }',
     '  }',
     '}',
@@ -218,6 +246,7 @@ test('GalleryComponent: a case per contract with its id, the board-prefixed titl
     ') {',
     '    BUTTON("button", "C01 Fixture buttons", "c01-fixture-buttons"),',
     '    ICON("icon", "C02 Fixture icons", "c02-fixture-icons"),',
+    '    CHIP("chip", "C03 Fixture chips", "c03-fixture-chips"),',
     '}',
   ];
   assert.equal(block(kotlin, 'enum class GalleryComponent('), ktSections.join('\n'));
@@ -226,10 +255,11 @@ test('GalleryComponent: a case per contract with its id, the board-prefixed titl
   }
 });
 
-test('Swift: every generated type is nonisolated and public', () => {
+test('Swift: every generated type is nonisolated, and public but for the Spec holders', () => {
+  const holder = /^ {2}nonisolated private enum (Light|Dark|Brand|HcLight|HcDark) \{$/;
   for (const text of [swift, repoSwift()]) {
     for (const line of text.split('\n').filter((l) => /\b(enum|struct) \w/.test(l))) {
-      assert.match(line, /^ *nonisolated public (enum|struct) /, line);
+      if (!holder.test(line)) assert.match(line, /^ *nonisolated public (enum|struct) /, line);
     }
   }
 });
@@ -428,4 +458,147 @@ test('a Kotlin enum entry longer than 120 columns takes one argument per line', 
   assert.ok(kt.includes('\n    BACK("back", AppIconSet.NAVIGATION, '), 'a short one stays');
   const sw = emittedIconSet(emitApiSwift, fixtureModel, rename)['ComponentAPI.swift'];
   assert.ok(sw.includes(`\n    case .thumbsUpFilledWithLongName: AppIconGlyphs.${type}.glyph\n`));
+});
+
+// The C03 fields (Linear AI-204 part B) on the fixture chip (fixtures/contracts/_valid/chip.yaml).
+
+test('roles (G7): a role enum of the roles in use, and each variant carries its own', () => {
+  const role = [
+    'nonisolated public enum ChipRole: String, CaseIterable, Sendable {',
+    '  case button',
+    '  case selectable',
+    '}',
+  ];
+  assert.equal(block(swift, 'nonisolated public enum ChipRole'), role.join('\n'));
+  const variant = block(swift, 'nonisolated public enum ChipVariant');
+  assert.match(variant, /\n {2}public var role: ChipRole \{\n/);
+  assert.match(variant, /\n {4}case \.choice: \.selectable\n/);
+  assert.match(variant, /\n {2}public var parts: \[ChipPart\] \{\n/);
+  assert.match(variant, /\n {4}case \.choice: \[\.swatch, \.detail\]\n/);
+  const ktVariant = [
+    'enum class ChipVariant(',
+    '    val id: String,',
+    '    val role: ChipRole,',
+    '    val parts: List<ChipPart>,',
+    ') {',
+    '    ASSIST("assist", ChipRole.BUTTON, listOf(ChipPart.DOT, ChipPart.NOTE, ChipPart.OUTER_RING)),',
+    '    CHOICE("choice", ChipRole.SELECTABLE, listOf(ChipPart.SWATCH, ChipPart.DETAIL)),',
+    '}',
+  ];
+  assert.equal(block(kotlin, 'enum class ChipVariant('), ktVariant.join('\n'));
+});
+
+test('compound states (G2): a state case, a test ID and a look per allowed compound', () => {
+  assert.match(swift, /\n {2}case selectedPressed = "selected-pressed"\n/);
+  assert.match(kotlin, /\n {4}SELECTED_PRESSED\("selected-pressed"\),\n/);
+  const id = 'choiceMediumSelectedPressed: String = "ds-chip-choice-medium-selected-pressed"';
+  assert.ok(swift.includes(`public static let ${id}`) && kotlin.includes(`val ${id}`));
+  const ktTokens = emitted(emitKotlin, fixtureModel)['ComponentTokens.kt'];
+  assert.match(ktTokens, /\n {4}val selectedPressed: SelectedPressed,\n/);
+  assert.doesNotMatch(ktTokens, /ChipChoiceSelectedTokens/);
+});
+
+test('the enum prop (G8): `<Name><Prop>` with its values', () => {
+  const selection = [
+    'enum class ChipSelection(',
+    '    val id: String,',
+    ') {',
+    '    MULTIPLE("multiple"),',
+    '    SINGLE("single"),',
+    '}',
+  ];
+  assert.equal(block(kotlin, 'enum class ChipSelection('), selection.join('\n'));
+  const swiftSelection = block(swift, 'nonisolated public enum ChipSelection');
+  assert.match(swiftSelection, /^nonisolated public enum ChipSelection: String, CaseIterable, /);
+  assert.deepEqual(firstGroups(swiftSelection, /case (\w+)/g), ['multiple', 'single']);
+});
+
+test('the icon source (G4): a Swift enum with a payload, a Kotlin sealed interface', () => {
+  const source = [
+    'nonisolated public enum ChipIconSource: Sendable, Equatable {',
+    '  /// A glyph of the icon set (`AppIconName`).',
+    '  case glyph(name: AppIconName)',
+    '',
+    "  /// The caller's icon prop.",
+    '  case prop',
+    '}',
+  ];
+  assert.equal(block(swift, 'nonisolated public enum ChipIconSource'), source.join('\n'));
+  const ktSource = [
+    'sealed interface ChipIconSource {',
+    '    /** A glyph of the icon set (`AppIconName`). */',
+    '    data class Glyph(',
+    '        val name: AppIconName,',
+    '    ) : ChipIconSource',
+    '',
+    "    /** The caller's icon prop. */",
+    '    data object Prop : ChipIconSource',
+    '}',
+  ];
+  assert.equal(block(kotlin, 'sealed interface ChipIconSource'), ktSource.join('\n'));
+  const appearance = block(swift, 'nonisolated public struct ChipAppearance');
+  assert.match(appearance, /\n {2}public let leadingIcon: ChipIconSource\?\n/);
+  assert.match(swift, /\n {12}leadingIcon: \.glyph\(name: \.plus\),\n/);
+  assert.match(swift, /\n {12}leadingIcon: \.prop,\n/);
+  assert.match(kotlin, /\n {36}leadingIcon = ChipIconSource\.Glyph\(name = AppIconName\.PLUS\),\n/);
+  assert.match(kotlin, /\n {36}leadingIcon = ChipIconSource\.Prop,\n/);
+});
+
+test('the parts (G12): kinds, positions, the separator resource key, the leading icon', () => {
+  const part = block(swift, 'nonisolated public enum ChipPart:');
+  assert.match(part, /\n {2}case outerRing\n/);
+  assert.match(part, /\n {2}public var separatorKey: String\? \{\n/);
+  assert.match(part, /\n {4}case \.detail: "ds_chip_detail_separator"\n {4}case \.note: nil\n/);
+  assert.match(part, /\n {4}case \.note: true\n/);
+  const position = block(swift, 'nonisolated public enum ChipPartPosition');
+  assert.match(position, /\n {2}case beforeLabel = "before-label"\n/);
+  const entry = '    DETAIL("detail", ChipPartKind.TEXT, ChipPartPosition.AFTER_LABEL, ';
+  assert.ok(kotlin.includes(`\n${entry}"ds_chip_detail_separator", false),\n`), 'the Kotlin part');
+  assert.match(kotlin, /\n {4}val takesLeadingIcon: Boolean,\n/);
+  // The separator copy itself lives in each app's string resources, never in generated code.
+  for (const text of [swift, kotlin]) assert.ok(!text.includes('· '), 'no separator literal');
+});
+
+test('the gallery samples (G10): one typed constant per sampled prop, before the cells', () => {
+  const gallery = block(swift, 'nonisolated public enum ComponentGallery');
+  const samples = [
+    '  public static let chipLabel: String = "Fixture chip"',
+    '  public static let chipLeadingIcon: AppIconName = .wave',
+    '  public static let chipHostSurface: AppColorRole = .surface2',
+    '  public static let chipSwatch: AppColorRole = .primary',
+    '  public static let chipDetail: String = "12"',
+  ];
+  assert.ok(gallery.includes(samples.join('\n')), 'the Swift samples');
+  assert.match(kotlin, /\n {4}val chipLeadingIcon: AppIconName = AppIconName\.WAVE\n/);
+  assert.match(kotlin, /\n {4}val chipSwatch: AppColorRole = AppColorRole\.PRIMARY\n/);
+  // A sentence too long for its line starts on the line after its `=`.
+  const sentence = '"Rain is expected after 4 pm, so this look has a water-resistant outer layer."';
+  const wrapped = `\n  public static let reasonRowLabel: String =\n    ${sentence}\n`;
+  assert.ok(repoSwift().includes(wrapped), 'the wrapped Swift sentence');
+  assert.ok(repoKotlin().includes(`\n    val reasonRowLabel: String = ${sentence}\n`));
+});
+
+const TOP = /^(?:nonisolated public \w+|enum class|data class|sealed interface|object) (\w+)/gm;
+
+test('the repository API: the types each component emits, in order, in both languages', () => {
+  const head = ['Variant', 'Size', 'State', 'Role'];
+  const parts = ['PartKind', 'PartPosition', 'Part', 'IconSource'];
+  const tail = ['TestId', 'Appearance', 'Look', 'Spec', 'GalleryEntry'];
+  const expected = {
+    Badge: [...head, ...parts, ...tail],
+    Button: [...head, ...tail],
+    Chip: [...head, 'Selection', ...parts, ...tail],
+    ReasonRow: [...head, ...parts, ...tail],
+    Tag: [...head, ...parts, ...tail],
+  };
+  for (const text of [repoSwift(), repoKotlin()]) {
+    const names = firstGroups(text, TOP);
+    for (const [prefix, suffixes] of Object.entries(expected)) {
+      const own = names.filter((name) => name.startsWith(prefix));
+      assert.deepEqual(
+        own,
+        suffixes.map((suffix) => `${prefix}${suffix}`),
+      );
+    }
+  }
 });

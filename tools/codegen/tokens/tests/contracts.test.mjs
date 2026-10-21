@@ -11,9 +11,10 @@ import { after, test } from 'node:test';
 
 import { parse as parseYaml } from 'yaml';
 
-import { comboKey, resolveReference } from '../contract-model.mjs';
+import { comboKey, isToken, resolveReference } from '../contract-model.mjs';
 import { checkContract, iconSetOf, loadContracts } from '../contracts.mjs';
 import { formatFinding, loadTokens } from '../pipeline.mjs';
+import { splitState } from '../syntax.mjs';
 import {
   CONTRACT_FIXTURES,
   CONTRACT_TOKENS,
@@ -36,9 +37,15 @@ const SCRATCH = mkdtempSync(path.join(tmpdir(), 'contracts-test-'));
 after(() => rmSync(SCRATCH, { recursive: true, force: true }));
 
 const VALID_ICON_TEXT = readFileSync(path.join(VALID_CONTRACTS, 'icon.yaml'), 'utf8');
+const VALID_CHIP = readFileSync(path.join(VALID_CONTRACTS, 'chip.yaml'), 'utf8');
 const listed = (findings) => findings.map(formatFinding).join('\n');
-const [fixture, iconFixture] = apisOf(fixtureModel, VALID_CONTRACTS);
-const repoButton = once(() => apisOf(repoModel, REPO_CONTRACTS)[0]);
+const byId = (apis, id) => apis.find((api) => api.id === id);
+const fixtureApis = apisOf(fixtureModel, VALID_CONTRACTS);
+const fixture = byId(fixtureApis, 'button');
+const chipFixture = byId(fixtureApis, 'chip');
+const iconFixture = byId(fixtureApis, 'icon');
+const repoApis = once(() => apisOf(repoModel, REPO_CONTRACTS));
+const repoButton = () => byId(repoApis(), 'button');
 
 /** The fixture contract after `edit(text)`, checked against `model`. */
 const checkEdited = (edit, model = fixtureModel) =>
@@ -70,31 +77,35 @@ function look(api, context, variant, size, state) {
   return found.values;
 }
 
-test('the repository contracts pass, and the button and icon contracts are approved', () => {
+test('the repository contracts pass, and all six are approved', () => {
   const { findings, apis, pending } = loadContracts(REPO_CONTRACTS, repoModel);
   assert.deepEqual(findings, [], listed(findings));
   assert.deepEqual(pending, []);
   assert.deepEqual(
     apis.map(({ id }) => id),
-    ['button', 'icon'],
+    ['badge', 'button', 'chip', 'icon', 'reason-row', 'tag'],
   );
 });
 
-test('the fixtures hold the valid contracts and one failing case per rule, CC-01 to CC-13', () => {
-  const expected = Array.from({ length: 13 }, (_, i) => `CC-${String(i + 1).padStart(2, '0')}`);
+test('the fixtures hold the valid contracts and one failing case per rule, CC-01 to CC-18', () => {
+  const expected = Array.from({ length: 18 }, (_, i) => `CC-${String(i + 1).padStart(2, '0')}`);
   assert.deepEqual([...new Set(RULE_CASES.map(ruleOf))], expected);
   const cases = [
     'CC-01-gallery-title',
     'CC-01-icon-kind',
     'CC-01-icon-paint',
+    'CC-03-compound',
     'CC-08-trailing',
     'CC-11-viewbox',
+    'CC-13-roles',
   ];
   for (const name of cases) {
     assert.ok(RULE_CASES.includes(name), name);
   }
-  assert.equal(fixture.id, 'button');
-  assert.equal(iconFixture.id, 'icon');
+  assert.deepEqual(
+    fixtureApis.map(({ id }) => id),
+    ['button', 'chip', 'icon'],
+  );
 });
 
 for (const name of RULE_CASES) {
@@ -326,6 +337,9 @@ test('the fixture API: merged fields, colours first, optional where a look lacks
     ['iconGap', 'double', false],
     ['trailingIconSize', 'AppIconSize', true],
     ['trailingIconGap', 'double', true],
+    // The icon sources (G4): every look draws the leading prop, only secondary the trailing plus.
+    ['leadingIcon', 'ButtonIconSource', false],
+    ['trailingIcon', 'ButtonIconSource', true],
     ['focusRing', 'FocusRingTokens', true],
   ]);
 });
@@ -657,4 +671,296 @@ test('the icon fixture API: token sizes, the default, sets by first use, compile
   const heart = (id) => iconFixture.glyphs.find((glyph) => glyph.id === id).shapes[0];
   assert.deepEqual(heart('heart-filled').segments, heart('heart').segments, 'the twin');
   assert.equal(heart('heart-filled').paint, 'both');
+});
+
+// The C03 fields (.impeccable/components/README.md "Proposed fields", Linear AI-204 part B):
+// compound states (G2), icons (G4), roles (G7), prop types (G8), gallery samples (G10), parts
+// (G12), on the fixture chip (../fixtures/contracts/_valid/chip.yaml) and the repository C03.
+
+const ICON_SETS = [iconSetOf(parseYaml(VALID_ICON_TEXT), 'icon.yaml')];
+/** The fixture chip after `edit(text)`, checked beside `iconSets` (the fixture icon set). */
+const checkChip = (edit, iconSets = ICON_SETS) =>
+  checkContract(edit(VALID_CHIP), 'chip.yaml', fixtureModel, iconSets);
+/** An edit of the fixture chip that adds `prop` (YAML lines) after its last prop. */
+function withProp(prop) {
+  const variants = '\nvariants: [assist, choice]';
+  return (t) => t.replace(variants, `${prop}${variants}`);
+}
+const glyphSource = (id) => ({
+  t: 'union',
+  type: 'ChipIconSource',
+  case: 'glyph',
+  args: [{ name: 'name', type: 'AppIconName', value: { t: 'case', type: 'AppIconName', id } }],
+});
+const PROP_SOURCE = { t: 'union', type: 'ChipIconSource', case: 'prop', args: [] };
+
+test('compound states (G2): the longest state suffix wins, so the keys regroup', () => {
+  assert.deepEqual(splitState('chip-choice-selected-pressed'), {
+    component: 'chip-choice',
+    state: 'selected-pressed',
+  });
+  assert.deepEqual(splitState('button-primary-pressed'), {
+    component: 'button-primary',
+    state: 'pressed',
+  });
+  const choice = fixtureModel.sets.components['chip-choice'];
+  const states = Object.keys(choice).filter((key) => !isToken(choice[key]));
+  assert.deepEqual(states, ['pressed', 'selected', 'selected-pressed']);
+  assert.equal(fixtureModel.sets.components['chip-choice-selected'], undefined);
+  const ref = (key) => resolveReference(`{components.${key}}`, repoModel);
+  assert.deepEqual(ref('chip-reason-expanded-pressed'), {
+    component: 'chip-reason',
+    state: 'expanded-pressed',
+  });
+  assert.deepEqual(ref('chip-filter-selected-disabled'), {
+    component: 'chip-filter',
+    state: 'selected-disabled',
+  });
+  assert.equal(repoModel.sets.components['chip-reason-expanded'], undefined);
+});
+
+test('CC-03 (G2): a compound state is allowed only beside its toggle', () => {
+  const compound = loadContracts(path.join(CONTRACT_FIXTURES, 'CC-03-compound'), fixtureModel);
+  const at = 'CC-03 chip.yaml combinations.choice.states';
+  assert.deepEqual(messagesOf(compound), [
+    `${at}: the compound state "selected-pressed" needs its toggle "selected" beside it`,
+    `${at}: the compound state "selected-focused" needs its toggle "selected" beside it`,
+    'CC-03 chip.yaml states: state "selected" is allowed by no variant',
+  ]);
+});
+
+test('the merge (G2): base, then the toggle, then the compound or its overlay, then the size', () => {
+  const pressed = look(chipFixture, 'light', 'choice', 'medium', 'selected-pressed');
+  assert.equal(pressed.backgroundColor.value.id, 'primaryPressed', 'the compound wins');
+  assert.equal(pressed.textColor.value.id, 'onPrimary', 'the toggle under it');
+  assert.equal(pressed.paddingStart.value.n, 8, "the toggle's padding");
+  assert.equal(pressed.borderWidth.value.n, 1, 'chip-outline-ring');
+  const selected = look(chipFixture, 'dark', 'choice', 'medium', 'selected');
+  const { focusRing, ...rest } = look(chipFixture, 'dark', 'choice', 'medium', 'selected-focused');
+  assert.deepEqual(rest, selected, 'the focus ring over the toggled look');
+  assert.deepEqual(focusRing.value, { t: 'ref', namespace: 'FocusRingTokens', member: 'dark' });
+  const assist = look(chipFixture, 'light', 'assist', 'medium', 'pressed');
+  assert.equal(assist.height.value.n, 36, 'chip-medium holds the assist size');
+});
+
+test('icon sources (G4): a glyph or the prop per look; a compound takes its toggle icons', () => {
+  const source = (variant, state, field) =>
+    look(chipFixture, 'hc-light', variant, 'medium', state)[field]?.value;
+  assert.deepEqual(source('assist', 'pressed', 'leadingIcon'), PROP_SOURCE);
+  assert.deepEqual(source('assist', 'enabled', 'trailingIcon'), glyphSource('back'));
+  assert.equal(source('choice', 'enabled', 'leadingIcon'), undefined);
+  for (const state of ['selected', 'selected-pressed', 'selected-focused']) {
+    assert.deepEqual(source('choice', state, 'leadingIcon'), glyphSource('plus'), state);
+  }
+  const fields = chipFixture.fields.map(({ name }) => name);
+  assert.deepEqual(fields.slice(-3), ['leadingIcon', 'trailingIcon', 'focusRing']);
+  // Without an approved icon set there is no glyph type to name: no icon sources.
+  const pending = [{ ...ICON_SETS[0], approved: false }];
+  for (const iconSets of [[], pending]) {
+    const { findings, api } = checkChip((t) => t, iconSets);
+    assert.deepEqual(findings, [], listed(findings));
+    assert.equal(api.iconSource, null);
+    assert.ok(!api.fields.some(({ name }) => name.endsWith('Icon')));
+  }
+});
+
+test('CC-14 (G4): icons name variants, their states, glyphs of the set and icon props', () => {
+  const misspelt = loadContracts(path.join(CONTRACT_FIXTURES, 'CC-14'), fixtureModel);
+  assert.deepEqual(messagesOf(misspelt), [
+    'CC-14 chip.yaml icons.assists: "assists" is not a variant',
+  ]);
+  const selected = 'selected: { leading: plus }';
+  const leading = "leading: '{props.leadingIcon}'";
+  const cases = [
+    [selected, 'disabled: { leading: plus }', 'choice.states.disabled: "disabled" is not allowed'],
+    [selected, 'enabled: { leading: plus }', 'choice.states.enabled: "enabled" is the variant'],
+    ['trailing: back }', 'trailing: backs }', 'assist.trailing: glyph "backs" is not in icon.yaml'],
+    [leading, "leading: '{props.note}'", 'assist.leading: {props.note} is a string prop, not an'],
+    [leading, "leading: '{props.icon}'", 'assist.leading: {props.icon} names no prop'],
+    [selected, `selected: { ${leading} }`, 'states.selected.leading: {props.leadingIcon} does not'],
+  ];
+  for (const [from, to, message] of cases) {
+    const result = checkChip((t) => t.replace(from, to));
+    assert.deepEqual(rulesOf(result), ['CC-14'], message);
+    assert.ok(listed(result.findings).includes(message), listed(result.findings));
+  }
+  // Without one icon set beside it, a glyph id names no set and is not checked.
+  const alone = checkChip((t) => t.replace('trailing: back }', 'trailing: backs }'), []);
+  assert.deepEqual(alone.findings, []);
+});
+
+test('CC-13 (G7): every variant role counts, so one interactive variant needs the target', () => {
+  const roles = loadContracts(path.join(CONTRACT_FIXTURES, 'CC-13-roles'), fixtureModel);
+  assert.deepEqual(messagesOf(roles), [
+    'CC-13 chip.yaml accessibility: role selectable is interactive: it needs minTouchTarget',
+  ]);
+  const target = '  minTouchTarget: { ios: 44, android: 48 }\n';
+  const passive = (t) => {
+    const roles = t.replace('role: button', 'role: decorative\n  roles: { secondary: text }');
+    return roles.replace(ACTION_PROP, '').replace(target, '');
+  };
+  assert.deepEqual(checkEdited(passive).findings, []);
+  const acting = checkEdited((t) => passive(t).replace('props:\n', `props:\n${ACTION_PROP}`));
+  assert.deepEqual(messagesOf(acting), [
+    'CC-13 button.yaml props: roles text and decorative are never activated, so no prop is an action',
+  ]);
+});
+
+test('CC-15 (G7): roles name variants, a selectable role names the selection enum', () => {
+  const missing = loadContracts(path.join(CONTRACT_FIXTURES, 'CC-15'), fixtureModel);
+  assert.deepEqual(messagesOf(missing), [
+    'CC-15 chip.yaml accessibility.selection: choice: a selectable role needs the selection prop',
+  ]);
+  const at = 'CC-15 chip.yaml accessibility';
+  const role = '    choice: selectable\n';
+  const misspelt = checkChip((t) => t.replace(role, role.replace('choice', 'choise')));
+  assert.deepEqual(messagesOf(misspelt), [
+    `${at}.roles.choise: "choise" is not a variant`,
+    `${at}.selection: no variant is selectable, so nothing reads the selection`,
+  ]);
+  const enumValues = 'values: [multiple, single]\n    default: multiple';
+  const cases = [
+    ["selection: '{props.selection}'", "selection: '{props.detail}'", '{props.detail} is not'],
+    [enumValues, 'values: [many, one]\n    default: many', 'selection: {props.selection} is not'],
+    [`${enumValues}\n    variants: [choice]`, `${enumValues}\n    variants: [assist]`, 'apply to'],
+    ["labelOverride: '{props.accessibilityLabel}'", "labelOverride: '{props.selected}'", 'a bool'],
+  ];
+  for (const [from, to, message] of cases) {
+    const result = checkChip((t) => t.replace(from, to));
+    assert.deepEqual(rulesOf(result), ['CC-15'], message);
+    assert.ok(listed(result.findings).includes(message), listed(result.findings));
+  }
+  const override = '  - name: accessibilityLabel\n    type: string\n    default: null\n';
+  const requiredOverride = override.replace('default: null', 'required: true');
+  const required = checkChip((t) => t.replace(override, requiredOverride));
+  assert.deepEqual(messagesOf(required), [
+    `${at}.labelOverride: {props.accessibilityLabel} is required, so it would always replace the label`,
+  ]);
+});
+
+test('CC-16 (G8): enum props hold their values; prop names and variants agree', () => {
+  const fallback = loadContracts(path.join(CONTRACT_FIXTURES, 'CC-16'), fixtureModel);
+  assert.deepEqual(messagesOf(fallback), [
+    'CC-16 chip.yaml props.6.default: "both" is not one of its values',
+  ]);
+  const cases = [
+    ['  - name: tone\n    type: enum\n    default: null\n', 'props.10: the enum prop "tone" needs'],
+    ['  - name: tone\n    type: string\n    values: [a]\n    default: null\n', 'props.10.values'],
+    ['  - name: tone\n    type: enum\n    values: [default, loud]\n    default: loud\n', 'keyword'],
+    ['  - name: variant\n    type: enum\n    values: [a, b]\n    default: a\n', 'type ChipVariant'],
+    ['  - name: note\n    type: string\n    default: null\n', 'props.10: "note" is not unique'],
+    ['  - name: tone\n    type: bool\n    default: false\n    variants: [ghost]\n', '"ghost"'],
+  ];
+  for (const [prop, message] of cases) {
+    const result = checkChip(withProp(prop));
+    assert.deepEqual(rulesOf(result), ['CC-16'], message);
+    assert.ok(listed(result.findings).includes(message), listed(result.findings));
+  }
+});
+
+test('CC-17 (G10): every sample fits its prop, and every required prop has one', () => {
+  const missing = loadContracts(path.join(CONTRACT_FIXTURES, 'CC-17'), fixtureModel);
+  assert.deepEqual(messagesOf(missing), [
+    'CC-17 chip.yaml gallery.props: the required prop "swatch" has no sample',
+  ]);
+  const sample = "    detail: '12'\n";
+  const cases = [
+    [sample, `${sample}    label: Wool\n`, 'props.label: the label sample is gallery.label'],
+    [sample, `${sample}    ghost: x\n`, 'props.ghost: names no prop'],
+    ['leadingIcon: wave', 'leadingIcon: rain', '"rain" is not in icon.yaml'],
+    ['leadingIcon: wave', 'leadingIcon: Wave', '"Wave" is not a glyph id'],
+    ["swatch: '{colors.primary}'", "swatch: '{colors.primary-light}'", 'is not a {colors.<role>}'],
+    [sample, `${sample}    selection: both\n`, '"both" is not one of its values'],
+    [sample, `${sample}    selected: 'true'\n`, 'a bool prop takes no sample'],
+  ];
+  for (const [from, to, message] of cases) {
+    const result = checkChip((t) => t.replace(from, to));
+    assert.deepEqual(rulesOf(result), ['CC-17'], message);
+    assert.ok(listed(result.findings).includes(message), listed(result.findings));
+  }
+});
+
+test('CC-18 (G12): each part has its prop, its position and only the fields its kind takes', () => {
+  const wrong = loadContracts(path.join(CONTRACT_FIXTURES, 'CC-18'), fixtureModel);
+  assert.deepEqual(messagesOf(wrong), [
+    'CC-18 chip.yaml parts.2: a swatch part takes the color prop "detail": it is a string prop',
+  ]);
+  const detail = "    separator: '· '\n    variants: [choice]\n";
+  const ring = "    position: outside\n    color: '{props.hostSurface}'\n";
+  const dot = '  - name: dot\n    kind: dot\n    position: before-label\n';
+  const marker = '  - name: marker\n    kind: dot\n    position: line\n    icon: leading\n';
+  const cases = [
+    [detail, "    separator: '· '\n    variants: [assist, choice]\n", 'does not apply to assist'],
+    [ring, "    position: line\n    color: '{props.hostSurface}'\n", 'parts.4.position: a ring'],
+    [dot, dot.replace('before-label', 'outside'), 'parts.0.position: a ring, and only a ring'],
+    [ring, '    position: outside\n', 'parts.4: a ring takes its colour from a prop'],
+    [ring, ring.replace('hostSurface', 'note'), 'parts.4.color: {props.note}: it is a string'],
+    [dot, `${dot}    color: '{props.hostSurface}'\n`, 'parts.0.color: only a ring takes'],
+    [dot, `${dot}    separator: '· '\n`, 'parts.0.separator: only a text part has a separator'],
+    [detail, `    icon: leading\n${detail}`, 'parts.2.icon: only a line takes the leading icon'],
+    ['parts:\n', `parts:\n${marker}    variants: [assist]\n`, 'assist: marker and note take'],
+    ['parts:\n', `parts:\n${dot}    variants: [ghost]\n`, 'parts.0.variants: "ghost" is not'],
+  ];
+  for (const [from, to, message] of cases) {
+    const result = checkChip((t) => t.replace(from, to));
+    assert.deepEqual(rulesOf(result), ['CC-18'], message);
+    assert.ok(listed(result.findings).includes(message), listed(result.findings));
+  }
+});
+
+test('the fixture chip API: roles, the enum prop, the parts and the gallery samples', () => {
+  assert.deepEqual(chipFixture.roles, ['button', 'selectable']);
+  assert.deepEqual(chipFixture.variantRoles, { assist: 'button', choice: 'selectable' });
+  assert.deepEqual(chipFixture.enums, [
+    { prop: 'selection', type: 'ChipSelection', values: ['multiple', 'single'] },
+  ]);
+  assert.deepEqual(chipFixture.partKinds, ['text', 'swatch', 'dot', 'ring']);
+  assert.deepEqual(chipFixture.partPositions, ['before-label', 'after-label', 'line', 'outside']);
+  const row = (p) => [p.name, p.separatorKey, p.takesLeadingIcon, p.variants];
+  assert.deepEqual(chipFixture.parts.map(row), [
+    ['dot', null, false, ['assist']],
+    ['swatch', null, false, ['choice']],
+    ['detail', 'ds_chip_detail_separator', false, ['choice']],
+    ['note', null, true, ['assist']],
+    ['outerRing', null, false, ['assist']],
+  ]);
+  const icon = { t: 'case', type: 'AppIconName', id: 'wave' };
+  assert.deepEqual(chipFixture.samples, [
+    { prop: 'leadingIcon', type: 'AppIconName', value: icon },
+    { prop: 'hostSurface', type: 'role', value: { t: 'role', id: 'surface2' } },
+    { prop: 'swatch', type: 'role', value: { t: 'role', id: 'primary' } },
+    { prop: 'detail', type: 'string', value: { t: 'string', s: '12' } },
+  ]);
+  const { roles, parts: buttonParts, enums, samples } = fixture;
+  assert.deepEqual([roles, buttonParts, enums, samples], [['button'], [], [], []]);
+});
+
+test('the repository C03 contracts: compound looks, icons, roles and parts as approved', () => {
+  const apis = repoApis();
+  const chip = byId(apis, 'chip');
+  assert.equal(chip.combinations.length, 84);
+  const expandedPressed = look(chip, 'light', 'reason', 'compact', 'expanded-pressed');
+  assert.equal(expandedPressed.overlayColor.value.id, 'pressedOverlay');
+  assert.equal(expandedPressed.backgroundColor.value.id, 'primaryText', 'the expanded fill');
+  const chevron = expandedPressed.trailingIcon.value.args[0].value.id;
+  assert.equal(chevron, 'chevronUp', "the expanded state's icon");
+  const selectedDisabled = look(chip, 'dark', 'filter', 'medium', 'selected-disabled');
+  assert.equal(selectedDisabled.textColor.value.id, 'textSecondary');
+  assert.equal(selectedDisabled.leadingIcon.value.args[0].value.id, 'check', 'the check stays');
+  assert.deepEqual(chip.roles, ['button', 'selectable', 'disclosure', 'menu']);
+  assert.equal(chip.variantRoles.reason, 'disclosure');
+  assert.deepEqual(
+    chip.parts.map(({ name }) => name),
+    ['prefix', 'swatch', 'detail'],
+  );
+  assert.equal(chip.parts[2].separatorKey, 'ds_chip_detail_separator');
+  const roles = Object.fromEntries(apis.map(({ id, roles: r }) => [id, r]));
+  assert.deepEqual(roles.tag, ['text']);
+  assert.deepEqual(roles.badge, ['text', 'decorative']);
+  assert.deepEqual(roles['reason-row'], ['region']);
+  const fact = byId(apis, 'reason-row').parts[0];
+  assert.deepEqual([fact.name, fact.takesLeadingIcon], ['fact', true]);
+  const ringPart = byId(apis, 'badge').parts[0];
+  assert.deepEqual([ringPart.kind, ringPart.position], ['ring', 'outside']);
+  assert.equal(byId(apis, 'button').iconSource, null, 'no icons map: the button API is unchanged');
 });

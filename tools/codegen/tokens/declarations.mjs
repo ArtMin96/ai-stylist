@@ -250,16 +250,21 @@ function componentDeclarations(model) {
       nested: [],
       instances: [],
     }));
+    // A compound state (G2) names its field in lowerCamelCase: `selected-pressed` -> selectedPressed.
+    const stateField = (state) => memberId(state);
     return {
       kind: 'struct',
       name,
       doc: `Component \`${component}\` per context: colours are role keys, sizes in pt/dp.`,
-      fields: [...fields, ...states.map((state, i) => ({ name: state, type: nested[i].name }))],
+      fields: [
+        ...fields,
+        ...states.map((state, i) => ({ name: stateField(state), type: nested[i].name })),
+      ],
       nested,
       instances: groups.map(([context, group]) => {
         const where = `${component} (${context})`;
         const stateArgs = states.map((state, i) => ({
-          name: state,
+          name: stateField(state),
           type: nested[i].name,
           value: {
             t: 'init',

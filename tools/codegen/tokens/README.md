@@ -25,8 +25,8 @@ package with a test that reads them (`DesignTokensTests`, `GeneratedTokensTest`)
 
 AI-198 adds the component API surface (Component contracts below): the contract checker, the
 merged looks and `ComponentAPI.swift` / `ComponentApi.kt`, emitted by the same run into the same
-two directories. Not done: those two files are not committed or compiled inside the app packages
-yet (`just generate` writes them; see Emitted code, Gates on the output).
+two directories, committed and compiled in both app packages (`AppButton` builds on
+`ButtonSpec`).
 
 AI-201 adds icon sets (Icon sets below): a contract with `kind: icon-set` (C02,
 `.impeccable/components/icon.yaml`), its rules CC-09 to CC-12, the SVG path compiler and the icon
@@ -41,9 +41,13 @@ fields") adds the validation and token side: the trailing icon slot (G3), an ent
 `borderWidth` (G5) and slot values (G6) winning in the merge, a slot entry only where an icon is
 drawn (G11, reading `icons` by shape), `accessibility.busy` optional (G1), `minTouchTarget` optional
 for a passive role (G9, CC-13), and the C03 entry properties (G12 parts, G13 `borderDash`) as
-ordinary tokens. Part B (compound states G2, the icons API G4, roles G7, prop types G8,
-`gallery.props` G10 and the contract-side `parts` of G12) is not built: until it is, the four C03
-contracts fail CC-01 on those fields and `just generate` writes nothing.
+ordinary tokens. Part B adds the contract side: compound toggle states (G2: `STATES`, the
+longest-suffix `splitState`, the merge after the toggle, CC-03), the `icons` rules and the looks'
+icon sources (G4, CC-14), per-variant roles with `selection` and `labelOverride` (G7, CC-13 and
+CC-15), the prop types `enum`, `color` and `colorRole` with per-variant props (G8, CC-16),
+`gallery.props` (G10, CC-17) and the contract-side `parts` (G12, CC-18), each with its emitted
+API, and one holder per context in every `<Name>Spec` (the JVM class-initialiser limit). The
+four C03 contracts (chip, tag, badge, reason row) pass and emit their API.
 
 ## Usage
 
@@ -117,15 +121,19 @@ per directory; nothing is written when any input has a finding. A contract still
 
 Key grammar: a colour or component key may end in a scheme suffix (`-light`, `-dark`, `-brand`,
 `-hc-light`, `-hc-dark`); a component key may end in a state before that (`-pressed`, `-focused`,
-`-disabled`, `-loading`, `-error`, `-selected`, `-expanded`). Every token is treated the same way;
-no component is special-cased.
+`-disabled`, `-loading`, `-error`, `-selected`, `-expanded`, or a compound toggle state G2:
+`-selected-pressed`, `-selected-focused`, `-selected-disabled`, `-expanded-pressed`,
+`-expanded-focused`). The longest state suffix wins: `chip-choice-selected-pressed-light` is
+component `chip-choice`, state `selected-pressed` (not `chip-choice-selected` -> `pressed`). Every
+token is treated the same way; no component is special-cased.
 
 ## Component contracts (Linear AI-198)
 
 `.impeccable/components/<id>.yaml` is the master for a component's API (ADR-0011 follow-up 7,
-DEC-87; field rules in `.impeccable/components/README.md`). `contracts.mjs` checks each contract;
-`contract-model.mjs` merges its looks; `api-declarations.mjs` decides the API's names and values;
-`emit-api-swift.mjs` and `emit-api-kotlin.mjs` spell them with the token dialects.
+DEC-87; field rules in `.impeccable/components/README.md`). `contracts.mjs` checks each contract
+(with `contract-fields.mjs`, `contract-parts.mjs` and `icon-set.mjs`); `contract-model.mjs` merges
+its looks; `api-declarations.mjs` decides the API's names and values; `emit-api-swift.mjs` and
+`emit-api-kotlin.mjs` spell them with the token dialects.
 
 - **CC-01** The YAML parses (no duplicate keys) and matches `component-contract.schema.json`
   (Ajv, draft 2020-12 with ajv-formats, loaded from the `packages/contracts` devDependencies as
@@ -135,20 +143,29 @@ DEC-87; field rules in `.impeccable/components/README.md`). `contracts.mjs` chec
   The schema has two closed branches: a contract without `kind` is a control (the button, the
   fields below), and `kind: icon-set` is an icon set (Icon sets); any other `kind` fails
   (`fixtures/contracts/CC-01-icon-kind/`). Ajv's own "must match the then/else schema" error is
-  left out, since the branch's errors say what is wrong. A control's optional `icons` (G4: per
-  variant `leading`, `trailing` and `states.<state>`, each a kebab glyph id, a `'{props.<name>}'`
-  reference or `null`) is checked by shape only: CC-08 and CC-12 read it to find the sizes that
-  draw a slot; no rule checks its glyph ids or props yet, and no API is emitted for it.
+  left out, since the branch's errors say what is wrong. The shapes of a control's C03 fields
+  (README "Proposed fields"): `icons` (G4: per variant `leading`, `trailing` and
+  `states.<state>`, each a kebab glyph id, a `'{props.<name>}'` reference or `null`);
+  `accessibility.role` and each `accessibility.roles` value one of the nine roles (`button`,
+  `toggle`, `radio`, `selectable`, `disclosure`, `menu`, `text`, `region`, `decorative`),
+  `selection` and `labelOverride` a `'{props.<name>}'` reference (G7); a prop `type` of `string`,
+  `bool`, `icon`, `action`, `enum`, `color` or `colorRole`, with optional `values` and `variants`
+  lists (G8); `gallery.props`, prop name to a sample string (G10); `parts`, each with `name`,
+  `kind` and `position` and optional `separator`, `color` (a `{props.…}` reference),
+  `icon: leading` and `variants` (G12).
 - **CC-02** `id` is the file name without `.yaml`.
 - **CC-03** The axes agree: `combinations` names exactly the variants, each allows only listed
   sizes and states, every listed size and state is allowed by some variant, and the ids and test-ID
-  constants become distinct identifiers that are no Swift or Kotlin keyword.
+  constants become distinct identifiers that are no Swift or Kotlin keyword. A compound state
+  (G2) is allowed only where its toggle is: `selected-pressed` needs `selected` beside it (fixture
+  `fixtures/contracts/CC-03-compound/`).
 - **CC-04** `tokens` has one entry per variant; its `sizes` name exactly the variant's allowed
   sizes, its `states` only allowed states other than `enabled` (the base entry is that look).
 - **CC-05** Every `{components.…}` reference resolves in the token model, and the
   `accessibility.label` `{props.…}` names a prop. A whole component wins; otherwise
-  `<component>-<state>` names that component's state (owner decision 2026-10-20:
-  `{components.button-primary-pressed}` is `button-primary` -> `pressed`).
+  `<component>-<state>` names that component's state, the longest state suffix first (owner
+  decision 2026-10-20: `{components.button-primary-pressed}` is `button-primary` -> `pressed`;
+  G2: `{components.chip-reason-expanded-pressed}` is `chip-reason` -> `expanded-pressed`).
 - **CC-06** Each reference plays its part. A base is a whole component. A state names the same
   state of the variant's base, or a whole component drawn over the enabled look (an overlay:
   `focus-ring`) with an instance in every context of the table. A size is the base itself or a size
@@ -174,11 +191,43 @@ DEC-87; field rules in `.impeccable/components/README.md`). `contracts.mjs` chec
   size that a variant's own base or state entry names (G6). Two icon sets are a finding: the slot
   names one scale. Fixture `fixtures/contracts/CC-12/` holds the valid button beside an icon set
   without `icon-md`. Without an icon set the slot may be a number.
-- **CC-13** An interactive role needs `accessibility.minTouchTarget` and an `action` prop; a
-  passive role (`text`, `region`, `decorative`: read or skipped, never activated) has no `action`
-  prop and may leave `minTouchTarget` out (G9). Any role outside those three counts as
-  interactive. Only `accessibility.role` is read; per-variant `roles` (G7) are not built yet.
-  Fixture `fixtures/contracts/CC-13/` is the valid button without `minTouchTarget`.
+- **CC-13** The roles are read per variant: each variant's `accessibility.roles` entry, else
+  `accessibility.role` (G7). A contract where some variant's role is interactive (`button`,
+  `toggle`, `radio`, `selectable`, `disclosure`, `menu`) needs `accessibility.minTouchTarget` and
+  an `action` prop; one whose roles are all passive (`text`, `region`, `decorative`: read or
+  skipped, never activated) has no `action` prop and may leave `minTouchTarget` out (G9).
+  Fixture `fixtures/contracts/CC-13/` is the valid button without `minTouchTarget`;
+  `fixtures/contracts/CC-13-roles/` is the valid chip whose default role is `text` but whose
+  `choice` is `selectable`, without `minTouchTarget`.
+- **CC-14** `icons` (G4): every key is a variant, and every `states` key a state that variant
+  allows, never `enabled` (the variant's own `leading` and `trailing` are that look). A
+  `'{props.<name>}'` source names an `icon` prop that applies to the variant (G8 `variants`); a
+  glyph id is one of the `glyphs` of the icon set beside the contract (without exactly one there is
+  no set to name, and CC-12 reports two). Fixture `fixtures/contracts/CC-14/` spells a variant
+  `assists`, which would silently draw nothing.
+- **CC-15** `accessibility` (G7): every `roles` key is a variant. `selection` is given exactly
+  when some variant's role is `selectable`, and names an `enum` prop whose `values` are `multiple`
+  (toggle) and `single` (radio) and that applies to every selectable variant. `labelOverride`
+  names a `string` prop with a `default`: it replaces the label only when it is passed. Fixture
+  `fixtures/contracts/CC-15/` is the valid chip without `selection`.
+- **CC-16** Props (G8): names are unique and each `variants` entry is a variant. Only an `enum`
+  prop has `values`, and it must have them: each a case that is no keyword, the `default` one of
+  them (or `null`), and its type `<Name><Prop>` no other API type (a prop named `variant`,
+  `size`, `state`, `role`, `part`, `spec`, … fails). Fixture `fixtures/contracts/CC-16/` defaults
+  the selection to `both`.
+- **CC-17** `gallery.props` (G10): every key is a prop other than `label` (whose sample is
+  `gallery.label`), and its sample fits: an `icon` a glyph id (of the icon set beside it), a
+  `color` or `colorRole` a `{colors.<role>}` role key of `DESIGN.md` (`camera-ink`, `surface-2`),
+  an `enum` one of its values, a `string` text; a `bool` or `action` prop takes none (the gallery
+  cell sets it). Every required `string`, `icon`, `enum`, `color` or `colorRole` prop other than
+  `label` has a sample, so no gallery cell needs a literal. Fixture `fixtures/contracts/CC-17/`
+  lacks the required swatch's sample.
+- **CC-18** `parts` (G12): names are unique identifiers and each `variants` entry is a variant.
+  A `text` part is filled by the `string` prop of its name and a `swatch` by the `color` prop, each
+  applying to every variant the part does. A `ring`, and only a ring, sits `outside` and takes its
+  `color` from a `colorRole` prop; no other part has a `color`. Only a `text` part has a
+  `separator`, only a `line` takes `icon: leading`, and at most one part of a variant takes it.
+  Fixture `fixtures/contracts/CC-18/` makes the string `detail` a swatch.
 
 `iconSize`, `iconGap`, `trailingIconSize` and `trailingIconGap` are ordinary component properties
 for TK-11 (px, a number or a reference, like `height`); the normaliser makes them `dimension`
@@ -187,15 +236,20 @@ tokens. An icon-slot size that names an icon size is that size's px value, with 
 `trailingIconSize` are that set's size enum (`AppIconSize`, case `.md`) instead of their number;
 beside a pending one they stay the number, since the enum is not emitted yet.
 
-The rules run in stages (CC-01; CC-02 and CC-03; CC-04, CC-07 and CC-13; CC-05; CC-06; CC-08; CC-12; for
-an icon set CC-01; CC-02 and CC-09; CC-10; CC-11) and stop at the first stage with a finding, so
-each `fixtures/contracts/CC-NN/` (or `CC-NN-<case>/`) case fails on its own rule only.
-`loadContracts` checks the icon sets in a directory first, so a control sees them.
+The rules run in stages (CC-01; CC-02 and CC-03; CC-04, CC-07, CC-15 and CC-16; CC-13, which
+reads the roles CC-15 checks; CC-05; CC-06; CC-14, CC-17 and CC-18; CC-08; CC-12; for an icon set
+CC-01; CC-02 and CC-09; CC-10; CC-11) and stop at the first stage with a finding, so each
+`fixtures/contracts/CC-NN/` (or `CC-NN-<case>/`) case fails on its own rule only. CC-13 to CC-16
+live in `contract-fields.mjs`, CC-17 and CC-18 in `contract-parts.mjs`, CC-08 to CC-12 in
+`icon-set.mjs`. `loadContracts` checks the icon sets in a directory first, so a control sees them.
 
 **The merge** (owner decision 2026-10-20: one ready look per allowed variant x size x state x
 context). For each context of the table (the contexts every base and size entry has, `contextsOf`):
 the base entry's properties, then the state entry's, then the size entry's, later overriding
-earlier. `enabled`, and a state the variant names no token for (`loading` on primary), is the base
+earlier. A compound state (G2) applies its toggle's entry first, then its own entry or overlay:
+`selected-pressed` is the base, then `selected`, then `selected-pressed` (its pressed overlay
+colour), then the size; `selected-focused: {components.focus-ring}` is the `selected` look with the
+focus ring. `enabled`, and a state the variant names no token for (`loading` on primary), is the base
 look. A size entry that is the base itself adds nothing: applying it again would undo the state
 (the destructive-filled disabled label weight). An overlay state (`focused: {components.focus-ring}`)
 changes no colour: it adds a field named after its component that holds that component's instance
@@ -208,10 +262,16 @@ entry names (G6: the group and sort chip's gaps of 6 at 36, where `chip-medium` 
 shared size entry `<id>-<size>`'s, even where a size entry of the variant holds that size's
 height and padding (`button-compact-filled`, `button-text-compact`): the button is `icon-md` at
 every size, gap 6 at compact and 8 elsewhere. A size with no shared entry (G11) adds no slot.
-The look's fields are colours, then `borderWidth`, then the other properties, then overlays; a
-field some look lacks is optional (`nil` / `null`: no fill, no ring, the spinner takes the label
-colour, no trailing slot). Only allowed combinations get a look, so a disallowed one is never
-offered.
+Beside an approved icon set, a contract with `icons` (G4) gives each look its `leadingIcon` and
+`trailingIcon` where it draws one: the state's `icons` entry, else its toggle's for a compound
+state (G2: a toggle state's icons apply to its compounds, so the selected chip's check stays while
+pressed), else the variant's own; a glyph id becomes `.glyph(name:)` of the set's name enum and a
+`{props.…}` source `.prop` (the caller's icon prop). Without an approved icon set there is no
+glyph type to name, so the looks have no icon sources; the button has no `icons`, so
+`ButtonAppearance` has none either. The look's fields are colours, then `borderWidth`, then the
+other properties, then the icon sources, then overlays; a field some look lacks is optional (`nil`
+/ `null`: no fill, no ring, the spinner takes the label colour, no trailing slot, no icon). Only
+allowed combinations get a look, so a disallowed one is never offered.
 
 ## Icon sets (Linear AI-201)
 
@@ -307,7 +367,10 @@ data (no `Map`, no class instances), the same for the same input, and never writ
     so emitters go through `loadTokens`.
 - `tools/codegen/tokens/syntax.mjs` (closed lists, in emission order)
   - `CONTEXTS`: `['light', 'dark', 'brand', 'hc-light', 'hc-dark']`.
-  - `STATES`: `pressed`, `focused`, `disabled`, `loading`, `error`, `selected`, `expanded`.
+  - `STATES`: `pressed`, `focused`, `disabled`, `loading`, `error`, then `TOGGLES` (`selected`,
+    `expanded`), then `COMPOUND_STATES` (G2: `selected-pressed`, `selected-focused`,
+    `selected-disabled`, `expanded-pressed`, `expanded-focused`). `splitState` tries them longest
+    first; `toggleOf(state)` is a compound's toggle (`selected`), or null.
   - `M3_ROLES`: the 15 Compose `Typography` properties, `displayLarge` … `labelSmall`.
   - `DYNAMIC_TYPE_STYLES`: the SwiftUI `Font.TextStyle` cases, `largeTitle` … `caption2`.
 - `tools/codegen/tokens/naming.mjs`: every identifier helper (see Naming rules).
@@ -453,7 +516,12 @@ guarantees that no two generated identifiers collide. Any other derivation loses
 - `contextId(context)` names the `AppColors` instances: `light`, `dark`, `brand`, `hcLight`,
   `hcDark`.
 - `tokensTypeName(component)`: `button-primary` -> `ButtonPrimaryTokens`. `nestedTypeName(key)`
-  names a state or an elevation/motion group namespace: `pressed` -> `Pressed`, `sheet` -> `Sheet`.
+  names a state or an elevation/motion group namespace: `pressed` -> `Pressed`, `sheet` -> `Sheet`,
+  a compound state `selected-pressed` -> `SelectedPressed`, whose field is `memberId(state)`:
+  `selectedPressed`. A context's holder in a `<Name>Spec` is `nestedTypeName(contextId(context))`:
+  `HcLight`.
+- A part (G12) is named by its prop name, already lowerCamelCase, so its case is that name
+  (`outerRing`, Kotlin `OUTER_RING`); never `memberId`, which would lowercase it (`outerring`).
 - Property and field names are already lowerCamelCase (TK-10), so use them verbatim or through
   `propertyIds(prop)`. Never pass them through `camel()`, which lowercases inner words
   (`backgroundColor` -> `backgroundcolor`).
@@ -471,12 +539,15 @@ guarantees that no two generated identifiers collide. Any other derivation loses
 - `tools/codegen/tokens/emit-kotlin.mjs`: the Kotlin dialect. `just generate` writes its output to
   `apps/android/core/designsystem/src/main/kotlin/app/aistylist/core/designsystem/generated/`.
 - `tools/codegen/tokens/component-contract.schema.json`, `contracts.mjs` (`loadContracts`,
-  `checkContract`: CC-01 to CC-13), `contract-model.mjs` (the reference grammar, the allowed
-  combinations, the drawn icon slots and the merged API model), `api-declarations.mjs` (the API
-  declaration tree) and
-  `emit-api-swift.mjs` / `emit-api-kotlin.mjs`: the component API surface, written as
-  `ComponentAPI.swift` and `ComponentApi.kt` beside the tier files.
-- `tools/codegen/tokens/icon-set.mjs` (CC-09 to CC-12 and the icon-set API model),
+  `checkContract`: CC-01 to CC-18, in stages), `contract-fields.mjs` (CC-13 to CC-16 and the
+  roles and enum props of the API model), `contract-parts.mjs` (CC-17, CC-18 and the parts and
+  gallery samples of the API model), `contract-model.mjs` (the reference grammar, the allowed
+  combinations, the drawn icon slots, the icon sources and the merged looks),
+  `api-declarations.mjs` (the API declaration tree) and `emit-api-swift.mjs` /
+  `emit-api-kotlin.mjs`: the component API surface, written as `ComponentAPI.swift` and
+  `ComponentApi.kt` beside the tier files.
+- `tools/codegen/tokens/icon-set.mjs` (CC-09 to CC-11, the icon-slot rules CC-08 and CC-12, and
+  the icon-set API model),
   `svg-path.mjs` (`compilePath`: path data to absolute move, line, cubic and close) and
   `icon-declarations.mjs` (the icon declarations and the glyph table): an icon set's part of the
   API file, plus `<Name>Glyphs.swift` / `<Name>Glyphs.kt` beside it.
@@ -517,7 +588,9 @@ ARGB (`UInt32`/`Long`, `0xFFFA_FAFA`). The theme code in each app maps them to S
   `AppColors` (one field per role, one instance per context: `light`, `dark`, `brand`, `hcLight`,
   `hcDark`, plus `colors[role]`).
 - Tier 3: one `<Component>Tokens` value type per component: its properties, then one field per
-  state holding a nested type (`ButtonPrimaryTokens.Pressed`), and one instance per context from
+  state holding a nested type (`ButtonPrimaryTokens.Pressed`; a compound state G2 under its
+  component: `ChipChoiceTokens.selectedPressed` of type `ChipChoiceTokens.SelectedPressed`, never
+  a `ChipChoiceSelectedTokens`), and one instance per context from
   `resolveComponents` (`ButtonPrimaryTokens.dark.pressed.backgroundColor`). Colour properties are
   `AppColorRole` values; resolve them with the same context's `AppColors`. A component that is the
   same in every context still has five equal instances, so every component is used the same way.
@@ -525,38 +598,92 @@ ARGB (`UInt32`/`Long`, `0xFFFA_FAFA`). The theme code in each app maps them to S
   that draw from that scheme (`CONTEXT_SOURCES`, owner decision 2026-10-20): `BannerDarkTokens`
   has `dark`, `brand` and `hcDark`, and no `light` or `hcLight`, so a light use does not compile.
 - Component API (`ComponentAPI.swift`, `ComponentApi.kt`), per approved contract, `<Name>` from
-  its id (`button` -> `Button`; names per D6, no product name): `<Name>Variant`, `<Name>Size`,
-  `<Name>State` (Swift `String` raw-value enums, `CaseIterable, Sendable`, the raw value written
-  only where it differs from the case: `case primaryOutline = "primary-outline"`; Kotlin
-  `enum class` entries with `val id: String`: `PRIMARY_OUTLINE("primary-outline")`);
-  `<Name>TestId` (one string constant per allowed combination: `primaryLargeEnabled` =
-  `"ds-button-primary-large-enabled"`); `<Name>Appearance` (the merged look: optional colours and
-  `borderWidth`, then `typography`, `rounded`, `height`, the four paddings, `iconSize` and
-  `iconGap: Double` (pt/dp; `iconSize` is the icon set's size enum beside an approved icon set,
-  Swift `public let iconSize: AppIconSize`, Kotlin `val iconSize: AppIconSize`, and a `Double`
-  without one; optional only where some size draws no leading icon, G11), then `trailingIconSize`
-  and `trailingIconGap` where some size holds the trailing slot (optional where one does not:
-  `AppIconSize?`, `Double?`), then the optional
-  `focusRing`); `<Name>Look`
-  (variant, size, state, appearance); `<Name>Spec` (`looks`, one instance per context of the table,
-  and `appearance(variant:size:state:)` returning that combination's `<Name>Appearance`, or
-  `nil` / `null` for a combination the contract does not allow); `<Name>GalleryEntry` (variant, size, state, `testId`). Then
-  `GalleryComponent`: one case per approved contract in board order, its id the contract id,
-  with `title` (`<board> <gallery.title>`: `C01 Buttons`) and `slug` (the title in lower-case
-  kebab: `c01-buttons`); Swift `enum GalleryComponent: String, CaseIterable, Sendable` with
-  computed `title` and `slug`, Kotlin `enum class GalleryComponent(val id, val title, val slug)`.
-  The galleries switch over it exhaustively, so a new contract fails their build until it has a
-  renderer. Then `ComponentGallery`: per contract `<id>Label` (the synthetic `gallery.label`) and
-  `<id>` (its entries, each `testId` a reference to the constant). Props stay hand-written in each app (owner
-  decision 2026-10-20); no props descriptor is emitted. An icon set emits its own types instead
-  (Icon sets: `AppIconName`, `AppIconSet`, `AppIconSize`, `AppIconMetrics` and the glyph types)
-  and its glyph table `AppIconGlyphs` in `AppIconGlyphs.swift` / `AppIconGlyphs.kt`.
+  its id (`button` -> `Button`, `reason-row` -> `ReasonRow`; names per D6, no product name), in
+  this order:
+  - `<Name>Variant`, `<Name>Size`, `<Name>State` (Swift `String` raw-value enums,
+    `CaseIterable, Sendable`, the raw value written only where it differs from the case:
+    `case primaryOutline = "primary-outline"`, `case selectedPressed = "selected-pressed"`; Kotlin
+    `enum class` entries with `val id: String`: `PRIMARY_OUTLINE("primary-outline", …)`). The
+    variant enum carries each variant's `role: <Name>Role` (G7) and, with `parts`, the
+    `parts: [<Name>Part]` it draws (G12): Swift computed properties switching over the cases,
+    Kotlin constructor fields (`CHOICE("choice", ChipRole.SELECTABLE, listOf(ChipPart.SWATCH))`).
+    A compound state (G2) is a state case like any other; the state shown is picked by the app
+    (README G2: disabled, pressed, focused, none, prefixed with the toggle while it is on).
+  - `<Name>Role` (G7): the roles the variants take, in the order `button`, `toggle`, `radio`,
+    `selectable`, `disclosure`, `menu`, `text`, `region`, `decorative` (`ChipRole`: `button`,
+    `selectable`, `disclosure`, `menu`). `selection` and `labelOverride` are checked (CC-15) and
+    read by the app from its own props.
+  - `<Name><Prop>` per `enum` prop (G8): its values as cases (`ChipSelection`: `multiple`,
+    `single`).
+  - With `parts` (G12): `<Name>PartKind` and `<Name>PartPosition` (the kinds and positions in use,
+    in the order `text`, `swatch`, `dot`, `ring` and `before-label`, `after-label`, `line`,
+    `outside`) and `<Name>Part` (one case per part, named by the part: `outerRing`, `OUTER_RING`)
+    with `kind`, `position`, `separatorKey: String?` and `takesLeadingIcon: Bool` (`icon: leading`:
+    the line opens with the variant's leading icon instead of the label's). The separator copy
+    itself (`'· '`) is never emitted: each app ships it as a string resource under
+    `separatorKey`, `ds_<id>_<part>_separator` in snake case (`ds_chip_detail_separator`), Android
+    `res/values/strings.xml` (`.claude/rules/android.md` invariant 6) and the iOS String Catalog,
+    with the contract's text byte for byte.
+  - `<Name>IconSource` (G4), beside an approved icon set, for a contract with `icons`: Swift
+    `enum ChipIconSource: Sendable, Equatable { case glyph(name: AppIconName); case prop }`,
+    Kotlin `sealed interface ChipIconSource` with `data class Glyph(val name: AppIconName)` and
+    `data object Prop`. `.prop` is the caller's icon prop the `icons` entry names (each C03
+    contract has one).
+  - `<Name>TestId` (one string constant per allowed combination: `primaryLargeEnabled` =
+    `"ds-button-primary-large-enabled"`, `choiceLargeSelectedPressed` =
+    `"ds-chip-choice-large-selected-pressed"`).
+  - `<Name>Appearance` (the merged look: optional colours and `borderWidth`, then `typography`,
+    `rounded`, `height`, the four paddings, the entry properties (`detailTypography`,
+    `swatchSize`, `dotSize`, `outerRingWidth`, `lineGap`, …), `iconSize` and `iconGap: Double`
+    (pt/dp; `iconSize` is the icon set's size enum beside an approved icon set, Swift
+    `public let iconSize: AppIconSize`, Kotlin `val iconSize: AppIconSize`, and a `Double` without
+    one; optional only where some size draws no leading icon, G11), then `trailingIconSize` and
+    `trailingIconGap` where some size holds the trailing slot (optional where one does not:
+    `AppIconSize?`, `Double?`), then `leadingIcon` and `trailingIcon: <Name>IconSource?` (G4),
+    then the optional `focusRing`).
+  - `<Name>Look` (variant, size, state, appearance); `<Name>Spec` (`looks`; one private nested
+    holder per context of the table, `Light`, `Dark`, `Brand`, `HcLight`, `HcDark`, each holding
+    that context's `spec`; the public instances `light` … `hcDark` refer to them,
+    `ChipSpec.light = Light.spec`; and `appearance(variant:size:state:)` returning that combination's
+    `<Name>Appearance`, or `nil` / `null` for a combination the contract does not allow);
+    `<Name>GalleryEntry` (variant, size, state, `testId`).
+- After the contracts, `GalleryComponent`: one case per approved contract in board order (file
+  order within a board), its id the contract id, with `title` (`<board> <gallery.title>`:
+  `C01 Buttons`) and `slug` (the title in lower-case kebab: `c01-buttons`); Swift
+  `enum GalleryComponent: String, CaseIterable, Sendable` with computed `title` and `slug`, Kotlin
+  `enum class GalleryComponent(val id, val title, val slug)`. The galleries switch over it
+  exhaustively, so a new contract fails their build until it has a renderer. Then
+  `ComponentGallery`: per contract `<id>Label` (the synthetic `gallery.label`), one `<id><Prop>`
+  constant per `gallery.props` sample in prop order (G10: `chipLeadingIcon: AppIconName = .rain`,
+  `chipPrefix: String = "Group:"`, `chipSwatch: AppColorRole = .cameraInk`, resolved per context
+  by the app; an icon sample only beside an approved icon set) and `<id>` (its entries, each
+  `testId` a reference to the constant). Props stay hand-written in each app (owner decision
+  2026-10-20); no props descriptor is emitted, so the prop types map as below. An icon set emits
+  its own types instead (Icon sets: `AppIconName`, `AppIconSet`, `AppIconSize`, `AppIconMetrics`
+  and the glyph types) and its glyph table `AppIconGlyphs` in `AppIconGlyphs.swift` /
+  `AppIconGlyphs.kt`.
 - Swift: every type is `nonisolated public` (the package defaults to `MainActor` isolation; these
   are immutable `Sendable` values), structs are `Sendable, Equatable` with the memberwise
   initialiser, 2-space indent, 120 columns. Kotlin: package
   `app.aistylist.core.designsystem.generated`, `data class` values with companion instances,
   ktlint_official layout (trailing commas, a multiline value wrapped after its `=`, a list item
-  where it stands), 120 columns.
+  where it stands), 120 columns. A single value too long for its line (the reason row's gallery
+  sentence) starts on the line after its `=`, one indent in, in both languages.
+
+**Prop types** (G8). A contract prop's `type` is the type each app's hand-written component takes
+for it (Swift / Kotlin); the generator emits only the `enum` types:
+
+- `string`: `String` / `String`, optional (`String?`) with `default: null`.
+- `bool`: `Bool` / `Boolean`.
+- `icon`: the generated `AppIconName` in both.
+- `action`: `() -> Void` / `() -> Unit`.
+- `enum`: the generated `<Name><Prop>` in both (`ChipSelection`).
+- `color`: SwiftUI `Color` / Compose `Color`, runtime data such as a garment colour, never a token.
+- `colorRole`: the generated `AppColorRole` in both, resolved with the context's `AppColors`.
+
+A prop with `variants` exists only for those variants (`required: true` is required there). The
+generated `DesignTokens` target and the `:core:designsystem` generated package stay free of SwiftUI
+and Compose, so `color` is never a generated type.
 
 Gates on the output, not run by this pass: the Swift files sit under `apps/ios/Packages`, so
 swift-format and SwiftLint lint them, and `swift build` compiles them with warnings as errors; the
@@ -564,9 +691,20 @@ Kotlin files are compiled with warnings as errors and checked by Spotless (ktlin
 (`LongParameterList` allows 8 constructor parameters; its `ignoreDataClasses` default is expected
 to exempt these data classes, unverified) and Android Lint. A data class constructor
 takes at most 255 JVM slots, so `AppColors` (two per `Long`) holds at most 126 roles. The button's
-merged table is 100 combinations x 5 contexts = 500 looks (about 12,000 to 13,000 lines per language). On the
-JVM all five `ButtonSpec` instances initialise in one companion `<clinit>`, estimated at about
-40 KB of the 64 KB method limit; a contract with many more combinations needs that split.
+merged table is 100 combinations x 5 contexts = 500 looks (about 12,000 to 13,000 lines per
+language). A JVM class initialiser (`<clinit>`) holds at most 64 KB of bytecode, so every
+`<Name>Spec` puts each context's looks in a holder of its own (`ChipSpec.Light`, a private
+`object` with its own `<clinit>`), and the companion only reads the five holders. The holders
+are private so that only the Spec's own initialiser reaches them: a holder read first would build
+its Spec while the Spec class waited on that holder, and the companion would keep a null. Sized
+by estimate, not measured: a look costs about 4 to 6 bytes per argument (a `getstatic` for a role
+or enum case, an
+`ldc2_w` plus `Double.valueOf` for an optional number, `aconst_null` for an absent one, about 10
+for a `ChipIconSource.Glyph`) plus about 30 for its `<Name>Look`, its three axis cases and its
+list slot, so about 190 bytes for the chip's 35 or so fields. The chip's 84 looks are then about
+16 KB per holder (about a quarter of the limit), where one shared initialiser for all five
+contexts would be about 80 KB and fail to compile; the button's looks have fewer fields, so its
+holders are smaller still. The lead's compile of both apps after `just generate` is the proof.
 
 ## Tests and fixtures
 
@@ -582,15 +720,17 @@ repository `DESIGN.md` and `fixtures/_valid/` must pass; each `fixtures/TK-NN/` 
 and must fail on rule TK-NN and nothing else (`TK-06-trailing-icon`: a `trailingIconSize` naming
 a missing step). The repository contracts and
 `fixtures/contracts/_valid/` (`button.yaml`, whose `icons` draw a trailing plus on the large
-secondary, and `icon.yaml`, whose glyphs use arcs, relative commands, a filled dot and a filled
-twin) pass against their tokens (`fixtures/contracts/DESIGN.md`, synthetic, with the scale
-`icon-xs` … `icon-lg`, slots naming it in both spellings, a trailing slot at large only and
-spacing references in padding and gap); each `fixtures/contracts/CC-NN/button.yaml` or `icon.yaml`
-(and `CC-NN-<case>/`, a second case of the same rule: `CC-01-icon-kind`, `CC-01-icon-paint`,
-`CC-08-trailing`, `CC-11-viewbox`) is a valid contract with one defect and must fail on rule CC-NN
-and nothing else (`CC-12/` holds the valid button beside a defective pairing). Until part B lands,
-the repository contracts fail CC-01 (the four C03 contracts use its fields), so the tests that read
-them fail while every fixture test runs. `TOKENS_REPO_ROOT=<checkout>` points the repository tests at
+secondary; `chip.yaml`, the C03 fields: compound states, icons with a toggle's glyph, a
+selectable role with its selection enum, colour and colour-role props, gallery samples and all
+four part kinds; and `icon.yaml`, whose glyphs use arcs, relative commands, a filled dot and a
+filled twin) pass against their tokens (`fixtures/contracts/DESIGN.md`, synthetic, with the scale
+`icon-xs` … `icon-lg`, slots naming it in both spellings, a trailing slot at large only, spacing
+references in padding and gap, and a compound `chip-choice-selected-pressed` key); each
+`fixtures/contracts/CC-NN/button.yaml`, `chip.yaml` or `icon.yaml` (and `CC-NN-<case>/`, a second
+case of the same rule: `CC-01-icon-kind`, `CC-01-icon-paint`, `CC-03-compound`, `CC-08-trailing`,
+`CC-11-viewbox`, `CC-13-roles`) is a valid contract with one defect and must fail on rule CC-NN
+and nothing else (`CC-12/` holds the valid button beside a defective pairing).
+`TOKENS_REPO_ROOT=<checkout>` points the repository tests at
 another checkout's `DESIGN.md` and `.impeccable/components/` (a worktree whose inputs are not
 integrated yet). The tests read the repository contracts lazily
 (`once` in `tests/models.mjs`), so a defect there fails the repository tests and leaves the

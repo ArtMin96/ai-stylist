@@ -1,14 +1,17 @@
 // Icon-set contracts (`kind: icon-set`; C02 icons, Linear AI-201): the rules CC-09 to CC-11, the
-// rule CC-12 a control's icon slot meets beside an icon set, and the API model the icon
-// declarations (icon-declarations.mjs) read. contracts.mjs runs CC-01 and CC-02 first, as for
-// every contract. Glyph path data compiles to absolute move / line / cubic / close segments
-// (svg-path.mjs); sizes come from the `components.icon-<step>` tokens (the scale xs … hero).
-// tools/codegen/tokens/README.md, "Icon sets".
+// rules CC-08 and CC-12 a control's icon slots meet (its shared size entries, and beside an icon
+// set its sizes), and the API model the icon declarations (icon-declarations.mjs) read.
+// contracts.mjs runs CC-01 and CC-02 first, as for every contract. Glyph path data compiles to
+// absolute move / line / cubic / close segments (svg-path.mjs); sizes come from the
+// `components.icon-<step>` tokens (the scale xs … hero). tools/codegen/tokens/README.md, "Icon
+// sets".
 import { readFileSync } from 'node:fs';
 import path from 'node:path';
 
 import {
+  LEADING_SLOT,
   SLOT_SIZES,
+  TRAILING_SLOT,
   finding,
   iconSizeKeyOf,
   identifierFindings,
@@ -137,6 +140,38 @@ function sizeTokenFindings(size, resolved, at) {
     } else if (new Set(values).size > 1) {
       out.push(finding('CC-10', at, `${token} ${field} differs between contexts`));
     }
+  }
+  return out;
+}
+
+/**
+ * CC-08: every size where an allowed look draws an icon slot (slotsDrawn, G11: the leading one,
+ * and the trailing one, G3) has its shared size entry `<id>-<size>`, and that entry holds each
+ * drawn slot (LEADING_SLOT: `iconSize`, `iconGap`; TRAILING_SLOT: `trailingIconSize`,
+ * `trailingIconGap`) as dimensions in every context of the table. The entry is the size's value:
+ * a variant's own slot value wins over it in the merge (G6), but a missing one is a finding here.
+ */
+export function checkIconSlot(contract, file, model) {
+  const out = [];
+  const resolved = tableContexts(contract, model).map((c) => resolveComponents(model, c));
+  for (const [size, { leading, trailing }] of slotsDrawn(contract)) {
+    const slot = [...(leading ? LEADING_SLOT : []), ...(trailing ? TRAILING_SLOT : [])];
+    if (slot.length === 0) continue;
+    const entry = slotEntryOf(contract.id, size);
+    const at = `${file} sizes.${size}`;
+    if (!Object.hasOwn(model.sets.components, entry)) {
+      out.push(finding('CC-08', at, `no {components.${entry}} holds the ${size} icon slot`));
+      continue;
+    }
+    const missing = slot.filter((name) =>
+      resolved.some((components) => {
+        const node = components[entry]?.[name];
+        return !node || !isToken(node) || typedValue(node).type !== 'double';
+      }),
+    );
+    if (missing.length === 0) continue;
+    const message = `{components.${entry}} has no ${missing.join(' or ')} dimension`;
+    out.push(finding('CC-08', at, message));
   }
   return out;
 }

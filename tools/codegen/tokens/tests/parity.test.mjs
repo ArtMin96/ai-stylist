@@ -185,9 +185,12 @@ test('the repository contracts: both component API files spell the same table', 
   assert.deepEqual(swiftTable(swift), kotlinTable(kotlin));
 });
 
+/** The holder of one context's looks: `hc-light` -> `HcLight` (`ButtonSpec.HcLight.spec`). */
+const holder = (context) => nestedTypeName(contextId(context));
+
 test('the API table holds the ids, the test IDs, the lookup and every merged look', () => {
   const table = kotlinTable(repoWithApi().kotlin);
-  const [button] = apisOf(repoModel, REPO_CONTRACTS);
+  const button = apisOf(repoModel, REPO_CONTRACTS).find(({ id }) => id === 'button');
   const expected = {
     'ButtonVariant[PRIMARY_OUTLINE].id': 'str:"primary-outline"',
     'ButtonSize.cases': 'LARGE,CARD,MEDIUM,COMPACT,SMALL',
@@ -198,10 +201,12 @@ test('the API table holds the ids, the test IDs, the lookup and every merged loo
     'ButtonAppearance.backgroundColor:type': 'AppColorRole?',
     'ButtonAppearance.iconSize:type': 'AppIconSize',
     'ButtonAppearance.iconGap:type': 'Double',
-    'ButtonSpec.light.looks': 'list:100',
+    'ButtonSpec.light': 'ref:Light.spec',
+    'ButtonSpec.light:type': 'ButtonSpec',
+    'ButtonSpec.Light.spec.looks': 'list:100',
     'ComponentGallery.buttonLabel': 'str:"Continue"',
     'ComponentGallery.button': 'list:100',
-    'GalleryComponent.cases': 'BUTTON,ICON',
+    'GalleryComponent.cases': 'BUTTON,ICON,BADGE,CHIP,REASON_ROW,TAG',
     'GalleryComponent[BUTTON].id': 'str:"button"',
     'GalleryComponent[BUTTON].title': 'str:"C01 Buttons"',
     'GalleryComponent[BUTTON].slug': 'str:"c01-buttons"',
@@ -212,7 +217,7 @@ test('the API table holds the ids, the test IDs, the lookup and every merged loo
   assert.equal(table['ButtonTestId.textSmallEnabled'], undefined, 'text small is gone');
   for (const context of button.contexts) {
     button.looks[context].forEach(({ variant, size, state, values }, i) => {
-      const at = `ButtonSpec.${contextId(context)}.looks[${i}]`;
+      const at = `ButtonSpec.${holder(context)}.spec.looks[${i}]`;
       assert.equal(table[`${at}.variant`], `role:${ktEnumEntry(memberId(variant))}`, at);
       assert.equal(table[`${at}.state`], `role:${ktEnumEntry(memberId(state))}`, at);
       assert.equal(table[`${at}.size`], `role:${ktEnumEntry(memberId(size))}`, at);
@@ -232,6 +237,52 @@ test('the API table holds the ids, the test IDs, the lookup and every merged loo
   });
 });
 
+test('the repository C03 API: compound states, roles, enums, parts, icons and samples in both', () => {
+  const tables = {
+    Swift: swiftTable(repoWithApi().swift),
+    Kotlin: kotlinTable(repoWithApi().kotlin),
+  };
+  const expected = {
+    'ChipState[SELECTED_PRESSED].id': 'str:"selected-pressed"',
+    'ChipTestId.choiceLargeSelectedPressed': 'str:"ds-chip-choice-large-selected-pressed"',
+    'ChipRole.cases': 'BUTTON,SELECTABLE,DISCLOSURE,MENU',
+    'ChipVariant[REASON].role': 'role:DISCLOSURE',
+    'ChipVariant[FILTER].parts': 'list:[role:DETAIL]',
+    'ChipSelection.cases': 'MULTIPLE,SINGLE',
+    'ChipPart[DETAIL].separatorKey': 'str:"ds_chip_detail_separator"',
+    'ChipPart[DETAIL].position': 'role:AFTER_LABEL',
+    'ChipIconSource.cases': 'GLYPH,PROP',
+    'ChipIconSource[GLYPH].name:type': 'AppIconName',
+    'ChipAppearance.leadingIcon:type': 'ChipIconSource?',
+    'ComponentGallery.chipSwatch': 'role:CAMERA_INK',
+    'ComponentGallery.chipPrefix': 'str:"Group:"',
+    'ComponentGallery.tagLeadingIcon': 'role:LAUNDRY',
+    'ComponentGallery.badgeHostSurface': 'role:SURFACE2',
+    'ReasonRowPart[FACT].takesLeadingIcon': 'bool:true',
+    'BadgeRole.cases': 'TEXT,DECORATIVE',
+    'TagPart[DOT].kind': 'role:DOT',
+    'ChipChoiceTokens.light.selectedPressed:init': 'SelectedPressed',
+    'ChipReasonTokens.dark.expandedPressed.overlayColor': 'role:PRESSED_OVERLAY',
+  };
+  for (const [language, table] of Object.entries(tables)) {
+    for (const [name, value] of Object.entries(expected)) {
+      assert.equal(table[name], value, `${language} ${name}`);
+    }
+    assert.equal(table['ChipChoiceSelectedTokens.light:init'], undefined, 'the compound regroups');
+  }
+  const chip = apisOf(repoModel, REPO_CONTRACTS).find(({ id }) => id === 'chip');
+  const index = chip.looks['hc-dark'].findIndex(
+    (l) => l.variant === 'reason' && l.state === 'expanded-focused',
+  );
+  const at = `ChipSpec.HcDark.spec.looks[${index}].appearance`;
+  for (const table of Object.values(tables)) {
+    assert.equal(table[`${at}.trailingIcon:init`], 'case:GLYPH', at);
+    assert.equal(table[`${at}.trailingIcon.name`], 'role:CHEVRON_UP', at);
+    assert.equal(table[`${at}.leadingIcon`], 'role:PROP', at);
+    assert.equal(table[`${at}.focusRing`], 'ref:FocusRingTokens.hcDark', at);
+  }
+});
+
 test('a merged look, an id or a test ID spelled differently in one API file fails', () => {
   const differs = (from, to) => {
     const kotlin = Object.fromEntries(
@@ -240,12 +291,27 @@ test('a merged look, an id or a test ID spelled differently in one API file fail
     const [swift, kt] = [swiftTable(contractFixture.swift), kotlinTable(kotlin)];
     return Object.keys({ ...swift, ...kt }).filter((name) => swift[name] !== kt[name]);
   };
-  assert.deepEqual(differs('SECONDARY("secondary")', 'SECONDARY("secondary-1")'), [
+  assert.deepEqual(differs('SECONDARY("secondary",', 'SECONDARY("secondary-1",'), [
     'ButtonVariant[SECONDARY].id',
   ]);
   assert.deepEqual(differs('borderColor = null,', 'borderColor = AppColorRole.OUTLINE,'), [
-    'ButtonSpec.light.looks[0].appearance.borderColor',
+    'ButtonSpec.Light.spec.looks[0].appearance.borderColor',
   ]);
+  // The C03 shapes (Linear AI-204 part B): a role, an icon source, a part's separator key, a
+  // gallery sample and a context's holder, each spelled differently in Kotlin only.
+  const role = differs('CHOICE("choice", ChipRole.SELECTABLE', 'CHOICE("choice", ChipRole.BUTTON');
+  assert.deepEqual(role, ['ChipVariant[CHOICE].role']);
+  const plus = 'ChipIconSource.Glyph(name = AppIconName.PLUS)';
+  const glyph = differs(plus, plus.replace('PLUS', 'WAVE'));
+  assert.deepEqual(glyph, ['ChipSpec.Light.spec.looks[6].appearance.leadingIcon.name']);
+  const source = differs('leadingIcon = ChipIconSource.Prop', 'leadingIcon = ChipIconSource.Glyph');
+  assert.deepEqual(source, ['ChipSpec.Light.spec.looks[0].appearance.leadingIcon']);
+  const separator = differs('"ds_chip_detail_separator"', '"ds_chip_detail"');
+  assert.deepEqual(separator, ['ChipPart[DETAIL].separatorKey']);
+  const sample = differs('AppColorRole = AppColorRole.PRIMARY', 'AppColorRole = AppColorRole.TEXT');
+  assert.deepEqual(sample, ['ComponentGallery.chipSwatch']);
+  const instance = differs('val dark: ChipSpec = Dark.spec', 'val dark: ChipSpec = Light.spec');
+  assert.deepEqual(instance, ['ChipSpec.dark']);
   assert.deepEqual(differs('"ds-button-primary-large-enabled"', '"ds-button-primary-large"'), [
     'ButtonTestId.primaryLargeEnabled',
   ]);
@@ -322,7 +388,7 @@ test('the glyph table: every segment of every fixture glyph, the same in both la
     'AppIconSize[SM].size': 'num:16',
     'AppIconSize[SM].strokeWidth': 'num:1.9',
     'ButtonAppearance.iconSize:type': 'AppIconSize',
-    'ButtonSpec.light.looks[0].appearance.iconSize': 'role:MD',
+    'ButtonSpec.Light.spec.looks[0].appearance.iconSize': 'role:MD',
     'AppIconSize.strokeWidth:type': 'Double',
     'AppIconMetrics.viewBox': 'num:24',
     'AppIconMetrics.defaultSize': 'role:LG',
@@ -331,7 +397,7 @@ test('the glyph table: every segment of every fixture glyph, the same in both la
     'AppIconPaint.cases': 'STROKE,FILL,BOTH',
     'AppIconCommand.cases': 'MOVE,LINE,CUBIC,CLOSE',
     'AppIconGlyphs.Info.glyph.shapes[0].segments[5].points': 'list:[]',
-    'GalleryComponent.cases': 'BUTTON,ICON',
+    'GalleryComponent.cases': 'BUTTON,ICON,CHIP',
     'GalleryComponent[ICON].title': 'str:"C02 Fixture icons"',
     'GalleryComponent[ICON].slug': 'str:"c02-fixture-icons"',
   };

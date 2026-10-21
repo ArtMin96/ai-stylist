@@ -1,11 +1,12 @@
 // A checked component contract + the in-memory token model -> the API model the component-API
 // emitters read (ADR-0011 follow-up 7, DEC-87): the axes, the allowed combinations and one ready,
 // merged look per combination and context (owner decision 2026-10-20: base, then state, then
-// size, then the size's icon slots). Also the reference grammar the checker (contracts.mjs)
-// shares. Only run buildApi on a contract that passed CC-01 to CC-08 and CC-13.
-// tools/codegen/tokens/README.md, "Component contracts".
+// size, then the size's icon slots; G2: a compound state after its toggle). Also the reference
+// grammar the checker (contracts.mjs) shares. Only run buildApi on a contract that passed CC-01 to
+// CC-18. tools/codegen/tokens/README.md, "Component contracts".
 import { contextsOf, typedValue } from './declarations.mjs';
 import {
+  apiTypeName,
   contextId,
   galleryTitle,
   ktEnumEntry,
@@ -21,6 +22,7 @@ import {
   isColourProperty,
   isIconSizeProperty,
   splitState,
+  toggleOf,
 } from './syntax.mjs';
 
 /** The state every variant has before any state applies: its base entry is this look. */
@@ -44,14 +46,28 @@ export const SLOT_SIZES = ICON_SLOTS.filter(isIconSizeProperty);
 export const slotEntryOf = (id, size) => `${id}-${size}`;
 
 /** An `icons` source draws an icon: a glyph id or a `{props.…}` reference; `null` draws none. */
-const drawsIcon = (source) => source !== undefined && source !== null;
+export const drawsIcon = (source) => source !== undefined && source !== null;
+
+/** `{props.leadingIcon}`: an `icons` source or part colour that names a prop, not a glyph. */
+export const isPropReference = (value) => /^\{props\.[a-z][A-Za-z0-9]*\}$/.test(value);
+
+/**
+ * One look's icon sources (G4) as `{ leading, trailing }`, each a glyph id, a `{props.…}`
+ * reference, `null` or undefined: the state's entry in `icons`, else its toggle's for a compound
+ * state (G2: a toggle state's icons apply to its compounds), else the variant's own.
+ */
+export function iconSourcesOf(contract, variant, state) {
+  const icons = contract.icons?.[variant] ?? {};
+  const layers = [icons.states?.[state], icons.states?.[toggleOf(state)], icons];
+  const source = (side) => layers.find((layer) => layer && Object.hasOwn(layer, side))?.[side];
+  return { leading: source('leading'), trailing: source('trailing') };
+}
 
 /**
  * The icon slots each used size draws, in `sizes` order: `[size, { leading, trailing }]` (G11).
- * With `icons` (G4) a look draws a slot when its state's entry there, else its variant's, names an
- * icon. Without `icons` every look draws the leading slot (the button: its `leadingIcon` prop, or
- * the spinner while loading) and none a trailing one. A compound state (G2) that takes its
- * toggle's icons adds no size: a compound is allowed only where its toggle is.
+ * With `icons` (G4) a look draws a slot when its icon sources (iconSourcesOf) name an icon there.
+ * Without `icons` every look draws the leading slot (the button: its `leadingIcon` prop, or the
+ * spinner while loading) and none a trailing one.
  */
 export function slotsDrawn(contract) {
   const drawn = new Map();
@@ -60,11 +76,9 @@ export function slotsDrawn(contract) {
     if (contract.icons === undefined) {
       slots.leading = true;
     } else {
-      const icons = contract.icons[variant] ?? {};
-      const own = icons.states?.[state] ?? {};
-      const source = (side) => (Object.hasOwn(own, side) ? own[side] : icons[side]);
-      slots.leading ||= drawsIcon(source('leading'));
-      slots.trailing ||= drawsIcon(source('trailing'));
+      const { leading, trailing } = iconSourcesOf(contract, variant, state);
+      slots.leading ||= drawsIcon(leading);
+      slots.trailing ||= drawsIcon(trailing);
     }
     drawn.set(size, slots);
   }
@@ -150,20 +164,28 @@ export function tableContexts(contract, model) {
  * wins, the never-suggest chip's pressed 2 px). A ring with neither width, or a property whose
  * type differs between looks, is a CC-06 finding. The gallery's `title` is
  * `<board> <gallery.title>` and its `slug` the kebab of that title (`C01 Buttons`, `c01-buttons`).
- * With `iconSizeType` (the size enum of the approved icon set beside it: `AppIconSize`), a slot
- * size (SLOT_SIZES) that names an icon size is that enum's case (`.md`) instead of its number
- * (CC-12 makes every drawn slot name one).
+ * With `iconSet` (the approved icon set beside it, `iconSetOf` in contracts.mjs), a slot size
+ * (SLOT_SIZES) that names an icon size is that set's size enum case (`AppIconSize.md`) instead of
+ * its number (CC-12 makes every drawn slot name one), and a contract with `icons` (G4) gives each
+ * look its `leadingIcon` and `trailingIcon` sources (`<Name>IconSource`: a glyph of the set's name
+ * enum, or the caller's icon prop). Without an approved icon set there is no glyph type to name,
+ * so the look has no icon sources.
  */
-export function buildApi(contract, file, model, iconSizeType = null) {
+export function buildApi(contract, file, model, iconSet = null) {
   const findings = [];
   const combinations = allowedCombinations(contract);
   const contexts = tableContexts(contract, model);
   const ring = `${contract.id}-outline-ring`;
+  const icons =
+    iconSet && contract.icons !== undefined
+      ? { sourceType: apiTypeName(contract.id, 'IconSource'), nameType: iconSet.nameType }
+      : null;
+  const table = { model, iconSizeType: iconSet?.sizeType ?? null, icons };
   const looks = {};
   for (const context of contexts) {
     const resolved = resolveComponents(model, context);
     looks[context] = combinations.map((combo) => {
-      const values = lookValues(contract, combo, { resolved, context, model, iconSizeType });
+      const values = lookValues(contract, combo, { ...table, resolved, context });
       if (values.borderColor && !values.borderWidth) {
         const width = resolved[ring]?.width;
         if (width && isToken(width)) values.borderWidth = typedValue(width);
@@ -189,6 +211,7 @@ export function buildApi(contract, file, model, iconSizeType = null) {
     contexts,
     fields,
     looks,
+    iconSource: icons,
     gallery: {
       ...galleryTitle(contract.board, title),
       label,
@@ -200,13 +223,15 @@ export function buildApi(contract, file, model, iconSizeType = null) {
 
 /**
  * One look's typed values (`typedValue`): the base entry's properties, then the state's, then the
- * size entry's, later overriding earlier. A size entry that is the base itself adds nothing: the
- * base is already applied, and applying it again would undo the state (the destructive-filled
- * disabled label weight). Last, the icon slots (ICON_SLOTS, in that order): each value the base or
- * the state entry names (G6), else the shared size entry's, which a size without a drawn slot may
- * lack (G11). An overlay state adds a field named after its component that holds that component's
- * instance for the context (`focusRing: FocusRingTokens.hcDark`) and changes no colour (owner
- * decision 2026-10-20: focused is the focus ring drawn over the enabled look).
+ * size entry's, later overriding earlier. A compound state (G2) applies its toggle's entry first,
+ * then its own (`selected`, then `selected-pressed`). A size entry that is the base itself adds
+ * nothing: the base is already applied, and applying it again would undo the state (the
+ * destructive-filled disabled label weight). Then the icon slots (ICON_SLOTS, in that order): each
+ * value the base or a state entry names (G6), else the shared size entry's, which a size without a
+ * drawn slot may lack (G11). An overlay state adds a field named after its component that holds
+ * that component's instance for the context (`focusRing: FocusRingTokens.hcDark`) and changes no
+ * colour (owner decision 2026-10-20: focused is the focus ring drawn over the enabled look). Last,
+ * with `table.icons`, the icon sources (G4).
  */
 function lookValues(contract, { variant, size, state }, table) {
   const { resolved, context, model, iconSizeType } = table;
@@ -215,9 +240,12 @@ function lookValues(contract, { variant, size, state }, table) {
   const props = propertiesOf(resolved[base]);
   const own = slotOf(props);
   const overlays = {};
-  const stateReference = state === BASE_STATE ? undefined : tokens.states[state];
-  if (stateReference) {
-    const r = resolveReference(stateReference, model);
+  const stateReferences = [toggleOf(state), state]
+    .filter((s) => s && s !== BASE_STATE)
+    .map((s) => tokens.states[s])
+    .filter(Boolean);
+  for (const reference of stateReferences) {
+    const r = resolveReference(reference, model);
     if (r.state === null) overlays[memberId(r.component)] = r.component;
     else {
       const stateProps = propertiesOf(resolved[r.component][r.state]);
@@ -247,8 +275,37 @@ function lookValues(contract, { variant, size, state }, table) {
     const value = { t: 'ref', namespace: type, member: contextId(context) };
     values[name] = { type, value, overlay: true };
   }
+  if (table.icons) Object.assign(values, iconValues(contract, { variant, state }, table.icons));
   return values;
 }
+
+/** The icon-source fields of a look: `leadingIcon`, `trailingIcon` (ICON_SOURCE_FIELDS). */
+export const ICON_SOURCE_FIELDS = { leading: 'leadingIcon', trailing: 'trailingIcon' };
+
+/**
+ * A look's `leadingIcon` and `trailingIcon` where it draws one (G4): `<Name>IconSource.glyph(name:)`
+ * with the icon set's name case, or `.prop` for a `{props.…}` source (the caller's icon prop).
+ */
+function iconValues(contract, { variant, state }, { sourceType, nameType }) {
+  const sources = iconSourcesOf(contract, variant, state);
+  const values = {};
+  for (const [side, field] of Object.entries(ICON_SOURCE_FIELDS)) {
+    const source = sources[side];
+    if (!drawsIcon(source)) continue;
+    const value = isPropReference(source)
+      ? { t: 'union', type: sourceType, case: 'prop', args: [] }
+      : { t: 'union', type: sourceType, case: 'glyph', args: [glyphArgument(nameType, source)] };
+    values[field] = { type: sourceType, value, iconSource: true };
+  }
+  return values;
+}
+
+/** The `name:` argument of `.glyph(name:)`: the glyph's case of the icon set's name enum. */
+const glyphArgument = (nameType, glyph) => ({
+  name: 'name',
+  type: nameType,
+  value: { t: 'case', type: nameType, id: memberId(glyph) },
+});
 
 const propertiesOf = (group) =>
   Object.fromEntries(Object.entries(group).filter(([, node]) => isToken(node)));
@@ -263,9 +320,9 @@ const slotOf = (group) =>
   );
 
 /**
- * The merged look's fields: colours first, then `borderWidth`, then the other properties, then
- * overlays, each group in first-appearance order. A field some look lacks is optional; a field
- * whose type differs between looks is a CC-06 finding.
+ * The merged look's fields: colours first, then `borderWidth`, then the other properties, then the
+ * icon sources (G4), then overlays, each group in first-appearance order. A field some look lacks
+ * is optional; a field whose type differs between looks is a CC-06 finding.
  */
 function fieldsOf(looks, file, findings) {
   const types = new Map();
@@ -281,11 +338,14 @@ function fieldsOf(looks, file, findings) {
   }
   const names = [...types.keys()];
   const isOverlay = (name) => looks.some(({ values }) => values[name]?.overlay);
-  const isPlain = (name) => !isColourProperty(name) && name !== 'borderWidth' && !isOverlay(name);
+  const isIconSource = (name) => looks.some(({ values }) => values[name]?.iconSource);
+  const isPlain = (name) =>
+    !isColourProperty(name) && name !== 'borderWidth' && !isOverlay(name) && !isIconSource(name);
   const ordered = [
     ...names.filter((name) => isColourProperty(name)),
     ...names.filter((name) => name === 'borderWidth'),
     ...names.filter(isPlain),
+    ...Object.values(ICON_SOURCE_FIELDS).filter((name) => names.includes(name)),
     ...names.filter(isOverlay),
   ];
   return ordered.map((name) => ({

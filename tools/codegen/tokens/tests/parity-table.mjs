@@ -3,33 +3,44 @@
 // declaration tree both emitters share, so it catches a dialect that spells a name, value or type
 // differently. Only the spelling is normalised: `.onPrimary` and `AppColorRole.ON_PRIMARY` are
 // `role:ON_PRIMARY` (so are `.primaryOutline` and `ButtonVariant.PRIMARY_OUTLINE`), `[a, b]` and
-// `listOf(a, b)` are one list, `UInt32` and `Long` are `argb`, `nil` and `null` are `none`, a
-// Swift raw value and a Kotlin `id` are one `[ENTRY].id`, a Swift computed `var` switching over
-// the cases and a Kotlin enum constructor field are one `[ENTRY].<field>` (any value: a string, a
+// `listOf(a, b)` are one list, `UInt32` and `Long` are `argb`, `Bool` and `Boolean` are `bool`,
+// `nil` and `null` are `none`, a Swift raw value and a Kotlin `id` are one `[ENTRY].id`, a Swift
+// computed `var` switching over the cases and a Kotlin enum constructor field are one
+// `[ENTRY].<field>` (any value: a string, a
 // number, a case, a reference) with one `<Enum>.<field>:type`, and a Kotlin `AppColors::x` entry
 // argument is the Swift `colors[role]` case. A Kotlin entry wrapped one argument per line reads as
 // the one-line entry. A list of struct values is read item by item
-// (`looks[3].appearance.textColor`, `Back.glyph.shapes[0].segments[2].points`). The grammar is the
-// emitters' own output (emit-swift.mjs, emit-kotlin.mjs), not Swift or Kotlin in general.
+// (`looks[3].appearance.textColor`, `Back.glyph.shapes[0].segments[2].points`). A union (a Swift
+// enum with payload cases, a Kotlin sealed interface of data classes and data objects) reads as
+// its cases and each payload's types (`ChipIconSource[GLYPH].name:type`), and its values
+// (`.glyph(name: .check)`, `ChipIconSource.Glyph(name = AppIconName.CHECK)`) as `case:GLYPH`
+// with their arguments. The grammar is the emitters' own output (emit-swift.mjs,
+// emit-kotlin.mjs), not Swift or Kotlin in general.
 import { ktEnumEntry } from '../naming.mjs';
 
 const STRING = '"((?:[^"\\\\]|\\\\.)*)"';
 const SWIFT = {
-  open: /^(?:nonisolated )?public (?:enum|struct) (\w+)\b.*\{$/,
+  open: /^(?:nonisolated )?(?:public|private) (?:enum|struct) (\w+)\b.*\{$/,
   rawEnum: /^(?:nonisolated )?public enum (\w+): String, /,
   field: /^public let (\w+): (.+)$/,
-  value: /^public static let (\w+)(?:: (.+?))? = (.*)$/,
+  value: /^(?:public )?static let (\w+)(?:: (.+?))?(?: = (.*)| =)$/,
   enumCase: /^case (\w+)$/,
   rawCase: new RegExp(`^case (\\w+) = ${STRING}$`),
+  payloadCase: /^case (\w+)\((.+)\)$/,
   lookupCase: /^case \.(\w+): (\w+)$/,
   fieldCase: /^case \.(\w+): (.+)$/,
   property: /^public var (\w+): (.+) \{$/,
   anonymous: /^(public subscript\(|switch ).*\{$/,
   method: /^public func (\w+)\((.*)\) -> (.+) \{$/,
+  methodOpen: /^public func (\w+)\($/,
+  methodClose: /^\) -> (.+) \{$/,
 };
 const KOTLIN = {
-  open: /^object (\w+) \{$/,
+  open: /^(?:private )?object (\w+) \{$/,
+  sealed: /^sealed interface (\w+) \{$/,
+  dataObject: /^data object (\w+) : \w+$/,
   header: /^(data class|enum class) (\w+)\($/,
+  headerClose: /^\)(?: : \w+)?( \{)?$/,
   field: /^val (\w+): (.+),$/,
   enumField: /^(internal )?val (\w+): (.+),$/,
   value: /^val (\w+): (.+?) =(?: (.*))?$/,
@@ -45,6 +56,7 @@ const unescape = (id) => id.replace(/`/g, '');
 const canonicalType = (type) =>
   type
     .replace(/^(UInt32|Long)$/, 'argb')
+    .replace(/^(Bool|Boolean)$/, 'bool')
     .replace(/^\[(\w+)\]$/, 'list<$1>')
     .replace(/^List<(\w+)>$/, 'list<$1>');
 
@@ -67,6 +79,7 @@ function readTable(files, extension, readLine) {
       entry: null,
       cases: {},
       rawEnums: new Set(),
+      sealed: new Set(),
       enumFields: {},
       body: null,
     };
@@ -92,7 +105,8 @@ const openProperty = (state) => state.stack.findLast((frame) => frame?.property)
 
 function readSwiftLine(state, line) {
   let m;
-  if ((m = SWIFT.open.exec(line))) {
+  if (state.method) readSwiftMethod(state, line);
+  else if ((m = SWIFT.open.exec(line))) {
     state.stack.push(m[1]);
     if (SWIFT.rawEnum.test(line)) state.rawEnums.add(m[1]);
   } else if ((m = SWIFT.property.exec(line))) {
@@ -104,6 +118,15 @@ function readSwiftLine(state, line) {
   else if ((m = SWIFT.method.exec(line))) {
     addMethod(state, m[1], m[2], m[3]);
     state.body = { until: '}' };
+  } else if ((m = SWIFT.methodOpen.exec(line))) state.method = { name: m[1], params: [] };
+  else if ((m = SWIFT.payloadCase.exec(line))) {
+    const type = path(state, '');
+    const entry = ktEnumEntry(unescape(m[1]));
+    addCase(state, type, entry);
+    for (const field of m[2].split(', ')) {
+      const [name, fieldType] = field.split(': ');
+      state.table[`${type}[${entry}].${unescape(name)}:type`] = canonicalType(fieldType);
+    }
   } else if ((m = SWIFT.enumCase.exec(line) ?? SWIFT.rawCase.exec(line))) {
     const type = path(state, '');
     const entry = ktEnumEntry(unescape(m[1]));
@@ -127,8 +150,16 @@ function readKotlinLine(state, line) {
   else if (state.method) readKotlinMethod(state, line);
   else if ((m = KOTLIN.methodOpen.exec(line))) state.method = { name: m[1], params: [] };
   else if ((m = KOTLIN.open.exec(line))) state.stack.push(m[1]);
-  else if ((m = KOTLIN.header.exec(line))) state.header = { kind: m[1], name: m[2] };
-  else if (KOTLIN.anonymous.test(line)) state.stack.push(null);
+  else if ((m = KOTLIN.sealed.exec(line))) {
+    state.stack.push(m[1]);
+    state.sealed.add(m[1]);
+  } else if ((m = KOTLIN.dataObject.exec(line))) addCase(state, path(state, ''), ktEnumEntry(m[1]));
+  else if ((m = KOTLIN.header.exec(line))) {
+    // A data class inside a sealed interface is a union case, its fields the case's payload.
+    const union = state.sealed.has(path(state, '')) ? path(state, '') : null;
+    if (union) addCase(state, union, ktEnumEntry(m[2]));
+    state.header = { kind: m[1], name: m[2], union };
+  } else if (KOTLIN.anonymous.test(line)) state.stack.push(null);
   else if (line === '}') state.stack.pop();
   else if ((m = KOTLIN.entry.exec(line)) && state.enumFields[path(state, '')]) {
     readKotlinEntry(state, m[1], m[2]);
@@ -192,13 +223,18 @@ function continueKotlinEntry(state, line) {
   state.entry = null;
 }
 
-/** The parameters of a `data class X(` or `enum class X(` header, up to `)` or `) {`. */
+/**
+ * The parameters of a `data class X(` or `enum class X(` header, up to `)`, `) {` or, for a
+ * union case, `) : Union`.
+ */
 function readKotlinHeader(state, line) {
-  const { kind, name } = state.header;
+  const { kind, name, union } = state.header;
   let m;
-  if (line === ')' || line === ') {') {
+  if ((m = KOTLIN.headerClose.exec(line))) {
     state.header = null;
-    if (line === ') {') state.stack.push(name);
+    if (m[1]) state.stack.push(name);
+  } else if (union && (m = KOTLIN.field.exec(line))) {
+    state.table[`${union}[${ktEnumEntry(name)}].${unescape(m[1])}:type`] = canonicalType(m[2]);
   } else if (kind === 'enum class' && (m = KOTLIN.enumField.exec(line))) {
     const [, internal, field, type] = m;
     (state.enumFields[name] ??= []).push(field);
@@ -209,6 +245,18 @@ function readKotlinHeader(state, line) {
     addType(state, m[1], m[2]);
     state.stack.pop();
   }
+}
+
+/** A Swift signature wrapped one parameter per line, up to `) -> R {`, then its body. */
+function readSwiftMethod(state, line) {
+  const close = SWIFT.methodClose.exec(line);
+  if (!close) {
+    state.method.params.push(line.replace(/,$/, ''));
+    return;
+  }
+  addMethod(state, state.method.name, state.method.params.join(', '), close[1]);
+  state.method = null;
+  state.body = { until: '}' };
 }
 
 /** A signature wrapped one parameter per line (ktlint_official), up to `): R =`. */
@@ -235,7 +283,7 @@ function addCase(state, type, id) {
   (state.cases[type] ??= []).push(id);
 }
 
-function startValue(state, name, type, text) {
+function startValue(state, name, type, text = '') {
   state.pending = { name: path(state, unescape(name)), type, text };
   if (balanced(text) && text) finishValue(state);
 }
@@ -283,8 +331,17 @@ function flatten(table, name, value) {
     table[name] = canonical(value);
     return;
   }
-  table[`${name}:init`] = value.callee;
+  table[`${name}:init`] = calleeOf(value.callee);
   for (const [label, arg] of value.args) flatten(table, `${name}.${label}`, arg);
+}
+
+/**
+ * A struct value's callee as written (`ButtonLook`); a union case with a payload, the Swift
+ * `.glyph(` or the Kotlin `ChipIconSource.Glyph(`, as `case:GLYPH`.
+ */
+function calleeOf(callee) {
+  const union = /^(?:\.|\w+\.)(\w+)$/.exec(callee);
+  return union ? `case:${ktEnumEntry(union[1])}` : callee;
 }
 
 function canonical(value) {
@@ -294,10 +351,12 @@ function canonical(value) {
   if (/^0x/.test(token)) return `argb:${token.slice(2).replace(/_/g, '')}`;
   if (/^-?[\d.]+(e-?\d+)?$/.test(token)) return `num:${Number(token)}`;
   if (token === 'nil' || token === 'null') return 'none';
+  if (token === 'true' || token === 'false') return `bool:${token}`;
   if (token.startsWith('.')) return `role:${ktEnumEntry(unescape(token.slice(1)))}`;
-  // A Kotlin enum entry (`AppColorRole.ON_PRIMARY`, `ButtonSize.LARGE`) is the Swift `.case`.
-  const entry = /^\w+\.([A-Z][A-Z0-9_]*)$/.exec(token);
-  if (entry) return `role:${entry[1]}`;
+  // A Kotlin enum entry (`AppColorRole.ON_PRIMARY`, `ButtonSize.LARGE`) or a union case without a
+  // payload (`ChipIconSource.Prop`) is the Swift `.case`.
+  const entry = /^\w+\.([A-Z]\w*)$/.exec(token);
+  if (entry) return `role:${ktEnumEntry(entry[1])}`;
   return `ref:${unescape(token)}`;
 }
 

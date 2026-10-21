@@ -162,7 +162,7 @@ test('--components: the API and glyph-table files join the tiers in each directo
   const args = ['--input', fixture('contracts'), '--components', components];
   const result = run([...args, '--swift-out', `${out}/swift`, '--kotlin-out', `${out}/kotlin`]);
   assert.equal(result.status, 0, result.stderr);
-  const valid = `${labelOf(components)} is valid (2 approved contract(s): button, icon)`;
+  const valid = `${labelOf(components)} is valid (3 approved contract(s): button, chip, icon)`;
   assert.equal(labelOf(components), 'tools/codegen/tokens/fixtures/contracts/_valid');
   assert.ok(result.stdout.includes(`\ngen-tokens: ${valid}\n`), result.stdout);
   const tiers = ['ReferenceTokens', 'SchemeTokens', 'ComponentTokens'];
@@ -204,7 +204,8 @@ test('the repository DESIGN.md and contracts generate the component API', (t) =>
   args.push('--swift-out', `${out}/swift`, '--kotlin-out', `${out}/kotlin`);
   const result = run(args);
   assert.equal(result.status, 0, result.stderr);
-  const valid = `${labelOf(components)} is valid (2 approved contract(s): button, icon)`;
+  const ids = 'badge, button, chip, icon, reason-row, tag';
+  const valid = `${labelOf(components)} is valid (6 approved contract(s): ${ids})`;
   assert.ok(result.stdout.includes(`\ngen-tokens: ${valid}\n`), result.stdout);
   const swift = readFileSync(path.join(out, 'swift', 'ComponentAPI.swift'), 'utf8');
   const kotlin = readFileSync(path.join(out, 'kotlin', 'ComponentApi.kt'), 'utf8');

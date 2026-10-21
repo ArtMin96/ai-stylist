@@ -141,6 +141,67 @@ components:
     spinnerColor: '{colors.primary-light}'
   button-secondary-loading-dark:
     spinnerColor: '{colors.primary-dark}'
+  # The chip of ../_valid/chip.yaml (the C03 fields). chip-medium is the shared size entry: the
+  # assist chip's label, height and padding, and both icon slots (assist draws a trailing glyph).
+  # The choice base holds its own size, so its states stay visible in the merge: selected, then
+  # the compound selected-pressed (G2), whose key regroups under chip-choice.
+  chip-medium:
+    typography: '{typography.body}'
+    height: 36px
+    padding: '0 {spacing.12}'
+    iconSize: icon-sm
+    iconGap: 4px
+    trailingIconSize: icon-sm
+    trailingIconGap: 4px
+  chip-outline-ring: { width: 1px }
+  chip-assist-light:
+    backgroundColor: '{colors.surface-2-light}'
+    textColor: '{colors.text-light}'
+    rounded: '{rounded.full}'
+    dotSize: 6px
+    noteTypography: '{typography.label-muted}'
+    outerRingWidth: 2px
+  chip-assist-dark:
+    backgroundColor: '{colors.surface-2-dark}'
+    textColor: '{colors.text-dark}'
+    rounded: '{rounded.full}'
+    dotSize: 6px
+    noteTypography: '{typography.label-muted}'
+    outerRingWidth: 2px
+  chip-assist-pressed-light: { backgroundColor: '{colors.outline-light}' }
+  chip-assist-pressed-dark: { backgroundColor: '{colors.outline-dark}' }
+  chip-choice-light:
+    textColor: '{colors.text-light}'
+    borderColor: '{colors.outline-light}'
+    detailColor: '{colors.text-secondary-light}'
+    typography: '{typography.label}'
+    rounded: '{rounded.full}'
+    height: 36px
+    padding: 0 12px
+    swatchSize: 16px
+  chip-choice-dark:
+    textColor: '{colors.text-dark}'
+    borderColor: '{colors.outline-dark}'
+    detailColor: '{colors.text-secondary-dark}'
+    typography: '{typography.label}'
+    rounded: '{rounded.full}'
+    height: 36px
+    padding: 0 12px
+    swatchSize: 16px
+  chip-choice-pressed-light: { backgroundColor: '{colors.surface-2-light}' }
+  chip-choice-pressed-dark: { backgroundColor: '{colors.surface-2-dark}' }
+  chip-choice-selected-light:
+    backgroundColor: '{colors.primary-light}'
+    textColor: '{colors.on-primary-light}'
+    borderColor: '{colors.primary-light}'
+    padding: 0 12px 0 8px
+  chip-choice-selected-dark:
+    backgroundColor: '{colors.primary-dark}'
+    textColor: '{colors.on-primary-dark}'
+    borderColor: '{colors.primary-dark}'
+    padding: 0 12px 0 8px
+  chip-choice-selected-pressed-light: { backgroundColor: '{colors.primary-pressed-light}' }
+  chip-choice-selected-pressed-dark: { backgroundColor: '{colors.primary-pressed-dark}' }
   # The icon scale for ../_valid/icon.yaml: size in px, strokeWidth in viewBox units (24 x 24).
   # ../CC-10/icon.yaml names icon-xl, which is missing on purpose.
   icon-xs: { size: 12px, strokeWidth: 2.2 }

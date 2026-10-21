@@ -6,16 +6,41 @@ export const SCHEMES = ['hc-light', 'hc-dark', 'light', 'dark', 'brand'];
 /** The five DEC-87 resolver contexts, in emission order. */
 export const CONTEXTS = ['light', 'dark', 'brand', 'hc-light', 'hc-dark'];
 
-/** Component states: the DESIGN.md "Components" state list (after default) plus `expanded`. */
+/** The toggles a caller sets (G2): each combines with an interaction as `<toggle>-<interaction>`. */
+export const TOGGLES = ['selected', 'expanded'];
+
+/**
+ * The compound toggle states (.impeccable/components/README.md G2): a toggle joined with the
+ * interaction drawn while it is on (`selected-pressed`).
+ */
+export const COMPOUND_STATES = [
+  'selected-pressed',
+  'selected-focused',
+  'selected-disabled',
+  'expanded-pressed',
+  'expanded-focused',
+];
+
+/**
+ * Component states: the DESIGN.md "Components" state list (after default), `expanded`, and the
+ * compound toggle states (G2).
+ */
 export const STATES = [
   'pressed',
   'focused',
   'disabled',
   'loading',
   'error',
-  'selected',
-  'expanded',
+  ...TOGGLES,
+  ...COMPOUND_STATES,
 ];
+
+/** The toggle of a compound state (`selected-pressed` -> `selected`); null for any other state. */
+export const toggleOf = (state) =>
+  COMPOUND_STATES.includes(state) ? TOGGLES.find((t) => state.startsWith(`${t}-`)) : null;
+
+/** STATES longest first, so a compound suffix wins over the interaction it ends with. */
+const STATES_LONGEST_FIRST = [...STATES].sort((a, b) => b.length - a.length);
 
 /** The 15 Material 3 type roles (Compose `Typography` property names). */
 export const M3_ROLES = [
@@ -88,9 +113,12 @@ export function splitScheme(key) {
   return { base: key, scheme: null };
 }
 
-/** `button-primary-pressed` -> `{ component: 'button-primary', state: 'pressed' }`. */
+/**
+ * `button-primary-pressed` -> `{ component: 'button-primary', state: 'pressed' }`. The longest
+ * state suffix wins (G2): `chip-choice-selected-pressed` is `chip-choice` -> `selected-pressed`.
+ */
 export function splitState(base) {
-  for (const state of STATES) {
+  for (const state of STATES_LONGEST_FIRST) {
     const suffix = `-${state}`;
     if (base.endsWith(suffix) && base.length > suffix.length) {
       return { component: base.slice(0, -suffix.length), state };

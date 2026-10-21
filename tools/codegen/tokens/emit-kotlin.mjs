@@ -4,7 +4,7 @@
 // the Compose theme maps them to Color, Dp and TextStyle. Layout follows ktlint_official
 // (apps/android/.editorconfig): 4-space indent, 120 columns, trailing commas, a multiline value
 // wrapped after its `=` (multiline-expression-wrapping), no empty class body.
-import { docText, ktEnumEntry, ktIdent, ktStr, num } from './naming.mjs';
+import { docText, ktEnumEntry, ktIdent, ktStr, nestedTypeName, num } from './naming.mjs';
 import { inline, joinMembers, renderDeclaration, renderTiers, valueLines } from './render.mjs';
 
 const INDENT = '    ';
@@ -12,6 +12,7 @@ const PACKAGE = 'app.aistylist.core.designsystem.generated';
 const TYPE = {
   double: 'Double',
   int: 'Int',
+  bool: 'Boolean',
   string: 'String',
   color: 'Long',
   role: 'AppColorRole',
@@ -41,6 +42,7 @@ export const kotlin = {
     role: (id) => `AppColorRole.${ktEnumEntry(id)}`,
     ref: (namespace, member) => `${namespace}.${ktIdent(member)}`,
     enumCase: (type, id) => `${type}.${ktEnumEntry(id)}`,
+    unionCase: (type, name) => `${type}.${nestedTypeName(name)}`,
     none: 'null',
   },
   header: (source, title) => [
@@ -50,7 +52,7 @@ export const kotlin = {
     `package ${PACKAGE}`,
   ],
   doc: (text, pad) => `${pad}/** ${docText(text)} */`,
-  namespaceHead: (name) => `object ${name}`,
+  namespaceHead: (name, access) => (access ? `${access} object ${name}` : `object ${name}`),
   emptyNamespace: (name) => `object ${name}`,
   constant(member, depth) {
     const pad = INDENT.repeat(depth);
@@ -107,6 +109,29 @@ export const kotlin = {
         if (single.length <= kotlin.limit) return [single];
         return [entry, ...args.map((arg) => `${INDENT}${INDENT}${arg},`), `${INDENT}),`];
       }),
+      '}',
+    ];
+  },
+  /**
+   * A closed set of cases, some with a payload: a sealed interface whose cases are a data class
+   * (`Glyph(val name: AppIconName)`) or a data object (`Prop`).
+   */
+  union(decl) {
+    const cases = decl.cases.map(({ name, doc, fields }) => {
+      const type = nestedTypeName(name);
+      const head = [`${INDENT}/** ${docText(doc)} */`];
+      if (fields.length === 0) return [...head, `${INDENT}data object ${type} : ${decl.name}`];
+      return [
+        ...head,
+        `${INDENT}data class ${type}(`,
+        ...fields.map((f) => `${INDENT}${INDENT}val ${ktIdent(f.name)}: ${typeName(f.type)},`),
+        `${INDENT}) : ${decl.name}`,
+      ];
+    });
+    return [
+      `/** ${docText(decl.doc)} */`,
+      `sealed interface ${decl.name} {`,
+      ...joinMembers(cases),
       '}',
     ];
   },

@@ -2,11 +2,12 @@
 // (ADR-0011 follow-up 7, DEC-87; field rules: .impeccable/components/README.md). CC-01 parses the
 // YAML and checks it against component-contract.schema.json with the generators' shared Ajv
 // (../ajv.mjs: draft 2020-12 + ajv-formats from the packages/contracts devDependencies, as
-// gen-kernel.mjs uses it). A contract without `kind` is a control (the button): CC-02 to CC-08 and
-// CC-13 check its fields against each other and against the in-memory token model, and
-// contract-model.mjs then merges the looks; beside an icon set its icon slots also meet CC-12.
-// `kind: icon-set` (C02) runs CC-02 and CC-09 to CC-11 (icon-set.mjs) instead. Rules: tools/codegen/tokens/README.md, "Component contracts" and
-// "Icon sets".
+// gen-kernel.mjs uses it). A contract without `kind` is a control (the button, the chip): CC-02
+// to CC-08 and CC-13 to CC-18 (contract-fields.mjs, contract-parts.mjs) check its fields against
+// each other and against the in-memory token model, and contract-model.mjs then merges the looks;
+// beside an icon set its icon slots also meet CC-12. `kind: icon-set` (C02) runs CC-02 and CC-09
+// to CC-11 (icon-set.mjs) instead. Rules: tools/codegen/tokens/README.md, "Component contracts"
+// and "Icon sets".
 import { readdirSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 
@@ -14,9 +15,14 @@ import { parseDocument } from 'yaml';
 
 import { createAjv } from '../ajv.mjs';
 import {
+  checkAccessibility,
+  checkIcons,
+  checkProps,
+  checkTouchTarget,
+  fieldsApi,
+} from './contract-fields.mjs';
+import {
   BASE_STATE,
-  LEADING_SLOT,
-  TRAILING_SLOT,
   allowedCombinations,
   buildApi,
   comboKey,
@@ -24,15 +30,20 @@ import {
   identifierFindings,
   isToken,
   resolveReference,
-  slotEntryOf,
-  slotsDrawn,
   tableContexts,
 } from './contract-model.mjs';
-import { contextsOf, typedValue } from './declarations.mjs';
-import { ICON_SET_STAGES, buildIconSet, checkIconSlotSizes, isIconSet } from './icon-set.mjs';
+import { checkGalleryProps, checkParts, partsApi } from './contract-parts.mjs';
+import { contextsOf } from './declarations.mjs';
+import {
+  ICON_SET_STAGES,
+  buildIconSet,
+  checkIconSlot,
+  checkIconSlotSizes,
+  isIconSet,
+} from './icon-set.mjs';
 import { testIdName } from './naming.mjs';
 import { resolveComponents } from './normalise.mjs';
-import { CONTEXTS, isColourProperty } from './syntax.mjs';
+import { CONTEXTS, isColourProperty, toggleOf } from './syntax.mjs';
 
 const SCHEMA_FILE = path.join(import.meta.dirname, 'component-contract.schema.json');
 const ajv = await createAjv();
@@ -88,18 +99,24 @@ export function checkContract(text, file, model, iconSets = []) {
   return checkParsed(parsed.contract, file, model, iconSets);
 }
 
-/** What a control needs from an icon set beside it: its file, sizes, size enum and approval. */
+/**
+ * What a control needs from an icon set beside it: its file, sizes, glyph ids, size and name
+ * enums, and approval.
+ */
 export const iconSetOf = (contract, file) => ({
   file,
   sizes: contract.sizes,
+  glyphs: contract.glyphs.map(({ id }) => id),
   sizeType: `${contract.name}Size`,
+  nameType: `${contract.name}Name`,
   approved: contract.approved !== 'pending',
 });
 
 /**
  * The rules after CC-01, in stages that stop at the first stage with a finding, so a later rule
  * never reports what an earlier one already explains (each fixture fails on its own rule only).
- * A control's `iconSize` is the approved icon set's size enum; otherwise it stays a number.
+ * Beside one approved icon set, a control's icon slots are its size enum and its icon sources its
+ * glyphs (buildApi); otherwise the slots stay numbers and the looks have no icon sources.
  */
 function checkParsed(contract, file, model, iconSets) {
   const iconSet = isIconSet(contract);
@@ -111,24 +128,42 @@ function checkParsed(contract, file, model, iconSets) {
     if (findings.length > 0) return { findings };
   }
   const [only] = iconSets;
-  const iconSizeType = iconSets.length === 1 && only.approved ? only.sizeType : null;
+  const approvedSet = iconSets.length === 1 && only.approved ? only : null;
   const { findings, api } = iconSet
     ? buildIconSet(contract, file, model)
-    : buildApi(contract, file, model, iconSizeType);
+    : controlApi(contract, file, model, approvedSet);
   if (findings.length > 0) return { findings };
   return { findings: [], api, pending: contract.approved === 'pending' };
 }
 
-/** A control contract (no `kind`: the button): CC-02 to CC-08 and CC-13, then CC-12, in stages. */
+/** The merged looks (contract-model.mjs) plus the roles, enum props, parts and gallery samples. */
+function controlApi(contract, file, model, iconSet) {
+  const { findings, api } = buildApi(contract, file, model, iconSet);
+  const extra = { ...fieldsApi(contract), ...partsApi(contract, iconSet?.nameType ?? null) };
+  return { findings, api: { ...api, ...extra } };
+}
+
+/**
+ * A control contract (no `kind`: the button, the chip), in stages: CC-02 and CC-03; CC-04, CC-07,
+ * CC-15 and CC-16; CC-13 (it reads the roles CC-15 checks); CC-05; CC-06; CC-14, CC-17 and
+ * CC-18; CC-08; CC-12.
+ */
 const controlStages = (contract, file, model, iconSets) => [
   () => [...checkId(contract, file), ...checkAxes(contract, file)],
   () => [
     ...checkTokenShape(contract, file),
     ...checkUsage(contract, file),
-    ...checkTouchTarget(contract, file),
+    ...checkAccessibility(contract, file),
+    ...checkProps(contract, file),
   ],
+  () => checkTouchTarget(contract, file),
   () => checkReferences(contract, file, model),
   () => checkRoles(contract, file, model),
+  () => [
+    ...checkIcons(contract, file, iconSets),
+    ...checkGalleryProps(contract, file, model, iconSets),
+    ...checkParts(contract, file),
+  ],
   () => checkIconSlot(contract, file, model),
   () => checkIconSlotSizes(contract, file, model, iconSets),
 ];
@@ -175,7 +210,8 @@ function checkId(contract, file) {
 
 /**
  * CC-03: the axes agree. `combinations` names exactly the variants; each allows only listed sizes
- * and states; every listed size and state is allowed somewhere; ids and test-ID constants become
+ * and states, and a compound state only beside its toggle (G2: `selected-pressed` needs
+ * `selected`); every listed size and state is allowed somewhere; ids and test-ID constants become
  * distinct identifiers that are no Swift or Kotlin keyword.
  */
 function checkAxes(contract, file) {
@@ -191,6 +227,12 @@ function checkAxes(contract, file) {
         const message = `${noun} "${id}" is not in \`${list}\``;
         out.push(finding('CC-03', at(`combinations.${variant}.${list}`), message));
       }
+    }
+    for (const state of allowed.states) {
+      const toggle = toggleOf(state);
+      if (toggle === null || allowed.states.includes(toggle)) continue;
+      const message = `the compound state "${state}" needs its toggle "${toggle}" beside it`;
+      out.push(finding('CC-03', at(`combinations.${variant}.states`), message));
     }
   }
   for (const [list, noun] of axes) {
@@ -260,29 +302,6 @@ function checkUsage(contract, file) {
     out.push(finding('CC-07', `${file} gallery.include.${i}`, message));
   });
   return out;
-}
-
-/** Roles a screen reader reads or skips but nobody activates (G9); every other role acts. */
-const PASSIVE_ROLES = ['text', 'region', 'decorative'];
-
-/**
- * CC-13: an interactive role (any role outside PASSIVE_ROLES: button, toggle, menu, …) needs
- * `minTouchTarget` and an `action` prop; a passive one has no `action` prop and may leave the
- * touch target out (G9: tags, badges, the reason row).
- */
-function checkTouchTarget(contract, file) {
-  const { role, minTouchTarget } = contract.accessibility;
-  const hasAction = contract.props.some(({ type }) => type === 'action');
-  if (PASSIVE_ROLES.includes(role)) {
-    const message = `role ${role} is never activated, so no prop is an action`;
-    return hasAction ? [finding('CC-13', `${file} props`, message)] : [];
-  }
-  const needs = (where, what) =>
-    finding('CC-13', `${file} ${where}`, `role ${role} is interactive: it needs ${what}`);
-  return [
-    ...(minTouchTarget === undefined ? [needs('accessibility', 'minTouchTarget')] : []),
-    ...(hasAction ? [] : [needs('props', 'an action prop')]),
-  ];
 }
 
 /** CC-05: every `{components.…}` reference resolves in the token model, `{props.…}` to a prop. */
@@ -360,36 +379,4 @@ function isSizeEntry(component, model) {
     const group = resolveComponents(model, context)[component];
     return Object.entries(group).every(([key, node]) => isToken(node) && !isColourProperty(key));
   });
-}
-
-/**
- * CC-08: every size where an allowed look draws an icon slot (slotsDrawn, G11: the leading one,
- * and the trailing one, G3) has its shared size entry `<id>-<size>`, and that entry holds each
- * drawn slot (LEADING_SLOT: `iconSize`, `iconGap`; TRAILING_SLOT: `trailingIconSize`,
- * `trailingIconGap`) as dimensions in every context of the table. The entry is the size's value:
- * a variant's own slot value wins over it in the merge (G6), but a missing one is a finding here.
- */
-function checkIconSlot(contract, file, model) {
-  const out = [];
-  const resolved = tableContexts(contract, model).map((c) => resolveComponents(model, c));
-  for (const [size, { leading, trailing }] of slotsDrawn(contract)) {
-    const slot = [...(leading ? LEADING_SLOT : []), ...(trailing ? TRAILING_SLOT : [])];
-    if (slot.length === 0) continue;
-    const entry = slotEntryOf(contract.id, size);
-    const at = `${file} sizes.${size}`;
-    if (!Object.hasOwn(model.sets.components, entry)) {
-      out.push(finding('CC-08', at, `no {components.${entry}} holds the ${size} icon slot`));
-      continue;
-    }
-    const missing = slot.filter((name) =>
-      resolved.some((components) => {
-        const node = components[entry]?.[name];
-        return !node || !isToken(node) || typedValue(node).type !== 'double';
-      }),
-    );
-    if (missing.length === 0) continue;
-    const message = `{components.${entry}} has no ${missing.join(' or ')} dimension`;
-    out.push(finding('CC-08', at, message));
-  }
-  return out;
 }

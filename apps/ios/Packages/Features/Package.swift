@@ -3,8 +3,10 @@
 //   <Name>Model    @Observable view model; no SwiftUI, so it builds and tests on Linux too.
 //   <Name>Feature  the SwiftUI view; Apple platforms only (left out of this manifest on Linux).
 // Features depend on Core's AppServices/Analytics/AppConfig protocols and values, never on
-// APIData or the generated client (enforced by apps/ios/scripts/check-banned.sh). *Feature targets
-// draw with the DesignSystem package (AppButton, `\.appTheme`).
+// APIData or the generated API client (enforced by apps/ios/scripts/check-banned.sh). The generated
+// package's AIStylistKernel product (registry constants, no network code; ADR-0005) is allowed: the
+// capture rules come from it. *Feature targets draw with the DesignSystem package (AppButton,
+// `\.appTheme`).
 import PackageDescription
 
 // jscpd:ignore-start (SwiftPM manifests cannot share code; the copies are kept in sync by hand.)
@@ -28,11 +30,16 @@ let core: [Target.Dependency] = [
   .product(name: "AppServices", package: "Core"),
 ]
 
+/// Generated shared-kernel constants (capture rules, reason codes); never edit, run `just generate`.
+let kernel: Target.Dependency = .product(name: "AIStylistKernel", package: "swift-client")
+
 var dependencies: [Package.Dependency] = [
-  .package(path: "../Core")
+  .package(path: "../Core"),
+  .package(path: "../../../../packages/contracts/gen/swift-client"),
 ]
 var products: [Product] = [
-  .library(name: "HomeModel", targets: ["HomeModel"])
+  .library(name: "HomeModel", targets: ["HomeModel"]),
+  .library(name: "CaptureModel", targets: ["CaptureModel"]),
 ]
 var targets: [Target] = [
   .target(name: "HomeModel", dependencies: core, swiftSettings: strictSettings),
@@ -40,6 +47,15 @@ var targets: [Target] = [
     name: "HomeModelTests",
     dependencies: ["HomeModel"] + core,
     path: "tests/HomeModelTests",
+    swiftSettings: strictSettings
+  ),
+  // Guided capture camera logic (capture brief §3–§7): rules, lock machine, timers, flow. No UI, no
+  // camera or Vision import, no analytics (owner, 2026-10-22), so it needs only the kernel.
+  .target(name: "CaptureModel", dependencies: [kernel], swiftSettings: strictSettings),
+  .testTarget(
+    name: "CaptureModelTests",
+    dependencies: ["CaptureModel", kernel],
+    path: "tests/CaptureModelTests",
     swiftSettings: strictSettings
   ),
 ]

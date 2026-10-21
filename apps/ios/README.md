@@ -25,7 +25,10 @@ Packages/Core/           no UI; builds and tests on macOS AND Linux
 Packages/Features/       one pair of targets per screen
   Sources/HomeModel        @Observable view model (no SwiftUI; tests run on Linux too)
   Sources/HomeFeature      SwiftUI view (Apple platforms only; left out of the manifest on Linux)
+  Sources/CaptureModel     guided capture camera logic (no UI, camera, Vision or analytics; tests run on
+                           Linux too); its screens and camera plumbing (CaptureFeature) come later
   tests/HomeModelTests
+  tests/CaptureModelTests
 Packages/DesignSystem/   app-internal design system (DEC-87); no dependency on Core or APIData; used by the app
                          target (`.appTheme()` at the root) and the *Feature targets
   Sources/DesignTokens     Foundation-only tokens (tests run on Linux too); `just generate` writes them into
@@ -45,9 +48,31 @@ scripts/                 recipe bodies (bash 3.2-portable); fixtures/ prove each
 
 The generated client lives in `packages/contracts/gen/swift-client/`. `tools/codegen/gen-swift.sh`
 (`just generate`) writes it. Never edit it. Its package has two products: `AIStylistAPI` (the OpenAPI client) and
-`AIStylistKernel` (reason codes, entitlement names and units generated from `packages/shared-kernel/registry/*.json`,
-[ADR-0005](../../docs/adr/0005-shared-kernel-registries-for-native-clients.md)). No app target consumes
-`AIStylistKernel` yet.
+`AIStylistKernel` (reason codes, entitlement names, units and the capture rules generated from
+`packages/shared-kernel/registry/*.json`, [ADR-0005](../../docs/adr/0005-shared-kernel-registries-for-native-clients.md)).
+`CaptureModel` in `Packages/Features` is its first consumer: every capture threshold, count and timing comes from
+the generated `CaptureRules`. `AIStylistAPI` stays limited to `APIData`.
+
+## Guided capture camera (CaptureModel)
+
+The logic of capture brief `.claude/plans/2026-10-22-capture-camera-brief.md` §3–§7, pure and driven by an
+injected clock (`CaptureClock`; the app uses `ContinuousCaptureClock`), so every rule and timing is tested with
+`swift test` on macOS and Linux. No analytics (owner, 2026-10-22: camera only).
+
+- `CaptureObservation`: one analysed frame from the platform (item box, mask area, edge contact, sharpness,
+  luma, clipped share, device motion, tilt, body pose with `.modelUnavailable` for the doc-10 fallback).
+- `CaptureRuleEngine`: one observation → `CaptureVerdict` (blocking and advisory hints in §6 order);
+  `importTips(for:family:)` for a library still.
+- `ShutterLock` (§4 states and transitions), `AnywayTimer`, `HintPresenter` (hold + minimum visible time) and
+  `SpeechGate` (screen reader or speaker button, gap, repeat window).
+- `CaptureCameraSession`: one camera screen; every input takes the clock time and returns `CaptureEffect`s
+  (capture request, speech line, haptic) for the app to perform; `output` is what the screen draws.
+- `CaptureModel` (`@Observable`): the flow (picker, underwear opt-in through `UnderwearOptInStore`, back and pair
+  step, batch, library import); it reads the clock and owns one session per camera screen.
+- `CaptureObservationSource`: the port the live camera + Vision source and the debug test-frame source implement.
+
+Hints, guides and reasons are keys (`CaptureHint`, `CaptureGuide`, `CaptureAnywayReason`); the copy lives in the
+screen layer's strings.
 
 ## Design system
 

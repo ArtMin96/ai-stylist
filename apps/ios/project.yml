@@ -90,6 +90,7 @@ schemes:
         - package: Core/AnalyticsTests
         - package: Core/APIDataTests
         - package: Features/HomeModelTests
+        - package: Features/CaptureModelTests
         - package: DesignSystem/DesignTokensTests
         - package: DesignSystem/DesignSystemTests
         - package: DesignSystem/DesignSystemCatalogTests

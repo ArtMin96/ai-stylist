@@ -21,19 +21,22 @@
           .font(theme.font(AppTypography.labelSm))
           .frame(minHeight: AppSpacing.space32)
           .accessibilityIdentifier("cap-debug-panel")
-        Text(harness.lockState)
-          .font(theme.font(AppTypography.caption))
-          .accessibilityIdentifier("cap-debug-lock-state")
-        if !harness.spokenLog.isEmpty {
-          Text(harness.spokenLog.joined(separator: "\n"))
+        // Only while the harness is in use (brief §11), so a plain Dev run sees the screens uncovered.
+        if isInUse {
+          Text(harness.lockState)
             .font(theme.font(AppTypography.caption))
-            .fixedSize(horizontal: false, vertical: true)
-            .accessibilityIdentifier("cap-debug-spoken-log")
-        }
-        if !harness.status.isEmpty {
-          Text(harness.status)
-            .font(theme.font(AppTypography.caption))
-            .fixedSize(horizontal: false, vertical: true)
+            .accessibilityIdentifier("cap-debug-lock-state")
+          if !harness.spokenLog.isEmpty {
+            Text(harness.spokenLog.joined(separator: "\n"))
+              .font(theme.font(AppTypography.caption))
+              .fixedSize(horizontal: false, vertical: true)
+              .accessibilityIdentifier("cap-debug-spoken-log")
+          }
+          if !harness.status.isEmpty {
+            Text(harness.status)
+              .font(theme.font(AppTypography.caption))
+              .fixedSize(horizontal: false, vertical: true)
+          }
         }
         if isExpanded {
           controls
@@ -46,6 +49,11 @@
       // Below the camera's top bar (18 + 44 + 14), inside the preview's top-left corner.
       .padding(.top, AppSpacing.space64 + AppSpacing.space16)
       .padding(.leading, AppSpacing.space24)
+    }
+
+    /// A launch argument, the frame source or the opened panel puts the harness in use.
+    private var isInUse: Bool {
+      harness.options.isActive || harness.source == .frames || harness.isScreenReaderForced || isExpanded
     }
 
     /// Debug-only sizes (the panel is not product UI).

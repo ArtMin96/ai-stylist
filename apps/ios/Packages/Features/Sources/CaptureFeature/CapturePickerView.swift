@@ -12,14 +12,14 @@
     case family(CaptureShapeFamily)
     case underwear
 
-    /// §2 order: the eight families, underwear, then "Not sure" (`generic`).
+    /// §2 order: the eight families, then underwear. "Not sure" (`generic`) is the button under the grid
+    /// (SC16).
     static let all: [PickerTile] =
       [.top, .longBottom, .shortBottom, .onePiece, .outerwear, .shoes, .bag, .smallItem].map(PickerTile.family)
-      + [.underwear, .family(.generic)]
+      + [.underwear]
 
     var testID: String {
       switch self {
-      case .family(.generic): "cap-picker-not-sure"
       case .family(let family): "cap-picker-family-\(family.rawValue)"
       case .underwear: "cap-picker-family-underwear"
       }
@@ -42,7 +42,6 @@
       case .family(.outerwear): .coat
       case .family(.bag): .packed
       case .family(.smallItem): .tag
-      case .family(.generic): .search
       case .family, .underwear: .closet
       }
     }
@@ -66,35 +65,47 @@
           onClose: model.close
         )
         ScrollView {
-          VStack(spacing: AppSpacing.space24) {
+          VStack(spacing: AppSpacing.space16) {
             LazyVGrid(columns: columns, spacing: AppSpacing.space12) {
               ForEach(PickerTile.all, id: \.self) { tile in
                 tileButton(tile)
               }
             }
+            // SC16: "Not sure" secondary Large 52, then batch and import as tonal Compact 44.
             VStack(spacing: AppSpacing.space12) {
               AppButton(
-                CaptureText.localized("capture.picker.batch"),
+                CaptureText.familyLabel(.generic),
                 variant: .secondary,
                 size: .large,
-                leadingIcon: .collection,
                 fullWidth: true,
-                action: model.startBatch
+                action: model.chooseNotSure
               )
-              .accessibilityIdentifier("cap-picker-batch")
-              AppButton(
-                CaptureText.localized("capture.picker.import"),
-                variant: .secondary,
-                size: .large,
-                leadingIcon: .photo,
-                fullWidth: true,
-                action: model.startImport
-              )
-              .accessibilityIdentifier("cap-picker-import")
+              .accessibilityIdentifier("cap-picker-not-sure")
+              VStack(spacing: CaptureMetrics.sheetActionGap) {
+                AppButton(
+                  CaptureText.localized("capture.picker.batch"),
+                  variant: .tonal,
+                  size: .compact,
+                  leadingIcon: .collection,
+                  fullWidth: true,
+                  action: model.startBatch
+                )
+                .accessibilityIdentifier("cap-picker-batch")
+                AppButton(
+                  CaptureText.localized("capture.picker.import"),
+                  variant: .tonal,
+                  size: .compact,
+                  leadingIcon: .photo,
+                  fullWidth: true,
+                  action: model.startImport
+                )
+                .accessibilityIdentifier("cap-picker-import")
+              }
             }
           }
           .padding(.horizontal, AppSpacing.space20)
-          .padding(.vertical, AppSpacing.space24)
+          .padding(.top, AppSpacing.space16)
+          .padding(.bottom, AppSpacing.space24)
         }
       }
       .background(theme.color(.background).ignoresSafeArea())
@@ -105,12 +116,11 @@
     private func tileButton(_ tile: PickerTile) -> some View {
       Button {
         switch tile {
-        case .family(.generic): model.chooseNotSure()
         case .family(let family): model.chooseFamily(family)
         case .underwear: model.chooseUnderwear()
         }
       } label: {
-        VStack(spacing: AppSpacing.space4) {
+        VStack(alignment: .leading, spacing: AppSpacing.space4) {
           RoundedRectangle(cornerRadius: AppRadius.radius16)
             .fill(theme.color(.surface2))
             .aspectRatio(1, contentMode: .fit)
@@ -120,15 +130,13 @@
           Text(tile.label)
             .font(theme.font(AppTypography.captionStrong))
             .foregroundStyle(theme.color(.text))
-            .multilineTextAlignment(.center)
           if let subtitle = tile.subtitle {
             Text(subtitle)
               .font(theme.font(AppTypography.caption))
               .foregroundStyle(theme.color(.textSecondary))
-              .multilineTextAlignment(.center)
           }
         }
-        .frame(maxWidth: .infinity)
+        .frame(maxWidth: .infinity, alignment: .leading)
         .contentShape(Rectangle())
       }
       .buttonStyle(.plain)
@@ -186,6 +194,8 @@
   /// `cap-optin-sheet` (§7 C19): asked once; the answer stays on the device.
   struct CaptureOptInSheet: View {
     let model: CaptureModel
+    /// The content's height: a short sheet fits its content (DESIGN.md "Bottom sheet").
+    @State private var contentHeight = 0.0
     @Environment(\.appTheme) private var theme
 
     var body: some View {
@@ -198,7 +208,7 @@
             .accessibilityAddTraits(.isHeader)
           Text(CaptureText.localized("capture.optin.body"))
             .font(theme.font(AppTypography.callout))
-            .foregroundStyle(theme.color(.textSecondary))
+            .foregroundStyle(theme.color(.text))
           VStack(spacing: CaptureMetrics.sheetActionGap) {
             AppButton(
               CaptureText.localized("capture.optin.flatOnly"),
@@ -220,10 +230,17 @@
         .padding(.top, sheet.paddingTop + AppSpacing.space20)
         .padding(.horizontal, sheet.paddingStart)
         .padding(.bottom, sheet.paddingBottom)
+        .onGeometryChange(for: Double.self) { proxy in
+          proxy.size.height
+        } action: { height in
+          contentHeight = height
+        }
       }
       .accessibilityElement(children: .contain)
       .accessibilityIdentifier("cap-optin-sheet")
-      .presentationDetents([.medium, .large])
+      // Taller than the screen at the largest text sizes: the system caps the detent and the content
+      // scrolls.
+      .presentationDetents(contentHeight > 0 ? [.height(contentHeight)] : [.medium])
       .presentationDragIndicator(.visible)
       .presentationCornerRadius(sheet.rounded)
       .presentationBackground(theme.color(sheet.backgroundColor))

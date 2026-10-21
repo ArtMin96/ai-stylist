@@ -101,30 +101,33 @@
           }
           .accessibilityIdentifier("cap-camera-close")
           Spacer(minLength: AppSpacing.space8)
-          CaptureIconButton(label: CaptureText.localized("capture.a11y.help"), action: { isHelpShown = true }) {
-            AppIcon(.info, size: .lg)
-          }
-          .accessibilityIdentifier("cap-camera-help")
-          speechButton
-          if controller.camera.hasTorch {
-            torchButton
-          }
+          // SC17–SC18 order: more (underwear only), speaker, torch, help.
           if model.isUnderwear {
             CaptureIconButton(label: CaptureText.localized("capture.a11y.more"), action: { isMenuShown = true }) {
               AppIcon(.more, size: .lg)
             }
             .accessibilityIdentifier("cap-camera-more")
           }
+          speechButton
+          if controller.camera.hasTorch {
+            torchButton
+          }
+          CaptureIconButton(label: CaptureText.localized("capture.a11y.help"), action: { isHelpShown = true }) {
+            AppIcon(.info, size: .lg)
+          }
+          .accessibilityIdentifier("cap-camera-help")
         }
       }
       .frame(minHeight: CaptureMetrics.minTouchTarget)
     }
 
+    /// Shows whether hints are spoken: on with the screen reader (SC18) or the toggle; the tap flips the
+    /// toggle.
     private var speechButton: some View {
-      let isOn = model.isSpeechToggledOn
+      let isOn = model.isSpeechToggledOn || model.isScreenReaderOn
       return CaptureIconButton(
         label: CaptureText.localized(isOn ? "capture.a11y.speech.on" : "capture.a11y.speech.off"),
-        action: { model.setSpeechToggled(!isOn) }
+        action: { model.setSpeechToggled(!model.isSpeechToggledOn) }
       ) {
         CaptureSpeakerGlyph(isOn: isOn)
           .stroke(style: StrokeStyle(lineWidth: AppIconGlyphStroke.lg, lineCap: .round, lineJoin: .round))

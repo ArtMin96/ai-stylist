@@ -19,12 +19,6 @@ struct AppButtonStyle: ButtonStyle {
 
 /// The style's view, so it can read the environment.
 private struct AppButtonStyleBody: View {
-  /// The minimum touch target on iOS, in points, for every size (contract
-  /// `accessibility.minTouchTarget.ios`; DESIGN.md Layout "Touch targets"). No token carries it yet.
-  private static let minTouchTarget: CGFloat = 44
-  /// `AppMotion.Press.duration` is in milliseconds.
-  private static let millisecondsPerSecond = 1000.0
-
   let style: AppButtonStyle
   let isPressed: Bool
 
@@ -50,19 +44,9 @@ private struct AppButtonStyleBody: View {
         loading: style.loading,
         fullWidth: style.fullWidth
       )
-      .frame(minWidth: Self.minTouchTarget, minHeight: Self.minTouchTarget)
+      .frame(minWidth: AppInteraction.minTouchTarget, minHeight: AppInteraction.minTouchTarget)
       .contentShape(.rect)
-      .animation(reduceMotion ? nil : Self.pressAnimation, value: appearance)
+      .animation(AppInteraction.pressAnimation(reduceMotion: reduceMotion), value: appearance)
     }
-  }
-
-  /// The pressed transition: `AppMotion.Press` duration and easing (a cubic Bézier).
-  private static var pressAnimation: Animation {
-    let seconds = AppMotion.Press.duration / millisecondsPerSecond
-    let curve = AppMotion.Press.easing
-    guard curve.count == 4 else {
-      return .linear(duration: seconds)
-    }
-    return .timingCurve(curve[0], curve[1], curve[2], curve[3], duration: seconds)
   }
 }

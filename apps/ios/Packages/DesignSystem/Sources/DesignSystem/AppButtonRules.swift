@@ -6,8 +6,11 @@ public import DesignTokens
 
 /// The state, look and activation rules of `AppButton`.
 nonisolated public enum AppButtonRules {
-  /// The state text announced while loading (parity: Android `stateDescription`).
-  public static let loadingStateText = "Loading"
+  /// The state text announced while loading (parity: Android `stateDescription`), from the String Catalog
+  /// key `app_button_loading`.
+  public static var loadingStateText: String {
+    AppStrings.localized("app_button_loading")
+  }
 
   /// The state shown, first match wins: loading, disabled (not enabled), pressed, focused, enabled.
   public static func displayedState(loading: Bool, enabled: Bool, pressed: Bool, focused: Bool) -> ButtonState {

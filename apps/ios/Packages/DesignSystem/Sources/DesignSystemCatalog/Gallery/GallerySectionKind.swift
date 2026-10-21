@@ -10,8 +10,12 @@ nonisolated package enum GallerySectionKind: Equatable, Sendable {
   case radius([AppScaleStep])
   case buttons([ButtonGalleryEntry])
   case icons([AppIconName])
+  case badges([BadgeGalleryEntry])
+  case chips([ChipGalleryEntry])
+  case reasonRows([ReasonRowGalleryEntry])
+  case tags([TagGalleryEntry])
 
-  /// The label of each item, in order: role ids, style and step names, button and icon test ids.
+  /// The label of each item, in order: role ids, style and step names, component and icon test ids.
   package var itemLabels: [String] {
     switch self {
     case .colours(let roles): roles.map(\.rawValue)
@@ -19,6 +23,10 @@ nonisolated package enum GallerySectionKind: Equatable, Sendable {
     case .spacing(let steps), .radius(let steps): steps.map(\.name)
     case .buttons(let entries): entries.map(\.testId)
     case .icons(let names): names.map(\.testId)
+    case .badges(let entries): entries.map(\.testId)
+    case .chips(let entries): entries.map(\.testId)
+    case .reasonRows(let entries): entries.map(\.testId)
+    case .tags(let entries): entries.map(\.testId)
     }
   }
 }

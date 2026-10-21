@@ -5,7 +5,7 @@ import DesignSystemCatalog
 import DesignTokens
 import Testing
 
-/// The parity table of the AI-195 brief: (id, title), in display order. Android asserts the same.
+/// The parity tables of the AI-195 and C03 briefs: (id, title), in display order. Android asserts the same.
 private let paritySections: [(id: String, title: String)] = [
   ("ds-gallery-section-colours", "Colours"),
   ("ds-gallery-section-typography", "Typography"),
@@ -13,6 +13,10 @@ private let paritySections: [(id: String, title: String)] = [
   ("ds-gallery-section-radius", "Radius"),
   ("ds-gallery-section-c01-buttons", "C01 Buttons"),
   ("ds-gallery-section-c02-icons", "C02 Icons"),
+  ("ds-gallery-section-c03-badges", "C03 Badges"),
+  ("ds-gallery-section-c03-chips", "C03 Chips"),
+  ("ds-gallery-section-c03-reason-row", "C03 Reason row"),
+  ("ds-gallery-section-c03-tags", "C03 Tags"),
 ]
 
 private func section(_ id: String) throws -> GallerySection {
@@ -56,6 +60,30 @@ func iconCells() throws {
   #expect(ids == AppIconName.allCases.map(\.testId))
   #expect(Set(ids).count == ids.count)
   #expect(!ids.isEmpty)
+}
+
+@Test(
+  "each C03 section's cells are its generated gallery, in order, with unique test ids and the brief's count",
+  arguments: [
+    ("ds-gallery-section-c03-chips", GalleryComponent.chip, 84),
+    ("ds-gallery-section-c03-tags", GalleryComponent.tag, 12),
+    ("ds-gallery-section-c03-badges", GalleryComponent.badge, 4),
+    ("ds-gallery-section-c03-reason-row", GalleryComponent.reasonRow, 1),
+  ]
+)
+func c03Cells(sectionId: String, component: GalleryComponent, count: Int) throws {
+  let ids = try section(sectionId).kind.itemLabels
+  let generated: [String] =
+    switch component {
+    case .chip: ComponentGallery.chip.map(\.testId)
+    case .tag: ComponentGallery.tag.map(\.testId)
+    case .badge: ComponentGallery.badge.map(\.testId)
+    case .reasonRow: ComponentGallery.reasonRow.map(\.testId)
+    case .button, .icon: []
+    }
+  #expect(ids == generated)
+  #expect(ids.count == count)
+  #expect(Set(ids).count == ids.count)
 }
 
 @Test("every C01 cell resolves a look in every context, so no forced state is skipped")

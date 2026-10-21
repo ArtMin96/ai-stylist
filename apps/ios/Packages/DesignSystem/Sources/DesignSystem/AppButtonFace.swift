@@ -72,7 +72,7 @@ package struct AppButtonFace: View {
     }
     .overlay {
       if let ring = appearance.focusRing {
-        focusRing(ring)
+        AppFocusRing(ring: ring, cornerRadius: appearance.rounded)
       }
     }
   }
@@ -91,13 +91,5 @@ package struct AppButtonFace: View {
     } else if let leadingIcon {
       AppIcon(leadingIcon, size: appearance.iconSize)
     }
-  }
-
-  /// The focus ring: outside the pill by `offset`, following its corners.
-  private func focusRing(_ ring: FocusRingTokens) -> some View {
-    let outset = ring.offset + ring.width
-    return RoundedRectangle(cornerRadius: appearance.rounded + outset)
-      .strokeBorder(theme.color(ring.color), lineWidth: ring.width)
-      .padding(-outset)
   }
 }

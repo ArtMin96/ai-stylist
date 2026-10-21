@@ -1,0 +1,54 @@
+{
+  "sourceLanguage" : "en",
+  "strings" : {
+    "app_button_loading" : {
+      "comment" : "AppButton: the state announced while the button is busy. Same value as the Android string app_button_loading.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Loading"
+          }
+        }
+      }
+    },
+    "ds_chip_detail_separator" : {
+      "comment" : "AppChip: drawn before the detail part (U+00B7 MIDDLE DOT, then a space). The key is ChipPart.detail.separatorKey; same value as the Android string.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "· "
+          }
+        }
+      }
+    },
+    "ds_chip_state_collapsed" : {
+      "comment" : "AppChip reason (disclosure): the value spoken while its reason row is hidden. Same value as the Android string.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Collapsed"
+          }
+        }
+      }
+    },
+    "ds_chip_state_expanded" : {
+      "comment" : "AppChip reason (disclosure): the value spoken while its reason row shows. Same value as the Android string.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Expanded"
+          }
+        }
+      }
+    }
+  },
+  "version" : "1.0"
+}

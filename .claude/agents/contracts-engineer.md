@@ -33,12 +33,15 @@ Invariants that bite here (enforced by the named gate unless marked reviewer-che
 - Registries are JSON (ADR-0005, DEC-55): `packages/shared-kernel/registry/*.json`, validated by
   their `*.schema.json` when `just generate` runs `tools/codegen/gen-kernel.mjs`. It emits
   `packages/shared-kernel/src/gen/*.ts`, the Swift `AIStylistKernel` and the Kotlin
-  `app.aistylist.contracts.kernel` sources. `packages/shared-kernel/src/errors.ts`, `ids.ts` and
-  `envelope.ts` stay TS-only; the types in `packages/shared-kernel/src/reason-codes.ts`,
-  `entitlements.ts` and `units.ts` are hand-written. The registries `forbidden-log-keys.json`,
-  `log-redaction.json`, `correlation.json`, `owners.json` and `feature-flags.json` are imported as
-  JSON in TS (no generated TS): `packages/shared-kernel/src/forbidden-log-keys.ts`,
-  `log-redaction.ts`, `correlation.ts`, `owners.ts` and `feature-flags.ts` import them; `just
+  `app.aistylist.contracts.kernel` sources. `packages/shared-kernel/src/errors.ts` (its codes from
+  `packages/shared-kernel/registry/error-codes.json`), `ids.ts` and `envelope.ts` stay TS-only; the types in
+  `packages/shared-kernel/src/reason-codes.ts`, `entitlements.ts` and `units.ts` are hand-written.
+  The registries `forbidden-log-keys.json`, `log-redaction.json`, `correlation.json`,
+  `owners.json`, `feature-flags.json`, `error-codes.json`, `measurement-definitions.json` and
+  `starting-shapes.json` are imported as JSON in TS (no generated TS):
+  `packages/shared-kernel/src/forbidden-log-keys.ts`, `log-redaction.ts`, `correlation.ts`,
+  `owners.ts`, `feature-flags.ts`, `errors.ts`, `measurements.ts` and `starting-shapes.ts` import
+  them; the last three registries are client-facing and owe Swift and Kotlin output; `just
   generate` also emits forbidden-log-keys (+ examples), log-redaction and correlation (with the
   envelope's `correlationId` rule) for Python as
   `workers/ml/generated/ai_stylist_generated/kernel/` (DEC-59). `packages/contracts/tests/kernel-registries.test.ts` validates

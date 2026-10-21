@@ -8,7 +8,7 @@ Branch: feat/c03-chips · Lanes: iOS, Android (no API lane, no contract lane)
 Approval (`ui-prototype-first` step 1, "a DESIGN.md component → skip to step 5"): the approved
 contracts are the owner approval, all `approved: 2026-10-21`, canvas board C03 plus the screens they
 cite: `.impeccable/components/chip.yaml`, `tag.yaml`, `badge.yaml`, `reason-row.yaml` (commits
-8067942, ec8085c). A base component needs no surface brief.
+42a8792, 03d54ad). A base component needs no surface brief.
 
 ## Outcome and scope
 
@@ -21,7 +21,7 @@ cite: `.impeccable/components/chip.yaml`, `tag.yaml`, `badge.yaml`, `reason-row.
   `apps/android/core/designsystem-catalog/src/main/kotlin/app/aistylist/core/designsystem/catalog/gallery/DesignSystemGalleryScreen.kt:122`).
   The core modules (`DesignTokens`, `:core:designsystem`) compile. The lane makes the check green;
   never stop BLOCKED on this.
-- Inputs (generated, committed at 70edf5c; never hand-edit, never redeclare):
+- Inputs (generated, committed at d653ace; never hand-edit, never redeclare):
   - iOS `apps/ios/Packages/DesignSystem/Sources/DesignTokens/generated/{ReferenceTokens,SchemeTokens,ComponentTokens,ComponentAPI}.swift`
   - Android `apps/android/core/designsystem/src/main/kotlin/app/aistylist/core/designsystem/generated/{ReferenceTokens,SchemeTokens,ComponentTokens,ComponentApi}.kt`
   - Per component `<C>` in Chip, Tag, Badge, ReasonRow: `<C>Variant` (with `.role` and `.parts`),
@@ -325,7 +325,7 @@ Notes for the lanes:
 
 ## Fix round 1 (2026-10-21, after the architecture and UI reviews)
 
-New generated inputs (f12816b, plus the lead's regeneration after the ui-designer's `DESIGN.md` and
+New generated inputs (353a632, plus the lead's regeneration after the ui-designer's `DESIGN.md` and
 `badge.yaml` edits):
 
 - `ButtonAccessibility.minTouchTarget` and `ChipAccessibility.minTouchTarget`, a `Double`: 44 in

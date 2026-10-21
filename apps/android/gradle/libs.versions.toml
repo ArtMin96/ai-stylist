@@ -31,6 +31,11 @@ compose-lint-checks = "1.6.0"
 # on FakePostHogSdk in PostHogAnalyticsSinkTest): storagePrefix, networkStatus, close() flushing.
 posthog-android = "3.71.1"
 posthog-android-gradle-plugin = "1.7.0"
+# Guided capture camera (capture brief 2026-10-22 §1): CameraX stable, ML Kit object detection with the
+# bundled model, ML Kit pose detection with the bundled base model (beta, owner-approved Q-A).
+camerax = "1.6.2"
+mlkit-object-detection = "17.0.2"
+mlkit-pose-detection = "18.0.0-beta5"
 
 # Security floors for BUILD-TOOL configurations only (never the app's runtime classpath): the
 # patched versions of transitive dependencies that AGP's plugin classpath, Android Lint
@@ -85,6 +90,13 @@ androidx-test-espresso-core = { module = "androidx.test.espresso:espresso-core",
 compose-lint-checks = { module = "com.slack.lint.compose:compose-lint-checks", version.ref = "compose-lint-checks" }
 
 posthog-android = { module = "com.posthog:posthog-android", version.ref = "posthog-android" }
+
+androidx-camera-core = { module = "androidx.camera:camera-core", version.ref = "camerax" }
+androidx-camera-camera2 = { module = "androidx.camera:camera-camera2", version.ref = "camerax" }
+androidx-camera-lifecycle = { module = "androidx.camera:camera-lifecycle", version.ref = "camerax" }
+androidx-camera-compose = { module = "androidx.camera:camera-compose", version.ref = "camerax" }
+mlkit-detection-objects = { module = "com.google.mlkit:object-detection", version.ref = "mlkit-object-detection" }
+mlkit-detection-pose = { module = "com.google.mlkit:pose-detection", version.ref = "mlkit-pose-detection" }
 
 # Security floors (see the floor-* versions above). Constraints only: none is ever a direct dependency.
 floor-bcprov = { module = "org.bouncycastle:bcprov-jdk18on", version.ref = "floor-bouncycastle" }

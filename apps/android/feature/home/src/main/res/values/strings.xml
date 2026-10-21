@@ -18,4 +18,6 @@
     <string name="home_debug_force_crash">Force test crash</string>
     <!-- Debug build only (not preview): opens the design-system gallery (AI-195). Same text as iOS. -->
     <string name="home_debug_open_ds_gallery">Design system gallery</string>
+    <!-- Debug build only (capture brief Q-F): opens the capture camera. Same text as iOS. -->
+    <string name="home_open_capture">Add item</string>
 </resources>

@@ -10,6 +10,9 @@ React Native, no Kotlin Multiplatform and no 3D code.
 |---|---|
 | `app/` | `:app`, the application. Build types (= environments), `AppContainer` (the composition root), `MainActivity` (wraps everything in `AppTheme`), the window theme, manifest, and the PostHog adapter (`app/analytics/`, the only code that sees the PostHog SDK) |
 | `feature/home/` | `:feature:home`, the home screen: `HomeViewModel` (StateFlow) and `HomeScreen` (Compose), plus the debug tools (shown only when `AppContainer` injects the crash action: `debug`/`preview`) |
+| `feature/capture/` | `:feature:capture`, the guided capture camera (`.claude/plans/2026-10-22-capture-camera-brief.md`, surface brief `.impeccable/surfaces/sc16-capture-camera.md`). `domain/` is pure Kotlin with no Android imports, unit-tested on the JVM: the live checks (`LiveChecks.kt`), the shutter lock state machine (`LockMachine.kt`), the "Take photo anyway" timer (`AnywayTimer.kt`), the hint presenter and speech gate (`HintPresenter.kt`), one camera step (`CaptureCameraSession.kt`, timed by an injected `CaptureClock`), the flow (`CaptureFlow.kt`) and its ports (`CapturePorts.kt`); every threshold and timing comes from the generated `CaptureRules`. `CaptureViewModel` wires it to a `StateFlow`. `analysis/` measures a frame's light and sharpness (`LumaPlane`), shared by the camera, imports and the debug frames. `camera/` is the CameraX source (`CameraXObservationSource`: 640 × 480 KEEP_ONLY_LATEST analysis, ML Kit object detection with the bundled model, ML Kit pose in worn mode, accelerometer motion, ImageCapture), the in-memory photo store (dropped when the flow closes; nothing is saved in v1), the permission gate and the SharedPreferences opt-in store. `ui/` holds the screens (`CaptureRoute` and the picker, camera, review, import-tips, batch-summary, permission and no-camera screens), the copy in `res/values/strings.xml`, the test IDs (`CaptureTestTags`) and, in `CaptureProposedTokens`, the measured values DESIGN.md has no token for yet |
+| `feature/capture-debug/` | `:feature:capture-debug`, the capture camera's test harness (brief §11), `debugImplementation` only: a frame-set source in place of the camera, the debug panel (`cap-debug-*`), the screen-reader flag, the interactive results log and the sweep (every set on a virtual clock). Launch extras: `captureFrameSet`, `captureScreenReader=1`, `captureSweep=1` (plus `captureSweepFilter`, `captureBoxes`, `capturePose`, `captureFramesDir`, `captureDebugPanel=0`). The one feature-to-feature edge, allowed for the harness only |
+| `core/kernel/` | `:core:kernel`, the **generated** shared-kernel registries (`app.aistylist.contracts.kernel`: reason codes, entitlement names, units, capture rules; ADR-0005), compiled from `packages/contracts/gen/kotlin-client/kernel` like `:core:api-client`. No sources of its own |
 | `core/data/` | `:core:data`, pure Kotlin. `parseAppConfig` (API_BASE_URL and PostHog key/host validation), `DataServices`, `VersionRepository` over the generated client |
 | `core/analytics/` | `:core:analytics`, pure Kotlin, SDK-free. The `Analytics` port, the consent gate (`ConsentGatedAnalytics`), the no-op sink, and the generated `AnalyticsTaxonomy` |
 | `core/api-client/` | `:core:api-client`. It compiles the **generated** client. It has no source code of its own |
@@ -19,11 +22,11 @@ React Native, no Kotlin Multiplatform and no 3D code.
 | `config/` | `detekt.yml`, `lint.xml`, `compose-stability.conf` |
 | `gradle/libs.versions.toml` | The version catalog. Every dependency and plugin version is set here |
 | `gradle/verification-metadata.xml`, `**/gradle.lockfile`, `*-gradle.lockfile` | Supply chain: checksums and the locked dependency graph |
-| `tools/` | `gradle.sh` (runs the wrapper with JDK 25 + the SDK) and `sdk.sh` (SDK check/install), behind the `just android-*` recipes |
+| `tools/` | `gradle.sh` (runs the wrapper with JDK 25 + the SDK) and `sdk.sh` (SDK check/install), behind the `just android-*` recipes; `capture-frames.sh` (push the capture test frames, run a sweep, pull `capture-results.jsonl`) |
 
 The generated client also has `app.aistylist.contracts.kernel` (reason codes, entitlement names and units, from
 `packages/shared-kernel/registry/*.json`; [ADR-0005](../../docs/adr/0005-shared-kernel-registries-for-native-clients.md))
-in `packages/contracts/gen/kotlin-client/kernel`. No module compiles it yet.
+in `packages/contracts/gen/kotlin-client/kernel`. `:core:kernel` compiles it; `:feature:capture` is its first consumer.
 
 ### Module graph
 
@@ -34,13 +37,17 @@ in `build-logic/convention/src/main/kotlin/RootConventionPlugin.kt`.
 :app ──► :feature:home ──► :core:data ──(implementation)──► :core:api-client (generated)
   │            ├─────────► :core:analytics (+ generated AnalyticsTaxonomy)
   │            └─────────► :core:designsystem (generated tokens, AppTheme, AppButton, AppIcon, AppChip, AppTag, AppBadge, AppReasonRow)
+  ├──► :feature:capture ──► :core:kernel (generated shared-kernel registries), :core:designsystem
   ├──► :core:data, :core:analytics, :core:designsystem
-  └──(debugImplementation)──► :core:designsystem-catalog ──► :core:designsystem
+  ├──(debugImplementation)──► :core:designsystem-catalog ──► :core:designsystem
+  └──(debugImplementation)──► :feature:capture-debug ──► :feature:capture, :core:kernel, :core:designsystem
 ```
 
-- Feature modules never depend on each other. `core` never depends on `feature`.
+- Feature modules never depend on each other, with one exception: the debug-only harness
+  `:feature:capture-debug` plays test frames into `:feature:capture`. `core` never depends on `feature`.
 - `:core:designsystem` never depends on another project module.
-- Production code never depends on `:core:designsystem-catalog`; only the `debug` build of `:app` has it.
+- Production code never depends on `:core:designsystem-catalog` or `:feature:capture-debug`; only the
+  `debug` build of `:app` has them.
 - Only `:core:data` can see generated DTOs. Features get the domain types from `:core:data`.
 - `AppContainer` in `:app` is the only place that reads `BuildConfig` or builds adapters.
 
@@ -96,6 +103,14 @@ Upstream projects: Figtree `https://github.com/erikdkennedy/figtree` (google/fon
   the gallery, the others `null`. Home's debug tools then show "Design system gallery"
   (`debug_open_ds_gallery`). `MainActivity` swaps Home for the gallery in the same window, so its
   test tags stay resource ids; "Close" (`debug_close_ds_gallery`) or Back returns to Home.
+- The capture camera opens from Home's "Add item" (`home-open-capture`) in `debug` only (capture
+  brief Q-F), and only `debug` has its test harness: `DebugCapture` exists once per build type
+  (`app/src/{debug,preview,release}/kotlin/app/aistylist/app/DebugCapture.kt`), and `:app` takes
+  `:feature:capture-debug` as `debugImplementation`. The capture flow replaces Home in the same
+  window; the volume keys are its shutter while the shutter is usable. Harness runs:
+  `apps/android/tools/capture-frames.sh push [frames-root]`, then
+  `adb shell am start -S -n app.aistylist.mobile.dev/app.aistylist.app.MainActivity -e captureFrameSet <set id>`
+  or `apps/android/tools/capture-frames.sh sweep [out-dir]`.
 
 ## Parity with the retired React Native home screen
 

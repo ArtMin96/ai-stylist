@@ -35,9 +35,12 @@ rootProject.name = "ai-stylist-android"
 include(
     ":app",
     ":feature:home",
+    ":feature:capture",
+    ":feature:capture-debug",
     ":core:data",
     ":core:analytics",
     ":core:api-client",
+    ":core:kernel",
     ":core:designsystem",
     ":core:designsystem-catalog",
 )

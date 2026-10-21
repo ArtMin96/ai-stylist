@@ -40,19 +40,12 @@ struct AIStylistApp: App {
   }
 
   #if DEBUG
-    /// Home with the Dev build's "Design system gallery" and "Add item" buttons, each presenting full
-    /// screen.
-    private var home: some View {
-      HomeScreen(
-        services: services,
-        onOpenDesignSystemGallery: { showsDesignSystemGallery = true },
-        onOpenCapture: { showsCapture = true }
-      )
-      .fullScreenCover(isPresented: $showsDesignSystemGallery) {
-        DesignSystemGalleryScreen(onClose: { showsDesignSystemGallery = false })
-          .appTheme()
-      }
-      .fullScreenCover(isPresented: $showsCapture) {
+    /// Home with the Dev build's "Design system gallery" (presented full screen) and "Add item" buttons.
+    /// The capture flow replaces Home instead of covering it: a sheet the flow presents (the underwear
+    /// opt-in, help, the camera menu) is then the only modal view, so UI tests and VoiceOver read the
+    /// sheet rather than the cover beneath it.
+    @ViewBuilder private var home: some View {
+      if showsCapture {
         CaptureFlowView(
           dependencies: CompositionRoot.makeCaptureDependencies(harness: captureHarness),
           onClose: { showsCapture = false }
@@ -60,7 +53,16 @@ struct AIStylistApp: App {
         .overlay(alignment: .topLeading) {
           CaptureDebugPanel(harness: captureHarness)
         }
-        .appTheme()
+      } else {
+        HomeScreen(
+          services: services,
+          onOpenDesignSystemGallery: { showsDesignSystemGallery = true },
+          onOpenCapture: { showsCapture = true }
+        )
+        .fullScreenCover(isPresented: $showsDesignSystemGallery) {
+          DesignSystemGalleryScreen(onClose: { showsDesignSystemGallery = false })
+            .appTheme()
+        }
       }
     }
   #else

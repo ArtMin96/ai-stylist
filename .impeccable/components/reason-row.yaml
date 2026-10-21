@@ -90,5 +90,5 @@ gallery:
 
 testId: 'ds-{component}-{variant}-{size}-{state}'
 
-# Owner approval of this contract is not recorded yet; the lead relays it.
-approved: pending
+# Owner, 2026-10-21, in chat, on AppBadge and AppReasonRow: "Approve both (Recommended)".
+approved: 2026-10-21

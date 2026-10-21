@@ -201,22 +201,46 @@ combinations:
   choice:
     sizes: [large]
     states:
-      [enabled, pressed, focused, disabled, selected, selected-pressed, selected-focused,
-       selected-disabled]
+      [
+        enabled,
+        pressed,
+        focused,
+        disabled,
+        selected,
+        selected-pressed,
+        selected-focused,
+        selected-disabled,
+      ]
   # Screens win: SC06 (Colour) and P03 ("Colours you reach for") draw the swatch chip as C03 does.
   swatch:
     sizes: [large]
     states:
-      [enabled, pressed, focused, disabled, selected, selected-pressed, selected-focused,
-       selected-disabled]
+      [
+        enabled,
+        pressed,
+        focused,
+        disabled,
+        selected,
+        selected-pressed,
+        selected-focused,
+        selected-disabled,
+      ]
   # Screens win: SC06, SC09, SC12, SC15, P09 and P14 draw the filter chip as C03 does (36, 0 14,
   # 14/600, selected 0 14 0 10 with check 16). SC09 Occasion and the SC12 and SC15 tabs use it as a
   # one-choice group, SC06 as multi-select. The count is drawn on C03 only.
   filter:
     sizes: [medium]
     states:
-      [enabled, pressed, focused, disabled, selected, selected-pressed, selected-focused,
-       selected-disabled]
+      [
+        enabled,
+        pressed,
+        focused,
+        disabled,
+        selected,
+        selected-pressed,
+        selected-focused,
+        selected-disabled,
+      ]
   # Screens win: C03 and SC06 draw this chevron as M7 10l5 5 5-5; SC09 draws icon.yaml's
   # chevron-down (C02), which every chip uses (icon.yaml owner decision 5).
   filter-menu:

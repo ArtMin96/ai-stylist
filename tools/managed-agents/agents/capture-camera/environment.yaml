@@ -1,0 +1,5 @@
+# Self-hosted: the agent loop runs at Anthropic, every tool call runs on the owner's Mac through
+# `ant beta:worker poll` (started by tools/managed-agents/capture-agent.sh). The camera work needs the
+# Mac's Xcode, iOS Simulator, Android emulator and Maestro, which a cloud container does not have.
+name: capture-camera-mac
+config: { type: self_hosted }

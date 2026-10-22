@@ -10,6 +10,8 @@ struct FrameMetrics: Encodable {
     let meanLuma: Double
     let clippedShare: Double
     let sharpness: Double
+    /// Ground-truth frames: what the Mac's Vision made of the image (absent on Vision frames).
+    let vision: VisionCheck?
 
     init(_ measure: FrameMeasure) {
         instances = measure.instances.count
@@ -19,6 +21,7 @@ struct FrameMetrics: Encodable {
         meanLuma = round4(measure.meanLuma)
         clippedShare = round4(measure.clippedShare)
         sharpness = round4(measure.sharpness)
+        vision = measure.vision
     }
 }
 
@@ -35,6 +38,9 @@ struct SegmentEntry: Encodable {
     let jitter: Double
     let jitterSeed: UInt32
     let offsets: [[Double]]?
+    /// The phone's tilt during the segment in degrees, fed as the gravity angle (tilt hint, flat mode);
+    /// absent means no gravity sensor.
+    let tiltDegrees: Double?
     let expected: String
     let metrics: FrameMetrics
 }
@@ -102,7 +108,8 @@ struct BoxFile: Encodable {
         let edgeContact: EdgeShares
     }
 
-    let source = "vision-foreground-instance-mask"
+    /// `vision-foreground-instance-mask`, or `ground-truth` for the masks the generator drew.
+    let source: String
     let frameWidthPx: Int
     let frameHeightPx: Int
     /// Largest first.
@@ -174,9 +181,13 @@ struct Manifest: Encodable {
         let bases: [BaseInfo]
         let rejected: [Rejected]
         let wornGarment: String?
+        /// Per surface and `covered`: what the Mac's Vision made of the hard-case composites.
+        let vision: [String: VisionTally]
     }
 
     let dataset: DatasetInfo
+    /// Every family's `vision` summed (README "Hard cases").
+    let hardCaseVision: [String: VisionTally]
     let synthetic: String
     let families: [String: FamilyInfo]
 }
@@ -189,9 +200,10 @@ struct WrittenFrame {
     let keypoints: String?
     let metrics: FrameMetrics
 
-    func segment(frames: Int, jitter: Double, setId: String, expected: String, rules: CaptureRules? = nil) throws
-        -> SegmentEntry
-    {
+    func segment(
+        frames: Int, jitter: Double, setId: String, expected: String, rules: CaptureRules? = nil,
+        tiltDegrees: Double? = nil
+    ) throws -> SegmentEntry {
         let seed = stableSeed(setId)
         var offsets: [[Double]]?
         if jitter > 0 {
@@ -200,7 +212,7 @@ struct WrittenFrame {
         }
         return SegmentEntry(
             frame: frame, mask: mask, box: box, keypoints: keypoints, frames: frames, jitter: jitter,
-            jitterSeed: seed, offsets: offsets, expected: expected, metrics: metrics)
+            jitterSeed: seed, offsets: offsets, tiltDegrees: tiltDegrees, expected: expected, metrics: metrics)
     }
 }
 
@@ -231,7 +243,9 @@ final class FrameWriter {
                 edgeContact: $0.edgeContact.rounded)
         }
         try writeJSON(
-            BoxFile(frameWidthPx: size.width, frameHeightPx: size.height, objects: objects),
+            BoxFile(
+                source: measure.detector.rawValue, frameWidthPx: size.width, frameHeightPx: size.height,
+                objects: objects),
             to: root.appendingPathComponent(box))
         var keypointPath: String?
         if let keypoints {

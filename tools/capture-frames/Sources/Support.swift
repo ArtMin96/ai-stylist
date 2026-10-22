@@ -68,6 +68,15 @@ struct NormRect: Codable, Equatable {
         NormRect(x: round4(x), y: round4(y), width: round4(width), height: round4(height))
     }
 
+    /// The intersection with `other` as a share of the smaller box's area (the covered rule, brief §4):
+    /// the same measure as both apps' `overlapShareOfSmaller`.
+    func overlapShareOfSmaller(with other: NormRect) -> Double {
+        let overlapWidth = max(0, min(maxX, other.maxX) - max(x, other.x))
+        let overlapHeight = max(0, min(maxY, other.maxY) - max(y, other.y))
+        let smaller = min(area, other.area)
+        return smaller > 0 ? overlapWidth * overlapHeight / smaller : 0
+    }
+
     /// Distance from this box to the given frame edge (negative when the box reaches past it).
     func gap(to edge: Edge) -> Double {
         switch edge {

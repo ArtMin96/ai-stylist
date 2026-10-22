@@ -100,7 +100,9 @@ a rejection drops only that set: `too-big` (C11: the item scaled up until 25 % o
 the two edges it reaches first, split evenly, so it touches two or more edges and locks with
 `cap-hint-cut-off-multiple`; at 25 % past each edge it fills the frame and Vision finds no item) and `too-bright` (the good item on a white surface: everything but the
 item is clipped white, so the clipped share is clearly over the limit while the item stays found and
-sharp; it unlocks with `cap-hint-too-bright`). Per family there is also one
+sharp; it unlocks with `cap-hint-too-bright`). The first base also gets the light and tilt hard cases (`overexposed`,
+`glare-spots`, `glare-window`, `tilt`, `tilt-under`; below, "Hard cases"), and the first two bases of
+every family but `generic` the surface and covered cases. Per family there is also one
 `empty` set (the shared plain background) and one `sweep` set: every good frame in turn, with 1 s
 of empty background between them. One `batch-<n>` set (C20) holds up to 10 different items judged
 under the `generic` family, with empty gaps between them.
@@ -118,6 +120,47 @@ says so. When it sits above the middle (the hips of `long-bottom` and `short-bot
 stay at 10 % from the bottom and the part ends past the top edge, so the garment stays in view.
 Joints are named by the subject's
 side. The subject faces the camera, so `leftShoulder` is on the image's right.
+
+## Hard cases
+
+The owner asked for strict frame sets for the hard capture cases (brief §12 C8–C11, C32, tilt and
+glare; 2026-10-22). Every one is drawn here (`Sources/HardCases.swift`): procedural textures and plain
+shapes on the CC0 cut-outs, never a photo of a person or a real hand.
+
+- **Surfaces (C8–C10).** The good item on dark twill fabric (`dark-on-dark`: the garment toned to
+  mean luma 64 on fabric at 62), on white bedding with soft folds (`white-on-white`: 196 on 192) or on
+  a striped floral sheet (`patterned`: the garment in its own colours). Toning keeps the detail at full
+  contrast, as for "Too dark", keeps 30 % of the garment's saturation and erodes its outline by 2 px,
+  so no fringe of the photo's own white background is left. Each image ships twice, as two sets:
+  `<surface>` stores the true mask, as a good detector would see it (unlocks, `cap-hint-ready`), and
+  `<surface>-weak` stores no instance, as a weak detector would (locked `no-item`, anyway at 10 s with
+  the surface tip). The light stays inside the light limits plus the usual margin, so the case is
+  contrast, not light.
+- **Vision on the surfaces.** The generator also runs the Mac's Vision foreground instance mask on
+  every surface composite of every base, and records in the segment `metrics.vision` and in
+  `manifest.json` `hardCaseVision` whether it found the item (an instance with IoU ≥ 0.5 against the
+  true mask). The stored masks never come from that run. First run, 2026-10-22: Vision found the item
+  in 40 of 40 composites on each surface. Clean cut-outs on drawn textures are easier than real
+  fabric under real light, so the weak flavour stays: a phone's detector is device-only evidence.
+- **Partly covered (C32).** A plain object lies on the good item: a grey or skin-neutral rounded
+  shape, a phone, a book or a mug, 30 % of the box width wide, fully inside the item's box
+  (`covered-inside`) or across its right edge with 80 % of its width inside (`covered-edge`). The
+  stored instances are the ground truth, item and object apart; both apps lock with
+  `cap-hint-covered`. Vision merged the object into the item in 66 of 66 composites (2026-10-22): on
+  iOS the rule's input is device-unverified, and a merged object unlocks (a miss, not a false lock).
+  `small-item` has no covered set: an object 30 % of a ring's box is smaller than the rule's minimum,
+  and a larger one hides the ring.
+- **C11 coat too big** is the `too-big` set above; its expected file names the "Try hanger mode"
+  reason line.
+- **Tilt.** `tilt` plays the good frame with a stored phone tilt 5° over `tilt.hintAboveDegrees`
+  (unlocks with `cap-hint-tilt`: tilt is a hint, never a lock), `tilt-under` 2° under it (unlocks with
+  `cap-hint-ready`). The segment's `tiltDegrees` is fed as the gravity angle on both platforms.
+- **Glare.** `overexposed` lifts the whole frame to mean luma 235 with its detail kept (unlocks with
+  `cap-hint-too-bright`). `glare-spots` puts three small clipped highlights on the garment, far too
+  small a share for the hint (unlocks with `cap-hint-ready`). `glare-window` lays a patch of direct
+  sun over the surface and part of the item (clipped share over 31 %, `cap-hint-too-bright`). Vision
+  lost the item or cut it short under that patch in 7 of 9 families, so only 2 ship; the clipped-share
+  path is also covered by `too-bright`.
 
 ## Output: `artifacts/capture-camera/frames/`
 
@@ -145,7 +188,9 @@ All paths are relative to the frames folder. A segment plays `frame` for `frames
 shares of the frame), so both apps play the same path and a run repeats exactly; a segment without
 `offsets` does not move. The last segment loops until the screen closes.
 Each segment names its own `expected` file, so a sweep or batch set is judged item by item.
-`metrics` is what the generator measured, for debugging.
+`metrics` is what the generator measured, for debugging; on a ground-truth frame `metrics.vision`
+says what the Mac's Vision made of the same image. A segment with `tiltDegrees` plays with the phone
+tilted by that angle (the tilt hint); without it there is no gravity sensor.
 
 ```json
 {
@@ -193,7 +238,7 @@ Each segment names its own `expected` file, so a sweep or batch set is judged it
 ```
 
 `kind` is `single`, `sweep` or `batch`. `source` is `dataset`, `synthetic` or `mixed`. A worn
-segment also has `"keypoints": "<path>"`.
+segment also has `"keypoints": "<path>"`, a tilt segment `"tiltDegrees": 25`.
 
 ### Jitter
 
@@ -211,17 +256,24 @@ up to `evaluation.intervalMs` plus one frame apart, with the segment looping. No
 
 ### `expected.json`
 
-This is the brief §11 schema, plus `lockReason`. It is derived from the variant's geometry and
+This is the brief §11 schema, plus `lockReason` and `anywayReason`. It is derived from the variant's geometry and
 `capture-rules.json`, never from running an app. The lock order is that of brief §4 and §6: no
-item, cut off (not in worn mode), body parts missing (worn mode only), too small, then not steady.
-When nothing locks, the hint is `cap-hint-too-dark`, `cap-hint-too-bright` or `cap-hint-ready`.
+item, cut off (not in worn mode), body parts missing (worn mode only), covered (not in worn mode),
+too small, then not steady. When nothing locks, the hint is `cap-hint-too-dark`,
+`cap-hint-too-bright`, `cap-hint-tilt` (flat mode, a stored tilt over the hint angle) or
+`cap-hint-ready`. A frame must also show its covered verdict clearly: another instance's box overlaps
+the item's box by over 1.25 × `covered.aboveOverlapShare` of the smaller box on a covered frame, and
+by at most 0.5 × it on every other frame.
 
-- `shutter`: `unlocked` or `locked`. `either-or-anyway` is reserved for the surface cases C8–C10,
-  which this generator does not build yet.
+- `shutter`: `unlocked` or `locked`. `either-or-anyway` is not used: each surface case ships one
+  strict set per flavour ("Hard cases").
 - `hint`: the hint test ID shown while locked, or at unlock for an unlocked frame.
 - `lockReason`: a registry lock reason; absent when unlocked.
 - `maxUnlockMs`: present when unlocked; the clock starts at the segment's first frame.
 - `anywayAtMs`: present when locked: `timing.anywayDelayMs`, ± `acceptance.anywayToleranceMs`.
+- `anywayReason`: present when locked, the reason line under "Take photo anyway" (brief §6):
+  `surface-tip` for no item, `try-hanger-mode` for a flat cut-off where the family offers hanger mode,
+  else the blocking hint's test ID. Both apps' results logs write the same value as `anywayReason`.
 - `platform`: per-platform overrides, `{}` when both platforms expect the same. Today the only
   one is `ios` on a frame whose drawn item covers less than `ios.minInstanceAreaShare`, such as
   `small-item` too small. iOS then finds no instance and locks with `no-item`, while the stored
@@ -258,7 +310,8 @@ When nothing locks, the hint is `cap-hint-too-dark`, `cap-hint-too-bright` or `c
 
 The instances of the stored mask, largest first. These are the boxes the Android harness reads when
 ML Kit cannot run on the emulator. The iOS reader pairs them with the mask PNG for the instance
-count and areas. `box` is normalised, with the origin at the top left. `edgeContact` follows the
+count, and feeds every box after the first to the covered rule. `source` is
+`vision-foreground-instance-mask`, or `ground-truth` for the hard cases' drawn masks. `box` is normalised, with the origin at the top left. `edgeContact` follows the
 iOS rule: the share of each edge whose 2 % band holds mask pixels.
 
 ```json
@@ -347,6 +400,5 @@ expected file's `platform.<platform>` block applies first. `summary.md` states t
 
 ## Not built yet
 
-The hanger-mode hook frames (C2), the bag strap grazing an edge (C6) and the dark-on-dark,
-white-on-white and patterned surfaces (C8–C10) need their own variants. Add them here when the
-harness reaches those cases.
+The hanger-mode hook frames (C2) and the bag strap grazing an edge (C6) need their own variants. Add
+them here when the harness reaches those cases.

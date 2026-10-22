@@ -306,7 +306,10 @@ platform:
 3. Sweeps the locked sets `top-flat-01-jitter`, `top-flat-01-cut-top`, `top-flat-empty` and
    `top-worn-shoulders-cut` again with the screen-reader flag.
 4. Runs every flow in `e2e/capture/` in light, then in dark (`simctl ui appearance`,
-   `cmd uimode night`), and keeps their screenshots.
+   `cmd uimode night`), and keeps their screenshots. On Android, before each flow, it closes any
+   system screen a failed flow left open and pushes the frames again if a flow's `clearState` wiped
+   the app's external files. Maestro's device logs are dropped: the Simulator's system log trips the
+   working-tree secret scan.
 5. Scores the logs (`capture-score.mjs`) and writes `summary.md` and the scoreboard row
    (`capture-report.mjs`). It exits 1 unless every case, flow and finish-line measure passes.
 

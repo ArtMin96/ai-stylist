@@ -6,7 +6,7 @@ appId: ${APP_ID}
 - launchApp:
     arguments:
       captureFrameSet: ${SET}
-      captureRecordOnly: "1"
+      captureRecordOnly: '1'
 - tapOn:
     id: home-open-capture
 - tapOn:

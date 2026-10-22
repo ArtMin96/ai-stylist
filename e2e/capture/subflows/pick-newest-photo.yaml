@@ -15,5 +15,5 @@ appId: ${APP_ID}
       platform: Android
     commands:
       - tapOn:
-          text: "Photo taken on.*"
+          text: 'Photo taken on.*'
           index: 0

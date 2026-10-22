@@ -15,9 +15,9 @@ appId: ${APP_ID}
 # Android asks again after a revoke: the user declines in the system dialog (system UI, no test ID).
 - runFlow:
     when:
-      visible: "Don.t allow"
+      visible: 'Don.t allow'
     commands:
-      - tapOn: "Don.t allow"
+      - tapOn: 'Don.t allow'
 - extendedWaitUntil:
     visible:
       id: cap-screen-permission

@@ -6,7 +6,7 @@ appId: ${APP_ID}
 - launchApp:
     arguments:
       captureFrameSet: ${SET}
-      captureScreenReader: "1"
+      captureScreenReader: '1'
 - tapOn:
     id: home-open-capture
 - tapOn:

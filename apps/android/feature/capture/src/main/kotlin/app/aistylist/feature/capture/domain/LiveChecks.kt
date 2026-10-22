@@ -8,7 +8,7 @@ import app.aistylist.contracts.kernel.CaptureShapeFamily
 import kotlin.math.abs
 
 /** The live checks of capture brief §3, in the priority order of §6. */
-enum class CaptureCheck { ITEM_FOUND, CUT_OFF, BODY_PARTS, SIZE, STEADY, TOO_DARK, TOO_BRIGHT, TILT }
+enum class CaptureCheck { ITEM_FOUND, CUT_OFF, BODY_PARTS, COVERED, SIZE, STEADY, TOO_DARK, TOO_BRIGHT, TILT }
 
 /** One check's result. [SKIPPED]: the check does not apply to this frame, mode or device. */
 enum class CheckOutcome { PASSED, FAILED, SKIPPED }
@@ -53,6 +53,7 @@ fun evaluateLiveChecks(
             CaptureCheck.CUT_OFF to if (isWorn) SKIPPED else cutOff(box),
             CaptureCheck.BODY_PARTS to
                 if (isWorn && box != null) bodyParts(observation.pose, context.family) else SKIPPED,
+            CaptureCheck.COVERED to if (isWorn) SKIPPED else covered(box, observation.itemBoxes),
             CaptureCheck.SIZE to size(box, minAreaShare(context)),
             CaptureCheck.STEADY to steady(box, previous?.itemBox, observation),
             CaptureCheck.TOO_DARK to tooDark(observation.light),
@@ -151,6 +152,25 @@ private fun PoseLandmark.isPresent(): Boolean {
     return inFrameLikelihood >= CaptureRules.Android.MIN_KEYPOINT_IN_FRAME_LIKELIHOOD &&
         position.x in inside &&
         position.y in inside
+}
+
+/**
+ * Partly covered (capture brief §4, C32): another box of at least the minimum area overlaps the item
+ * box by more than the limit, as a share of the smaller box. Two items side by side do not overlap,
+ * so they never lock (Q15). Off in worn mode, where the person and the garment overlap by design.
+ */
+private fun covered(
+    box: NormalizedRect?,
+    boxes: List<NormalizedRect>,
+): Finding {
+    box ?: return SKIPPED
+    // `minus` drops only the item box itself, so an identical second box still counts.
+    val isCovered =
+        (boxes - box).any { other ->
+            other.areaShare >= CaptureRules.Covered.MIN_OTHER_BOX_AREA_SHARE &&
+                box.overlapShareOfSmaller(other) > CaptureRules.Covered.ABOVE_OVERLAP_SHARE
+        }
+    return if (isCovered) blocking(CaptureHint.COVERED) else PASSED
 }
 
 private fun minAreaShare(context: CameraContext): Double =

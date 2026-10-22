@@ -178,6 +178,20 @@ class CaptureCameraSessionTest {
     }
 
     @Test
+    fun `C32 a partly covered item never unlocks and anyway shows the covered hint`() {
+        val occluder = squareBox(areaShare = 0.04)
+        val harness = Harness().apply { ready() }
+
+        harness.playUntil(anywayMs) { frame(it).copy(itemBoxes = listOf(GOOD_BOX, occluder)) }
+
+        assertNull(harness.timeOf(CaptureEffect.Haptic(HapticKind.UNLOCK)))
+        assertEquals(LockPhase.LOCKED, harness.snapshot.phase)
+        assertEquals(CaptureHint.COVERED, harness.snapshot.hint)
+        assertTrue(harness.snapshot.isAnywayVisible)
+        assertEquals(AnywayReason.Hint(CaptureHint.COVERED), harness.snapshot.anywayReason)
+    }
+
+    @Test
     fun `C13 a dim room hints too dark and the shutter still unlocks`() {
         val dim = LightSample(meanLuma = CaptureRules.Light.TOO_DARK_BELOW_MEAN_LUMA - 15, clippedShare = 0.0)
         val harness = Harness().apply { ready() }

@@ -1,7 +1,8 @@
 // Reads the test frames `just capture-frames` writes to `artifacts/capture-camera/frames/` (layout:
 // tools/capture-frames/README.md "Output"): `index.json`, and per segment the frame PNG, its stored Vision
-// mask, its box file (instance count and the other instances' boxes) and, for worn frames, the ground-truth keypoints. Only what the
-// frame source plays is decoded; the expected-result files are the recipe's, not the app's.
+// mask or, with several instances, its instance label PNG, its box file (instance count) and, for worn
+// frames, the ground-truth keypoints. Only what the frame source plays is decoded; the expected-result
+// files are the recipe's, not the app's.
 #if os(iOS)
   public import AIStylistKernel
   import CaptureFeature
@@ -27,6 +28,8 @@
     public struct Segment: Decodable, Sendable {
       public let frame: String
       public let mask: String?
+      /// Two or more instances: the label PNG (0 background, 1 the largest instance, 2 the next, …).
+      public let instances: String?
       public let box: String?
       public let keypoints: String?
       public let expected: String?
@@ -83,7 +86,7 @@
     let maskWidth: Int
     let maskHeight: Int
     let instanceCount: Int
-    /// The stored boxes of every instance but the largest (the covered rule, capture brief §4).
+    /// The boxes of every instance but the largest (the covered rule, capture brief §4).
     let otherBoxes: [NormalizedRect]
     let sharpness: Double
     let meanLuma: Double
@@ -97,8 +100,20 @@
       guard let luma = CaptureImageReader.gray(from: image) else {
         throw CaptureFrameError(reason: "unreadable frame \(segment.frame)")
       }
-      let maskImage = try segment.mask.map { try Self.image(at: directory.appending(path: $0)) }
-      let maskGray = maskImage.flatMap { CaptureImageReader.gray(from: $0) }
+      // With several instances the item is the largest one, as on the phone, and the rest feed the
+      // covered rule; otherwise the stored mask is the item.
+      let labels = try segment.instances.flatMap {
+        CaptureImageReader.gray(from: try Self.image(at: directory.appending(path: $0)))
+      }
+      let instances = labels.map(CaptureInstanceLabels.instances(in:)) ?? []
+      let maskGray: CaptureGrayImage?
+      if let labels, let largest = instances.first {
+        maskGray = CaptureInstanceLabels.mask(of: largest.label, in: labels)
+      } else {
+        maskGray = try segment.mask.flatMap {
+          CaptureImageReader.gray(from: try Self.image(at: directory.appending(path: $0)))
+        }
+      }
       let profile = maskGray.flatMap(CaptureMaskProfile.init(mask:))
       let box = profile?.measure()?.box
       let storedBoxes = try segment.box.map { try Self.boxes(at: directory.appending(path: $0)) }
@@ -108,7 +123,7 @@
         maskWidth: maskGray?.width ?? luma.width,
         maskHeight: maskGray?.height ?? luma.height,
         instanceCount: storedBoxes?.count ?? 1,
-        otherBoxes: Array(storedBoxes?.dropFirst() ?? []),
+        otherBoxes: instances.dropFirst().map(\.box),
         sharpness: box.map { CaptureLumaMetrics.sharpness(of: luma, inside: $0) } ?? 0,
         meanLuma: CaptureLumaMetrics.meanLuma(of: luma),
         clippedShare: CaptureLumaMetrics.clippedShare(of: luma),
@@ -138,7 +153,7 @@
       let objects: [Instance]
     }
 
-    /// Every stored instance box, largest first (the generator's order).
+    /// Every stored instance box, largest first (the generator's order); read for the instance count.
     private static func boxes(at url: URL) throws -> [NormalizedRect] {
       try JSONDecoder().decode(BoxFile.self, from: Data(contentsOf: url)).objects.map {
         NormalizedRect(x: $0.box.x, y: $0.box.y, width: $0.box.width, height: $0.box.height)

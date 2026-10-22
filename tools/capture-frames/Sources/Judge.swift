@@ -125,6 +125,9 @@ struct FrameMeasure {
     let clippedShare: Double
     /// Inside the largest instance's box; 0 without an instance.
     let sharpness: Double
+    /// With two or more instances: each pixel's instance, 1 for the largest, 2 for the next, 0 for
+    /// background (the stored `frame.instances.png`, read like the phone's Vision label mask).
+    let labels: [UInt8]?
     /// Where the instances come from: the `source` of the stored box file.
     var detector = Detector.vision
     /// Ground-truth frames only: what the Mac's Vision made of the same image.
@@ -159,14 +162,27 @@ struct FrameMeasure {
 
     private static func measured(_ image: CGImage, masks: [BinaryMask], rules: CaptureRules) throws -> FrameMeasure {
         var mask = BinaryMask.empty(width: image.width, height: image.height)
-        var instances: [MaskStats] = []
+        var measured: [(mask: BinaryMask, stats: MaskStats)] = []
         for instance in masks {
             mask = mask.union(instance)
             if let stats = instance.stats(edgeBandShare: rules.edgeBandShare) {
-                instances.append(stats)
+                measured.append((instance, stats))
             }
         }
-        instances.sort { $0.maskAreaShare > $1.maskAreaShare }
+        measured.sort { $0.stats.maskAreaShare > $1.stats.maskAreaShare }
+        let instances = measured.map(\.stats)
+        var labels: [UInt8]?
+        if measured.count >= 2 {
+            var values = [UInt8](repeating: 0, count: image.width * image.height)
+            // Smaller instances last, so a pixel two masks share goes to the smaller one, as Vision's
+            // label mask gives every pixel to exactly one instance.
+            for (rank, instance) in measured.enumerated().prefix(Int(UInt8.max)) {
+                for index in 0..<values.count where instance.mask.values[index] > 0 {
+                    values[index] = UInt8(rank + 1)
+                }
+            }
+            labels = values
+        }
         let raster = try Imaging.raster(of: image, width: image.width, height: image.height)
         let sharpness =
             try instances.first.map {
@@ -174,7 +190,8 @@ struct FrameMeasure {
             } ?? 0
         return FrameMeasure(
             instances: instances, mask: mask, meanLuma: raster.meanLuma,
-            clippedShare: raster.clippedShare(minLuma: rules.light.clippedMinLuma), sharpness: sharpness)
+            clippedShare: raster.clippedShare(minLuma: rules.light.clippedMinLuma), sharpness: sharpness,
+            labels: labels)
     }
 
     enum Detector: String {

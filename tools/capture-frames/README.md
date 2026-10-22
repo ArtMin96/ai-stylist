@@ -172,6 +172,8 @@ contact/<family>.png            every frame of a family with its mask tinted red
 common/empty/frame.png          the plain background (+ .mask.png, .box.json)
 <family>/<set id>/frame.png     the frame, 480 × 640 portrait (the analysis frame from the registry)
 <family>/<set id>/frame.mask.png   Vision foreground mask: 8-bit grey, 0 background, 255 foreground
+<family>/<set id>/frame.instances.png   two or more instances only: 8-bit labels, 0 background,
+                                1 the largest instance, 2 the next, … (like Vision's label mask)
 <family>/<set id>/frame.box.json   instances from that mask: the stored-box fallback
 <family>/<set id>/frame.keypoints.json   worn frames only: ground-truth keypoints
 <family>/<set id>/expected.json the expected result
@@ -236,6 +238,11 @@ tilted by that angle (the tilt hint); without it there is no gravity sensor.
   ]
 }
 ```
+
+A segment whose frame holds two or more instances also names `instances`, the label PNG: the iOS
+frame source then takes the largest instance as the item, as the phone does, and gives the others'
+boxes to the covered rule (the merged mask alone would make two separate items one item that
+"covers" the other).
 
 `kind` is `single`, `sweep` or `batch`. `source` is `dataset`, `synthetic` or `mixed`. A worn
 segment also has `"keypoints": "<path>"`, a tilt segment `"tiltDegrees": 25`.

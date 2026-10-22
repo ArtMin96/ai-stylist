@@ -32,6 +32,8 @@ struct FrameMetrics: Encodable {
 struct SegmentEntry: Encodable {
     let frame: String
     let mask: String
+    /// Two or more instances: the label PNG (0 background, 1 the largest instance, 2 the next, …).
+    let instances: String?
     let box: String
     let keypoints: String?
     let frames: Int
@@ -196,6 +198,7 @@ struct Manifest: Encodable {
 struct WrittenFrame {
     let frame: String
     let mask: String
+    let instances: String?
     let box: String
     let keypoints: String?
     let metrics: FrameMetrics
@@ -211,7 +214,8 @@ struct WrittenFrame {
             offsets = try JitterPath.offsets(seed: seed, amplitude: jitter, count: frames, rules: rules)
         }
         return SegmentEntry(
-            frame: frame, mask: mask, box: box, keypoints: keypoints, frames: frames, jitter: jitter,
+            frame: frame, mask: mask, instances: instances, box: box, keypoints: keypoints, frames: frames,
+            jitter: jitter,
             jitterSeed: seed, offsets: offsets, tiltDegrees: tiltDegrees, expected: expected, metrics: metrics)
     }
 }
@@ -237,6 +241,14 @@ final class FrameWriter {
         let maskImage = try Imaging.grayImage(
             measure.mask.values, width: measure.mask.width, height: measure.mask.height)
         try Imaging.writePNG(maskImage, to: root.appendingPathComponent(mask))
+        var instancesPath: String?
+        if let labels = measure.labels {
+            let path = "\(directory)/frame.instances.png"
+            try Imaging.writePNG(
+                try Imaging.grayImage(labels, width: measure.mask.width, height: measure.mask.height),
+                to: root.appendingPathComponent(path))
+            instancesPath = path
+        }
         let objects = measure.instances.map {
             BoxFile.Object(
                 box: $0.box.rounded, boxAreaShare: round4($0.box.area), maskAreaShare: round4($0.maskAreaShare),
@@ -255,7 +267,8 @@ final class FrameWriter {
         }
         imageCount += 1
         return WrittenFrame(
-            frame: frame, mask: mask, box: box, keypoints: keypointPath, metrics: FrameMetrics(measure))
+            frame: frame, mask: mask, instances: instancesPath, box: box, keypoints: keypointPath,
+            metrics: FrameMetrics(measure))
     }
 
     func writeExpectation(_ expectation: Expectation, path: String) throws -> String {

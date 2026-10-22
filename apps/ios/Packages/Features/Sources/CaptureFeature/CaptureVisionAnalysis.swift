@@ -1,8 +1,8 @@
 // Turns pixels into a `CaptureObservation` (capture brief §3): the Vision foreground instance mask
-// (largest instance → box, area share, edge contact; instance count), Vision body pose in worn mode, and
-// luma for light and sharpness. The measuring itself is `CaptureModel`'s `CaptureImageMetrics`, shared
-// with the debug frame source. `nonisolated`: it runs on the camera's analysis queue or a background task,
-// never the main actor.
+// (largest instance → box, area share, edge contact; instance count; the other instances' boxes for the
+// covered rule), Vision body pose in worn mode, and luma for light and sharpness. The measuring itself is
+// `CaptureModel`'s `CaptureImageMetrics`, shared with the debug frame source. `nonisolated`: it runs on the
+// camera's analysis queue or a background task, never the main actor.
 #if os(iOS)
   import AIStylistKernel
   public import CaptureModel
@@ -76,10 +76,11 @@
     }
   }
 
-  /// The item one Vision foreground mask shows.
+  /// The item one Vision foreground mask shows, and the boxes of the other instances (covered rule).
   nonisolated struct CaptureForeground: Sendable {
     let measure: CaptureMaskMeasure
     let instanceCount: Int
+    let otherBoxes: [NormalizedRect]
   }
 
   /// Vision requests on one image handler.
@@ -96,19 +97,16 @@
       guard let observation = request.results?.first, !observation.allInstances.isEmpty,
         let labels = CaptureImageReader.gray(from: observation.instanceMask, plane: 0)
       else { return nil }
-      var counts = [Int](repeating: 0, count: 256)
-      for label in labels.pixels where label > 0 {
-        counts[Int(label)] += 1
-      }
-      guard let largest = counts.indices.dropFirst().max(by: { counts[$0] < counts[$1] }), counts[largest] > 0,
-        let mask = CaptureGrayImage(
-          width: labels.width,
-          height: labels.height,
-          pixels: labels.pixels.map { Int($0) == largest ? 255 : 0 }
-        ),
+      let instances = CaptureInstanceLabels.instances(in: labels)
+      guard let largest = instances.first,
+        let mask = CaptureInstanceLabels.mask(of: largest.label, in: labels),
         let measure = CaptureMaskProfile(mask: mask)?.measure()
       else { return nil }
-      return CaptureForeground(measure: measure, instanceCount: observation.allInstances.count)
+      return CaptureForeground(
+        measure: measure,
+        instanceCount: observation.allInstances.count,
+        otherBoxes: instances.dropFirst().map(\.box)
+      )
     }
 
     /// The body keypoints of the most confident person (origin top-left), an empty set when nobody is
@@ -157,6 +155,7 @@
           maskAreaShare: $0.measure.maskAreaShare,
           edgeContact: $0.measure.edgeContact,
           instanceCount: $0.instanceCount,
+          otherBoxes: $0.otherBoxes,
           sharpness: 0
         )
       }

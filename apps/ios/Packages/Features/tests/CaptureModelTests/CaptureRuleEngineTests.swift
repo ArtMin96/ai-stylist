@@ -136,6 +136,91 @@ struct CaptureItemRuleTests {
   }
 }
 
+@Suite("Capture rules: partly covered (C32)")
+struct CaptureCoveredRuleTests {
+  private let limit = CaptureRules.Covered.aboveOverlapShare
+
+  /// A box of `side` × `side` whose `share` of its width lies inside `goodBox`'s right edge.
+  private func otherBox(overlapping share: Double, side: Double = 0.2) -> NormalizedRect {
+    NormalizedRect(x: goodBox.x + goodBox.width - side * share, y: 0.4, width: side, height: side)
+  }
+
+  private func covered(by others: [NormalizedRect], context: CaptureCheckContext = topFlat) -> CaptureVerdict {
+    let item = CaptureItemObservation(
+      box: goodBox, maskAreaShare: 0.3, instanceCount: others.count + 1, otherBoxes: others, sharpness: 20)
+    return steadyVerdict(frame(item: item), context: context)
+  }
+
+  @Test("another object inside the item's box locks with covered")
+  func objectOnTheItem() {
+    let verdict = covered(by: [centredBox(area: 0.04)])
+    #expect(verdict.blockingHints == [.covered])
+    #expect(verdict.lockReason == .covered)
+  }
+
+  @Test("an overlap just above the limit locks; at the limit it passes")
+  func overlapLimit() {
+    #expect(covered(by: [otherBox(overlapping: limit + nudge)]).blockingHints == [.covered])
+    #expect(covered(by: [otherBox(overlapping: limit)]).passes)
+  }
+
+  @Test("an object below the minimum box area never covers; at the minimum it does")
+  func minimumOtherBoxArea() {
+    let minimum = CaptureRules.Covered.minOtherBoxAreaShare
+    #expect(covered(by: [centredBox(area: minimum * 0.9)]).passes)
+    #expect(covered(by: [centredBox(area: minimum)]).blockingHints == [.covered])
+  }
+
+  @Test("two separate items never lock (C15)")
+  func separateItems() {
+    #expect(covered(by: [NormalizedRect(x: 0.82, y: 0.3, width: 0.15, height: 0.3)]).passes)
+  }
+
+  @Test("hanger mode checks it too")
+  func hangerMode() {
+    #expect(
+      covered(by: [centredBox(area: 0.04)], context: CaptureCheckContext(family: .top, mode: .hanger))
+        .blockingHints == [.covered])
+  }
+
+  @Test("worn mode never checks it: the person and the garment overlap by design")
+  func wornModeIsOff() {
+    let worn = CaptureCheckContext(family: .generic, mode: .worn)
+    #expect(covered(by: [centredBox(area: 0.04)], context: worn).passes)
+  }
+
+  @Test("covered ranks after cut off and before too small")
+  func priority() {
+    let over = CaptureRules.Ios.cutOffAboveEdgeContactShare + nudge
+    let small = NormalizedRect(x: 0.4, y: 0.4, width: 0.1, height: 0.1)
+    let item = CaptureItemObservation(
+      box: small, maskAreaShare: 0.01, edgeContact: EdgeContact(left: over), instanceCount: 2,
+      otherBoxes: [NormalizedRect(x: 0.42, y: 0.42, width: 0.08, height: 0.08)], sharpness: 20)
+    var engine = CaptureRuleEngine(context: topFlat)
+    #expect(engine.evaluate(frame(item: item)).blockingHints == [.cutOffLeft, .covered, .tooSmall, .notSteady])
+  }
+
+  @Test("an import is not checked for it (brief §7)")
+  func importIgnoresIt() {
+    let item = CaptureItemObservation(
+      box: goodBox, maskAreaShare: 0.3, instanceCount: 2, otherBoxes: [centredBox(area: 0.04)], sharpness: 0)
+    #expect(CaptureRuleEngine.importTips(for: frame(item: item)).isEmpty)
+  }
+}
+
+@Suite("Capture rules: box overlap")
+struct CaptureBoxOverlapTests {
+  @Test("the overlap is a share of the smaller box, the same whichever box asks")
+  func shareOfSmaller() {
+    let big = NormalizedRect(x: 0, y: 0, width: 0.5, height: 0.5)
+    let half = NormalizedRect(x: 0.4, y: 0.1, width: 0.2, height: 0.1)
+    #expect(abs(big.overlapShareOfSmaller(with: half) - 0.5) < 1e-9)
+    #expect(abs(half.overlapShareOfSmaller(with: big) - 0.5) < 1e-9)
+    #expect(big.overlapShareOfSmaller(with: NormalizedRect(x: 0.6, y: 0, width: 0.1, height: 0.1)) == 0)
+    #expect(big.overlapShareOfSmaller(with: NormalizedRect(x: 0.1, y: 0.1, width: 0, height: 0)) == 0)
+  }
+}
+
 @Suite("Capture rules: steadiness")
 struct CaptureSteadyRuleTests {
   @Test("a centre shift just below the limit is steady, just above is not", arguments: [true, false])

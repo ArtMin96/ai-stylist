@@ -273,6 +273,7 @@
             maskAreaShare: $0.measure.maskAreaShare,
             edgeContact: $0.measure.edgeContact,
             instanceCount: $0.instanceCount,
+            otherBoxes: $0.otherBoxes,
             sharpness: CaptureLumaMetrics.sharpness(of: luma, inside: $0.measure.box)
           )
         }

@@ -77,4 +77,24 @@ struct CaptureImageMetricsTests {
     #expect(moved.edgeContact == EdgeContact(left: 0.5))
     #expect(profile.measure(offsetX: 200) == nil)
   }
+
+  @Test("instance labels: largest first, each with its pixel count and box; background and empty labels skipped")
+  func instanceLabels() throws {
+    var pixels = [UInt8](repeating: 0, count: 100 * 100)
+    for y in 10..<70 {
+      for x in 10..<70 { pixels[y * 100 + x] = 2 }
+    }
+    for y in 30..<40 {
+      for x in 30..<50 { pixels[y * 100 + x] = 5 }
+    }
+    let labels = try #require(CaptureGrayImage(width: 100, height: 100, pixels: pixels))
+    let instances = CaptureInstanceLabels.instances(in: labels)
+    #expect(instances.map(\.label) == [2, 5])
+    #expect(instances.map(\.pixelCount) == [3400, 200])
+    #expect(instances[0].box == NormalizedRect(x: 0.1, y: 0.1, width: 0.6, height: 0.6))
+    #expect(instances[1].box == NormalizedRect(x: 0.3, y: 0.3, width: 0.2, height: 0.1))
+    let mask = try #require(CaptureInstanceLabels.mask(of: 5, in: labels))
+    #expect(CaptureMaskProfile(mask: mask)?.measure()?.box == instances[1].box)
+    #expect(CaptureInstanceLabels.instances(in: try image(width: 4, height: 4, rect: (0, 0, 0, 0))).isEmpty)
+  }
 }

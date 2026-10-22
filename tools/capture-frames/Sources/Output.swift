@@ -48,14 +48,22 @@ struct SegmentEntry: Encodable {
 }
 
 /// The per-frame offsets of a jittered segment (README "Jitter"). Shaky hands never hold still, so
-/// every two frames that consecutive evaluations may read (up to one evaluation interval plus one
-/// frame apart, the segment looping) differ by more than `Layout.jitterStepFailFactor` times
-/// `steady.maxCentreShift` on at least one axis. Independent draws do not: about one jittered set in
+/// every two frames that consecutive evaluations or consecutive masks may read (one evaluation
+/// interval or one mask interval apart, each up to one frame late, the segment looping) differ by more
+/// than `Layout.jitterStepFailFactor` times `steady.maxCentreShift` on at least one axis. Independent draws do not: about one jittered set in
 /// 25 held still for three evaluations and unlocked (scoreboard, 2026-10-22).
 enum JitterPath {
     static func offsets(seed: UInt32, amplitude: Double, count: Int, rules: CaptureRules) throws -> [[Double]] {
         let frameMs = 1000.0 / Double(Harness.playbackFps)
-        let reach = Int((Double(rules.evaluation.intervalMs) / frameMs).rounded(.up)) + 1
+        // Steady compares consecutive evaluations (one evaluation interval apart) and, at the phone's
+        // cadence, consecutive masks (one mask interval apart); each may land one frame late. Only those
+        // distances are constrained: every distance up to the longest one leaves some seeds no offset.
+        let distances = Set(
+            [rules.evaluation.intervalMs, rules.ios.maskIntervalMs].flatMap { intervalMs -> ClosedRange<Int> in
+                let frames = Double(intervalMs) / frameMs
+                return Int(frames.rounded(.down))...(Int(frames.rounded(.up)) + 1)
+            }
+        ).sorted()
         let minStep = rules.steady.maxCentreShift * Layout.jitterStepFailFactor
         var random = SplitMix64(seed: UInt64(seed))
         var offsets: [[Double]] = []
@@ -67,9 +75,9 @@ enum JitterPath {
                     throw GeneratorError("jitter seed \(seed): no offset for frame \(index) keeps the frame shaky")
                 }
                 let offset = [round4((random.nextUnit() * 2 - 1) * amplitude), round4((random.nextUnit() * 2 - 1) * amplitude)]
-                // The frames already drawn within `reach`: earlier ones, and near the end the first
+                // The frames already drawn at those distances: earlier ones, and near the end the first
                 // ones, which the looping segment plays next.
-                let neighbours = (1...reach).flatMap { distance -> [[Double]] in
+                let neighbours = distances.flatMap { distance -> [[Double]] in
                     (index - distance >= 0 ? [offsets[index - distance]] : [])
                         + (index + distance >= count ? [offsets[index + distance - count]] : [])
                 }

@@ -11,7 +11,7 @@ android {
 }
 
 dependencies {
-    implementation(project(":core:kernel"))
+    implementation(project(":core:data"))
     implementation(project(":core:designsystem"))
 
     // Compose (BOM, ui, material3), JUnit 4, Robolectric and Compose ui-test come from the

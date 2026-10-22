@@ -5,7 +5,8 @@
 // one (`events[].phase`, `anywayAtMs`, `finalLockReason`). Called by capture-sim.sh.
 //
 // Usage: node tools/capture-frames/capture-score.mjs --platform ios|android --frames <dir>
-//          --results <jsonl> [--screen-reader <jsonl>] --out <run dir>
+//          --results <jsonl> [--screen-reader <jsonl>] [--mask-cadence-ms <ms>] --out <run dir>
+// --mask-cadence-ms: the mask cadence the harness played (iOS -captureMaskCadenceMs); default 0.
 // Writes <run dir>/results/<platform>/<case id>.json (expected, observed, pass, reason) and
 // <run dir>/results/<platform>.summary.json for capture-report.mjs.
 // Exit: 0 every case passed, 1 a case failed, 2 a usage error or unreadable input.
@@ -16,6 +17,8 @@ import path from 'node:path';
 const REPO_ROOT = path.resolve(import.meta.dirname, '..', '..');
 const RULES = 'packages/shared-kernel/registry/capture-rules.json';
 const LOCKED_STATES = new Set(['locked', 'cooldown', 'warming-up']);
+// Live outline: a jittered flat item's successive outlines keep at least this centroid-aligned IoU.
+const OUTLINE_MIN_STABILITY = 0.95;
 
 function fail(message) {
   process.stderr.write(`capture-score: ${message}\n`);
@@ -100,9 +103,14 @@ function observe(line) {
   };
 }
 
-/** A gap in a sweep or batch: locked within `relock × interval`, stays locked, no capture. */
-function judgeGap(observed, rules) {
-  const lockByMs = rules.lock.relockAfterFailingEvaluations * rules.evaluation.intervalMs;
+/**
+ * A gap in a sweep or batch: locked within `relock × interval` (plus one mask interval when the
+ * harness played the phone's mask cadence, since the item's last mask lingers that long), stays
+ * locked, no capture.
+ */
+function judgeGap(observed, rules, maskCadenceMs) {
+  const lockByMs =
+    rules.lock.relockAfterFailingEvaluations * rules.evaluation.intervalMs + maskCadenceMs;
   const reasons = [];
   const lockedAt = observed.events.find((event) => LOCKED_STATES.has(stateOf(event).state))?.tMs;
   if (lockedAt == null || lockedAt > lockByMs)
@@ -161,6 +169,32 @@ function judgeLocked(expected, observed, timing) {
   return { reasons, falseUnlock };
 }
 
+/**
+ * The live outline (capture brief "Live outline"), on lines that log it: a segment that shows an item
+ * has an outline by its first mask (one mask interval); an empty, weak-surface or gap segment, or any
+ * segment expected as no-item, shows none; a flat jitter set keeps its outline's shape stable.
+ */
+function judgeOutline(line, expected, set, isGap, rules) {
+  if (!('outlineUpdates' in line)) return [];
+  const reasons = [];
+  const first = line.outlineFirstMs ?? null;
+  const shouldShow = !isGap && expected.lockReason !== 'no-item';
+  if (shouldShow && (first == null || first > rules.ios.maskIntervalMs)) {
+    reasons.push(
+      `outline at ${first ?? 'never'} ms, wanted by the first mask (${rules.ios.maskIntervalMs} ms)`,
+    );
+  }
+  if (!shouldShow && first != null)
+    reasons.push(`outline shown at ${first} ms on a segment with no item`);
+  if (set.variant === 'jitter' && set.mode === 'flat') {
+    const stability = line.outlineStabilityMin ?? null;
+    if (stability == null || stability < OUTLINE_MIN_STABILITY) {
+      reasons.push(`outline stability min ${stability ?? 'none'} < ${OUTLINE_MIN_STABILITY}`);
+    }
+  }
+  return reasons;
+}
+
 function caseIdOf(line, set) {
   return set.kind === 'single'
     ? line.setId
@@ -178,7 +212,7 @@ function scoreLine(line, context, screenReader) {
   const role = isGap ? 'gap' : set.kind === 'single' ? 'single' : 'item';
   let verdict;
   if (isGap) {
-    verdict = judgeGap(observed, rules);
+    verdict = judgeGap(observed, rules, context.maskCadenceMs);
   } else if (expected.shutter === 'unlocked') {
     verdict = judgeUnlocked(expected, observed, true);
   } else {
@@ -197,6 +231,7 @@ function scoreLine(line, context, screenReader) {
       );
     }
   }
+  if (!screenReader) verdict.reasons.push(...judgeOutline(line, expected, set, isGap, rules));
   const { events, ...shown } = observed;
   return {
     caseId: caseIdOf(line, set) + (screenReader ? '-screen-reader' : ''),
@@ -209,7 +244,23 @@ function scoreLine(line, context, screenReader) {
     role,
     screenReader,
     expected,
-    observed: { ...shown, eventCount: events.length },
+    observed: {
+      ...shown,
+      eventCount: events.length,
+      outline:
+        'outlineUpdates' in line
+          ? {
+              firstMs: line.outlineFirstMs ?? null,
+              presentAtEnd: line.outlinePresentAtEnd,
+              updates: line.outlineUpdates,
+              snaps: line.outlineSnaps,
+              iouMedian: line.outlineIouMedian ?? null,
+              iouMin: line.outlineIouMin ?? null,
+              stabilityMedian: line.outlineStabilityMedian ?? null,
+              stabilityMin: line.outlineStabilityMin ?? null,
+            }
+          : null,
+    },
     pass: verdict.reasons.length === 0,
     reason: verdict.reasons.join('; '),
     miss: Boolean(verdict.miss),
@@ -227,6 +278,18 @@ function summarize(cases, platform, index) {
     )
     .map((c) => c.observed.anywayMs);
   const reader = cases.filter((c) => c.screenReader);
+  const spread = (values) => {
+    const sorted = values.filter((v) => v != null).sort((a, b) => a - b);
+    return sorted.length
+      ? {
+          min: sorted[0],
+          median: sorted[Math.floor(sorted.length / 2)],
+          max: sorted.at(-1),
+          count: sorted.length,
+        }
+      : null;
+  };
+  const singles = shouldUnlock.filter((c) => c.role === 'single');
   return {
     platform,
     total: scored.length,
@@ -243,6 +306,11 @@ function summarize(cases, platform, index) {
       atMs: index.acceptance.anywayAtMs,
       toleranceMs: index.acceptance.anywayToleranceMs,
     },
+    // From the segment's first frame: the first unlock and the first auto-capture of should-unlock singles.
+    unlockMs: spread(singles.map((c) => c.observed.firstUnlockMs)),
+    autoCaptureMs: spread(
+      singles.map((c) => c.observed.captures.find((x) => x.trigger === 'auto')?.tMs),
+    ),
     screenReader: {
       total: reader.length,
       passed: reader.filter((c) => c.pass).length,
@@ -251,7 +319,17 @@ function summarize(cases, platform, index) {
     byVariant: Object.fromEntries(
       [...new Set(scored.map((c) => c.variant))].sort().map((variant) => {
         const of = scored.filter((c) => c.variant === variant);
-        return [variant, { passed: of.filter((c) => c.pass).length, total: of.length }];
+        const ious = of
+          .map((c) => c.observed.outline?.iouMedian)
+          .filter((v) => v != null)
+          .sort((a, b) => a - b);
+        const iou = ious.length
+          ? { median: ious[Math.floor(ious.length / 2)], min: ious[0] }
+          : undefined;
+        return [
+          variant,
+          { passed: of.filter((c) => c.pass).length, total: of.length, outlineIou: iou },
+        ];
       }),
     ),
     failures: cases.filter((c) => !c.pass).map((c) => ({ caseId: c.caseId, reason: c.reason })),
@@ -268,6 +346,7 @@ function main() {
     index,
     rules: readJson(path.join(REPO_ROOT, RULES)),
     sets: new Map(index.sets.map((set) => [set.id, set])),
+    maskCadenceMs: Number(args['mask-cadence-ms'] ?? 0),
   };
   const lines = [
     ...readLines(args.results).map((line) => ({ line, screenReader: false })),

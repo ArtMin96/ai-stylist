@@ -59,6 +59,7 @@ struct CaptureRules: Decodable {
     }
 
     struct IOS: Decodable {
+        let maskIntervalMs: Int
         let minInstanceAreaShare: Double
         let cutOffAboveEdgeContactShare: Double
     }

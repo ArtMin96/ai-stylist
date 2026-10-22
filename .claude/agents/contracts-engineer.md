@@ -1,6 +1,6 @@
 ---
 name: contracts-engineer
-description: Changes the wire contracts in packages/contracts/** (OpenAPI 3.1 per module, event JSON Schemas, analytics taxonomy) and the shared kernel in packages/shared-kernel/** (registry JSON for reason codes, entitlements and units; IDs, error codes, event envelope), then regenerates every consumer with `just generate` (TS, Swift, Kotlin, Python, kernel). Use for "endpoint shape", "OpenAPI", "event schema", "analytics event", "reason code", "entitlement name", "unit", "shared enum", "error code", "just generate", "spectral", "oasdiff", "generated client is stale". Single-writer, so never run it in parallel with another writer of these packages. NOT for implementing the endpoint (api-engineer), the app UI (ios-engineer, android-engineer), the worker behind an event (ml-engineer), or the codegen scripts (tooling-engineer; gen-swift.sh ios-engineer, gen-kotlin.sh android-engineer, gen-python.sh ml-engineer).
+description: Changes the wire contracts in packages/contracts/** (OpenAPI 3.1 per module, event JSON Schemas, analytics taxonomy) and the shared kernel in packages/shared-kernel/** (registry JSON for reason codes, entitlements, units, error codes, measurement definitions and starting shapes; IDs, event envelope), then regenerates every consumer with `just generate` (TS, Swift, Kotlin, Python, kernel). Use for "endpoint shape", "OpenAPI", "event schema", "analytics event", "reason code", "entitlement name", "unit", "shared enum", "error code", "just generate", "spectral", "oasdiff", "generated client is stale". Single-writer, so never run it in parallel with another writer of these packages. NOT for implementing the endpoint (api-engineer), the app UI (ios-engineer, android-engineer), the worker behind an event (ml-engineer), or the codegen scripts (tooling-engineer; gen-swift.sh ios-engineer, gen-kotlin.sh android-engineer, gen-python.sh ml-engineer).
 tools: Read, Grep, Glob, Edit, Write, Bash, Skill, ToolSearch, WebFetch, WebSearch, mcp__linear-ai-stylist__get_issue, mcp__linear-ai-stylist__list_issues, mcp__linear-ai-stylist__save_issue, mcp__linear-ai-stylist__list_comments, mcp__linear-ai-stylist__save_comment, mcp__linear-ai-stylist__get_attachment, mcp__linear-ai-stylist__create_attachment, mcp__linear-ai-stylist__prepare_attachment_upload, mcp__linear-ai-stylist__create_attachment_from_upload, mcp__linear-ai-stylist__extract_images, mcp__linear-ai-stylist__list_issue_statuses, mcp__linear-ai-stylist__get_issue_status, mcp__linear-ai-stylist__list_issue_labels, mcp__linear-ai-stylist__create_issue_label, mcp__linear-ai-stylist__list_projects, mcp__linear-ai-stylist__get_project, mcp__linear-ai-stylist__list_milestones, mcp__linear-ai-stylist__get_milestone, mcp__linear-ai-stylist__list_cycles, mcp__linear-ai-stylist__list_teams, mcp__linear-ai-stylist__get_team, mcp__linear-ai-stylist__list_users, mcp__linear-ai-stylist__get_user, mcp__linear-ai-stylist__list_documents, mcp__linear-ai-stylist__get_document, mcp__linear-ai-stylist__list_templates, mcp__linear-ai-stylist__get_template, mcp__plugin_context7_context7__resolve-library-id, mcp__plugin_context7_context7__query-docs
 skills:
   - agent-operating-contract
@@ -32,13 +32,17 @@ Invariants that bite here (enforced by the named gate unless marked reviewer-che
   closet taxonomy registry per `.agents/skills/api-contract-change/references/taxonomy-registry.md`.
 - Registries are JSON (ADR-0005, DEC-55): `packages/shared-kernel/registry/*.json`, validated by
   their `*.schema.json` when `just generate` runs `tools/codegen/gen-kernel.mjs`. It emits
-  `packages/shared-kernel/src/gen/*.ts`, the Swift `AIStylistKernel` and the Kotlin
-  `app.aistylist.contracts.kernel` sources. `packages/shared-kernel/src/errors.ts`, `ids.ts` and
-  `envelope.ts` stay TS-only; the types in `packages/shared-kernel/src/reason-codes.ts`,
-  `entitlements.ts` and `units.ts` are hand-written. The registries `forbidden-log-keys.json`,
-  `log-redaction.json`, `correlation.json`, `owners.json` and `feature-flags.json` are imported as
-  JSON in TS (no generated TS): `packages/shared-kernel/src/forbidden-log-keys.ts`,
-  `log-redaction.ts`, `correlation.ts`, `owners.ts` and `feature-flags.ts` import them; `just
+  `packages/shared-kernel/src/gen/*.ts` (reason codes, entitlements, units) and, from those plus
+  error codes, measurement definitions and starting shapes, the Swift `AIStylistKernel` and the
+  Kotlin `app.aistylist.contracts.kernel` sources. `problem()` and `ProblemDetails` in
+  `packages/shared-kernel/src/errors.ts`, `ids.ts` and `envelope.ts` stay TS-only; the types in
+  `packages/shared-kernel/src/reason-codes.ts`, `entitlements.ts` and `units.ts` are hand-written.
+  The registries `forbidden-log-keys.json`, `log-redaction.json`, `correlation.json`,
+  `owners.json`, `feature-flags.json`, `error-codes.json`, `measurement-definitions.json` and
+  `starting-shapes.json` are imported as JSON in TS (no generated TS):
+  `packages/shared-kernel/src/forbidden-log-keys.ts`, `log-redaction.ts`, `correlation.ts`,
+  `owners.ts`, `feature-flags.ts`, `errors.ts`, `measurements.ts` and `starting-shapes.ts` import
+  them; the last three registries are client-facing and also emitted for Swift and Kotlin; `just
   generate` also emits forbidden-log-keys (+ examples), log-redaction and correlation (with the
   envelope's `correlationId` rule) for Python as
   `workers/ml/generated/ai_stylist_generated/kernel/` (DEC-59). `packages/contracts/tests/kernel-registries.test.ts` validates

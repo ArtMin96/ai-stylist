@@ -258,6 +258,25 @@ struct Renderer {
         return try judged("too-bright", image: image, intent: intent, judge: judge)
     }
 
+    /// C5 (brief §12): an item small enough for "Move closer" yet big enough for iOS to find, its mask
+    /// clearly over `ios.minInstanceAreaShare` and its box clearly under the family minimum. Brief §11's
+    /// too-small (35 % of the minimum) falls under the iOS item-found floor for `small-item`, so iOS reads
+    /// it as no item; this set covers the band in between. The box sits midway between the two limits.
+    func tooSmallFound(of base: Cutout, family: String) throws -> RenderedFrame {
+        let judge = Judge(rules: rules, family: family, mode: try rules.mode("flat"))
+        let minimum = try rules.family(family).minAreaShare
+        let low = rules.ios.minInstanceAreaShare * Layout.sizePassFactor / base.coverage
+        let high = minimum * Layout.sizeFailFactor
+        guard low < high else {
+            throw Rejection("too-small-found: no box between the iOS item-found floor and the family minimum")
+        }
+        let area = (low + high) / 2
+        let rect = Sizing.centred(Sizing.box(aspect: base.aspect, areaShare: area, size: size))
+        let image = try compose([Placement(cutout: base, rect: rect)])
+        let intent = Intent(iosMaskShare: area * base.coverage, boxAreaShare: area)
+        return try judged("too-small-found", image: image, intent: intent, judge: judge)
+    }
+
     // MARK: - Hard cases (README "Hard cases")
 
     /// The good frame's placement: the item centred at `Layout.goodSizeTimesMinimum` × the family

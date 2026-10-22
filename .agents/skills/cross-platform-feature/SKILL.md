@@ -85,10 +85,11 @@ metadata:
      modules. Lanes run builds with the PostHog keys unset, and the lead does every lockfile
      refresh. All of this is `.claude/rules/design-system.md` invariants 7–10; the sibling brief is
      `.claude/plans/2026-10-20-app-button-brief.md`.
-   - Registry values (reason codes, entitlements, units): the apps import the generated
+   - Registry values (reason codes, entitlements and their levels, units, error codes, measurement bounds, starting shapes): the apps import the generated
      `AIStylistKernel` (Swift) and `app.aistylist.contracts.kernel` (Kotlin) from
-     `packages/shared-kernel/registry/*.json` (DEC-55, ADR-0005). No app target consumes them yet,
-     so the brief fixes the wiring once for both lanes (template "Contract" section).
+     `packages/shared-kernel/registry/*.json` (DEC-55, ADR-0005). iOS Core's `APIData` and Android
+     `:core:data` compile them; the brief names any other target that needs them (template
+     "Contract" section).
 
 3. **Contract lane (only when an operation, field, event or registry entry is missing or
    changes).** Launch `contracts-engineer` alone in the lead checkout (no isolation; it needs
@@ -220,8 +221,7 @@ metadata:
     Ask the human before any push, PR or merge.
 
 Never: copy constants between the apps or from `packages/shared-kernel` into Swift or Kotlin
-(error codes, IDs and the event envelope are TS-only; a native need for one is a contract-lane
-question); fork business rules into the clients; hand-edit `packages/contracts/gen/`; let two
+(IDs and the event envelope are TS-only; a native need for one is a contract-lane question); fork business rules into the clients; hand-edit `packages/contracts/gen/`; let two
 write agents share a working tree; widen a lane's scope mid-run; add 3D (none in the native apps;
 the future path is Filament behind an ADR).
 
@@ -264,8 +264,9 @@ without the human.
   `api-contract-change`.
 - A lane needs a file outside its scope (`packages/**`, `e2e/**`, `justfile`, `.github/**`) → the
   lead sequences that change with its owner; never widen a lane mid-run.
-- A needed value is not in `packages/shared-kernel/registry/` → contract lane first. An error
-  code, ID or envelope field in native code → stop; a human decides (DEC-55 keeps them TS-only).
+- A needed value is not in `packages/shared-kernel/registry/` → contract lane first. An ID or
+  envelope field in native code → stop; a human decides (DEC-55 keeps them TS-only). Error codes
+  come from the generated `ErrorCode`; an unknown code is a state the app handles.
 - A second screen and no navigation shell → nav-shell task first on both apps; the Android
   navigation dependency needs the human's grant.
 - A merge or `git apply --3way` conflict → stop and show it.

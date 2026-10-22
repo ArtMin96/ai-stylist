@@ -57,7 +57,8 @@ struct Generator {
     let output: URL
 
     private static let rulesPath = "packages/shared-kernel/registry/capture-rules.json"
-    private static let flatColumns = Renderer.flatVariantNames + ["too-big", "too-bright", "two-items", "empty", "sweep"]
+    private static let flatColumns =
+        Renderer.flatVariantNames + ["too-big", "too-bright", "too-small-found", "two-items", "empty", "sweep"]
     /// The hard cases (README "Hard cases"), printed as a second table.
     private static let hardColumns =
         Surface.allCases.flatMap { [$0.rawValue, "\($0.rawValue)-weak"] }
@@ -154,6 +155,30 @@ struct Generator {
                         let frame = try make(base.cutout, family)
                         guard let image = frame.image else { continue }
                         let id = "\(family)-flat-01-\(frame.variant)"
+                        let written = try writer.write(image, measure: frame.measure, keypoints: nil, directory: "\(family)/\(id)")
+                        result.contactFrames.append(written)
+                        let expected = try writer.writeExpectation(frame.expectation, path: "\(family)/\(id)/expected.json")
+                        sets.append(
+                            SetEntry(
+                                id: id, family: family, mode: "flat", variant: frame.variant, kind: "single",
+                                source: base.source, baseImages: [base.id],
+                                segments: [
+                                    try written.segment(frames: Harness.segmentFrames, jitter: 0, setId: id, expected: expected)
+                                ]))
+                        result.flatCounts[frame.variant, default: 0] += 1
+                    } catch let rejection as Rejection {
+                        result.rejected.append(Manifest.Rejected(id: base.id, reason: rejection.reason))
+                    }
+                }
+            }
+
+            // C5: every small-item base once more, small enough for "Move closer" yet found on iOS.
+            if family == "small-item" {
+                for (index, base) in result.bases.enumerated() {
+                    do {
+                        let frame = try renderer.tooSmallFound(of: base.cutout, family: family)
+                        guard let image = frame.image else { continue }
+                        let id = "\(family)-flat-\(String(format: "%02d", index + 1))-\(frame.variant)"
                         let written = try writer.write(image, measure: frame.measure, keypoints: nil, directory: "\(family)/\(id)")
                         result.contactFrames.append(written)
                         let expected = try writer.writeExpectation(frame.expectation, path: "\(family)/\(id)/expected.json")

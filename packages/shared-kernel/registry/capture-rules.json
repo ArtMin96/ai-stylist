@@ -96,7 +96,7 @@
   "lock": {
     "unlockAfterPassingEvaluations": 3,
     "relockAfterFailingEvaluations": 3,
-    "ringFillMs": 1000,
+    "ringFillMs": 500,
     "ringMinEvaluations": 3
   },
   "batch": { "cooldownExitEvaluations": 3, "newItemBelowIou": 0.5 },

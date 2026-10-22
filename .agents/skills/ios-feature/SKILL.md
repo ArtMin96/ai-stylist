@@ -83,10 +83,11 @@ metadata:
    for byte from `packages/contracts/events/analytics/events.json`; a new event needs the contract
    lane first. Consent defaults OFF; no sensitive data in events, logs or fixtures.
    `API_BASE_URL` stays host-only; config holds no secrets.
-10. Registry values (reason codes, entitlements, units): import the generated `AIStylistKernel`
-    through `.product(name: "AIStylistKernel", package: "swift-client")` in the target the brief
-    or task names; never copy a value (DEC-55). No target consumes it yet: if the task does not say
-    which target gets it, stop and ask.
+10. Registry values (reason codes, entitlements and their levels, units, error codes, measurement
+    bounds, starting shapes): import the generated `AIStylistKernel`. Core's `APIData` target
+    already depends on it (`apps/ios/Packages/Core/Package.swift`); another target adds the same
+    `.product(name: "AIStylistKernel", package: "swift-client")` dependency when the brief or task
+    names it. Never copy a value (DEC-55).
 11. Tests: Swift Testing in `apps/ios/Packages/<Pkg>/tests/<Target>Tests/`, behaviour-level, fakes
     of the `AppServices` protocols, synthetic data. A bug fix is test-first: `just test-regression`
     cannot run Swift, so write the test, run `just test ios` and keep the failing line, fix, rerun

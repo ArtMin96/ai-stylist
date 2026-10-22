@@ -98,7 +98,11 @@ playback jitter. `two-items` places the next base beside this one, and ships onl
 both as separate instances. The first base also gets two extra sets, built after base selection so
 a rejection drops only that set: `too-big` (C11: the item scaled up until 25 % of its box lies past
 the two edges it reaches first, split evenly, so it touches two or more edges and locks with
-`cap-hint-cut-off-multiple`; at 25 % past each edge it fills the frame and Vision finds no item) and `too-bright` (the good item on a white surface: everything but the
+`cap-hint-cut-off-multiple`; at 25 % past each edge it fills the frame and Vision finds no item)
+and, for `small-item` only, every base gets `too-small-found` (C5: the box midway between the size at
+which iOS clearly finds the mask, 1.1 × `ios.minInstanceAreaShare` ÷ coverage, and 0.9 × the family
+minimum; it locks with `cap-hint-too-small` on both platforms, where brief §11's 35 % too-small reads
+as no item on iOS) and `too-bright` (the good item on a white surface: everything but the
 item is clipped white, so the clipped share is clearly over the limit while the item stays found and
 sharp; it unlocks with `cap-hint-too-bright`). The first base also gets the light and tilt hard cases (`overexposed`,
 `glare-spots`, `glare-window`, `tilt`, `tilt-under`; below, "Hard cases"), and the first two bases of
@@ -258,8 +262,11 @@ different paths from the same seed.
 So the generator draws the path itself (`JitterPath` in `Sources/Output.swift`) and writes it into
 the index. It draws each frame's offset uniformly within ±`jitter` from SplitMix64 seeded with
 `jitterSeed`. It redraws until the offset differs by more than 1.25 × `steady.maxCentreShift`
-(`Layout.jitterStepFailFactor`) on at least one axis from every frame two evaluations may read:
-up to `evaluation.intervalMs` plus one frame apart, with the segment looping. No threshold changes.
+(`Layout.jitterStepFailFactor`) on at least one axis from every frame that two consecutive reads may
+see: one `evaluation.intervalMs` apart (consecutive evaluations) or one `ios.maskIntervalMs` apart
+(consecutive masks at the phone's cadence), each up to one frame late, with the segment looping. Only
+those distances are constrained; requiring every distance up to the mask interval left some seeds with
+no possible offset. No threshold changes.
 
 ### `expected.json`
 
@@ -361,7 +368,9 @@ platform:
    unset, on the iPhone 18 Pro on the newest iOS runtime (or `IOS_SIMULATOR_ID`). Android:
    `just android-run`, which boots the AVD `aistylist-dev` when no device is online, then
    `apps/android/tools/capture-frames.sh push`. No Gradle build runs after that point.
-2. Sweeps every frame set on the harness's virtual clock and pulls `capture-results.jsonl`. Android
+2. Sweeps every frame set on the harness's virtual clock and pulls `capture-results.jsonl`. iOS plays
+   masks at the phone's cadence (`-captureMaskCadenceMs`, the registry's `ios.maskIntervalMs`):
+   observations every evaluation interval, a new mask only every 250 ms. Android
    is scored on stored boxes and keypoints. A second sweep with live ML Kit is information only.
 3. Sweeps the locked sets `top-flat-01-jitter`, `top-flat-01-cut-top`, `top-flat-empty` and
    `top-worn-shoulders-cut` again with the screen-reader flag.
@@ -398,9 +407,15 @@ expected file's `platform.<platform>` block applies first. `summary.md` states t
   "Take photo anyway" shows at `anywayAtMs` ± `acceptance.anywayToleranceMs`, with the reason line
   the expected `anywayReason`. With the screen-reader flag it shows within one evaluation interval of
   the start. Fields the scorer does not know (such as a segment's `tiltDegrees`) pass through.
+- **Live outline** (on results lines that log it; iOS now, Android after its outline lane): a
+  segment that shows an item has an outline by its first mask (`ios.maskIntervalMs`); an empty,
+  weak-surface, no-item or gap segment shows none; flat jitter sets keep outline stability ≥ 0.95.
+  The outline's IoU with the stored mask is reported per variant as information.
 - `summary.md` adds a hard-cases table: pass counts per variant beyond the brief §11 variants.
 - **Gap** (the empty second between sweep or batch items): locked or in cooldown within
-  `relockAfterFailingEvaluations × evaluation.intervalMs`, stays locked, nothing captured. The hint
+  `relockAfterFailingEvaluations × evaluation.intervalMs`, plus one mask interval when the sweep
+  played the phone's mask cadence (the item's last mask lingers that long), stays locked, nothing
+  captured. The hint
   and the anyway timing are not judged, because the gap opens on the previous item's state and is
   shorter than the anyway delay.
 - **Miss:** an unlocked case that never unlocks in time. **False lock:** unlocked straight back to

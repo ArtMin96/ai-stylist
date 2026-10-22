@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://contracts.ai-stylist.app/shared-kernel/registry/capture-rules.schema.json",
   "title": "CaptureRuleRegistry",
-  "description": "Live checks, lock state machine counts and timings of the guided capture camera (build brief .claude/plans/2026-10-22-capture-camera-brief.md §3-§6). One source for the iOS and Android apps and the frame generator; tools/codegen/gen-kernel.mjs emits it as Swift CaptureRules.swift and Kotlin CaptureRules.kt and checks the cross-references a schema cannot express (family modes, body parts, hints and lock reasons are declared). Coordinates and shares are normalised to the analysis frame (0-1, portrait, origin top-left). Keys ending in Ms, Px or Evaluations are integers (Int in Swift and Kotlin); every other number is a Double. Field names carry the comparison: min/max pass inclusively, Below/Above trigger strictly. Ids are stable: never rename or reuse one.",
+  "description": "Live checks, lock state machine counts and timings of the guided capture camera (build brief .claude/plans/2026-10-22-capture-camera-brief.md §3-§6). One source for the iOS and Android apps and the frame generator; tools/codegen/gen-kernel.mjs emits it as Swift CaptureRules.swift and Kotlin CaptureRules.kt and checks the cross-references a schema cannot express (family modes, body parts, hints and lock reasons are declared). Coordinates and shares are normalised to the analysis frame (0-1, portrait, origin top-left). A number this schema types integer is an Int in Swift and Kotlin; every other number is a Double. Field names carry the comparison: min/max pass inclusively, Below/Above trigger strictly. Ids are stable: never rename or reuse one.",
   "type": "object",
   "additionalProperties": false,
   "required": [
@@ -22,6 +22,8 @@
     "batch",
     "timing",
     "worn",
+    "mask",
+    "outline",
     "ios",
     "android"
   ],
@@ -151,7 +153,7 @@
     },
     "covered": {
       "type": "object",
-      "description": "Partly covered item (brief §4, C32; flat and hanger modes, never worn): another detected object's box overlaps the item's box. The item is the largest box (iOS: the largest Vision foreground instance; Android: the largest ML Kit box); overlap is the intersection divided by the smaller box's area",
+      "description": "Partly covered item (brief §4, C32; flat and hanger modes, never worn): another mask instance's box overlaps the item's box. The item is the largest mask instance (iOS: Vision foreground instance; Android: connected component of the segmenter mask); overlap is the intersection divided by the smaller box's area",
       "additionalProperties": false,
       "required": ["aboveOverlapShare", "minOtherBoxAreaShare"],
       "properties": {
@@ -269,31 +271,28 @@
         }
       }
     },
-    "ios": {
+    "mask": {
       "type": "object",
-      "description": "iOS-only values (Vision foreground instance mask and body pose, Core Motion). Android has no counterpart for these: there ML Kit's tracked object is the item, any box edge inside the edge band is cut off, and pose runs on every analysis frame",
+      "description": "The item mask, read by both apps (brief §3): iOS from the Vision foreground instance mask, Android from the LiteRT segmenter mask split into connected components. Each app measures it the same way",
       "additionalProperties": false,
       "required": [
-        "maskIntervalMs",
-        "poseIntervalMs",
+        "intervalMs",
+        "hotIntervalMs",
         "minInstanceAreaShare",
         "cutOffAboveEdgeContactShare",
-        "hangerTopCutOffAboveEdgeContactShare",
-        "maxUserAccelerationG",
-        "maxRotationRateRadPerS",
-        "minKeypointConfidence"
+        "hangerTopCutOffAboveEdgeContactShare"
       ],
       "properties": {
-        "maskIntervalMs": {
-          "description": "Foreground instance mask cadence, newest frame only, one request in flight",
+        "intervalMs": {
+          "description": "Mask cadence: at most one new mask per this interval, newest frame only, one request in flight",
           "$ref": "#/$defs/positiveInt"
         },
-        "poseIntervalMs": {
-          "description": "Body pose cadence in worn mode, same frame and handler as the mask request",
+        "hotIntervalMs": {
+          "description": "Mask cadence while the phone is hot: Android uses it when it reports THERMAL_STATUS_MODERATE or worse. iOS does not read it",
           "$ref": "#/$defs/positiveInt"
         },
         "minInstanceAreaShare": {
-          "description": "Item found when a foreground instance covers at least this share of the frame",
+          "description": "Item found when a mask instance covers at least this share of the frame",
           "$ref": "#/$defs/share"
         },
         "cutOffAboveEdgeContactShare": {
@@ -303,6 +302,99 @@
         "hangerTopCutOffAboveEdgeContactShare": {
           "description": "The same rule for the top edge in hanger mode",
           "$ref": "#/$defs/share"
+        }
+      }
+    },
+    "outline": {
+      "type": "object",
+      "description": "The live outline traced from each new mask (brief 'Live outline'). These equal the params of the parity fixture tools/capture-frames/parity/outline-parity.json, whose maskIntervalMs is mask.intervalMs; both apps' parity tests assert it",
+      "additionalProperties": false,
+      "required": [
+        "cropGrowDivisor",
+        "cropGrowMinPx",
+        "longSidePx",
+        "foregroundAtLeast",
+        "epsilonPx",
+        "pointCount",
+        "keepAtLeastIou",
+        "switchAtAreaRatio",
+        "snapBelowIou",
+        "snapKeepsShapeAtLeastIou",
+        "emaAlpha",
+        "clearAfterMissedUpdates",
+        "iouGridCells"
+      ],
+      "properties": {
+        "cropGrowDivisor": {
+          "description": "The crop around the item grows by the item box's long side divided by this (integer division)",
+          "$ref": "#/$defs/positiveInt"
+        },
+        "cropGrowMinPx": {
+          "description": "...and by at least this many pixels",
+          "$ref": "#/$defs/positiveInt"
+        },
+        "longSidePx": {
+          "description": "The crop is area-averaged down to this long side, in pixels",
+          "$ref": "#/$defs/positiveInt"
+        },
+        "foregroundAtLeast": {
+          "description": "An area-averaged cell at or above this is foreground; also the contour's iso value",
+          "$ref": "#/$defs/share"
+        },
+        "epsilonPx": {
+          "description": "Douglas-Peucker tolerance, in downscaled pixels",
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "pointCount": {
+          "description": "Points of every outline",
+          "$ref": "#/$defs/positiveInt"
+        },
+        "keepAtLeastIou": {
+          "description": "The drawn item is kept while its new outline overlaps the drawn one by at least this IoU",
+          "$ref": "#/$defs/share"
+        },
+        "switchAtAreaRatio": {
+          "description": "...unless the largest candidate has at least this many times its area",
+          "type": "number",
+          "minimum": 1
+        },
+        "snapBelowIou": {
+          "description": "A new outline below this IoU with the drawn one jumps there without animation",
+          "$ref": "#/$defs/share"
+        },
+        "snapKeepsShapeAtLeastIou": {
+          "description": "...and its shape replaces the drawn shape only below this IoU of the two shapes centred on their centroids; otherwise the shape still blends",
+          "$ref": "#/$defs/share"
+        },
+        "emaAlpha": {
+          "description": "Weight of the new outline in the moving averages of position and shape",
+          "$ref": "#/$defs/share"
+        },
+        "clearAfterMissedUpdates": {
+          "description": "The outline clears after this many mask updates in a row without an item",
+          "$ref": "#/$defs/positiveInt"
+        },
+        "iouGridCells": {
+          "description": "Outline IoU rasterises both polygons on this many cells per side over their joint box",
+          "$ref": "#/$defs/positiveInt"
+        }
+      }
+    },
+    "ios": {
+      "type": "object",
+      "description": "iOS-only values (Vision body pose, Core Motion)",
+      "additionalProperties": false,
+      "required": [
+        "poseIntervalMs",
+        "maxUserAccelerationG",
+        "maxRotationRateRadPerS",
+        "minKeypointConfidence"
+      ],
+      "properties": {
+        "poseIntervalMs": {
+          "description": "Body pose cadence in worn mode, same frame and handler as the mask request",
+          "$ref": "#/$defs/positiveInt"
         },
         "maxUserAccelerationG": {
           "description": "Steady when user acceleration is at most this (g)",

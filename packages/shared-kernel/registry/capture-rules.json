@@ -109,12 +109,30 @@
     "speechRepeatWindowMs": 5000
   },
   "worn": { "minAreaShare": 0.25, "keypointMinCoordinate": 0.02, "keypointMaxCoordinate": 0.98 },
-  "ios": {
-    "maskIntervalMs": 250,
-    "poseIntervalMs": 250,
+  "mask": {
+    "intervalMs": 250,
+    "hotIntervalMs": 1000,
     "minInstanceAreaShare": 0.005,
     "cutOffAboveEdgeContactShare": 0.04,
-    "hangerTopCutOffAboveEdgeContactShare": 0.1,
+    "hangerTopCutOffAboveEdgeContactShare": 0.1
+  },
+  "outline": {
+    "cropGrowDivisor": 8,
+    "cropGrowMinPx": 2,
+    "longSidePx": 64,
+    "foregroundAtLeast": 0.5,
+    "epsilonPx": 0.5,
+    "pointCount": 64,
+    "keepAtLeastIou": 0.3,
+    "switchAtAreaRatio": 1.5,
+    "snapBelowIou": 0.5,
+    "snapKeepsShapeAtLeastIou": 0.5,
+    "emaAlpha": 0.5,
+    "clearAfterMissedUpdates": 3,
+    "iouGridCells": 64
+  },
+  "ios": {
+    "poseIntervalMs": 250,
     "maxUserAccelerationG": 0.08,
     "maxRotationRateRadPerS": 0.5,
     "minKeypointConfidence": 0.3

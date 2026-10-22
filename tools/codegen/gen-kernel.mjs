@@ -39,7 +39,6 @@ import { emitKotlin } from './kernel/emit-kotlin.mjs';
 import { emitPython } from './kernel/emit-python.mjs';
 import { emitSwift } from './kernel/emit-swift.mjs';
 import { emitTs } from './kernel/emit-ts.mjs';
-import { isIntKey, isNumberBlock } from './kernel/naming.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 // Registry files resolve through the package export `@ai-stylist/shared-kernel/registry/*` (a root
@@ -82,8 +81,8 @@ const ajv = await createAjv();
 const [emit, REGISTRIES] = EMITTERS[lang];
 const ENVELOPE = 'packages/contracts/events/envelope.json';
 
-/** Schema validation per file; returns the parsed registries keyed by name. */
-async function loadRegistries(errors) {
+/** Schema validation per file; fills `schemas` and returns the parsed registries keyed by name. */
+async function loadRegistries(errors, schemas) {
   const reg = {};
   for (const name of REGISTRIES) {
     const rel = `packages/shared-kernel/registry/${name}.json`;
@@ -96,6 +95,7 @@ async function loadRegistries(errors) {
       errors.push(`${rel}: ${err.message}`);
       continue;
     }
+    schemas[name] = schema;
     const validate = ajv.compile(schema);
     if (validate(data)) {
       reg[name] = data;
@@ -215,7 +215,7 @@ function checkReferences(reg, errors) {
   }
 }
 
-/** capture-rules: declared modes, body parts, hints and lock reasons, and Int-typed keys. */
+/** capture-rules: declared modes, body parts, hints and lock reasons. */
 function checkCaptureRules(cr, errors) {
   const where = 'capture-rules.json';
   for (const [key, hint] of Object.entries(cr.hints)) {
@@ -251,26 +251,17 @@ function checkCaptureRules(cr, errors) {
       errors.push(`${at}: wornHint '${fam.wornHint}' is not a body-parts-missing hint`);
     }
   }
-  // The emitters type these keys Int; a fraction would emit code that does not compile.
-  const numbers = Object.entries(cr).filter(([, v]) => typeof v === 'number');
-  for (const [block, values] of Object.entries(cr).filter(([, v]) => isNumberBlock(v))) {
-    numbers.push(...Object.entries(values).map(([k, v]) => [`${block}.${k}`, v]));
-  }
-  for (const [key, value] of numbers) {
-    if (isIntKey(key) && !Number.isInteger(value)) {
-      errors.push(`${where}: ${key}: keys ending in Ms, Px or Evaluations must be integers`);
-    }
-  }
 }
 
 const errors = [];
-const reg = await loadRegistries(errors);
+const schemas = {};
+const reg = await loadRegistries(errors, schemas);
 checkReferences(reg, errors);
 const contracts = lang === 'python' ? { correlationId: await loadCorrelationIdRule(errors) } : {};
 let files = {};
 if (errors.length === 0) {
   try {
-    files = emit(reg, contracts);
+    files = emit(reg, { ...contracts, schemas });
   } catch (err) {
     errors.push(err.message);
   }

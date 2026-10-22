@@ -333,6 +333,10 @@ describe('capture-rules.json', async () => {
     expect(check({ ...committed, ios: { ...committed.ios, minKeypointConfidence: 30 } })).toBe(
       false,
     );
+    expect(check({ ...committed, outline: { ...committed.outline, pointCount: 64.5 } })).toBe(
+      false,
+    );
+    expect(check({ ...committed, mask: { ...committed.mask, hotIntervalMs: 0 } })).toBe(false);
     expect(check({ ...committed, notes: 'x' })).toBe(false);
     expect(check({ ...committed, steady: { ...committed.steady, jitter: 0.06 } })).toBe(false);
   });

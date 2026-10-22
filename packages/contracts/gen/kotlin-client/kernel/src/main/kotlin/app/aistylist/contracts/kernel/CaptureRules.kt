@@ -171,12 +171,32 @@ object CaptureRules {
         const val KEYPOINT_MAX_COORDINATE: Double = 0.98
     }
 
-    object Ios {
-        const val MASK_INTERVAL_MS: Int = 250
-        const val POSE_INTERVAL_MS: Int = 250
+    object Mask {
+        const val INTERVAL_MS: Int = 250
+        const val HOT_INTERVAL_MS: Int = 1000
         const val MIN_INSTANCE_AREA_SHARE: Double = 0.005
         const val CUT_OFF_ABOVE_EDGE_CONTACT_SHARE: Double = 0.04
         const val HANGER_TOP_CUT_OFF_ABOVE_EDGE_CONTACT_SHARE: Double = 0.1
+    }
+
+    object Outline {
+        const val CROP_GROW_DIVISOR: Int = 8
+        const val CROP_GROW_MIN_PX: Int = 2
+        const val LONG_SIDE_PX: Int = 64
+        const val FOREGROUND_AT_LEAST: Double = 0.5
+        const val EPSILON_PX: Double = 0.5
+        const val POINT_COUNT: Int = 64
+        const val KEEP_AT_LEAST_IOU: Double = 0.3
+        const val SWITCH_AT_AREA_RATIO: Double = 1.5
+        const val SNAP_BELOW_IOU: Double = 0.5
+        const val SNAP_KEEPS_SHAPE_AT_LEAST_IOU: Double = 0.5
+        const val EMA_ALPHA: Double = 0.5
+        const val CLEAR_AFTER_MISSED_UPDATES: Int = 3
+        const val IOU_GRID_CELLS: Int = 64
+    }
+
+    object Ios {
+        const val POSE_INTERVAL_MS: Int = 250
         const val MAX_USER_ACCELERATION_G: Double = 0.08
         const val MAX_ROTATION_RATE_RAD_PER_S: Double = 0.5
         const val MIN_KEYPOINT_CONFIDENCE: Double = 0.3

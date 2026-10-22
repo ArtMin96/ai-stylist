@@ -253,12 +253,32 @@ public enum CaptureRules {
     public static let keypointMaxCoordinate: Double = 0.98
   }
 
-  public enum Ios {
-    public static let maskIntervalMs: Int = 250
-    public static let poseIntervalMs: Int = 250
+  public enum Mask {
+    public static let intervalMs: Int = 250
+    public static let hotIntervalMs: Int = 1000
     public static let minInstanceAreaShare: Double = 0.005
     public static let cutOffAboveEdgeContactShare: Double = 0.04
     public static let hangerTopCutOffAboveEdgeContactShare: Double = 0.1
+  }
+
+  public enum Outline {
+    public static let cropGrowDivisor: Int = 8
+    public static let cropGrowMinPx: Int = 2
+    public static let longSidePx: Int = 64
+    public static let foregroundAtLeast: Double = 0.5
+    public static let epsilonPx: Double = 0.5
+    public static let pointCount: Int = 64
+    public static let keepAtLeastIou: Double = 0.3
+    public static let switchAtAreaRatio: Double = 1.5
+    public static let snapBelowIou: Double = 0.5
+    public static let snapKeepsShapeAtLeastIou: Double = 0.5
+    public static let emaAlpha: Double = 0.5
+    public static let clearAfterMissedUpdates: Int = 3
+    public static let iouGridCells: Int = 64
+  }
+
+  public enum Ios {
+    public static let poseIntervalMs: Int = 250
     public static let maxUserAccelerationG: Double = 0.08
     public static let maxRotationRateRadPerS: Double = 0.5
     public static let minKeypointConfidence: Double = 0.3

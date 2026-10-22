@@ -91,7 +91,7 @@ Log hygiene: when this log exceeds ~30 entries, move the oldest entries to `plan
 
 *(newest first)*
 
-### 2026-10-22 (capture-camera) — Guided capture camera engine on both apps: rules, live garment outline, hard cases, simulator loop (branch `feat/capture-camera`)
+### 2026-10-22 (capture-camera) — Guided capture camera engine on both apps: rules, live garment outline, hard cases, simulator loop (branch `feat/capture-camera`, PR #56)
 
 *Lead session, delegated.*
 

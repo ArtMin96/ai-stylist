@@ -38,6 +38,9 @@
     @ObservationIgnored private var playingSet: CaptureFrameIndex.FrameSet?
     @ObservationIgnored private var current: CaptureSegmentResult?
     @ObservationIgnored private var segmentStartMs = 0
+    /// The playing frame camera: the stored masks the live outline is scored against.
+    @ObservationIgnored private weak var frameCamera: CaptureFrameSetCamera?
+    @ObservationIgnored private var outlineScores = CaptureOutlineScores()
 
     public init(options: CaptureDebugOptions) {
       self.options = options
@@ -122,7 +125,7 @@
       guard source == .frames, let index, let set = index.sets.first(where: { $0.id == selectedSetID }) else {
         return nil
       }
-      return CaptureFrameSetCamera(
+      let camera = CaptureFrameSetCamera(
         set: set,
         directory: options.resolvedFramesDirectory,
         fps: index.playback.fps,
@@ -131,6 +134,8 @@
         virtualClock: virtualClock,
         listener: self
       )
+      frameCamera = camera
+      return camera
     }
 
     /// A single set plays until "Take photo anyway" is due plus its tolerance and a second; a sweep or
@@ -185,6 +190,11 @@
 
     private func record(_ output: CaptureCameraOutput?) {
       guard var result = current, let output else { return }
+      if let outline = output.outline, outlineScores.isNew(outline) {
+        if result.outlineFirstMs == nil { result.outlineFirstMs = elapsedMs }
+        outlineScores.add(outline, reference: frameCamera?.outlineReference)
+        current = result
+      }
       let event = CaptureSegmentResult.Event(
         tMs: elapsedMs,
         shutter: Self.describe(output.shutter),
@@ -215,6 +225,8 @@
       guard var result = current else { return }
       current = nil
       result.durationMs = elapsedMs
+      result.outlinePresentAtEnd = model?.camera?.outline != nil
+      outlineScores.write(into: &result)
       do {
         try log?.append(result)
       } catch {
@@ -258,6 +270,8 @@
         expected: source.expected,
         sweep: options.sweep
       )
+      // An outline already drawn belongs to the previous segment's mask; only later ones are scored.
+      outlineScores = CaptureOutlineScores(drawnBefore: model?.camera?.outline)
       record(model?.camera)
     }
 
@@ -279,6 +293,59 @@
       let continuation = caseFinished
       caseFinished = nil
       continuation?.resume()
+    }
+  }
+
+  /// The live outline's scores over one segment (results log).
+  struct CaptureOutlineScores {
+    private var last: CaptureLiveOutlineState?
+    /// The first scored outline is compared with this one for stability, but not counted or scored.
+    init(drawnBefore: CaptureLiveOutlineState? = nil) {
+      last = drawnBefore
+    }
+
+    private var updates = 0
+    private var snaps = 0
+    private var ious: [Double] = []
+    private var stabilities: [Double] = []
+
+    /// True when `outline` differs from the last one scored (a new mask update).
+    func isNew(_ outline: CaptureLiveOutlineState) -> Bool { outline != last }
+
+    mutating func add(_ outline: CaptureLiveOutlineState, reference: CaptureGrayImage?) {
+      updates += 1
+      if let last {
+        if outline.snapCount != last.snapCount {
+          snaps += 1
+        } else {
+          stabilities.append(
+            CaptureOutlineGeometry.intersectionOverUnion(
+              CaptureOutlineGeometry.centred(outline.points), CaptureOutlineGeometry.centred(last.points)))
+        }
+      }
+      if let reference {
+        let ious = CaptureInstanceLabels.instances(in: reference).compactMap { instance in
+          CaptureInstanceLabels.mask(of: instance.label, in: reference).map {
+            CaptureOutlineGeometry.intersectionOverUnion(outline.points, mask: $0)
+          }
+        }
+        if let best = ious.max() { self.ious.append(best) }
+      }
+      last = outline
+    }
+
+    func write(into result: inout CaptureSegmentResult) {
+      result.outlineUpdates = updates
+      result.outlineSnaps = snaps
+      result.outlineIouMedian = Self.median(ious)
+      result.outlineIouMin = ious.min()
+      result.outlineStabilityMedian = Self.median(stabilities)
+      result.outlineStabilityMin = stabilities.min()
+    }
+
+    private static func median(_ values: [Double]) -> Double? {
+      let sorted = values.sorted()
+      return sorted.isEmpty ? nil : sorted[sorted.count / 2]
     }
   }
 

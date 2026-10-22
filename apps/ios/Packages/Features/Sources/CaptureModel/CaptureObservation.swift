@@ -149,6 +149,11 @@ nonisolated public enum CaptureBodyPose: Equatable, Sendable {
 nonisolated public struct CaptureObservation: Equatable, Sendable {
   /// Frame time in milliseconds, for the results log; the rules time everything with the injected clock.
   public let timestampMs: Int
+  /// Frame time of the detector result `item` comes from. The live iOS camera runs the mask every
+  /// `CaptureRules.Ios.maskIntervalMs` and reuses it in between, so several observations share one; the
+  /// steady check compares boxes only across different masks. Nil: a new detector result on every
+  /// observation.
+  public let maskTimestampMs: Int?
   /// The item, or nil when no item was found.
   public let item: CaptureItemObservation?
   /// Mean luma of the whole frame, 0–255.
@@ -160,22 +165,29 @@ nonisolated public struct CaptureObservation: Equatable, Sendable {
   /// Angle between gravity and the phone's back axis, in degrees; nil when not a phone.
   public let tiltDegrees: Double?
   public let bodyPose: CaptureBodyPose
+  /// The live outline's input (capture brief "Live outline"): the item outlines of the newest mask. Nil
+  /// when the platform draws no outline for this observation (an imported still).
+  public let outlines: CaptureMaskOutlines?
 
   public init(
     timestampMs: Int,
+    maskTimestampMs: Int? = nil,
     item: CaptureItemObservation?,
     meanLuma: Double,
     clippedShare: Double = 0,
     deviceMotion: CaptureDeviceMotion? = nil,
     tiltDegrees: Double? = nil,
-    bodyPose: CaptureBodyPose = .notRun
+    bodyPose: CaptureBodyPose = .notRun,
+    outlines: CaptureMaskOutlines? = nil
   ) {
     self.timestampMs = timestampMs
+    self.maskTimestampMs = maskTimestampMs
     self.item = item
     self.meanLuma = meanLuma
     self.clippedShare = clippedShare
     self.deviceMotion = deviceMotion
     self.tiltDegrees = tiltDegrees
     self.bodyPose = bodyPose
+    self.outlines = outlines
   }
 }

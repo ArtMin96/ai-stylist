@@ -38,6 +38,26 @@ nonisolated public struct CaptureGrayImage: Equatable, Sendable {
     return CaptureGrayImage(uncheckedWidth: newWidth, height: newHeight, pixels: result)
   }
 
+  /// The image moved by whole pixels (right and down are positive); what leaves the frame is lost and
+  /// what enters is 0. The debug frame source moves stored masks by the playback jitter this way.
+  public func shifted(byX dx: Int, y dy: Int) -> CaptureGrayImage {
+    guard dx != 0 || dy != 0 else { return self }
+    var result = [UInt8](repeating: 0, count: pixels.count)
+    let columns = max(0, dx)..<min(width, width + dx)
+    let rows = max(0, dy)..<min(height, height + dy)
+    if !columns.isEmpty && !rows.isEmpty {
+      pixels.withUnsafeBufferPointer { source in
+        result.withUnsafeMutableBufferPointer { target in
+          for y in rows {
+            let from = (y - dy) * width - dx
+            for x in columns { target[y * width + x] = source[from + x] }
+          }
+        }
+      }
+    }
+    return CaptureGrayImage(uncheckedWidth: width, height: height, pixels: result)
+  }
+
   private init(uncheckedWidth width: Int, height: Int, pixels: [UInt8]) {
     self.width = width
     self.height = height

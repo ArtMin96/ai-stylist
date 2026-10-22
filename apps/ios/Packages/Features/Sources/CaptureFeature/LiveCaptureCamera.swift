@@ -1,5 +1,6 @@
 // The live camera (capture brief §3, §7): AVCaptureSession with a photo output and a preview-sized video
-// data output for analysis, the Vision foreground mask every `CaptureRules.Ios.maskIntervalMs`, Vision body
+// data output for analysis, the Vision foreground mask (and the live outline traced from it, brief "Live
+// outline") every `CaptureRules.Ios.maskIntervalMs`, Vision body
 // pose in worn mode every `poseIntervalMs`, luma for light and sharpness, and CoreMotion for device motion
 // and tilt. Nothing is saved: frames are measured and dropped, photos stay in memory.
 //
@@ -192,6 +193,8 @@
       var lastMaskMs: Int?
       var lastPoseMs: Int?
       var foreground: CaptureForeground?
+      /// Frame time of the mask `foreground` came from; observations in between reuse it.
+      var foregroundMs: Int?
       var bodyPose = CaptureBodyPose.notRun
       var motion: CaptureDeviceMotion?
       var tiltDegrees: Double?
@@ -256,7 +259,7 @@
       }
       guard let plan else { return }
       let handler = VNImageRequestHandler(cvPixelBuffer: pixelBuffer, orientation: .up)
-      let foreground = plan.runsMask ? CaptureVision.foreground(using: handler) : nil
+      let foreground = plan.runsMask ? CaptureVision.foreground(using: handler, tracesOutlines: true) : nil
       let pose = plan.runsPose ? CaptureVision.bodyPose(using: handler) : nil
       let luma = CaptureImageReader.gray(
         from: pixelBuffer,
@@ -265,7 +268,10 @@
       )
       guard let luma else { return }
       let (observation, continuation) = state.withLock { state in
-        if plan.runsMask { state.foreground = foreground }
+        if plan.runsMask {
+          state.foreground = foreground
+          state.foregroundMs = nowMs
+        }
         if let pose { state.bodyPose = pose }
         let item = state.foreground.map {
           CaptureItemObservation(
@@ -279,12 +285,16 @@
         }
         let observation = CaptureObservation(
           timestampMs: nowMs,
+          maskTimestampMs: state.foregroundMs,
           item: item,
           meanLuma: CaptureLumaMetrics.meanLuma(of: luma),
           clippedShare: CaptureLumaMetrics.clippedShare(of: luma),
           deviceMotion: state.motion,
           tiltDegrees: state.tiltDegrees,
-          bodyPose: state.isWornMode ? state.bodyPose : .notRun
+          bodyPose: state.isWornMode ? state.bodyPose : .notRun,
+          outlines: state.foregroundMs.map {
+            CaptureMaskOutlines(maskTimestampMs: $0, candidates: state.foreground?.outlines ?? [])
+          }
         )
         return (observation, state.continuation)
       }

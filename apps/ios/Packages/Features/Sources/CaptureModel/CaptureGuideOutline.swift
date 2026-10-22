@@ -7,7 +7,8 @@
 import AIStylistKernel
 import Foundation
 
-/// A point in the outline's coordinate space (`CaptureGuideOutline.canvasWidth` × `canvasHeight`).
+/// A point of an outline: the guide's canvas space (`CaptureGuideOutline.canvasWidth` × `canvasHeight`), or
+/// for the live outline the frame normalised to 0–1 (origin top-left).
 nonisolated public struct CaptureOutlinePoint: Hashable, Sendable {
   public let x: Double
   public let y: Double

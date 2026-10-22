@@ -18,6 +18,11 @@ dependencies {
     implementation(libs.androidx.lifecycle.runtime.compose)
     implementation(libs.kotlinx.coroutines.android)
     implementation(libs.mlkit.detection.objects)
+    constraints {
+        // ML Kit's POMs ask for okhttp 3.0.0 (and okio 1.6.0 through it), both with known advisories
+        // (`just security-scan`); hold them at the catalog's okhttp, which the app already resolves.
+        implementation(libs.okhttp)
+    }
 
     testImplementation(libs.kotlinx.coroutines.test)
 }

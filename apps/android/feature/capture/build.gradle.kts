@@ -28,6 +28,11 @@ dependencies {
     // Bundled models: no Play-services download and no Play-services API call (capture brief C31).
     implementation(libs.mlkit.detection.objects)
     implementation(libs.mlkit.detection.pose)
+    constraints {
+        // ML Kit's POMs ask for okhttp 3.0.0 (and okio 1.6.0 through it), both with known advisories
+        // (`just security-scan`); hold them at the catalog's okhttp, which the app already resolves.
+        implementation(libs.okhttp)
+    }
 
     testImplementation(libs.kotlinx.coroutines.test)
     testImplementation(libs.turbine)

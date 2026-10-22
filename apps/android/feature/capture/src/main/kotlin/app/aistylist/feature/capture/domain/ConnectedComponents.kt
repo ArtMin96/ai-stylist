@@ -17,11 +17,9 @@ class ConnectedComponents private constructor(
         ): ConnectedComponents {
             val labels = IntArray(width * height)
             val sizes = ArrayList<Int>()
-            val stack = IntArray(width * height)
+            val grid = Grid(width, height, foreground, labels, IntArray(width * height))
             for (start in labels.indices) {
-                if (foreground[start] && labels[start] == 0) {
-                    sizes += fill(Grid(width, height, foreground, labels, stack), start, sizes.size + 1)
-                }
+                if (foreground[start] && labels[start] == 0) sizes += fill(grid, start, sizes.size + 1)
             }
             return ConnectedComponents(labels, sizes)
         }
@@ -47,36 +45,33 @@ class ConnectedComponents private constructor(
             while (top > 0) {
                 val index = grid.stack[--top]
                 size++
-                for (next in neighbours(grid, index)) {
-                    if (grid.foreground[next] && grid.labels[next] == 0) {
-                        grid.labels[next] = label
-                        grid.stack[top++] = next
-                    }
+                val x = index % grid.width
+                val y = index / grid.width
+                for (direction in 0 until NEIGHBOURS) {
+                    top = push(grid, x + DX[direction], y + DY[direction], label, top)
                 }
             }
             return size
         }
 
-        /** The up to eight in-grid neighbours of [index]. */
-        private fun neighbours(
+        /** Labels and stacks ([x], [y]) when it is an unlabelled foreground pixel; returns the new stack top. */
+        private fun push(
             grid: Grid,
-            index: Int,
-        ): List<Int> {
-            val x = index % grid.width
-            val y = index / grid.width
-            val result = ArrayList<Int>(NEIGHBOURS)
-            for (dy in -1..1) {
-                for (dx in -1..1) {
-                    val nx = x + dx
-                    val ny = y + dy
-                    if ((dx != 0 || dy != 0) && nx in 0 until grid.width && ny in 0 until grid.height) {
-                        result += ny * grid.width + nx
-                    }
-                }
-            }
-            return result
+            x: Int,
+            y: Int,
+            label: Int,
+            top: Int,
+        ): Int {
+            if (x !in 0 until grid.width || y !in 0 until grid.height) return top
+            val next = y * grid.width + x
+            if (!grid.foreground[next] || grid.labels[next] != 0) return top
+            grid.labels[next] = label
+            grid.stack[top] = next
+            return top + 1
         }
 
+        private val DX = intArrayOf(-1, 0, 1, -1, 1, -1, 0, 1)
+        private val DY = intArrayOf(-1, -1, -1, 0, 0, 1, 1, 1)
         private const val NEIGHBOURS = 8
     }
 }

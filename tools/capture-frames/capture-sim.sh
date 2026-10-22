@@ -12,7 +12,8 @@
 # Output: artifacts/capture-camera/runs/<yyyy-mm-dd-hhmm>/ (raw/, results/, maestro/, screenshots/,
 # summary.md) and artifacts/capture-camera/scoreboard.md. All gitignored.
 # Usage: capture-sim.sh ios|android|all
-# Env: IOS_SIMULATOR_ID (default: the iPhone 18 Pro on the newest iOS runtime), ANDROID_SERIAL,
+# Env: IOS_SIMULATOR_ID (default: the iPhone 18 Pro on the newest iOS runtime), ANDROID_SERIAL
+#      (default: the AVD aistylist-dev, booted when needed),
 #      CAPTURE_SWEEP_TIMEOUT (seconds per sweep, default 1800).
 # Exit: 0 every platform met the finish line; 1 a case, flow or step failed; 2 misuse.
 # macOS for iOS; bash 3.2-compatible.
@@ -195,13 +196,14 @@ run_android() {
     || die "capture-sim-android: the Android capture harness is not merged on this branch (apps/android/feature/capture-debug and apps/android/tools/capture-frames.sh are missing). Nothing was run."
   have maestro || die "capture-sim-android: maestro not found (mise install maestro)"
   heading "Android"
-  # Builds and installs the debug build; boots the AVD aistylist-dev when no device is online. No
-  # Gradle build runs after this point: a build beside a sweep has wedged the emulator.
+  # The AVD aistylist-dev (or ANDROID_SERIAL), booted when it is not running: never another agent's
+  # emulator. Then the debug build is built and installed on it. No Gradle build runs after this
+  # point: a build beside a sweep has wedged the emulator.
+  serial="${ANDROID_SERIAL:-$("$REPO_ROOT/apps/android/tools/device.sh" boot | tail -n 1)}"
+  [[ -n "$serial" ]] || die "capture-sim-android: the AVD aistylist-dev did not boot"
+  export ANDROID_SERIAL="$serial"
   just android-run
   adb="$(android_adb)"
-  serial="${ANDROID_SERIAL:-$("$adb" devices | awk 'NR > 1 && $2 == "device" { print $1; exit }')}"
-  [[ -n "$serial" ]] || die "capture-sim-android: no device online after android-run"
-  export ANDROID_SERIAL="$serial"
   "$ANDROID_FRAMES" push "$FRAMES_DIR"
   mkdir -p "$raw"
   log "Android sweep: every frame set, stored boxes and keypoints (the scored run)"

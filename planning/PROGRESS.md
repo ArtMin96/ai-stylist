@@ -30,7 +30,7 @@ Rules:
 | P03 | Identity, consent, onboarding | `IN_PROGRESS` | Started 2026-10-21, after its hard dependency P02 became `ACCEPTED` the same day ([phase file](phases/P03-identity-consent-onboarding.md) §3). P03-T01 `DONE` on branch `feat/p03-t01-kernel` @ `e317b5b` (Linear AI-51); PR #47 merged. P03-T02 `DONE` on branch `feat/p03-t02-contracts` @ `bd1d7cb` plus the docs sync of 2026-10-21 (Linear AI-48 with AI-49, AI-53, AI-58, AI-61, AI-64); its PR #48 merged. P03-X03 (Linear AI-87) done on branch `feat/p03-x03-error-registry` @ `44783d3` (PR #51, on `main`; its tip is the vitest 5.0.5 bump of 2026-10-22); P03-X04 (Linear AI-88) done on branch `feat/p03-x04-native-kernel` @ `f30b405` (PR #52), stacked on the X03 branch; P03-X06 (Linear AI-95, the spectral `Idempotency-Key` rule) done on branch `feat/p03-x06-idempotency-lint` @ `4f6b911` plus the ledger sync (PR #53), stacked on the X04 branch. Next: the owner merges #51, #52 and #53 bottom-up; then P03-T03 (AI-50) ∥ P03-T06 (AI-68) ∥ P03-T07 (AI-69) per phase §13. Carried in: AI-42 before P03-T10; the Mac and device checks (AI-28, AI-29; DEC-81) at the first P03 client task that needs the Mac. Per-task state: phase file §12 (X03, X04 and X06 are Linear-only, not §12 rows). Latest: the 2026-10-22 (vitest) handoff entry |
 | P04 | Parametric avatar v1 | `NOT_STARTED` | |
 | P05 | Selfie face personalization | `NOT_STARTED` | |
-| P06 | Closet capture pipeline | `NOT_STARTED` | |
+| P06 | Closet capture pipeline | `NOT_STARTED` | Groundwork ahead of the phase, status unchanged: the guided capture camera brief, the capture rules registry and the test-frame generator on branch `feat/capture-rules-foundation` (2026-10-22 (capture-foundation) entry); the app work (P06-T04 part) follows as a stacked PR |
 | P07 | Closet organization and sync | `NOT_STARTED` | |
 | P08 | Context providers | `NOT_STARTED` | |
 | P09 | Recommendation engine v1 | `NOT_STARTED` | |
@@ -90,6 +90,19 @@ Log hygiene: when this log exceeds ~30 entries, move the oldest entries to `plan
 ## Session handoff log
 
 *(newest first)*
+
+### 2026-10-22 (capture-foundation) — Guided capture camera groundwork: capture rules registry, test-frame generator and plan (branch `feat/capture-rules-foundation`)
+
+*Lead session, delegated.*
+
+- **Phase / tasks worked:** groundwork for P06-T04 (live capture checks), ahead of P06; no phase status change. Split from `feat/capture-camera` so the stable part is reviewed first; the iOS and Android app work follows as a PR stacked on this branch once its simulator loop passes.
+- **Status changes:** none.
+- **Done this session:** `packages/shared-kernel/registry/capture-rules.json` + schema (thresholds, counts, timings, hints, lock reasons, shape families, the `covered` block), emitted by `just generate` as `CaptureRules.swift` / `CaptureRules.kt` beside the P03 kernel files; `tools/capture-frames/` and `just capture-frames` (macOS; frames into the gitignored `artifacts/capture-camera/frames/`); the brief, the two proposals and the SC16 surface brief; the applied planning changes to docs 02, 10 and P06.
+- **Not done / in flight:** the app work, the capture simulator recipes and ADR-0012 stay on `feat/capture-camera`. Human-applied: the doc 15 §5 row for `just capture-frames` in [`.claude/plans/2026-10-22-capture-frames-recipe-proposal.md`](../.claude/plans/2026-10-22-capture-frames-recipe-proposal.md) (DC-15 warns until then) and the decision-log rows in [`.claude/plans/2026-10-22-capture-camera-plan-changes-proposal.md`](../.claude/plans/2026-10-22-capture-camera-plan-changes-proposal.md).
+- **Repository state:** see the PR body for the check results on this branch.
+- **New decisions / risks / questions filed:** none (the proposals above carry the draft rows).
+- **Surprises / gotchas:** main's P03-X04 compiles the Kotlin kernel in `:core:data`; the capture branch's own `:core:kernel` module was dropped when main was merged into it, so the app PR depends on `:core:data`.
+- **Next session starts:** the owner reviews and merges the foundation PR; then the capture app PR, stacked on this branch.
 
 ### 2026-10-22 (vitest) — `@vitest/mocker` advisories: vitest 5.0.5, stack rebased (branch `feat/p03-x03-error-registry`)
 

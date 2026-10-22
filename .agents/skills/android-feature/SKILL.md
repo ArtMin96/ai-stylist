@@ -88,11 +88,10 @@ metadata:
     (`packages/contracts/gen/kotlin-client/analytics/src/main/kotlin/app/aistylist/contracts/analytics/AnalyticsTaxonomy.kt`);
     a new event needs the contract lane first. Consent defaults OFF; no sensitive data in events,
     logs or fixtures. `API_BASE_URL` stays host-only; no secrets in build config.
-12. Registry values (reason codes, entitlements, units): add
-    `packages/contracts/gen/kotlin-client/kernel/src/main/kotlin` as a `kotlin.srcDir` in the
-    module the brief or task names, copying the block in
-    `apps/android/core/analytics/build.gradle.kts`, and import `app.aistylist.contracts.kernel`;
-    never copy a value (DEC-55). No module has it yet: if the task does not name one, stop and ask.
+12. Registry values (reason codes, entitlements and their levels, units, error codes, measurement
+    bounds, starting shapes): import `app.aistylist.contracts.kernel`, which `:core:data` compiles
+    (the `kotlin.srcDir` block in `apps/android/core/data/build.gradle.kts`); never copy a value
+    (DEC-55).
 13. Tests in the module's src/test/kotlin (documented test-placement exception): ViewModel tests
     with fakes, Robolectric for Compose screens, synthetic data. A bug fix is test-first:
     `just test-regression` cannot run Kotlin, so write the test, run `just test android` and keep
@@ -139,7 +138,7 @@ run or Not run · `Suggested PROGRESS.md line` given.
   the lockfiles and checksums are reviewed changes.
 - A new JVM `:core:*` module → the `justfile` test lists need `tooling-engineer`; stop and report.
 - A second screen with no navigation shell → stop; the lead sequences a nav-shell task on both apps.
-- Registry value needed and no module named for the kernel `srcDir` → stop; the brief decides.
+- Registry value needed in a module that cannot reach `:core:data` → stop; the brief decides.
 - Behaviour must differ from iOS → `Parity: Intended differences`; the lead decides.
 - No emulator or device for a device-only behaviour → implement, report `Not run`, never claim a
   device result you did not see.

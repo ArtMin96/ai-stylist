@@ -12,7 +12,7 @@ android {
 
 dependencies {
     implementation(project(":feature:capture"))
-    implementation(project(":core:kernel"))
+    implementation(project(":core:data"))
     implementation(project(":core:designsystem"))
 
     implementation(libs.androidx.lifecycle.runtime.compose)

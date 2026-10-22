@@ -10,8 +10,9 @@ OpenAPI source in `packages/contracts/openapi/` and run `just generate`.
   `tools/codegen/gen-kernel.mjs` from `packages/shared-kernel/registry/*.json` (`ReasonCode`,
   `ReasonCodeNamespace`, `ReasonCodeStage`, `EntitlementName`, `EntitlementValueKind`,
   `CreditMeter`, `LengthUnit`, `MassUnit`, `TemperatureUnit`, `MeasurementDimension`,
-  `CanonicalUnits`, `UnitSystem`, `MeasurementSource`, `ConversionFactors`). Change the registry
-  JSON, never these files.
+  `CanonicalUnits`, `UnitSystem`, `MeasurementSource`, `ConversionFactors`, `ErrorCode`,
+  `MeasurementId`, `StartingShape`, `StartingShapes`). Consumed by `apps/ios/Packages/Core`
+  (target `APIData` and its tests) by local path. Change the registry JSON, never these files.
 - Build the client from the configured **host-only** base URL (for example `http://localhost:3000`):
   the operation paths already start with `/v1`. Do not use the generated `Servers` URLs, which
   also end in `/v1` and would produce `/v1/v1/...`.

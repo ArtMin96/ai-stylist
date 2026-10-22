@@ -1,0 +1,162 @@
+# Fixture for the .spectral.yaml rule ai-stylist-mutating-operation-has-idempotency-key, linted by
+# scripts/test/contracts-spectral.test.sh. The rule must report every operation below, and only
+# these: each one changes data and declares no Idempotency-Key header parameter on the operation,
+# or carries the exemption marker where the marker does not count. Synthetic shapes only.
+openapi: 3.1.0
+info:
+  title: Fixture — mutating operations without Idempotency-Key
+  version: 1.0.0
+  description: Synthetic document; the idempotency rule must report each of its operations.
+  contact:
+    name: AI Stylist engineering
+servers:
+  - url: http://localhost:3000
+tags:
+  - name: fixture
+    description: Synthetic operations
+paths:
+  /v1/items:
+    # No parameters at all.
+    post:
+      operationId: createItem
+      tags: [fixture]
+      responses:
+        '201':
+          description: Created
+        default:
+          $ref: '#/components/responses/Problem'
+    # Another header, but not Idempotency-Key.
+    put:
+      operationId: replaceItem
+      tags: [fixture]
+      parameters:
+        - $ref: '#/components/parameters/IfMatch'
+      responses:
+        '200':
+          description: Replaced
+        default:
+          $ref: '#/components/responses/Problem'
+    # The right name in the wrong place: a query parameter is not the header.
+    patch:
+      operationId: updateItem
+      tags: [fixture]
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKeyInQuery'
+      responses:
+        '200':
+          description: Updated
+        default:
+          $ref: '#/components/responses/Problem'
+    delete:
+      operationId: deleteItem
+      tags: [fixture]
+      responses:
+        '204':
+          description: Deleted
+        default:
+          $ref: '#/components/responses/Problem'
+  /v1/items/path-item-header:
+    # Declared once on the path item only: the rule checks the operation.
+    parameters:
+      - $ref: '#/components/parameters/IdempotencyKey'
+    post:
+      operationId: createItemWithPathItemHeader
+      tags: [fixture]
+      responses:
+        '201':
+          description: Created
+        default:
+          $ref: '#/components/responses/Problem'
+  /v1/auth/not-named:
+    # Under /v1/auth/ but not named as an exception: checked like every other operation.
+    post:
+      operationId: authNotNamed
+      tags: [fixture]
+      responses:
+        '200':
+          description: Done
+        default:
+          $ref: '#/components/responses/Problem'
+  /v1/auth/marker-without-reason:
+    # The marker needs its reason as a non-empty string; `true` and '' name no reason.
+    post:
+      operationId: authMarkerTrue
+      tags: [fixture]
+      x-idempotency-key-exempt: true
+      responses:
+        '200':
+          description: Done
+        default:
+          $ref: '#/components/responses/Problem'
+    delete:
+      operationId: authMarkerEmpty
+      tags: [fixture]
+      x-idempotency-key-exempt: ''
+      responses:
+        '204':
+          description: Done
+        default:
+          $ref: '#/components/responses/Problem'
+  /v1/marked:
+    # The marker with a reason, outside /v1/auth/: ignored.
+    post:
+      operationId: markedOutsideAuth
+      tags: [fixture]
+      x-idempotency-key-exempt: Synthetic reason; the marker counts under /v1/auth/ only.
+      responses:
+        '200':
+          description: Done
+        default:
+          $ref: '#/components/responses/Problem'
+  /v1/authorizations:
+    # Starts with /v1/auth but not with /v1/auth/: outside the exception prefix.
+    post:
+      operationId: markedLookalikePrefix
+      tags: [fixture]
+      x-idempotency-key-exempt: Synthetic reason; the marker counts under /v1/auth/ only.
+      responses:
+        '200':
+          description: Done
+        default:
+          $ref: '#/components/responses/Problem'
+components:
+  parameters:
+    IdempotencyKey:
+      name: Idempotency-Key
+      in: header
+      description: Synthetic copy of the shape of platform.yaml components/parameters/IdempotencyKey.
+      schema:
+        type: string
+    IdempotencyKeyInQuery:
+      name: Idempotency-Key
+      in: query
+      description: The header's name on a query parameter.
+      schema:
+        type: string
+    IfMatch:
+      name: If-Match
+      in: header
+      required: true
+      description: A header other than Idempotency-Key.
+      schema:
+        type: string
+  responses:
+    Problem:
+      description: Error (RFC 9457)
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/ProblemDetails'
+  schemas:
+    ProblemDetails:
+      type: object
+      required: [type, title, status, code]
+      properties:
+        type:
+          type: string
+        title:
+          type: string
+        status:
+          type: integer
+        code:
+          type: string

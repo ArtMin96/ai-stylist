@@ -5,7 +5,8 @@
 #     --swift-openapi-generator 1.13.1-->  packages/contracts/gen/swift-client/  (SwiftPM package, product AIStylistAPI)
 #   packages/shared-kernel/registry/*.json
 #     --tools/codegen/gen-kernel.mjs swift-->  Sources/AIStylistKernel/  (product AIStylistKernel, no dependencies:
-#                                               reason codes, entitlement names, credit meters, units; OQ-15)
+#                                               reason codes, entitlement names + levels, credit meters, units,
+#                                               error codes, measurement definitions, starting shapes; OQ-15)
 #
 # The whole output directory is GENERATED (Package.swift, README.md, Sources/). Never edit it by hand.
 # Deterministic: running it twice on an unchanged bundle produces byte-identical output.
@@ -35,7 +36,7 @@ check_only=false
 for arg in "$@"; do
   case "$arg" in
     --check) check_only=true ;;
-    -h | --help) sed -n '2,19p' "$0"; exit 0 ;;
+    -h | --help) sed -n '2,20p' "$0"; exit 0 ;;
     *) echo "gen-swift.sh: unknown argument: $arg" >&2; exit 2 ;;
   esac
 done
@@ -121,8 +122,9 @@ for f in "$staged"/Sources/AIStylistAPI/*.swift; do
   mv "$f.tmp" "$f"
 done
 
-# shared-kernel registries (reason codes, entitlements, units) as a dependency-free target, so the
-# iOS app never hand-copies them (CLAUDE.md single source of truth; OQ-15). Banner is per file.
+# shared-kernel registries (reason codes, entitlements, units, error codes, measurements, starting
+# shapes) as a dependency-free target, so the iOS app never hand-copies them (CLAUDE.md single source
+# of truth; OQ-15). Banner is per file.
 if command -v node >/dev/null 2>&1; then
   node_cmd=(node)
 elif command -v mise >/dev/null 2>&1; then
@@ -175,8 +177,9 @@ OpenAPI source in \`packages/contracts/openapi/\` and run \`just generate\`.
   \`tools/codegen/gen-kernel.mjs\` from \`packages/shared-kernel/registry/*.json\` (\`ReasonCode\`,
   \`ReasonCodeNamespace\`, \`ReasonCodeStage\`, \`EntitlementName\`, \`EntitlementValueKind\`,
   \`CreditMeter\`, \`LengthUnit\`, \`MassUnit\`, \`TemperatureUnit\`, \`MeasurementDimension\`,
-  \`CanonicalUnits\`, \`UnitSystem\`, \`MeasurementSource\`, \`ConversionFactors\`). Change the registry
-  JSON, never these files.
+  \`CanonicalUnits\`, \`UnitSystem\`, \`MeasurementSource\`, \`ConversionFactors\`, \`ErrorCode\`,
+  \`MeasurementId\`, \`StartingShape\`, \`StartingShapes\`). Consumed by \`apps/ios/Packages/Core\`
+  (target \`APIData\` and its tests) by local path. Change the registry JSON, never these files.
 - Build the client from the configured **host-only** base URL (for example \`http://localhost:3000\`):
   the operation paths already start with \`/v1\`. Do not use the generated \`Servers\` URLs, which
   also end in \`/v1\` and would produce \`/v1/v1/...\`.

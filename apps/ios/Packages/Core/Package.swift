@@ -9,7 +9,9 @@
 //                AppConfig only. The PostHog SDK adapter lives in the app target (posthog-ios is
 //                Apple-only and pinned in project.yml), so this package still builds and tests on Linux.
 //   AppServices  the container the composition root hands to features + the service protocols
-//   APIData      the ONLY target that imports the generated AIStylistAPI client / OpenAPI runtime
+//   APIData      the ONLY target that imports the generated AIStylistAPI client / OpenAPI runtime; also
+//                depends on the generated AIStylistKernel (shared-kernel registries), so `just test ios`
+//                compiles it (ADR-0005). The kernel is dependency-free and not limited to APIData.
 import PackageDescription
 
 // jscpd:ignore-start (SwiftPM manifests cannot share code; the copies are kept in sync by hand.)
@@ -54,6 +56,7 @@ let package = Package(
       dependencies: [
         "AppServices",
         .product(name: "AIStylistAPI", package: "swift-client"),
+        .product(name: "AIStylistKernel", package: "swift-client"),
         .product(name: "OpenAPIRuntime", package: "swift-openapi-runtime"),
         .product(name: "OpenAPIURLSession", package: "swift-openapi-urlsession"),
         .product(name: "HTTPTypes", package: "swift-http-types"),
@@ -78,6 +81,7 @@ let package = Package(
         "APIData",
         "AppConfig",
         "AppServices",
+        .product(name: "AIStylistKernel", package: "swift-client"),
         .product(name: "OpenAPIRuntime", package: "swift-openapi-runtime"),
         .product(name: "HTTPTypes", package: "swift-http-types"),
       ],

@@ -42,9 +42,10 @@ Invariants that bite here (enforced by `just ios-check` unless marked reviewer-c
 - Swift 6 mode, complete strict concurrency, warnings as errors, MainActor default isolation. A new
   safety setting goes in both `apps/ios/Config/Base.xcconfig` and each `Package.swift`.
 - `API_BASE_URL` is host-only; never use the generated `Servers.*` URLs (they end in /v1).
-- Reason codes, entitlement names and units come from the generated `AIStylistKernel` product in
-  `packages/contracts/gen/swift-client/` (ADR-0005). No app target consumes it yet: the first
-  consumer adds the package dependency in the relevant `Package.swift`. Never copy a value.
+- Reason codes, entitlement names and levels, units, error codes, measurement bounds and starting
+  shapes come from the generated `AIStylistKernel` product in `packages/contracts/gen/swift-client/`
+  (ADR-0005). Core's `APIData` target depends on it (`apps/ios/Packages/Core/Package.swift`);
+  another target adds the same package dependency. Never copy a value.
 - Analytics goes through the port; consent defaults OFF. Swift event names are hand-written and must
   equal an entry in `packages/contracts/events/analytics/events.json` byte for byte (no generated
   Swift taxonomy, ADR-0005). No sensitive data in events, logs or fixtures. (reviewer-checked)

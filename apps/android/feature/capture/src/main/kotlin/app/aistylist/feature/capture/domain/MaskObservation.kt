@@ -18,9 +18,9 @@ data class MaskObservation(
     /** The largest few instances, each with its traced polygon, largest first (outline hysteresis). */
     val outlineCandidates: List<OutlineCandidate>,
 ) {
-    /** The item when it is large enough to count as found (iOS `minInstanceAreaShare`). */
+    /** The item when it is large enough to count as found (`mask.minInstanceAreaShare`). */
     val foundItem: MaskMeasure?
-        get() = item?.takeIf { it.maskAreaShare >= CaptureRules.Ios.MIN_INSTANCE_AREA_SHARE }
+        get() = item?.takeIf { it.maskAreaShare >= CaptureRules.Mask.MIN_INSTANCE_AREA_SHARE }
 }
 
 /**
@@ -37,7 +37,7 @@ class MaskAnalysis(
         instances
             .filter {
                 it.pixelCount.toDouble() / (labels.width * labels.height) >=
-                    CaptureRules.Ios.MIN_INSTANCE_AREA_SHARE
+                    CaptureRules.Mask.MIN_INSTANCE_AREA_SHARE
             }.take(MAX_OUTLINE_CANDIDATES)
 
     /** The candidates per pixel offset, traced on the moved mask (clipped at the frame edge), as the camera would see it. */

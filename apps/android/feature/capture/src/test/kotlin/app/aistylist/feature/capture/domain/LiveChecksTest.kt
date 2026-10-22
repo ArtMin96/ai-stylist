@@ -573,7 +573,7 @@ class LiveChecksTest {
 
     // Mask path (the segmenter; the iOS rules, capture brief §3)
 
-    private val contactLimit = CaptureRules.Ios.CUT_OFF_ABOVE_EDGE_CONTACT_SHARE
+    private val contactLimit = CaptureRules.Mask.CUT_OFF_ABOVE_EDGE_CONTACT_SHARE
 
     /** Evaluates a mask frame after an earlier mask with the same box, so "steady" can pass. */
     private fun maskReport(
@@ -604,7 +604,7 @@ class LiveChecksTest {
     @Test
     fun `hanger mode tolerates the hook at the top edge up to its own limit (C2)`() {
         val hanger = TOP_FLAT.copy(mode = CaptureMode.HANGER)
-        val hookLimit = CaptureRules.Ios.HANGER_TOP_CUT_OFF_ABOVE_EDGE_CONTACT_SHARE
+        val hookLimit = CaptureRules.Mask.HANGER_TOP_CUT_OFF_ABOVE_EDGE_CONTACT_SHARE
         val hook = maskReport(maskFrame(0, edgeContact = EdgeContact(top = hookLimit)), hanger)
         val tooMuch = maskReport(maskFrame(0, edgeContact = EdgeContact(top = hookLimit + SHARE_STEP)), hanger)
         val flat = maskReport(maskFrame(0, edgeContact = EdgeContact(top = hookLimit)))
@@ -616,7 +616,7 @@ class LiveChecksTest {
 
     @Test
     fun `a mask item under the minimum instance share counts as no item`() {
-        val minimum = CaptureRules.Ios.MIN_INSTANCE_AREA_SHARE
+        val minimum = CaptureRules.Mask.MIN_INSTANCE_AREA_SHARE
         val tiny = maskReport(maskFrame(0, box = squareBox(0.01), maskAreaShare = minimum - SHARE_STEP / 10))
         val found = maskReport(maskFrame(0, box = squareBox(0.01), maskAreaShare = minimum))
 

@@ -6,7 +6,8 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class MaskCadenceTest {
-    private val interval = CaptureRules.Ios.MASK_INTERVAL_MS.toLong()
+    private val interval = CaptureRules.Mask.INTERVAL_MS.toLong()
+    private val hotInterval = CaptureRules.Mask.HOT_INTERVAL_MS.toLong()
 
     @Test
     fun `the first frame starts a run`() {
@@ -39,7 +40,7 @@ class MaskCadenceTest {
         cadence.tryStart(0, isHot = true)
         cadence.finish()
 
-        assertFalse(cadence.tryStart(MaskCadence.HOT_INTERVAL_MS - 1, isHot = true))
-        assertTrue(cadence.tryStart(MaskCadence.HOT_INTERVAL_MS, isHot = true))
+        assertFalse(cadence.tryStart(hotInterval - 1, isHot = true))
+        assertTrue(cadence.tryStart(hotInterval, isHot = true))
     }
 }

@@ -138,6 +138,6 @@ data class CaptureHarnessArgs(
         private fun maskCadence(
             value: String?,
             isSweep: Boolean,
-        ): Int = value?.toIntOrNull() ?: if (isSweep) CaptureRules.Ios.MASK_INTERVAL_MS else 0
+        ): Int = value?.toIntOrNull() ?: if (isSweep) CaptureRules.Mask.INTERVAL_MS else 0
     }
 }

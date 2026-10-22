@@ -291,14 +291,13 @@ struct Judge {
     let family: String
     let mode: String
 
+    /// Both apps measure the item from a foreground mask the same way (iOS Vision; Android LiteRT,
+    /// owner's mask decision 2026-10-22), so one expectation serves both: an item is found when its mask
+    /// covers `ios.minInstanceAreaShare`. `platform` stays empty; the field remains for a future
+    /// difference.
     func expectation(_ intent: Intent, measure: FrameMeasure) throws -> Expectation {
-        let base = try outcome(intent, itemFound: intent.itemPresent, measure: measure)
-        let ios = try outcome(intent, itemFound: iosFindsItem(intent), measure: measure)
-        let shared = platformExpectation(base)
-        var platform: [String: PlatformExpectation] = [:]
-        if ios != base {
-            platform["ios"] = platformExpectation(ios)
-        }
+        let shared = platformExpectation(try outcome(intent, itemFound: iosFindsItem(intent), measure: measure))
+        let platform: [String: PlatformExpectation] = [:]
         return Expectation(
             shutter: shared.shutter, hint: shared.hint, lockReason: shared.lockReason,
             maxUnlockMs: shared.maxUnlockMs, anywayAtMs: shared.anywayAtMs, anywayReason: shared.anywayReason,

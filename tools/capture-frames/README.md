@@ -288,10 +288,11 @@ by at most 0.5 × it on every other frame.
 - `anywayReason`: present when locked, the reason line under "Take photo anyway" (brief §6):
   `surface-tip` for no item, `try-hanger-mode` for a flat cut-off where the family offers hanger mode,
   else the blocking hint's test ID. Both apps' results logs write the same value as `anywayReason`.
-- `platform`: per-platform overrides, `{}` when both platforms expect the same. Today the only
-  one is `ios` on a frame whose drawn item covers less than `ios.minInstanceAreaShare`, such as
-  `small-item` too small. iOS then finds no instance and locks with `no-item`, while the stored
-  box still gives Android `too-small`.
+- `platform`: per-platform overrides, `{}` when both platforms expect the same. Today it is always
+  `{}`: both apps measure the item from a foreground mask the same way (iOS Vision, Android LiteRT;
+  owner's mask decision 2026-10-22), so a drawn item whose mask covers less than
+  `ios.minInstanceAreaShare`, such as `small-item` too small, locks with `no-item` on both. Until
+  Android's mask lane merges, Android still reads ML Kit boxes there and fails those sets, by design.
 
 ```json
 {
@@ -299,23 +300,6 @@ by at most 0.5 × it on every other frame.
   "hint": "cap-hint-cut-off-left",
   "lockReason": "cut-off",
   "platform": {},
-  "shutter": "locked"
-}
-```
-
-```json
-{
-  "anywayAtMs": 10000,
-  "hint": "cap-hint-too-small",
-  "lockReason": "too-small",
-  "platform": {
-    "ios": {
-      "anywayAtMs": 10000,
-      "hint": "cap-hint-no-item",
-      "lockReason": "no-item",
-      "shutter": "locked"
-    }
-  },
   "shutter": "locked"
 }
 ```

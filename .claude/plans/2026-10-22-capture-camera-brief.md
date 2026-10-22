@@ -417,11 +417,11 @@ Where the platforms differ, the expectation is per platform.
 | Case | Class | What the simulator run asserts |
 |---|---|---|
 | C1 T-shirt flat | sim | `top` flat: unlock ≤ 3 s, ring, auto-capture, review |
-| C2 hanger | sim | hanger mode unlocks. iOS: hook touching the top edge up to 10 % still unlocks. Android: any top contact locks (`cut-off-top`) |
+| C2 hanger | sim | hanger mode unlocks; a hook touching the top edge up to 10 % still unlocks (both apps measure the mask the same way since the owner's mask decision, 2026-10-22; Android's ML Kit box rule "any top contact locks" is gone) |
 | C3 mirror selfie (worn) | sim (rules on keypoint files); live pose on real bodies device-only | the same frame touching the edges unlocks in worn mode and locks in flat mode. Body check (Q-A b): the whole-body synthetic frame unlocks; each variant missing a required part locks with that family's `cap-hint-body-*`, anyway at 10.0 ± 0.5 s; `generic` worn never shows a body hint |
 | C4 shoes | sim | side-view guide; pair step (Q-D) |
 | C5 small item | sim | `small-item` min 0.015 unlocks a ring-sized item; "Move closer" below it |
-| C6 bag strap | sim | iOS: strap grazing ≤ 4 % unlocks. Android: box touches → locked `cut-off-*` (documented platform difference) |
+| C6 bag strap | sim | a strap grazing an edge ≤ 4 % unlocks on both apps (mask measure, owner's mask decision 2026-10-22; the former Android box difference is gone) |
 | C7 back photo | sim | "Different" → back guide, `cap-step-back`, skip and capture both work |
 | C8 dark on dark | sim (the detector on real fabric: device-only) | two strict sets per base: `dark-on-dark` (true mask) unlocks; `dark-on-dark-weak` (no instance) locks with `no-item` and anyway at 10.0 ± 0.5 s with the surface tip |
 | C9 white on white | sim (as C8) | same as C8: `white-on-white`, `white-on-white-weak` |

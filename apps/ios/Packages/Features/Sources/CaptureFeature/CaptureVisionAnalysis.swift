@@ -80,7 +80,8 @@
   nonisolated struct CaptureForeground: Sendable {
     let measure: CaptureMaskMeasure
     let instanceCount: Int
-    let otherBoxes: [NormalizedRect]
+    /// The other instances, largest first (`NormalizedRect` alone is ambiguous next to Vision's).
+    let others: [CaptureInstance]
   }
 
   /// Vision requests on one image handler.
@@ -105,7 +106,7 @@
       return CaptureForeground(
         measure: measure,
         instanceCount: observation.allInstances.count,
-        otherBoxes: instances.dropFirst().map(\.box)
+        others: Array(instances.dropFirst())
       )
     }
 
@@ -155,7 +156,7 @@
           maskAreaShare: $0.measure.maskAreaShare,
           edgeContact: $0.measure.edgeContact,
           instanceCount: $0.instanceCount,
-          otherBoxes: $0.otherBoxes,
+          otherBoxes: $0.others.map(\.box),
           sharpness: 0
         )
       }

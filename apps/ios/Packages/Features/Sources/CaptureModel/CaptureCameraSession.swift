@@ -70,6 +70,9 @@ nonisolated public struct CaptureCameraOutput: Equatable, Sendable {
   public let isAnywayVisible: Bool
   public let anywayReason: CaptureAnywayReason?
   public let guide: CaptureGuide
+  /// The live outline of the item (capture brief "Live outline"); nil before an item is found and after
+  /// it is lost, when the screen shows the faint guide instead.
+  public let outline: CaptureLiveOutlineState?
 
   /// Volume and Camera Control buttons act as the shutter only now (§7 "Hardware shutter").
   public var isHardwareShutterEnabled: Bool {
@@ -95,6 +98,7 @@ nonisolated public struct CaptureCameraSession: Sendable {
   /// shows it again.
   private var hintBeforeCapture: CaptureHint?
   private var isFallback = false
+  private var liveOutline = CaptureLiveOutline()
 
   public init(setup: CaptureCameraSetup, screenReaderOn: Bool = false, speechToggledOn: Bool = false) {
     self.setup = setup
@@ -114,7 +118,8 @@ nonisolated public struct CaptureCameraSession: Sendable {
       hint: hints.shown,
       isAnywayVisible: isAnywayVisible,
       anywayReason: anywayReason,
-      guide: setup.guide
+      guide: setup.guide,
+      outline: liveOutline.state
     )
   }
 
@@ -126,6 +131,7 @@ nonisolated public struct CaptureCameraSession: Sendable {
   /// The camera delivers frames: warming up, the guide shows, the anyway timer starts.
   public mutating func cameraReady(atMs now: Int) -> [CaptureEffect] {
     rules.reset()
+    liveOutline.reset()
     lock.start()
     anyway.start(atMs: now)
     hints.clear()
@@ -148,6 +154,7 @@ nonisolated public struct CaptureCameraSession: Sendable {
   /// To the background: camera and analysis stop, nothing is half-saved.
   public mutating func backgrounded() {
     rules.reset()
+    liveOutline.reset()
     lock.stop()
     anyway.stop()
     hints.clear()
@@ -164,6 +171,10 @@ nonisolated public struct CaptureCameraSession: Sendable {
       return []
     case .warmingUp, .locked, .unlocked, .cooldown:
       break
+    }
+    // The outline follows every new mask, also one that arrives between evaluations.
+    if let outlines = observation.outlines {
+      liveOutline.observe(outlines)
     }
     if let lastEvaluationAtMs, now - lastEvaluationAtMs < CaptureRules.Evaluation.intervalMs {
       return []
@@ -247,6 +258,7 @@ nonisolated public struct CaptureCameraSession: Sendable {
     guard mode != setup.mode else { return }
     setup = setup.with(mode: mode)
     rules.reset(context: setup.checkContext)
+    liveOutline.reset()
     lock.modeChanged()
   }
 

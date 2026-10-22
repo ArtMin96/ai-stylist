@@ -165,6 +165,9 @@ nonisolated public struct CaptureObservation: Equatable, Sendable {
   /// Angle between gravity and the phone's back axis, in degrees; nil when not a phone.
   public let tiltDegrees: Double?
   public let bodyPose: CaptureBodyPose
+  /// The live outline's input (capture brief "Live outline"): the item outlines of the newest mask. Nil
+  /// when the platform draws no outline for this observation (an imported still).
+  public let outlines: CaptureMaskOutlines?
 
   public init(
     timestampMs: Int,
@@ -174,7 +177,8 @@ nonisolated public struct CaptureObservation: Equatable, Sendable {
     clippedShare: Double = 0,
     deviceMotion: CaptureDeviceMotion? = nil,
     tiltDegrees: Double? = nil,
-    bodyPose: CaptureBodyPose = .notRun
+    bodyPose: CaptureBodyPose = .notRun,
+    outlines: CaptureMaskOutlines? = nil
   ) {
     self.timestampMs = timestampMs
     self.maskTimestampMs = maskTimestampMs
@@ -184,5 +188,6 @@ nonisolated public struct CaptureObservation: Equatable, Sendable {
     self.deviceMotion = deviceMotion
     self.tiltDegrees = tiltDegrees
     self.bodyPose = bodyPose
+    self.outlines = outlines
   }
 }

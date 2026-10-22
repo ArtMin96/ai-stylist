@@ -1,6 +1,7 @@
 # Proposal: add `just capture-frames` to the doc 15 §5 recipe catalog (human-applied)
 
-> Status: PROPOSED (2026-10-22). Branch `feat/capture-camera-harness`, for the guided capture
+> Status: `capture-frames` row APPLIED (2026-10-22, owner-approved); the three `capture-sim` rows are
+> applied with the capture camera app change. Originally PROPOSED (2026-10-22). Branch `feat/capture-camera-harness`, for the guided capture
 > camera's harness (brief `.claude/plans/2026-10-22-capture-camera-brief.md` §11, §15 step 5).
 
 **Why:** this branch adds the recipes `capture-frames`, `capture-sim-ios`, `capture-sim-android` and

@@ -521,7 +521,7 @@ class CaptureCameraSessionTest {
         // count once, so the unlock comes at 800, the first evaluation that reads the mask at 750.
         harness.playUntil(2_000) { now -> maskFrame(now, maskAt(now, maskEveryMs), box = squareBox(0.3)) }
 
-        assertEquals(UNLOCK_ON_THIRD_MASK_MS, harness.timeOf(CaptureEffect.Haptic(HapticKind.UNLOCK)))
+        assertEquals(unlockOnThirdMaskMs, harness.timeOf(CaptureEffect.Haptic(HapticKind.UNLOCK)))
     }
 
     // Live outline
@@ -575,7 +575,7 @@ class CaptureCameraSessionTest {
     }
 
     /** The first 100 ms evaluation after the mask at 750 ms. */
-    private val UNLOCK_ON_THIRD_MASK_MS = 800L
+    private val unlockOnThirdMaskMs = 800L
 
     private fun CameraSnapshot.lockReasonHint(): CaptureHint? = hint?.takeIf { it.lockReason != null }
 }

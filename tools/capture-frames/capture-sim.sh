@@ -214,8 +214,8 @@ run_android() {
   adb="$(android_adb)"
   "$ANDROID_FRAMES" push "$FRAMES_DIR"
   mkdir -p "$raw"
-  log "Android sweep: every frame set, stored boxes and keypoints (the scored run)"
-  "$ANDROID_FRAMES" sweep "$raw/stored" "" -e captureBoxes stored -e capturePose stored
+  log "Android sweep: every frame set, stored masks and keypoints (the scored run)"
+  "$ANDROID_FRAMES" sweep "$raw/stored" "" -e captureMasks stored -e capturePose stored
   cp "$raw/stored/capture-results.jsonl" "$raw/sweep.jsonl"
   : >"$raw/screen-reader.jsonl"
   for set in $READER_SETS; do
@@ -223,8 +223,8 @@ run_android() {
     "$ANDROID_FRAMES" sweep "$raw/reader-$set" "$set" -e captureScreenReader 1
     cat "$raw/reader-$set/capture-results.jsonl" >>"$raw/screen-reader.jsonl"
   done
-  log "Android sweep: live ML Kit detection and pose (information only)"
-  if "$ANDROID_FRAMES" sweep "$raw/live" "" -e captureBoxes live -e capturePose live; then
+  log "Android sweep: the live LiteRT segmenter and ML Kit pose (information only)"
+  if "$ANDROID_FRAMES" sweep "$raw/live" "" -e captureMasks live -e capturePose live; then
     android_live_info "$run"
   fi
   "$adb" shell am force-stop "$APP_ID"
@@ -249,13 +249,13 @@ android_network() {
   "$adb" shell svc data "$1"
 }
 
-# Scores the live ML Kit sweep apart and writes its numbers as a note for summary.md.
+# Scores the live-model sweep apart and writes its numbers as a note for summary.md.
 android_live_info() {
   local run="$1" scratch="$1/raw/android/live-score" line
   line="$(node "$TOOL_DIR/capture-score.mjs" --platform android --frames "$FRAMES_DIR" \
     --results "$run/raw/android/live/capture-results.jsonl" --out "$scratch" || true)"
   mkdir -p "$run/results"
-  printf '### Live ML Kit sweep (information only)\n\nThe scored run uses stored boxes and keypoints. With live ML Kit object detection and pose on the emulator: %s Live detection quality is device-only.\n' \
+  printf '### Live-model sweep (information only)\n\nThe scored run uses stored masks and keypoints. With the live LiteRT segmenter and ML Kit pose on the emulator: %s Live detection quality is device-only.\n' \
     "${line#capture-score android: }" >"$run/results/android.info.md"
 }
 

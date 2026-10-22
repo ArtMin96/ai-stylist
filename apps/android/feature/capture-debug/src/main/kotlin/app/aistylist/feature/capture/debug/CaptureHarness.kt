@@ -5,6 +5,7 @@ import app.aistylist.contracts.kernel.CaptureMode
 import app.aistylist.feature.capture.CaptureViewModel
 import app.aistylist.feature.capture.camera.CaptureCameraView
 import app.aistylist.feature.capture.camera.CapturePhotoStore
+import app.aistylist.feature.capture.camera.LiteRtGarmentSegmenter
 import app.aistylist.feature.capture.domain.CameraSnapshot
 import app.aistylist.feature.capture.domain.CaptureClock
 import app.aistylist.feature.capture.domain.CaptureObservationSource
@@ -21,7 +22,7 @@ import java.io.File
  * where `apps/android/tools/capture-frames.sh push` copies `artifacts/capture-camera/frames/`.
  */
 class CaptureHarness(
-    context: Context,
+    private val context: Context,
     val args: CaptureHarnessArgs,
     private val clock: CaptureClock,
     private val dispatcher: CoroutineDispatcher = Dispatchers.Default,
@@ -38,7 +39,9 @@ class CaptureHarness(
     /** The frames index, read on first use; null when no frames were pushed. */
     val index: FrameIndex? by lazy { FrameIndex.load(framesDir) }
 
-    val analysis: HarnessAnalysis? by lazy { index?.let { HarnessAnalysis(it, args, files, dispatcher) } }
+    val analysis: HarnessAnalysis? by lazy {
+        index?.let { HarnessAnalysis(it, args, files, dispatcher) { LiteRtGarmentSegmenter.load(context) } }
+    }
 
     private var camera: HarnessCamera? = null
     private var photos: CapturePhotoStore? = null
@@ -135,6 +138,8 @@ class CaptureHarness(
                         clock = "real",
                         detector = probe?.boxes ?: BoxSource.AUTO,
                         pose = probe?.pose ?: PoseSource.AUTO,
+                        masks = MaskPlay(args.masks),
+                        drawnBefore = snapshot.outline,
                     ),
                     source.set,
                     frame.segmentIndex,
@@ -143,6 +148,7 @@ class CaptureHarness(
                     recorder = it
                 }
         current.record.onState(StepState.of(snapshot), clock.nowMs())
+        current.record.onOutline(snapshot.outline, frame.reference, frame.offset, clock.nowMs())
     }
 
     private class InteractiveRecorder(

@@ -8,6 +8,10 @@ plugins {
 
 android {
     namespace = "app.aistylist.feature.capture"
+    // The live-outline parity fixture both apps test against (tools/capture-frames/parity/README.md).
+    sourceSets {
+        getByName("test") { resources.directories.add("../../../../tools/capture-frames/parity") }
+    }
 }
 
 dependencies {
@@ -28,6 +32,9 @@ dependencies {
     // Bundled models: no Play-services download and no Play-services API call (capture brief C31).
     implementation(libs.mlkit.detection.objects)
     implementation(libs.mlkit.detection.pose)
+    // The garment segmenter behind the live outline: LiteRT 1.4.2, CPU (XNNPACK), no Play services
+    // and no network (docs/adr/0013-on-device-garment-outline-android.md).
+    implementation(libs.litert)
     constraints {
         // ML Kit's POMs ask for okhttp 3.0.0 (and okio 1.6.0 through it), both with known advisories
         // (`just security-scan`); hold them at the catalog's okhttp, which the app already resolves.
@@ -36,4 +43,5 @@ dependencies {
 
     testImplementation(libs.kotlinx.coroutines.test)
     testImplementation(libs.turbine)
+    testImplementation(libs.kotlinx.serialization.json)
 }

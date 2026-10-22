@@ -1,5 +1,7 @@
 package app.aistylist.feature.capture.ui
 
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -50,6 +52,7 @@ import app.aistylist.core.designsystem.AppTheme
 import app.aistylist.core.designsystem.generated.AppColorRole
 import app.aistylist.core.designsystem.generated.AppIconName
 import app.aistylist.core.designsystem.generated.AppIconSize
+import app.aistylist.core.designsystem.generated.AppMotion
 import app.aistylist.core.designsystem.generated.ButtonSize
 import app.aistylist.core.designsystem.generated.ButtonVariant
 import app.aistylist.feature.capture.R
@@ -248,15 +251,25 @@ private fun PreviewArea(
                 ),
     ) {
         preview(Modifier.fillMaxSize())
+        // The family guide (faint) until the item is outlined; then transparent, its node and tag kept.
+        // It cross-fades back over the DESIGN.md reduced-motion crossfade when the item is lost.
+        val guideAlpha by animateFloatAsState(
+            targetValue = if (snapshot?.outline != null) 0f else 1f,
+            animationSpec = tween(AppMotion.Reduced.duration.toInt()),
+            label = "guide-alpha",
+        )
         GuideOutline(
             pathData = context.guidePath,
             isSolid = isSolid,
+            isFaint = true,
+            alpha = guideAlpha,
             modifier =
                 Modifier
                     .fillMaxSize()
                     .testTag(context.guideTestTag)
                     .semantics { contentDescription = previewLabel },
         )
+        ItemOutline(live = snapshot?.outline, isSolid = isSolid, modifier = Modifier.fillMaxSize())
         stepLabel(context, model.underwearPick)?.let { (text, tag) ->
             StepPill(
                 text = stringResource(text),

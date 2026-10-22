@@ -28,6 +28,12 @@ data class CameraSnapshot(
     val isAnywayVisible: Boolean,
     /** The reason line, live from the current lock reason; null while hidden or unlocked. */
     val anywayReason: AnywayReason?,
+    /**
+     * The live outline of the item (64 points, normalised, clockwise), drawn over the preview while
+     * the camera judges frames; null before an item is found, after it is lost, and while capturing
+     * or cooling down.
+     */
+    val outline: LiveOutline? = null,
 ) {
     val shutter: ShutterState
         get() =
@@ -67,6 +73,8 @@ class CaptureCameraSession(
     private var previous: CaptureObservation? = null
     private var lastReport: CheckReport? = null
     private var lastEvaluationAtMs: Long? = null
+    private var outline = OutlineTracker()
+    private var lastOutlineMaskMs: Long? = null
 
     val snapshot: CameraSnapshot
         get() =
@@ -78,6 +86,7 @@ class CaptureCameraSession(
                 lockReason = lockHint?.lockReason,
                 isAnywayVisible = isAnywayVisible,
                 anywayReason = if (isAnywayVisible) anywayReasonFor(lockHint, context) else null,
+                outline = outline.live.takeIf { lock.showsOutline },
             )
 
     private val isAnywayVisible: Boolean get() = timer.isShown && lock.acceptsAnyway
@@ -95,6 +104,8 @@ class CaptureCameraSession(
     fun submit(observation: CaptureObservation): List<CaptureEffect> =
         step { now ->
             latest = observation
+            // While capturing or cooling down no outline shows, and none is kept for the next item.
+            if (lock.showsOutline) observation.mask?.let(::trackOutline) else outline = OutlineTracker()
             evaluateIfDue(now)
         }
 
@@ -114,6 +125,8 @@ class CaptureCameraSession(
         step {
             lock = lock.onCaptureFinished(context.kind)
             timer = AnywayTimer()
+            // The captured item's outline is done: the next item starts a new one.
+            outline = OutlineTracker()
             emptyList()
         }
 
@@ -132,6 +145,8 @@ class CaptureCameraSession(
         hints = HintPresenter()
         speech = speech.cleared()
         latest = null
+        outline = OutlineTracker()
+        lastOutlineMaskMs = null
     }
 
     /** Back from the background: like camera ready (warming up, guide, counters and anyway timer restart). */
@@ -190,6 +205,13 @@ class CaptureCameraSession(
         return effects + speak(shownBefore, now)
     }
 
+    /** The outline follows each new mask once; a reused mask changes nothing (brief §17 step 10). */
+    private fun trackOutline(mask: MaskObservation) {
+        if (mask.timestampMs == lastOutlineMaskMs) return
+        lastOutlineMaskMs = mask.timestampMs
+        outline = outline.update(mask.outlineCandidates)
+    }
+
     private fun startCamera(nowMs: Long) {
         lock = LockState.WarmingUp
         restartAnyway(nowMs)
@@ -199,6 +221,8 @@ class CaptureCameraSession(
         previous = null
         lastReport = null
         lastEvaluationAtMs = null
+        outline = OutlineTracker()
+        lastOutlineMaskMs = null
     }
 
     private fun restartAnyway(nowMs: Long) {
@@ -216,13 +240,20 @@ class CaptureCameraSession(
         val last = lastEvaluationAtMs
         if (last != null && nowMs - last < CaptureRules.Evaluation.INTERVAL_MS) return emptyList()
 
-        val report = evaluateLiveChecks(observation, previous, context, lastReport?.isTiltHintOn ?: false)
+        val report =
+            evaluateLiveChecks(
+                observation,
+                previous,
+                context,
+                wasTiltHintOn = lastReport?.isTiltHintOn ?: false,
+                previousMotion = lastReport?.maskMotion,
+            )
         latest = null
         previous = observation
         lastReport = report
         lastEvaluationAtMs = nowMs
         val wasUnlocked = lock is LockState.Unlocked
-        val effects = applyStep(lock.onEvaluation(report, nowMs))
+        val effects = applyStep(lock.onEvaluation(report, nowMs, observation.mask?.timestampMs))
         hints =
             if (!wasUnlocked && lock is LockState.Unlocked) {
                 // The unlock ends the guide at once (brief §5); an advisory tip may show while the ring
@@ -263,6 +294,10 @@ class CaptureCameraSession(
         return listOfNotNull(release.spoken?.let { CaptureEffect.Speak(it.hint) })
     }
 }
+
+/** The outline shows while frames are judged: not while capturing, cooling down or idle. */
+private val LockState.showsOutline: Boolean
+    get() = this is LockState.WarmingUp || this is LockState.Locked || this is LockState.Unlocked
 
 private val LockState.phase: LockPhase
     get() =

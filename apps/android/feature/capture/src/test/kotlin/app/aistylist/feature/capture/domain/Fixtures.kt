@@ -89,3 +89,29 @@ internal class FakeClock(
         now += ms
     }
 }
+
+/** A mask-path frame: the segmenter's item [box] (null: empty mask) from the mask analysed at [maskAtMs]. */
+internal fun maskFrame(
+    timestampMs: Long,
+    maskAtMs: Long = timestampMs,
+    box: NormalizedRect? = GOOD_BOX,
+    edgeContact: EdgeContact = EdgeContact(),
+    maskAreaShare: Double = box?.areaShare ?: 0.0,
+    otherBoxes: List<NormalizedRect> = emptyList(),
+    device: DeviceSample? = null,
+): CaptureObservation =
+    CaptureObservation(
+        timestampMs = timestampMs,
+        itemBoxes = emptyList(),
+        sharpness = SHARP,
+        light = GOOD_LIGHT,
+        device = device,
+        mask =
+            MaskObservation(
+                timestampMs = maskAtMs,
+                item = box?.let { MaskMeasure(it, maskAreaShare, edgeContact) },
+                instanceCount = if (box == null) 0 else 1 + otherBoxes.size,
+                otherBoxes = otherBoxes,
+                outlineCandidates = emptyList(),
+            ),
+    )

@@ -306,8 +306,9 @@ by at most 0.5 × it on every other frame.
 
 ### `frame.box.json`
 
-The instances of the stored mask, largest first. These are the boxes the Android harness reads when
-ML Kit cannot run on the emulator. The iOS reader pairs them with the mask PNG for the instance
+The instances of the stored mask, largest first. The Android harness reads them only on the box path
+(`captureMasks=none`, the camera's fallback when the segmenter cannot load); by default it reads the
+mask PNGs, like iOS. The iOS reader pairs them with the mask PNG for the instance
 count, and feeds every box after the first to the covered rule. `source` is
 `vision-foreground-instance-mask`, or `ground-truth` for the hard cases' drawn masks. `box` is normalised, with the origin at the top left. `edgeContact` follows the
 iOS rule: the share of each edge whose 2 % band holds mask pixels.
@@ -352,10 +353,13 @@ platform:
    unset, on the iPhone 18 Pro on the newest iOS runtime (or `IOS_SIMULATOR_ID`). Android:
    `just android-run`, which boots the AVD `aistylist-dev` when no device is online, then
    `apps/android/tools/capture-frames.sh push`. No Gradle build runs after that point.
-2. Sweeps every frame set on the harness's virtual clock and pulls `capture-results.jsonl`. iOS plays
-   masks at the phone's cadence (`-captureMaskCadenceMs`, the registry's `ios.maskIntervalMs`):
-   observations every evaluation interval, a new mask only every 250 ms. Android
-   is scored on stored boxes and keypoints. A second sweep with live ML Kit is information only.
+2. Sweeps every frame set on the harness's virtual clock and pulls `capture-results.jsonl`. Both apps
+   play masks at the phone's cadence: observations every evaluation interval, a new mask only every
+   250 ms (iOS `-captureMaskCadenceMs`, Android `-e captureMaskCadenceMs`; 0 gives every frame a fresh
+   mask), so the sweeps exercise the steady rule's mask timestamps. Android is scored on stored masks
+   and keypoints, read with the iOS mask measure. A second Android sweep with the live LiteRT
+   segmenter on every frame PNG (and live ML Kit pose) is information only; it also pulls
+   `capture-segmenter.jsonl` (latency and mask IoU per image).
 3. Sweeps the locked sets `top-flat-01-jitter`, `top-flat-01-cut-top`, `top-flat-empty` and
    `top-worn-shoulders-cut` again with the screen-reader flag.
 4. Runs every flow in `e2e/capture/` in light, then in dark (`simctl ui appearance`,

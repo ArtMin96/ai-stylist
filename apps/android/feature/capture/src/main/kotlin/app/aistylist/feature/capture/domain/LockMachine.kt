@@ -36,11 +36,13 @@ sealed interface LockState {
 
     /**
      * Locked. [hint] is the last failing blocking check's hint (null before the first failure);
-     * [passStreak] counts consecutive passing evaluations towards the unlock.
+     * [passStreak] counts consecutive passing evaluations towards the unlock, each of a distinct mask:
+     * [lastPassingMaskMs] is the mask of the last one counted (null without mask times).
      */
     data class Locked(
         val hint: CaptureHint?,
         val passStreak: Int = 0,
+        val lastPassingMaskMs: Long? = null,
     ) : LockState
 
     /**
@@ -85,18 +87,22 @@ data class LockStep(
 internal val LockState.acceptsAnyway: Boolean
     get() = this is LockState.WarmingUp || this is LockState.Locked || this is LockState.Unlocked
 
-/** Applies one evaluated frame taken at [nowMs]. */
+/**
+ * Applies one evaluated frame taken at [nowMs]. [maskTimestampMs] is the time of the mask the report
+ * read (null: a fresh detector result on every evaluation, the box path).
+ */
 fun LockState.onEvaluation(
     report: CheckReport,
     nowMs: Long,
+    maskTimestampMs: Long? = null,
 ): LockStep =
     when (this) {
         LockState.Idle, is LockState.Capturing -> LockStep(this)
 
         // The first evaluation leaves warming-up: locked, or already counting when it passes.
-        LockState.WarmingUp -> LockState.Locked(hint = null).afterEvaluation(report, nowMs)
+        LockState.WarmingUp -> LockState.Locked(hint = null).afterEvaluation(report, nowMs, maskTimestampMs)
 
-        is LockState.Locked -> afterEvaluation(report, nowMs)
+        is LockState.Locked -> afterEvaluation(report, nowMs, maskTimestampMs)
 
         is LockState.Unlocked -> afterEvaluation(report, nowMs)
 
@@ -157,13 +163,18 @@ private fun startCapture(
 private fun LockState.Locked.afterEvaluation(
     report: CheckReport,
     nowMs: Long,
+    maskTimestampMs: Long?,
 ): LockStep {
     if (!report.passes) return LockStep(LockState.Locked(report.blockingHint))
+    // A pass that reads the same mask as the last counted one adds no evidence (a mask every 250 ms,
+    // evaluations every 100 ms): the streak holds, so an unlock needs that many distinct masks, never
+    // one chance-still mask read three times (the iOS ShutterLock rule).
+    if (maskTimestampMs != null && maskTimestampMs == lastPassingMaskMs) return LockStep(this)
     val streak = passStreak + 1
     return if (streak >= CaptureRules.Lock.UNLOCK_AFTER_PASSING_EVALUATIONS) {
         LockStep(LockState.Unlocked(lastEvaluationAtMs = nowMs), listOf(CaptureEffect.Haptic(HapticKind.UNLOCK)))
     } else {
-        LockStep(copy(passStreak = streak))
+        LockStep(copy(passStreak = streak, lastPassingMaskMs = maskTimestampMs))
     }
 }
 

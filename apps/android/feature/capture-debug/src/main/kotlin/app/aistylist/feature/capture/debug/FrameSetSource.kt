@@ -24,6 +24,8 @@ data class ShownFrame(
     val offset: FrameOffset,
     val segmentIndex: Int,
     val segmentStartMs: Long,
+    /** The stored item mask the results log scores the drawn outline against. */
+    val reference: OutlineReference? = null,
 )
 
 /**
@@ -61,7 +63,14 @@ class FrameSetSource(
                     val observation =
                         analysis.use { analyzer ->
                             val offset = analyzer.offset(segment, frameNumber)
-                            shownFrame.value = ShownFrame(analyzer.bitmap(segment), offset, index, startMs)
+                            shownFrame.value =
+                                ShownFrame(
+                                    analyzer.bitmap(segment),
+                                    offset,
+                                    index,
+                                    startMs,
+                                    analyzer.outlineReference(segment),
+                                )
                             val withPose = poseDetection.value && set.mode == CaptureMode.WORN
                             analyzer.observe(segment, offset, clock.nowMs(), withPose)
                         }

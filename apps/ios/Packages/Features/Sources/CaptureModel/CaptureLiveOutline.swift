@@ -104,15 +104,44 @@ nonisolated public struct CaptureLiveOutline: Sendable {
       return
     }
     let chosen = Self.choose(candidates, largest: largest, drawn: drawn).points
-    guard CaptureOutlineGeometry.intersectionOverUnion(chosen, drawn) >= CaptureOutlineSpec.snapBelowIou else {
-      snap(to: chosen)
-      return
-    }
+    // Position and shape blend apart, so a moving item keeps its shape: centroid = vertex mean, shape = the
+    // points around it, the new shape cyclically aligned to the drawn shape.
     let alpha = CaptureOutlineSpec.emaAlpha
-    let blended = zip(CaptureOutlineGeometry.aligned(chosen, to: drawn), drawn).map { new, old in
-      CaptureOutlinePoint(x: alpha * new.x + (1 - alpha) * old.x, y: alpha * new.y + (1 - alpha) * old.y)
+    let new = Shape(chosen)
+    let old = Shape(drawn)
+    let shape = CaptureOutlineGeometry.aligned(new.points, to: old.points)
+    var centre = new.centroid
+    if CaptureOutlineGeometry.intersectionOverUnion(chosen, drawn) >= CaptureOutlineSpec.snapBelowIou {
+      centre = CaptureOutlinePoint(
+        x: alpha * new.centroid.x + (1 - alpha) * old.centroid.x,
+        y: alpha * new.centroid.y + (1 - alpha) * old.centroid.y)
+    } else if CaptureOutlineGeometry.intersectionOverUnion(shape, old.points)
+      < CaptureOutlineSpec.snapKeepsShapeAtLeastIou
+    {
+      snap(to: chosen)  // another shape: replaced
+      return
+    } else {
+      snapCount += 1  // the same shape moved far: the position jumps, the shape still blends
+    }
+    let blended = zip(shape, old.points).map { new, old in
+      CaptureOutlinePoint(
+        x: centre.x + alpha * new.x + (1 - alpha) * old.x, y: centre.y + alpha * new.y + (1 - alpha) * old.y)
     }
     state = CaptureLiveOutlineState(points: blended, snapCount: snapCount)
+  }
+
+  /// An outline split into its centroid (the vertex mean) and its points relative to it.
+  private struct Shape {
+    let centroid: CaptureOutlinePoint
+    let points: [CaptureOutlinePoint]
+
+    init(_ outline: [CaptureOutlinePoint]) {
+      let count = Double(max(1, outline.count))
+      let centroid = CaptureOutlinePoint(
+        x: outline.map(\.x).reduce(0, +) / count, y: outline.map(\.y).reduce(0, +) / count)
+      self.centroid = centroid
+      points = outline.map { CaptureOutlinePoint(x: $0.x - centroid.x, y: $0.y - centroid.y) }
+    }
   }
 
   private mutating func snap(to points: [CaptureOutlinePoint]) {

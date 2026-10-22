@@ -26,6 +26,7 @@ struct CaptureOutlineParityTests {
       keepAtLeastIou: CaptureOutlineSpec.keepAtLeastIou,
       switchAtAreaRatio: CaptureOutlineSpec.switchAtAreaRatio,
       snapBelowIou: CaptureOutlineSpec.snapBelowIou,
+      snapKeepsShapeAtLeastIou: CaptureOutlineSpec.snapKeepsShapeAtLeastIou,
       emaAlpha: CaptureOutlineSpec.emaAlpha,
       clearAfterMissedUpdates: CaptureOutlineSpec.clearAfterMissedUpdates,
       iouGridCells: CaptureOutlineSpec.iouGridCells
@@ -52,11 +53,49 @@ struct CaptureOutlineParityTests {
     }
   }
 
+  @Test("the static IoU reads the filled outer boundary, not the raw mask, as the reference does")
+  func staticIouReference() throws {
+    let cases = fixture.contour.filter { $0.staticIouFilled != nil }
+    #expect(cases.contains { ($0.staticIouRaw ?? 1) < ($0.staticIouFilled ?? 0) - 0.05 })
+    for testCase in cases {
+      let mask = try #require(testCase.mask)
+      let outline = try #require(CaptureOutlineContour.outline(of: mask))
+      let drawn = CaptureOutlineGeometry.rasterise(outline, width: mask.width, height: mask.height)
+      let filled = CaptureModelTests.intersectionOverUnion(drawn, filledLargestComponent(mask))
+      let raw = CaptureOutlineGeometry.intersectionOverUnion(outline, mask: mask)
+      #expect(abs(filled - (testCase.staticIouFilled ?? .nan)) <= 1e-6, "\(testCase.name): filled \(filled)")
+      #expect(abs(raw - (testCase.staticIouRaw ?? .nan)) <= 1e-6, "\(testCase.name): raw \(raw)")
+    }
+  }
+
   @Test("polygon IoU matches the reference")
   func intersectionOverUnion() {
     for testCase in fixture.iou {
       let value = CaptureOutlineGeometry.intersectionOverUnion(outlinePoints(testCase.a), outlinePoints(testCase.b))
       #expect(abs(value - testCase.expected) <= 1e-6, "\(testCase.name): \(value)")
+    }
+  }
+
+  // Regression (capture-sim run 2026-10-22-1502): a jittered item only moves, yet successive drawn outlines
+  // changed shape (centroid-aligned IoU 0.93) because a move past the snap limit replaced the blended
+  // outline with the raw one, whose shape the crop grid changes with every position.
+  @Test("a purely translated item keeps its drawn shape: centroid-aligned IoU of successive outlines ≥ 0.95")
+  func translationKeepsShape() throws {
+    let testCase = try #require(fixture.temporal.first { $0.name == "translation-jitter" })
+    var outline = CaptureLiveOutline()
+    var previous: [CaptureOutlinePoint]?
+    for (number, step) in testCase.steps.enumerated() {
+      let candidates = step.candidates.map {
+        CaptureOutlineCandidate(areaShare: $0.areaShare, points: outlinePoints($0.points))
+      }
+      outline.observe(maskTimestampMs: number * fixture.params.maskIntervalMs, candidates: candidates)
+      let drawn = try #require(outline.state?.points)
+      if let previous {
+        let stability = CaptureOutlineGeometry.intersectionOverUnion(
+          CaptureOutlineGeometry.centred(drawn), CaptureOutlineGeometry.centred(previous))
+        #expect(stability >= 0.95, "step \(number): \(stability)")
+      }
+      previous = drawn
     }
   }
 

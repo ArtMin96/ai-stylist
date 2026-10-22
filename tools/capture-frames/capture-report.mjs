@@ -46,7 +46,10 @@ const DEVICE_ONLY = `## Device-only (never claimed here)
   information only.
 - Device motion and tilt hints (phones only), hardware shutter buttons on iOS (C26), real
   VoiceOver/TalkBack (C25), heat (C30), low-end phones (C28, C29), no Google Play (C31).
-- The system photo picker driven by hand (C21).
+- The system photo picker driven by hand (C21); live Vision on an imported still on iOS (the
+  Simulator has no foreground mask, so a simulator import also gets the no-item tip).
+- A network capture of the app on a phone (C22): ML Kit's usage reports are off (ADR-0012), but its
+  model-update and accelerator allow-list downloads remain possible.
 `;
 
 function fail(message) {

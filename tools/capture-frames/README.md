@@ -309,7 +309,8 @@ platform:
    `cmd uimode night`), and keeps their screenshots. On Android, before each flow, it closes any
    system screen a failed flow left open and pushes the frames again if a flow's `clearState` wiped
    the app's external files. Maestro's device logs are dropped: the Simulator's system log trips the
-   working-tree secret scan.
+   working-tree secret scan. The Android flows run with the emulator's Wi-Fi and mobile data off
+   (C22); the runner turns them back on when it ends.
 5. Scores the logs (`capture-score.mjs`) and writes `summary.md` and the scoreboard row
    (`capture-report.mjs`). It exits 1 unless every case, flow and finish-line measure passes.
 

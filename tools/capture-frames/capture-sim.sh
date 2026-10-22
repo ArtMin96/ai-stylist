@@ -218,12 +218,25 @@ run_android() {
     android_live_info "$run"
   fi
   "$adb" shell am force-stop "$APP_ID"
+  # C22: the flows run with the emulator's network off (Maestro talks over adb, which stays up).
+  trap 'android_network enable' EXIT
+  android_network disable
   for theme in light dark; do
     if [[ "$theme" == dark ]]; then "$adb" shell cmd uimode night yes; else "$adb" shell cmd uimode night no; fi
     run_flows android "$serial" "$run" "$theme"
   done
+  android_network enable
+  trap - EXIT
   "$adb" shell cmd uimode night no
   score android "$run"
+}
+
+# Turns the emulator's Wi-Fi and mobile data on or off: android_network enable|disable.
+android_network() {
+  local adb
+  adb="$(android_adb)"
+  "$adb" shell svc wifi "$1"
+  "$adb" shell svc data "$1"
 }
 
 # Scores the live ML Kit sweep apart and writes its numbers as a note for summary.md.

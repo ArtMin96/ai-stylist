@@ -398,7 +398,7 @@ ios-doctor:
 ios-project:
     apps/ios/scripts/xcode.sh project
 
-# Unsigned iOS simulator build: `just ios-build [--config dev|preview|prod]` (default dev; macOS only)
+# Unsigned iOS simulator build: `just ios-build [--config dev|preview|prod]` (default dev; macOS only); then greps the app for the capture test harness (scripts/check-capture-harness.sh: Dev must hold it, Preview and Prod must not)
 ios-build *args:
     apps/ios/scripts/xcode.sh build "$@"
 
@@ -438,6 +438,7 @@ ios-check:
     just ios-check-banned --fixtures
     just ios-test-packages
     scripts/native-lane.sh ios xcode just ios-build --config dev
+    scripts/native-lane.sh ios xcode just ios-build --config prod
     scripts/native-lane.sh ios xcode just ios-test
 
 # --- android (apps/android: Kotlin + Jetpack Compose; Gradle via apps/android/tools/gradle.sh) ----
@@ -480,9 +481,12 @@ android-format *args:
         *) echo "android-format: unknown argument '$1' (use --check)" >&2; exit 2 ;;
     esac
 
-# The Android local gate in one Gradle invocation: Spotless, module graph, detekt, Android Lint, unit + Robolectric tests, all three APKs
+# The Android local gate in one Gradle invocation: Spotless, module graph, detekt, Android Lint, unit + Robolectric tests, all three APKs; then the capture test harness grep (scripts/check-capture-harness.sh: the debug APK must hold it, preview and release must not)
 android-check:
     apps/android/tools/gradle.sh spotlessCheck checkModuleGraph detektMain detektTest :app:lintDebug testDebugUnitTest :core:data:test :core:analytics:test :core:designsystem:test :app:assembleDebug :app:assemblePreview :app:assembleRelease
+    scripts/check-capture-harness.sh present apps/android/app/build/outputs/apk/debug/app-debug.apk
+    scripts/check-capture-harness.sh absent apps/android/app/build/outputs/apk/preview/app-preview*.apk
+    scripts/check-capture-harness.sh absent apps/android/app/build/outputs/apk/release/app-release*.apk
 
 # Check (default) or install the Android SDK packages apps/android needs: `just android-sdk [check|install]` (user-level, no emulator, no sudo); `just android-sdk emulator` also installs the emulator and a system image
 android-sdk mode='check':

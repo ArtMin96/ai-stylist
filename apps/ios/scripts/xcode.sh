@@ -4,7 +4,8 @@
 #
 #   xcode.sh doctor                       toolchain check (on Linux: reports what can run there)
 #   xcode.sh project                      apps/ios/project.yml -> apps/ios/AIStylist.xcodeproj (XcodeGen), pins from apps/ios/Package.resolved
-#   xcode.sh build [--config dev|preview|prod]   unsigned simulator build (default dev), then the dSYM upload
+#   xcode.sh build [--config dev|preview|prod]   unsigned simulator build (default dev), the capture-harness
+#                                         check (Preview/Prod: absent; Dev: present), then the dSYM upload
 #   xcode.sh test                         package unit tests through the AIStylist-Dev scheme on a simulator
 #   xcode.sh e2e [flow]                   Dev simulator build + one Maestro flow, default e2e/smoke.yaml (APP_ID=app.aistylist.mobile.dev)
 #   xcode.sh run                          Dev simulator build, then boot the simulator, install the app, open Device Hub and launch the app
@@ -289,6 +290,10 @@ cmd_build() {
     -configuration "$name" \
     -destination 'generic/platform=iOS Simulator' \
     CODE_SIGNING_ALLOWED=NO
+  # The capture test harness ships in Dev only (capture brief §11); the Dev check proves the grep fires.
+  local want=absent
+  [[ "$config" != dev ]] || want=present
+  "$REPO_ROOT/scripts/check-capture-harness.sh" "$want" "$DERIVED_DATA/Build/Products/$name-iphonesimulator/AIStylist.app"
   upload_dsyms "$name"
 }
 

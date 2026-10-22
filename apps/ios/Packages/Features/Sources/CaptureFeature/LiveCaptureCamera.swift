@@ -80,7 +80,11 @@
     }
 
     public func takePhoto() async throws -> UIImage {
-      guard let graph else { throw CaptureCameraError("camera not running") }
+      // An interrupted or stopped session has no active video connection, and `capturePhoto` raises an
+      // Objective-C exception then (a crash). Throwing instead locks the shutter again (`captureFailed`).
+      guard let graph, graph.session.isRunning, !graph.session.isInterrupted,
+        let connection = graph.photoOutput.connection(with: .video), connection.isActive, connection.isEnabled
+      else { throw CaptureCameraError("camera not running") }
       let delegate = PhotoCaptureDelegate()
       pendingPhoto = delegate
       defer { pendingPhoto = nil }
@@ -250,7 +254,8 @@
         guard state.continuation != nil else { return nil }
         if let last = state.lastEmitMs, nowMs - last < CaptureRules.Evaluation.intervalMs { return nil }
         state.lastEmitMs = nowMs
-        let runsMask = state.lastMaskMs.map { nowMs - $0 >= CaptureRules.Mask.intervalMs } ?? true
+        let isHot = ProcessInfo.processInfo.thermalState.rawValue >= ProcessInfo.ThermalState.serious.rawValue
+        let runsMask = CaptureMaskCadence.isDue(nowMs: nowMs, lastMaskMs: state.lastMaskMs, isHot: isHot)
         let poseIsDue = state.lastPoseMs.map { nowMs - $0 >= CaptureRules.Ios.poseIntervalMs } ?? true
         let runsPose = state.isWornMode && poseIsDue
         if runsMask { state.lastMaskMs = nowMs }

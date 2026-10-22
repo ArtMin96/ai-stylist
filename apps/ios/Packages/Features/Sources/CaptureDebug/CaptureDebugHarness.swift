@@ -191,6 +191,10 @@
         hint: output.hint?.rawValue,
         anyway: output.isAnywayVisible
       )
+      if let reason = output.anywayReason {
+        result.anywayReason = Self.describe(reason)
+        current = result
+      }
       if let last = result.events.last, last.shutter == event.shutter, last.hint == event.hint,
         last.anyway == event.anyway
       {
@@ -215,6 +219,14 @@
         try log?.append(result)
       } catch {
         status = "results log write failed: \(error)"
+      }
+    }
+
+    private static func describe(_ reason: CaptureAnywayReason) -> String {
+      switch reason {
+      case .surfaceTip: "surface-tip"
+      case .tryHangerMode: "try-hanger-mode"
+      case .hint(let hint): hint.rawValue
       }
     }
 

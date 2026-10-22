@@ -58,6 +58,8 @@ list_devices() {
 choose_serial() {
   local explicit="$1" serial state emulator="" phone=""
   if [[ -n "$explicit" ]]; then
+    # Read the list anyway: under pipefail a writer whose reader left early dies of SIGPIPE (141).
+    cat >/dev/null
     printf '%s\n' "$explicit"
     return 0
   fi

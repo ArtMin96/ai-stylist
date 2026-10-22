@@ -435,7 +435,7 @@ Where the platforms differ, the expectation is per platform.
 | C28 Galaxy A12 | device-only | |
 | C29 iPhone 11 / SE 2 | device-only | |
 | C30 heat | device-only | |
-| C31 no Google Play | device-only | ML Kit ODT and ML Kit Pose (base) are bundled; no Play-services API is used in v1 |
+| C31 no Google Play | device-only | ML Kit ODT and ML Kit Pose (base) are bundled; no Play Services API is called in v1, and the only Play Services code linked is the `play-services-tasks` library that ML Kit depends on |
 
 ## 13. Not in v1
 

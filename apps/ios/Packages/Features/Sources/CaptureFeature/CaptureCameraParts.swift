@@ -198,6 +198,7 @@
       case .noItem: .search
       case .cutOffMultiple, .cutOffTop, .cutOffBottom, .cutOffLeft, .cutOffRight: .zoomOut
       case .bodyShouldersHips, .bodyHipsAnkles, .bodyHipsKnees, .bodyShouldersKnees: .poseNeutral
+      case .covered: .layers
       case .tooSmall: .zoomIn
       case .notSteady: .pause
       case .tooDark: .evening

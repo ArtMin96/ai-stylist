@@ -17,6 +17,7 @@
     "steady",
     "light",
     "tilt",
+    "covered",
     "lock",
     "batch",
     "timing",
@@ -146,6 +147,22 @@
       "properties": {
         "hintAboveDegrees": { "$ref": "#/$defs/degrees" },
         "clearBelowDegrees": { "$ref": "#/$defs/degrees" }
+      }
+    },
+    "covered": {
+      "type": "object",
+      "description": "Partly covered item (brief §4, C32; flat and hanger modes, never worn): another detected object's box overlaps the item's box. The item is the largest box (iOS: the largest Vision foreground instance; Android: the largest ML Kit box); overlap is the intersection divided by the smaller box's area",
+      "additionalProperties": false,
+      "required": ["aboveOverlapShare", "minOtherBoxAreaShare"],
+      "properties": {
+        "aboveOverlapShare": {
+          "description": "Covered (lock) when another box's overlap with the item box exceeds this share of the smaller box",
+          "$ref": "#/$defs/share"
+        },
+        "minOtherBoxAreaShare": {
+          "description": "Another box counts only when it covers at least this share of the frame",
+          "$ref": "#/$defs/share"
+        }
       }
     },
     "lock": {

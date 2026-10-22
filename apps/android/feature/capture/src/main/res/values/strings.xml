@@ -71,6 +71,7 @@
     <string name="cap_hint_body_hips_ankles">Step back so your hips and ankles show</string>
     <string name="cap_hint_body_hips_knees">Step back so your hips and knees show</string>
     <string name="cap_hint_body_shoulders_knees">Step back so your shoulders and knees show</string>
+    <string name="cap_hint_covered">Something is covering the item</string>
     <string name="cap_hint_too_small">Move closer</string>
     <string name="cap_hint_not_steady">Hold the phone still</string>
     <string name="cap_hint_too_dark">Too dark. Turn on a light.</string>

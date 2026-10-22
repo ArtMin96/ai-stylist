@@ -1,6 +1,6 @@
 // JSON Schema validation for the shared-kernel registries that TS reads straight from JSON (no
 // generated TS): forbidden-log-keys (+ its word-split examples), log-redaction, correlation, owners,
-// feature-flags, measurement-definitions and starting-shapes. They live in
+// feature-flags, measurement-definitions, starting-shapes and error-codes. They live in
 // packages/shared-kernel/registry; Ajv lives here (as it does for
 // gen-kernel.mjs, which also validates the first four before emitting them for Python; their
 // Python output is pinned by kernel-python.test.ts). It also checks the `levels` rule of
@@ -245,6 +245,43 @@ describe('starting-shapes.json', async () => {
     expect(check(noDefault)).toBe(false);
     expect(check({ ...minimal, labels: {} })).toBe(false);
     expect(check({ ...minimal, shapes: { shape_a: { ...shape, morphs: {} } } })).toBe(false);
+  });
+});
+
+describe('error-codes.json', async () => {
+  const registry = await validatorFor('error-codes');
+  const { check } = registry;
+  const code = { status: 404, title: 'Fixture', description: 'fixture' };
+  const minimal = { codes: { FIXTURE_CODE: code } };
+  const one = (definition: unknown, name = 'FIXTURE_CODE') =>
+    check({ codes: { [name]: definition } });
+
+  it('validates against its schema', () => {
+    expectBothValid(registry, minimal);
+  });
+
+  it('rejects a code name that is not upper case with digits and `_`', () => {
+    for (const name of ['not_found', 'NotFound', 'NOT-FOUND', '_NOT_FOUND', '1_FOUND', 'X']) {
+      expect(one(code, name), name).toBe(false);
+    }
+  });
+
+  it('rejects a status outside 400..599 or not an integer', () => {
+    for (const status of [200, 399, 600, 404.5, '404']) {
+      expect(one({ ...code, status }), JSON.stringify(status)).toBe(false);
+    }
+  });
+
+  it('rejects a missing or empty title or description, unknown fields and an empty registry', () => {
+    const { title: _noTitle, ...noTitle } = code;
+    const { description: _noDescription, ...noDescription } = code;
+    expect(one(noTitle)).toBe(false);
+    expect(one({ ...code, title: '' })).toBe(false);
+    expect(one(noDescription)).toBe(false);
+    expect(one({ ...code, description: '' })).toBe(false);
+    expect(one({ ...code, retryable: true })).toBe(false);
+    expect(check({ codes: {} })).toBe(false);
+    expect(check({ ...minimal, notes: 'x' })).toBe(false);
   });
 });
 

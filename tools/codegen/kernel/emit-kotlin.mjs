@@ -1,7 +1,17 @@
 // shared-kernel registries -> Kotlin (package app.aistylist.contracts.kernel, written next to the
 // analytics taxonomy under packages/contracts/gen/kotlin-client/kernel). Enums carry their wire
 // `value` and a `fromValue` lookup; plain constants are `const val` in an object.
-import { docText, ktStr, num, pascal, src, stripRc, upperSnake } from './naming.mjs';
+import {
+  assertUniqueIds,
+  docText,
+  int,
+  ktStr,
+  num,
+  pascal,
+  src,
+  stripRc,
+  upperSnake,
+} from './naming.mjs';
 
 const banner = (name) =>
   [
@@ -12,6 +22,7 @@ const banner = (name) =>
   ].join('\n');
 
 const ktEnum = ({ doc, name, cases, props = [] }) => {
+  assertUniqueIds(name, cases);
   const params = ['val value: String', ...props.map((p) => `val ${p.name}: ${p.type}`)];
   const lines = [`/** ${docText(doc)} */`, `enum class ${name}(${params.join(', ')}) {`];
   cases.forEach((c, i) => {
@@ -37,6 +48,9 @@ export function emitKotlin(reg) {
   const rc = reg['reason-codes'];
   const ent = reg.entitlements;
   const units = reg.units;
+  const errorCodes = reg['error-codes'];
+  const measurements = reg['measurement-definitions'];
+  const shapes = reg['starting-shapes'];
   const out = {};
 
   out['ReasonCodes.kt'] = [
@@ -112,6 +126,11 @@ export function emitKotlin(reg) {
           value: (c) => `EntitlementValueKind.${upperSnake(c.def.kind)}`,
         },
         describe,
+        {
+          name: 'levels',
+          type: 'List<String>',
+          value: (c) => `listOf(${(c.def.levels ?? []).map(ktStr).join(', ')})`,
+        },
       ],
     }),
     '',
@@ -166,6 +185,74 @@ export function emitKotlin(reg) {
     ...Object.entries(units.conversionFactors).map(
       ([k, v]) => `    const val ${upperSnake(k)}: Double = ${num(v)}`,
     ),
+    '}',
+    '',
+  ].join('\n');
+
+  out['ErrorCodes.kt'] = [
+    banner('error-codes'),
+    ktEnum({
+      doc: 'Error code (planning/06 §2): the stable `code` of an RFC 9457 problem the API answers, with its HTTP `status`, its RFC 9457 `title` and its `description` (registry text, not UI copy). A newer server can send a code this build lacks, so a null `fromValue` is a case to handle.',
+      name: 'ErrorCode',
+      // A code is already SCREAMING_SNAKE (schema pattern), so it is the entry name as written.
+      cases: Object.entries(errorCodes.codes).map(([code, def]) => ({
+        id: code,
+        raw: code,
+        doc: def.description,
+        def,
+      })),
+      props: [
+        { name: 'status', type: 'Int', value: (c) => int(c.def.status) },
+        { name: 'title', type: 'String', value: (c) => ktStr(c.def.title) },
+        describe,
+      ],
+    }),
+    '',
+  ].join('\n');
+
+  out['MeasurementDefinitions.kt'] = [
+    banner('measurement-definitions'),
+    ktEnum({
+      doc: 'Body measurement (planning/07 §3.3) with its `dimension`, the raw value of its stored `unit` (the canonical unit of the dimension) and its hard bounds `minimum` and `maximum` in that unit (registry `min` and `max`; the names match Swift, where `min` would shadow `min(_:_:)`). Both bounds are inclusive: a value equal to one is accepted. Outside them the API answers `MEASUREMENT_IMPLAUSIBLE` and never stores or clamps the value.',
+      name: 'MeasurementId',
+      cases: Object.entries(measurements.measurements).map(([id, def]) => ({
+        id: upperSnake(id),
+        raw: id,
+        def,
+      })),
+      props: [
+        {
+          name: 'dimension',
+          type: 'MeasurementDimension',
+          value: (c) => `MeasurementDimension.${upperSnake(c.def.dimension)}`,
+        },
+        { name: 'unit', type: 'String', value: (c) => ktStr(c.def.unit) },
+        { name: 'minimum', type: 'Double', value: (c) => num(c.def.min) },
+        { name: 'maximum', type: 'Double', value: (c) => num(c.def.max) },
+      ],
+    }),
+    '',
+  ].join('\n');
+
+  out['StartingShapes.kt'] = [
+    banner('starting-shapes'),
+    ktEnum({
+      doc: 'Avatar starting shape offered at onboarding (planning/07 §3.1), in display order. The entry docs are registry text, not UI copy.',
+      name: 'StartingShape',
+      cases: Object.entries(shapes.shapes).map(([id, def]) => ({
+        id: upperSnake(id),
+        raw: id,
+        doc: def.description,
+      })),
+    }),
+    '',
+    '/** Starting-shape constants (planning/07 §3.1). */',
+    'object StartingShapes {',
+    '    /** The shape preselected when the person makes no choice. */',
+    `    val DEFAULT_SHAPE: StartingShape = StartingShape.${upperSnake(shapes.default)}`,
+    '',
+    '    /** Base mesh id every starting shape starts from. */',
+    `    const val BASE_MESH: String = ${ktStr(shapes.baseMesh)}`,
     '}',
     '',
   ].join('\n');

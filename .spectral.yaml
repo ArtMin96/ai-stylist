@@ -1,6 +1,8 @@
-# OpenAPI lint (planning/06 §9): naming, problem+json errors, operationIds. Runs on the bundled contract via
-# `pnpm --filter @ai-stylist/contracts lint:spectral`: inside lint:openapi (`just lint`) and in the PR gate
-# (`just ci-contracts-spectral`). Warnings fail (--fail-severity=warn).
+# OpenAPI lint (planning/06 §9): naming, problem+json errors, operationIds, and the Idempotency-Key
+# header on mutating operations. Runs on the bundled contract via
+# `pnpm --filter @ai-stylist/contracts lint:spectral`: inside lint:openapi (`just lint`) and in the PR
+# gate (`just ci-contracts-spectral`). Warnings fail (--fail-severity=warn). Rule fixtures:
+# tools/spectral/fixtures, proven by scripts/test/contracts-spectral.test.sh (`just test tooling`).
 extends:
   - spectral:oas
 rules:
@@ -45,3 +47,34 @@ rules:
                 propertyNames:
                   not:
                     pattern: '^[45][0-9]{2}$'
+
+  # Every POST, PUT, PATCH and DELETE operation declares the Idempotency-Key header parameter on the
+  # operation itself (doc 06 §2 and §9, P03 phase §7), by $ref to platform.yaml
+  # components/parameters/IdempotencyKey. Its `required` flag is not checked, and a header declared
+  # only on the path item does not count. Named exception, under /v1/auth/ only: an operation the
+  # sign-in library serves that cannot take the header carries `x-idempotency-key-exempt: <reason>`
+  # (a non-empty string). That marker anywhere else, or without a reason, is ignored.
+  ai-stylist-mutating-operation-has-idempotency-key:
+    description: POST, PUT, PATCH and DELETE operations declare the Idempotency-Key header parameter.
+    message: '{{path}} changes data but declares no Idempotency-Key header parameter; add the IdempotencyKey parameter of platform.yaml by $ref (doc 06 §2).'
+    severity: error
+    given:
+      - '$.paths[?(!@property.match(/^\/v1\/auth\//))][post,put,patch,delete]'
+      - '$.paths[?(@property.match(/^\/v1\/auth\//))][?(@property.match(/^(post|put|patch|delete)$/) && !(@["x-idempotency-key-exempt"] && @["x-idempotency-key-exempt"].match && @["x-idempotency-key-exempt"].match(/\S/)))]'
+    then:
+      function: schema
+      functionOptions:
+        schema:
+          type: object
+          required: [parameters]
+          properties:
+            parameters:
+              type: array
+              contains:
+                type: object
+                required: [name, in]
+                properties:
+                  name:
+                    const: Idempotency-Key
+                  in:
+                    const: header

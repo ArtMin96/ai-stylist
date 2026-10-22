@@ -1,7 +1,11 @@
 // Pins every OpenAPI enum, id pattern and list key that restates a shared-kernel value (phase §14,
 // shared-kernel row: "enums referenced by contracts stay in sync"; .claude/rules/contracts.md
-// invariant 6). The contract restates them so the generated Swift and Kotlin clients carry them;
-// this test fails as soon as the contract and the kernel drift apart.
+// invariant 6), and every error code the OpenAPI files name to the error-code registry. The
+// contract restates them so the generated Swift and Kotlin clients carry them; this test fails as
+// soon as the contract and the kernel drift apart.
+import { readFile, readdir } from 'node:fs/promises';
+
+import * as kernel from '@ai-stylist/shared-kernel';
 import {
   CLIMATE_TOLERANCES,
   CONSENT_PURPOSES,
@@ -9,6 +13,7 @@ import {
   type ConsentPurpose as KernelConsentPurpose,
   DEFAULT_STARTING_SHAPE,
   ENTITLEMENTS,
+  ERROR_CODES,
   ENTITLEMENT_GRANT_KINDS,
   ENTITLEMENT_LIFECYCLE_STATES,
   type EntitlementGrantKind as KernelEntitlementGrantKind,
@@ -181,6 +186,66 @@ describe('OpenAPI lists keyed by kernel values', () => {
     }
     expect(examples).toEqual([DEFAULT_STARTING_SHAPE]);
     expect(schemas.StartingShapeId).not.toHaveProperty('enum');
+  });
+});
+
+const OPENAPI_DIR = new URL('../openapi/', import.meta.url);
+
+/** An error code as the contract names one: backticked, in the `ProblemDetails.code` shape. */
+const QUOTED_CODE_SHAPED_WORD = /`[A-Z][A-Z0-9_]+`/g;
+
+/**
+ * Code-shaped words the contract quotes that are not error codes: the shared-kernel constants a
+ * description says it mirrors (`GARMENT_GROUPS`), entitlement levels (`G2`) and the example region
+ * `DE` of profile.yaml.
+ */
+const NOT_ERROR_CODES: ReadonlySet<string> = new Set([
+  ...Object.keys(kernel),
+  ...Object.values(ENTITLEMENTS).flatMap((definition) =>
+    'levels' in definition ? definition.levels : [],
+  ),
+  'DE',
+]);
+
+/** The quoted code-shaped words of `text` that are neither a registered error code nor exempt. */
+function unregisteredCodes(text: string): string[] {
+  return (text.match(QUOTED_CODE_SHAPED_WORD) ?? [])
+    .map((quoted) => quoted.slice(1, -1))
+    .filter((word) => !Object.hasOwn(ERROR_CODES, word) && !NOT_ERROR_CODES.has(word));
+}
+
+/** Every OpenAPI source file, relative to packages/contracts/openapi/. */
+async function openApiFiles(): Promise<string[]> {
+  const entries = await readdir(OPENAPI_DIR, { recursive: true });
+  return entries.filter((file) => file.endsWith('.yaml')).sort();
+}
+
+describe('OpenAPI error codes come from the error-code registry', () => {
+  const { code, status } = schemas.ProblemDetails.properties;
+
+  it('every registered code is a valid ProblemDetails code and status; code is not an enum', () => {
+    for (const [name, definition] of Object.entries(ERROR_CODES)) {
+      expect(new RegExp(code.pattern).test(name), name).toBe(true);
+      expect(definition.status, name).toBeGreaterThanOrEqual(status.minimum);
+      expect(definition.status, name).toBeLessThanOrEqual(status.maximum);
+    }
+    expect(code).not.toHaveProperty('enum');
+  });
+
+  it('every code an OpenAPI file names is registered', async () => {
+    const files = await openApiFiles();
+    expect(files).toContain('modules/platform.yaml');
+    const unregistered: string[] = [];
+    for (const file of files) {
+      const text = await readFile(new URL(file, OPENAPI_DIR), 'utf8');
+      unregistered.push(...unregisteredCodes(text).map((word) => `${file}: ${word}`));
+    }
+    expect(unregistered).toEqual([]);
+  });
+
+  it('reports a quoted code that is neither registered nor exempt', () => {
+    const text = '403 `RECENT_SIGN_IN`, 404 `NOT_FOUND`, mirrors `GARMENT_GROUPS`, e.g. `G2`';
+    expect(unregisteredCodes(text)).toEqual(['RECENT_SIGN_IN']);
   });
 });
 

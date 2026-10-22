@@ -29,21 +29,24 @@ module, `just test` (the package tests have no scoped route), and
 3. Generated output is never hand-edited: change the YAML/JSON source, then run `just generate` — the
    PreToolUse path guard `scripts/hooks/guard-protected-paths.sh` denies `packages/contracts/gen/`,
    `packages/shared-kernel/src/gen/` and `workers/ml/generated/`; `just generate --check` catches drift.
-4. Reason codes, entitlement names and units live in `packages/shared-kernel/registry/*.json` (ADR-0005).
+4. Reason codes, entitlement names (with their levels), units, error codes, measurement definitions and starting shapes live in `packages/shared-kernel/registry/*.json` (ADR-0005).
    Swift consumes the generated `AIStylistKernel`, Kotlin `app.aistylist.contracts.kernel`; nobody copies
    a constant — `just generate --check` for the generated side; copies are reviewer-checked. The
-   forbidden-log-keys, log-redaction, correlation, owners and feature-flags registries there are
-   imported as JSON in TS (no generated TS); `just generate` emits forbidden-log-keys, its examples,
+   forbidden-log-keys, log-redaction, correlation, owners, feature-flags, error-codes,
+   measurement-definitions and starting-shapes registries there are imported as JSON in TS (no
+   generated TS); the last three are client-facing, so `just generate` also emits them for Swift and Kotlin (`ErrorCode`, `MeasurementId`, `StartingShape` + `StartingShapes`; invariant 6); `just generate` emits forbidden-log-keys, its examples,
    log-redaction and correlation (with the envelope's `correlationId` rule) for Python as
    `ai_stylist_generated.kernel` (DEC-59). All are validated by `packages/contracts/tests/kernel-registries.test.ts` (`just test`).
 5. Analytics event names live in `packages/contracts/events/analytics/events.json`. Android uses the
    generated `AnalyticsTaxonomy`; the hand-written iOS names equal it byte for byte (reviewer-checked).
 6. Every value a native app reads reaches TypeScript, Swift and Kotlin through `just generate`. That
-   covers registries, enums, error codes, id kinds and bounds. Each one is either a kernel registry that
-   `tools/codegen/gen-kernel.mjs` emits for all three (`NATIVE_REGISTRIES`), or an OpenAPI enum or
-   schema that lands in the generated `swift-client` and `kotlin-client`. A TS-only home (a JSON import,
-   a hand-written `as const` list, `errors.ts`) is for server-only and worker-only values. A
-   client-facing value without native output is not done. Its emitter change (`tools/codegen/kernel/`,
-   owner `tooling-engineer`) lands in the same PR stack, before any native consumer. An OpenAPI enum
-   that mirrors a kernel list has a contract test that pins the two value for value
-   (`just generate --check` for the output; the rest reviewer-checked).
+   covers registries, enums, error codes, id kinds and bounds. Each one is either a kernel registry in
+   `NATIVE_REGISTRIES` of `tools/codegen/gen-kernel.mjs`, emitted for Swift and Kotlin and either
+   generated for TS (`packages/shared-kernel/src/gen/`) or imported there as JSON, or an OpenAPI enum
+   or schema that lands in the generated `swift-client` and `kotlin-client`. A TS-only home (a JSON
+   import outside `NATIVE_REGISTRIES`, a hand-written `as const` list, `problem()` and the
+   `ProblemDetails` type of `errors.ts`) is for server-only and worker-only values. A client-facing
+   value without native output is not done. Its emitter change (`tools/codegen/kernel/`, owner
+   `tooling-engineer`) lands in the same PR stack, before any native consumer. An OpenAPI enum that
+   mirrors a kernel list has a contract test that pins the two value for value (`just generate --check`
+   for the output; the rest reviewer-checked).

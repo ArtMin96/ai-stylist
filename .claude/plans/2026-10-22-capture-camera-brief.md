@@ -526,7 +526,7 @@ Answered by the owner through the question tool on 2026-10-22. These override ea
     too small to count as an item on iOS never counts as a covering object either; the covered sets'
     objects cover at least 4 × that.
   - Feasibility: the Mac's Vision merged the object into the item in 66 of 66 covered composites
-    (instance mask) and 0 of 225 earlier trials separated it (instance mask and objectness
-    saliency). On iOS the rule is therefore mostly a no-op on device until a detector separates the
+    (instance mask); in earlier trials it separated it in 0 of 225 (instance mask) and 0 of 225
+    (objectness saliency) composites. On iOS the rule is therefore mostly a no-op on device until a detector separates the
     object; a merged object unlocks (a miss, not a false lock). Android turns ML Kit's multiple
     objects on for it; ML Kit on real objects is device-only.

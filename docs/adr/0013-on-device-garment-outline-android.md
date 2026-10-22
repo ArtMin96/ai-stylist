@@ -121,8 +121,8 @@ Private emulator `outlineprobe` (API 36 arm64, `google_apis`), 2026-10-22; frame
 
 ## Proposed doc-10 entry
 
-Planning docs are human-only, so this ADR carries the text; the lead applies it to
-`planning/10-ai-usage-cost-and-evaluation.md` §1.
+Applied to `planning/10-ai-usage-cost-and-evaluation.md` §1 on 2026-10-22 with the owner's approval
+(row 11 wording and the new row 11a below).
 
 - Row 11, replace "Google ML Kit Object Detection, bundled, single object, stream mode" with "on Android
   the on-device garment segmenter of row 11a, with Google ML Kit Object Detection (bundled, multiple

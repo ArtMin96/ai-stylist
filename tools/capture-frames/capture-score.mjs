@@ -85,6 +85,7 @@ function observe(line) {
   return {
     firstUnlockMs: line.firstUnlockMs ?? null,
     anywayMs: line.anywayMs ?? line.anywayAtMs ?? null,
+    anywayReason: line.anywayReason ?? null,
     finalHint: line.finalHint ?? last?.hint ?? null,
     finalState: last ? stateOf(last).state : null,
     finalLockReason: line.finalLockReason ?? (lastLocked ? stateOf(lastLocked).reason : null),
@@ -151,6 +152,10 @@ function judgeLocked(expected, observed, timing) {
     const anyway = observed.anywayMs;
     if (anyway == null || Math.abs(anyway - atMs) > toleranceMs) {
       reasons.push(`anyway at ${anyway ?? 'never'} ms, wanted ${atMs} ± ${toleranceMs} ms`);
+    }
+    // The reason line under "Take photo anyway" (brief §6): surface-tip, try-hanger-mode or a hint id.
+    if (expected.anywayReason && observed.anywayReason !== expected.anywayReason) {
+      reasons.push(`anyway reason ${observed.anywayReason} != ${expected.anywayReason}`);
     }
   }
   return { reasons, falseUnlock };
@@ -243,6 +248,12 @@ function summarize(cases, platform, index) {
       passed: reader.filter((c) => c.pass).length,
       anywayMs: reader.map((c) => c.observed.anywayMs),
     },
+    byVariant: Object.fromEntries(
+      [...new Set(scored.map((c) => c.variant))].sort().map((variant) => {
+        const of = scored.filter((c) => c.variant === variant);
+        return [variant, { passed: of.filter((c) => c.pass).length, total: of.length }];
+      }),
+    ),
     failures: cases.filter((c) => !c.pass).map((c) => ({ caseId: c.caseId, reason: c.reason })),
   };
 }

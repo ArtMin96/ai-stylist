@@ -395,8 +395,10 @@ expected file's `platform.<platform>` block applies first. `summary.md` states t
 - **Unlocked:** first unlock within `maxUnlockMs`, the expected hint shown at the unlock (the
   meaning of `hint` in `expected.json`), and at least one capture.
 - **Locked:** never unlocks. The final hint and lock reason are the expected ones. On a single set,
-  "Take photo anyway" shows at `anywayAtMs` ± `acceptance.anywayToleranceMs`. With the
-  screen-reader flag it shows within one evaluation interval of the start.
+  "Take photo anyway" shows at `anywayAtMs` ± `acceptance.anywayToleranceMs`, with the reason line
+  the expected `anywayReason`. With the screen-reader flag it shows within one evaluation interval of
+  the start. Fields the scorer does not know (such as a segment's `tiltDegrees`) pass through.
+- `summary.md` adds a hard-cases table: pass counts per variant beyond the brief §11 variants.
 - **Gap** (the empty second between sweep or batch items): locked or in cooldown within
   `relockAfterFailingEvaluations × evaluation.intervalMs`, stays locked, nothing captured. The hint
   and the anyway timing are not judged, because the gap opens on the previous item's state and is

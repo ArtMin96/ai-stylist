@@ -15,6 +15,27 @@ import { existsSync, readFileSync, readdirSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 
 const THEMES = ['light', 'dark'];
+// The brief §11 variants and the sweep and batch sets; every other variant is a hard case.
+const BASE_VARIANTS = new Set([
+  'good',
+  'cut-top',
+  'cut-bottom',
+  'cut-left',
+  'cut-right',
+  'too-small',
+  'too-dark',
+  'motion-blur',
+  'jitter',
+  'two-items',
+  'empty',
+  'sweep',
+  'batch',
+  'whole',
+  'shoulders-cut',
+  'hips-cut',
+  'knees-cut',
+  'ankles-cut',
+]);
 const MAX_FALSE_LOCK_SHARE = 0.1;
 
 const DEFINITIONS = `## Definitions
@@ -206,6 +227,38 @@ None yet.
 None yet.
 `;
 
+/** Per-variant pass counts of the hard cases (C8–C11, tilt, glare, covered), one column per platform. */
+function hardCases(run, platforms) {
+  const counts = {};
+  for (const platform of platforms) {
+    const file = path.join(run, 'results', `${platform}.summary.json`);
+    if (!existsSync(file)) continue;
+    const byVariant = JSON.parse(readFileSync(file, 'utf8')).byVariant ?? {};
+    for (const [variant, count] of Object.entries(byVariant)) {
+      if (BASE_VARIANTS.has(variant)) continue;
+      counts[variant] = { ...counts[variant], [platform]: `${count.passed}/${count.total}` };
+    }
+  }
+  const variants = Object.keys(counts).sort();
+  return [
+    '## Hard cases',
+    '',
+    'Frame sets beyond the brief §11 variants: hard surfaces (C8–C10), a coat too big (C11), tilt,',
+    'glare and too bright, and partly covered items. Cases passed per variant:',
+    '',
+    `| Variant | ${platforms.join(' | ')} |`,
+    `|---|${platforms.map(() => '---').join('|')}|`,
+    ...(variants.length
+      ? variants.map((v) => `| ${v} | ${platforms.map((p) => counts[v][p] ?? '—').join(' | ')} |`)
+      : [`| none | ${platforms.map(() => '—').join(' | ')} |`]),
+    '',
+    'Device-only here: the iOS covered rule rarely fires on a real phone, because Vision merges the',
+    'cover into the item; Android `enableMultipleObjects()` changes live ML Kit behaviour; real fabric,',
+    'glare and the tilt sensor are device-only (the harness feeds a stored gravity angle).',
+    '',
+  ].join('\n');
+}
+
 function addScoreboardRow(file, row) {
   let text = existsSync(file) ? readFileSync(file, 'utf8') : SCOREBOARD_HEAD + SCOREBOARD_TAIL;
   const lines = text.split('\n');
@@ -238,6 +291,7 @@ function main() {
     `Commit \`${args.commit}\`. ${headline}`,
     '',
     ...platforms.map((platform) => sections[platform].text),
+    hardCases(args.run, platforms),
     DEFINITIONS,
     DEVICE_ONLY,
   ].join('\n');

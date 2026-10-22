@@ -1,7 +1,7 @@
 # Guidance states (capture brief §6, C3, C5, C11–C14): the family guide first, then each blocking hint
 # its frame set locks on (C11: a coat too big for the frame, cut-off-multiple), the worn body hints
-# (C3, keypoint files), and the too-dark (C13) and too-bright hints that show while the shutter is
-# unlocked. Light/dark screenshots of every state. Simulator/emulator-safe.
+# (C3, keypoint files), a partly covered item, and the too-dark (C13), too-bright and tilt hints that
+# show while the shutter is unlocked. Light/dark screenshots of every state. Simulator/emulator-safe.
 # Timing is not judged here: the sweep times every set on a virtual clock (summary.md).
 appId: ${APP_ID}
 ---
@@ -147,4 +147,24 @@ appId: ${APP_ID}
         MODE: flat,
         HINT: cap-hint-too-bright,
         SHOT: 15-hint-too-bright-unlocked,
+      }
+- runFlow:
+    file: subflows/hint.yaml
+    env:
+      {
+        SET: top-flat-01-covered-inside,
+        TILE: cap-picker-family-top,
+        MODE: flat,
+        HINT: cap-hint-covered,
+        SHOT: 16-hint-covered,
+      }
+- runFlow:
+    file: subflows/hint.yaml
+    env:
+      {
+        SET: top-flat-01-tilt,
+        TILE: cap-picker-family-top,
+        MODE: flat,
+        HINT: cap-hint-tilt,
+        SHOT: 17-hint-tilt-unlocked,
       }

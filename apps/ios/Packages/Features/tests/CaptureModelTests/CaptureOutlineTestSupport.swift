@@ -27,6 +27,7 @@ struct OutlineParityFixture: Decodable {
     let keepAtLeastIou: Double
     let switchAtAreaRatio: Double
     let snapBelowIou: Double
+    let snapKeepsShapeAtLeastIou: Double
     let emaAlpha: Double
     let clearAfterMissedUpdates: Int
     let iouGridCells: Int

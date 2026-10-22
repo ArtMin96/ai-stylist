@@ -12,8 +12,7 @@ React Native, no Kotlin Multiplatform and no 3D code.
 | `feature/home/` | `:feature:home`, the home screen: `HomeViewModel` (StateFlow) and `HomeScreen` (Compose), plus the debug tools (shown only when `AppContainer` injects the crash action: `debug`/`preview`) |
 | `feature/capture/` | `:feature:capture`, the guided capture camera (`.claude/plans/2026-10-22-capture-camera-brief.md`, surface brief `.impeccable/surfaces/sc16-capture-camera.md`). `domain/` is pure Kotlin with no Android imports, unit-tested on the JVM: the live checks (`LiveChecks.kt`), the shutter lock state machine (`LockMachine.kt`), the "Take photo anyway" timer (`AnywayTimer.kt`), the hint presenter and speech gate (`HintPresenter.kt`), one camera step (`CaptureCameraSession.kt`, timed by an injected `CaptureClock`), the flow (`CaptureFlow.kt`) and its ports (`CapturePorts.kt`); every threshold and timing comes from the generated `CaptureRules`. `CaptureViewModel` wires it to a `StateFlow`. `analysis/` measures a frame's light and sharpness (`LumaPlane`), shared by the camera, imports and the debug frames. `camera/` is the CameraX source (`CameraXObservationSource`: 640 × 480 KEEP_ONLY_LATEST analysis, ML Kit object detection with the bundled model, ML Kit pose in worn mode, accelerometer motion, ImageCapture), the in-memory photo store (dropped when the flow closes; nothing is saved in v1), the permission gate and the SharedPreferences opt-in store. `ui/` holds the screens (`CaptureRoute` and the picker, camera, review, import-tips, batch-summary, permission and no-camera screens), the copy in `res/values/strings.xml`, the test IDs (`CaptureTestTags`) and, in `CaptureProposedTokens`, the measured values DESIGN.md has no token for yet |
 | `feature/capture-debug/` | `:feature:capture-debug`, the capture camera's test harness (brief §11), `debugImplementation` only: a frame-set source in place of the camera, the debug panel (`cap-debug-*`), the screen-reader flag, the interactive results log and the sweep (every set on a virtual clock). Launch extras: `captureFrameSet`, `captureScreenReader=1`, `captureSweep=1`, `captureRecordOnly=1` (plus `captureSweepFilter`, `captureBoxes`, `capturePose`, `captureFramesDir`, `captureDebugPanel=0`). The one feature-to-feature edge, allowed for the harness only |
-| `core/kernel/` | `:core:kernel`, the **generated** shared-kernel registries (`app.aistylist.contracts.kernel`: reason codes, entitlement names, units, capture rules; ADR-0005), compiled from `packages/contracts/gen/kotlin-client/kernel` like `:core:api-client`. No sources of its own |
-| `core/data/` | `:core:data`, pure Kotlin. `parseAppConfig` (API_BASE_URL and PostHog key/host validation), `DataServices`, `VersionRepository` over the generated client |
+| `core/data/` | `:core:data`, pure Kotlin. `parseAppConfig` (API_BASE_URL and PostHog key/host validation), `DataServices`, `VersionRepository` over the generated client, and the generated kernel (`app.aistylist.contracts.kernel`) |
 | `core/analytics/` | `:core:analytics`, pure Kotlin, SDK-free. The `Analytics` port, the consent gate (`ConsentGatedAnalytics`), the no-op sink, and the generated `AnalyticsTaxonomy` |
 | `core/api-client/` | `:core:api-client`. It compiles the **generated** client. It has no source code of its own |
 | `core/designsystem/` | `:core:designsystem`, the app-internal design system (DEC-87), an Android library with Compose that depends on no other project module. It holds the generated `DESIGN.md` tokens in `src/main/kotlin/app/aistylist/core/designsystem/generated/` (written by `just generate`, never hand-edited), the bundled fonts (below), `AppTheme` (the token context from the system: light, dark, or high contrast S7 from Android's high-contrast-text setting on API 36+; it provides the scheme's `text` role as `LocalContentColor`, so untinted content outside a `Surface` follows the scheme), `AppButton` (C01, `.impeccable/components/button.yaml`; its `leadingIcon` is an `AppIconName?`), `AppIcon` (C02, `.impeccable/components/icon.yaml`: any generated glyph at any `AppIconSize` step, decorative, tinted by `LocalContentColor` or an `AppColorRole`; the step is treated as sp, so it grows with Android's non-linear font scale, and `AppIconGeometry` holds its unit-tested scaling, stroke and `PathNode` replay), and the C03 components `AppChip`, `AppTag`, `AppBadge` and `AppReasonRow` (`.impeccable/components/{chip,tag,badge,reason-row}.yaml`; looks from `AppTheme.chips`, `.tags`, `.badges`, `.reasonRows`; the chip's role semantics follow `variant.role`, its swatch edge follows the WCAG contrast rule in `ColorContrast.kt`, and its copy is in `res/values/strings.xml`). `AppText` draws every design-system text in its `AppTextStyle`: it applies the style's `textTransform` (the overline in capitals) to the drawn glyphs only and keeps the caller's string as what assistive tech reads; `toTextStyle()` is internal, so nothing draws a type style past it. The faces share their drawing helpers (shape, rings, frame, icon, disc) in `AppFaceDrawing.kt`; `AppButton` and `AppChip` share their interaction state and touch target in `AppControl.kt`, which feeds the generated `ButtonAccessibility.minTouchTarget` / `ChipAccessibility.minTouchTarget` (48 dp) to `minimumInteractiveComponentSize()` through `LocalMinimumInteractiveComponentSize`. It holds no previews and no `ui-tooling` dependency: those live in the catalog (next row). `AppButtonFace`, `AppChipFace`, `AppScheme` and `AppTheme(scheme)` are public for the catalog and snapshot tests only; product UI uses the components, `AppText` and `AppTheme {}` |
@@ -24,9 +23,12 @@ React Native, no Kotlin Multiplatform and no 3D code.
 | `gradle/verification-metadata.xml`, `**/gradle.lockfile`, `*-gradle.lockfile` | Supply chain: checksums and the locked dependency graph |
 | `tools/` | `gradle.sh` (runs the wrapper with JDK 25 + the SDK) and `sdk.sh` (SDK check/install), behind the `just android-*` recipes; `capture-frames.sh` (push the capture test frames, run a sweep, pull `capture-results.jsonl`) |
 
-The generated client also has `app.aistylist.contracts.kernel` (reason codes, entitlement names and units, from
+The generated client also has `app.aistylist.contracts.kernel` (reason codes, entitlement names and levels, units,
+error codes, measurement definitions, starting shapes and capture rules, from
 `packages/shared-kernel/registry/*.json`; [ADR-0005](../../docs/adr/0005-shared-kernel-registries-for-native-clients.md))
-in `packages/contracts/gen/kotlin-client/kernel`. `:core:kernel` compiles it; `:feature:capture` is its first consumer.
+in `packages/contracts/gen/kotlin-client/kernel`. `:core:data` compiles it as a `srcDir`, so `:app` and every
+feature import those values from `:core:data` and never copy one. Unlike the generated DTOs, they are meant to
+reach features; `:feature:capture` reads its capture rules from there.
 
 ### Module graph
 
@@ -34,13 +36,13 @@ in `packages/contracts/gen/kotlin-client/kernel`. `:core:kernel` compiles it; `:
 in `build-logic/convention/src/main/kotlin/RootConventionPlugin.kt`.
 
 ```
-:app ──► :feature:home ──► :core:data ──(implementation)──► :core:api-client (generated)
+:app ──► :feature:home ──► :core:data (+ generated kernel) ──(implementation)──► :core:api-client (generated)
   │            ├─────────► :core:analytics (+ generated AnalyticsTaxonomy)
   │            └─────────► :core:designsystem (generated tokens, AppTheme, AppButton, AppIcon, AppChip, AppTag, AppBadge, AppReasonRow)
-  ├──► :feature:capture ──► :core:kernel (generated shared-kernel registries), :core:designsystem
+  ├──► :feature:capture ──► :core:data (generated capture rules), :core:designsystem
   ├──► :core:data, :core:analytics, :core:designsystem
   ├──(debugImplementation)──► :core:designsystem-catalog ──► :core:designsystem
-  └──(debugImplementation)──► :feature:capture-debug ──► :feature:capture, :core:kernel, :core:designsystem
+  └──(debugImplementation)──► :feature:capture-debug ──► :feature:capture, :core:data, :core:designsystem
 ```
 
 - Feature modules never depend on each other, with one exception: the debug-only harness

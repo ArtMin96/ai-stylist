@@ -40,7 +40,6 @@ include(
     ":core:data",
     ":core:analytics",
     ":core:api-client",
-    ":core:kernel",
     ":core:designsystem",
     ":core:designsystem-catalog",
 )

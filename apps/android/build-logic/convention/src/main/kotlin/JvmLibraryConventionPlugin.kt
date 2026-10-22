@@ -25,8 +25,8 @@ class JvmLibraryConventionPlugin : Plugin<Project> {
 }
 
 /**
- * `aistylist.jvm.generated` — `:core:api-client` and `:core:kernel` only. They compile committed
- * generator output (packages/contracts/gen/kotlin-client), which is never hand-edited, so lint and detekt do not
+ * `aistylist.jvm.generated` — `:core:api-client` only. It compiles committed generator output
+ * (packages/contracts/gen/kotlin-client), which is never hand-edited, so lint and detekt do not
  * run on it (the same way ESLint ignores `gen/`). Compiler warnings still fail the build.
  */
 class JvmGeneratedLibraryConventionPlugin : Plugin<Project> {

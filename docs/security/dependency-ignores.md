@@ -164,6 +164,18 @@ Results of 2026-10-13, after the owner's install and re-resolve:
   or another module's `internal/`, each with the names rendered into the message, and it accepts a
   module's own `internal/`, which the rendered `captured` selector decides.
 
+2026-10-22: `just security-scan` went red on two `@vitest/mocker` advisories published 2026-10-21
+at 19:48 and 19:54 UTC (2 Medium; every PR run after that and the 2026-10-22 `main` nightly failed).
+`vitest` pins `@vitest/mocker` exactly, so step 2 of the order above applies: the owner ran
+`pnpm update -r vitest`, which moved the direct devDependency to `5.0.5` (latest patch) and raised
+the seven `package.json` ranges from `^5.0.2` to `^5.0.5`. The other lockfile moves are the floors
+and pins `vitest@5.0.5` itself declares (`chai`, `obug`, `std-env`, `tinybench`, `magic-string`,
+`why-is-node-running`); nothing outside the vitest tree changed. No override and no ignore.
+
+| Package (vulnerable version) | Advisories                               | Dependency path                                                                                               | Action                                      | Verification run                                                                                                                                  |
+| ---------------------------- | ---------------------------------------- | ------------------------------------------------------------------------------------------------------------- | ------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `@vitest/mocker@5.0.2`       | GHSA-qxg6-89mg-rqv8, GHSA-xp26-3454-mjgp | `vitest@5.0.2` (root and six workspace devDependencies; exact pin `@vitest/mocker: 5.0.2`); test tooling only | `vitest` bumped to `5.0.5` (mocker `5.0.5`) | `just security-scan` (2026-10-22): exit 0, osv-scanner "No issues found"; `just test` (95 test files pass), `just lint`, `just typecheck`: exit 0 |
+
 2026-09-23: the native apps' lockfiles are in the scan (osv-scanner 2.5.1 reads Gradle lockfiles,
 `verification-metadata.xml` and SwiftPM `Package.resolved` natively; no configuration needed). The
 first run reported **Maven findings: 65 packages, 286 advisories**, all Android. The packages are

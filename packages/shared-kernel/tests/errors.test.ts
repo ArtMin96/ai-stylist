@@ -1,6 +1,19 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, expectTypeOf, it } from 'vitest';
 
+import errorCodesJson from '../registry/error-codes.json' with { type: 'json' };
 import { ERROR_CODES, type ErrorCode, PROBLEM_TYPE_BASE, problem } from '../src/index.js';
+
+describe('error codes come from registry/error-codes.json', () => {
+  it('codes, with status, title and description, in order', () => {
+    expect(ERROR_CODES).toEqual(errorCodesJson.codes);
+    expect(Object.keys(ERROR_CODES)).toEqual(Object.keys(errorCodesJson.codes));
+  });
+
+  it('ErrorCode stays the union of the registered codes, not string', () => {
+    expectTypeOf<'NOT_FOUND'>().toExtend<ErrorCode>();
+    expectTypeOf<string>().not.toExtend<ErrorCode>();
+  });
+});
 
 describe('problem()', () => {
   it('builds an RFC 9457 body from the registry entry', () => {

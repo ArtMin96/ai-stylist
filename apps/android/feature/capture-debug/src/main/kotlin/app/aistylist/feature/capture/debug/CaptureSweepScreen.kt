@@ -47,7 +47,10 @@ fun CaptureSweepScreen(
         var lines = 0
         sets.forEachIndexed { position, set ->
             status = "Sweep ${position + 1} of ${sets.size}: ${set.id}"
-            val records = analysis.use { analyzer -> SweepRunner(index, analyzer).run(set) }
+            val records =
+                analysis.use { analyzer ->
+                    SweepRunner(index, analyzer, harness.args.isScreenReader).run(set)
+                }
             records.forEach { harness.files.append(it.toJson()) }
             lines += records.size
         }

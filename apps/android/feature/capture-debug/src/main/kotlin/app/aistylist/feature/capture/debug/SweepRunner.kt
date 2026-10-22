@@ -19,13 +19,20 @@ import kotlin.math.max
 class SweepRunner(
     private val index: FrameIndex,
     private val analyzer: FrameAnalyzer,
+    /** The screen-reader flag (`captureScreenReader=1`): "Take photo anyway" shows at once (C25). */
+    private val isScreenReader: Boolean = false,
 ) {
     /** Runs [set] and returns its segments' records. */
     fun run(set: FrameSet): List<SegmentRecord> {
         var now = 0L
         val clock = CaptureClock { now }
         val kind = if (set.isBatch) CaptureFlowKind.BATCH else CaptureFlowKind.SINGLE
-        val session = CaptureCameraSession(CameraContext(set.family, set.mode, kind = kind), clock)
+        val session =
+            CaptureCameraSession(
+                CameraContext(set.family, set.mode, kind = kind),
+                clock,
+                isScreenReaderOn = isScreenReader,
+            )
         val frameMs = MS_PER_SECOND.toDouble() / index.fps
         val records = mutableListOf<SegmentRecord>()
         var nextTickMs = CaptureRules.Evaluation.INTERVAL_MS.toLong()

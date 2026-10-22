@@ -133,7 +133,9 @@
         clock: virtualClock ?? continuousClock,
         virtualClock: virtualClock,
         listener: self,
-        maskCadenceMs: options.maskCadenceMs
+        maskCadenceMs: options.maskCadenceMs,
+        holdFirstFrameMs: options.holdFirstFrameMs,
+        holdCaptureMs: options.holdCaptureMs
       )
       frameCamera = camera
       return camera

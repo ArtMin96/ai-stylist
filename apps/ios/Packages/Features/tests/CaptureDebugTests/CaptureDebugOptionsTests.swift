@@ -41,6 +41,18 @@ struct CaptureDebugOptionsTests {
     #expect(!options.forcesScreenReader)
   }
 
+  @Test("the hold switches keep warming up and capturing on screen for the screenshot flow")
+  func holds() {
+    let options = CaptureDebugOptions.parse([
+      "/app/AIStylist", "-captureHoldFirstFrameMs", "6000", "captureHoldCaptureMs=5000",
+    ])
+    #expect(options.holdFirstFrameMs == 6000)
+    #expect(options.holdCaptureMs == 5000)
+    let off = CaptureDebugOptions.parse(["/app/AIStylist", "-captureHoldFirstFrameMs", "0", "captureHoldCaptureMs=x"])
+    #expect(off.holdFirstFrameMs == nil)
+    #expect(off.holdCaptureMs == nil)
+  }
+
   @Test("the default frames folder is the repo's artifacts/capture-camera/frames")
   func defaultFramesDirectory() {
     let path = CaptureDebugOptions.defaultFramesDirectory.path(percentEncoded: false)

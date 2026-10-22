@@ -84,7 +84,12 @@ class CaptureHarness(
                 store,
                 stills = target,
                 dispatcher = dispatcher,
-                recordsCaptures = args.recordsCaptures,
+                playback =
+                    RealTimePlayback(
+                        recordsCaptures = args.recordsCaptures,
+                        holdFirstFrameMs = args.holdFirstFrameMs,
+                        holdCaptureMs = args.holdCaptureMs,
+                    ),
             )
         return true
     }

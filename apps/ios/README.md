@@ -110,6 +110,9 @@ Launch arguments (`-key value`, as `xcrun simctl launch` and Maestro `launchApp:
   phone's Vision mask (every 250 ms) does; `just capture-sim-ios` sweeps with it. Unset: a fresh mask every frame.
 - `captureRecordOnly 1`: in real time, a capture is recorded and the camera carries on (the sweep's rule), so
   the unlocked states keep coming back for the `e2e/capture` screenshot flows.
+- `captureHoldFirstFrameMs <ms>` and `captureHoldCaptureMs <ms>`: in real time only, the set's first frame comes
+  that late (the camera stays warming up, `cap-hint-warming-up` after the guide) and each photo takes that long
+  (`cap-hint-capturing` stays), so `e2e/capture/hints.yaml` can screenshot both states. A sweep ignores them.
 - `captureFramesDir <absolute path>`: the frames folder; default `<repo>/artifacts/capture-camera/frames` of
   the checkout the Dev build was compiled from (`just capture-frames` writes it; the Simulator reads the
   Mac's file system).

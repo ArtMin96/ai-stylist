@@ -99,6 +99,26 @@ class HarnessTest {
     }
 
     @Test
+    fun `the hold extras keep warming up and capturing on screen for the screenshot flow`() {
+        val held =
+            Bundle().apply {
+                putString(CaptureHarnessArgs.HOLD_FIRST_FRAME_MS, "6000")
+                putString(CaptureHarnessArgs.HOLD_CAPTURE_MS, "5000")
+            }
+        val off =
+            Bundle().apply {
+                putString(CaptureHarnessArgs.HOLD_FIRST_FRAME_MS, "0")
+                putString(CaptureHarnessArgs.HOLD_CAPTURE_MS, "x")
+            }
+
+        val args = CaptureHarnessArgs.from(held)
+        assertEquals(6000L, args.holdFirstFrameMs)
+        assertEquals(5000L, args.holdCaptureMs)
+        assertEquals(0L, CaptureHarnessArgs.from(off).holdFirstFrameMs)
+        assertEquals(0L, CaptureHarnessArgs.from(off).holdCaptureMs)
+    }
+
+    @Test
     fun `the index reads every set it knows and skips unknown families`() {
         folder.newFile(FrameIndex.INDEX_FILE).writeText(INDEX)
 

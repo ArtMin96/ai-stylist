@@ -57,6 +57,10 @@
     @ObservationIgnored private var lastOutlineMs: Int?
     /// Mask cadence in ms (`captureMaskCadenceMs`); nil measures a fresh mask on every frame.
     @ObservationIgnored private let maskCadenceMs: Int?
+    /// Real time only: the first frame's delay and each photo's duration (`captureHoldFirstFrameMs`,
+    /// `captureHoldCaptureMs`), so warming up and capturing stay on screen for a screenshot.
+    @ObservationIgnored private let holdFirstFrameMs: Int?
+    @ObservationIgnored private let holdCaptureMs: Int?
     /// With a mask cadence: the frame the current mask was taken from and when.
     @ObservationIgnored private var lastMask: (segment: Int, frame: Int, atMs: Int)?
     @ObservationIgnored private var outlines: CaptureMaskOutlines?
@@ -72,9 +76,14 @@
       clock: any CaptureClock,
       virtualClock: CaptureVirtualClock?,
       listener: any CaptureFrameSetListener,
-      maskCadenceMs: Int? = nil
+      maskCadenceMs: Int? = nil,
+      holdFirstFrameMs: Int? = nil,
+      holdCaptureMs: Int? = nil
     ) {
       self.maskCadenceMs = maskCadenceMs
+      let realTime = pacing == .realTime
+      self.holdFirstFrameMs = realTime ? holdFirstFrameMs : nil
+      self.holdCaptureMs = realTime ? holdCaptureMs : nil
       self.set = set
       self.directory = directory
       self.fps = max(1, fps)
@@ -115,6 +124,9 @@
     public func setTorch(_ isOn: Bool) {}
 
     public func takePhoto() async throws -> UIImage {
+      if let holdCaptureMs {
+        try await Task.sleep(for: .milliseconds(holdCaptureMs))
+      }
       guard let currentImage else { throw CaptureCameraError("no frame") }
       return UIImage(cgImage: currentImage)
     }
@@ -132,9 +144,10 @@
       guard isRunning else { return nil }
       switch pacing {
       case .realTime:
-        if frameNumber > 0 {
+        let delayMs = frameNumber > 0 ? Int(frameMs.rounded()) : holdFirstFrameMs
+        if let delayMs {
           do {
-            try await Task.sleep(for: .milliseconds(Int(frameMs.rounded())))
+            try await Task.sleep(for: .milliseconds(delayMs))
           } catch {
             return nil
           }

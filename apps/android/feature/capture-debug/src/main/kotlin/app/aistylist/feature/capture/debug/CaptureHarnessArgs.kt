@@ -55,7 +55,9 @@ enum class PoseSource(
 /**
  * The harness launch options, from intent extras (`adb shell am start -e <name> <value>`):
  * `captureFrameSet=<set id>`, `captureScreenReader=1`, `captureSweep=1`, `captureRecordOnly=1` (in
- * real time a capture is recorded and the camera carries on, as in a sweep), and for runs by hand
+ * real time a capture is recorded and the camera carries on, as in a sweep),
+ * `captureHoldFirstFrameMs=<ms>` and `captureHoldCaptureMs=<ms>` (real time: the first frame comes
+ * that late and each photo takes that long, so warming up and capturing can be screenshot), and for runs by hand
  * `captureFramesDir=<path>`, `captureBoxes=auto|live|stored`, `capturePose=auto|live|keypoints`,
  * `captureMasks=stored|live|none` (default stored), `captureCovered=components|mlkit` (live masks),
  * `captureMaskCadenceMs=<ms>` (sweeps: a new mask every 250 ms by default, reused in between, as on
@@ -76,6 +78,10 @@ data class CaptureHarnessArgs(
     val covered: CoveredSource = CoveredSource.COMPONENTS,
     /** Sweeps: how often a new mask is taken (0: on every frame). */
     val maskCadenceMs: Int = 0,
+    /** Real time only: the first frame comes this late (warming up stays on screen); 0 is off. */
+    val holdFirstFrameMs: Long = 0,
+    /** Real time only: each photo takes this long (capturing stays on screen); 0 is off. */
+    val holdCaptureMs: Long = 0,
 ) {
     companion object {
         const val FRAME_SET: String = "captureFrameSet"
@@ -90,6 +96,8 @@ data class CaptureHarnessArgs(
         const val MASKS: String = "captureMasks"
         const val COVERED: String = "captureCovered"
         const val MASK_CADENCE_MS: String = "captureMaskCadenceMs"
+        const val HOLD_FIRST_FRAME_MS: String = "captureHoldFirstFrameMs"
+        const val HOLD_CAPTURE_MS: String = "captureHoldCaptureMs"
 
         fun from(extras: Bundle?): CaptureHarnessArgs {
             if (extras == null) return CaptureHarnessArgs()
@@ -124,8 +132,13 @@ data class CaptureHarnessArgs(
                         CoveredSource.COMPONENTS
                     },
                 maskCadenceMs = maskCadence(extras.getString(MASK_CADENCE_MS), isSweep),
+                holdFirstFrameMs = holdMs(extras.getString(HOLD_FIRST_FRAME_MS)),
+                holdCaptureMs = holdMs(extras.getString(HOLD_CAPTURE_MS)),
             )
         }
+
+        /** A whole number of milliseconds over 0, else 0 (off). */
+        private fun holdMs(value: String?): Long = value?.toLongOrNull()?.coerceAtLeast(0) ?: 0
 
         private fun maskSource(value: String?): MaskSource =
             when (value) {

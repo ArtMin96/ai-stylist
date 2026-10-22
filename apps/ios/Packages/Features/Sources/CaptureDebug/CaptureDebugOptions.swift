@@ -21,6 +21,12 @@ nonisolated public struct CaptureDebugOptions: Equatable, Sendable {
   /// mask comes every 250 ms while observations come every 100 ms), stamped with its time. Nil gives a
   /// fresh mask on every frame.
   public var maskCadenceMs: Int?
+  /// `captureHoldFirstFrameMs=<ms>`: in real time, the frame set's first frame comes this late, so the
+  /// camera stays in warming up (`cap-hint-warming-up` after the guide) for the screenshot flow.
+  public var holdFirstFrameMs: Int?
+  /// `captureHoldCaptureMs=<ms>`: in real time, a photo takes this long, so `cap-hint-capturing` stays on
+  /// screen for the screenshot flow.
+  public var holdCaptureMs: Int?
   /// `captureFramesDir=<absolute path>`: the frames folder; the Simulator reads the Mac's file system.
   /// Nil uses `defaultFramesDirectory`.
   public var framesDirectory: URL?
@@ -45,6 +51,8 @@ nonisolated public struct CaptureDebugOptions: Equatable, Sendable {
     sweep: Bool = false,
     recordsCaptures: Bool = false,
     maskCadenceMs: Int? = nil,
+    holdFirstFrameMs: Int? = nil,
+    holdCaptureMs: Int? = nil,
     framesDirectory: URL? = nil
   ) {
     self.frameSetID = frameSetID
@@ -52,6 +60,8 @@ nonisolated public struct CaptureDebugOptions: Equatable, Sendable {
     self.sweep = sweep
     self.recordsCaptures = recordsCaptures
     self.maskCadenceMs = maskCadenceMs
+    self.holdFirstFrameMs = holdFirstFrameMs
+    self.holdCaptureMs = holdCaptureMs
     self.framesDirectory = framesDirectory
   }
 
@@ -66,13 +76,20 @@ nonisolated public struct CaptureDebugOptions: Equatable, Sendable {
       forcesScreenReader: isOn(values["captureScreenReader"]),
       sweep: isOn(values["captureSweep"]),
       recordsCaptures: isOn(values["captureRecordOnly"]),
-      maskCadenceMs: values["captureMaskCadenceMs"].flatMap(Int.init).flatMap { $0 > 0 ? $0 : nil },
+      maskCadenceMs: positive(values["captureMaskCadenceMs"]),
+      holdFirstFrameMs: positive(values["captureHoldFirstFrameMs"]),
+      holdCaptureMs: positive(values["captureHoldCaptureMs"]),
       framesDirectory: values["captureFramesDir"].flatMap { $0.isEmpty ? nil : URL(filePath: $0) }
     )
   }
 
   private static func isOn(_ value: String?) -> Bool {
     value == "1" || value?.lowercased() == "true"
+  }
+
+  /// A whole number over 0, else nil.
+  private static func positive(_ value: String?) -> Int? {
+    value.flatMap(Int.init).flatMap { $0 > 0 ? $0 : nil }
   }
 
   /// `key=value` arguments, and `-key value` pairs.

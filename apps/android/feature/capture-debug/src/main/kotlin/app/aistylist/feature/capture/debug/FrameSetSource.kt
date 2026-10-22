@@ -29,12 +29,24 @@ data class ShownFrame(
 )
 
 /**
+ * How a frame set plays in real time for the screenshot flows: [recordsCaptures]
+ * (`captureRecordOnly=1`) keeps the camera open after a capture; [holdFirstFrameMs] delays the first
+ * frame so warming up stays on screen; [holdCaptureMs] makes each photo take that long so capturing
+ * stays on screen (0: off).
+ */
+data class RealTimePlayback(
+    val recordsCaptures: Boolean = false,
+    val holdFirstFrameMs: Long = 0,
+    val holdCaptureMs: Long = 0,
+)
+
+/**
  * Plays one frame set in real time through the camera step (capture brief §11): each segment's
  * image for its frame count at the index's fps, moved by its jitter, the last segment looping until
  * the step ends. Observations come from [analysis], stamped with the session [clock]. A photo is the
- * frame on screen; imported stills go to [stills] (the real analysis path). With [recordsCaptures]
- * (`captureRecordOnly=1`) a single set's photo is not taken: the session locks again and the camera
- * carries on, as in a sweep, so the unlocked states keep coming back for screenshots.
+ * frame on screen; imported stills go to [stills] (the real analysis path). With
+ * [RealTimePlayback.recordsCaptures] a single set's photo is not taken: the session locks again and
+ * the camera carries on, as in a sweep, so the unlocked states keep coming back for screenshots.
  */
 class FrameSetSource(
     val set: FrameSet,
@@ -44,7 +56,7 @@ class FrameSetSource(
     private val photos: CapturePhotoStore,
     private val stills: CaptureObservationSource,
     private val dispatcher: CoroutineDispatcher,
-    private val recordsCaptures: Boolean = false,
+    private val playback: RealTimePlayback = RealTimePlayback(),
 ) : CaptureObservationSource {
     private val shownFrame = MutableStateFlow<ShownFrame?>(null)
     val shown: StateFlow<ShownFrame?> = shownFrame.asStateFlow()
@@ -55,6 +67,7 @@ class FrameSetSource(
             // the camera, whose first analysed frame makes it ready: the anyway timer starts here.
             analysis.use { analyzer -> analyzer.bitmap(set.segments.first()) }
             emit(CameraFeedEvent.Ready)
+            if (playback.holdFirstFrameMs > 0) delay(playback.holdFirstFrameMs)
             set.segments.forEachIndexed { index, segment ->
                 val isLast = index == set.segments.lastIndex
                 val startMs = clock.nowMs()
@@ -84,7 +97,8 @@ class FrameSetSource(
         }.flowOn(dispatcher)
 
     override suspend fun takePhoto(): PhotoResult {
-        if (recordsCaptures && !set.isBatch) return PhotoResult.Failed
+        if (playback.holdCaptureMs > 0) delay(playback.holdCaptureMs)
+        if (playback.recordsCaptures && !set.isBatch) return PhotoResult.Failed
         val frame = shownFrame.value ?: return PhotoResult.Failed
         return PhotoResult.Taken(photos.put(frame.bitmap))
     }

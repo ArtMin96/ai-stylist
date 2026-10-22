@@ -141,13 +141,16 @@ ios_results() {
   printf '%s/Documents/%s\n' "$(xcrun simctl get_app_container "$1" "$APP_ID" data)" "$2"
 }
 
-# Launches the harness with "$@" and copies the finished sweep's log to $out.
+# Launches the harness with "$@" and copies the finished sweep's log to $out. The last sweep's files
+# go first: the app removes them only once it has started, so a done marker left from the previous
+# sweep could otherwise end the wait before this sweep begins.
 ios_sweep() {
   local udid="$1" out="$2" done_file
   shift 2
-  xcrun simctl launch --terminate-running-process "$udid" "$APP_ID" -captureSweep 1 -captureFramesDir "$FRAMES_DIR" "$@" >/dev/null
   done_file="$(ios_results "$udid" capture-results.done)"
-  sleep 2
+  xcrun simctl terminate "$udid" "$APP_ID" 2>/dev/null || true
+  rm -f "$done_file" "$(ios_results "$udid" capture-results.jsonl)"
+  xcrun simctl launch --terminate-running-process "$udid" "$APP_ID" -captureSweep 1 -captureFramesDir "$FRAMES_DIR" "$@" >/dev/null
   wait_for "the iOS sweep ($*)" test -f "$done_file"
   cat "$(ios_results "$udid" capture-results.jsonl)" >>"$out"
 }

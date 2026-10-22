@@ -57,7 +57,15 @@ class FrameAnalyzer(
     /** One line per image the live segmenter ran on: latency, IoU against the stored mask, crop pass. */
     private val onLiveMask: (JSONObject) -> Unit = {},
 ) : Closeable {
-    private val measured = HashMap<String, MeasuredFrame>()
+    /** The most recent images only: a sweep visits each set's frames in turn, and masks are large. */
+    private val measured =
+        object : LinkedHashMap<String, MeasuredFrame>(CACHED_FRAMES, LOAD_FACTOR, true) {
+            override fun removeEldestEntry(eldest: MutableMap.MutableEntry<String, MeasuredFrame>): Boolean =
+                size > CACHED_FRAMES
+        }
+
+    /** Images the live segmenter has logged, so a re-measured image adds no second line. */
+    private val logged = HashSet<String>()
     private val itemDetector by lazy { MlKitItemDetector(streamMode = false) }
     private val poseDetector by lazy { MlKitPoseDetector() }
 
@@ -149,21 +157,31 @@ class FrameAnalyzer(
         when (masks) {
             MaskSource.NONE -> null
             MaskSource.STORED -> MaskAnalysis(storedLabels(segment, bitmap) ?: emptyLabels(bitmap))
-            MaskSource.LIVE -> liveLabels(segment, bitmap)?.let(::MaskAnalysis)
+            MaskSource.LIVE -> liveAnalysis(segment, bitmap)
         }
 
-    /** The live segmenter on [bitmap]; null when it cannot load. Logs latency and IoU per image. */
-    private fun liveLabels(
+    /**
+     * The live segmenter on [bitmap], measured as the camera measures its masks; null when it cannot
+     * load. Logs, once per image, the model time, the mask measure and outline time, and the IoU
+     * against the stored mask.
+     */
+    private fun liveAnalysis(
         segment: FrameSegment,
         bitmap: Bitmap,
-    ): LabelImage? {
+    ): MaskAnalysis? {
         val model = segmenter.value ?: return null
         val result = model.segment(bitmap)
+        val started = System.nanoTime()
+        val analysis = MaskAnalysis(result.labels).also { it.at(0) }
+        val measureMs = (System.nanoTime() - started) / NANOS_PER_MS
+        if (segment.frame in logged) return analysis
+        logged += segment.frame
         val stored = storedLabels(segment, bitmap)
         val line =
             JSONObject()
                 .put("frame", segment.frame)
                 .put("inferenceMs", result.inferenceMs)
+                .put("measureMs", measureMs)
                 .put("refined", result.isRefined)
                 .put("iou", stored?.let { foregroundIou(result.labels, it) } ?: JSONObject.NULL)
         if (result.isRefined && stored != null) {
@@ -171,7 +189,7 @@ class FrameAnalyzer(
             line.put("iouFirstPassOnly", foregroundIou(model.segment(bitmap, refinesSmallItems = false).labels, stored))
         }
         onLiveMask(line)
-        return result.labels
+        return analysis
     }
 
     /** The generator's labels: `frame.instances.png` (several instances), else `frame.mask.png` as one. */
@@ -314,6 +332,9 @@ class FrameAnalyzer(
 
     private companion object {
         const val GREY_MASK = 0xFF
+        const val CACHED_FRAMES = 24
+        const val LOAD_FACTOR = 0.75f
+        const val NANOS_PER_MS = 1_000_000L
     }
 }
 

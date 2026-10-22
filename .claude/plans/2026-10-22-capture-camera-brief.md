@@ -163,7 +163,11 @@ Pure logic, same in both apps, unit-tested on Linux (`swift test`) and in Robole
 **Transitions (exact)**
 - `warmingUp` → `locked` or counting on the first evaluation.
 - The first evaluation that sees an item can never pass "steady" (no previous box).
-- `locked` → `unlocked(0)` after **3 consecutive passing evaluations** (≥ 300 ms at 10 Hz).
+- `locked` → `unlocked(0)` after **3 consecutive passing evaluations** (≥ 300 ms at 10 Hz), each
+  reading a different mask: a passing evaluation that reuses the last counted mask (the phone's mask
+  comes every 250 ms, evaluations every 100 ms) holds the streak, so one chance-still mask read three
+  times never unlocks (2026-10-22, found with the harness's realistic mask cadence; unlock then takes
+  about 800 ms on the iOS phone cadence).
   Haptic "unlock". Announce "ready".
 - `unlocked`: each passing evaluation advances the ring. The ring is full after **1000 ms** of
   passing evaluations, counted from the unlock, and at least 3 evaluations. Full ring → auto-capture
@@ -181,8 +185,10 @@ Pure logic, same in both apps, unit-tested on Linux (`swift test`) and in Robole
 - `modeChanged` → counters reset to `locked`; the anyway timer does **not** restart.
 
 Minimum time from the first good frame to auto-capture at 10 Hz: 1 + 3 evaluations + 1000 ms ≈
-1.4 s (owner: "~1–1.5 s steady"). On a slower phone the 3-evaluation step takes longer; the device
-test measures it.
+1.4 s (owner: "~1–1.5 s steady"). With the phone's 250 ms masks and one counted pass per mask, the
+unlock takes about 800 ms and the auto-capture about 1.8 s (iOS harness sweep, 2026-10-22), above the
+owner's ~1.5 s: flagged for the owner. On a slower phone the step takes longer; the device test
+measures it.
 
 **Outputs:** `shutter` (locked, unlocked, capturing), `ringProgress` 0–1, `hint` key, `anywayVisible`,
 `anywayReason`, `hardwareShutterEnabled` (= unlocked or anyway visible), and one-shot effects:

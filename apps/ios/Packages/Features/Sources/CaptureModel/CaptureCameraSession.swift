@@ -275,7 +275,7 @@ nonisolated public struct CaptureCameraSession: Sendable {
     }
     let itemBox = verdict.reports(.noItem) ? nil : observation.item?.box
     lastItemBox = itemBox
-    switch lock.evaluate(verdict, itemBox: itemBox, atMs: now) {
+    switch lock.evaluate(verdict, itemBox: itemBox, atMs: now, maskTimestampMs: observation.maskTimestampMs) {
     case .unlocked:
       // An advisory hint may show while the ring fills (§6), so it wins over "ready" (C13).
       return [.haptic(.unlock)] + show(verdict.advisoryHint ?? .ready, atMs: now)

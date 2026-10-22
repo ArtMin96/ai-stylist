@@ -75,6 +75,7 @@ internal fun GuideOutline(
     pathData: String,
     isSolid: Boolean,
     modifier: Modifier = Modifier,
+    alpha: Float = 1f,
 ) {
     val path = rememberSvgPath(pathData)
     val ink = role(AppColorRole.CAMERA_INK)
@@ -87,13 +88,13 @@ internal fun GuideOutline(
             path,
             viewport,
             Stroke(CaptureProposedTokens.guideHalo.toPx(), cap = cap, join = StrokeJoin.Round, pathEffect = dash),
-            ink,
+            ink.copy(alpha = ink.alpha * alpha),
         )
         drawInViewport(
             path,
             viewport,
             Stroke(CaptureProposedTokens.guideStroke.toPx(), cap = cap, join = StrokeJoin.Round, pathEffect = dash),
-            paper,
+            paper.copy(alpha = paper.alpha * alpha),
         )
     }
 }

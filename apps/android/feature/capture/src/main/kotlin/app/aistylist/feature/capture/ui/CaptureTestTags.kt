@@ -46,6 +46,9 @@ object CaptureTestTags {
     const val STEP_BACK: String = "cap-step-back"
     const val STEP_PAIR: String = "cap-step-pair"
     const val RING: String = "cap-ring"
+
+    /** The live outline of the item; its state description is `locked` or `unlocked` (capture brief "Live outline"). */
+    const val OUTLINE: String = "cap-outline"
     const val ANYWAY_BUTTON: String = "cap-anyway-button"
     const val ANYWAY_REASON: String = "cap-anyway-reason"
 

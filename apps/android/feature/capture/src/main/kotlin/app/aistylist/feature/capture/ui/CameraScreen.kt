@@ -248,15 +248,18 @@ private fun PreviewArea(
                 ),
     ) {
         preview(Modifier.fillMaxSize())
+        // The family guide stays (faint, with its tag) under the item's live outline.
         GuideOutline(
             pathData = context.guidePath,
             isSolid = isSolid,
+            alpha = CaptureProposedTokens.GUIDE_FAINT_ALPHA,
             modifier =
                 Modifier
                     .fillMaxSize()
                     .testTag(context.guideTestTag)
                     .semantics { contentDescription = previewLabel },
         )
+        LiveOutline(outline = snapshot?.outline, isSolid = isSolid, modifier = Modifier.fillMaxSize())
         stepLabel(context, model.underwearPick)?.let { (text, tag) ->
             StepPill(
                 text = stringResource(text),

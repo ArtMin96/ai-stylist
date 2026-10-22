@@ -14,6 +14,13 @@ internal object CaptureProposedTokens {
     val guideHalo = 4.dp
     val guideDash = 6.dp
 
+    /**
+     * Proposed by the live-outline lane, not on the canvas yet: the family guide drawn faint, so the
+     * item's live outline (full strength, same stroke) reads as the primary shape. Awaiting the
+     * ui-designer and owner, like the rest of this object.
+     */
+    const val GUIDE_FAINT_ALPHA: Float = 0.5f
+
     /** The canvas the guide paths are drawn in (the 350 × 506 preview of SC04). */
     const val GUIDE_VIEWPORT_WIDTH: Float = 350f
     const val GUIDE_VIEWPORT_HEIGHT: Float = 506f

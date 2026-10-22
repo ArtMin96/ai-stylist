@@ -33,25 +33,41 @@ class MaskAnalysis(
 ) {
     private val instances = labels.instances()
     private val itemProfile = instances.firstOrNull()?.let { MaskProfile.of(labels, it.label) }
-    private val candidates: List<OutlineCandidate> =
+    private val outlined =
         instances
             .filter {
                 it.pixelCount.toDouble() / (labels.width * labels.height) >=
                     CaptureRules.Ios.MIN_INSTANCE_AREA_SHARE
             }.take(MAX_OUTLINE_CANDIDATES)
-            .mapNotNull { instance ->
-                val mask =
-                    BooleanArray(labels.width * labels.height) {
-                        labels.isLabel(
-                            it % labels.width,
-                            it / labels.width,
-                            instance.label,
-                        )
-                    }
-                traceOutline(labels.width, labels.height, mask)?.let { trace ->
-                    OutlineCandidate(instance.pixelCount.toDouble() / (labels.width * labels.height), trace.points)
+
+    /** The candidates per pixel offset, traced on the moved mask (clipped at the frame edge), as the camera would see it. */
+    private val candidatesByOffset = HashMap<Pair<Int, Int>, List<OutlineCandidate>>()
+
+    private fun candidates(
+        offsetX: Int,
+        offsetY: Int,
+    ): List<OutlineCandidate> =
+        candidatesByOffset[offsetX to offsetY] ?: traceCandidates(offsetX, offsetY).also {
+            if (candidatesByOffset.size < MAX_CACHED_OFFSETS) candidatesByOffset[offsetX to offsetY] = it
+        }
+
+    private fun traceCandidates(
+        offsetX: Int,
+        offsetY: Int,
+    ): List<OutlineCandidate> {
+        val width = labels.width
+        val height = labels.height
+        return outlined.mapNotNull { instance ->
+            val mask =
+                BooleanArray(width * height) {
+                    val x = it % width - offsetX
+                    val y = it / width - offsetY
+                    x in 0 until width && y in 0 until height && labels.isLabel(x, y, instance.label)
                 }
-            }
+            val area = mask.count { on -> on }
+            traceOutline(width, height, mask)?.let { OutlineCandidate(area.toDouble() / (width * height), it.points) }
+        }
+    }
 
     /** The observation of the mask moved by ([offsetX], [offsetY]) pixels, stamped [timestampMs]. */
     fun at(
@@ -67,19 +83,14 @@ class MaskAnalysis(
             item = item,
             instanceCount = instances.size,
             otherBoxes = instances.drop(1).mapNotNull { it.box.shifted(dx, dy) },
-            outlineCandidates =
-                if (offsetX == 0 && offsetY == 0) {
-                    candidates
-                } else {
-                    candidates.map { candidate ->
-                        candidate.copy(points = candidate.points.map { NormalizedPoint(it.x + dx, it.y + dy) })
-                    }
-                },
+            outlineCandidates = candidates(offsetX, offsetY),
         )
     }
 
     private companion object {
+        /** At most this many outlines per mask (iOS `maxCandidates`): a cost bound, not a parity value. */
         const val MAX_OUTLINE_CANDIDATES = 3
+        const val MAX_CACHED_OFFSETS = 256
     }
 }
 

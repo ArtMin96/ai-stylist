@@ -3,6 +3,7 @@ package app.aistylist.feature.capture.debug
 import android.os.Bundle
 import app.aistylist.contracts.kernel.CaptureHint
 import app.aistylist.contracts.kernel.CaptureMode
+import app.aistylist.contracts.kernel.CaptureRules
 import app.aistylist.contracts.kernel.CaptureShapeFamily
 import app.aistylist.feature.capture.domain.CameraContext
 import app.aistylist.feature.capture.domain.CameraSnapshot
@@ -75,6 +76,26 @@ class HarnessTest {
         assertFalse(args.showsPanel)
         assertTrue(args.recordsCaptures)
         assertEquals(CaptureHarnessArgs(), CaptureHarnessArgs.from(null))
+        assertEquals(MaskSource.STORED, args.masks)
+        assertEquals(0, args.maskCadenceMs)
+    }
+
+    @Test
+    fun `a sweep plays masks at the live cadence unless the extras say otherwise`() {
+        val sweep = Bundle().apply { putString(CaptureHarnessArgs.SWEEP, "1") }
+        val fresh =
+            Bundle().apply {
+                putString(CaptureHarnessArgs.SWEEP, "1")
+                putString(CaptureHarnessArgs.MASK_CADENCE_MS, "0")
+                putString(CaptureHarnessArgs.MASKS, "live")
+                putString(CaptureHarnessArgs.COVERED, "mlkit")
+            }
+
+        assertEquals(CaptureRules.Ios.MASK_INTERVAL_MS, CaptureHarnessArgs.from(sweep).maskCadenceMs)
+        val args = CaptureHarnessArgs.from(fresh)
+        assertEquals(0, args.maskCadenceMs)
+        assertEquals(MaskSource.LIVE, args.masks)
+        assertEquals(CoveredSource.OBJECT_BOXES, args.covered)
     }
 
     @Test

@@ -114,12 +114,7 @@ data class CaptureHarnessArgs(
                 sweepFilter = extras.getString(SWEEP_FILTER)?.takeIf { it.isNotBlank() },
                 showsPanel = extras.getString(DEBUG_PANEL) != "0",
                 recordsCaptures = extras.getString(RECORD_ONLY) == "1",
-                masks =
-                    when (extras.getString(MASKS)) {
-                        "live" -> MaskSource.LIVE
-                        "none" -> MaskSource.NONE
-                        else -> MaskSource.STORED
-                    },
+                masks = maskSource(extras.getString(MASKS)),
                 covered =
                     if (extras.getString(COVERED) ==
                         "mlkit"
@@ -128,7 +123,21 @@ data class CaptureHarnessArgs(
                     } else {
                         CoveredSource.COMPONENTS
                     },
+                maskCadenceMs = maskCadence(extras.getString(MASK_CADENCE_MS), isSweep),
             )
         }
+
+        private fun maskSource(value: String?): MaskSource =
+            when (value) {
+                "live" -> MaskSource.LIVE
+                "none" -> MaskSource.NONE
+                else -> MaskSource.STORED
+            }
+
+        /** A sweep plays the live mask cadence unless told otherwise; an interactive run a fresh mask per frame. */
+        private fun maskCadence(
+            value: String?,
+            isSweep: Boolean,
+        ): Int = value?.toIntOrNull() ?: if (isSweep) CaptureRules.Ios.MASK_INTERVAL_MS else 0
     }
 }

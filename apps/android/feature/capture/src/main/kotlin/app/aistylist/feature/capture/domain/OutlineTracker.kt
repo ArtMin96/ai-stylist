@@ -17,8 +17,9 @@ data class LiveOutline(
  * reference's `Tracker`). Feed it once per distinct mask, never per rule evaluation:
  * - hysteresis: keep the candidate with the highest IoU ≥ 0.3 to the drawn outline, unless none
  *   qualifies or the largest is at least 1.5 × its area;
- * - snap to the new polygon on the first item or when IoU(new, drawn) < 0.5, else an EMA (α 0.5)
- *   over the cyclically aligned points;
+ * - position (vertex mean) and shape (points around it, cyclically aligned) blend apart, EMA α 0.5;
+ *   when IoU(new, drawn) < 0.5 it snaps: the position jumps and the shape still blends while the two
+ *   shapes overlap by ≥ 0.5, else the new outline replaces the drawn one (and always on the first item);
  * - clear after three consecutive updates with no item.
  * Immutable: each update returns the next tracker.
  */
@@ -42,15 +43,20 @@ data class OutlineTracker(
         }
         val current = drawn
         val next = choose(candidates, current).points
-        if (current == null || polygonIou(next, current) < OutlineSpec.SNAP_BELOW_IOU) {
+        current ?: return OutlineTracker(next, snapCount = snapCount + 1)
+        // Position and shape blend apart, so a moving item keeps its shape (pinned detail 7).
+        val (newCentre, newShape) = split(next)
+        val (oldCentre, oldShape) = split(current)
+        val shape = alignedTo(newShape, oldShape)
+        val isSnap = polygonIou(next, current) < OutlineSpec.SNAP_BELOW_IOU
+        // A snap to another shape replaces the outline; a snap to the same shape moved far only jumps.
+        if (isSnap && polygonIou(shape, oldShape) < OutlineSpec.SNAP_KEEPS_SHAPE_AT_LEAST_IOU) {
             return OutlineTracker(next, snapCount = snapCount + 1)
         }
         val alpha = OutlineSpec.EMA_ALPHA
-        val blended =
-            alignedTo(next, current).zip(current) { new, old ->
-                NormalizedPoint(alpha * new.x + (1 - alpha) * old.x, alpha * new.y + (1 - alpha) * old.y)
-            }
-        return OutlineTracker(blended, snapCount = snapCount)
+        val centre = if (isSnap) newCentre else blend(newCentre, oldCentre, alpha)
+        val blended = shape.zip(oldShape) { new, old -> NormalizedPoint(centre.x, centre.y) + blend(new, old, alpha) }
+        return OutlineTracker(blended, snapCount = if (isSnap) snapCount + 1 else snapCount)
     }
 
     private fun choose(
@@ -77,3 +83,21 @@ data class OutlineTracker(
         }
     }
 }
+
+/** The vertex mean and the points relative to it. */
+private fun split(points: List<NormalizedPoint>): Pair<NormalizedPoint, List<NormalizedPoint>> {
+    val centre = NormalizedPoint(points.sumOf { it.x } / points.size, points.sumOf { it.y } / points.size)
+    return centre to points.map { NormalizedPoint(it.x - centre.x, it.y - centre.y) }
+}
+
+private fun blend(
+    new: NormalizedPoint,
+    old: NormalizedPoint,
+    alpha: Double,
+): NormalizedPoint = NormalizedPoint(alpha * new.x + (1 - alpha) * old.x, alpha * new.y + (1 - alpha) * old.y)
+
+private operator fun NormalizedPoint.plus(other: NormalizedPoint): NormalizedPoint =
+    NormalizedPoint(
+        x + other.x,
+        y + other.y,
+    )

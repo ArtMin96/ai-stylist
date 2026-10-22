@@ -157,9 +157,10 @@ class OutlineQualityTest {
     }
 
     @Test
-    fun `the polygon-to-mask IoU of a traced outline is high on the raw mask`() {
+    fun `at frame size a traced outline covers the filled item with IoU of at least 0_92`() {
         stillItems.forEach { mask ->
-            val iou = polygonMaskIou(requireNotNull(mask.outline()), mask.width, mask.height, mask.pixels)
+            val filled = filledLargestComponent(mask.width, mask.height, mask.pixels)
+            val iou = polygonMaskIou(requireNotNull(mask.outline()), mask.width, mask.height, filled)
             assertTrue("${mask.name}: IoU $iou", iou >= STATIC_MIN_IOU)
         }
     }
@@ -227,7 +228,7 @@ class OutlineQualityTest {
     ): Double = from.maxOf { p -> to.minOf { q -> hypot(p.x - q.x, p.y - q.y) } }
 
     private companion object {
-        const val REAL_MASK_COUNT = 4
+        const val REAL_MASK_COUNT = 5
         const val FIXTURE_REDUCTION = 4
         const val STATIC_MIN_IOU = 0.92
         const val JITTER_MIN_IOU = 0.95

@@ -40,6 +40,7 @@ class OutlineParityTest {
         assertEquals(OutlineSpec.KEEP_AT_LEAST_IOU, params.number("keepAtLeastIou"), 0.0)
         assertEquals(OutlineSpec.SWITCH_AT_AREA_RATIO, params.number("switchAtAreaRatio"), 0.0)
         assertEquals(OutlineSpec.SNAP_BELOW_IOU, params.number("snapBelowIou"), 0.0)
+        assertEquals(OutlineSpec.SNAP_KEEPS_SHAPE_AT_LEAST_IOU, params.number("snapKeepsShapeAtLeastIou"), 0.0)
         assertEquals(OutlineSpec.EMA_ALPHA, params.number("emaAlpha"), 0.0)
         assertEquals(OutlineSpec.CLEAR_AFTER_MISSED_UPDATES, params.int("clearAfterMissedUpdates"))
         assertEquals(OutlineSpec.IOU_GRID_CELLS, params.int("iouGridCells"))
@@ -66,6 +67,20 @@ class OutlineParityTest {
                 val traced = requireNotNull(trace) { "$name: no outline" }
                 assertEquals("$name vertex count", case.int("simplifiedVertexCount"), traced.simplifiedVertexCount)
                 assertClose(name, expected.points(), traced.points)
+                // The static reference (pinned detail 8): the filled largest component, and the raw mask.
+                val filled = filledLargestComponent(width, height, mask)
+                assertEquals(
+                    "$name filled IoU",
+                    case.number("staticIouFilled"),
+                    polygonMaskIou(traced.points, width, height, filled),
+                    STATIC_IOU_TOLERANCE,
+                )
+                assertEquals(
+                    "$name raw IoU",
+                    case.number("staticIouRaw"),
+                    polygonMaskIou(traced.points, width, height, mask),
+                    STATIC_IOU_TOLERANCE,
+                )
             }
         }
     }
@@ -102,6 +117,33 @@ class OutlineParityTest {
     }
 
     @Test
+    fun `a translated item keeps its shape between masks`() {
+        val case =
+            fixture.getValue("temporal").jsonArray.map { it.jsonObject }.single {
+                it.string("name") ==
+                    "translation-jitter"
+            }
+        var tracker = OutlineTracker()
+        var previous: List<NormalizedPoint>? = null
+        case.getValue("steps").jsonArray.forEach { step ->
+            val candidates =
+                step.jsonObject.getValue("candidates").jsonArray.map {
+                    OutlineCandidate(it.jsonObject.number("areaShare"), it.jsonObject.getValue("points").points())
+                }
+            tracker = tracker.update(candidates)
+            val drawn = requireNotNull(tracker.drawn)
+            previous?.let { assertTrue(polygonIou(centred(drawn), centred(it)) >= TRANSLATION_MIN_IOU) }
+            previous = drawn
+        }
+    }
+
+    private fun centred(points: List<NormalizedPoint>): List<NormalizedPoint> {
+        val cx = points.sumOf { it.x } / points.size
+        val cy = points.sumOf { it.y } / points.size
+        return points.map { NormalizedPoint(it.x - cx + HALF, it.y - cy + HALF) }
+    }
+
+    @Test
     fun `round half to even matches the reference rounding`() {
         assertEquals(2L, roundHalfEven(5, 2))
         assertEquals(4L, roundHalfEven(7, 2))
@@ -127,6 +169,10 @@ class OutlineParityTest {
 }
 
 /** The shared parity fixture, a test resource (see this module's build file). */
+private const val TRANSLATION_MIN_IOU = 0.95
+private const val STATIC_IOU_TOLERANCE = 1e-6
+private const val HALF = 0.5
+
 internal fun loadParityFixture(): JsonObject =
     Json
         .parseToJsonElement(

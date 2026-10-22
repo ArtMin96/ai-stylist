@@ -20,6 +20,7 @@ object OutlineSpec {
     const val KEEP_AT_LEAST_IOU: Double = 0.3
     const val SWITCH_AT_AREA_RATIO: Double = 1.5
     const val SNAP_BELOW_IOU: Double = 0.5
+    const val SNAP_KEEPS_SHAPE_AT_LEAST_IOU: Double = 0.5
     const val EMA_ALPHA: Double = 0.5
     const val CLEAR_AFTER_MISSED_UPDATES: Int = 3
     const val IOU_GRID_CELLS: Int = 64

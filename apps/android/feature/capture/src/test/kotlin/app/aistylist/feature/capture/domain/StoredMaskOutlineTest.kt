@@ -55,8 +55,9 @@ class StoredMaskOutlineTest {
         val item = image8.instances().firstOrNull() ?: return null
         val mask = BooleanArray(labels.size) { image8.isLabel(it % image.width, it / image.width, item.label) }
         val outline = traceOutline(image.width, image.height, mask)?.points ?: return file.path to 0.0
+        val filled = filledLargestComponent(image.width, image.height, mask)
         return file.path.substringBeforeLast('/').substringAfterLast('/') to
-            polygonMaskIou(outline, image.width, image.height, mask)
+            polygonMaskIou(outline, image.width, image.height, filled)
     }
 
     private companion object {

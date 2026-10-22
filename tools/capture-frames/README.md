@@ -100,7 +100,7 @@ a rejection drops only that set: `too-big` (C11: the item scaled up until 25 % o
 the two edges it reaches first, split evenly, so it touches two or more edges and locks with
 `cap-hint-cut-off-multiple`; at 25 % past each edge it fills the frame and Vision finds no item)
 and, for `small-item` only, every base gets `too-small-found` (C5: the box midway between the size at
-which iOS clearly finds the mask, 1.1 × `ios.minInstanceAreaShare` ÷ coverage, and 0.9 × the family
+which iOS clearly finds the mask, 1.1 × `mask.minInstanceAreaShare` ÷ coverage, and 0.9 × the family
 minimum; it locks with `cap-hint-too-small` on both platforms, where brief §11's 35 % too-small reads
 as no item on iOS) and `too-bright` (the good item on a white surface: everything but the
 item is clipped white, so the clipped share is clearly over the limit while the item stays found and
@@ -263,7 +263,7 @@ So the generator draws the path itself (`JitterPath` in `Sources/Output.swift`) 
 the index. It draws each frame's offset uniformly within ±`jitter` from SplitMix64 seeded with
 `jitterSeed`. It redraws until the offset differs by more than 1.25 × `steady.maxCentreShift`
 (`Layout.jitterStepFailFactor`) on at least one axis from every frame that two consecutive reads may
-see: one `evaluation.intervalMs` apart (consecutive evaluations) or one `ios.maskIntervalMs` apart
+see: one `evaluation.intervalMs` apart (consecutive evaluations) or one `mask.intervalMs` apart
 (consecutive masks at the phone's cadence), each up to one frame late, with the segment looping. Only
 those distances are constrained; requiring every distance up to the mask interval left some seeds with
 no possible offset. No threshold changes.
@@ -291,7 +291,7 @@ by at most 0.5 × it on every other frame.
 - `platform`: per-platform overrides, `{}` when both platforms expect the same. Today it is always
   `{}`: both apps measure the item from a foreground mask the same way (iOS Vision, Android LiteRT;
   owner's mask decision 2026-10-22), so a drawn item whose mask covers less than
-  `ios.minInstanceAreaShare`, such as `small-item` too small, locks with `no-item` on both. Until
+  `mask.minInstanceAreaShare`, such as `small-item` too small, locks with `no-item` on both. Until
   Android's mask lane merges, Android still reads ML Kit boxes there and fails those sets, by design.
 
 ```json
@@ -396,7 +396,7 @@ expected file's `platform.<platform>` block applies first. `summary.md` states t
   the expected `anywayReason`. With the screen-reader flag it shows within one evaluation interval of
   the start. Fields the scorer does not know (such as a segment's `tiltDegrees`) pass through.
 - **Live outline** (on results lines that log it; iOS now, Android after its outline lane): a
-  segment that shows an item has an outline by its first mask (`ios.maskIntervalMs`); an empty,
+  segment that shows an item has an outline by its first mask (`mask.intervalMs`); an empty,
   weak-surface, no-item or gap segment shows none; flat jitter sets keep outline stability ≥ 0.95.
   The outline's IoU with the stored mask is reported per variant as information.
 - `summary.md` adds a hard-cases table: pass counts per variant beyond the brief §11 variants.

@@ -2,10 +2,10 @@
 
 > File name: `docs/adr/0013-on-device-garment-outline-android.md`. Index: `docs/adr/README.md`.
 
-- **Status:** Proposed (owner-approved 2026-10-22)
+- **Status:** Accepted (owner, 2026-10-22)
 - **Date:** 2026-10-22
 - **Deciders:** product owner; capture camera lead
-- **Decision-log entry:** none yet _(create a DEC in doc 16 when accepted)_
+- **Decision-log entry:** DEC-90 in `planning/16-risks-open-questions-and-decision-log.md`
 - **Related:** capture brief `.claude/plans/2026-10-22-capture-camera-brief.md` ("Live outline", §3, C2, C6, C32) · ADR-0012 (ML Kit usage reporting off) · doc 10 §1 row 11 · the parity fixture `tools/capture-frames/parity/` · phase P06
 
 ## Context

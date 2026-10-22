@@ -129,7 +129,7 @@ answers Q5, Q8, Q14–Q19 and the underwear worn-mode opt-in of 2026-10-21 (arti
 answers of 2026-10-22 (brief §16), so the rows above rest on a recorded decision. Its number and
 wording are the owner's. It is not added to doc 16 by this proposal.
 
-### 7a. Draft wording for the owner (not applied)
+### 7a. Draft wording for the owner (APPLIED 2026-10-22 as DEC-88, updated to the built camera, and DEC-89; ADR-0013 became DEC-90)
 
 The row follows the doc 16 table (`| DEC | Decision | Rationale | Source |`). `DEC-NN` is a
 placeholder; the owner picks the number.

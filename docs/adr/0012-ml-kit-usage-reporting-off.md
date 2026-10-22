@@ -2,10 +2,10 @@
 
 > File name: `docs/adr/0012-ml-kit-usage-reporting-off.md`. Index: `docs/adr/README.md`.
 
-- **Status:** Proposed (owner-approved 2026-10-22)
+- **Status:** Accepted (owner, 2026-10-22)
 - **Date:** 2026-10-22
 - **Deciders:** product owner; capture camera lead
-- **Decision-log entry:** DEC-NN draft in `.claude/plans/2026-10-22-capture-camera-plan-changes-proposal.md` §7a _(create in doc 16 when accepted)_
+- **Decision-log entry:** DEC-89 in `planning/16-risks-open-questions-and-decision-log.md`
 - **Related:** capture brief `.claude/plans/2026-10-22-capture-camera-brief.md` (C22, C31) · doc 10 §2 row 11 · security review finding B1 (2026-10-22) · phase P06
 
 ## Context

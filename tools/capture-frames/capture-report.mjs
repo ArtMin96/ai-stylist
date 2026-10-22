@@ -113,6 +113,12 @@ function flowsOf(run, platform) {
   return flows;
 }
 
+function timing(spread) {
+  return spread
+    ? `${spread.min}–${spread.max} ms (median ${spread.median}, n=${spread.count})`
+    : 'not measured';
+}
+
 function platformVerdict(summary, flows, shots) {
   const problems = [];
   if (summary.failures.length > 0) problems.push(`${summary.failures.length} failing case(s)`);
@@ -177,6 +183,8 @@ function section(run, platform) {
     `| False unlocks | ${summary.falseUnlocks.length} |`,
     `| "Take photo anyway" | ${anyway}; wanted ${summary.anyway.atMs} ± ${summary.anyway.toleranceMs} ms |`,
     `| Screen reader: anyway at once | ${reader} |`,
+    `| Unlock (single, from first frame) | ${timing(summary.unlockMs)} |`,
+    `| Auto-capture (single, from first frame) | ${timing(summary.autoCaptureMs)} |`,
     `| Screenshots | light ${shots.light.length}, dark ${shots.dark.length} |`,
     '',
     '### Maestro flows',

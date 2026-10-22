@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
 
     <!-- The guided capture camera (capture brief §7, C23): asked at first use; without it the flow
          offers import. A phone with no camera still installs the app. -->
@@ -7,5 +8,19 @@
     <uses-feature
         android:name="android.hardware.camera.any"
         android:required="false" />
+
+    <application>
+        <!-- ML Kit links Google's datatransport runtime, whose CCT backend sends usage reports to
+             Google. The owner switched that channel off (docs/adr/0012-ml-kit-usage-reporting-off.md):
+             only the backend's registration is removed; the runtime stays, ML Kit needs it. It sits
+             here, in the module that brings ML Kit, so the class is on this module's classpath. -->
+        <service
+            android:name="com.google.android.datatransport.runtime.backends.TransportBackendDiscovery"
+            tools:node="merge">
+            <meta-data
+                android:name="backend:com.google.android.datatransport.cct.CctBackendFactory"
+                tools:node="remove" />
+        </service>
+    </application>
 
 </manifest>

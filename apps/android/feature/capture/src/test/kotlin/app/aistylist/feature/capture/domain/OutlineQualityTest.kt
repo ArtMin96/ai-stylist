@@ -176,39 +176,8 @@ class OutlineQualityTest {
     private fun Mask.candidate(): OutlineCandidate? =
         outline()?.let { OutlineCandidate(pixels.count { on -> on }.toDouble() / pixels.size, it) }
 
-    /** The largest 8-connected component of [mask] with its holes filled (what an outline can trace). */
-    private fun filledLargestComponent(mask: Mask): BooleanArray {
-        val components = ConnectedComponents.of(mask.width, mask.height, mask.pixels)
-        val largest = components.sizes.indices.maxBy { components.sizes[it] } + 1
-        val isItem = BooleanArray(mask.pixels.size) { components.labels[it] == largest }
-        val outside = BooleanArray(mask.pixels.size)
-        val stack = ArrayDeque<Int>()
-        mask.pixels.indices.filter { mask.isBorder(it) && !isItem[it] }.forEach {
-            outside[it] = true
-            stack += it
-        }
-        while (stack.isNotEmpty()) {
-            mask.fourNeighbours(stack.removeLast()).filter { !outside[it] && !isItem[it] }.forEach {
-                outside[it] = true
-                stack += it
-            }
-        }
-        return BooleanArray(mask.pixels.size) { !outside[it] }
-    }
-
-    private fun Mask.isBorder(index: Int): Boolean {
-        val x = index % width
-        val y = index / width
-        return x == 0 || y == 0 || x == width - 1 || y == height - 1
-    }
-
-    private fun Mask.fourNeighbours(index: Int): List<Int> {
-        val x = index % width
-        val y = index / width
-        return listOf(x - 1 to y, x + 1 to y, x to y - 1, x to y + 1)
-            .filter { (nx, ny) -> nx in 0 until width && ny in 0 until height }
-            .map { (nx, ny) -> ny * width + nx }
-    }
+    private fun filledLargestComponent(mask: Mask): BooleanArray =
+        filledLargestComponent(mask.width, mask.height, mask.pixels)
 
     /** IoU of [polygon] (pixel centres inside, even-odd) and [filled], at the mask's resolution. */
     private fun rasterIou(

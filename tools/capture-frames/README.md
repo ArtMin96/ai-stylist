@@ -363,7 +363,9 @@ platform:
    `just android-run`, which boots the AVD `aistylist-dev` when no device is online, then
    `apps/android/tools/capture-frames.sh push`. No Gradle build runs after that point.
 2. Sweeps every frame set on the harness's virtual clock and pulls `capture-results.jsonl`. Android
-   is scored on stored masks and keypoints, read with the iOS mask measure. A second sweep with the
+   is scored on stored masks and keypoints, read with the iOS mask measure. Android sweeps take a new
+   mask every 250 ms and reuse it between frames, as the phone's segmenter does, so they exercise the
+   steady rule's mask timestamps (`-e captureMaskCadenceMs 0` gives every frame a fresh mask). A second sweep with the
    live LiteRT segmenter on every frame PNG (and live ML Kit pose) is information only; it also pulls
    `capture-segmenter.jsonl` (latency and mask IoU per image).
 3. Sweeps the locked sets `top-flat-01-jitter`, `top-flat-01-cut-top`, `top-flat-empty` and

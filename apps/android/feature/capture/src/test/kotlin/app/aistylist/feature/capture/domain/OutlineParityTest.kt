@@ -23,12 +23,7 @@ import kotlin.math.abs
  * fixture's tolerance, and every spec number equal to the fixture's `params`.
  */
 class OutlineParityTest {
-    private val fixture: JsonObject =
-        Json
-            .parseToJsonElement(
-                requireNotNull(javaClass.classLoader?.getResource("outline-parity.json")) { "parity fixture missing" }
-                    .readText(),
-            ).jsonObject
+    private val fixture: JsonObject = loadParityFixture()
 
     private val tolerance = fixture.number("tolerance")
 
@@ -60,8 +55,7 @@ class OutlineParityTest {
             val name = case.string("name")
             val width = case.int("width")
             val height = case.int("height")
-            val rows = case.getValue("rows").jsonArray.map { it.jsonPrimitive.content }
-            val mask = BooleanArray(width * height) { rows[it / width][it % width] == '#' }
+            val mask = case.mask()
 
             val trace = traceOutline(width, height, mask)
 
@@ -132,13 +126,29 @@ class OutlineParityTest {
     }
 }
 
-private fun JsonObject.number(key: String): Double = getValue(key).jsonPrimitive.double
+/** The shared parity fixture, a test resource (see this module's build file). */
+internal fun loadParityFixture(): JsonObject =
+    Json
+        .parseToJsonElement(
+            requireNotNull(OutlineParityTest::class.java.classLoader?.getResource("outline-parity.json")) {
+                "parity fixture missing"
+            }.readText(),
+        ).jsonObject
 
-private fun JsonObject.int(key: String): Int = getValue(key).jsonPrimitive.int
+/** A contour case's mask (`#` is foreground), row-major. */
+internal fun JsonObject.mask(): BooleanArray {
+    val width = int("width")
+    val rows = getValue("rows").jsonArray.map { it.jsonPrimitive.content }
+    return BooleanArray(width * int("height")) { rows[it / width][it % width] == '#' }
+}
 
-private fun JsonObject.string(key: String): String = getValue(key).jsonPrimitive.content
+internal fun JsonObject.number(key: String): Double = getValue(key).jsonPrimitive.double
 
-private fun JsonElement.points(): List<NormalizedPoint> =
+internal fun JsonObject.int(key: String): Int = getValue(key).jsonPrimitive.int
+
+internal fun JsonObject.string(key: String): String = getValue(key).jsonPrimitive.content
+
+internal fun JsonElement.points(): List<NormalizedPoint> =
     (this as JsonArray).map { pair ->
         val xy = pair.jsonArray
         NormalizedPoint(xy[0].jsonPrimitive.double, xy[1].jsonPrimitive.double)

@@ -99,6 +99,20 @@ struct CaptureOutlineParityTests {
     }
   }
 
+  // Owner 2026-10-22: the stability measure centres on the area centroid. The vertex mean drifts with the
+  // edge's jaggies on an unchanged shape (these raw outlines read 0.932 centred on it).
+  @Test("the raw outlines of an unchanged real mask, translated by its stored offsets, keep centred IoU ≥ 0.95")
+  func stabilityCentresOnAreaCentroid() throws {
+    let testCase = try #require(fixture.temporal.first { $0.name == "translation-jitter" })
+    let raw = try testCase.steps.map { try outlinePoints(#require($0.candidates.first).points) }
+    #expect(raw.count >= 3)
+    for (number, pair) in zip(raw.dropFirst(), raw).enumerated() {
+      let stability = CaptureOutlineGeometry.intersectionOverUnion(
+        CaptureOutlineGeometry.centred(pair.0), CaptureOutlineGeometry.centred(pair.1))
+      #expect(stability >= 0.95, "step \(number + 1): \(stability)")
+    }
+  }
+
   @Test("the tracker draws what the reference draws after every mask update")
   func temporal() {
     #expect(!fixture.temporal.isEmpty)

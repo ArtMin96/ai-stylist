@@ -349,6 +349,22 @@ nonisolated public enum CaptureOutlineContour {
     return sum / 2
   }
 
+  /// The polygon's area centroid (shoelace); nil when its area is under 1e-9.
+  static func areaCentroid(_ points: [CaptureOutlinePoint]) -> CaptureOutlinePoint? {
+    let area = signedArea(points)
+    guard abs(area) >= 1e-9 else { return nil }
+    var x = 0.0
+    var y = 0.0
+    for index in points.indices {
+      let a = points[index]
+      let b = points[(index + 1) % points.count]
+      let cross = a.x * b.y - b.x * a.y
+      x += (a.x + b.x) * cross
+      y += (a.y + b.y) * cross
+    }
+    return CaptureOutlinePoint(x: x / (6 * area), y: y / (6 * area))
+  }
+
   /// Douglas–Peucker on a closed loop, split at the vertex farthest from vertex 0.
   private static func douglasPeuckerClosed(
     _ points: [CaptureOutlinePoint],
@@ -420,15 +436,7 @@ nonisolated public enum CaptureOutlineContour {
 
   /// Arc length where the vertical line through the area centroid meets the loop at its smallest y.
   private static func topRayAnchor(_ points: [CaptureOutlinePoint], cumulative: [Double]) -> Double {
-    let area = signedArea(points)
-    guard abs(area) >= 1e-9 else { return 0 }
-    var centroidX = 0.0
-    for index in points.indices {
-      let a = points[index]
-      let b = points[(index + 1) % points.count]
-      centroidX += (a.x + b.x) * (a.x * b.y - b.x * a.y)
-    }
-    centroidX /= 6 * area
+    guard let centroidX = areaCentroid(points)?.x else { return 0 }
     var best: (y: Double, arc: Double)?
     for index in points.indices {
       let a = points[index]

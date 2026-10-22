@@ -331,7 +331,7 @@
     }
 
     /// The spec's shape stability (brief §17, the stored-frame test): both outlines centred on their
-    /// vertex mean, rasterised at the frame's pixels (the stored mask's size), IoU.
+    /// area centroid, rasterised at the frame's pixels (the stored mask's size), IoU.
     private static func shapeStability(
       _ outline: [CaptureOutlinePoint],
       _ previous: [CaptureOutlinePoint],

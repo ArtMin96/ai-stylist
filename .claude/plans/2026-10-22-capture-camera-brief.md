@@ -512,6 +512,7 @@ Answered by the owner through the question tool on 2026-10-22. These override ea
 | Stuck case (3 iterations, no progress) | Record it as BLOCKED in the scoreboard with attempts and evidence, then keep working on other cases. Never weaken tests or thresholds. |
 | New dependencies | "Add what needed": add what the work needs and list every addition (name, version, why) in the final report for the owner to approve or revert. |
 | Hard cases | 2026-10-22 owner: add hard cases C8–C11, tilt, glare and a new partly-covered rule; live outline approved pending a feasibility check; UI polish deferred. |
+| Stability measure (2026-10-22) | 2026-10-22 owner: stability measure centres on the area centroid (was vertex mean); old 0.9522 / new 0.9680 (stored-frame flat jitter min; p5 0.9883); reason: vertex mean drifts with edge jaggies on an unchanged shape (0.907 vs 0.948). The tracker's blend keeps the vertex mean. |
 | Hold-still ring (2026-10-22) | Shorten the ring from 1 s to 0.5 s (`lock.ringFillMs` 1000 → 500) and keep the strict unlock on three distinct masks: about 1.3 s from a steady item to the photo. |
 | Scope | Owner, mid-turn: "You are allowed to do anything to make this as close as possible." Hard limits that still stand: no PR, no merge, no `main` changes, no rebase or force-push of pushed commits, no public publication of repo content, no real user or real-person photos, no weakened tests, expected files or thresholds (threshold changes only through the frame-set rule with old/new/reason). |
 
@@ -599,8 +600,10 @@ tolerance does not absorb (rounding, loop order, ties, IoU).
     change. The 0.95 bar is unchanged. Open for the owner: the margin is thin, and most of what is
     left is the measure, not the outline. Centring on the vertex mean, raw outlines of an unchanged,
     translated mask score as low as 0.907; centred on the area centroid they score 0.948, and the
-    drawn outlines 0.968 (flat). Centring the stability measure on the area centroid is proposed, not
-    applied.
+    drawn outlines 0.968 (flat). **Changed 2026-10-22 (owner):** the stability measure centres each
+    outline on its area centroid (shoelace; the vertex mean only for a polygon of area under 1e-9);
+    the tracker's blend keeps the vertex mean. Stored-frame flat jitter min 0.9522 → 0.9680, p5 0.9883
+    (1935 pairs); the 0.95 bar is unchanged.
 11. **Rate:** at most every 250 ms, one request in flight (the mask's own cadence).
 12. **Draw:** before an item is found, the faint family guide only (one camera-paper 2 stroke, no
     halo). Then the live outline `cap-outline`, two-tone like the guide was (camera-paper 2 over
@@ -618,7 +621,7 @@ moved by the jitter, once per 250 ms of playback. The results log adds per segme
 `outlineFirstMs`, `outlinePresentAtEnd`, `outlineUpdates`, `outlineSnaps`, `outlineIouMedian`,
 `outlineIouMin` (drawn outline against the stored item mask it was traced from, as stored: an item
 with a hole, such as a bag handle or a covered item, scores lower because the outline fills holes), and
-`outlineStabilityMedian`, `outlineStabilityMin` (centroid-aligned IoU of successive drawn outlines,
+`outlineStabilityMedian`, `outlineStabilityMin` (IoU of successive drawn outlines, each centred on its area centroid,
 snaps included, rasterised at the frame's pixels as the stored-frame test and the spike's
 `stability.py` measure it; until 2026-10-22 it used the coarser 64 × 64 IoU grid and left snaps out,
 which read 0.9498 where the spec's measure reads 0.9522). An outline still drawn from the previous
@@ -645,7 +648,9 @@ ios-test-packages features`) and skip with that message otherwise. Measured 2026
 static lowest 0.932 over 507 masks; jitter min 0.961, p5 0.985 over 1035 pairs; noise median 0.0042,
 p95 0.023 over 495 pairs; two items lowest 0.958 over 41 sets. Re-measured on the regenerated frames
 (wider jitter reach) after the blend change: static lowest 0.932 over 512 masks; jitter min 0.952,
-p5 0.987; noise median 0.0042, p95 0.023; two items lowest 0.958.
+p5 0.987; noise median 0.0042, p95 0.023; two items lowest 0.958. With the stability measure centred
+on the area centroid (owner 2026-10-22): static lowest 0.932 over 512 masks; jitter min 0.968, p5 0.988
+over 1935 pairs; noise median 0.0042, p95 0.023; two items lowest 0.958.
 
 **Steady-check fix (2026-10-22).** The spike found that the iOS rules compared each evaluation's box
 with the previous evaluation's box. Evaluations run every 100 ms and the mask every 250 ms, so two of

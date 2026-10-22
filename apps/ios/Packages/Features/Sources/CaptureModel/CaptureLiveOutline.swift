@@ -273,12 +273,18 @@ nonisolated public enum CaptureOutlineGeometry {
     return union > 0 ? Double(intersection) / Double(union) : 0
   }
 
-  /// The polygon moved so its vertex mean sits at the frame centre: shape comparisons without position.
+  /// The polygon moved so its area centroid sits at the frame centre: the stability measure's shape
+  /// comparison without position. The area centroid, unlike the vertex mean, does not drift with the edge's
+  /// jaggies on an unchanged shape (owner 2026-10-22). The tracker's blend keeps the vertex mean (`Shape`).
+  /// A degenerate polygon (area under 1e-9) falls back to the vertex mean.
   public static func centred(_ points: [CaptureOutlinePoint]) -> [CaptureOutlinePoint] {
     guard !points.isEmpty else { return points }
-    let meanX = points.map(\.x).reduce(0, +) / Double(points.count)
-    let meanY = points.map(\.y).reduce(0, +) / Double(points.count)
-    return points.map { CaptureOutlinePoint(x: $0.x - meanX + 0.5, y: $0.y - meanY + 0.5) }
+    let centre =
+      CaptureOutlineContour.areaCentroid(points)
+      ?? CaptureOutlinePoint(
+        x: points.map(\.x).reduce(0, +) / Double(points.count),
+        y: points.map(\.y).reduce(0, +) / Double(points.count))
+    return points.map { CaptureOutlinePoint(x: $0.x - centre.x + 0.5, y: $0.y - centre.y + 0.5) }
   }
 
   /// `points` cyclically shifted to the least summed squared distance to `reference` (same count; ties

@@ -33,7 +33,8 @@ pnpm exec prettier --write tools/capture-frames/parity/outline-parity.json
 - `temporal`: sequences of mask updates. Each step lists the candidates (largest first, each with its
   `areaShare` and polygon) and the outline `expected` after that update, or `null` once it is cleared.
   `translation-jitter` is a real item (`one-piece-flat-02-jitter`) moved by its stored offsets at the
-  mask cadence; both apps also assert that successive drawn outlines keep a centroid-aligned IoU ≥ 0.95.
+  mask cadence; both apps also assert that successive drawn outlines keep a centroid-aligned IoU ≥ 0.95,
+  and so must the raw candidates (the stability measure, "Pinned details" item 9).
 
 ## Pinned details
 
@@ -71,3 +72,12 @@ The tolerance does not absorb a different choice in any of these, so both apps m
    background not reachable 4-connected from the border. Never the raw mask: the outline fills holes by
    spec, so an item with a hole scores low against it (`bag-flat-01-good` at full size: 0.986 filled,
    0.879 raw). The results log's `outlineIou*` fields do use the raw mask, as information.
+9. **Stability measure.** Stability is the IoU of two successive outlines, each first moved so its
+   area centroid sits at (0.5, 0.5). The area centroid is the polygon's, by the shoelace formula:
+   `Cx = Σ (xᵢ + xᵢ₊₁)(xᵢyᵢ₊₁ − xᵢ₊₁yᵢ) / 6A`, likewise `Cy`, with `A` the signed area. A polygon
+   with |A| under 1e-9 falls back to the vertex mean. The parity tests read it with the IoU of item 6;
+   the stored-frame test and the results log's `outlineStability*` rasterise at the mask's pixels. The
+   bar is 0.95. Only the measure uses the area centroid; the blend (item 7) keeps the vertex mean.
+   Changed 2026-10-22 (owner): it centred on the vertex mean, which drifts with the edge's jaggies on
+   an unchanged shape (raw outlines of a translated mask 0.907 vs 0.948 on the area centroid; the
+   fixture's `translation-jitter` raw candidates 0.932 vs 0.954).

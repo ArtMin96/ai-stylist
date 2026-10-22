@@ -25,11 +25,15 @@ pnpm exec prettier --write tools/capture-frames/parity/outline-parity.json
   - Hand-made masks: square, wide rectangle, a 4 × 4 item (the crop is upsampled), L-shape, a ring
     with a hole, two equal blobs (the first in row-major order wins), two unequal blobs, two squares
     touching at a corner (a saddle), and a checkerboard.
-  - Real masks: four `frame.mask.png` files from `just capture-frames`, reduced 4 × 4 by majority.
-    Their sets are named in each case's `note`.
+  - Real masks: five `frame.mask.png` files from `just capture-frames`, reduced 4 × 4 by majority.
+    Their sets are named in each case's `note`. `bag-flat-01-good` keeps its handle hole.
+  - `staticIouFilled` is the static test's number for the case, and `staticIouRaw` the same against
+    the raw mask (information only); see "Pinned details" item 8.
 - `iou`: polygon pairs and the IoU the snap and hysteresis rules read.
 - `temporal`: sequences of mask updates. Each step lists the candidates (largest first, each with its
   `areaShare` and polygon) and the outline `expected` after that update, or `null` once it is cleared.
+  `translation-jitter` is a real item (`one-piece-flat-02-jitter`) moved by its stored offsets at the
+  mask cadence; both apps also assert that successive drawn outlines keep a centroid-aligned IoU ≥ 0.95.
 
 ## Pinned details
 
@@ -53,3 +57,17 @@ The tolerance does not absorb a different choice in any of these, so both apps m
 6. **IoU.** Both polygons are rasterised on a 64 × 64 grid over their joint bounding box. A cell
    counts when its centre is inside by the even-odd rule. An edge crosses a row's centre line when
    exactly one of its ends lies below it.
+7. **Blend.** Position and shape blend apart. The centroid is the vertex mean; the shape is the points
+   minus the centroid. The new shape is cyclically aligned to the drawn shape (least summed squared
+   distance, smallest shift on a tie). With IoU(new, drawn) ≥ 0.5 both the centroid and the shape take
+   the EMA (α 0.5). Below it the outline snaps: with the two shapes' IoU ≥ 0.5
+   (`snapKeepsShapeAtLeastIou`) the centroid jumps to the new one and the shape still takes the EMA;
+   otherwise the new outline replaces the drawn one. Changed 2026-10-22 (capture-sim run
+   `2026-10-22-1502`): blending absolute points and replacing the outline on every snap let a purely
+   translated item change shape between masks (centroid-aligned IoU 0.932 against the 0.95 bar).
+8. **Static IoU reference.** The stored-frame static test (≥ 0.92) rasterises the outline at the
+   mask's resolution (a pixel counts when its centre is inside, even-odd) and compares it with the
+   filled outer boundary of the mask's largest 8-connected component: holes filled, where a hole is
+   background not reachable 4-connected from the border. Never the raw mask: the outline fills holes by
+   spec, so an item with a hole scores low against it (`bag-flat-01-good` at full size: 0.986 filled,
+   0.879 raw). The results log's `outlineIou*` fields do use the raw mask, as information.

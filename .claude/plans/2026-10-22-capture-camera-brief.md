@@ -576,11 +576,31 @@ tolerance does not absorb (rounding, loop order, ties, IoU).
 8. **Resample:** 64 points by arc length, starting where the vertical line through the area centroid
    meets the contour at its smallest y.
 9. **Map:** normalised frame coordinates, origin top-left.
-10. **Temporal:** one update per new mask (a reused mask changes nothing). The new outline is cyclically
-    shifted to the least summed squared distance to the drawn one, then blended, EMA α = 0.5. It snaps
-    (replaces, no animation) when IoU(new, drawn) < 0.5 or on the first item. It clears after 3
-    consecutive mask updates with no item (750 ms; not 3 rule evaluations). IoU everywhere: both
-    polygons rasterised on a 64 × 64 grid over their joint box, cell centres, even-odd.
+10. **Temporal:** one update per new mask (a reused mask changes nothing). Position and shape blend
+    apart: the centroid is the vertex mean, the shape is the points minus the centroid, and the new
+    shape is cyclically shifted to the least summed squared distance to the drawn shape. With
+    IoU(new, drawn) ≥ 0.5 the centroid and the shape each take an EMA, α = 0.5. Below 0.5 the outline
+    snaps (no animation): when the two centred shapes have IoU ≥ 0.5 (`snapKeepsShapeAtLeastIou`) the
+    centroid jumps to the new one and the shape still takes the EMA; otherwise the new outline replaces
+    the drawn one. The first item replaces. It clears after 3 consecutive mask updates with no item
+    (750 ms; not 3 rule evaluations). IoU everywhere: both polygons rasterised on a 64 × 64 grid over
+    their joint box, cell centres, even-odd.
+    **Changed 2026-10-22** (capture-sim run `2026-10-22-1502` on `7c06e36`, iOS 787/788 at the 250 ms
+    mask cadence: `outerwear-flat-01-jitter` outline stability min 0.9498 < 0.95). Old: one EMA on the
+    absolute points after cyclic alignment, and every snap replaced the outline. New: as above. Reason:
+    a purely translated item's raw outline changes shape by up to 7 % between positions (crop and
+    64 px grid quantisation), and each snap showed that raw shape; with the regenerated jitter reach,
+    snaps between masks became common. Splitting centroid and shape alone gave the same numbers
+    (measured: the alignment did not change); keeping the shape blend through a same-shape snap is what
+    holds it. Stored-frame flat jitter min, sampled as the harness samples (a mask once playback
+    advances 250 ms, 44 masks over 11.5 s): 0.9378 old, 0.9522 new (worn 0.8933 → 0.9377, not under
+    the bar). Sweep at the 250 ms cadence (iPhone 17 Simulator, 788 segments): 788/788, flat jitter
+    stability min 0.9522 (`outerwear-flat-01-jitter`), rule outcomes identical to the run before the
+    change. The 0.95 bar is unchanged. Open for the owner: the margin is thin, and most of what is
+    left is the measure, not the outline. Centring on the vertex mean, raw outlines of an unchanged,
+    translated mask score as low as 0.907; centred on the area centroid they score 0.948, and the
+    drawn outlines 0.968 (flat). Centring the stability measure on the area centroid is proposed, not
+    applied.
 11. **Rate:** at most every 250 ms, one request in flight (the mask's own cadence).
 12. **Draw:** before an item is found, the faint family guide only (one camera-paper 2 stroke, no
     halo). Then the live outline `cap-outline`, two-tone like the guide was (camera-paper 2 over
@@ -598,8 +618,11 @@ moved by the jitter, once per 250 ms of playback. The results log adds per segme
 `outlineFirstMs`, `outlinePresentAtEnd`, `outlineUpdates`, `outlineSnaps`, `outlineIouMedian`,
 `outlineIouMin` (drawn outline against the stored item mask it was traced from, as stored: an item
 with a hole, such as a bag handle or a covered item, scores lower because the outline fills holes), and
-`outlineStabilityMedian`, `outlineStabilityMin` (centroid-aligned IoU of successive blended outlines;
-snaps are left out). An outline still drawn from the previous segment is not scored.
+`outlineStabilityMedian`, `outlineStabilityMin` (centroid-aligned IoU of successive drawn outlines,
+snaps included, rasterised at the frame's pixels as the stored-frame test and the spike's
+`stability.py` measure it; until 2026-10-22 it used the coarser 64 × 64 IoU grid and left snaps out,
+which read 0.9498 where the spec's measure reads 0.9522). An outline still drawn from the previous
+segment is not scored.
 
 Sweep 2026-10-22 (iPhone 17 Simulator, 683 sets, 783 segments): the scorer passed 783/783, 0 misses,
 0/299 false locks, 0 false unlocks, as before the outline. Every segment with an item showed an
@@ -612,14 +635,17 @@ that size drops IoU(new, drawn) under 0.5.
 
 **Tests and thresholds** (from the spike's `stability.py`; never loosened): the parity fixture always;
 on the stored frames, static IoU ≥ 0.92 against the filled largest component of every flat
-single-item `frame.mask.png`, and an empty mask draws none; jitter sets, centroid-aligned IoU of
+single-item `frame.mask.png` (holes filled, never the raw mask; `parity/README.md` item 8), and an
+empty mask draws none; jitter sets, centroid-aligned IoU of
 successive drawn outlines ≥ 0.95; still frames with 1 px noise, Hausdorff between successive outlines
 median ≤ 0.01 and p95 ≤ 0.04; two items, IoU ≥ 0.92 with one item and hysteresis keeps it. The
 stored-frame tests trace about 2000 full-size masks, which takes minutes in a debug build, so they run
 only with `CAPTURE_FRAMES_DIR` set (`CAPTURE_FRAMES_DIR=$PWD/artifacts/capture-camera/frames just
 ios-test-packages features`) and skip with that message otherwise. Measured 2026-10-22 (iOS, M4):
 static lowest 0.932 over 507 masks; jitter min 0.961, p5 0.985 over 1035 pairs; noise median 0.0042,
-p95 0.023 over 495 pairs; two items lowest 0.958 over 41 sets.
+p95 0.023 over 495 pairs; two items lowest 0.958 over 41 sets. Re-measured on the regenerated frames
+(wider jitter reach) after the blend change: static lowest 0.932 over 512 masks; jitter min 0.952,
+p5 0.987; noise median 0.0042, p95 0.023; two items lowest 0.958.
 
 **Steady-check fix (2026-10-22).** The spike found that the iOS rules compared each evaluation's box
 with the previous evaluation's box. Evaluations run every 100 ms and the mask every 250 ms, so two of

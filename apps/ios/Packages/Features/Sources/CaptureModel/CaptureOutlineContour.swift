@@ -24,9 +24,12 @@ nonisolated public enum CaptureOutlineSpec {
   public static let keepAtLeastIou = 0.3
   /// …unless the largest candidate has at least this many times its area.
   public static let switchAtAreaRatio = 1.5
-  /// A new outline below this IoU with the drawn one replaces it at once (no blending, no animation).
+  /// A new outline below this IoU with the drawn one snaps: its position jumps (no animation)…
   public static let snapBelowIou = 0.5
-  /// Weight of the new outline in the moving average.
+  /// …and its shape replaces the drawn shape only below this IoU of the two shapes centred on their
+  /// centroids; otherwise the shape still blends (a moved item keeps its shape).
+  public static let snapKeepsShapeAtLeastIou = 0.5
+  /// Weight of the new outline in the moving averages of position and shape.
   public static let emaAlpha = 0.5
   /// The outline clears after this many mask updates in a row without an item.
   public static let clearAfterMissedUpdates = 3

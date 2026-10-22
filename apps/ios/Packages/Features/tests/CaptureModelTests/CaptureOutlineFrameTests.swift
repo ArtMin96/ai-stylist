@@ -151,6 +151,22 @@
     }
   }
 
+  /// The playback frames the debug harness takes a mask from, as `CaptureFrameSetCamera` does: 30 fps, a
+  /// new mask once the playback time has advanced by `maskIntervalMs`, over a single set's 11.5 s
+  /// (anyway delay + tolerance + 1 s).
+  nonisolated private let harnessMaskFrames: [Int] = {
+    var frames: [Int] = []
+    var lastMs: Int?
+    for frame in 0..<345 {
+      let timeMs = Int((Double(frame) * 1000 / 30).rounded())
+      if lastMs.map({ timeMs - $0 >= CaptureRules.Ios.maskIntervalMs }) ?? true {
+        frames.append(frame)
+        lastMs = timeMs
+      }
+    }
+    return frames
+  }()
+
   /// One mask per playback update at the mask cadence, as the tracker sees them: the drawn outlines.
   nonisolated private func drawnOutlines(_ masks: [CaptureGrayImage]) -> [[CaptureOutlinePoint]?] {
     var outline = CaptureLiveOutline()
@@ -208,9 +224,8 @@
       let perSet = try await concurrentMap(sets.map(\.segment)) { segment -> [Double] in
         let mask = try loadGray(segment.mask ?? "")
         let offsets = segment.offsets ?? [[0, 0]]
-        // 180 playback frames at 30 fps, one mask every 250 ms = every 7.5 frames.
-        let masks = (0..<24).map { update in
-          let offset = offsets[Int(Double(update) * 7.5) % offsets.count]
+        let masks = harnessMaskFrames.map { frame in
+          let offset = offsets[frame % offsets.count]
           return mask.shifted(
             byX: Int((offset[0] * Double(mask.width)).rounded()),
             y: Int((offset[1] * Double(mask.height)).rounded()))

@@ -54,8 +54,8 @@
     /// instance), median and minimum; the drawn outline is smoothed, so it lags a moving item.
     public var outlineIouMedian: Double?
     public var outlineIouMin: Double?
-    /// Centroid-aligned IoU of each blended outline with the one before it (shape stability; snaps are
-    /// left out), median and minimum.
+    /// Centroid-aligned IoU of each drawn outline with the one before it, rasterised at the frame's
+    /// pixels as the stored-frame test measures it (shape stability), median and minimum.
     public var outlineStabilityMedian: Double?
     public var outlineStabilityMin: Double?
   }

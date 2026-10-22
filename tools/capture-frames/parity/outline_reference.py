@@ -43,6 +43,7 @@ PARAMS = {
     "keepAtLeastIou": 0.3,
     "switchAtAreaRatio": 1.5,
     "snapBelowIou": 0.5,
+    "snapKeepsShapeAtLeastIou": 0.5,
     "emaAlpha": 0.5,
     "clearAfterMissedUpdates": 3,
     "iouGridCells": 64,
@@ -51,6 +52,7 @@ TOLERANCE = 0.005
 # Real masks: 480 x 640 Vision masks from `just capture-frames`, reduced 4 x 4 by majority (>= 8 of 16).
 REAL_SETS = [
     "top/top-flat-01-good",
+    "bag/bag-flat-01-good",
     "shoes/shoes-flat-01-good",
     "small-item/small-item-flat-01-good",
     "long-bottom/long-bottom-flat-01-cut-left",
@@ -289,6 +291,73 @@ def contour(mask, W, H):
     return mapped, len(simple)
 
 
+# ---------------------------------------------------------------------------------------------- static IoU
+
+
+def rasterise(points, w, h):
+    """The polygon (normalised) filled at w x h pixels: a pixel counts when its centre is inside (even-odd)."""
+    pts = [(x * w, y * h) for x, y in points]
+    inside = set()
+    for r in range(h):
+        y = r + 0.5
+        crossings = []
+        for i in range(len(pts)):
+            a, b = pts[i], pts[(i + 1) % len(pts)]
+            if (a[1] > y) != (b[1] > y):
+                crossings.append(a[0] + (y - a[1]) / (b[1] - a[1]) * (b[0] - a[0]))
+        crossings.sort()
+        for k in range(0, len(crossings) - 1, 2):
+            for c in range(max(0, math.ceil(crossings[k] - 0.5)), min(w, math.ceil(crossings[k + 1] - 0.5))):
+                inside.add(r * w + c)
+    return inside
+
+
+def filled_largest_component(mask, w, h):
+    """The static test's reference: the largest 8-connected component with its holes filled (background
+    reachable 4-connected from the border stays out)."""
+    label, best, best_n = {}, None, 0
+    for start in range(w * h):
+        if mask[start // w][start % w] and start not in label:
+            stack, n = [start], 0
+            label[start] = start
+            while stack:
+                j = stack.pop()
+                n += 1
+                y, x = divmod(j, w)
+                for yy in range(max(0, y - 1), min(h, y + 2)):
+                    for xx in range(max(0, x - 1), min(w, x + 2)):
+                        k = yy * w + xx
+                        if mask[yy][xx] and k not in label:
+                            label[k] = start
+                            stack.append(k)
+            if n > best_n:
+                best, best_n = start, n
+    item = {k for k, v in label.items() if v == best}
+    outside, stack = set(), []
+    for y in range(h):
+        for x in range(w):
+            k = y * w + x
+            if (x in (0, w - 1) or y in (0, h - 1)) and k not in item:
+                outside.add(k)
+                stack.append(k)
+    while stack:
+        y, x = divmod(stack.pop(), w)
+        for yy, xx in ((y, x - 1), (y, x + 1), (y - 1, x), (y + 1, x)):
+            k = yy * w + xx
+            if 0 <= yy < h and 0 <= xx < w and k not in outside and k not in item:
+                outside.add(k)
+                stack.append(k)
+    return set(range(w * h)) - outside
+
+
+def static_ious(points, mask, w, h):
+    """(IoU with the filled largest component: what the static test reads; IoU with the raw mask: information)."""
+    drawn = rasterise(points, w, h)
+    raw = {y * w + x for y in range(h) for x in range(w) if mask[y][x]}
+    filled = filled_largest_component(mask, w, h)
+    return len(drawn & filled) / len(drawn | filled), len(drawn & raw) / len(drawn | raw)
+
+
 # ---------------------------------------------------------------------------------------------- temporal
 
 
@@ -367,12 +436,30 @@ class Tracker:
             return self.drawn
         self.missed = 0
         new = self.choose(candidates)[1]
-        if self.drawn is None or iou(new, self.drawn) < PARAMS["snapBelowIou"]:
+        if self.drawn is None:
             self.drawn = list(new)
-        else:
-            a = PARAMS["emaAlpha"]
-            self.drawn = [(a * x + (1 - a) * px, a * y + (1 - a) * py) for (x, y), (px, py) in zip(align(new, self.drawn), self.drawn)]
+            return self.drawn
+        # Position and shape blend apart, so a moving item keeps its shape: centroid = vertex mean, shape =
+        # the points around it, the new shape cyclically aligned to the drawn shape.
+        a = PARAMS["emaAlpha"]
+        (cx, cy), shape = split(new)
+        (dx, dy), drawn_shape = split(self.drawn)
+        shape = align(shape, drawn_shape)
+        if iou(new, self.drawn) >= PARAMS["snapBelowIou"]:
+            cx, cy = a * cx + (1 - a) * dx, a * cy + (1 - a) * dy
+        elif iou(shape, drawn_shape) < PARAMS["snapKeepsShapeAtLeastIou"]:
+            self.drawn = list(new)  # snap to another shape: replaced
+            return self.drawn
+        # else: snap to the same shape moved far: the position jumps, the shape still blends
+        self.drawn = [(cx + a * x + (1 - a) * px, cy + a * y + (1 - a) * py) for (x, y), (px, py) in zip(shape, drawn_shape)]
         return self.drawn
+
+
+def split(points):
+    """(centroid, shape): the vertex mean, and the points relative to it."""
+    cx = sum(x for x, _ in points) / len(points)
+    cy = sum(y for _, y in points) / len(points)
+    return (cx, cy), [(x - cx, y - cy) for x, y in points]
 
 
 # ---------------------------------------------------------------------------------------------- inputs
@@ -491,7 +578,37 @@ def area_share(mask):
     return sum(sum(row) for row in mask) / (len(mask) * len(mask[0]))
 
 
-def temporal_cases():
+# A jittered real item (`just capture-frames` one-piece-flat-02-jitter): its mask moved by the stored
+# offsets at the 250 ms mask cadence (frame int(k x 7.5) at 30 fps). A pure translation, yet the raw outline
+# changes shape by up to 7 % from one position to the next (crop and 64 px grid quantisation).
+JITTER_SET = "one-piece-flat-02-jitter"
+JITTER_UPDATES = 4
+
+
+def jitter_candidates(frames, previous):
+    if not frames:
+        old = next((c for c in (previous or {}).get("temporal", []) if c["name"] == "translation-jitter"), None)
+        if old is None:
+            raise SystemExit("translation-jitter: pass --frames to build it")
+        return [step["candidates"] for step in old["steps"]]
+    index = json.load(open(os.path.join(frames, "index.json")))
+    segment = next(s for s in index["sets"] if s["id"] == JITTER_SET)["segments"][0]
+    mask = [[1 if v else 0 for v in row] for row in read_png_gray(os.path.join(frames, segment["mask"]))]
+    H, W = len(mask), len(mask[0])
+    steps = []
+    for k in range(JITTER_UPDATES):
+        ox, oy = segment["offsets"][int(k * 7.5) % len(segment["offsets"])]
+        dx, dy = round(ox * W), round(oy * H)
+        moved = blank(W, H)
+        for y in range(max(0, dy), min(H, H + dy)):
+            for x in range(max(0, dx), min(W, W + dx)):
+                moved[y][x] = mask[y - dy][x - dx]
+        pts, _ = contour(moved, W, H)
+        steps.append([{"areaShare": round(area_share(moved), 6), "points": rounded(pts)}])
+    return steps
+
+
+def temporal_cases(frames, previous):
     """Sequences of mask updates (candidates as polygons, largest first) and the outline drawn after each."""
     W, H = 80, 80
 
@@ -500,14 +617,25 @@ def temporal_cases():
         return {"areaShare": round(area_share(mask), 6), "points": rounded(pts)}
 
     sq = lambda x, y, s: fill_rect(blank(W, H), x, y, x + s, y + s)  # noqa: E731
-    a, a_moved, far = cand(sq(20, 20, 30)), cand(sq(22, 21, 30)), cand(sq(52, 52, 24))
+    a, a_moved, far = cand(sq(20, 20, 30)), cand(sq(22, 21, 30)), cand(fill_rect(blank(W, H), 44, 60, 78, 70))
+    a_far = cand(sq(48, 46, 30))
     left, right_same = cand(sq(6, 30, 20)), cand(sq(50, 28, 22))
     right_big = cand(sq(46, 22, 30))
     cases = [
         {
             "name": "ema-snap-clear",
-            "note": "first item snaps; a small move blends (EMA 0.5 after cyclic alignment); a jump snaps; three empty updates clear",
+            "note": "first item snaps; a small move blends (centroid and shape EMA 0.5); another shape far away replaces it; three empty updates clear",
             "steps": [[a], [a_moved], [far], [], [], [], [a]],
+        },
+        {
+            "name": "snap-keeps-shape",
+            "note": "the same shape far away (IoU under 0.5): the position jumps, the shape still blends",
+            "steps": [[a], [a_moved], [a_far]],
+        },
+        {
+            "name": "translation-jitter",
+            "note": f"{JITTER_SET} at the mask cadence: successive drawn outlines keep their shape (centroid-aligned IoU >= 0.95)",
+            "steps": jitter_candidates(frames, previous),
         },
         {
             "name": "hysteresis",
@@ -555,14 +683,17 @@ def build(frames, previous):
         case["width"], case["height"] = len(mask[0]), len(mask)
         case["simplifiedVertexCount"] = vertices
         case["expected"] = rounded(pts)
+        if pts is not None:
+            filled_iou, raw_iou = static_ious(pts, mask, len(mask[0]), len(mask))
+            case["staticIouFilled"], case["staticIouRaw"] = round(filled_iou, 6), round(raw_iou, 6)
     return {
         "about": "Live-outline parity fixture: capture brief 'Live outline'. Generated by outline_reference.py; never edit by hand.",
         "version": 1,
         "tolerance": TOLERANCE,
         "params": PARAMS,
-        "contour": [{k: c[k] for k in ("name", "note", "width", "height", "simplifiedVertexCount", "rows", "expected")} for c in contour_cases],
+        "contour": [{k: c[k] for k in ("name", "note", "width", "height", "simplifiedVertexCount", "staticIouFilled", "staticIouRaw", "rows", "expected") if k in c} for c in contour_cases],
         "iou": iou_cases(),
-        "temporal": temporal_cases(),
+        "temporal": temporal_cases(frames, previous),
     }
 
 

@@ -24,7 +24,7 @@ struct AIStylistApp: App {
 
     init() {
       // Launch arguments: captureFrameSet=<set id>, captureScreenReader=1, captureSweep=1,
-      // captureFramesDir=<path> (apps/ios/README.md "Capture test harness").
+      // captureRecordOnly=1, captureFramesDir=<path> (apps/ios/README.md "Capture test harness").
       let harness = CaptureDebugHarness(options: CaptureDebugOptions.parse(ProcessInfo.processInfo.arguments))
       _captureHarness = State(initialValue: harness)
       _showsCapture = State(initialValue: harness.opensCaptureAtLaunch)

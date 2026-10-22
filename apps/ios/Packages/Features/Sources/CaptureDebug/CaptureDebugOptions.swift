@@ -14,6 +14,9 @@ nonisolated public struct CaptureDebugOptions: Equatable, Sendable {
   /// `captureSweep=1`: open the camera at launch, play every frame set (or only `frameSetID`) on a virtual
   /// clock, and write `capture-results.jsonl`.
   public var sweep: Bool
+  /// `captureRecordOnly=1`: in real time, a capture is recorded and the camera carries on, as in a sweep,
+  /// so the unlocked states keep coming back for the screenshot flows (`e2e/capture`).
+  public var recordsCaptures: Bool
   /// `captureFramesDir=<absolute path>`: the frames folder; the Simulator reads the Mac's file system.
   /// Nil uses `defaultFramesDirectory`.
   public var framesDirectory: URL?
@@ -36,16 +39,18 @@ nonisolated public struct CaptureDebugOptions: Equatable, Sendable {
     frameSetID: String? = nil,
     forcesScreenReader: Bool = false,
     sweep: Bool = false,
+    recordsCaptures: Bool = false,
     framesDirectory: URL? = nil
   ) {
     self.frameSetID = frameSetID
     self.forcesScreenReader = forcesScreenReader
     self.sweep = sweep
+    self.recordsCaptures = recordsCaptures
     self.framesDirectory = framesDirectory
   }
 
   /// True when the launch asked for any harness behaviour.
-  public var isActive: Bool { frameSetID != nil || forcesScreenReader || sweep }
+  public var isActive: Bool { frameSetID != nil || forcesScreenReader || sweep || recordsCaptures }
 
   /// Reads the switches from `arguments` (the process's launch arguments, first one the executable).
   public static func parse(_ arguments: [String]) -> CaptureDebugOptions {
@@ -54,6 +59,7 @@ nonisolated public struct CaptureDebugOptions: Equatable, Sendable {
       frameSetID: values["captureFrameSet"].flatMap { $0.isEmpty ? nil : $0 },
       forcesScreenReader: isOn(values["captureScreenReader"]),
       sweep: isOn(values["captureSweep"]),
+      recordsCaptures: isOn(values["captureRecordOnly"]),
       framesDirectory: values["captureFramesDir"].flatMap { $0.isEmpty ? nil : URL(filePath: $0) }
     )
   }

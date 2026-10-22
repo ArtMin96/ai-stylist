@@ -16,11 +16,12 @@ struct CaptureDebugOptionsTests {
   func dashPairs() {
     let options = CaptureDebugOptions.parse([
       "/app/AIStylist", "-captureFrameSet", "top-flat-01-good", "-captureScreenReader", "1", "-captureSweep",
-      "true", "-captureFramesDir", "/tmp/frames",
+      "true", "-captureRecordOnly", "1", "-captureFramesDir", "/tmp/frames",
     ])
     #expect(options.frameSetID == "top-flat-01-good")
     #expect(options.forcesScreenReader)
     #expect(options.sweep)
+    #expect(options.recordsCaptures)
     #expect(options.resolvedFramesDirectory.path(percentEncoded: false) == "/tmp/frames")
   }
 

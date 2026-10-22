@@ -103,8 +103,9 @@
         result.captures.append(.init(tMs: elapsedMs, trigger: trigger.rawValue))
         current = result
       }
-      // A sweep records the capture and carries on; a batch set still counts its photos (C20).
-      return options.sweep && playingSet?.isBatch != true
+      // A sweep (or a record-only launch) records the capture and carries on; a batch set still counts
+      // its photos (C20).
+      return (options.sweep || options.recordsCaptures) && playingSet?.isBatch != true
     }
 
     // MARK: - Panel

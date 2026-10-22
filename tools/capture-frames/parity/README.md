@@ -30,6 +30,8 @@ pnpm exec prettier --write tools/capture-frames/parity/outline-parity.json
 - `iou`: polygon pairs and the IoU the snap and hysteresis rules read.
 - `temporal`: sequences of mask updates. Each step lists the candidates (largest first, each with its
   `areaShare` and polygon) and the outline `expected` after that update, or `null` once it is cleared.
+  `translation-jitter` is a real item (`one-piece-flat-02-jitter`) moved by its stored offsets at the
+  mask cadence; both apps also assert that successive drawn outlines keep a centroid-aligned IoU ≥ 0.95.
 
 ## Pinned details
 
@@ -53,3 +55,11 @@ The tolerance does not absorb a different choice in any of these, so both apps m
 6. **IoU.** Both polygons are rasterised on a 64 × 64 grid over their joint bounding box. A cell
    counts when its centre is inside by the even-odd rule. An edge crosses a row's centre line when
    exactly one of its ends lies below it.
+7. **Blend.** Position and shape blend apart. The centroid is the vertex mean; the shape is the points
+   minus the centroid. The new shape is cyclically aligned to the drawn shape (least summed squared
+   distance, smallest shift on a tie). With IoU(new, drawn) ≥ 0.5 both the centroid and the shape take
+   the EMA (α 0.5). Below it the outline snaps: with the two shapes' IoU ≥ 0.5
+   (`snapKeepsShapeAtLeastIou`) the centroid jumps to the new one and the shape still takes the EMA;
+   otherwise the new outline replaces the drawn one. Changed 2026-10-22 (capture-sim run
+   `2026-10-22-1502`): blending absolute points and replacing the outline on every snap let a purely
+   translated item change shape between masks (centroid-aligned IoU 0.932 against the 0.95 bar).

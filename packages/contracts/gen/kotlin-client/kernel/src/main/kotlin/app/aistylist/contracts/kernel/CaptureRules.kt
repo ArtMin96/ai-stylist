@@ -147,7 +147,7 @@ object CaptureRules {
     object Lock {
         const val UNLOCK_AFTER_PASSING_EVALUATIONS: Int = 3
         const val RELOCK_AFTER_FAILING_EVALUATIONS: Int = 3
-        const val RING_FILL_MS: Int = 1000
+        const val RING_FILL_MS: Int = 500
         const val RING_MIN_EVALUATIONS: Int = 3
     }
 

@@ -229,7 +229,7 @@ public enum CaptureRules {
   public enum Lock {
     public static let unlockAfterPassingEvaluations: Int = 3
     public static let relockAfterFailingEvaluations: Int = 3
-    public static let ringFillMs: Int = 1000
+    public static let ringFillMs: Int = 500
     public static let ringMinEvaluations: Int = 3
   }
 

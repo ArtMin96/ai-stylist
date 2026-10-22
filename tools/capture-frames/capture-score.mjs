@@ -278,6 +278,18 @@ function summarize(cases, platform, index) {
     )
     .map((c) => c.observed.anywayMs);
   const reader = cases.filter((c) => c.screenReader);
+  const spread = (values) => {
+    const sorted = values.filter((v) => v != null).sort((a, b) => a - b);
+    return sorted.length
+      ? {
+          min: sorted[0],
+          median: sorted[Math.floor(sorted.length / 2)],
+          max: sorted.at(-1),
+          count: sorted.length,
+        }
+      : null;
+  };
+  const singles = shouldUnlock.filter((c) => c.role === 'single');
   return {
     platform,
     total: scored.length,
@@ -294,6 +306,11 @@ function summarize(cases, platform, index) {
       atMs: index.acceptance.anywayAtMs,
       toleranceMs: index.acceptance.anywayToleranceMs,
     },
+    // From the segment's first frame: the first unlock and the first auto-capture of should-unlock singles.
+    unlockMs: spread(singles.map((c) => c.observed.firstUnlockMs)),
+    autoCaptureMs: spread(
+      singles.map((c) => c.observed.captures.find((x) => x.trigger === 'auto')?.tMs),
+    ),
     screenReader: {
       total: reader.length,
       passed: reader.filter((c) => c.pass).length,

@@ -481,12 +481,13 @@ android-format *args:
         *) echo "android-format: unknown argument '$1' (use --check)" >&2; exit 2 ;;
     esac
 
-# The Android local gate in one Gradle invocation: Spotless, module graph, detekt, Android Lint, unit + Robolectric tests, all three APKs; then the capture test harness grep (scripts/check-capture-harness.sh: the debug APK must hold it, preview and release must not)
+# The Android local gate in one Gradle invocation: Spotless, module graph, detekt, Android Lint, unit + Robolectric tests, all three APKs; then the capture test harness grep (scripts/check-capture-harness.sh: the debug APK must hold it, preview and release must not) and the check that the release manifest has no ML Kit usage-reporting backend (ADR-0012)
 android-check:
     apps/android/tools/gradle.sh spotlessCheck checkModuleGraph detektMain detektTest :app:lintDebug testDebugUnitTest :core:data:test :core:analytics:test :core:designsystem:test :app:assembleDebug :app:assemblePreview :app:assembleRelease
     scripts/check-capture-harness.sh present apps/android/app/build/outputs/apk/debug/app-debug.apk
     scripts/check-capture-harness.sh absent apps/android/app/build/outputs/apk/preview/app-preview*.apk
     scripts/check-capture-harness.sh absent apps/android/app/build/outputs/apk/release/app-release*.apk
+    m=apps/android/app/build/intermediates/merged_manifest/release/processReleaseMainManifest/AndroidManifest.xml; [[ -f "$m" ]] || { echo "android-check: $m not found" >&2; exit 1; }; if grep -q 'backend:com.google.android.datatransport.cct.CctBackendFactory' "$m"; then echo "android-check: ML Kit's usage-reporting backend (CCT) is back in the release manifest; docs/adr/0012-ml-kit-usage-reporting-off.md" >&2; exit 1; fi; echo "android-check: no ML Kit usage-reporting backend in the release manifest"
 
 # Check (default) or install the Android SDK packages apps/android needs: `just android-sdk [check|install]` (user-level, no emulator, no sudo); `just android-sdk emulator` also installs the emulator and a system image
 android-sdk mode='check':

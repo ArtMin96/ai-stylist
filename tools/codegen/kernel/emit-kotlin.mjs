@@ -3,12 +3,16 @@
 // `value` and a `fromValue` lookup; plain constants are `const val` in an object.
 import {
   assertUniqueIds,
+  captureHintKinds,
   docText,
   int,
+  isIntKey,
+  isNumberBlock,
   ktStr,
   num,
   pascal,
   src,
+  stripCapHint,
   stripRc,
   upperSnake,
 } from './naming.mjs';
@@ -256,5 +260,101 @@ export function emitKotlin(reg) {
     '}',
     '',
   ].join('\n');
+
+  out['CaptureRules.kt'] = emitCaptureRules(reg['capture-rules']);
   return out;
+}
+
+const hintEntry = (key) => upperSnake(stripCapHint(key));
+const optional = (value, render) => (value === undefined ? 'null' : render(value));
+const captureConstant = (k, v) =>
+  `const val ${upperSnake(k)}: ${isIntKey(k) ? `Int = ${v}` : `Double = ${num(v)}`}`;
+
+function emitCaptureRules(cr) {
+  return [
+    banner('capture-rules'),
+    ktEnum({
+      doc: 'How the item is photographed (capture brief §2).',
+      name: 'CaptureMode',
+      cases: simpleCases(cr.captureModes),
+    }),
+    '',
+    ktEnum({
+      doc: 'Blocking check that keeps the shutter locked, highest priority first (capture brief §4).',
+      name: 'CaptureLockReason',
+      cases: simpleCases(cr.lockReasons),
+    }),
+    '',
+    ktEnum({
+      doc: 'Body keypoint read by the worn-mode body check (capture brief §3).',
+      name: 'CaptureBodyPart',
+      cases: simpleCases(cr.bodyParts),
+    }),
+    '',
+    ktEnum({
+      doc: 'Hint class: blocking (shutter locked), advisory (never locks) or status.',
+      name: 'CaptureHintKind',
+      cases: simpleCases(captureHintKinds(cr)),
+    }),
+    '',
+    ktEnum({
+      doc: 'Hint key, also the hint label test ID, in priority order (capture brief §6).',
+      name: 'CaptureHint',
+      cases: Object.entries(cr.hints).map(([key, def]) => ({ id: hintEntry(key), raw: key, def })),
+      props: [
+        {
+          name: 'kind',
+          type: 'CaptureHintKind',
+          value: (c) => `CaptureHintKind.${upperSnake(c.def.kind)}`,
+        },
+        {
+          name: 'lockReason',
+          type: 'CaptureLockReason?',
+          value: (c) => optional(c.def.lockReason, (r) => `CaptureLockReason.${upperSnake(r)}`),
+        },
+      ],
+    }),
+    '',
+    ktEnum({
+      doc: 'Shape family picked before capture (capture brief §2); not a closet taxonomy id.',
+      name: 'CaptureShapeFamily',
+      cases: Object.entries(cr.families).map(([id, def]) => ({ id: upperSnake(id), raw: id, def })),
+      props: [
+        { name: 'minAreaShare', type: 'Double', value: (c) => num(c.def.minAreaShare) },
+        {
+          name: 'modes',
+          type: 'List<CaptureMode>',
+          value: (c) =>
+            `listOf(${c.def.modes.map((m) => `CaptureMode.${upperSnake(m)}`).join(', ')})`,
+        },
+        {
+          name: 'wornRequiredParts',
+          type: 'List<CaptureBodyPart>',
+          value: (c) =>
+            `listOf(${c.def.wornRequiredParts.map((p) => `CaptureBodyPart.${upperSnake(p)}`).join(', ')})`,
+        },
+        {
+          name: 'wornHint',
+          type: 'CaptureHint?',
+          value: (c) => optional(c.def.wornHint, (h) => `CaptureHint.${hintEntry(h)}`),
+        },
+      ],
+    }),
+    '',
+    '/** Live-check thresholds, counts and timings (capture brief §3-§5). MS = milliseconds. */',
+    'object CaptureRules {',
+    ...Object.entries(cr)
+      .filter(([, v]) => typeof v === 'number')
+      .map(([k, v]) => `    ${captureConstant(k, v)}`),
+    ...Object.entries(cr)
+      .filter(([, v]) => isNumberBlock(v))
+      .flatMap(([block, values]) => [
+        '',
+        `    object ${pascal(block)} {`,
+        ...Object.entries(values).map(([k, v]) => `        ${captureConstant(k, v)}`),
+        '    }',
+      ]),
+    '}',
+    '',
+  ].join('\n');
 }

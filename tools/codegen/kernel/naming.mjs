@@ -53,6 +53,22 @@ export const tsStr = (s) => `'${assertPrintable(s).replace(/\\/g, '\\\\').replac
 /** Text safe inside a `/** … *\/` or `///` comment. */
 export const docText = (s) => assertPrintable(s).replace(/\*\//g, '* /');
 
+/** `cap-hint-cut-off-top` -> `cut-off-top` (capture hint ids share the `cap-hint-` prefix). */
+export const stripCapHint = (s) => s.replace(/^cap-hint-/, '');
+
+/** capture-rules keys ending in Ms, Px or Evaluations are integers (the schema types them so). */
+export const isIntKey = (k) => /(Ms|Px|Evaluations)$/.test(k);
+
+/** A capture-rules block of plain numbers (emitted as a nested namespace of constants). */
+export const isNumberBlock = (v) =>
+  typeof v === 'object' &&
+  v !== null &&
+  !Array.isArray(v) &&
+  Object.values(v).every((n) => typeof n === 'number');
+
+/** Hint kinds in first-use order, read from the hints so the emitters never restate the schema. */
+export const captureHintKinds = (cr) => [...new Set(Object.values(cr.hints).map((h) => h.kind))];
+
 /** Always a Double literal in Swift/Kotlin (`2` -> `2.0`). */
 export const num = (n) => {
   const s = String(n);

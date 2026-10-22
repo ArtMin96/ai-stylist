@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Suite for the Swift and Kotlin emitters of the shared-kernel generator (tools/codegen/gen-kernel.mjs,
-# tools/codegen/kernel/emit-{swift,kotlin}.mjs; Linear AI-88): over the committed registries, the six
+# tools/codegen/kernel/emit-{swift,kotlin}.mjs; Linear AI-88): over the committed registries, the seven
 # files per language and their banners, the error codes, measurement definitions, starting shapes and
 # entitlement levels read back from both outputs and compared with the JSON, and the guard that fails
 # a run when two registry values map to one identifier. No gate compiles the kernel output yet.

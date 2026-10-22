@@ -1,5 +1,5 @@
 // In-process tests for the Swift and Kotlin emitters (emit-swift.mjs, emit-kotlin.mjs) over the
-// committed shared-kernel registries: the six files of each language and their banners, then the
+// committed shared-kernel registries: the seven files of each language and their banners, then the
 // error codes, measurement definitions, starting shapes and entitlement levels. Each enum is read
 // back from both outputs into one table that must equal its registry, in registry order, so Swift
 // and Kotlin cannot drift from the JSON or from each other. No gate compiles the kernel yet, so the
@@ -21,6 +21,7 @@ const NAMES = [
   'error-codes',
   'measurement-definitions',
   'starting-shapes',
+  'capture-rules',
 ];
 const requireRegistry = createRequire(import.meta.url);
 const readRegistry = async (name) => {
@@ -120,14 +121,16 @@ const STEMS = [
   'ErrorCodes',
   'MeasurementDefinitions',
   'StartingShapes',
+  'CaptureRules',
 ];
 const NEW_SOURCES = {
   ErrorCodes: 'error-codes',
   MeasurementDefinitions: 'measurement-definitions',
   StartingShapes: 'starting-shapes',
+  CaptureRules: 'capture-rules',
 };
 
-test('six files per language, banners naming the source, no mutable state, deterministic', () => {
+test('seven files per language, banners naming the source, no mutable state, deterministic', () => {
   assert.deepEqual(
     Object.keys(swift),
     STEMS.map((s) => `${s}.swift`),

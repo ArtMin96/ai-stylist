@@ -4,11 +4,15 @@
 import {
   assertUniqueIds,
   camel,
+  captureHintKinds,
   docText,
   int,
+  isIntKey,
+  isNumberBlock,
   num,
   pascal,
   src,
+  stripCapHint,
   stripRc,
   swiftIdent,
   swiftStr,
@@ -290,5 +294,109 @@ export function emitSwift(reg) {
     '}',
     '',
   ].join('\n');
+
+  out['CaptureRules.swift'] = emitCaptureRules(reg['capture-rules']);
   return out;
+}
+
+const hintCase = (key) => camel(stripCapHint(key));
+const optional = (value, render) => (value === undefined ? 'nil' : render(value));
+const captureConstant = (k, v) =>
+  `public static let ${swiftIdent(k)}: ${isIntKey(k) ? `Int = ${v}` : `Double = ${num(v)}`}`;
+
+function emitCaptureRules(cr) {
+  return [
+    banner('capture-rules'),
+    swiftEnum({
+      doc: 'How the item is photographed (capture brief §2).',
+      name: 'CaptureMode',
+      cases: simpleCases(cr.captureModes),
+    }),
+    '',
+    swiftEnum({
+      doc: 'Blocking check that keeps the shutter locked, highest priority first (capture brief §4).',
+      name: 'CaptureLockReason',
+      cases: simpleCases(cr.lockReasons),
+    }),
+    '',
+    swiftEnum({
+      doc: 'Body keypoint read by the worn-mode body check (capture brief §3).',
+      name: 'CaptureBodyPart',
+      cases: cr.bodyParts.map((p) => ({ id: p, raw: p })),
+    }),
+    '',
+    swiftEnum({
+      doc: 'Hint class: blocking (shutter locked), advisory (never locks) or status.',
+      name: 'CaptureHintKind',
+      cases: simpleCases(captureHintKinds(cr)),
+    }),
+    '',
+    swiftEnum({
+      doc: 'Hint key, also the hint label test ID, in priority order (capture brief §6).',
+      name: 'CaptureHint',
+      cases: Object.entries(cr.hints).map(([key, def]) => ({ id: hintCase(key), raw: key, def })),
+      props: [
+        {
+          doc: 'Hint class.',
+          name: 'kind',
+          type: 'CaptureHintKind',
+          value: (c) => `.${swiftIdent(camel(c.def.kind))}`,
+        },
+        {
+          doc: 'Lock reason this hint reports, if any.',
+          name: 'lockReason',
+          type: 'CaptureLockReason?',
+          value: (c) => optional(c.def.lockReason, (r) => `.${swiftIdent(camel(r))}`),
+        },
+      ],
+    }),
+    '',
+    swiftEnum({
+      doc: 'Shape family picked before capture (capture brief §2); not a closet taxonomy id.',
+      name: 'CaptureShapeFamily',
+      cases: Object.entries(cr.families).map(([id, def]) => ({ id: camel(id), raw: id, def })),
+      props: [
+        {
+          doc: 'Too small below this box area share (flat and hanger modes).',
+          name: 'minAreaShare',
+          type: 'Double',
+          value: (c) => num(c.def.minAreaShare),
+        },
+        {
+          doc: 'Capture modes offered.',
+          name: 'modes',
+          type: '[CaptureMode]',
+          value: (c) => `[${c.def.modes.map((m) => `.${swiftIdent(camel(m))}`).join(', ')}]`,
+        },
+        {
+          doc: 'Body parts that must all be present in worn mode; empty means no body check.',
+          name: 'wornRequiredParts',
+          type: '[CaptureBodyPart]',
+          value: (c) => `[${c.def.wornRequiredParts.map((p) => `.${swiftIdent(p)}`).join(', ')}]`,
+        },
+        {
+          doc: 'Hint shown when a required body part is missing.',
+          name: 'wornHint',
+          type: 'CaptureHint?',
+          value: (c) => optional(c.def.wornHint, (h) => `.${swiftIdent(hintCase(h))}`),
+        },
+      ],
+    }),
+    '',
+    '/// Live-check thresholds, counts and timings (capture brief §3-§5). Ms = milliseconds.',
+    'public enum CaptureRules {',
+    ...Object.entries(cr)
+      .filter(([, v]) => typeof v === 'number')
+      .map(([k, v]) => `  ${captureConstant(k, v)}`),
+    ...Object.entries(cr)
+      .filter(([, v]) => isNumberBlock(v))
+      .flatMap(([block, values]) => [
+        '',
+        `  public enum ${pascal(block)} {`,
+        ...Object.entries(values).map(([k, v]) => `    ${captureConstant(k, v)}`),
+        '  }',
+      ]),
+    '}',
+    '',
+  ].join('\n');
 }

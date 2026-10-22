@@ -10,6 +10,10 @@
 //   (+ *.schema.json; TS imports them as JSON, so the ts run validates them and writes nothing)
 //     swift   -> <out>/{ErrorCodes,MeasurementDefinitions,StartingShapes}.swift (same target)
 //     kotlin  -> <out>/{ErrorCodes,MeasurementDefinitions,StartingShapes}.kt    (same package)
+//   packages/shared-kernel/registry/capture-rules.json  (+ capture-rules.schema.json; only the
+//   native apps read it, so the ts run validates it and writes nothing)
+//     swift   -> <out>/CaptureRules.swift (same target)
+//     kotlin  -> <out>/CaptureRules.kt    (same package)
 //   packages/shared-kernel/registry/{forbidden-log-keys,forbidden-log-keys.examples,log-redaction,
 //   correlation}.json  (+ the `correlationId` rule of packages/contracts/events/envelope.json)
 //     python  -> <out>/{__init__,forbidden_log_keys,log_redaction,correlation}.py
@@ -18,7 +22,7 @@
 // Usage: node tools/codegen/gen-kernel.mjs <ts|swift|kotlin|python> <out-dir>
 // Called by generate.sh (ts), gen-swift.sh (swift), gen-kotlin.sh (kotlin) and gen-python.sh
 // (python); not run by hand.
-// Every run validates each registry of its list (all six above for ts, swift and kotlin, so an
+// Every run validates each registry of its list (all seven above for ts, swift and kotlin, so an
 // invalid client-facing registry fails the ts run even where the native lanes are skipped) against
 // its JSON Schema (Ajv, draft 2020-12, with ajv-formats, resolved from the packages/contracts
 // devDependencies) plus the cross-references a schema cannot express (and, for python, that the
@@ -35,6 +39,7 @@ import { emitKotlin } from './kernel/emit-kotlin.mjs';
 import { emitPython } from './kernel/emit-python.mjs';
 import { emitSwift } from './kernel/emit-swift.mjs';
 import { emitTs } from './kernel/emit-ts.mjs';
+import { isIntKey, isNumberBlock } from './kernel/naming.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 // Registry files resolve through the package export `@ai-stylist/shared-kernel/registry/*` (a root
@@ -43,7 +48,7 @@ const requireRegistry = createRequire(import.meta.url);
 const registryFile = (file) =>
   requireRegistry.resolve(`@ai-stylist/shared-kernel/registry/${file}`);
 // Every registry a native app reads (.claude/rules/contracts.md invariant 6). emitTs writes only
-// the first three; TS imports the other three as JSON.
+// the first three; TS imports the next three as JSON and does not read capture-rules.
 const NATIVE_REGISTRIES = [
   'reason-codes',
   'entitlements',
@@ -51,6 +56,7 @@ const NATIVE_REGISTRIES = [
   'error-codes',
   'measurement-definitions',
   'starting-shapes',
+  'capture-rules',
 ];
 const WORKER_REGISTRIES = [
   'forbidden-log-keys',
@@ -141,7 +147,7 @@ async function loadCorrelationIdRule(errors) {
 
 /**
  * Cross-references JSON Schema cannot express (declared namespace/stage/kind/canonical unit, each
- * measurement's dimension and bounds, the default starting shape).
+ * measurement's dimension and bounds, the default starting shape, the capture-rules references).
  */
 function checkReferences(reg, errors) {
   const rc = reg['reason-codes'];
@@ -196,6 +202,8 @@ function checkReferences(reg, errors) {
   if (shapes && !Object.hasOwn(shapes.shapes, shapes.default)) {
     errors.push(`starting-shapes.json: default '${shapes.default}' is not a declared shape`);
   }
+  const cr = reg['capture-rules'];
+  if (cr) checkCaptureRules(cr, errors);
   const lr = reg['log-redaction'];
   if (lr) {
     // Emitted verbatim for Python's `re.ASCII`; the shared-kernel tests run every vector in TS.
@@ -203,6 +211,54 @@ function checkReferences(reg, errors) {
       if (/[^\x20-\x7e]/.test(lr[key])) {
         errors.push(`log-redaction.json: ${key}: must be printable ASCII`);
       }
+    }
+  }
+}
+
+/** capture-rules: declared modes, body parts, hints and lock reasons, and Int-typed keys. */
+function checkCaptureRules(cr, errors) {
+  const where = 'capture-rules.json';
+  for (const [key, hint] of Object.entries(cr.hints)) {
+    if (hint.lockReason === undefined) continue;
+    if (!cr.lockReasons.includes(hint.lockReason)) {
+      errors.push(`${where}: hints.${key}: lockReason '${hint.lockReason}' is not declared`);
+    }
+    if (hint.kind !== 'blocking') {
+      errors.push(`${where}: hints.${key}: only a blocking hint has a lockReason`);
+    }
+  }
+  for (const reason of cr.lockReasons) {
+    if (!Object.values(cr.hints).some((h) => h.lockReason === reason)) {
+      errors.push(`${where}: lockReasons: '${reason}' has no hint`);
+    }
+  }
+  for (const [id, fam] of Object.entries(cr.families)) {
+    const at = `${where}: families.${id}`;
+    for (const m of fam.modes) {
+      if (!cr.captureModes.includes(m)) errors.push(`${at}: mode '${m}' is not declared`);
+    }
+    for (const p of fam.wornRequiredParts) {
+      if (!cr.bodyParts.includes(p)) errors.push(`${at}: body part '${p}' is not declared`);
+    }
+    const needsBodyCheck = fam.wornRequiredParts.length > 0;
+    if (needsBodyCheck && !fam.modes.includes('worn')) {
+      errors.push(`${at}: wornRequiredParts without the worn mode`);
+    }
+    if ((fam.wornHint !== undefined) !== needsBodyCheck) {
+      errors.push(`${at}: wornHint is required exactly when wornRequiredParts is not empty`);
+    }
+    if (fam.wornHint !== undefined && cr.hints[fam.wornHint]?.lockReason !== 'body-parts-missing') {
+      errors.push(`${at}: wornHint '${fam.wornHint}' is not a body-parts-missing hint`);
+    }
+  }
+  // The emitters type these keys Int; a fraction would emit code that does not compile.
+  const numbers = Object.entries(cr).filter(([, v]) => typeof v === 'number');
+  for (const [block, values] of Object.entries(cr).filter(([, v]) => isNumberBlock(v))) {
+    numbers.push(...Object.entries(values).map(([k, v]) => [`${block}.${k}`, v]));
+  }
+  for (const [key, value] of numbers) {
+    if (isIntKey(key) && !Number.isInteger(value)) {
+      errors.push(`${where}: ${key}: keys ending in Ms, Px or Evaluations must be integers`);
     }
   }
 }

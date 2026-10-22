@@ -36,6 +36,9 @@ posthog-android-gradle-plugin = "1.7.0"
 camerax = "1.6.2"
 mlkit-object-detection = "17.0.2"
 mlkit-pose-detection = "18.0.0-beta5"
+# The live garment outline (docs/adr/0013-on-device-garment-outline-android.md): LiteRT 1.4.2, the last
+# line without Play-services delivery (2.x pulls com.google.android.play:ai-delivery). Pinned.
+litert = "1.4.2"
 
 # Security floors for BUILD-TOOL configurations only (never the app's runtime classpath): the
 # patched versions of transitive dependencies that AGP's plugin classpath, Android Lint
@@ -97,6 +100,7 @@ androidx-camera-lifecycle = { module = "androidx.camera:camera-lifecycle", versi
 androidx-camera-compose = { module = "androidx.camera:camera-compose", version.ref = "camerax" }
 mlkit-detection-objects = { module = "com.google.mlkit:object-detection", version.ref = "mlkit-object-detection" }
 mlkit-detection-pose = { module = "com.google.mlkit:pose-detection", version.ref = "mlkit-pose-detection" }
+litert = { module = "com.google.ai.edge.litert:litert", version.ref = "litert" }
 
 # Security floors (see the floor-* versions above). Constraints only: none is ever a direct dependency.
 floor-bcprov = { module = "org.bouncycastle:bcprov-jdk18on", version.ref = "floor-bouncycastle" }

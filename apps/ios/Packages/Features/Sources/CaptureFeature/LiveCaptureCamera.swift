@@ -192,6 +192,8 @@
       var lastMaskMs: Int?
       var lastPoseMs: Int?
       var foreground: CaptureForeground?
+      /// Frame time of the mask `foreground` came from; observations in between reuse it.
+      var foregroundMs: Int?
       var bodyPose = CaptureBodyPose.notRun
       var motion: CaptureDeviceMotion?
       var tiltDegrees: Double?
@@ -265,7 +267,10 @@
       )
       guard let luma else { return }
       let (observation, continuation) = state.withLock { state in
-        if plan.runsMask { state.foreground = foreground }
+        if plan.runsMask {
+          state.foreground = foreground
+          state.foregroundMs = nowMs
+        }
         if let pose { state.bodyPose = pose }
         let item = state.foreground.map {
           CaptureItemObservation(
@@ -279,6 +284,7 @@
         }
         let observation = CaptureObservation(
           timestampMs: nowMs,
+          maskTimestampMs: state.foregroundMs,
           item: item,
           meanLuma: CaptureLumaMetrics.meanLuma(of: luma),
           clippedShare: CaptureLumaMetrics.clippedShare(of: luma),

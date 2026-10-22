@@ -246,20 +246,36 @@
     }
   }
 
-  /// The step pill ("Back", "Pair"): 32, label-sm, camera-ground / camera-paper.
+  /// The step pill: "Back" / "Pair" (`cap-step-back`, `cap-step-pair`) or, on a single front step, the
+  /// item's name with no test ID (boards SC16–SC18); 32, label-sm, camera-ground / camera-paper.
   struct CaptureStepPill: View {
-    let side: CaptureSide
+    let label: CaptureStepLabel
     @Environment(\.appTheme) private var theme
 
     var body: some View {
-      if side != .front {
-        Text(CaptureText.localized(side == .pair ? "capture.step.pair" : "capture.step.back"))
-          .font(theme.font(AppTypography.labelSm))
-          .foregroundStyle(theme.color(.cameraPaper))
-          .padding(.horizontal, CaptureMetrics.pillPaddingHorizontal)
-          .frame(minHeight: CaptureMetrics.pillHeight)
-          .background(Capsule().fill(theme.color(.cameraGround)))
-          .accessibilityIdentifier(side == .pair ? "cap-step-pair" : "cap-step-back")
+      Text(CaptureText.localized(textKey))
+        .font(theme.font(AppTypography.labelSm))
+        .foregroundStyle(theme.color(.cameraPaper))
+        .padding(.horizontal, CaptureMetrics.pillPaddingHorizontal)
+        .frame(minHeight: CaptureMetrics.pillHeight)
+        .background(Capsule().fill(theme.color(.cameraGround)))
+        .accessibilityIdentifier(testID ?? "")
+    }
+
+    private var textKey: String {
+      switch label {
+      case .back: "capture.step.back"
+      case .pair: "capture.step.pair"
+      case .family(let family): "capture.family.\(family.rawValue)"
+      case .underwear(let pick): "capture.underwear.\(pick.rawValue)"
+      }
+    }
+
+    private var testID: String? {
+      switch label {
+      case .back: "cap-step-back"
+      case .pair: "cap-step-pair"
+      case .family, .underwear: nil
       }
     }
   }

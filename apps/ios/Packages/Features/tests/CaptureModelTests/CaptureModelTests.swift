@@ -412,3 +412,33 @@ struct CaptureImportTests {
     #expect(model.camera?.shutter == .idle)
   }
 }
+
+@Suite("Capture flow: step pill")
+struct CaptureStepLabelTests {
+  @Test("a single front step names the family, as boards SC17 and SC18 draw it", arguments: CaptureShapeFamily.allCases)
+  func frontNamesFamily(_ family: CaptureShapeFamily) {
+    let (model, _, _) = makeModel()
+    model.chooseFamily(family)
+    #expect(model.stepLabel == .family(family))
+  }
+
+  @Test("an underwear sub-pick names the sub-pick, not its shape family (board SC16)")
+  func underwearNamesPick() {
+    let (model, _, _) = makeModel(optIn: .flatAndHangerOnly)
+    model.chooseUnderwear()
+    model.chooseUnderwear(.swimsuit)
+    #expect(model.stepLabel == .underwear(.swimsuit))
+  }
+
+  @Test("batch shows no pill; the back step shows Back")
+  func batchAndBack() {
+    let (model, clock, _) = makeModel()
+    model.startBatch()
+    #expect(model.stepLabel == nil)
+    model.chooseFamily(.top)
+    captureSteadyItem(model, clock, photo: front)
+    model.answerSecondPhoto(wanted: true)
+    model.takeSecondPhoto()
+    #expect(model.stepLabel == .back)
+  }
+}

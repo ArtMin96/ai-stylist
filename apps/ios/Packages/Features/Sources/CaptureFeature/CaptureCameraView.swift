@@ -163,8 +163,10 @@
           CaptureGuideOutlineView(guide: output.guide, isUnlocked: output.isUnlockedLook)
         }
         VStack(spacing: 0) {
-          CaptureStepPill(side: currentSetup.side)
-            .padding(.top, CaptureMetrics.pillTop)
+          if let label = model.stepLabel {
+            CaptureStepPill(label: label)
+              .padding(.top, CaptureMetrics.pillTop)
+          }
           Spacer(minLength: 0)
           if let output, let hint = output.hint {
             CaptureHintCard(hint: hint, guide: output.guide)

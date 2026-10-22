@@ -33,6 +33,16 @@ nonisolated public enum UnderwearPick: String, CaseIterable, Sendable {
   public var testID: String { "cap-picker-underwear-\(rawValue)" }
 }
 
+/// The pill over the camera preview (boards SC16–SC19): "Back" or "Pair" on those steps
+/// (`cap-step-back`, `cap-step-pair`), and on a single front step the item's name, which has no test ID:
+/// the family's tile label, or the underwear sub-pick's.
+nonisolated public enum CaptureStepLabel: Equatable, Sendable {
+  case back
+  case pair
+  case family(CaptureShapeFamily)
+  case underwear(UnderwearPick)
+}
+
 /// A photo the app captured or imported; the app keeps the image, the model only its ID.
 nonisolated public struct CapturePhotoID: Hashable, Sendable {
   public let rawValue: String
@@ -99,8 +109,10 @@ public final class CaptureModel {
   public private(set) var camera: CaptureCameraOutput?
   /// Photos taken in this batch (`cap-batch-count` shows the count).
   public private(set) var batchPhotos: [CapturePhotoID] = []
+  /// The underwear or swimwear sub-pick the camera shows, nil for any other item.
+  public private(set) var underwearPick: UnderwearPick?
   /// The camera shows an underwear or swimwear sub-pick (the worn toggle is in its menu).
-  public private(set) var isUnderwear = false
+  public var isUnderwear: Bool { underwearPick != nil }
   public private(set) var isScreenReaderOn: Bool
   /// The speaker button (`cap-camera-speech`, Q-B).
   public private(set) var isSpeechToggledOn = false
@@ -124,7 +136,7 @@ public final class CaptureModel {
 
   /// A category tile: the camera opens in the family's default mode (flat for every family, §2).
   public func chooseFamily(_ family: CaptureShapeFamily) {
-    isUnderwear = false
+    underwearPick = nil
     review = nil
     openCamera(CaptureCameraSetup(family: family, mode: .flat))
   }
@@ -157,14 +169,14 @@ public final class CaptureModel {
   }
 
   public func chooseUnderwear(_ pick: UnderwearPick) {
-    isUnderwear = true
+    underwearPick = pick
     review = nil
     openCamera(CaptureCameraSetup(family: pick.family, mode: .flat))
   }
 
   /// "Many items (batch)": generic guide, no category tap, no back question (Q-C).
   public func startBatch() {
-    isUnderwear = false
+    underwearPick = nil
     review = nil
     batchPhotos = []
     openCamera(CaptureCameraSetup(family: .generic, mode: .flat, flow: .batch))
@@ -183,6 +195,18 @@ public final class CaptureModel {
     review = nil
     batchPhotos = []
     screen = .closed
+  }
+
+  /// The camera's step pill; nil when no camera is open, and in batch (SC20 draws none).
+  public var stepLabel: CaptureStepLabel? {
+    guard case .camera(let setup) = screen else { return nil }
+    switch setup.side {
+    case .back: return .back
+    case .pair: return .pair
+    case .front:
+      guard setup.flow == .single else { return nil }
+      return underwearPick.map(CaptureStepLabel.underwear) ?? .family(setup.family)
+    }
   }
 
   // MARK: - Modes

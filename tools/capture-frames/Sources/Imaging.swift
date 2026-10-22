@@ -47,17 +47,7 @@ struct Raster {
         var noise = GaussianNoise(seed: seed)
         let offsets = (0..<(width * height)).map { _ in noise.next() * noiseSigma }
         func render(level: Double) -> Raster {
-            var result = self
-            for index in 0..<(width * height) {
-                for channel in 0..<3 {
-                    let offset = index * 4 + channel
-                    let value = Double(pixels[offset])
-                    let mean = local[offset]
-                    let dark = level * mean + (value - mean) + offsets[index]
-                    result.pixels[offset] = UInt8(min(255, max(0, dark.rounded())))
-                }
-            }
-            return result
+            toneMapped(local: local) { value, mean, index in level * mean + (value - mean) + offsets[index] }
         }
         // Clipping at 0 lifts the mean above the linear target, so correct the level a few times.
         var level = target / max(1, meanLuma)
@@ -65,6 +55,20 @@ struct Raster {
         for _ in 0..<4 {
             level *= target / max(1, result.meanLuma)
             result = render(level: level)
+        }
+        return result
+    }
+
+    /// Every colour channel mapped by `tone(value, local mean, pixel index)`, where `local` is a
+    /// `boxMean`, then rounded and clamped to 0…255; alpha is unchanged.
+    func toneMapped(local: [Double], _ tone: (_ value: Double, _ mean: Double, _ index: Int) -> Double) -> Raster {
+        var result = self
+        for index in 0..<(width * height) {
+            for channel in 0..<3 {
+                let offset = index * 4 + channel
+                let mapped = tone(Double(pixels[offset]), local[offset], index)
+                result.pixels[offset] = UInt8(min(255, max(0, mapped.rounded())))
+            }
         }
         return result
     }

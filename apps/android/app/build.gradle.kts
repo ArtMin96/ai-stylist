@@ -100,6 +100,13 @@ android {
             matchingFallbacks += listOf("release")
         }
     }
+
+    // The build-type stubs both non-debug builds share (DebugCatalog, DebugCapture): no debug tooling.
+    sourceSets {
+        listOf("preview", "release").forEach { buildType ->
+            named(buildType) { kotlin.directories.add("src/nonDebug/kotlin") }
+        }
+    }
 }
 
 // R8 mapping upload. For every minified variant (preview, release) the PostHog plugin injects a

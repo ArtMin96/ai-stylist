@@ -100,14 +100,14 @@ Upstream projects: Figtree `https://github.com/erikdkennedy/figtree` (google/fon
   deobfuscation proof); iOS shows them only in Dev (dSYM suffices). `preview` is debug-signed, so
   it cannot reach Play.
 - The design-system gallery is in `debug` only, not `preview` or `release` (AI-195). `:app` takes
-  `:core:designsystem-catalog` as `debugImplementation`, and `DebugCatalog` exists once per build
-  type (`app/src/{debug,preview,release}/kotlin/app/aistylist/app/DebugCatalog.kt`): `debug` holds
-  the gallery, the others `null`. Home's debug tools then show "Design system gallery"
-  (`debug_open_ds_gallery`). `MainActivity` swaps Home for the gallery in the same window, so its
+  `:core:designsystem-catalog` as `debugImplementation`, and `DebugCatalog` exists twice
+  (`app/src/{debug,nonDebug}/kotlin/app/aistylist/app/DebugCatalog.kt`; `preview` and `release`
+  share `nonDebug`): `debug` holds the gallery, `nonDebug` `null`. Home's debug tools then show
+  "Design system gallery" (`debug_open_ds_gallery`). `MainActivity` swaps Home for the gallery in the same window, so its
   test tags stay resource ids; "Close" (`debug_close_ds_gallery`) or Back returns to Home.
 - The capture camera opens from Home's "Add item" (`home-open-capture`) in `debug` only (capture
-  brief Q-F), and only `debug` has its test harness: `DebugCapture` exists once per build type
-  (`app/src/{debug,preview,release}/kotlin/app/aistylist/app/DebugCapture.kt`), and `:app` takes
+  brief Q-F), and only `debug` has its test harness: `DebugCapture` exists for `debug` and
+  `nonDebug` (`app/src/{debug,nonDebug}/kotlin/app/aistylist/app/DebugCapture.kt`), and `:app` takes
   `:feature:capture-debug` as `debugImplementation`. The capture flow replaces Home in the same
   window; the volume keys are its shutter while the shutter is usable. Harness runs:
   `apps/android/tools/capture-frames.sh push [frames-root]`, then

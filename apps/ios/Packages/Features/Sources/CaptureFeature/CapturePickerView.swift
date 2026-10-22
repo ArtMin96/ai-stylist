@@ -52,11 +52,6 @@
     let model: CaptureModel
     @Environment(\.appTheme) private var theme
 
-    private let columns = Array(
-      repeating: GridItem(.flexible(), spacing: CaptureMetrics.pickerColumnGap, alignment: .top),
-      count: 3
-    )
-
     var body: some View {
       VStack(spacing: 0) {
         CaptureModalHeader(
@@ -66,7 +61,7 @@
         )
         ScrollView {
           VStack(spacing: AppSpacing.space16) {
-            LazyVGrid(columns: columns, spacing: AppSpacing.space12) {
+            LazyVGrid(columns: CaptureMetrics.pickerColumns, spacing: AppSpacing.space12) {
               ForEach(PickerTile.all, id: \.self) { tile in
                 tileButton(tile)
               }

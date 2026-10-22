@@ -102,16 +102,32 @@ struct Generator {
             let emptyExpected = try writer.writeExpectation(
                 try renderer.emptyExpectation(family: family, measure: empty.measure),
                 path: "\(family)/\(family)-flat-empty/expected.json")
+            // Records one looped single-segment flat set and counts its variant.
+            func addSingle(id: String, variant: String, source: String, baseImages: [String], segment: SegmentEntry) {
+                sets.append(
+                    SetEntry(
+                        id: id, family: family, mode: "flat", variant: variant, kind: "single", source: source,
+                        baseImages: baseImages, segments: [segment]))
+                result.flatCounts[variant, default: 0] += 1
+            }
+            // Writes a rendered frame and its expectation as an unjittered single set; skips a frame with no image.
+            func writeSingle(
+                _ frame: RenderedFrame, id: String, variant: String? = nil, source: String, baseImages: [String]
+            ) throws {
+                guard let image = frame.image else { return }
+                let written = try writer.write(image, measure: frame.measure, keypoints: nil, directory: "\(family)/\(id)")
+                result.contactFrames.append(written)
+                let expected = try writer.writeExpectation(frame.expectation, path: "\(family)/\(id)/expected.json")
+                addSingle(
+                    id: id, variant: variant ?? frame.variant, source: source, baseImages: baseImages,
+                    segment: try written.segment(frames: Harness.segmentFrames, jitter: 0, setId: id, expected: expected))
+            }
+
             let emptyId = "\(family)-flat-empty"
-            sets.append(
-                SetEntry(
-                    id: emptyId, family: family, mode: "flat", variant: "empty", kind: "single", source: "synthetic",
-                    baseImages: [],
-                    segments: [
-                        try emptyWritten.segment(
-                            frames: Harness.segmentFrames, jitter: 0, setId: emptyId, expected: emptyExpected)
-                    ]))
-            result.flatCounts["empty", default: 0] += 1
+            addSingle(
+                id: emptyId, variant: "empty", source: "synthetic", baseImages: [],
+                segment: try emptyWritten.segment(
+                    frames: Harness.segmentFrames, jitter: 0, setId: emptyId, expected: emptyExpected))
 
             for (index, base) in result.bases.enumerated() {
                 let number = String(format: "%02d", index + 1)
@@ -128,16 +144,11 @@ struct Generator {
                         throw GeneratorError("\(id) plays the good frame, which was not written")
                     }
                     let expected = try writer.writeExpectation(frame.expectation, path: "\(family)/\(id)/expected.json")
-                    sets.append(
-                        SetEntry(
-                            id: id, family: family, mode: "flat", variant: frame.variant, kind: "single",
-                            source: base.source, baseImages: [base.id],
-                            segments: [
-                                try written.segment(
-                                    frames: Harness.segmentFrames, jitter: frame.jitter, setId: id, expected: expected,
-                                    rules: rules)
-                            ]))
-                    result.flatCounts[frame.variant, default: 0] += 1
+                    addSingle(
+                        id: id, variant: frame.variant, source: base.source, baseImages: [base.id],
+                        segment: try written.segment(
+                            frames: Harness.segmentFrames, jitter: frame.jitter, setId: id, expected: expected,
+                            rules: rules))
                     if frame.variant == "good" {
                         goodWritten = written
                         goodFrames[family, default: []].append(
@@ -153,19 +164,8 @@ struct Generator {
                 ] {
                     do {
                         let frame = try make(base.cutout, family)
-                        guard let image = frame.image else { continue }
-                        let id = "\(family)-flat-01-\(frame.variant)"
-                        let written = try writer.write(image, measure: frame.measure, keypoints: nil, directory: "\(family)/\(id)")
-                        result.contactFrames.append(written)
-                        let expected = try writer.writeExpectation(frame.expectation, path: "\(family)/\(id)/expected.json")
-                        sets.append(
-                            SetEntry(
-                                id: id, family: family, mode: "flat", variant: frame.variant, kind: "single",
-                                source: base.source, baseImages: [base.id],
-                                segments: [
-                                    try written.segment(frames: Harness.segmentFrames, jitter: 0, setId: id, expected: expected)
-                                ]))
-                        result.flatCounts[frame.variant, default: 0] += 1
+                        try writeSingle(
+                            frame, id: "\(family)-flat-01-\(frame.variant)", source: base.source, baseImages: [base.id])
                     } catch let rejection as Rejection {
                         result.rejected.append(Manifest.Rejected(id: base.id, reason: rejection.reason))
                     }
@@ -177,19 +177,9 @@ struct Generator {
                 for (index, base) in result.bases.enumerated() {
                     do {
                         let frame = try renderer.tooSmallFound(of: base.cutout, family: family)
-                        guard let image = frame.image else { continue }
-                        let id = "\(family)-flat-\(String(format: "%02d", index + 1))-\(frame.variant)"
-                        let written = try writer.write(image, measure: frame.measure, keypoints: nil, directory: "\(family)/\(id)")
-                        result.contactFrames.append(written)
-                        let expected = try writer.writeExpectation(frame.expectation, path: "\(family)/\(id)/expected.json")
-                        sets.append(
-                            SetEntry(
-                                id: id, family: family, mode: "flat", variant: frame.variant, kind: "single",
-                                source: base.source, baseImages: [base.id],
-                                segments: [
-                                    try written.segment(frames: Harness.segmentFrames, jitter: 0, setId: id, expected: expected)
-                                ]))
-                        result.flatCounts[frame.variant, default: 0] += 1
+                        try writeSingle(
+                            frame, id: "\(family)-flat-\(String(format: "%02d", index + 1))-\(frame.variant)",
+                            source: base.source, baseImages: [base.id])
                     } catch let rejection as Rejection {
                         result.rejected.append(Manifest.Rejected(id: base.id, reason: rejection.reason))
                     }
@@ -207,16 +197,11 @@ struct Generator {
                         let frame = try renderer.tilted(good.frame, family: family, degrees: degrees, variant: variant)
                         let id = "\(family)-flat-01-\(variant)"
                         let expected = try writer.writeExpectation(frame.expectation, path: "\(family)/\(id)/expected.json")
-                        sets.append(
-                            SetEntry(
-                                id: id, family: family, mode: "flat", variant: variant, kind: "single",
-                                source: good.base.source, baseImages: [good.base.id],
-                                segments: [
-                                    try good.written.segment(
-                                        frames: Harness.segmentFrames, jitter: 0, setId: id, expected: expected,
-                                        tiltDegrees: degrees)
-                                ]))
-                        result.flatCounts[variant, default: 0] += 1
+                        addSingle(
+                            id: id, variant: variant, source: good.base.source, baseImages: [good.base.id],
+                            segment: try good.written.segment(
+                                frames: Harness.segmentFrames, jitter: 0, setId: id, expected: expected,
+                                tiltDegrees: degrees))
                     } catch let rejection as Rejection {
                         result.rejected.append(Manifest.Rejected(id: good.base.id, reason: rejection.reason))
                     }
@@ -229,19 +214,9 @@ struct Generator {
                     let ships = index < Layout.hardCaseBases
                     let number = String(format: "%02d", index + 1)
                     func write(_ frame: RenderedFrame) throws {
-                        guard let image = frame.image else { return }
-                        let id = "\(family)-flat-\(number)-\(frame.variant)"
-                        let written = try writer.write(image, measure: frame.measure, keypoints: nil, directory: "\(family)/\(id)")
-                        result.contactFrames.append(written)
-                        let expected = try writer.writeExpectation(frame.expectation, path: "\(family)/\(id)/expected.json")
-                        sets.append(
-                            SetEntry(
-                                id: id, family: family, mode: "flat", variant: frame.variant, kind: "single",
-                                source: base.source, baseImages: [base.id],
-                                segments: [
-                                    try written.segment(frames: Harness.segmentFrames, jitter: 0, setId: id, expected: expected)
-                                ]))
-                        result.flatCounts[frame.variant, default: 0] += 1
+                        try writeSingle(
+                            frame, id: "\(family)-flat-\(number)-\(frame.variant)", source: base.source,
+                            baseImages: [base.id])
                     }
                     for surface in Surface.allCases {
                         let outcome = try renderer.onSurface(base.cutout, family: family, surface: surface)
@@ -272,19 +247,10 @@ struct Generator {
                     let id = "\(family)-flat-\(String(format: "%02d", index + 1))-two-items"
                     do {
                         let frame = try renderer.twoItems(main: base.cutout, second: second.cutout, family: family)
-                        guard let image = frame.image else { continue }
-                        let written = try writer.write(image, measure: frame.measure, keypoints: nil, directory: "\(family)/\(id)")
-                        result.contactFrames.append(written)
-                        let expected = try writer.writeExpectation(frame.expectation, path: "\(family)/\(id)/expected.json")
-                        sets.append(
-                            SetEntry(
-                                id: id, family: family, mode: "flat", variant: "two-items", kind: "single",
-                                source: base.source == second.source ? base.source : "mixed",
-                                baseImages: [base.id, second.id],
-                                segments: [
-                                    try written.segment(frames: Harness.segmentFrames, jitter: 0, setId: id, expected: expected)
-                                ]))
-                        result.flatCounts["two-items", default: 0] += 1
+                        try writeSingle(
+                            frame, id: id, variant: "two-items",
+                            source: base.source == second.source ? base.source : "mixed",
+                            baseImages: [base.id, second.id])
                     } catch let rejection as Rejection {
                         result.rejected.append(Manifest.Rejected(id: base.id, reason: rejection.reason))
                     }

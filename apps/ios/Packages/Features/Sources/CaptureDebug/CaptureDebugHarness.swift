@@ -227,7 +227,6 @@
       result.durationMs = elapsedMs
       result.outlinePresentAtEnd = model?.camera?.outline != nil
       outlineScores.write(into: &result)
-      outlineScores = CaptureOutlineScores()
       do {
         try log?.append(result)
       } catch {
@@ -271,6 +270,8 @@
         expected: source.expected,
         sweep: options.sweep
       )
+      // An outline already drawn belongs to the previous segment's mask; only later ones are scored.
+      outlineScores = CaptureOutlineScores(drawnBefore: model?.camera?.outline)
       record(model?.camera)
     }
 
@@ -298,6 +299,11 @@
   /// The live outline's scores over one segment (results log).
   struct CaptureOutlineScores {
     private var last: CaptureLiveOutlineState?
+    /// The first scored outline is compared with this one for stability, but not counted or scored.
+    init(drawnBefore: CaptureLiveOutlineState? = nil) {
+      last = drawnBefore
+    }
+
     private var updates = 0
     private var snaps = 0
     private var ious: [Double] = []
@@ -309,10 +315,13 @@
     mutating func add(_ outline: CaptureLiveOutlineState, reference: CaptureGrayImage?) {
       updates += 1
       if let last {
-        if outline.snapCount != last.snapCount { snaps += 1 }
-        stabilities.append(
-          CaptureOutlineGeometry.intersectionOverUnion(
-            CaptureOutlineGeometry.centred(outline.points), CaptureOutlineGeometry.centred(last.points)))
+        if outline.snapCount != last.snapCount {
+          snaps += 1
+        } else {
+          stabilities.append(
+            CaptureOutlineGeometry.intersectionOverUnion(
+              CaptureOutlineGeometry.centred(outline.points), CaptureOutlineGeometry.centred(last.points)))
+        }
       }
       if let reference {
         let ious = CaptureInstanceLabels.instances(in: reference).compactMap { instance in

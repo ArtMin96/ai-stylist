@@ -17,8 +17,10 @@ container between you and the owner's machine.
 
 ## Where things are
 
-- Repository root: the worker's working directory. The camera branch is `feat/capture-camera` (PR #56),
-  checked out in `.claude/worktrees/capture-camera`. Do the work there unless the task says otherwise.
+- Repository root: the worker's working directory. The camera branch is `feat/capture-camera` (PR #56).
+  Work in the repository root when that branch is checked out there (the owner's normal setup);
+  otherwise create a worktree for it (`git worktree add .claude/worktrees/capture-camera feat/capture-camera`)
+  and work there. Never switch the branch of a checkout that has uncommitted changes.
 - Read first, every session: `CLAUDE.md` (binding operating contract), `PROGRESS.md`, the newest
   `planning/PROGRESS.md` handoff entries whose title starts with `2026-10-22 (capture-camera)`, and the
   brief `.claude/plans/2026-10-22-capture-camera-brief.md` (the binding camera spec). Then every file in

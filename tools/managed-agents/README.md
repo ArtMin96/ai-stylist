@@ -32,9 +32,10 @@ You need a Mac that already runs the repo's checks (`just doctor`, Xcode, the An
    ant auth login
    ant auth status   # shows the active profile
    ```
-3. **Create the agent and its environment.** From the camera worktree
-   (`.claude/worktrees/capture-camera`), run:
+3. **Create the agent and its environment.** In the repository's main folder, check out the camera
+   branch and run the command (the recipe exists only on that branch):
    ```sh
+   git switch feat/capture-camera
    just capture-agent
    ```
    It prints the plan (one agent, one environment) and asks to create them: answer `y`. It writes
@@ -53,6 +54,8 @@ You need a Mac that already runs the repo's checks (`just doctor`, Xcode, the An
 To remove the key later: `security delete-generic-password -s ai-stylist-capture-agent-environment-key`.
 
 ## Every run
+
+Run these from the repository's main folder with `feat/capture-camera` checked out:
 
 ```sh
 just capture-agent                    # start a session with the default kickoff message
@@ -77,7 +80,7 @@ price, web searches, and session running time ($0.08 per hour). Change the total
 
 ## What the agent can and cannot do
 
-- It works in `.claude/worktrees/capture-camera` on `feat/capture-camera`, may push there and to new
+- It works on `feat/capture-camera` in the repository's main folder, may push there and to new
   branches, and never pushes to `main`, merges, force-pushes or deletes branches.
 - Tool calls run as your macOS user from the repository's main folder (the worker's `--workdir`), so it
   reaches every worktree, the simulators and Maestro. Its instructions forbid reading `.git/account/`,

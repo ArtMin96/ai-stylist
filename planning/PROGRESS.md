@@ -102,7 +102,7 @@ Log hygiene: when this log exceeds ~30 entries, move the oldest entries to `plan
 - **Repository state:** buildable; see the PR body for the check results on the merged branch.
 - **New decisions / risks / questions filed:** DEC-88, DEC-89, DEC-90 (2026-10-22).
 - **Surprises / gotchas:** the iOS Simulator has no Vision mask, so sweeps play stored masks; the stored-frame outline tests run only with `CAPTURE_FRAMES_DIR` set; Vision and U²-Netp both merge a covering object into the item, so C32 rarely fires on a real phone; three emulators plus builds drove the Mac to load 189 and killed an emulator, so run Android sweeps alone; GitHub Actions jobs do not start (account billing); live detector quality, latency on a Galaxy A12 and iPhone 11 / SE 2, heat, real VoiceOver and TalkBack and a phone network capture are device-only and unproven.
-- **Next session starts:** `just capture-agent` (or a Claude Code session) from `.claude/worktrees/capture-camera`: check PR #56 CI on the latest push, then `just capture-frames` and `just capture-sim` twice in a row on a quiet machine, fix what fails, update this entry.
+- **Next session starts:** `git switch feat/capture-camera`, then `just capture-agent` (or a Claude Code session) from the repository root: check PR #56 CI on the latest push, then `just capture-frames` and `just capture-sim` twice in a row on a quiet machine, fix what fails, update this entry.
 
 ### 2026-10-22 (capture-foundation) — Guided capture camera groundwork: capture rules registry, test-frame generator and plan (branch `feat/capture-rules-foundation`)
 

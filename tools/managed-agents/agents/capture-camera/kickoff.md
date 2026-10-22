@@ -1,8 +1,8 @@
 Continue the guided capture camera work from where the last session stopped.
 
 1. Orient: read `CLAUDE.md`, `PROGRESS.md` and the newest `2026-10-22 (capture-camera)` handoff entries in
-   `planning/PROGRESS.md`, then the brief's §16 and §17. Work in `.claude/worktrees/capture-camera` on
-   `feat/capture-camera` (PR #56). Pull the branch first (`git pull --ff-only`).
+   `planning/PROGRESS.md`, then the brief's §16 and §17. Work on `feat/capture-camera` (PR #56) where
+   it is checked out (see your instructions). Pull the branch first (`git pull --ff-only`).
 2. Check PR #56's CI with `git gh pr checks 56`. Fix every failing check at its root cause, with new
    commits, and push. Never weaken a gate.
 3. Run the exit loop: `just capture-frames`, then `just capture-sim` twice in a row on a quiet machine.

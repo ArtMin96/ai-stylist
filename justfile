@@ -430,7 +430,7 @@ ios-format *args:
 ios-check-banned *args:
     apps/ios/scripts/check-banned.sh "$@"
 
-# The iOS local gate: lint, format --check, bans (+ fixtures), package tests; on macOS also the Dev simulator build + simulator tests (Linux prints a skip for those two)
+# The iOS local gate: lint, format --check, bans (+ fixtures), package tests; on macOS also the Dev and Prod simulator builds (each greps for the capture test harness: present in Dev, absent in Prod) + simulator tests (Linux prints a skip for those)
 ios-check:
     just ios-lint
     just ios-format --check
@@ -514,6 +514,18 @@ android-e2e flow='e2e/smoke.yaml':
 # Build the capture camera's test frames into artifacts/capture-camera/frames/ (macOS only, pinned Xcode): CC0 dataset product shots plus drawn items and a drawn person, every brief §11 variant, Vision masks, stored boxes, keypoints, expected results and index.json; downloads only the dataset images it tries (cached in artifacts/capture-camera/source/); unchanged inputs reuse the last output
 capture-frames:
     bash tools/capture-frames/capture-frames.sh
+
+# The capture camera's iOS simulator loop (macOS; iPhone 18 Pro or IOS_SIMULATOR_ID): frames, a Dev build without symbol upload, the harness sweep + screen-reader sweeps, every e2e/capture flow in light and dark, scoring; writes artifacts/capture-camera/runs/<yyyy-mm-dd-hhmm>/summary.md and the scoreboard row; exit 1 unless the finish line holds
+capture-sim-ios:
+    bash tools/capture-frames/capture-sim.sh ios
+
+# The capture camera's Android emulator loop (AVD aistylist-dev via android-run, or ANDROID_SERIAL): frames pushed, stored-box sweep (scored) + live ML Kit sweep (information), screen-reader sweeps, every e2e/capture flow in light and dark, scoring; same run folder and scoreboard as capture-sim-ios
+capture-sim-android:
+    bash tools/capture-frames/capture-sim.sh android
+
+# Both capture simulator loops in one run folder: capture-sim-ios, then capture-sim-android
+capture-sim:
+    bash tools/capture-frames/capture-sim.sh all
 
 # --- database (drizzle-kit; expand–contract) ----------------------------------------
 

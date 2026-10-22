@@ -292,6 +292,55 @@ parts as `bodyParts` when the live pose model cannot run.
 }
 ```
 
+## Simulator runs (`just capture-sim-ios`, `just capture-sim-android`, `just capture-sim`)
+
+`capture-sim.sh` runs the loop of brief §15 step 6 in one command. It builds the frames, then per
+platform:
+
+1. Builds and installs the Dev app. iOS: `just ios-build --config dev` with the `POSTHOG_CLI_*` keys
+   unset, on the iPhone 18 Pro on the newest iOS runtime (or `IOS_SIMULATOR_ID`). Android:
+   `just android-run`, which boots the AVD `aistylist-dev` when no device is online, then
+   `apps/android/tools/capture-frames.sh push`. No Gradle build runs after that point.
+2. Sweeps every frame set on the harness's virtual clock and pulls `capture-results.jsonl`. Android
+   is scored on stored boxes and keypoints. A second sweep with live ML Kit is information only.
+3. Sweeps the locked sets `top-flat-01-jitter`, `top-flat-01-cut-top`, `top-flat-empty` and
+   `top-worn-shoulders-cut` again with the screen-reader flag.
+4. Runs every flow in `e2e/capture/` in light, then in dark (`simctl ui appearance`,
+   `cmd uimode night`), and keeps their screenshots.
+5. Scores the logs (`capture-score.mjs`) and writes `summary.md` and the scoreboard row
+   (`capture-report.mjs`). It exits 1 unless every case, flow and finish-line measure passes.
+
+```text
+artifacts/capture-camera/runs/<yyyy-mm-dd-hhmm>/
+  raw/<platform>/sweep.jsonl, screen-reader.jsonl   the pulled results logs
+  results/<platform>/<case id>.json                 expected, observed, pass, reason
+  results/<platform>.summary.json                   counts and lists for the report
+  maestro/<platform>/<theme>/<flow>.log, .status    each flow's output and exit code
+  screenshots/<platform>/<theme>/<flow>-<shot>.png  every guidance state, light and dark
+  summary.md                                        verdicts, numbers, definitions, device-only list
+artifacts/capture-camera/scoreboard.md              one row per run; BLOCKED cases; threshold changes
+```
+
+### Scoring
+
+One scorer for both apps. It reads the iOS line shape (`events[].shutter` such as
+`locked:cut-off`, `anywayMs`) and the Android one (`events[].phase`, `anywayAtMs`,
+`finalLockReason`). A case is one segment: a single set, or `<set id>-sNN` in a sweep or batch. The
+expected file's `platform.<platform>` block applies first. `summary.md` states the definitions:
+
+- **Unlocked:** first unlock within `maxUnlockMs`, the expected hint shown at or after the unlock,
+  and at least one capture.
+- **Locked:** never unlocks. The final hint and lock reason are the expected ones. On a single set,
+  "Take photo anyway" shows at `anywayAtMs` ± `acceptance.anywayToleranceMs`. With the
+  screen-reader flag it shows within one evaluation interval of the start.
+- **Gap** (the empty second between sweep or batch items): locked or in cooldown within
+  `relockAfterFailingEvaluations × evaluation.intervalMs`, stays locked, nothing captured. The hint
+  and the anyway timing are not judged, because the gap opens on the previous item's state and is
+  shorter than the anyway delay.
+- **Miss:** an unlocked case that never unlocks in time. **False lock:** unlocked straight back to
+  locked, not through capturing; the rate is over should-unlock cases. **False unlock:** a locked
+  case that unlocks or auto-captures, listed on its own.
+
 ## Not built yet
 
 The hanger-mode hook frames (C2), the bag strap grazing an edge (C6) and the dark-on-dark,

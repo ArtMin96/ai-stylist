@@ -58,6 +58,8 @@
         <item quantity="other">%1$d items</item>
     </plurals>
     <string name="cap_preview_label">Camera view with the guide outline</string>
+    <!-- iOS capture.a11y.outline: the live outline of the item. -->
+    <string name="cap_a11y_outline">Item outline</string>
 
     <!-- Hints shown (brief §6) -->
     <string name="cap_hint_warming_up">Looking for the item…</string>

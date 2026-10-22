@@ -248,18 +248,19 @@ private fun PreviewArea(
                 ),
     ) {
         preview(Modifier.fillMaxSize())
-        // The family guide stays (faint, with its tag) under the item's live outline.
+        // The family guide (faint) until the item is outlined; then transparent, its node and tag kept.
         GuideOutline(
             pathData = context.guidePath,
             isSolid = isSolid,
-            alpha = CaptureProposedTokens.GUIDE_FAINT_ALPHA,
+            isFaint = true,
+            alpha = if (snapshot?.outline != null) 0f else 1f,
             modifier =
                 Modifier
                     .fillMaxSize()
                     .testTag(context.guideTestTag)
                     .semantics { contentDescription = previewLabel },
         )
-        LiveOutline(outline = snapshot?.outline, isSolid = isSolid, modifier = Modifier.fillMaxSize())
+        ItemOutline(live = snapshot?.outline, isSolid = isSolid, modifier = Modifier.fillMaxSize())
         stepLabel(context, model.underwearPick)?.let { (text, tag) ->
             StepPill(
                 text = stringResource(text),

@@ -67,14 +67,17 @@ internal fun isReducedMotion(): Boolean {
 }
 
 /**
- * The guide outline (C11 proposed): camera-paper 2 over a camera-ink 4 halo, so it reads at 3:1 over
- * any picture; dashed while locked, solid with round caps once unlocked. Never colour alone.
+ * The guide outline (C11 proposed): dashed while locked, solid with round caps once unlocked; never
+ * colour alone. Faint ([isFaint], as on iOS: the camera-paper 2 stroke without its camera-ink halo)
+ * until an item is outlined; then transparent ([alpha] 0), its node and test tag kept. Otherwise
+ * camera-paper 2 over a camera-ink 4 halo, so it reads at 3:1 over any picture (the box-path fallback).
  */
 @Composable
 internal fun GuideOutline(
     pathData: String,
     isSolid: Boolean,
     modifier: Modifier = Modifier,
+    isFaint: Boolean = false,
     alpha: Float = 1f,
 ) {
     val path = rememberSvgPath(pathData)
@@ -84,12 +87,14 @@ internal fun GuideOutline(
         val viewport = Size(CaptureProposedTokens.GUIDE_VIEWPORT_WIDTH, CaptureProposedTokens.GUIDE_VIEWPORT_HEIGHT)
         val dash = if (isSolid) null else dashEffect(CaptureProposedTokens.guideDash.toPx())
         val cap = if (isSolid) StrokeCap.Round else StrokeCap.Butt
-        drawInViewport(
-            path,
-            viewport,
-            Stroke(CaptureProposedTokens.guideHalo.toPx(), cap = cap, join = StrokeJoin.Round, pathEffect = dash),
-            ink.copy(alpha = ink.alpha * alpha),
-        )
+        if (!isFaint) {
+            drawInViewport(
+                path,
+                viewport,
+                Stroke(CaptureProposedTokens.guideHalo.toPx(), cap = cap, join = StrokeJoin.Round, pathEffect = dash),
+                ink.copy(alpha = ink.alpha * alpha),
+            )
+        }
         drawInViewport(
             path,
             viewport,

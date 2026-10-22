@@ -21,10 +21,14 @@ import androidx.compose.ui.graphics.StrokeJoin
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
 import app.aistylist.contracts.kernel.CaptureRules
 import app.aistylist.core.designsystem.generated.AppColorRole
+import app.aistylist.feature.capture.R
+import app.aistylist.feature.capture.domain.LiveOutline
 import app.aistylist.feature.capture.domain.NormalizedPoint
 import kotlin.math.max
 
@@ -38,34 +42,38 @@ import kotlin.math.max
  * `locked` or `unlocked`, present only while an outline shows.
  */
 @Composable
-internal fun LiveOutline(
-    outline: List<NormalizedPoint>?,
+internal fun ItemOutline(
+    live: LiveOutline?,
     isSolid: Boolean,
     modifier: Modifier = Modifier,
 ) {
+    val outline = live?.points
     val reduced = isReducedMotion()
     val durationMs = CaptureRules.Ios.MASK_INTERVAL_MS
-    var shown by remember { mutableStateOf(outline) }
+    var shown by remember { mutableStateOf(live) }
     var from by remember { mutableStateOf(outline) }
     val progress = remember { Animatable(1f) }
-    LaunchedEffect(outline, reduced) {
-        if (outline == null) return@LaunchedEffect
+    LaunchedEffect(live, reduced) {
+        if (live == null) return@LaunchedEffect
         val previous = shown
-        from = if (previous != null && previous.size == outline.size) previous.lerp(from, progress.value) else outline
-        shown = outline
+        // A blend moves from where the outline is drawn now; a snap (new item, big change) jumps.
+        val blends = previous != null && previous.snapCount == live.snapCount
+        from = if (previous != null && blends) previous.points.lerp(from, progress.value) else live.points
+        shown = live
         progress.snapTo(0f)
-        progress.animateTo(1f, if (reduced) snap() else tween(durationMs, easing = LinearEasing))
+        progress.animateTo(1f, if (reduced || !blends) snap() else tween(durationMs, easing = LinearEasing))
     }
     val alpha by animateFloatAsState(
         targetValue = if (outline == null) 0f else 1f,
         animationSpec = if (reduced) snap() else tween(durationMs, easing = LinearEasing),
         label = "outline-alpha",
     )
-    val target = shown ?: return
+    val target = shown?.points ?: return
     val start = from ?: target
     val ink = role(AppColorRole.CAMERA_INK)
     val paper = role(AppColorRole.CAMERA_PAPER)
-    Canvas(modifier = modifier.outlineSemantics(isShown = outline != null, isSolid = isSolid)) {
+    val label = stringResource(R.string.cap_a11y_outline)
+    Canvas(modifier = modifier.outlineSemantics(isShown = outline != null, isSolid = isSolid, label = label)) {
         if (alpha >
             0f
         ) {
@@ -78,10 +86,14 @@ internal fun LiveOutline(
 private fun Modifier.outlineSemantics(
     isShown: Boolean,
     isSolid: Boolean,
+    label: String,
 ): Modifier {
     if (!isShown) return this
     val state = if (isSolid) OUTLINE_UNLOCKED else OUTLINE_LOCKED
-    return testTag(CaptureTestTags.OUTLINE).semantics { stateDescription = state }
+    return testTag(CaptureTestTags.OUTLINE).semantics {
+        contentDescription = label
+        stateDescription = state
+    }
 }
 
 private class OutlineInk(

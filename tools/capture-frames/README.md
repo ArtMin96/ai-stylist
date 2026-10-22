@@ -361,7 +361,9 @@ platform:
    unset, on the iPhone 18 Pro on the newest iOS runtime (or `IOS_SIMULATOR_ID`). Android:
    `just android-run`, which boots the AVD `aistylist-dev` when no device is online, then
    `apps/android/tools/capture-frames.sh push`. No Gradle build runs after that point.
-2. Sweeps every frame set on the harness's virtual clock and pulls `capture-results.jsonl`. Android
+2. Sweeps every frame set on the harness's virtual clock and pulls `capture-results.jsonl`. iOS plays
+   masks at the phone's cadence (`-captureMaskCadenceMs`, the registry's `ios.maskIntervalMs`):
+   observations every evaluation interval, a new mask only every 250 ms. Android
    is scored on stored boxes and keypoints. A second sweep with live ML Kit is information only.
 3. Sweeps the locked sets `top-flat-01-jitter`, `top-flat-01-cut-top`, `top-flat-empty` and
    `top-worn-shoulders-cut` again with the screen-reader flag.
@@ -398,9 +400,15 @@ expected file's `platform.<platform>` block applies first. `summary.md` states t
   "Take photo anyway" shows at `anywayAtMs` ± `acceptance.anywayToleranceMs`, with the reason line
   the expected `anywayReason`. With the screen-reader flag it shows within one evaluation interval of
   the start. Fields the scorer does not know (such as a segment's `tiltDegrees`) pass through.
+- **Live outline** (on results lines that log it; iOS now, Android after its outline lane): a
+  segment that shows an item has an outline by its first mask (`ios.maskIntervalMs`); an empty,
+  weak-surface, no-item or gap segment shows none; flat jitter sets keep outline stability ≥ 0.95.
+  The outline's IoU with the stored mask is reported per variant as information.
 - `summary.md` adds a hard-cases table: pass counts per variant beyond the brief §11 variants.
 - **Gap** (the empty second between sweep or batch items): locked or in cooldown within
-  `relockAfterFailingEvaluations × evaluation.intervalMs`, stays locked, nothing captured. The hint
+  `relockAfterFailingEvaluations × evaluation.intervalMs`, plus one mask interval when the sweep
+  played the phone's mask cadence (the item's last mask lingers that long), stays locked, nothing
+  captured. The hint
   and the anyway timing are not judged, because the gap opens on the previous item's state and is
   shorter than the anyway delay.
 - **Miss:** an unlocked case that never unlocks in time. **False lock:** unlocked straight back to

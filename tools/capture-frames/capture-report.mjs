@@ -259,6 +259,37 @@ function hardCases(run, platforms) {
   ].join('\n');
 }
 
+/** Live outline IoU per variant (information only): the drawn outline against the stored mask. */
+function outlineInfo(run, platforms) {
+  const rows = [];
+  for (const platform of platforms) {
+    const file = path.join(run, 'results', `${platform}.summary.json`);
+    if (!existsSync(file)) continue;
+    const byVariant = JSON.parse(readFileSync(file, 'utf8')).byVariant ?? {};
+    for (const [variant, count] of Object.entries(byVariant)) {
+      if (count.outlineIou) {
+        rows.push(
+          `| ${platform} | ${variant} | ${count.outlineIou.median.toFixed(3)} | ${count.outlineIou.min.toFixed(3)} |`,
+        );
+      }
+    }
+  }
+  if (rows.length === 0) return '';
+  return [
+    '## Live outline (information)',
+    '',
+    'Median and lowest per-segment median IoU of the drawn outline with the stored item mask (raw mask,',
+    'holes not filled, so items with handles or a cover inside score lower). The outline checks',
+    'themselves are strict and part of each case: an outline by the first mask on every segment with an',
+    'item, none on empty, weak-surface or gap segments, and stability ≥ 0.95 on flat jitter sets.',
+    '',
+    '| Platform | Variant | IoU median | IoU lowest |',
+    '|---|---|---|---|',
+    ...rows,
+    '',
+  ].join('\n');
+}
+
 function addScoreboardRow(file, row) {
   let text = existsSync(file) ? readFileSync(file, 'utf8') : SCOREBOARD_HEAD + SCOREBOARD_TAIL;
   const lines = text.split('\n');
@@ -292,6 +323,7 @@ function main() {
     '',
     ...platforms.map((platform) => sections[platform].text),
     hardCases(args.run, platforms),
+    outlineInfo(args.run, platforms),
     DEFINITIONS,
     DEVICE_ONLY,
   ].join('\n');

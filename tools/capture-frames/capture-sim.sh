@@ -112,11 +112,12 @@ run_flows() {
   done
 }
 
+# $3: the mask cadence the sweep played (0: a fresh mask on every frame).
 score() {
-  local platform="$1" run="$2"
+  local platform="$1" run="$2" cadence="${3:-0}"
   local reader="$run/raw/$platform/screen-reader.jsonl"
   node "$TOOL_DIR/capture-score.mjs" --platform "$platform" --frames "$FRAMES_DIR" \
-    --results "$run/raw/$platform/sweep.jsonl" --screen-reader "$reader" --out "$run" || true
+    --results "$run/raw/$platform/sweep.jsonl" --screen-reader "$reader" --mask-cadence-ms "$cadence" --out "$run" || true
 }
 
 # --- iOS --------------------------------------------------------------------------------------
@@ -138,6 +139,12 @@ ios_udid() {
   ' || die "capture-sim: no iPhone 18 Pro simulator; create one (Xcode > Settings > Components) or set IOS_SIMULATOR_ID"
 }
 
+# The phone's Vision mask cadence (capture-rules.json ios.maskIntervalMs): iOS sweeps play masks at it.
+ios_mask_cadence_ms() {
+  node -e 'process.stdout.write(String(require(process.argv[1]).ios.maskIntervalMs))' \
+    "$REPO_ROOT/packages/shared-kernel/registry/capture-rules.json"
+}
+
 ios_results() {
   printf '%s/Documents/%s\n' "$(xcrun simctl get_app_container "$1" "$APP_ID" data)" "$2"
 }
@@ -151,7 +158,8 @@ ios_sweep() {
   done_file="$(ios_results "$udid" capture-results.done)"
   xcrun simctl terminate "$udid" "$APP_ID" 2>/dev/null || true
   rm -f "$done_file" "$(ios_results "$udid" capture-results.jsonl)"
-  xcrun simctl launch --terminate-running-process "$udid" "$APP_ID" -captureSweep 1 -captureFramesDir "$FRAMES_DIR" "$@" >/dev/null
+  xcrun simctl launch --terminate-running-process "$udid" "$APP_ID" -captureSweep 1 -captureFramesDir "$FRAMES_DIR" \
+    -captureMaskCadenceMs "$(ios_mask_cadence_ms)" "$@" >/dev/null
   wait_for "the iOS sweep ($*)" test -f "$done_file"
   cat "$(ios_results "$udid" capture-results.jsonl)" >>"$out"
 }
@@ -167,7 +175,7 @@ run_ios() {
   xcrun simctl bootstatus "$IOS_UDID" -b >/dev/null
   xcrun simctl install "$IOS_UDID" "$REPO_ROOT/apps/ios/.build/DerivedData/Build/Products/Dev-iphonesimulator/AIStylist.app"
   mkdir -p "$raw"
-  log "iOS sweep: every frame set on the virtual clock"
+  log "iOS sweep: every frame set on the virtual clock, masks at the phone's cadence ($(ios_mask_cadence_ms) ms)"
   : >"$raw/sweep.jsonl"
   ios_sweep "$IOS_UDID" "$raw/sweep.jsonl"
   : >"$raw/screen-reader.jsonl"
@@ -181,7 +189,7 @@ run_ios() {
     run_flows ios "$IOS_UDID" "$run" "$theme"
   done
   xcrun simctl ui "$IOS_UDID" appearance light
-  score ios "$run"
+  score ios "$run" "$(ios_mask_cadence_ms)"
 }
 
 # --- Android ----------------------------------------------------------------------------------

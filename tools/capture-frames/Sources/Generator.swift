@@ -41,7 +41,7 @@ struct Generator {
     let output: URL
 
     private static let rulesPath = "packages/shared-kernel/registry/capture-rules.json"
-    private static let flatColumns = Renderer.flatVariantNames + ["two-items", "empty", "sweep"]
+    private static let flatColumns = Renderer.flatVariantNames + ["too-big", "too-bright", "two-items", "empty", "sweep"]
 
     func run() throws -> String {
         let rulesURL = repoRoot.appendingPathComponent(Generator.rulesPath)
@@ -121,6 +121,30 @@ struct Generator {
                         goodWritten = written
                         goodFrames[family, default: []].append(
                             GoodFrame(written: written, frame: frame, base: base.withoutFrames, expected: expected))
+                    }
+                }
+            }
+
+            // Extra variants on the first base, outside base selection: a rejection drops only the variant.
+            if let base = result.bases.first {
+                for make in [renderer.tooBig, renderer.tooBright] {
+                    do {
+                        let frame = try make(base.cutout, family)
+                        guard let image = frame.image else { continue }
+                        let id = "\(family)-flat-01-\(frame.variant)"
+                        let written = try writer.write(image, measure: frame.measure, keypoints: nil, directory: "\(family)/\(id)")
+                        result.contactFrames.append(written)
+                        let expected = try writer.writeExpectation(frame.expectation, path: "\(family)/\(id)/expected.json")
+                        sets.append(
+                            SetEntry(
+                                id: id, family: family, mode: "flat", variant: frame.variant, kind: "single",
+                                source: base.source, baseImages: [base.id],
+                                segments: [
+                                    try written.segment(frames: Harness.segmentFrames, jitter: 0, setId: id, expected: expected)
+                                ]))
+                        result.flatCounts[frame.variant, default: 0] += 1
+                    } catch let rejection as Rejection {
+                        result.rejected.append(Manifest.Rejected(id: base.id, reason: rejection.reason))
                     }
                 }
             }

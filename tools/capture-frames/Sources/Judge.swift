@@ -133,6 +133,8 @@ struct Intent {
     var sharp = true
     var jittered = false
     var dark = false
+    /// The too-bright variant: the light check must fail clearly (a hint, never a lock).
+    var bright = false
 }
 
 /// The lock machine's checks in priority order (brief §4, §6); `unlocked` when none fails.
@@ -278,6 +280,13 @@ struct Judge {
         if intent.dark {
             return measure.meanLuma < light.tooDarkBelowMeanLuma
                 ? nil : "mean luma \(round4(measure.meanLuma)) is not under \(light.tooDarkBelowMeanLuma)"
+        }
+        if intent.bright {
+            let clearlyBright =
+                measure.meanLuma > light.tooBrightAboveMeanLuma + Layout.lumaMargin
+                || measure.clippedShare > light.tooBrightAboveClippedShare * Layout.contactFailFactor
+            return clearlyBright
+                ? nil : "mean luma \(round4(measure.meanLuma)) and clipped share \(round4(measure.clippedShare)) are not clearly too bright"
         }
         let inRange =
             measure.meanLuma >= light.tooDarkBelowMeanLuma + Layout.lumaMargin

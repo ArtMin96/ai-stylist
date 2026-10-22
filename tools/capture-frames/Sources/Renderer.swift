@@ -210,6 +210,54 @@ struct Renderer {
         throw last
     }
 
+    /// C11 "coat too big" (brief §12): the item scaled up until `Harness.cutPastEdgeShare` of its box
+    /// lies past the two edges it reaches first, split evenly (left and right for an item wider than
+    /// the frame's ratio, else top and bottom), so it touches two or more edges:
+    /// `cap-hint-cut-off-multiple`. With that share past each edge instead, the item fills the frame
+    /// and Vision finds no foreground at all (2026-10-22), which a phone would read as no item.
+    func tooBig(of base: Cutout, family: String) throws -> RenderedFrame {
+        let judge = Judge(rules: rules, family: family, mode: try rules.mode("flat"))
+        let span = 1 / (1 - Harness.cutPastEdgeShare)
+        let box =
+            base.aspect >= size.ratio
+            ? (width: span, height: span * size.ratio / base.aspect)
+            : (width: span * base.aspect / size.ratio, height: span)
+        let rect = Sizing.centred(box)
+        let touched = Edge.allCases.filter { edge in
+            switch edge {
+            case .top: rect.y < 0
+            case .bottom: rect.maxY > 1
+            case .left: rect.x < 0
+            case .right: rect.maxX > 1
+            }
+        }
+        let visible = rect.clippedToFrame.area
+        let intent = Intent(iosMaskShare: visible * base.coverage, touchedEdges: touched, boxAreaShare: visible)
+        let image = try compose([Placement(cutout: base, rect: rect)])
+        return try judged("too-big", image: image, intent: intent, judge: judge)
+    }
+
+    /// Too bright (brief §3, §6 row 7): the good item on a white surface in direct light. Everything
+    /// but the item is clipped white, far over `light.tooBrightAboveClippedShare`, while the item keeps
+    /// its contrast, so it is still found and sharp: a hint, never a lock (Q15).
+    func tooBright(of base: Cutout, family: String) throws -> RenderedFrame {
+        let judge = Judge(rules: rules, family: family, mode: try rules.mode("flat"))
+        let minimum = try rules.family(family).minAreaShare
+        let fit = Sizing.largestArea(aspect: base.aspect, margin: Layout.jitterSafeMargin, size: size)
+        let area = min(Layout.goodSizeTimesMinimum * minimum, fit)
+        let rect = Sizing.centred(Sizing.box(aspect: base.aspect, areaShare: area, size: size))
+        let context = try Imaging.makeContext(width: size.width, height: size.height)
+        context.setFillColor(CGColor(srgbRed: 1, green: 1, blue: 1, alpha: 1))
+        context.fill(CGRect(x: 0, y: 0, width: size.width, height: size.height))
+        context.draw(base.image, in: Imaging.cgRect(rect, width: size.width, height: size.height))
+        guard let image = context.makeImage() else {
+            throw GeneratorError("cannot finish a too-bright frame")
+        }
+        var intent = Intent(iosMaskShare: area * base.coverage, boxAreaShare: area)
+        intent.bright = true
+        return try judged("too-bright", image: image, intent: intent, judge: judge)
+    }
+
     /// The plain background with no item; fatal when Vision finds an item in it.
     func emptyFrame() throws -> (image: CGImage, measure: FrameMeasure) {
         let image = try compose([])

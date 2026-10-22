@@ -95,7 +95,12 @@ half of its good frame's sharpness, 71 or more, far above the 2 × 12 margin; th
 Flat mode, per base image, one set each: `good`, `cut-top`, `cut-bottom`, `cut-left`, `cut-right`,
 `too-small`, `too-dark`, `motion-blur`, `jitter` and `two-items`. `jitter` plays the good frame with
 playback jitter. `two-items` places the next base beside this one, and ships only when Vision finds
-both as separate instances. Per family there is also one
+both as separate instances. The first base also gets two extra sets, built after base selection so
+a rejection drops only that set: `too-big` (C11: the item scaled up until 25 % of its box lies past
+the two edges it reaches first, split evenly, so it touches two or more edges and locks with
+`cap-hint-cut-off-multiple`; at 25 % past each edge it fills the frame and Vision finds no item) and `too-bright` (the good item on a white surface: everything but the
+item is clipped white, so the clipped share is clearly over the limit while the item stays found and
+sharp; it unlocks with `cap-hint-too-bright`). Per family there is also one
 `empty` set (the shared plain background) and one `sweep` set: every good frame in turn, with 1 s
 of empty background between them. One `batch-<n>` set (C20) holds up to 10 different items judged
 under the `generic` family, with empty gaps between them.

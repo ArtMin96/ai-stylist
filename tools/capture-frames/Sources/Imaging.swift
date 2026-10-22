@@ -112,25 +112,16 @@ struct Raster {
 
 /// Standard normal samples from a seeded SplitMix64 stream (Box–Muller), so a run repeats exactly.
 struct GaussianNoise {
-    private var state: UInt64
+    private var uniform: SplitMix64
 
     init(seed: UInt64) {
-        state = seed
+        uniform = SplitMix64(seed: seed)
     }
 
     mutating func next() -> Double {
-        let first = max(Double.leastNonzeroMagnitude, uniform())
-        let second = uniform()
+        let first = max(Double.leastNonzeroMagnitude, uniform.nextUnit())
+        let second = uniform.nextUnit()
         return (-2 * log(first)).squareRoot() * cos(2 * Double.pi * second)
-    }
-
-    private mutating func uniform() -> Double {
-        state &+= 0x9E37_79B9_7F4A_7C15
-        var mixed = state
-        mixed = (mixed ^ (mixed >> 30)) &* 0xBF58_476D_1CE4_E5B9
-        mixed = (mixed ^ (mixed >> 27)) &* 0x94D0_49BB_1331_11EB
-        mixed ^= mixed >> 31
-        return Double(mixed >> 11) / Double(1 << 53)
     }
 }
 

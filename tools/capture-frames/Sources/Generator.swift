@@ -87,7 +87,7 @@ struct Generator {
                     id: emptyId, family: family, mode: "flat", variant: "empty", kind: "single", source: "synthetic",
                     baseImages: [],
                     segments: [
-                        emptyWritten.segment(
+                        try emptyWritten.segment(
                             frames: Harness.segmentFrames, jitter: 0, setId: emptyId, expected: emptyExpected)
                     ]))
             result.flatCounts["empty", default: 0] += 1
@@ -112,8 +112,9 @@ struct Generator {
                             id: id, family: family, mode: "flat", variant: frame.variant, kind: "single",
                             source: base.source, baseImages: [base.id],
                             segments: [
-                                written.segment(
-                                    frames: Harness.segmentFrames, jitter: frame.jitter, setId: id, expected: expected)
+                                try written.segment(
+                                    frames: Harness.segmentFrames, jitter: frame.jitter, setId: id, expected: expected,
+                                    rules: rules)
                             ]))
                     result.flatCounts[frame.variant, default: 0] += 1
                     if frame.variant == "good" {
@@ -140,7 +141,7 @@ struct Generator {
                                 source: base.source == second.source ? base.source : "mixed",
                                 baseImages: [base.id, second.id],
                                 segments: [
-                                    written.segment(frames: Harness.segmentFrames, jitter: 0, setId: id, expected: expected)
+                                    try written.segment(frames: Harness.segmentFrames, jitter: 0, setId: id, expected: expected)
                                 ]))
                         result.flatCounts["two-items", default: 0] += 1
                     } catch let rejection as Rejection {
@@ -154,9 +155,9 @@ struct Generator {
                 var segments: [SegmentEntry] = []
                 for good in goods {
                     segments.append(
-                        good.written.segment(frames: Harness.segmentFrames, jitter: 0, setId: id, expected: good.expected))
+                        try good.written.segment(frames: Harness.segmentFrames, jitter: 0, setId: id, expected: good.expected))
                     segments.append(
-                        emptyWritten.segment(frames: Harness.gapFrames, jitter: 0, setId: id, expected: emptyExpected))
+                        try emptyWritten.segment(frames: Harness.gapFrames, jitter: 0, setId: id, expected: emptyExpected))
                 }
                 let sources = Set(goods.map(\.base.source))
                 sets.append(
@@ -219,7 +220,9 @@ struct Generator {
                         id: id, family: family, mode: "worn", variant: frame.variant, kind: "single",
                         source: "synthetic", baseImages: ["synthetic-figure", chosen.garment.id],
                         segments: [
-                            written.segment(frames: Harness.segmentFrames, jitter: frame.jitter, setId: id, expected: expected)
+                            try written.segment(
+                                frames: Harness.segmentFrames, jitter: frame.jitter, setId: id, expected: expected,
+                                rules: rules)
                         ]))
                 result.wornCounts[frame.variant, default: 0] += 1
             }
@@ -368,8 +371,8 @@ struct Generator {
             guard judged.expectation.shutter == "unlocked" else { continue }
             let expected = try writer.writeExpectation(
                 judged.expectation, path: "batch/expected-\(String(format: "%02d", baseImages.count + 1)).json")
-            segments.append(pick.written.segment(frames: Harness.segmentFrames, jitter: 0, setId: id, expected: expected))
-            segments.append(empty.segment(frames: Harness.gapFrames, jitter: 0, setId: id, expected: emptyExpected))
+            segments.append(try pick.written.segment(frames: Harness.segmentFrames, jitter: 0, setId: id, expected: expected))
+            segments.append(try empty.segment(frames: Harness.gapFrames, jitter: 0, setId: id, expected: emptyExpected))
             baseImages.append(pick.base.id)
             sources.insert(pick.base.source)
         }

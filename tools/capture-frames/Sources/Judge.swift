@@ -52,6 +52,11 @@ enum Layout {
     static let sizeFailFactor = 0.9
     static let contactFailFactor = 1.25
     static let contactPassFactor = 0.5
+    /// Jitter: frames that two evaluations may read differ by over this many times the steady
+    /// centre-shift limit (README "Jitter").
+    static let jitterStepFailFactor = 1.25
+    /// Jitter: random draws tried per frame before the generator gives up on a seed.
+    static let jitterMaxDrawsPerFrame = 1000
     static let lumaMargin = 10.0
     static let wornWholeHeightShare = 0.86
     static let wornWholeTopShare = 0.06

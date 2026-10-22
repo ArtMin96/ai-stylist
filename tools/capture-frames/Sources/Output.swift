@@ -22,8 +22,10 @@ struct FrameMetrics: Encodable {
     }
 }
 
-/// One image played for `frames` frames at `Harness.playbackFps`, moved by up to `jitter` of the
-/// frame per frame (seeded by `jitterSeed`). Paths are relative to the frames root.
+/// One image played for `frames` frames at `Harness.playbackFps`. A jittered segment moves frame
+/// `n` by `offsets[n % offsets.count]` (`[dx, dy]`, shares of the frame, each within ±`jitter`), drawn
+/// from `jitterSeed` and checked by `JitterPath`; absent offsets mean no movement. Paths are relative
+/// to the frames root.
 struct SegmentEntry: Encodable {
     let frame: String
     let mask: String
@@ -32,8 +34,48 @@ struct SegmentEntry: Encodable {
     let frames: Int
     let jitter: Double
     let jitterSeed: UInt32
+    let offsets: [[Double]]?
     let expected: String
     let metrics: FrameMetrics
+}
+
+/// The per-frame offsets of a jittered segment (README "Jitter"). Shaky hands never hold still, so
+/// every two frames that consecutive evaluations may read (up to one evaluation interval plus one
+/// frame apart, the segment looping) differ by more than `Layout.jitterStepFailFactor` times
+/// `steady.maxCentreShift` on at least one axis. Independent draws do not: about one jittered set in
+/// 25 held still for three evaluations and unlocked (scoreboard, 2026-10-22).
+enum JitterPath {
+    static func offsets(seed: UInt32, amplitude: Double, count: Int, rules: CaptureRules) throws -> [[Double]] {
+        let frameMs = 1000.0 / Double(Harness.playbackFps)
+        let reach = Int((Double(rules.evaluation.intervalMs) / frameMs).rounded(.up)) + 1
+        let minStep = rules.steady.maxCentreShift * Layout.jitterStepFailFactor
+        var random = SplitMix64(seed: UInt64(seed))
+        var offsets: [[Double]] = []
+        for index in 0..<count {
+            var draws = 0
+            while true {
+                draws += 1
+                guard draws <= Layout.jitterMaxDrawsPerFrame else {
+                    throw GeneratorError("jitter seed \(seed): no offset for frame \(index) keeps the frame shaky")
+                }
+                let offset = [round4((random.nextUnit() * 2 - 1) * amplitude), round4((random.nextUnit() * 2 - 1) * amplitude)]
+                // The frames already drawn within `reach`: earlier ones, and near the end the first
+                // ones, which the looping segment plays next.
+                let neighbours = (1...reach).flatMap { distance -> [[Double]] in
+                    (index - distance >= 0 ? [offsets[index - distance]] : [])
+                        + (index + distance >= count ? [offsets[index + distance - count]] : [])
+                }
+                let isShaky = neighbours.allSatisfy { other in
+                    abs(other[0] - offset[0]) > minStep || abs(other[1] - offset[1]) > minStep
+                }
+                if isShaky {
+                    offsets.append(offset)
+                    break
+                }
+            }
+        }
+        return offsets
+    }
 }
 
 /// A frame set the apps' debug frame source plays (`captureFrameSet=<id>`).
@@ -147,10 +189,18 @@ struct WrittenFrame {
     let keypoints: String?
     let metrics: FrameMetrics
 
-    func segment(frames: Int, jitter: Double, setId: String, expected: String) -> SegmentEntry {
-        SegmentEntry(
+    func segment(frames: Int, jitter: Double, setId: String, expected: String, rules: CaptureRules? = nil) throws
+        -> SegmentEntry
+    {
+        let seed = stableSeed(setId)
+        var offsets: [[Double]]?
+        if jitter > 0 {
+            guard let rules else { throw GeneratorError("\(setId): a jittered segment needs the rules") }
+            offsets = try JitterPath.offsets(seed: seed, amplitude: jitter, count: frames, rules: rules)
+        }
+        return SegmentEntry(
             frame: frame, mask: mask, box: box, keypoints: keypoints, frames: frames, jitter: jitter,
-            jitterSeed: stableSeed(setId), expected: expected, metrics: metrics)
+            jitterSeed: seed, offsets: offsets, expected: expected, metrics: metrics)
     }
 }
 

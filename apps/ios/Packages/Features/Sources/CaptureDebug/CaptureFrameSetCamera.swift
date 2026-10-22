@@ -1,6 +1,6 @@
 // The test-frame camera (capture brief §11 "Playback"): plays a frame set at `playback.fps` through the
 // same observation path, lock machine and screens as the live camera. Each segment repeats its image for
-// its frame count, moved each frame by a seeded random offset up to its `jitter` share; the last segment
+// its frame count, moved each frame by the generator's jitter offsets (index `offsets`); the last segment
 // loops until the screen closes (or, in a sweep, until the case's duration). On the Simulator Vision has
 // no foreground mask, so the stored mask is measured instead (same `CaptureMaskProfile` as the phone).
 #if os(iOS)
@@ -48,7 +48,6 @@
     @ObservationIgnored private var frameNumber = 0
     @ObservationIgnored private var startMs = 0
     @ObservationIgnored private var segmentIndex = -1
-    @ObservationIgnored private var random = SplitMix64(seed: 0)
     @ObservationIgnored private var currentImage: CGImage?
 
     init(
@@ -130,14 +129,13 @@
       guard isRunning, !Task.isCancelled else { return nil }
       let elapsedMs = Int((Double(frameNumber) * frameMs).rounded())
       virtualClock?.nowMs = startMs + elapsedMs
-      let (index, isNewSegment) = segment(forFrame: frameNumber)
+      let (index, frameInSegment, isNewSegment) = segment(forFrame: frameNumber)
       if isNewSegment {
         segmentIndex = index
-        random = SplitMix64(seed: set.segments[index].jitterSeed)
         listener?.frameSetSegmentStarted(set, segment: index, atMs: clock.nowMs)
       }
       frameNumber += 1
-      return observation(segment: index, timestampMs: elapsedMs)
+      return observation(segment: index, frame: frameInSegment, timestampMs: elapsedMs)
     }
 
     private func finish() {
@@ -145,23 +143,21 @@
       listener?.frameSetFinished(set)
     }
 
-    /// The segment that plays frame `number`; the last one loops.
-    private func segment(forFrame number: Int) -> (index: Int, isNew: Bool) {
+    /// The segment that plays frame `number`, and that frame's number within it; the last one loops.
+    private func segment(forFrame number: Int) -> (index: Int, frame: Int, isNew: Bool) {
       var remaining = number
       for (index, segment) in set.segments.enumerated() {
         if remaining < segment.frames || index == set.segments.count - 1 {
-          return (index, index != segmentIndex)
+          return (index, remaining, index != segmentIndex)
         }
         remaining -= segment.frames
       }
-      return (set.segments.count - 1, false)
+      return (set.segments.count - 1, remaining, false)
     }
 
-    private func observation(segment index: Int, timestampMs: Int) -> CaptureObservation {
+    private func observation(segment index: Int, frame: Int, timestampMs: Int) -> CaptureObservation {
       let asset = assets[index]
-      let jitter = set.segments[index].jitter
-      let dx = jitter > 0 ? random.nextUnit() * 2 * jitter - jitter : 0
-      let dy = jitter > 0 ? random.nextUnit() * 2 * jitter - jitter : 0
+      let (dx, dy) = set.segments[index].offset(atFrame: frame)
       currentImage = asset.image
       frames.image = asset.image
       frames.offset = CGSize(width: dx, height: dy)
@@ -200,24 +196,5 @@
     func frameSetFinished(_ set: CaptureFrameIndex.FrameSet)
     func frameSetStopped(_ set: CaptureFrameIndex.FrameSet)
     func frameSetFailed(_ set: CaptureFrameIndex.FrameSet, reason: String)
-  }
-
-  /// A small seeded generator, so a jittered segment plays the same offsets every run.
-  nonisolated struct SplitMix64: Sendable {
-    private var state: UInt64
-
-    init(seed: UInt64) {
-      state = seed
-    }
-
-    /// A value in 0..<1.
-    mutating func nextUnit() -> Double {
-      state &+= 0x9E37_79B9_7F4A_7C15
-      var value = state
-      value = (value ^ (value >> 30)) &* 0xBF58_476D_1CE4_E5B9
-      value = (value ^ (value >> 27)) &* 0x94D0_49BB_1331_11EB
-      value ^= value >> 31
-      return Double(value >> 11) / Double(UInt64(1) << 53)
-    }
   }
 #endif

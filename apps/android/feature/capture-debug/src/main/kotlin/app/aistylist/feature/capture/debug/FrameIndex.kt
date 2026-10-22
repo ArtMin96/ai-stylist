@@ -5,7 +5,11 @@ import app.aistylist.contracts.kernel.CaptureShapeFamily
 import org.json.JSONObject
 import java.io.File
 
-/** One played image: [frames] frames at the index's fps, moved by up to [jitter] of the frame each frame. */
+/**
+ * One played image: [frames] frames at the index's fps. A jittered segment moves frame `n` by
+ * `offsets[n % offsets.size]`, the generator's checked path (each within ±[jitter] of the frame);
+ * empty [offsets] mean no movement.
+ */
 data class FrameSegment(
     val frame: String,
     val box: String,
@@ -13,7 +17,7 @@ data class FrameSegment(
     val expected: String,
     val frames: Int,
     val jitter: Double,
-    val jitterSeed: Long,
+    val offsets: List<FrameOffset> = emptyList(),
 )
 
 /** One frame set of `artifacts/capture-camera/frames/index.json` (tools/capture-frames/README.md). */
@@ -52,6 +56,15 @@ class FrameIndex(
             return FrameIndex(root, fps, (0 until sets.length()).mapNotNull { parseSet(sets.getJSONObject(it)) })
         }
 
+        /** The segment's `offsets`: `[dx, dy]` pairs, shares of the frame. */
+        private fun parseOffsets(segment: JSONObject): List<FrameOffset> {
+            val offsets = segment.optJSONArray("offsets") ?: return emptyList()
+            return (0 until offsets.length()).map { index ->
+                val pair = offsets.getJSONArray(index)
+                FrameOffset(dx = pair.getDouble(0), dy = pair.getDouble(1))
+            }
+        }
+
         private fun parseSet(json: JSONObject): FrameSet? {
             val family = CaptureShapeFamily.fromValue(json.getString("family")) ?: return null
             val mode = CaptureMode.fromValue(json.getString("mode")) ?: return null
@@ -72,7 +85,7 @@ class FrameIndex(
                             expected = segment.getString("expected"),
                             frames = segment.getInt("frames"),
                             jitter = segment.optDouble("jitter", 0.0),
-                            jitterSeed = segment.optLong("jitterSeed", 0L),
+                            offsets = parseOffsets(segment),
                         )
                     },
             )

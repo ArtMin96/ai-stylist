@@ -21,9 +21,14 @@ struct CaptureRules: Decodable {
     }
 
     struct Steady: Decodable {
+        let maxCentreShift: Double
         let minSharpness: Double
         let sharpnessLongSidePx: Int
         let laplacianKernelPx: Int
+    }
+
+    struct Evaluation: Decodable {
+        let intervalMs: Int
     }
 
     struct Light: Decodable {
@@ -55,6 +60,7 @@ struct CaptureRules: Decodable {
     let families: [String: Family]
     let edgeBandShare: Double
     let analysisFrame: AnalysisFrame
+    let evaluation: Evaluation
     let steady: Steady
     let light: Light
     let timing: Timing

@@ -37,7 +37,7 @@ light, worn-mode keypoint bounds, body parts, hint keys and lock reasons. Nothin
 - Too small (§11): 35 % of the family minimum (box area).
 - Too dark (§11): mean luma 30 (how the frame is darkened: "Too dark" below).
 - Motion blur (§11): Core Image motion blur, 25 px at a 640 px long side (angle: below).
-- Jitter (§11): 0.06 of the frame, applied at playback.
+- Jitter (§11): 0.06 of the frame, as per-frame offsets the apps play (below, "Jitter").
 - Worn part cut off (§11): 25 % of the torso height past the edge.
 - Acceptance (§0, C1): unlock within 3000 ms; "Take photo anyway" at 10 s ± 500 ms.
 
@@ -136,8 +136,9 @@ Set ids are test-ID safe (`cap-debug-frameset-<set id>`): `<family>-flat-<nn>-<v
 ### `index.json`
 
 All paths are relative to the frames folder. A segment plays `frame` for `frames` frames at
-`playback.fps`, moved each frame by a random offset of up to `jitter` of the frame. The offset is
-seeded with `jitterSeed`, so a run repeats exactly. The last segment loops until the screen closes.
+`playback.fps`. A jittered segment moves frame `n` by `offsets[n % offsets.count]` (`[dx, dy]`,
+shares of the frame), so both apps play the same path and a run repeats exactly; a segment without
+`offsets` does not move. The last segment loops until the screen closes.
 Each segment names its own `expected` file, so a sweep or batch set is judged item by item.
 `metrics` is what the generator measured, for debugging.
 
@@ -188,6 +189,20 @@ Each segment names its own `expected` file, so a sweep or batch set is judged it
 
 `kind` is `single`, `sweep` or `batch`. `source` is `dataset`, `synthetic` or `mixed`. A worn
 segment also has `"keypoints": "<path>"`.
+
+### Jitter
+
+C14 says a jittered frame never unlocks: shaky hands never hold still. Offsets drawn independently
+for each frame do hold still now and then. About one jittered set in 25 drew three evaluations in a
+row within `steady.maxCentreShift`, and the shutter unlocked as brief §4 says it must (first iOS
+sweep, 2026-10-22). Each app also drew from its own random generator, so the two platforms played
+different paths from the same seed.
+
+So the generator draws the path itself (`JitterPath` in `Sources/Output.swift`) and writes it into
+the index. It draws each frame's offset uniformly within ±`jitter` from SplitMix64 seeded with
+`jitterSeed`. It redraws until the offset differs by more than 1.25 × `steady.maxCentreShift`
+(`Layout.jitterStepFailFactor`) on at least one axis from every frame two evaluations may read:
+up to `evaluation.intervalMs` plus one frame apart, with the segment looping. No threshold changes.
 
 ### `expected.json`
 

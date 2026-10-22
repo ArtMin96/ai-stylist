@@ -88,6 +88,24 @@ func sha256Hex(of data: Data) -> String {
     SHA256.hash(data: data).map { String(format: "%02x", $0) }.joined()
 }
 
+/// A seeded SplitMix64 stream of uniform values in 0..<1, so a run repeats exactly.
+struct SplitMix64 {
+    private var state: UInt64
+
+    init(seed: UInt64) {
+        state = seed
+    }
+
+    mutating func nextUnit() -> Double {
+        state &+= 0x9E37_79B9_7F4A_7C15
+        var mixed = state
+        mixed = (mixed ^ (mixed >> 30)) &* 0xBF58_476D_1CE4_E5B9
+        mixed = (mixed ^ (mixed >> 27)) &* 0x94D0_49BB_1331_11EB
+        mixed ^= mixed >> 31
+        return Double(mixed >> 11) / Double(1 << 53)
+    }
+}
+
 /// Stable 32-bit FNV-1a hash of a set id: the per-set jitter seed, so playback repeats exactly.
 func stableSeed(_ text: String) -> UInt32 {
     var hash: UInt32 = 2_166_136_261

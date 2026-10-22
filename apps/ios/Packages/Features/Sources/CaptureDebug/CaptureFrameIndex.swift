@@ -32,7 +32,15 @@
       public let expected: String?
       public let frames: Int
       public let jitter: Double
-      public let jitterSeed: UInt64
+      /// Jittered segments: `[dx, dy]` per frame, shares of the frame; absent means no movement.
+      public let offsets: [[Double]]?
+
+      /// The jitter offset of the segment's frame `number`; the offsets loop with the segment.
+      public func offset(atFrame number: Int) -> (dx: Double, dy: Double) {
+        guard let offsets, !offsets.isEmpty else { return (0, 0) }
+        let pair = offsets[number % offsets.count]
+        return (pair.first ?? 0, pair.dropFirst().first ?? 0)
+      }
     }
 
     public struct FrameSet: Decodable, Sendable, Identifiable {

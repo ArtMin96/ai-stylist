@@ -18,7 +18,6 @@ import app.aistylist.feature.capture.domain.PoseSample
 import com.google.mlkit.vision.common.InputImage
 import org.json.JSONObject
 import java.io.Closeable
-import java.util.Random
 
 /** A frame's offset this playback frame: the jitter, as a share of the frame (capture brief §11). */
 data class FrameOffset(
@@ -50,18 +49,12 @@ class FrameAnalyzer(
     /** The decoded frame of [segment]. */
     fun bitmap(segment: FrameSegment): Bitmap = frame(segment).bitmap
 
-    /** The jitter offset of playback frame [frameNumber] of [segment], repeatable from its seed. */
+    /** The jitter offset of playback frame [frameNumber] of [segment]; the index's offsets loop with it. */
     fun offset(
         segment: FrameSegment,
         frameNumber: Int,
-    ): FrameOffset {
-        if (segment.jitter <= 0.0) return FrameOffset.NONE
-        val random = Random(segment.jitterSeed * SEED_STRIDE + frameNumber)
-        return FrameOffset(
-            dx = (random.nextDouble() * 2 - 1) * segment.jitter,
-            dy = (random.nextDouble() * 2 - 1) * segment.jitter,
-        )
-    }
+    ): FrameOffset =
+        if (segment.offsets.isEmpty()) FrameOffset.NONE else segment.offsets[frameNumber % segment.offsets.size]
 
     /** The observation of [segment] moved by [offset], stamped [timestampMs]; pose only when [withPose]. */
     fun observe(
@@ -179,11 +172,6 @@ class FrameAnalyzer(
         var keypoints: PoseSample? = null,
         var livePose: PoseSample? = null,
     )
-
-    private companion object {
-        /** Spreads frame numbers apart in the seed space so neighbouring frames are unrelated. */
-        const val SEED_STRIDE = 1_000_003L
-    }
 }
 
 /** [this] box moved by [offset] (not clipped). */

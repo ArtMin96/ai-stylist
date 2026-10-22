@@ -31,7 +31,8 @@ private const val INDEX =
           "id": "top-flat-01-jitter", "family": "top", "mode": "flat", "kind": "single", "variant": "jitter",
           "segments": [
             { "frame": "top/a/frame.png", "box": "top/a/frame.box.json", "expected": "top/a/expected.json",
-              "frames": 180, "jitter": 0.06, "jitterSeed": 7 }
+              "frames": 3, "jitter": 0.06, "jitterSeed": 7,
+              "offsets": [[0.01, -0.02], [0.05, 0.03], [-0.04, 0.0]] }
           ]
         },
         {
@@ -95,7 +96,7 @@ class HarnessTest {
     }
 
     @Test
-    fun `jitter is repeatable per frame and stays within its share`() {
+    fun `a jittered segment plays the index's offsets in order and loops them`() {
         folder.newFile(FrameIndex.INDEX_FILE).writeText(INDEX)
         val index = requireNotNull(FrameIndex.load(folder.root))
         val analyzer = FrameAnalyzer(index, BoxSource.STORED, PoseSource.KEYPOINTS)
@@ -106,11 +107,9 @@ class HarnessTest {
                 .single()
         val steady = index.sets[1].segments.single()
 
-        val offsets = (0 until 30).map { analyzer.offset(jittered, it) }
-
-        assertEquals(offsets, (0 until 30).map { analyzer.offset(jittered, it) })
-        assertTrue(offsets.all { kotlin.math.abs(it.dx) <= 0.06 && kotlin.math.abs(it.dy) <= 0.06 })
-        assertTrue(offsets.distinct().size > 1)
+        assertEquals(FrameOffset(0.05, 0.03), analyzer.offset(jittered, 1))
+        assertEquals(FrameOffset(-0.04, 0.0), analyzer.offset(jittered, 5))
+        assertEquals(FrameOffset(0.01, -0.02), analyzer.offset(jittered, 6))
         assertEquals(FrameOffset.NONE, analyzer.offset(steady, 5))
     }
 

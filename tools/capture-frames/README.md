@@ -258,8 +258,11 @@ different paths from the same seed.
 So the generator draws the path itself (`JitterPath` in `Sources/Output.swift`) and writes it into
 the index. It draws each frame's offset uniformly within ±`jitter` from SplitMix64 seeded with
 `jitterSeed`. It redraws until the offset differs by more than 1.25 × `steady.maxCentreShift`
-(`Layout.jitterStepFailFactor`) on at least one axis from every frame two evaluations may read:
-up to `evaluation.intervalMs` plus one frame apart, with the segment looping. No threshold changes.
+(`Layout.jitterStepFailFactor`) on at least one axis from every frame that two consecutive reads may
+see: one `evaluation.intervalMs` apart (consecutive evaluations) or one `ios.maskIntervalMs` apart
+(consecutive masks at the phone's cadence), each up to one frame late, with the segment looping. Only
+those distances are constrained; requiring every distance up to the mask interval left some seeds with
+no possible offset. No threshold changes.
 
 ### `expected.json`
 

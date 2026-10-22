@@ -53,7 +53,6 @@ class FrameSetSource(
             // the camera, whose first analysed frame makes it ready: the anyway timer starts here.
             analysis.use { analyzer -> analyzer.bitmap(set.segments.first()) }
             emit(CameraFeedEvent.Ready)
-            val frameMs = MS_PER_SECOND / fps
             set.segments.forEachIndexed { index, segment ->
                 val isLast = index == set.segments.lastIndex
                 val startMs = clock.nowMs()
@@ -68,7 +67,9 @@ class FrameSetSource(
                         }
                     emit(CameraFeedEvent.Frame(observation))
                     frameNumber++
-                    delay(frameMs)
+                    // Frame n is due at n / fps from the segment's start, so measuring a frame does not
+                    // slow playback below the index's fps (brief §11: 30 frames per second).
+                    delay((startMs + frameNumber * MS_PER_SECOND / fps - clock.nowMs()).coerceAtLeast(0))
                 }
             }
         }.flowOn(dispatcher)

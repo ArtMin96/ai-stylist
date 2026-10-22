@@ -32,7 +32,8 @@ nonisolated final class RequestRecorder: URLProtocol {
 @Suite("Capture flow: offline (C22)", .serialized)
 struct CaptureOfflineTests {
   private func recording(_ body: () async throws -> Void) async rethrows -> [String] {
-    URLProtocol.registerClass(RequestRecorder.self)
+    // Returns Bool on Linux (swift-corelibs-foundation) and Void on Apple platforms.
+    _ = URLProtocol.registerClass(RequestRecorder.self)
     defer { URLProtocol.unregisterClass(RequestRecorder.self) }
     RequestRecorder.seen.withLock { $0 = [] }
     try await body()

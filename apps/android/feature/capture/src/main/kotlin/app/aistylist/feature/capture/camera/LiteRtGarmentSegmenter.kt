@@ -136,6 +136,9 @@ class LiteRtGarmentSegmenter private constructor(
                 // LiteRT reports a model or native-library problem this way.
                 Log.w(TAG, "garment segmenter unavailable, using object boxes", error)
                 null
+            } catch (error: IllegalStateException) {
+                Log.w(TAG, "garment segmenter unavailable, using object boxes", error)
+                null
             } catch (error: UnsatisfiedLinkError) {
                 Log.w(TAG, "garment segmenter unavailable, using object boxes", error)
                 null

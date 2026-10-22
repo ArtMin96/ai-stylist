@@ -5,6 +5,7 @@ import android.content.pm.PackageManager
 import android.graphics.Bitmap
 import android.graphics.Matrix
 import android.os.PowerManager
+import android.util.Log
 import android.util.Size
 import androidx.camera.compose.CameraXViewfinder
 import androidx.camera.core.Camera
@@ -302,9 +303,20 @@ class CameraXObservationSource(
         ) {
             try {
                 latestMask = MaskAnalysis(model.segment(upright).labels).at(frameAtMs)
+            } catch (error: IllegalStateException) {
+                fallBack(error)
+            } catch (error: IllegalArgumentException) {
+                fallBack(error)
             } finally {
                 cadence.finish()
             }
+        }
+
+        /** The segmenter failed at run time (LiteRT reports native errors this way): ML Kit boxes from now on. */
+        private fun fallBack(error: RuntimeException) {
+            Log.w(SEGMENTER_TAG, "garment segmenter failed, using object boxes", error)
+            segmenter = SegmenterState.Failed
+            latestMask = null
         }
 
         private fun itemDetector(): MlKitItemDetector =
@@ -332,6 +344,8 @@ class CameraXObservationSource(
     }
 
     private companion object {
+        const val SEGMENTER_TAG = "CaptureSegmenter"
+
         fun ratio4by3(): ResolutionSelector =
             ResolutionSelector
                 .Builder()

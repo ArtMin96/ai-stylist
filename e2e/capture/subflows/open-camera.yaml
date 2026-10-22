@@ -1,0 +1,12 @@
+# Subflow: launch with frame set ${SET} (the Dev harness's frame source, capture brief §11), open the
+# capture flow from Home and tap picker tile ${TILE}. Callers pass SET and TILE through runFlow env and
+# assert the state they expect next: a set that unlocks may auto-capture to review within 1.5 s.
+appId: ${APP_ID}
+---
+- launchApp:
+    arguments:
+      captureFrameSet: ${SET}
+- tapOn:
+    id: home-open-capture
+- tapOn:
+    id: ${TILE}

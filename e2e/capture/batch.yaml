@@ -1,0 +1,45 @@
+# Batch (capture brief §7, Q16, Q-C, C20): ten different items with empty gaps between them → ten
+# auto-captures, the count chip at 10, "Next item" in cooldown, no picker step and no back question;
+# Done shows the summary. The batch set plays in real time (about 70 s). Simulator/emulator-safe.
+appId: ${APP_ID}
+---
+- launchApp:
+    arguments:
+      captureFrameSet: batch-10
+- tapOn:
+    id: home-open-capture
+- scrollUntilVisible:
+    element:
+      id: cap-picker-batch
+- tapOn:
+    id: cap-picker-batch
+- assertVisible:
+    id: cap-screen-camera
+- assertVisible:
+    id: cap-guide-generic-flat
+- extendedWaitUntil:
+    visible:
+      id: cap-batch-count
+    timeout: 8000
+- extendedWaitUntil:
+    visible:
+      id: cap-hint-next-item
+    timeout: 8000
+- takeScreenshot: 01-batch-next-item
+- extendedWaitUntil:
+    visible:
+      id: cap-batch-count
+      text: 10 items
+    timeout: 90000
+- assertNotVisible:
+    id: cap-review-back-same
+- takeScreenshot: 02-batch-ten-items
+- tapOn:
+    id: cap-batch-done
+- assertVisible:
+    id: cap-screen-batch-summary
+- takeScreenshot: 03-batch-summary
+- tapOn:
+    id: cap-batch-summary-done
+- assertVisible:
+    id: home-open-capture

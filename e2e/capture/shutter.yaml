@@ -1,0 +1,35 @@
+# Lock and unlock (capture brief §4, C1, C27): a good frame unlocks (solid outline, ring, "Keep
+# still…") and auto-captures to review; a cut-off frame stays locked (dashed outline). The unlock time
+# is judged by the sweep, not here. Simulator/emulator-safe.
+appId: ${APP_ID}
+---
+- runFlow:
+    file: subflows/open-camera.yaml
+    env: { SET: top-flat-01-cut-top, TILE: cap-picker-family-top }
+- extendedWaitUntil:
+    visible:
+      id: cap-shutter-locked
+    timeout: 3000
+- takeScreenshot: 01-shutter-locked
+# Captures recorded only: the camera stays open and unlocks again after each capture.
+- runFlow:
+    file: subflows/open-camera-record-only.yaml
+    env: { SET: top-flat-01-good, TILE: cap-picker-family-top }
+- extendedWaitUntil:
+    visible:
+      id: cap-shutter-unlocked
+    timeout: 3000
+- assertVisible:
+    id: cap-ring
+- takeScreenshot: 02-shutter-unlocked-ready
+# A normal launch: the full ring auto-captures and review opens.
+- runFlow:
+    file: subflows/open-camera.yaml
+    env: { SET: top-flat-01-good, TILE: cap-picker-family-top }
+- extendedWaitUntil:
+    visible:
+      id: cap-screen-review
+    timeout: 5000
+- assertVisible:
+    id: cap-review-photo-front
+- takeScreenshot: 03-review-after-auto-capture

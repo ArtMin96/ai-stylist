@@ -1,0 +1,71 @@
+# Shape-family guides (capture brief §2, §6 "Family instructions", §10 `cap-guide-<family>-<mode>`):
+# every family's flat guide, and the top's hanger and worn guides through the mode switch. Each
+# camera plays the family's too-small frame set, so the shutter stays locked while the screenshot is
+# taken. Simulator/emulator-safe.
+appId: ${APP_ID}
+---
+- runFlow:
+    file: subflows/open-camera.yaml
+    env: { SET: top-flat-01-too-small, TILE: cap-picker-family-top }
+- assertVisible:
+    id: cap-guide-top-flat
+- takeScreenshot: 01-guide-top-flat
+- tapOn:
+    id: cap-mode-hanger
+- assertVisible:
+    id: cap-guide-top-hanger
+- takeScreenshot: 02-guide-top-hanger
+- tapOn:
+    id: cap-mode-worn
+- assertVisible:
+    id: cap-guide-top-worn
+- takeScreenshot: 03-guide-top-worn
+- runFlow:
+    file: subflows/open-camera.yaml
+    env: { SET: long-bottom-flat-01-too-small, TILE: cap-picker-family-long-bottom }
+- assertVisible:
+    id: cap-guide-long-bottom-flat
+- takeScreenshot: 04-guide-long-bottom-flat
+- runFlow:
+    file: subflows/open-camera.yaml
+    env: { SET: short-bottom-flat-01-too-small, TILE: cap-picker-family-short-bottom }
+- assertVisible:
+    id: cap-guide-short-bottom-flat
+- takeScreenshot: 05-guide-short-bottom-flat
+- runFlow:
+    file: subflows/open-camera.yaml
+    env: { SET: one-piece-flat-01-too-small, TILE: cap-picker-family-one-piece }
+- assertVisible:
+    id: cap-guide-one-piece-flat
+- takeScreenshot: 06-guide-one-piece-flat
+- runFlow:
+    file: subflows/open-camera.yaml
+    env: { SET: outerwear-flat-01-too-small, TILE: cap-picker-family-outerwear }
+- assertVisible:
+    id: cap-guide-outerwear-flat
+- takeScreenshot: 07-guide-outerwear-flat
+- runFlow:
+    file: subflows/open-camera.yaml
+    env: { SET: shoes-flat-01-too-small, TILE: cap-picker-family-shoes }
+- assertVisible:
+    id: cap-guide-shoes-flat
+- takeScreenshot: 08-guide-shoes-flat
+- runFlow:
+    file: subflows/open-camera.yaml
+    env: { SET: bag-flat-01-too-small, TILE: cap-picker-family-bag }
+- assertVisible:
+    id: cap-guide-bag-flat
+- takeScreenshot: 09-guide-bag-flat
+- launchApp:
+    arguments:
+      captureFrameSet: small-item-flat-01-too-small
+- tapOn:
+    id: home-open-capture
+- scrollUntilVisible:
+    element:
+      id: cap-picker-family-small-item
+- tapOn:
+    id: cap-picker-family-small-item
+- assertVisible:
+    id: cap-guide-small-item-flat
+- takeScreenshot: 10-guide-small-item-flat

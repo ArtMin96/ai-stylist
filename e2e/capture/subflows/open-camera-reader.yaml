@@ -1,0 +1,11 @@
+# Subflow: as open-camera.yaml, with the screen-reader flag on (captureScreenReader, brief §11, C25).
+appId: ${APP_ID}
+---
+- launchApp:
+    arguments:
+      captureFrameSet: ${SET}
+      captureScreenReader: 1
+- tapOn:
+    id: home-open-capture
+- tapOn:
+    id: ${TILE}

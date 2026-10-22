@@ -1,0 +1,18 @@
+# Subflow: pick the newest photo in the system photo picker. System UI, so the step differs per
+# platform: iOS's inline PHPicker grid cell, Android's photo picker thumbnail.
+appId: ${APP_ID}
+---
+- runFlow:
+    when:
+      platform: iOS
+    commands:
+      - tapOn:
+          id: PXGGridLayout-Info
+          index: 0
+- runFlow:
+    when:
+      platform: Android
+    commands:
+      - tapOn:
+          id: com.google.android.providers.media.module:id/icon_thumbnail
+          index: 0

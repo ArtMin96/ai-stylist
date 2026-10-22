@@ -1,0 +1,49 @@
+# "Take photo anyway" (capture brief §5, §6, C8, C11, C14): hidden at first, shown after the 10 s
+# delay with the reason line: the hanger tip for a coat too big to fit (C11), the surface tip for no item. Tapping
+# it captures. Its exact time is judged by the sweep (10.0 s ± 0.5 s). Simulator/emulator-safe.
+appId: ${APP_ID}
+---
+- runFlow:
+    file: subflows/open-camera.yaml
+    env: { SET: outerwear-flat-01-too-big, TILE: cap-picker-family-outerwear }
+- extendedWaitUntil:
+    visible:
+      id: cap-shutter-locked
+    timeout: 3000
+- assertNotVisible:
+    id: cap-anyway-button
+- extendedWaitUntil:
+    visible:
+      id: cap-anyway-button
+    timeout: 15000
+- assertVisible:
+    id: cap-hint-cut-off-multiple
+- assertVisible:
+    id: cap-anyway-reason
+    text: Too big to fit? Try hanger mode.
+- takeScreenshot: 01-anyway-too-big-try-hanger
+- runFlow:
+    file: subflows/open-camera.yaml
+    env: { SET: top-flat-empty, TILE: cap-picker-family-top }
+- extendedWaitUntil:
+    visible:
+      id: cap-anyway-button
+    timeout: 15000
+- assertVisible:
+    id: cap-anyway-reason
+    text: No item found. A plain surface in a different colour helps.
+- takeScreenshot: 02-anyway-surface-tip
+- runFlow:
+    file: subflows/open-camera.yaml
+    env: { SET: top-flat-01-jitter, TILE: cap-picker-family-top }
+- extendedWaitUntil:
+    visible:
+      id: cap-anyway-button
+    timeout: 15000
+- assertVisible:
+    id: cap-hint-not-steady
+- takeScreenshot: 03-anyway-not-steady
+- tapOn:
+    id: cap-anyway-button
+- assertVisible:
+    id: cap-screen-review

@@ -1,0 +1,31 @@
+# Shoes (capture brief §6, §7, Q-D, C4): one shoe from the side, then "Add a photo of the pair?"
+# through the back-photo step, with the Pair step label and the pair guide. The shoe stays locked (too
+# small), so "Take photo anyway" takes it and nothing auto-captures past the Pair step.
+# Simulator/emulator-safe.
+appId: ${APP_ID}
+---
+- runFlow:
+    file: subflows/open-camera.yaml
+    env: { SET: shoes-flat-01-too-small, TILE: cap-picker-family-shoes }
+- extendedWaitUntil:
+    visible:
+      id: cap-anyway-button
+    timeout: 15000
+- tapOn:
+    id: cap-anyway-button
+- extendedWaitUntil:
+    visible:
+      id: cap-screen-review
+    timeout: 6000
+- assertVisible:
+    text: Add a photo of the pair?
+- takeScreenshot: 01-review-pair-question
+- tapOn:
+    id: cap-review-back-different
+- tapOn:
+    id: cap-review-take-back
+- assertVisible:
+    id: cap-step-pair
+- assertVisible:
+    id: cap-guide-shoes-flat-pair
+- takeScreenshot: 02-pair-step

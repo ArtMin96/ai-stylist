@@ -1,0 +1,40 @@
+# Camera permission denied (capture brief §7, C23): launched with the camera permission denied, the
+# camera tile shows the permission screen with Settings and import. With the permission allowed and no
+# camera at all (the iOS Simulator's live source; an Android emulator has a virtual camera), the
+# no-camera screen offers import. Simulator/emulator-safe.
+appId: ${APP_ID}
+---
+- launchApp:
+    permissions:
+      camera: deny
+- tapOn:
+    id: home-open-capture
+- tapOn:
+    id: cap-picker-family-top
+- extendedWaitUntil:
+    visible:
+      id: cap-screen-permission
+    timeout: 6000
+- assertVisible:
+    id: cap-permission-settings
+- assertVisible:
+    id: cap-permission-import
+- takeScreenshot: 01-permission-denied
+- runFlow:
+    when:
+      platform: iOS
+    commands:
+      - launchApp:
+          permissions:
+            camera: allow
+      - tapOn:
+          id: home-open-capture
+      - tapOn:
+          id: cap-picker-family-top
+      - extendedWaitUntil:
+          visible:
+            id: cap-screen-no-camera
+          timeout: 6000
+      - assertVisible:
+          id: cap-permission-import
+      - takeScreenshot: 02-no-camera

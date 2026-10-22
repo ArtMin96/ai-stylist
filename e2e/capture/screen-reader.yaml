@@ -1,0 +1,22 @@
+# Screen reader (capture brief §8, C25, debug flag): "Take photo anyway" shows at once, the shutter's
+# label says why it is locked, spoken hints go to the debug spoken log; the help sheet holds the
+# flat-lay technique. Real VoiceOver/TalkBack is device-only. Simulator/emulator-safe.
+appId: ${APP_ID}
+---
+- runFlow:
+    file: subflows/open-camera-reader.yaml
+    env: { SET: top-flat-01-jitter, TILE: cap-picker-family-top }
+- extendedWaitUntil:
+    visible:
+      id: cap-anyway-button
+    timeout: 2000
+- extendedWaitUntil:
+    visible:
+      id: cap-debug-spoken-log
+    timeout: 6000
+- takeScreenshot: 01-reader-anyway-at-once
+- tapOn:
+    id: cap-camera-help
+- assertVisible:
+    id: cap-help-sheet
+- takeScreenshot: 02-help-sheet

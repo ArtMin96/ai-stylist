@@ -47,6 +47,9 @@
     static let modeSwitchGap = 2.0
     // Picker grid (SC16): tiles in 3 columns, row gap 12, column gap 10.
     static let pickerColumnGap = 10.0
+    static var pickerColumns: [GridItem] {
+      Array(repeating: GridItem(.flexible(), spacing: pickerColumnGap, alignment: .top), count: 3)
+    }
     // Review photo (SC19): one photo 350 high; front and back side by side 220 high.
     static let reviewPhotoHeight = 350.0
     static let reviewPairPhotoHeight = 220.0

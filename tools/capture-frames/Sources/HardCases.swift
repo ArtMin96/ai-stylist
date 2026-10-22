@@ -294,17 +294,7 @@ extension Raster {
     func brightened(toMeanLuma target: Double, detailRadiusPx: Int) -> Raster {
         let local = boxMean(radius: detailRadiusPx)
         func render(level: Double) -> Raster {
-            var result = self
-            for index in 0..<(width * height) {
-                for channel in 0..<3 {
-                    let offset = index * 4 + channel
-                    let value = Double(pixels[offset])
-                    let mean = local[offset]
-                    let bright = 255 - level * (255 - mean) + (value - mean)
-                    result.pixels[offset] = UInt8(min(255, max(0, bright.rounded())))
-                }
-            }
-            return result
+            toneMapped(local: local) { value, mean, _ in 255 - level * (255 - mean) + (value - mean) }
         }
         var level = (255 - target) / max(1, 255 - meanLuma)
         var result = render(level: level)

@@ -331,8 +331,8 @@ One scorer for both apps. It reads the iOS line shape (`events[].shutter` such a
 `finalLockReason`). A case is one segment: a single set, or `<set id>-sNN` in a sweep or batch. The
 expected file's `platform.<platform>` block applies first. `summary.md` states the definitions:
 
-- **Unlocked:** first unlock within `maxUnlockMs`, the expected hint shown at or after the unlock,
-  and at least one capture.
+- **Unlocked:** first unlock within `maxUnlockMs`, the expected hint shown at the unlock (the
+  meaning of `hint` in `expected.json`), and at least one capture.
 - **Locked:** never unlocks. The final hint and lock reason are the expected ones. On a single set,
   "Take photo anyway" shows at `anywayAtMs` ± `acceptance.anywayToleranceMs`. With the
   screen-reader flag it shows within one evaluation interval of the start.

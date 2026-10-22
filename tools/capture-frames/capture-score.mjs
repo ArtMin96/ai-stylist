@@ -89,14 +89,10 @@ function observe(line) {
     finalState: last ? stateOf(last).state : null,
     finalLockReason: line.finalLockReason ?? (lastLocked ? stateOf(lastLocked).reason : null),
     hintsSeen: [...new Set(events.map((event) => event.hint).filter(Boolean))],
-    hintsAfterUnlock: [
-      ...new Set(
-        events
-          .filter((event) => line.firstUnlockMs != null && event.tMs >= line.firstUnlockMs)
-          .map((event) => event.hint)
-          .filter(Boolean),
-      ),
-    ],
+    hintAtUnlock:
+      line.hintAtUnlock ??
+      events.find((event) => stateOf(event).state === 'unlocked')?.hint ??
+      null,
     captures: line.captures ?? [],
     falseRelocks,
     events,
@@ -127,10 +123,9 @@ function judgeUnlocked(expected, observed, needsCapture) {
     reasons.push(
       `miss: unlock ${observed.firstUnlockMs ?? 'never'} ms > ${max} ms (final ${observed.finalHint})`,
     );
-  if (!miss && !observed.hintsAfterUnlock.includes(expected.hint)) {
-    reasons.push(
-      `hint ${expected.hint} not shown after unlock (${observed.hintsAfterUnlock.join(', ')})`,
-    );
+  // The expected hint is the one shown at the unlock (tools/capture-frames/README.md "expected.json").
+  if (!miss && observed.hintAtUnlock !== expected.hint) {
+    reasons.push(`hint at unlock ${observed.hintAtUnlock} != ${expected.hint}`);
   }
   if (!miss && needsCapture && observed.captures.length === 0)
     reasons.push('unlocked but never captured');

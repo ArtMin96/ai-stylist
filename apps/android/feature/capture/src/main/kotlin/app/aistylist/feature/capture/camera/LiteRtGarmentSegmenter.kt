@@ -51,8 +51,9 @@ class LiteRtGarmentSegmenter private constructor(
         val first = LabelImage.components(width, height, mask).instances().firstOrNull()
         var refined = false
         if (refinesSmallItems && first != null && first.box.areaShare < SMALL_ITEM_AREA_SHARE) {
+            // Only the crop is segmented again; the rest keeps the first pass (a second item stays).
             val crop = grownCrop(first.box, width, height)
-            mask.fill(false)
+            for (y in crop.top until crop.bottom) mask.fill(false, y * width + crop.left, y * width + crop.right)
             paint(bitmap, crop, mask)
             refined = true
         }

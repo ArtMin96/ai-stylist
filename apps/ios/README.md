@@ -20,7 +20,8 @@ Packages/Core/           no UI; builds and tests on macOS AND Linux
   Sources/AppConfig        API_BASE_URL + app version validator (host-only base URL)
   Sources/Analytics        analytics port, consent gate (OFF by default), NoopSink, SDK-free PostHogSettings
   Sources/AppServices      container handed to features + service protocols (VersionFetching) + DebugTools
-  Sources/APIData          the ONLY code that imports the generated client (AIStylistAPI) / OpenAPI runtime
+  Sources/APIData          the ONLY code that imports the generated client (AIStylistAPI) / OpenAPI runtime;
+                           also depends on the generated AIStylistKernel
   tests/<Target>Tests      Swift Testing unit tests
 Packages/Features/       one pair of targets per screen
   Sources/HomeModel        @Observable view model (no SwiftUI; tests run on Linux too)
@@ -54,10 +55,12 @@ scripts/                 recipe bodies (bash 3.2-portable); fixtures/ prove each
 
 The generated client lives in `packages/contracts/gen/swift-client/`. `tools/codegen/gen-swift.sh`
 (`just generate`) writes it. Never edit it. Its package has two products: `AIStylistAPI` (the OpenAPI client) and
-`AIStylistKernel` (reason codes, entitlement names, units and the capture rules generated from
-`packages/shared-kernel/registry/*.json`, [ADR-0005](../../docs/adr/0005-shared-kernel-registries-for-native-clients.md)).
-`CaptureModel` in `Packages/Features` is its first consumer: every capture threshold, count and timing comes from
-the generated `CaptureRules`. `AIStylistAPI` stays limited to `APIData`.
+`AIStylistKernel` (reason codes, entitlement names and levels, units, error codes, measurement definitions,
+starting shapes and capture rules generated from `packages/shared-kernel/registry/*.json`,
+[ADR-0005](../../docs/adr/0005-shared-kernel-registries-for-native-clients.md)). The Core package compiles
+`AIStylistKernel`: `APIData` and `APIDataTests` depend on it, and `tests/APIDataTests/KernelTests.swift` checks
+its registry invariants. `CaptureModel` in `Packages/Features` also depends on it: every capture threshold, count
+and timing comes from the generated `CaptureRules`. Import it; never copy a value from it.
 
 ## Guided capture camera (CaptureModel)
 

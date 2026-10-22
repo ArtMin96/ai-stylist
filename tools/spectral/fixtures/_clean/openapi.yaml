@@ -1,0 +1,190 @@
+# Control fixture for the .spectral.yaml rules, linted by scripts/test/contracts-spectral.test.sh:
+# the whole ruleset must report nothing here at --fail-severity=warn. It holds the forms that
+# ai-stylist-mutating-operation-has-idempotency-key accepts: the Idempotency-Key header declared
+# by $ref on each mutating operation, marked required or not; read-only methods without it; and
+# one named exception under /v1/auth/. Synthetic shapes only.
+openapi: 3.1.0
+info:
+  title: Fixture — accepted Idempotency-Key forms
+  version: 1.0.0
+  description: Synthetic document; no rule may report any of its operations.
+  contact:
+    name: AI Stylist engineering
+servers:
+  - url: http://localhost:3000
+tags:
+  - name: fixture
+    description: Synthetic operations
+paths:
+  /v1/optional:
+    # The contract's form: $ref to the shared parameter, not marked required.
+    post:
+      operationId: createOptional
+      tags: [fixture]
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      responses:
+        '201':
+          description: Created
+        default:
+          $ref: '#/components/responses/Problem'
+    put:
+      operationId: replaceOptional
+      tags: [fixture]
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      responses:
+        '200':
+          description: Replaced
+        default:
+          $ref: '#/components/responses/Problem'
+    patch:
+      operationId: updateOptional
+      tags: [fixture]
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+        - $ref: '#/components/parameters/IfMatch'
+      responses:
+        '200':
+          description: Updated
+        default:
+          $ref: '#/components/responses/Problem'
+    delete:
+      operationId: deleteOptional
+      tags: [fixture]
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      responses:
+        '204':
+          description: Deleted
+        default:
+          $ref: '#/components/responses/Problem'
+  /v1/required:
+    # The same $ref form with the header marked required: the rule ignores the flag.
+    post:
+      operationId: createRequired
+      tags: [fixture]
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKeyRequired'
+      responses:
+        '201':
+          description: Created
+        default:
+          $ref: '#/components/responses/Problem'
+    put:
+      operationId: replaceRequired
+      tags: [fixture]
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKeyRequired'
+      responses:
+        '200':
+          description: Replaced
+        default:
+          $ref: '#/components/responses/Problem'
+    patch:
+      operationId: updateRequired
+      tags: [fixture]
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKeyRequired'
+      responses:
+        '200':
+          description: Updated
+        default:
+          $ref: '#/components/responses/Problem'
+    delete:
+      operationId: deleteRequired
+      tags: [fixture]
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKeyRequired'
+      responses:
+        '204':
+          description: Deleted
+        default:
+          $ref: '#/components/responses/Problem'
+  /v1/read:
+    # Read-only methods change no data and need no header.
+    get:
+      operationId: getRead
+      tags: [fixture]
+      responses:
+        '200':
+          description: Read
+        default:
+          $ref: '#/components/responses/Problem'
+    head:
+      operationId: headRead
+      tags: [fixture]
+      responses:
+        '200':
+          description: Read
+        default:
+          $ref: '#/components/responses/Problem'
+    options:
+      operationId: optionsRead
+      tags: [fixture]
+      responses:
+        '204':
+          description: Allowed methods
+        default:
+          $ref: '#/components/responses/Problem'
+    trace:
+      operationId: traceRead
+      tags: [fixture]
+      responses:
+        '200':
+          description: Echo
+        default:
+          $ref: '#/components/responses/Problem'
+  /v1/auth/named-exception:
+    # A named exception: under /v1/auth/, the marker carries its reason.
+    post:
+      operationId: authNamedException
+      tags: [fixture]
+      x-idempotency-key-exempt: Synthetic reason; the sign-in library serves this route and reads no header.
+      responses:
+        '200':
+          description: Done
+        default:
+          $ref: '#/components/responses/Problem'
+components:
+  parameters:
+    IdempotencyKey:
+      name: Idempotency-Key
+      in: header
+      description: Synthetic copy of the shape of platform.yaml components/parameters/IdempotencyKey.
+      schema:
+        type: string
+    IdempotencyKeyRequired:
+      name: Idempotency-Key
+      in: header
+      required: true
+      description: The same header marked required.
+      schema:
+        type: string
+    IfMatch:
+      name: If-Match
+      in: header
+      required: true
+      description: A second header beside Idempotency-Key.
+      schema:
+        type: string
+  responses:
+    Problem:
+      description: Error (RFC 9457)
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/ProblemDetails'
+  schemas:
+    ProblemDetails:
+      type: object
+      required: [type, title, status, code]
+      properties:
+        type:
+          type: string
+        title:
+          type: string
+        status:
+          type: integer
+        code:
+          type: string

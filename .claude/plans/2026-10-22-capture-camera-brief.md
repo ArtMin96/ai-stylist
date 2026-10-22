@@ -44,10 +44,9 @@ Galaxy A12, the body-pose models on real bodies, heat or real VoiceOver/TalkBack
 three readers (iOS, Android, the frame generator), so they live in
 `packages/shared-kernel/registry/capture-rules.json` (+ `.schema.json`) and reach the apps through
 the existing kernel generator (`tools/codegen/gen-kernel.mjs`, `just generate`). Wiring needed: the
-Features package depends on the generated `AIStylistKernel` product (no network code in it), and a
-small `:core:kernel` Android module compiles `packages/contracts/gen/kotlin-client/kernel` the way
-`:core:analytics` compiles the analytics taxonomy; `:feature:capture` may depend on it (module-graph
-rule update). Copy (button labels, hints) is UI text and lives in each app's string resources,
+Features package depends on the generated `AIStylistKernel` product (no network code in it), and
+`:core:data` already compiles `packages/contracts/gen/kotlin-client/kernel` as a `srcDir`, so
+`:feature:capture` depends on `:core:data` (module-graph rule update). Copy (button labels, hints) is UI text and lives in each app's string resources,
 byte-identical, keyed by the registry's hint keys.
 
 **Dependencies.** iOS: none new (AVFoundation and Vision are system frameworks). Android, from

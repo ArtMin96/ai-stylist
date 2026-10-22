@@ -18,6 +18,7 @@
     },
     "lint": {
       "dependsOn": ["^generate", "generate"],
+      "inputs": ["$TURBO_DEFAULT$", "$TURBO_ROOT$/.spectral.yaml"],
       "outputs": [],
       "cache": true
     },

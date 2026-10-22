@@ -48,10 +48,11 @@ Invariants that bite here (enforced by `just android-check` unless marked review
   flow `e2e/smoke.yaml` asserts stay byte-identical to iOS. (reviewer-checked)
 - `API_BASE_URL` is host-only; analytics names come from the generated `AnalyticsTaxonomy`; consent
   defaults OFF; no sensitive data in events, logs or fixtures.
-- Reason codes, entitlement names and units come from the generated package
-  `app.aistylist.contracts.kernel` in `packages/contracts/gen/kotlin-client/kernel/` (ADR-0005).
-  No module compiles it yet: the first consumer adds the source dir the way
-  `apps/android/core/analytics/build.gradle.kts` adds the generated analytics sources. Never copy a value.
+- Reason codes, entitlement names and levels, units, error codes, measurement bounds and starting
+  shapes come from the generated package `app.aistylist.contracts.kernel` in
+  `packages/contracts/gen/kotlin-client/kernel/` (ADR-0005). `:core:data` compiles it as a source dir
+  (`apps/android/core/data/build.gradle.kts`); features reach it through `:core:data`. Never copy a
+  value.
 - Tests live in each Gradle module's src/test/kotlin (documented exception). No emulator needed
   except for `just android-e2e`.
 - No 3D now: no SceneView, OpenGL renderer or other 3D dependency.

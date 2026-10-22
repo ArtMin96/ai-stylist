@@ -28,6 +28,12 @@ data class CameraSnapshot(
     val isAnywayVisible: Boolean,
     /** The reason line, live from the current lock reason; null while hidden or unlocked. */
     val anywayReason: AnywayReason?,
+    /**
+     * The live outline of the item (64 points, normalised, clockwise), drawn over the preview while
+     * the camera judges frames; null before an item is found, after it is lost, and while capturing
+     * or cooling down.
+     */
+    val outline: List<NormalizedPoint>? = null,
 ) {
     val shutter: ShutterState
         get() =
@@ -67,6 +73,8 @@ class CaptureCameraSession(
     private var previous: CaptureObservation? = null
     private var lastReport: CheckReport? = null
     private var lastEvaluationAtMs: Long? = null
+    private var outline = OutlineTracker()
+    private var lastOutlineMaskMs: Long? = null
 
     val snapshot: CameraSnapshot
         get() =
@@ -78,6 +86,7 @@ class CaptureCameraSession(
                 lockReason = lockHint?.lockReason,
                 isAnywayVisible = isAnywayVisible,
                 anywayReason = if (isAnywayVisible) anywayReasonFor(lockHint, context) else null,
+                outline = outline.drawn.takeIf { lock.showsOutline },
             )
 
     private val isAnywayVisible: Boolean get() = timer.isShown && lock.acceptsAnyway
@@ -95,6 +104,7 @@ class CaptureCameraSession(
     fun submit(observation: CaptureObservation): List<CaptureEffect> =
         step { now ->
             latest = observation
+            observation.mask?.let(::trackOutline)
             evaluateIfDue(now)
         }
 
@@ -132,6 +142,8 @@ class CaptureCameraSession(
         hints = HintPresenter()
         speech = speech.cleared()
         latest = null
+        outline = OutlineTracker()
+        lastOutlineMaskMs = null
     }
 
     /** Back from the background: like camera ready (warming up, guide, counters and anyway timer restart). */
@@ -190,6 +202,17 @@ class CaptureCameraSession(
         return effects + speak(shownBefore, now)
     }
 
+    /**
+     * The outline follows each distinct mask, at most once per mask interval (the live cadence; the
+     * frame-set harness hands the rules a fresh mask on every frame).
+     */
+    private fun trackOutline(mask: MaskObservation) {
+        val last = lastOutlineMaskMs
+        if (last != null && mask.timestampMs - last < CaptureRules.Ios.MASK_INTERVAL_MS) return
+        lastOutlineMaskMs = mask.timestampMs
+        outline = outline.update(mask.outlineCandidates)
+    }
+
     private fun startCamera(nowMs: Long) {
         lock = LockState.WarmingUp
         restartAnyway(nowMs)
@@ -199,6 +222,8 @@ class CaptureCameraSession(
         previous = null
         lastReport = null
         lastEvaluationAtMs = null
+        outline = OutlineTracker()
+        lastOutlineMaskMs = null
     }
 
     private fun restartAnyway(nowMs: Long) {
@@ -216,7 +241,14 @@ class CaptureCameraSession(
         val last = lastEvaluationAtMs
         if (last != null && nowMs - last < CaptureRules.Evaluation.INTERVAL_MS) return emptyList()
 
-        val report = evaluateLiveChecks(observation, previous, context, lastReport?.isTiltHintOn ?: false)
+        val report =
+            evaluateLiveChecks(
+                observation,
+                previous,
+                context,
+                wasTiltHintOn = lastReport?.isTiltHintOn ?: false,
+                previousMotion = lastReport?.maskMotion,
+            )
         latest = null
         previous = observation
         lastReport = report
@@ -263,6 +295,10 @@ class CaptureCameraSession(
         return listOfNotNull(release.spoken?.let { CaptureEffect.Speak(it.hint) })
     }
 }
+
+/** The outline shows while frames are judged: not while capturing, cooling down or idle. */
+private val LockState.showsOutline: Boolean
+    get() = this is LockState.WarmingUp || this is LockState.Locked || this is LockState.Unlocked
 
 private val LockState.phase: LockPhase
     get() =

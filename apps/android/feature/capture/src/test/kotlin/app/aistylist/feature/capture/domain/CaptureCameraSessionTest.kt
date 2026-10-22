@@ -459,4 +459,105 @@ class CaptureCameraSessionTest {
         assertEquals(CaptureHint.WARMING_UP, harness.snapshot.hint)
         assertEquals(LockPhase.WARMING_UP, harness.snapshot.phase)
     }
+
+    // Steady on the mask path: the mask arrives every 250 ms and is reused by the 100 ms evaluations.
+
+    /** The mask analysed at the last multiple of [maskEveryMs] at or before [nowMs]. */
+    private fun maskAt(
+        nowMs: Long,
+        maskEveryMs: Long,
+    ): Long = nowMs / maskEveryMs * maskEveryMs
+
+    @Test
+    fun `a reused mask does not count as holding still`() {
+        // The thermal cadence: one mask a second, reused by ten evaluations.
+        val maskEveryMs = 1_000L
+        val harness = Harness().apply { ready() }
+
+        // Every new mask moves the item by twice the steady limit; the evaluations between reuse it.
+        harness.playUntil(4_000) { now ->
+            val maskAtMs = maskAt(now, maskEveryMs)
+            val shift = (maskAtMs / maskEveryMs % 2) * 2 * CaptureRules.Steady.MAX_CENTRE_SHIFT
+            maskFrame(now, maskAtMs, box = squareBox(0.3, centerX = 0.5 + shift))
+        }
+
+        assertEquals(LockPhase.LOCKED, harness.snapshot.phase)
+        assertEquals(CaptureHint.NOT_STEADY, harness.snapshot.lockReasonHint())
+    }
+
+    @Test
+    fun `a still item on reused masks unlocks once a second mask confirms it`() {
+        val maskEveryMs = CaptureRules.Ios.MASK_INTERVAL_MS.toLong()
+        val harness = Harness().apply { ready() }
+        val frameAt = { now: Long -> maskFrame(now, maskAt(now, maskEveryMs), box = squareBox(0.3)) }
+
+        // The mask at 0 is the first: its evaluations (100, 200) fail; the mask at 250 confirms the box.
+        harness.playUntil(maskEveryMs + 2 * EVALUATION_MS, frameAt)
+        assertEquals(LockPhase.LOCKED, harness.snapshot.phase)
+
+        harness.playUntil(maskEveryMs + 3 * EVALUATION_MS, frameAt)
+        assertEquals(LockPhase.UNLOCKED, harness.snapshot.phase)
+    }
+
+    @Test
+    fun `the first mask is never steady, even when it is reused`() {
+        val harness = Harness().apply { ready() }
+
+        // One mask, analysed at 0, reused by every evaluation.
+        harness.playUntil(4_000) { now -> maskFrame(now, maskAtMs = 0, box = squareBox(0.3)) }
+
+        assertEquals(LockPhase.LOCKED, harness.snapshot.phase)
+    }
+
+    // Live outline
+
+    private val square =
+        listOf(
+            NormalizedPoint(0.3, 0.3),
+            NormalizedPoint(0.7, 0.3),
+            NormalizedPoint(0.7, 0.7),
+            NormalizedPoint(0.3, 0.7),
+        )
+
+    private fun outlined(
+        now: Long,
+        maskAtMs: Long,
+        points: List<NormalizedPoint>?,
+    ): CaptureObservation {
+        val frame = maskFrame(now, maskAtMs, box = if (points == null) null else squareBox(0.16))
+        val candidates = listOfNotNull(points?.let { OutlineCandidate(0.16, it) })
+        return frame.copy(mask = requireNotNull(frame.mask).copy(outlineCandidates = candidates))
+    }
+
+    @Test
+    fun `the outline shows from the first mask with an item and clears after three empty masks`() {
+        val maskEveryMs = CaptureRules.Ios.MASK_INTERVAL_MS.toLong()
+        val harness = Harness().apply { ready() }
+        assertNull(harness.snapshot.outline)
+
+        // Masks at 0 and 250 hold the item.
+        harness.playUntil(2 * maskEveryMs - EVALUATION_MS) { now -> outlined(now, maskAt(now, maskEveryMs), square) }
+        assertEquals(square, harness.snapshot.outline)
+
+        // Empty masks at 500 and 750 keep it; the third, at 1000, clears it.
+        harness.playUntil(4 * maskEveryMs - EVALUATION_MS) { now -> outlined(now, maskAt(now, maskEveryMs), null) }
+        assertEquals(square, harness.snapshot.outline)
+        harness.playUntil(4 * maskEveryMs) { now -> outlined(now, maskAt(now, maskEveryMs), null) }
+        assertNull(harness.snapshot.outline)
+    }
+
+    @Test
+    fun `fresh masks on every frame move the outline at most once per mask interval`() {
+        val harness = Harness().apply { ready() }
+        val moved = square.map { NormalizedPoint(it.x + 0.01, it.y) }
+        harness.playUntil(EVALUATION_MS) { now -> outlined(now, now, square) }
+
+        // A fresh mask on every frame, but the next outline update is due only at 100 + 250.
+        harness.playUntil(3 * EVALUATION_MS) { now -> outlined(now, now, moved) }
+        assertEquals(square, harness.snapshot.outline)
+        harness.playUntil(4 * EVALUATION_MS) { now -> outlined(now, now, moved) }
+        assertTrue(harness.snapshot.outline != square)
+    }
+
+    private fun CameraSnapshot.lockReasonHint(): CaptureHint? = hint?.takeIf { it.lockReason != null }
 }

@@ -570,4 +570,82 @@ class LiveChecksTest {
     private fun steadyOutcome(box: NormalizedRect): CheckOutcome? =
         evaluateLiveChecks(frame(box = box), previous = frame(box = GOOD_BOX), context = TOP_FLAT)
             .outcomes[CaptureCheck.STEADY]
+
+    // Mask path (the segmenter; the iOS rules, capture brief §3)
+
+    private val contactLimit = CaptureRules.Ios.CUT_OFF_ABOVE_EDGE_CONTACT_SHARE
+
+    /** Evaluates a mask frame after an earlier mask with the same box, so "steady" can pass. */
+    private fun maskReport(
+        observation: CaptureObservation,
+        context: CameraContext = TOP_FLAT,
+    ): CheckReport {
+        val earlier = MaskMotion(maskTimestampMs = -1, box = observation.itemBox, isStill = true)
+        return evaluateLiveChecks(observation, observation, context, previousMotion = earlier)
+    }
+
+    @Test
+    fun `mask contact just at the limit passes and just over it locks with that edge`() {
+        val at = maskReport(maskFrame(0, edgeContact = EdgeContact(left = contactLimit)))
+        val over = maskReport(maskFrame(0, edgeContact = EdgeContact(left = contactLimit + SHARE_STEP)))
+
+        assertEquals(CheckOutcome.PASSED, at.outcomes[CaptureCheck.CUT_OFF])
+        assertEquals(CaptureHint.CUT_OFF_LEFT, over.blockingHint)
+    }
+
+    @Test
+    fun `mask contact on two edges says multiple`() {
+        val over = contactLimit + SHARE_STEP
+        val report = maskReport(maskFrame(0, edgeContact = EdgeContact(top = over, right = over)))
+
+        assertEquals(CaptureHint.CUT_OFF_MULTIPLE, report.blockingHint)
+    }
+
+    @Test
+    fun `hanger mode tolerates the hook at the top edge up to its own limit (C2)`() {
+        val hanger = TOP_FLAT.copy(mode = CaptureMode.HANGER)
+        val hookLimit = CaptureRules.Ios.HANGER_TOP_CUT_OFF_ABOVE_EDGE_CONTACT_SHARE
+        val hook = maskReport(maskFrame(0, edgeContact = EdgeContact(top = hookLimit)), hanger)
+        val tooMuch = maskReport(maskFrame(0, edgeContact = EdgeContact(top = hookLimit + SHARE_STEP)), hanger)
+        val flat = maskReport(maskFrame(0, edgeContact = EdgeContact(top = hookLimit)))
+
+        assertEquals(CheckOutcome.PASSED, hook.outcomes[CaptureCheck.CUT_OFF])
+        assertEquals(CaptureHint.CUT_OFF_TOP, tooMuch.blockingHint)
+        assertEquals(CaptureHint.CUT_OFF_TOP, flat.blockingHint)
+    }
+
+    @Test
+    fun `a mask item under the minimum instance share counts as no item`() {
+        val minimum = CaptureRules.Ios.MIN_INSTANCE_AREA_SHARE
+        val tiny = maskReport(maskFrame(0, box = squareBox(0.01), maskAreaShare = minimum - SHARE_STEP / 10))
+        val found = maskReport(maskFrame(0, box = squareBox(0.01), maskAreaShare = minimum))
+
+        assertEquals(CaptureHint.NO_ITEM, tiny.blockingHint)
+        assertEquals(CheckOutcome.PASSED, found.outcomes[CaptureCheck.ITEM_FOUND])
+    }
+
+    @Test
+    fun `another object over the mask item locks as covered, one beside it does not (C32)`() {
+        val onTop = squareBox(0.05, centerX = 0.5, centerY = 0.5)
+        val beside = squareBox(0.05, centerX = 0.1, centerY = 0.1)
+
+        assertEquals(CaptureHint.COVERED, maskReport(maskFrame(0, otherBoxes = listOf(onTop))).blockingHint)
+        assertTrue(maskReport(maskFrame(0, otherBoxes = listOf(beside))).passes)
+    }
+
+    @Test
+    fun `a still mask item on distinct masks is steady`() {
+        val first = evaluateLiveChecks(maskFrame(0), null, TOP_FLAT)
+        val second = evaluateLiveChecks(maskFrame(250), maskFrame(0), TOP_FLAT, previousMotion = first.maskMotion)
+
+        assertEquals(CheckOutcome.FAILED, first.outcomes[CaptureCheck.STEADY])
+        assertEquals(CheckOutcome.PASSED, second.outcomes[CaptureCheck.STEADY])
+    }
+
+    @Test
+    fun `an import with a mask reads the flat mask cut-off`() {
+        val tips = evaluateImportChecks(maskFrame(0, edgeContact = EdgeContact(bottom = contactLimit + SHARE_STEP)))
+
+        assertEquals(listOf(CaptureHint.CUT_OFF_BOTTOM), tips)
+    }
 }

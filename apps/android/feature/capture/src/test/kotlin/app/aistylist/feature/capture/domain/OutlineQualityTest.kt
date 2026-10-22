@@ -145,6 +145,26 @@ class OutlineQualityTest {
     }
 
     @Test
+    fun `the first outline and every jump count as snaps, blends do not`() {
+        val mask = realMasks.first { "-cut-" !in it.name }.atFrameSize()
+        val first = OutlineTracker().update(listOfNotNull(mask.candidate()))
+        val blended = first.update(listOfNotNull(mask.shifted(2, 2).candidate()))
+        val jumped = blended.update(listOfNotNull(mask.shifted(mask.width / 2, 0).candidate()))
+
+        assertEquals(1, first.snapCount)
+        assertEquals(1, blended.snapCount)
+        assertEquals(2, jumped.snapCount)
+    }
+
+    @Test
+    fun `the polygon-to-mask IoU of a traced outline is high on the raw mask`() {
+        stillItems.forEach { mask ->
+            val iou = polygonMaskIou(requireNotNull(mask.outline()), mask.width, mask.height, mask.pixels)
+            assertTrue("${mask.name}: IoU $iou", iou >= STATIC_MIN_IOU)
+        }
+    }
+
+    @Test
     fun `an empty frame gives no outline`() {
         val empty = LabelImage(EMPTY_SIZE, EMPTY_SIZE, ByteArray(EMPTY_SIZE * EMPTY_SIZE))
 

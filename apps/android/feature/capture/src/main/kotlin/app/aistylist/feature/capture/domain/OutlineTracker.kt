@@ -6,6 +6,12 @@ data class OutlineCandidate(
     val points: List<NormalizedPoint>,
 )
 
+/** The drawn outline: its points and how many times it snapped (the screen animates only while this stays). */
+data class LiveOutline(
+    val points: List<NormalizedPoint>,
+    val snapCount: Int,
+)
+
 /**
  * The drawn outline across mask updates (capture brief "Live outline", spec steps 8–9; the shared
  * reference's `Tracker`). Feed it once per distinct mask, never per rule evaluation:
@@ -19,22 +25,32 @@ data class OutlineCandidate(
 data class OutlineTracker(
     val drawn: List<NormalizedPoint>? = null,
     private val missedUpdates: Int = 0,
+    /** Snaps so far: the first outline and every jump to a new shape. */
+    val snapCount: Int = 0,
 ) {
+    /** The drawn outline with its snap count; null while nothing is drawn. */
+    val live: LiveOutline? get() = drawn?.let { LiveOutline(it, snapCount) }
+
     /** The next tracker after one mask update; [candidates] are largest first, empty when no item. */
     fun update(candidates: List<OutlineCandidate>): OutlineTracker {
         if (candidates.isEmpty()) {
             val missed = missedUpdates + 1
-            return OutlineTracker(drawn.takeIf { missed < OutlineSpec.CLEAR_AFTER_MISSED_UPDATES }, missed)
+            return copy(
+                drawn = drawn.takeIf { missed < OutlineSpec.CLEAR_AFTER_MISSED_UPDATES },
+                missedUpdates = missed,
+            )
         }
         val current = drawn
         val next = choose(candidates, current).points
-        if (current == null || polygonIou(next, current) < OutlineSpec.SNAP_BELOW_IOU) return OutlineTracker(next)
+        if (current == null || polygonIou(next, current) < OutlineSpec.SNAP_BELOW_IOU) {
+            return OutlineTracker(next, snapCount = snapCount + 1)
+        }
         val alpha = OutlineSpec.EMA_ALPHA
         val blended =
             alignedTo(next, current).zip(current) { new, old ->
                 NormalizedPoint(alpha * new.x + (1 - alpha) * old.x, alpha * new.y + (1 - alpha) * old.y)
             }
-        return OutlineTracker(blended)
+        return OutlineTracker(blended, snapCount = snapCount)
     }
 
     private fun choose(

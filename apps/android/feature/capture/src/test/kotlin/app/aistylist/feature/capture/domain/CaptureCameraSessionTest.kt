@@ -537,11 +537,11 @@ class CaptureCameraSessionTest {
 
         // Masks at 0 and 250 hold the item.
         harness.playUntil(2 * maskEveryMs - EVALUATION_MS) { now -> outlined(now, maskAt(now, maskEveryMs), square) }
-        assertEquals(square, harness.snapshot.outline)
+        assertEquals(square, harness.snapshot.outline?.points)
 
         // Empty masks at 500 and 750 keep it; the third, at 1000, clears it.
         harness.playUntil(4 * maskEveryMs - EVALUATION_MS) { now -> outlined(now, maskAt(now, maskEveryMs), null) }
-        assertEquals(square, harness.snapshot.outline)
+        assertEquals(square, harness.snapshot.outline?.points)
         harness.playUntil(4 * maskEveryMs) { now -> outlined(now, maskAt(now, maskEveryMs), null) }
         assertNull(harness.snapshot.outline)
     }
@@ -554,9 +554,9 @@ class CaptureCameraSessionTest {
 
         // A fresh mask on every frame, but the next outline update is due only at 100 + 250.
         harness.playUntil(3 * EVALUATION_MS) { now -> outlined(now, now, moved) }
-        assertEquals(square, harness.snapshot.outline)
+        assertEquals(square, harness.snapshot.outline?.points)
         harness.playUntil(4 * EVALUATION_MS) { now -> outlined(now, now, moved) }
-        assertTrue(harness.snapshot.outline != square)
+        assertTrue(harness.snapshot.outline?.points != square)
     }
 
     private fun CameraSnapshot.lockReasonHint(): CaptureHint? = hint?.takeIf { it.lockReason != null }

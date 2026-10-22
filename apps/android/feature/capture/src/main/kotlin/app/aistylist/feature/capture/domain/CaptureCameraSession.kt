@@ -33,7 +33,7 @@ data class CameraSnapshot(
      * the camera judges frames; null before an item is found, after it is lost, and while capturing
      * or cooling down.
      */
-    val outline: List<NormalizedPoint>? = null,
+    val outline: LiveOutline? = null,
 ) {
     val shutter: ShutterState
         get() =
@@ -86,7 +86,7 @@ class CaptureCameraSession(
                 lockReason = lockHint?.lockReason,
                 isAnywayVisible = isAnywayVisible,
                 anywayReason = if (isAnywayVisible) anywayReasonFor(lockHint, context) else null,
-                outline = outline.drawn.takeIf { lock.showsOutline },
+                outline = outline.live.takeIf { lock.showsOutline },
             )
 
     private val isAnywayVisible: Boolean get() = timer.isShown && lock.acceptsAnyway

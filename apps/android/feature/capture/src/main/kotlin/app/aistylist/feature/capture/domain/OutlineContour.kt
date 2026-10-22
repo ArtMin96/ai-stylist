@@ -98,6 +98,50 @@ fun polygonIou(
     return if (union == 0) 0.0 else intersection.toDouble() / union
 }
 
+/** The pixels of a [width] × [height] grid whose centres lie inside [polygon] (even-odd), row-major. */
+fun rasterise(
+    polygon: List<NormalizedPoint>,
+    width: Int,
+    height: Int,
+): BooleanArray {
+    val inside = BooleanArray(width * height)
+    for (row in 0 until height) {
+        val y = (row + HALF) / height
+        val crossings = ArrayList<Double>()
+        for (i in polygon.indices) {
+            val a = polygon[i]
+            val b = polygon[(i + 1) % polygon.size]
+            if ((a.y > y) != (b.y > y)) crossings += (a.x + (y - a.y) / (b.y - a.y) * (b.x - a.x)) * width - HALF
+        }
+        crossings.sort()
+        var k = 0
+        while (k + 1 < crossings.size) {
+            val from = max(0, kotlin.math.ceil(crossings[k]).toInt())
+            val until = min(width - 1, kotlin.math.ceil(crossings[k + 1]).toInt() - 1)
+            for (column in from..until) inside[row * width + column] = true
+            k += 2
+        }
+    }
+    return inside
+}
+
+/** IoU of [polygon] with the [mask] pixels that are true, at the mask's resolution. */
+fun polygonMaskIou(
+    polygon: List<NormalizedPoint>,
+    width: Int,
+    height: Int,
+    mask: BooleanArray,
+): Double {
+    val inside = rasterise(polygon, width, height)
+    var intersection = 0
+    var union = 0
+    for (i in mask.indices) {
+        if (mask[i] && inside[i]) intersection++
+        if (mask[i] || inside[i]) union++
+    }
+    return if (union > 0) intersection.toDouble() / union else 0.0
+}
+
 /** [points] cyclically shifted to the least summed squared distance to [reference] (ties: the smallest shift). */
 fun alignedTo(
     points: List<NormalizedPoint>,

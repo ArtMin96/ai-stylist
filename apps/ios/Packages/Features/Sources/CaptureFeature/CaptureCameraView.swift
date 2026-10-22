@@ -160,7 +160,12 @@
       return ZStack {
         CapturePreviewContent(preview: controller.camera.preview)
         if let output {
-          CaptureGuideOutlineView(guide: output.guide, isUnlocked: output.isUnlockedLook)
+          CaptureGuideOutlineView(
+            guide: output.guide, isUnlocked: output.isUnlockedLook, isOutlineShown: output.outline != nil)
+          if let outline = output.outline {
+            CaptureLiveOutlineView(outline: outline, isUnlocked: output.isUnlockedLook)
+              .transition(.opacity)
+          }
         }
         VStack(spacing: 0) {
           if let label = model.stepLabel {
@@ -175,6 +180,9 @@
           }
         }
       }
+      // The guide and the live outline cross-fade (DESIGN.md reduced-motion crossfade, also used here
+      // without reduced motion: a fade, not movement).
+      .animation(.linear(duration: AppMotion.Reduced.duration / 1000), value: output?.outline == nil)
       .frame(maxWidth: .infinity, maxHeight: .infinity)
       .background(theme.color(.cameraTrack))
       .clipShape(shape)
@@ -273,7 +281,7 @@
   }
 
   extension CaptureCameraOutput {
-    /// The guide is solid while unlocked or capturing, dashed otherwise.
+    /// The guide and the live outline are solid while unlocked or capturing, dashed otherwise.
     fileprivate var isUnlockedLook: Bool {
       switch shutter {
       case .unlocked, .capturing: true
@@ -300,13 +308,15 @@
       case .frames(let frames):
         GeometryReader { proxy in
           if let image = frames.image {
+            // The jitter is a share of the frame, so it moves by the filled frame's size, as the outline does.
+            let fill = CaptureFrameFill(in: CGRect(origin: .zero, size: proxy.size))
             Image(decorative: image, scale: 1)
               .resizable()
               .scaledToFill()
               .frame(width: proxy.size.width, height: proxy.size.height)
               .offset(
-                x: frames.offset.width * proxy.size.width,
-                y: frames.offset.height * proxy.size.height
+                x: frames.offset.width * fill.size.width,
+                y: frames.offset.height * fill.size.height
               )
           }
         }

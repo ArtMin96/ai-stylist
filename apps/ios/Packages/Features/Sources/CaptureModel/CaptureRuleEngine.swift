@@ -45,11 +45,13 @@ nonisolated public struct CaptureVerdict: Equatable, Sendable {
   }
 }
 
-/// Evaluates observations one after another. It keeps the two pieces of state the rules need across
-/// evaluations: the previous item box (steadiness) and whether the tilt hint is on (hysteresis).
+/// Evaluates observations one after another. It keeps the state the rules need across evaluations: the
+/// last mask's box and whether the box was still between the last two masks (steadiness), and whether
+/// the tilt hint is on (hysteresis).
 nonisolated public struct CaptureRuleEngine: Sendable {
   public private(set) var context: CaptureCheckContext
-  private var previousBox: NormalizedRect?
+  private var lastMask: (timestampMs: Int?, box: NormalizedRect)?
+  private var isBoxStill = false
   private var isTiltHintOn = false
 
   public init(context: CaptureCheckContext) {
@@ -64,15 +66,15 @@ nonisolated public struct CaptureRuleEngine: Sendable {
 
   /// Forgets the previous box and tilt state (camera restart, mode change).
   public mutating func reset() {
-    previousBox = nil
+    lastMask = nil
+    isBoxStill = false
     isTiltHintOn = false
   }
 
   /// Evaluates one live frame.
   public mutating func evaluate(_ observation: CaptureObservation) -> CaptureVerdict {
     let item = Self.foundItem(in: observation)
-    let previous = previousBox
-    previousBox = item?.box
+    updateBoxMotion(item?.box, maskTimestampMs: observation.maskTimestampMs)
 
     var blocking: [CaptureHint] = []
     var advisory: [CaptureHint] = []
@@ -99,7 +101,7 @@ nonisolated public struct CaptureRuleEngine: Sendable {
       if item.box.area < minAreaShare {
         blocking.append(.tooSmall)
       }
-      if !Self.isSteady(item, previous: previous, motion: observation.deviceMotion) {
+      if !isBoxStill || !Self.isSharpAndStill(item, motion: observation.deviceMotion) {
         blocking.append(.notSteady)
       }
     } else {
@@ -205,25 +207,38 @@ nonisolated public struct CaptureRuleEngine: Sendable {
       && range.contains(keypoint.x) && range.contains(keypoint.y)
   }
 
-  /// Steady (§3): the first evaluation that sees an item never passes, because there is no previous box.
-  private static func isSteady(
-    _ item: CaptureItemObservation,
-    previous: NormalizedRect?,
-    motion: CaptureDeviceMotion?
-  ) -> Bool {
-    guard let previous, previous.area > 0 else { return false }
-    let box = item.box
-    let boxIsStill =
-      abs(box.centreX - previous.centreX) <= CaptureRules.Steady.maxCentreShift
+  /// Steady, box part (§3): the box moved less than the limits between the last two masks. A reused mask
+  /// keeps the verdict of its own comparison, because a box compared with itself never moves. The first
+  /// mask that shows an item never passes, because there is no earlier mask.
+  private mutating func updateBoxMotion(_ box: NormalizedRect?, maskTimestampMs: Int?) {
+    guard let box else {
+      lastMask = nil
+      isBoxStill = false
+      return
+    }
+    if let lastMask, let maskTimestampMs, lastMask.timestampMs == maskTimestampMs {
+      return
+    }
+    isBoxStill = lastMask.map { Self.isStill(box, previous: $0.box) } ?? false
+    lastMask = (maskTimestampMs, box)
+  }
+
+  private static func isStill(_ box: NormalizedRect, previous: NormalizedRect) -> Bool {
+    previous.area > 0
+      && abs(box.centreX - previous.centreX) <= CaptureRules.Steady.maxCentreShift
       && abs(box.centreY - previous.centreY) <= CaptureRules.Steady.maxCentreShift
       && abs(box.area - previous.area) / previous.area <= CaptureRules.Steady.maxAreaChangeShare
+  }
+
+  /// Steady, every evaluation (§3): the item is sharp and the device is still.
+  private static func isSharpAndStill(_ item: CaptureItemObservation, motion: CaptureDeviceMotion?) -> Bool {
     let isSharp = item.sharpness >= CaptureRules.Steady.minSharpness
     let deviceIsStill =
       motion.map {
         $0.userAccelerationG <= CaptureRules.Ios.maxUserAccelerationG
           && $0.rotationRateRadPerS <= CaptureRules.Ios.maxRotationRateRadPerS
       } ?? true
-    return boxIsStill && isSharp && deviceIsStill
+    return isSharp && deviceIsStill
   }
 
   /// Too dark before too bright (§6 rows 6–7); hints only, never a lock (Q15).

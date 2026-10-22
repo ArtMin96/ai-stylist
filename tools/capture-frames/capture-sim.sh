@@ -12,7 +12,8 @@
 # Output: artifacts/capture-camera/runs/<yyyy-mm-dd-hhmm>/ (raw/, results/, maestro/, screenshots/,
 # summary.md) and artifacts/capture-camera/scoreboard.md. All gitignored.
 # Usage: capture-sim.sh ios|android|all
-# Env: IOS_SIMULATOR_ID (default: the iPhone 18 Pro on the newest iOS runtime), ANDROID_SERIAL,
+# Env: IOS_SIMULATOR_ID (default: the iPhone 18 Pro on the newest iOS runtime), ANDROID_SERIAL
+#      (default: the AVD aistylist-dev, booted when needed),
 #      CAPTURE_SWEEP_TIMEOUT (seconds per sweep, default 1800).
 # Exit: 0 every platform met the finish line; 1 a case, flow or step failed; 2 misuse.
 # macOS for iOS; bash 3.2-compatible.
@@ -111,11 +112,12 @@ run_flows() {
   done
 }
 
+# $3: the mask cadence the sweep played (0: a fresh mask on every frame).
 score() {
-  local platform="$1" run="$2"
+  local platform="$1" run="$2" cadence="${3:-0}"
   local reader="$run/raw/$platform/screen-reader.jsonl"
   node "$TOOL_DIR/capture-score.mjs" --platform "$platform" --frames "$FRAMES_DIR" \
-    --results "$run/raw/$platform/sweep.jsonl" --screen-reader "$reader" --out "$run" || true
+    --results "$run/raw/$platform/sweep.jsonl" --screen-reader "$reader" --mask-cadence-ms "$cadence" --out "$run" || true
 }
 
 # --- iOS --------------------------------------------------------------------------------------
@@ -137,6 +139,12 @@ ios_udid() {
   ' || die "capture-sim: no iPhone 18 Pro simulator; create one (Xcode > Settings > Components) or set IOS_SIMULATOR_ID"
 }
 
+# The phone's Vision mask cadence (capture-rules.json ios.maskIntervalMs): iOS sweeps play masks at it.
+ios_mask_cadence_ms() {
+  node -e 'process.stdout.write(String(require(process.argv[1]).ios.maskIntervalMs))' \
+    "$REPO_ROOT/packages/shared-kernel/registry/capture-rules.json"
+}
+
 ios_results() {
   printf '%s/Documents/%s\n' "$(xcrun simctl get_app_container "$1" "$APP_ID" data)" "$2"
 }
@@ -150,7 +158,8 @@ ios_sweep() {
   done_file="$(ios_results "$udid" capture-results.done)"
   xcrun simctl terminate "$udid" "$APP_ID" 2>/dev/null || true
   rm -f "$done_file" "$(ios_results "$udid" capture-results.jsonl)"
-  xcrun simctl launch --terminate-running-process "$udid" "$APP_ID" -captureSweep 1 -captureFramesDir "$FRAMES_DIR" "$@" >/dev/null
+  xcrun simctl launch --terminate-running-process "$udid" "$APP_ID" -captureSweep 1 -captureFramesDir "$FRAMES_DIR" \
+    -captureMaskCadenceMs "$(ios_mask_cadence_ms)" "$@" >/dev/null
   wait_for "the iOS sweep ($*)" test -f "$done_file"
   cat "$(ios_results "$udid" capture-results.jsonl)" >>"$out"
 }
@@ -166,7 +175,7 @@ run_ios() {
   xcrun simctl bootstatus "$IOS_UDID" -b >/dev/null
   xcrun simctl install "$IOS_UDID" "$REPO_ROOT/apps/ios/.build/DerivedData/Build/Products/Dev-iphonesimulator/AIStylist.app"
   mkdir -p "$raw"
-  log "iOS sweep: every frame set on the virtual clock"
+  log "iOS sweep: every frame set on the virtual clock, masks at the phone's cadence ($(ios_mask_cadence_ms) ms)"
   : >"$raw/sweep.jsonl"
   ios_sweep "$IOS_UDID" "$raw/sweep.jsonl"
   : >"$raw/screen-reader.jsonl"
@@ -180,7 +189,7 @@ run_ios() {
     run_flows ios "$IOS_UDID" "$run" "$theme"
   done
   xcrun simctl ui "$IOS_UDID" appearance light
-  score ios "$run"
+  score ios "$run" "$(ios_mask_cadence_ms)"
 }
 
 # --- Android ----------------------------------------------------------------------------------
@@ -195,13 +204,14 @@ run_android() {
     || die "capture-sim-android: the Android capture harness is not merged on this branch (apps/android/feature/capture-debug and apps/android/tools/capture-frames.sh are missing). Nothing was run."
   have maestro || die "capture-sim-android: maestro not found (mise install maestro)"
   heading "Android"
-  # Builds and installs the debug build; boots the AVD aistylist-dev when no device is online. No
-  # Gradle build runs after this point: a build beside a sweep has wedged the emulator.
+  # The AVD aistylist-dev (or ANDROID_SERIAL), booted when it is not running: never another agent's
+  # emulator. Then the debug build is built and installed on it. No Gradle build runs after this
+  # point: a build beside a sweep has wedged the emulator.
+  serial="${ANDROID_SERIAL:-$("$REPO_ROOT/apps/android/tools/device.sh" boot | tail -n 1)}"
+  [[ -n "$serial" ]] || die "capture-sim-android: the AVD aistylist-dev did not boot"
+  export ANDROID_SERIAL="$serial"
   just android-run
   adb="$(android_adb)"
-  serial="${ANDROID_SERIAL:-$("$adb" devices | awk 'NR > 1 && $2 == "device" { print $1; exit }')}"
-  [[ -n "$serial" ]] || die "capture-sim-android: no device online after android-run"
-  export ANDROID_SERIAL="$serial"
   "$ANDROID_FRAMES" push "$FRAMES_DIR"
   mkdir -p "$raw"
   log "Android sweep: every frame set, stored masks and keypoints (the scored run)"

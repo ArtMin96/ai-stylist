@@ -44,6 +44,7 @@
     "capture.a11y.help" : { "extractionState" : "manual", "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Help" } } } },
     "capture.a11y.import" : { "extractionState" : "manual", "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Import from photos" } } } },
     "capture.a11y.more" : { "extractionState" : "manual", "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "More options" } } } },
+    "capture.a11y.outline" : { "comment" : "The live outline that traces the item (capture brief \"Live outline\").", "extractionState" : "manual", "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Item outline" } } } },
     "capture.a11y.speech.off" : { "extractionState" : "manual", "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Spoken hints, off" } } } },
     "capture.a11y.speech.on" : { "extractionState" : "manual", "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Spoken hints, on" } } } },
     "capture.a11y.torch" : { "extractionState" : "manual", "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Torch" } } } },

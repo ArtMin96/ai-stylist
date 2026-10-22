@@ -346,3 +346,29 @@ struct ShutterLockCaptureTests {
     return driver
   }
 }
+
+@Suite("Shutter lock: the phone's mask cadence")
+struct ShutterLockMaskCadenceTests {
+  @Test("a passing evaluation that reuses a mask does not count again toward the unlock")
+  func reusedMaskHoldsTheStreak() {
+    var lock = ShutterLock()
+    lock.start()
+    // Evaluations every 100 ms, masks every 250 ms (stamped with their own time), as on the phone.
+    let evaluations = [(0, 0), (100, 0), (200, 0), (300, 250), (400, 250)]
+    for (now, mask) in evaluations {
+      #expect(lock.evaluate(pass, itemBox: goodBox, atMs: now, maskTimestampMs: mask) == nil)
+    }
+    #expect(lock.state == .locked(.noItem))
+    // The third distinct mask unlocks.
+    #expect(lock.evaluate(pass, itemBox: goodBox, atMs: 500, maskTimestampMs: 500) == .unlocked)
+  }
+
+  @Test("without mask times every passing evaluation counts, as before")
+  func freshMasksCountEachTime() {
+    var lock = ShutterLock()
+    lock.start()
+    _ = lock.evaluate(pass, itemBox: goodBox, atMs: 0)
+    _ = lock.evaluate(pass, itemBox: goodBox, atMs: 100)
+    #expect(lock.evaluate(pass, itemBox: goodBox, atMs: 200) == .unlocked)
+  }
+}

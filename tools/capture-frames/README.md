@@ -362,11 +362,12 @@ platform:
    unset, on the iPhone 18 Pro on the newest iOS runtime (or `IOS_SIMULATOR_ID`). Android:
    `just android-run`, which boots the AVD `aistylist-dev` when no device is online, then
    `apps/android/tools/capture-frames.sh push`. No Gradle build runs after that point.
-2. Sweeps every frame set on the harness's virtual clock and pulls `capture-results.jsonl`. Android
-   is scored on stored masks and keypoints, read with the iOS mask measure. Android sweeps take a new
-   mask every 250 ms and reuse it between frames, as the phone's segmenter does, so they exercise the
-   steady rule's mask timestamps (`-e captureMaskCadenceMs 0` gives every frame a fresh mask). A second sweep with the
-   live LiteRT segmenter on every frame PNG (and live ML Kit pose) is information only; it also pulls
+2. Sweeps every frame set on the harness's virtual clock and pulls `capture-results.jsonl`. Both apps
+   play masks at the phone's cadence: observations every evaluation interval, a new mask only every
+   250 ms (iOS `-captureMaskCadenceMs`, Android `-e captureMaskCadenceMs`; 0 gives every frame a fresh
+   mask), so the sweeps exercise the steady rule's mask timestamps. Android is scored on stored masks
+   and keypoints, read with the iOS mask measure. A second Android sweep with the live LiteRT
+   segmenter on every frame PNG (and live ML Kit pose) is information only; it also pulls
    `capture-segmenter.jsonl` (latency and mask IoU per image).
 3. Sweeps the locked sets `top-flat-01-jitter`, `top-flat-01-cut-top`, `top-flat-empty` and
    `top-worn-shoulders-cut` again with the screen-reader flag.
@@ -403,9 +404,15 @@ expected file's `platform.<platform>` block applies first. `summary.md` states t
   "Take photo anyway" shows at `anywayAtMs` ± `acceptance.anywayToleranceMs`, with the reason line
   the expected `anywayReason`. With the screen-reader flag it shows within one evaluation interval of
   the start. Fields the scorer does not know (such as a segment's `tiltDegrees`) pass through.
+- **Live outline** (on results lines that log it; iOS now, Android after its outline lane): a
+  segment that shows an item has an outline by its first mask (`ios.maskIntervalMs`); an empty,
+  weak-surface, no-item or gap segment shows none; flat jitter sets keep outline stability ≥ 0.95.
+  The outline's IoU with the stored mask is reported per variant as information.
 - `summary.md` adds a hard-cases table: pass counts per variant beyond the brief §11 variants.
 - **Gap** (the empty second between sweep or batch items): locked or in cooldown within
-  `relockAfterFailingEvaluations × evaluation.intervalMs`, stays locked, nothing captured. The hint
+  `relockAfterFailingEvaluations × evaluation.intervalMs`, plus one mask interval when the sweep
+  played the phone's mask cadence (the item's last mask lingers that long), stays locked, nothing
+  captured. The hint
   and the anyway timing are not judged, because the gap opens on the previous item's state and is
   shorter than the anyway delay.
 - **Miss:** an unlocked case that never unlocks in time. **False lock:** unlocked straight back to

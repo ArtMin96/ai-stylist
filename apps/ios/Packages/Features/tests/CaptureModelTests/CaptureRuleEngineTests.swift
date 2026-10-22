@@ -268,6 +268,49 @@ struct CaptureSteadyRuleTests {
     #expect(steadyVerdict(frame(motion: nil), context: topFlat).passes)
   }
 
+  // Regression: the live camera reuses one Vision mask for about 2.5 evaluations (mask every 250 ms,
+  // evaluations every 100 ms). Comparing a reused mask's box with itself gave a zero shift, so a moving
+  // item passed "steady" on 2 of every 3 evaluations and could unlock early.
+  @Test("a reused mask never counts as a still box: the box moves only between different masks")
+  func reusedMaskKeepsTheLastMotionVerdict() {
+    var engine = CaptureRuleEngine(context: topFlat)
+    let area = goodBox.area
+    let jump = CaptureRules.Steady.maxCentreShift * 3
+    let first = item(box: centredBox(area: area))
+    let moved = item(box: centredBox(area: area, centreX: 0.5 + jump))
+    // First mask: no earlier mask to compare with, however often it is evaluated.
+    #expect(engine.evaluate(frame(maskMs: 0, item: first)).blockingHints == [.notSteady])
+    #expect(engine.evaluate(frame(maskMs: 0, item: first)).blockingHints == [.notSteady])
+    #expect(engine.evaluate(frame(maskMs: 0, item: first)).blockingHints == [.notSteady])
+    // Second mask: the item jumped, and the reused evaluations keep that verdict.
+    #expect(engine.evaluate(frame(maskMs: 250, item: moved)).blockingHints == [.notSteady])
+    #expect(engine.evaluate(frame(maskMs: 250, item: moved)).blockingHints == [.notSteady])
+    #expect(engine.evaluate(frame(maskMs: 250, item: moved)).blockingHints == [.notSteady])
+    // Third mask, still: it passes, and so do its reused evaluations.
+    #expect(engine.evaluate(frame(maskMs: 500, item: moved)).passes)
+    #expect(engine.evaluate(frame(maskMs: 500, item: moved)).passes)
+  }
+
+  @Test("sharpness and device motion are still checked on every evaluation of a reused mask")
+  func reusedMaskStillChecksSharpnessAndMotion() {
+    var engine = CaptureRuleEngine(context: topFlat)
+    _ = engine.evaluate(frame(maskMs: 0))
+    #expect(engine.evaluate(frame(maskMs: 250)).passes)
+    let shaking = CaptureDeviceMotion(userAccelerationG: 1, rotationRateRadPerS: 0)
+    #expect(engine.evaluate(frame(maskMs: 250, motion: shaking)).blockingHints == [.notSteady])
+    #expect(engine.evaluate(frame(maskMs: 250, item: item(sharpness: 0))).blockingHints == [.notSteady])
+    #expect(engine.evaluate(frame(maskMs: 250)).passes)
+  }
+
+  @Test("losing the item between masks forgets the earlier mask")
+  func noItemForgetsTheMask() {
+    var engine = CaptureRuleEngine(context: topFlat)
+    _ = engine.evaluate(frame(maskMs: 0))
+    #expect(engine.evaluate(frame(maskMs: 250)).passes)
+    _ = engine.evaluate(frame(maskMs: 500, item: nil))
+    #expect(engine.evaluate(frame(maskMs: 750)).blockingHints == [.notSteady])
+  }
+
   private func shifted(by shift: Double, horizontal: Bool) -> CaptureVerdict {
     var engine = CaptureRuleEngine(context: topFlat)
     let area = goodBox.area

@@ -42,6 +42,8 @@ nonisolated public struct ShutterLock: Sendable {
   public private(set) var lastLockReason: CaptureLockReason = .noItem
 
   private var passingStreak = 0
+  /// The mask of the last passing evaluation counted while locked; nil when masks carry no time.
+  private var lastPassingMaskMs: Int?
   private var failingStreak = 0
   private var ringElapsedMs = 0
   private var ringEvaluations = 0
@@ -76,11 +78,13 @@ nonisolated public struct ShutterLock: Sendable {
   }
 
   /// Applies one evaluation. `itemBox` is the evaluated item's box (cooldown compares it with the
-  /// captured box); nil when no item was found.
+  /// captured box); nil when no item was found. `maskTimestampMs` is the time of the mask the verdict
+  /// read; nil means a fresh mask on every evaluation.
   public mutating func evaluate(
     _ verdict: CaptureVerdict,
     itemBox: NormalizedRect?,
-    atMs now: Int
+    atMs now: Int,
+    maskTimestampMs: Int? = nil
   ) -> ShutterTransition? {
     if let reason = verdict.lockReason {
       lastLockReason = reason
@@ -91,7 +95,7 @@ nonisolated public struct ShutterLock: Sendable {
     case .cooldown:
       return evaluateCooldown(itemBox: itemBox)
     case .warmingUp, .locked:
-      return evaluateLocked(verdict, atMs: now)
+      return evaluateLocked(verdict, atMs: now, maskTimestampMs: maskTimestampMs)
     case .unlocked:
       return evaluateUnlocked(verdict, atMs: now)
     }
@@ -150,12 +154,27 @@ nonisolated public struct ShutterLock: Sendable {
 
   // MARK: - Transitions
 
-  private mutating func evaluateLocked(_ verdict: CaptureVerdict, atMs now: Int) -> ShutterTransition? {
+  private mutating func evaluateLocked(
+    _ verdict: CaptureVerdict,
+    atMs now: Int,
+    maskTimestampMs: Int?
+  ) -> ShutterTransition? {
     guard verdict.passes else {
       passingStreak = 0
+      lastPassingMaskMs = nil
       state = .locked(lastLockReason)
       return nil
     }
+    // A passing evaluation that reads the same mask as the last one adds no new evidence (the phone's
+    // mask comes every 250 ms, evaluations every 100 ms): the streak holds, so an unlock needs
+    // `unlockAfterPassingEvaluations` distinct masks, not one chance-still mask read three times.
+    if let maskTimestampMs, maskTimestampMs == lastPassingMaskMs {
+      if state == .warmingUp {
+        state = .locked(lastLockReason)
+      }
+      return nil
+    }
+    lastPassingMaskMs = maskTimestampMs
     passingStreak += 1
     guard passingStreak >= CaptureRules.Lock.unlockAfterPassingEvaluations else {
       if state == .warmingUp {
@@ -214,6 +233,7 @@ nonisolated public struct ShutterLock: Sendable {
 
   private mutating func resetCounters() {
     passingStreak = 0
+    lastPassingMaskMs = nil
     failingStreak = 0
     ringElapsedMs = 0
     ringEvaluations = 0

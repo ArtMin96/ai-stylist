@@ -221,6 +221,20 @@ test_device_choice() {
   )
 }
 
+test_boot_finds_only_its_own_avd() {
+  (
+    # shellcheck source=apps/android/tools/device.sh
+    source "$ROOT/apps/android/tools/device.sh"
+    AVD=aistylist-dev
+    # Stubs for adb: another agent's emulator runs too.
+    list_devices() { printf 'emulator-5570 device\nemulator-5554 device\n'; }
+    emulator_avd_name() { case "$1" in emulator-5570) echo outlineprobe ;; emulator-5554) echo aistylist-dev ;; esac; }
+    expect_eq "$(listed_emulator)" emulator-5554 || exit 1
+    list_devices() { printf 'emulator-5570 device\n'; }
+    expect_eq "$(listed_emulator)" ""
+  )
+}
+
 test_api_url_per_device() {
   (
     # shellcheck source=apps/android/tools/device.sh
@@ -271,6 +285,7 @@ run_test "API port: API_PORT, else PORT, else 3000; environment before .env" tes
 run_test "logs: live, one prefix per service, no tail headers" test_logs_stream_live_with_a_prefix_per_service
 run_test "stop ends every process a service started" test_stop_ends_the_whole_process_group
 run_test "android: emulator first, then a phone, never an unauthorized one; --serial wins" test_device_choice
+run_test "android: boot reuses only an emulator of its own AVD, never another one" test_boot_finds_only_its_own_avd
 run_test "android: API URL per device (emulator 10.0.2.2, phone localhost via adb reverse)" test_api_url_per_device
 run_test "android: newest Google APIs image for the host CPU when the pinned one is missing" test_newest_system_image_fallback
 

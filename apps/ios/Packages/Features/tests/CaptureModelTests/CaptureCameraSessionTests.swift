@@ -502,3 +502,61 @@ struct CaptureSessionSpeechTests {
     #expect(driver.spoken == [.noItem])
   }
 }
+
+@Suite("Camera session: live outline")
+struct CaptureSessionOutlineTests {
+  private let square = CaptureOutlineCandidate(
+    areaShare: 0.16,
+    points: [
+      CaptureOutlinePoint(x: 0.2, y: 0.2), CaptureOutlinePoint(x: 0.6, y: 0.2), CaptureOutlinePoint(x: 0.6, y: 0.6),
+      CaptureOutlinePoint(x: 0.2, y: 0.6),
+    ]
+  )
+
+  private func observation(maskMs: Int, candidates: [CaptureOutlineCandidate]) -> CaptureObservation {
+    CaptureObservation(
+      timestampMs: maskMs,
+      item: candidates.isEmpty ? nil : item(),
+      meanLuma: 120,
+      outlines: CaptureMaskOutlines(maskTimestampMs: maskMs, candidates: candidates)
+    )
+  }
+
+  @Test("no outline before an item; the outline appears with the first mask that shows one")
+  func appearsWithTheItem() {
+    var driver = SessionDriver()
+    #expect(driver.output.outline == nil)
+    driver.feed(observation(maskMs: 0, candidates: []))
+    #expect(driver.output.outline == nil)
+    driver.feed(observation(maskMs: 250, candidates: [square]))
+    #expect(driver.output.outline?.points == square.points)
+  }
+
+  @Test("a mask that arrives between evaluations still updates the outline")
+  func updatesBetweenEvaluations() {
+    var session = CaptureCameraSession(setup: CaptureCameraSetup(family: .top, mode: .flat))
+    _ = session.cameraReady(atMs: 0)
+    _ = session.submit(observation(maskMs: 0, candidates: []), atMs: 0)
+    _ = session.submit(observation(maskMs: 50, candidates: [square]), atMs: 50)
+    #expect(session.output.outline?.points == square.points)
+  }
+
+  @Test("the outline clears after three masks without an item, and on a mode change or the background")
+  func clears() {
+    var driver = SessionDriver()
+    driver.feed(observation(maskMs: 0, candidates: [square]))
+    driver.feed(observation(maskMs: 250, candidates: []))
+    driver.feed(observation(maskMs: 500, candidates: []))
+    #expect(driver.output.outline != nil)
+    driver.feed(observation(maskMs: 750, candidates: []))
+    #expect(driver.output.outline == nil)
+
+    driver.feed(observation(maskMs: 1000, candidates: [square]))
+    driver.session.modeChanged(to: .hanger)
+    #expect(driver.output.outline == nil)
+
+    driver.feed(observation(maskMs: 1250, candidates: [square]))
+    driver.session.backgrounded()
+    #expect(driver.output.outline == nil)
+  }
+}

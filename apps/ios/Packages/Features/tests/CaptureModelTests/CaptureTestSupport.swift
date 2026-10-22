@@ -53,8 +53,9 @@ func item(
   CaptureItemObservation(box: box, maskAreaShare: maskAreaShare, edgeContact: contact, sharpness: sharpness)
 }
 
-/// A well-lit frame; pass `item: nil` for an empty frame.
+/// A well-lit frame; pass `item: nil` for an empty frame, and `maskMs` for a reused detector result.
 func frame(
+  maskMs: Int? = nil,
   item: CaptureItemObservation? = item(),
   meanLuma: Double = 120,
   clippedShare: Double = 0,
@@ -64,6 +65,7 @@ func frame(
 ) -> CaptureObservation {
   CaptureObservation(
     timestampMs: 0,
+    maskTimestampMs: maskMs,
     item: item,
     meanLuma: meanLuma,
     clippedShare: clippedShare,

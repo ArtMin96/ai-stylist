@@ -2,7 +2,7 @@
 // `Documents/capture-results.jsonl` of the app's data container. The recipes pull it with
 // `xcrun simctl get_app_container booted app.aistylist.mobile.dev data` and compare it with each
 // segment's expected-result file. A sweep also writes `Documents/capture-results.done` when it ends.
-// Only rule outcomes are logged: no pixel, mask, box or photo data.
+// Only rule outcomes and live-outline scores are logged: no pixel, mask, box, outline point or photo data.
 #if os(iOS)
   import Foundation
 
@@ -41,6 +41,23 @@
     public var finalHint: String?
     public var captures: [Capture] = []
     public var durationMs = 0
+    // Live outline (capture brief "Live outline"); each drawn outline counts once per mask update.
+    /// When the live outline first showed in the segment; nil when it never did.
+    public var outlineFirstMs: Int?
+    /// The live outline showed when the segment ended.
+    public var outlinePresentAtEnd = false
+    /// Drawn outlines seen (one per mask update while an item is outlined).
+    public var outlineUpdates = 0
+    /// Of those, the ones that replaced the drawn outline at once (new item or a large change).
+    public var outlineSnaps = 0
+    /// IoU of each drawn outline with the stored item mask it was traced from (the best-matching
+    /// instance), median and minimum; the drawn outline is smoothed, so it lags a moving item.
+    public var outlineIouMedian: Double?
+    public var outlineIouMin: Double?
+    /// Centroid-aligned IoU of each blended outline with the one before it (shape stability; snaps are
+    /// left out), median and minimum.
+    public var outlineStabilityMedian: Double?
+    public var outlineStabilityMin: Double?
   }
 
   /// Appends results to the log file.

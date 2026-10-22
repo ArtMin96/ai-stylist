@@ -17,6 +17,10 @@ nonisolated public struct CaptureDebugOptions: Equatable, Sendable {
   /// `captureRecordOnly=1`: in real time, a capture is recorded and the camera carries on, as in a sweep,
   /// so the unlocked states keep coming back for the screenshot flows (`e2e/capture`).
   public var recordsCaptures: Bool
+  /// `captureMaskCadenceMs=<ms>`: frame sets give the rules a new mask only this often (the phone's Vision
+  /// mask comes every 250 ms while observations come every 100 ms), stamped with its time. Nil gives a
+  /// fresh mask on every frame.
+  public var maskCadenceMs: Int?
   /// `captureFramesDir=<absolute path>`: the frames folder; the Simulator reads the Mac's file system.
   /// Nil uses `defaultFramesDirectory`.
   public var framesDirectory: URL?
@@ -40,12 +44,14 @@ nonisolated public struct CaptureDebugOptions: Equatable, Sendable {
     forcesScreenReader: Bool = false,
     sweep: Bool = false,
     recordsCaptures: Bool = false,
+    maskCadenceMs: Int? = nil,
     framesDirectory: URL? = nil
   ) {
     self.frameSetID = frameSetID
     self.forcesScreenReader = forcesScreenReader
     self.sweep = sweep
     self.recordsCaptures = recordsCaptures
+    self.maskCadenceMs = maskCadenceMs
     self.framesDirectory = framesDirectory
   }
 
@@ -60,6 +66,7 @@ nonisolated public struct CaptureDebugOptions: Equatable, Sendable {
       forcesScreenReader: isOn(values["captureScreenReader"]),
       sweep: isOn(values["captureSweep"]),
       recordsCaptures: isOn(values["captureRecordOnly"]),
+      maskCadenceMs: values["captureMaskCadenceMs"].flatMap(Int.init).flatMap { $0 > 0 ? $0 : nil },
       framesDirectory: values["captureFramesDir"].flatMap { $0.isEmpty ? nil : URL(filePath: $0) }
     )
   }

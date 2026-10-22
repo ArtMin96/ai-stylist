@@ -65,14 +65,14 @@ Generate one in the Anthropic Console on the environment page for $env_id (\"Gen
     -u POSTHOG_CLI_API_KEY -u POSTHOG_CLI_HOST -u POSTHOG_CLI_PROJECT_ID \
     ANTHROPIC_ENVIRONMENT_KEY="$key" \
     nohup ant beta:worker poll --environment-id "$env_id" --workdir "$workdir" \
-    --unrestricted-paths --max-idle 12h >>"$state/worker.log" 2>&1 &
+    --max-idle 12h >>"$state/worker.log" 2>&1 &
   echo $! >"$state/worker.pid"
   echo "capture-agent: worker started (pid $!, log $state/worker.log)"
 }
 
 spent_cents() {
-  # Sum the list cost (cents) of every earlier session this script started.
-  ant beta:sessions list --format jsonl \
+  # Sum the list cost (cents) of every earlier session this script started for this agent.
+  ant beta:sessions list --agent-id "$1" --max-items -1 --format jsonl \
     --transform '{title,cost:usage.list_cost.amount}' |
     jq -s --arg p "$title_prefix" \
       '[.[] | select((.title // "") | startswith($p)) | (.cost // "0" | tonumber)] | add // 0'
@@ -88,7 +88,7 @@ start() {
   env_id="$(lock_id "$env_file")"
   [[ -n "$agent_id" && -n "$env_id" ]] || die "ant apply did not record the agent and environment in $here/claude-lock.json"
 
-  spent="$(spent_cents)" || die "could not read the spend of earlier sessions; not starting without a known cap"
+  spent="$(spent_cents "$agent_id")" || die "could not read the spend of earlier sessions; not starting without a known cap"
   left=$((total_cents - spent))
   ((left > 0)) || die "the total cap of \$$((total_cents / 100)) is used up (spent $spent cents)"
   echo "capture-agent: spent so far $spent cents; this session's cap is $left cents"

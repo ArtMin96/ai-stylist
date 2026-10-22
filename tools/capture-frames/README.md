@@ -407,6 +407,14 @@ expected file's `platform.<platform>` block applies first. `summary.md` states t
   locked, not through capturing; the rate is over should-unlock cases. **False unlock:** a locked
   case that unlocks or auto-captures, listed on its own.
 
+## Live-outline parity fixture (`parity/`)
+
+`parity/outline-parity.json` is the committed fixture both apps' unit tests read for the live outline
+(brief "Live outline"): masks with their expected polygons, IoU pairs and tracker sequences, plus every
+spec number. `parity/outline_reference.py` (Python standard library) generates and checks it; four of
+its masks come from this generator's output. `parity/README.md` has the commands and the details both
+apps must follow.
+
 ## Not built yet
 
 The hanger-mode hook frames (C2) and the bag strap grazing an edge (C6) need their own variants. Add

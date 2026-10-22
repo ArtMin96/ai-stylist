@@ -45,6 +45,8 @@ class SweepRunner(
         var mask: MaskSample? = null
         set.segments.forEachIndexed { segmentIndex, segment ->
             val startMs = now
+            // A new image is a new scene: its first frame takes a mask at once, then the cadence runs.
+            mask = null
             val record =
                 SegmentRecord(
                     set,

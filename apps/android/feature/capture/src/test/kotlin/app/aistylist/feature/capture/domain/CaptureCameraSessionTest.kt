@@ -340,7 +340,8 @@ class CaptureCameraSessionTest {
         dim.playUntil(unlockMs) { frame(it, light = dark) }
 
         assertEquals(CaptureHint.READY, plain.snapshot.hint)
-        assertEquals(CaptureHint.GUIDE, dim.snapshot.hint)
+        // The unlock ends the guide at once (brief §5), as on iOS; the tip wins over "ready" (C13).
+        assertEquals(CaptureHint.TOO_DARK, dim.snapshot.hint)
         assertNull(plain.snapshot.anywayReason)
     }
 

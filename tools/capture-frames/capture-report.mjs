@@ -235,13 +235,19 @@ None yet.
 None yet.
 `;
 
+/** The scored sweep's counts per variant on `platform`, or null when the platform has no summary. */
+function variantCounts(run, platform) {
+  const file = path.join(run, 'results', `${platform}.summary.json`);
+  if (!existsSync(file)) return null;
+  return JSON.parse(readFileSync(file, 'utf8')).byVariant ?? {};
+}
+
 /** Per-variant pass counts of the hard cases (C8–C11, tilt, glare, covered), one column per platform. */
 function hardCases(run, platforms) {
   const counts = {};
   for (const platform of platforms) {
-    const file = path.join(run, 'results', `${platform}.summary.json`);
-    if (!existsSync(file)) continue;
-    const byVariant = JSON.parse(readFileSync(file, 'utf8')).byVariant ?? {};
+    const byVariant = variantCounts(run, platform);
+    if (!byVariant) continue;
     for (const [variant, count] of Object.entries(byVariant)) {
       if (BASE_VARIANTS.has(variant)) continue;
       counts[variant] = { ...counts[variant], [platform]: `${count.passed}/${count.total}` };
@@ -271,9 +277,8 @@ function hardCases(run, platforms) {
 function outlineInfo(run, platforms) {
   const rows = [];
   for (const platform of platforms) {
-    const file = path.join(run, 'results', `${platform}.summary.json`);
-    if (!existsSync(file)) continue;
-    const byVariant = JSON.parse(readFileSync(file, 'utf8')).byVariant ?? {};
+    const byVariant = variantCounts(run, platform);
+    if (!byVariant) continue;
     for (const [variant, count] of Object.entries(byVariant)) {
       if (count.outlineIou) {
         rows.push(

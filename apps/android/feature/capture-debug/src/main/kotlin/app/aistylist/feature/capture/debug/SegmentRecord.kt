@@ -4,6 +4,8 @@ import app.aistylist.feature.capture.domain.AnywayReason
 import app.aistylist.feature.capture.domain.CameraSnapshot
 import app.aistylist.feature.capture.domain.CaptureTrigger
 import app.aistylist.feature.capture.domain.LockPhase
+import app.aistylist.feature.capture.domain.NormalizedPoint
+import app.aistylist.feature.capture.domain.polygonIou
 import org.json.JSONArray
 import org.json.JSONObject
 import java.io.File
@@ -54,7 +56,10 @@ class SegmentRecord(
     private val clock: String,
     private val detector: BoxSource,
     private val pose: PoseSource,
+    private val masks: MaskSource = MaskSource.NONE,
 ) {
+    private val outline = OutlineStats()
+
     private val events = JSONArray()
     private val captures = JSONArray()
     private var last: StepState? = null
@@ -95,6 +100,12 @@ class SegmentRecord(
         )
     }
 
+    /** The drawn [drawn] outline after a frame, scored against the stored mask's [reference] outline. */
+    fun onOutline(
+        drawn: List<NormalizedPoint>?,
+        reference: List<NormalizedPoint>?,
+    ) = outline.add(drawn, reference)
+
     fun onCapture(
         trigger: CaptureTrigger,
         nowMs: Long,
@@ -116,6 +127,8 @@ class SegmentRecord(
             .put("segment", segmentIndex)
             .put("expected", segment.expected)
             .put("detector", detector.id)
+            .put("masks", masks.id)
+            .put("outline", outline.toJson())
             .put("pose", pose.id)
             .put("events", events)
             .put("firstUnlockMs", firstUnlockMs ?: JSONObject.NULL)
@@ -145,11 +158,20 @@ class ResultsFiles(
 
     val probe: File get() = File(dir, PROBE)
 
+    /** Live-mask runs only: one line per image the LiteRT segmenter ran on (latency, IoU). */
+    val segmenter: File get() = File(dir, SEGMENTER)
+
     /** Starts a fresh results file (a new sweep or a new frame-set launch). */
     fun reset() {
         dir.mkdirs()
         results.delete()
         done.delete()
+        segmenter.delete()
+    }
+
+    fun appendSegmenter(line: JSONObject) {
+        dir.mkdirs()
+        segmenter.appendText(line.toString() + "\n")
     }
 
     fun append(line: JSONObject) {
@@ -161,5 +183,54 @@ class ResultsFiles(
         const val RESULTS: String = "capture-results.jsonl"
         const val DONE: String = "capture-results.done"
         const val PROBE: String = "capture-probe.json"
+        const val SEGMENTER: String = "capture-segmenter.jsonl"
+    }
+}
+
+/**
+ * The live outline over one segment (results log): how often it was drawn, its IoU against the
+ * stored mask's outline at the end, and its stability — the centroid-aligned IoU of successive drawn
+ * outlines (the jitter acceptance is a mean of at least 0.95).
+ */
+private class OutlineStats {
+    private var frames = 0
+    private var drawnFrames = 0
+    private var last: List<NormalizedPoint>? = null
+    private var lastIou: Double? = null
+    private val stability = ArrayList<Double>()
+
+    fun add(
+        drawn: List<NormalizedPoint>?,
+        reference: List<NormalizedPoint>?,
+    ) {
+        frames++
+        if (drawn == null) {
+            last = null
+            return
+        }
+        drawnFrames++
+        lastIou = reference?.let { polygonIou(drawn, it) }
+        val previous = last
+        if (previous != null && previous != drawn) stability += polygonIou(centred(drawn), centred(previous))
+        last = drawn
+    }
+
+    fun toJson(): JSONObject =
+        JSONObject()
+            .put("presentShare", if (frames == 0) 0.0 else drawnFrames.toDouble() / frames)
+            .put("presentAtEnd", last != null)
+            .put("iouVsStored", lastIou ?: JSONObject.NULL)
+            .put("updates", stability.size)
+            .put("stabilityMean", if (stability.isEmpty()) JSONObject.NULL else stability.average())
+            .put("stabilityMin", stability.minOrNull() ?: JSONObject.NULL)
+
+    private fun centred(points: List<NormalizedPoint>): List<NormalizedPoint> {
+        val cx = points.sumOf { it.x } / points.size
+        val cy = points.sumOf { it.y } / points.size
+        return points.map { NormalizedPoint(it.x - cx + CENTRE, it.y - cy + CENTRE) }
+    }
+
+    private companion object {
+        const val CENTRE = 0.5
     }
 }

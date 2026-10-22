@@ -1,5 +1,6 @@
 package app.aistylist.feature.capture.debug
 
+import app.aistylist.feature.capture.camera.LiteRtGarmentSegmenter
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -15,6 +16,8 @@ class HarnessAnalysis(
     private val args: CaptureHarnessArgs,
     private val files: ResultsFiles,
     private val dispatcher: CoroutineDispatcher,
+    /** Loads the real LiteRT segmenter (live masks); null when it cannot load. */
+    private val loadSegmenter: () -> LiteRtGarmentSegmenter? = { null },
 ) {
     private val mutex = Mutex()
     private var analyzer: FrameAnalyzer? = null
@@ -32,8 +35,19 @@ class HarnessAnalysis(
     private fun create(): FrameAnalyzer {
         val result = DetectorProbe.run(index, args)
         probe = result
+        val segmenter = lazy(loadSegmenter)
+        if (args.masks == MaskSource.LIVE) result.report.put("segmenterLoads", segmenter.value != null)
+        result.report.put("masksUsed", args.masks.id).put("coveredUsed", args.covered.id)
         files.probe.parentFile?.mkdirs()
         files.probe.writeText(result.report.toString(2))
-        return FrameAnalyzer(index, result.boxes, result.pose)
+        return FrameAnalyzer(
+            index,
+            result.boxes,
+            result.pose,
+            args.masks,
+            args.covered,
+            segmenter,
+            files::appendSegmenter,
+        )
     }
 }

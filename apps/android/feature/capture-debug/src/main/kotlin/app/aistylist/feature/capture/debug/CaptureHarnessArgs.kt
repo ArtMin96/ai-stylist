@@ -17,6 +17,31 @@ enum class BoxSource(
     STORED("stored-box"),
 }
 
+/** Where the garment mask comes from (the rules read the item from it, as on the phone). */
+enum class MaskSource(
+    val id: String,
+) {
+    /** The generator's stored mask (`frame.instances.png`, else `frame.mask.png`): the scored sweep. */
+    STORED("stored-mask"),
+
+    /** The real LiteRT segmenter on each frame PNG: the live-model sweep. */
+    LIVE("litert-live"),
+
+    /** No mask: the ML Kit box path, the camera's fallback when the segmenter cannot load. */
+    NONE("boxes"),
+}
+
+/** Where the covered rule's other-object boxes come from with a live mask (C32 measurement). */
+enum class CoveredSource(
+    val id: String,
+) {
+    /** The mask's other connected components. */
+    COMPONENTS("mask-components"),
+
+    /** ML Kit object boxes, without the one that matches the item best. */
+    OBJECT_BOXES("mlkit-boxes"),
+}
+
 /** Where worn-mode keypoints come from: the live pose model, or the generator's keypoint files. */
 enum class PoseSource(
     val id: String,
@@ -31,6 +56,7 @@ enum class PoseSource(
  * `captureFrameSet=<set id>`, `captureScreenReader=1`, `captureSweep=1`, `captureRecordOnly=1` (in
  * real time a capture is recorded and the camera carries on, as in a sweep), and for runs by hand
  * `captureFramesDir=<path>`, `captureBoxes=auto|live|stored`, `capturePose=auto|live|keypoints`,
+ * `captureMasks=stored|live|none` (default stored), `captureCovered=components|mlkit` (live masks),
  * `captureSweepFilter=<set id prefix>` and `captureDebugPanel=0` (hide the panel for screenshots).
  */
 data class CaptureHarnessArgs(
@@ -43,6 +69,8 @@ data class CaptureHarnessArgs(
     val sweepFilter: String? = null,
     val showsPanel: Boolean = true,
     val recordsCaptures: Boolean = false,
+    val masks: MaskSource = MaskSource.STORED,
+    val covered: CoveredSource = CoveredSource.COMPONENTS,
 ) {
     companion object {
         const val FRAME_SET: String = "captureFrameSet"
@@ -54,6 +82,8 @@ data class CaptureHarnessArgs(
         const val SWEEP_FILTER: String = "captureSweepFilter"
         const val DEBUG_PANEL: String = "captureDebugPanel"
         const val RECORD_ONLY: String = "captureRecordOnly"
+        const val MASKS: String = "captureMasks"
+        const val COVERED: String = "captureCovered"
 
         fun from(extras: Bundle?): CaptureHarnessArgs {
             if (extras == null) return CaptureHarnessArgs()
@@ -77,6 +107,20 @@ data class CaptureHarnessArgs(
                 sweepFilter = extras.getString(SWEEP_FILTER)?.takeIf { it.isNotBlank() },
                 showsPanel = extras.getString(DEBUG_PANEL) != "0",
                 recordsCaptures = extras.getString(RECORD_ONLY) == "1",
+                masks =
+                    when (extras.getString(MASKS)) {
+                        "live" -> MaskSource.LIVE
+                        "none" -> MaskSource.NONE
+                        else -> MaskSource.STORED
+                    },
+                covered =
+                    if (extras.getString(COVERED) ==
+                        "mlkit"
+                    ) {
+                        CoveredSource.OBJECT_BOXES
+                    } else {
+                        CoveredSource.COMPONENTS
+                    },
             )
         }
     }

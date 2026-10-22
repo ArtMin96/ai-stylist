@@ -20,6 +20,10 @@ data class FrameSegment(
     val jitter: Double,
     val offsets: List<FrameOffset> = emptyList(),
     val tiltDegrees: Double? = null,
+    /** The generator's Vision foreground mask (`frame.mask.png`: 0 background, 255 foreground). */
+    val mask: String? = null,
+    /** Two or more instances only: the label PNG (0 background, 1 the largest, 2 the next, …). */
+    val instances: String? = null,
 )
 
 /** One frame set of `artifacts/capture-camera/frames/index.json` (tools/capture-frames/README.md). */
@@ -89,6 +93,8 @@ class FrameIndex(
                             jitter = segment.optDouble("jitter", 0.0),
                             offsets = parseOffsets(segment),
                             tiltDegrees = segment.optDouble("tiltDegrees").takeUnless { it.isNaN() },
+                            mask = segment.optString("mask").takeIf { it.isNotEmpty() },
+                            instances = segment.optString("instances").takeIf { it.isNotEmpty() },
                         )
                     },
             )

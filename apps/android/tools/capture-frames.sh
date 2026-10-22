@@ -9,12 +9,13 @@
 #       replacing what is there, and grant the camera permission so frame runs never stop on the
 #       system dialog. The Dev build must be installed (it owns that folder).
 #   apps/android/tools/capture-frames.sh pull [out-dir]
-#       copy capture-results.jsonl, capture-results.done (sweep finished) and capture-probe.json
-#       (which detector the harness used) to out-dir (default <repo>/artifacts/capture-camera/android).
+#       copy capture-results.jsonl, capture-results.done (sweep finished), capture-probe.json
+#       (which detector the harness used) and, after a live-mask sweep, capture-segmenter.jsonl
+#       (LiteRT latency and mask IoU per image) to out-dir (default <repo>/artifacts/capture-camera/android).
 #   apps/android/tools/capture-frames.sh sweep [out-dir] [set-id-prefix] [extra am-start args...]
 #       remove old results, launch the sweep (`-e captureSweep 1`, every set or those whose id starts
 #       with the prefix), wait for capture-results.done (up to CAPTURE_SWEEP_TIMEOUT seconds, default
-#       1800), then pull as above. Extra args go to `am start`, e.g. `-e captureBoxes stored`.
+#       1800), then pull as above. Extra args go to `am start`, e.g. `-e captureMasks live`.
 #   apps/android/tools/capture-frames.sh path
 #       print the device folder.
 #
@@ -59,7 +60,7 @@ pull() {
   local out="${1:-$REPO_ROOT/artifacts/capture-camera/android}" adb name pulled=0
   adb="$(adb_bin)"
   mkdir -p "$out"
-  for name in capture-results.jsonl capture-results.done capture-probe.json; do
+  for name in capture-results.jsonl capture-results.done capture-probe.json capture-segmenter.jsonl; do
     if "$adb" shell test -f "$DEVICE_DIR/$name"; then
       "$adb" pull "$DEVICE_DIR/$name" "$out/$name" >/dev/null
       pulled=$((pulled + 1))

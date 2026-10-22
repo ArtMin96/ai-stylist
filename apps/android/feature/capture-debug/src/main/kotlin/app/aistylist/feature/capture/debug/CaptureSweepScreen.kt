@@ -61,6 +61,8 @@ fun CaptureSweepScreen(
                 .put("lines", lines)
                 .put("detector", probe?.boxes?.id)
                 .put("pose", probe?.pose?.id)
+                .put("masks", harness.args.masks.id)
+                .put("covered", harness.args.covered.id)
         harness.files.done.writeText(summary.toString())
         status = "Sweep done: ${sets.size} sets, $lines lines → ${harness.files.results}"
     }

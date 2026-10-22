@@ -39,7 +39,7 @@ class SweepRunner(
         session.cameraReady()
         set.segments.forEachIndexed { segmentIndex, segment ->
             val startMs = now
-            val record = SegmentRecord(set, segmentIndex, startMs, CLOCK, analyzer.boxes, analyzer.pose)
+            val record = SegmentRecord(set, segmentIndex, startMs, CLOCK, analyzer.boxes, analyzer.pose, analyzer.masks)
             records += record
             record.onState(StepState.of(session.snapshot), now)
             val endMs = startMs + playMs(set, segmentIndex, segment.frames, frameMs)
@@ -53,15 +53,10 @@ class SweepRunner(
                     nextTickMs += CaptureRules.Evaluation.INTERVAL_MS
                 }
                 now = frameAt
-                val observation =
-                    analyzer.observe(
-                        segment,
-                        analyzer.offset(segment, frameNumber),
-                        now,
-                        withPose =
-                            set.mode == CaptureMode.WORN,
-                    )
+                val offset = analyzer.offset(segment, frameNumber)
+                val observation = analyzer.observe(segment, offset, now, withPose = set.mode == CaptureMode.WORN)
                 handle(session, session.submit(observation), record, kind, clock)
+                record.onOutline(session.snapshot.outline, analyzer.storedOutline(segment, offset))
                 frameNumber++
             }
             now = endMs

@@ -35,7 +35,7 @@ Galaxy A12, the body-pose models on real bodies, heat or real VoiceOver/TalkBack
 |---|---|---|---|
 | Pure rules + lock state machine | `CaptureModel` target (Features package, no Apple UI imports, builds on Linux) | `:feature:capture`, package `app.aistylist.feature.capture.domain` (pure Kotlin, no Android imports) | `HomeModel` / `:feature:home` |
 | View model | `CaptureModel` (`@Observable`) | `CaptureViewModel` (StateFlow) | same |
-| Screens + camera plumbing | `CaptureFeature` target (SwiftUI, AVFoundation, Vision foreground mask + body pose) | `:feature:capture` (Compose, CameraX, ML Kit ODT + Pose) | same |
+| Screens + camera plumbing | `CaptureFeature` target (SwiftUI, AVFoundation, Vision foreground mask + body pose) | `:feature:capture` (Compose, CameraX, LiteRT garment mask + ML Kit Pose; ML Kit ODT only as the fallback) | same |
 | Debug harness (test frames, screen-reader flag, results log) | `CaptureDebug` target, linked only in the Dev configuration | `:feature:capture-debug`, `debugImplementation` only | the design-system catalog (Dev-only link on iOS, `debugImplementation(project(":core:designsystem-catalog"))` on Android) |
 | Thresholds, timings, hint keys, family ids | generated `CaptureRules.swift` | generated `CaptureRules.kt` | `reason-codes` registry |
 | Entry point | "Add item" button on the Home placeholder, Dev builds only (Q-F) | same | Home debug tools |
@@ -46,14 +46,16 @@ three readers (iOS, Android, the frame generator), so they live in
 the existing kernel generator (`tools/codegen/gen-kernel.mjs`, `just generate`). Wiring needed: the
 Features package depends on the generated `AIStylistKernel` product (no network code in it), and
 `:core:data` already compiles `packages/contracts/gen/kotlin-client/kernel` as a `srcDir`, so
-`:feature:capture` depends on `:core:data` (module-graph rule update). Copy (button labels, hints) is UI text and lives in each app's string resources,
+`:feature:capture` depends on `:core:data` (module-graph rule update). The mask numbers both apps
+share are the `mask` block, and the live-outline numbers are the `outline` block (§17). Copy (button labels, hints) is UI text and lives in each app's string resources,
 byte-identical, keyed by the registry's hint keys.
 
 **Dependencies.** iOS: none new (AVFoundation and Vision are system frameworks). Android, from
 Google Maven, checked 2026-10-22: CameraX (`androidx.camera`, 1.6.2 stable), ML Kit Object Detection
 (`com.google.mlkit:object-detection:17.0.2`, bundled model), and ML Kit Pose Detection, base model
 (`com.google.mlkit:pose-detection:18.0.0-beta5`; beta, no SLA; about +10.1 MB; owner-approved
-2026-10-22, Q-A). No Play-services API. The final report lists every addition with its version.
+2026-10-22, Q-A), and LiteRT (`com.google.ai.edge.litert:litert:1.4.2`) with the U²-Netp model for
+the item mask (owner-approved 2026-10-22, ADR 0013). No Play-services API. The final report lists every addition with its version.
 
 ## 2. Category picker and shape families
 
@@ -85,18 +87,19 @@ P06-T01 registry lands, each registry category gets a `captureFamily` field and 
 ## 3. Live checks: exact starting values
 
 All values are in `capture-rules.json`. Coordinates are normalised to the analysis frame (0–1,
-portrait, origin top-left). "Box" = the item's bounding box: from the Vision mask on iOS, from ML Kit
-on Android.
+portrait, origin top-left). "Box" = the item's bounding box, from the item mask on both apps: the
+Vision foreground instance mask on iOS, the LiteRT segmenter mask split into connected components on
+Android. Only if the Android segmenter cannot load do ML Kit object boxes stand in (doc-10 fallback).
 
 | Check | Rule | Value | Locks? |
 |---|---|---|---|
 | Evaluation rate | The lock machine reads the latest detector result at most once per | 100 ms (10 Hz) | — |
 | Analysis frame | iOS preview-sized video buffers; Android `ImageAnalysis` target | 640 × 480, KEEP_ONLY_LATEST | — |
-| iOS mask cadence | Vision foreground instance mask, newest frame only, one request in flight | every 250 ms | — |
-| Item found | iOS: ≥ 1 foreground instance with area ≥ 0.5 % of the frame. Android: ≥ 1 tracked object | — | yes |
+| Mask cadence | iOS: Vision foreground instance mask. Android: LiteRT segmenter. Newest frame only, one request in flight | every 250 ms; Android every 1000 ms while the phone is hot (`THERMAL_STATUS_MODERATE` or worse) | — |
+| Item found | ≥ 1 mask instance (iOS: foreground instance; Android: mask component) with area ≥ 0.5 % of the frame. Android fallback: ≥ 1 ML Kit object | — | yes |
 | Edge band | Width of the band along each edge | 2 % of that dimension | — |
-| Cut off (iOS) | Mask pixels inside an edge band span more than this share of that edge's length | > 4 % (top edge in hanger mode: > 10 %) | yes |
-| Cut off (Android) | Box edge inside the edge band | any | yes |
+| Cut off | Mask pixels inside an edge band span more than this share of that edge's length | > 4 % (top edge in hanger mode: > 10 %) | yes |
+| Cut off (Android fallback only) | ML Kit box edge inside the edge band | any | yes |
 | Too small | Box area ÷ frame area below the family minimum | `top` 0.20, `long-bottom` 0.15, `short-bottom` 0.12, `one-piece` 0.18, `outerwear` 0.20, `shoes` 0.06, `bag` 0.08, `small-item` 0.015, `generic` 0.08; worn mode, every family: 0.25 | yes |
 | Steady (motion) | Box centre moves less than this between two evaluations, and box area changes less than. The boxes compared come from two different detector results: iOS reuses one mask for about 2.5 evaluations, and a reused mask keeps the verdict of its own comparison (fix 2026-10-22, §17) | Δx, Δy ≤ 0.02; area ≤ 8 % | yes |
 | Steady (sharpness) | Variance of the 3×3 Laplacian on luma inside the box, luma scaled so the long side is 320 px | ≥ 12 | yes |
@@ -104,8 +107,8 @@ on Android.
 | Too dark | Mean luma of the whole frame (0–255) | < 45 | **no**, hint |
 | Too bright | Mean luma, or share of pixels with luma ≥ 250 | > 215, or > 25 % | **no**, hint |
 | Tilt (flat mode only, phones only) | Angle between gravity and the phone's back axis | hint on > 20°, clear at < 15° | **no**, hint |
-| Several items (iOS) | More than one instance, none overlapping the item | — | **no** (Q15; "Which item?" stays post-shot, P06) |
-| Partly covered (C32; flat and hanger, never worn) | Another detected object's box overlaps the item's box by more than this share of the smaller box, and covers at least this share of the frame. iOS: the other Vision foreground instances' boxes; Android: the other ML Kit boxes (multiple objects on) | > 0.5; ≥ 0.005 | yes |
+| Several items | More than one mask instance, none overlapping the item | — | **no** (Q15; "Which item?" stays post-shot, P06) |
+| Partly covered (C32; flat and hanger, never worn) | Another detected object's box overlaps the item's box by more than this share of the smaller box, and covers at least this share of the frame. Both apps: the boxes of the other mask instances (iOS: Vision foreground instances; Android: mask components). Android fallback: the other ML Kit boxes (multiple objects on) | > 0.5; ≥ 0.005 | yes |
 | Category matches pick | — | not checked | **no** (Q15) |
 
 **Worn mode** (Q-A, decided 2026-10-22: (b)): the edge rule is off. Item found, size ≥ 0.25 and
@@ -115,7 +118,7 @@ steady still lock. A body-part check also locks, on both apps. Its values sit in
 | Body check | Rule | Value | Locks? |
 |---|---|---|---|
 | Detector (iOS) | `VNDetectHumanBodyPoseRequest` (built in), same frame and handler as the mask request, newest frame only, one request in flight, worn mode only | every 250 ms | — |
-| Detector (Android) | ML Kit Pose Detection, base model, `STREAM_MODE`, on the same `ImageAnalysis` frame as ODT, one frame in flight, worn mode only | every analysis frame | — |
+| Detector (Android) | ML Kit Pose Detection, base model, `STREAM_MODE`, on the same `ImageAnalysis` frame as the live checks, one frame in flight, worn mode only | every analysis frame | — |
 | Keypoint present (iOS) | Joint `confidence` (0–1) of `VNHumanBodyPoseObservation`, and the point inside the frame minus the edge band (Vision's origin is bottom-left; flip y first) | ≥ 0.3, and 0.02 ≤ x, y ≤ 0.98 | — |
 | Keypoint present (Android) | `PoseLandmark.getInFrameLikelihood()` (0–1), and `getPosition()` inside the frame minus the edge band | ≥ 0.5, and 0.02 ≤ x, y ≤ 0.98 | — |
 | Required parts present | Every required keypoint of the family (below) is present. Left and right both count. No person found = every part missing | per family | yes |
@@ -166,7 +169,7 @@ Pure logic, same in both apps, unit-tested on Linux (`swift test`) and in Robole
   reading a different mask: a passing evaluation that reuses the last counted mask (the phone's mask
   comes every 250 ms, evaluations every 100 ms) holds the streak, so one chance-still mask read three
   times never unlocks (2026-10-22, found with the harness's realistic mask cadence; unlock then takes
-  about 800 ms on the iOS phone cadence).
+  about 800 ms at the phone's 250 ms mask cadence, on both apps).
   Haptic "unlock". Announce "ready".
 - `unlocked`: each passing evaluation advances the ring. The ring is full after **500 ms** of
   passing evaluations (owner, 2026-10-22; was 1000 ms), counted from the unlock, and at least 3
@@ -371,16 +374,14 @@ string is the iOS `accessibilityIdentifier` and the Android `testTag` (resource 
 - **Playback:** 30 frames per second into the detector; each image repeats for its segment's frame
   count (default 180 = 6 s); `jitter` moves each frame by a random offset up to the given share of
   the frame (shaky hands, default 0.06); the last segment loops until the screen closes.
-- **Outlines:** iOS reads the mask PNG stored next to each image (made on the Mac by the same Vision
-  request, `just capture-frames`). Android runs ML Kit live on the emulator if it works there, else
-  reads stored boxes. This Mac is Apple silicon, so the emulator image is arm64 and ML Kit's native
-  code should load; checked in harness step 6.5 and recorded in the scoreboard.
+- **Masks:** both apps read the mask PNG stored next to each image (made on the Mac by the same
+  Vision request, `just capture-frames`) and measure it the same way. A second Android sweep runs the
+  live LiteRT segmenter on every frame image, for information only.
 - **Keypoints (worn frames):** each worn frame has a keypoint JSON next to it
   (`{ "parts": { "leftShoulder": {"x","y","present"}, … } }`, normalised, origin top-left). The frame
   source feeds it as `bodyParts` when the live pose model cannot run. Vision body pose on the iOS
   Simulator and ML Kit Pose on the arm64 emulator are both unverified; harness step 6.5 tries each
-  live model once and the scoreboard records "live" or "keypoint file" per platform. The same
-  fallback as the ML Kit ODT stored boxes.
+  live model once and the scoreboard records "live" or "keypoint file" per platform.
 - **Screen-reader flag:** sets the `screenReaderChanged(true)` input; spoken text goes to
   `cap-debug-spoken-log` (last 3 lines) as well as the platform announcement.
 - **Sweep mode:** plays every good image of a family in a row, 1 s of empty background between
@@ -417,11 +418,11 @@ Where the platforms differ, the expectation is per platform.
 | Case | Class | What the simulator run asserts |
 |---|---|---|
 | C1 T-shirt flat | sim | `top` flat: unlock ≤ 3 s, ring, auto-capture, review |
-| C2 hanger | sim | hanger mode unlocks; a hook touching the top edge up to 10 % still unlocks (both apps measure the mask the same way since the owner's mask decision, 2026-10-22; Android's ML Kit box rule "any top contact locks" is gone) |
+| C2 hanger | sim | hanger mode unlocks; a hook touching the top edge up to 10 % still unlocks, on both apps (both measure the mask the same way, owner's mask decision 2026-10-22) |
 | C3 mirror selfie (worn) | sim (rules on keypoint files); live pose on real bodies device-only | the same frame touching the edges unlocks in worn mode and locks in flat mode. Body check (Q-A b): the whole-body synthetic frame unlocks; each variant missing a required part locks with that family's `cap-hint-body-*`, anyway at 10.0 ± 0.5 s; `generic` worn never shows a body hint |
 | C4 shoes | sim | side-view guide; pair step (Q-D) |
 | C5 small item | sim | `small-item` min 0.015 unlocks a ring-sized item; "Move closer" below it |
-| C6 bag strap | sim | a strap grazing an edge ≤ 4 % unlocks on both apps (mask measure, owner's mask decision 2026-10-22; the former Android box difference is gone) |
+| C6 bag strap | sim | a strap grazing an edge ≤ 4 % unlocks, on both apps (mask measure, owner's mask decision 2026-10-22) |
 | C7 back photo | sim | "Different" → back guide, `cap-step-back`, skip and capture both work |
 | C8 dark on dark | sim (the detector on real fabric: device-only) | two strict sets per base: `dark-on-dark` (true mask) unlocks; `dark-on-dark-weak` (no instance) locks with `no-item` and anyway at 10.0 ± 0.5 s with the surface tip |
 | C9 white on white | sim (as C8) | same as C8: `white-on-white`, `white-on-white-weak` |
@@ -449,7 +450,7 @@ Where the platforms differ, the expectation is per platform.
 | C32 partly covered | sim (rules on ground-truth instances); Vision and ML Kit on real objects device-only | `covered-inside` and `covered-edge`: locked `covered`, `cap-hint-covered`, anyway at 10.0 ± 0.5 s with the covered hint; the `two-items` sets still unlock |
 | tilt | sim (stored `tiltDegrees`); real sensors device-only | `tilt` (25°) unlocks with `cap-hint-tilt`; `tilt-under` (18°) unlocks with `cap-hint-ready` |
 | glare | sim | `overexposed` and `glare-window` unlock with `cap-hint-too-bright`; `glare-spots` unlocks with `cap-hint-ready` |
-| C31 no Google Play | device-only | ML Kit ODT and ML Kit Pose (base) are bundled; no Play Services API is called in v1, and the only Play Services code linked is the `play-services-tasks` library that ML Kit depends on |
+| C31 no Google Play | device-only | LiteRT with the U²-Netp model, ML Kit ODT (fallback) and ML Kit Pose (base) are all bundled in the app; no Play Services API is called in v1, and the only Play Services code linked is the `play-services-tasks` library that ML Kit depends on |
 
 ## 13. Not in v1
 
@@ -532,8 +533,8 @@ Answered by the owner through the question tool on 2026-10-22. These override ea
     (`covered-edge`) of its own box inside the item's box. 0.5 sits halfway, so loose ML Kit boxes of
     two items side by side (the shoe pair step) may overlap by up to half the smaller box before it
     locks, and the generator's margins (over 0.625 on covered sets, under 0.25 elsewhere) hold.
-  - `minOtherBoxAreaShare` 0.005: the iOS item-found minimum (`ios.minInstanceAreaShare`), so a box
-    too small to count as an item on iOS never counts as a covering object either; the covered sets'
+  - `minOtherBoxAreaShare` 0.005: the item-found minimum (`mask.minInstanceAreaShare`), so a box
+    too small to count as an item never counts as a covering object either; the covered sets'
     objects cover at least 4 × that.
   - Feasibility: the Mac's Vision merged the object into the item in 66 of 66 covered composites
     (instance mask); in earlier trials it separated it in 0 of 225 (instance mask) and 0 of 225
@@ -550,17 +551,22 @@ don't care about UI or anything. You can even use native buttons. I need the cor
 working." The `ui-prototype-first` canvas step is deferred by the owner for this change; the design
 rules still apply (below).
 
-**Shared reference.** `tools/capture-frames/parity/outline-parity.json` holds every number below
-(`params`) and expected results for hand-made and real masks, IoU pairs and tracker sequences. Both
-apps' unit tests read it; tolerance 0.005 of the frame per coordinate, never bit equality.
+**Where the numbers live.** Every number below is in `capture-rules.json`: the `outline` block, and
+`mask.intervalMs` for the cadence. `just generate` emits them as `CaptureRules.Outline` and
+`CaptureRules.Mask` for both apps.
+
+**Shared reference.** `tools/capture-frames/parity/outline-parity.json` repeats those numbers
+(`params`) and holds expected results for hand-made and real masks, IoU pairs and tracker sequences.
+Both apps' parity tests check that the generated numbers equal its `params` and that their results
+match; tolerance 0.005 of the frame per coordinate, never bit equality.
 `outline_reference.py` next to it generates and checks it, and its README pins the details the
 tolerance does not absorb (rounding, loop order, ties, IoU).
 
 **Spec.**
 1. **Input:** the item mask at the mask cadence. iOS: the Vision foreground instance mask, every
-   250 ms (`ios.maskIntervalMs`); the largest 3 instances that count as an item (`ios.minInstanceAreaShare`)
-   are traced, largest first. Android: U²-Netp, prob > 0.5, the same cadence; its components are the
-   candidates.
+   250 ms (`mask.intervalMs`); the largest 3 instances that count as an item (`mask.minInstanceAreaShare`)
+   are traced, largest first. Android: U²-Netp, prob > 0.5, the same cadence (every 1000 ms while the
+   phone is hot, `mask.hotIntervalMs`); its components are the candidates.
 2. **Instance hysteresis:** of the candidates, the one with the highest IoU ≥ 0.3 against the drawn
    outline is kept, unless the largest candidate has ≥ 1.5× its area. With none at ≥ 0.3, or no drawn
    outline, the largest wins.
@@ -581,7 +587,7 @@ tolerance does not absorb (rounding, loop order, ties, IoU).
     apart: the centroid is the vertex mean, the shape is the points minus the centroid, and the new
     shape is cyclically shifted to the least summed squared distance to the drawn shape. With
     IoU(new, drawn) ≥ 0.5 the centroid and the shape each take an EMA, α = 0.5. Below 0.5 the outline
-    snaps (no animation): when the two centred shapes have IoU ≥ 0.5 (`snapKeepsShapeAtLeastIou`) the
+    snaps (no animation): when the two centred shapes have IoU ≥ 0.5 (`outline.snapKeepsShapeAtLeastIou`) the
     centroid jumps to the new one and the shape still takes the EMA; otherwise the new outline replaces
     the drawn one. The first item replaces. It clears after 3 consecutive mask updates with no item
     (750 ms; not 3 rule evaluations). IoU everywhere: both polygons rasterised on a 64 × 64 grid over
@@ -604,7 +610,7 @@ tolerance does not absorb (rounding, loop order, ties, IoU).
     outline on its area centroid (shoelace; the vertex mean only for a polygon of area under 1e-9);
     the tracker's blend keeps the vertex mean. Stored-frame flat jitter min 0.9522 → 0.9680, p5 0.9883
     (1935 pairs); the 0.95 bar is unchanged.
-11. **Rate:** at most every 250 ms, one request in flight (the mask's own cadence).
+11. **Rate:** at most every 250 ms, one request in flight (the mask's own cadence; Android 1000 ms while hot).
 12. **Draw:** before an item is found, the faint family guide only (one camera-paper 2 stroke, no
     halo). Then the live outline `cap-outline`, two-tone like the guide was (camera-paper 2 over
     camera-ink 4): dashed while `locked`, solid when `unlocked` (C27). Between masks it moves over one
@@ -615,9 +621,11 @@ tolerance does not absorb (rounding, loop order, ties, IoU).
     `CaptureLiveOutline`, Linux-tested); `CaptureCameraSession` owns the tracker and publishes
     `CaptureCameraOutput.outline`. Android mirrors them in `app.aistylist.feature.capture.domain`.
 
-**Debug harness.** The frame-set camera keeps measuring a fresh mask on every frame for the rules (the
-loop's numbers do not move) and traces the live outline from the stored mask, or `frame.instances.png`,
-moved by the jitter, once per 250 ms of playback. The results log adds per segment:
+**Debug harness.** Sweeps play masks at the 250 ms mask cadence by default (`mask.intervalMs`: the
+Android harness uses it for sweeps, and `just capture-sim` passes it to iOS). `captureMaskCadenceMs`
+overrides it; 0 gives every frame a fresh mask. The rules and the live outline read the newest mask
+and reuse it in between. The outline is traced from the stored mask, or `frame.instances.png`, moved
+by the jitter. The results log adds per segment:
 `outlineFirstMs`, `outlinePresentAtEnd`, `outlineUpdates`, `outlineSnaps`, `outlineIouMedian`,
 `outlineIouMin` (drawn outline against the stored item mask it was traced from, as stored: an item
 with a hole, such as a bag handle or a covered item, scores lower because the outline fills holes), and

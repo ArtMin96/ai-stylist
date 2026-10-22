@@ -59,7 +59,7 @@ enum JitterPath {
         // cadence, consecutive masks (one mask interval apart); each may land one frame late. Only those
         // distances are constrained: every distance up to the longest one leaves some seeds no offset.
         let distances = Set(
-            [rules.evaluation.intervalMs, rules.ios.maskIntervalMs].flatMap { intervalMs -> ClosedRange<Int> in
+            [rules.evaluation.intervalMs, rules.mask.intervalMs].flatMap { intervalMs -> ClosedRange<Int> in
                 let frames = Double(intervalMs) / frameMs
                 return Int(frames.rounded(.down))...(Int(frames.rounded(.up)) + 1)
             }

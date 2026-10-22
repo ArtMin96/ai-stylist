@@ -7,7 +7,7 @@ import {
   captureHintKinds,
   docText,
   int,
-  isIntKey,
+  integerKeys,
   isNumberBlock,
   num,
   pascal,
@@ -49,7 +49,7 @@ const describe = {
   value: (c) => swiftStr(c.def.description),
 };
 
-export function emitSwift(reg) {
+export function emitSwift(reg, { schemas }) {
   const rc = reg['reason-codes'];
   const ent = reg.entitlements;
   const units = reg.units;
@@ -295,16 +295,19 @@ export function emitSwift(reg) {
     '',
   ].join('\n');
 
-  out['CaptureRules.swift'] = emitCaptureRules(reg['capture-rules']);
+  out['CaptureRules.swift'] = emitCaptureRules(
+    reg['capture-rules'],
+    integerKeys(schemas['capture-rules']),
+  );
   return out;
 }
 
 const hintCase = (key) => camel(stripCapHint(key));
 const optional = (value, render) => (value === undefined ? 'nil' : render(value));
-const captureConstant = (k, v) =>
-  `public static let ${swiftIdent(k)}: ${isIntKey(k) ? `Int = ${v}` : `Double = ${num(v)}`}`;
+const captureConstant = (path, k, v, intKeys) =>
+  `public static let ${swiftIdent(k)}: ${intKeys.has(path) ? `Int = ${int(v)}` : `Double = ${num(v)}`}`;
 
-function emitCaptureRules(cr) {
+function emitCaptureRules(cr, intKeys) {
   return [
     banner('capture-rules'),
     swiftEnum({
@@ -387,13 +390,15 @@ function emitCaptureRules(cr) {
     'public enum CaptureRules {',
     ...Object.entries(cr)
       .filter(([, v]) => typeof v === 'number')
-      .map(([k, v]) => `  ${captureConstant(k, v)}`),
+      .map(([k, v]) => `  ${captureConstant(k, k, v, intKeys)}`),
     ...Object.entries(cr)
       .filter(([, v]) => isNumberBlock(v))
       .flatMap(([block, values]) => [
         '',
         `  public enum ${pascal(block)} {`,
-        ...Object.entries(values).map(([k, v]) => `    ${captureConstant(k, v)}`),
+        ...Object.entries(values).map(
+          ([k, v]) => `    ${captureConstant(`${block}.${k}`, k, v, intKeys)}`,
+        ),
         '  }',
       ]),
     '}',

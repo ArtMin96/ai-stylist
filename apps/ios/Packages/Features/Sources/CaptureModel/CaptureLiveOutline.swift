@@ -9,7 +9,7 @@ import AIStylistKernel
 nonisolated public struct CaptureOutlineCandidate: Equatable, Sendable {
   /// The item's mask pixels ÷ frame pixels (hysteresis compares these).
   public let areaShare: Double
-  /// `CaptureOutlineSpec.pointCount` points, normalised to the frame, clockwise on screen.
+  /// `CaptureRules.Outline.pointCount` points, normalised to the frame, clockwise on screen.
   public let points: [CaptureOutlinePoint]
 
   public init(areaShare: Double, points: [CaptureOutlinePoint]) {
@@ -36,13 +36,13 @@ nonisolated public struct CaptureMaskOutlines: Equatable, Sendable {
     self.init(maskTimestampMs: maskTimestampMs, candidates: Self.candidates(labels: labels, instances: instances))
   }
 
-  /// The outlines of a label image's instances that count as an item (`CaptureRules.Ios.minInstanceAreaShare`),
+  /// The outlines of a label image's instances that count as an item (`CaptureRules.Mask.minInstanceAreaShare`),
   /// the largest `maxCandidates` of them, which bounds the work per mask. `instances` largest first, as
   /// `CaptureInstanceLabels.instances(in:)` lists them.
   public static func candidates(labels: CaptureGrayImage, instances: [CaptureInstance]) -> [CaptureOutlineCandidate] {
     let frameArea = Double(labels.width * labels.height)
     return instances.prefix(maxCandidates)
-      .filter { Double($0.pixelCount) / frameArea >= CaptureRules.Ios.minInstanceAreaShare }
+      .filter { Double($0.pixelCount) / frameArea >= CaptureRules.Mask.minInstanceAreaShare }
       .compactMap { instance in
         CaptureOutlineContour.outline(of: instance, in: labels).map {
           CaptureOutlineCandidate(areaShare: Double(instance.pixelCount) / frameArea, points: $0)
@@ -95,7 +95,7 @@ nonisolated public struct CaptureLiveOutline: Sendable {
   mutating func update(_ candidates: [CaptureOutlineCandidate]) {
     guard let largest = candidates.first else {
       missedUpdates += 1
-      if missedUpdates >= CaptureOutlineSpec.clearAfterMissedUpdates { state = nil }
+      if missedUpdates >= CaptureRules.Outline.clearAfterMissedUpdates { state = nil }
       return
     }
     missedUpdates = 0
@@ -106,17 +106,17 @@ nonisolated public struct CaptureLiveOutline: Sendable {
     let chosen = Self.choose(candidates, largest: largest, drawn: drawn).points
     // Position and shape blend apart, so a moving item keeps its shape: centroid = vertex mean, shape = the
     // points around it, the new shape cyclically aligned to the drawn shape.
-    let alpha = CaptureOutlineSpec.emaAlpha
+    let alpha = CaptureRules.Outline.emaAlpha
     let new = Shape(chosen)
     let old = Shape(drawn)
     let shape = CaptureOutlineGeometry.aligned(new.points, to: old.points)
     var centre = new.centroid
-    if CaptureOutlineGeometry.intersectionOverUnion(chosen, drawn) >= CaptureOutlineSpec.snapBelowIou {
+    if CaptureOutlineGeometry.intersectionOverUnion(chosen, drawn) >= CaptureRules.Outline.snapBelowIou {
       centre = CaptureOutlinePoint(
         x: alpha * new.centroid.x + (1 - alpha) * old.centroid.x,
         y: alpha * new.centroid.y + (1 - alpha) * old.centroid.y)
     } else if CaptureOutlineGeometry.intersectionOverUnion(shape, old.points)
-      < CaptureOutlineSpec.snapKeepsShapeAtLeastIou
+      < CaptureRules.Outline.snapKeepsShapeAtLeastIou
     {
       snap(to: chosen)  // another shape: replaced
       return
@@ -160,12 +160,12 @@ nonisolated public struct CaptureLiveOutline: Sendable {
     var keptIou = -1.0
     for candidate in candidates {
       let overlap = CaptureOutlineGeometry.intersectionOverUnion(candidate.points, drawn)
-      if overlap >= CaptureOutlineSpec.keepAtLeastIou && overlap > keptIou {
+      if overlap >= CaptureRules.Outline.keepAtLeastIou && overlap > keptIou {
         kept = candidate
         keptIou = overlap
       }
     }
-    guard let kept, largest.areaShare < CaptureOutlineSpec.switchAtAreaRatio * kept.areaShare else {
+    guard let kept, largest.areaShare < CaptureRules.Outline.switchAtAreaRatio * kept.areaShare else {
       return largest
     }
     return kept
@@ -181,7 +181,7 @@ nonisolated public enum CaptureOutlineGeometry {
     guard let minX = all.map(\.x).min(), let maxX = all.map(\.x).max(), let minY = all.map(\.y).min(),
       let maxY = all.map(\.y).max(), maxX > minX, maxY > minY
     else { return 0 }
-    let cells = CaptureOutlineSpec.iouGridCells
+    let cells = CaptureRules.Outline.iouGridCells
     let cellWidth = (maxX - minX) / Double(cells)
     let cellHeight = (maxY - minY) / Double(cells)
     var intersection = 0

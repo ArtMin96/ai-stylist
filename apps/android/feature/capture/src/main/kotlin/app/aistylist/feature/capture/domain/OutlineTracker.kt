@@ -1,5 +1,7 @@
 package app.aistylist.feature.capture.domain
 
+import app.aistylist.contracts.kernel.CaptureRules
+
 /** One instance the outline may follow: its mask area share and its traced polygon. */
 data class OutlineCandidate(
     val areaShare: Double,
@@ -37,7 +39,7 @@ data class OutlineTracker(
         if (candidates.isEmpty()) {
             val missed = missedUpdates + 1
             return copy(
-                drawn = drawn.takeIf { missed < OutlineSpec.CLEAR_AFTER_MISSED_UPDATES },
+                drawn = drawn.takeIf { missed < CaptureRules.Outline.CLEAR_AFTER_MISSED_UPDATES },
                 missedUpdates = missed,
             )
         }
@@ -48,12 +50,12 @@ data class OutlineTracker(
         val (newCentre, newShape) = split(next)
         val (oldCentre, oldShape) = split(current)
         val shape = alignedTo(newShape, oldShape)
-        val isSnap = polygonIou(next, current) < OutlineSpec.SNAP_BELOW_IOU
+        val isSnap = polygonIou(next, current) < CaptureRules.Outline.SNAP_BELOW_IOU
         // A snap to another shape replaces the outline; a snap to the same shape moved far only jumps.
-        if (isSnap && polygonIou(shape, oldShape) < OutlineSpec.SNAP_KEEPS_SHAPE_AT_LEAST_IOU) {
+        if (isSnap && polygonIou(shape, oldShape) < CaptureRules.Outline.SNAP_KEEPS_SHAPE_AT_LEAST_IOU) {
             return OutlineTracker(next, snapCount = snapCount + 1)
         }
-        val alpha = OutlineSpec.EMA_ALPHA
+        val alpha = CaptureRules.Outline.EMA_ALPHA
         val centre = if (isSnap) newCentre else blend(newCentre, oldCentre, alpha)
         val blended = shape.zip(oldShape) { new, old -> NormalizedPoint(centre.x, centre.y) + blend(new, old, alpha) }
         return OutlineTracker(blended, snapCount = if (isSnap) snapCount + 1 else snapCount)
@@ -69,13 +71,13 @@ data class OutlineTracker(
         var keptIou = -1.0
         for (candidate in candidates) {
             val iou = polygonIou(candidate.points, current)
-            if (iou >= OutlineSpec.KEEP_AT_LEAST_IOU && iou > keptIou) {
+            if (iou >= CaptureRules.Outline.KEEP_AT_LEAST_IOU && iou > keptIou) {
                 kept = candidate
                 keptIou = iou
             }
         }
         return if (kept == null ||
-            largest.areaShare >= OutlineSpec.SWITCH_AT_AREA_RATIO * kept.areaShare
+            largest.areaShare >= CaptureRules.Outline.SWITCH_AT_AREA_RATIO * kept.areaShare
         ) {
             largest
         } else {

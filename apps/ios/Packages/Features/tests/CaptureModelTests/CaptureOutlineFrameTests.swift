@@ -159,7 +159,7 @@
     var lastMs: Int?
     for frame in 0..<345 {
       let timeMs = Int((Double(frame) * 1000 / 30).rounded())
-      if lastMs.map({ timeMs - $0 >= CaptureRules.Ios.maskIntervalMs }) ?? true {
+      if lastMs.map({ timeMs - $0 >= CaptureRules.Mask.intervalMs }) ?? true {
         frames.append(frame)
         lastMs = timeMs
       }
@@ -174,7 +174,7 @@
       let candidates = CaptureOutlineContour.outline(of: mask).map {
         [CaptureOutlineCandidate(areaShare: 0, points: $0)]
       }
-      outline.observe(maskTimestampMs: update * CaptureRules.Ios.maskIntervalMs, candidates: candidates ?? [])
+      outline.observe(maskTimestampMs: update * CaptureRules.Mask.intervalMs, candidates: candidates ?? [])
       return outline.state?.points
     }
   }
@@ -306,7 +306,7 @@
         outline.observe(maskTimestampMs: 0, candidates: candidates)
         var traced = [tracedItem(outline)]
         for update in 1...3 {
-          outline.observe(maskTimestampMs: update * CaptureRules.Ios.maskIntervalMs, candidates: candidates.reversed())
+          outline.observe(maskTimestampMs: update * CaptureRules.Mask.intervalMs, candidates: candidates.reversed())
           traced.append(tracedItem(outline))
         }
         return traced

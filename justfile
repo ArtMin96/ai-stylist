@@ -529,6 +529,10 @@ capture-sim-android:
 capture-sim:
     bash tools/capture-frames/capture-sim.sh all
 
+# The capture camera Managed Agent on this Mac (needs ant + `ant auth login` once): syncs the agent (tools/managed-agents/), starts the self-hosted worker, opens a session capped at what is left of the owner's $197 total and attaches the terminal; `stop` stops the worker; an optional file replaces the default kickoff message
+capture-agent action="start" message="":
+    bash tools/managed-agents/capture-agent.sh {{action}} {{message}}
+
 # --- database (drizzle-kit; expand–contract) ----------------------------------------
 
 # Generate a Drizzle migration from packages/db schema changes, named <name> (drizzle-kit generate --name); prints a reminder that packages/db/migrations/down/<idx>.sql is required by db-rollback

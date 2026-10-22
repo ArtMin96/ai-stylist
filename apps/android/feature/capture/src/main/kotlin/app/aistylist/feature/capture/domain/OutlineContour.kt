@@ -1,31 +1,16 @@
 package app.aistylist.feature.capture.domain
 
+import app.aistylist.contracts.kernel.CaptureRules
 import kotlin.math.abs
 import kotlin.math.max
 import kotlin.math.min
 import kotlin.math.sqrt
 
-/**
- * The live outline's numbers (capture brief "Live outline"). They equal the `params` of the shared
- * parity fixture `tools/capture-frames/parity/outline-parity.json`, which the unit test asserts,
- * until the registry gets an `outline` block.
- */
-object OutlineSpec {
-    const val CROP_GROW_DIVISOR: Int = 8
-    const val CROP_GROW_MIN_PX: Int = 2
-    const val LONG_SIDE_PX: Int = 64
-    const val FOREGROUND_AT_LEAST: Double = 0.5
-    const val EPSILON_PX: Double = 0.5
-    const val POINT_COUNT: Int = 64
-    const val KEEP_AT_LEAST_IOU: Double = 0.3
-    const val SWITCH_AT_AREA_RATIO: Double = 1.5
-    const val SNAP_BELOW_IOU: Double = 0.5
-    const val SNAP_KEEPS_SHAPE_AT_LEAST_IOU: Double = 0.5
-    const val EMA_ALPHA: Double = 0.5
-    const val CLEAR_AFTER_MISSED_UPDATES: Int = 3
-    const val IOU_GRID_CELLS: Int = 64
-    const val MIN_OUTLINE_SIZE_PX: Int = 3
-}
+// The live outline's numbers (capture brief "Live outline") come from the generated
+// `CaptureRules.Outline`; the parity test holds them to the fixture's `params`.
+
+/** Fewest points (and downscaled pixels per side) an outline needs; not a parity value. */
+private const val MIN_OUTLINE_SIZE_PX: Int = 3
 
 /** A traced outline: [points] normalised to the frame, clockwise on screen, and the vertex count after simplifying. */
 data class OutlineTrace(
@@ -47,7 +32,7 @@ fun traceOutline(
     mask: BooleanArray,
 ): OutlineTrace? {
     val crop = foregroundCrop(width, height, mask) ?: return null
-    val soft = downscale(crop, OutlineSpec.LONG_SIDE_PX)
+    val soft = downscale(crop, CaptureRules.Outline.LONG_SIDE_PX)
     val component = largestComponent(soft) ?: return null
     val loops = marchingSquares(paddedField(soft, component))
     if (loops.isEmpty()) return null
@@ -56,10 +41,10 @@ fun traceOutline(
         if (abs(signedArea(candidate)) > abs(signedArea(loop))) loop = candidate
     }
     if (signedArea(loop) < 0) loop = loop.reversed()
-    var simple = douglasPeuckerClosed(loop, OutlineSpec.EPSILON_PX)
-    if (simple.size < OutlineSpec.MIN_OUTLINE_SIZE_PX || abs(signedArea(simple)) < AREA_EPSILON) simple = loop
+    var simple = douglasPeuckerClosed(loop, CaptureRules.Outline.EPSILON_PX)
+    if (simple.size < MIN_OUTLINE_SIZE_PX || abs(signedArea(simple)) < AREA_EPSILON) simple = loop
     val points =
-        resample(simple, OutlineSpec.POINT_COUNT).map { (x, y) ->
+        resample(simple, CaptureRules.Outline.POINT_COUNT).map { (x, y) ->
             NormalizedPoint(
                 x = (crop.x0 + (x - 1 + HALF) / soft.width * crop.width) / width,
                 y = (crop.y0 + (y - 1 + HALF) / soft.height * crop.height) / height,
@@ -116,7 +101,7 @@ fun polygonIou(
     val minY = all.minOf { it.y }
     val maxY = all.maxOf { it.y }
     if (maxX <= minX || maxY <= minY) return 0.0
-    val grid = OutlineSpec.IOU_GRID_CELLS
+    val grid = CaptureRules.Outline.IOU_GRID_CELLS
     val cellWidth = (maxX - minX) / grid
     val cellHeight = (maxY - minY) / grid
     var intersection = 0
@@ -246,7 +231,7 @@ private fun foregroundCrop(
     }
     if (maxX < 0) return null
     val longSide = max(maxX + 1 - minX, maxY + 1 - minY)
-    val pad = max(OutlineSpec.CROP_GROW_MIN_PX, longSide / OutlineSpec.CROP_GROW_DIVISOR)
+    val pad = max(CaptureRules.Outline.CROP_GROW_MIN_PX, longSide / CaptureRules.Outline.CROP_GROW_DIVISOR)
     val x0 = max(0, minX - pad)
     val y0 = max(0, minY - pad)
     val x1 = min(width, maxX + 1 + pad)
@@ -280,8 +265,8 @@ private fun downscale(
     val w = crop.width
     val h = crop.height
     val longest = max(w, h).toLong()
-    val outHeight = max(OutlineSpec.MIN_OUTLINE_SIZE_PX, roundHalfEven(h.toLong() * longSide, longest).toInt())
-    val outWidth = max(OutlineSpec.MIN_OUTLINE_SIZE_PX, roundHalfEven(w.toLong() * longSide, longest).toInt())
+    val outHeight = max(MIN_OUTLINE_SIZE_PX, roundHalfEven(h.toLong() * longSide, longest).toInt())
+    val outWidth = max(MIN_OUTLINE_SIZE_PX, roundHalfEven(w.toLong() * longSide, longest).toInt())
     val integral = IntArray((w + 1) * (h + 1))
     for (y in 0 until h) {
         var row = 0
@@ -317,7 +302,7 @@ private fun downscale(
 
 /** The largest 8-connected component of the grid's foreground (ties: the first found in row-major order). */
 private fun largestComponent(soft: SoftGrid): BooleanArray? {
-    val foreground = BooleanArray(soft.values.size) { soft.values[it] >= OutlineSpec.FOREGROUND_AT_LEAST }
+    val foreground = BooleanArray(soft.values.size) { soft.values[it] >= CaptureRules.Outline.FOREGROUND_AT_LEAST }
     val components = ConnectedComponents.of(soft.width, soft.height, foreground)
     var best = 0
     components.sizes.forEachIndexed { index, size ->
@@ -433,7 +418,7 @@ private class EdgeGraph(
                 previous = edge
                 edge = next
             }
-            if (loop.size >= OutlineSpec.MIN_OUTLINE_SIZE_PX) loops += loop
+            if (loop.size >= MIN_OUTLINE_SIZE_PX) loops += loop
         }
         return loops
     }
@@ -505,7 +490,7 @@ private fun douglasPeucker(
     points: List<GridPoint>,
     epsilon: Double,
 ): List<GridPoint> {
-    if (points.size < OutlineSpec.MIN_OUTLINE_SIZE_PX) return points
+    if (points.size < MIN_OUTLINE_SIZE_PX) return points
     val a = points.first()
     val b = points.last()
     val dx = b.first - a.first
@@ -610,10 +595,10 @@ private fun rowCells(
         if ((a.y > y) != (b.y > y)) crossings += a.x + (y - a.y) / (b.y - a.y) * (b.x - a.x)
     }
     crossings.sort()
-    val inside = BooleanArray(OutlineSpec.IOU_GRID_CELLS)
+    val inside = BooleanArray(CaptureRules.Outline.IOU_GRID_CELLS)
     var k = 0
     while (k + 1 < crossings.size) {
-        for (cell in 0 until OutlineSpec.IOU_GRID_CELLS) {
+        for (cell in 0 until CaptureRules.Outline.IOU_GRID_CELLS) {
             val x = minX + (cell + HALF) * cellWidth
             if (crossings[k] <= x && x < crossings[k + 1]) inside[cell] = true
         }

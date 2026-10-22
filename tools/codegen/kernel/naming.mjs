@@ -56,8 +56,23 @@ export const docText = (s) => assertPrintable(s).replace(/\*\//g, '* /');
 /** `cap-hint-cut-off-top` -> `cut-off-top` (capture hint ids share the `cap-hint-` prefix). */
 export const stripCapHint = (s) => s.replace(/^cap-hint-/, '');
 
-/** capture-rules keys ending in Ms, Px or Evaluations are integers (the schema types them so). */
-export const isIntKey = (k) => /(Ms|Px|Evaluations)$/.test(k);
+/**
+ * The capture-rules number paths (`edgeBandShare`, `lock.ringFillMs`) its schema types `integer`,
+ * following `$ref`s into its `$defs`: Int in Swift and Kotlin, every other number a Double.
+ */
+export function integerKeys(schema) {
+  const resolve = (def) =>
+    def?.$ref ? resolve(schema.$defs[def.$ref.replace('#/$defs/', '')]) : (def ?? {});
+  const keys = new Set();
+  for (const [key, prop] of Object.entries(schema.properties)) {
+    const def = resolve(prop);
+    if (def.type === 'integer') keys.add(key);
+    for (const [sub, subProp] of Object.entries(def.properties ?? {})) {
+      if (resolve(subProp).type === 'integer') keys.add(`${key}.${sub}`);
+    }
+  }
+  return keys;
+}
 
 /** A capture-rules block of plain numbers (emitted as a nested namespace of constants). */
 export const isNumberBlock = (v) =>

@@ -13,23 +13,23 @@ struct CaptureOutlineParityTests {
     fixture = try OutlineParityFixture.load()
   }
 
-  @Test("every spec number equals the fixture's params")
+  @Test("the generated mask cadence and outline numbers equal the fixture's params")
   func paramsMatch() {
     let expected = OutlineParityFixture.Params(
-      maskIntervalMs: CaptureRules.Ios.maskIntervalMs,
-      cropGrowDivisor: CaptureOutlineSpec.cropGrowDivisor,
-      cropGrowMinPx: CaptureOutlineSpec.cropGrowMinPx,
-      longSidePx: CaptureOutlineSpec.longSidePx,
-      foregroundAtLeast: CaptureOutlineSpec.foregroundAtLeast,
-      epsilonPx: CaptureOutlineSpec.epsilonPx,
-      pointCount: CaptureOutlineSpec.pointCount,
-      keepAtLeastIou: CaptureOutlineSpec.keepAtLeastIou,
-      switchAtAreaRatio: CaptureOutlineSpec.switchAtAreaRatio,
-      snapBelowIou: CaptureOutlineSpec.snapBelowIou,
-      snapKeepsShapeAtLeastIou: CaptureOutlineSpec.snapKeepsShapeAtLeastIou,
-      emaAlpha: CaptureOutlineSpec.emaAlpha,
-      clearAfterMissedUpdates: CaptureOutlineSpec.clearAfterMissedUpdates,
-      iouGridCells: CaptureOutlineSpec.iouGridCells
+      maskIntervalMs: CaptureRules.Mask.intervalMs,
+      cropGrowDivisor: CaptureRules.Outline.cropGrowDivisor,
+      cropGrowMinPx: CaptureRules.Outline.cropGrowMinPx,
+      longSidePx: CaptureRules.Outline.longSidePx,
+      foregroundAtLeast: CaptureRules.Outline.foregroundAtLeast,
+      epsilonPx: CaptureRules.Outline.epsilonPx,
+      pointCount: CaptureRules.Outline.pointCount,
+      keepAtLeastIou: CaptureRules.Outline.keepAtLeastIou,
+      switchAtAreaRatio: CaptureRules.Outline.switchAtAreaRatio,
+      snapBelowIou: CaptureRules.Outline.snapBelowIou,
+      snapKeepsShapeAtLeastIou: CaptureRules.Outline.snapKeepsShapeAtLeastIou,
+      emaAlpha: CaptureRules.Outline.emaAlpha,
+      clearAfterMissedUpdates: CaptureRules.Outline.clearAfterMissedUpdates,
+      iouGridCells: CaptureRules.Outline.iouGridCells
     )
     #expect(fixture.params == expected)
     #expect(fixture.tolerance <= 0.005)

@@ -148,7 +148,7 @@ struct CaptureSessionUnlockTests {
 
   @Test("C2: hanger mode unlocks with the hook touching the top edge up to its limit")
   func hangerHook() {
-    let hook = frame(item: item(contact: EdgeContact(top: CaptureRules.Ios.hangerTopCutOffAboveEdgeContactShare)))
+    let hook = frame(item: item(contact: EdgeContact(top: CaptureRules.Mask.hangerTopCutOffAboveEdgeContactShare)))
     var driver = SessionDriver(CaptureCameraSetup(family: .top, mode: .hanger))
     driver.unlock(with: hook)
     #expect(driver.isUnlocked)
@@ -235,7 +235,7 @@ struct CaptureSessionAnywayTests {
 
   @Test("C11: a coat cut off at several edges: anyway with 'Try hanger mode'")
   func coatTooBig() {
-    let over = CaptureRules.Ios.cutOffAboveEdgeContactShare * 2
+    let over = CaptureRules.Mask.cutOffAboveEdgeContactShare * 2
     let coat = frame(item: item(contact: EdgeContact(top: over, bottom: over)))
     var driver = SessionDriver(CaptureCameraSetup(family: .outerwear, mode: .flat))
     driver.feed(coat, until: anywayMs + stepMs)
@@ -245,7 +245,7 @@ struct CaptureSessionAnywayTests {
 
   @Test("cut off in a family without hanger mode gives the hint itself as the reason")
   func cutOffWithoutHanger() {
-    let shoe = frame(item: item(contact: EdgeContact(left: CaptureRules.Ios.cutOffAboveEdgeContactShare * 2)))
+    let shoe = frame(item: item(contact: EdgeContact(left: CaptureRules.Mask.cutOffAboveEdgeContactShare * 2)))
     var driver = SessionDriver(CaptureCameraSetup(family: .shoes, mode: .flat))
     driver.feed(shoe, until: anywayMs + stepMs)
     #expect(driver.output.anywayReason == .hint(.cutOffLeft))

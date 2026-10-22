@@ -80,7 +80,7 @@ nonisolated public enum CaptureEdge: CaseIterable, Hashable, Sendable {
 nonisolated public struct CaptureItemObservation: Equatable, Sendable {
   /// Bounding box of the item's mask.
   public let box: NormalizedRect
-  /// Mask pixels of that instance ÷ frame pixels ("item found" needs `CaptureRules.Ios.minInstanceAreaShare`).
+  /// Mask pixels of that instance ÷ frame pixels ("item found" needs `CaptureRules.Mask.minInstanceAreaShare`).
   public let maskAreaShare: Double
   public let edgeContact: EdgeContact
   /// Foreground instances in the frame. Several separate items never lock (Q15); kept for the results log.
@@ -150,7 +150,7 @@ nonisolated public struct CaptureObservation: Equatable, Sendable {
   /// Frame time in milliseconds, for the results log; the rules time everything with the injected clock.
   public let timestampMs: Int
   /// Frame time of the detector result `item` comes from. The live iOS camera runs the mask every
-  /// `CaptureRules.Ios.maskIntervalMs` and reuses it in between, so several observations share one; the
+  /// `CaptureRules.Mask.intervalMs` and reuses it in between, so several observations share one; the
   /// steady check compares boxes only across different masks. Nil: a new detector result on every
   /// observation.
   public let maskTimestampMs: Int?

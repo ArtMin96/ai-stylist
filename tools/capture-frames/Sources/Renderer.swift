@@ -195,7 +195,7 @@ struct Renderer {
                     do {
                         let frame = try judged("two-items", image: image, intent: intent, judge: judge)
                         let items = frame.measure.instances.filter {
-                            $0.maskAreaShare >= rules.ios.minInstanceAreaShare
+                            $0.maskAreaShare >= rules.mask.minInstanceAreaShare
                         }
                         guard items.count >= 2 else {
                             throw Rejection("two-items: Vision finds \(items.count) item instance(s), not 2")
@@ -265,7 +265,7 @@ struct Renderer {
     func tooSmallFound(of base: Cutout, family: String) throws -> RenderedFrame {
         let judge = Judge(rules: rules, family: family, mode: try rules.mode("flat"))
         let minimum = try rules.family(family).minAreaShare
-        let low = rules.ios.minInstanceAreaShare * Layout.sizePassFactor / base.coverage
+        let low = rules.mask.minInstanceAreaShare * Layout.sizePassFactor / base.coverage
         let high = minimum * Layout.sizeFailFactor
         guard low < high else {
             throw Rejection("too-small-found: no box between the iOS item-found floor and the family minimum")
@@ -447,7 +447,7 @@ struct Renderer {
     func emptyFrame() throws -> (image: CGImage, measure: FrameMeasure) {
         let image = try compose([])
         let measure = try FrameMeasure.of(image, rules: rules)
-        guard (measure.main?.maskAreaShare ?? 0) < rules.ios.minInstanceAreaShare else {
+        guard (measure.main?.maskAreaShare ?? 0) < rules.mask.minInstanceAreaShare else {
             throw GeneratorError("Vision finds an item in the plain background; change Renderer.backgroundContext")
         }
         return (image, measure)

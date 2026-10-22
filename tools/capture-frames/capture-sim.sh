@@ -139,9 +139,9 @@ ios_udid() {
   ' || die "capture-sim: no iPhone 18 Pro simulator; create one (Xcode > Settings > Components) or set IOS_SIMULATOR_ID"
 }
 
-# The phone's Vision mask cadence (capture-rules.json ios.maskIntervalMs): iOS sweeps play masks at it.
+# The phone's mask cadence (capture-rules.json mask.intervalMs): iOS sweeps play masks at it.
 ios_mask_cadence_ms() {
-  node -e 'process.stdout.write(String(require(process.argv[1]).ios.maskIntervalMs))' \
+  node -e 'process.stdout.write(String(require(process.argv[1]).mask.intervalMs))' \
     "$REPO_ROOT/packages/shared-kernel/registry/capture-rules.json"
 }
 

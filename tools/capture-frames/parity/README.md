@@ -18,7 +18,10 @@ pnpm exec prettier --write tools/capture-frames/parity/outline-parity.json
 
 ## What the JSON holds
 
-- `params`: every number of the spec. Each platform's test asserts that its constants equal these.
+- `params`: every number of the spec. They live in `packages/shared-kernel/registry/capture-rules.json`
+  (the `outline` block, and `mask.intervalMs` for `maskIntervalMs`), which `just generate` emits as
+  `CaptureRules` for both apps. Each platform's parity test asserts that the generated values equal
+  these. `outline_reference.py` keeps its own copy in `PARAMS`; the parity tests catch a drift.
 - `tolerance`: 0.005 of the frame, per point and per coordinate. Never bit equality.
 - `contour`: masks as `rows` (`#` is foreground) with `width` and `height`, and the `expected`
   64-point polygon (normalised 0–1, origin top-left, clockwise on screen), or `null` for no outline.

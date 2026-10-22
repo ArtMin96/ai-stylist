@@ -20,7 +20,7 @@ struct CaptureItemRuleTests {
 
   @Test("an instance below the minimum mask area counts as no item; at the minimum it is found")
   func minimumInstanceArea() {
-    let minimum = CaptureRules.Ios.minInstanceAreaShare
+    let minimum = CaptureRules.Mask.minInstanceAreaShare
     let below = steadyVerdict(frame(item: item(maskAreaShare: minimum - nudge / 10)), context: topFlat)
     let atMinimum = steadyVerdict(frame(item: item(maskAreaShare: minimum)), context: topFlat)
     #expect(below.blockingHints == [.noItem])
@@ -44,7 +44,7 @@ struct CaptureItemRuleTests {
 
   @Test("cut off: contact just above the limit locks with that edge's hint", arguments: CaptureEdge.allCases)
   func cutOffEachEdge(_ edge: CaptureEdge) {
-    let over = CaptureRules.Ios.cutOffAboveEdgeContactShare + nudge
+    let over = CaptureRules.Mask.cutOffAboveEdgeContactShare + nudge
     let verdict = steadyVerdict(frame(item: item(contact: contact(edge, over))), context: topFlat)
     #expect(verdict.blockingHints == [hint(for: edge)])
     #expect(verdict.lockReason == .cutOff)
@@ -52,14 +52,14 @@ struct CaptureItemRuleTests {
 
   @Test("cut off: contact at or just below the limit passes", arguments: CaptureEdge.allCases)
   func cutOffAtLimitPasses(_ edge: CaptureEdge) {
-    let limit = CaptureRules.Ios.cutOffAboveEdgeContactShare
+    let limit = CaptureRules.Mask.cutOffAboveEdgeContactShare
     #expect(steadyVerdict(frame(item: item(contact: contact(edge, limit))), context: topFlat).passes)
     #expect(steadyVerdict(frame(item: item(contact: contact(edge, limit - nudge))), context: topFlat).passes)
   }
 
   @Test("cut off at two or more edges shows the multiple-edges hint")
   func cutOffMultiple() {
-    let over = CaptureRules.Ios.cutOffAboveEdgeContactShare + nudge
+    let over = CaptureRules.Mask.cutOffAboveEdgeContactShare + nudge
     let verdict = steadyVerdict(frame(item: item(contact: EdgeContact(left: over, right: over))), context: topFlat)
     #expect(verdict.blockingHints == [.cutOffMultiple])
   }
@@ -67,7 +67,7 @@ struct CaptureItemRuleTests {
   @Test("hanger mode: the hook may touch the top edge up to its own limit (C2)")
   func hangerTopException() {
     let hanger = CaptureCheckContext(family: .top, mode: .hanger)
-    let hookLimit = CaptureRules.Ios.hangerTopCutOffAboveEdgeContactShare
+    let hookLimit = CaptureRules.Mask.hangerTopCutOffAboveEdgeContactShare
     #expect(steadyVerdict(frame(item: item(contact: EdgeContact(top: hookLimit))), context: hanger).passes)
     let over = steadyVerdict(frame(item: item(contact: EdgeContact(top: hookLimit + nudge))), context: hanger)
     #expect(over.blockingHints == [.cutOffTop])
@@ -76,7 +76,7 @@ struct CaptureItemRuleTests {
   @Test("hanger mode keeps the normal limit on the other edges, and flat mode on the top edge")
   func hangerExceptionIsTopOnly() {
     let hanger = CaptureCheckContext(family: .top, mode: .hanger)
-    let over = CaptureRules.Ios.cutOffAboveEdgeContactShare + nudge
+    let over = CaptureRules.Mask.cutOffAboveEdgeContactShare + nudge
     let bottom = steadyVerdict(frame(item: item(contact: EdgeContact(bottom: over))), context: hanger)
     let flatTop = steadyVerdict(frame(item: item(contact: EdgeContact(top: over))), context: topFlat)
     #expect(bottom.blockingHints == [.cutOffBottom])
@@ -86,7 +86,7 @@ struct CaptureItemRuleTests {
   @Test("a strap grazing the edge within the limit still passes (C6, bag)")
   func bagStrapGrazing() {
     let bag = CaptureCheckContext(family: .bag, mode: .flat)
-    let graze = CaptureRules.Ios.cutOffAboveEdgeContactShare
+    let graze = CaptureRules.Mask.cutOffAboveEdgeContactShare
     #expect(steadyVerdict(frame(item: item(contact: EdgeContact(top: graze))), context: bag).passes)
   }
 
@@ -191,7 +191,7 @@ struct CaptureCoveredRuleTests {
 
   @Test("covered ranks after cut off and before too small")
   func priority() {
-    let over = CaptureRules.Ios.cutOffAboveEdgeContactShare + nudge
+    let over = CaptureRules.Mask.cutOffAboveEdgeContactShare + nudge
     let small = NormalizedRect(x: 0.4, y: 0.4, width: 0.1, height: 0.1)
     let item = CaptureItemObservation(
       box: small, maskAreaShare: 0.01, edgeContact: EdgeContact(left: over), instanceCount: 2,
@@ -406,7 +406,7 @@ struct CapturePriorityTests {
   @Test("blocking checks rank no-item, cut off, too small, not steady")
   func blockingOrder() {
     var engine = CaptureRuleEngine(context: topFlat)
-    let over = CaptureRules.Ios.cutOffAboveEdgeContactShare + nudge
+    let over = CaptureRules.Mask.cutOffAboveEdgeContactShare + nudge
     let verdict = engine.evaluate(frame(item: item(box: centredBox(area: 0.01), contact: EdgeContact(left: over))))
     #expect(verdict.blockingHints == [.cutOffLeft, .tooSmall, .notSteady])
     #expect(verdict.blockingHint == .cutOffLeft)
@@ -560,7 +560,7 @@ struct CaptureImportRuleTests {
 
   @Test("every failing check is a tip, in priority order")
   func everyFailingCheck() {
-    let over = CaptureRules.Ios.cutOffAboveEdgeContactShare + nudge
+    let over = CaptureRules.Mask.cutOffAboveEdgeContactShare + nudge
     let still = frame(
       item: item(box: centredBox(area: 0.01), contact: EdgeContact(top: over)),
       meanLuma: CaptureRules.Light.tooBrightAboveMeanLuma + 1
@@ -570,7 +570,7 @@ struct CaptureImportRuleTests {
 
   @Test("an import has no mode, so the top edge uses the flat limit")
   func flatEdgeRule() {
-    let over = CaptureRules.Ios.cutOffAboveEdgeContactShare + nudge
+    let over = CaptureRules.Mask.cutOffAboveEdgeContactShare + nudge
     #expect(CaptureRuleEngine.importTips(for: frame(item: item(contact: EdgeContact(top: over)))) == [.cutOffTop])
   }
 

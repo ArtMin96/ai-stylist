@@ -308,7 +308,7 @@ struct Judge {
     /// before the deciding one must pass clearly, the deciding one must fail clearly, later ones
     /// do not matter.
     func problem(_ intent: Intent, measure: FrameMeasure) throws -> String? {
-        let minInstance = rules.ios.minInstanceAreaShare
+        let minInstance = rules.mask.minInstanceAreaShare
         let found = iosFindsItem(intent)
         let measuredShare = measure.main?.maskAreaShare ?? 0
         guard found == (measuredShare >= minInstance) else {
@@ -345,7 +345,7 @@ struct Judge {
     }
 
     private func iosFindsItem(_ intent: Intent) -> Bool {
-        intent.itemPresent && intent.iosMaskShare >= rules.ios.minInstanceAreaShare
+        intent.itemPresent && intent.iosMaskShare >= rules.mask.minInstanceAreaShare
     }
 
     private func outcome(_ intent: Intent, itemFound: Bool, measure: FrameMeasure) throws -> Outcome {
@@ -442,7 +442,7 @@ struct Judge {
     }
 
     private func edgeProblem(_ intent: Intent, main: MaskStats, contact: EdgeShares) -> String? {
-        let threshold = rules.ios.cutOffAboveEdgeContactShare
+        let threshold = rules.mask.cutOffAboveEdgeContactShare
         for edge in Edge.allCases {
             if intent.touchedEdges.contains(edge) {
                 if contact[edge] <= threshold * Layout.contactFailFactor {

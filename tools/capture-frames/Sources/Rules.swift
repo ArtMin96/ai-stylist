@@ -58,8 +58,8 @@ struct CaptureRules: Decodable {
         let keypointMaxCoordinate: Double
     }
 
-    struct IOS: Decodable {
-        let maskIntervalMs: Int
+    struct Mask: Decodable {
+        let intervalMs: Int
         let minInstanceAreaShare: Double
         let cutOffAboveEdgeContactShare: Double
     }
@@ -78,7 +78,7 @@ struct CaptureRules: Decodable {
     let covered: Covered
     let timing: Timing
     let worn: Worn
-    let ios: IOS
+    let mask: Mask
 
     static func load(from url: URL) throws -> CaptureRules {
         let rules = try JSONDecoder().decode(CaptureRules.self, from: Data(contentsOf: url))

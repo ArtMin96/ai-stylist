@@ -179,9 +179,9 @@ function judgeOutline(line, expected, set, isGap, rules) {
   const reasons = [];
   const first = line.outlineFirstMs ?? null;
   const shouldShow = !isGap && expected.lockReason !== 'no-item';
-  if (shouldShow && (first == null || first > rules.ios.maskIntervalMs)) {
+  if (shouldShow && (first == null || first > rules.mask.intervalMs)) {
     reasons.push(
-      `outline at ${first ?? 'never'} ms, wanted by the first mask (${rules.ios.maskIntervalMs} ms)`,
+      `outline at ${first ?? 'never'} ms, wanted by the first mask (${rules.mask.intervalMs} ms)`,
     );
   }
   if (!shouldShow && first != null)

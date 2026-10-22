@@ -183,12 +183,12 @@ private fun maskCutOff(
     mode: CaptureMode,
 ): Finding {
     item ?: return SKIPPED
-    val limit = CaptureRules.Ios.CUT_OFF_ABOVE_EDGE_CONTACT_SHARE
+    val limit = CaptureRules.Mask.CUT_OFF_ABOVE_EDGE_CONTACT_SHARE
     val topLimit =
         if (mode ==
             CaptureMode.HANGER
         ) {
-            CaptureRules.Ios.HANGER_TOP_CUT_OFF_ABOVE_EDGE_CONTACT_SHARE
+            CaptureRules.Mask.HANGER_TOP_CUT_OFF_ABOVE_EDGE_CONTACT_SHARE
         } else {
             limit
         }

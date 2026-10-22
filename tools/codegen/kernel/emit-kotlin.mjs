@@ -6,7 +6,7 @@ import {
   captureHintKinds,
   docText,
   int,
-  isIntKey,
+  integerKeys,
   isNumberBlock,
   ktStr,
   num,
@@ -48,7 +48,7 @@ const ktEnum = ({ doc, name, cases, props = [] }) => {
 const simpleCases = (values) => values.map((v) => ({ id: upperSnake(v), raw: v }));
 const describe = { name: 'description', type: 'String', value: (c) => ktStr(c.def.description) };
 
-export function emitKotlin(reg) {
+export function emitKotlin(reg, { schemas }) {
   const rc = reg['reason-codes'];
   const ent = reg.entitlements;
   const units = reg.units;
@@ -261,16 +261,19 @@ export function emitKotlin(reg) {
     '',
   ].join('\n');
 
-  out['CaptureRules.kt'] = emitCaptureRules(reg['capture-rules']);
+  out['CaptureRules.kt'] = emitCaptureRules(
+    reg['capture-rules'],
+    integerKeys(schemas['capture-rules']),
+  );
   return out;
 }
 
 const hintEntry = (key) => upperSnake(stripCapHint(key));
 const optional = (value, render) => (value === undefined ? 'null' : render(value));
-const captureConstant = (k, v) =>
-  `const val ${upperSnake(k)}: ${isIntKey(k) ? `Int = ${v}` : `Double = ${num(v)}`}`;
+const captureConstant = (path, k, v, intKeys) =>
+  `const val ${upperSnake(k)}: ${intKeys.has(path) ? `Int = ${int(v)}` : `Double = ${num(v)}`}`;
 
-function emitCaptureRules(cr) {
+function emitCaptureRules(cr, intKeys) {
   return [
     banner('capture-rules'),
     ktEnum({
@@ -345,13 +348,15 @@ function emitCaptureRules(cr) {
     'object CaptureRules {',
     ...Object.entries(cr)
       .filter(([, v]) => typeof v === 'number')
-      .map(([k, v]) => `    ${captureConstant(k, v)}`),
+      .map(([k, v]) => `    ${captureConstant(k, k, v, intKeys)}`),
     ...Object.entries(cr)
       .filter(([, v]) => isNumberBlock(v))
       .flatMap(([block, values]) => [
         '',
         `    object ${pascal(block)} {`,
-        ...Object.entries(values).map(([k, v]) => `        ${captureConstant(k, v)}`),
+        ...Object.entries(values).map(
+          ([k, v]) => `        ${captureConstant(`${block}.${k}`, k, v, intKeys)}`,
+        ),
         '    }',
       ]),
     '}',

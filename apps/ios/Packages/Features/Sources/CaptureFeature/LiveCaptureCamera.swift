@@ -1,6 +1,6 @@
 // The live camera (capture brief §3, §7): AVCaptureSession with a photo output and a preview-sized video
 // data output for analysis, the Vision foreground mask (and the live outline traced from it, brief "Live
-// outline") every `CaptureRules.Ios.maskIntervalMs`, Vision body
+// outline") every `CaptureRules.Mask.intervalMs`, Vision body
 // pose in worn mode every `poseIntervalMs`, luma for light and sharpness, and CoreMotion for device motion
 // and tilt. Nothing is saved: frames are measured and dropped, photos stay in memory.
 //
@@ -250,7 +250,7 @@
         guard state.continuation != nil else { return nil }
         if let last = state.lastEmitMs, nowMs - last < CaptureRules.Evaluation.intervalMs { return nil }
         state.lastEmitMs = nowMs
-        let runsMask = state.lastMaskMs.map { nowMs - $0 >= CaptureRules.Ios.maskIntervalMs } ?? true
+        let runsMask = state.lastMaskMs.map { nowMs - $0 >= CaptureRules.Mask.intervalMs } ?? true
         let poseIsDue = state.lastPoseMs.map { nowMs - $0 >= CaptureRules.Ios.poseIntervalMs } ?? true
         let runsPose = state.isWornMode && poseIsDue
         if runsMask { state.lastMaskMs = nowMs }

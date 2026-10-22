@@ -91,7 +91,7 @@ class HarnessTest {
                 putString(CaptureHarnessArgs.COVERED, "mlkit")
             }
 
-        assertEquals(CaptureRules.Ios.MASK_INTERVAL_MS, CaptureHarnessArgs.from(sweep).maskCadenceMs)
+        assertEquals(CaptureRules.Mask.INTERVAL_MS, CaptureHarnessArgs.from(sweep).maskCadenceMs)
         val args = CaptureHarnessArgs.from(fresh)
         assertEquals(0, args.maskCadenceMs)
         assertEquals(MaskSource.LIVE, args.masks)

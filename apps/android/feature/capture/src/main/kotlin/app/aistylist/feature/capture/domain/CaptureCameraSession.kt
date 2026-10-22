@@ -104,7 +104,8 @@ class CaptureCameraSession(
     fun submit(observation: CaptureObservation): List<CaptureEffect> =
         step { now ->
             latest = observation
-            observation.mask?.let(::trackOutline)
+            // While capturing or cooling down no outline shows, and none is kept for the next item.
+            if (lock.showsOutline) observation.mask?.let(::trackOutline) else outline = OutlineTracker()
             evaluateIfDue(now)
         }
 

@@ -576,15 +576,24 @@ class CaptureCameraSessionTest {
 
     @Test
     fun `a batch capture drops the captured item's outline`() {
+        val maskEveryMs = CaptureRules.Ios.MASK_INTERVAL_MS.toLong()
         val batch = CameraContext(CaptureShapeFamily.GENERIC, CaptureMode.FLAT, kind = CaptureFlowKind.BATCH)
         val harness = Harness(batch).apply { ready() }
-        harness.playUntil(autoCaptureMs) { now -> outlined(now, now, square) }
-        harness.clock.now = autoCaptureMs + EVALUATION_MS
+        while (harness.snapshot.phase != LockPhase.CAPTURING) {
+            harness.playUntil(
+                harness.clock.now + EVALUATION_MS,
+            ) { now -> outlined(now, maskAt(now, maskEveryMs), square) }
+        }
         harness.record(harness.session.captureFinished())
+        // The captured item stays in view for a while during the cooldown.
+        harness.playUntil(harness.clock.now + 5 * EVALUATION_MS) { now ->
+            outlined(now, maskAt(now, maskEveryMs), square)
+        }
 
-        // The item leaves: the cooldown ends on the empty surface, and no outline of the item comes back.
+        // The item leaves: the cooldown ends on the empty surface (three no-item evaluations, before
+        // three empty masks), and no outline of the item comes back.
         val exitAt = harness.clock.now + CaptureRules.Batch.COOLDOWN_EXIT_EVALUATIONS * EVALUATION_MS
-        harness.playUntil(exitAt) { now -> outlined(now, now, null) }
+        harness.playUntil(exitAt) { now -> outlined(now, maskAt(now, maskEveryMs), null) }
         assertEquals(LockPhase.LOCKED, harness.snapshot.phase)
         assertNull(harness.snapshot.outline)
     }

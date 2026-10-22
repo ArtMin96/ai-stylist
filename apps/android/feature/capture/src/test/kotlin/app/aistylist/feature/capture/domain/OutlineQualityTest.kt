@@ -108,7 +108,7 @@ class OutlineQualityTest {
                 val dy = (random.nextDouble(-MAX_JITTER, MAX_JITTER) * mask.height).roundToInt()
                 tracker = tracker.update(listOfNotNull(mask.shifted(dx, dy).candidate()))
                 val drawn = requireNotNull(tracker.drawn) { mask.name }
-                previous?.let { ious += polygonIou(centred(drawn), centred(it)) }
+                previous?.let { ious += polygonIou(centredOutline(drawn), centredOutline(it)) }
                 previous = drawn
             }
             val worst = ious.min()
@@ -209,12 +209,6 @@ class OutlineQualityTest {
             if ((a.y > y) != (b.y > y) && x < a.x + (y - a.y) / (b.y - a.y) * (b.x - a.x)) inside = !inside
         }
         return inside
-    }
-
-    private fun centred(points: List<NormalizedPoint>): List<NormalizedPoint> {
-        val cx = points.sumOf { it.x } / points.size
-        val cy = points.sumOf { it.y } / points.size
-        return points.map { NormalizedPoint(it.x - cx + HALF, it.y - cy + HALF) }
     }
 
     private fun hausdorff(

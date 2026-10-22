@@ -69,6 +69,40 @@ fun traceOutline(
 }
 
 /**
+ * [points] moved so their area centroid sits at (0.5, 0.5): the outline stability measure compares
+ * two outlines after this, so a pure move scores 1. The area centroid, not the vertex mean, because
+ * the vertex mean drifts with the edge's jaggies on an unchanged shape (owner, 2026-10-22). A
+ * degenerate polygon falls back to the vertex mean. The tracker's blend keeps the vertex mean.
+ */
+fun centredOutline(points: List<NormalizedPoint>): List<NormalizedPoint> {
+    if (points.isEmpty()) return points
+    val centre =
+        areaCentroid(points)
+            ?: NormalizedPoint(points.sumOf { it.x } / points.size, points.sumOf { it.y } / points.size)
+    return points.map { NormalizedPoint(it.x - centre.x + OUTLINE_CENTRE, it.y - centre.y + OUTLINE_CENTRE) }
+}
+
+/** The polygon's area centroid (shoelace formula), or null when its area is under 1e-9. */
+internal fun areaCentroid(points: List<NormalizedPoint>): NormalizedPoint? {
+    var area = 0.0
+    var x = 0.0
+    var y = 0.0
+    for (i in points.indices) {
+        val a = points[i]
+        val b = points[(i + 1) % points.size]
+        val cross = a.x * b.y - b.x * a.y
+        area += cross
+        x += (a.x + b.x) * cross
+        y += (a.y + b.y) * cross
+    }
+    area /= 2
+    if (abs(area) < AREA_EPSILON) return null
+    return NormalizedPoint(x / (CENTROID_DIVISOR * area), y / (CENTROID_DIVISOR * area))
+}
+
+private const val OUTLINE_CENTRE = 0.5
+
+/**
  * Intersection over union of two closed polygons, both rasterised on a 64 × 64 grid over their joint
  * box at the cell centres by the even-odd rule (the measure the snap and the hysteresis read).
  */

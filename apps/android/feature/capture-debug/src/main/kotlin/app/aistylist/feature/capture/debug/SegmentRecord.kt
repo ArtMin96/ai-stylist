@@ -6,6 +6,7 @@ import app.aistylist.feature.capture.domain.CaptureTrigger
 import app.aistylist.feature.capture.domain.LiveOutline
 import app.aistylist.feature.capture.domain.LockPhase
 import app.aistylist.feature.capture.domain.NormalizedPoint
+import app.aistylist.feature.capture.domain.centredOutline
 import app.aistylist.feature.capture.domain.polygonIou
 import app.aistylist.feature.capture.domain.polygonMaskIou
 import org.json.JSONArray
@@ -246,7 +247,7 @@ private class OutlineScores(
             if (drawn.snapCount != previous.snapCount) {
                 snaps++
             } else {
-                stabilities += polygonIou(centred(drawn.points), centred(previous.points))
+                stabilities += polygonIou(centredOutline(drawn.points), centredOutline(previous.points))
             }
         }
         if (reference != null) {
@@ -274,15 +275,5 @@ private class OutlineScores(
         val sorted = values.sorted()
         val middle = sorted.size / 2
         return if (sorted.size % 2 == 1) sorted[middle] else (sorted[middle - 1] + sorted[middle]) / 2
-    }
-
-    private fun centred(points: List<NormalizedPoint>): List<NormalizedPoint> {
-        val cx = points.sumOf { it.x } / points.size
-        val cy = points.sumOf { it.y } / points.size
-        return points.map { NormalizedPoint(it.x - cx + CENTRE, it.y - cy + CENTRE) }
-    }
-
-    private companion object {
-        const val CENTRE = 0.5
     }
 }

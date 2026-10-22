@@ -132,15 +132,35 @@ class OutlineParityTest {
                 }
             tracker = tracker.update(candidates)
             val drawn = requireNotNull(tracker.drawn)
-            previous?.let { assertTrue(polygonIou(centred(drawn), centred(it)) >= TRANSLATION_MIN_IOU) }
+            previous?.let { assertTrue(polygonIou(centredOutline(drawn), centredOutline(it)) >= TRANSLATION_MIN_IOU) }
             previous = drawn
         }
     }
 
-    private fun centred(points: List<NormalizedPoint>): List<NormalizedPoint> {
-        val cx = points.sumOf { it.x } / points.size
-        val cy = points.sumOf { it.y } / points.size
-        return points.map { NormalizedPoint(it.x - cx + HALF, it.y - cy + HALF) }
+    // Owner 2026-10-22: the stability measure centres on the area centroid. The vertex mean drifts
+    // with the edge's jaggies on an unchanged shape.
+    @Test
+    fun `the raw outlines of an unchanged translated mask keep a centred IoU of at least 0_95`() {
+        val case =
+            fixture.getValue("temporal").jsonArray.map { it.jsonObject }.single {
+                it.string("name") ==
+                    "translation-jitter"
+            }
+        val raw =
+            case.getValue("steps").jsonArray.map { step ->
+                step.jsonObject
+                    .getValue("candidates")
+                    .jsonArray
+                    .first()
+                    .jsonObject
+                    .getValue("points")
+                    .points()
+            }
+        assertTrue(raw.size >= MIN_RAW_STEPS)
+        raw.zipWithNext().forEachIndexed { index, (before, after) ->
+            val stability = polygonIou(centredOutline(after), centredOutline(before))
+            assertTrue("step ${index + 1}: $stability", stability >= TRANSLATION_MIN_IOU)
+        }
     }
 
     @Test
@@ -170,8 +190,9 @@ class OutlineParityTest {
 
 /** The shared parity fixture, a test resource (see this module's build file). */
 private const val TRANSLATION_MIN_IOU = 0.95
+
+private const val MIN_RAW_STEPS = 3
 private const val STATIC_IOU_TOLERANCE = 1e-6
-private const val HALF = 0.5
 
 internal fun loadParityFixture(): JsonObject =
     Json

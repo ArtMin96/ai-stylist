@@ -168,8 +168,9 @@ Pure logic, same in both apps, unit-tested on Linux (`swift test`) and in Robole
   times never unlocks (2026-10-22, found with the harness's realistic mask cadence; unlock then takes
   about 800 ms on the iOS phone cadence).
   Haptic "unlock". Announce "ready".
-- `unlocked`: each passing evaluation advances the ring. The ring is full after **1000 ms** of
-  passing evaluations, counted from the unlock, and at least 3 evaluations. Full ring → auto-capture
+- `unlocked`: each passing evaluation advances the ring. The ring is full after **500 ms** of
+  passing evaluations (owner, 2026-10-22; was 1000 ms), counted from the unlock, and at least 3
+  evaluations. Full ring → auto-capture
   → `capturing`.
 - `unlocked`: one failing evaluation pauses the ring (no advance, no reset).
   **3 consecutive failing evaluations** → `locked(reason)`, ring reset to 0. No haptic.
@@ -183,11 +184,11 @@ Pure logic, same in both apps, unit-tested on Linux (`swift test`) and in Robole
   `warmingUp`, all counters and the anyway timer restart.
 - `modeChanged` → counters reset to `locked`; the anyway timer does **not** restart.
 
-Minimum time from the first good frame to auto-capture at 10 Hz: 1 + 3 evaluations + 1000 ms ≈
-1.4 s (owner: "~1–1.5 s steady"). With the phone's 250 ms masks and one counted pass per mask, the
-unlock takes about 800 ms and the auto-capture about 1.8 s (iOS harness sweep, 2026-10-22), above the
-owner's ~1.5 s: flagged for the owner. On a slower phone the step takes longer; the device test
-measures it.
+Minimum time from the first good frame to auto-capture with the phone's 250 ms masks and one counted
+pass per mask: unlock after about 800 ms, then the 500 ms ring, about 1.3 s in all (owner: "~1–1.5 s
+steady"). With a 1000 ms ring it measured about 1.8 s (iOS harness sweep, 2026-10-22), so the owner
+shortened the ring and kept the strict three-mask unlock. On a slower phone the step takes longer;
+the device test measures it.
 
 **Outputs:** `shutter` (locked, unlocked, capturing), `ringProgress` 0–1, `hint` key, `anywayVisible`,
 `anywayReason`, `hardwareShutterEnabled` (= unlocked or anyway visible), and one-shot effects:
@@ -511,6 +512,7 @@ Answered by the owner through the question tool on 2026-10-22. These override ea
 | Stuck case (3 iterations, no progress) | Record it as BLOCKED in the scoreboard with attempts and evidence, then keep working on other cases. Never weaken tests or thresholds. |
 | New dependencies | "Add what needed": add what the work needs and list every addition (name, version, why) in the final report for the owner to approve or revert. |
 | Hard cases | 2026-10-22 owner: add hard cases C8–C11, tilt, glare and a new partly-covered rule; live outline approved pending a feasibility check; UI polish deferred. |
+| Hold-still ring (2026-10-22) | Shorten the ring from 1 s to 0.5 s (`lock.ringFillMs` 1000 → 500) and keep the strict unlock on three distinct masks: about 1.3 s from a steady item to the photo. |
 | Scope | Owner, mid-turn: "You are allowed to do anything to make this as close as possible." Hard limits that still stand: no PR, no merge, no `main` changes, no rebase or force-push of pushed commits, no public publication of repo content, no real user or real-person photos, no weakened tests, expected files or thresholds (threshold changes only through the frame-set rule with old/new/reason). |
 
 ### Status log

@@ -43,6 +43,7 @@ PARAMS = {
     "keepAtLeastIou": 0.3,
     "switchAtAreaRatio": 1.5,
     "snapBelowIou": 0.5,
+    "snapKeepsShapeAtLeastIou": 0.5,
     "emaAlpha": 0.5,
     "clearAfterMissedUpdates": 3,
     "iouGridCells": 64,
@@ -367,12 +368,30 @@ class Tracker:
             return self.drawn
         self.missed = 0
         new = self.choose(candidates)[1]
-        if self.drawn is None or iou(new, self.drawn) < PARAMS["snapBelowIou"]:
+        if self.drawn is None:
             self.drawn = list(new)
-        else:
-            a = PARAMS["emaAlpha"]
-            self.drawn = [(a * x + (1 - a) * px, a * y + (1 - a) * py) for (x, y), (px, py) in zip(align(new, self.drawn), self.drawn)]
+            return self.drawn
+        # Position and shape blend apart, so a moving item keeps its shape: centroid = vertex mean, shape =
+        # the points around it, the new shape cyclically aligned to the drawn shape.
+        a = PARAMS["emaAlpha"]
+        (cx, cy), shape = split(new)
+        (dx, dy), drawn_shape = split(self.drawn)
+        shape = align(shape, drawn_shape)
+        if iou(new, self.drawn) >= PARAMS["snapBelowIou"]:
+            cx, cy = a * cx + (1 - a) * dx, a * cy + (1 - a) * dy
+        elif iou(shape, drawn_shape) < PARAMS["snapKeepsShapeAtLeastIou"]:
+            self.drawn = list(new)  # snap to another shape: replaced
+            return self.drawn
+        # else: snap to the same shape moved far: the position jumps, the shape still blends
+        self.drawn = [(cx + a * x + (1 - a) * px, cy + a * y + (1 - a) * py) for (x, y), (px, py) in zip(shape, drawn_shape)]
         return self.drawn
+
+
+def split(points):
+    """(centroid, shape): the vertex mean, and the points relative to it."""
+    cx = sum(x for x, _ in points) / len(points)
+    cy = sum(y for _, y in points) / len(points)
+    return (cx, cy), [(x - cx, y - cy) for x, y in points]
 
 
 # ---------------------------------------------------------------------------------------------- inputs
@@ -491,7 +510,37 @@ def area_share(mask):
     return sum(sum(row) for row in mask) / (len(mask) * len(mask[0]))
 
 
-def temporal_cases():
+# A jittered real item (`just capture-frames` one-piece-flat-02-jitter): its mask moved by the stored
+# offsets at the 250 ms mask cadence (frame int(k x 7.5) at 30 fps). A pure translation, yet the raw outline
+# changes shape by up to 7 % from one position to the next (crop and 64 px grid quantisation).
+JITTER_SET = "one-piece-flat-02-jitter"
+JITTER_UPDATES = 4
+
+
+def jitter_candidates(frames, previous):
+    if not frames:
+        old = next((c for c in (previous or {}).get("temporal", []) if c["name"] == "translation-jitter"), None)
+        if old is None:
+            raise SystemExit("translation-jitter: pass --frames to build it")
+        return [step["candidates"] for step in old["steps"]]
+    index = json.load(open(os.path.join(frames, "index.json")))
+    segment = next(s for s in index["sets"] if s["id"] == JITTER_SET)["segments"][0]
+    mask = [[1 if v else 0 for v in row] for row in read_png_gray(os.path.join(frames, segment["mask"]))]
+    H, W = len(mask), len(mask[0])
+    steps = []
+    for k in range(JITTER_UPDATES):
+        ox, oy = segment["offsets"][int(k * 7.5) % len(segment["offsets"])]
+        dx, dy = round(ox * W), round(oy * H)
+        moved = blank(W, H)
+        for y in range(max(0, dy), min(H, H + dy)):
+            for x in range(max(0, dx), min(W, W + dx)):
+                moved[y][x] = mask[y - dy][x - dx]
+        pts, _ = contour(moved, W, H)
+        steps.append([{"areaShare": round(area_share(moved), 6), "points": rounded(pts)}])
+    return steps
+
+
+def temporal_cases(frames, previous):
     """Sequences of mask updates (candidates as polygons, largest first) and the outline drawn after each."""
     W, H = 80, 80
 
@@ -500,14 +549,25 @@ def temporal_cases():
         return {"areaShare": round(area_share(mask), 6), "points": rounded(pts)}
 
     sq = lambda x, y, s: fill_rect(blank(W, H), x, y, x + s, y + s)  # noqa: E731
-    a, a_moved, far = cand(sq(20, 20, 30)), cand(sq(22, 21, 30)), cand(sq(52, 52, 24))
+    a, a_moved, far = cand(sq(20, 20, 30)), cand(sq(22, 21, 30)), cand(fill_rect(blank(W, H), 44, 60, 78, 70))
+    a_far = cand(sq(48, 46, 30))
     left, right_same = cand(sq(6, 30, 20)), cand(sq(50, 28, 22))
     right_big = cand(sq(46, 22, 30))
     cases = [
         {
             "name": "ema-snap-clear",
-            "note": "first item snaps; a small move blends (EMA 0.5 after cyclic alignment); a jump snaps; three empty updates clear",
+            "note": "first item snaps; a small move blends (centroid and shape EMA 0.5); another shape far away replaces it; three empty updates clear",
             "steps": [[a], [a_moved], [far], [], [], [], [a]],
+        },
+        {
+            "name": "snap-keeps-shape",
+            "note": "the same shape far away (IoU under 0.5): the position jumps, the shape still blends",
+            "steps": [[a], [a_moved], [a_far]],
+        },
+        {
+            "name": "translation-jitter",
+            "note": f"{JITTER_SET} at the mask cadence: successive drawn outlines keep their shape (centroid-aligned IoU >= 0.95)",
+            "steps": jitter_candidates(frames, previous),
         },
         {
             "name": "hysteresis",
@@ -562,7 +622,7 @@ def build(frames, previous):
         "params": PARAMS,
         "contour": [{k: c[k] for k in ("name", "note", "width", "height", "simplifiedVertexCount", "rows", "expected")} for c in contour_cases],
         "iou": iou_cases(),
-        "temporal": temporal_cases(),
+        "temporal": temporal_cases(frames, previous),
     }
 
 

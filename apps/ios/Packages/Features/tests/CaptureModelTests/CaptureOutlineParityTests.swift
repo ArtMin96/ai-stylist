@@ -53,6 +53,21 @@ struct CaptureOutlineParityTests {
     }
   }
 
+  @Test("the static IoU reads the filled outer boundary, not the raw mask, as the reference does")
+  func staticIouReference() throws {
+    let cases = fixture.contour.filter { $0.staticIouFilled != nil }
+    #expect(cases.contains { ($0.staticIouRaw ?? 1) < ($0.staticIouFilled ?? 0) - 0.05 })
+    for testCase in cases {
+      let mask = try #require(testCase.mask)
+      let outline = try #require(CaptureOutlineContour.outline(of: mask))
+      let drawn = CaptureOutlineGeometry.rasterise(outline, width: mask.width, height: mask.height)
+      let filled = CaptureModelTests.intersectionOverUnion(drawn, filledLargestComponent(mask))
+      let raw = CaptureOutlineGeometry.intersectionOverUnion(outline, mask: mask)
+      #expect(abs(filled - (testCase.staticIouFilled ?? .nan)) <= 1e-6, "\(testCase.name): filled \(filled)")
+      #expect(abs(raw - (testCase.staticIouRaw ?? .nan)) <= 1e-6, "\(testCase.name): raw \(raw)")
+    }
+  }
+
   @Test("polygon IoU matches the reference")
   func intersectionOverUnion() {
     for testCase in fixture.iou {

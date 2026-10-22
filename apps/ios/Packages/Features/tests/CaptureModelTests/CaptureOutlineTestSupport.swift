@@ -38,6 +38,10 @@ struct OutlineParityFixture: Decodable {
     let width: Int
     let height: Int
     let simplifiedVertexCount: Int
+    /// The static test's IoU: the outline against the filled largest component of the mask.
+    let staticIouFilled: Double?
+    /// The same against the raw mask (information: holes count against it).
+    let staticIouRaw: Double?
     let rows: [String]
     let expected: [[Double]]?
 

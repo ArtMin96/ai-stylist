@@ -367,7 +367,7 @@ extension VisionMasks {
     static func check(_ image: CGImage, item: BinaryMask, occluder: BinaryMask?, rules: CaptureRules) throws
         -> VisionCheck
     {
-        let instances = try instances(in: image).filter { $0.share >= rules.ios.minInstanceAreaShare }
+        let instances = try instances(in: image).filter { $0.share >= rules.mask.minInstanceAreaShare }
         let itemIoU = instances.map { $0.intersectionOverUnion(with: item) }.max() ?? 0
         let found = itemIoU >= Layout.visionFoundMinIoU
         let separated = occluder.map { occluder in

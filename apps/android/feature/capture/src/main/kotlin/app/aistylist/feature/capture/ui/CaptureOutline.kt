@@ -59,7 +59,7 @@ internal fun ItemOutline(
 ) {
     val outline = live?.points
     val reduced = isReducedMotion()
-    val durationMs = CaptureRules.Ios.MASK_INTERVAL_MS
+    val durationMs = CaptureRules.Mask.INTERVAL_MS
     val motion = rememberOutlineMotion(live, reduced, durationMs)
     val alpha by animateFloatAsState(
         targetValue = if (outline == null) 0f else 1f,

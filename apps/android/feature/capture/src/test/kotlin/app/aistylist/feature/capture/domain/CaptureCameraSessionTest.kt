@@ -499,7 +499,7 @@ class CaptureCameraSessionTest {
 
     @Test
     fun `one chance-still mask read by several evaluations does not unlock`() {
-        val maskEveryMs = CaptureRules.Ios.MASK_INTERVAL_MS.toLong()
+        val maskEveryMs = CaptureRules.Mask.INTERVAL_MS.toLong()
         val jump = 2 * CaptureRules.Steady.MAX_CENTRE_SHIFT
         val harness = Harness().apply { ready() }
 
@@ -516,7 +516,7 @@ class CaptureCameraSessionTest {
 
     @Test
     fun `an unlock needs three distinct passing masks`() {
-        val maskEveryMs = CaptureRules.Ios.MASK_INTERVAL_MS.toLong()
+        val maskEveryMs = CaptureRules.Mask.INTERVAL_MS.toLong()
         val harness = Harness().apply { ready() }
 
         // A still item: the mask at 0 is the first (never steady); the masks at 250, 500 and 750 each
@@ -548,7 +548,7 @@ class CaptureCameraSessionTest {
 
     @Test
     fun `the outline shows from the first mask with an item and clears after three empty masks`() {
-        val maskEveryMs = CaptureRules.Ios.MASK_INTERVAL_MS.toLong()
+        val maskEveryMs = CaptureRules.Mask.INTERVAL_MS.toLong()
         val harness = Harness().apply { ready() }
         assertNull(harness.snapshot.outline)
 
@@ -578,7 +578,7 @@ class CaptureCameraSessionTest {
 
     @Test
     fun `a batch capture drops the captured item's outline`() {
-        val maskEveryMs = CaptureRules.Ios.MASK_INTERVAL_MS.toLong()
+        val maskEveryMs = CaptureRules.Mask.INTERVAL_MS.toLong()
         val batch = CameraContext(CaptureShapeFamily.GENERIC, CaptureMode.FLAT, kind = CaptureFlowKind.BATCH)
         val harness = Harness(batch).apply { ready() }
         while (harness.snapshot.phase != LockPhase.CAPTURING) {

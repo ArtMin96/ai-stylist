@@ -58,7 +58,7 @@
           style: CaptureOutlineStroke.style(width: CaptureMetrics.guideStroke, isUnlocked: isUnlocked))
       }
       .animation(
-        reduceMotion ? nil : .linear(duration: Double(CaptureRules.Ios.maskIntervalMs) / 1000),
+        reduceMotion ? nil : .linear(duration: Double(CaptureRules.Mask.intervalMs) / 1000),
         value: shape.points
       )
       .id(outline.snapCount)

@@ -562,16 +562,31 @@ class CaptureCameraSessionTest {
     }
 
     @Test
-    fun `fresh masks on every frame move the outline at most once per mask interval`() {
+    fun `each new mask updates the outline and a reused mask changes nothing`() {
         val harness = Harness().apply { ready() }
         val moved = square.map { NormalizedPoint(it.x + 0.01, it.y) }
         harness.playUntil(EVALUATION_MS) { now -> outlined(now, now, square) }
 
-        // A fresh mask on every frame, but the next outline update is due only at 100 + 250.
-        harness.playUntil(3 * EVALUATION_MS) { now -> outlined(now, now, moved) }
+        // The mask of 100 read again at 200 (a reused mask) leaves the outline; a new mask at 300 moves it.
+        harness.playUntil(2 * EVALUATION_MS) { now -> outlined(now, EVALUATION_MS, moved) }
         assertEquals(square, harness.snapshot.outline?.points)
-        harness.playUntil(4 * EVALUATION_MS) { now -> outlined(now, now, moved) }
+        harness.playUntil(3 * EVALUATION_MS) { now -> outlined(now, now, moved) }
         assertTrue(harness.snapshot.outline?.points != square)
+    }
+
+    @Test
+    fun `a batch capture drops the captured item's outline`() {
+        val batch = CameraContext(CaptureShapeFamily.GENERIC, CaptureMode.FLAT, kind = CaptureFlowKind.BATCH)
+        val harness = Harness(batch).apply { ready() }
+        harness.playUntil(autoCaptureMs) { now -> outlined(now, now, square) }
+        harness.clock.now = autoCaptureMs + EVALUATION_MS
+        harness.record(harness.session.captureFinished())
+
+        // The item leaves: the cooldown ends on the empty surface, and no outline of the item comes back.
+        val exitAt = harness.clock.now + CaptureRules.Batch.COOLDOWN_EXIT_EVALUATIONS * EVALUATION_MS
+        harness.playUntil(exitAt) { now -> outlined(now, now, null) }
+        assertEquals(LockPhase.LOCKED, harness.snapshot.phase)
+        assertNull(harness.snapshot.outline)
     }
 
     /** The first 100 ms evaluation after the mask at 750 ms. */

@@ -124,6 +124,8 @@ class CaptureCameraSession(
         step {
             lock = lock.onCaptureFinished(context.kind)
             timer = AnywayTimer()
+            // The captured item's outline is done: the next item starts a new one.
+            outline = OutlineTracker()
             emptyList()
         }
 
@@ -202,13 +204,9 @@ class CaptureCameraSession(
         return effects + speak(shownBefore, now)
     }
 
-    /**
-     * The outline follows each distinct mask, at most once per mask interval (the live cadence; the
-     * frame-set harness hands the rules a fresh mask on every frame).
-     */
+    /** The outline follows each new mask once; a reused mask changes nothing (brief §17 step 10). */
     private fun trackOutline(mask: MaskObservation) {
-        val last = lastOutlineMaskMs
-        if (last != null && mask.timestampMs - last < CaptureRules.Ios.MASK_INTERVAL_MS) return
+        if (mask.timestampMs == lastOutlineMaskMs) return
         lastOutlineMaskMs = mask.timestampMs
         outline = outline.update(mask.outlineCandidates)
     }

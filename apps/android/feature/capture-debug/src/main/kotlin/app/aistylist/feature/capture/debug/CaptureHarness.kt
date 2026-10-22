@@ -73,13 +73,37 @@ class CaptureHarness(
         val shared = analysis ?: return false
         val store = photos ?: return false
         target.frames.value =
-            FrameSetSource(set, shared, currentIndex.fps, clock, store, stills = target, dispatcher = dispatcher)
+            FrameSetSource(
+                set,
+                shared,
+                currentIndex.fps,
+                clock,
+                store,
+                stills = target,
+                dispatcher = dispatcher,
+                recordsCaptures = args.recordsCaptures,
+            )
         return true
     }
 
-    /** A fresh flow on the selected set's camera step (its family and mode, or batch); the picker without one. */
+    /**
+     * A fresh flow from Home's "Add item": the picker, as on iOS; the selected set plays at whichever
+     * camera step the user opens, so the shared e2e/capture flows walk the same screens on both apps.
+     */
     fun startFlow(target: CaptureViewModel) {
         viewModel = target
+        target.onOpened()
+        files.reset()
+    }
+
+    /** Picks [setId] and restarts the flow on its camera step (the debug panel's set list). */
+    fun play(setId: String?) {
+        if (!select(setId)) return
+        viewModel?.let(::openSet)
+    }
+
+    /** A fresh flow straight on the selected set's camera step (its family and mode, or batch). */
+    private fun openSet(target: CaptureViewModel) {
         target.onOpened()
         val set = selectedSet ?: return
         if (set.isBatch) {
@@ -89,12 +113,6 @@ class CaptureHarness(
             if (set.mode != CaptureMode.FLAT) target.onModeSelected(set.mode)
         }
         files.reset()
-    }
-
-    /** Picks [setId] and restarts the flow on it (the debug panel's set list). */
-    fun play(setId: String?) {
-        if (!select(setId)) return
-        viewModel?.let(::startFlow)
     }
 
     /** The interactive results log: one line per segment of the set on screen, on the real clock. */

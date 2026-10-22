@@ -31,9 +31,6 @@ internal object DebugCapture {
 private class HarnessHooks(
     private val harness: CaptureHarness,
 ) : CaptureDebugHooks {
-    override val opensCaptureAtLaunch: Boolean
-        get() = harness.args.frameSetId != null || harness.args.isScreenReader
-
     override val opensSweepAtLaunch: Boolean get() = harness.args.isSweep
 
     override val screenReaderAtLaunch: Boolean get() = harness.args.isScreenReader

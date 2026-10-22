@@ -10,9 +10,6 @@ import app.aistylist.feature.capture.CaptureViewModel
  * `release` have none and never see `:feature:capture-debug`.
  */
 internal interface CaptureDebugHooks {
-    /** The launch asked for the camera directly (`captureFrameSet`, `captureScreenReader`). */
-    val opensCaptureAtLaunch: Boolean
-
     /** The launch asked for a sweep over every frame set (`captureSweep=1`). */
     val opensSweepAtLaunch: Boolean
 
@@ -22,7 +19,7 @@ internal interface CaptureDebugHooks {
     /** [real] wrapped so a frame set can stand in for the camera. */
     fun wrap(real: CaptureServices): CaptureServices
 
-    /** Puts a fresh flow on the frame set's camera step (family, mode, batch). */
+    /** Opens a fresh flow on the picker; the selected frame set plays at the next camera step. */
     fun startFlow(viewModel: CaptureViewModel)
 
     /** The debug panel over the capture screens. */

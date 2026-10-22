@@ -61,6 +61,7 @@ class HarnessTest {
                 putString(CaptureHarnessArgs.SCREEN_READER, "1")
                 putString(CaptureHarnessArgs.BOXES, "live")
                 putString(CaptureHarnessArgs.DEBUG_PANEL, "0")
+                putString(CaptureHarnessArgs.RECORD_ONLY, "1")
             }
 
         val args = CaptureHarnessArgs.from(extras)
@@ -71,6 +72,7 @@ class HarnessTest {
         assertEquals(BoxSource.LIVE, args.boxes)
         assertEquals(PoseSource.AUTO, args.pose)
         assertFalse(args.showsPanel)
+        assertTrue(args.recordsCaptures)
         assertEquals(CaptureHarnessArgs(), CaptureHarnessArgs.from(null))
     }
 

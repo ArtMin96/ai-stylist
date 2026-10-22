@@ -134,8 +134,10 @@ class MainActivity : ComponentActivity() {
     private fun launchScreen(): AppScreen {
         val hooks = captureHooks ?: return AppScreen.HOME
         return when {
+            // A frame-set or screen-reader launch starts on Home, like iOS, so the shared e2e/capture
+            // flows walk Home's "Add item" and the picker on both apps.
             hooks.opensSweepAtLaunch -> AppScreen.SWEEP
-            hooks.opensCaptureAtLaunch -> AppScreen.CAPTURE
+
             else -> AppScreen.HOME
         }
     }

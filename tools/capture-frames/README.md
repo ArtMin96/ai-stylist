@@ -98,7 +98,11 @@ playback jitter. `two-items` places the next base beside this one, and ships onl
 both as separate instances. The first base also gets two extra sets, built after base selection so
 a rejection drops only that set: `too-big` (C11: the item scaled up until 25 % of its box lies past
 the two edges it reaches first, split evenly, so it touches two or more edges and locks with
-`cap-hint-cut-off-multiple`; at 25 % past each edge it fills the frame and Vision finds no item) and `too-bright` (the good item on a white surface: everything but the
+`cap-hint-cut-off-multiple`; at 25 % past each edge it fills the frame and Vision finds no item)
+and, for `small-item` only, every base gets `too-small-found` (C5: the box midway between the size at
+which iOS clearly finds the mask, 1.1 × `ios.minInstanceAreaShare` ÷ coverage, and 0.9 × the family
+minimum; it locks with `cap-hint-too-small` on both platforms, where brief §11's 35 % too-small reads
+as no item on iOS) and `too-bright` (the good item on a white surface: everything but the
 item is clipped white, so the clipped share is clearly over the limit while the item stays found and
 sharp; it unlocks with `cap-hint-too-bright`). The first base also gets the light and tilt hard cases (`overexposed`,
 `glare-spots`, `glare-window`, `tilt`, `tilt-under`; below, "Hard cases"), and the first two bases of

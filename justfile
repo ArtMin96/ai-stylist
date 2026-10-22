@@ -220,7 +220,7 @@ lint *args:
     pnpm exec eslint tools eslint.config.mjs
     uv run --project workers ruff check workers
     # -s bash: every script must run under macOS /bin/bash 3.2 as well (docs/DEVELOPING-ON-MACOS.md)
-    shellcheck -s bash -x -P SCRIPTDIR scripts/*.sh scripts/security/*.sh scripts/security/tests/*.sh scripts/docs/*.sh scripts/docs/lib/*.sh scripts/hooks/*.sh scripts/test/*.sh scripts/db/*.sh scripts/ci/*.sh scripts/lint-file.sh scripts/native-lane.sh tools/analytics/*.sh tools/codegen/*.sh tools/depcruise/*.sh tools/eslint/*.sh tools/flags/*.sh tools/jscpd/*.sh apps/ios/scripts/*.sh apps/android/tools/*.sh
+    shellcheck -s bash -x -P SCRIPTDIR scripts/*.sh scripts/security/*.sh scripts/security/tests/*.sh scripts/docs/*.sh scripts/docs/lib/*.sh scripts/hooks/*.sh scripts/test/*.sh scripts/db/*.sh scripts/ci/*.sh scripts/lint-file.sh scripts/native-lane.sh tools/analytics/*.sh tools/capture-frames/*.sh tools/codegen/*.sh tools/depcruise/*.sh tools/eslint/*.sh tools/flags/*.sh tools/jscpd/*.sh apps/ios/scripts/*.sh apps/android/tools/*.sh
     actionlint
     scripts/native-lane.sh ios none just ios-lint
     scripts/native-lane.sh android android just android-lint
@@ -505,6 +505,12 @@ android-e2e flow='e2e/smoke.yaml':
     [[ -f "$1" ]] || { echo "android-e2e: Maestro flow '$1' not found" >&2; exit 1; }
     apps/android/tools/gradle.sh :app:installDebug
     maestro test -e APP_ID=app.aistylist.mobile.dev "$1"
+
+# --- capture camera test harness (tools/capture-frames/README.md) ------------------------------
+
+# Build the capture camera's test frames into artifacts/capture-camera/frames/ (macOS only, pinned Xcode): CC0 dataset product shots plus drawn items and a drawn person, every brief §11 variant, Vision masks, stored boxes, keypoints, expected results and index.json; downloads only the dataset images it tries (cached in artifacts/capture-camera/source/); unchanged inputs reuse the last output
+capture-frames:
+    bash tools/capture-frames/capture-frames.sh
 
 # --- database (drizzle-kit; expand–contract) ----------------------------------------
 

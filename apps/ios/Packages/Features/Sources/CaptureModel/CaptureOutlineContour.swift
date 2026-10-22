@@ -1,41 +1,11 @@
 // The live outline's shape (capture brief "Live outline", steps 3–9): one item mask in, a closed polygon of
-// `CaptureOutlineSpec.pointCount` points out, normalised to the frame (0–1, origin top-left), clockwise on
+// `CaptureRules.Outline.pointCount` points out, normalised to the frame (0–1, origin top-left), clockwise on
 // screen. The Python reference `tools/capture-frames/parity/outline_reference.py` and the Android port
 // follow the same steps; `outline-parity.json` holds both apps to it (its README pins the details).
 // Pure values on byte buffers, no Apple framework: tested on Linux. `nonisolated`: the camera runs it on
-// its analysis queue.
+// its analysis queue. Its numbers come from the generated `CaptureRules.Outline`.
 
-/// Every number of the live-outline spec. The parity fixture's `params` must equal these
-/// (CaptureOutlineParityTests).
-nonisolated public enum CaptureOutlineSpec {
-  /// The crop grows by the item box's long side divided by this (integer division)…
-  public static let cropGrowDivisor = 8
-  /// …and by at least this many pixels.
-  public static let cropGrowMinPx = 2
-  /// The crop is area-averaged to this long side, in pixels.
-  public static let longSidePx = 64
-  /// An area-averaged cell at or above this value is foreground; also the iso value of the contour.
-  public static let foregroundAtLeast = 0.5
-  /// Douglas–Peucker tolerance, in downscaled pixels.
-  public static let epsilonPx = 0.5
-  /// Points of every outline.
-  public static let pointCount = 64
-  /// Hysteresis: the drawn item is kept while its new outline overlaps the drawn one by at least this IoU…
-  public static let keepAtLeastIou = 0.3
-  /// …unless the largest candidate has at least this many times its area.
-  public static let switchAtAreaRatio = 1.5
-  /// A new outline below this IoU with the drawn one snaps: its position jumps (no animation)…
-  public static let snapBelowIou = 0.5
-  /// …and its shape replaces the drawn shape only below this IoU of the two shapes centred on their
-  /// centroids; otherwise the shape still blends (a moved item keeps its shape).
-  public static let snapKeepsShapeAtLeastIou = 0.5
-  /// Weight of the new outline in the moving averages of position and shape.
-  public static let emaAlpha = 0.5
-  /// The outline clears after this many mask updates in a row without an item.
-  public static let clearAfterMissedUpdates = 3
-  /// IoU rasterises both polygons on this many cells per side over their joint box.
-  public static let iouGridCells = 64
-}
+import AIStylistKernel
 
 /// Steps 3–9: mask → outline polygon.
 nonisolated public enum CaptureOutlineContour {
@@ -88,12 +58,12 @@ nonisolated public enum CaptureOutlineContour {
     }
     // Clockwise on screen: positive area with y pointing down.
     if signedArea(loop) < 0 { loop.reverse() }
-    var simple = douglasPeuckerClosed(loop, epsilon: CaptureOutlineSpec.epsilonPx)
+    var simple = douglasPeuckerClosed(loop, epsilon: CaptureRules.Outline.epsilonPx)
     if simple.count < 3 || abs(signedArea(simple)) < 1e-9 { simple = loop }
     let cellWidth = Double(crop.width) / Double(soft.width)
     let cellHeight = Double(crop.height) / Double(soft.height)
     // The centre of downscaled cell (c, r) sits at field index (c + 1, r + 1).
-    let points = resample(simple, count: CaptureOutlineSpec.pointCount).map { point in
+    let points = resample(simple, count: CaptureRules.Outline.pointCount).map { point in
       CaptureOutlinePoint(
         x: (Double(crop.originX) + (point.x - 0.5) * cellWidth) / Double(frameWidth),
         y: (Double(crop.originY) + (point.y - 0.5) * cellHeight) / Double(frameHeight)
@@ -150,7 +120,7 @@ nonisolated public enum CaptureOutlineContour {
     maxY: Int
   ) -> Crop {
     let longSide = max(maxX + 1 - minX, maxY + 1 - minY)
-    let grow = max(CaptureOutlineSpec.cropGrowMinPx, longSide / CaptureOutlineSpec.cropGrowDivisor)
+    let grow = max(CaptureRules.Outline.cropGrowMinPx, longSide / CaptureRules.Outline.cropGrowDivisor)
     let left = max(0, minX - grow)
     let top = max(0, minY - grow)
     let right = min(image.width, maxX + 1 + grow)
@@ -179,7 +149,7 @@ nonisolated public enum CaptureOutlineContour {
     let width = crop.width
     let height = crop.height
     let longSide = max(width, height)
-    let target = CaptureOutlineSpec.longSidePx
+    let target = CaptureRules.Outline.longSidePx
     let outHeight = max(3, roundHalfEven(height * target, longSide))
     let outWidth = max(3, roundHalfEven(width * target, longSide))
     var integral = [Int](repeating: 0, count: (width + 1) * (height + 1))
@@ -222,7 +192,7 @@ nonisolated public enum CaptureOutlineContour {
   private static func largestComponent(_ soft: SoftGrid) -> [Bool]? {
     let width = soft.width
     let height = soft.height
-    let isForeground = soft.values.map { $0 >= CaptureOutlineSpec.foregroundAtLeast }
+    let isForeground = soft.values.map { $0 >= CaptureRules.Outline.foregroundAtLeast }
     var label = [Int](repeating: 0, count: width * height)
     var best = 0
     var bestSize = 0
@@ -275,7 +245,7 @@ nonisolated public enum CaptureOutlineContour {
 
   /// Every closed iso line of `field` (zero border included), points in field coordinates (x, y).
   private static func marchingSquares(_ field: [Double], width: Int, height: Int) -> [[CaptureOutlinePoint]] {
-    let iso = CaptureOutlineSpec.foregroundAtLeast
+    let iso = CaptureRules.Outline.foregroundAtLeast
     func value(_ row: Int, _ column: Int) -> Double { field[row * width + column] }
     func point(_ edge: Edge) -> CaptureOutlinePoint {
       let (row2, column2) = edge.isVertical ? (edge.row + 1, edge.column) : (edge.row, edge.column + 1)

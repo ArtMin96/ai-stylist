@@ -4,7 +4,7 @@
 // loops until the screen closes (or, in a sweep, until the case's duration). On the Simulator Vision has
 // no foreground mask, so the stored mask is measured instead (same `CaptureMaskProfile` as the phone).
 // By default the rules get a freshly measured mask on every frame; the live outline is traced from the
-// stored mask (or instance labels), moved by the jitter, once per `CaptureRules.Ios.maskIntervalMs` of
+// stored mask (or instance labels), moved by the jitter, once per `CaptureRules.Mask.intervalMs` of
 // playback, as the phone's Vision mask is. With a mask cadence (`captureMaskCadenceMs`), the rules see
 // the phone's timing too: the mask (box, edges, other boxes, keypoints) and the outline are measured
 // once per cadence and reused, stamped with their `maskTimestampMs`, while light comes from every frame.
@@ -155,7 +155,7 @@
         listener?.frameSetSegmentStarted(set, segment: index, atMs: clock.nowMs)
       }
       frameNumber += 1
-      let maskIntervalMs = maskCadenceMs ?? CaptureRules.Ios.maskIntervalMs
+      let maskIntervalMs = maskCadenceMs ?? CaptureRules.Mask.intervalMs
       if lastOutlineMs.map({ elapsedMs - $0 >= maskIntervalMs }) ?? true {
         lastOutlineMs = elapsedMs
         if maskCadenceMs != nil {

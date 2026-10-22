@@ -124,7 +124,7 @@ nonisolated public struct CaptureRuleEngine: Sendable {
   ) -> [CaptureHint] {
     var tips: [CaptureHint] = []
     if let item = foundItem(in: observation) {
-      if let cutOff = cutOffHint(item.edgeContact, topLimit: CaptureRules.Ios.cutOffAboveEdgeContactShare) {
+      if let cutOff = cutOffHint(item.edgeContact, topLimit: CaptureRules.Mask.cutOffAboveEdgeContactShare) {
         tips.append(cutOff)
       }
       if item.box.area < family.minAreaShare {
@@ -145,11 +145,11 @@ nonisolated public struct CaptureRuleEngine: Sendable {
   /// Hanger mode tolerates the hook at the top edge (§3, C2).
   private var topEdgeLimit: Double {
     context.mode == .hanger
-      ? CaptureRules.Ios.hangerTopCutOffAboveEdgeContactShare : CaptureRules.Ios.cutOffAboveEdgeContactShare
+      ? CaptureRules.Mask.hangerTopCutOffAboveEdgeContactShare : CaptureRules.Mask.cutOffAboveEdgeContactShare
   }
 
   private static func foundItem(in observation: CaptureObservation) -> CaptureItemObservation? {
-    guard let item = observation.item, item.maskAreaShare >= CaptureRules.Ios.minInstanceAreaShare else {
+    guard let item = observation.item, item.maskAreaShare >= CaptureRules.Mask.minInstanceAreaShare else {
       return nil
     }
     return item
@@ -158,7 +158,7 @@ nonisolated public struct CaptureRuleEngine: Sendable {
   /// One edge touched → that edge's hint; two or more → `cutOffMultiple`.
   private static func cutOffHint(_ contact: EdgeContact, topLimit: Double) -> CaptureHint? {
     let edges = CaptureEdge.allCases.filter { edge in
-      let limit = edge == .top ? topLimit : CaptureRules.Ios.cutOffAboveEdgeContactShare
+      let limit = edge == .top ? topLimit : CaptureRules.Mask.cutOffAboveEdgeContactShare
       return contact.share(at: edge) > limit
     }
     guard let edge = edges.first else { return nil }

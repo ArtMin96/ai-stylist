@@ -132,7 +132,8 @@
         pacing: options.sweep ? .sweep(durationMs: sweepDuration(of: set, in: index)) : .realTime,
         clock: virtualClock ?? continuousClock,
         virtualClock: virtualClock,
-        listener: self
+        listener: self,
+        maskCadenceMs: options.maskCadenceMs
       )
       frameCamera = camera
       return camera

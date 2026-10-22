@@ -103,6 +103,8 @@ Launch arguments (`-key value`, as `xcrun simctl launch` and Maestro `launchApp:
 - `captureScreenReader 1`: VoiceOver behaviour (anyway at once, spoken hints) plus the visible spoken log.
 - `captureSweep 1`: the capture flow opens at launch and plays every set (or only `captureFrameSet`) on a
   virtual clock; a capture is recorded and the camera carries on (batch sets still count photos).
+- `captureMaskCadenceMs <ms>`: frame sets give the rules a new mask only this often, stamped with its time, as the
+  phone's Vision mask (every 250 ms) does; `just capture-sim-ios` sweeps with it. Unset: a fresh mask every frame.
 - `captureRecordOnly 1`: in real time, a capture is recorded and the camera carries on (the sweep's rule), so
   the unlocked states keep coming back for the `e2e/capture` screenshot flows.
 - `captureFramesDir <absolute path>`: the frames folder; default `<repo>/artifacts/capture-camera/frames` of

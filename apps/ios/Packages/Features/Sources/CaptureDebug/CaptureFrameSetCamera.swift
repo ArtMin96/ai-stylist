@@ -3,9 +3,11 @@
 // its frame count, moved each frame by the generator's jitter offsets (index `offsets`); the last segment
 // loops until the screen closes (or, in a sweep, until the case's duration). On the Simulator Vision has
 // no foreground mask, so the stored mask is measured instead (same `CaptureMaskProfile` as the phone).
-// The rules get a freshly measured mask on every frame, as before; the live outline is traced from the
+// By default the rules get a freshly measured mask on every frame; the live outline is traced from the
 // stored mask (or instance labels), moved by the jitter, once per `CaptureRules.Ios.maskIntervalMs` of
-// playback, as the phone's Vision mask is.
+// playback, as the phone's Vision mask is. With a mask cadence (`captureMaskCadenceMs`), the rules see
+// the phone's timing too: the mask (box, edges, other boxes, keypoints) and the outline are measured
+// once per cadence and reused, stamped with their `maskTimestampMs`, while light comes from every frame.
 #if os(iOS)
   import AIStylistKernel
   public import CaptureFeature
@@ -53,6 +55,10 @@
     @ObservationIgnored private var segmentIndex = -1
     @ObservationIgnored private var currentImage: CGImage?
     @ObservationIgnored private var lastOutlineMs: Int?
+    /// Mask cadence in ms (`captureMaskCadenceMs`); nil measures a fresh mask on every frame.
+    @ObservationIgnored private let maskCadenceMs: Int?
+    /// With a mask cadence: the frame the current mask was taken from and when.
+    @ObservationIgnored private var lastMask: (segment: Int, frame: Int, atMs: Int)?
     @ObservationIgnored private var outlines: CaptureMaskOutlines?
     /// The label image (moved by the jitter) the current outlines were traced from; the results log
     /// measures the drawn outline against it.
@@ -65,8 +71,10 @@
       pacing: CaptureFramePacing,
       clock: any CaptureClock,
       virtualClock: CaptureVirtualClock?,
-      listener: any CaptureFrameSetListener
+      listener: any CaptureFrameSetListener,
+      maskCadenceMs: Int? = nil
     ) {
+      self.maskCadenceMs = maskCadenceMs
       self.set = set
       self.directory = directory
       self.fps = max(1, fps)
@@ -87,6 +95,7 @@
       frameNumber = 0
       segmentIndex = -1
       lastOutlineMs = nil
+      lastMask = nil
       outlines = nil
       outlineReference = nil
       startMs = clock.nowMs
@@ -146,8 +155,12 @@
         listener?.frameSetSegmentStarted(set, segment: index, atMs: clock.nowMs)
       }
       frameNumber += 1
-      if lastOutlineMs.map({ elapsedMs - $0 >= CaptureRules.Ios.maskIntervalMs }) ?? true {
+      let maskIntervalMs = maskCadenceMs ?? CaptureRules.Ios.maskIntervalMs
+      if lastOutlineMs.map({ elapsedMs - $0 >= maskIntervalMs }) ?? true {
         lastOutlineMs = elapsedMs
+        if maskCadenceMs != nil {
+          lastMask = (index, frameInSegment, elapsedMs)
+        }
         let (dx, dy) = pixelOffset(segment: index, frame: frameInSegment)
         let traced = await Self.traceOutlines(assets[index].outlineLabels, dx: dx, dy: dy, atMs: elapsedMs)
         guard isRunning, !Task.isCancelled else { return nil }
@@ -201,27 +214,35 @@
       currentImage = asset.image
       frames.image = asset.image
       frames.offset = CGSize(width: dx, height: dy)
-      let (pixelX, pixelY) = pixelOffset(segment: index, frame: frame)
-      let measure = asset.mask?.measure(offsetX: pixelX, offsetY: pixelY)
+      // The mask the rules read: this frame's, or with a cadence the last one taken (possibly from the
+      // previous segment, as a phone's mask lags a scene change).
+      let mask = lastMask ?? (index, frame, timestampMs)
+      let maskAsset = assets[mask.segment]
+      let (maskDx, maskDy) = set.segments[mask.segment].offset(atFrame: mask.frame)
+      let (pixelX, pixelY) = pixelOffset(segment: mask.segment, frame: mask.frame)
+      let measure = maskAsset.mask?.measure(offsetX: pixelX, offsetY: pixelY)
       let item = measure.map {
         CaptureItemObservation(
           box: $0.box,
           maskAreaShare: $0.maskAreaShare,
           edgeContact: $0.edgeContact,
-          instanceCount: asset.instanceCount,
-          otherBoxes: asset.otherBoxes.map {
-            NormalizedRect(x: $0.x + dx, y: $0.y + dy, width: $0.width, height: $0.height)
+          instanceCount: maskAsset.instanceCount,
+          otherBoxes: maskAsset.otherBoxes.map {
+            NormalizedRect(x: $0.x + maskDx, y: $0.y + maskDy, width: $0.width, height: $0.height)
           },
-          sharpness: asset.sharpness
+          sharpness: maskAsset.sharpness
         )
       }
-      let pose = asset.keypoints.map { keypoints in
+      let pose = maskAsset.keypoints.map { keypoints in
         CaptureBodyPose.observed(
-          keypoints.mapValues { CaptureKeypoint(x: $0.x + dx, y: $0.y + dy, confidence: $0.confidence) }
+          keypoints.mapValues {
+            CaptureKeypoint(x: $0.x + maskDx, y: $0.y + maskDy, confidence: $0.confidence)
+          }
         )
       }
       return CaptureObservation(
         timestampMs: timestampMs,
+        maskTimestampMs: maskCadenceMs == nil ? nil : mask.atMs,
         item: item,
         meanLuma: asset.meanLuma,
         clippedShare: asset.clippedShare,

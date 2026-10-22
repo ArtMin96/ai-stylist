@@ -28,7 +28,9 @@ of usage data the privacy docs do not name. The security review of the camera br
 ## Decision
 
 The Android app removes the `backend:com.google.android.datatransport.cct.CctBackendFactory`
-registration from `TransportBackendDiscovery` in its manifest (`tools:node="remove"`). The
+registration from `TransportBackendDiscovery` (`tools:node="remove"`). The override sits in the
+manifest of `:feature:capture`, the module that brings ML Kit, where Android Lint can resolve the
+class; the app's merged manifests (debug, preview, release) no longer hold the registration. The
 `datatransport` runtime itself stays, because ML Kit depends on it. `just android-check` fails if the
 release merged manifest has that registration again.
 

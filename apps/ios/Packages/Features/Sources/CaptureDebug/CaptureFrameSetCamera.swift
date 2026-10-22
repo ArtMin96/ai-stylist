@@ -3,6 +3,9 @@
 // its frame count, moved each frame by the generator's jitter offsets (index `offsets`); the last segment
 // loops until the screen closes (or, in a sweep, until the case's duration). On the Simulator Vision has
 // no foreground mask, so the stored mask is measured instead (same `CaptureMaskProfile` as the phone).
+// The rules get a freshly measured mask on every frame, as before; the live outline is traced from the
+// stored mask (or instance labels), moved by the jitter, once per `CaptureRules.Ios.maskIntervalMs` of
+// playback, as the phone's Vision mask is.
 #if os(iOS)
   import AIStylistKernel
   public import CaptureFeature
@@ -49,6 +52,11 @@
     @ObservationIgnored private var startMs = 0
     @ObservationIgnored private var segmentIndex = -1
     @ObservationIgnored private var currentImage: CGImage?
+    @ObservationIgnored private var lastOutlineMs: Int?
+    @ObservationIgnored private var outlines: CaptureMaskOutlines?
+    /// The label image (moved by the jitter) the current outlines were traced from; the results log
+    /// measures the drawn outline against it.
+    @ObservationIgnored private(set) var outlineReference: CaptureGrayImage?
 
     init(
       set: CaptureFrameIndex.FrameSet,
@@ -78,6 +86,9 @@
       guard !assets.isEmpty else { return .noCamera }
       frameNumber = 0
       segmentIndex = -1
+      lastOutlineMs = nil
+      outlines = nil
+      outlineReference = nil
       startMs = clock.nowMs
       isRunning = true
       return .ready
@@ -135,7 +146,36 @@
         listener?.frameSetSegmentStarted(set, segment: index, atMs: clock.nowMs)
       }
       frameNumber += 1
+      if lastOutlineMs.map({ elapsedMs - $0 >= CaptureRules.Ios.maskIntervalMs }) ?? true {
+        lastOutlineMs = elapsedMs
+        let (dx, dy) = pixelOffset(segment: index, frame: frameInSegment)
+        let traced = await Self.traceOutlines(assets[index].outlineLabels, dx: dx, dy: dy, atMs: elapsedMs)
+        guard isRunning, !Task.isCancelled else { return nil }
+        outlines = traced.outlines
+        outlineReference = traced.reference
+      }
       return observation(segment: index, frame: frameInSegment, timestampMs: elapsedMs)
+    }
+
+    /// The segment's jitter offset at `frame`, in mask pixels.
+    private func pixelOffset(segment index: Int, frame: Int) -> (dx: Int, dy: Int) {
+      let asset = assets[index]
+      let (dx, dy) = set.segments[index].offset(atFrame: frame)
+      return (Int((dx * Double(asset.maskWidth)).rounded()), Int((dy * Double(asset.maskHeight)).rounded()))
+    }
+
+    /// The live outline's candidates of one stored mask moved by the jitter, traced off the main actor
+    /// (a Dev build is unoptimised, and tracing a full-size mask takes tens of milliseconds there).
+    @concurrent nonisolated private static func traceOutlines(
+      _ labels: CaptureGrayImage?,
+      dx: Int,
+      dy: Int,
+      atMs: Int
+    ) async -> (outlines: CaptureMaskOutlines, reference: CaptureGrayImage?) {
+      guard let labels else { return (CaptureMaskOutlines(maskTimestampMs: atMs, candidates: []), nil) }
+      let moved = labels.shifted(byX: dx, y: dy)
+      let instances = CaptureInstanceLabels.instances(in: moved)
+      return (CaptureMaskOutlines(maskTimestampMs: atMs, labels: moved, instances: instances), moved)
     }
 
     private func finish() {
@@ -161,10 +201,8 @@
       currentImage = asset.image
       frames.image = asset.image
       frames.offset = CGSize(width: dx, height: dy)
-      let measure = asset.mask?.measure(
-        offsetX: Int((dx * Double(asset.maskWidth)).rounded()),
-        offsetY: Int((dy * Double(asset.maskHeight)).rounded())
-      )
+      let (pixelX, pixelY) = pixelOffset(segment: index, frame: frame)
+      let measure = asset.mask?.measure(offsetX: pixelX, offsetY: pixelY)
       let item = measure.map {
         CaptureItemObservation(
           box: $0.box,
@@ -188,7 +226,8 @@
         meanLuma: asset.meanLuma,
         clippedShare: asset.clippedShare,
         tiltDegrees: set.segments[index].tiltDegrees,
-        bodyPose: pose ?? .notRun
+        bodyPose: pose ?? .notRun,
+        outlines: outlines
       )
     }
   }

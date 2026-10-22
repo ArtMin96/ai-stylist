@@ -87,24 +87,6 @@
     return gray
   }
 
-  /// `mask` moved by whole pixels (right and down positive); what leaves the frame is lost.
-  nonisolated private func shifted(_ mask: CaptureGrayImage, dx: Int, dy: Int) -> CaptureGrayImage {
-    let width = mask.width
-    var pixels = [UInt8](repeating: 0, count: mask.pixels.count)
-    let columns = max(0, dx)..<min(width, width + dx)
-    if !columns.isEmpty {
-      mask.pixels.withUnsafeBufferPointer { source in
-        pixels.withUnsafeMutableBufferPointer { target in
-          for y in max(0, dy)..<min(mask.height, mask.height + dy) {
-            let from = (y - dy) * width - dx
-            for x in columns { target[y * width + x] = source[from + x] }
-          }
-        }
-      }
-    }
-    return CaptureGrayImage(width: width, height: mask.height, pixels: pixels) ?? mask
-  }
-
   /// A 3 × 3 dilation (`grow`) or erosion of the mask; only the mask's box (grown by 1 px) can change.
   nonisolated private func morphed(_ mask: CaptureGrayImage, grow: Bool) -> CaptureGrayImage {
     guard let bounds = foregroundBounds(mask) else { return mask }
@@ -229,9 +211,9 @@
         // 180 playback frames at 30 fps, one mask every 250 ms = every 7.5 frames.
         let masks = (0..<24).map { update in
           let offset = offsets[Int(Double(update) * 7.5) % offsets.count]
-          return shifted(
-            mask, dx: Int((offset[0] * Double(mask.width)).rounded()),
-            dy: Int((offset[1] * Double(mask.height)).rounded()))
+          return mask.shifted(
+            byX: Int((offset[0] * Double(mask.width)).rounded()),
+            y: Int((offset[1] * Double(mask.height)).rounded()))
         }
         let drawn = drawnOutlines(masks).map { $0 ?? [] }
         return zip(drawn.dropFirst(), drawn).map { current, previous in
@@ -258,8 +240,8 @@
         let mask = try loadGray(item.segment.mask ?? "")
         var generator = SeededGenerator(state: item.seed)
         let masks = (0..<12).map { _ in
-          let moved = shifted(
-            mask, dx: Int.random(in: -1...1, using: &generator), dy: Int.random(in: -1...1, using: &generator))
+          let moved = mask.shifted(
+            byX: Int.random(in: -1...1, using: &generator), y: Int.random(in: -1...1, using: &generator))
           switch Int.random(in: 0...2, using: &generator) {
           case 0: return morphed(moved, grow: true)
           case 1: return morphed(moved, grow: false)

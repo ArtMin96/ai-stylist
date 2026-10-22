@@ -127,3 +127,42 @@ struct CaptureLiveOutlineTests {
     #expect(outline.state?.points == square)
   }
 }
+
+@Suite("Live outline: label images")
+struct CaptureOutlineLabelTests {
+  /// Two drawn instances: label 1 a 30 × 20 block, label 2 a 12 × 12 block.
+  private let labels: CaptureGrayImage? = {
+    let width = 60
+    let height = 40
+    var pixels = [UInt8](repeating: 0, count: width * height)
+    for y in 5..<25 { for x in 4..<34 { pixels[y * width + x] = 1 } }
+    for y in 20..<32 { for x in 40..<52 { pixels[y * width + x] = 2 } }
+    return CaptureGrayImage(width: width, height: height, pixels: pixels)
+  }()
+
+  @Test("an instance traced in its label image equals its own mask traced alone")
+  func instanceMatchesItsMask() throws {
+    let labels = try #require(labels)
+    for instance in CaptureInstanceLabels.instances(in: labels) {
+      let mask = try #require(CaptureInstanceLabels.mask(of: instance.label, in: labels))
+      #expect(CaptureOutlineContour.outline(of: instance, in: labels) == CaptureOutlineContour.outline(of: mask))
+    }
+  }
+
+  @Test("a mask's outlines list its items largest first")
+  func candidatesLargestFirst() throws {
+    let labels = try #require(labels)
+    let outlines = CaptureMaskOutlines(
+      maskTimestampMs: 0, labels: labels, instances: CaptureInstanceLabels.instances(in: labels))
+    #expect(outlines.candidates.map(\.areaShare) == [600.0 / 2400, 144.0 / 2400])
+  }
+
+  @Test("shifting moves pixels by whole steps and drops what leaves the frame")
+  func shifted() throws {
+    let labels = try #require(labels)
+    let moved = labels.shifted(byX: 10, y: -5)
+    #expect(moved.pixels[0 * 60 + 14] == 1)  // was (4, 5)
+    #expect(moved.pixels[15 * 60 + 50] == 2)  // was (40, 20)
+    #expect(CaptureInstanceLabels.instances(in: moved).first { $0.label == 2 }?.pixelCount == 10 * 12)
+  }
+}

@@ -76,19 +76,22 @@
     }
   }
 
-  /// The item one Vision foreground mask shows, and the boxes of the other instances (covered rule).
+  /// The item one Vision foreground mask shows, the boxes of the other instances (covered rule) and the
+  /// items' outlines (live outline).
   nonisolated struct CaptureForeground: Sendable {
     let measure: CaptureMaskMeasure
     let instanceCount: Int
     /// The other instances, largest first (`NormalizedRect` alone is ambiguous next to Vision's).
     let others: [CaptureInstance]
+    /// The outlines of the largest instances that count as an item, largest first.
+    let outlines: [CaptureOutlineCandidate]
   }
 
   /// Vision requests on one image handler.
   nonisolated enum CaptureVision {
     /// The largest foreground instance and the instance count; nil when Vision finds none or cannot run
-    /// (the Simulator has no foreground mask).
-    static func foreground(using handler: VNImageRequestHandler) -> CaptureForeground? {
+    /// (the Simulator has no foreground mask). `tracesOutlines` adds the live outline's candidates.
+    static func foreground(using handler: VNImageRequestHandler, tracesOutlines: Bool) -> CaptureForeground? {
       let request = VNGenerateForegroundInstanceMaskRequest()
       do {
         try handler.perform([request])
@@ -106,7 +109,8 @@
       return CaptureForeground(
         measure: measure,
         instanceCount: observation.allInstances.count,
-        others: Array(instances.dropFirst())
+        others: Array(instances.dropFirst()),
+        outlines: tracesOutlines ? CaptureMaskOutlines.candidates(labels: labels, instances: instances) : []
       )
     }
 
@@ -148,7 +152,7 @@
     /// reported as not found, so the "no item" tip shows.
     @concurrent public static func observe(_ image: CGImage) async -> CaptureObservation {
       let handler = VNImageRequestHandler(cgImage: image, orientation: .up)
-      let foreground = CaptureVision.foreground(using: handler)
+      let foreground = CaptureVision.foreground(using: handler, tracesOutlines: false)
       let luma = CaptureImageReader.gray(from: image, longSide: CaptureRules.Steady.sharpnessLongSidePx)
       let item = foreground.map {
         CaptureItemObservation(

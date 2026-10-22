@@ -94,6 +94,9 @@
     /// Ground-truth keypoints (worn frames), fed as the body pose (the Simulator cannot run the live
     /// pose model on drawn figures reliably; brief §11).
     let keypoints: [CaptureBodyPart: CaptureKeypoint]?
+    /// What the live outline traces: the instance label image, or the stored mask (one instance); nil when
+    /// the segment stores neither.
+    let outlineLabels: CaptureGrayImage?
 
     static func load(_ segment: CaptureFrameIndex.Segment, in directory: URL) throws -> CaptureFrameAssets {
       let image = try Self.image(at: directory.appending(path: segment.frame))
@@ -127,7 +130,8 @@
         sharpness: box.map { CaptureLumaMetrics.sharpness(of: luma, inside: $0) } ?? 0,
         meanLuma: CaptureLumaMetrics.meanLuma(of: luma),
         clippedShare: CaptureLumaMetrics.clippedShare(of: luma),
-        keypoints: try segment.keypoints.map { try Self.keypoints(at: directory.appending(path: $0)) }
+        keypoints: try segment.keypoints.map { try Self.keypoints(at: directory.appending(path: $0)) },
+        outlineLabels: labels ?? maskGray
       )
     }
 

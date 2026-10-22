@@ -31,20 +31,23 @@ nonisolated public struct CaptureMaskOutlines: Equatable, Sendable {
   }
 
   /// The outlines of a label image's instances (0 background; Vision's instance mask, or the frame
-  /// generator's instance PNG). Only instances that count as an item (`CaptureRules.Ios.minInstanceAreaShare`)
-  /// are traced, the largest `maxCandidates` of them, which bounds the work per mask.
+  /// generator's instance PNG).
   public init(maskTimestampMs: Int, labels: CaptureGrayImage, instances: [CaptureInstance]) {
+    self.init(maskTimestampMs: maskTimestampMs, candidates: Self.candidates(labels: labels, instances: instances))
+  }
+
+  /// The outlines of a label image's instances that count as an item (`CaptureRules.Ios.minInstanceAreaShare`),
+  /// the largest `maxCandidates` of them, which bounds the work per mask. `instances` largest first, as
+  /// `CaptureInstanceLabels.instances(in:)` lists them.
+  public static func candidates(labels: CaptureGrayImage, instances: [CaptureInstance]) -> [CaptureOutlineCandidate] {
     let frameArea = Double(labels.width * labels.height)
-    let items = instances.prefix(Self.maxCandidates).filter {
-      Double($0.pixelCount) / frameArea >= CaptureRules.Ios.minInstanceAreaShare
-    }
-    let candidates = items.compactMap { instance -> CaptureOutlineCandidate? in
-      guard let mask = CaptureInstanceLabels.mask(of: instance.label, in: labels),
-        let points = CaptureOutlineContour.outline(of: mask)
-      else { return nil }
-      return CaptureOutlineCandidate(areaShare: Double(instance.pixelCount) / frameArea, points: points)
-    }
-    self.init(maskTimestampMs: maskTimestampMs, candidates: candidates)
+    return instances.prefix(maxCandidates)
+      .filter { Double($0.pixelCount) / frameArea >= CaptureRules.Ios.minInstanceAreaShare }
+      .compactMap { instance in
+        CaptureOutlineContour.outline(of: instance, in: labels).map {
+          CaptureOutlineCandidate(areaShare: Double(instance.pixelCount) / frameArea, points: $0)
+        }
+      }
   }
 
   /// At most this many instances are traced per mask (the largest ones).

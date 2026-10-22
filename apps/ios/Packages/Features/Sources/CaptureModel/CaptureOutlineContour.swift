@@ -41,9 +41,32 @@ nonisolated public enum CaptureOutlineContour {
     trace(mask)?.points
   }
 
+  /// The outline of one instance of a label image (its pixels equal `instance.label`). Its box, already
+  /// measured, saves the scan of the whole image.
+  public static func outline(of instance: CaptureInstance, in labels: CaptureGrayImage) -> [CaptureOutlinePoint]? {
+    let minX = Int((instance.box.x * Double(labels.width)).rounded())
+    let minY = Int((instance.box.y * Double(labels.height)).rounded())
+    let maxX = minX + Int((instance.box.width * Double(labels.width)).rounded()) - 1
+    let maxY = minY + Int((instance.box.height * Double(labels.height)).rounded()) - 1
+    guard instance.label > 0, minX >= 0, minY >= 0, maxX < labels.width, maxY < labels.height, minX <= maxX,
+      minY <= maxY
+    else { return nil }
+    let crop = crop(labels, matching: instance.label, minX: minX, maxX: maxX, minY: minY, maxY: maxY)
+    return trace(crop, frameWidth: labels.width, frameHeight: labels.height)?.points
+  }
+
   /// The outline and the vertex count after simplification (the parity fixture checks both).
   public static func trace(_ mask: CaptureGrayImage) -> (points: [CaptureOutlinePoint], simplifiedVertexCount: Int)? {
-    guard let crop = crop(mask) else { return nil }
+    guard let bounds = foregroundBounds(mask) else { return nil }
+    let crop = crop(mask, matching: nil, minX: bounds.minX, maxX: bounds.maxX, minY: bounds.minY, maxY: bounds.maxY)
+    return trace(crop, frameWidth: mask.width, frameHeight: mask.height)
+  }
+
+  private static func trace(
+    _ crop: Crop,
+    frameWidth: Int,
+    frameHeight: Int
+  ) -> (points: [CaptureOutlinePoint], simplifiedVertexCount: Int)? {
     let soft = downscale(crop)
     guard let component = largestComponent(soft) else { return nil }
     // Zero border, and the area-averaged value only inside the kept component.
@@ -64,15 +87,13 @@ nonisolated public enum CaptureOutlineContour {
     if signedArea(loop) < 0 { loop.reverse() }
     var simple = douglasPeuckerClosed(loop, epsilon: CaptureOutlineSpec.epsilonPx)
     if simple.count < 3 || abs(signedArea(simple)) < 1e-9 { simple = loop }
-    let frameWidth = Double(mask.width)
-    let frameHeight = Double(mask.height)
     let cellWidth = Double(crop.width) / Double(soft.width)
     let cellHeight = Double(crop.height) / Double(soft.height)
     // The centre of downscaled cell (c, r) sits at field index (c + 1, r + 1).
     let points = resample(simple, count: CaptureOutlineSpec.pointCount).map { point in
       CaptureOutlinePoint(
-        x: (Double(crop.originX) + (point.x - 0.5) * cellWidth) / frameWidth,
-        y: (Double(crop.originY) + (point.y - 0.5) * cellHeight) / frameHeight
+        x: (Double(crop.originX) + (point.x - 0.5) * cellWidth) / Double(frameWidth),
+        y: (Double(crop.originY) + (point.y - 0.5) * cellHeight) / Double(frameHeight)
       )
     }
     return (points, simple.count)
@@ -95,8 +116,8 @@ nonisolated public enum CaptureOutlineContour {
     let values: [Double]
   }
 
-  /// Step 3: the mask's box grown by max(2 px, long side / 8) and clamped to the frame.
-  private static func crop(_ mask: CaptureGrayImage) -> Crop? {
+  /// The box of the pixels > 0, in pixels; nil when there is none.
+  private static func foregroundBounds(_ mask: CaptureGrayImage) -> (minX: Int, maxX: Int, minY: Int, maxY: Int)? {
     var minX = mask.width
     var maxX = -1
     var minY = mask.height
@@ -112,21 +133,36 @@ nonisolated public enum CaptureOutlineContour {
         }
       }
     }
-    guard maxX >= 0 else { return nil }
+    return maxX >= 0 ? (minX, maxX, minY, maxY) : nil
+  }
+
+  /// Step 3: the item's box (inclusive pixel bounds) grown by max(2 px, long side / 8) and clamped to the
+  /// frame. A pixel is the item when it equals `label`, or with no label when it is > 0.
+  private static func crop(
+    _ image: CaptureGrayImage,
+    matching label: UInt8?,
+    minX: Int,
+    maxX: Int,
+    minY: Int,
+    maxY: Int
+  ) -> Crop {
     let longSide = max(maxX + 1 - minX, maxY + 1 - minY)
     let grow = max(CaptureOutlineSpec.cropGrowMinPx, longSide / CaptureOutlineSpec.cropGrowDivisor)
     let left = max(0, minX - grow)
     let top = max(0, minY - grow)
-    let right = min(mask.width, maxX + 1 + grow)
-    let bottom = min(mask.height, maxY + 1 + grow)
+    let right = min(image.width, maxX + 1 + grow)
+    let bottom = min(image.height, maxY + 1 + grow)
     let width = right - left
     let height = bottom - top
     var bits = [UInt8](repeating: 0, count: width * height)
-    mask.pixels.withUnsafeBufferPointer { pixels in
-      for y in 0..<height {
-        let source = (top + y) * mask.width + left
-        for x in 0..<width where pixels[source + x] > 0 {
-          bits[y * width + x] = 1
+    image.pixels.withUnsafeBufferPointer { pixels in
+      bits.withUnsafeMutableBufferPointer { bits in
+        for y in 0..<height {
+          let source = (top + y) * image.width + left
+          for x in 0..<width {
+            let pixel = pixels[source + x]
+            if label.map({ pixel == $0 }) ?? (pixel > 0) { bits[y * width + x] = 1 }
+          }
         }
       }
     }

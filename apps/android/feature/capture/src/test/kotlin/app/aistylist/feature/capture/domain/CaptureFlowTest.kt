@@ -108,6 +108,7 @@ class CaptureFlowTest {
             val flow = CaptureFlowState().pickUnderwear(WornOptIn.WORN_ALLOWED).pickUnderwearItem(pick)
             assertEquals(pick.name, family, flow.camera().family)
             assertTrue(flow.selection.isUnderwear)
+            assertEquals(pick, flow.selection.underwearPick)
         }
     }
 

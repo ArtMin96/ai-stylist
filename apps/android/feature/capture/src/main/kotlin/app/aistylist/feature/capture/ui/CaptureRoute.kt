@@ -198,7 +198,7 @@ private fun CameraRoute(
                 context = state.camera?.context ?: screen.context,
                 snapshot = state.camera,
                 offeredModes = flow.offeredModes,
-                isUnderwear = flow.selection.isUnderwear,
+                underwearPick = flow.selection.underwearPick,
                 isWornAllowed = flow.wornOptIn.allowsWorn,
                 batchCount = flow.batchPhotos.size,
                 isSpeechOn = state.isSpeechOn || state.isScreenReaderOn,

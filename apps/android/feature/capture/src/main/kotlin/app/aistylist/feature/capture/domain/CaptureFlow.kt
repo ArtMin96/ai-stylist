@@ -47,8 +47,11 @@ enum class CameraUnavailableReason { PERMISSION_DENIED, NO_CAMERA }
 data class CaptureSelection(
     val family: CaptureShapeFamily = CaptureShapeFamily.GENERIC,
     val mode: CaptureMode = DEFAULT_CAPTURE_MODE,
-    val isUnderwear: Boolean = false,
+    /** The underwear or swimwear sub-pick; null for any other item. */
+    val underwearPick: UnderwearPick? = null,
 ) {
+    val isUnderwear: Boolean get() = underwearPick != null
+
     /** The family's modes; for underwear, worn only after the opt-in. */
     fun offeredModes(optIn: WornOptIn): List<CaptureMode> =
         if (isUnderwear && !optIn.allowsWorn) family.modes - CaptureMode.WORN else family.modes
@@ -164,7 +167,7 @@ data class CaptureFlowState(
         if (screen != CaptureScreen.UnderwearPicker) {
             this
         } else {
-            startSingle(CaptureSelection(family = pick.family, isUnderwear = true))
+            startSingle(CaptureSelection(family = pick.family, underwearPick = pick))
         }
 
     /** "Many items (batch)": generic guide, no category, no back question (Q16, Q-C). */

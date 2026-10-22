@@ -111,7 +111,7 @@ class CaptureScreensTest {
     private fun showCamera(
         context: CameraContext,
         snapshot: CameraSnapshot?,
-        isUnderwear: Boolean = false,
+        underwearPick: UnderwearPick? = null,
         batchCount: Int = 0,
     ) {
         compose.setContent {
@@ -122,7 +122,7 @@ class CaptureScreensTest {
                             context = context,
                             snapshot = snapshot,
                             offeredModes = context.family.modes,
-                            isUnderwear = isUnderwear,
+                            underwearPick = underwearPick,
                             isWornAllowed = false,
                             batchCount = batchCount,
                             isSpeechOn = false,
@@ -219,9 +219,17 @@ class CaptureScreensTest {
     }
 
     @Test
+    fun `a front step's pill names the item, the underwear sub-pick for underwear (boards SC16-SC18)`() {
+        val topFlat = CameraContext(CaptureShapeFamily.TOP, CaptureMode.FLAT)
+        showCamera(topFlat, snapshot(topFlat, hint = CaptureHint.GUIDE), underwearPick = UnderwearPick.BRA_OR_TOP)
+
+        compose.onNodeWithText("Bra or top").assertIsDisplayed()
+    }
+
+    @Test
     fun `the underwear camera has the menu with the worn toggle (C19)`() {
         val bra = CameraContext(CaptureShapeFamily.TOP, CaptureMode.FLAT)
-        showCamera(bra, snapshot(bra, hint = CaptureHint.GUIDE), isUnderwear = true)
+        showCamera(bra, snapshot(bra, hint = CaptureHint.GUIDE), underwearPick = UnderwearPick.BRA_OR_TOP)
 
         compose.onNodeWithTag(CaptureTestTags.CAMERA_MENU).performClick()
         compose.onNodeWithText("Underwear and swimwear only. Saved on this phone.").assertIsDisplayed()

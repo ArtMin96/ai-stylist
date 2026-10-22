@@ -59,6 +59,7 @@ import app.aistylist.feature.capture.domain.CaptureFlowKind
 import app.aistylist.feature.capture.domain.CaptureSide
 import app.aistylist.feature.capture.domain.LockPhase
 import app.aistylist.feature.capture.domain.ShutterState
+import app.aistylist.feature.capture.domain.UnderwearPick
 
 /** Everything the camera screen shows, beyond the live picture. */
 data class CameraScreenModel(
@@ -66,13 +67,16 @@ data class CameraScreenModel(
     /** Null only for the instant before the step's session publishes. */
     val snapshot: CameraSnapshot?,
     val offeredModes: List<CaptureMode>,
-    val isUnderwear: Boolean,
+    /** The underwear or swimwear sub-pick the camera shows; null for any other item. */
+    val underwearPick: UnderwearPick?,
     val isWornAllowed: Boolean,
     val batchCount: Int,
     val isSpeechOn: Boolean,
     val hasTorch: Boolean,
     val isTorchOn: Boolean,
-)
+) {
+    val isUnderwear: Boolean get() = underwearPick != null
+}
 
 /** What the camera screen reports. */
 interface CameraActions {
@@ -253,7 +257,7 @@ private fun PreviewArea(
                     .testTag(context.guideTestTag)
                     .semantics { contentDescription = previewLabel },
         )
-        stepLabel(context)?.let { (text, tag) ->
+        stepLabel(context, model.underwearPick)?.let { (text, tag) ->
             StepPill(
                 text = stringResource(text),
                 modifier =
@@ -280,13 +284,19 @@ private fun PreviewArea(
     }
 }
 
-/** The pill text and its test ID: "Back" / "Pair" on those steps, the family label on a single front step. */
-private fun stepLabel(context: CameraContext): Pair<Int, String?>? =
+/**
+ * The pill text and its test ID: "Back" / "Pair" on those steps; on a single front step the item's
+ * name with no ID, the underwear sub-pick's for underwear (boards SC16-SC18).
+ */
+private fun stepLabel(
+    context: CameraContext,
+    underwearPick: UnderwearPick?,
+): Pair<Int, String?>? =
     when {
         context.side == CaptureSide.BACK -> R.string.cap_step_back to CaptureTestTags.STEP_BACK
         context.side == CaptureSide.PAIR -> R.string.cap_step_pair to CaptureTestTags.STEP_PAIR
         context.kind == CaptureFlowKind.BATCH -> null
-        else -> context.family.label() to null
+        else -> (underwearPick?.label() ?: context.family.label()) to null
     }
 
 @Composable

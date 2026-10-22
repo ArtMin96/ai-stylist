@@ -38,6 +38,16 @@ struct CaptureRules: Decodable {
         let tooBrightAboveClippedShare: Double
     }
 
+    struct Tilt: Decodable {
+        let hintAboveDegrees: Double
+        let clearBelowDegrees: Double
+    }
+
+    struct Covered: Decodable {
+        let aboveOverlapShare: Double
+        let minOtherBoxAreaShare: Double
+    }
+
     struct Timing: Decodable {
         let anywayDelayMs: Int
     }
@@ -63,6 +73,8 @@ struct CaptureRules: Decodable {
     let evaluation: Evaluation
     let steady: Steady
     let light: Light
+    let tilt: Tilt
+    let covered: Covered
     let timing: Timing
     let worn: Worn
     let ios: IOS

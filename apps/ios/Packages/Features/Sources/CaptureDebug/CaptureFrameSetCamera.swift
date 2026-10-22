@@ -171,6 +171,9 @@
           maskAreaShare: $0.maskAreaShare,
           edgeContact: $0.edgeContact,
           instanceCount: asset.instanceCount,
+          otherBoxes: asset.otherBoxes.map {
+            NormalizedRect(x: $0.x + dx, y: $0.y + dy, width: $0.width, height: $0.height)
+          },
           sharpness: asset.sharpness
         )
       }
@@ -184,6 +187,7 @@
         item: item,
         meanLuma: asset.meanLuma,
         clippedShare: asset.clippedShare,
+        tiltDegrees: set.segments[index].tiltDegrees,
         bodyPose: pose ?? .notRun
       )
     }

@@ -27,6 +27,7 @@ private val SHOWN_TEXT: Map<CaptureHint, Int> =
         CaptureHint.BODY_HIPS_ANKLES to R.string.cap_hint_body_hips_ankles,
         CaptureHint.BODY_HIPS_KNEES to R.string.cap_hint_body_hips_knees,
         CaptureHint.BODY_SHOULDERS_KNEES to R.string.cap_hint_body_shoulders_knees,
+        CaptureHint.COVERED to R.string.cap_hint_covered,
         CaptureHint.TOO_SMALL to R.string.cap_hint_too_small,
         CaptureHint.NOT_STEADY to R.string.cap_hint_not_steady,
         CaptureHint.TOO_DARK to R.string.cap_hint_too_dark,
@@ -73,6 +74,8 @@ val CaptureHint.icon: AppIconName
             CaptureHint.BODY_HIPS_KNEES,
             CaptureHint.BODY_SHOULDERS_KNEES,
             -> AppIconName.POSE_NEUTRAL
+
+            CaptureHint.COVERED -> AppIconName.LAYERS
 
             CaptureHint.TOO_SMALL -> AppIconName.ZOOM_IN
 

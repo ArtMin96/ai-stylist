@@ -12,6 +12,7 @@ public enum CaptureLockReason: String, CaseIterable, Sendable {
   case noItem = "no-item"
   case cutOff = "cut-off"
   case bodyPartsMissing = "body-parts-missing"
+  case covered = "covered"
   case tooSmall = "too-small"
   case notSteady = "not-steady"
 }
@@ -48,6 +49,7 @@ public enum CaptureHint: String, CaseIterable, Sendable {
   case bodyHipsAnkles = "cap-hint-body-hips-ankles"
   case bodyHipsKnees = "cap-hint-body-hips-knees"
   case bodyShouldersKnees = "cap-hint-body-shoulders-knees"
+  case covered = "cap-hint-covered"
   case tooSmall = "cap-hint-too-small"
   case notSteady = "cap-hint-not-steady"
   case tooDark = "cap-hint-too-dark"
@@ -72,6 +74,7 @@ public enum CaptureHint: String, CaseIterable, Sendable {
     case .bodyHipsAnkles: .blocking
     case .bodyHipsKnees: .blocking
     case .bodyShouldersKnees: .blocking
+    case .covered: .blocking
     case .tooSmall: .blocking
     case .notSteady: .blocking
     case .tooDark: .advisory
@@ -98,6 +101,7 @@ public enum CaptureHint: String, CaseIterable, Sendable {
     case .bodyHipsAnkles: .bodyPartsMissing
     case .bodyHipsKnees: .bodyPartsMissing
     case .bodyShouldersKnees: .bodyPartsMissing
+    case .covered: .covered
     case .tooSmall: .tooSmall
     case .notSteady: .notSteady
     case .tooDark: nil
@@ -215,6 +219,11 @@ public enum CaptureRules {
   public enum Tilt {
     public static let hintAboveDegrees: Double = 20.0
     public static let clearBelowDegrees: Double = 15.0
+  }
+
+  public enum Covered {
+    public static let aboveOverlapShare: Double = 0.5
+    public static let minOtherBoxAreaShare: Double = 0.005
   }
 
   public enum Lock {

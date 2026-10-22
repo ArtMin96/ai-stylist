@@ -11,6 +11,8 @@
     "cap-hint-body-shoulders-knees.spoken" : { "extractionState" : "manual", "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Step back so your shoulders and knees show" } } } },
     "cap-hint-capturing" : { "comment" : "Capture brief §6: while the photo is taken.", "extractionState" : "manual", "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Taking photo" } } } },
     "cap-hint-capturing.spoken" : { "extractionState" : "manual", "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Photo taken." } } } },
+    "cap-hint-covered" : { "comment" : "Capture brief §6 hint 3c (C32): another object overlaps the item.", "extractionState" : "manual", "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Something is covering the item" } } } },
+    "cap-hint-covered.spoken" : { "extractionState" : "manual", "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Something is covering the item" } } } },
     "cap-hint-cut-off-bottom" : { "comment" : "Capture brief §6 hint 3.", "extractionState" : "manual", "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Move back. The bottom is cut off." } } } },
     "cap-hint-cut-off-bottom.spoken" : { "extractionState" : "manual", "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Move back. The bottom is cut off." } } } },
     "cap-hint-cut-off-left" : { "comment" : "Capture brief §6 hint 3.", "extractionState" : "manual", "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Move back. The left side is cut off." } } } },

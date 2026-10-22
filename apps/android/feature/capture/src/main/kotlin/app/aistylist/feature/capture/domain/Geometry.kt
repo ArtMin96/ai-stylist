@@ -34,6 +34,17 @@ data class NormalizedRect(
         val union = areaShare + other.areaShare - intersection
         return if (union > 0.0) intersection / union else 0.0
     }
+
+    /**
+     * The intersection with [other] as a share of the smaller box's area: 1 when one box lies inside
+     * the other, 0 when they do not overlap or the smaller box is empty (the covered rule, brief §4).
+     */
+    fun overlapShareOfSmaller(other: NormalizedRect): Double {
+        val overlapWidth = (min(right, other.right) - max(left, other.left)).coerceAtLeast(0.0)
+        val overlapHeight = (min(bottom, other.bottom) - max(top, other.top)).coerceAtLeast(0.0)
+        val smaller = min(areaShare, other.areaShare)
+        return if (smaller > 0.0) overlapWidth * overlapHeight / smaller else 0.0
+    }
 }
 
 /** A point in the same normalised space as [NormalizedRect]. */

@@ -205,3 +205,61 @@ nonisolated public struct CaptureMaskProfile: Equatable, Sendable {
     }
   }
 }
+
+/// A foreground instance in a label image (Vision's instance mask, or the frame generator's instance
+/// PNG): its label, pixel count and box.
+nonisolated public struct CaptureInstance: Equatable, Sendable {
+  public let label: UInt8
+  public let pixelCount: Int
+  public let box: NormalizedRect
+}
+
+/// Reads a label image: 0 is background, every other value one foreground instance.
+nonisolated public enum CaptureInstanceLabels {
+  /// Every instance, largest first (ties by label): the item is the first, the rest are the other
+  /// objects the covered rule reads (capture brief §4, C32).
+  public static func instances(in labels: CaptureGrayImage) -> [CaptureInstance] {
+    var count = [Int](repeating: 0, count: 256)
+    var minX = [Int](repeating: Int.max, count: 256)
+    var minY = [Int](repeating: Int.max, count: 256)
+    var maxX = [Int](repeating: -1, count: 256)
+    var maxY = [Int](repeating: -1, count: 256)
+    labels.pixels.withUnsafeBufferPointer { pixels in
+      for y in 0..<labels.height {
+        let row = y * labels.width
+        for x in 0..<labels.width {
+          let label = Int(pixels[row + x])
+          guard label > 0 else { continue }
+          count[label] += 1
+          minX[label] = min(minX[label], x)
+          maxX[label] = max(maxX[label], x)
+          minY[label] = min(minY[label], y)
+          maxY[label] = max(maxY[label], y)
+        }
+      }
+    }
+    let width = Double(labels.width)
+    let height = Double(labels.height)
+    return (1..<256).filter { count[$0] > 0 }
+      .map { label in
+        CaptureInstance(
+          label: UInt8(label),
+          pixelCount: count[label],
+          box: NormalizedRect(
+            x: Double(minX[label]) / width,
+            y: Double(minY[label]) / height,
+            width: Double(maxX[label] - minX[label] + 1) / width,
+            height: Double(maxY[label] - minY[label] + 1) / height
+          )
+        )
+      }
+      .sorted { ($0.pixelCount, Int.max - Int($0.label)) > ($1.pixelCount, Int.max - Int($1.label)) }
+  }
+
+  /// One instance as a mask (255 inside, 0 outside); nil when the label has no pixel.
+  public static func mask(of label: UInt8, in labels: CaptureGrayImage) -> CaptureGrayImage? {
+    guard label > 0, labels.pixels.contains(label) else { return nil }
+    return CaptureGrayImage(
+      width: labels.width, height: labels.height, pixels: labels.pixels.map { $0 == label ? 255 : 0 })
+  }
+}

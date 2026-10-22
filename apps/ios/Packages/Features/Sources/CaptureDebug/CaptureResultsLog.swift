@@ -35,6 +35,9 @@
     public var events: [Event] = []
     public var firstUnlockMs: Int?
     public var anywayMs: Int?
+    /// The "Take photo anyway" reason line while the button showed, last one seen: `surface-tip`,
+    /// `try-hanger-mode`, or the blocking hint's test ID.
+    public var anywayReason: String?
     public var finalHint: String?
     public var captures: [Capture] = []
     public var durationMs = 0

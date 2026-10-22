@@ -1,5 +1,6 @@
 package app.aistylist.feature.capture.debug
 
+import app.aistylist.feature.capture.domain.AnywayReason
 import app.aistylist.feature.capture.domain.CameraSnapshot
 import app.aistylist.feature.capture.domain.CaptureTrigger
 import app.aistylist.feature.capture.domain.LockPhase
@@ -7,13 +8,17 @@ import org.json.JSONArray
 import org.json.JSONObject
 import java.io.File
 
-/** What the results log keeps of one camera state: the lock phase, hint, shutter and anyway button. */
+/**
+ * What the results log keeps of one camera state: the lock phase, hint, shutter and anyway button,
+ * and the anyway reason line while the button shows.
+ */
 data class StepState(
     val phase: LockPhase,
     val hint: String?,
     val shutter: String,
     val isAnywayVisible: Boolean,
     val lockReason: String?,
+    val anywayReason: String? = null,
 ) {
     companion object {
         fun of(snapshot: CameraSnapshot): StepState =
@@ -23,9 +28,19 @@ data class StepState(
                 shutter = snapshot.shutter.name.lowercase(),
                 isAnywayVisible = snapshot.isAnywayVisible,
                 lockReason = snapshot.lockReason?.value,
+                anywayReason = snapshot.anywayReason?.wire,
             )
     }
 }
+
+/** The reason line as the results log writes it: `surface-tip`, `try-hanger-mode` or the hint's test ID. */
+val AnywayReason.wire: String
+    get() =
+        when (this) {
+            AnywayReason.NoItemSurfaceTip -> "surface-tip"
+            AnywayReason.TryHangerMode -> "try-hanger-mode"
+            is AnywayReason.Hint -> hint.value
+        }
 
 /**
  * One segment's line in `capture-results.jsonl` (capture brief §11): the set, every state change with
@@ -46,16 +61,22 @@ class SegmentRecord(
     private var firstUnlockMs: Long? = null
     private var anywayAtMs: Long? = null
     private var hintAtUnlock: String? = null
+    private var anywayReason: String? = null
     private val hintsSeen = LinkedHashSet<String>()
 
-    /** Records [state] at [nowMs] if it differs from the last one. */
+    /**
+     * Records [state] at [nowMs] if it differs from the last one. The anyway reason is kept apart (the
+     * last one seen), so a reason change alone adds no event.
+     */
     fun onState(
         state: StepState,
         nowMs: Long,
     ) {
-        if (state == last) return
+        state.anywayReason?.let { anywayReason = it }
+        val visible = state.copy(anywayReason = null)
+        if (visible == last) return
         val previous = last
-        last = state
+        last = visible
         val t = nowMs - startMs
         if (previous == null && state.isAnywayVisible) anywayAtMs = 0
         if (state.isAnywayVisible && previous?.isAnywayVisible == false) anywayAtMs = anywayAtMs ?: t
@@ -100,6 +121,7 @@ class SegmentRecord(
             .put("firstUnlockMs", firstUnlockMs ?: JSONObject.NULL)
             .put("hintAtUnlock", hintAtUnlock ?: JSONObject.NULL)
             .put("anywayAtMs", anywayAtMs ?: JSONObject.NULL)
+            .put("anywayReason", anywayReason ?: JSONObject.NULL)
             .put("hintsSeen", JSONArray(hintsSeen.toList()))
             .put("captures", captures)
             .put("finalPhase", final?.phase?.wire ?: JSONObject.NULL)

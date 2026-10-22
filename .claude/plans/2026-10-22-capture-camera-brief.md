@@ -105,7 +105,8 @@ on Android.
 | Too dark | Mean luma of the whole frame (0–255) | < 45 | **no**, hint |
 | Too bright | Mean luma, or share of pixels with luma ≥ 250 | > 215, or > 25 % | **no**, hint |
 | Tilt (flat mode only, phones only) | Angle between gravity and the phone's back axis | hint on > 20°, clear at < 15° | **no**, hint |
-| Several items (iOS) | More than one instance | — | **no** (Q15; "Which item?" stays post-shot, P06) |
+| Several items (iOS) | More than one instance, none overlapping the item | — | **no** (Q15; "Which item?" stays post-shot, P06) |
+| Partly covered (C32; flat and hanger, never worn) | Another detected object's box overlaps the item's box by more than this share of the smaller box, and covers at least this share of the frame. iOS: the other Vision foreground instances' boxes; Android: the other ML Kit boxes (multiple objects on) | > 0.5; ≥ 0.005 | yes |
 | Category matches pick | — | not checked | **no** (Q15) |
 
 **Worn mode** (Q-A, decided 2026-10-22: (b)): the edge rule is off. Item found, size ≥ 0.25 and
@@ -153,7 +154,8 @@ Pure logic, same in both apps, unit-tested on Linux (`swift test`) and in Robole
 1. `idle` — not started or in the background.
 2. `warmingUp` — camera ready, no evaluation yet. Locked.
 3. `locked(reason)` — `reason` is the highest-priority failing blocking check: `no-item`, `cut-off`,
-   `body-parts-missing` (worn mode only), `too-small`, `not-steady` (order of §6).
+   `body-parts-missing` (worn mode only), `covered` (flat and hanger only), `too-small`, `not-steady`
+   (order of §6).
 4. `unlocked(progress)` — manual shutter on, ring fills from 0 to 1.
 5. `capturing` — photo requested; all input ignored.
 6. `cooldown` — batch only, after a capture; locked until the next item.
@@ -215,6 +217,7 @@ blocking check fails, and may show while the ring fills. Every hint label carrie
 | 3b | `cap-hint-body-hips-ankles` | Step back so your hips and ankles show | same | — | yes (worn) |
 | 3b | `cap-hint-body-hips-knees` | Step back so your hips and knees show | same | — | yes (worn) |
 | 3b | `cap-hint-body-shoulders-knees` | Step back so your shoulders and knees show | same | — | yes (worn) |
+| 3c | `cap-hint-covered` | Something is covering the item | same | — | yes (flat, hanger) |
 | 4 | `cap-hint-too-small` | Move closer | The item is too small. Move closer. | — | yes |
 | 5 | `cap-hint-not-steady` | Hold the phone still | Hold the phone still. | — | yes |
 | 6 | `cap-hint-too-dark` | Too dark. Turn on a light. | same | — | no |
@@ -412,10 +415,10 @@ Where the platforms differ, the expectation is per platform.
 | C5 small item | sim | `small-item` min 0.015 unlocks a ring-sized item; "Move closer" below it |
 | C6 bag strap | sim | iOS: strap grazing ≤ 4 % unlocks. Android: box touches → locked `cut-off-*` (documented platform difference) |
 | C7 back photo | sim | "Different" → back guide, `cap-step-back`, skip and capture both work |
-| C8 dark on dark | sim | either unlocks, or locks with `no-item` and anyway at 10.0 ± 0.5 s with the surface tip |
-| C9 white on white | sim | same as C8 |
-| C10 patterned sheet | sim | same as C8 |
-| C11 coat too big | sim | `cut-off-multiple`, anyway at 10 s with "Try hanger mode" |
+| C8 dark on dark | sim (the detector on real fabric: device-only) | two strict sets per base: `dark-on-dark` (true mask) unlocks; `dark-on-dark-weak` (no instance) locks with `no-item` and anyway at 10.0 ± 0.5 s with the surface tip |
+| C9 white on white | sim (as C8) | same as C8: `white-on-white`, `white-on-white-weak` |
+| C10 patterned sheet | sim (as C8) | same as C8: `patterned`, `patterned-weak` |
+| C11 coat too big | sim | `cut-off-multiple`, anyway at 10 s with "Try hanger mode" (`<family>-flat-01-too-big`) |
 | C12 crumpled | not in v1 | no rule; only the guide text helps |
 | C13 dim room | sim (torch: device-only) | `too-dark` hint, shutter still unlocks |
 | C14 shaky hands | sim | jitter: `not-steady`, no unlock, anyway at 10 s |
@@ -435,6 +438,9 @@ Where the platforms differ, the expectation is per platform.
 | C28 Galaxy A12 | device-only | |
 | C29 iPhone 11 / SE 2 | device-only | |
 | C30 heat | device-only | |
+| C32 partly covered | sim (rules on ground-truth instances); Vision and ML Kit on real objects device-only | `covered-inside` and `covered-edge`: locked `covered`, `cap-hint-covered`, anyway at 10.0 ± 0.5 s with the covered hint; the `two-items` sets still unlock |
+| tilt | sim (stored `tiltDegrees`); real sensors device-only | `tilt` (25°) unlocks with `cap-hint-tilt`; `tilt-under` (18°) unlocks with `cap-hint-ready` |
+| glare | sim | `overexposed` and `glare-window` unlock with `cap-hint-too-bright`; `glare-spots` unlocks with `cap-hint-ready` |
 | C31 no Google Play | device-only | ML Kit ODT and ML Kit Pose (base) are bundled; no Play Services API is called in v1, and the only Play Services code linked is the `play-services-tasks` library that ML Kit depends on |
 
 ## 13. Not in v1
@@ -497,6 +503,7 @@ Answered by the owner through the question tool on 2026-10-22. These override ea
 | shared-kernel + contracts | Change them on this branch, small and additive. Resolve later conflicts by merging `main` in, never by rebasing pushed commits. Record the risk in the handoff. |
 | Stuck case (3 iterations, no progress) | Record it as BLOCKED in the scoreboard with attempts and evidence, then keep working on other cases. Never weaken tests or thresholds. |
 | New dependencies | "Add what needed": add what the work needs and list every addition (name, version, why) in the final report for the owner to approve or revert. |
+| Hard cases | 2026-10-22 owner: add hard cases C8–C11, tilt, glare and a new partly-covered rule; live outline approved pending a feasibility check; UI polish deferred. |
 | Scope | Owner, mid-turn: "You are allowed to do anything to make this as close as possible." Hard limits that still stand: no PR, no merge, no `main` changes, no rebase or force-push of pushed commits, no public publication of repo content, no real user or real-person photos, no weakened tests, expected files or thresholds (threshold changes only through the frame-set rule with old/new/reason). |
 
 ### Status log
@@ -507,3 +514,19 @@ Answered by the owner through the question tool on 2026-10-22. These override ea
   dependency (§1), synthetic worn frames + keypoint-file fallback (§11), C3/C31 (§12), Q-A–Q-F
   marked decided (§14); proposal updated and applied to docs 02, 10 and P06.
 - 2026-10-22: owner narrowed scope to the camera tool only; analytics events and other non-blocking work are deferred to the owner.
+- 2026-10-22: hard cases added (§3 covered row, §4, §6 row 3c, §12 C8–C10, C32, tilt, glare). New
+  thresholds, `capture-rules.json` `covered` (no old value; new rule):
+  - `aboveOverlapShare` 0.5. Derived from the frame set: the 41 second instances of the existing
+    frames (all in `two-items` sets, 0.04 of the frame apart) overlap the item's box by 0.0 of the
+    smaller box; the covered sets place the object at 1.0 (`covered-inside`) and 0.8
+    (`covered-edge`) of its own box inside the item's box. 0.5 sits halfway, so loose ML Kit boxes of
+    two items side by side (the shoe pair step) may overlap by up to half the smaller box before it
+    locks, and the generator's margins (over 0.625 on covered sets, under 0.25 elsewhere) hold.
+  - `minOtherBoxAreaShare` 0.005: the iOS item-found minimum (`ios.minInstanceAreaShare`), so a box
+    too small to count as an item on iOS never counts as a covering object either; the covered sets'
+    objects cover at least 4 × that.
+  - Feasibility: the Mac's Vision merged the object into the item in 66 of 66 covered composites
+    (instance mask); in earlier trials it separated it in 0 of 225 (instance mask) and 0 of 225
+    (objectness saliency) composites. On iOS the rule is therefore mostly a no-op on device until a detector separates the
+    object; a merged object unlocks (a miss, not a false lock). Android turns ML Kit's multiple
+    objects on for it; ML Kit on real objects is device-only.

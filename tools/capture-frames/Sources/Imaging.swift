@@ -71,7 +71,7 @@ struct Raster {
 
     /// Per colour channel, the mean over the (2r+1)² box around each pixel (clamped at the borders),
     /// indexed like `pixels`; alpha entries are 0.
-    private func boxMean(radius: Int) -> [Double] {
+    func boxMean(radius: Int) -> [Double] {
         var means = [Double](repeating: 0, count: pixels.count)
         let stride = width + 1
         for channel in 0..<3 {

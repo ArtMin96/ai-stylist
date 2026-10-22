@@ -31,6 +31,15 @@ nonisolated public struct NormalizedRect: Equatable, Sendable {
     let union = area + other.area - intersection
     return union > 0 ? intersection / union : 0
   }
+
+  /// The intersection with `other` as a share of the smaller box's area: 1 when one box lies inside the
+  /// other, 0 when they do not overlap or the smaller box is empty (the covered rule, capture brief §4).
+  public func overlapShareOfSmaller(with other: NormalizedRect) -> Double {
+    let overlapWidth = max(0, min(x + width, other.x + other.width) - max(x, other.x))
+    let overlapHeight = max(0, min(y + height, other.y + other.height) - max(y, other.y))
+    let smaller = min(area, other.area)
+    return smaller > 0 ? overlapWidth * overlapHeight / smaller : 0
+  }
 }
 
 /// For each frame edge, the share of that edge's length the item mask spans inside the edge band
@@ -74,8 +83,11 @@ nonisolated public struct CaptureItemObservation: Equatable, Sendable {
   /// Mask pixels of that instance ÷ frame pixels ("item found" needs `CaptureRules.Ios.minInstanceAreaShare`).
   public let maskAreaShare: Double
   public let edgeContact: EdgeContact
-  /// Foreground instances in the frame. Several items never lock (Q15); kept for the results log.
+  /// Foreground instances in the frame. Several separate items never lock (Q15); kept for the results log.
   public let instanceCount: Int
+  /// The boxes of the frame's other foreground instances. One that overlaps the item's box locks as
+  /// covered (capture brief §4, C32); one beside it does not.
+  public let otherBoxes: [NormalizedRect]
   /// Variance of the 3×3 Laplacian on luma inside the box, luma scaled to `Steady.sharpnessLongSidePx`.
   public let sharpness: Double
 
@@ -84,12 +96,14 @@ nonisolated public struct CaptureItemObservation: Equatable, Sendable {
     maskAreaShare: Double,
     edgeContact: EdgeContact = EdgeContact(),
     instanceCount: Int = 1,
+    otherBoxes: [NormalizedRect] = [],
     sharpness: Double
   ) {
     self.box = box
     self.maskAreaShare = maskAreaShare
     self.edgeContact = edgeContact
     self.instanceCount = instanceCount
+    self.otherBoxes = otherBoxes
     self.sharpness = sharpness
   }
 }

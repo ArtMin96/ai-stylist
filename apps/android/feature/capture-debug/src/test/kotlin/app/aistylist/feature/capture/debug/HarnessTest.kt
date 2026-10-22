@@ -9,6 +9,7 @@ import app.aistylist.feature.capture.domain.CameraSnapshot
 import app.aistylist.feature.capture.domain.CaptureTrigger
 import app.aistylist.feature.capture.domain.LockPhase
 import app.aistylist.feature.capture.domain.NormalizedRect
+import app.aistylist.feature.capture.domain.anywayReasonFor
 import org.json.JSONObject
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -31,7 +32,7 @@ private const val INDEX =
           "id": "top-flat-01-jitter", "family": "top", "mode": "flat", "kind": "single", "variant": "jitter",
           "segments": [
             { "frame": "top/a/frame.png", "box": "top/a/frame.box.json", "expected": "top/a/expected.json",
-              "frames": 3, "jitter": 0.06, "jitterSeed": 7,
+              "frames": 3, "jitter": 0.06, "jitterSeed": 7, "tiltDegrees": 25,
               "offsets": [[0.01, -0.02], [0.05, 0.03], [-0.04, 0.0]] }
           ]
         },
@@ -87,6 +88,15 @@ class HarnessTest {
         val worn = requireNotNull(index.set("top-worn-whole"))
         assertEquals(CaptureMode.WORN, worn.mode)
         assertEquals("top/w/frame.keypoints.json", worn.segments.single().keypoints)
+        assertNull(worn.segments.single().tiltDegrees)
+        assertEquals(
+            25.0,
+            index.sets
+                .first()
+                .segments
+                .single()
+                .tiltDegrees,
+        )
         assertNull(
             index
                 .set("top-flat-01-jitter")
@@ -143,7 +153,11 @@ class HarnessTest {
             phase: LockPhase,
             hint: CaptureHint,
             anyway: Boolean = false,
-        ) = StepState.of(CameraSnapshot(step, phase, 0.0, hint, hint.lockReason, anyway, null))
+        ): StepState {
+            // As the session does: the reason line follows the lock hint while "Take photo anyway" shows.
+            val reason = anywayReasonFor(hint.takeIf { anyway && it.lockReason != null }, step)
+            return StepState.of(CameraSnapshot(step, phase, 0.0, hint, hint.lockReason, anyway, reason))
+        }
 
         record.onState(snapshot(LockPhase.WARMING_UP, CaptureHint.GUIDE), 1_000)
         record.onState(snapshot(LockPhase.WARMING_UP, CaptureHint.GUIDE), 1_050)
@@ -154,6 +168,7 @@ class HarnessTest {
         val json = record.toJson()
 
         assertEquals(4, json.getJSONArray("events").length())
+        assertEquals("cap-hint-not-steady", json.getString("anywayReason"))
         assertEquals(10_000L, json.getLong("anywayAtMs"))
         assertEquals(10_300L, json.getLong("firstUnlockMs"))
         assertEquals("cap-hint-ready", json.getString("hintAtUnlock"))

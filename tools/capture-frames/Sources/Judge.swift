@@ -58,6 +58,46 @@ enum Layout {
     /// Jitter: random draws tried per frame before the generator gives up on a seed.
     static let jitterMaxDrawsPerFrame = 1000
     static let lumaMargin = 10.0
+    /// Hard cases (README "Hard cases"). Vision "found" the item when an instance overlaps its true
+    /// mask with at least this IoU.
+    static let visionFoundMinIoU = 0.5
+    /// The first bases of each family that ship the surface and covered sets; Vision is checked on every base.
+    static let hardCaseBases = 2
+    /// C8: dark fabric and the garment toned to about the same mean luma, both clear of the too-dark
+    /// limit plus `lumaMargin` (45 + 10), so the case is contrast, not light.
+    static let darkSurfaceLuma = 62.0
+    static let darkGarmentLuma = 64.0
+    /// C9: white bedding and a white garment, clear of the too-bright limit minus `lumaMargin` and of
+    /// the clipped luma.
+    static let whiteSurfaceLuma = 192.0
+    static let whiteSurfaceMaxLuma = 236.0
+    static let whiteGarmentLuma = 196.0
+    /// C8, C9: the toned garment keeps this share of its saturation, and loses this many outline pixels
+    /// (the photo's own background fringe).
+    static let hardGarmentSaturation = 0.3
+    static let hardGarmentErodePx = 2
+    /// C10: stripe width and flower spacing in pixels at the 480 px frame width.
+    static let stripeWidthPx = 26
+    static let flowerSpacingPx = 64
+    /// C32: the object's width as a share of the item's box width, its height capped at a share of the
+    /// box height, its area at least this many times `covered.minOtherBoxAreaShare`, and for
+    /// `covered-edge` this share of its width inside the item's box.
+    static let occluderWidthShareOfBox = 0.3
+    static let occluderMaxHeightShareOfBox = 0.7
+    static let occluderMinAreaTimesLimit = 4.0
+    static let occluderEdgeInsideShare = 0.8
+    /// Tilt frames: this far over the hint angle (hint on), and this far under it (hint off).
+    static let tiltOverDegrees = 5.0
+    static let tiltUnderDegrees = 2.0
+    /// Overexposed: the frame's mean luma this far over the too-bright limit (twice `lumaMargin`).
+    static let overexposedOverLuma = 20.0
+    /// Glare spots on the garment, in shares of its box, each this radius (share of the frame width)
+    /// with this clipped core.
+    static let glareSpots: [(x: Double, y: Double)] = [(0.35, 0.3), (0.62, 0.5), (0.42, 0.72)]
+    static let glareSpotRadius = 0.045
+    static let glareCore = 0.5
+    /// Direct sun from a window: a large patch whose clipped core covers well over the clipped limit.
+    static let windowLight = LightSpot(centreX: 0.12, centreY: 0.3, radiusX: 0.85, radiusY: 0.62, core: 0.7)
     static let wornWholeHeightShare = 0.86
     static let wornWholeTopShare = 0.06
     /// Worn zoom variants (hips or knees past the bottom) keep the shoulders this far from the top.
@@ -73,7 +113,9 @@ struct Rejection: Error {
     }
 }
 
-/// What Vision sees in a finished frame, measured the way the iOS rules read it (brief §3).
+/// What the detector sees in a finished frame, measured the way the iOS rules read it (brief §3). The
+/// detector is the Mac's Vision foreground instance mask, or for the hard cases the ground truth the
+/// generator drew ("as a good detector would see it"), with Vision's own result kept in `vision`.
 struct FrameMeasure {
     /// Largest first.
     let instances: [MaskStats]
@@ -83,19 +125,64 @@ struct FrameMeasure {
     let clippedShare: Double
     /// Inside the largest instance's box; 0 without an instance.
     let sharpness: Double
+    /// With two or more instances: each pixel's instance, 1 for the largest, 2 for the next, 0 for
+    /// background (the stored `frame.instances.png`, read like the phone's Vision label mask).
+    let labels: [UInt8]?
+    /// Where the instances come from: the `source` of the stored box file.
+    var detector = Detector.vision
+    /// Ground-truth frames only: what the Mac's Vision made of the same image.
+    var vision: VisionCheck?
 
     var main: MaskStats? { instances.first }
 
     static func of(_ image: CGImage, rules: CaptureRules) throws -> FrameMeasure {
+        try measured(image, masks: try VisionMasks.instances(in: image), rules: rules)
+    }
+
+    /// The frame measured on the masks the generator drew instead of Vision's (hard backgrounds, the
+    /// covered item); `masks` empty is a detector that finds nothing.
+    static func groundTruth(_ image: CGImage, masks: [BinaryMask], vision: VisionCheck, rules: CaptureRules)
+        throws -> FrameMeasure
+    {
+        var measure = try measured(image, masks: masks, rules: rules)
+        measure.detector = .groundTruth
+        measure.vision = vision
+        return measure
+    }
+
+    /// The largest overlap of another instance's box with the item's box, as a share of the smaller
+    /// box, over the instances the covered rule counts (brief §4, C32); 0 with fewer than two.
+    func coveredOverlap(rules: CaptureRules) -> Double {
+        guard let main else { return 0 }
+        return instances.dropFirst()
+            .filter { $0.box.area >= rules.covered.minOtherBoxAreaShare }
+            .map { main.box.overlapShareOfSmaller(with: $0.box) }
+            .max() ?? 0
+    }
+
+    private static func measured(_ image: CGImage, masks: [BinaryMask], rules: CaptureRules) throws -> FrameMeasure {
         var mask = BinaryMask.empty(width: image.width, height: image.height)
-        var instances: [MaskStats] = []
-        for instance in try VisionMasks.instances(in: image) {
+        var measured: [(mask: BinaryMask, stats: MaskStats)] = []
+        for instance in masks {
             mask = mask.union(instance)
             if let stats = instance.stats(edgeBandShare: rules.edgeBandShare) {
-                instances.append(stats)
+                measured.append((instance, stats))
             }
         }
-        instances.sort { $0.maskAreaShare > $1.maskAreaShare }
+        measured.sort { $0.stats.maskAreaShare > $1.stats.maskAreaShare }
+        let instances = measured.map(\.stats)
+        var labels: [UInt8]?
+        if measured.count >= 2 {
+            var values = [UInt8](repeating: 0, count: image.width * image.height)
+            // Smaller instances last, so a pixel two masks share goes to the smaller one, as Vision's
+            // label mask gives every pixel to exactly one instance.
+            for (rank, instance) in measured.enumerated().prefix(Int(UInt8.max)) {
+                for index in 0..<values.count where instance.mask.values[index] > 0 {
+                    values[index] = UInt8(rank + 1)
+                }
+            }
+            labels = values
+        }
         let raster = try Imaging.raster(of: image, width: image.width, height: image.height)
         let sharpness =
             try instances.first.map {
@@ -103,7 +190,13 @@ struct FrameMeasure {
             } ?? 0
         return FrameMeasure(
             instances: instances, mask: mask, meanLuma: raster.meanLuma,
-            clippedShare: raster.clippedShare(minLuma: rules.light.clippedMinLuma), sharpness: sharpness)
+            clippedShare: raster.clippedShare(minLuma: rules.light.clippedMinLuma), sharpness: sharpness,
+            labels: labels)
+    }
+
+    enum Detector: String {
+        case vision = "vision-foreground-instance-mask"
+        case groundTruth = "ground-truth"
     }
 
     /// Per edge, the largest contact of any instance big enough to count as an item on iOS.
@@ -135,11 +228,29 @@ struct Intent {
     var dark = false
     /// The too-bright variant: the light check must fail clearly (a hint, never a lock).
     var bright = false
+    /// Another object lies on the item (C32): the covered rule must fail clearly.
+    var covered = false
+    /// The phone's stored tilt during playback, in degrees; nil means no gravity sensor.
+    var tiltDegrees: Double?
+}
+
+/// What the Mac's Vision foreground instance mask made of a ground-truth frame (the evidence for the
+/// hard cases, README "Hard cases").
+struct VisionCheck: Encodable {
+    /// Instances Vision found.
+    let instances: Int
+    /// Vision found the item: one instance of at least `ios.minInstanceAreaShare` overlaps its true
+    /// mask with IoU of at least `Layout.visionFoundMinIoU`.
+    let foundItem: Bool
+    /// The best IoU of a Vision instance with the item's true mask.
+    let itemIoU: Double
+    /// Covered frames: Vision found the occluder as an instance of its own as well.
+    let separatedOccluder: Bool?
 }
 
 /// The lock machine's checks in priority order (brief §4, §6); `unlocked` when none fails.
 enum Stage: Int, Comparable {
-    case item, edges, body, size, steady, unlocked
+    case item, edges, body, covered, size, steady, unlocked
 
     static func < (lhs: Stage, rhs: Stage) -> Bool { lhs.rawValue < rhs.rawValue }
 }
@@ -157,6 +268,7 @@ struct PlatformExpectation: Encodable, Equatable {
     let lockReason: String?
     let maxUnlockMs: Int?
     let anywayAtMs: Int?
+    let anywayReason: String?
 }
 
 /// The expected-result file. `platform` holds only the platforms whose result differs.
@@ -166,6 +278,9 @@ struct Expectation: Encodable {
     let lockReason: String?
     let maxUnlockMs: Int?
     let anywayAtMs: Int?
+    /// Locked only: the "Take photo anyway" reason line (brief §6): `surface-tip`, `try-hanger-mode`, or
+    /// the blocking hint's test ID.
+    let anywayReason: String?
     let platform: [String: PlatformExpectation]
 }
 
@@ -186,7 +301,8 @@ struct Judge {
         }
         return Expectation(
             shutter: shared.shutter, hint: shared.hint, lockReason: shared.lockReason,
-            maxUnlockMs: shared.maxUnlockMs, anywayAtMs: shared.anywayAtMs, platform: platform)
+            maxUnlockMs: shared.maxUnlockMs, anywayAtMs: shared.anywayAtMs, anywayReason: shared.anywayReason,
+            platform: platform)
     }
 
     /// Why the finished frame does not show what the variant means, or nil when it does. Checks
@@ -206,6 +322,9 @@ struct Judge {
             let edges = edgeProblem(intent, main: main, contact: measure.itemContact(minInstanceAreaShare: minInstance))
         {
             return edges
+        }
+        if mode != "worn", decisive >= .covered, let covered = coveredProblem(intent, measure: measure) {
+            return covered
         }
         let minimum = try mode == "worn" ? rules.worn.minAreaShare : rules.family(family).minAreaShare
         if decisive == .size, main.box.area > minimum * Layout.sizeFailFactor {
@@ -246,6 +365,7 @@ struct Judge {
             return Outcome(
                 stage: .body, hint: try rules.hint(hint), lockReason: try rules.lockReason("body-parts-missing"))
         }
+        if mode != "worn", intent.covered { return try locked(.covered, reason: "covered") }
         let minimum = mode == "worn" ? rules.worn.minAreaShare : familyRules.minAreaShare
         if intent.boxAreaShare < minimum { return try locked(.size, reason: "too-small") }
         if !intent.sharp || intent.jittered { return try locked(.steady, reason: "not-steady") }
@@ -257,6 +377,9 @@ struct Judge {
             || measure.clippedShare > light.tooBrightAboveClippedShare
         {
             hint = try rules.hint("cap-hint-too-bright")
+        } else if mode == "flat", let tilt = intent.tiltDegrees, tilt > rules.tilt.hintAboveDegrees {
+            // Tilt starts off, so only the on-limit matters for a segment played at one angle.
+            hint = try rules.hint("cap-hint-tilt")
         } else {
             hint = try rules.hint("cap-hint-ready")
         }
@@ -272,7 +395,31 @@ struct Judge {
         return PlatformExpectation(
             shutter: unlocked ? "unlocked" : "locked", hint: outcome.hint, lockReason: outcome.lockReason,
             maxUnlockMs: unlocked ? Harness.maxUnlockMs : nil,
-            anywayAtMs: unlocked ? nil : rules.timing.anywayDelayMs)
+            anywayAtMs: unlocked ? nil : rules.timing.anywayDelayMs, anywayReason: anywayReason(outcome))
+    }
+
+    /// The reason line under "Take photo anyway" (brief §6): the surface tip for no item (C8–C10),
+    /// "Try hanger mode" for a flat cut-off where the family offers hanger mode (C11), else the hint.
+    private func anywayReason(_ outcome: Outcome) -> String? {
+        guard outcome.stage != .unlocked else { return nil }
+        if outcome.lockReason == "no-item" { return "surface-tip" }
+        if outcome.lockReason == "cut-off", mode == "flat", rules.families[family]?.modes.contains("hanger") == true {
+            return "try-hanger-mode"
+        }
+        return outcome.hint
+    }
+
+    /// A covered frame must overlap clearly over the limit; every other frame clearly under it.
+    private func coveredProblem(_ intent: Intent, measure: FrameMeasure) -> String? {
+        let overlap = measure.coveredOverlap(rules: rules)
+        let limit = rules.covered.aboveOverlapShare
+        if intent.covered, overlap <= limit * Layout.contactFailFactor {
+            return "covered overlap \(round4(overlap)) is not clearly over \(limit)"
+        }
+        if !intent.covered, overlap > limit * Layout.contactPassFactor {
+            return "another object overlaps the item by \(round4(overlap)), near the covered limit \(limit)"
+        }
+        return nil
     }
 
     private func lightProblem(_ intent: Intent, measure: FrameMeasure) -> String? {

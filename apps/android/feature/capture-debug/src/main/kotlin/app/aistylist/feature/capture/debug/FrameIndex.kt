@@ -8,7 +8,8 @@ import java.io.File
 /**
  * One played image: [frames] frames at the index's fps. A jittered segment moves frame `n` by
  * `offsets[n % offsets.size]`, the generator's checked path (each within ±[jitter] of the frame);
- * empty [offsets] mean no movement.
+ * empty [offsets] mean no movement. [tiltDegrees] is the phone's tilt during the segment (the tilt
+ * hint, flat mode); null means no phone sensors, as on the emulator.
  */
 data class FrameSegment(
     val frame: String,
@@ -18,6 +19,7 @@ data class FrameSegment(
     val frames: Int,
     val jitter: Double,
     val offsets: List<FrameOffset> = emptyList(),
+    val tiltDegrees: Double? = null,
 )
 
 /** One frame set of `artifacts/capture-camera/frames/index.json` (tools/capture-frames/README.md). */
@@ -86,6 +88,7 @@ class FrameIndex(
                             frames = segment.getInt("frames"),
                             jitter = segment.optDouble("jitter", 0.0),
                             offsets = parseOffsets(segment),
+                            tiltDegrees = segment.optDouble("tiltDegrees").takeUnless { it.isNaN() },
                         )
                     },
             )

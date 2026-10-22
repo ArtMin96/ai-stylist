@@ -10,6 +10,8 @@ struct FrameMetrics: Encodable {
     let meanLuma: Double
     let clippedShare: Double
     let sharpness: Double
+    /// Ground-truth frames: what the Mac's Vision made of the image (absent on Vision frames).
+    let vision: VisionCheck?
 
     init(_ measure: FrameMeasure) {
         instances = measure.instances.count
@@ -19,6 +21,7 @@ struct FrameMetrics: Encodable {
         meanLuma = round4(measure.meanLuma)
         clippedShare = round4(measure.clippedShare)
         sharpness = round4(measure.sharpness)
+        vision = measure.vision
     }
 }
 
@@ -29,12 +32,17 @@ struct FrameMetrics: Encodable {
 struct SegmentEntry: Encodable {
     let frame: String
     let mask: String
+    /// Two or more instances: the label PNG (0 background, 1 the largest instance, 2 the next, …).
+    let instances: String?
     let box: String
     let keypoints: String?
     let frames: Int
     let jitter: Double
     let jitterSeed: UInt32
     let offsets: [[Double]]?
+    /// The phone's tilt during the segment in degrees, fed as the gravity angle (tilt hint, flat mode);
+    /// absent means no gravity sensor.
+    let tiltDegrees: Double?
     let expected: String
     let metrics: FrameMetrics
 }
@@ -102,7 +110,8 @@ struct BoxFile: Encodable {
         let edgeContact: EdgeShares
     }
 
-    let source = "vision-foreground-instance-mask"
+    /// `vision-foreground-instance-mask`, or `ground-truth` for the masks the generator drew.
+    let source: String
     let frameWidthPx: Int
     let frameHeightPx: Int
     /// Largest first.
@@ -174,9 +183,13 @@ struct Manifest: Encodable {
         let bases: [BaseInfo]
         let rejected: [Rejected]
         let wornGarment: String?
+        /// Per surface and `covered`: what the Mac's Vision made of the hard-case composites.
+        let vision: [String: VisionTally]
     }
 
     let dataset: DatasetInfo
+    /// Every family's `vision` summed (README "Hard cases").
+    let hardCaseVision: [String: VisionTally]
     let synthetic: String
     let families: [String: FamilyInfo]
 }
@@ -185,13 +198,15 @@ struct Manifest: Encodable {
 struct WrittenFrame {
     let frame: String
     let mask: String
+    let instances: String?
     let box: String
     let keypoints: String?
     let metrics: FrameMetrics
 
-    func segment(frames: Int, jitter: Double, setId: String, expected: String, rules: CaptureRules? = nil) throws
-        -> SegmentEntry
-    {
+    func segment(
+        frames: Int, jitter: Double, setId: String, expected: String, rules: CaptureRules? = nil,
+        tiltDegrees: Double? = nil
+    ) throws -> SegmentEntry {
         let seed = stableSeed(setId)
         var offsets: [[Double]]?
         if jitter > 0 {
@@ -199,8 +214,9 @@ struct WrittenFrame {
             offsets = try JitterPath.offsets(seed: seed, amplitude: jitter, count: frames, rules: rules)
         }
         return SegmentEntry(
-            frame: frame, mask: mask, box: box, keypoints: keypoints, frames: frames, jitter: jitter,
-            jitterSeed: seed, offsets: offsets, expected: expected, metrics: metrics)
+            frame: frame, mask: mask, instances: instances, box: box, keypoints: keypoints, frames: frames,
+            jitter: jitter,
+            jitterSeed: seed, offsets: offsets, tiltDegrees: tiltDegrees, expected: expected, metrics: metrics)
     }
 }
 
@@ -225,13 +241,23 @@ final class FrameWriter {
         let maskImage = try Imaging.grayImage(
             measure.mask.values, width: measure.mask.width, height: measure.mask.height)
         try Imaging.writePNG(maskImage, to: root.appendingPathComponent(mask))
+        var instancesPath: String?
+        if let labels = measure.labels {
+            let path = "\(directory)/frame.instances.png"
+            try Imaging.writePNG(
+                try Imaging.grayImage(labels, width: measure.mask.width, height: measure.mask.height),
+                to: root.appendingPathComponent(path))
+            instancesPath = path
+        }
         let objects = measure.instances.map {
             BoxFile.Object(
                 box: $0.box.rounded, boxAreaShare: round4($0.box.area), maskAreaShare: round4($0.maskAreaShare),
                 edgeContact: $0.edgeContact.rounded)
         }
         try writeJSON(
-            BoxFile(frameWidthPx: size.width, frameHeightPx: size.height, objects: objects),
+            BoxFile(
+                source: measure.detector.rawValue, frameWidthPx: size.width, frameHeightPx: size.height,
+                objects: objects),
             to: root.appendingPathComponent(box))
         var keypointPath: String?
         if let keypoints {
@@ -241,7 +267,8 @@ final class FrameWriter {
         }
         imageCount += 1
         return WrittenFrame(
-            frame: frame, mask: mask, box: box, keypoints: keypointPath, metrics: FrameMetrics(measure))
+            frame: frame, mask: mask, instances: instancesPath, box: box, keypoints: keypointPath,
+            metrics: FrameMetrics(measure))
     }
 
     func writeExpectation(_ expectation: Expectation, path: String) throws -> String {

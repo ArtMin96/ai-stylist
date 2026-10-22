@@ -16,7 +16,7 @@ nonisolated public struct CaptureCheckContext: Equatable, Sendable {
 
 /// The result of evaluating one observation.
 nonisolated public struct CaptureVerdict: Equatable, Sendable {
-  /// Every failing blocking check's hint, highest priority first (§6 rows 2–5).
+  /// Every failing blocking check's hint, highest priority first (§6 rows 2–5, covered after the body check).
   public let blockingHints: [CaptureHint]
   /// Every non-blocking hint that applies, highest priority first (§6 rows 6–8; the body tip in the
   /// pose-model fallback comes first).
@@ -93,6 +93,9 @@ nonisolated public struct CaptureRuleEngine: Sendable {
           isFallback = true
         }
       }
+      if context.mode != .worn, Self.isCovered(item) {
+        blocking.append(.covered)
+      }
       if item.box.area < minAreaShare {
         blocking.append(.tooSmall)
       }
@@ -163,6 +166,16 @@ nonisolated public struct CaptureRuleEngine: Sendable {
     case .bottom: return .cutOffBottom
     case .left: return .cutOffLeft
     case .right: return .cutOffRight
+    }
+  }
+
+  /// Partly covered (§4, C32): another object's box at least `minOtherBoxAreaShare` of the frame overlaps
+  /// the item's box by more than `aboveOverlapShare` of the smaller box. Two items side by side do not
+  /// overlap, so they never lock (Q15).
+  private static func isCovered(_ item: CaptureItemObservation) -> Bool {
+    item.otherBoxes.contains { other in
+      other.area >= CaptureRules.Covered.minOtherBoxAreaShare
+        && item.box.overlapShareOfSmaller(with: other) > CaptureRules.Covered.aboveOverlapShare
     }
   }
 

@@ -19,6 +19,7 @@ enum class CaptureLockReason(val value: String) {
     NO_ITEM("no-item"),
     CUT_OFF("cut-off"),
     BODY_PARTS_MISSING("body-parts-missing"),
+    COVERED("covered"),
     TOO_SMALL("too-small"),
     NOT_STEADY("not-steady");
 
@@ -70,6 +71,7 @@ enum class CaptureHint(val value: String, val kind: CaptureHintKind, val lockRea
     BODY_HIPS_ANKLES("cap-hint-body-hips-ankles", CaptureHintKind.BLOCKING, CaptureLockReason.BODY_PARTS_MISSING),
     BODY_HIPS_KNEES("cap-hint-body-hips-knees", CaptureHintKind.BLOCKING, CaptureLockReason.BODY_PARTS_MISSING),
     BODY_SHOULDERS_KNEES("cap-hint-body-shoulders-knees", CaptureHintKind.BLOCKING, CaptureLockReason.BODY_PARTS_MISSING),
+    COVERED("cap-hint-covered", CaptureHintKind.BLOCKING, CaptureLockReason.COVERED),
     TOO_SMALL("cap-hint-too-small", CaptureHintKind.BLOCKING, CaptureLockReason.TOO_SMALL),
     NOT_STEADY("cap-hint-not-steady", CaptureHintKind.BLOCKING, CaptureLockReason.NOT_STEADY),
     TOO_DARK("cap-hint-too-dark", CaptureHintKind.ADVISORY, null),
@@ -135,6 +137,11 @@ object CaptureRules {
     object Tilt {
         const val HINT_ABOVE_DEGREES: Double = 20.0
         const val CLEAR_BELOW_DEGREES: Double = 15.0
+    }
+
+    object Covered {
+        const val ABOVE_OVERLAP_SHARE: Double = 0.5
+        const val MIN_OTHER_BOX_AREA_SHARE: Double = 0.005
     }
 
     object Lock {

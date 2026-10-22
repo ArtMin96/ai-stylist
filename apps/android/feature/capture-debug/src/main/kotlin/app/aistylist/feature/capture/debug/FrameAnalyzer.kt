@@ -10,6 +10,7 @@ import app.aistylist.feature.capture.camera.MlKitItemDetector
 import app.aistylist.feature.capture.camera.MlKitPoseDetector
 import app.aistylist.feature.capture.camera.lumaPlane
 import app.aistylist.feature.capture.domain.CaptureObservation
+import app.aistylist.feature.capture.domain.DeviceSample
 import app.aistylist.feature.capture.domain.LightSample
 import app.aistylist.feature.capture.domain.NormalizedPoint
 import app.aistylist.feature.capture.domain.NormalizedRect
@@ -75,7 +76,9 @@ class FrameAnalyzer(
             itemBoxes = visible,
             sharpness = sharpness,
             light = frame.light,
-            device = null,
+            // A stored tilt stands in for the phone's sensors; zero linear acceleration keeps the
+            // device-motion part of the steady check passing, as on a still phone.
+            device = segment.tiltDegrees?.let { DeviceSample(linearAccelerationMps2 = 0.0, tiltDegrees = it) },
             pose = if (withPose && visible.isNotEmpty()) pose(segment, frame, offset) else null,
         )
     }

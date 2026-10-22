@@ -1,7 +1,7 @@
 {
   "$schema": "./capture-rules.schema.json",
   "captureModes": ["flat", "hanger", "worn"],
-  "lockReasons": ["no-item", "cut-off", "body-parts-missing", "too-small", "not-steady"],
+  "lockReasons": ["no-item", "cut-off", "body-parts-missing", "covered", "too-small", "not-steady"],
   "bodyParts": [
     "leftShoulder",
     "rightShoulder",
@@ -24,6 +24,7 @@
     "cap-hint-body-hips-ankles": { "kind": "blocking", "lockReason": "body-parts-missing" },
     "cap-hint-body-hips-knees": { "kind": "blocking", "lockReason": "body-parts-missing" },
     "cap-hint-body-shoulders-knees": { "kind": "blocking", "lockReason": "body-parts-missing" },
+    "cap-hint-covered": { "kind": "blocking", "lockReason": "covered" },
     "cap-hint-too-small": { "kind": "blocking", "lockReason": "too-small" },
     "cap-hint-not-steady": { "kind": "blocking", "lockReason": "not-steady" },
     "cap-hint-too-dark": { "kind": "advisory" },
@@ -91,6 +92,7 @@
     "tooBrightAboveClippedShare": 0.25
   },
   "tilt": { "hintAboveDegrees": 20, "clearBelowDegrees": 15 },
+  "covered": { "aboveOverlapShare": 0.5, "minOtherBoxAreaShare": 0.005 },
   "lock": {
     "unlockAfterPassingEvaluations": 3,
     "relockAfterFailingEvaluations": 3,

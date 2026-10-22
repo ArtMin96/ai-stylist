@@ -258,6 +258,172 @@ struct Renderer {
         return try judged("too-bright", image: image, intent: intent, judge: judge)
     }
 
+    // MARK: - Hard cases (README "Hard cases")
+
+    /// The good frame's placement: the item centred at `Layout.goodSizeTimesMinimum` × the family
+    /// minimum, or as large as fits inside the jitter-safe margin.
+    private func goodPlacement(of base: Cutout, family: String) throws -> (rect: NormRect, area: Double) {
+        let minimum = try rules.family(family).minAreaShare
+        let fit = Sizing.largestArea(aspect: base.aspect, margin: Layout.jitterSafeMargin, size: size)
+        let area = min(Layout.goodSizeTimesMinimum * minimum, fit)
+        return (Sizing.centred(Sizing.box(aspect: base.aspect, areaShare: area, size: size)), area)
+    }
+
+    /// The item drawn alone on a transparent layer: its true mask.
+    private func trueMask(_ cutout: Cutout, rect: NormRect) throws -> BinaryMask {
+        let layer = try Imaging.makeContext(width: size.width, height: size.height)
+        layer.draw(cutout.image, in: Imaging.cgRect(rect, width: size.width, height: size.height))
+        return BinaryMask.opaque(in: try Imaging.raster(of: layer))
+    }
+
+    /// C8–C10: the good item on a hard `surface`, its garment toned to match. Two flavours of one image:
+    /// `<surface>` stores the true mask, as a good detector would see it (the unlock path), and
+    /// `<surface>-weak` stores no instance at all, as a weak detector would (no-item, the surface tip,
+    /// anyway at 10 s). `vision` is what the Mac's Vision found in the image, the evidence for how
+    /// a real detector does on that surface. A flavour that does not hold up is a rejection.
+    func onSurface(_ base: Cutout, family: String, surface: Surface) throws -> (
+        frames: [RenderedFrame], rejections: [Rejection], vision: VisionCheck
+    ) {
+        let judge = Judge(rules: rules, family: family, mode: try rules.mode("flat"))
+        let detailRadius = max(1, Int((Double(Layout.darkDetailRadiusPx) * longSideScale).rounded()))
+        let garment = try surface.garmentLuma.map { try base.toned(toMeanLuma: $0, detailRadiusPx: detailRadius) } ?? base
+        let (rect, area) = try goodPlacement(of: garment, family: family)
+        let context = try Imaging.makeContext(width: size.width, height: size.height)
+        context.draw(
+            try Imaging.image(of: surface.raster(width: size.width, height: size.height)),
+            in: CGRect(x: 0, y: 0, width: size.width, height: size.height))
+        context.draw(garment.image, in: Imaging.cgRect(rect, width: size.width, height: size.height))
+        guard let image = context.makeImage() else {
+            throw GeneratorError("cannot finish a \(surface.rawValue) frame")
+        }
+        let truth = try trueMask(garment, rect: rect)
+        let vision = try VisionMasks.check(image, item: truth, occluder: nil, rules: rules)
+        var frames: [RenderedFrame] = []
+        var rejections: [Rejection] = []
+        let flavours: [(variant: String, masks: [BinaryMask], intent: Intent)] = [
+            (surface.rawValue, [truth], Intent(iosMaskShare: truth.share, boxAreaShare: area)),
+            ("\(surface.rawValue)-weak", [], Intent(itemPresent: false, iosMaskShare: 0, boxAreaShare: 0)),
+        ]
+        for flavour in flavours {
+            do {
+                let measure = try FrameMeasure.groundTruth(image, masks: flavour.masks, vision: vision, rules: rules)
+                frames.append(try judged(flavour.variant, image: image, intent: flavour.intent, judge: judge, measure: measure))
+            } catch let rejection as Rejection {
+                rejections.append(rejection)
+            }
+        }
+        return (frames, rejections, vision)
+    }
+
+    /// C32: `occluder` lies on the good item, fully inside its box (`covered-inside`) or across its right
+    /// edge with `Layout.occluderEdgeInsideShare` of its width inside (`covered-edge`). The stored
+    /// instances are the ground truth, the item and the object apart, as a detector that separates them
+    /// sees it; `vision` records whether the Mac's Vision did (it merges them: README "Hard cases").
+    func covered(_ base: Cutout, family: String, atEdge: Bool, occluder: Occluder) throws -> (
+        frame: RenderedFrame, vision: VisionCheck
+    ) {
+        let variant = atEdge ? "covered-edge" : "covered-inside"
+        let judge = Judge(rules: rules, family: family, mode: try rules.mode("flat"))
+        let (rect, area) = try goodPlacement(of: base, family: family)
+        let box = Imaging.cgRect(rect, width: size.width, height: size.height)
+        var width = Layout.occluderWidthShareOfBox * box.width
+        var height = width * occluder.aspect
+        if height > Layout.occluderMaxHeightShareOfBox * box.height {
+            height = Layout.occluderMaxHeightShareOfBox * box.height
+            width = height / occluder.aspect
+        }
+        let frameArea = Double(size.width * size.height)
+        let minimumArea = Layout.occluderMinAreaTimesLimit * rules.covered.minOtherBoxAreaShare * frameArea
+        if width * height < minimumArea {
+            let grow = (minimumArea / (width * height)).squareRoot()
+            width *= grow
+            height *= grow
+        }
+        let centreX = atEdge ? box.maxX - (Layout.occluderEdgeInsideShare - 0.5) * width : box.midX
+        let spot = CGRect(x: centreX - width / 2, y: box.midY - height / 2, width: width, height: height)
+
+        let context = try backgroundContext()
+        context.draw(base.image, in: box)
+        occluder.draw(in: context, rect: spot)
+        guard let image = context.makeImage() else {
+            throw GeneratorError("cannot finish a \(variant) frame")
+        }
+        let layer = try Imaging.makeContext(width: size.width, height: size.height)
+        occluder.draw(in: layer, rect: spot)
+        let object = BinaryMask.opaque(in: try Imaging.raster(of: layer))
+        let item = try trueMask(base, rect: rect).subtracting(object)
+        guard item.share > object.share else {
+            throw Rejection("\(variant): the \(occluder.rawValue) is larger than what shows of the item")
+        }
+        let vision = try VisionMasks.check(image, item: item, occluder: object, rules: rules)
+        var intent = Intent(iosMaskShare: item.share, boxAreaShare: area)
+        intent.covered = true
+        let measure = try FrameMeasure.groundTruth(image, masks: [item, object], vision: vision, rules: rules)
+        return (try judged(variant, image: image, intent: intent, judge: judge, measure: measure), vision)
+    }
+
+    /// Tilt (brief §3, §6 row 8): the good frame played with the phone at `degrees`; a hint, never a lock.
+    func tilted(_ good: RenderedFrame, family: String, degrees: Double, variant: String) throws -> RenderedFrame {
+        let judge = Judge(rules: rules, family: family, mode: try rules.mode("flat"))
+        var intent = good.intent
+        intent.tiltDegrees = degrees
+        return try judged(variant, image: nil, intent: intent, judge: judge, measure: good.measure)
+    }
+
+    /// Too bright through the mean (brief §3): the whole good frame overexposed, its detail kept.
+    func overexposed(of base: Cutout, family: String) throws -> RenderedFrame {
+        let (raster, intent) = try goodRaster(of: base, family: family)
+        var bright = intent
+        bright.bright = true
+        return try judged(
+            "overexposed",
+            image: try Imaging.image(
+                of: raster.brightened(
+                    toMeanLuma: rules.light.tooBrightAboveMeanLuma + Layout.overexposedOverLuma,
+                    detailRadiusPx: max(1, Int((Double(Layout.darkDetailRadiusPx) * longSideScale).rounded())))),
+            intent: bright,
+            judge: Judge(rules: rules, family: family, mode: try rules.mode("flat")))
+    }
+
+    /// Specular glare spots on the garment: clipped, but far too small a share of the frame for the
+    /// too-bright hint, so the frame unlocks with "ready".
+    func glareSpots(of base: Cutout, family: String) throws -> RenderedFrame {
+        let (raster, intent) = try goodRaster(of: base, family: family)
+        let (rect, _) = try goodPlacement(of: base, family: family)
+        let spots = Layout.glareSpots.map { spot in
+            LightSpot(
+                centreX: rect.x + spot.x * rect.width, centreY: rect.y + spot.y * rect.height,
+                radiusX: Layout.glareSpotRadius, radiusY: Layout.glareSpotRadius * size.ratio, core: Layout.glareCore)
+        }
+        return try judged(
+            "glare-spots", image: try Imaging.image(of: raster.withLight(spots)), intent: intent,
+            judge: Judge(rules: rules, family: family, mode: try rules.mode("flat")))
+    }
+
+    /// Too bright through the clipped share (brief §3): a patch of direct sun from a window across the
+    /// surface and part of the garment.
+    func glareWindow(of base: Cutout, family: String) throws -> RenderedFrame {
+        let (raster, intent) = try goodRaster(of: base, family: family)
+        var bright = intent
+        bright.bright = true
+        return try judged(
+            "glare-window", image: try Imaging.image(of: raster.withLight([Layout.windowLight])), intent: bright,
+            judge: Judge(rules: rules, family: family, mode: try rules.mode("flat")))
+    }
+
+    private func goodRaster(of base: Cutout, family: String) throws -> (Raster, Intent) {
+        let (rect, area) = try goodPlacement(of: base, family: family)
+        let image = try compose([Placement(cutout: base, rect: rect)])
+        return (
+            try Imaging.raster(of: image, width: size.width, height: size.height),
+            Intent(iosMaskShare: area * base.coverage, boxAreaShare: area)
+        )
+    }
+
+    private var longSideScale: Double {
+        Double(max(size.width, size.height)) / Harness.motionBlurReferenceLongSidePx
+    }
+
     /// The plain background with no item; fatal when Vision finds an item in it.
     func emptyFrame() throws -> (image: CGImage, measure: FrameMeasure) {
         let image = try compose([])
@@ -412,7 +578,7 @@ struct Renderer {
         return (image, intent, keypoints)
     }
 
-    private func judged(
+    func judged(
         _ variant: String, image: CGImage?, intent: Intent, judge: Judge, measure known: FrameMeasure? = nil,
         jitter: Double = 0, keypoints: [String: Keypoint]? = nil
     ) throws -> RenderedFrame {

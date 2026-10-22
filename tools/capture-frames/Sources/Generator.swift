@@ -25,8 +25,24 @@ struct GoodFrame {
     let expected: String
 }
 
+/// What the Mac's Vision made of the hard-case composites: the evidence behind README "Hard cases".
+struct VisionTally: Encodable {
+    var composites = 0
+    var found = 0
+    /// Covered composites: Vision found the object as an instance of its own.
+    var separated = 0
+
+    mutating func add(_ check: VisionCheck) {
+        composites += 1
+        if check.foundItem { found += 1 }
+        if check.separatedOccluder == true { separated += 1 }
+    }
+}
+
 struct FamilyResult {
     var bases: [Base] = []
+    /// Per surface (and `covered`), over every base of the family.
+    var vision: [String: VisionTally] = [:]
     var rejected: [Manifest.Rejected] = []
     var flatCounts: [String: Int] = [:]
     var wornCounts: [String: Int] = [:]
@@ -42,6 +58,10 @@ struct Generator {
 
     private static let rulesPath = "packages/shared-kernel/registry/capture-rules.json"
     private static let flatColumns = Renderer.flatVariantNames + ["too-big", "too-bright", "two-items", "empty", "sweep"]
+    /// The hard cases (README "Hard cases"), printed as a second table.
+    private static let hardColumns =
+        Surface.allCases.flatMap { [$0.rawValue, "\($0.rawValue)-weak"] }
+        + ["covered-inside", "covered-edge", "tilt", "tilt-under", "overexposed", "glare-spots", "glare-window"]
 
     func run() throws -> String {
         let rulesURL = repoRoot.appendingPathComponent(Generator.rulesPath)
@@ -127,7 +147,9 @@ struct Generator {
 
             // Extra variants on the first base, outside base selection: a rejection drops only the variant.
             if let base = result.bases.first {
-                for make in [renderer.tooBig, renderer.tooBright] {
+                for make in [
+                    renderer.tooBig, renderer.tooBright, renderer.overexposed, renderer.glareSpots, renderer.glareWindow,
+                ] {
                     do {
                         let frame = try make(base.cutout, family)
                         guard let image = frame.image else { continue }
@@ -145,6 +167,76 @@ struct Generator {
                         result.flatCounts[frame.variant, default: 0] += 1
                     } catch let rejection as Rejection {
                         result.rejected.append(Manifest.Rejected(id: base.id, reason: rejection.reason))
+                    }
+                }
+            }
+
+            // Tilt (brief §3): the first good frame played with a stored phone tilt over and under the hint angle.
+            if let good = goodFrames[family]?.first {
+                let angles = [
+                    ("tilt", rules.tilt.hintAboveDegrees + Layout.tiltOverDegrees),
+                    ("tilt-under", rules.tilt.hintAboveDegrees - Layout.tiltUnderDegrees),
+                ]
+                for (variant, degrees) in angles {
+                    do {
+                        let frame = try renderer.tilted(good.frame, family: family, degrees: degrees, variant: variant)
+                        let id = "\(family)-flat-01-\(variant)"
+                        let expected = try writer.writeExpectation(frame.expectation, path: "\(family)/\(id)/expected.json")
+                        sets.append(
+                            SetEntry(
+                                id: id, family: family, mode: "flat", variant: variant, kind: "single",
+                                source: good.base.source, baseImages: [good.base.id],
+                                segments: [
+                                    try good.written.segment(
+                                        frames: Harness.segmentFrames, jitter: 0, setId: id, expected: expected,
+                                        tiltDegrees: degrees)
+                                ]))
+                        result.flatCounts[variant, default: 0] += 1
+                    } catch let rejection as Rejection {
+                        result.rejected.append(Manifest.Rejected(id: good.base.id, reason: rejection.reason))
+                    }
+                }
+            }
+
+            // Hard cases (C8–C10, C32): Vision is checked on every base, the first bases ship sets.
+            if family != "generic" {
+                for (index, base) in result.bases.enumerated() {
+                    let ships = index < Layout.hardCaseBases
+                    let number = String(format: "%02d", index + 1)
+                    func write(_ frame: RenderedFrame) throws {
+                        guard let image = frame.image else { return }
+                        let id = "\(family)-flat-\(number)-\(frame.variant)"
+                        let written = try writer.write(image, measure: frame.measure, keypoints: nil, directory: "\(family)/\(id)")
+                        result.contactFrames.append(written)
+                        let expected = try writer.writeExpectation(frame.expectation, path: "\(family)/\(id)/expected.json")
+                        sets.append(
+                            SetEntry(
+                                id: id, family: family, mode: "flat", variant: frame.variant, kind: "single",
+                                source: base.source, baseImages: [base.id],
+                                segments: [
+                                    try written.segment(frames: Harness.segmentFrames, jitter: 0, setId: id, expected: expected)
+                                ]))
+                        result.flatCounts[frame.variant, default: 0] += 1
+                    }
+                    for surface in Surface.allCases {
+                        let outcome = try renderer.onSurface(base.cutout, family: family, surface: surface)
+                        result.vision[surface.rawValue, default: VisionTally()].add(outcome.vision)
+                        guard ships else { continue }
+                        for frame in outcome.frames { try write(frame) }
+                        for rejection in outcome.rejections {
+                            result.rejected.append(Manifest.Rejected(id: base.id, reason: rejection.reason))
+                        }
+                    }
+                    for atEdge in [false, true] {
+                        let occluders = Occluder.allCases
+                        let occluder = occluders[(2 * index + (atEdge ? 1 : 0)) % occluders.count]
+                        do {
+                            let outcome = try renderer.covered(base.cutout, family: family, atEdge: atEdge, occluder: occluder)
+                            result.vision["covered", default: VisionTally()].add(outcome.vision)
+                            if ships { try write(outcome.frame) }
+                        } catch let rejection as Rejection {
+                            if ships { result.rejected.append(Manifest.Rejected(id: base.id, reason: rejection.reason)) }
+                        }
                     }
                 }
             }
@@ -406,17 +498,33 @@ struct Generator {
             source: sources.count == 1 ? sources.first ?? "mixed" : "mixed", baseImages: baseImages, segments: segments)
     }
 
+    /// The Vision tallies summed over every family.
+    private static func visionTotals(_ results: [String: FamilyResult]) -> [String: VisionTally] {
+        var totals: [String: VisionTally] = [:]
+        for result in results.values {
+            for (name, tally) in result.vision {
+                var total = totals[name, default: VisionTally()]
+                total.composites += tally.composites
+                total.found += tally.found
+                total.separated += tally.separated
+                totals[name] = total
+            }
+        }
+        return totals
+    }
+
     private func manifest(results: [String: FamilyResult], dataset: Dataset?, status: String) -> Manifest {
         let families = results.mapValues { result in
             Manifest.FamilyInfo(
                 bases: result.bases.map { Manifest.BaseInfo(id: $0.id, source: $0.source, label: $0.label, sha256: $0.sha256) },
-                rejected: result.rejected, wornGarment: result.wornGarment)
+                rejected: result.rejected, wornGarment: result.wornGarment, vision: result.vision)
         }
         return Manifest(
             dataset: Manifest.DatasetInfo(
                 name: "clothing-dataset", url: Dataset.homepage, branch: dataset?.branch,
                 licence: dataset == nil ? "not used" : "CC0-1.0", licenceVerified: dataset != nil,
                 licenceEvidence: dataset?.licenceEvidence, status: status),
+            hardCaseVision: Generator.visionTotals(results),
             synthetic:
                 "Bases with source 'synthetic' and every worn frame are drawn by tools/capture-frames (Sources/Shapes.swift): no photo, no real person.",
             families: families)
@@ -443,6 +551,20 @@ struct Generator {
                 cell(family, 14) + cell("\(dataset)+\(result.bases.count - dataset)", 7)
                 + Generator.flatColumns.map { cell("\(result.flatCounts[$0] ?? 0)", $0.count + 1) }.joined()
             lines.append(row)
+        }
+        lines.append("")
+        lines.append("hard-case sets per family (README \"Hard cases\")")
+        lines.append(cell("family", 14) + Generator.hardColumns.map { cell($0, $0.count + 1) }.joined())
+        for family in families {
+            let result = results[family] ?? FamilyResult()
+            lines.append(
+                cell(family, 14) + Generator.hardColumns.map { cell("\(result.flatCounts[$0] ?? 0)", $0.count + 1) }.joined())
+        }
+        lines.append("")
+        lines.append("Vision on the hard-case composites (ground truth stored; Vision is evidence only)")
+        for (name, tally) in Generator.visionTotals(results).sorted(by: { $0.key < $1.key }) {
+            let what = name == "covered" ? "separated the object \(tally.separated)" : "found the item \(tally.found)"
+            lines.append("  \(name): \(what) of \(tally.composites)")
         }
         lines.append("")
         lines.append("worn sets per family")

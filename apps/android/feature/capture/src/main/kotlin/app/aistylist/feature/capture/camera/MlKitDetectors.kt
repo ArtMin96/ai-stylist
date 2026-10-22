@@ -20,9 +20,10 @@ import java.util.concurrent.ExecutionException
 import com.google.mlkit.vision.pose.PoseLandmark as MlKitPoseLandmark
 
 /**
- * ML Kit object detection with the bundled model, one object (capture brief §3). [streamMode] for
- * the live camera (tracking across frames); single-image mode for stills and test frames. Calls
- * block their thread: run them on the analysis executor or an IO dispatcher.
+ * ML Kit object detection with the bundled model (capture brief §3). [streamMode] for the live camera
+ * (tracking across frames); single-image mode for stills and test frames. Up to five objects, so the
+ * covered rule (brief §4, C32) sees an object lying on the item; the rules judge the largest box.
+ * Calls block their thread: run them on the analysis executor or an IO dispatcher.
  */
 class MlKitItemDetector(
     streamMode: Boolean,
@@ -33,7 +34,8 @@ class MlKitItemDetector(
                 .Builder()
                 .setDetectorMode(
                     if (streamMode) ObjectDetectorOptions.STREAM_MODE else ObjectDetectorOptions.SINGLE_IMAGE_MODE,
-                ).build(),
+                ).enableMultipleObjects()
+                .build(),
         )
 
     /**

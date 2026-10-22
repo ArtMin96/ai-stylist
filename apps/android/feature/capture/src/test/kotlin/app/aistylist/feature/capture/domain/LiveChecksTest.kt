@@ -59,6 +59,96 @@ class LiveChecksTest {
         assertEquals(GOOD_BOX, report.itemBox)
     }
 
+    // Partly covered (C32): another box overlaps the item box
+
+    /** A [side] x [side] box whose [share] of its width lies inside [GOOD_BOX]'s right edge. */
+    private fun otherBox(
+        share: Double,
+        side: Double = 0.2,
+    ): NormalizedRect {
+        val left = GOOD_BOX.right - side * share
+        return NormalizedRect(left, 0.4, left + side, 0.4 + side)
+    }
+
+    private fun coveredBy(
+        other: NormalizedRect,
+        context: CameraContext = TOP_FLAT,
+    ): CheckReport = afterStill(frame().copy(itemBoxes = listOf(GOOD_BOX, other)), context)
+
+    @Test
+    fun `another object inside the item box locks with covered (C32)`() {
+        val report = coveredBy(squareBox(areaShare = 0.04))
+
+        assertEquals(CaptureHint.COVERED, report.blockingHint)
+        assertEquals(CaptureLockReason.COVERED, report.lockReason)
+        assertEquals(CheckOutcome.FAILED, report.outcomes[CaptureCheck.COVERED])
+        assertEquals(GOOD_BOX, report.itemBox)
+    }
+
+    @Test
+    fun `an overlap just above the limit locks and at the limit passes`() {
+        val limit = CaptureRules.Covered.ABOVE_OVERLAP_SHARE
+
+        assertEquals(CaptureHint.COVERED, coveredBy(otherBox(limit + SHARE_STEP)).blockingHint)
+        assertTrue(coveredBy(otherBox(limit)).passes)
+    }
+
+    @Test
+    fun `an object below the minimum box area never covers and at the minimum it does`() {
+        val minimum = CaptureRules.Covered.MIN_OTHER_BOX_AREA_SHARE
+
+        assertTrue(coveredBy(squareBox(areaShare = minimum * 0.9)).passes)
+        assertEquals(CaptureHint.COVERED, coveredBy(squareBox(areaShare = minimum)).blockingHint)
+    }
+
+    @Test
+    fun `hanger mode checks covered and worn mode never does`() {
+        val inside = squareBox(areaShare = 0.04)
+
+        assertEquals(
+            CaptureHint.COVERED,
+            coveredBy(inside, CameraContext(CaptureShapeFamily.TOP, CaptureMode.HANGER)).blockingHint,
+        )
+        val worn = coveredBy(inside, CameraContext(CaptureShapeFamily.GENERIC, CaptureMode.WORN))
+        assertTrue(worn.passes)
+        assertEquals(CheckOutcome.SKIPPED, worn.outcomes[CaptureCheck.COVERED])
+    }
+
+    @Test
+    fun `covered ranks after cut off and before too small`() {
+        val cutAndSmall = NormalizedRect(0.0, 0.4, 0.1, 0.5)
+        val inside = NormalizedRect(0.0, 0.42, 0.08, 0.5)
+        val small = squareBox(areaShare = 0.01)
+        val insideSmall = squareBox(areaShare = 0.006)
+
+        assertEquals(
+            CaptureHint.CUT_OFF_LEFT,
+            afterStill(frame().copy(itemBoxes = listOf(cutAndSmall, inside))).blockingHint,
+        )
+        assertEquals(
+            CaptureHint.COVERED,
+            afterStill(frame().copy(itemBoxes = listOf(small, insideSmall))).blockingHint,
+        )
+    }
+
+    @Test
+    fun `an import is not checked for covered`() {
+        val covered = frame().copy(itemBoxes = listOf(GOOD_BOX, squareBox(areaShare = 0.04)))
+
+        assertEquals(emptyList<CaptureHint>(), evaluateImportChecks(covered))
+    }
+
+    @Test
+    fun `the overlap is a share of the smaller box whichever box asks`() {
+        val big = NormalizedRect(0.0, 0.0, 0.5, 0.5)
+        val half = NormalizedRect(0.4, 0.1, 0.6, 0.2)
+
+        assertEquals(0.5, big.overlapShareOfSmaller(half), 1e-9)
+        assertEquals(0.5, half.overlapShareOfSmaller(big), 1e-9)
+        assertEquals(0.0, big.overlapShareOfSmaller(NormalizedRect(0.6, 0.0, 0.7, 0.1)), 0.0)
+        assertEquals(0.0, big.overlapShareOfSmaller(NormalizedRect(0.1, 0.1, 0.1, 0.1)), 0.0)
+    }
+
     // Cut off (Android: any box edge inside the edge band)
 
     @Test

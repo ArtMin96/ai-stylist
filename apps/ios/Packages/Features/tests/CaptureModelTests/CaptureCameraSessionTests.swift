@@ -251,6 +251,18 @@ struct CaptureSessionAnywayTests {
     #expect(driver.output.anywayReason == .hint(.cutOffLeft))
   }
 
+  @Test("C32: a partly covered item never unlocks; anyway at 10 s with the covered hint")
+  func partlyCovered() {
+    let coveredItem = CaptureItemObservation(
+      box: goodBox, maskAreaShare: 0.3, instanceCount: 2, otherBoxes: [centredBox(area: 0.04)], sharpness: 20)
+    var driver = SessionDriver()
+    driver.feed(frame(item: coveredItem), until: anywayMs + stepMs)
+    #expect(driver.unlockHaptics == 0)
+    #expect(driver.output.shutter == .locked(.covered))
+    #expect(driver.output.hint == .covered)
+    #expect(driver.output.anywayReason == .hint(.covered))
+  }
+
   @Test("C14: shaky hands never unlock; anyway at 10 s with 'Hold the phone still'")
   func shakyHands() {
     var driver = SessionDriver()

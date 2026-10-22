@@ -49,7 +49,7 @@ fun CaptureSweepScreen(
             status = "Sweep ${position + 1} of ${sets.size}: ${set.id}"
             val records =
                 analysis.use { analyzer ->
-                    SweepRunner(index, analyzer, harness.args.isScreenReader).run(set)
+                    SweepRunner(index, analyzer, harness.args.isScreenReader, harness.args.maskCadenceMs).run(set)
                 }
             records.forEach { harness.files.append(it.toJson()) }
             lines += records.size
@@ -63,6 +63,7 @@ fun CaptureSweepScreen(
                 .put("pose", probe?.pose?.id)
                 .put("masks", harness.args.masks.id)
                 .put("covered", harness.args.covered.id)
+                .put("maskCadenceMs", harness.args.maskCadenceMs)
         harness.files.done.writeText(summary.toString())
         status = "Sweep done: ${sets.size} sets, $lines lines → ${harness.files.results}"
     }

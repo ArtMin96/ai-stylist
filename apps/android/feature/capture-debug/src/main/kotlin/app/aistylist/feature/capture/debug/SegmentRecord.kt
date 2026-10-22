@@ -3,9 +3,11 @@ package app.aistylist.feature.capture.debug
 import app.aistylist.feature.capture.domain.AnywayReason
 import app.aistylist.feature.capture.domain.CameraSnapshot
 import app.aistylist.feature.capture.domain.CaptureTrigger
+import app.aistylist.feature.capture.domain.LiveOutline
 import app.aistylist.feature.capture.domain.LockPhase
 import app.aistylist.feature.capture.domain.NormalizedPoint
 import app.aistylist.feature.capture.domain.polygonIou
+import app.aistylist.feature.capture.domain.polygonMaskIou
 import org.json.JSONArray
 import org.json.JSONObject
 import java.io.File
@@ -56,9 +58,13 @@ class SegmentRecord(
     private val clock: String,
     private val detector: BoxSource,
     private val pose: PoseSource,
-    private val masks: MaskSource = MaskSource.NONE,
+    private val masks: MaskPlay = MaskPlay(),
+    /** The outline already drawn when the segment starts: it belongs to the previous segment's mask. */
+    drawnBefore: LiveOutline? = null,
 ) {
-    private val outline = OutlineStats()
+    private val outline = OutlineScores(drawnBefore)
+    private var outlineFirstMs: Long? = null
+    private var outlinePresentAtEnd = false
 
     private val events = JSONArray()
     private val captures = JSONArray()
@@ -100,11 +106,21 @@ class SegmentRecord(
         )
     }
 
-    /** The drawn [drawn] outline after a frame, scored against the stored mask's [reference] outline. */
+    /**
+     * The drawn outline after a frame at [nowMs]: each new one is scored against the stored item mask
+     * ([reference], the frame moved by [offset]).
+     */
     fun onOutline(
-        drawn: List<NormalizedPoint>?,
-        reference: List<NormalizedPoint>?,
-    ) = outline.add(drawn, reference)
+        drawn: LiveOutline?,
+        reference: OutlineReference?,
+        offset: FrameOffset,
+        nowMs: Long,
+    ) {
+        outlinePresentAtEnd = drawn != null
+        if (drawn == null || !outline.isNew(drawn)) return
+        if (outlineFirstMs == null) outlineFirstMs = nowMs - startMs
+        outline.add(drawn, reference, offset)
+    }
 
     fun onCapture(
         trigger: CaptureTrigger,
@@ -127,8 +143,11 @@ class SegmentRecord(
             .put("segment", segmentIndex)
             .put("expected", segment.expected)
             .put("detector", detector.id)
-            .put("masks", masks.id)
-            .put("outline", outline.toJson())
+            .put("masks", masks.source.id)
+            .put("maskCadenceMs", masks.cadenceMs)
+            .put("outlineFirstMs", outlineFirstMs ?: JSONObject.NULL)
+            .put("outlinePresentAtEnd", outlinePresentAtEnd)
+            .also(outline::write)
             .put("pose", pose.id)
             .put("events", events)
             .put("firstUnlockMs", firstUnlockMs ?: JSONObject.NULL)
@@ -187,42 +206,75 @@ class ResultsFiles(
     }
 }
 
+/** How masks were played: their source and cadence (`captureMaskCadenceMs`; 0 = a fresh mask on every frame). */
+data class MaskPlay(
+    val source: MaskSource = MaskSource.NONE,
+    val cadenceMs: Int = 0,
+)
+
+/** The stored item mask a drawn outline is scored against: one mask per stored instance. */
+class OutlineReference(
+    val width: Int,
+    val height: Int,
+    val instances: List<BooleanArray>,
+)
+
 /**
- * The live outline over one segment (results log): how often it was drawn, its IoU against the
- * stored mask's outline at the end, and its stability — the centroid-aligned IoU of successive drawn
- * outlines (the jitter acceptance is a mean of at least 0.95).
+ * The live outline's scores over one segment, as iOS logs them: updates and snaps, the IoU of each
+ * drawn outline with the stored item mask (best instance, raw mask), and the centroid-aligned IoU of
+ * each blended outline with the one before it (snaps excluded). An outline still drawn from the
+ * previous segment is the comparison base only, never scored.
  */
-private class OutlineStats {
-    private var frames = 0
-    private var drawnFrames = 0
-    private var last: List<NormalizedPoint>? = null
-    private var lastIou: Double? = null
-    private val stability = ArrayList<Double>()
+private class OutlineScores(
+    private var last: LiveOutline?,
+) {
+    private var updates = 0
+    private var snaps = 0
+    private val ious = ArrayList<Double>()
+    private val stabilities = ArrayList<Double>()
+
+    fun isNew(drawn: LiveOutline): Boolean = drawn != last
 
     fun add(
-        drawn: List<NormalizedPoint>?,
-        reference: List<NormalizedPoint>?,
+        drawn: LiveOutline,
+        reference: OutlineReference?,
+        offset: FrameOffset,
     ) {
-        frames++
-        if (drawn == null) {
-            last = null
-            return
-        }
-        drawnFrames++
-        lastIou = reference?.let { polygonIou(drawn, it) }
+        updates++
         val previous = last
-        if (previous != null && previous != drawn) stability += polygonIou(centred(drawn), centred(previous))
+        if (previous != null) {
+            if (drawn.snapCount != previous.snapCount) {
+                snaps++
+            } else {
+                stabilities += polygonIou(centred(drawn.points), centred(previous.points))
+            }
+        }
+        if (reference != null) {
+            // The stored mask is unmoved: move the outline back by the frame's jitter instead.
+            val unmoved = drawn.points.map { NormalizedPoint(it.x - offset.dx, it.y - offset.dy) }
+            reference.instances
+                .maxOfOrNull { polygonMaskIou(unmoved, reference.width, reference.height, it) }
+                ?.let(ious::add)
+        }
         last = drawn
     }
 
-    fun toJson(): JSONObject =
-        JSONObject()
-            .put("presentShare", if (frames == 0) 0.0 else drawnFrames.toDouble() / frames)
-            .put("presentAtEnd", last != null)
-            .put("iouVsStored", lastIou ?: JSONObject.NULL)
-            .put("updates", stability.size)
-            .put("stabilityMean", if (stability.isEmpty()) JSONObject.NULL else stability.average())
-            .put("stabilityMin", stability.minOrNull() ?: JSONObject.NULL)
+    fun write(json: JSONObject) {
+        json
+            .put("outlineUpdates", updates)
+            .put("outlineSnaps", snaps)
+            .put("outlineIouMedian", median(ious) ?: JSONObject.NULL)
+            .put("outlineIouMin", ious.minOrNull() ?: JSONObject.NULL)
+            .put("outlineStabilityMedian", median(stabilities) ?: JSONObject.NULL)
+            .put("outlineStabilityMin", stabilities.minOrNull() ?: JSONObject.NULL)
+    }
+
+    private fun median(values: List<Double>): Double? {
+        if (values.isEmpty()) return null
+        val sorted = values.sorted()
+        val middle = sorted.size / 2
+        return if (sorted.size % 2 == 1) sorted[middle] else (sorted[middle - 1] + sorted[middle]) / 2
+    }
 
     private fun centred(points: List<NormalizedPoint>): List<NormalizedPoint> {
         val cx = points.sumOf { it.x } / points.size

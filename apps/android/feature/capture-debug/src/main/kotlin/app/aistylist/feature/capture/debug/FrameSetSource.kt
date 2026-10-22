@@ -7,7 +7,6 @@ import app.aistylist.feature.capture.domain.CameraFeedEvent
 import app.aistylist.feature.capture.domain.CaptureClock
 import app.aistylist.feature.capture.domain.CaptureObservation
 import app.aistylist.feature.capture.domain.CaptureObservationSource
-import app.aistylist.feature.capture.domain.NormalizedPoint
 import app.aistylist.feature.capture.domain.PhotoRef
 import app.aistylist.feature.capture.domain.PhotoResult
 import kotlinx.coroutines.CoroutineDispatcher
@@ -25,8 +24,8 @@ data class ShownFrame(
     val offset: FrameOffset,
     val segmentIndex: Int,
     val segmentStartMs: Long,
-    /** The stored mask's outline at this offset: what the results log scores the drawn outline against. */
-    val storedOutline: List<NormalizedPoint>? = null,
+    /** The stored item mask the results log scores the drawn outline against. */
+    val reference: OutlineReference? = null,
 )
 
 /**
@@ -70,7 +69,7 @@ class FrameSetSource(
                                     offset,
                                     index,
                                     startMs,
-                                    analyzer.storedOutline(segment, offset),
+                                    analyzer.outlineReference(segment),
                                 )
                             val withPose = poseDetection.value && set.mode == CaptureMode.WORN
                             analyzer.observe(segment, offset, clock.nowMs(), withPose)

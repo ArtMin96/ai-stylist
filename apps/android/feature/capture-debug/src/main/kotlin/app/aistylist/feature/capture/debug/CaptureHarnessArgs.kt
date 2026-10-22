@@ -1,6 +1,7 @@
 package app.aistylist.feature.capture.debug
 
 import android.os.Bundle
+import app.aistylist.contracts.kernel.CaptureRules
 import java.io.File
 
 /** Where item boxes come from in the harness (capture brief §11, harness step 6.5). */
@@ -57,6 +58,8 @@ enum class PoseSource(
  * real time a capture is recorded and the camera carries on, as in a sweep), and for runs by hand
  * `captureFramesDir=<path>`, `captureBoxes=auto|live|stored`, `capturePose=auto|live|keypoints`,
  * `captureMasks=stored|live|none` (default stored), `captureCovered=components|mlkit` (live masks),
+ * `captureMaskCadenceMs=<ms>` (sweeps: a new mask every 250 ms by default, reused in between, as on
+ * the phone; 0 gives every frame a fresh mask),
  * `captureSweepFilter=<set id prefix>` and `captureDebugPanel=0` (hide the panel for screenshots).
  */
 data class CaptureHarnessArgs(
@@ -71,6 +74,8 @@ data class CaptureHarnessArgs(
     val recordsCaptures: Boolean = false,
     val masks: MaskSource = MaskSource.STORED,
     val covered: CoveredSource = CoveredSource.COMPONENTS,
+    /** Sweeps: how often a new mask is taken (0: on every frame). */
+    val maskCadenceMs: Int = 0,
 ) {
     companion object {
         const val FRAME_SET: String = "captureFrameSet"
@@ -84,13 +89,15 @@ data class CaptureHarnessArgs(
         const val RECORD_ONLY: String = "captureRecordOnly"
         const val MASKS: String = "captureMasks"
         const val COVERED: String = "captureCovered"
+        const val MASK_CADENCE_MS: String = "captureMaskCadenceMs"
 
         fun from(extras: Bundle?): CaptureHarnessArgs {
             if (extras == null) return CaptureHarnessArgs()
+            val isSweep = extras.getString(SWEEP) == "1"
             return CaptureHarnessArgs(
                 frameSetId = extras.getString(FRAME_SET)?.takeIf { it.isNotBlank() },
                 isScreenReader = extras.getString(SCREEN_READER) == "1",
-                isSweep = extras.getString(SWEEP) == "1",
+                isSweep = isSweep,
                 framesDir = extras.getString(FRAMES_DIR)?.let(::File),
                 boxes =
                     when (extras.getString(BOXES)) {

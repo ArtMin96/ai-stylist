@@ -20,7 +20,6 @@ import app.aistylist.feature.capture.domain.NormalizedPoint
 import app.aistylist.feature.capture.domain.NormalizedRect
 import app.aistylist.feature.capture.domain.PoseLandmark
 import app.aistylist.feature.capture.domain.PoseSample
-import app.aistylist.feature.capture.domain.traceOutline
 import com.google.mlkit.vision.common.InputImage
 import org.json.JSONObject
 import java.io.Closeable
@@ -85,9 +84,12 @@ class FrameAnalyzer(
         offset: FrameOffset,
         timestampMs: Long,
         withPose: Boolean,
+        maskSample: MaskSample = MaskSample(segment, offset, timestampMs),
     ): CaptureObservation {
         val frame = frame(segment)
-        val mask = frame.mask?.let { maskAt(segment, frame, it, offset, timestampMs) }
+        val maskFrame = frame(maskSample.segment)
+        val mask =
+            maskFrame.mask?.let { maskAt(maskSample.segment, maskFrame, it, maskSample.offset, maskSample.timestampMs) }
         val visible =
             if (mask != null) {
                 emptyList()
@@ -111,19 +113,18 @@ class FrameAnalyzer(
         )
     }
 
-    /**
-     * The stored mask's outline for [segment] moved by [offset]: the reference the results log
-     * scores the drawn outline against; null without a stored item.
-     */
-    fun storedOutline(
-        segment: FrameSegment,
-        offset: FrameOffset,
-    ): List<NormalizedPoint>? {
+    /** The stored item mask of [segment] the drawn outline is scored against; null without stored masks. */
+    fun outlineReference(segment: FrameSegment): OutlineReference? {
         val frame = frame(segment)
-        val reference =
-            frame.storedOutline
-                ?: storedLabels(segment, frame.bitmap)?.let(::largestOutline).also { frame.storedOutline = it }
-        return reference?.map { NormalizedPoint(it.x + offset.dx, it.y + offset.dy) }
+        frame.reference?.let { return it }
+        val labels = storedLabels(segment, frame.bitmap) ?: return null
+        val instances =
+            labels.instances().map { instance ->
+                BooleanArray(labels.width * labels.height) {
+                    labels.isLabel(it % labels.width, it / labels.width, instance.label)
+                }
+            }
+        return OutlineReference(labels.width, labels.height, instances).also { frame.reference = it }
     }
 
     private fun maskAt(
@@ -326,7 +327,7 @@ class FrameAnalyzer(
     ) {
         var keypoints: PoseSample? = null
         var livePose: PoseSample? = null
-        var storedOutline: List<NormalizedPoint>? = null
+        var reference: OutlineReference? = null
         var objectBoxes: List<NormalizedRect>? = null
     }
 
@@ -345,14 +346,6 @@ private fun emptyLabels(bitmap: Bitmap): LabelImage =
         ByteArray(bitmap.width * bitmap.height),
     )
 
-/** The outline of the largest instance of [labels]; null when it is empty. */
-private fun largestOutline(labels: LabelImage): List<NormalizedPoint>? {
-    val item = labels.instances().firstOrNull() ?: return null
-    val mask =
-        BooleanArray(labels.width * labels.height) { labels.isLabel(it % labels.width, it / labels.width, item.label) }
-    return traceOutline(labels.width, labels.height, mask)?.points
-}
-
 /** Pixel IoU of the foregrounds (any label) of two same-size label images. */
 private fun foregroundIou(
     a: LabelImage,
@@ -370,6 +363,16 @@ private fun foregroundIou(
     }
     return if (union == 0) 1.0 else intersection.toDouble() / union
 }
+
+/**
+ * Which mask an observation carries: the one taken from [segment]'s image at [offset] at
+ * [timestampMs]. By default the frame's own; at the live mask cadence an earlier frame's, reused.
+ */
+data class MaskSample(
+    val segment: FrameSegment,
+    val offset: FrameOffset,
+    val timestampMs: Long,
+)
 
 /** [this] box moved by [offset] (not clipped). */
 fun NormalizedRect.moved(offset: FrameOffset): NormalizedRect =

@@ -138,7 +138,8 @@ class CaptureHarness(
                         clock = "real",
                         detector = probe?.boxes ?: BoxSource.AUTO,
                         pose = probe?.pose ?: PoseSource.AUTO,
-                        masks = args.masks,
+                        masks = MaskPlay(args.masks),
+                        drawnBefore = snapshot.outline,
                     ),
                     source.set,
                     frame.segmentIndex,
@@ -147,7 +148,7 @@ class CaptureHarness(
                     recorder = it
                 }
         current.record.onState(StepState.of(snapshot), clock.nowMs())
-        current.record.onOutline(snapshot.outline, frame.storedOutline)
+        current.record.onOutline(snapshot.outline, frame.reference, frame.offset, clock.nowMs())
     }
 
     private class InteractiveRecorder(

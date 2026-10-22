@@ -21,6 +21,11 @@ class SweepRunner(
     private val analyzer: FrameAnalyzer,
     /** The screen-reader flag (`captureScreenReader=1`): "Take photo anyway" shows at once (C25). */
     private val isScreenReader: Boolean = false,
+    /**
+     * A new mask every this many ms, reused by the frames in between, as the phone's segmenter
+     * cadence (`captureMaskCadenceMs`); 0 gives every frame a fresh mask.
+     */
+    private val maskCadenceMs: Int = 0,
 ) {
     /** Runs [set] and returns its segments' records. */
     fun run(set: FrameSet): List<SegmentRecord> {
@@ -37,9 +42,20 @@ class SweepRunner(
         val records = mutableListOf<SegmentRecord>()
         var nextTickMs = CaptureRules.Evaluation.INTERVAL_MS.toLong()
         session.cameraReady()
+        var mask: MaskSample? = null
         set.segments.forEachIndexed { segmentIndex, segment ->
             val startMs = now
-            val record = SegmentRecord(set, segmentIndex, startMs, CLOCK, analyzer.boxes, analyzer.pose, analyzer.masks)
+            val record =
+                SegmentRecord(
+                    set,
+                    segmentIndex,
+                    startMs,
+                    CLOCK,
+                    analyzer.boxes,
+                    analyzer.pose,
+                    MaskPlay(analyzer.masks, maskCadenceMs),
+                    drawnBefore = session.snapshot.outline,
+                )
             records += record
             record.onState(StepState.of(session.snapshot), now)
             val endMs = startMs + playMs(set, segmentIndex, segment.frames, frameMs)
@@ -54,9 +70,22 @@ class SweepRunner(
                 }
                 now = frameAt
                 val offset = analyzer.offset(segment, frameNumber)
-                val observation = analyzer.observe(segment, offset, now, withPose = set.mode == CaptureMode.WORN)
+                val current = mask
+                val sample =
+                    if (current == null || maskCadenceMs == 0 || now - current.timestampMs >= maskCadenceMs) {
+                        MaskSample(segment, offset, now).also { mask = it }
+                    } else {
+                        current
+                    }
+                val observation =
+                    analyzer.observe(segment, offset, now, withPose = set.mode == CaptureMode.WORN, maskSample = sample)
                 handle(session, session.submit(observation), record, kind, clock)
-                record.onOutline(session.snapshot.outline, analyzer.storedOutline(segment, offset))
+                record.onOutline(
+                    session.snapshot.outline,
+                    analyzer.outlineReference(sample.segment),
+                    sample.offset,
+                    now,
+                )
                 frameNumber++
             }
             now = endMs

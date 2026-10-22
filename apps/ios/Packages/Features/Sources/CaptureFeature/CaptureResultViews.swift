@@ -318,11 +318,6 @@
     let photos: CapturePhotoStore
     @Environment(\.appTheme) private var theme
 
-    private let columns = Array(
-      repeating: GridItem(.flexible(), spacing: CaptureMetrics.pickerColumnGap, alignment: .top),
-      count: 3
-    )
-
     var body: some View {
       VStack(spacing: 0) {
         CaptureModalHeader(
@@ -335,7 +330,7 @@
             Text(CaptureText.localized("capture.summary.line"))
               .font(theme.font(AppTypography.footnote))
               .foregroundStyle(theme.color(.textSecondary))
-            LazyVGrid(columns: columns, spacing: AppSpacing.space12) {
+            LazyVGrid(columns: CaptureMetrics.pickerColumns, spacing: AppSpacing.space12) {
               ForEach(Array(photoIDs.enumerated()), id: \.offset) { index, id in
                 let label = CaptureText.formatted("capture.summary.photo", index + 1)
                 VStack(alignment: .leading, spacing: AppSpacing.space4) {

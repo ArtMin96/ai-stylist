@@ -327,7 +327,7 @@
       VStack(spacing: 0) {
         CaptureModalHeader(
           title: CaptureText.itemCount(photoIDs.count),
-          closeID: "cap-summary-close",
+          closeID: "cap-batch-summary-close",
           onClose: model.done
         )
         ScrollView {
@@ -357,7 +357,7 @@
           fullWidth: true,
           action: model.done
         )
-        .accessibilityIdentifier("cap-summary-done")
+        .accessibilityIdentifier("cap-batch-summary-done")
         .padding(.horizontal, AppSpacing.space20)
         .padding(.vertical, AppSpacing.space16)
       }

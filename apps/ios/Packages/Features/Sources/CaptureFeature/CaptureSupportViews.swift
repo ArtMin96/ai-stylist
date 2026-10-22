@@ -119,7 +119,7 @@
           fullWidth: true,
           action: model.startImport
         )
-        .accessibilityIdentifier("cap-no-camera-import")
+        .accessibilityIdentifier("cap-permission-import")
       }
     }
   }
@@ -190,7 +190,7 @@
     }
 
     var body: some View {
-      CaptureSheet(sheetID: "cap-camera-menu", titleKey: "capture.a11y.more") {
+      CaptureSheet(sheetID: "cap-camera-menu-sheet", titleKey: "capture.a11y.more") {
         HStack(spacing: AppSpacing.space12) {
           VStack(alignment: .leading, spacing: AppSpacing.space4) {
             Text(CaptureText.localized("capture.menu.allowWorn"))

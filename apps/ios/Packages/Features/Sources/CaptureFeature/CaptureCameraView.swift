@@ -110,7 +110,7 @@
             CaptureIconButton(label: CaptureText.localized("capture.a11y.more"), action: { isMenuShown = true }) {
               AppIcon(.more, size: .lg)
             }
-            .accessibilityIdentifier("cap-camera-more")
+            .accessibilityIdentifier("cap-camera-menu")
           }
           speechButton
           if controller.camera.hasTorch {

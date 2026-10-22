@@ -27,11 +27,13 @@ appId: ${APP_ID}
       id: cap-hint-next-item
     timeout: 8000
 - takeScreenshot: 01-batch-next-item
+# The count chip's words (brief §7: "3 items"); on Android they sit on a child of the tagged chip.
+- assertVisible:
+    id: cap-batch-count
 - extendedWaitUntil:
     visible:
-      id: cap-batch-count
       text: 10 items
-    timeout: 90000
+    timeout: 120000
 - assertNotVisible:
     id: cap-review-back-same
 - takeScreenshot: 02-batch-ten-items

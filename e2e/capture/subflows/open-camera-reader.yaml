@@ -1,10 +1,12 @@
 # Subflow: as open-camera.yaml, with the screen-reader flag on (captureScreenReader, brief §11, C25).
+# Flag values are quoted: Maestro passes an unquoted 1 to Android as an integer extra, and both
+# harnesses read the flags as text.
 appId: ${APP_ID}
 ---
 - launchApp:
     arguments:
       captureFrameSet: ${SET}
-      captureScreenReader: 1
+      captureScreenReader: "1"
 - tapOn:
     id: home-open-capture
 - tapOn:

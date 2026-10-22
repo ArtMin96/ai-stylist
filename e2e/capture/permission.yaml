@@ -1,5 +1,6 @@
-# Camera permission denied (capture brief §7, C23): launched with the camera permission denied, the
-# camera tile shows the permission screen with Settings and import. With the permission allowed and no
+# Camera permission denied (capture brief §7, C23): launched with the camera permission denied (on
+# Android the user also declines the system request), the camera tile shows the permission screen
+# with Settings and import. With the permission allowed and no
 # camera at all (the iOS Simulator's live source; an Android emulator has a virtual camera), the
 # no-camera screen offers import. Simulator/emulator-safe.
 appId: ${APP_ID}
@@ -11,6 +12,12 @@ appId: ${APP_ID}
     id: home-open-capture
 - tapOn:
     id: cap-picker-family-top
+# Android asks again after a revoke: the user declines in the system dialog (system UI, no test ID).
+- runFlow:
+    when:
+      visible: "Don.t allow"
+    commands:
+      - tapOn: "Don.t allow"
 - extendedWaitUntil:
     visible:
       id: cap-screen-permission

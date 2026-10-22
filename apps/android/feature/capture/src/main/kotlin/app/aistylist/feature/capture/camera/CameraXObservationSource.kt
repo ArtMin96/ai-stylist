@@ -4,6 +4,7 @@ import android.content.Context
 import android.content.pm.PackageManager
 import android.graphics.Bitmap
 import android.graphics.Matrix
+import android.os.PowerManager
 import android.util.Size
 import androidx.camera.compose.CameraXViewfinder
 import androidx.camera.core.Camera
@@ -34,6 +35,8 @@ import app.aistylist.feature.capture.domain.CameraUnavailableReason
 import app.aistylist.feature.capture.domain.CaptureClock
 import app.aistylist.feature.capture.domain.CaptureObservation
 import app.aistylist.feature.capture.domain.CaptureObservationSource
+import app.aistylist.feature.capture.domain.MaskAnalysis
+import app.aistylist.feature.capture.domain.MaskObservation
 import app.aistylist.feature.capture.domain.PhotoRef
 import app.aistylist.feature.capture.domain.PhotoResult
 import com.google.mlkit.vision.common.InputImage
@@ -49,6 +52,8 @@ import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.flow.emitAll
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.suspendCancellableCoroutine
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
@@ -56,8 +61,9 @@ import kotlin.coroutines.resume
 
 /**
  * The real camera (capture brief §3): CameraX preview, a 640 × 480 KEEP_ONLY_LATEST analysis stream
- * measured on its Y plane and fed to ML Kit object detection (and pose detection in worn mode, on
- * the same frame), phone motion from the accelerometer, and ImageCapture for the photo. The camera
+ * measured on its Y plane, the on-device garment segmenter every mask interval (ML Kit object
+ * detection when it cannot load; ML Kit pose detection in worn mode, on the same frame), phone motion
+ * from the accelerometer, and ImageCapture for the photo. The camera
  * opens when [feed] is collected and closes when it is cancelled; it has its own lifecycle, so the
  * view model alone decides when the camera runs (background, leaving the camera step).
  */
@@ -75,6 +81,8 @@ class CameraXObservationSource(
     private val torchOn = MutableStateFlow(false)
     private val motion = DeviceMotionSensor(context)
     private val stillDetector by lazy { MlKitItemDetector(streamMode = false) }
+    private val stillSegmenter by lazy { LiteRtGarmentSegmenter.load(context) }
+    private val stillLock = Mutex()
 
     @Volatile
     private var imageCapture: ImageCapture? = null
@@ -156,7 +164,16 @@ class CameraXObservationSource(
 
     override suspend fun analyzeStill(photo: PhotoRef): CaptureObservation? {
         val bitmap = photos.load(photo) ?: return null
-        return withContext(ioDispatcher) { analyzeBitmap(bitmap, stillDetector, clock.nowMs()) }
+        return withContext(ioDispatcher) {
+            stillLock.withLock {
+                val segmenter = stillSegmenter
+                if (segmenter != null) {
+                    analyzeBitmap(bitmap, segmenter, clock.nowMs())
+                } else {
+                    analyzeBitmap(bitmap, stillDetector, clock.nowMs())
+                }
+            }
+        }
     }
 
     private suspend fun unavailableReason(): CameraUnavailableReason? =
@@ -221,28 +238,55 @@ class CameraXObservationSource(
         }
     }
 
-    /** Measures each analysis frame and runs the detectors on it; one frame in flight (KEEP_ONLY_LATEST). */
+    /**
+     * Measures each analysis frame (one in flight, KEEP_ONLY_LATEST) and attaches the newest garment
+     * mask. The segmenter loads and runs on its own thread at the mask cadence, so luma, sharpness
+     * and motion keep the frame rate while a mask is computed. If it cannot load, ML Kit object
+     * detection gives boxes on every frame instead (doc-10 fallback). Pose stays ML Kit (worn mode).
+     */
     private inner class FrameAnalyzer(
         private val poseDetection: StateFlow<Boolean>,
         private val emit: (CameraFeedEvent) -> Unit,
     ) : ImageAnalysis.Analyzer {
-        private val items = MlKitItemDetector(streamMode = true)
+        private var items: MlKitItemDetector? = null
         private val poses by lazy { MlKitPoseDetector() }
+        private val segmenterThread: ExecutorService = Executors.newSingleThreadExecutor()
+        private val cadence = MaskCadence()
+        private val power = context.getSystemService(PowerManager::class.java)
+
+        @Volatile
+        private var segmenter: SegmenterState = SegmenterState.Loading
+
+        @Volatile
+        private var latestMask: MaskObservation? = null
         private var isReady = false
+
+        init {
+            segmenterThread.execute {
+                segmenter = LiteRtGarmentSegmenter.load(context)?.let(SegmenterState::Ready) ?: SegmenterState.Failed
+            }
+        }
 
         @androidx.annotation.OptIn(androidx.camera.core.ExperimentalGetImage::class)
         override fun analyze(image: ImageProxy) {
             image.use { proxy ->
                 val media = proxy.image ?: return
+                val nowMs = clock.nowMs()
                 val rotation = proxy.imageInfo.rotationDegrees
                 val input = InputImage.fromMediaImage(media, rotation)
-                val boxes = items.detect(input).orEmpty()
-                val pose = if (poseDetection.value && boxes.isNotEmpty()) poses.detect(input) else null
+                val state = segmenter
+                val boxes = if (state == SegmenterState.Failed) itemDetector().detect(input).orEmpty() else emptyList()
+                if (state is SegmenterState.Ready && cadence.tryStart(nowMs, isHot())) {
+                    val upright = proxy.toBitmap().rotated(rotation)
+                    segmenterThread.execute { runSegmenter(state.segmenter, upright, nowMs) }
+                }
+                val mask = if (state is SegmenterState.Ready) latestMask else null
+                val hasItem = mask?.foundItem != null || boxes.isNotEmpty()
+                val pose = if (poseDetection.value && hasItem) poses.detect(input) else null
                 val yPlane = proxy.planes[0]
                 val bytes = ByteArray(yPlane.buffer.remaining()).also { yPlane.buffer.get(it) }
                 val plane = LumaPlane.fromYPlane(proxy.width, proxy.height, bytes, yPlane.rowStride, yPlane.pixelStride)
-                val observation =
-                    measureObservation(clock.nowMs(), plane, rotation, boxes, motion.latest, pose)
+                val observation = measureObservation(nowMs, plane, rotation, boxes, motion.latest, pose, mask)
                 if (!isReady) {
                     isReady = true
                     emit(CameraFeedEvent.Ready)
@@ -251,10 +295,40 @@ class CameraXObservationSource(
             }
         }
 
+        private fun runSegmenter(
+            model: LiteRtGarmentSegmenter,
+            upright: Bitmap,
+            frameAtMs: Long,
+        ) {
+            try {
+                latestMask = MaskAnalysis(model.segment(upright).labels).at(frameAtMs)
+            } finally {
+                cadence.finish()
+            }
+        }
+
+        private fun itemDetector(): MlKitItemDetector =
+            items ?: MlKitItemDetector(streamMode = true).also { items = it }
+
+        private fun isHot(): Boolean = power.currentThermalStatus >= PowerManager.THERMAL_STATUS_MODERATE
+
         fun close() {
-            items.close()
+            // Queued after any run in flight, so the interpreter closes once it is idle.
+            segmenterThread.execute { (segmenter as? SegmenterState.Ready)?.segmenter?.close() }
+            segmenterThread.shutdown()
+            items?.close()
             poses.close()
         }
+    }
+
+    private sealed interface SegmenterState {
+        data object Loading : SegmenterState
+
+        data class Ready(
+            val segmenter: LiteRtGarmentSegmenter,
+        ) : SegmenterState
+
+        data object Failed : SegmenterState
     }
 
     private companion object {
@@ -312,6 +386,16 @@ fun analyzeBitmap(
 ): CaptureObservation {
     val boxes = detector.detect(InputImage.fromBitmap(bitmap, 0)).orEmpty()
     return measureObservation(timestampMs, bitmap.lumaPlane(), rotationDegrees = 0, boxes = boxes)
+}
+
+/** Measures a still (an import or a test frame) with the garment [segmenter]: no motion, no pose. */
+fun analyzeBitmap(
+    bitmap: Bitmap,
+    segmenter: LiteRtGarmentSegmenter,
+    timestampMs: Long,
+): CaptureObservation {
+    val mask = MaskAnalysis(segmenter.segment(bitmap).labels).at(timestampMs)
+    return measureObservation(timestampMs, bitmap.lumaPlane(), rotationDegrees = 0, boxes = emptyList(), mask = mask)
 }
 
 /** Rec. 601 luma of [this] bitmap. */

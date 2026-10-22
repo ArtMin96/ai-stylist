@@ -1,0 +1,43 @@
+Garment segmenter of the capture camera: u2netp-224-fp16.tflite
+
+What it is
+  U²-Netp, the small salient-object model of U²-Net, converted to TFLite with float16 weights and a
+  fixed 1 × 224 × 224 × 3 input. It runs on the phone only (LiteRT 1.4.2, CPU). Nothing is sent off
+  the device.
+
+Model and weights
+  U²-Net / U²-Netp by Xuebin Qin, Zichen Zhang, Chenyang Huang, Masood Dehghan, Osmar R. Zaiane and
+  Martin Jagersand, "U²-Net: Going Deeper with Nested U-Structure for Salient Object Detection",
+  Pattern Recognition 106, 2020. https://github.com/xuebinqin/U-2-Net
+  Licence: Apache License 2.0, read from the repository's LICENSE file at commit
+  ac7e1c817ecab7c7dff5ce6b1abba61cd213ff29 (2026-10-22).
+
+ONNX export used as the source
+  rembg by Daniel Gatis, release v0.0.0 asset u2netp.onnx (4,574,861 bytes),
+  https://github.com/danielgatis/rembg/releases/download/v0.0.0/u2netp.onnx
+  sha256 309c8469258dda742793dce0ebea8e6dd393174f89934733ecc8b14c76f4ddd8
+  Licence: MIT License, Copyright (c) 2020 Daniel Gatis, read from the repository's LICENSE.txt at
+  commit c5b48b0417a0254df7d461efa14573597f369a83 (2026-10-22).
+  The official U²-Net weights are a PyTorch pickle; the build never unpickles downloaded data, so it
+  starts from this ONNX export.
+
+How this file was made
+  bash tools/capture-segmenter/convert.sh (pinned conversion stack; onnx2tf 1.28.8, TensorFlow
+  2.19.1). Two runs from a fresh download gave the same bytes. Its sha256 is in
+  u2netp-224-fp16.tflite.sha256 next to this file; a unit test checks it.
+
+Licence texts
+  Apache License 2.0: https://www.apache.org/licenses/LICENSE-2.0
+  MIT License (rembg):
+    Permission is hereby granted, free of charge, to any person obtaining a copy of this software
+    and associated documentation files (the "Software"), to deal in the Software without
+    restriction, including without limitation the rights to use, copy, modify, merge, publish,
+    distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the
+    Software is furnished to do so, subject to the following conditions:
+    The above copyright notice and this permission notice shall be included in all copies or
+    substantial portions of the Software.
+    THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING
+    BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+    NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
+    DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+    OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.

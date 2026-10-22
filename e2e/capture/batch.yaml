@@ -11,6 +11,7 @@ appId: ${APP_ID}
 - scrollUntilVisible:
     element:
       id: cap-picker-batch
+    centerElement: true
 - tapOn:
     id: cap-picker-batch
 - assertVisible:

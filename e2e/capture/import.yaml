@@ -10,6 +10,7 @@ appId: ${APP_ID}
 - scrollUntilVisible:
     element:
       id: cap-picker-import
+    centerElement: true
 - tapOn:
     id: cap-picker-import
 - takeScreenshot: 01-system-picker

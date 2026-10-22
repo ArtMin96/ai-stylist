@@ -64,6 +64,7 @@ appId: ${APP_ID}
 - scrollUntilVisible:
     element:
       id: cap-picker-family-small-item
+    centerElement: true
 - tapOn:
     id: cap-picker-family-small-item
 - assertVisible:

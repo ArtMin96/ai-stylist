@@ -73,6 +73,20 @@ add_photo() {
   esac
 }
 
+# Android only, before each flow: close any system screen a failed flow left open (the photo picker
+# survives Maestro's app stop), and push the frames again when a flow's clearState wiped the app's
+# external files, which hold them (on iOS they stay on the Mac).
+android_before_flow() {
+  local adb
+  adb="$(android_adb)"
+  "$adb" shell input keyevent KEYCODE_BACK
+  "$adb" shell input keyevent KEYCODE_BACK
+  "$adb" shell am force-stop "$APP_ID"
+  if ! "$adb" shell test -f "$("$ANDROID_FRAMES" path)/index.json"; then
+    "$ANDROID_FRAMES" push "$FRAMES_DIR" >/dev/null
+  fi
+}
+
 # Runs every flow in e2e/capture/ on device $2 for platform $1 in the current theme $4, into run $3.
 run_flows() {
   local platform="$1" device="$2" run="$3" theme="$4" flow name out code shot
@@ -81,6 +95,7 @@ run_flows() {
     out="$run/maestro/$platform/$theme/$name"
     rm -rf "$out"
     mkdir -p "$out" "$run/screenshots/$platform/$theme"
+    [[ "$platform" != android ]] || android_before_flow
     [[ "$name" != import ]] || add_photo "$platform"
     log "$platform $theme: $name"
     code=0

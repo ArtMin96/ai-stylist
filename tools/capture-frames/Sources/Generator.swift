@@ -63,6 +63,7 @@ struct Generator {
     private static let hardColumns =
         Surface.allCases.flatMap { [$0.rawValue, "\($0.rawValue)-weak"] }
         + ["covered-inside", "covered-edge", "tilt", "tilt-under", "overexposed", "glare-spots", "glare-window"]
+        + ["hanger-hook", "hook", "strap-graze"]
 
     func run() throws -> String {
         let rulesURL = repoRoot.appendingPathComponent(Generator.rulesPath)
@@ -103,10 +104,13 @@ struct Generator {
                 try renderer.emptyExpectation(family: family, measure: empty.measure),
                 path: "\(family)/\(family)-flat-empty/expected.json")
             // Records one looped single-segment flat set and counts its variant.
-            func addSingle(id: String, variant: String, source: String, baseImages: [String], segment: SegmentEntry) {
+            func addSingle(
+                id: String, variant: String, mode: String = "flat", source: String, baseImages: [String],
+                segment: SegmentEntry
+            ) {
                 sets.append(
                     SetEntry(
-                        id: id, family: family, mode: "flat", variant: variant, kind: "single", source: source,
+                        id: id, family: family, mode: mode, variant: variant, kind: "single", source: source,
                         baseImages: baseImages, segments: [segment]))
                 result.flatCounts[variant, default: 0] += 1
             }
@@ -179,6 +183,47 @@ struct Generator {
                         let frame = try renderer.tooSmallFound(of: base.cutout, family: family)
                         try writeSingle(
                             frame, id: "\(family)-flat-\(String(format: "%02d", index + 1))-\(frame.variant)",
+                            source: base.source, baseImages: [base.id])
+                    } catch let rejection as Rejection {
+                        result.rejected.append(Manifest.Rejected(id: base.id, reason: rejection.reason))
+                    }
+                }
+            }
+
+            // C2 (README "Edge grazes"): the first base on a hanger whose hook grazes the top edge, one
+            // image played in hanger mode (unlocks) and in flat mode (top cut off).
+            if let base = result.bases.first, try rules.family(family).modes.contains("hanger") {
+                do {
+                    let outcome = try renderer.hook(of: base.cutout, family: family)
+                    result.vision["hook", default: VisionTally()].add(outcome.vision)
+                    let directory = "\(family)/\(family)-hanger-01-hook"
+                    guard let image = outcome.hanger.image else {
+                        throw GeneratorError("\(directory) has no image")
+                    }
+                    let written = try writer.write(
+                        image, measure: outcome.hanger.measure, keypoints: nil, directory: directory)
+                    result.contactFrames.append(written)
+                    for (frame, mode) in [(outcome.hanger, "hanger"), (outcome.flat, "flat")] {
+                        let id = "\(family)-\(mode)-01-hook"
+                        let expected = try writer.writeExpectation(frame.expectation, path: "\(family)/\(id)/expected.json")
+                        addSingle(
+                            id: id, variant: frame.variant, mode: mode, source: base.source, baseImages: [base.id],
+                            segment: try written.segment(
+                                frames: Harness.segmentFrames, jitter: 0, setId: id, expected: expected))
+                    }
+                } catch let rejection as Rejection {
+                    result.rejected.append(Manifest.Rejected(id: base.id, reason: rejection.reason))
+                }
+            }
+
+            // C6 (README "Edge grazes"): every bag base moved up until its strap grazes the top edge.
+            if family == "bag" {
+                for (index, base) in result.bases.enumerated() {
+                    do {
+                        let outcome = try renderer.strapGraze(of: base.cutout, family: family)
+                        result.vision["strap-graze", default: VisionTally()].add(outcome.vision)
+                        try writeSingle(
+                            outcome.frame, id: "\(family)-flat-\(String(format: "%02d", index + 1))-strap-graze",
                             source: base.source, baseImages: [base.id])
                     } catch let rejection as Rejection {
                         result.rejected.append(Manifest.Rejected(id: base.id, reason: rejection.reason))

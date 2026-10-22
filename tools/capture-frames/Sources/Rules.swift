@@ -62,6 +62,8 @@ struct CaptureRules: Decodable {
         let intervalMs: Int
         let minInstanceAreaShare: Double
         let cutOffAboveEdgeContactShare: Double
+        /// Hanger mode, top edge only: the hook may touch it up to this share (brief §3, C2).
+        let hangerTopCutOffAboveEdgeContactShare: Double
     }
 
     let captureModes: [String]

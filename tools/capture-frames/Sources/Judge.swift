@@ -52,6 +52,23 @@ enum Layout {
     static let sizeFailFactor = 0.9
     static let contactFailFactor = 1.25
     static let contactPassFactor = 0.5
+    /// A deliberate graze (C2 hook, C6 strap; README "Edge grazes") touches the edge band and stays
+    /// under this share of that edge's cut-off limit. Wider than `contactPassFactor`, so the C2 hook can
+    /// also be clearly over the flat limit (× `contactFailFactor`) and one frame tests both modes.
+    static let grazePassFactor = 0.75
+    /// C6: the strap's contact aims at this share of the most a graze may touch.
+    static let strapGrazeShareOfPass = 0.5
+    /// C2: the hanger's wire, in pixels at the 480 px frame width, and the hook's outer radius.
+    static let hangerWirePx = 5.0
+    static let hookOuterRadiusPx = 22.0
+    /// C2: how far the hook curls down past its far side, the apex and the bar of the hanger's
+    /// triangle as shares of the item's box height, and the bar's half width as a share of its width.
+    static let hookCurlRadians = 0.7
+    static let hangerApexShareOfBox = 0.03
+    static let hangerShoulderShareOfBox = 0.14
+    static let hangerHalfWidthShareOfBox = 0.42
+    /// Bisection steps when searching the graze depth: far finer than a pixel.
+    static let grazeBisectionSteps = 24
     /// Jitter: frames that two evaluations may read differ by over this many times the steady
     /// centre-shift limit (README "Jitter").
     static let jitterStepFailFactor = 1.25
@@ -219,6 +236,9 @@ struct Intent {
     /// Mask area share of the largest item, from the drawing: decides "item found" on iOS.
     var iosMaskShare: Double
     var touchedEdges: [Edge] = []
+    /// Edges the item touches on purpose, under the cut-off limit (C2 hook, C6 strap): the shutter
+    /// still unlocks.
+    var grazedEdges: [Edge] = []
     var missingParts: [String] = []
     /// The largest item's box inside the frame.
     var boxAreaShare: Double
@@ -441,12 +461,22 @@ struct Judge {
         return inRange ? nil : "mean luma \(round4(measure.meanLuma)) or clipped share is near a light threshold"
     }
 
+    /// The cut-off limit of `edge` in this mode: hanger mode tolerates the hook at the top (brief §3, C2).
+    func cutOffLimit(_ edge: Edge) -> Double {
+        mode == "hanger" && edge == .top
+            ? rules.mask.hangerTopCutOffAboveEdgeContactShare : rules.mask.cutOffAboveEdgeContactShare
+    }
+
     private func edgeProblem(_ intent: Intent, main: MaskStats, contact: EdgeShares) -> String? {
-        let threshold = rules.mask.cutOffAboveEdgeContactShare
         for edge in Edge.allCases {
+            let threshold = cutOffLimit(edge)
             if intent.touchedEdges.contains(edge) {
                 if contact[edge] <= threshold * Layout.contactFailFactor {
                     return "\(edge.rawValue) contact \(round4(contact[edge])) is not clearly over \(threshold)"
+                }
+            } else if intent.grazedEdges.contains(edge) {
+                if contact[edge] <= 0 || contact[edge] > threshold * Layout.grazePassFactor {
+                    return "\(edge.rawValue) graze contact \(round4(contact[edge])) is not inside (0, \(threshold) × \(Layout.grazePassFactor)]"
                 }
             } else if contact[edge] > threshold * Layout.contactPassFactor
                 || main.box.gap(to: edge) <= rules.edgeBandShare

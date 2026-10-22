@@ -381,6 +381,155 @@ struct Renderer {
         return (try judged(variant, image: image, intent: intent, judge: judge, measure: measure), vision)
     }
 
+    // MARK: - Edge grazes (README "Edge grazes")
+
+    /// C2 (brief §12): the good item on a wire hanger whose hook reaches into the top edge band. Its
+    /// contact sits midway between clearly over the flat limit and the most a graze may touch under the
+    /// hanger limit. One image, two sets: hanger mode unlocks (`hanger-hook`); flat mode locks with the
+    /// top cut off (`hook`), because the hook is part of the item. The stored mask is the ground truth,
+    /// item and hanger as one instance; `vision` records what the Mac's Vision found.
+    func hook(of base: Cutout, family: String) throws -> (hanger: RenderedFrame, flat: RenderedFrame, vision: VisionCheck) {
+        let (rect, _) = try goodPlacement(of: base, family: family)
+        let garment = try trueMask(base, rect: rect)
+        let target =
+            (rules.mask.cutOffAboveEdgeContactShare * Layout.contactFailFactor
+                + rules.mask.hangerTopCutOffAboveEdgeContactShare * Layout.grazePassFactor) / 2
+        let draw = { (depth: Double) in try self.hangerLayer(rect: rect, garment: garment, family: family, hookDepthPx: depth) }
+        // The hook's top stays inside the band: past the frame's edge the band crosses only the hook's
+        // two sides and its contact falls again.
+        let band = rules.edgeBandShare * Double(size.height)
+        let depth = try grazeDepth(edge: .top, target: target, upTo: band) { try draw($0).mask }
+        let hanger = try draw(depth)
+        let context = try backgroundContext()
+        context.draw(base.image, in: Imaging.cgRect(rect, width: size.width, height: size.height))
+        context.draw(hanger.image, in: CGRect(x: 0, y: 0, width: size.width, height: size.height))
+        guard let image = context.makeImage() else {
+            throw GeneratorError("cannot finish a hook frame")
+        }
+        let item = garment.union(hanger.mask)
+        let vision = try VisionMasks.check(image, item: item, occluder: nil, rules: rules)
+        let measure = try FrameMeasure.groundTruth(image, masks: [item], vision: vision, rules: rules)
+        let boxArea = measure.main?.box.area ?? 0
+        var hangerIntent = Intent(iosMaskShare: item.share, boxAreaShare: boxArea)
+        hangerIntent.grazedEdges = [.top]
+        let flatIntent = Intent(iosMaskShare: item.share, touchedEdges: [.top], boxAreaShare: boxArea)
+        return (
+            try judged(
+                "hanger-hook", image: image, intent: hangerIntent,
+                judge: Judge(rules: rules, family: family, mode: try rules.mode("hanger")), measure: measure),
+            try judged(
+                "hook", image: image, intent: flatIntent,
+                judge: Judge(rules: rules, family: family, mode: try rules.mode("flat")), measure: measure),
+            vision
+        )
+    }
+
+    /// C6 (brief §12): the good item moved up until its top (a bag's strap) grazes the top edge band with
+    /// `Layout.strapGrazeShareOfPass` of the most a graze may touch; the rest stays clear. It unlocks. A
+    /// flat-topped item touches far more at once and is rejected. The stored mask is the ground truth;
+    /// `vision` records what the Mac's Vision found.
+    func strapGraze(of base: Cutout, family: String) throws -> (frame: RenderedFrame, vision: VisionCheck) {
+        let judge = Judge(rules: rules, family: family, mode: try rules.mode("flat"))
+        let (rect, area) = try goodPlacement(of: base, family: family)
+        let band = rules.edgeBandShare * Double(size.height)
+        let target = judge.cutOffLimit(.top) * Layout.grazePassFactor * Layout.strapGrazeShareOfPass
+        func placed(_ depth: Double) -> NormRect {
+            var moved = rect
+            moved.y = (band - depth) / Double(size.height)
+            return moved
+        }
+        let depth = try grazeDepth(edge: .top, target: target, upTo: band) { try trueMask(base, rect: placed($0)) }
+        let item = try trueMask(base, rect: placed(depth))
+        let image = try compose([Placement(cutout: base, rect: placed(depth))])
+        let vision = try VisionMasks.check(image, item: item, occluder: nil, rules: rules)
+        let measure = try FrameMeasure.groundTruth(image, masks: [item], vision: vision, rules: rules)
+        var intent = Intent(iosMaskShare: item.share, boxAreaShare: area)
+        intent.grazedEdges = [.top]
+        return (try judged("strap-graze", image: image, intent: intent, judge: judge, measure: measure), vision)
+    }
+
+    /// The depth (pixels, 0…`upTo`) at which `mask(depth)`, whose contact with `edge` grows with the
+    /// depth, first reaches `target`: bisection. A rejection when even `upTo` stays under it.
+    private func grazeDepth(edge: Edge, target: Double, upTo limit: Double, mask: (Double) throws -> BinaryMask)
+        throws -> Double
+    {
+        func contact(_ depth: Double) throws -> Double {
+            try mask(depth).stats(edgeBandShare: rules.edgeBandShare)?.edgeContact[edge] ?? 0
+        }
+        let deepest = try contact(limit)
+        guard deepest >= target else {
+            throw Rejection("graze: the \(edge.rawValue) contact reaches only \(round4(deepest)), under \(round4(target))")
+        }
+        var low = 0.0
+        var high = limit
+        for _ in 0..<Layout.grazeBisectionSteps {
+            let middle = (low + high) / 2
+            if try contact(middle) < target { low = middle } else { high = middle }
+        }
+        return high
+    }
+
+    /// The wire hanger on a transparent layer, and its mask. For a garment, a triangle across the
+    /// shoulders; for a bag, only the neck down into the strap. The neck runs up to a hook whose outer
+    /// top lies `hookDepthPx` inside the top edge band.
+    private func hangerLayer(rect: NormRect, garment: BinaryMask, family: String, hookDepthPx depth: Double) throws
+        -> (image: CGImage, mask: BinaryMask)
+    {
+        let wire = Layout.hangerWirePx * pixelScale
+        let outer = Layout.hookOuterRadiusPx * pixelScale
+        let radius = outer - wire / 2
+        let frameHeight = Double(size.height)
+        let box = Imaging.cgRect(rect, width: size.width, height: size.height)
+        let boxTop = rect.y * frameHeight
+        let centreX = Double(box.midX)
+        let point = { (x: Double, y: Double) in CGPoint(x: x, y: frameHeight - y) }
+        let neckBottom: Double
+        if family == "bag" {
+            // Into the strap: the item's first pixel under the box's top centre, so item and hanger are one piece.
+            let column = min(size.width - 1, max(0, Int(centreX)))
+            let rows = max(0, Int(boxTop))..<min(size.height, Int(boxTop + Double(box.height)))
+            guard let entry = rows.first(where: { garment.values[$0 * size.width + column] > 0 }) else {
+                throw Rejection("hook: the item has no pixel under its top centre")
+            }
+            neckBottom = Double(entry) + 3 * wire
+        } else {
+            neckBottom = boxTop + Layout.hangerApexShareOfBox * Double(box.height)
+        }
+        let hookCentreY = rules.edgeBandShare * frameHeight - depth + outer
+        let layer = try Imaging.makeContext(width: size.width, height: size.height)
+        layer.setStrokeColor(CGColor(srgbRed: 0.80, green: 0.81, blue: 0.83, alpha: 1))
+        layer.setLineWidth(wire)
+        layer.setLineCap(.round)
+        layer.setLineJoin(.round)
+        if family != "bag" {
+            // The bar crosses the item's shoulders, so item and hanger are one piece.
+            let shoulderY = boxTop + Layout.hangerShoulderShareOfBox * Double(box.height)
+            let half = Layout.hangerHalfWidthShareOfBox * Double(box.width)
+            layer.addLines(between: [
+                point(centreX - half, shoulderY), point(centreX, neckBottom), point(centreX + half, shoulderY),
+                point(centreX - half, shoulderY),
+            ])
+            layer.strokePath()
+        }
+        layer.addLines(between: [point(centreX, neckBottom), point(centreX, hookCentreY)])
+        layer.strokePath()
+        // From the hook circle's left point over the top and down the far side (y grows downwards here).
+        let steps = 48
+        let arc = (0...steps).map { step -> CGPoint in
+            let angle = Double.pi + (Double.pi + Layout.hookCurlRadians) * Double(step) / Double(steps)
+            return point(centreX + radius + radius * cos(angle), hookCentreY + radius * sin(angle))
+        }
+        layer.addLines(between: arc)
+        layer.strokePath()
+        guard let image = layer.makeImage() else {
+            throw GeneratorError("cannot finish the hanger layer")
+        }
+        return (image, BinaryMask.opaque(in: try Imaging.raster(of: layer)))
+    }
+
+    /// Pixel sizes in `Layout` are at a 480 px frame width.
+    private var pixelScale: Double { Double(size.width) / 480 }
+
     /// Tilt (brief §3, §6 row 8): the good frame played with the phone at `degrees`; a hint, never a lock.
     func tilted(_ good: RenderedFrame, family: String, degrees: Double, variant: String) throws -> RenderedFrame {
         let judge = Judge(rules: rules, family: family, mode: try rules.mode("flat"))

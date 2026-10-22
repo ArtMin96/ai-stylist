@@ -166,6 +166,32 @@ shapes on the CC0 cut-outs, never a photo of a person or a real hand.
   lost the item or cut it short under that patch in 7 of 9 families, so only 2 ship; the clipped-share
   path is also covered by `too-bright`.
 
+## Edge grazes
+
+Two cases where an item touches an edge band on purpose and still unlocks (brief §12 C2, C6). Both
+store the mask they draw as the ground truth (one instance: the item and what it carries) and record
+what the Mac's Vision found in `metrics.vision` and `manifest.json` `hardCaseVision`.
+
+- **C2 hanger hook.** The first base of every family that offers hanger mode hangs on a drawn wire
+  hanger (a triangle across the shoulders; for a bag only the neck, down into the strap). Its hook
+  reaches into the top edge band until the top contact is midway between clearly over the flat limit
+  (1.25 × `mask.cutOffAboveEdgeContactShare`) and the most a graze may touch under the hanger limit
+  (`Layout.grazePassFactor` 0.75 × `mask.hangerTopCutOffAboveEdgeContactShare`): about 6.25 % of the
+  top edge. One image ships as two sets: `<family>-hanger-01-hook` (variant `hanger-hook`, hanger mode,
+  unlocks with `cap-hint-ready`) and `<family>-flat-01-hook` (variant `hook`, flat mode, locked
+  `cap-hint-cut-off-top` with "Try hanger mode"). The flat set proves the hook counts as part of the
+  item, the hanger set that hanger mode tolerates it.
+- **C6 bag strap.** Every bag base moves up until its top grazes the top edge band with half the most
+  a graze may touch under the flat limit (0.5 × 0.75 × 4 % = 1.5 % of the top edge), the rest of the
+  bag clear of every band: `bag-flat-0N-strap-graze`, unlocks with `cap-hint-ready`. A bag without a
+  strap touches far more at once and is rejected (the manifest says why).
+
+`Layout.grazePassFactor` (0.75) is wider than `contactPassFactor` (0.5) only for these deliberate
+grazes: with 0.5 the hook could not be clearly over the flat limit and clearly under the hanger limit
+at once (both bounds would be 5 %). The stored masks are what both apps read, so no detector
+difference applies in the simulator; a real hook or strap on a phone is device-only. No threshold in
+`capture-rules.json` changes.
+
 ## Output: `artifacts/capture-camera/frames/`
 
 ```text
@@ -185,7 +211,7 @@ batch/expected-NN.json          the batch set's expected results, one per item, 
 ```
 
 Set ids are test-ID safe (`cap-debug-frameset-<set id>`): `<family>-flat-<nn>-<variant>`,
-`<family>-flat-empty`, `<family>-flat-sweep`, `<family>-worn-<variant>` and `batch-<n>`.
+`<family>-flat-empty`, `<family>-flat-sweep`, `<family>-hanger-01-hook`, `<family>-worn-<variant>` and `batch-<n>`.
 
 ### `index.json`
 
@@ -417,8 +443,3 @@ expected file's `platform.<platform>` block applies first. `summary.md` states t
 spec number. `parity/outline_reference.py` (Python standard library) generates and checks it; four of
 its masks come from this generator's output. `parity/README.md` has the commands and the details both
 apps must follow.
-
-## Not built yet
-
-The hanger-mode hook frames (C2) and the bag strap grazing an edge (C6) need their own variants. Add
-them here when the harness reaches those cases.

@@ -486,20 +486,6 @@ class CaptureCameraSessionTest {
     }
 
     @Test
-    fun `a still item on reused masks unlocks once a second mask confirms it`() {
-        val maskEveryMs = CaptureRules.Ios.MASK_INTERVAL_MS.toLong()
-        val harness = Harness().apply { ready() }
-        val frameAt = { now: Long -> maskFrame(now, maskAt(now, maskEveryMs), box = squareBox(0.3)) }
-
-        // The mask at 0 is the first: its evaluations (100, 200) fail; the mask at 250 confirms the box.
-        harness.playUntil(maskEveryMs + 2 * EVALUATION_MS, frameAt)
-        assertEquals(LockPhase.LOCKED, harness.snapshot.phase)
-
-        harness.playUntil(maskEveryMs + 3 * EVALUATION_MS, frameAt)
-        assertEquals(LockPhase.UNLOCKED, harness.snapshot.phase)
-    }
-
-    @Test
     fun `the first mask is never steady, even when it is reused`() {
         val harness = Harness().apply { ready() }
 
@@ -507,6 +493,35 @@ class CaptureCameraSessionTest {
         harness.playUntil(4_000) { now -> maskFrame(now, maskAtMs = 0, box = squareBox(0.3)) }
 
         assertEquals(LockPhase.LOCKED, harness.snapshot.phase)
+    }
+
+    @Test
+    fun `one chance-still mask read by several evaluations does not unlock`() {
+        val maskEveryMs = CaptureRules.Ios.MASK_INTERVAL_MS.toLong()
+        val jump = 2 * CaptureRules.Steady.MAX_CENTRE_SHIFT
+        val harness = Harness().apply { ready() }
+
+        // Masks every 250 ms move the item, except the mask at 500, which repeats the one at 250: a
+        // single still comparison, read by the evaluations at 500, 600 and 700 (100 ms apart).
+        harness.playUntil(1_200) { now ->
+            val maskAtMs = maskAt(now, maskEveryMs)
+            val position = if (maskAtMs == 2 * maskEveryMs) 1 else maskAtMs / maskEveryMs
+            maskFrame(now, maskAtMs, box = squareBox(0.3, centerX = 0.3 + position * jump))
+        }
+
+        assertNull(harness.timeOf(CaptureEffect.Haptic(HapticKind.UNLOCK)))
+    }
+
+    @Test
+    fun `an unlock needs three distinct passing masks`() {
+        val maskEveryMs = CaptureRules.Ios.MASK_INTERVAL_MS.toLong()
+        val harness = Harness().apply { ready() }
+
+        // A still item: the mask at 0 is the first (never steady); the masks at 250, 500 and 750 each
+        // count once, so the unlock comes at 800, the first evaluation that reads the mask at 750.
+        harness.playUntil(2_000) { now -> maskFrame(now, maskAt(now, maskEveryMs), box = squareBox(0.3)) }
+
+        assertEquals(UNLOCK_ON_THIRD_MASK_MS, harness.timeOf(CaptureEffect.Haptic(HapticKind.UNLOCK)))
     }
 
     // Live outline
@@ -558,6 +573,9 @@ class CaptureCameraSessionTest {
         harness.playUntil(4 * EVALUATION_MS) { now -> outlined(now, now, moved) }
         assertTrue(harness.snapshot.outline?.points != square)
     }
+
+    /** The first 100 ms evaluation after the mask at 750 ms. */
+    private val UNLOCK_ON_THIRD_MASK_MS = 800L
 
     private fun CameraSnapshot.lockReasonHint(): CaptureHint? = hint?.takeIf { it.lockReason != null }
 }

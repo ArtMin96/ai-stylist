@@ -254,7 +254,7 @@ class CaptureCameraSession(
         lastReport = report
         lastEvaluationAtMs = nowMs
         val wasUnlocked = lock is LockState.Unlocked
-        val effects = applyStep(lock.onEvaluation(report, nowMs))
+        val effects = applyStep(lock.onEvaluation(report, nowMs, observation.mask?.timestampMs))
         hints =
             if (!wasUnlocked && lock is LockState.Unlocked) {
                 // The unlock ends the guide at once (brief §5); an advisory tip may show while the ring

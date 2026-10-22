@@ -78,10 +78,12 @@ class CaptureCameraSessionTest {
     fun `the ring shows progress while unlocked`() {
         val harness = Harness().apply { ready() }
 
-        harness.playUntil(unlockMs + CaptureRules.Lock.RING_FILL_MS / 2)
+        // Two evaluations into the ring (whole evaluation steps, shorter than the ring).
+        val ringMs = 2 * EVALUATION_MS
+        harness.playUntil(unlockMs + ringMs)
 
         assertEquals(ShutterState.UNLOCKED, harness.snapshot.shutter)
-        assertEquals(0.5, harness.snapshot.ringProgress, 1e-9)
+        assertEquals(ringMs.toDouble() / CaptureRules.Lock.RING_FILL_MS, harness.snapshot.ringProgress, 1e-9)
     }
 
     @Test
@@ -196,8 +198,8 @@ class CaptureCameraSessionTest {
         val dim = LightSample(meanLuma = CaptureRules.Light.TOO_DARK_BELOW_MEAN_LUMA - 15, clippedShare = 0.0)
         val harness = Harness().apply { ready() }
 
-        // The guide (shown at 0) gives way once it has been visible the minimum time.
-        harness.playUntil(CaptureRules.Timing.HINT_MIN_VISIBLE_MS.toLong()) { frame(it, light = dim) }
+        // At the unlock the tip replaces the guide (brief §5), and the shutter is unlocked.
+        harness.playUntil(unlockMs) { frame(it, light = dim) }
 
         assertEquals(LockPhase.UNLOCKED, harness.snapshot.phase)
         assertEquals(CaptureHint.TOO_DARK, harness.snapshot.hint)

@@ -2,6 +2,7 @@ package app.aistylist.feature.capture
 
 import app.aistylist.contracts.kernel.CaptureHint
 import app.aistylist.contracts.kernel.CaptureMode
+import app.aistylist.contracts.kernel.CaptureRules
 import app.aistylist.contracts.kernel.CaptureShapeFamily
 import app.aistylist.feature.capture.domain.CameraFeedEvent
 import app.aistylist.feature.capture.domain.CameraSnapshot
@@ -38,6 +39,11 @@ import org.junit.Test
 @OptIn(ExperimentalCoroutinesApi::class)
 class CaptureViewModelTest {
     private val dispatcher = StandardTestDispatcher()
+
+    /** The fake source's frame period ([FakeObservationSource] default). */
+    private companion object {
+        const val FRAME_MS = 100L
+    }
 
     @Before
     fun setMainDispatcher() {
@@ -121,7 +127,10 @@ class CaptureViewModelTest {
             val viewModel = CaptureViewModel(source, FakeWornOptInStore(), clock())
 
             viewModel.onFamilyPicked(CaptureShapeFamily.TOP)
-            advanceTimeBy(1_450)
+            // First frame at 100 ms, the unlock after three more passing frames, then the full ring
+            // requests the photo, which fails; the next unlock is three frames later.
+            val unlockMs = FRAME_MS * (1 + CaptureRules.Lock.UNLOCK_AFTER_PASSING_EVALUATIONS)
+            advanceTimeBy(unlockMs + CaptureRules.Lock.RING_FILL_MS + FRAME_MS / 2)
             runCurrent()
 
             assertEquals(1, source.photosTaken)

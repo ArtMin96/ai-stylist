@@ -56,8 +56,8 @@ Android runs U²-Netp through LiteRT 1.4.2 on the CPU, behind the existing obser
   three distinct passing masks (as on iOS).
 - **Covered (C32).** The other objects are the mask's other connected components, not ML Kit boxes:
   measured below, components never lock a frame falsely; ML Kit boxes do.
-- **Fallback.** If the model cannot load, ML Kit object detection boxes and the box rules run, as
-  before (doc-10 fallback). Pose stays ML Kit (worn mode).
+- **Fallback.** If the model cannot load, or fails at run time, ML Kit object detection boxes and the
+  box rules run, as before (doc-10 fallback). Pose stays ML Kit (worn mode).
 - **Device gate.** Before release, a Galaxy A12-class phone must segment at p50 ≤ 700 ms per mask,
   and the camera must not heat the phone into throttling within a 5-minute batch session. Above that,
   the cadence drops further or the model moves to 160².
@@ -96,9 +96,11 @@ Private emulator `outlineprobe` (API 36 arm64, `google_apis`), 2026-10-22; frame
 - **Covered (C32), live masks:** components lock 0 of 26 covered sets and 0 other segments; ML Kit
   "other" boxes (the item's own box removed) lock 6 of 26 but also 13 segments that are not covered (4
   good, 5 two-items, 4 jitter). Components chosen: a miss, never a false lock.
-- **Outline** (stored masks, 250 ms cadence): every segment with an item showed an outline; IoU of the
-  drawn outline with the stored item mask, median 0.972; flat jitter stability min 0.952 (worn 0.931);
-  small and narrow items snap often under jitter (up to 34 times), as the spec says.
+- **Outline** (stored masks, 250 ms cadence, position and shape blended apart): every segment with an
+  item showed an outline at its first mask; drawn outline against the stored item mask (raw), median
+  0.972; jitter stability (centroid-aligned IoU of successive outlines) min 0.952 flat, 0.939 worn;
+  small and narrow items snap often under jitter (up to 34 times), as the spec says. Static bar on all
+  444 flat single-item stored masks, against the filled largest component: min 0.932, median 0.978.
 - **APK** (release, unsigned, `apkanalyzer`): universal file size 135,077,758 → 157,485,645 B
   (+22.4 MB: `libtensorflowlite_jni.so` for four ABIs, the model, +35 KB dex); download size
   49,375,475 → 59,701,135 B. An arm64 device gets +6.86 MB (4,475,256 B native library, 2,353,047 B

@@ -99,7 +99,7 @@ on Android.
 | Cut off (iOS) | Mask pixels inside an edge band span more than this share of that edge's length | > 4 % (top edge in hanger mode: > 10 %) | yes |
 | Cut off (Android) | Box edge inside the edge band | any | yes |
 | Too small | Box area ÷ frame area below the family minimum | `top` 0.20, `long-bottom` 0.15, `short-bottom` 0.12, `one-piece` 0.18, `outerwear` 0.20, `shoes` 0.06, `bag` 0.08, `small-item` 0.015, `generic` 0.08; worn mode, every family: 0.25 | yes |
-| Steady (motion) | Box centre moves less than this between two evaluations, and box area changes less than | Δx, Δy ≤ 0.02; area ≤ 8 % | yes |
+| Steady (motion) | Box centre moves less than this between two evaluations, and box area changes less than. The boxes compared come from two different detector results: iOS reuses one mask for about 2.5 evaluations, and a reused mask keeps the verdict of its own comparison (fix 2026-10-22, §17) | Δx, Δy ≤ 0.02; area ≤ 8 % | yes |
 | Steady (sharpness) | Variance of the 3×3 Laplacian on luma inside the box, luma scaled so the long side is 320 px | ≥ 12 | yes |
 | Steady (device motion, phones only) | iOS user acceleration and rotation rate; Android linear acceleration (accelerometer minus low-pass gravity, α = 0.8) | ≤ 0.08 g, ≤ 0.5 rad/s; ≤ 0.8 m/s² | yes |
 | Too dark | Mean luma of the whole frame (0–255) | < 45 | **no**, hint |
@@ -340,6 +340,8 @@ string is the iOS `accessibilityIdentifier` and the Android `testTag` (resource 
   its accessibility value.
 - Guide outline: `cap-guide-<family>-<mode>[-back|-pair]`, e.g. `cap-guide-top-flat`,
   `cap-guide-shoes-flat-pair`.
+- Live outline (§17): `cap-outline`, accessibility value `locked` or `unlocked`. The guide keeps its
+  `cap-guide-*` element while the live outline shows.
 - Shutter: one control whose ID follows its state: `cap-shutter-locked`, `cap-shutter-unlocked`,
   `cap-shutter-capturing`. Ring: `cap-ring`, value = percent.
 - "Take photo anyway": `cap-anyway-button`, reason `cap-anyway-reason`.
@@ -530,3 +532,104 @@ Answered by the owner through the question tool on 2026-10-22. These override ea
     (objectness saliency) composites. On iOS the rule is therefore mostly a no-op on device until a detector separates the
     object; a merged object unlocks (a miss, not a false lock). Android turns ML Kit's multiple
     objects on for it; ML Kit on real objects is device-only.
+- 2026-10-22 owner: live outline approved; Android uses LiteRT 1.4.2 + U²-Netp; UI polish and the canvas step deferred.
+
+## 17. Live outline
+
+The on-screen outline traces the item as the camera sees it, instead of only the fixed family guide.
+Approved by the owner on 2026-10-22 (§16): "Always be prepared technically before doing UI. For now I
+don't care about UI or anything. You can even use native buttons. I need the core feature to be
+working." The `ui-prototype-first` canvas step is deferred by the owner for this change; the design
+rules still apply (below).
+
+**Shared reference.** `tools/capture-frames/parity/outline-parity.json` holds every number below
+(`params`) and expected results for hand-made and real masks, IoU pairs and tracker sequences. Both
+apps' unit tests read it; tolerance 0.005 of the frame per coordinate, never bit equality.
+`outline_reference.py` next to it generates and checks it, and its README pins the details the
+tolerance does not absorb (rounding, loop order, ties, IoU).
+
+**Spec.**
+1. **Input:** the item mask at the mask cadence. iOS: the Vision foreground instance mask, every
+   250 ms (`ios.maskIntervalMs`); the largest 3 instances that count as an item (`ios.minInstanceAreaShare`)
+   are traced, largest first. Android: U²-Netp, prob > 0.5, the same cadence; its components are the
+   candidates.
+2. **Instance hysteresis:** of the candidates, the one with the highest IoU ≥ 0.3 against the drawn
+   outline is kept, unless the largest candidate has ≥ 1.5× its area. With none at ≥ 0.3, or no drawn
+   outline, the largest wins.
+3. **Crop:** the item's box grown by max(2 px, long side / 8, integer division), clamped to the frame.
+4. **Downscale:** area average to a 64 px long side; a cell ≥ 0.5 is foreground. Cell edges round half
+   to even on the exact value; the cell start is clamped to size − 1 (needed only when a crop under 64 px
+   is upsampled; the spike's `contour.py` indexed past the crop there).
+5. **Component:** the largest 8-connected one; ties keep the first in row-major order.
+6. **Marching squares:** iso 0.5 on the area-averaged values inside that component, zero-padded, linear
+   interpolation; saddles keep the foreground corners joined; segments linked undirected; the loop with
+   the largest |area| is kept (outer only, holes filled); oriented clockwise on screen.
+7. **Simplify:** Douglas–Peucker, ε = 0.5 grid px, split at the vertex farthest from vertex 0; under 3
+   vertices keeps the unsimplified loop.
+8. **Resample:** 64 points by arc length, starting where the vertical line through the area centroid
+   meets the contour at its smallest y.
+9. **Map:** normalised frame coordinates, origin top-left.
+10. **Temporal:** one update per new mask (a reused mask changes nothing). The new outline is cyclically
+    shifted to the least summed squared distance to the drawn one, then blended, EMA α = 0.5. It snaps
+    (replaces, no animation) when IoU(new, drawn) < 0.5 or on the first item. It clears after 3
+    consecutive mask updates with no item (750 ms; not 3 rule evaluations). IoU everywhere: both
+    polygons rasterised on a 64 × 64 grid over their joint box, cell centres, even-odd.
+11. **Rate:** at most every 250 ms, one request in flight (the mask's own cadence).
+12. **Draw:** before an item is found, the faint family guide only (one camera-paper 2 stroke, no
+    halo). Then the live outline `cap-outline`, two-tone like the guide was (camera-paper 2 over
+    camera-ink 4): dashed while `locked`, solid when `unlocked` (C27). Between masks it moves over one
+    mask interval; a snap jumps; with reduced motion it never moves. When the item is lost it
+    cross-fades back to the guide (150 ms, the DESIGN.md reduced-motion crossfade). The guide keeps its
+    `cap-guide-*` element (transparent) while the outline shows, so flows that assert it still pass.
+13. **Location:** steps 3–10 are pure code in `CaptureModel` (`CaptureOutlineContour`,
+    `CaptureLiveOutline`, Linux-tested); `CaptureCameraSession` owns the tracker and publishes
+    `CaptureCameraOutput.outline`. Android mirrors them in `app.aistylist.feature.capture.domain`.
+
+**Debug harness.** The frame-set camera keeps measuring a fresh mask on every frame for the rules (the
+loop's numbers do not move) and traces the live outline from the stored mask, or `frame.instances.png`,
+moved by the jitter, once per 250 ms of playback. The results log adds per segment:
+`outlineFirstMs`, `outlinePresentAtEnd`, `outlineUpdates`, `outlineSnaps`, `outlineIouMedian`,
+`outlineIouMin` (drawn outline against the stored item mask it was traced from, as stored: an item
+with a hole, such as a bag handle or a covered item, scores lower because the outline fills holes), and
+`outlineStabilityMedian`, `outlineStabilityMin` (centroid-aligned IoU of successive blended outlines;
+snaps are left out). An outline still drawn from the previous segment is not scored.
+
+Sweep 2026-10-22 (iPhone 17 Simulator, 683 sets, 783 segments): the scorer passed 783/783, 0 misses,
+0/299 false locks, 0 false unlocks, as before the outline. Every segment with an item showed an
+outline at its first mask, and none showed one on the empty, `-weak` or gap segments. Per-segment
+outline IoU median 0.972 overall; lowest by variant: good 0.878 (bags with handles), motion-blur 0.955,
+cut-* 0.817–0.936, too-small 0.875, two-items 0.882, covered-inside 0.709 (the object leaves a hole in
+the item's mask). Jitter sets (0.06 of the frame per frame): stability median ≥ 0.979 and min ≥ 0.952
+(flat), 0.931 (worn); narrow or small items snap often (up to 34 times in 11.5 s), because a jump of
+that size drops IoU(new, drawn) under 0.5.
+
+**Tests and thresholds** (from the spike's `stability.py`; never loosened): the parity fixture always;
+on the stored frames, static IoU ≥ 0.92 against the filled largest component of every flat
+single-item `frame.mask.png`, and an empty mask draws none; jitter sets, centroid-aligned IoU of
+successive drawn outlines ≥ 0.95; still frames with 1 px noise, Hausdorff between successive outlines
+median ≤ 0.01 and p95 ≤ 0.04; two items, IoU ≥ 0.92 with one item and hysteresis keeps it. The
+stored-frame tests trace about 2000 full-size masks, which takes minutes in a debug build, so they run
+only with `CAPTURE_FRAMES_DIR` set (`CAPTURE_FRAMES_DIR=$PWD/artifacts/capture-camera/frames just
+ios-test-packages features`) and skip with that message otherwise. Measured 2026-10-22 (iOS, M4):
+static lowest 0.932 over 507 masks; jitter min 0.961, p5 0.985 over 1035 pairs; noise median 0.0042,
+p95 0.023 over 495 pairs; two items lowest 0.958 over 41 sets.
+
+**Steady-check fix (2026-10-22).** The spike found that the iOS rules compared each evaluation's box
+with the previous evaluation's box. Evaluations run every 100 ms and the mask every 250 ms, so two of
+three compared a reused mask with itself: Δ = 0, and a moving item passed the motion part of "steady"
+and could unlock early. Observations now carry the mask's frame time (`maskTimestampMs`); the motion
+part compares boxes only across different masks and a reused mask keeps its own comparison's verdict.
+Sharpness and device motion are still checked on every evaluation. Android has the same pattern and
+mirrors the fix.
+
+**Design rules checked** (`.claude/rules/design-system.md`, `.claude/rules/ios.md`, DESIGN.md
+"Layout" and "Do's and Don'ts"): colours are tokens only (camera-paper, camera-ink); widths and dash
+are the existing `CaptureMetrics` guide values; state is never colour alone (dashed vs solid, plus the
+ring and lock glyph); reduced motion is honoured (no outline movement; the fade is the 150 ms
+crossfade); no new layout, control or touch target. One new string, `capture.a11y.outline` ("Item
+outline"), the outline's accessibility label. The canvas prototype is deferred (above).
+
+**Device-only.** Vision mask latency and heat on iPhone 11 / SE 2 (the M4 measured 14.3 ms per mask
+and 0.54 ms per outline, 3.5 ms max), and the mask quality on real scenes (fabric on fabric, hands,
+glare). A Dev build is unoptimised: tracing there takes tens of milliseconds, off the main actor.
+

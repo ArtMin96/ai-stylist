@@ -59,6 +59,11 @@ appId: ${APP_ID}
 - launchApp:
     arguments:
       captureFrameSet: small-item-flat-01-too-small
+# Home can be slow to draw on a busy emulator.
+- extendedWaitUntil:
+    visible:
+      id: home-open-capture
+    timeout: 15000
 - tapOn:
     id: home-open-capture
 - scrollUntilVisible:

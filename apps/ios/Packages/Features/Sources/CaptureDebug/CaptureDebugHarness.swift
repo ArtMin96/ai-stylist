@@ -316,13 +316,8 @@
     mutating func add(_ outline: CaptureLiveOutlineState, reference: CaptureGrayImage?) {
       updates += 1
       if let last {
-        if outline.snapCount != last.snapCount {
-          snaps += 1
-        } else {
-          stabilities.append(
-            CaptureOutlineGeometry.intersectionOverUnion(
-              CaptureOutlineGeometry.centred(outline.points), CaptureOutlineGeometry.centred(last.points)))
-        }
+        if outline.snapCount != last.snapCount { snaps += 1 }
+        stabilities.append(Self.shapeStability(outline.points, last.points, frame: reference))
       }
       if let reference {
         let ious = CaptureInstanceLabels.instances(in: reference).compactMap { instance in
@@ -333,6 +328,28 @@
         if let best = ious.max() { self.ious.append(best) }
       }
       last = outline
+    }
+
+    /// The spec's shape stability (brief §17, the stored-frame test): both outlines centred on their
+    /// vertex mean, rasterised at the frame's pixels (the stored mask's size), IoU.
+    private static func shapeStability(
+      _ outline: [CaptureOutlinePoint],
+      _ previous: [CaptureOutlinePoint],
+      frame: CaptureGrayImage?
+    ) -> Double {
+      let width = frame?.width ?? CaptureRules.AnalysisFrame.heightPx
+      let height = frame?.height ?? CaptureRules.AnalysisFrame.widthPx
+      let current = CaptureOutlineGeometry.rasterise(
+        CaptureOutlineGeometry.centred(outline), width: width, height: height)
+      let before = CaptureOutlineGeometry.rasterise(
+        CaptureOutlineGeometry.centred(previous), width: width, height: height)
+      var intersection = 0
+      var union = 0
+      for index in current.indices {
+        if current[index] && before[index] { intersection += 1 }
+        if current[index] || before[index] { union += 1 }
+      }
+      return union > 0 ? Double(intersection) / Double(union) : 1
     }
 
     func write(into result: inout CaptureSegmentResult) {

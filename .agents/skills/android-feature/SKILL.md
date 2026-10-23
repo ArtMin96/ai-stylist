@@ -153,4 +153,6 @@ sources), `cross-platform-feature` (the lead's brief and parity review win), `ap
 recipes that list Gradle tasks), `release-readiness` (Play track, human-only),
 `performance-profiling` (budgets), `ui-prototype-first` (the UI gate in step 3, run by
 `ui-designer`, who owns `DESIGN.md` and the surface briefs and reviews the built UI before merge).
+The capture camera's tools have their own skills, loaded next to this one: `mlkit-android`,
+`camerax-android`, `litert-android` and `capture-frames`.
 This skill owns `apps/android/**` and `tools/codegen/gen-kotlin.sh`.

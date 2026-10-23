@@ -1,0 +1,82 @@
+[
+  {
+    "query": "the android capture photo is saved rotated, fix the ImageCapture rotation",
+    "should_trigger": true
+  },
+  {
+    "query": "CameraX ImageAnalysis stops delivering frames after I rotate the phone on the capture screen",
+    "should_trigger": true
+  },
+  {
+    "query": "galaxy a12 crashes opening the capture camera, bindToLifecycle says No supported surface combination",
+    "should_trigger": true
+  },
+  {
+    "query": "after I allow the camera in android settings and come back, the capture step still shows the permission screen",
+    "should_trigger": true
+  },
+  {
+    "query": "android capture screen says looking for the item forever after a phone call, preview is frozen",
+    "should_trigger": true
+  },
+  {
+    "query": "bump camerax to the next stable in the catalog and relock",
+    "should_trigger": true
+  },
+  {
+    "query": "the steady check on android is jumpy, look at how DeviceMotionSensor computes linear acceleration",
+    "should_trigger": true
+  },
+  {
+    "query": "torch button never shows on my android phone even though it has a flash",
+    "should_trigger": true
+  },
+  {
+    "query": "can we get a bigger ImageAnalysis frame than 640x480 on android so tiny items are found",
+    "should_trigger": true
+  },
+  {
+    "query": "add tap to focus on the android capture viewfinder",
+    "should_trigger": true
+  },
+  {
+    "query": "ML Kit pose misses the ankles in worn mode on android, check the landmark mapping",
+    "should_trigger": false
+  },
+  {
+    "query": "the LiteRT segmenter takes 300ms per mask on android, try a GPU delegate",
+    "should_trigger": false
+  },
+  {
+    "query": "on iOS the AVCaptureSession doesn't restart after a phone call, the preview stays black",
+    "should_trigger": false
+  },
+  {
+    "query": "regenerate the capture test frames, the bag strap set looks off",
+    "should_trigger": false
+  },
+  {
+    "query": "change the stale feed timeout from 2 s to 3 s on both apps",
+    "should_trigger": false
+  },
+  {
+    "query": "write a maestro flow that revokes the camera permission and checks the import button shows",
+    "should_trigger": false
+  },
+  {
+    "query": "add an 'accessories' chip to the capture picker screen in compose",
+    "should_trigger": false
+  },
+  {
+    "query": "the capture-sim-android sweep scores dropped after my rebase, which frame sets regressed",
+    "should_trigger": false
+  },
+  {
+    "query": "VNGenerateForegroundInstanceMaskRequest returns an empty mask for black fabric on iOS",
+    "should_trigger": false
+  },
+  {
+    "query": "create a new :feature:closet-scan gradle module with a viewmodel and an empty screen",
+    "should_trigger": false
+  }
+]

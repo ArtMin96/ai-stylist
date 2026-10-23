@@ -1,0 +1,82 @@
+[
+  {
+    "query": "the iOS worn check says ankles missing even when I'm fully in frame, can you look at how CaptureVision maps the body pose joints",
+    "should_trigger": true
+  },
+  {
+    "query": "keypoints on iphone look upside down in the debug overlay, is the vision y flip wrong?",
+    "should_trigger": true
+  },
+  {
+    "query": "on iOS the item box from the foreground instance mask is off when two shirts are on the bed, check how we pick the largest instance",
+    "should_trigger": true
+  },
+  {
+    "query": "VNGenerateForegroundInstanceMaskRequest returns nothing in the simulator, is that a bug in CaptureVisionAnalysis or expected",
+    "should_trigger": true
+  },
+  {
+    "query": "when the vision pose request throws on iOS the shutter never shows take photo anyway, make it fall back like doc 10 says",
+    "should_trigger": true
+  },
+  {
+    "query": "can we run VNDetectHumanHandPoseRequest in the iOS capture camera to warn when a hand covers the item",
+    "should_trigger": true
+  },
+  {
+    "query": "should we move CaptureVision from the VN request classes to the new swift Vision API now that we target iOS 26",
+    "should_trigger": true
+  },
+  {
+    "query": "the live outline on iphone lags behind the item, can vision run more often than every 250ms",
+    "should_trigger": true
+  },
+  {
+    "query": "imported library photos on iOS that were taken sideways show the cut-off hint on the wrong edge, check the Vision handler orientation",
+    "should_trigger": true
+  },
+  {
+    "query": "AVCaptureVideoDataOutput stops sending sample buffers after a phone call interrupts the iOS capture session",
+    "should_trigger": false
+  },
+  {
+    "query": "regenerate the capture frame sets with just capture-frames, the C5 move-closer masks look wrong",
+    "should_trigger": false
+  },
+  {
+    "query": "on android the ML Kit pose landmark inFrameLikelihood bar is too strict for ankles, tune it",
+    "should_trigger": false
+  },
+  {
+    "query": "the LiteRT u2netp outline on android is jumpy compared to iOS, look at the segmenter mask threshold",
+    "should_trigger": false
+  },
+  {
+    "query": "add a hint card animation to the iOS capture camera screen in SwiftUI",
+    "should_trigger": false
+  },
+  {
+    "query": "change the worn-mode keypoint edge bounds from 0.02 to 0.03 in capture-rules.json and regenerate the kernel",
+    "should_trigger": false
+  },
+  {
+    "query": "the iOS photo from capturePhoto comes back as HEIC and too big, switch the photo settings to JPEG",
+    "should_trigger": false
+  },
+  {
+    "query": "capture-sim-ios fails scoring on the jitter sets, read the results log and tell me which sweep broke",
+    "should_trigger": false
+  },
+  {
+    "query": "the segmentation worker in workers/ml should cut the garment out of uploaded photos on the server",
+    "should_trigger": false
+  },
+  {
+    "query": "make the PhotosPicker in the iOS capture import flow allow picking several photos at once",
+    "should_trigger": false
+  },
+  {
+    "query": "the CameraX ImageAnalysis frames on android are rotated 90 degrees in the capture debug overlay",
+    "should_trigger": false
+  }
+]

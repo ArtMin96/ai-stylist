@@ -6,6 +6,8 @@ skills:
   - agent-operating-contract
   - tooling-ci
   - code-quality
+  - litert-android
+  - capture-frames
 color: red
 hooks:
   PreToolUse:

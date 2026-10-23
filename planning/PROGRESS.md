@@ -91,6 +91,19 @@ Log hygiene: when this log exceeds ~30 entries, move the oldest entries to `plan
 
 *(newest first)*
 
+### 2026-10-23 (capture-tool-skills) — Skills for the capture camera's tools: ML Kit, CameraX, LiteRT, Apple Vision, AVFoundation, capture-frames (branch `feat/capture-camera`, PR #56)
+
+*Lead session, delegated (one subagent per skill).*
+
+- **Phase / tasks worked:** none (enforcement layer: skills for the tools PR #56 added); no phase status change.
+- **Status changes:** none.
+- **Done this session:** six skills, one per tool, at the owner's request: `mlkit-android`, `camerax-android`, `litert-android`, `apple-vision-ios`, `avfoundation-camera-ios`, `capture-frames` (each with its evals pair and `.claude/skills` symlink). Index rows and an ownership note in `.agents/skills/README.md`; preloads added to `android-engineer`, `ios-engineer` and `tooling-engineer`; pointers in the Overlap of `android-feature`, `ios-feature` and `tooling-ci`. The six skills own no paths. Also removed a stale sentence in `tools/capture-frames/README.md` (Android now scores stored masks). Full `just docs-check`: ok (0 errors, 0 warnings).
+- **Not done / in flight:** `just skills-eval` not run (it spends model usage). Doc 15 §5 (`planning/15-team-workflow-and-ai-agent-operations.md`, human-only) still describes `just capture-sim-android` as "stored-box sweep + live ML Kit sweep"; the `justfile` comment is fixed, doc 15 waits for the owner's go-ahead.
+- **Repository state:** committed and pushed to `feat/capture-camera` (PR #56) at the owner's request; docs-check green.
+- **New decisions / risks / questions filed:** none.
+- **Surprises / gotchas:** the skills cite paths that exist only on `feat/capture-camera`, so they ship in PR #56. Found while writing `camerax-android`: `CameraPermissionGate.refresh()` has no caller in `apps/android`, so returning from Settings after granting camera access likely still shows the permission screen (not reproduced on a device).
+- **Next session starts:** the owner reviews the six skills in PR #56; optionally `just skills-eval <skill>` for each, one skill first.
+
 ### 2026-10-22 (capture-camera) — Guided capture camera engine on both apps: rules, live garment outline, hard cases, simulator loop (branch `feat/capture-camera`, PR #56)
 
 *Lead session, delegated.*

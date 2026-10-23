@@ -1,0 +1,82 @@
+[
+  {
+    "query": "regenerate the capture test frames, the C5 move-closer set looks wrong",
+    "should_trigger": true
+  },
+  {
+    "query": "add a crumpled-shirt flat variant to the capture frame generator with its expected.json",
+    "should_trigger": true
+  },
+  {
+    "query": "capture-sim-ios summary.md says 3 false unlocks, where do I find which cases and why",
+    "should_trigger": true
+  },
+  {
+    "query": "the jitter sets unlock in the android sweep but stay locked on ios, aren't both apps playing the same offsets?",
+    "should_trigger": true
+  },
+  {
+    "query": "add captureSweepFilter to the iOS capture harness launch args like android has",
+    "should_trigger": true
+  },
+  {
+    "query": "OutlineParityTest is red after I touched the contour rounding, can I just regenerate outline-parity.json",
+    "should_trigger": true
+  },
+  {
+    "query": "is one green capture-sim run enough for the capture camera finish line or do we need two",
+    "should_trigger": true
+  },
+  {
+    "query": "just capture-frames exits 1 on my linux box, what's wrong",
+    "should_trigger": true
+  },
+  {
+    "query": "the C14 shaky hands case still fails after 3 attempts, add it to the scoreboard as blocked",
+    "should_trigger": true
+  },
+  {
+    "query": "android sweep unlocks one evaluation later than ios on every set, 900 vs 800 ms, check the SweepRunner clock",
+    "should_trigger": true
+  },
+  {
+    "query": "the live ML Kit object boxes on android are rotated wrong in landscape, fix the InputImage rotation",
+    "should_trigger": false
+  },
+  {
+    "query": "the u2netp segmenter takes 300ms per mask on the pixel, try the GPU delegate",
+    "should_trigger": false
+  },
+  {
+    "query": "CameraX ImageAnalysis stops delivering frames after I rotate the phone on the capture screen",
+    "should_trigger": false
+  },
+  {
+    "query": "on iPhone the foreground instance mask misses white shirts on white sheets, tune the Vision request",
+    "should_trigger": false
+  },
+  {
+    "query": "the AVCaptureSession never restarts when the app comes back from background on iOS",
+    "should_trigger": false
+  },
+  {
+    "query": "write a maestro flow in e2e/capture for the shoe pair step that asserts cap-step-back",
+    "should_trigger": false
+  },
+  {
+    "query": "add tools/analytics to the shellcheck list in just lint and fix the docs-check fixture",
+    "should_trigger": false
+  },
+  {
+    "query": "run just ml-eval on the segmentation worker and compare it with last week's numbers",
+    "should_trigger": false
+  },
+  {
+    "query": "raise steady.minSharpness in capture-rules.json from 12 to 14 and regenerate the clients",
+    "should_trigger": false
+  },
+  {
+    "query": "change the 'Take photo anyway' button copy on the capture screen in both apps",
+    "should_trigger": false
+  }
+]

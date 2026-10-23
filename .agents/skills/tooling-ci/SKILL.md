@@ -149,7 +149,9 @@ Adjacent: `ios-feature` (`tools/codegen/gen-swift.sh`, `apps/ios/scripts/`), `an
 `data-lifecycle` (product behavior; this skill only runs its gates), `architecture-review` (reviews an `arch-check` rule change),
 `security-privacy-review` (`scripts/security/**`, `.gitleaks.toml`, secrets tooling: it reviews what
 this skill implements), `performance-profiling` (measures a CI-duration claim; this skill implements
-the recipe or workflow change), `e2e-device-testing` (asks for e2e recipe arguments and lanes).
+the recipe or workflow change), `e2e-device-testing` (asks for e2e recipe arguments and lanes),
+`capture-frames` (load it next to this skill for `tools/capture-frames/**`) and `litert-android`
+(load it for `tools/capture-segmenter/**`); this skill still owns both directories.
 `media-ml-pipeline` owns `tools/codegen/gen-python.sh`, `ios-feature` owns `tools/codegen/gen-swift.sh`
 and `android-feature` owns `tools/codegen/gen-kotlin.sh`; this skill owns the rest of
 `tools/codegen/**` and the write set in Workflow step 2. It owns no SPINE module.

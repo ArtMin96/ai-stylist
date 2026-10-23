@@ -58,6 +58,8 @@ list_devices() {
 choose_serial() {
   local explicit="$1" serial state emulator="" phone=""
   if [[ -n "$explicit" ]]; then
+    # Read the list anyway: under pipefail a writer whose reader left early dies of SIGPIPE (141).
+    cat >/dev/null
     printf '%s\n' "$explicit"
     return 0
   fi
@@ -173,8 +175,21 @@ wait_for_boot() {
 # Whether an emulator process for this AVD runs (it may not have reached adb yet).
 avd_process_running() { pgrep -f -- "-avd $AVD( |$)" >/dev/null 2>&1; }
 
-# The serial of the first emulator adb lists, in any state, or nothing.
-listed_emulator() { list_devices | awk '$1 ~ /^emulator-/ { print $1; exit }'; }
+# The AVD name of emulator $1 (`adb emu avd name`), or nothing when it does not answer.
+emulator_avd_name() { "$(adb_bin)" -s "$1" emu avd name 2>/dev/null | head -n 1 | tr -d '\r'; }
+
+# The serial of the emulator running this AVD ($AVD), in any state, or nothing. Another AVD's
+# emulator (another agent's, for example) is never reused.
+listed_emulator() {
+  local serial state
+  while read -r serial state; do
+    [[ "$serial" == emulator-* ]] || continue
+    if [[ "$(emulator_avd_name "$serial")" == "$AVD" ]]; then
+      printf '%s\n' "$serial"
+      return 0
+    fi
+  done < <(list_devices)
+}
 
 cmd_boot() {
   local wait=1 running port serial emulator args deadline

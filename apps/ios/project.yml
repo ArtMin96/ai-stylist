@@ -63,7 +63,12 @@ targets:
       - package: Core
         products: [AppConfig, Analytics, AppServices, APIData]
       - package: Features
-        products: [HomeFeature]
+        products: [HomeFeature, CaptureFeature, CaptureModel]
+      # The capture test harness (capture brief §11), built for every configuration with `link: false`
+      # like DesignSystemCatalog below; only Config/Dev.xcconfig links its object.
+      - package: Features
+        products: [CaptureDebug]
+        link: false
       - package: DesignSystem
         products: [DesignSystem]
       # Built for every configuration, linked by none here: XcodeGen cannot link a package product per
@@ -90,6 +95,9 @@ schemes:
         - package: Core/AnalyticsTests
         - package: Core/APIDataTests
         - package: Features/HomeModelTests
+        - package: Features/CaptureModelTests
+        - package: Features/CaptureFeatureTests
+        - package: Features/CaptureDebugTests
         - package: DesignSystem/DesignTokensTests
         - package: DesignSystem/DesignSystemTests
         - package: DesignSystem/DesignSystemCatalogTests

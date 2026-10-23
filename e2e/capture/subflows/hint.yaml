@@ -1,0 +1,21 @@
+# Subflow: open the camera on frame set ${SET} from tile ${TILE} with captures recorded only (the camera
+# stays open), switch to mode ${MODE} unless it is flat (always pass it), wait for hint label ${HINT}
+# and screenshot it as ${SHOT}. Timing is judged by the harness sweep, not here.
+appId: ${APP_ID}
+---
+- runFlow:
+    file: open-camera-record-only.yaml
+    env:
+      SET: ${SET}
+      TILE: ${TILE}
+- runFlow:
+    when:
+      true: ${MODE != 'flat'}
+    commands:
+      - tapOn:
+          id: cap-mode-${MODE}
+- extendedWaitUntil:
+    visible:
+      id: ${HINT}
+    timeout: 6000
+- takeScreenshot: ${SHOT}

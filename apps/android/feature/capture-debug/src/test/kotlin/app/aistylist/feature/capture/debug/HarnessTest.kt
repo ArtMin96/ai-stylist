@@ -1,0 +1,222 @@
+package app.aistylist.feature.capture.debug
+
+import android.os.Bundle
+import app.aistylist.contracts.kernel.CaptureHint
+import app.aistylist.contracts.kernel.CaptureMode
+import app.aistylist.contracts.kernel.CaptureRules
+import app.aistylist.contracts.kernel.CaptureShapeFamily
+import app.aistylist.feature.capture.domain.CameraContext
+import app.aistylist.feature.capture.domain.CameraSnapshot
+import app.aistylist.feature.capture.domain.CaptureTrigger
+import app.aistylist.feature.capture.domain.LockPhase
+import app.aistylist.feature.capture.domain.NormalizedRect
+import app.aistylist.feature.capture.domain.anywayReasonFor
+import org.json.JSONObject
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
+import org.junit.Rule
+import org.junit.Test
+import org.junit.rules.TemporaryFolder
+import org.junit.runner.RunWith
+import org.robolectric.RobolectricTestRunner
+import org.robolectric.annotation.Config
+
+// A synthetic index in the generator's layout (tools/capture-frames/README.md); no real frames.
+private const val INDEX =
+    """
+    {
+      "playback": { "fps": 30, "gapFrames": 30, "segmentFrames": 180 },
+      "sets": [
+        {
+          "id": "top-flat-01-jitter", "family": "top", "mode": "flat", "kind": "single", "variant": "jitter",
+          "segments": [
+            { "frame": "top/a/frame.png", "box": "top/a/frame.box.json", "expected": "top/a/expected.json",
+              "frames": 3, "jitter": 0.06, "jitterSeed": 7, "tiltDegrees": 25,
+              "offsets": [[0.01, -0.02], [0.05, 0.03], [-0.04, 0.0]] }
+          ]
+        },
+        {
+          "id": "top-worn-whole", "family": "top", "mode": "worn", "kind": "single", "variant": "whole",
+          "segments": [
+            { "frame": "top/w/frame.png", "box": "top/w/frame.box.json", "keypoints": "top/w/frame.keypoints.json",
+              "expected": "top/w/expected.json", "frames": 180, "jitter": 0, "jitterSeed": 1 }
+          ]
+        },
+        { "id": "hat-flat-01-good", "family": "hat", "mode": "flat", "kind": "single", "segments": [] }
+      ]
+    }
+    """
+
+@RunWith(RobolectricTestRunner::class)
+@Config(sdk = [37])
+class HarnessTest {
+    @get:Rule
+    val folder = TemporaryFolder()
+
+    @Test
+    fun `launch extras select the frame set, the screen-reader flag, the sweep and the sources`() {
+        val extras =
+            Bundle().apply {
+                putString(CaptureHarnessArgs.FRAME_SET, "top-flat-01-good")
+                putString(CaptureHarnessArgs.SCREEN_READER, "1")
+                putString(CaptureHarnessArgs.BOXES, "live")
+                putString(CaptureHarnessArgs.DEBUG_PANEL, "0")
+                putString(CaptureHarnessArgs.RECORD_ONLY, "1")
+            }
+
+        val args = CaptureHarnessArgs.from(extras)
+
+        assertEquals("top-flat-01-good", args.frameSetId)
+        assertTrue(args.isScreenReader)
+        assertFalse(args.isSweep)
+        assertEquals(BoxSource.LIVE, args.boxes)
+        assertEquals(PoseSource.AUTO, args.pose)
+        assertFalse(args.showsPanel)
+        assertTrue(args.recordsCaptures)
+        assertEquals(CaptureHarnessArgs(), CaptureHarnessArgs.from(null))
+        assertEquals(MaskSource.STORED, args.masks)
+        assertEquals(0, args.maskCadenceMs)
+    }
+
+    @Test
+    fun `a sweep plays masks at the live cadence unless the extras say otherwise`() {
+        val sweep = Bundle().apply { putString(CaptureHarnessArgs.SWEEP, "1") }
+        val fresh =
+            Bundle().apply {
+                putString(CaptureHarnessArgs.SWEEP, "1")
+                putString(CaptureHarnessArgs.MASK_CADENCE_MS, "0")
+                putString(CaptureHarnessArgs.MASKS, "live")
+                putString(CaptureHarnessArgs.COVERED, "mlkit")
+            }
+
+        assertEquals(CaptureRules.Mask.INTERVAL_MS, CaptureHarnessArgs.from(sweep).maskCadenceMs)
+        val args = CaptureHarnessArgs.from(fresh)
+        assertEquals(0, args.maskCadenceMs)
+        assertEquals(MaskSource.LIVE, args.masks)
+        assertEquals(CoveredSource.OBJECT_BOXES, args.covered)
+    }
+
+    @Test
+    fun `the hold extras keep warming up and capturing on screen for the screenshot flow`() {
+        val held =
+            Bundle().apply {
+                putString(CaptureHarnessArgs.HOLD_FIRST_FRAME_MS, "6000")
+                putString(CaptureHarnessArgs.HOLD_CAPTURE_MS, "5000")
+            }
+        val off =
+            Bundle().apply {
+                putString(CaptureHarnessArgs.HOLD_FIRST_FRAME_MS, "0")
+                putString(CaptureHarnessArgs.HOLD_CAPTURE_MS, "x")
+            }
+
+        val args = CaptureHarnessArgs.from(held)
+        assertEquals(6000L, args.holdFirstFrameMs)
+        assertEquals(5000L, args.holdCaptureMs)
+        assertEquals(0L, CaptureHarnessArgs.from(off).holdFirstFrameMs)
+        assertEquals(0L, CaptureHarnessArgs.from(off).holdCaptureMs)
+    }
+
+    @Test
+    fun `the index reads every set it knows and skips unknown families`() {
+        folder.newFile(FrameIndex.INDEX_FILE).writeText(INDEX)
+
+        val index = requireNotNull(FrameIndex.load(folder.root))
+
+        assertEquals(30, index.fps)
+        assertEquals(listOf("top-flat-01-jitter", "top-worn-whole"), index.sets.map { it.id })
+        val worn = requireNotNull(index.set("top-worn-whole"))
+        assertEquals(CaptureMode.WORN, worn.mode)
+        assertEquals("top/w/frame.keypoints.json", worn.segments.single().keypoints)
+        assertNull(worn.segments.single().tiltDegrees)
+        assertEquals(
+            25.0,
+            index.sets
+                .first()
+                .segments
+                .single()
+                .tiltDegrees,
+        )
+        assertNull(
+            index
+                .set("top-flat-01-jitter")
+                ?.segments
+                ?.single()
+                ?.keypoints,
+        )
+        assertNull(FrameIndex.load(folder.newFolder("empty")))
+    }
+
+    @Test
+    fun `a jittered segment plays the index's offsets in order and loops them`() {
+        folder.newFile(FrameIndex.INDEX_FILE).writeText(INDEX)
+        val index = requireNotNull(FrameIndex.load(folder.root))
+        val analyzer = FrameAnalyzer(index, BoxSource.STORED, PoseSource.KEYPOINTS)
+        val jittered =
+            index.sets
+                .first()
+                .segments
+                .single()
+        val steady = index.sets[1].segments.single()
+
+        assertEquals(FrameOffset(0.05, 0.03), analyzer.offset(jittered, 1))
+        assertEquals(FrameOffset(-0.04, 0.0), analyzer.offset(jittered, 5))
+        assertEquals(FrameOffset(0.01, -0.02), analyzer.offset(jittered, 6))
+        assertEquals(FrameOffset.NONE, analyzer.offset(steady, 5))
+    }
+
+    @Test
+    fun `a moved box keeps its size`() {
+        val moved = NormalizedRect(0.2, 0.2, 0.6, 0.5).moved(FrameOffset(0.1, -0.1))
+
+        assertEquals(0.3, moved.left, 1e-9)
+        assertEquals(0.1, moved.top, 1e-9)
+        assertEquals(0.4, moved.width, 1e-9)
+    }
+
+    @Test
+    fun `a segment record logs state changes, the first unlock, anyway and captures`() {
+        folder.newFile(FrameIndex.INDEX_FILE).writeText(INDEX)
+        val set = requireNotNull(FrameIndex.load(folder.root)).sets.first()
+        val record =
+            SegmentRecord(
+                set,
+                0,
+                startMs = 1_000,
+                clock = "virtual",
+                detector = BoxSource.STORED,
+                pose = PoseSource.KEYPOINTS,
+            )
+        val step = CameraContext(CaptureShapeFamily.TOP, CaptureMode.FLAT)
+
+        fun snapshot(
+            phase: LockPhase,
+            hint: CaptureHint,
+            anyway: Boolean = false,
+        ): StepState {
+            // As the session does: the reason line follows the lock hint while "Take photo anyway" shows.
+            val reason = anywayReasonFor(hint.takeIf { anyway && it.lockReason != null }, step)
+            return StepState.of(CameraSnapshot(step, phase, 0.0, hint, hint.lockReason, anyway, reason))
+        }
+
+        record.onState(snapshot(LockPhase.WARMING_UP, CaptureHint.GUIDE), 1_000)
+        record.onState(snapshot(LockPhase.WARMING_UP, CaptureHint.GUIDE), 1_050)
+        record.onState(snapshot(LockPhase.LOCKED, CaptureHint.NOT_STEADY), 2_500)
+        record.onState(snapshot(LockPhase.LOCKED, CaptureHint.NOT_STEADY, anyway = true), 11_000)
+        record.onState(snapshot(LockPhase.UNLOCKED, CaptureHint.READY, anyway = true), 11_300)
+        record.onCapture(CaptureTrigger.AUTO, 12_300)
+        val json = record.toJson()
+
+        assertEquals(4, json.getJSONArray("events").length())
+        assertEquals("cap-hint-not-steady", json.getString("anywayReason"))
+        assertEquals(10_000L, json.getLong("anywayAtMs"))
+        assertEquals(10_300L, json.getLong("firstUnlockMs"))
+        assertEquals("cap-hint-ready", json.getString("hintAtUnlock"))
+        assertEquals("auto", json.getJSONArray("captures").getJSONObject(0).getString("trigger"))
+        assertEquals("unlocked", json.getString("finalPhase"))
+        assertEquals("top-flat-01-jitter", json.getString("setId"))
+        assertEquals("stored-box", json.getString("detector"))
+        assertEquals(JSONObject.NULL, json.get("finalLockReason"))
+    }
+}

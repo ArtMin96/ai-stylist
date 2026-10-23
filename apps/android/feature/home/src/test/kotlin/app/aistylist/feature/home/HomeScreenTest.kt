@@ -35,9 +35,12 @@ class HomeScreenTest {
         recording: RecordingAnalytics = RecordingAnalytics(),
         testCrash: (() -> Unit)? = null,
         onOpenDesignSystemGallery: (() -> Unit)? = null,
+        onOpenCapture: (() -> Unit)? = null,
     ): HomeViewModel {
         val viewModel = HomeViewModel(repository, recording.analytics, TEST_CONFIG, testCrash)
-        compose.setContent { HomeRoute(viewModel, onOpenDesignSystemGallery = onOpenDesignSystemGallery) }
+        compose.setContent {
+            HomeRoute(viewModel, onOpenDesignSystemGallery = onOpenDesignSystemGallery, onOpenCapture = onOpenCapture)
+        }
         return viewModel
     }
 
@@ -151,5 +154,22 @@ class HomeScreenTest {
         compose.onNodeWithTag(HomeTestTags.DEBUG_FORCE_CRASH).assertIsDisplayed()
         compose.onNodeWithTag(HomeTestTags.DEBUG_OPEN_DS_GALLERY).assertDoesNotExist()
         compose.onNodeWithText("Design system gallery").assertDoesNotExist()
+    }
+
+    @Test
+    fun addItemOpensTheCaptureCameraOnlyWhenTheAppRootPassesTheEntry() {
+        var opened = 0
+        show(QueuedVersionRepository(VERSION_OK), onOpenCapture = { opened++ })
+
+        compose.onNodeWithTag(HomeTestTags.OPEN_CAPTURE).assertTextEquals("Add item").performClick()
+
+        assertEquals(1, opened)
+    }
+
+    @Test
+    fun withoutTheCaptureEntryThereIsNoAddItemButton() {
+        show(QueuedVersionRepository(VERSION_OK))
+
+        compose.onNodeWithTag(HomeTestTags.OPEN_CAPTURE).assertDoesNotExist()
     }
 }

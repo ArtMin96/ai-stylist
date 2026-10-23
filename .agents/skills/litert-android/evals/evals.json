@@ -1,0 +1,43 @@
+{
+  "skill_name": "litert-android",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "LiteRT 1.4.2 is old. Bump com.google.ai.edge.litert:litert to the latest 2.x in the Android app and move the garment segmenter to the CompiledModel API if it's simpler. Keep CI green.",
+      "expected_output": "The agent reads the litert pin comment in apps/android/gradle/libs.versions.toml and ADR-0013, sees that every LiteRT 2.x release pulls com.google.android.play:ai-delivery (Play services), which the owner ruled out, and stops without changing the version. It reports the conflict, cites ADR-0013 option B and the owner's no-Play-services condition (brief C31), and says a move to 2.x needs the owner and a new ADR. It makes no lockfile or verification-metadata change.",
+      "files": [],
+      "assertions": [
+        "apps/android/gradle/libs.versions.toml still contains litert = \"1.4.2\" after the run",
+        "No change is made to any gradle.lockfile or apps/android/gradle/verification-metadata.xml",
+        "The report says LiteRT 2.x pulls Play-services delivery (ai-delivery) and names ADR-0013 or the libs.versions.toml pin comment as the source",
+        "The agent stops for owner approval or a new ADR instead of implementing the bump"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "The Android capture outline lags: the segmenter takes ~300 ms per mask on the emulator. Add the GPU delegate to LiteRtGarmentSegmenter and run the mask every frame instead of every 250 ms.",
+      "expected_output": "The agent reads LiteRtGarmentSegmenter.kt, MaskCadence.kt and ADR-0013. It notes the GPU delegate needs new artifacts (litert-gpu, litert-gpu-api) and so a dependency the owner has not granted, and that the segmenter is CPU/XNNPACK by decision; it stops for approval on the delegate. It refuses to hard-code a per-frame cadence: the 250 ms / 1000 ms hot intervals come from CaptureRules.Mask (the capture-rules.json mask block, shared with iOS), so a change goes through api-contract-change. It notes that emulator latency is not device latency and that the device gate is p50 ≤ 700 ms on a Galaxy A12-class phone, and routes measurement to performance-profiling.",
+      "files": [],
+      "assertions": [
+        "No litert-gpu or litert-gpu-api entry is added to apps/android/gradle/libs.versions.toml or any build.gradle.kts",
+        "MaskCadence.kt still reads CaptureRules.Mask.INTERVAL_MS and CaptureRules.Mask.HOT_INTERVAL_MS, with no new numeric interval literal in Kotlin",
+        "The report names packages/shared-kernel/registry/capture-rules.json (mask block) or api-contract-change as where the cadence changes, and says it affects iOS too",
+        "The report states that emulator latency is not device latency or cites the ADR-0013 device gate (p50 ≤ 700 ms)",
+        "The agent stops for owner approval on the GPU delegate instead of adding it"
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "On a tester's phone the Android capture camera crashed with an IllegalStateException from org.tensorflow.lite.NativeInterpreterWrapper inside the segmenter. Also, while you're there, swap the model for the 320x320 u2netp since it's sharper.",
+      "expected_output": "The agent finds runSegmenter and fallBack in CameraXObservationSource.kt (commit 485783e) and checks whether the crash path is covered: IllegalStateException and IllegalArgumentException are caught on the segmenter thread, fallBack sets SegmenterState.Failed and clears latestMask, and ML Kit boxes take over. If a path is uncovered (for example the still segmenter in analyzeStill, or load), it fixes it with a regression test first and keeps the fallback to ML Kit boxes, never rethrowing. For the model swap it stops: a new model needs the owner, new mask IoU, rule parity, latency and APK numbers (doc-10 row 11a), a rebuild through tools/capture-segmenter/convert.sh with a matching .sha256 and NOTICE.txt, and it never commits a model the script did not build.",
+      "files": [],
+      "assertions": [
+        "The failure path ends in SegmenterState.Failed / ML Kit boxes; no change rethrows the exception or removes the fallback",
+        "If production code changes, a test that failed before the fix is added under apps/android/feature/capture/src/test/kotlin and the report shows it failing then passing",
+        "apps/android/feature/capture/src/main/assets/capture-segmenter/u2netp-224-fp16.tflite and its .sha256 are unchanged",
+        "The report says a model swap needs owner approval and new evidence (mask IoU, latency, APK size) or a doc-10 / ADR update, and names tools/capture-segmenter/convert.sh as the only way to build a model",
+        "The report does not claim a device result it did not run"
+      ]
+    }
+  ]
+}

@@ -220,7 +220,7 @@ lint *args:
     pnpm exec eslint tools eslint.config.mjs
     uv run --project workers ruff check workers
     # -s bash: every script must run under macOS /bin/bash 3.2 as well (docs/DEVELOPING-ON-MACOS.md)
-    shellcheck -s bash -x -P SCRIPTDIR scripts/*.sh scripts/security/*.sh scripts/security/tests/*.sh scripts/docs/*.sh scripts/docs/lib/*.sh scripts/hooks/*.sh scripts/test/*.sh scripts/db/*.sh scripts/ci/*.sh scripts/lint-file.sh scripts/native-lane.sh tools/analytics/*.sh tools/codegen/*.sh tools/depcruise/*.sh tools/eslint/*.sh tools/flags/*.sh tools/jscpd/*.sh apps/ios/scripts/*.sh apps/android/tools/*.sh
+    shellcheck -s bash -x -P SCRIPTDIR scripts/*.sh scripts/security/*.sh scripts/security/tests/*.sh scripts/docs/*.sh scripts/docs/lib/*.sh scripts/hooks/*.sh scripts/test/*.sh scripts/db/*.sh scripts/ci/*.sh scripts/lint-file.sh scripts/native-lane.sh tools/analytics/*.sh tools/capture-frames/*.sh tools/codegen/*.sh tools/depcruise/*.sh tools/eslint/*.sh tools/flags/*.sh tools/jscpd/*.sh apps/ios/scripts/*.sh apps/android/tools/*.sh
     actionlint
     scripts/native-lane.sh ios none just ios-lint
     scripts/native-lane.sh android android just android-lint
@@ -399,7 +399,7 @@ ios-doctor:
 ios-project:
     apps/ios/scripts/xcode.sh project
 
-# Unsigned iOS simulator build: `just ios-build [--config dev|preview|prod]` (default dev; macOS only)
+# Unsigned iOS simulator build: `just ios-build [--config dev|preview|prod]` (default dev; macOS only); then greps the app for the capture test harness (scripts/check-capture-harness.sh: Dev must hold it, Preview and Prod must not)
 ios-build *args:
     apps/ios/scripts/xcode.sh build "$@"
 
@@ -431,7 +431,7 @@ ios-format *args:
 ios-check-banned *args:
     apps/ios/scripts/check-banned.sh "$@"
 
-# The iOS local gate: lint, format --check, bans (+ fixtures), package tests; on macOS also the Dev simulator build + simulator tests (Linux prints a skip for those two)
+# The iOS local gate: lint, format --check, bans (+ fixtures), package tests; on macOS also the Dev and Prod simulator builds (each greps for the capture test harness: present in Dev, absent in Prod) + simulator tests (Linux prints a skip for those)
 ios-check:
     just ios-lint
     just ios-format --check
@@ -439,6 +439,7 @@ ios-check:
     just ios-check-banned --fixtures
     just ios-test-packages
     scripts/native-lane.sh ios xcode just ios-build --config dev
+    scripts/native-lane.sh ios xcode just ios-build --config prod
     scripts/native-lane.sh ios xcode just ios-test
 
 # --- android (apps/android: Kotlin + Jetpack Compose; Gradle via apps/android/tools/gradle.sh) ----
@@ -481,9 +482,13 @@ android-format *args:
         *) echo "android-format: unknown argument '$1' (use --check)" >&2; exit 2 ;;
     esac
 
-# The Android local gate in one Gradle invocation: Spotless, module graph, detekt, Android Lint, unit + Robolectric tests, all three APKs
+# The Android local gate in one Gradle invocation: Spotless, module graph, detekt, Android Lint, unit + Robolectric tests, all three APKs; then the capture test harness grep (scripts/check-capture-harness.sh: the debug APK must hold it, preview and release must not) and the check that the release manifest has no ML Kit usage-reporting backend (ADR-0012)
 android-check:
     apps/android/tools/gradle.sh spotlessCheck checkModuleGraph detektMain detektTest :app:lintDebug testDebugUnitTest :core:data:test :core:analytics:test :core:designsystem:test :app:assembleDebug :app:assemblePreview :app:assembleRelease
+    scripts/check-capture-harness.sh present apps/android/app/build/outputs/apk/debug/app-debug.apk
+    scripts/check-capture-harness.sh absent apps/android/app/build/outputs/apk/preview/app-preview*.apk
+    scripts/check-capture-harness.sh absent apps/android/app/build/outputs/apk/release/app-release*.apk
+    m=apps/android/app/build/intermediates/merged_manifest/release/processReleaseMainManifest/AndroidManifest.xml; [[ -f "$m" ]] || { echo "android-check: $m not found" >&2; exit 1; }; if grep -q 'backend:com.google.android.datatransport.cct.CctBackendFactory' "$m"; then echo "android-check: ML Kit's usage-reporting backend (CCT) is back in the release manifest; docs/adr/0012-ml-kit-usage-reporting-off.md" >&2; exit 1; fi; echo "android-check: no ML Kit usage-reporting backend in the release manifest"
 
 # Check (default) or install the Android SDK packages apps/android needs: `just android-sdk [check|install]` (user-level, no emulator, no sudo); `just android-sdk emulator` also installs the emulator and a system image
 android-sdk mode='check':
@@ -505,6 +510,28 @@ android-e2e flow='e2e/smoke.yaml':
     [[ -f "$1" ]] || { echo "android-e2e: Maestro flow '$1' not found" >&2; exit 1; }
     apps/android/tools/gradle.sh :app:installDebug
     maestro test -e APP_ID=app.aistylist.mobile.dev "$1"
+
+# --- capture camera test harness (tools/capture-frames/README.md) ------------------------------
+
+# Build the capture camera's test frames into artifacts/capture-camera/frames/ (macOS only, pinned Xcode): CC0 dataset product shots plus drawn items and a drawn person, every brief §11 variant, Vision masks, stored boxes, keypoints, expected results and index.json; downloads only the dataset images it tries (cached in artifacts/capture-camera/source/); unchanged inputs reuse the last output
+capture-frames:
+    bash tools/capture-frames/capture-frames.sh
+
+# The capture camera's iOS simulator loop (macOS; iPhone 18 Pro or IOS_SIMULATOR_ID): frames, a Dev build without symbol upload, the harness sweep + screen-reader sweeps, every e2e/capture flow in light and dark, scoring; writes artifacts/capture-camera/runs/<yyyy-mm-dd-hhmm>/summary.md and the scoreboard row; exit 1 unless the finish line holds
+capture-sim-ios:
+    bash tools/capture-frames/capture-sim.sh ios
+
+# The capture camera's Android emulator loop (AVD aistylist-dev via android-run, or ANDROID_SERIAL): frames pushed, stored mask + keypoint sweep (scored) + live LiteRT mask + ML Kit pose sweep (information), screen-reader sweeps, every e2e/capture flow in light and dark, scoring; same run folder and scoreboard as capture-sim-ios
+capture-sim-android:
+    bash tools/capture-frames/capture-sim.sh android
+
+# Both capture simulator loops in one run folder: capture-sim-ios, then capture-sim-android
+capture-sim:
+    bash tools/capture-frames/capture-sim.sh all
+
+# The capture camera Managed Agent on this Mac (needs ant + `ant auth login` once): syncs the agent (tools/managed-agents/), starts the self-hosted worker, opens a session capped at what is left of the owner's $197 total and attaches the terminal; `stop` stops the worker; an optional file replaces the default kickoff message
+capture-agent action="start" message="":
+    bash tools/managed-agents/capture-agent.sh {{action}} {{message}}
 
 # --- database (drizzle-kit; expand–contract) ----------------------------------------
 

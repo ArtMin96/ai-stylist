@@ -1,0 +1,75 @@
+# Underwear and swimwear opt-in (capture brief §7, C19): the sheet shows the first time only; "Flat and
+# hanger only" leads to the sub-pick and a camera without worn mode; the camera menu's toggle turns
+# worn mode on. clearState gives the first-use sheet. Simulator/emulator-safe.
+appId: ${APP_ID}
+---
+- launchApp:
+    clearState: true
+    arguments:
+      captureFrameSet: top-flat-01-too-small
+# Home can be slow to draw on a busy emulator.
+- extendedWaitUntil:
+    visible:
+      id: home-open-capture
+    timeout: 15000
+- tapOn:
+    id: home-open-capture
+- scrollUntilVisible:
+    element:
+      id: cap-picker-family-underwear
+    centerElement: true
+- tapOn:
+    id: cap-picker-family-underwear
+- assertVisible:
+    id: cap-optin-sheet
+- assertVisible:
+    id: cap-optin-allow-worn
+- takeScreenshot: 01-optin-sheet
+- tapOn:
+    id: cap-optin-flat-only
+- assertVisible:
+    id: cap-picker-underwear-top
+- assertVisible:
+    id: cap-picker-underwear-socks
+- takeScreenshot: 02-underwear-subpick
+- tapOn:
+    id: cap-picker-underwear-top
+- assertVisible:
+    id: cap-mode-hanger
+- assertNotVisible:
+    id: cap-mode-worn
+- takeScreenshot: 03-camera-no-worn-mode
+- tapOn:
+    id: cap-camera-menu
+- tapOn:
+    id: cap-camera-underwear-worn-toggle
+- runFlow:
+    when:
+      visible:
+        id: cap-camera-underwear-worn-toggle
+    commands:
+      - swipe:
+          direction: DOWN
+- assertVisible:
+    id: cap-mode-worn
+- takeScreenshot: 04-camera-worn-allowed
+- launchApp:
+    arguments:
+      captureFrameSet: top-flat-01-too-small
+# Home can be slow to draw on a busy emulator.
+- extendedWaitUntil:
+    visible:
+      id: home-open-capture
+    timeout: 15000
+- tapOn:
+    id: home-open-capture
+- scrollUntilVisible:
+    element:
+      id: cap-picker-family-underwear
+    centerElement: true
+- tapOn:
+    id: cap-picker-family-underwear
+- assertNotVisible:
+    id: cap-optin-sheet
+- assertVisible:
+    id: cap-picker-underwear-top

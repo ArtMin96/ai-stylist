@@ -1,0 +1,211 @@
+# Guidance states (capture brief §6, C3, C5, C11–C14): the family guide first, then each blocking hint
+# its frame set locks on (C11: a coat too big for the frame, cut-off-multiple), the worn body hints
+# (C3, keypoint files), a partly covered item, and the too-dark (C13), too-bright and tilt hints that
+# show while the shutter is unlocked; then warming up and capturing, held on screen by the harness's
+# hold switches. Light/dark screenshots of every state. Simulator/emulator-safe.
+# Timing is not judged here: the sweep times every set on a virtual clock (summary.md).
+appId: ${APP_ID}
+---
+- runFlow:
+    file: subflows/open-camera.yaml
+    env: { SET: top-flat-empty, TILE: cap-picker-family-top }
+- assertVisible:
+    id: cap-hint-guide
+- takeScreenshot: 01-hint-guide
+- extendedWaitUntil:
+    visible:
+      id: cap-hint-no-item
+    timeout: 6000
+- assertVisible:
+    id: cap-shutter-locked
+- takeScreenshot: 02-hint-no-item
+- runFlow:
+    file: subflows/hint.yaml
+    env:
+      {
+        SET: top-flat-01-cut-top,
+        TILE: cap-picker-family-top,
+        MODE: flat,
+        HINT: cap-hint-cut-off-top,
+        SHOT: 03-hint-cut-off-top,
+      }
+- runFlow:
+    file: subflows/hint.yaml
+    env:
+      {
+        SET: top-flat-01-cut-bottom,
+        TILE: cap-picker-family-top,
+        MODE: flat,
+        HINT: cap-hint-cut-off-bottom,
+        SHOT: 04-hint-cut-off-bottom,
+      }
+- runFlow:
+    file: subflows/hint.yaml
+    env:
+      {
+        SET: top-flat-01-cut-left,
+        TILE: cap-picker-family-top,
+        MODE: flat,
+        HINT: cap-hint-cut-off-left,
+        SHOT: 05-hint-cut-off-left,
+      }
+- runFlow:
+    file: subflows/hint.yaml
+    env:
+      {
+        SET: top-flat-01-cut-right,
+        TILE: cap-picker-family-top,
+        MODE: flat,
+        HINT: cap-hint-cut-off-right,
+        SHOT: 06-hint-cut-off-right,
+      }
+- runFlow:
+    file: subflows/hint.yaml
+    env:
+      {
+        SET: top-flat-01-too-small,
+        TILE: cap-picker-family-top,
+        MODE: flat,
+        HINT: cap-hint-too-small,
+        SHOT: 07-hint-too-small,
+      }
+- runFlow:
+    file: subflows/hint.yaml
+    env:
+      {
+        SET: top-flat-01-jitter,
+        TILE: cap-picker-family-top,
+        MODE: flat,
+        HINT: cap-hint-not-steady,
+        SHOT: 08-hint-not-steady,
+      }
+- runFlow:
+    file: subflows/hint.yaml
+    env:
+      {
+        SET: top-worn-shoulders-cut,
+        TILE: cap-picker-family-top,
+        MODE: worn,
+        HINT: cap-hint-body-shoulders-hips,
+        SHOT: 09-hint-body-shoulders-hips,
+      }
+- runFlow:
+    file: subflows/hint.yaml
+    env:
+      {
+        SET: long-bottom-worn-ankles-cut,
+        TILE: cap-picker-family-long-bottom,
+        MODE: worn,
+        HINT: cap-hint-body-hips-ankles,
+        SHOT: 10-hint-body-hips-ankles,
+      }
+- runFlow:
+    file: subflows/hint.yaml
+    env:
+      {
+        SET: short-bottom-worn-knees-cut,
+        TILE: cap-picker-family-short-bottom,
+        MODE: worn,
+        HINT: cap-hint-body-hips-knees,
+        SHOT: 11-hint-body-hips-knees,
+      }
+- runFlow:
+    file: subflows/hint.yaml
+    env:
+      {
+        SET: one-piece-worn-knees-cut,
+        TILE: cap-picker-family-one-piece,
+        MODE: worn,
+        HINT: cap-hint-body-shoulders-knees,
+        SHOT: 12-hint-body-shoulders-knees,
+      }
+- runFlow:
+    file: subflows/hint.yaml
+    env:
+      {
+        SET: top-flat-01-too-dark,
+        TILE: cap-picker-family-top,
+        MODE: flat,
+        HINT: cap-hint-too-dark,
+        SHOT: 13-hint-too-dark-unlocked,
+      }
+- runFlow:
+    file: subflows/hint.yaml
+    env:
+      {
+        SET: outerwear-flat-01-too-big,
+        TILE: cap-picker-family-outerwear,
+        MODE: flat,
+        HINT: cap-hint-cut-off-multiple,
+        SHOT: 14-hint-cut-off-multiple,
+      }
+- runFlow:
+    file: subflows/hint.yaml
+    env:
+      {
+        SET: top-flat-01-too-bright,
+        TILE: cap-picker-family-top,
+        MODE: flat,
+        HINT: cap-hint-too-bright,
+        SHOT: 15-hint-too-bright-unlocked,
+      }
+- runFlow:
+    file: subflows/hint.yaml
+    env:
+      {
+        SET: top-flat-01-covered-inside,
+        TILE: cap-picker-family-top,
+        MODE: flat,
+        HINT: cap-hint-covered,
+        SHOT: 16-hint-covered,
+      }
+- runFlow:
+    file: subflows/hint.yaml
+    env:
+      {
+        SET: top-flat-01-tilt,
+        TILE: cap-picker-family-top,
+        MODE: flat,
+        HINT: cap-hint-tilt,
+        SHOT: 17-hint-tilt-unlocked,
+      }
+# Warming up (brief §5): the harness holds the first frame back 6 s, so after the 1.5 s guide the
+# camera shows "Looking for the item…" until it comes.
+- launchApp:
+    arguments:
+      captureFrameSet: top-flat-01-good
+      captureHoldFirstFrameMs: '6000'
+- extendedWaitUntil:
+    visible:
+      id: home-open-capture
+    timeout: 15000
+- tapOn:
+    id: home-open-capture
+- tapOn:
+    id: cap-picker-family-top
+- extendedWaitUntil:
+    visible:
+      id: cap-hint-warming-up
+    timeout: 6000
+- takeScreenshot: 18-hint-warming-up
+# Capturing (brief §6): each photo takes 5 s in the harness, so "Taking photo" stays after the
+# auto-capture.
+- launchApp:
+    arguments:
+      captureFrameSet: top-flat-01-good
+      captureHoldCaptureMs: '5000'
+- extendedWaitUntil:
+    visible:
+      id: home-open-capture
+    timeout: 15000
+- tapOn:
+    id: home-open-capture
+- tapOn:
+    id: cap-picker-family-top
+- extendedWaitUntil:
+    visible:
+      id: cap-hint-capturing
+    timeout: 8000
+- assertVisible:
+    id: cap-shutter-capturing
+- takeScreenshot: 19-hint-capturing

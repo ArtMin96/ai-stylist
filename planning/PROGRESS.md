@@ -30,7 +30,7 @@ Rules:
 | P03 | Identity, consent, onboarding | `IN_PROGRESS` | Started 2026-10-21, after its hard dependency P02 became `ACCEPTED` the same day ([phase file](phases/P03-identity-consent-onboarding.md) §3). P03-T01 `DONE` on branch `feat/p03-t01-kernel` @ `e317b5b` (Linear AI-51); PR #47 merged. P03-T02 `DONE` on branch `feat/p03-t02-contracts` @ `bd1d7cb` plus the docs sync of 2026-10-21 (Linear AI-48 with AI-49, AI-53, AI-58, AI-61, AI-64); its PR #48 merged. P03-X03 (Linear AI-87) done on branch `feat/p03-x03-error-registry` @ `44783d3` (PR #51, on `main`; its tip is the vitest 5.0.5 bump of 2026-10-22); P03-X04 (Linear AI-88) done on branch `feat/p03-x04-native-kernel` @ `f30b405` (PR #52), stacked on the X03 branch; P03-X06 (Linear AI-95, the spectral `Idempotency-Key` rule) done on branch `feat/p03-x06-idempotency-lint` @ `4f6b911` plus the ledger sync (PR #53), stacked on the X04 branch. Next: the owner merges #51, #52 and #53 bottom-up; then P03-T03 (AI-50) ∥ P03-T06 (AI-68) ∥ P03-T07 (AI-69) per phase §13. Carried in: AI-42 before P03-T10; the Mac and device checks (AI-28, AI-29; DEC-81) at the first P03 client task that needs the Mac. Per-task state: phase file §12 (X03, X04 and X06 are Linear-only, not §12 rows). Latest: the 2026-10-22 (vitest) handoff entry |
 | P04 | Parametric avatar v1 | `NOT_STARTED` | |
 | P05 | Selfie face personalization | `NOT_STARTED` | |
-| P06 | Closet capture pipeline | `NOT_STARTED` | |
+| P06 | Closet capture pipeline | `NOT_STARTED` | Groundwork ahead of the phase, status unchanged: the guided capture camera engine on both apps (rules registry, test-frame generator, live outline, simulator loop) on branch `feat/capture-camera` (2026-10-22 (capture-camera) entry) |
 | P07 | Closet organization and sync | `NOT_STARTED` | |
 | P08 | Context providers | `NOT_STARTED` | |
 | P09 | Recommendation engine v1 | `NOT_STARTED` | |
@@ -90,6 +90,45 @@ Log hygiene: when this log exceeds ~30 entries, move the oldest entries to `plan
 ## Session handoff log
 
 *(newest first)*
+
+### 2026-10-23 (capture-tool-skills) — Skills for the capture camera's tools: ML Kit, CameraX, LiteRT, Apple Vision, AVFoundation, capture-frames (branch `feat/capture-camera`, PR #56)
+
+*Lead session, delegated (one subagent per skill).*
+
+- **Phase / tasks worked:** none (enforcement layer: skills for the tools PR #56 added); no phase status change.
+- **Status changes:** none.
+- **Done this session:** six skills, one per tool, at the owner's request: `mlkit-android`, `camerax-android`, `litert-android`, `apple-vision-ios`, `avfoundation-camera-ios`, `capture-frames` (each with its evals pair and `.claude/skills` symlink). Index rows and an ownership note in `.agents/skills/README.md`; preloads added to `android-engineer`, `ios-engineer` and `tooling-engineer`; pointers in the Overlap of `android-feature`, `ios-feature` and `tooling-ci`. The six skills own no paths. Also removed a stale sentence in `tools/capture-frames/README.md` (Android now scores stored masks). Full `just docs-check`: ok (0 errors, 0 warnings). Fixed that Android permission bug (owner: "change anything which is not destructive"): the permission screen now re-reads the grant on start and a grant returns to the same camera step (`permissionGranted`), matching iOS, whose camera view re-checks access on every return. Regression test `CapturePermissionReturnTest` failed first (`expected Camera but was PermissionDenied`), then passed; `just android-check` green. Not run on a device.
+- **Not done / in flight:** `just skills-eval` not run (it spends model usage). The `capture-sim-android` description is fixed in the `justfile` and in doc 15 §5 (the owner applied the doc 15 line).
+- **Repository state:** committed and pushed to `feat/capture-camera` (PR #56) at the owner's request; docs-check green.
+- **New decisions / risks / questions filed:** none.
+- **Surprises / gotchas:** the skills cite paths that exist only on `feat/capture-camera`, so they ship in PR #56. Found while writing `camerax-android`: on Android, granting camera access in Settings left the user on the permission screen, because `CameraPermissionGate.refresh()` had no caller.
+- **Next session starts:** the owner reviews the six skills in PR #56; optionally `just skills-eval <skill>` for each, one skill first.
+
+### 2026-10-22 (capture-camera) — Guided capture camera engine on both apps: rules, live garment outline, hard cases, simulator loop (branch `feat/capture-camera`, PR #56)
+
+*Lead session, delegated.*
+
+- **Phase / tasks worked:** P06-T04 (live capture checks), ahead of P06; no phase status change. One PR for the whole engine, at the owner's request (it includes the `feat/capture-rules-foundation` work, so PR #55 is superseded); the owner will later move the camera into reusable iOS and Android packages.
+- **Status changes:** none.
+- **Done this session:** both apps' capture flow and rule engine (lock machine, hints, "Take photo anyway" at 10 s and at once with a screen reader, back, pair, underwear opt-in, batch, import, permission); the live garment outline from the item mask (iOS: Vision foreground instance mask; Android: LiteRT 1.4.2 + U²-Netp, [ADR-0013](../docs/adr/0013-on-device-garment-outline-android.md), doc 10 row 11a), with a shared parity fixture (`tools/capture-frames/parity/`); hard cases C8–C11, tilt, glare and the new C32 "partly covered" rule; the simulator loop `just capture-sim`, `capture-sim-ios` and `capture-sim-android` (one scorer, 13 Maestro flows in light and dark); the security review fixes (ML Kit usage reporting off, [ADR-0012](../docs/adr/0012-ml-kit-usage-reporting-off.md); okhttp pin; release-build harness grep; no-network test). Owner decisions: ring 0.5 s (auto-capture about 1.3 s), unlock after 3 distinct steady masks, outline stability measured on the area centroid. Last sweeps: iOS 788/788 at the 250 ms mask cadence (0 misses, 0 false locks, 0 false unlocks); Android stored masks 778/783 before the shared-expectation fix `4a03994` (the 5 were that override).
+- **Not done / in flight:** (1) the two final consecutive `just capture-sim` passes on the merged engine were not run; (2) the phone test on a Galaxy A12-class phone and an iPhone 11 / SE 2 (device-only). Done later the same day: DEC-88 (camera v1 as built; the camera permission keeps shipping in every build, owner), DEC-89 and DEC-90 added to doc 16, ADR-0012 and ADR-0013 accepted; Android area-centroid stability measure (`2456b05`), the Linux Swift build fix (`e9aa31b`), duplicate code below the clone threshold (`cd01568`), the mask and outline numbers moved into `capture-rules.json` with the brief rows updated (`d37eda4`), and a self-hosted Managed Agent that continues this work (`just capture-agent`, [`tools/managed-agents/README.md`](../tools/managed-agents/README.md), $197 total cap). PR #56 CI was 18/18 green at `cd01568`.
+- **Repository state:** buildable; see the PR body for the check results on the merged branch.
+- **New decisions / risks / questions filed:** DEC-88, DEC-89, DEC-90 (2026-10-22).
+- **Surprises / gotchas:** the iOS Simulator has no Vision mask, so sweeps play stored masks; the stored-frame outline tests run only with `CAPTURE_FRAMES_DIR` set; Vision and U²-Netp both merge a covering object into the item, so C32 rarely fires on a real phone; three emulators plus builds drove the Mac to load 189 and killed an emulator, so run Android sweeps alone; GitHub Actions jobs do not start (account billing); live detector quality, latency on a Galaxy A12 and iPhone 11 / SE 2, heat, real VoiceOver and TalkBack and a phone network capture are device-only and unproven.
+- **Next session starts:** `git switch feat/capture-camera`, then `just capture-agent` (or a Claude Code session) from the repository root: check PR #56 CI on the latest push, then `just capture-frames` and `just capture-sim` twice in a row on a quiet machine, fix what fails, update this entry.
+
+### 2026-10-22 (capture-foundation) — Guided capture camera groundwork: capture rules registry, test-frame generator and plan (branch `feat/capture-rules-foundation`)
+
+*Lead session, delegated.*
+
+- **Phase / tasks worked:** groundwork for P06-T04 (live capture checks), ahead of P06; no phase status change. Split from `feat/capture-camera` so the stable part is reviewed first; the iOS and Android app work follows as a PR stacked on this branch once its simulator loop passes.
+- **Status changes:** none.
+- **Done this session:** `packages/shared-kernel/registry/capture-rules.json` + schema (thresholds, counts, timings, hints, lock reasons, shape families, the `covered` block), emitted by `just generate` as `CaptureRules.swift` / `CaptureRules.kt` beside the P03 kernel files; `tools/capture-frames/` and `just capture-frames` (macOS; frames into the gitignored `artifacts/capture-camera/frames/`); the brief, the two proposals and the SC16 surface brief; the applied planning changes to docs 02, 10 and P06.
+- **Not done / in flight:** the app work, the capture simulator recipes and ADR-0012 stay on `feat/capture-camera`. Human-applied: the doc 15 §5 row for `just capture-frames` in [`.claude/plans/2026-10-22-capture-frames-recipe-proposal.md`](../.claude/plans/2026-10-22-capture-frames-recipe-proposal.md) (DC-15 warns until then) and the decision-log rows in [`.claude/plans/2026-10-22-capture-camera-plan-changes-proposal.md`](../.claude/plans/2026-10-22-capture-camera-plan-changes-proposal.md).
+- **Repository state:** see the PR body for the check results on this branch.
+- **New decisions / risks / questions filed:** none (the proposals above carry the draft rows).
+- **Surprises / gotchas:** main's P03-X04 compiles the Kotlin kernel in `:core:data`; the capture branch's own `:core:kernel` module was dropped when main was merged into it, so the app PR depends on `:core:data`.
+- **Next session starts:** the owner reviews and merges the foundation PR; then the capture app PR, stacked on this branch.
 
 ### 2026-10-22 (vitest) — `@vitest/mocker` advisories: vitest 5.0.5, stack rebased (branch `feat/p03-x03-error-registry`)
 

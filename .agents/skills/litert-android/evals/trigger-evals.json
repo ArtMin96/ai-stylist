@@ -1,0 +1,82 @@
+[
+  {
+    "query": "the LiteRT segmenter on android takes 300ms per mask, can we speed it up with a GPU delegate",
+    "should_trigger": true
+  },
+  {
+    "query": "rebuild the u2netp tflite model with convert.sh --check, the sha256 test fails",
+    "should_trigger": true
+  },
+  {
+    "query": "renovate wants to bump com.google.ai.edge.litert:litert to 2.3.0, is that ok to merge",
+    "should_trigger": true
+  },
+  {
+    "query": "android capture crashes on some phones with an IllegalStateException from the tflite interpreter, the camera should just fall back",
+    "should_trigger": true
+  },
+  {
+    "query": "small items like socks get a blobby mask on android, look at the crop pass in LiteRtGarmentSegmenter",
+    "should_trigger": true
+  },
+  {
+    "query": "is MaskCadence really holding one inference in flight? the phone gets hot fast in batch mode",
+    "should_trigger": true
+  },
+  {
+    "query": "can we swap u2netp for a bigger segmentation model on android, the outline edges are rough",
+    "should_trigger": true
+  },
+  {
+    "query": "SegmenterAssetTest fails after I re-ran the model conversion locally, what changed",
+    "should_trigger": true
+  },
+  {
+    "query": "how much did the garment segmenter add to the android apk and what's the latency budget on a cheap phone",
+    "should_trigger": true
+  },
+  {
+    "query": "the android capture pose check never finds ankles, look at how MlKitPoseDetector maps landmarks",
+    "should_trigger": false
+  },
+  {
+    "query": "bump com.google.mlkit:object-detection and check nothing from play services sneaks into the lockfile",
+    "should_trigger": false
+  },
+  {
+    "query": "CameraX ImageAnalysis stops delivering frames after I rotate the phone on the capture screen",
+    "should_trigger": false
+  },
+  {
+    "query": "on iOS the VNGenerateForegroundInstanceMaskRequest merges the hanger into the shirt, tune it",
+    "should_trigger": false
+  },
+  {
+    "query": "regenerate the capture test frames, the stored masks for the cut-off sets look wrong",
+    "should_trigger": false
+  },
+  {
+    "query": "the segmentation worker in workers/ml should cut the garment out of uploaded photos before classification",
+    "should_trigger": false
+  },
+  {
+    "query": "change mask.intervalMs in capture-rules.json from 250 to 300 for both apps",
+    "should_trigger": false
+  },
+  {
+    "query": "add a chip for 'accessories' to the capture picker screen in compose",
+    "should_trigger": false
+  },
+  {
+    "query": "the capture-sim-android run hangs at pushing frames to the emulator, fix the sweep script",
+    "should_trigger": false
+  },
+  {
+    "query": "the live outline on android should fade in instead of snapping, change the compose animation",
+    "should_trigger": false
+  },
+  {
+    "query": "bump the fal.ai background removal model the media pipeline uses for closet photos",
+    "should_trigger": false
+  }
+]

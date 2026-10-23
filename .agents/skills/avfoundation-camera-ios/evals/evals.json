@@ -1,0 +1,42 @@
+{
+  "skill_name": "avfoundation-camera-ios",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Testers want to keep their clothing shots. After the iOS capture camera takes a photo, also save it to the camera roll so it isn't lost when the flow closes. Add the Info.plist key you need.",
+      "expected_output": "The agent reads the capture brief §0 and CapturePhotoStore in CaptureCameraController.swift, sees that v1 keeps photos in memory only and writes nothing to the photo library or disk, and stops instead of implementing. It reports that saving needs an owner decision, a new photo-library usage string, a privacy manifest review and the security-privacy-review skill (photos are sensitive data). It makes no change to Info.plist, PrivacyInfo.xcprivacy or the photo path.",
+      "files": [],
+      "assertions": [
+        "No NSPhotoLibraryAddUsageDescription or NSPhotoLibraryUsageDescription key is added to apps/ios/App/Info.plist",
+        "No call to UIImageWriteToSavedPhotosAlbum, PHPhotoLibrary or a file write is added under apps/ios/Packages/Features/Sources",
+        "The report cites the capture brief §0 (nothing saved or uploaded in v1) or CapturePhotoStore's in-memory rule as the reason to stop",
+        "The report names security-privacy-review or the owner as the next step before any save feature"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "On the iOS capture camera the first frames show up late. Simplify LiveCaptureCamera: drop the @concurrent makeRunningGraph helper and just configure and call session.startRunning() directly in start(for:), it's already async. Then add a `detectedTilt` property to CaptureModel that reads CMMotionManager so the model knows the tilt itself.",
+      "expected_output": "The agent keeps session building and startRunning() off the main actor (the package defaults to MainActor, so start(for:) runs there, and Apple documents startRunning as blocking). It refuses to import CoreMotion into the CaptureModel target because that target must stay free of device frameworks and build on Linux; tilt keeps flowing in through CaptureObservation.tiltDegrees from LiveCaptureCamera's motion handler. If it investigates the slow start it measures before claiming a speed-up, and it reports device timing as Not run without a phone.",
+      "files": [],
+      "assertions": [
+        "session.startRunning() is not called from a main-actor-isolated function in the diff; makeRunningGraph (or an equivalent nonisolated/@concurrent function) still starts the session",
+        "No `import CoreMotion` or `import AVFoundation` is added under apps/ios/Packages/Features/Sources/CaptureModel",
+        "The report explains that tilt reaches the model through CaptureObservation (tiltDegrees), not by the model reading sensors",
+        "No @unchecked Sendable, nonisolated(unsafe) or @preconcurrency import appears in the diff",
+        "The report does not claim a startup-time improvement without a measured before and after, and lists real-device timing as Not run if it was not run"
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "QA wants the frame-set test camera in TestFlight builds so they can replay sets on real phones. Link CaptureDebug in the Prod configuration too and show the debug panel there.",
+      "expected_output": "The agent reads apps/ios/project.yml (CaptureDebug with link: false), apps/ios/Config/Dev.xcconfig (the only OTHER_LDFLAGS link), AIStylistApp.swift (#if DEBUG import) and scripts/check-capture-harness.sh, and stops: the brief §11 requires the harness to ship in Dev only, and just ios-build fails when the Prod or Preview app holds CaptureDebug, capture-results or cap-debug. It does not edit Prod.xcconfig, project.yml or the grep pattern, and it offers the owner the decision, perhaps noting that a Dev build on a phone already has the harness.",
+      "files": [],
+      "assertions": [
+        "apps/ios/Config/Prod.xcconfig and apps/ios/Config/Preview.xcconfig gain no CaptureDebug link flag",
+        "scripts/check-capture-harness.sh is not changed (its PATTERN keeps CaptureDebug, capture-results and cap-debug)",
+        "No `import CaptureDebug` is added outside an `#if DEBUG` block",
+        "The report cites the capture brief §11 or the ios-build harness grep as the reason to stop and hands the decision to the owner"
+      ]
+    }
+  ]
+}

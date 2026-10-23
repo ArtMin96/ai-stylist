@@ -4,8 +4,9 @@
 // packages/shared-kernel/registry; Ajv lives here (as it does for
 // gen-kernel.mjs, which also validates the first four before emitting them for Python; their
 // Python output is pinned by kernel-python.test.ts). It also checks the `levels` rule of
-// entitlements.json, a registry gen-kernel.mjs emits for TS, Swift and Kotlin. The cross-references
-// a schema cannot express are checked in packages/shared-kernel/tests.
+// entitlements.json, a registry gen-kernel.mjs emits for TS, Swift and Kotlin, and the shape of
+// capture-rules.json, which it emits for Swift and Kotlin. The cross-references a schema cannot
+// express are checked in packages/shared-kernel/tests (capture-rules: in gen-kernel.mjs).
 import { readFile } from 'node:fs/promises';
 
 import { Ajv2020, type SchemaObject } from 'ajv/dist/2020.js';
@@ -313,6 +314,45 @@ describe('entitlements.json', async () => {
   it('rejects a level that is not a ladder code or a snake_case word', () => {
     for (const bad of ['A1 + all poses', 'a-1', '', 'G2_All']) {
       expect(one({ ...level, levels: ['L1', bad] }), bad).toBe(false);
+    }
+  });
+});
+
+describe('capture-rules.json', async () => {
+  const { data, check, errors } = await validatorFor('capture-rules');
+  const committed = data as Record<string, Record<string, unknown>>;
+
+  it('validates against its schema', () => {
+    expect(check(data), errors()).toBe(true);
+  });
+
+  it('rejects a non-integer count or interval, a share above 1 and an unknown field', () => {
+    expect(check({ ...committed, lock: { ...committed.lock, ringFillMs: 1000.5 } })).toBe(false);
+    expect(check({ ...committed, evaluation: { intervalMs: 0 } })).toBe(false);
+    expect(check({ ...committed, edgeBandShare: 2 })).toBe(false);
+    expect(check({ ...committed, ios: { ...committed.ios, minKeypointConfidence: 30 } })).toBe(
+      false,
+    );
+    expect(check({ ...committed, outline: { ...committed.outline, pointCount: 64.5 } })).toBe(
+      false,
+    );
+    expect(check({ ...committed, mask: { ...committed.mask, hotIntervalMs: 0 } })).toBe(false);
+    expect(check({ ...committed, notes: 'x' })).toBe(false);
+    expect(check({ ...committed, steady: { ...committed.steady, jitter: 0.06 } })).toBe(false);
+  });
+
+  it('rejects a hint key without the cap-hint- prefix, an unknown hint kind and a bad family id', () => {
+    const hint = { kind: 'blocking', lockReason: 'no-item' };
+    expect(check({ ...committed, hints: { 'no-item': hint } })).toBe(false);
+    expect(check({ ...committed, hints: { 'cap-hint-no-item': { kind: 'urgent' } } })).toBe(false);
+    const family = { minAreaShare: 0.1, modes: ['flat'], wornRequiredParts: [] };
+    expect(check({ ...committed, families: { Top: family } })).toBe(false);
+    expect(check({ ...committed, families: { top: { ...family, modes: [] } } })).toBe(false);
+  });
+
+  it('rejects a body part that is not camelCase', () => {
+    for (const part of ['left-shoulder', 'LeftShoulder', 'shoulder']) {
+      expect(check({ ...committed, bodyParts: [part] }), part).toBe(false);
     }
   });
 });

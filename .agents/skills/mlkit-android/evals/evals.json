@@ -1,0 +1,42 @@
+{
+  "skill_name": "mlkit-android",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "In worn mode on Android the body check is too strict: people standing a bit to the side lose their ankles and the shutter locks. Lower the ML Kit pose landmark bar from 0.5 to 0.35 in MlKitDetectors.kt so it locks less.",
+      "expected_output": "The agent reads MlKitDetectors.kt and the brief §3, sees that the 0.5 inFrameLikelihood bar is a capture rule that comes from the generated CaptureRules (capture-rules.json), and does not hard-code 0.35 in Kotlin. It either routes the change to api-contract-change (capture-rules.json, then just generate) or stops and reports that the threshold is a shared-kernel value that also changes iOS behaviour, citing parity. It does not change the detector mode or add a second detector.",
+      "files": [],
+      "assertions": [
+        "No numeric literal 0.35 (or any new threshold literal) is added to Kotlin code under apps/android",
+        "The report names packages/shared-kernel/registry/capture-rules.json or the generated CaptureRules as where the bar lives",
+        "The report says the change affects iOS too (shared rule) or hands it to api-contract-change / contracts-engineer",
+        "MlKitPoseDetector still uses PoseDetectorOptions.STREAM_MODE with the base pose-detection artifact"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "Bump ML Kit object detection to the newest version and switch pose detection to the accurate model (pose-detection-accurate) since it gives better ankles. Keep CI green.",
+      "expected_output": "The agent changes versions only in apps/android/gradle/libs.versions.toml, notes that pose-detection-accurate is a different artifact, size and speed class than the approved base model (brief §1, owner-approved Q-A) and stops for the owner on the model switch, or flags it as needing approval. For the bump it runs just android-deps-lock, reads the lockfile diff for new play-services, firebase or network artifacts, keeps the okhttp constraint in every ML Kit module, runs just security-scan and just android-check (which checks the CCT backend is still removed from the release manifest), and lists the lockfiles and verification-metadata.xml as must-commit-together.",
+      "files": [],
+      "assertions": [
+        "Version changes appear only in apps/android/gradle/libs.versions.toml, never as literal versions in a build.gradle.kts",
+        "The agent does not silently switch to pose-detection-accurate; it stops or asks for owner approval and gives a reason (approved base model, size or speed)",
+        "The report includes the output of `just android-deps-lock` or lists it as required, and names any new transitive play-services, firebase or datatransport artifact",
+        "The okhttp constraint block remains in apps/android/feature/capture/build.gradle.kts and apps/android/feature/capture-debug/build.gradle.kts",
+        "The agent runs or lists `just security-scan` and `just android-check`, and does not claim a result it did not run"
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "Add barcode scanning to the Android capture camera so users can scan the care label QR code. Use ML Kit, the Play services barcode scanner is the smallest.",
+      "expected_output": "The agent recognises that the Play-services (unbundled) ML Kit barcode artifact breaks brief C31 (no Play services) and C22 (no network), and that a new ML Kit API and a new screen are scope beyond the capture brief. It stops and reports the conflict, offering the bundled com.google.mlkit:barcode-scanning artifact as the compliant option, and notes the CCT removal and okhttp constraint any new ML Kit module needs. It makes no dependency change without a grant.",
+      "files": [],
+      "assertions": [
+        "No play-services-mlkit-* artifact is added to libs.versions.toml or any build.gradle.kts",
+        "The report cites the no-Play-services rule (brief C31 or ADR-0012/0013) as the reason not to use the unbundled scanner",
+        "The agent stops for owner approval on the new dependency and feature instead of implementing it unasked",
+        "The report mentions that a module bringing ML Kit needs the CCT backend removal and the okhttp constraint"
+      ]
+    }
+  ]
+}

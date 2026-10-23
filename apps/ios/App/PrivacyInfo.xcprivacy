@@ -58,7 +58,7 @@
 	</array>
 	<key>NSPrivacyAccessedAPITypes</key>
 	<array>
-		<!-- App/PostHogAnalyticsSink.swift keeps one flag of its own (withdrawal vs. crash capture). -->
+		<!-- Two keys of the app's own, both on this device only: App/PostHogAnalyticsSink.swift's flag (withdrawal vs. crash capture) and App/UserDefaultsUnderwearOptInStore.swift's underwear worn-mode answer. -->
 		<dict>
 			<key>NSPrivacyAccessedAPIType</key>
 			<string>NSPrivacyAccessedAPICategoryUserDefaults</string>

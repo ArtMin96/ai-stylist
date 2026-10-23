@@ -3,6 +3,7 @@ package app.aistylist.app
 import android.content.Context
 import app.aistylist.app.analytics.AndroidPostHogSdk
 import app.aistylist.app.analytics.PostHogAnalyticsSink
+import app.aistylist.app.capture.CaptureServices
 import app.aistylist.core.analytics.Analytics
 import app.aistylist.core.analytics.AnalyticsSink
 import app.aistylist.core.analytics.ConsentGatedAnalytics
@@ -15,7 +16,8 @@ import app.aistylist.core.data.version.VersionRepository
 
 /**
  * Composition root (planning/04 §4.3 `composition-root-only`). The ONLY place that reads build
- * configuration and constructs adapters: config, API client (via [DataServices]) and analytics.
+ * configuration and constructs adapters: config, API client (via [DataServices]), analytics and
+ * the capture camera's adapters ([CaptureServices]).
  * Screens receive what they need through their view-model factories. No DI framework.
  */
 class AppContainer(
@@ -27,7 +29,11 @@ class AppContainer(
      * `debug` and `preview` only. Null in `release`, so no code path there can reach the crash.
      */
     val forceTestCrash: (() -> Nothing)?,
+    /** Built on first use: the camera adapters need the app context and cost nothing until then. */
+    private val captureFactory: () -> CaptureServices = { error("no capture camera in this container") },
 ) {
+    val captureServices: CaptureServices by lazy { captureFactory() }
+
     companion object {
         /** The container for this build variant. Throws [app.aistylist.core.data.config.ConfigError]. */
         fun fromBuildConfig(context: Context): AppContainer {
@@ -39,6 +45,7 @@ class AppContainer(
                 postHogHost = BuildConfig.POSTHOG_HOST,
                 debugTools = BuildConfig.DEBUG_TOOLS,
                 postHogSink = { settings -> PostHogAnalyticsSink(settings, AndroidPostHogSdk(appContext)) },
+                captureFactory = { CaptureServices.create(appContext) },
             )
         }
 
@@ -58,6 +65,7 @@ class AppContainer(
             postHogHost: String = "",
             debugTools: Boolean = false,
             postHogSink: (PostHogSettings) -> AnalyticsSink,
+            captureFactory: () -> CaptureServices = { error("no capture camera in this container") },
         ): AppContainer {
             val config = parseAppConfig(apiBaseUrl, appVersion, postHogApiKey, postHogHost)
             val data = DataServices(config)
@@ -67,6 +75,7 @@ class AppContainer(
                 analytics = ConsentGatedAnalytics(sink),
                 versionRepository = data.versionRepository,
                 forceTestCrash = if (debugTools) ::throwForcedTestCrash else null,
+                captureFactory = captureFactory,
             )
         }
     }

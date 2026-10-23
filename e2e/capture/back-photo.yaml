@@ -1,0 +1,57 @@
+# Back photo (capture brief §7, Q5, C7): after the front shot review asks "Is the back different?";
+# Different → "Take back photo" opens the back guide with the Back step; Skip returns to review;
+# capturing the back shows both photos. The frame set stays locked (too small), so each photo is taken
+# with "Take photo anyway" and nothing auto-captures while a step is checked. Simulator/emulator-safe.
+appId: ${APP_ID}
+---
+- runFlow:
+    file: subflows/open-camera.yaml
+    env: { SET: top-flat-01-too-small, TILE: cap-picker-family-top }
+- extendedWaitUntil:
+    visible:
+      id: cap-anyway-button
+    timeout: 25000
+- tapOn:
+    id: cap-anyway-button
+- extendedWaitUntil:
+    visible:
+      id: cap-screen-review
+    timeout: 6000
+- assertVisible:
+    id: cap-review-back-same
+- assertVisible:
+    id: cap-review-done
+- takeScreenshot: 01-review-back-question
+- tapOn:
+    id: cap-review-back-different
+- assertVisible:
+    id: cap-review-take-back
+- takeScreenshot: 02-review-back-different
+- tapOn:
+    id: cap-review-take-back
+- assertVisible:
+    id: cap-step-back
+- assertVisible:
+    id: cap-guide-top-flat-back
+- takeScreenshot: 03-back-step
+- tapOn:
+    id: cap-camera-skip-back
+- assertVisible:
+    id: cap-screen-review
+- tapOn:
+    id: cap-review-take-back
+- extendedWaitUntil:
+    visible:
+      id: cap-anyway-button
+    timeout: 25000
+- tapOn:
+    id: cap-anyway-button
+- extendedWaitUntil:
+    visible:
+      id: cap-review-photo-back
+    timeout: 6000
+- assertVisible:
+    id: cap-review-photo-front
+- assertVisible:
+    id: cap-review-done
+- takeScreenshot: 04-review-front-and-back

@@ -7,6 +7,9 @@ skills:
   - ios-feature
   - code-quality
   - ui-prototype-first
+  - apple-vision-ios
+  - avfoundation-camera-ios
+  - capture-frames
 color: blue
 hooks:
   PreToolUse:

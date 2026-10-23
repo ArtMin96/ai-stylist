@@ -1,0 +1,43 @@
+{
+  "skill_name": "apple-vision-ios",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "The iOS worn-mode body check keeps saying ankles are missing on my iPhone even when I'm fully in frame. Add a unit test in CaptureModelTests that runs VNDetectHumanBodyPoseRequest on a sample image so we can debug the joint mapping, and drop the 0.3 confidence bar to 0.2 while you're at it.",
+      "expected_output": "The agent reads CaptureVisionAnalysis.swift and the brief §3, keeps Vision out of CaptureModel and its tests (they build on Linux, where Vision does not exist), and checks the mapping in CaptureVision.bodyPose: the 8 joints, the most confident person and the y-flip (1 - location.y, Vision's origin is bottom-left). It does not hard-code 0.2: the bar is CaptureRules.Ios.minKeypointConfidence from capture-rules.json, so it routes that change to api-contract-change or stops and reports it. Any new test exercises the rule engine with CaptureKeypoint values, not Vision. It reports real-body pose results as device-only.",
+      "files": [],
+      "assertions": [
+        "No `import Vision` is added anywhere under apps/ios/Packages/Features/Sources/CaptureModel or apps/ios/Packages/Features/tests/CaptureModelTests",
+        "No numeric literal 0.2 (or any new confidence literal) is added to Swift code; the report names CaptureRules.Ios.minKeypointConfidence or packages/shared-kernel/registry/capture-rules.json as where the bar lives",
+        "The report states that Vision pose points use a bottom-left origin and that the y value is flipped exactly once (1 - location.y) before reaching CaptureKeypoint",
+        "The threshold change is handed to api-contract-change / contracts-engineer, or the agent stops and says it changes a shared rule",
+        "The report does not claim the fix is proven on a real body unless an iPhone run is shown; Simulator or drawn-figure results are not presented as real-body evidence"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "The live outline on iOS feels laggy. Run the Vision foreground mask on every camera frame in LiveFrameProcessor instead of every 250 ms so the outline tracks the item smoothly.",
+      "expected_output": "The agent reads LiveCaptureCamera.swift and CaptureMaskCadence.swift and explains that the mask cadence is a shared rule (CaptureRules.Mask.intervalMs 250 ms, hotIntervalMs 1000 ms at thermal state serious or worse) with the newest frame and one request in flight, matched by Android. It does not remove the CaptureMaskCadence.isDue gate or add a per-frame request. It points out that maskTimestampMs lets the steady check and shutter lock count each mask once, so changing the cadence changes the lock timing. A cadence change goes through api-contract-change on capture-rules.json with a device latency and heat measurement (performance-profiling).",
+      "files": [],
+      "assertions": [
+        "LiveFrameProcessor.captureOutput still gates the mask request with CaptureMaskCadence.isDue; no code path runs VNGenerateForegroundInstanceMaskRequest on every frame",
+        "No new interval literal (in ms) is added to Swift code in apps/ios",
+        "The report names capture-rules.json mask.intervalMs (or CaptureRules.Mask.intervalMs) as the source of the 250 ms cadence and says a change affects Android too",
+        "The report mentions maskTimestampMs or that the steady check / shutter lock depend on counting each mask once",
+        "The agent stops for a contract change or a device measurement instead of shipping the per-frame change"
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "Library import on iOS should also check that a worn photo shows the body. In CaptureStillAnalyzer, run VNDetectHumanBodyPoseRequest on the still and pass the image's EXIF orientation to the handler so sideways photos work. Show me it works in the simulator.",
+      "expected_output": "The agent reads CaptureVisionAnalysis.swift and brief §7, notes that the still path deliberately runs no pose (import has no body check) so adding it is a scope change to confirm with the owner, and that CaptureImageReader.uprightImage already applies EXIF orientation, so passing it to the handler again would rotate twice; handlers stay at .up. If pose is added it reuses CaptureVision.bodyPose on the same handler with its .modelUnavailable fallback. It does not claim Simulator evidence for real-body pose: the Simulator has no foreground mask and drawn figures are not real bodies, so pose on real photos is device-only.",
+      "files": [],
+      "assertions": [
+        "Every VNImageRequestHandler in CaptureVisionAnalysis.swift still uses orientation .up; no EXIF orientation is passed after uprightImage",
+        "The agent flags that import intentionally has no body check (brief §7 / the CaptureStillAnalyzer comment) and asks or stops for the scope change instead of silently adding it",
+        "Any pose call on the still reuses CaptureVision.bodyPose rather than a second Vision wrapper",
+        "The report states that Vision has no foreground mask on the Simulator and that real-body pose results are device-only, and does not present Simulator output as proof"
+      ]
+    }
+  ]
+}

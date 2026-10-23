@@ -1,0 +1,501 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://contracts.ai-stylist.app/shared-kernel/registry/capture-rules.schema.json",
+  "title": "CaptureRuleRegistry",
+  "description": "Live checks, lock state machine counts and timings of the guided capture camera (build brief .claude/plans/2026-10-22-capture-camera-brief.md §3-§6). One source for the iOS and Android apps and the frame generator; tools/codegen/gen-kernel.mjs emits it as Swift CaptureRules.swift and Kotlin CaptureRules.kt and checks the cross-references a schema cannot express (family modes, body parts, hints and lock reasons are declared). Coordinates and shares are normalised to the analysis frame (0-1, portrait, origin top-left). A number this schema types integer is an Int in Swift and Kotlin; every other number is a Double. Field names carry the comparison: min/max pass inclusively, Below/Above trigger strictly. Ids are stable: never rename or reuse one.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "captureModes",
+    "lockReasons",
+    "bodyParts",
+    "hints",
+    "families",
+    "edgeBandShare",
+    "evaluation",
+    "analysisFrame",
+    "steady",
+    "light",
+    "tilt",
+    "covered",
+    "lock",
+    "batch",
+    "timing",
+    "worn",
+    "mask",
+    "outline",
+    "ios",
+    "android"
+  ],
+  "properties": {
+    "$schema": { "type": "string" },
+    "captureModes": {
+      "description": "How the item is photographed (brief §2): laid flat, on a hanger, or worn",
+      "$ref": "#/$defs/kebabList"
+    },
+    "lockReasons": {
+      "description": "Blocking checks in priority order (brief §4 locked(reason), §6): the highest-priority failing one is the lock reason",
+      "$ref": "#/$defs/kebabList"
+    },
+    "bodyParts": {
+      "type": "array",
+      "description": "Body keypoints the worn-mode body check reads (brief §3, §4 Part), named as in the keypoint files of brief §11",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": { "type": "string", "pattern": "^[a-z]+(?:[A-Z][a-z]+)+$" }
+    },
+    "hints": {
+      "type": "object",
+      "description": "Hint key (also the hint label's test ID) to its definition, in the priority order of brief §6. UI copy lives in each app's string resources, keyed by these ids",
+      "minProperties": 1,
+      "propertyNames": { "pattern": "^cap-hint-[a-z]+(-[a-z]+)*$" },
+      "additionalProperties": { "$ref": "#/$defs/Hint" }
+    },
+    "families": {
+      "type": "object",
+      "description": "Shape family id to its rules (brief §2, §3), in picker order. Shape families, not closet taxonomy ids",
+      "minProperties": 1,
+      "propertyNames": { "pattern": "^[a-z]+(-[a-z]+)*$" },
+      "additionalProperties": { "$ref": "#/$defs/Family" }
+    },
+    "edgeBandShare": {
+      "description": "Width of the band along each frame edge, as a share of that dimension; a box or mask inside it touches the edge",
+      "$ref": "#/$defs/share"
+    },
+    "evaluation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["intervalMs", "staleFeedAfterMs"],
+      "properties": {
+        "intervalMs": {
+          "description": "The lock machine reads the latest detector result at most once per this interval (10 Hz)",
+          "$ref": "#/$defs/positiveInt"
+        },
+        "staleFeedAfterMs": {
+          "description": "No detector result for this long (an interruption, a stalled detector) sends a locked or unlocked shutter back to warming up; the anyway timer keeps running (brief §4)",
+          "$ref": "#/$defs/positiveInt"
+        }
+      }
+    },
+    "analysisFrame": {
+      "type": "object",
+      "description": "Analysis frame size: iOS preview-sized video buffers, Android ImageAnalysis target (KEEP_ONLY_LATEST)",
+      "additionalProperties": false,
+      "required": ["widthPx", "heightPx"],
+      "properties": {
+        "widthPx": { "$ref": "#/$defs/positiveInt" },
+        "heightPx": { "$ref": "#/$defs/positiveInt" }
+      }
+    },
+    "steady": {
+      "type": "object",
+      "description": "Steadiness checks (lock): box motion between two evaluations and sharpness inside the box",
+      "additionalProperties": false,
+      "required": [
+        "maxCentreShift",
+        "maxAreaChangeShare",
+        "minSharpness",
+        "sharpnessLongSidePx",
+        "laplacianKernelPx"
+      ],
+      "properties": {
+        "maxCentreShift": {
+          "description": "Steady when the box centre moves at most this much in x and in y",
+          "$ref": "#/$defs/share"
+        },
+        "maxAreaChangeShare": {
+          "description": "Steady when the box area changes by at most this share",
+          "$ref": "#/$defs/share"
+        },
+        "minSharpness": {
+          "description": "Steady when the Laplacian variance on luma inside the box is at least this",
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "sharpnessLongSidePx": {
+          "description": "Luma is scaled so its long side is this many pixels before the sharpness check",
+          "$ref": "#/$defs/positiveInt"
+        },
+        "laplacianKernelPx": {
+          "description": "Side of the square Laplacian kernel (3 x 3)",
+          "$ref": "#/$defs/positiveInt"
+        }
+      }
+    },
+    "light": {
+      "type": "object",
+      "description": "Light hints (never lock, brief Q15): mean luma of the whole frame, 0-255",
+      "additionalProperties": false,
+      "required": [
+        "tooDarkBelowMeanLuma",
+        "tooBrightAboveMeanLuma",
+        "clippedMinLuma",
+        "tooBrightAboveClippedShare"
+      ],
+      "properties": {
+        "tooDarkBelowMeanLuma": { "$ref": "#/$defs/luma" },
+        "tooBrightAboveMeanLuma": { "$ref": "#/$defs/luma" },
+        "clippedMinLuma": {
+          "description": "A pixel with luma at or above this counts as clipped",
+          "$ref": "#/$defs/luma"
+        },
+        "tooBrightAboveClippedShare": {
+          "description": "Too bright also when the share of clipped pixels exceeds this",
+          "$ref": "#/$defs/share"
+        }
+      }
+    },
+    "tilt": {
+      "type": "object",
+      "description": "Tilt hint (flat mode, phones only, never locks): angle between gravity and the phone's back axis, with hysteresis",
+      "additionalProperties": false,
+      "required": ["hintAboveDegrees", "clearBelowDegrees"],
+      "properties": {
+        "hintAboveDegrees": { "$ref": "#/$defs/degrees" },
+        "clearBelowDegrees": { "$ref": "#/$defs/degrees" }
+      }
+    },
+    "covered": {
+      "type": "object",
+      "description": "Partly covered item (brief §4, C32; flat and hanger modes, never worn): another mask instance's box overlaps the item's box. The item is the largest mask instance (iOS: Vision foreground instance; Android: connected component of the segmenter mask); overlap is the intersection divided by the smaller box's area",
+      "additionalProperties": false,
+      "required": ["aboveOverlapShare", "minOtherBoxAreaShare"],
+      "properties": {
+        "aboveOverlapShare": {
+          "description": "Covered (lock) when another box's overlap with the item box exceeds this share of the smaller box",
+          "$ref": "#/$defs/share"
+        },
+        "minOtherBoxAreaShare": {
+          "description": "Another box counts only when it covers at least this share of the frame",
+          "$ref": "#/$defs/share"
+        }
+      }
+    },
+    "lock": {
+      "type": "object",
+      "description": "Lock state machine counts (brief §4)",
+      "additionalProperties": false,
+      "required": [
+        "unlockAfterPassingEvaluations",
+        "relockAfterFailingEvaluations",
+        "ringFillMs",
+        "ringMinEvaluations"
+      ],
+      "properties": {
+        "unlockAfterPassingEvaluations": {
+          "description": "Consecutive passing evaluations that unlock the shutter",
+          "$ref": "#/$defs/positiveInt"
+        },
+        "relockAfterFailingEvaluations": {
+          "description": "Consecutive failing evaluations that lock it again and reset the ring",
+          "$ref": "#/$defs/positiveInt"
+        },
+        "ringFillMs": {
+          "description": "Passing time from the unlock until the ring is full and auto-capture fires",
+          "$ref": "#/$defs/positiveInt"
+        },
+        "ringMinEvaluations": {
+          "description": "The ring is full only after at least this many passing evaluations as well",
+          "$ref": "#/$defs/positiveInt"
+        }
+      }
+    },
+    "batch": {
+      "type": "object",
+      "description": "Batch cooldown after a capture (brief §4)",
+      "additionalProperties": false,
+      "required": ["cooldownExitEvaluations", "newItemBelowIou"],
+      "properties": {
+        "cooldownExitEvaluations": {
+          "description": "Consecutive no-item evaluations, or consecutive evaluations of a new item, that end the cooldown",
+          "$ref": "#/$defs/positiveInt"
+        },
+        "newItemBelowIou": {
+          "description": "A box is a new item when its IoU with the captured box is below this",
+          "$ref": "#/$defs/share"
+        }
+      }
+    },
+    "timing": {
+      "type": "object",
+      "description": "Timings of brief §5",
+      "additionalProperties": false,
+      "required": [
+        "anywayDelayMs",
+        "guideHintMs",
+        "hintHoldEvaluations",
+        "hintMinVisibleMs",
+        "speechMinGapMs",
+        "speechRepeatWindowMs"
+      ],
+      "properties": {
+        "anywayDelayMs": {
+          "description": "Foreground time since cameraReady before \"Take photo anyway\" shows (at once with a screen reader)",
+          "$ref": "#/$defs/positiveInt"
+        },
+        "guideHintMs": {
+          "description": "The family instruction shows this long after cameraReady unless the shutter unlocks earlier",
+          "$ref": "#/$defs/positiveInt"
+        },
+        "hintHoldEvaluations": {
+          "description": "A new hint replaces the shown one only after holding for this many consecutive evaluations",
+          "$ref": "#/$defs/positiveInt"
+        },
+        "hintMinVisibleMs": {
+          "description": "...and only when the shown hint has been visible at least this long",
+          "$ref": "#/$defs/positiveInt"
+        },
+        "speechMinGapMs": {
+          "description": "Minimum time between two utterances",
+          "$ref": "#/$defs/positiveInt"
+        },
+        "speechRepeatWindowMs": {
+          "description": "The same text is not spoken again within this window",
+          "$ref": "#/$defs/positiveInt"
+        }
+      }
+    },
+    "worn": {
+      "type": "object",
+      "description": "Worn mode (brief §3, Q-A b): the edge rule is off, this size minimum applies to every family, and the body check locks",
+      "additionalProperties": false,
+      "required": ["minAreaShare", "keypointMinCoordinate", "keypointMaxCoordinate"],
+      "properties": {
+        "minAreaShare": {
+          "description": "Too small below this box area share, every family",
+          "$ref": "#/$defs/share"
+        },
+        "keypointMinCoordinate": {
+          "description": "A keypoint is present only when x and y are at least this (the frame minus the edge band)",
+          "$ref": "#/$defs/share"
+        },
+        "keypointMaxCoordinate": {
+          "description": "...and at most this",
+          "$ref": "#/$defs/share"
+        }
+      }
+    },
+    "mask": {
+      "type": "object",
+      "description": "The item mask, read by both apps (brief §3): iOS from the Vision foreground instance mask, Android from the LiteRT segmenter mask split into connected components. Each app measures it the same way",
+      "additionalProperties": false,
+      "required": [
+        "intervalMs",
+        "hotIntervalMs",
+        "minInstanceAreaShare",
+        "cutOffAboveEdgeContactShare",
+        "hangerTopCutOffAboveEdgeContactShare"
+      ],
+      "properties": {
+        "intervalMs": {
+          "description": "Mask cadence: at most one new mask per this interval, newest frame only, one request in flight",
+          "$ref": "#/$defs/positiveInt"
+        },
+        "hotIntervalMs": {
+          "description": "Mask cadence while the phone is hot: Android uses it when it reports THERMAL_STATUS_MODERATE or worse. iOS does not read it",
+          "$ref": "#/$defs/positiveInt"
+        },
+        "minInstanceAreaShare": {
+          "description": "Item found when a mask instance covers at least this share of the frame",
+          "$ref": "#/$defs/share"
+        },
+        "cutOffAboveEdgeContactShare": {
+          "description": "Cut off when mask pixels inside an edge band span more than this share of that edge's length",
+          "$ref": "#/$defs/share"
+        },
+        "hangerTopCutOffAboveEdgeContactShare": {
+          "description": "The same rule for the top edge in hanger mode",
+          "$ref": "#/$defs/share"
+        }
+      }
+    },
+    "outline": {
+      "type": "object",
+      "description": "The live outline traced from each new mask (brief 'Live outline'). These equal the params of the parity fixture tools/capture-frames/parity/outline-parity.json, whose maskIntervalMs is mask.intervalMs; both apps' parity tests assert it",
+      "additionalProperties": false,
+      "required": [
+        "cropGrowDivisor",
+        "cropGrowMinPx",
+        "longSidePx",
+        "foregroundAtLeast",
+        "epsilonPx",
+        "pointCount",
+        "keepAtLeastIou",
+        "switchAtAreaRatio",
+        "snapBelowIou",
+        "snapKeepsShapeAtLeastIou",
+        "emaAlpha",
+        "clearAfterMissedUpdates",
+        "iouGridCells"
+      ],
+      "properties": {
+        "cropGrowDivisor": {
+          "description": "The crop around the item grows by the item box's long side divided by this (integer division)",
+          "$ref": "#/$defs/positiveInt"
+        },
+        "cropGrowMinPx": {
+          "description": "...and by at least this many pixels",
+          "$ref": "#/$defs/positiveInt"
+        },
+        "longSidePx": {
+          "description": "The crop is area-averaged down to this long side, in pixels",
+          "$ref": "#/$defs/positiveInt"
+        },
+        "foregroundAtLeast": {
+          "description": "An area-averaged cell at or above this is foreground; also the contour's iso value",
+          "$ref": "#/$defs/share"
+        },
+        "epsilonPx": {
+          "description": "Douglas-Peucker tolerance, in downscaled pixels",
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "pointCount": {
+          "description": "Points of every outline",
+          "$ref": "#/$defs/positiveInt"
+        },
+        "keepAtLeastIou": {
+          "description": "The drawn item is kept while its new outline overlaps the drawn one by at least this IoU",
+          "$ref": "#/$defs/share"
+        },
+        "switchAtAreaRatio": {
+          "description": "...unless the largest candidate has at least this many times its area",
+          "type": "number",
+          "minimum": 1
+        },
+        "snapBelowIou": {
+          "description": "A new outline below this IoU with the drawn one jumps there without animation",
+          "$ref": "#/$defs/share"
+        },
+        "snapKeepsShapeAtLeastIou": {
+          "description": "...and its shape replaces the drawn shape only below this IoU of the two shapes centred on their centroids; otherwise the shape still blends",
+          "$ref": "#/$defs/share"
+        },
+        "emaAlpha": {
+          "description": "Weight of the new outline in the moving averages of position and shape",
+          "$ref": "#/$defs/share"
+        },
+        "clearAfterMissedUpdates": {
+          "description": "The outline clears after this many mask updates in a row without an item",
+          "$ref": "#/$defs/positiveInt"
+        },
+        "iouGridCells": {
+          "description": "Outline IoU rasterises both polygons on this many cells per side over their joint box",
+          "$ref": "#/$defs/positiveInt"
+        }
+      }
+    },
+    "ios": {
+      "type": "object",
+      "description": "iOS-only values (Vision body pose, Core Motion)",
+      "additionalProperties": false,
+      "required": [
+        "poseIntervalMs",
+        "maxUserAccelerationG",
+        "maxRotationRateRadPerS",
+        "minKeypointConfidence"
+      ],
+      "properties": {
+        "poseIntervalMs": {
+          "description": "Body pose cadence in worn mode, same frame and handler as the mask request",
+          "$ref": "#/$defs/positiveInt"
+        },
+        "maxUserAccelerationG": {
+          "description": "Steady when user acceleration is at most this (g)",
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "maxRotationRateRadPerS": {
+          "description": "...and the rotation rate at most this (rad/s)",
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "minKeypointConfidence": {
+          "description": "A body joint is present when its Vision confidence is at least this",
+          "$ref": "#/$defs/share"
+        }
+      }
+    },
+    "android": {
+      "type": "object",
+      "description": "Android-only values (ML Kit Pose base model, linear acceleration)",
+      "additionalProperties": false,
+      "required": [
+        "maxLinearAccelerationMps2",
+        "gravityLowPassAlpha",
+        "minKeypointInFrameLikelihood"
+      ],
+      "properties": {
+        "maxLinearAccelerationMps2": {
+          "description": "Steady when linear acceleration (accelerometer minus low-pass gravity) is at most this (m/s²)",
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "gravityLowPassAlpha": {
+          "description": "Smoothing factor of the gravity low-pass filter",
+          "$ref": "#/$defs/share"
+        },
+        "minKeypointInFrameLikelihood": {
+          "description": "A pose landmark is present when its in-frame likelihood is at least this",
+          "$ref": "#/$defs/share"
+        }
+      }
+    }
+  },
+  "$defs": {
+    "share": { "type": "number", "minimum": 0, "maximum": 1 },
+    "luma": { "type": "number", "minimum": 0, "maximum": 255 },
+    "degrees": { "type": "number", "exclusiveMinimum": 0, "maximum": 90 },
+    "positiveInt": { "type": "integer", "minimum": 1 },
+    "kebabList": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": { "type": "string", "pattern": "^[a-z]+(-[a-z]+)*$" }
+    },
+    "Hint": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind"],
+      "properties": {
+        "kind": {
+          "description": "blocking: shown while the shutter is locked; advisory: never locks, shown only when no blocking check fails; status: guide and state messages",
+          "type": "string",
+          "enum": ["blocking", "advisory", "status"]
+        },
+        "lockReason": {
+          "description": "The lock reason this hint reports (blocking hints only; warming-up has none)",
+          "type": "string"
+        }
+      }
+    },
+    "Family": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["minAreaShare", "modes", "wornRequiredParts"],
+      "properties": {
+        "minAreaShare": {
+          "description": "Too small when box area / frame area is below this (flat and hanger modes)",
+          "$ref": "#/$defs/share"
+        },
+        "modes": {
+          "type": "array",
+          "description": "Capture modes offered, from captureModes",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": { "type": "string" }
+        },
+        "wornRequiredParts": {
+          "type": "array",
+          "description": "Body parts that must all be present in worn mode, from bodyParts; empty when the family has no body check",
+          "uniqueItems": true,
+          "items": { "type": "string" }
+        },
+        "wornHint": {
+          "description": "The hint shown when a required part is missing; present exactly when wornRequiredParts is not empty",
+          "type": "string"
+        }
+      }
+    }
+  }
+}

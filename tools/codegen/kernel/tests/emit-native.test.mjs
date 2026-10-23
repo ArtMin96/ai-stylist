@@ -1,5 +1,5 @@
 // In-process tests for the Swift and Kotlin emitters (emit-swift.mjs, emit-kotlin.mjs) over the
-// committed shared-kernel registries: the six files of each language and their banners, then the
+// committed shared-kernel registries: the seven files of each language and their banners, then the
 // error codes, measurement definitions, starting shapes and entitlement levels. Each enum is read
 // back from both outputs into one table that must equal its registry, in registry order, so Swift
 // and Kotlin cannot drift from the JSON or from each other. No gate compiles the kernel yet, so the
@@ -21,6 +21,7 @@ const NAMES = [
   'error-codes',
   'measurement-definitions',
   'starting-shapes',
+  'capture-rules',
 ];
 const requireRegistry = createRequire(import.meta.url);
 const readRegistry = async (name) => {
@@ -28,8 +29,14 @@ const readRegistry = async (name) => {
   return [name, JSON.parse(await readFile(file, 'utf8'))];
 };
 const reg = Object.fromEntries(await Promise.all(NAMES.map(readRegistry)));
-const swift = emitSwift(reg);
-const kotlin = emitKotlin(reg);
+// The schemas type the capture-rules numbers (Int or Double), as gen-kernel.mjs passes them.
+const schemaEntries = await Promise.all(NAMES.map((name) => readRegistry(`${name}.schema`)));
+const schemas = Object.fromEntries(
+  schemaEntries.map(([name, schema]) => [name.slice(0, -7), schema]),
+);
+const inputs = { schemas };
+const swift = emitSwift(reg, inputs);
+const kotlin = emitKotlin(reg, inputs);
 
 /** The top-level declaration that starts with `head`, through its closing brace. */
 function block(text, head) {
@@ -120,14 +127,16 @@ const STEMS = [
   'ErrorCodes',
   'MeasurementDefinitions',
   'StartingShapes',
+  'CaptureRules',
 ];
 const NEW_SOURCES = {
   ErrorCodes: 'error-codes',
   MeasurementDefinitions: 'measurement-definitions',
   StartingShapes: 'starting-shapes',
+  CaptureRules: 'capture-rules',
 };
 
-test('six files per language, banners naming the source, no mutable state, deterministic', () => {
+test('seven files per language, banners naming the source, no mutable state, deterministic', () => {
   assert.deepEqual(
     Object.keys(swift),
     STEMS.map((s) => `${s}.swift`),
@@ -147,8 +156,8 @@ test('six files per language, banners naming the source, no mutable state, deter
     assert.ok(text.endsWith('}\n'), 'ends with one newline');
   }
   for (const text of Object.values(swift)) assert.doesNotMatch(text, /\bvar \w+ =|static var/);
-  assert.deepEqual(emitSwift(reg), swift);
-  assert.deepEqual(emitKotlin(reg), kotlin);
+  assert.deepEqual(emitSwift(reg, inputs), swift);
+  assert.deepEqual(emitKotlin(reg, inputs), kotlin);
 });
 
 test('error codes: each wire code with its Int status, title and description', () => {
@@ -234,11 +243,33 @@ test('two registry values that map to one identifier fail the run instead of emi
   const clash = structuredClone(reg);
   clash.entitlements.entitlements['recs.context_full'] = { kind: 'boolean', description: 'x' };
   assert.throws(
-    () => emitSwift(clash),
+    () => emitSwift(clash, inputs),
     /EntitlementName: 'recs\.context_full' maps to the identifier 'recsContextFull'/,
   );
   assert.throws(
-    () => emitKotlin(clash),
+    () => emitKotlin(clash, inputs),
     /EntitlementName: 'recs\.context_full' maps to the identifier 'RECS_CONTEXT_FULL'/,
   );
+});
+
+test('capture rules: a number is Int exactly when the schema types it integer, whatever its name', () => {
+  const rules = structuredClone(reg['capture-rules']);
+  rules.outline = { ...rules.outline, epsilonPx: 0.5, cropGrowDivisor: 8 };
+  const typed = structuredClone(schemas);
+  const outline = typed['capture-rules'].properties.outline.properties;
+  outline.epsilonPx = { type: 'number' };
+  outline.cropGrowDivisor = { $ref: '#/$defs/positiveInt' };
+  const out = { schemas: typed };
+  const s = emitSwift({ ...reg, 'capture-rules': rules }, out)['CaptureRules.swift'];
+  const k = emitKotlin({ ...reg, 'capture-rules': rules }, out)['CaptureRules.kt'];
+  assert.match(s, /\n {4}public static let epsilonPx: Double = 0\.5\n/);
+  assert.match(s, /\n {4}public static let cropGrowDivisor: Int = 8\n/);
+  assert.match(k, /\n {8}const val EPSILON_PX: Double = 0\.5\n/);
+  assert.match(k, /\n {8}const val CROP_GROW_DIVISOR: Int = 8\n/);
+  // A whole number the schema types `number` stays a Double (steady.minSharpness).
+  assert.match(
+    swift['CaptureRules.swift'],
+    /\n {4}public static let minSharpness: Double = 12\.0\n/,
+  );
+  assert.match(kotlin['CaptureRules.kt'], /\n {8}const val MIN_SHARPNESS: Double = 12\.0\n/);
 });

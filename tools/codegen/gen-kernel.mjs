@@ -10,6 +10,10 @@
 //   (+ *.schema.json; TS imports them as JSON, so the ts run validates them and writes nothing)
 //     swift   -> <out>/{ErrorCodes,MeasurementDefinitions,StartingShapes}.swift (same target)
 //     kotlin  -> <out>/{ErrorCodes,MeasurementDefinitions,StartingShapes}.kt    (same package)
+//   packages/shared-kernel/registry/capture-rules.json  (+ capture-rules.schema.json; only the
+//   native apps read it, so the ts run validates it and writes nothing)
+//     swift   -> <out>/CaptureRules.swift (same target)
+//     kotlin  -> <out>/CaptureRules.kt    (same package)
 //   packages/shared-kernel/registry/{forbidden-log-keys,forbidden-log-keys.examples,log-redaction,
 //   correlation}.json  (+ the `correlationId` rule of packages/contracts/events/envelope.json)
 //     python  -> <out>/{__init__,forbidden_log_keys,log_redaction,correlation}.py
@@ -18,7 +22,7 @@
 // Usage: node tools/codegen/gen-kernel.mjs <ts|swift|kotlin|python> <out-dir>
 // Called by generate.sh (ts), gen-swift.sh (swift), gen-kotlin.sh (kotlin) and gen-python.sh
 // (python); not run by hand.
-// Every run validates each registry of its list (all six above for ts, swift and kotlin, so an
+// Every run validates each registry of its list (all seven above for ts, swift and kotlin, so an
 // invalid client-facing registry fails the ts run even where the native lanes are skipped) against
 // its JSON Schema (Ajv, draft 2020-12, with ajv-formats, resolved from the packages/contracts
 // devDependencies) plus the cross-references a schema cannot express (and, for python, that the
@@ -43,7 +47,7 @@ const requireRegistry = createRequire(import.meta.url);
 const registryFile = (file) =>
   requireRegistry.resolve(`@ai-stylist/shared-kernel/registry/${file}`);
 // Every registry a native app reads (.claude/rules/contracts.md invariant 6). emitTs writes only
-// the first three; TS imports the other three as JSON.
+// the first three; TS imports the next three as JSON and does not read capture-rules.
 const NATIVE_REGISTRIES = [
   'reason-codes',
   'entitlements',
@@ -51,6 +55,7 @@ const NATIVE_REGISTRIES = [
   'error-codes',
   'measurement-definitions',
   'starting-shapes',
+  'capture-rules',
 ];
 const WORKER_REGISTRIES = [
   'forbidden-log-keys',
@@ -76,8 +81,8 @@ const ajv = await createAjv();
 const [emit, REGISTRIES] = EMITTERS[lang];
 const ENVELOPE = 'packages/contracts/events/envelope.json';
 
-/** Schema validation per file; returns the parsed registries keyed by name. */
-async function loadRegistries(errors) {
+/** Schema validation per file; fills `schemas` and returns the parsed registries keyed by name. */
+async function loadRegistries(errors, schemas) {
   const reg = {};
   for (const name of REGISTRIES) {
     const rel = `packages/shared-kernel/registry/${name}.json`;
@@ -90,6 +95,7 @@ async function loadRegistries(errors) {
       errors.push(`${rel}: ${err.message}`);
       continue;
     }
+    schemas[name] = schema;
     const validate = ajv.compile(schema);
     if (validate(data)) {
       reg[name] = data;
@@ -141,7 +147,7 @@ async function loadCorrelationIdRule(errors) {
 
 /**
  * Cross-references JSON Schema cannot express (declared namespace/stage/kind/canonical unit, each
- * measurement's dimension and bounds, the default starting shape).
+ * measurement's dimension and bounds, the default starting shape, the capture-rules references).
  */
 function checkReferences(reg, errors) {
   const rc = reg['reason-codes'];
@@ -196,6 +202,8 @@ function checkReferences(reg, errors) {
   if (shapes && !Object.hasOwn(shapes.shapes, shapes.default)) {
     errors.push(`starting-shapes.json: default '${shapes.default}' is not a declared shape`);
   }
+  const cr = reg['capture-rules'];
+  if (cr) checkCaptureRules(cr, errors);
   const lr = reg['log-redaction'];
   if (lr) {
     // Emitted verbatim for Python's `re.ASCII`; the shared-kernel tests run every vector in TS.
@@ -207,14 +215,53 @@ function checkReferences(reg, errors) {
   }
 }
 
+/** capture-rules: declared modes, body parts, hints and lock reasons. */
+function checkCaptureRules(cr, errors) {
+  const where = 'capture-rules.json';
+  for (const [key, hint] of Object.entries(cr.hints)) {
+    if (hint.lockReason === undefined) continue;
+    if (!cr.lockReasons.includes(hint.lockReason)) {
+      errors.push(`${where}: hints.${key}: lockReason '${hint.lockReason}' is not declared`);
+    }
+    if (hint.kind !== 'blocking') {
+      errors.push(`${where}: hints.${key}: only a blocking hint has a lockReason`);
+    }
+  }
+  for (const reason of cr.lockReasons) {
+    if (!Object.values(cr.hints).some((h) => h.lockReason === reason)) {
+      errors.push(`${where}: lockReasons: '${reason}' has no hint`);
+    }
+  }
+  for (const [id, fam] of Object.entries(cr.families)) {
+    const at = `${where}: families.${id}`;
+    for (const m of fam.modes) {
+      if (!cr.captureModes.includes(m)) errors.push(`${at}: mode '${m}' is not declared`);
+    }
+    for (const p of fam.wornRequiredParts) {
+      if (!cr.bodyParts.includes(p)) errors.push(`${at}: body part '${p}' is not declared`);
+    }
+    const needsBodyCheck = fam.wornRequiredParts.length > 0;
+    if (needsBodyCheck && !fam.modes.includes('worn')) {
+      errors.push(`${at}: wornRequiredParts without the worn mode`);
+    }
+    if ((fam.wornHint !== undefined) !== needsBodyCheck) {
+      errors.push(`${at}: wornHint is required exactly when wornRequiredParts is not empty`);
+    }
+    if (fam.wornHint !== undefined && cr.hints[fam.wornHint]?.lockReason !== 'body-parts-missing') {
+      errors.push(`${at}: wornHint '${fam.wornHint}' is not a body-parts-missing hint`);
+    }
+  }
+}
+
 const errors = [];
-const reg = await loadRegistries(errors);
+const schemas = {};
+const reg = await loadRegistries(errors, schemas);
 checkReferences(reg, errors);
 const contracts = lang === 'python' ? { correlationId: await loadCorrelationIdRule(errors) } : {};
 let files = {};
 if (errors.length === 0) {
   try {
-    files = emit(reg, contracts);
+    files = emit(reg, { ...contracts, schemas });
   } catch (err) {
     errors.push(err.message);
   }

@@ -1,0 +1,82 @@
+[
+  {
+    "query": "the android capture camera's pose check never finds ankles on my pixel, can you look at how MlKitPoseDetector maps the landmarks",
+    "should_trigger": true
+  },
+  {
+    "query": "bump com.google.mlkit:object-detection to the latest and check nothing new from play services sneaks into the lockfile",
+    "should_trigger": true
+  },
+  {
+    "query": "android-check fails with 'ML Kit's usage-reporting backend (CCT) is back in the release manifest' after I added a module, what do I do",
+    "should_trigger": true
+  },
+  {
+    "query": "on android the item boxes from ML Kit are rotated wrong when the phone is in landscape, InputImage rotation issue?",
+    "should_trigger": true
+  },
+  {
+    "query": "switch the still-photo item detection to SINGLE_IMAGE_MODE, imports are using stream mode and tracking ids look weird",
+    "should_trigger": true
+  },
+  {
+    "query": "the live ML Kit sweep in capture-sim-android finds 0 objects on cut-off frames, is the detector broken or expected",
+    "should_trigger": true
+  },
+  {
+    "query": "security-scan flags okhttp 3.0.0 coming in through mlkit in the new :feature:closet-scan module",
+    "should_trigger": true
+  },
+  {
+    "query": "when ML Kit pose throws on a frame the whole analyzer crashes on android, make it fall back like the brief says",
+    "should_trigger": true
+  },
+  {
+    "query": "can we add ML Kit text recognition to read the size off care labels on android? keep it on-device",
+    "should_trigger": true
+  },
+  {
+    "query": "the LiteRT segmenter on android takes 300ms per mask, can we speed it up with a GPU delegate",
+    "should_trigger": false
+  },
+  {
+    "query": "CameraX ImageAnalysis stops delivering frames after I rotate the phone on the capture screen",
+    "should_trigger": false
+  },
+  {
+    "query": "on iOS VNDetectHumanBodyPoseRequest misses the knees in the worn check, tune it",
+    "should_trigger": false
+  },
+  {
+    "query": "add a new chip to the capture picker screen in compose for 'accessories'",
+    "should_trigger": false
+  },
+  {
+    "query": "the classification worker in workers/ml should detect garment category from the uploaded photo, wire a model in",
+    "should_trigger": false
+  },
+  {
+    "query": "change the 'Take photo anyway' delay from 10 s to 8 s on both apps",
+    "should_trigger": false
+  },
+  {
+    "query": "regenerate the capture test frames, the C5 move-closer set looks wrong",
+    "should_trigger": false
+  },
+  {
+    "query": "turn off posthog session replay in the android app, it sends too much",
+    "should_trigger": false
+  },
+  {
+    "query": "rebuild the u2netp tflite model with convert.sh --check, the sha256 test fails",
+    "should_trigger": false
+  },
+  {
+    "query": "the android capture photo is saved rotated, fix the ImageCapture target rotation",
+    "should_trigger": false
+  },
+  {
+    "query": "add firebase crashlytics to the android app so we get crash reports from the capture screen",
+    "should_trigger": false
+  }
+]

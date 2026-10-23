@@ -149,4 +149,6 @@ sources), `cross-platform-feature` (the lead's brief and parity review win), `ap
 (flows in `e2e/`, run by `test-engineer`), `release-readiness` (TestFlight is human-only),
 `performance-profiling` (device traces), `ui-prototype-first` (the UI gate in step 3, run by
 `ui-designer`, who owns `DESIGN.md` and the surface briefs and reviews the built UI before merge).
+The capture camera's tools have their own skills, loaded next to this one: `apple-vision-ios`,
+`avfoundation-camera-ios` and `capture-frames`.
 This skill owns `apps/ios/**` and `tools/codegen/gen-swift.sh`.

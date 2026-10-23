@@ -1,0 +1,18 @@
+# Subflow: as open-camera.yaml, with the harness's record-only flag (captureRecordOnly, brief §11 sweep
+# rule in real time): a capture is recorded, not shown, and the camera carries on, so a state that
+# shows only while the shutter is unlocked keeps coming back for the screenshot.
+appId: ${APP_ID}
+---
+- launchApp:
+    arguments:
+      captureFrameSet: ${SET}
+      captureRecordOnly: '1'
+# Home can be slow to draw on a busy emulator.
+- extendedWaitUntil:
+    visible:
+      id: home-open-capture
+    timeout: 15000
+- tapOn:
+    id: home-open-capture
+- tapOn:
+    id: ${TILE}

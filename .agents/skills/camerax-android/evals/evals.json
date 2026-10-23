@@ -1,0 +1,43 @@
+{
+  "skill_name": "camerax-android",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "The Android capture camera crashes on a Galaxy A12 as soon as the camera step opens. Logcat shows IllegalArgumentException 'No supported surface combination' from bindToLifecycle. Quick fix: wrap the bind in a try/catch and log it, or drop ImageCapture if that helps.",
+      "expected_output": "The agent reads CameraXObservationSource.kt and CameraBinding.kt, finds that bindOrUnavailable (commit 0c7af58) already maps IllegalArgumentException and IllegalStateException from bindToLifecycle to CameraUnavailableReason.NO_CAMERA, so the step shows the no-camera screen with import, with CameraBindingTest covering it. It does not add a second try/catch, does not remove a use case, and reports that the real A12 behaviour is device-only (C28) and Not run unless it ran it. If it finds a new failure type, it adds a CameraBindingTest case first and pastes the failing run.",
+      "files": [],
+      "assertions": [
+        "No second try/catch around bindToLifecycle is added; any new failure handling goes through bindOrUnavailable in CameraBinding.kt",
+        "The bind in CameraXObservationSource.kt still binds Preview, ImageAnalysis and ImageCapture together (no use case removed)",
+        "The report names bindOrUnavailable or CameraBindingTest and says the failure ends in the no-camera screen (CameraFeedEvent.Unavailable / NO_CAMERA)",
+        "The report marks the Galaxy A12 result as device-only and Not run unless the transcript shows a run on that phone",
+        "If production code changed, a CameraBindingTest failing run is pasted before the fix and `just test android` passes after"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "Users say the Android capture screen sometimes freezes on 'Keep still' after a phone call while the preview is stuck. Make CameraXObservationSource re-send the last frame every 500 ms when no new frame arrives, so the screen keeps updating.",
+      "expected_output": "The agent declines to emit repeated or synthetic frames: the stale-feed rule (commit 371ab42, brief §4) already sends a locked or unlocked shutter back to warming up when no detector result arrives for CaptureRules.Evaluation.STALE_FEED_AFTER_MS, and fake frames would defeat it. It looks for why the analyzer stopped (background/foreground handling in CaptureViewModel and CaptureRoute, the camera's own lifecycle owner, the feed's finally/unbind), reproduces with a CaptureCameraSessionTest if it is a domain bug, and says that changing the 2000 ms value is an api-contract-change on capture-rules.json affecting iOS too.",
+      "files": [],
+      "assertions": [
+        "No code that re-emits a stored or repeated CameraFeedEvent.Frame on a timer is added to CameraXObservationSource.kt",
+        "The report cites the stale-feed rule by name (staleFeedAfterMs, STALE_FEED_AFTER_MS, onFeedStalled or warming up after a stall)",
+        "No new numeric timeout literal is added to Kotlin under apps/android; any timing change is routed to capture-rules.json / api-contract-change",
+        "Any bug fix comes with a failing test run pasted before the fix (CaptureCameraSessionTest or a camera-package test) and `just test android` after"
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "Add tap-to-focus to the Android capture viewfinder: when the user taps the preview, call cameraControl.startFocusAndMetering at that point. Keep it small.",
+      "expected_output": "The agent adds the capability to the CaptureCameraView port (not a CameraX call from a screen), implements it in CameraXObservationSource as a no-op when no camera is bound, and updates HarnessCamera to forward it to the real camera or ignore it while a frame set plays, so the debug build still compiles and test frames still work. CameraX types stay in the camera package. If the change shows anything new on screen (a focus ring), it stops for ui-prototype-first. It runs just test android and just android-check (which includes the harness check) and reports real-device focus behaviour as Not run unless it ran it.",
+      "files": [],
+      "assertions": [
+        "The new member is declared on CaptureCameraView (or CaptureObservationSource), and HarnessCamera.kt implements it",
+        "No androidx.camera import appears in the domain package or in a ui/ Compose screen file",
+        "The CameraXObservationSource implementation returns without error when no camera is bound (camera reference null)",
+        "No visible focus indicator is drawn unless the report cites an approved surface brief or ui-prototype-first",
+        "The report shows `just android-check` output, or says it was not run, and marks real-device focus as Not run unless run"
+      ]
+    }
+  ]
+}

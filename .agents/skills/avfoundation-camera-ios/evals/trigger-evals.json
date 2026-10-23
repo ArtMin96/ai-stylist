@@ -1,0 +1,82 @@
+[
+  {
+    "query": "the ios capture app crashes with an objc exception when I tap the shutter right after coming back from the background, takePhoto on a dead session?",
+    "should_trigger": true
+  },
+  {
+    "query": "LiveCaptureCamera calls startRunning — is that blocking the main thread? the camera screen hitches when it opens",
+    "should_trigger": true
+  },
+  {
+    "query": "on iphone the preview is rotated 90 degrees from the guide outline after I changed the video connection, fix the rotation",
+    "should_trigger": true
+  },
+  {
+    "query": "add a front camera switch to the ios capture camera, AVCaptureDevice position front",
+    "should_trigger": true
+  },
+  {
+    "query": "the permission screen doesn't show on iOS when camera access is restricted by screen time, check how start(for:) handles authorizationStatus",
+    "should_trigger": true
+  },
+  {
+    "query": "tilt reads wrong on iOS when the phone is flat above the shirt, look at the CMMotionManager gravity math",
+    "should_trigger": true
+  },
+  {
+    "query": "with voiceover on the iphone both the synthesizer and the announcement read the hint, make it just one",
+    "should_trigger": true
+  },
+  {
+    "query": "change the camera usage text in Info.plist to mention batch mode",
+    "should_trigger": true
+  },
+  {
+    "query": "CaptureFrameSetCamera needs to support the torch so the dim-room set can toggle it in the harness",
+    "should_trigger": true
+  },
+  {
+    "query": "the iOS photo import picks the image but it's sideways, PhotosPicker loadTransferable orientation",
+    "should_trigger": true
+  },
+  {
+    "query": "VNGenerateForegroundInstanceMaskRequest gives two instances for one shirt on iOS, tune the mask",
+    "should_trigger": false
+  },
+  {
+    "query": "CameraX ImageCapture on android returns a black photo on the pixel 6",
+    "should_trigger": false
+  },
+  {
+    "query": "make the shutter button ring thicker and the hint card more rounded on the iOS camera screen",
+    "should_trigger": false
+  },
+  {
+    "query": "add a settings screen on iOS with a toggle for the underwear worn photos",
+    "should_trigger": false
+  },
+  {
+    "query": "regenerate the capture frame sets and rerun the iOS sweep, the shoes sets are missing",
+    "should_trigger": false
+  },
+  {
+    "query": "write a maestro flow for the capture batch mode that taps next item ten times",
+    "should_trigger": false
+  },
+  {
+    "query": "raise the stale feed timeout from 2 s to 3 s in the capture rules for both apps",
+    "should_trigger": false
+  },
+  {
+    "query": "the home screen view model in HomeModel should show the API version error state",
+    "should_trigger": false
+  },
+  {
+    "query": "ML Kit pose on android misses the ankles in worn mode",
+    "should_trigger": false
+  },
+  {
+    "query": "the android capture camera stops delivering frames after rotation, ImageAnalysis backpressure",
+    "should_trigger": false
+  }
+]

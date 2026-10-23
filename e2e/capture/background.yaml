@@ -1,0 +1,22 @@
+# Background and back (capture brief §4, §5, C24): leaving the app stops the camera; on return it
+# restarts warming up and the anyway timer restarts, so "Take photo anyway" is hidden again.
+# Simulator/emulator-safe.
+appId: ${APP_ID}
+---
+- runFlow:
+    file: subflows/open-camera.yaml
+    env: { SET: top-flat-01-cut-top, TILE: cap-picker-family-top }
+- extendedWaitUntil:
+    visible:
+      id: cap-anyway-button
+    timeout: 25000
+- pressKey: home
+- launchApp:
+    stopApp: false
+- assertVisible:
+    id: cap-screen-camera
+- assertNotVisible:
+    id: cap-anyway-button
+- assertVisible:
+    id: cap-hint-cut-off-top
+- takeScreenshot: 01-back-from-background

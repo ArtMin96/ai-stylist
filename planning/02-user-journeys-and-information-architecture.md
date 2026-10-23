@@ -255,16 +255,16 @@ flowchart TD
 
 Target: photo → confirmed catalog entry in under ~30 seconds of user attention (measured target owned by [13-testing-quality-and-performance.md](13-testing-quality-and-performance.md)).
 
-1. **Capture screen:** live camera with framing guide, background hint ("plain background works best"), flat-lay or hanging both supported. Front photo is the only required input.
-2. **Optional extra views:** back, side, detail, label, material — offered as one-tap chips after the front shot, all skippable.
-3. **Instant local feedback:** on-device background removal preview + quality check (blur, lighting, garment fully in frame). Failures → specific retake guidance; user may **keep anyway** (override).
-4. **Auto-classification:** category + attributes proposed with confidence; user confirms or corrects in a single compact review card (category, color, season chips). Correction here is the primary taxonomy-quality input — see [08-closet-taxonomy-and-organization.md](08-closet-taxonomy-and-organization.md).
+1. **Capture screen:** the user first picks a category (single capture only; "Not sure" keeps the generic guide). Live camera with one guide per shape family (top, long bottom, short bottom and skirt, one-piece, outerwear, shoes, bag, small item), background hint ("plain background works best"), and a mode switch: flat-lay, hanger, worn. Worn mode turns the edge rule off and instead locks the shutter until the body parts the garment needs are in frame (for example both shoulders and both hips for a top), checked on device by the platform's body-pose model. Underwear and swimwear get worn mode only after a one-time opt-in, off by default. Front photo is the only required input.
+2. **Optional extra views:** after the front shot the app asks once "Is the back different?" (default "Same"); "Different" reopens the camera with the back guide, skippable. Side, detail, label, material — offered as one-tap chips after the front shot, all skippable.
+3. **Live checks, then local feedback:** before the shot, live on-device checks lock the shutter until an item is found, fully in frame (in worn mode: the needed body parts in frame), big enough and held steady; light and tilt are hints only; the category never locks (DEC pending, Q14/Q15). The camera takes the photo itself once steady; "Take photo anyway" appears after 10 s, and at once with a screen reader. After the shot: on-device background removal preview + the same checks on the full photo; failures → specific retake guidance; user may **keep anyway** (override).
+4. **Auto-classification:** the category the user picked before the shot is the draft category; with "Not sure", the category is proposed with confidence as before. Attributes are proposed with confidence; the server check may only ask "Is this a <category>?" and the user's answer wins. The user confirms or corrects in a single compact review card (category, color, season chips). Correction here is the primary taxonomy-quality input — see [08-closet-taxonomy-and-organization.md](08-closet-taxonomy-and-organization.md).
 5. **Save:** item appears in the closet immediately in a `processing` visual state while server-side derivation (full segmentation, attribute extraction, dedup) completes in the background.
 
 ### 6.2 Batch capture
 
-- Rapid-fire mode: shoot many items consecutively; review happens afterward as a swipeable stack of confirmation cards.
-- Import from photo library with multi-select; each import runs the same quality checks.
+- Rapid-fire mode: shoot many items consecutively with the generic guide and the same live checks, no category tap per item; review happens afterward as a swipeable stack of confirmation cards.
+- Import from photo library with multi-select; each import runs the same quality checks after import, as tips with "keep anyway" (imports are never refused; the library is the way out for anyone the live camera locks).
 - Batch review supports "accept all high-confidence, review the rest".
 - A batch is resumable: leaving mid-review keeps the remaining stack under **Capture → Pending review**.
 
@@ -504,7 +504,7 @@ Target: photo → confirmed catalog entry in under ~30 seconds of user attention
 | **Onboarding** | Each step fully operable by screen reader; consent text real text (not images); measurement inputs support switch access and keyboard; unit labels announced with values |
 | **Selfie capture** | Spoken capture guidance ("move phone up", "good lighting") mirrored as captions; volume-button shutter; upload-from-library as full alternative to live camera |
 | **Avatar studio / any 3D view** | See §13.3 non-3D alternative; camera controls have button equivalents (rotate left/right, zoom in/out) — never gesture-only; pose switch announced |
-| **Capture** | Voice-over capture flow with audible framing feedback; batch review cards navigable sequentially; quality warnings announced |
+| **Capture** | Voice-over capture flow with audible framing feedback, one instruction at a time; a manual shutter ("Take photo anyway") is reachable from the start with VoiceOver/TalkBack; no capture timeout; photo-library import always one tap away; batch review cards navigable sequentially; quality warnings announced |
 | **Closet** | Grid navigable by screen reader with item summaries (name, category, color, availability); filters operable without drag; color-view augmented with color names |
 | **Today / outfit detail** | Reason chips readable in sequence; the complete outfit announced as a structured list (item by item); feedback actions reachable without gesture shortcuts; "show me something different" a plain labeled button |
 | **Try-on images (G2)** | Alt text generated from structured outfit data; provenance marker announced ("AI-generated preview") |

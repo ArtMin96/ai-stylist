@@ -7,6 +7,10 @@ skills:
   - android-feature
   - code-quality
   - ui-prototype-first
+  - mlkit-android
+  - camerax-android
+  - litert-android
+  - capture-frames
 color: green
 hooks:
   PreToolUse:

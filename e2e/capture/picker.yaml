@@ -1,0 +1,55 @@
+# C17 and the entry (capture brief §2, Q-F): Home "Add item" (Dev) opens the category picker with every
+# family tile, batch and import; "Not sure" opens the generic guide. Simulator/emulator-safe: the
+# camera plays a frame set through the Dev harness. Run by `just capture-sim` (light and dark).
+appId: ${APP_ID}
+---
+- launchApp:
+    arguments:
+      captureFrameSet: generic-flat-01-too-small
+- assertVisible:
+    id: home-open-capture
+- takeScreenshot: 01-home
+# Home can be slow to draw on a busy emulator.
+- extendedWaitUntil:
+    visible:
+      id: home-open-capture
+    timeout: 15000
+- tapOn:
+    id: home-open-capture
+- assertVisible:
+    id: cap-screen-picker
+- assertVisible:
+    id: cap-picker-close
+- assertVisible:
+    id: cap-picker-family-top
+- assertVisible:
+    id: cap-picker-family-long-bottom
+- assertVisible:
+    id: cap-picker-family-short-bottom
+- assertVisible:
+    id: cap-picker-family-one-piece
+- assertVisible:
+    id: cap-picker-family-outerwear
+- assertVisible:
+    id: cap-picker-family-shoes
+- takeScreenshot: 02-picker
+- scrollUntilVisible:
+    element:
+      id: cap-picker-import
+    centerElement: true
+- assertVisible:
+    id: cap-picker-family-bag
+- assertVisible:
+    id: cap-picker-family-small-item
+- assertVisible:
+    id: cap-picker-family-underwear
+- assertVisible:
+    id: cap-picker-not-sure
+- assertVisible:
+    id: cap-picker-batch
+- takeScreenshot: 03-picker-bottom
+- tapOn:
+    id: cap-picker-not-sure
+- assertVisible:
+    id: cap-guide-generic-flat
+- takeScreenshot: 04-not-sure-generic-guide

@@ -151,6 +151,14 @@ fun LockState.onModeChanged(): LockState =
 /** "Next item" (batch) ends the cooldown at once. */
 fun LockState.onNextItem(): LockState = if (this is LockState.Cooldown) LockState.Locked(hint = null) else this
 
+/**
+ * No detector result for `evaluation.staleFeedAfterMs` (an interruption, a stalled detector): back to
+ * warming up with every counter reset, so a frozen preview never keeps the shutter unlocked or
+ * counting. Capturing, cooldown and idle are unaffected. Mirrors iOS `ShutterLock.feedStalled`.
+ */
+fun LockState.onFeedStalled(): LockState =
+    if (this is LockState.Locked || this is LockState.Unlocked) LockState.WarmingUp else this
+
 private fun startCapture(
     trigger: CaptureTrigger,
     itemBox: NormalizedRect?,

@@ -143,6 +143,45 @@ class CaptureCameraSessionTest {
     }
 
     @Test
+    fun `a stalled feed sends an unlocked shutter back to warming up and returning frames unlock it again`() {
+        val harness = Harness().apply { ready() }
+        harness.playUntil(unlockMs)
+        assertEquals(ShutterState.UNLOCKED, harness.snapshot.shutter)
+        val staleMs = CaptureRules.Evaluation.STALE_FEED_AFTER_MS.toLong()
+
+        harness.tickAt(unlockMs + staleMs - 1)
+        assertEquals("a shorter gap changes nothing", ShutterState.UNLOCKED, harness.snapshot.shutter)
+
+        harness.tickAt(unlockMs + staleMs)
+        assertEquals(LockPhase.WARMING_UP, harness.snapshot.phase)
+        assertEquals(CaptureHint.WARMING_UP, harness.snapshot.hint)
+        assertEquals(0.0, harness.snapshot.ringProgress, 0.0)
+        assertNull(harness.snapshot.outline)
+        assertFalse(harness.snapshot.isHardwareShutterEnabled)
+        assertNull(harness.timeOf(CaptureEffect.RequestCapture(CaptureTrigger.AUTO)))
+
+        // As after camera ready: the first frame back has no previous box, then the unlock count.
+        val back = harness.clock.now
+        harness.playUntil(back + (1 + CaptureRules.Lock.UNLOCK_AFTER_PASSING_EVALUATIONS) * EVALUATION_MS)
+        assertEquals(ShutterState.UNLOCKED, harness.snapshot.shutter)
+    }
+
+    @Test
+    fun `a stalled feed keeps the anyway timer running and drops the reason until the next blocking hint`() {
+        val harness = Harness().apply { ready() }
+        harness.playUntil(5 * EVALUATION_MS) { frame(it, box = null) }
+
+        harness.tickAt(anywayMs)
+        assertEquals(LockPhase.WARMING_UP, harness.snapshot.phase)
+        assertTrue(harness.snapshot.isAnywayVisible)
+        assertNull("nothing is judged while warming up", harness.snapshot.anywayReason)
+
+        harness.playUntil(anywayMs + EVALUATION_MS) { frame(it, box = null) }
+        assertEquals(LockPhase.LOCKED, harness.snapshot.phase)
+        assertEquals(AnywayReason.NoItemSurfaceTip, harness.snapshot.anywayReason)
+    }
+
+    @Test
     fun `anyway captures with the anyway trigger`() {
         val harness = Harness().apply { ready() }
         harness.playUntil(anywayMs) { frame(it, box = null) }

@@ -76,7 +76,7 @@
     }
   },
   "edgeBandShare": 0.02,
-  "evaluation": { "intervalMs": 100 },
+  "evaluation": { "intervalMs": 100, "staleFeedAfterMs": 2000 },
   "analysisFrame": { "widthPx": 640, "heightPx": 480 },
   "steady": {
     "maxCentreShift": 0.02,

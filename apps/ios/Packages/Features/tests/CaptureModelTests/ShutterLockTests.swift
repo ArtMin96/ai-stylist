@@ -76,6 +76,37 @@ struct ShutterLockUnlockTests {
     #expect(driver.lock.state == .locked(.noItem))
   }
 
+  @Test("a stalled feed: locked or unlocked go back to warming up; capturing, cooldown and idle stay")
+  func feedStalled() {
+    var locked = LockDriver()
+    locked.feed(fail())
+    let lockedChanged = locked.lock.feedStalled()
+    #expect(lockedChanged)
+    #expect(locked.lock.state == .warmingUp)
+    let againChanged = locked.lock.feedStalled()
+    #expect(!againChanged, "already warming up")
+
+    var unlocked = LockDriver()
+    unlocked.unlock()
+    let unlockedChanged = unlocked.lock.feedStalled()
+    #expect(unlockedChanged)
+    #expect(unlocked.lock.state == .warmingUp)
+    #expect(unlocked.lock.ringProgress == 0)
+
+    var capturing = LockDriver()
+    capturing.unlock()
+    let began = capturing.lock.beginCapture()
+    #expect(began)
+    let capturingChanged = capturing.lock.feedStalled()
+    #expect(!capturingChanged)
+    #expect(capturing.lock.state == .capturing)
+
+    var idle = ShutterLock()
+    let idleChanged = idle.feedStalled()
+    #expect(!idleChanged)
+    #expect(idle.state == .idle)
+  }
+
   @Test("unlocks after exactly the brief's number of passing evaluations, not one fewer")
   func unlockAfterPassingStreak() {
     var driver = LockDriver()

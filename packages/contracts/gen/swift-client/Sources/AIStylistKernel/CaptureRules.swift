@@ -194,6 +194,7 @@ public enum CaptureRules {
 
   public enum Evaluation {
     public static let intervalMs: Int = 100
+    public static let staleFeedAfterMs: Int = 2000
   }
 
   public enum AnalysisFrame {

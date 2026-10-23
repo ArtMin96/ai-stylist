@@ -73,6 +73,9 @@ class CaptureCameraSession(
     private var previous: CaptureObservation? = null
     private var lastReport: CheckReport? = null
     private var lastEvaluationAtMs: Long? = null
+
+    /** When the camera last delivered a detector result; the stale-feed check reads it. */
+    private var lastObservationAtMs: Long? = null
     private var outline = OutlineTracker()
     private var lastOutlineMaskMs: Long? = null
 
@@ -104,13 +107,18 @@ class CaptureCameraSession(
     fun submit(observation: CaptureObservation): List<CaptureEffect> =
         step { now ->
             latest = observation
+            lastObservationAtMs = now
             // While capturing or cooling down no outline shows, and none is kept for the next item.
             if (lock.showsOutline) observation.mask?.let(::trackOutline) else outline = OutlineTracker()
             evaluateIfDue(now)
         }
 
-    /** The ViewModel's clock tick: due evaluations, the anyway delay, the guide time and waiting speech. */
-    fun tick(): List<CaptureEffect> = step { now -> evaluateIfDue(now) }
+    /** The ViewModel's clock tick: due evaluations, a stalled feed, the anyway delay, the guide time and waiting speech. */
+    fun tick(): List<CaptureEffect> =
+        step { now ->
+            checkFeedStalled(now)
+            evaluateIfDue(now)
+        }
 
     /** The on-screen shutter. */
     fun shutterTapped(): List<CaptureEffect> = shutter(CaptureTrigger.MANUAL)
@@ -145,6 +153,7 @@ class CaptureCameraSession(
         hints = HintPresenter()
         speech = speech.cleared()
         latest = null
+        lastObservationAtMs = null
         outline = OutlineTracker()
         lastOutlineMaskMs = null
     }
@@ -205,6 +214,25 @@ class CaptureCameraSession(
         return effects + speak(shownBefore, now)
     }
 
+    /**
+     * No detector result for a while (an interruption, a stalled detector): warming up again, so the
+     * screen never says "Keep still…" over a frozen preview. The anyway timer keeps running.
+     */
+    private fun checkFeedStalled(nowMs: Long) {
+        val last = lastObservationAtMs ?: return
+        if (nowMs - last < CaptureRules.Evaluation.STALE_FEED_AFTER_MS) return
+        val stalled = lock.onFeedStalled()
+        if (stalled == lock) return
+        lock = stalled
+        latest = null
+        previous = null
+        lastReport = null
+        lastEvaluationAtMs = null
+        outline = OutlineTracker()
+        lastOutlineMaskMs = null
+        hints = hints.showNow(CaptureHint.WARMING_UP, nowMs)
+    }
+
     /** The outline follows each new mask once; a reused mask changes nothing (brief §17 step 10). */
     private fun trackOutline(mask: MaskObservation) {
         if (mask.timestampMs == lastOutlineMaskMs) return
@@ -221,6 +249,7 @@ class CaptureCameraSession(
         previous = null
         lastReport = null
         lastEvaluationAtMs = null
+        lastObservationAtMs = null
         outline = OutlineTracker()
         lastOutlineMaskMs = null
     }

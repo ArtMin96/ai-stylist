@@ -65,10 +65,14 @@
     "evaluation": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["intervalMs"],
+      "required": ["intervalMs", "staleFeedAfterMs"],
       "properties": {
         "intervalMs": {
           "description": "The lock machine reads the latest detector result at most once per this interval (10 Hz)",
+          "$ref": "#/$defs/positiveInt"
+        },
+        "staleFeedAfterMs": {
+          "description": "No detector result for this long (an interruption, a stalled detector) sends a locked or unlocked shutter back to warming up; the anyway timer keeps running (brief §4)",
           "$ref": "#/$defs/positiveInt"
         }
       }

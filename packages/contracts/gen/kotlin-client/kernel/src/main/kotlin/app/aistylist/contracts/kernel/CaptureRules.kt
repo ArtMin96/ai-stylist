@@ -112,6 +112,7 @@ object CaptureRules {
 
     object Evaluation {
         const val INTERVAL_MS: Int = 100
+        const val STALE_FEED_AFTER_MS: Int = 2000
     }
 
     object AnalysisFrame {

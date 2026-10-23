@@ -152,6 +152,21 @@ nonisolated public struct ShutterLock: Sendable {
     }
   }
 
+  /// The camera delivered no detector result for `CaptureRules.Evaluation.staleFeedAfterMs` (an
+  /// interruption, a stalled detector): back to warming up with every counter reset, so a frozen preview
+  /// never keeps the shutter unlocked or counting. Capturing, cooldown and idle are unaffected. True when
+  /// the state changed.
+  public mutating func feedStalled() -> Bool {
+    switch state {
+    case .locked, .unlocked:
+      resetCounters()
+      state = .warmingUp
+      return true
+    case .idle, .warmingUp, .capturing, .cooldown:
+      return false
+    }
+  }
+
   // MARK: - Transitions
 
   private mutating func evaluateLocked(

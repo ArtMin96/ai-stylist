@@ -161,6 +161,40 @@ struct CaptureSessionUnlockTests {
     #expect(driver.isUnlocked)
     #expect(driver.output.hint == .tooDark)
   }
+
+  @Test("a stalled feed sends an unlocked shutter back to warming up; frames that return unlock it again")
+  func stalledFeed() {
+    var driver = SessionDriver()
+    driver.unlock()
+    #expect(driver.isUnlocked)
+    let lastFrameMs = driver.now - stepMs
+    let staleMs = CaptureRules.Evaluation.staleFeedAfterMs
+    driver.tick(atMs: lastFrameMs + staleMs - 1)
+    #expect(driver.isUnlocked, "a shorter gap changes nothing")
+    driver.tick(atMs: lastFrameMs + staleMs)
+    #expect(driver.output.shutter == .warmingUp)
+    #expect(driver.output.hint == .warmingUp)
+    #expect(driver.output.ringProgress == 0)
+    #expect(driver.output.outline == nil)
+    #expect(!driver.output.isHardwareShutterEnabled)
+    #expect(driver.captures.isEmpty)
+    // As after camera ready: the first frame back has no previous box, then the unlock count.
+    driver.unlock()
+    #expect(driver.isUnlocked)
+  }
+
+  @Test("a stalled feed keeps the anyway timer running")
+  func stalledFeedKeepsAnyway() {
+    var driver = SessionDriver()
+    driver.feed(empty, times: 5)
+    driver.tick(atMs: anywayMs)
+    #expect(driver.output.shutter == .warmingUp)
+    #expect(driver.output.isAnywayVisible)
+    #expect(driver.output.anywayReason == nil, "nothing is judged while warming up")
+    driver.feed(empty)
+    #expect(driver.output.shutter == .locked(.noItem))
+    #expect(driver.output.anywayReason == .surfaceTip)
+  }
 }
 
 @Suite("Camera session: hints")

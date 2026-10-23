@@ -91,6 +91,8 @@ nonisolated public struct CaptureCameraSession: Sendable {
   private var speech: SpeechGate
   private var readyAtMs: Int?
   private var lastEvaluationAtMs: Int?
+  /// When the camera last delivered a detector result (evaluated or dropped); the stale-feed check reads it.
+  private var lastObservationAtMs: Int?
   private var lastBlockingHint: CaptureHint?
   private var lastItemBox: NormalizedRect?
   private var capturedBox: NormalizedRect?
@@ -137,6 +139,7 @@ nonisolated public struct CaptureCameraSession: Sendable {
     hints.clear()
     readyAtMs = now
     lastEvaluationAtMs = nil
+    lastObservationAtMs = nil
     lastBlockingHint = nil
     lastItemBox = nil
     capturedBox = nil
@@ -160,6 +163,7 @@ nonisolated public struct CaptureCameraSession: Sendable {
     hints.clear()
     readyAtMs = nil
     lastEvaluationAtMs = nil
+    lastObservationAtMs = nil
     captureTrigger = nil
   }
 
@@ -172,6 +176,7 @@ nonisolated public struct CaptureCameraSession: Sendable {
     case .warmingUp, .locked, .unlocked, .cooldown:
       break
     }
+    lastObservationAtMs = now
     // The outline follows every new mask, also one that arrives between evaluations.
     if let outlines = observation.outlines {
       liveOutline.observe(outlines)
@@ -183,12 +188,25 @@ nonisolated public struct CaptureCameraSession: Sendable {
     return evaluate(observation, atMs: now) + housekeeping(atMs: now)
   }
 
-  /// Clock tick between frames: the anyway timer, the warming-up hint and waiting speech.
+  /// Clock tick between frames: the anyway timer, the warming-up hint, a stalled feed and waiting speech.
   public mutating func tick(atMs now: Int) -> [CaptureEffect] {
     var effects: [CaptureEffect] = []
     if let readyAtMs, lastEvaluationAtMs == nil, lock.state == .warmingUp,
       now - readyAtMs >= CaptureRules.Timing.guideHintMs
     {
+      effects += show(.warmingUp, atMs: now)
+    }
+    // No detector result for a while (an interruption, a stalled detector): warming up again, so the
+    // screen never says "Keep still…" over a frozen preview. The anyway timer keeps running.
+    if let lastObservationAtMs, now - lastObservationAtMs >= CaptureRules.Evaluation.staleFeedAfterMs,
+      lock.feedStalled()
+    {
+      rules.reset()
+      liveOutline.reset()
+      lastEvaluationAtMs = nil
+      lastItemBox = nil
+      // Nothing is judged while warming up, so the anyway reason line waits for the next blocking hint.
+      lastBlockingHint = nil
       effects += show(.warmingUp, atMs: now)
     }
     return effects + housekeeping(atMs: now)

@@ -95,7 +95,7 @@ Android. Only if the Android segmenter cannot load do ML Kit object boxes stand 
 |---|---|---|---|
 | Evaluation rate | The lock machine reads the latest detector result at most once per | 100 ms (10 Hz) | — |
 | Analysis frame | iOS preview-sized video buffers; Android `ImageAnalysis` target | 640 × 480, KEEP_ONLY_LATEST | — |
-| Mask cadence | iOS: Vision foreground instance mask. Android: LiteRT segmenter. Newest frame only, one request in flight | every 250 ms; Android every 1000 ms while the phone is hot (`THERMAL_STATUS_MODERATE` or worse) | — |
+| Mask cadence | iOS: Vision foreground instance mask. Android: LiteRT segmenter. Newest frame only, one request in flight | every 250 ms; every 1000 ms while the phone is hot (Android `THERMAL_STATUS_MODERATE` or worse; iOS `ProcessInfo.ThermalState.serious` or worse, added 2026-10-22 for parity, `CaptureMaskCadence`) | — |
 | Item found | ≥ 1 mask instance (iOS: foreground instance; Android: mask component) with area ≥ 0.5 % of the frame. Android fallback: ≥ 1 ML Kit object | — | yes |
 | Edge band | Width of the band along each edge | 2 % of that dimension | — |
 | Cut off | Mask pixels inside an edge band span more than this share of that edge's length | > 4 % (top edge in hanger mode: > 10 %) | yes |
@@ -186,6 +186,14 @@ Pure logic, same in both apps, unit-tested on Linux (`swift test`) and in Robole
 - `backgrounded` → `idle` (camera and analysis stop; nothing half-saved). `foregrounded` →
   `warmingUp`, all counters and the anyway timer restart.
 - `modeChanged` → counters reset to `locked`; the anyway timer does **not** restart.
+- **Stale feed (2026-10-22, owner's reliability request):** `locked` or `unlocked` → `warmingUp` when no
+  detector result arrived for `evaluation.staleFeedAfterMs` (2000 ms; an interruption, a stalled
+  detector), checked on the clock tick. Counters, the ring, the previous box and the live outline reset;
+  the hint shows `cap-hint-warming-up`; the anyway reason line waits for the next blocking hint; the anyway
+  timer keeps running. Capturing, cooldown and idle are unaffected. Frames that return are evaluated as
+  after `cameraReady`. Never fires while frames flow (sweeps feed one every frame), so the simulator
+  sweeps cannot exercise it; unit tests on both apps do (`ShutterLock.feedStalled`,
+  `LockState.onFeedStalled`).
 
 Minimum time from the first good frame to auto-capture with the phone's 250 ms masks and one counted
 pass per mask: unlock after about 800 ms, then the 500 ms ring, about 1.3 s in all (owner: "~1–1.5 s
@@ -384,6 +392,10 @@ string is the iOS `accessibilityIdentifier` and the Android `testTag` (resource 
   live model once and the scoreboard records "live" or "keypoint file" per platform.
 - **Screen-reader flag:** sets the `screenReaderChanged(true)` input; spoken text goes to
   `cap-debug-spoken-log` (last 3 lines) as well as the platform announcement.
+- **Hold switches (2026-10-22):** `captureHoldFirstFrameMs` and `captureHoldCaptureMs` (real time only)
+  hold back a set's first frame and make each photo take that long, so the two passing states
+  `cap-hint-warming-up` and `cap-hint-capturing` stay on screen long enough for the light and dark
+  screenshots (`e2e/capture/hints.yaml` shots 18 and 19). A sweep ignores them.
 - **Sweep mode:** plays every good image of a family in a row, 1 s of empty background between
   them; a capture is recorded, not shown, and the camera carries on.
 - **Results log:** the debug build writes one JSON line per segment (set id, family, mode, every
@@ -418,11 +430,11 @@ Where the platforms differ, the expectation is per platform.
 | Case | Class | What the simulator run asserts |
 |---|---|---|
 | C1 T-shirt flat | sim | `top` flat: unlock ≤ 3 s, ring, auto-capture, review |
-| C2 hanger | sim | hanger mode unlocks; a hook touching the top edge up to 10 % still unlocks, on both apps (both measure the mask the same way, owner's mask decision 2026-10-22) |
+| C2 hanger | sim | hanger mode unlocks; a hook touching the top edge up to 10 % still unlocks, on both apps (both measure the mask the same way, owner's mask decision 2026-10-22). Frame sets (2026-10-22): `<family>-hanger-01-hook` (hook at 6.25 % of the top edge, unlocks) and the same frame as `<family>-flat-01-hook` (locked `cap-hint-cut-off-top`, "Try hanger mode"), every family with hanger mode; `tools/capture-frames/README.md` "Edge grazes" |
 | C3 mirror selfie (worn) | sim (rules on keypoint files); live pose on real bodies device-only | the same frame touching the edges unlocks in worn mode and locks in flat mode. Body check (Q-A b): the whole-body synthetic frame unlocks; each variant missing a required part locks with that family's `cap-hint-body-*`, anyway at 10.0 ± 0.5 s; `generic` worn never shows a body hint |
 | C4 shoes | sim | side-view guide; pair step (Q-D) |
 | C5 small item | sim | `small-item` min 0.015 unlocks a ring-sized item; "Move closer" below it |
-| C6 bag strap | sim | a strap grazing an edge ≤ 4 % unlocks, on both apps (mask measure, owner's mask decision 2026-10-22) |
+| C6 bag strap | sim | a strap grazing an edge ≤ 4 % unlocks, on both apps (mask measure, owner's mask decision 2026-10-22). Frame sets (2026-10-22): `bag-flat-0N-strap-graze`, the strap at 1.5–2.1 % of the top edge, unlocks |
 | C7 back photo | sim | "Different" → back guide, `cap-step-back`, skip and capture both work |
 | C8 dark on dark | sim (the detector on real fabric: device-only) | two strict sets per base: `dark-on-dark` (true mask) unlocks; `dark-on-dark-weak` (no instance) locks with `no-item` and anyway at 10.0 ± 0.5 s with the surface tip |
 | C9 white on white | sim (as C8) | same as C8: `white-on-white`, `white-on-white-weak` |
@@ -542,6 +554,11 @@ Answered by the owner through the question tool on 2026-10-22. These override ea
     object; a merged object unlocks (a miss, not a false lock). Android turns ML Kit's multiple
     objects on for it; ML Kit on real objects is device-only.
 - 2026-10-22 owner: live outline approved; Android uses LiteRT 1.4.2 + U²-Netp; UI polish and the canvas step deferred.
+- 2026-10-22 (exit-loop session): C2 and C6 frame sets added (README "Edge grazes"; generator-only
+  `Layout.grazePassFactor` 0.75 for deliberate grazes, no registry threshold changed); hold switches so
+  warming up and capturing are screenshot; iOS mask cadence slows to `mask.hotIntervalMs` while the phone
+  is hot (parity with Android); iOS `takePhoto` refuses an interrupted or stopped session instead of
+  letting AVFoundation raise (device-only to prove).
 
 ## 17. Live outline
 

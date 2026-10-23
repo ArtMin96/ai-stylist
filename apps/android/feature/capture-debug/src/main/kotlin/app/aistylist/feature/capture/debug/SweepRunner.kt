@@ -65,7 +65,11 @@ class SweepRunner(
             while (true) {
                 val frameAt = startMs + (frameNumber * frameMs).toLong()
                 if (frameAt >= endMs) break
-                while (nextTickMs <= frameAt) {
+                // Ticks strictly before the frame: a frame stamped at the same instant is the newest
+                // detector result then, so the tick after it reads it (as iOS evaluates a frame when it
+                // arrives). With ticks first, a tick at 800 ms read the 766 ms frame and its older mask,
+                // and every sweep unlock came one evaluation later than on iOS (900 vs 800 ms).
+                while (nextTickMs < frameAt) {
                     now = nextTickMs
                     handle(session, session.tick(), record, kind, clock)
                     nextTickMs += CaptureRules.Evaluation.INTERVAL_MS

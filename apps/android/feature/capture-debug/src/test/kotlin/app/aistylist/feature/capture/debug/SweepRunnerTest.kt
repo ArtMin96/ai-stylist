@@ -116,6 +116,18 @@ class SweepRunnerTest {
         }
     }
 
+    @Test
+    fun `at the live cadence a still item unlocks with its fourth mask, as the iOS sweep does`() {
+        val (index, set) = squareSet()
+        FrameAnalyzer(index, BoxSource.STORED, PoseSource.KEYPOINTS, MaskSource.STORED).use { analyzer ->
+            val line = SweepRunner(index, analyzer, maskCadenceMs = CADENCE_MS).run(set).single().toJson()
+
+            // Masks at 0, 266, 533 and 800 ms (30 fps): the first has no previous box to be steady
+            // against, the next three count, so the unlock comes with the 800 ms mask (iOS: 800 ms).
+            assertEquals(IOS_SWEEP_UNLOCK_MS, line.getLong("firstUnlockMs"))
+        }
+    }
+
     private companion object {
         const val SIDE_W = 48
         const val SIDE_H = 64
@@ -124,6 +136,7 @@ class SweepRunnerTest {
         const val CHECK = 3
         const val CADENCE_MS = 250
         const val MAX_UNLOCK_MS = 3_000L
+        const val IOS_SWEEP_UNLOCK_MS = 800L
         const val MIN_OUTLINE_IOU = 0.9
     }
 }

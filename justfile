@@ -521,7 +521,7 @@ capture-frames:
 capture-sim-ios:
     bash tools/capture-frames/capture-sim.sh ios
 
-# The capture camera's Android emulator loop (AVD aistylist-dev via android-run, or ANDROID_SERIAL): frames pushed, stored-box sweep (scored) + live ML Kit sweep (information), screen-reader sweeps, every e2e/capture flow in light and dark, scoring; same run folder and scoreboard as capture-sim-ios
+# The capture camera's Android emulator loop (AVD aistylist-dev via android-run, or ANDROID_SERIAL): frames pushed, stored mask + keypoint sweep (scored) + live LiteRT mask + ML Kit pose sweep (information), screen-reader sweeps, every e2e/capture flow in light and dark, scoring; same run folder and scoreboard as capture-sim-ios
 capture-sim-android:
     bash tools/capture-frames/capture-sim.sh android
 

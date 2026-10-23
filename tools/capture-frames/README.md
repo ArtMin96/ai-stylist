@@ -317,8 +317,7 @@ by at most 0.5 × it on every other frame.
 - `platform`: per-platform overrides, `{}` when both platforms expect the same. Today it is always
   `{}`: both apps measure the item from a foreground mask the same way (iOS Vision, Android LiteRT;
   owner's mask decision 2026-10-22), so a drawn item whose mask covers less than
-  `mask.minInstanceAreaShare`, such as `small-item` too small, locks with `no-item` on both. Until
-  Android's mask lane merges, Android still reads ML Kit boxes there and fails those sets, by design.
+  `mask.minInstanceAreaShare`, such as `small-item` too small, locks with `no-item` on both.
 
 ```json
 {

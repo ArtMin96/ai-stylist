@@ -132,7 +132,17 @@ class CameraXObservationSource(
             val executor = Executors.newSingleThreadExecutor()
             val analyzer = FrameAnalyzer(poseDetection) { event -> trySend(event) }
             val owner = CameraLifecycleOwner()
-            withContext(mainDispatcher) { bind(provider, owner, analyzer, executor) }
+            val bindFailure =
+                withContext(mainDispatcher) { bindOrUnavailable { bind(provider, owner, analyzer, executor) } }
+            if (bindFailure != null) {
+                // The feed's `finally` unbinds the half-started camera; only the analysis parts are ours.
+                send(CameraFeedEvent.Unavailable(bindFailure))
+                awaitClose {
+                    analyzer.close()
+                    executor.shutdown()
+                }
+                return@callbackFlow
+            }
             motion.start()
             awaitClose {
                 motion.stop()

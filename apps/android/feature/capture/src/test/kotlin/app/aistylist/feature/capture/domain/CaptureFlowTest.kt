@@ -285,13 +285,21 @@ class CaptureFlowTest {
 
     @Test
     fun `C23 a denied permission shows the permission screen, from which import works`() {
-        val denied =
-            CaptureFlowState()
-                .pickFamily(CaptureShapeFamily.TOP)
-                .cameraUnavailable(CameraUnavailableReason.PERMISSION_DENIED)
+        val camera = CaptureFlowState().pickFamily(CaptureShapeFamily.TOP)
+        val denied = camera.cameraUnavailable(CameraUnavailableReason.PERMISSION_DENIED)
+        val permissionScreen = CaptureScreen.PermissionDenied(returnTo = camera.screen as CaptureScreen.Camera)
 
-        assertEquals(CaptureScreen.PermissionDenied, denied.screen)
-        assertEquals(CaptureScreen.ImportPicking(returnTo = CaptureScreen.PermissionDenied), denied.openImport().screen)
+        assertEquals(permissionScreen, denied.screen)
+        assertEquals(CaptureScreen.ImportPicking(returnTo = permissionScreen), denied.openImport().screen)
+    }
+
+    @Test
+    fun `C23 access granted on the permission screen returns to the same camera step`() {
+        val camera = CaptureFlowState().pickFamily(CaptureShapeFamily.TOP)
+        val denied = camera.cameraUnavailable(CameraUnavailableReason.PERMISSION_DENIED)
+
+        assertEquals(camera.screen, denied.permissionGranted().screen)
+        assertEquals(camera, camera.permissionGranted())
     }
 
     @Test

@@ -133,6 +133,9 @@ class CaptureViewModel(
     /** Review "Done", the batch summary "Done", or a close button. */
     fun onClose() = updateFlow { it.close() }
 
+    /** The camera permission became granted while the permission screen shows (back from Settings). */
+    fun onCameraPermissionGranted() = updateFlow { it.permissionGranted() }
+
     fun onScreenReaderChanged(isOn: Boolean) {
         state.update { it.copy(isScreenReaderOn = isOn) }
         withSession { it.screenReaderChanged(isOn) }

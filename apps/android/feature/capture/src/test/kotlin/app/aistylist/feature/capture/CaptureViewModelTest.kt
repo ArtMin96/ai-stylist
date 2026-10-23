@@ -235,7 +235,7 @@ class CaptureViewModelTest {
             viewModel.onFamilyPicked(CaptureShapeFamily.TOP)
             runCurrent()
 
-            assertEquals(CaptureScreen.PermissionDenied, viewModel.screen)
+            assertTrue(viewModel.screen is CaptureScreen.PermissionDenied)
             assertNull(viewModel.camera)
             assertEquals(0, source.openFeeds)
         }

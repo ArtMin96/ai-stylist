@@ -98,8 +98,10 @@ sealed interface CaptureScreen {
     /** `cap-screen-batch-summary`. */
     data object BatchSummary : CaptureScreen
 
-    /** `cap-screen-permission`. */
-    data object PermissionDenied : CaptureScreen
+    /** `cap-screen-permission`; once access is granted the flow returns to [returnTo]. */
+    data class PermissionDenied(
+        val returnTo: Camera,
+    ) : CaptureScreen
 
     /** `cap-screen-no-camera`. */
     data object NoCamera : CaptureScreen
@@ -254,7 +256,7 @@ data class CaptureFlowState(
         when (screen) {
             CaptureScreen.Picker,
             is CaptureScreen.Camera,
-            CaptureScreen.PermissionDenied,
+            is CaptureScreen.PermissionDenied,
             CaptureScreen.NoCamera,
             -> copy(screen = CaptureScreen.ImportPicking(returnTo = screen))
 
@@ -290,13 +292,19 @@ data class CaptureFlowState(
     }
 
     fun cameraUnavailable(reason: CameraUnavailableReason): CaptureFlowState {
-        if (screen !is CaptureScreen.Camera) return this
+        val camera = screen as? CaptureScreen.Camera ?: return this
         val next =
             when (reason) {
-                CameraUnavailableReason.PERMISSION_DENIED -> CaptureScreen.PermissionDenied
+                CameraUnavailableReason.PERMISSION_DENIED -> CaptureScreen.PermissionDenied(returnTo = camera)
                 CameraUnavailableReason.NO_CAMERA -> CaptureScreen.NoCamera
             }
         return copy(screen = next)
+    }
+
+    /** Access granted (back from Settings) while the permission screen shows: the same camera step again. */
+    fun permissionGranted(): CaptureFlowState {
+        val denied = screen as? CaptureScreen.PermissionDenied ?: return this
+        return copy(screen = denied.returnTo)
     }
 
     /** Review "Done", the batch summary "Done", or any close button: the flow ends, photos dropped. */

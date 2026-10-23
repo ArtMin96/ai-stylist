@@ -64,8 +64,11 @@ metadata:
    `IllegalStateException`). Route a new failure through `bindOrUnavailable` and add a
    `CameraBindingTest` case; never let it crash the app or show a black preview (0c7af58).
 6. Permission. `CameraPermissionGate` is shared: the source suspends in `awaitAnswer()` and
-   `CaptureRoute.kt` asks the system and reports through `onResult`. A path that comes back from
-   Settings must call `refresh()`. The manifest keeps `android.hardware.camera.any` with
+   `CaptureRoute.kt` asks the system and reports through `onResult`. Back from Settings,
+   `PermissionRequest` calls `refresh()` on start, but only on the permission screen (a re-read
+   without the grant means "ask again", which on a camera step would reopen the system dialog), and
+   a grant moves the flow back to the camera step it left (`permissionGranted`,
+   `CapturePermissionReturnTest`). The manifest keeps `android.hardware.camera.any` with
    `required="false"`, so phones without a camera still install the app.
 7. Analysis stream. One `ImageAnalysis` at 640×480 from `CaptureRules.AnalysisFrame`
    (`ResolutionSelector`, 4:3, closest-higher-then-lower fallback), `STRATEGY_KEEP_ONLY_LATEST`, one

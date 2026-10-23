@@ -30,6 +30,7 @@ import androidx.core.net.toUri
 import androidx.core.view.WindowCompat
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import app.aistylist.contracts.kernel.CaptureMode
@@ -91,7 +92,7 @@ fun CaptureRoute(
             while (spokenLog.size > SPOKEN_LOG_SIZE) spokenLog.removeAt(0)
         },
     )
-    PermissionRequest(screen, dependencies.permission)
+    PermissionRequest(screen, dependencies.permission, onGranted = viewModel::onCameraPermissionGranted)
     SystemBarsEffect(isOnCameraGround = screen is CaptureScreen.Camera)
     ImportPicker(screen, onPicked = viewModel::onImportPicked, onCancelled = viewModel::onImportCancelled)
     LaunchedEffect(screen) {
@@ -160,7 +161,7 @@ private fun CaptureScreenContent(
             BatchSummaryScreen(photos = state.flow.batchPhotos, loader = loader, onDone = handlers.onClose)
         }
 
-        CaptureScreen.PermissionDenied -> {
+        is CaptureScreen.PermissionDenied -> {
             PermissionScreen(
                 onOpenSettings = {
                     context.startActivity(
@@ -325,17 +326,32 @@ private fun SystemBarsEffect(isOnCameraGround: Boolean) {
     }
 }
 
-/** Asks for the camera the first time a camera step opens without the grant (C23). */
+/**
+ * Asks for the camera the first time a camera step opens without the grant (C23). On the permission
+ * screen it re-reads the grant each time the app starts (back from Settings) and reports a grant
+ * through [onGranted]. Only there: a re-read without the grant means "ask again", which on a camera
+ * step would open the system dialog on every return.
+ */
 @Composable
 private fun PermissionRequest(
     screen: CaptureScreen,
     gate: CameraPermissionGate,
+    onGranted: () -> Unit,
 ) {
     val permission by gate.permission.collectAsStateWithLifecycle()
+    val currentOnGranted by rememberUpdatedState(onGranted)
     val launcher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission(), gate::onResult)
     val needsAnswer = screen is CaptureScreen.Camera && permission == CameraPermission.NOT_ASKED
     LaunchedEffect(needsAnswer) {
         if (needsAnswer) launcher.launch(Manifest.permission.CAMERA)
+    }
+    val isDenied = screen is CaptureScreen.PermissionDenied
+    if (isDenied) {
+        LifecycleEventEffect(Lifecycle.Event.ON_START) { gate.refresh() }
+    }
+    val isGrantedNow = isDenied && permission == CameraPermission.GRANTED
+    LaunchedEffect(isGrantedNow) {
+        if (isGrantedNow) currentOnGranted()
     }
 }
 
